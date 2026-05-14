@@ -11,20 +11,21 @@ using Internal.TypeSystem;
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     /// <summary>
-    /// Tracks usage of a virtual or interface method call and dynamically discovers
+    /// Tracks usage of a generic virtual/interface method call and dynamically discovers
     /// implementations on types as they are added to the dependency graph.
     ///
     /// For each discovered concrete type (InheritedVirtualMethodsNode as an "interesting" type marker),
     /// this node resolves the method implementation and adds it as a compilation dependency. Used to
     /// find implementations that have non canonical generic type arguments.
     /// </summary>
-    public class ReadyToRunVirtualMethodDependenciesNode : DependencyNodeCore<NodeFactory>
+    public class ReadyToRunGVMDependenciesNode : DependencyNodeCore<NodeFactory>
     {
         private readonly MethodDesc _method;
 
-        public ReadyToRunVirtualMethodDependenciesNode(MethodDesc method)
+        public ReadyToRunGVMDependenciesNode(MethodDesc method)
         {
             Debug.Assert(method.GetCanonMethodTarget(CanonicalFormKind.Specific) == method);
+            Debug.Assert(method.HasInstantiation);
             Debug.Assert(method.IsVirtual);
 
             _method = method;
@@ -103,6 +104,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         }
 
         protected override string GetName(NodeFactory factory) =>
-            "__ReadyToRunVirtualMethodDependencies_" + factory.NameMangler.GetMangledMethodName(_method);
+            "__ReadyToRunGVMDependencies_" + factory.NameMangler.GetMangledMethodName(_method);
     }
 }

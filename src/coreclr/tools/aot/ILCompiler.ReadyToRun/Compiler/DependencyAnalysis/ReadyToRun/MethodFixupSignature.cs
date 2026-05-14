@@ -62,7 +62,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 factory.CompilationModuleGroup.CrossModuleCompileable(canonMethod) &&
                 factory.CompilationModuleGroup.ContainsMethodBody(canonMethod, false))
             {
-                list = list ?? new DependencyAnalysisFramework.DependencyNodeCore<NodeFactory>.DependencyList();
+                list = list ?? new DependencyList();
                 try
                 {
                     factory.DetectGenericCycles(_method.Method, canonMethod);
@@ -73,15 +73,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
             }
 
-            // FIXME Including async methods can lead to crash when compiling Async variant: [S.P.CoreLib] System.IO.TextWriter + SyncTextWriter.DisposeAsync()
-            // Crash is assertion in constructStringLiteral that gets called when compiling an IL stub.
-            //
             // For generic virtual method calls, create a virtual dependency node that will
             // dynamically discover implementations on types as they are added to the graph.
             if (_fixupKind == ReadyToRunFixupKind.VirtualEntry &&
                 Method.IsVirtual &&
+                Method.HasInstantiation &&
                 !Method.IsFinal &&
-                !Method.IsAsyncVariant() &&
                 !Method.IsGenericMethodDefinition &&
                 !Method.OwningType.IsGenericDefinition &&
                 (Method.OwningType.IsInterface || !Method.OwningType.IsSealed()))
@@ -90,7 +87,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 // instantiations of virtual methods that have at least one non-canonical argument (aka a valuetype).
                 if (HasNonCanonicalInstantiationArguments(canonMethod))
                 {
-                    list = list ?? new DependencyAnalysisFramework.DependencyNodeCore<NodeFactory>.DependencyList();
+                    list = list ?? new DependencyList();
                     list.Add(factory.VirtualMethodUseDependencies(Method), "Virtual dispatch dependency");
                 }
             }
@@ -106,12 +103,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 if (arg != canonType)
                     return true;
             }
-            foreach (TypeDesc arg in canonMethod.OwningType.Instantiation)
-            {
-                if (arg != canonType)
-                    return true;
-            }
-
             return false;
         }
 

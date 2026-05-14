@@ -862,6 +862,7 @@ namespace ILCompiler
             this TypeDesc potentialOverrideType, MethodDesc canonMethod, out bool foundMatchingInterface)
         {
             Debug.Assert(canonMethod.IsVirtual);
+            Debug.Assert(canonMethod.HasInstantiation);
             Debug.Assert(canonMethod.OwningType.IsInterface);
             Debug.Assert(canonMethod.GetCanonMethodTarget(CanonicalFormKind.Specific) == canonMethod);
 
@@ -902,19 +903,8 @@ namespace ILCompiler
 
                 if (slotDecl is not null)
                 {
-                    MethodDesc implementingMethod;
-                    if (canonMethod.HasInstantiation)
-                    {
-                        implementingMethod = slotDecl.MakeInstantiatedMethod(canonMethod.Instantiation)
-                            .InstantiateSignature(potentialOverrideType.Instantiation, canonMethod.Instantiation);
-                    }
-                    else
-                    {
-                        implementingMethod = slotDecl.InstantiateSignature(
-                            potentialOverrideType.Instantiation, Instantiation.Empty);
-                    }
-
-                    results.Add(implementingMethod);
+                    results.Add(slotDecl.MakeInstantiatedMethod(canonMethod.Instantiation)
+                            .InstantiateSignature(potentialOverrideType.Instantiation, canonMethod.Instantiation));
                 }
             }
 
@@ -929,6 +919,7 @@ namespace ILCompiler
             this TypeDesc potentialOverrideType, MethodDesc canonMethod)
         {
             Debug.Assert(canonMethod.IsVirtual);
+            Debug.Assert(canonMethod.HasInstantiation);
             Debug.Assert(!canonMethod.OwningType.IsInterface);
             Debug.Assert(canonMethod.GetCanonMethodTarget(CanonicalFormKind.Specific) == canonMethod);
 
@@ -957,12 +948,9 @@ namespace ILCompiler
             }
             else
             {
-                MethodDesc typicalOnConcreteType = context
-                    .GetMethodForInstantiatedType(canonMethod.GetTypicalMethodDefinition(), (InstantiatedType)overrideTypeCur);
-
-                methodToResolve = canonMethod.HasInstantiation
-                    ? typicalOnConcreteType.MakeInstantiatedMethod(canonMethod.Instantiation)
-                    : typicalOnConcreteType;
+                methodToResolve = context
+                    .GetMethodForInstantiatedType(canonMethod.GetTypicalMethodDefinition(), (InstantiatedType)overrideTypeCur)
+                    .MakeInstantiatedMethod(canonMethod.Instantiation);
             }
 
             MethodDesc canonTarget = potentialOverrideType.FindVirtualFunctionTargetMethodOnObjectType(methodToResolve)

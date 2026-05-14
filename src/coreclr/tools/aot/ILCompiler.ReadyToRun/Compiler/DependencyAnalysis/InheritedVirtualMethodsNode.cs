@@ -11,7 +11,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     /// <summary>
     /// Type discovery marker node for virtual dispatch dependency analysis.
     ///
-    /// Marked InterestingForDynamicDependencyAnalysis so that ReadyToRunVirtualMethodDependenciesNode
+    /// Marked InterestingForDynamicDependencyAnalysis so that ReadyToRunGVMDependenciesNode
     /// can iterate on these type nodes to discover new virtual method targets to include in compilation.
     /// </summary>
     public class InheritedVirtualMethodsNode : DependencyNodeCore<NodeFactory>
@@ -20,7 +20,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public InheritedVirtualMethodsNode(TypeDesc type)
         {
-            Debug.Assert(type is DefType && !type.IsInterface);
+            Debug.Assert(type.IsDefType && !type.IsInterface);
             _type = type;
         }
 
