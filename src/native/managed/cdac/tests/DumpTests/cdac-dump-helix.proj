@@ -194,8 +194,13 @@
       <!-- Windows: copy each debuggee DLL -->
       <_HelixCommandLines Condition="'$(TargetOS)' == 'windows'"
           Include="@(_UniqueDebuggee->'mkdir %25HELIX_WORKITEM_PAYLOAD%25\dumps\local\symbols\debuggees\%(Identity)')" />
+      <!-- Copy every DLL/PDB from the debuggee publish folder so that project
+           references (e.g. InterpreterStack/Trampoline.dll) are also available
+           for symbol resolution. -->
       <_HelixCommandLines Condition="'$(TargetOS)' == 'windows'"
-          Include="@(_UniqueDebuggee->'copy &quot;%25HELIX_WORKITEM_PAYLOAD%25\debuggees\%(Identity)\%(Identity).dll&quot; &quot;%25HELIX_WORKITEM_PAYLOAD%25\dumps\local\symbols\debuggees\%(Identity)\&quot;')" />
+          Include="@(_UniqueDebuggee->'copy &quot;%25HELIX_WORKITEM_PAYLOAD%25\debuggees\%(Identity)\*.dll&quot; &quot;%25HELIX_WORKITEM_PAYLOAD%25\dumps\local\symbols\debuggees\%(Identity)\&quot;')" />
+      <_HelixCommandLines Condition="'$(TargetOS)' == 'windows'"
+          Include="@(_UniqueDebuggee->'copy &quot;%25HELIX_WORKITEM_PAYLOAD%25\debuggees\%(Identity)\*.pdb&quot; &quot;%25HELIX_WORKITEM_PAYLOAD%25\dumps\local\symbols\debuggees\%(Identity)\&quot; 2&gt;nul || (exit /b 0)')" />
 
       <!-- Unix: copy SPC from testhost shared framework -->
       <_HelixCommandLines Condition="'$(TargetOS)' != 'windows'"
@@ -207,8 +212,13 @@
       <!-- Unix: copy each debuggee DLL -->
       <_HelixCommandLines Condition="'$(TargetOS)' != 'windows'"
           Include="@(_UniqueDebuggee->'mkdir -p $HELIX_WORKITEM_PAYLOAD/dumps/local/symbols/debuggees/%(Identity)')" />
+      <!-- Copy every DLL/PDB from the debuggee publish folder so that project
+           references (e.g. InterpreterStack/Trampoline.dll) are also available
+           for symbol resolution. -->
       <_HelixCommandLines Condition="'$(TargetOS)' != 'windows'"
-          Include="@(_UniqueDebuggee->'cp $HELIX_WORKITEM_PAYLOAD/debuggees/%(Identity)/%(Identity).dll $HELIX_WORKITEM_PAYLOAD/dumps/local/symbols/debuggees/%(Identity)/')" />
+          Include="@(_UniqueDebuggee->'cp $HELIX_WORKITEM_PAYLOAD/debuggees/%(Identity)/*.dll $HELIX_WORKITEM_PAYLOAD/dumps/local/symbols/debuggees/%(Identity)/')" />
+      <_HelixCommandLines Condition="'$(TargetOS)' != 'windows'"
+          Include="@(_UniqueDebuggee->'cp $HELIX_WORKITEM_PAYLOAD/debuggees/%(Identity)/*.pdb $HELIX_WORKITEM_PAYLOAD/dumps/local/symbols/debuggees/%(Identity)/ 2&gt;/dev/null || true')" />
     </ItemGroup>
 
     <!-- Test mode only: run xunit, capture exit code, propagate after archive. -->
