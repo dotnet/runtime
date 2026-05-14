@@ -1,8 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Reflection.Metadata;
+
+using ILCompiler.DependencyAnalysis;
+using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.Text;
 using Internal.TypeSystem;
@@ -29,7 +33,38 @@ namespace ILCompiler
         {
             get
             {
-                MetadataReader reader = _module.MetadataReader;
+                foreach (EcmaMethod method in UnmanagedEntryPointsNode.GetExportedMethods(_module))
+                    yield return method;
+            }
+        }
+
+        public void AddCompilationRoots(IRootingServiceProvider rootProvider)
+        {
+            rootProvider.AddCompilationRoot(new UnmanagedEntryPointsNode(_module, Hidden));
+        }
+
+        private sealed class UnmanagedEntryPointsNode : DependencyNodeCore<NodeFactory>
+        {
+            private readonly EcmaModule _module;
+            private readonly bool _isHidden;
+
+            public UnmanagedEntryPointsNode(EcmaModule module, bool isHidden)
+            {
+                _module = module;
+                _isHidden = isHidden;
+            }
+
+            public override bool InterestingForDynamicDependencyAnalysis => false;
+
+            public override bool HasDynamicDependencies => false;
+
+            public override bool HasConditionalStaticDependencies => true;
+
+            public override bool StaticDependenciesAreComputed => true;
+
+            public static IEnumerable<EcmaMethod> GetExportedMethods(EcmaModule module)
+            {
+                MetadataReader reader = module.MetadataReader;
                 MetadataStringComparer comparer = reader.StringComparer;
                 foreach (CustomAttributeHandle caHandle in reader.CustomAttributes)
                 {
@@ -45,7 +80,7 @@ namespace ILCompiler
                     if (comparer.Equals(nameHandle, "RuntimeExportAttribute")
                         && comparer.Equals(nsHandle, "System.Runtime"))
                     {
-                        EcmaMethod method = _module.GetMethod(parent);
+                        EcmaMethod method = module.GetMethod(parent);
                         if (method.GetRuntimeExportName() != null)
                             yield return method;
                     }
@@ -53,29 +88,97 @@ namespace ILCompiler
                     if (comparer.Equals(nameHandle, "UnmanagedCallersOnlyAttribute")
                         && comparer.Equals(nsHandle, "System.Runtime.InteropServices"))
                     {
-                        EcmaMethod method = _module.GetMethod(parent);
+                        EcmaMethod method = module.GetMethod(parent);
                         if (method.GetUnmanagedCallersOnlyExportName() != null)
                             yield return method;
                     }
                 }
             }
-        }
 
-        public void AddCompilationRoots(IRootingServiceProvider rootProvider)
-        {
-            foreach (var ecmaMethod in ExportedMethods)
+            public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
             {
-                if (ecmaMethod.IsUnmanagedCallersOnly)
+                foreach (EcmaMethod method in GetExportedMethods(_module))
                 {
-                    Utf8String unmanagedCallersOnlyExportName = new(ecmaMethod.GetUnmanagedCallersOnlyExportName());
-                    rootProvider.AddCompilationRoot((MethodDesc)ecmaMethod, "Native callable", unmanagedCallersOnlyExportName, Hidden);
-                }
-                else
-                {
-                    Utf8String runtimeExportName = new(ecmaMethod.GetRuntimeExportName());
-                    rootProvider.AddCompilationRoot((MethodDesc)ecmaMethod, "Runtime export", runtimeExportName, Hidden);
+                    if (!method.IsUnmanagedCallersOnly)
+                    {
+                        foreach (DependencyListEntry dependency in GetMethodStaticDependencies(context, method, "Runtime export", new Utf8String(method.GetRuntimeExportName())))
+                            yield return dependency;
+
+                        continue;
+                    }
+
+                    if (method.GetUnmanagedCallersOnlyAssociatedSourceType() is not null)
+                        continue;
+
+                    foreach (DependencyListEntry dependency in GetMethodStaticDependencies(context, method, "Native callable", new Utf8String(method.GetUnmanagedCallersOnlyExportName())))
+                        yield return dependency;
                 }
             }
+
+            public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context)
+            {
+                foreach (EcmaMethod method in GetExportedMethods(_module))
+                {
+                    TypeDesc associatedSourceType = method.GetUnmanagedCallersOnlyAssociatedSourceType();
+                    if (associatedSourceType is null)
+                        continue;
+
+                    IMethodNode methodEntryPoint = GetMethodEntrypointAndAddAlias(context, method, new Utf8String(method.GetUnmanagedCallersOnlyExportName()));
+
+                    yield return new CombinedDependencyListEntry(
+                        methodEntryPoint,
+                        context.MaximallyConstructableType(associatedSourceType),
+                        "Native callable with associated source type");
+
+                    MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                    if (canonMethod != method && method.HasInstantiation)
+                    {
+                        yield return new CombinedDependencyListEntry(
+                            context.MethodGenericDictionary(method),
+                            context.MaximallyConstructableType(associatedSourceType),
+                            "Native callable generic dictionary with associated source type");
+                    }
+
+                    // If the associated source type has a canonical form, it could be created at runtime by the type loader.
+                    // If there is a type loader template for it, create the generic type instantiation eagerly.
+                    TypeDesc canonAssociatedSourceType = associatedSourceType.ConvertToCanonForm(CanonicalFormKind.Specific);
+                    if (canonAssociatedSourceType != associatedSourceType && GenericTypesTemplateMap.IsEligibleToHaveATemplate(canonAssociatedSourceType))
+                    {
+                        yield return new CombinedDependencyListEntry(
+                            context.MaximallyConstructableType(associatedSourceType),
+                            context.NativeLayout.TemplateTypeLayout(canonAssociatedSourceType),
+                            "Associated source type that could be loaded at runtime");
+                    }
+                }
+            }
+
+            public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => Array.Empty<CombinedDependencyListEntry>();
+
+            private IEnumerable<DependencyListEntry> GetMethodStaticDependencies(NodeFactory context, EcmaMethod method, string reason, Utf8String exportName)
+            {
+                IMethodNode methodEntryPoint = GetMethodEntrypointAndAddAlias(context, method, exportName);
+
+                yield return new DependencyListEntry(methodEntryPoint, reason);
+
+                MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                if (canonMethod != method && method.HasInstantiation)
+                    yield return new DependencyListEntry(context.MethodGenericDictionary(method), reason);
+            }
+
+            private IMethodNode GetMethodEntrypointAndAddAlias(NodeFactory context, EcmaMethod method, Utf8String exportName)
+            {
+                IMethodNode methodEntryPoint = context.MethodEntrypoint(method.GetCanonMethodTarget(CanonicalFormKind.Specific));
+
+                if (!exportName.IsNull)
+                {
+                    exportName = context.NameMangler.NodeMangler.ExternMethod(exportName, method);
+                    context.NodeAliases[methodEntryPoint] = (exportName, _isHidden);
+                }
+
+                return methodEntryPoint;
+            }
+
+            protected override string GetName(NodeFactory context) => $"Unmanaged entry points: {_module}";
         }
     }
 }
