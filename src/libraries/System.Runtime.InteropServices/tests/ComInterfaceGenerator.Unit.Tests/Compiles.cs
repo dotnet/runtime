@@ -473,5 +473,26 @@ namespace ComInterfaceGenerator.Unit.Tests
 
             await test.RunAsync();
         }
+
+        [Fact]
+        public async Task MarshalAsInterfaceWithIidParameterIndexOnOutObjectCompiles()
+        {
+            string source = """
+                using System;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("78F11E0E-C576-4E3D-BC40-E9A3297D4DB7")]
+                partial interface IActivationFactory
+                {
+                    void GetActivationFactory(
+                        in Guid iid,
+                        [MarshalAs(UnmanagedType.Interface, IidParameterIndex = 0)] out object factory);
+                }
+                """;
+
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source);
+        }
     }
 }

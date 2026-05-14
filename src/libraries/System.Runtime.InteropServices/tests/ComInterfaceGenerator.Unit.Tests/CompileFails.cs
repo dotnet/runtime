@@ -884,5 +884,29 @@ namespace ComInterfaceGenerator.Unit.Tests
 
             await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(code, new DiagnosticResult(GeneratorDiagnostics.InvalidExceptionToUnmanagedMarshallerType).WithLocation(0));
         }
+
+        [Fact]
+        public async Task MarshalAsIidParameterIndexOnNonOutObject_ReportsDiagnostic()
+        {
+            string source = """
+                using System;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("85E4DFAA-2E8B-4A7A-9D56-DAA54CC8BF3B")]
+                partial interface I
+                {
+                    void M(in Guid iid, [{|#0:MarshalAs(UnmanagedType.Interface, IidParameterIndex = 0)|}] ref object o);
+                }
+                """;
+
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(
+                source,
+                VerifyComInterfaceGenerator
+                    .Diagnostic(GeneratorDiagnostics.ConfigurationNotSupported)
+                    .WithLocation(0)
+                    .WithArguments($"{nameof(MarshalAsAttribute)}{Type.Delimiter}{nameof(MarshalAsAttribute.IidParameterIndex)} (supported only on [MarshalAs(UnmanagedType.Interface)] out object parameters)"));
+        }
     }
 }
