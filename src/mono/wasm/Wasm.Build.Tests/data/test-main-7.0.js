@@ -162,6 +162,15 @@ function processArguments(incomingArguments) {
     }
 
     runArgs.applicationArguments = incomingArguments;
+
+    // xharness appends its own control arguments here; keep them from reaching Main(string[] args).
+    for (let i = 0; i < runArgs.applicationArguments.length; i++) {
+        if (runArgs.applicationArguments[i] === "-verbosity") {
+            runArgs.applicationArguments.splice(i, 2);
+            i--;
+        }
+    }
+
     // cheap way to let the testing infrastructure know we're running in a browser context (or not)
     runArgs.environmentVariables["IsBrowserDomSupported"] = is_browser.toString().toLowerCase();
     runArgs.environmentVariables["IsNodeJS"] = is_node.toString().toLowerCase();
