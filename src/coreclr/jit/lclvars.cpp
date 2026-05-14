@@ -5236,8 +5236,9 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
     unsigned sizeAscCost = tryStrategy(1, "sizeAsc", sizeAscCompare);
 
     // Strategies 2-3: Weight-based sorts that differ from density/sizeAsc only when
-    // PGO block weights are available (FullOpts). For MinOpts, weighted == unweighted
-    // and refDensity == density, so these are redundant and skipped.
+    // PGO block weights are available (FullOpts). For MinOpts, lclWeight == lclRefCnt,
+    // so S2 is redundant with density once D is in the set (empirically adds <1% of the
+    // code-size wins for the full per-strategy TP cost), and S3 == density. Skipped at MinOpts.
     unsigned weightCost     = 0;
     unsigned refDensityCost = 0;
     if (!isMinOpts)
@@ -5279,8 +5280,10 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
     // density first, then non-init locals by density. Keeps the zero-init span
     // tight while still prioritizing hot locals within each group.
     // Only useful when block init will be used (otherwise identical to density).
+    // Skipped at MinOpts: empirically adds <1% of the code-size wins for the full
+    // per-strategy TP cost.
     unsigned initGroupedDensityCost = 0;
-    if (useBlockInit)
+    if (useBlockInit && !isMinOpts)
     {
         auto initGroupedDensityCompare = [lclSize, lclWeight, lclNeedsInit](unsigned n1, unsigned n2) -> bool {
             bool init1 = lclNeedsInit[n1], init2 = lclNeedsInit[n2];
