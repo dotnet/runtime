@@ -2258,8 +2258,8 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
             //   SCC (EVEX.P3[3:0]) -> code_t bits [35:32] -> shift left by 32
             //   DFV (EVEX.P2[6:3]) -> code_t bits [46:43] -> shift left by 43
             code &= 0xFFFF87F0FFFFFFFF;
-            code |= ((size_t)GetCCFromCCMPOrCTEST(ins)) << 32;  // SCC: EVEX.P3[3:0] = code_t[35:32]
-            code |= ((size_t)id->idGetEvexDFV()) << 43;         // DFV: EVEX.P2[6:3] = code_t[46:43]
+            code |= ((size_t)GetCCFromCCMPOrCTEST(ins)) << 32; // SCC: EVEX.P3[3:0] = code_t[35:32]
+            code |= ((size_t)id->idGetEvexDFV()) << 43;        // DFV: EVEX.P2[6:3] = code_t[46:43]
         }
 #endif
 
