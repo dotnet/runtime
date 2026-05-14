@@ -55,9 +55,20 @@ record struct ThreadData (
 ```
 
 ``` csharp
+[Flags]
+enum DebuggerControlledThreadState
+{
+    None                        = 0x00000000, // Threads are initialized this way
+    UserSuspend                 = 0x00000001, // Marked "suspended" by the debugger
+}
+```
+
+``` csharp
 ThreadStoreData GetThreadStoreData();
 ThreadStoreCounts GetThreadCounts();
 ThreadData GetThreadData(TargetPointer threadPointer);
+void SetDebuggerControlledThreadState(TargetPointer thread, DebuggerControlledThreadState state);
+void ResetDebuggerControlledThreadState(TargetPointer thread, DebuggerControlledThreadState state);
 void GetStackLimitData(TargetPointer threadPointer, out TargetPointer stackBase, out TargetPointer stackLimit, out TargetPointer frameAddress);
 TargetPointer IdToThread(uint id);
 TargetPointer GetThreadLocalStaticBase(TargetPointer threadPointer, TargetPointer tlsIndexPtr);
@@ -106,6 +117,7 @@ The contract additionally depends on these data descriptors
 | `Thread` | `Id` | Thread identifier |
 | `Thread` | `OSId` | Operating system thread identifier |
 | `Thread` | `State` | Thread state flags |
+| `Thread` | `DebuggerControlledThreadState` | Thread state flags controlled by the debugger |
 | `Thread` | `PreemptiveGCDisabled` | Flag indicating if preemptive GC is disabled |
 | `Thread` | `Frame` | Pointer to current frame |
 | `Thread` | `CachedStackBase` | Pointer to the base of the stack |
@@ -228,6 +240,18 @@ void IThread.GetStackLimitData(TargetPointer threadPointer, out TargetPointer st
     stackBase = target.ReadPointer(threadPointer + /* Thread::CachedStackBase offset */);
     stackLimit = target.ReadPointer(threadPointer + /* Thread::CachedStackLimit offset */);
     frameAddress = threadPointer + /* Thread::Frame offset */;
+}
+
+void SetDebuggerControlledThreadState(TargetPointer thread, DebuggerControlledThreadState state)
+{
+    uint current = target.Read<uint>(thread + /* Thread::DebuggerControlledThreadState offset */);
+    target.Write<uint>(thread + /* Thread::DebuggerControlledThreadState offset */, current | (uint)state);
+}
+
+void ResetDebuggerControlledThreadState(TargetPointer thread, DebuggerControlledThreadState state)
+{
+    uint current = target.Read<uint>(thread + /* Thread::DebuggerControlledThreadState offset */);
+    target.Write<uint>(thread + /* Thread::DebuggerControlledThreadState offset */, current & ~(uint)state);
 }
 
 TargetPointer IThread.IdToThread(uint id)

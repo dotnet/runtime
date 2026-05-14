@@ -3935,7 +3935,7 @@ bool Thread::SysStartSuspendForDebug(AppDomain *pAppDomain)
 #endif
 
         // Don't try to suspend threads that you've left suspended.
-        if (thread->m_StateNC & TSNC_DebuggerUserSuspend)
+        if (thread->HasDebuggerControlledThreadState(Thread::DCTS_UserSuspend))
             continue;
 
         if (thread == pCurThread)
@@ -4320,7 +4320,7 @@ void Thread::SysResumeFromDebug(AppDomain *pAppDomain)
     {
         // If the user wants to keep the thread suspended, then
         // don't release the thread.
-        if (!(thread->m_StateNC & TSNC_DebuggerUserSuspend))
+        if (!(thread->HasDebuggerControlledThreadState(Thread::DCTS_UserSuspend)))
         {
             // If we are still trying to suspend this thread, forget about it.
             if (thread->m_State & TS_DebugSuspendPending)
