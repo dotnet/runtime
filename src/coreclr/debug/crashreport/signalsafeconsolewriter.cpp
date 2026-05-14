@@ -129,11 +129,9 @@ SignalSafeConsoleWriter::Flush()
 #else
     // On Apple/Linux the report goes to stderr; explicitly newline-terminate
     // each line so log readers split entries the same way logcat would.
-    if (m_pos + 1 < sizeof(m_buffer))
-    {
-        m_buffer[m_pos++] = '\n';
-        m_buffer[m_pos] = '\0';
-    }
+    size_t newlinePos = m_pos < sizeof(m_buffer) - 1 ? m_pos : sizeof(m_buffer) - 2;
+    m_buffer[newlinePos++] = '\n';
+    m_buffer[newlinePos] = '\0';
     minipal_log_write_error(m_buffer);
 #endif
 
