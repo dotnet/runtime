@@ -29,10 +29,10 @@ namespace {Namespace}
                 // Validates calling via reflection works
                 test.RunReflectionScenario();
 
-                // Validates that an offset of one element produces a single-true mask
+                // Validates when op2 is one element after op1
                 test.RunOffsetByOneScenario();
 
-                // Validates the reverse offset case (op2 one element before op1):
+                // Validate when op2 is one element before op1:
                 // WHILERW returns a single-true mask; WHILEWR returns an all-true mask.
                 test.RunReverseOffsetByOneScenario();
             }
