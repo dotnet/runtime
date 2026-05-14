@@ -991,7 +991,7 @@ const Compiler::AssertionDsc& Compiler::optGetAssertion(AssertionIndex assertInd
     return assertion;
 }
 
-ValueNum Compiler::optConservativeNormalVN(GenTree* tree)
+ValueNum Compiler::optConservativeNormalVN(const GenTree* tree)
 {
     if (optLocalAssertionProp)
     {
@@ -5207,7 +5207,7 @@ static GCInfo::WriteBarrierForm GetWriteBarrierForm(Compiler* comp, ValueNum vn)
             // Boxed static - always on the heap
             return GCInfo::WriteBarrierForm::WBF_BarrierUnchecked;
         }
-        if (funcApp.m_func == VNFunc(GT_ADD))
+        if (funcApp.m_func == VNF_ADD)
         {
             // Check arguments of the GT_ADD
             // To make it conservative, we require one of the arguments to be a constant, e.g.:
@@ -5225,6 +5225,25 @@ static GCInfo::WriteBarrierForm GetWriteBarrierForm(Compiler* comp, ValueNum vn)
             if (vnStore->IsVNConstantNonHandle(funcApp.m_args[1]))
             {
                 return GetWriteBarrierForm(comp, funcApp.m_args[0]);
+            }
+
+            // For an ADD producing a TYP_BYREF, identify the operand that is the actual
+            // base (TYP_BYREF/TYP_REF) and recurse on it - mirroring the analysis in
+            // GCInfo::gcWriteBarrierFormFromTargetAddress. This catches patterns where
+            // the offset is a non-constant integer expression (e.g. byrefBase + nonConstIndex)
+            // which the constant-based recursion above misses.
+            const var_types arg0Type   = vnStore->TypeOfVN(funcApp.m_args[0]);
+            const var_types arg1Type   = vnStore->TypeOfVN(funcApp.m_args[1]);
+            const bool      isArg0Base = (arg0Type == TYP_BYREF) || (arg0Type == TYP_REF);
+            const bool      isArg1Base = (arg1Type == TYP_BYREF) || (arg1Type == TYP_REF);
+
+            if (isArg0Base && !isArg1Base)
+            {
+                return GetWriteBarrierForm(comp, funcApp.m_args[0]);
+            }
+            if (isArg1Base && !isArg0Base)
+            {
+                return GetWriteBarrierForm(comp, funcApp.m_args[1]);
             }
         }
     }
@@ -5272,7 +5291,7 @@ bool Compiler::optWriteBarrierAssertionProp_StoreInd(ASSERT_VALARG_TP assertions
         return ValueNumStore::VNVisit::Abort;
     };
 
-    if (vnStore->VNVisitReachingVNs(value->gtVNPair.GetConservative(), vnVisitor) == ValueNumStore::VNVisit::Continue)
+    if (vnStore->VNVisitReachingVNs(optConservativeNormalVN(value), vnVisitor) == ValueNumStore::VNVisit::Continue)
     {
         barrierType = GCInfo::WriteBarrierForm::WBF_NoBarrier;
     }
@@ -5281,7 +5300,7 @@ bool Compiler::optWriteBarrierAssertionProp_StoreInd(ASSERT_VALARG_TP assertions
     {
         // NOTE: we might want to inspect indirs with GTF_IND_TGT_HEAP flag as well - what if we can prove
         // that they actually need no barrier? But that comes with a TP regression.
-        barrierType = GetWriteBarrierForm(this, addr->gtVNPair.GetConservative());
+        barrierType = GetWriteBarrierForm(this, optConservativeNormalVN(addr));
     }
 
     JITDUMP("Trying to determine the exact type of write barrier for STOREIND [%d06]: ", dspTreeID(indir));
