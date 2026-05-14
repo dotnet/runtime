@@ -803,6 +803,7 @@ extends:
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+                  useHelixMonitor: true
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
@@ -1099,6 +1100,7 @@ extends:
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+                  useHelixMonitor: true
                   condition: >-
                     or(
                     eq(variables['librariesContainsChange'], true),
@@ -1141,6 +1143,7 @@ extends:
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
+                  useHelixMonitor: true
                   condition: >-
                     or(
                     eq(variables['librariesContainsChange'], true),
@@ -1185,6 +1188,7 @@ extends:
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+                  useHelixMonitor: true
                   extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
                   condition: >-
                     or(
@@ -1229,6 +1233,7 @@ extends:
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+                  useHelixMonitor: true
                   extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
                   condition: >-
                     or(
@@ -1273,6 +1278,7 @@ extends:
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
+                  useHelixMonitor: true
                   extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
                   condition: >-
                     or(
@@ -1316,6 +1322,7 @@ extends:
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+                  useHelixMonitor: true
                   condition: >-
                     or(
                       eq(variables['librariesContainsChange'], true),
@@ -1358,6 +1365,7 @@ extends:
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+                  useHelixMonitor: true
                   extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
                   condition: >-
                     or(
@@ -1400,6 +1408,7 @@ extends:
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
+                  useHelixMonitor: true
                   extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
                   condition: >-
                     or(
@@ -1523,6 +1532,7 @@ extends:
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: NET481_$(_BuildConfig)
+                  useHelixMonitor: true
                   extraHelixArguments: /p:BuildTargetFramework=net481
             condition: >-
               or(
@@ -1681,6 +1691,7 @@ extends:
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: Mono_Release
+                  useHelixMonitor: true
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
 
@@ -1717,6 +1728,7 @@ extends:
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: Mono_Release
+                  useHelixMonitor: true
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
                 parameters:
@@ -1755,6 +1767,7 @@ extends:
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: Mono_Release
+                  useHelixMonitor: true
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
       #
@@ -1794,6 +1807,7 @@ extends:
                   creator: dotnet-bot
                   llvmAotStepContainer: linux_x64_llvmaot
                   testRunNamePrefixSuffix: Mono_Release
+                  useHelixMonitor: true
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
 
@@ -2045,6 +2059,7 @@ extends:
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: Mono_Interpreter_$(_BuildConfig)
+                  useHelixMonitor: true
                   interpreter: true
             condition: >-
               or(
@@ -2077,8 +2092,14 @@ extends:
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: Mono_Minijit_$(_BuildConfig)
+                  useHelixMonitor: true
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
+
+      - template: /eng/common/core-templates/job/helix-job-monitor.yml
+        parameters:
+          helixAccessToken: $(HelixApiAccessToken)
+          timeoutInMinutes: 540
