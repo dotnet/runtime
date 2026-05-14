@@ -38,7 +38,6 @@ public sealed unsafe class ContractDescriptorTarget : Target
     private readonly DataTargetDelegates _dataTargetDelegates;
     private readonly Dictionary<string, string> _contracts = [];
     private readonly IReadOnlyDictionary<string, GlobalValue> _globals = new Dictionary<string, GlobalValue>();
-    private readonly Dictionary<DataType, Target.TypeInfo> _knownTypes = [];
     private readonly Dictionary<string, Target.TypeInfo> _types = [];
 
     public override ContractRegistry Contracts { get; }
@@ -133,7 +132,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
         _contracts = [];
 
         // Set pointer type size
-        _knownTypes[DataType.pointer] = new TypeInfo { Size = (uint)_config.PointerSize };
+        _types[DataType.pointer.ToString()] = new TypeInfo { Size = (uint)_config.PointerSize };
 
         HashSet<string> seenTypeNames = new HashSet<string>();
         HashSet<string> seenGlobalNames = new HashSet<string>();
@@ -170,7 +169,6 @@ public sealed unsafe class ContractDescriptorTarget : Target
                             fieldInfos[fieldName] = new Target.FieldInfo()
                             {
                                 Offset = field.Offset,
-                                Type = field.Type is null ? DataType.Unknown : GetDataType(field.Type),
                                 TypeName = field.Type
                             };
                         }
@@ -183,15 +181,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
                     }
                     seenTypeNames.Add(name);
 
-                    DataType dataType = GetDataType(name);
-                    if (dataType is not DataType.Unknown)
-                    {
-                        _knownTypes[dataType] = typeInfo;
-                    }
-                    else
-                    {
-                        _types[name] = typeInfo;
-                    }
+                    _types[name] = typeInfo;
                 }
             }
 
@@ -380,14 +370,6 @@ public sealed unsafe class ContractDescriptorTarget : Target
         };
 
         return true;
-    }
-
-    private static DataType GetDataType(string type)
-    {
-        if (Enum.TryParse(type, false, out DataType dataType) && Enum.IsDefined(dataType))
-            return dataType;
-
-        return DataType.Unknown;
     }
 
     public override int PointerSize => _config.PointerSize;
@@ -583,7 +565,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
 
     public override TargetCodePointer ReadCodePointer(ulong address)
     {
-        TypeInfo codePointerTypeInfo = GetTypeInfo(DataType.CodePointer);
+        TypeInfo codePointerTypeInfo = this.GetTypeInfo(DataType.CodePointer);
         if (codePointerTypeInfo.Size is sizeof(uint))
         {
             return new TargetCodePointer(Read<uint>(address));
@@ -597,7 +579,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
 
     public override bool TryReadCodePointer(ulong address, out TargetCodePointer value)
     {
-        TypeInfo codePointerTypeInfo = GetTypeInfo(DataType.CodePointer);
+        TypeInfo codePointerTypeInfo = this.GetTypeInfo(DataType.CodePointer);
         if (codePointerTypeInfo.Size is sizeof(uint))
         {
             if (TryRead<uint>(address, out uint val))
@@ -821,22 +803,10 @@ public sealed unsafe class ContractDescriptorTarget : Target
 
     #endregion
 
-    public override TypeInfo GetTypeInfo(DataType type)
-    {
-        if (!_knownTypes.TryGetValue(type, out Target.TypeInfo typeInfo))
-            throw new InvalidOperationException($"Failed to get type info for '{type}'");
-
-        return typeInfo;
-    }
-
-    public Target.TypeInfo GetTypeInfo(string type)
+    public override Target.TypeInfo GetTypeInfo(string type)
     {
         if (_types.TryGetValue(type, out Target.TypeInfo typeInfo))
             return typeInfo;
-
-        DataType dataType = GetDataType(type);
-        if (dataType is not DataType.Unknown)
-            return GetTypeInfo(dataType);
 
         throw new InvalidOperationException($"Failed to get type info for '{type}'");
     }

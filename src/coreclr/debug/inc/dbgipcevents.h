@@ -1365,28 +1365,18 @@ struct MSLAYOUT DebuggerIPCE_STRData
     // @dbgtodo  stackwalker/shim- Ideally we should be able to get rid of the DebuggerREGDISPLAY and just use the CONTEXT.
     DT_CONTEXT              ctx;
     DebuggerREGDISPLAY      rd;
-    bool                    quicklyUnwound;
-
     VMPTR_AppDomain         vmCurrentAppDomainToken;
 
 
     enum EType
     {
         cMethodFrame = 0,
-        cChain,
         cStubFrame,
         cRuntimeNativeFrame
     } eType;
 
     union MSLAYOUT
     {
-        // Data for a chain
-        struct MSLAYOUT
-        {
-            CorDebugChainReason chainReason;
-            bool                managed;
-        } u;
-
         // Data for a Method
         struct MSLAYOUT
         {
