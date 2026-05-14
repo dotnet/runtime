@@ -549,7 +549,7 @@ public:
         // unused                 = 0x00800000,
         TS_TPWorkerThread         = 0x01000000,    // is this a threadpool worker thread? [cDAC] [Thread]: Contract depends on this value.
 
-        TS_Interruptible          = 0x02000000,    // sitting in a Sleep(), Wait(), Join()
+        TS_WaitSleepJoin          = 0x02000000,    // sitting in a Sleep(), Wait(), Join(). [cDAC] [Thread]: Contract depends on this value.
         TS_Interrupted            = 0x04000000,    // was awakened by an interrupt APC. !!! This can be moved to TSNC
 
         // unused
@@ -576,7 +576,7 @@ public:
     {
         TSNC_Unknown                    = 0x00000000, // threads are initialized this way
 
-        TSNC_DebuggerUserSuspend        = 0x00000001, // marked "suspended" by the debugger
+        // unused                       = 0x00000001,
         // unused                       = 0x00000002,
         TSNC_DebuggerIsStepping         = 0x00000004, // debugger is stepping this thread
         TSNC_DebuggerIsManagedException = 0x00000008, // EH is re-raising a managed exception.
@@ -614,9 +614,7 @@ public:
                                                       //
                                                       // Once we are completely independent of the OS UEF, we could remove this.
         TSNC_SkipManagedPersonalityRoutine = 0x02000000, // Ignore the ProcessCLRException calls when propagating exception to external native code
-        TSNC_DebuggerSleepWaitJoin      = 0x04000000, // Indicates to the debugger that this thread is in a sleep wait or join state
-                                                      // This almost mirrors the TS_Interruptible state however that flag can change
-                                                      // during GC-preemptive mode whereas this one cannot.
+        // unused                       = 0x04000000,
         // unused                       = 0x08000000,
         TSNC_TSLTakenForStartup         = 0x10000000, // The ThreadStoreLock (TSL) is held by another mechanism during
                                                       // thread startup so can be skipped.
@@ -629,6 +627,14 @@ public:
         TSNC_EtwStackWalkInProgress     = 0x80000000, // Set on the thread so that ETW can know that stackwalking is in progress
                                                       // and does not proceed with a stackwalk on the same thread
                                                       // There are cases during managed debugging when we can run into this situation
+    };
+
+    // Thread state flags that are only written by the debugger (out-of-proc) and read by the runtime (in-proc).
+    // Separated from ThreadStateNoConcurrency to avoid read-modify-write races between the debugger and the runtime.
+    enum DebuggerControlledThreadState
+    {
+        DCTS_None               = 0x00000000, // [cDAC] [Thread]: Contract depends on this value.
+        DCTS_UserSuspend        = 0x00000001, // Marked "suspended" by the debugger [cDAC] [Thread]: Contract depends on this value.
     };
 
 public:
@@ -678,6 +684,24 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return ((DWORD)m_StateNC & tsnc);
+    }
+
+    void SetDebuggerControlledThreadState(DebuggerControlledThreadState dcts)
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_DebuggerControlledThreadState = (DebuggerControlledThreadState)((DWORD)m_DebuggerControlledThreadState.Load() | dcts);
+    }
+
+    void ResetDebuggerControlledThreadState(DebuggerControlledThreadState dcts)
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_DebuggerControlledThreadState = (DebuggerControlledThreadState)((DWORD)m_DebuggerControlledThreadState.Load() & ~dcts);
+    }
+
+    BOOL HasDebuggerControlledThreadState(DebuggerControlledThreadState dcts)
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return ((DWORD)m_DebuggerControlledThreadState.Load() & dcts);
     }
 
     void MarkEtwStackWalkInProgress()
@@ -897,7 +921,7 @@ public:
 
 #ifdef FEATURE_INTERPRETER
 public:
-    InterpThreadContext *m_pInterpThreadContext;
+    PTR_InterpThreadContext m_pInterpThreadContext;
     InterpThreadContext* GetInterpThreadContext();
     InterpThreadContext* GetOrCreateInterpThreadContext();
 #endif // FEATURE_INTERPRETER
@@ -908,6 +932,9 @@ public:
 
     // Flags for thread states that have no concurrency issues.
     ThreadStateNoConcurrency m_StateNC;
+
+    // Flags for thread states controlled by the debugger.
+    Volatile<DebuggerControlledThreadState> m_DebuggerControlledThreadState;
 
 private:
 #ifdef _DEBUG
@@ -2290,8 +2317,6 @@ private:
     UINT_PTR    m_CacheStackSufficientExecutionLimit;
     UINT_PTR    m_CacheStackStackAllocNonRiskyExecutionLimit;
 
-#define HARD_GUARD_REGION_SIZE GetOsPageSize()
-
 private:
     //
     static HRESULT CLRSetThreadStackGuarantee(SetThreadStackGuaranteeScope fScope = STSGuarantee_OnlyIfEnabled);
@@ -2304,8 +2329,8 @@ private:
 
     // Every stack has a single reserved page at its limit that we call the 'hard guard page'. This page is never
     // committed, and access to it after a stack overflow will terminate the thread.
-#define HARD_GUARD_REGION_SIZE GetOsPageSize()
-#define SIZEOF_DEFAULT_STACK_GUARANTEE 1 * GetOsPageSize()
+#define HARD_GUARD_REGION_SIZE (minipal_getpagesize())
+#define SIZEOF_DEFAULT_STACK_GUARANTEE (minipal_getpagesize())
 
 public:
     // This will return the last stack address that one could write to before a stack overflow.
@@ -3737,6 +3762,7 @@ struct cdac_data<Thread>
     static constexpr size_t Id = offsetof(Thread, m_ThreadId);
     static constexpr size_t OSId = offsetof(Thread, m_OSThreadId);
     static constexpr size_t State = offsetof(Thread, m_State);
+    static constexpr size_t DebuggerControlledThreadState = offsetof(Thread, m_DebuggerControlledThreadState);
     static constexpr size_t PreemptiveGCDisabled = offsetof(Thread, m_fPreemptiveGCDisabled);
     static constexpr size_t RuntimeThreadLocals = offsetof(Thread, m_pRuntimeThreadLocals);
     static constexpr size_t Frame = offsetof(Thread, m_pFrame);

@@ -420,17 +420,10 @@ namespace System
                     return false;
                 }
 
-                ref byte sourceRef = ref MemoryMarshal.GetReference(source);
-
                 if (source.Length >= sizeof(ulong))
                 {
                     // We have at least 8 bytes, so just read the ones we need directly
-                    result = Unsafe.ReadUnaligned<ulong>(ref sourceRef);
-
-                    if (!BitConverter.IsLittleEndian)
-                    {
-                        result = BinaryPrimitives.ReverseEndianness(result);
-                    }
+                    result = BinaryPrimitives.ReadUInt64LittleEndian(source);
                 }
                 else
                 {
@@ -442,7 +435,7 @@ namespace System
 
                     for (int i = 0; i < source.Length; i++)
                     {
-                        ulong part = Unsafe.Add(ref sourceRef, i);
+                        ulong part = source[i];
                         part <<= (i * 8);
                         result |= part;
                     }

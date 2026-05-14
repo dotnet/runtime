@@ -291,7 +291,7 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   An error occurred while exporting the key.
         /// </exception>
-        public string ExportSubjectPublicKeyInfoPem()
+        public unsafe string ExportSubjectPublicKeyInfoPem()
         {
             ThrowIfDisposed();
             Span<byte> spki = stackalloc byte[SpkiSizeInBytes];
@@ -1375,6 +1375,7 @@ namespace System.Security.Cryptography
 
             while (!TryExportPkcs8PrivateKeyCore(buffer, out written))
             {
+                size = buffer.Length;
                 CryptoPool.Return(buffer);
                 size = checked(size * 2);
                 buffer = CryptoPool.Rent(size);

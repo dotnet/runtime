@@ -107,7 +107,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        public void Reset()
+        public unsafe void Reset()
         {
             // Reset only does something meaningful in XOF mode. In non-XOF mode, Finalize always
             // does a reset.

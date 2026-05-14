@@ -8,7 +8,7 @@ namespace System.Diagnostics
 {
     partial class Activity
     {
-        private static string GenerateRootId()
+        private static unsafe string GenerateRootId()
         {
             // It is important that the part that changes frequently be first, because
             // some sampling functions don't sample from the high entropy part of their hash function.

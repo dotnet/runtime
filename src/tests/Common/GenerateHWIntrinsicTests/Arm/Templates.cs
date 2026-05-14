@@ -412,4 +412,5 @@ static class Templates
     public static TemplateConfig VectorLookup_2Test = new TemplateConfig("VectorLookup_2Test.template");
     public static TemplateConfig VectorLookup_3Test = new TemplateConfig("VectorLookup_3Test.template");
     public static TemplateConfig VectorLookup_4Test = new TemplateConfig("VectorLookup_4Test.template");
+    public static TemplateConfig SveCreateWhileRWMaskTest = new TemplateConfig("SveCreateWhileRWMaskTest.template");
 }
