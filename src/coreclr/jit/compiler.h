@@ -3940,6 +3940,8 @@ public:
     //-------------------------------------------------------------------------
 
     GenTree* gtFoldExpr(GenTree* tree);
+    GenTree* gtFoldExprUnary(GenTree* tree);
+    GenTree* gtFoldExprBinary(GenTree* tree);
     GenTree* gtFoldExprConst(GenTree* tree);
     GenTree* gtFoldIndirConst(GenTreeIndir* indir);
     GenTree* gtFoldExprSpecial(GenTree* tree);
