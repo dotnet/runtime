@@ -652,8 +652,18 @@ if (FEATURE_PORTABLE_HELPERS)
     list(APPEND VM_SOURCES_WKS
         ${PORTABLE_SOURCES_DIR}/AllocFast.cpp
         ${PORTABLE_VM_SOURCES_DIR}/AllocSlow.cpp
-        ${PORTABLE_SOURCES_DIR}/WriteBarriers.cpp
     )
+
+    if(CLR_CMAKE_TARGET_ARCH_WASM)
+        list(APPEND VM_SOURCES_WKS
+            ${ARCH_SOURCES_DIR}/WriteBarriers.cpp
+        )
+    else()
+        list(APPEND VM_SOURCES_WKS
+            ${PORTABLE_SOURCES_DIR}/WriteBarriers.cpp
+        )
+    endif()
+
 elseif(CLR_CMAKE_TARGET_WIN32)
     if(CLR_CMAKE_TARGET_ARCH_AMD64)
         set(VM_SOURCES_WKS_ARCH_ASM
