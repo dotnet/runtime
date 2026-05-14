@@ -142,6 +142,9 @@ For each row in the pipeline table below, in order:
 | runtime-coreclr r2r | 120 | |
 | runtime-coreclr gc-simulator | 123 | |
 | runtime-coreclr crossgen2 | 124 | |
+| runtime-coreclr crossgen2 outerloop | 134 | |
+| runtime-coreclr crossgen2-composite | 136 | |
+| runtime-coreclr crossgen2-composite gcstress | 141 | Weekends |
 | runtime-jit-experimental | 137 | OSR / partial compilation |
 | runtime-coreclr libraries-jitstress | 138 | |
 | runtime-coreclr ilasm | 140 | |
