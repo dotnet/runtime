@@ -581,7 +581,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
                     // Only enable recursive subdirectory watching when at least one registered
                     // pattern actually references a subdirectory. This avoids creating an inotify
-                    // watch on every descendant directory on Linux when only root-level files
+                    // watch descriptor on every descendant directory on Linux when only root-level files
                     // (e.g. appsettings.json) are being monitored.
                     bool needsSubdirectories = _fileWatcherIsAboveRoot ||
                         Volatile.Read(ref _subdirectoryRequiringTokenCount) > 0;
