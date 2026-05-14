@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Xunit;
 
@@ -39,7 +40,7 @@ public class SignatureTests
         MockMemorySpace.BumpAllocator allocator = memBuilder.CreateAllocator(0x1_0000, 0x2_0000);
 
         TargetTestHelpers.LayoutResult layout = GetVASigCookieLayout(helpers);
-        builder.AddTypes(new()
+        builder.AddTypes(new Dictionary<DataType, Target.TypeInfo>
         {
             [DataType.VASigCookie] = new Target.TypeInfo() { Fields = layout.Fields, Size = layout.Stride },
         });
