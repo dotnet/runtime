@@ -261,7 +261,7 @@ namespace JIT.HardwareIntrinsics.General
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.outArrayPtr, mask: 1);
+            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.outArrayPtr, mask: ({RetBaseType})1);
         }
 
 
