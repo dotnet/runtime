@@ -41,10 +41,10 @@
 #include "threads.h"
 #include "nativeimage.h"
 
-#ifdef TARGET_UNIX
+#if defined(TARGET_UNIX) && !defined(DACCESS_COMPILE)
 #include <minipal/utf8.h>
 #include <minipal/getexepath.h>
-#endif // TARGET_UNIX
+#endif // TARGET_UNIX && !DACCESS_COMPILE
 
 #include "CachedInterfaceDispatchPal.h"
 #include "CachedInterfaceDispatch.h"
