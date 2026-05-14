@@ -185,11 +185,8 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         assert(m_compiler->lvaWasmFunctionIndex != BAD_VAR_NUM);
 
         // fp[0] == functionIndex
-        //
-        // TODO-WASM: Save the actual function index. For now we save a fixed constant
-        //
         GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
-        GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 0xBBBB);
+        GetEmitter()->emitFuncletAddressConstant(0 /* funcletId for main method */);
         GetEmitter()->emitIns_S(ins_Store(TYP_I_IMPL), EA_PTRSIZE, m_compiler->lvaWasmFunctionIndex, 0);
     }
 }
