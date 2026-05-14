@@ -92,7 +92,6 @@ public:
 
     void CreateReport(
         int signal,
-        siginfo_t* siginfo,
         void* context);
 
 private:

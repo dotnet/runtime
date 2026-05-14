@@ -237,9 +237,9 @@ FrameCallbackAdapter(
         }
     }
 
+    LPCUTF8 moduleName = nullptr;
     uint32_t moduleTimestamp = 0;
     uint32_t moduleSize = 0;
-    LPCUTF8 moduleName = nullptr;
     s_crashReportScratch.hasModuleGuid = false;
     CrashReportGetModuleDetails(
         pModule,
