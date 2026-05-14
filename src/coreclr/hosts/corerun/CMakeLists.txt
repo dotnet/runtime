@@ -91,6 +91,12 @@ else()
                 -sENVIRONMENT=node,shell,web
                 -Wl,--error-limit=0)
 
+            # HACK: Workaround for bug in wasm-opt that strips __stack_pointer
+            # -g forces 'limited post-link optimizations'. I tried a dozen other workarounds and this is the only thing that worked.
+            # This bug may be fixed in latest emscripten.
+            target_link_options(corerun PRIVATE
+                -g)
+
             if (CORERUN_IN_BROWSER)
                 # Node.js doesn't have good support for WASM_BIGINT
                 # so it only is added when running in the browser.
