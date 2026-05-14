@@ -393,8 +393,10 @@ void emitter::emitIns_V128Imm(instruction ins, const uint8_t* bytes)
 {
     assert(bytes != nullptr);
     instrDescV128Imm* id = static_cast<instrDescV128Imm*>(emitAllocAnyInstr(sizeof(instrDescV128Imm), EA_16BYTE));
+    insFormat fmt = emitInsFormat(ins);
+
+    id->idInsFmt(fmt);
     id->idIns(ins);
-    id->idInsFmt(IF_V128);
     id->idV128Const(bytes);
 
     dispIns(id);
@@ -411,10 +413,11 @@ void emitter::emitIns_V128Imm(instruction ins, const uint8_t* bytes)
 //
 void emitter::emitIns_Lane(instruction ins, emitAttr attr, uint8_t laneIdx)
 {
-    instrDesc* id = emitNewInstr(attr);
+    instrDesc* id = emitNewInstrSC(attr, laneIdx);
+    insFormat  fmt = emitInsFormat(ins);
+
+    id->idInsFmt(fmt);
     id->idIns(ins);
-    id->idInsFmt(IF_LANE);
-    id->idSmallCns(laneIdx);
 
     dispIns(id);
     appendToCurIG(id);
@@ -433,9 +436,12 @@ void emitter::emitIns_MemargLane(instruction ins, emitAttr attr, cnsval_ssize_t 
 {
     instrDescMemargLane* id =
         static_cast<instrDescMemargLane*>(emitAllocAnyInstr(sizeof(instrDescMemargLane), attr));
+    insFormat fmt = emitInsFormat(ins);
+
+    id->idInsFmt(fmt);
     id->idIns(ins);
-    id->idInsFmt(IF_MEMARG_LANE);
     id->idcCnsVal = offset;
+    id->idSetIsLargeCns();
     id->idLaneIdx(laneIdx);
 
     dispIns(id);
@@ -486,6 +492,11 @@ static bool HasOpcodePrefix(instruction ins)
     return GetOpcodePrefix(ins) != 0;
 }
 
+inline static bool IsWasmSimdInstruction(instruction ins)
+{
+    return GetOpcodePrefix(ins) == 0xFD;
+}
+
 size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
 {
     if (emitIsSmallInsDsc(id))
@@ -493,7 +504,7 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
         return SMALL_IDSC_SIZE;
     }
 
-    if (id->idIsLargeCns())
+    if (id->idIsLargeCns() && !IsWasmSimdInstruction(id->idIns()))
     {
         assert(!id->idIsLargeDsp());
         assert(!id->idIsLargeCall());

@@ -2728,14 +2728,13 @@ void CodeGen::genEmitterUnitTests()
 
     // Jump over the generated tests as they are not intended to be run.
     BasicBlock* skipLabel = genCreateTempLabel();
-#ifdef TARGET_WASM
-    skipLabel->bbPreorderNum = m_compiler->compCurBB->bbPreorderNum + 1; 
-    genDefineTempLabel(skipLabel);
-    WasmInterval* skipInterval = WasmInterval::NewBlock(m_compiler, skipLabel, skipLabel);
-    this->wasmControlFlowStack->Push(skipInterval);
-    instGen(INS_block);
-#endif
+#ifndef TARGET_WASM
     inst_JMP(EJ_jmp, skipLabel);
+#else
+    genDefineTempLabel(skipLabel);
+    instGen(INS_block);
+    GetEmitter()->emitIns_J(INS_br, EA_4BYTE, 0, skipLabel);
+#endif
 
     // Add NOPs at the start and end for easier script parsing.
     instGen(INS_nop);
@@ -2786,7 +2785,9 @@ void CodeGen::genEmitterUnitTests()
     }
 #endif
 
+#ifndef TARGET_WASM
     genDefineTempLabel(skipLabel);
+#endif
     instGen(INS_nop);
     instGen(INS_nop);
     instGen(INS_nop);
