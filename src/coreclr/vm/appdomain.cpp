@@ -2408,7 +2408,9 @@ Assembly *AppDomain::LoadAssembly(AssemblySpec* pSpec,
                 PAL_CPP_THROW(Exception *, pEx);
             }
             else
+            {
                 AddExceptionToCache(pSpec, pEx);
+            }
         }
     }
     EX_END_HOOK;
@@ -3156,6 +3158,7 @@ PEAssembly * AppDomain::BindAssemblySpec(
 
     HRESULT hrBindResult = S_OK;
     PEAssemblyHolder result;
+    StackSString bindDiagnosticInfo;
 
     bool isCached = false;
     EX_TRY
@@ -3166,7 +3169,7 @@ PEAssembly * AppDomain::BindAssemblySpec(
 
             {
                 ReleaseHolder<BINDER_SPACE::Assembly> boundAssembly;
-                hrBindResult = pSpec->Bind(this, &boundAssembly);
+                hrBindResult = pSpec->Bind(this, &boundAssembly, &bindDiagnosticInfo);
 
                 if (boundAssembly)
                 {
@@ -3210,7 +3213,7 @@ PEAssembly * AppDomain::BindAssemblySpec(
 
                         if (fFailure && fThrowOnFileNotFound)
                         {
-                            EEFileLoadException::Throw(pFailedSpec, COR_E_FILENOTFOUND, NULL);
+                            EEFileLoadException::Throw(pFailedSpec, COR_E_FILENOTFOUND, bindDiagnosticInfo, NULL);
                         }
                     }
                 }

@@ -255,7 +255,7 @@ namespace
         _ASSERTE(wszDllPath != nullptr);
 
         // We've got the name of the DLL to load, so load it.
-        HModuleHolder hDll = WszLoadLibrary(wszDllPath, nullptr, GetLoadWithAlteredSearchPathFlag());
+        HModuleHolder hDll{ WszLoadLibrary(wszDllPath, nullptr, GetLoadWithAlteredSearchPathFlag()) };
         if (hDll == nullptr)
             return HRESULT_FROM_GetLastError();
 
@@ -267,10 +267,10 @@ namespace
         // Call the function to get a class object for the rclsid and riid passed in.
         IfFailRet(dllGetClassObject(rclsid, riid, ppv));
 
-        hDll.SuppressRelease();
+        HMODULE hLoadedDll = hDll.Detach();
 
         if (phmodDll != nullptr)
-            *phmodDll = hDll.GetValue();
+            *phmodDll = hLoadedDll;
 
         return hr;
     }
@@ -334,11 +334,11 @@ HRESULT FakeCoCreateInstanceEx(REFCLSID       rclsid,
     // necessary object.
     IfFailRet(classFactory->CreateInstance(NULL, riid, ppv));
 
-    hDll.SuppressRelease();
+    HMODULE hLoadedDll = hDll.Detach();
 
     if (phmodDll != NULL)
     {
-        *phmodDll = hDll.GetValue();
+        *phmodDll = hLoadedDll;
     }
 
     return hr;

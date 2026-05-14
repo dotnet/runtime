@@ -4543,7 +4543,7 @@ do                                                                      \
                         }
                     }
 
-                    continuation->SetState((int32_t)((uint8_t*)ip - (uint8_t*)pFrame->startIp));
+                    continuation->SetState(pAsyncSuspendData->suspensionPointIndex);
                     _ASSERTE(pAsyncSuspendData->methodStartIP != 0);
                     continuation->SetResumeInfo(&pAsyncSuspendData->resumeInfo);
                     pInterpreterFrame->SetContinuation(continuation);
@@ -4612,9 +4612,11 @@ do                                                                      \
                     _ASSERTE(pInterpreterFrame->GetContinuation() == NULL);
                     if (continuation != NULL)
                     {
-                        // A continuation is present, begin the restoration process
+                        // State is the suspension-point index; map it to the resume IP.
                         int32_t state = continuation->GetState();
-                        ip = (int32_t*)((uint8_t*)pFrame->startIp + state);
+                        _ASSERTE(state >= 0 && state < pMethod->numSuspensionPoints);
+                        _ASSERTE(pMethod->suspensionPointIPOffsets != NULL);
+                        ip = (int32_t*)((uint8_t*)pFrame->startIp + pMethod->suspensionPointIPOffsets[state]);
 
                         // Now we have an IP to where we should resume execution. This should be an INTOP_HANDLE_CONTINUATION_RESUME opcode
                         // And before it should be an INTOP_HANDLE_CONTINUATION_SUSPEND opcode
