@@ -432,8 +432,6 @@ namespace Internal.IL
                 return;
             }
 
-            MethodDesc asyncVariantMethod = null;
-            MethodDesc asyncVariantRuntimeDeterminedMethod = null;
             // Are we scanning a call within a state machine?
             if (opcode is ILOpcode.call or ILOpcode.callvirt
                 && _canonMethod.IsAsyncCall())
@@ -474,16 +472,13 @@ namespace Internal.IL
 
                 if (allowAsyncVariant && MatchTaskAwaitPattern())
                 {
-                    asyncVariantMethod = _factory.TypeSystemContext.GetAsyncVariantMethod(method);
-                    asyncVariantRuntimeDeterminedMethod = _factory.TypeSystemContext.GetAsyncVariantMethod(runtimeDeterminedMethod);
+                    MethodDesc asyncVariantMethod = _factory.TypeSystemContext.GetAsyncVariantMethod(method);
+                    MethodDesc asyncVariantRuntimeDeterminedMethod = _factory.TypeSystemContext.GetAsyncVariantMethod(runtimeDeterminedMethod);
+                    ImportCall(opcode, asyncVariantMethod, asyncVariantRuntimeDeterminedMethod);
                 }
             }
 
             ImportCall(opcode, method, runtimeDeterminedMethod);
-            if (asyncVariantMethod != null)
-            {
-                ImportCall(opcode, asyncVariantMethod, asyncVariantRuntimeDeterminedMethod);
-            }
         }
 
         private void ImportCall(ILOpcode opcode, MethodDesc method, MethodDesc runtimeDeterminedMethod)
