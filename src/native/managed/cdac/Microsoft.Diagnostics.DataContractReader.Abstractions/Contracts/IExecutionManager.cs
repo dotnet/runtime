@@ -56,7 +56,8 @@ public enum CodeKind : uint
     CallCountingStub = 9,
     MethodCallThunk = 10,
     Jitted = 11,
-    ReadyToRun = 12
+    ReadyToRun = 12,
+    Interpreter = 13
 }
 
 public interface ICodeHeapInfo
