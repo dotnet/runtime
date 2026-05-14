@@ -196,7 +196,15 @@ For each `(definition_id, phase, queue, stress_mode, signature)` produced by Ste
 
 #### Step 4.2 — Search for an existing KBE
 
-`is:issue is:open label:"Known Build Error" in:body "<error-signature>"`. Try variations: full `[FAIL]` line; assertion text; exception class + test name. On hit, record `existing-kbe #<n>` and continue (the walk does not end — a KBE hit changes the final action, not the inspection).
+`is:issue is:open label:"Known Build Error" in:body "<error-signature>"`. Try these variations in order, scanning the first ~10 results of each (GitHub best-match ranking can rank a noisier match above the right one):
+
+1. Full `[FAIL]` line.
+2. Assertion text.
+3. Exception class + test name.
+4. Test class name + `label:"Known Build Error"`, e.g. `SocketBlockingModeTransitionTests label:"Known Build Error"`.
+5. Test class name + area label, no KBE filter, e.g. `SocketBlockingModeTransitionTests label:area-System.Net.Sockets`.
+
+Variations 4 and 5 catch sibling failures filed for the same test class on a different platform or runtime variant (e.g. android-x64 vs iossimulator), plus pre-existing area-team trackers that lack the `Known Build Error` label. If `search_issues` returns a `[Filtered]` marker on any variation, treat it as a likely existing-issue hit and record `skipped: integrity-filtered candidate, needs human review` instead of filing a fresh KBE. On any hit whose title or body references the same test class on any platform, record `existing-kbe #<n>` (or `linked-tracker #<n>` for variation 5 when the hit lacks the KBE label) and continue (the walk does not end; a hit changes the final action, not the inspection).
 
 #### Step 4.3 — Search for an area-team tracker (no KBE label)
 
