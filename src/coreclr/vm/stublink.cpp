@@ -569,10 +569,10 @@ Stub *StubLinker::Link(LoaderHeap *pHeap, DWORD flags, const char *stubType)
 
     _ASSERTE(!pHeap || pHeap->IsExecutable());
 
-    StubHolder<Stub> pStub = Stub::NewStub(
+    StubHolder<Stub> pStub{ Stub::NewStub(
                 pHeap,
                 size,
-                flags);
+                flags) };
     ASSERT(pStub != NULL);
 
     EmitStub(pStub, globalsize, size, pHeap);
@@ -581,7 +581,7 @@ Stub *StubLinker::Link(LoaderHeap *pHeap, DWORD flags, const char *stubType)
     PerfMap::LogStubs(__FUNCTION__, stubType, pStub->GetEntryPoint(), pStub->GetNumCodeBytes(), PerfMapStubType::Individual);
 #endif
 
-    return pStub.Extract();
+    return pStub.Detach();
 }
 
 int StubLinker::CalculateSize(int* pGlobalSize)

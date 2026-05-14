@@ -160,6 +160,12 @@ public enum DynamicMethodType
     kLCGMethod = 2,
 }
 
+public enum CorDebugThreadState
+{
+    ThreadRun = 0,
+    ThreadSuspend = 1,
+}
+
 [Flags]
 public enum CorDebugUserState
 {
@@ -559,9 +565,6 @@ public unsafe partial interface IDacDbiInterface
 
     [PreserveSig]
     int GetDelegateTargetObject(int delegateType, ulong delegateObject, ulong* ppTargetObj, ulong* ppTargetAppDomain);
-
-    [PreserveSig]
-    int GetLoaderHeapMemoryRanges(nint pRanges);
 
     [PreserveSig]
     int IsModuleMapped(ulong pModule, Interop.BOOL* isModuleMapped);

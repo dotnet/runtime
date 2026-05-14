@@ -141,6 +141,8 @@ usage_list+=("    target OS. Common values: linux (default on Linux), osx (defau
 usage_list+=("    ios, iossimulator, tvos, tvossimulator, maccatalyst, browser, wasi.")
 usage_list+=("    For mobile/device targets (android, ios, iossimulator, tvos, tvossimulator), this script")
 usage_list+=("    automatically skips building native test components.")
+usage_list+=("-browser - Shorthand for '-os browser' (also sets architecture to wasm).")
+usage_list+=("-wasi - Shorthand for '-os wasi' (also sets architecture to wasm).")
 usage_list+=("")
 usage_list+=("-rebuild - Clean up all test artifacts prior to building tests.")
 usage_list+=("-skiprestorepackages - Skip package restore.")
@@ -298,6 +300,16 @@ handle_arguments_local() {
             __Mono=0
             __MonoAot=0
             __MonoFullAot=0
+            ;;
+
+        browser|-browser)
+            __TargetOS=browser
+            __TargetArch=wasm
+            ;;
+
+        wasi|-wasi)
+            __TargetOS=wasi
+            __TargetArch=wasm
             ;;
 
         log*|-log*)

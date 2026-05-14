@@ -713,7 +713,38 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetThreadAllocInfo(vmThread, pThreadAllocInfo) : HResults.E_NOTIMPL;
 
     public int SetDebugState(ulong vmThread, int debugState)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.SetDebugState(vmThread, debugState) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            TargetPointer threadPtr = new TargetPointer(vmThread);
+
+            if (debugState == (int)CorDebugThreadState.ThreadSuspend)
+            {
+                _target.Contracts.Thread.SetDebuggerControlledThreadState(threadPtr, Contracts.DebuggerControlledThreadState.UserSuspend);
+            }
+            else if (debugState == (int)CorDebugThreadState.ThreadRun)
+            {
+                _target.Contracts.Thread.ResetDebuggerControlledThreadState(threadPtr, Contracts.DebuggerControlledThreadState.UserSuspend);
+            }
+            else
+            {
+                throw new ArgumentException("Invalid debug state value.", nameof(debugState));
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            int hrLocal = _legacy.SetDebugState(vmThread, debugState);
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+        return hr;
+    }
 
     public int HasUnhandledException(ulong vmThread, Interop.BOOL* pResult)
     {
@@ -2087,9 +2118,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
     public int GetDelegateTargetObject(int delegateType, ulong delegateObject, ulong* ppTargetObj, ulong* ppTargetAppDomain)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetDelegateTargetObject(delegateType, delegateObject, ppTargetObj, ppTargetAppDomain) : HResults.E_NOTIMPL;
-
-    public int GetLoaderHeapMemoryRanges(nint pRanges)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetLoaderHeapMemoryRanges(pRanges) : HResults.E_NOTIMPL;
 
     public int IsModuleMapped(ulong pModule, Interop.BOOL* isModuleMapped)
     {
