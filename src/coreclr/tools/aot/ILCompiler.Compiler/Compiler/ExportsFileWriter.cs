@@ -28,6 +28,15 @@ namespace ILCompiler
         public void AddExportedMethods(IEnumerable<EcmaMethod> methods)
             => _methods.AddRange(methods);
 
+        public void AddExportedMethods(IEnumerable<EcmaMethod> methods, CompilationResults compilationResults)
+        {
+            foreach (EcmaMethod method in methods)
+            {
+                if (compilationResults.IsMethodEntrypointMarked(method))
+                    _methods.Add(method);
+            }
+        }
+
         public void EmitExportedMethods()
         {
             FileStream fileStream = new FileStream(_exportsFile, FileMode.Create);

@@ -656,6 +656,12 @@ namespace ILCompiler
             }
         }
 
+        public bool IsMethodEntrypointMarked(MethodDesc method)
+        {
+            MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            return _factory.MethodEntrypoint(canonMethod).Marked;
+        }
+
         public IEnumerable<TypeDesc> ConstructedEETypes
         {
             get

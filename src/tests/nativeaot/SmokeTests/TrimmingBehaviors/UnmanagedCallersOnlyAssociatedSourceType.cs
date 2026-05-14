@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -13,6 +14,8 @@ class UnmanagedCallersOnlyAssociatedSourceType
     private const string UnusedSourceExport = "UnmanagedCallersOnlyAssociatedSourceType_UnusedSource";
     private const string DynamicSourceExport = "UnmanagedCallersOnlyAssociatedSourceType_DynamicSource";
 
+    [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode",
+        Justification = "The test verifies runtime creation of the generic type through a type loader template.")]
     public static unsafe int Run()
     {
         GC.KeepAlive(new UsedSource());
