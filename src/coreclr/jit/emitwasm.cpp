@@ -1156,11 +1156,6 @@ void emitter::emitDispIns(
 
         case IF_CODE_SIZE:
         {
-            if (emitCurIG == nullptr)
-            {
-                printf(" <not yet determined>");
-                break;
-            }
             FuncInfoDsc* const func = m_compiler->funGetFunc(emitCurIG->igFuncIdx);
 
             emitLocation* const startLoc = func->startLoc;
