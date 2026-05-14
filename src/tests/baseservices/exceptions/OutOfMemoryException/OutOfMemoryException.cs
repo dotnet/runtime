@@ -14,7 +14,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
 
-class OomHandlingTest
+class OutOfMemoryExceptionTest
 {
     const int Pass = 100;
     const int Fail = -1;
@@ -51,32 +51,30 @@ class OomHandlingTest
         }
 
         // Controller mode: launch subprocesses with a GC heap limit and verify their output.
-        string? processPath = Environment.ProcessPath;
-        if (processPath == null)
-        {
-            Console.WriteLine("ProcessPath is null, skipping test.");
-            return Pass;
-        }
-
-        int result = RunSubprocess(processPath, AllocateSmallArg, "small allocations");
+        int result = RunSubprocess(AllocateSmallArg, "small allocations");
         if (result != Pass)
             return result;
 
-        result = RunSubprocess(processPath, AllocateLargeArg, "large allocations");
-        return result;
+        return RunSubprocess(AllocateLargeArg, "large allocations");
     }
 
-    static int RunSubprocess(string processPath, string allocateArg, string description)
+    static int RunSubprocess(string allocateArg, string description)
     {
         Console.WriteLine($"Testing OOM with {description}...");
 
-        var psi = new ProcessStartInfo(processPath, allocateArg)
+        string fileName = Process.GetCurrentProcess().MainModule.FileName;
+        string arguments = TestLibrary.Utilities.IsNativeAot
+            ? allocateArg
+            : $"{typeof(OutOfMemoryExceptionTest).Assembly.Location} {allocateArg}";
+
+        var psi = new ProcessStartInfo(fileName, arguments)
         {
             RedirectStandardError = true,
             UseShellExecute = false,
         };
         // 0x2000000 = 32 MB GC heap limit: small enough to exhaust quickly but large enough for startup.
         psi.Environment["DOTNET_GCHeapHardLimit"] = "2000000";
+        psi.Environment["DOTNET_DbgEnableMiniDump"] = "0";
 
         using Process? p = Process.Start(psi);
         if (p is null)
