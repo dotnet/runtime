@@ -148,6 +148,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             Assert.NotNull(serviceProviderIsService);
             Assert.True(serviceProviderIsService.IsKeyedService(builtInServiceType, null));
             Assert.False(serviceProviderIsService.IsKeyedService(builtInServiceType, new object()));
+            Assert.False(serviceProviderIsService.IsKeyedService(builtInServiceType, KeyedService.AnyKey));
         }
     }
 }
