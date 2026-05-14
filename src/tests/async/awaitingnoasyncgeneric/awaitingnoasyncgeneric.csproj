@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+      <!-- https://github.com/dotnet/runtime/issues/127179 -->
+      <NativeAotIncompatible>true</NativeAotIncompatible>
+      <!-- Needed due to NativeAotIncompatible -->
+      <RequiresProcessIsolation>true</RequiresProcessIsolation>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+  </ItemGroup>
+</Project>

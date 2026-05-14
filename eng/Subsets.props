@@ -372,7 +372,7 @@
     The cross tools are used as part of the build process with the downloaded build tools, so we need to build them for the host architecture and build them as unsanitized binaries.
     -->
   <PropertyGroup>
-    <_BuildAnyCrossArch Condition="('$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)' or '$(HostOS)' != '$(TargetOS)' or '$(EnableNativeSanitizers)' != '') and '$(TargetArchitecture)' != 'wasm'">true</_BuildAnyCrossArch>
+    <_BuildAnyCrossArch Condition="('$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)' or '$(HostOS)' != '$(TargetOS)' or '$(EnableNativeSanitizers)' != '')">true</_BuildAnyCrossArch>
     <_BuildCrossComponents Condition="$(_subset.Contains('+clr.crossarchtools+'))">true</_BuildCrossComponents>
     <_BuildCrossComponents Condition="'$(ClrRuntimeBuildSubsets)' != '' and ('$(PrimaryRuntimeFlavor)' == 'CoreCLR' or '$(TargetsMobile)' == 'true')">true</_BuildCrossComponents>
     <_CrossBitwidthBuild Condition="'$(BuildArchitecture)' == 'x64' and ('$(TargetArchitecture)' == 'x86' or '$(TargetArchitecture)' == 'arm')">true</_CrossBitwidthBuild>
@@ -381,7 +381,9 @@
 
   <ItemGroup>
     <!-- crossgen2/ILC have dependencies on the JITs, so build them if the cross component includes crossgen2/ILC. -->
-    <_CrossToolSubset Condition="'$(_BuildCrossComponents)' == 'true' and ($(_subset.Contains('+clr.tools+')) or $(_subset.Contains('+clr.nativecorelib+')) or $(_subset.Contains('+clr.crossarchtools+')))" Include="ClrAllJitsSubset=true" />
+    <_CrossToolSubset Condition="'$(_BuildCrossComponents)' == 'true' and '$(TargetArchitecture)' != 'wasm' and ($(_subset.Contains('+clr.tools+')) or $(_subset.Contains('+clr.nativecorelib+')) or $(_subset.Contains('+clr.crossarchtools+')))" Include="ClrAllJitsSubset=true" />
+    <!-- When targeting WebAssembly, only build the wasm JIT for the cross component. -->
+    <_CrossToolSubset Condition="'$(_BuildCrossComponents)' == 'true' and '$(TargetArchitecture)' == 'wasm' and ($(_subset.Contains('+clr.tools+')) or $(_subset.Contains('+clr.nativecorelib+')) or $(_subset.Contains('+clr.crossarchtools+')))" Include="ClrWasmJitSubset=true" />
     <!-- When targeting Windows, we need to build a copy of the diagnostic libraries that can run on the host to enable remote debugging of a local build. -->
     <_CrossToolSubset Condition="'$(_BuildCrossComponents)' == 'true' and '$(TargetsWindows)' == 'true'" Include="ClrDebugSubset=true" />
     <!--

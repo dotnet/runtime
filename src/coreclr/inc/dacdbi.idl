@@ -118,7 +118,6 @@ typedef int COR_FIELD;
 typedef int COR_TYPE_LAYOUT;
 typedef int COR_ARRAY_LAYOUT;
 typedef int COR_HEAPINFO;
-typedef int COR_MEMORY_RANGE;
 
 // DacDbiArrayList type params
 typedef int TypeInfoList;
@@ -426,9 +425,6 @@ interface IDacDbiInterface : IUnknown
         [in] VMPTR_Object delegateObject,
         [out] VMPTR_Object * ppTargetObj,
         [out] VMPTR_AppDomain * ppTargetAppDomain);
-
-    // Loader Heap
-    HRESULT GetLoaderHeapMemoryRanges([out] DacDbiArrayList_COR_MEMORY_RANGE * pRanges);
 
     // Module Mapping
     HRESULT IsModuleMapped([in] VMPTR_Module pModule, [out] BOOL * isModuleMapped);
