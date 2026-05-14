@@ -665,7 +665,17 @@
     <HelixPreCommand Include="export __TestArchitecture=$(TargetArchitecture)" />
     <HelixPreCommand Include="cat $__TestEnv" />
 
-    <HelixPostCommand Include="find $HELIX_WORKITEM_PAYLOAD -name '*testResults.xml' -exec cp {} $HELIX_DUMP_FOLDER\; " />
+    <!--
+      Copy any testResults.xml files into $HELIX_DUMP_FOLDER for upload.
+      A piped 'find | xargs' is used instead of 'find -exec ... \;' because the
+      Helix SDK's SplitCommands treats a single ';' as the command separator
+      (and ';;' as the escape for a literal ';'), so a plain '\;' loses its
+      terminating semicolon and the resulting trailing '\' line-continues into
+      the next command (the SDK-appended 'exit $_commandExitCode'), causing
+      'find' to fail with "missing argument to -exec" and the work item to
+      exit 1 even when every test passed.
+    -->
+    <HelixPostCommand Include="find $HELIX_WORKITEM_PAYLOAD -name '*testResults.xml' -print0 | xargs -0 -I{} cp {} $HELIX_DUMP_FOLDER" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TestWrapperTargetsWindows)' != 'true' and '$(SuperPmiCollect)' == 'true' ">
