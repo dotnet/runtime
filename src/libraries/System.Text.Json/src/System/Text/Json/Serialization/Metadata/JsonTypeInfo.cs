@@ -559,6 +559,11 @@ namespace System.Text.Json.Serialization.Metadata
         internal HashSet<JsonValueType>? UnionAmbiguousValueTypes { get; set; }
 
         /// <summary>
+        /// First nullable union case type, if any. Populated at configuration time from <see cref="UnionCases"/>.
+        /// </summary>
+        internal Type? UnionNullableCaseType { get; set; }
+
+        /// <summary>
         /// <see langword="true"/> when at least one declared union case carries a user-defined
         /// <see cref="JsonConverter"/>. A custom converter can serialize as any JSON value type,
         /// so deserialization without a custom classifier is unsafe and must fail with a clear
@@ -1034,6 +1039,7 @@ namespace System.Text.Json.Serialization.Metadata
             if (Kind is JsonTypeInfoKind.Union)
             {
                 ValidateUnionContract();
+                CacheUnionNullableCaseType();
                 ConfigureTypeClassifier();
             }
 
@@ -1070,6 +1076,22 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 ThrowHelper.ThrowInvalidOperationException_UnionCannotReadValue(Type);
             }
+        }
+
+        private void CacheUnionNullableCaseType()
+        {
+            Debug.Assert(Kind is JsonTypeInfoKind.Union);
+
+            foreach (JsonUnionCaseInfo unionCase in UnionCases)
+            {
+                if (unionCase.IsNullable)
+                {
+                    UnionNullableCaseType = unionCase.CaseType;
+                    return;
+                }
+            }
+
+            UnionNullableCaseType = null;
         }
 
         private void ConfigureTypeClassifier()

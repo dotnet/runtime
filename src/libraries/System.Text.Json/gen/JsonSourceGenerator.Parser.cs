@@ -1110,7 +1110,7 @@ namespace System.Text.Json.SourceGeneration
                 {
                     if (member.Parameters.Length != 1 ||
                         member.DeclaredAccessibility != Accessibility.Public ||
-                        member.Parameters[0].RefKind is RefKind.Ref or RefKind.Out)
+                        member.Parameters[0].RefKind is not RefKind.None)
                     {
                         continue;
                     }

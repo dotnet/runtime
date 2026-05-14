@@ -413,18 +413,13 @@ namespace System.Text.Json.Serialization.Metadata
         {
             acceptsNull = false;
             Type parameterType = parameter.ParameterType;
-            if (parameter.IsOut || (parameterType.IsByRef && !parameter.IsIn))
+            if (parameterType.IsByRef)
             {
                 caseType = null;
                 return false;
             }
 
-            caseType = parameterType.IsByRef ? parameterType.GetElementType() : parameterType;
-            if (caseType is null)
-            {
-                return false;
-            }
-
+            caseType = parameterType;
             if (Nullable.GetUnderlyingType(caseType) is Type underlying)
             {
                 caseType = underlying;

@@ -38,8 +38,8 @@ namespace System.Text.Json.Serialization
         /// <para>
         /// When set, the classifier is invoked before any discriminator-based resolution.
         /// The classifier receives a <see cref="Utf8JsonReader"/> positioned at the start of
-        /// the JSON value and returns the resolved <see cref="Type"/>, or <see langword="null"/>
-        /// to fall back to standard discriminator handling.
+        /// the JSON object and returns the resolved <see cref="Type"/>. Returning
+        /// <see langword="null"/> fails deserialization.
         /// </para>
         /// <para>
         /// The specified type must derive from <see cref="JsonTypeClassifierFactory"/>

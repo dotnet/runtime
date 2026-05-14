@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
@@ -41,15 +40,13 @@ namespace System.Text.Json.Serialization.Converters
 
             if (reader.TokenType is JsonTokenType.Null)
             {
-                // Null short-circuit: bypass the classifier entirely. Per the union
-                // semantics, every nullable case constructor produces the same
-                // canonical null-holding union value, so the case type is irrelevant
-                // for null payloads. The constructor delegate encapsulates the
-                // null-handling policy: if any case is nullable it returns the
-                // canonical null union, otherwise it throws UnionDoesNotAcceptNull.
-                // This relieves custom classifier authors from having to handle the
-                // Null token themselves.
-                value = constructor(null!, null);
+                Type? nullableCaseType = typeInfo.UnionNullableCaseType;
+                if (nullableCaseType is null)
+                {
+                    ThrowHelper.ThrowJsonException_UnionDoesNotAcceptNull(typeToConvert);
+                }
+
+                value = constructor(nullableCaseType, null);
                 return true;
             }
 

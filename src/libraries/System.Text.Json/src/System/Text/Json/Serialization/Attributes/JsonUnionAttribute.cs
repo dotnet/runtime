@@ -39,7 +39,9 @@ namespace System.Text.Json.Serialization
         /// </summary>
         /// <remarks>
         /// <para>
-        /// When <see langword="null"/>, the built-in structural matching classifier is used.
+        /// When <see langword="null"/>, the built-in JSON value-shape classifier is used.
+        /// It dispatches using the current JSON token kind rather than by inspecting object
+        /// property names or other payload contents.
         /// </para>
         /// <para>
         /// The specified type must derive from <see cref="JsonTypeClassifierFactory"/>
