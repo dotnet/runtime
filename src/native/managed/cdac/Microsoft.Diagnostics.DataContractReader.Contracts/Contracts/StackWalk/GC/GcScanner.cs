@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+using Microsoft.Diagnostics.DataContractReader.SignatureHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
@@ -18,12 +19,14 @@ internal class GcScanner
     private readonly Target _target;
     private readonly IExecutionManager _eman;
     private readonly IGCInfo _gcInfo;
+    private readonly FrameHelpers _frameHelpers;
 
     internal GcScanner(Target target)
     {
         _target = target;
         _eman = target.Contracts.ExecutionManager;
         _gcInfo = target.Contracts.GCInfo;
+        _frameHelpers = new FrameHelpers(target);
     }
 
     /// <summary>
@@ -99,11 +102,11 @@ internal class GcScanner
             return;
 
         Data.Frame frameData = _target.ProcessedData.GetOrAdd<Data.Frame>(frameAddress);
-        FrameIterator.FrameType frameType = FrameIterator.GetFrameType(_target, frameData.Identifier);
+        FrameType frameType = _frameHelpers.GetFrameType(frameData.Identifier);
 
         switch (frameType)
         {
-            case FrameIterator.FrameType.StubDispatchFrame:
+            case FrameType.StubDispatchFrame:
             {
                 Data.FramedMethodFrame fmf = _target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(frameAddress);
                 Data.StubDispatchFrame sdf = _target.ProcessedData.GetOrAdd<Data.StubDispatchFrame>(frameAddress);
@@ -119,7 +122,7 @@ internal class GcScanner
                 break;
             }
 
-            case FrameIterator.FrameType.ExternalMethodFrame:
+            case FrameType.ExternalMethodFrame:
             {
                 Data.FramedMethodFrame fmf = _target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(frameAddress);
                 Data.ExternalMethodFrame emf = _target.ProcessedData.GetOrAdd<Data.ExternalMethodFrame>(frameAddress);
@@ -135,7 +138,7 @@ internal class GcScanner
                 break;
             }
 
-            case FrameIterator.FrameType.DynamicHelperFrame:
+            case FrameType.DynamicHelperFrame:
             {
                 Data.FramedMethodFrame fmf = _target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(frameAddress);
                 Data.DynamicHelperFrame dhf = _target.ProcessedData.GetOrAdd<Data.DynamicHelperFrame>(frameAddress);
@@ -143,19 +146,19 @@ internal class GcScanner
                 break;
             }
 
-            case FrameIterator.FrameType.CallCountingHelperFrame:
-            case FrameIterator.FrameType.PrestubMethodFrame:
+            case FrameType.CallCountingHelperFrame:
+            case FrameType.PrestubMethodFrame:
             {
                 Data.FramedMethodFrame fmf = _target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(frameAddress);
                 PromoteCallerStack(frameAddress, fmf.TransitionBlockPtr, scanContext);
                 break;
             }
 
-            case FrameIterator.FrameType.HijackFrame:
+            case FrameType.HijackFrame:
                 // TODO(stackref): Implement HijackFrame scanning (X86 only with FEATURE_HIJACK)
                 break;
 
-            case FrameIterator.FrameType.ProtectValueClassFrame:
+            case FrameType.ProtectValueClassFrame:
                 // TODO(stackref): Implement ProtectValueClassFrame scanning
                 break;
 
@@ -323,31 +326,50 @@ internal class GcScanner
         if (methodDescPtr == TargetPointer.Null)
             return;
 
-        ReadOnlySpan<byte> signature;
-        try
-        {
-            signature = GetMethodSignatureBytes(methodDescPtr);
-        }
-        catch (System.Exception)
-        {
-            return;
-        }
-
-        if (signature.IsEmpty)
-            return;
+        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+        MethodDescHandle mdh = rts.GetMethodDescHandle(methodDescPtr);
 
         MethodSignature<GcTypeKind> methodSig;
         try
         {
-            unsafe
+            TargetPointer methodTablePtr = rts.GetMethodTable(mdh);
+            TypeHandle typeHandle = rts.GetTypeHandle(methodTablePtr);
+            TargetPointer modulePtr = rts.GetModule(typeHandle);
+
+            ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
+            MetadataReader? mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle);
+            if (mdReader is null)
+                return;
+
+            GcSignatureTypeProvider provider = new(_target, moduleHandle);
+            GcSignatureContext genericContext = new(typeHandle, mdh);
+            RuntimeSignatureDecoder<GcTypeKind, GcSignatureContext> decoder = new(
+                provider, _target, mdReader, genericContext);
+
+            // Match native MethodDesc::GetSig: prefer stored signature (dynamic, EEImpl,
+            // and array method descs) before falling back to a metadata token lookup.
+            if (rts.IsStoredSigMethodDesc(mdh, out ReadOnlySpan<byte> storedSig))
             {
-                fixed (byte* pSig = signature)
+                unsafe
                 {
-                    BlobReader blobReader = new(pSig, signature.Length);
-                    SignatureDecoder<GcTypeKind, object?> decoder = new(
-                        GcSignatureTypeProvider.Instance, metadataReader: null!, genericContext: null);
-                    methodSig = decoder.DecodeMethodSignature(ref blobReader);
+                    fixed (byte* pStoredSig = storedSig)
+                    {
+                        BlobReader blobReader = new BlobReader(pStoredSig, storedSig.Length);
+                        methodSig = decoder.DecodeMethodSignature(ref blobReader);
+                    }
                 }
+            }
+            else
+            {
+                uint methodToken = rts.GetMethodToken(mdh);
+                if (methodToken == (uint)EcmaMetadataUtils.TokenType.mdtMethodDef)
+                    return;
+
+                MethodDefinitionHandle methodDefHandle = MetadataTokens.MethodDefinitionHandle((int)EcmaMetadataUtils.GetRowId(methodToken));
+                MethodDefinition methodDef = mdReader.GetMethodDefinition(methodDefHandle);
+
+                BlobReader blobReader = mdReader.GetBlobReader(methodDef.Signature);
+                methodSig = decoder.DecodeMethodSignature(ref blobReader);
             }
         }
         catch (System.Exception)
@@ -357,9 +379,6 @@ internal class GcScanner
 
         if (methodSig.Header.CallingConvention is SignatureCallingConvention.VarArgs)
             return;
-
-        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-        MethodDescHandle mdh = rts.GetMethodDescHandle(methodDescPtr);
 
         bool hasThis = methodSig.Header.IsInstance;
         bool hasRetBuf = methodSig.ReturnType is GcTypeKind.Other;
@@ -438,36 +457,6 @@ internal class GcScanner
             }
             pos++;
         }
-    }
-
-    private ReadOnlySpan<byte> GetMethodSignatureBytes(TargetPointer methodDescPtr)
-    {
-        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-        MethodDescHandle mdh = rts.GetMethodDescHandle(methodDescPtr);
-
-        if (rts.IsStoredSigMethodDesc(mdh, out ReadOnlySpan<byte> storedSig))
-            return storedSig;
-
-        uint methodToken = rts.GetMethodToken(mdh);
-        if (methodToken == 0x06000000)
-            return default;
-
-        TargetPointer methodTablePtr = rts.GetMethodTable(mdh);
-        TypeHandle typeHandle = rts.GetTypeHandle(methodTablePtr);
-        TargetPointer modulePtr = rts.GetModule(typeHandle);
-
-        ILoader loader = _target.Contracts.Loader;
-        ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
-
-        IEcmaMetadata ecmaMetadata = _target.Contracts.EcmaMetadata;
-        MetadataReader? mdReader = ecmaMetadata.GetMetadata(moduleHandle);
-        if (mdReader is null)
-            return default;
-
-        MethodDefinitionHandle methodDefHandle = MetadataTokens.MethodDefinitionHandle((int)(methodToken & 0x00FFFFFF));
-        MethodDefinition methodDef = mdReader.GetMethodDefinition(methodDefHandle);
-        BlobReader blobReader = mdReader.GetBlobReader(methodDef.Signature);
-        return blobReader.ReadBytes(blobReader.Length);
     }
 
     private TargetPointer AddressFromGCRefMapPos(Data.TransitionBlock tb, int pos)

@@ -8,7 +8,6 @@ namespace System.Globalization
 {
     public partial class TextInfo
     {
-        [RequiresUnsafe]
         private unsafe void NlsChangeCase(char* pSource, int pSourceLen, char* pResult, int pResultLen, bool toUpper)
         {
             Debug.Assert(!GlobalizationMode.Invariant);

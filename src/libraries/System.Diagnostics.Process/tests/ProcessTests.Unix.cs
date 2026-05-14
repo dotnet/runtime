@@ -15,6 +15,7 @@ using System.Security;
 using Xunit;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Diagnostics.Tests
 {
@@ -173,7 +174,13 @@ namespace System.Diagnostics.Tests
             File.WriteAllText(filename, $"#!/bin/sh\nsleep 600\n"); // sleep 10 min.
             File.SetUnixFileMode(filename, ExecutablePermissions);
 
-            using (var process = Process.Start(new ProcessStartInfo { FileName = filename }))
+            using SafeFileHandle nullHandle = File.OpenNullHandle();
+            ProcessStartInfo psi = new(filename)
+            {
+                StandardOutputHandle = nullHandle,
+                StandardErrorHandle= nullHandle
+            };
+            using (var process = Process.Start(psi))
             {
                 try
                 {
@@ -186,7 +193,7 @@ namespace System.Diagnostics.Tests
                 }
                 finally
                 {
-                    process.Kill();
+                    process.Kill(entireProcessTree: true);
                     process.WaitForExit();
                 }
             }
