@@ -409,12 +409,8 @@ namespace ILCompiler.ObjectWriter
                 }
 
                 bool isMethod = node is IMethodBodyNode or AssemblyStubNode;
-#if !READYTORUN
                 long thumbBit = _nodeFactory.Target.Architecture == TargetArchitecture.ARM && isMethod ? 1 : 0;
-#else
-                // R2R records the thumb bit in the addend when needed, so we don't have to do it here.
-                long thumbBit = 0;
-#endif
+
                 if (node is WasmTypeNode signature)
                 {
                     RecordMethodSignature(signature);
