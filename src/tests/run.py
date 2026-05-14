@@ -101,6 +101,7 @@ parser.add_argument("--il_link", dest="il_link", action="store_true", default=Fa
 parser.add_argument("--long_gc", dest="long_gc", action="store_true", default=False)
 parser.add_argument("--gcsimulator", dest="gcsimulator", action="store_true", default=False)
 parser.add_argument("--ilasmroundtrip", dest="ilasmroundtrip", action="store_true", default=False)
+parser.add_argument("--use_managed_ilasm", dest="use_managed_ilasm", action="store_true", default=False)
 parser.add_argument("--run_crossgen2_tests", dest="run_crossgen2_tests", action="store_true", default=False)
 parser.add_argument("--large_version_bubble", dest="large_version_bubble", action="store_true", default=False)
 parser.add_argument("--synthesize_pgo", dest="synthesize_pgo", action="store_true", default=False)
@@ -829,6 +830,15 @@ def run_tests(args,
         print("Setting RunningIlasmRoundTrip=1")
         os.environ["RunningIlasmRoundTrip"] = "1"
 
+    if args.use_managed_ilasm:
+        if not args.ilasmroundtrip:
+            print("--use_managed_ilasm implies --ilasmroundtrip; enabling ilasm round trip.")
+            print("Setting RunningIlasmRoundTrip=1")
+            os.environ["RunningIlasmRoundTrip"] = "1"
+        print("Using managed ILasm for round trip.")
+        print("Setting IlasmRoundTripUseManagedIlasm=1")
+        os.environ["IlasmRoundTripUseManagedIlasm"] = "1"
+
     if args.run_crossgen2_tests:
         print("Running tests R2R (Crossgen2)")
         print("Setting RunCrossGen2=1")
@@ -977,6 +987,11 @@ def setup_args(args):
                               "ilasmroundtrip",
                               lambda arg: True,
                               "Error setting ilasmroundtrip")
+
+    coreclr_setup_args.verify(args,
+                              "use_managed_ilasm",
+                              lambda arg: True,
+                              "Error setting use_managed_ilasm")
 
     coreclr_setup_args.verify(args,
                               "large_version_bubble",

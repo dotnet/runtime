@@ -119,3 +119,29 @@ EVP_PKEY* CryptoNative_X25519ImportPublicKey(const uint8_t* source, int32_t sour
         source,
         Int32ToSizeT(sourceLength));
 }
+
+int32_t CryptoNative_X25519IsValidHandle(const EVP_PKEY* key, int32_t* hasPrivateKey)
+{
+    assert(key != NULL && hasPrivateKey != NULL);
+    ERR_clear_error();
+
+    *hasPrivateKey = 0;
+
+    if (EVP_PKEY_get_base_id(key) != EVP_PKEY_X25519)
+    {
+        return 0;
+    }
+
+    size_t privateKeyLength = 0;
+
+    if (EVP_PKEY_get_raw_private_key(key, NULL, &privateKeyLength) == 1)
+    {
+        *hasPrivateKey = 1;
+    }
+    else
+    {
+        ERR_clear_error();
+    }
+
+    return 1;
+}

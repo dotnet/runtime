@@ -105,6 +105,14 @@ extern "C" BOOL QCALLTYPE MarshalNative_HasLayout(QCall::TypeHandle t, BOOL* pIs
     BEGIN_QCALL;
 
     TypeHandle th = t.AsTypeHandle();
+
+    if (th.IsEnum())
+    {
+        // Enums don't have native layout info, but they marshal identically
+        // to their underlying primitive type.
+        th = CoreLibBinder::GetElementType(th.GetVerifierCorElementType());
+    }
+
     if (th.HasLayout())
     {
         *pIsBlittable = th.IsBlittable();

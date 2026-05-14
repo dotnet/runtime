@@ -60,6 +60,8 @@ internal struct ARM64Context : IPlatformContext
         set => Fp = value.Value;
     }
 
+    public uint RawContextFlags { readonly get => ContextFlags; set => ContextFlags = value; }
+
     public void Unwind(Target target)
     {
         ARM64Unwinder unwinder = new(target);
