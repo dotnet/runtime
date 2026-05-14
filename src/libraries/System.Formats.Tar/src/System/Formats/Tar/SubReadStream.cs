@@ -27,9 +27,13 @@ namespace System.Formats.Tar
             {
                 throw new ArgumentException(SR.IO_NotSupported_UnreadableStream, nameof(superStream));
             }
+            if (startPosition > long.MaxValue - maxLength)
+            {
+                throw new InvalidDataException(SR.TarInvalidNumber);
+            }
             _startInSuperStream = startPosition;
             _positionInSuperStream = startPosition;
-            _endInSuperStream = checked(startPosition + maxLength);
+            _endInSuperStream = startPosition + maxLength;
             _superStream = superStream;
             _isDisposed = false;
             _hasReachedEnd = false;
