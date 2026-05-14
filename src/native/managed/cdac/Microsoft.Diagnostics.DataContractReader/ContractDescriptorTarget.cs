@@ -34,7 +34,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
         public int PointerSize { get; init; }
     }
 
-    private Configuration _config;
+    private readonly Configuration _config;
 
     private readonly DataTargetDelegates _dataTargetDelegates;
 
