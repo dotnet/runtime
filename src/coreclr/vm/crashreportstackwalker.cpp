@@ -27,13 +27,127 @@ struct CrashReportStackWalkerScratch
 {
     char crashExceptionType[CRASHREPORT_STRING_BUFFER_SIZE];
     char className[CRASHREPORT_STRING_BUFFER_SIZE];
-    char moduleGuid[MINIPAL_GUID_BUFFER_LEN];
+    GUID moduleGuid;
+    bool hasModuleGuid;
 };
 
 static CrashReportStackWalkerScratch s_crashReportScratch;
 static WalkContext s_walkContext;
 
 static void BuildTypeName(LPUTF8 buffer, size_t bufferSize, LPCUTF8 namespaceName, LPCUTF8 className);
+
+static
+void
+CrashReportGetModuleDetails(
+    Module* pModule,
+    LPCUTF8* moduleName,
+    GUID* moduleGuid,
+    bool* hasModuleGuid,
+    uint32_t* moduleTimestamp,
+    uint32_t* moduleSize)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        CANNOT_TAKE_LOCK;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    if (moduleName != nullptr)
+    {
+        *moduleName = nullptr;
+    }
+    if (hasModuleGuid != nullptr)
+    {
+        *hasModuleGuid = false;
+    }
+    if (moduleTimestamp != nullptr)
+    {
+        *moduleTimestamp = 0;
+    }
+    if (moduleSize != nullptr)
+    {
+        *moduleSize = 0;
+    }
+
+    if (pModule == nullptr)
+    {
+        return;
+    }
+
+    if (moduleName != nullptr)
+    {
+        Assembly* pAssembly = pModule->GetAssembly();
+        if (pAssembly != nullptr)
+        {
+            *moduleName = pAssembly->GetSimpleName();
+        }
+    }
+
+    if (moduleTimestamp != nullptr || moduleSize != nullptr)
+    {
+        PEAssembly* pPEAssembly = pModule->GetPEAssembly();
+        if (pPEAssembly != nullptr && pPEAssembly->HasLoadedPEImage())
+        {
+            if (moduleTimestamp != nullptr)
+            {
+                *moduleTimestamp = pPEAssembly->GetLoadedLayout()->GetTimeDateStamp();
+            }
+            if (moduleSize != nullptr)
+            {
+                *moduleSize = static_cast<uint32_t>(pPEAssembly->GetLoadedLayout()->GetSize());
+            }
+        }
+    }
+
+    if (moduleGuid != nullptr)
+    {
+        IMDInternalImport* pImport = pModule->GetMDImport();
+        if (pImport != nullptr && SUCCEEDED(pImport->GetScopeProps(nullptr, moduleGuid)))
+        {
+            if (hasModuleGuid != nullptr)
+            {
+                *hasModuleGuid = true;
+            }
+        }
+    }
+}
+
+static
+bool
+CrashReportGetModuleInfo(
+    const void* moduleHandle,
+    const char** moduleName,
+    GUID* moduleGuid)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        CANNOT_TAKE_LOCK;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    if (moduleName == nullptr || moduleGuid == nullptr || moduleHandle == nullptr)
+    {
+        return false;
+    }
+
+    LPCUTF8 resolvedModuleName = nullptr;
+    bool hasModuleGuid = false;
+    Module* pModule = reinterpret_cast<Module*>(const_cast<void*>(moduleHandle));
+    CrashReportGetModuleDetails(pModule, &resolvedModuleName, moduleGuid, &hasModuleGuid, nullptr, nullptr);
+    if (resolvedModuleName == nullptr || resolvedModuleName[0] == '\0' || !hasModuleGuid)
+    {
+        return false;
+    }
+
+    *moduleName = resolvedModuleName;
+    return true;
+}
 
 static
 StackWalkAction
@@ -81,16 +195,7 @@ FrameCallbackAdapter(
     s_crashReportScratch.className[0] = '\0';
     BuildTypeName(s_crashReportScratch.className, sizeof(s_crashReportScratch.className), namespaceName, className);
 
-    LPCUTF8 moduleName = nullptr;
     Module* pModule = pMD->GetModule();
-    if (pModule != nullptr)
-    {
-        Assembly* pAssembly = pModule->GetAssembly();
-        if (pAssembly != nullptr)
-        {
-            moduleName = pAssembly->GetSimpleName();
-        }
-    }
 
     uint32_t nativeOffset = pCF->HasFaulted() ? 0 : pCF->GetRelOffset();
     uint32_t ilOffset = 0;
@@ -134,30 +239,18 @@ FrameCallbackAdapter(
 
     uint32_t moduleTimestamp = 0;
     uint32_t moduleSize = 0;
-    s_crashReportScratch.moduleGuid[0] = '\0';
-
-    if (pModule != nullptr)
-    {
-        PEAssembly* pPEAssembly = pModule->GetPEAssembly();
-        if (pPEAssembly != nullptr && pPEAssembly->HasLoadedPEImage())
-        {
-            moduleTimestamp = pPEAssembly->GetLoadedLayout()->GetTimeDateStamp();
-            moduleSize = static_cast<uint32_t>(pPEAssembly->GetLoadedLayout()->GetSize());
-        }
-
-        IMDInternalImport* pImport = pModule->GetMDImport();
-        if (pImport != nullptr)
-        {
-            GUID mvid;
-            if (SUCCEEDED(pImport->GetScopeProps(nullptr, &mvid)))
-            {
-                minipal_guid_as_string(mvid, s_crashReportScratch.moduleGuid, sizeof(s_crashReportScratch.moduleGuid));
-            }
-        }
-    }
+    LPCUTF8 moduleName = nullptr;
+    s_crashReportScratch.hasModuleGuid = false;
+    CrashReportGetModuleDetails(
+        pModule,
+        &moduleName,
+        &s_crashReportScratch.moduleGuid,
+        &s_crashReportScratch.hasModuleGuid,
+        &moduleTimestamp,
+        &moduleSize);
 
     className = s_crashReportScratch.className[0] == '\0' ? nullptr : s_crashReportScratch.className;
-    ctx->callback(static_cast<uint64_t>(ip), static_cast<uint64_t>(stackPointer), methodName, className, moduleName, nativeOffset, static_cast<uint32_t>(token), ilOffset, moduleTimestamp, moduleSize, s_crashReportScratch.moduleGuid, ctx->userCtx);
+    ctx->callback(static_cast<uint64_t>(ip), static_cast<uint64_t>(stackPointer), methodName, className, moduleName, pModule, nativeOffset, static_cast<uint32_t>(token), ilOffset, moduleTimestamp, moduleSize, s_crashReportScratch.hasModuleGuid ? &s_crashReportScratch.moduleGuid : nullptr, ctx->userCtx);
     return SWA_CONTINUE;
 }
 
@@ -445,6 +538,7 @@ CrashReportConfigure()
     settings.isManagedThreadCallback = CrashReportIsCurrentThreadManaged;
     settings.walkStackCallback = CrashReportWalkStack;
     settings.enumerateThreadsCallback = CrashReportEnumerateThreads;
+    settings.moduleInfoCallback = CrashReportGetModuleInfo;
     settings.frameLimitPerThread = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_CrashReportFrameLimitPerThread);
 
     // Initialize the reporter and register the PAL signal-path callback last

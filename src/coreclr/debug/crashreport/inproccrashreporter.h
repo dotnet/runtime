@@ -11,6 +11,8 @@
 #include <signal.h>
 #include <stdint.h>
 
+#include <minipal/guid.h>
+
 #include "signalsafejsonwriter.h"
 
 // Scratch-buffer sizes used throughout the in-proc crash reporter:
@@ -38,12 +40,13 @@ using InProcCrashReportFrameCallback = void (*)(
     const char* methodName,
     const char* className,
     const char* moduleName,
+    const void* moduleHandle,
     uint32_t nativeOffset,
     uint32_t token,
     uint32_t ilOffset,
     uint32_t moduleTimestamp,
     uint32_t moduleSize,
-    const char* moduleGuid,
+    const GUID* moduleGuid,
     void* ctx);
 
 using InProcCrashReportWalkStackCallback = void (*)(
@@ -63,12 +66,18 @@ using InProcCrashReportEnumerateThreadsCallback = void (*)(
     InProcCrashReportFrameCallback frameCallback,
     void* ctx);
 
+using InProcCrashReportModuleInfoCallback = bool (*)(
+    const void* moduleHandle,
+    const char** moduleName,
+    GUID* moduleGuid);
+
 struct InProcCrashReporterSettings
 {
     const char* reportPath;
     InProcCrashReportIsManagedThreadCallback isManagedThreadCallback;
     InProcCrashReportWalkStackCallback walkStackCallback;
     InProcCrashReportEnumerateThreadsCallback enumerateThreadsCallback;
+    InProcCrashReportModuleInfoCallback moduleInfoCallback;
     uint32_t frameLimitPerThread;
 };
 
@@ -114,6 +123,7 @@ private:
     InProcCrashReportIsManagedThreadCallback m_isManagedThreadCallback = nullptr;
     InProcCrashReportWalkStackCallback m_walkStackCallback = nullptr;
     InProcCrashReportEnumerateThreadsCallback m_enumerateThreadsCallback = nullptr;
+    InProcCrashReportModuleInfoCallback m_moduleInfoCallback = nullptr;
     char m_reportPath[CRASHREPORT_PATH_BUFFER_SIZE] = {};
     char m_reportFilePathScratch[CRASHREPORT_PATH_BUFFER_SIZE] = {};
     char m_expandedReportPathScratch[CRASHREPORT_PATH_BUFFER_SIZE] = {};

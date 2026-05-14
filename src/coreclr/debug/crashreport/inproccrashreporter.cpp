@@ -96,6 +96,7 @@ static char sccsid[] = "@(#)Version N/A";
 
 static char s_versionScratch[sizeof(sccsid)];
 static char s_jsonFrameCallbackMethodNameScratch[CRASHREPORT_STRING_BUFFER_SIZE];
+static char s_moduleGuidScratch[MINIPAL_GUID_BUFFER_LEN];
 
 static const char*
 GetSignalNameAscii(int signal)
@@ -156,36 +157,35 @@ static void CacheSysctlString(const char* sysctlName, char* buffer, size_t buffe
 }
 #endif // __APPLE__
 
-// Bounded module name/GUID table that deduplicates each unique module
-// observed during a single crash report. Frames in the compact log refer to
-// modules by short ``[N]`` indices instead of repeating the (often verbose)
-// filename + GUID on every line; the matching ``modules:`` block at the end
-// of the report maps each index back to the full data.
+// Bounded module table that deduplicates each unique module observed during a
+// single crash report. Frames in the compact log refer to modules by short
+// ``[N]`` indices instead of repeating module identity on every line; the
+// matching ``modules:`` block resolves the module handles back to full data.
 //
 // Capacity is fixed at MAX_MODULES_IN_TABLE (no heap on the fatal-signal
-// path). A managed frame whose module didn't fit (table full, or empty/null GUID)
-// renders the module identity inline as ``(in <name>) `` so the frame stays
-// self-describing — overflow is lossless, just less compact for that frame.
+// path). A managed frame whose module didn't fit (table full, missing handle,
+// or unresolved module identity) renders the module identity inline as
+// ``(in <name>) `` so the frame stays self-describing — overflow is lossless,
+// just less compact for that frame.
 //
 // Single-instance because CreateReport is one-shot per process (guarded by
 // the ``s_generating`` InterlockedCompareExchange in CreateReport).
 
-static constexpr size_t MAX_MODULES_IN_TABLE = 64;
+static constexpr size_t MAX_MODULES_IN_TABLE = 256;
 
 class ModuleTable
 {
 public:
-    int GetOrAddIndex(const char* moduleName, const char* moduleGuid)
+    int GetOrAddIndex(const void* moduleHandle)
     {
-        if (moduleName == nullptr || moduleName[0] == '\0' ||
-            moduleGuid == nullptr || moduleGuid[0] == '\0')
+        if (moduleHandle == nullptr)
         {
             return -1;
         }
 
         for (size_t i = 0; i < m_count; ++i)
         {
-            if (strncmp(m_entries[i].guid, moduleGuid, MINIPAL_GUID_BUFFER_LEN) == 0)
+            if (m_moduleHandles[i] == moduleHandle)
             {
                 return static_cast<int>(i);
             }
@@ -196,28 +196,15 @@ public:
             return -1;
         }
 
-        Entry& entry = m_entries[m_count];
-        size_t nameLen = strnlen(moduleName, sizeof(entry.name) - 1);
-        memcpy(entry.name, moduleName, nameLen);
-        entry.name[nameLen] = '\0';
-        size_t guidLen = strnlen(moduleGuid, sizeof(entry.guid) - 1);
-        memcpy(entry.guid, moduleGuid, guidLen);
-        entry.guid[guidLen] = '\0';
+        m_moduleHandles[m_count] = moduleHandle;
         return static_cast<int>(m_count++);
     }
 
     size_t Count() const { return m_count; }
-    const char* Name(size_t i) const { return m_entries[i].name; }
-    const char* Guid(size_t i) const { return m_entries[i].guid; }
+    const void* ModuleHandle(size_t i) const { return m_moduleHandles[i]; }
 
 private:
-    struct Entry
-    {
-        char name[CRASHREPORT_STRING_BUFFER_SIZE];
-        char guid[MINIPAL_GUID_BUFFER_LEN];
-    };
-
-    Entry m_entries[MAX_MODULES_IN_TABLE];
+    const void* m_moduleHandles[MAX_MODULES_IN_TABLE];
     size_t m_count = 0;
 };
 
@@ -228,17 +215,18 @@ class ThreadEnumerationContext
 public:
     ThreadEnumerationContext()
     {
-        Init(nullptr, nullptr, 0, 0, nullptr);
+        Init(nullptr, nullptr, nullptr, 0, 0, nullptr);
     }
 
     ThreadEnumerationContext(
         SignalSafeJsonWriter* writer,
         SignalSafeConsoleWriter* consoleWriter,
+        InProcCrashReportModuleInfoCallback moduleInfoCallback,
         uint64_t crashingTid,
         uint32_t frameLimitPerThread,
         void* signalContext)
     {
-        Init(writer, consoleWriter, crashingTid, frameLimitPerThread, signalContext);
+        Init(writer, consoleWriter, moduleInfoCallback, crashingTid, frameLimitPerThread, signalContext);
     }
 
     ThreadEnumerationContext(const ThreadEnumerationContext&) = delete;
@@ -252,12 +240,14 @@ public:
     void Init(
         SignalSafeJsonWriter* writer,
         SignalSafeConsoleWriter* consoleWriter,
+        InProcCrashReportModuleInfoCallback moduleInfoCallback,
         uint64_t crashingTid,
         uint32_t frameLimitPerThread,
         void* signalContext)
     {
         m_jsonWriter = writer;
         m_consoleWriter = consoleWriter;
+        m_moduleInfoCallback = moduleInfoCallback;
         m_signalContext = signalContext;
         m_threadCount = 0;
         m_crashingTid = crashingTid;
@@ -283,12 +273,13 @@ public:
         const char* methodName,
         const char* className,
         const char* moduleName,
+        const void* moduleHandle,
         uint32_t nativeOffset,
         uint32_t token,
         uint32_t ilOffset,
         uint32_t moduleTimestamp,
         uint32_t moduleSize,
-        const char* moduleGuid,
+        const GUID* moduleGuid,
         void* ctx);
 
 private:
@@ -304,18 +295,20 @@ private:
         const char* methodName,
         const char* className,
         const char* moduleName,
+        const void* moduleHandle,
         uint32_t nativeOffset,
         uint32_t token,
         uint32_t ilOffset,
         uint32_t moduleTimestamp,
         uint32_t moduleSize,
-        const char* moduleGuid);
+        const GUID* moduleGuid);
 
     void EndCurrentConsoleThreadBlock();
     void EndCurrentJsonThreadBlock();
 
     SignalSafeJsonWriter* m_jsonWriter;
     SignalSafeConsoleWriter* m_consoleWriter;
+    InProcCrashReportModuleInfoCallback m_moduleInfoCallback;
     void* m_signalContext;
     size_t m_threadCount;
     uint64_t m_crashingTid;
@@ -372,6 +365,7 @@ public:
     {
         SignalSafeJsonWriter* writer;
         SignalSafeConsoleWriter* consoleWriter;
+        InProcCrashReportModuleInfoCallback moduleInfoCallback;
         uint32_t* currentThreadFrameCount;
         uint32_t* currentThreadDroppedCount;
         uint32_t frameLimitPerThread;
@@ -426,12 +420,13 @@ public:
         const char* methodName,
         const char* className,
         const char* moduleName,
+        const void* moduleHandle,
         uint32_t nativeOffset,
         uint32_t token,
         uint32_t ilOffset,
         uint32_t moduleTimestamp,
         uint32_t moduleSize,
-        const char* moduleGuid,
+        const GUID* moduleGuid,
         void* ctx);
 
     static void WriteFrameToJson(
@@ -448,7 +443,7 @@ public:
         uint32_t ilOffset,
         uint32_t moduleTimestamp,
         uint32_t moduleSize,
-        const char* moduleGuid);
+        const GUID* moduleGuid);
 
     static void WriteFrameToConsole(
         SignalSafeConsoleWriter* consoleWriter,
@@ -509,12 +504,13 @@ public:
         const char* methodName,
         const char* className,
         const char* moduleName,
+        const void* moduleHandle,
         uint32_t nativeOffset,
         uint32_t token,
         uint32_t ilOffset,
         uint32_t moduleTimestamp,
         uint32_t moduleSize,
-        const char* moduleGuid,
+        const GUID* moduleGuid,
         void* ctx);
 
     static bool WriteToFile(
@@ -625,7 +621,7 @@ InProcCrashReporter::EmitThreads(
     else if (m_enumerateThreadsCallback != nullptr)
     {
         uint64_t crashingTid = static_cast<uint64_t>(minipal_get_current_thread_id());
-        s_threadContext.Init(&m_jsonWriter, &s_consoleWriter, crashingTid, m_frameLimitPerThread, context);
+        s_threadContext.Init(&m_jsonWriter, &s_consoleWriter, m_moduleInfoCallback, crashingTid, m_frameLimitPerThread, context);
 
         s_threadContext.EnumerateThreads(m_enumerateThreadsCallback);
 
@@ -655,6 +651,7 @@ InProcCrashReporter::Initialize(
     m_isManagedThreadCallback = settings.isManagedThreadCallback;
     m_walkStackCallback = settings.walkStackCallback;
     m_enumerateThreadsCallback = settings.enumerateThreadsCallback;
+    m_moduleInfoCallback = settings.moduleInfoCallback;
     m_frameLimitPerThread = settings.frameLimitPerThread;
     CrashReportHelpers::CopyString(m_reportPath, sizeof(m_reportPath), settings.reportPath);
 
@@ -1260,14 +1257,17 @@ CrashReportHelpers::JsonFrameCallback(
     const char* methodName,
     const char* className,
     const char* moduleName,
+    const void* moduleHandle,
     uint32_t nativeOffset,
     uint32_t token,
     uint32_t ilOffset,
     uint32_t moduleTimestamp,
     uint32_t moduleSize,
-    const char* moduleGuid,
+    const GUID* moduleGuid,
     void* ctx)
 {
+    (void)moduleHandle;
+
     SignalSafeJsonWriter* writer = reinterpret_cast<SignalSafeJsonWriter*>(ctx);
     if (writer == nullptr)
     {
@@ -1296,7 +1296,7 @@ CrashReportHelpers::WriteFrameToJson(
     uint32_t ilOffset,
     uint32_t moduleTimestamp,
     uint32_t moduleSize,
-    const char* moduleGuid)
+    const GUID* moduleGuid)
 {
     if (writer == nullptr)
     {
@@ -1332,9 +1332,10 @@ CrashReportHelpers::WriteFrameToJson(
         {
             writer->WriteHexAsString("sizeofimage", moduleSize);
         }
-        if (moduleGuid != nullptr && moduleGuid[0] != '\0')
+        if (moduleGuid != nullptr)
         {
-            writer->WriteString("guid", moduleGuid);
+            minipal_guid_as_string(*moduleGuid, s_moduleGuidScratch, sizeof(s_moduleGuidScratch));
+            writer->WriteString("guid", s_moduleGuidScratch);
         }
     }
     else
@@ -1586,12 +1587,13 @@ CrashReportHelpers::FrameSinkCallback(
     const char* methodName,
     const char* className,
     const char* moduleName,
+    const void* moduleHandle,
     uint32_t nativeOffset,
     uint32_t token,
     uint32_t ilOffset,
     uint32_t moduleTimestamp,
     uint32_t moduleSize,
-    const char* moduleGuid,
+    const GUID* moduleGuid,
     void* ctx)
 {
     FrameSinks* sinks = reinterpret_cast<FrameSinks*>(ctx);
@@ -1603,8 +1605,6 @@ CrashReportHelpers::FrameSinkCallback(
     uint32_t frameIndex = sinks->currentThreadFrameCount != nullptr
         ? *sinks->currentThreadFrameCount
         : 0;
-
-    int moduleIndex = s_moduleTable.GetOrAddIndex(moduleName, moduleGuid);
 
     // Always feed the JSON sink: the file output is the authoritative,
     // post-mortem data store and the cap is a compact-log triage knob.
@@ -1618,6 +1618,9 @@ CrashReportHelpers::FrameSinkCallback(
         frameIndex >= sinks->frameLimitPerThread;
     if (!consoleCapped)
     {
+        int moduleIndex = sinks->moduleInfoCallback != nullptr && moduleHandle != nullptr
+            ? s_moduleTable.GetOrAddIndex(moduleHandle)
+            : -1;
         WriteFrameToConsole(sinks->consoleWriter,
             sinks->methodNameBuffer,
             sinks->methodNameBufferSize,
@@ -1642,24 +1645,26 @@ ThreadEnumerationContext::OnFrame(
     const char* methodName,
     const char* className,
     const char* moduleName,
+    const void* moduleHandle,
     uint32_t nativeOffset,
     uint32_t token,
     uint32_t ilOffset,
     uint32_t moduleTimestamp,
     uint32_t moduleSize,
-    const char* moduleGuid)
+    const GUID* moduleGuid)
 {
     CrashReportHelpers::FrameSinks sinks =
     {
         m_jsonWriter,
         m_consoleWriter,
+        m_moduleInfoCallback,
         &m_currentThreadFrameCount,
         &m_currentThreadDroppedCount,
         m_frameLimitPerThread,
         m_methodNameScratch,
         sizeof(m_methodNameScratch),
     };
-    CrashReportHelpers::FrameSinkCallback(ip, stackPointer, methodName, className, moduleName,
+    CrashReportHelpers::FrameSinkCallback(ip, stackPointer, methodName, className, moduleName, moduleHandle,
         nativeOffset, token, ilOffset, moduleTimestamp, moduleSize, moduleGuid, &sinks);
 }
 
@@ -1670,19 +1675,20 @@ ThreadEnumerationContext::FrameCallback(
     const char* methodName,
     const char* className,
     const char* moduleName,
+    const void* moduleHandle,
     uint32_t nativeOffset,
     uint32_t token,
     uint32_t ilOffset,
     uint32_t moduleTimestamp,
     uint32_t moduleSize,
-    const char* moduleGuid,
+    const GUID* moduleGuid,
     void* ctx)
 {
     if (ctx == nullptr)
     {
         return;
     }
-    reinterpret_cast<ThreadEnumerationContext*>(ctx)->OnFrame(ip, stackPointer, methodName, className, moduleName, nativeOffset, token, ilOffset, moduleTimestamp, moduleSize, moduleGuid);
+    reinterpret_cast<ThreadEnumerationContext*>(ctx)->OnFrame(ip, stackPointer, methodName, className, moduleName, moduleHandle, nativeOffset, token, ilOffset, moduleTimestamp, moduleSize, moduleGuid);
 }
 
 void
@@ -1817,6 +1823,7 @@ InProcCrashReporter::EmitSynthesizedCrashThread(
         {
             &m_jsonWriter,
             &s_consoleWriter,
+            m_moduleInfoCallback,
             &synthesizedFrameCount,
             &synthesizedDroppedCount,
             m_frameLimitPerThread,
@@ -2014,9 +2021,21 @@ InProcCrashReporter::EndConsoleReport()
             s_consoleWriter.AppendStr("  [");
             s_consoleWriter.AppendDecimal(static_cast<uint64_t>(i));
             s_consoleWriter.AppendStr("] ");
-            s_consoleWriter.AppendStr(CrashReportHelpers::GetFilename(s_moduleTable.Name(i)));
-            s_consoleWriter.AppendChar(' ');
-            s_consoleWriter.AppendStr(s_moduleTable.Guid(i));
+            const char* moduleName = nullptr;
+            GUID moduleGuid;
+            if (m_moduleInfoCallback != nullptr &&
+                m_moduleInfoCallback(s_moduleTable.ModuleHandle(i), &moduleName, &moduleGuid) &&
+                moduleName != nullptr && moduleName[0] != '\0')
+            {
+                s_consoleWriter.AppendStr(CrashReportHelpers::GetFilename(moduleName));
+                s_consoleWriter.AppendChar(' ');
+                minipal_guid_as_string(moduleGuid, s_moduleGuidScratch, sizeof(s_moduleGuidScratch));
+                s_consoleWriter.AppendStr(s_moduleGuidScratch);
+            }
+            else
+            {
+                s_consoleWriter.AppendStr("<unknown>");
+            }
             s_consoleWriter.EndLine();
         }
     }
