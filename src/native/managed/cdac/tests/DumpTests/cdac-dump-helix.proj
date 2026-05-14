@@ -196,11 +196,12 @@
           Include="@(_UniqueDebuggee->'mkdir %25HELIX_WORKITEM_PAYLOAD%25\dumps\local\symbols\debuggees\%(Identity)')" />
       <!-- Copy every DLL/PDB from the debuggee publish folder so that project
            references (e.g. InterpreterStack/Trampoline.dll) are also available
-           for symbol resolution. -->
+           for symbol resolution. PDB copy is guarded with `if exist` so that
+           a debuggee without PDBs doesn't fail the batch script. -->
       <_HelixCommandLines Condition="'$(TargetOS)' == 'windows'"
           Include="@(_UniqueDebuggee->'copy &quot;%25HELIX_WORKITEM_PAYLOAD%25\debuggees\%(Identity)\*.dll&quot; &quot;%25HELIX_WORKITEM_PAYLOAD%25\dumps\local\symbols\debuggees\%(Identity)\&quot;')" />
       <_HelixCommandLines Condition="'$(TargetOS)' == 'windows'"
-          Include="@(_UniqueDebuggee->'copy &quot;%25HELIX_WORKITEM_PAYLOAD%25\debuggees\%(Identity)\*.pdb&quot; &quot;%25HELIX_WORKITEM_PAYLOAD%25\dumps\local\symbols\debuggees\%(Identity)\&quot; 2&gt;nul || (exit /b 0)')" />
+          Include="@(_UniqueDebuggee->'if exist &quot;%25HELIX_WORKITEM_PAYLOAD%25\debuggees\%(Identity)\*.pdb&quot; copy &quot;%25HELIX_WORKITEM_PAYLOAD%25\debuggees\%(Identity)\*.pdb&quot; &quot;%25HELIX_WORKITEM_PAYLOAD%25\dumps\local\symbols\debuggees\%(Identity)\&quot;')" />
 
       <!-- Unix: copy SPC from testhost shared framework -->
       <_HelixCommandLines Condition="'$(TargetOS)' != 'windows'"
@@ -214,11 +215,13 @@
           Include="@(_UniqueDebuggee->'mkdir -p $HELIX_WORKITEM_PAYLOAD/dumps/local/symbols/debuggees/%(Identity)')" />
       <!-- Copy every DLL/PDB from the debuggee publish folder so that project
            references (e.g. InterpreterStack/Trampoline.dll) are also available
-           for symbol resolution. -->
+           for symbol resolution. PDB copy uses `find -exec ... +` so it's a
+           no-op when a debuggee has no PDBs (e.g. on net10.0 servicing dumps),
+           and avoids semicolons that would be split as Helix command separators. -->
       <_HelixCommandLines Condition="'$(TargetOS)' != 'windows'"
           Include="@(_UniqueDebuggee->'cp $HELIX_WORKITEM_PAYLOAD/debuggees/%(Identity)/*.dll $HELIX_WORKITEM_PAYLOAD/dumps/local/symbols/debuggees/%(Identity)/')" />
       <_HelixCommandLines Condition="'$(TargetOS)' != 'windows'"
-          Include="@(_UniqueDebuggee->'cp $HELIX_WORKITEM_PAYLOAD/debuggees/%(Identity)/*.pdb $HELIX_WORKITEM_PAYLOAD/dumps/local/symbols/debuggees/%(Identity)/ 2&gt;/dev/null || true')" />
+          Include="@(_UniqueDebuggee->'find $HELIX_WORKITEM_PAYLOAD/debuggees/%(Identity) -maxdepth 1 -name *.pdb -exec cp -t $HELIX_WORKITEM_PAYLOAD/dumps/local/symbols/debuggees/%(Identity)/ {} +')" />
     </ItemGroup>
 
     <!-- Test mode only: run xunit, capture exit code, propagate after archive. -->
