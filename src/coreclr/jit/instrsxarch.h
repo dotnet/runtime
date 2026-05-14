@@ -60,8 +60,8 @@ INST5(pop,              "pop",              IUM_WR, 0x00008E,     BAD_CODE,     
 INST5(push_hide,        "push",             IUM_RD, 0x0030FE,     0x000068,     BAD_CODE,     BAD_CODE,     0x000050,    ZERO,              1C,         INS_TT_NONE,    Encoding_REX2)
 INST5(pop_hide,         "pop",              IUM_WR, 0x00008E,     BAD_CODE,     BAD_CODE,     BAD_CODE,     0x000058,    ZERO,              2X,         INS_TT_NONE,    Encoding_REX2)
 
-INST5(push2,            "push2",            IUM_RD, 0x0030FF,     BAD_CODE,     0x0030FF,     BAD_CODE,     0x0030FF,    ZERO,              1C,         INS_TT_NONE,    INS_Flags_Has_NDD)
-INST5(pop2,             "pop2",             IUM_WR, 0x00008F,     BAD_CODE,     0x00008F,     BAD_CODE,     0x00008F,    ZERO,              2X,         INS_TT_NONE,    INS_Flags_Has_NDD)
+INST5(push2,            "push2",            IUM_RD, 0x0030FF,     BAD_CODE,     0x0030FF,     BAD_CODE,     0x0030FF,    ZERO,              1C,         INS_TT_NONE,    Encoding_APX | INS_Flags_Has_NDD)
+INST5(pop2,             "pop2",             IUM_WR, 0x00008F,     BAD_CODE,     0x00008F,     BAD_CODE,     0x00008F,    ZERO,              2X,         INS_TT_NONE,    Encoding_APX | INS_Flags_Has_NDD)
 
 INST5(inc,              "inc",              IUM_RW, 0x0000FE,     BAD_CODE,     0x0000FE,     BAD_CODE,     0x000040,    1C,                4X,         INS_TT_NONE,    Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF | INS_FLAGS_Has_Wbit | Encoding_REX2 | INS_Flags_Has_NDD | INS_Flags_Has_NF)
 INST5(inc_l,            "inc",              IUM_RW, 0x0000FE,     BAD_CODE,     BAD_CODE,     BAD_CODE,     0x00C0FE,    1C,                4X,         INS_TT_NONE,    Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF | Encoding_REX2 | INS_Flags_Has_NF)
@@ -1144,22 +1144,22 @@ INST3(vucomxss,         "vucomxss",         IUM_RD, BAD_CODE,               BAD_
 #ifdef TARGET_AMD64
 #define FIRST_APX_INSTRUCTION INS_ccmpo
 #define FIRST_CCMP_INSTRUCTION INS_ccmpo
-INST3(ccmpo,            "ccmpo",            IUM_RD, 0x000038,    0x0003880,   0x00003A,                                  1C,                2X,         INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit)
-INST3(ccmpno,           "ccmpno",           IUM_RD, 0x000038,    0x0003880,   0x00003A,                                  1C,                2X,         INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit)
-INST3(ccmpb,            "ccmpb",            IUM_RD, 0x000038,    0x0003880,   0x00003A,                                  1C,                2X,         INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit)
-INST3(ccmpae,           "ccmpae",           IUM_RD, 0x000038,    0x0003880,   0x00003A,                                  1C,                2X,         INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit)
-INST3(ccmpe,            "ccmpe",            IUM_RD, 0x000038,    0x0003880,   0x00003A,                                  1C,                2X,         INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit)
-INST3(ccmpne,           "ccmpne",           IUM_RD, 0x000038,    0x0003880,   0x00003A,                                  1C,                2X,         INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit)
-INST3(ccmpbe,           "ccmpbe",           IUM_RD, 0x000038,    0x0003880,   0x00003A,                                  1C,                2X,         INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit)
-INST3(ccmpa,            "ccmpa",            IUM_RD, 0x000038,    0x0003880,   0x00003A,                                  1C,                2X,         INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit)
-INST3(ccmps,            "ccmps",            IUM_RD, 0x000038,    0x0003880,   0x00003A,                                  1C,                2X,         INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit)
-INST3(ccmpns,           "ccmpns",           IUM_RD, 0x000038,    0x0003880,   0x00003A,                                  1C,                2X,         INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit)
-INST3(ccmpt,            "ccmpt",            IUM_RD, 0x000038,    0x0003880,   0x00003A,                                  1C,                2X,         INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit)
-INST3(ccmpf,            "ccmpf",            IUM_RD, 0x000038,    0x0003880,   0x00003A,                                  1C,                2X,         INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit)
-INST3(ccmpl,            "ccmpl",            IUM_RD, 0x000038,    0x0003880,   0x00003A,                                  1C,                2X,         INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit)
-INST3(ccmpge,           "ccmpge",           IUM_RD, 0x000038,    0x0003880,   0x00003A,                                  1C,                2X,         INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit)
-INST3(ccmple,           "ccmple",           IUM_RD, 0x000038,    0x0003880,   0x00003A,                                  1C,                2X,         INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit)
-INST3(ccmpg,            "ccmpg",            IUM_RD, 0x000038,    0x0003880,   0x00003A,                                  1C,                2X,         INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit)
+INST3(ccmpo,            "ccmpo",            IUM_RD, 0x000038,    0x0003880,   0x00003A,                                  1C,                2X,         INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit | Encoding_APX)
+INST3(ccmpno,           "ccmpno",           IUM_RD, 0x000038,    0x0003880,   0x00003A,                                  1C,                2X,         INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit | Encoding_APX)
+INST3(ccmpb,            "ccmpb",            IUM_RD, 0x000038,    0x0003880,   0x00003A,                                  1C,                2X,         INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit | Encoding_APX)
+INST3(ccmpae,           "ccmpae",           IUM_RD, 0x000038,    0x0003880,   0x00003A,                                  1C,                2X,         INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit | Encoding_APX)
+INST3(ccmpe,            "ccmpe",            IUM_RD, 0x000038,    0x0003880,   0x00003A,                                  1C,                2X,         INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit | Encoding_APX)
+INST3(ccmpne,           "ccmpne",           IUM_RD, 0x000038,    0x0003880,   0x00003A,                                  1C,                2X,         INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit | Encoding_APX)
+INST3(ccmpbe,           "ccmpbe",           IUM_RD, 0x000038,    0x0003880,   0x00003A,                                  1C,                2X,         INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit | Encoding_APX)
+INST3(ccmpa,            "ccmpa",            IUM_RD, 0x000038,    0x0003880,   0x00003A,                                  1C,                2X,         INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit | Encoding_APX)
+INST3(ccmps,            "ccmps",            IUM_RD, 0x000038,    0x0003880,   0x00003A,                                  1C,                2X,         INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit | Encoding_APX)
+INST3(ccmpns,           "ccmpns",           IUM_RD, 0x000038,    0x0003880,   0x00003A,                                  1C,                2X,         INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit | Encoding_APX)
+INST3(ccmpt,            "ccmpt",            IUM_RD, 0x000038,    0x0003880,   0x00003A,                                  1C,                2X,         INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit | Encoding_APX)
+INST3(ccmpf,            "ccmpf",            IUM_RD, 0x000038,    0x0003880,   0x00003A,                                  1C,                2X,         INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit | Encoding_APX)
+INST3(ccmpl,            "ccmpl",            IUM_RD, 0x000038,    0x0003880,   0x00003A,                                  1C,                2X,         INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit | Encoding_APX)
+INST3(ccmpge,           "ccmpge",           IUM_RD, 0x000038,    0x0003880,   0x00003A,                                  1C,                2X,         INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit | Encoding_APX)
+INST3(ccmple,           "ccmple",           IUM_RD, 0x000038,    0x0003880,   0x00003A,                                  1C,                2X,         INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit | Encoding_APX)
+INST3(ccmpg,            "ccmpg",            IUM_RD, 0x000038,    0x0003880,   0x00003A,                                  1C,                2X,         INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit | Encoding_APX)
 #define LAST_CCMP_INSTRUCTION INS_ccmpg
 #define FIRST_CFCMOV_INSTRUCTION INS_cfcmovo
 INST3(cfcmovo,          "cfcmovo",          IUM_WR, 0x000040,    BAD_CODE,    0x000040,                                  1C,           2X,    INS_TT_NONE,    Reads_OF | INS_Flags_Has_NDD | INS_Flags_Has_NF)
@@ -1200,22 +1200,22 @@ INST3(ctestg,            "ctestg",            IUM_RD, 0x000084,    0x00000F6,   
 INST3(crc32_apx,        "crc32",            IUM_RW, BAD_CODE,     BAD_CODE,     0x0000F0,                                3C,                1C,         INS_TT_NONE,    INS_FLAGS_None)
 INST3(movbe_apx,        "movbe",            IUM_WR, 0x000061,     BAD_CODE,     0x000060,                                1C,                2X,         INS_TT_NONE,    INS_FLAGS_None)
 
-INST3(seto_apx,         "setzuo",           IUM_WR, SSEDBLMAP(4, 0x40),  BAD_CODE, BAD_CODE,                             1C,                2X,         INS_TT_NONE,    Reads_OF)
-INST3(setno_apx,        "setzuno",          IUM_WR, SSEDBLMAP(4, 0x41),  BAD_CODE, BAD_CODE,                             1C,                2X,         INS_TT_NONE,    Reads_OF)
-INST3(setb_apx,         "setzub",           IUM_WR, SSEDBLMAP(4, 0x42),  BAD_CODE, BAD_CODE,                             1C,                2X,         INS_TT_NONE,    Reads_CF)
-INST3(setae_apx,        "setzuae",          IUM_WR, SSEDBLMAP(4, 0x43),  BAD_CODE, BAD_CODE,                             1C,                2X,         INS_TT_NONE,    Reads_CF)
-INST3(sete_apx,         "setzue",           IUM_WR, SSEDBLMAP(4, 0x44),  BAD_CODE, BAD_CODE,                             1C,                2X,         INS_TT_NONE,    Reads_ZF)
-INST3(setne_apx,        "setzune",          IUM_WR, SSEDBLMAP(4, 0x45),  BAD_CODE, BAD_CODE,                             1C,                2X,         INS_TT_NONE,    Reads_ZF)
-INST3(setbe_apx,        "setzube",          IUM_WR, SSEDBLMAP(4, 0x46),  BAD_CODE, BAD_CODE,                             1C,                2X,         INS_TT_NONE,    Reads_ZF | Reads_CF)
-INST3(seta_apx,         "setzua",           IUM_WR, SSEDBLMAP(4, 0x47),  BAD_CODE, BAD_CODE,                             1C,                2X,         INS_TT_NONE,    Reads_ZF | Reads_CF)
-INST3(sets_apx,         "setzus",           IUM_WR, SSEDBLMAP(4, 0x48),  BAD_CODE, BAD_CODE,                             1C,                2X,         INS_TT_NONE,    Reads_SF)
-INST3(setns_apx,        "setzuns",          IUM_WR, SSEDBLMAP(4, 0x49),  BAD_CODE, BAD_CODE,                             1C,                2X,         INS_TT_NONE,    Reads_SF)
-INST3(setp_apx,         "setzup",           IUM_WR, SSEDBLMAP(4, 0x4A),  BAD_CODE, BAD_CODE,                             1C,                2X,         INS_TT_NONE,    Reads_PF)
-INST3(setnp_apx,        "setzunp",          IUM_WR, SSEDBLMAP(4, 0x4B),  BAD_CODE, BAD_CODE,                             1C,                2X,         INS_TT_NONE,    Reads_PF)
-INST3(setl_apx,         "setzul",           IUM_WR, SSEDBLMAP(4, 0x4C),  BAD_CODE, BAD_CODE,                             1C,                2X,         INS_TT_NONE,    Reads_OF | Reads_SF)
-INST3(setge_apx,        "setzuge",          IUM_WR, SSEDBLMAP(4, 0x4D),  BAD_CODE, BAD_CODE,                             1C,                2X,         INS_TT_NONE,    Reads_OF | Reads_SF)
-INST3(setle_apx,        "setzule",          IUM_WR, SSEDBLMAP(4, 0x4E),  BAD_CODE, BAD_CODE,                             1C,                2X,         INS_TT_NONE,    Reads_OF | Reads_SF | Reads_ZF)
-INST3(setg_apx,         "setzug",           IUM_WR, SSEDBLMAP(4, 0x4F),  BAD_CODE, BAD_CODE,                             1C,                2X,         INS_TT_NONE,    Reads_OF | Reads_SF | Reads_ZF)
+INST3(seto_apx,         "setzuo",           IUM_WR, SSEDBLMAP(4, 0x40),  BAD_CODE, BAD_CODE,                             1C,                2X,         INS_TT_NONE,    Reads_OF | Encoding_APX)
+INST3(setno_apx,        "setzuno",          IUM_WR, SSEDBLMAP(4, 0x41),  BAD_CODE, BAD_CODE,                             1C,                2X,         INS_TT_NONE,    Reads_OF | Encoding_APX)
+INST3(setb_apx,         "setzub",           IUM_WR, SSEDBLMAP(4, 0x42),  BAD_CODE, BAD_CODE,                             1C,                2X,         INS_TT_NONE,    Reads_CF | Encoding_APX)
+INST3(setae_apx,        "setzuae",          IUM_WR, SSEDBLMAP(4, 0x43),  BAD_CODE, BAD_CODE,                             1C,                2X,         INS_TT_NONE,    Reads_CF | Encoding_APX)
+INST3(sete_apx,         "setzue",           IUM_WR, SSEDBLMAP(4, 0x44),  BAD_CODE, BAD_CODE,                             1C,                2X,         INS_TT_NONE,    Reads_ZF | Encoding_APX)
+INST3(setne_apx,        "setzune",          IUM_WR, SSEDBLMAP(4, 0x45),  BAD_CODE, BAD_CODE,                             1C,                2X,         INS_TT_NONE,    Reads_ZF | Encoding_APX)
+INST3(setbe_apx,        "setzube",          IUM_WR, SSEDBLMAP(4, 0x46),  BAD_CODE, BAD_CODE,                             1C,                2X,         INS_TT_NONE,    Reads_ZF | Reads_CF | Encoding_APX)
+INST3(seta_apx,         "setzua",           IUM_WR, SSEDBLMAP(4, 0x47),  BAD_CODE, BAD_CODE,                             1C,                2X,         INS_TT_NONE,    Reads_ZF | Reads_CF | Encoding_APX)
+INST3(sets_apx,         "setzus",           IUM_WR, SSEDBLMAP(4, 0x48),  BAD_CODE, BAD_CODE,                             1C,                2X,         INS_TT_NONE,    Reads_SF | Encoding_APX)
+INST3(setns_apx,        "setzuns",          IUM_WR, SSEDBLMAP(4, 0x49),  BAD_CODE, BAD_CODE,                             1C,                2X,         INS_TT_NONE,    Reads_SF | Encoding_APX)
+INST3(setp_apx,         "setzup",           IUM_WR, SSEDBLMAP(4, 0x4A),  BAD_CODE, BAD_CODE,                             1C,                2X,         INS_TT_NONE,    Reads_PF | Encoding_APX)
+INST3(setnp_apx,        "setzunp",          IUM_WR, SSEDBLMAP(4, 0x4B),  BAD_CODE, BAD_CODE,                             1C,                2X,         INS_TT_NONE,    Reads_PF | Encoding_APX)
+INST3(setl_apx,         "setzul",           IUM_WR, SSEDBLMAP(4, 0x4C),  BAD_CODE, BAD_CODE,                             1C,                2X,         INS_TT_NONE,    Reads_OF | Reads_SF | Encoding_APX)
+INST3(setge_apx,        "setzuge",          IUM_WR, SSEDBLMAP(4, 0x4D),  BAD_CODE, BAD_CODE,                             1C,                2X,         INS_TT_NONE,    Reads_OF | Reads_SF | Encoding_APX)
+INST3(setle_apx,        "setzule",          IUM_WR, SSEDBLMAP(4, 0x4E),  BAD_CODE, BAD_CODE,                             1C,                2X,         INS_TT_NONE,    Reads_OF | Reads_SF | Reads_ZF | Encoding_APX)
+INST3(setg_apx,         "setzug",           IUM_WR, SSEDBLMAP(4, 0x4F),  BAD_CODE, BAD_CODE,                             1C,                2X,         INS_TT_NONE,    Reads_OF | Reads_SF | Reads_ZF | Encoding_APX)
 #define LAST_APX_INSTRUCTION INS_setg_apx
 #endif // TARGET_AMD64
 
@@ -1225,13 +1225,13 @@ INST3(crc32,            "crc32",            IUM_RW, BAD_CODE,     BAD_CODE,     
 // BMI1
 INST3(tzcnt,            "tzcnt",            IUM_WR, BAD_CODE,     BAD_CODE,     SSEFLT(0xBC),                            3C,                1C,         INS_TT_NONE,    Undefined_OF   | Undefined_SF  | Writes_ZF     | Undefined_AF  | Undefined_PF  | Writes_CF | Encoding_REX2)    // Count the Number of Trailing Zero Bits
 #ifdef TARGET_AMD64
-INST3(tzcnt_apx,        "tzcnt",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0000F4,                                3C,                1C,         INS_TT_NONE,    Undefined_OF   | Undefined_SF  | Writes_ZF     | Undefined_AF  | Undefined_PF  | Writes_CF | INS_Flags_Has_NF)    // Count the Number of Trailing Zero Bits
+INST3(tzcnt_apx,        "tzcnt",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0000F4,                                3C,                1C,         INS_TT_NONE,    Undefined_OF   | Undefined_SF  | Writes_ZF     | Undefined_AF  | Undefined_PF  | Writes_CF | INS_Flags_Has_NF | Encoding_APX)    // Count the Number of Trailing Zero Bits
 #endif
 
 // LZCNT
 INST3(lzcnt,            "lzcnt",            IUM_WR, BAD_CODE,     BAD_CODE,     SSEFLT(0xBD),                            3C,                1C,         INS_TT_NONE,    Undefined_OF   | Undefined_SF  | Writes_ZF     | Undefined_AF  | Undefined_PF  | Writes_CF | Encoding_REX2)
 #ifdef TARGET_AMD64
-INST3(lzcnt_apx,        "lzcnt",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0000F5,                                3C,                1C,         INS_TT_NONE,    Undefined_OF   | Undefined_SF  | Writes_ZF     | Undefined_AF  | Undefined_PF  | Writes_CF | INS_Flags_Has_NF)
+INST3(lzcnt_apx,        "lzcnt",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0000F5,                                3C,                1C,         INS_TT_NONE,    Undefined_OF   | Undefined_SF  | Writes_ZF     | Undefined_AF  | Undefined_PF  | Writes_CF | INS_Flags_Has_NF | Encoding_APX)
 #endif
 
 // MOVBE
@@ -1240,7 +1240,7 @@ INST3(movbe,            "movbe",            IUM_WR, PCKMVB(0xF1), BAD_CODE,     
 // POPCNT
 INST3(popcnt,           "popcnt",           IUM_WR, BAD_CODE,     BAD_CODE,     SSEFLT(0xB8),                            3C,                1C,         INS_TT_NONE,    Resets_OF      | Resets_SF     | Writes_ZF     | Resets_AF     | Resets_PF     | Resets_CF | Encoding_REX2)
 #ifdef TARGET_AMD64
-INST3(popcnt_apx,       "popcnt",           IUM_WR, BAD_CODE,     BAD_CODE,     0x000088,                                3C,                1C,         INS_TT_NONE,    Resets_OF      | Resets_SF     | Writes_ZF     | Resets_AF     | Resets_PF     | Resets_CF | INS_Flags_Has_NF)
+INST3(popcnt_apx,       "popcnt",           IUM_WR, BAD_CODE,     BAD_CODE,     0x000088,                                3C,                1C,         INS_TT_NONE,    Resets_OF      | Resets_SF     | Writes_ZF     | Resets_AF     | Resets_PF     | Resets_CF | INS_Flags_Has_NF | Encoding_APX)
 #endif
 
 // WAITPKG
