@@ -131,6 +131,27 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioWrite")]
         internal static partial int BioWrite(SafeBioHandle b, ref byte data, int len);
 
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioNewManagedSpan")]
+        internal static partial SafeBioHandle BioNewManagedSpan();
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioSetReadWindow")]
+        internal static unsafe partial void BioSetReadWindow(SafeBioHandle bio, byte* ptr, int len);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioClearReadWindow")]
+        internal static partial void BioClearReadWindow(SafeBioHandle bio);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioSetWriteWindow")]
+        internal static unsafe partial void BioSetWriteWindow(SafeBioHandle bio, byte* ptr, int capacity);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioGetWriteResult")]
+        internal static partial void BioGetWriteResult(SafeBioHandle bio, out int writtenToWindow, out int spillLen);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioDrainSpill")]
+        internal static unsafe partial int BioDrainSpill(SafeBioHandle bio, byte* dst, int dstLen);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioResetManagedSpan")]
+        internal static partial void BioResetManagedSpan(SafeBioHandle bio);
+
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetPeerCertificate")]
         internal static partial IntPtr SslGetPeerCertificate(SafeSslHandle ssl);
 
@@ -437,8 +458,8 @@ namespace Microsoft.Win32.SafeHandles
 
         public static SafeSslHandle Create(SafeSslContextHandle context, SslAuthenticationOptions options)
         {
-            SafeBioHandle readBio = Interop.Crypto.CreateMemoryBio();
-            SafeBioHandle writeBio = Interop.Crypto.CreateMemoryBio();
+            SafeBioHandle readBio = Interop.Ssl.BioNewManagedSpan();
+            SafeBioHandle writeBio = Interop.Ssl.BioNewManagedSpan();
             SafeSslHandle handle = Interop.Ssl.SslCreate(context);
             if (readBio.IsInvalid || writeBio.IsInvalid || handle.IsInvalid)
             {
