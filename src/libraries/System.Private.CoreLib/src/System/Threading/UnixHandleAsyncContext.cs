@@ -10,7 +10,7 @@ namespace System.Threading
     /// <summary>
     /// Enables implementing asynchronous and synchronous I/O operations triggered by OS readiness notifications (epoll/kqueue).
     /// </summary>
-    public sealed partial class UnixHandleAsyncContext : IDisposable
+    public sealed partial class UnixHandleAsyncContext
     {
         private enum QueueResult
         {
@@ -753,12 +753,5 @@ namespace System.Threading
             }
         }
 
-        /// <summary>
-        /// Calls <see cref="AbortAndDispose"/>.
-        /// </summary>
-        public void Dispose()
-        {
-            AbortAndDispose();
-        }
     }
 }

@@ -102,10 +102,7 @@ namespace Microsoft.Win32.SafeHandles
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing)
-            {
-                _asyncContext?.Dispose();
-            }
+            _asyncContext?.AbortAndDispose(); // Type has no finalizer of its own.
             base.Dispose(disposing);
         }
 

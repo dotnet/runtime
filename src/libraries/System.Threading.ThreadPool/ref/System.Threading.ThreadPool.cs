@@ -78,7 +78,7 @@ namespace System.Threading
 #endif
         public static System.Threading.RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(System.Threading.WaitHandle waitObject, System.Threading.WaitOrTimerCallback callBack, object? state, uint millisecondsTimeOutInterval, bool executeOnlyOnce) { throw null; }
     }
-    public sealed partial class UnixHandleAsyncContext : System.IDisposable
+    public sealed partial class UnixHandleAsyncContext
     {
         internal UnixHandleAsyncContext() { }
         public static bool IsSupported { get { throw null; } }
@@ -90,7 +90,6 @@ namespace System.Threading
         public System.Threading.UnixHandleAsyncContext.SyncResult ReadSync(System.Threading.UnixHandleAsyncContext.Operation operation, int observedSequenceNumber, int timeout) { throw null; }
         public System.Threading.UnixHandleAsyncContext.SyncResult WriteSync(System.Threading.UnixHandleAsyncContext.Operation operation, int observedSequenceNumber, int timeout) { throw null; }
         public bool AbortAndDispose() { throw null; }
-        public void Dispose() { }
         public enum AsyncResult
         {
             Pending = 0,

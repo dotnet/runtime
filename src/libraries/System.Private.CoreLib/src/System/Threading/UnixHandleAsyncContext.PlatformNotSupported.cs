@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Threading
 {
-    public sealed partial class UnixHandleAsyncContext : IDisposable
+    public sealed partial class UnixHandleAsyncContext
     {
         public static bool IsSupported => false;
 
@@ -41,8 +41,5 @@ namespace System.Threading
             throw new PlatformNotSupportedException();
         }
 
-        public void Dispose()
-        {
-        }
     }
 }
