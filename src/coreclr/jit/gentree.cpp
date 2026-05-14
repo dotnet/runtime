@@ -15006,6 +15006,23 @@ GenTree* Compiler::gtFoldExpr(GenTree* tree)
     {
         GenTree* op2 = tree->AsOp()->gtOp2;
 
+        if ((tree->gtOper == GT_SUB) && !tree->gtOverflow() && !op2->TypeIs(TYP_BYREF) && !op2->IsIconHandle())
+        {
+            // Canonicalize the tree from `x - y` to `x + (-y)`
+            // as this allows various other optimizations to kick in
+
+            tree->ChangeOper(GT_ADD, GenTree::PRESERVE_VN);
+            op2 = gtNewOperNode(GT_NEG, genActualType(op2->gtType), op2);
+
+            if (fgGlobalMorph)
+            {
+                fgMorphTreeDone(op2);
+            }
+            op2 = gtFoldExpr(op2);
+
+            tree->AsOp()->gtOp2 = op2;
+        }
+
         // The atomic operations are exempted here because they are never computable statically;
         // one of their arguments is an address.
         if (op1->OperIsConst() && op2->OperIsConst() && !tree->OperIsAtomicOp())
