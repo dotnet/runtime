@@ -1,0 +1,4 @@
+<linker>
+  <assembly fullname="System.Runtime.Loader.Test.Assembly" />
+  <assembly fullname="System.Runtime.Loader.Test.Assembly2" />
+</linker>

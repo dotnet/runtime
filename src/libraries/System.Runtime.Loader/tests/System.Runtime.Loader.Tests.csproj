@@ -102,6 +102,9 @@
   <ItemGroup Condition="'$(TargetOS)' == 'browser' or ('$(TargetsAppleMobile)' == 'true' and '$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true')">
     <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
+  <ItemGroup Condition="('$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos') and '$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'">
+    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.AppleDevice.xml" />
+  </ItemGroup>
 
   <Target Name="PreserveEnCAssembliesFromLinking" Condition="'$(TargetOS)' == 'browser' and '$(EnableAggressiveTrimming)' == 'true'" BeforeTargets="PrepareForILLink">
     <ItemGroup>
