@@ -14,6 +14,7 @@ typedef char16_t WCHAR;
 
 MemoryMappedFile* MemoryMappedFile::OpenImpl(const WCHAR* path, bool readWrite, uint32_t desiredSize, void* desiredAddress)
 {
+    assert(path);
     size_t pathLen = u16_strlen(path);
     size_t pathU8Len = minipal_get_length_utf16_to_utf8((CHAR16_T*)path, pathLen, 0);
     char* pathU8 = new char[pathU8Len + 1];
