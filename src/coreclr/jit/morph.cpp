@@ -10565,31 +10565,6 @@ GenTree* Compiler::fgOptimizeAddition(GenTreeOp* add)
                     return fgMorphTree(add);
                 }
             }
-
-            // - a + b => b - a
-            // ADD(NEG(a), b) => SUB(b, a)
-            // Do not do this if "op2" is constant for canonicalization purposes.
-            if (!op2->IsIntegralConst() && gtCanSwapOrder(op1, op2))
-            {
-                add->SetOper(GT_SUB);
-                add->gtOp1 = op2;
-                add->gtOp2 = op1->AsOp()->gtGetOp1();
-
-                DEBUG_DESTROY_NODE(op1);
-                return add;
-            }
-        }
-
-        // a + -b = > a - b
-        // ADD(a, NEG(b)) => SUB(a, b)
-        if (!op1->OperIs(GT_NEG) && op2->OperIs(GT_NEG))
-        {
-            add->SetOper(GT_SUB);
-            add->gtOp2 = op2->AsOp()->gtGetOp1();
-
-            DEBUG_DESTROY_NODE(op2);
-
-            return add;
         }
 
         // Fold (~x + 1) to -x.

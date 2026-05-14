@@ -15124,6 +15124,38 @@ GenTree* Compiler::gtFoldExprBinary(GenTreeOp* tree)
 
     switch (oper)
     {
+        case GT_ADD:
+        {
+            if (tree->gtOverflow())
+            {
+                break;
+            }
+
+            if (op1->OperIs(GT_NEG))
+            {
+                JITDUMP("Folding (-a) + b => b - a\n")
+
+                tree->gtOp1 = op2;
+                tree->gtOp2 = op1->gtGetOp1();
+
+                tree->SetOper(GT_SUB, GenTree::PRESERVE_VN);
+                tree->ToggleReverseOp();
+
+                return tree;
+            }
+
+            if (op2->OperIs(GT_NEG))
+            {
+                JITDUMP("Folding a + (-b) => a - b\n")
+
+                tree->gtOp2 = op2->gtGetOp1();
+                tree->SetOper(GT_SUB, GenTree::PRESERVE_VN);
+
+                return tree;
+            }
+            break;
+        }
+
         case GT_SUB:
         {
             if (tree->gtOverflow())
