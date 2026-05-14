@@ -940,14 +940,13 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
     emitter* emit = GetEmitter();
 
     assert(genIsValidIntReg(reg));
-    emitAttr emitSize = EA_REMOVE_FLG(size, EA_GCREF_FLG | EA_BYREF_FLG);
-    if (EA_IS_RELOC(emitSize))
+    if (EA_IS_RELOC(size))
     {
-        emit->emitIns_R_AI(INS_addi, emitSize, reg, reg, imm);
+        emit->emitIns_R_AI(INS_addi, size, reg, reg, imm);
     }
     else
     {
-        emit->emitLoadImmediate<true>(emitSize, reg, imm);
+        emit->emitLoadImmediate<true>(size, reg, imm);
     }
 
     regSet.verifyRegUsed(reg);
