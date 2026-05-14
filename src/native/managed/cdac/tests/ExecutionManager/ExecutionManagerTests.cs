@@ -26,6 +26,7 @@ public class ExecutionManagerTests
             [DataType.LoaderCodeHeap] = TargetTestHelpers.CreateTypeInfo(emBuilder.LoaderCodeHeapLayout),
             [DataType.HostCodeHeap] = TargetTestHelpers.CreateTypeInfo(emBuilder.HostCodeHeapLayout),
             [DataType.RealCodeHeader] = TargetTestHelpers.CreateTypeInfo(emBuilder.RealCodeHeaderLayout),
+            [DataType.InterpreterRealCodeHeader] = TargetTestHelpers.CreateTypeInfo(emBuilder.InterpreterRealCodeHeaderLayout),
             [DataType.ReadyToRunInfo] = TargetTestHelpers.CreateTypeInfo(emBuilder.ReadyToRunInfoLayout),
             [DataType.EEJitManager] = TargetTestHelpers.CreateTypeInfo(emBuilder.EEJitManagerLayout),
             [DataType.Module] = TargetTestHelpers.CreateTypeInfo(emBuilder.ModuleLayout),
@@ -822,5 +823,74 @@ public class ExecutionManagerTests
                 yield return new object[] { $"c{version}", arch };
             }
         }
+    }
+
+    [Theory]
+    [MemberData(nameof(StdArchAllVersions))]
+    public void GetMethodDesc_InterpreterOneMethod(string version, MockTarget.Architecture arch)
+    {
+        const ulong codeRangeStart = 0x0a0a_0000u;
+        const uint codeRangeSize = 0xc000u;
+        const uint methodSize = 0x200;
+
+        const ulong jitManagerAddress = 0x000b_ff00;
+        const ulong expectedMethodDescAddress = 0x0101_bbb0;
+
+        ulong methodStart = 0;
+
+        IExecutionManager em = CreateExecutionManagerContract(
+            version,
+            arch,
+            emBuilder =>
+            {
+                var interpCodeRange = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
+
+                methodStart = emBuilder.AddInterpretedMethod(interpCodeRange, methodSize, expectedMethodDescAddress).CodeAddress;
+
+                NibbleMapTestBuilderBase nibBuilder = emBuilder.CreateNibbleMap(codeRangeStart, codeRangeSize);
+                nibBuilder.AllocateCodeChunk(new TargetCodePointer(methodStart), methodSize);
+
+                MockCodeHeapListNode codeHeapListNode = emBuilder.AddCodeHeapListNode(0, codeRangeStart, codeRangeStart + codeRangeSize, codeRangeStart, nibBuilder.NibbleMapFragment.Address);
+                MockRangeSection rangeSection = emBuilder.AddInterpreterRangeSection(interpCodeRange, jitManagerAddress, codeHeapListNode.Address);
+                _ = emBuilder.AddRangeSectionFragment(interpCodeRange, rangeSection.Address);
+            });
+
+        var eeInfo = em.GetCodeBlockHandle(new TargetCodePointer(methodStart));
+        Assert.NotNull(eeInfo);
+        TargetPointer actualMethodDesc = em.GetMethodDesc(eeInfo.Value);
+        Assert.Equal(new TargetPointer(expectedMethodDescAddress), actualMethodDesc);
+        Assert.Equal(CodeKind.Interpreter, em.GetCodeKind(new TargetCodePointer(methodStart)));
+
+        eeInfo = em.GetCodeBlockHandle(new TargetCodePointer(methodStart + methodSize / 2));
+        Assert.NotNull(eeInfo);
+        actualMethodDesc = em.GetMethodDesc(eeInfo.Value);
+        Assert.Equal(new TargetPointer(expectedMethodDescAddress), actualMethodDesc);
+    }
+
+    [Theory]
+    [MemberData(nameof(StdArchAllVersions))]
+    public void GetCodeBlockHandle_InterpreterPrecode_ReturnsNull(string version, MockTarget.Architecture arch)
+    {
+        const ulong precodeRangeStart = 0x0b0b_0000u;
+        const uint precodeRangeSize = 0x1000u;
+        const ulong jitManagerAddress = 0x000b_ff00;
+        const int stubCodeBlockKindPrecode = 4; // STUB_CODE_BLOCK_STUBPRECODE
+
+        IExecutionManager em = CreateExecutionManagerContract(
+            version,
+            arch,
+            emBuilder =>
+            {
+                var precodeRange = emBuilder.AllocateJittedCodeRange(precodeRangeStart, precodeRangeSize);
+                MockRangeSection precodeRangeSection = emBuilder.AddRangeListRangeSection(precodeRange, jitManagerAddress, stubCodeBlockKindPrecode);
+                _ = emBuilder.AddRangeSectionFragment(precodeRange, precodeRangeSection.Address);
+            });
+
+        // GetCodeBlockHandle should return null for a precode address.
+        // Callers are responsible for resolving interpreter precodes via
+        // PrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent before calling GetCodeBlockHandle.
+        TargetCodePointer precodeAddress = new(precodeRangeStart + 0x100);
+        var eeInfo = em.GetCodeBlockHandle(precodeAddress);
+        Assert.Null(eeInfo);
     }
 }
