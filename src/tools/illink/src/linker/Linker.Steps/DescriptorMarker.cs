@@ -184,6 +184,7 @@ namespace Mono.Linker.Steps
             if (!_preservedMembers.Add(field))
                 LogDuplicatePreserve(field.FullName, nav);
 
+            _context.Annotations.MarkPendingReflectionVisibleField(field);
             _context.Annotations.Mark(field, new DependencyInfo(DependencyKind.XmlDescriptor, _xmlDocumentLocation), GetMessageOriginForPosition(nav));
         }
 
@@ -195,18 +196,17 @@ namespace Mono.Linker.Steps
             _context.Annotations.MarkIndirectlyCalledMethod(method);
             _context.Annotations.SetAction(method, MethodAction.Parse);
 
-            // A descriptor-preserved method is reflection-visible, which means its declaring type
-            // is also accessible (e.g., via MethodBase.GetCurrentMethod().DeclaringType) and could
-            // be used as a generic argument in constrained calls. Mark the declaring type as relevant
-            // to variant casting so its static abstract interface implementations are preserved.
-            _context.Annotations.MarkRelevantToVariantCasting(type);
-
             if (customData is bool required && !required)
             {
                 _context.Annotations.AddPreservedMethod(type, method);
             }
             else
             {
+                // Required descriptor-preserved methods are reflection-visible. Defer full
+                // treatment to MarkStep via MarkMethodVisibleToReflection (which also marks
+                // the declaring type as reflection-visible, preserving its static abstract
+                // interface implementations, implicit fields for explicit layout, etc.).
+                _context.Annotations.MarkPendingReflectionVisibleMethod(method);
                 _context.Annotations.Mark(method, new DependencyInfo(DependencyKind.XmlDescriptor, _xmlDocumentLocation), GetMessageOriginForPosition(nav));
             }
         }

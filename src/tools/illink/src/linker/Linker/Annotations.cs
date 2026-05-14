@@ -71,6 +71,8 @@ namespace Mono.Linker
         protected readonly HashSet<MethodDefinition> indirectly_called = new HashSet<MethodDefinition>();
         protected readonly HashSet<TypeDefinition> types_relevant_to_variant_casting = new HashSet<TypeDefinition>();
         readonly HashSet<IMemberDefinition> reflection_used = new();
+        readonly HashSet<MethodDefinition> pending_reflection_visible_methods = new();
+        readonly HashSet<FieldDefinition> pending_reflection_visible_fields = new();
         AssemblyDefinition? entry_assembly;
 
         public AnnotationStore(LinkContext context)
@@ -241,6 +243,27 @@ namespace Mono.Linker
         public bool IsRelevantToVariantCasting(TypeDefinition type)
         {
             return types_relevant_to_variant_casting.Contains(type);
+        }
+
+        /// <summary>
+        /// Schedules a method for reflection-visible treatment by MarkStep.
+        /// Used by DescriptorMarker to defer to MarkStep which owns MarkMethodVisibleToReflection.
+        /// </summary>
+        public void MarkPendingReflectionVisibleMethod(MethodDefinition method) => pending_reflection_visible_methods.Add(method);
+        public void MarkPendingReflectionVisibleField(FieldDefinition field) => pending_reflection_visible_fields.Add(field);
+
+        public MethodDefinition[] GetPendingReflectionVisibleMethods()
+        {
+            var result = pending_reflection_visible_methods.ToArray();
+            pending_reflection_visible_methods.Clear();
+            return result;
+        }
+
+        public FieldDefinition[] GetPendingReflectionVisibleFields()
+        {
+            var result = pending_reflection_visible_fields.ToArray();
+            pending_reflection_visible_fields.Clear();
+            return result;
         }
 
         public bool SetProcessed(IMetadataTokenProvider provider)

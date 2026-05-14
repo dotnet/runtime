@@ -502,6 +502,28 @@ namespace Mono.Linker.Steps
                 ApplyPreserveInfo(type);
             }
 
+            foreach (var method in Annotations.GetPendingReflectionVisibleMethods())
+            {
+                marked = true;
+                var origin = new MessageOrigin(method);
+                var reason = new DependencyInfo(DependencyKind.XmlDescriptor, method);
+                MarkMethodVisibleToReflection(method, reason, origin);
+                // A descriptor-preserved method's DeclaringType is accessible without
+                // warnings (e.g., via MethodBase.GetCurrentMethod().DeclaringType) and could
+                // be used as a generic argument in constrained calls. Mark the declaring type
+                // as reflection-visible so its static abstract interface implementations,
+                // implicit fields for explicit layout, etc. are preserved.
+                MarkTypeVisibleToReflection(method.DeclaringType, new DependencyInfo(DependencyKind.DeclaringType, method), origin);
+            }
+
+            foreach (var field in Annotations.GetPendingReflectionVisibleFields())
+            {
+                marked = true;
+                var origin = new MessageOrigin(field);
+                MarkFieldVisibleToReflection(field, new DependencyInfo(DependencyKind.XmlDescriptor, field), origin);
+                MarkTypeVisibleToReflection(field.DeclaringType, new DependencyInfo(DependencyKind.DeclaringType, field), origin);
+            }
+
             return marked;
         }
 
