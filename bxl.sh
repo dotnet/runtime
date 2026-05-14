@@ -23,13 +23,18 @@ if [[ -z "${BUILDXL_BIN:-}" ]]; then
             MINGW*|MSYS*|CYGWIN*) arch_dir="win-x64" ;;
             *) echo "ERROR: unsupported host OS: $(uname -s)" >&2; exit 1 ;;
         esac
+        rid_package="agtest.bxl.tool.$arch_dir"
 
-        while IFS= read -r candidate; do
-            if [[ -x "$candidate/bxl" && -d "$candidate/Sdk/Sdk.Transformers" ]]; then
-                BUILDXL_BIN="$candidate"
-                break
-            fi
-        done < <(find "$HOME/.dotnet/tools/.store" -type d -path "*/agtest.bxl.tool/*/tools/net*/$arch_dir" 2>/dev/null | sort -r)
+        for store_root in "$bxl_dir/.store" "$HOME/.dotnet/tools/.store"; do
+            [[ -d "$store_root" ]] || continue
+
+            while IFS= read -r candidate; do
+                if [[ -x "$candidate/bxl" && -d "$candidate/Sdk/Sdk.Transformers" ]]; then
+                    BUILDXL_BIN="$candidate"
+                    break 2
+                fi
+            done < <(find "$store_root" -type d -path "*/agtest.bxl.tool/*/$rid_package/*/tools/net*/$arch_dir" 2>/dev/null | sort -r)
+        done
     fi
 fi
 
@@ -39,18 +44,6 @@ if [[ -z "${BUILDXL_BIN:-}" ]]; then
 fi
 
 export BUILDXL_BIN
-
-if [[ -z "${DOTNET_ROOT:-}" ]]; then
-    dotnet_path="$(realpath "$(command -v dotnet)")"
-    DOTNET_ROOT="$(dirname "$dotnet_path")"
-fi
-
-if [[ -z "${DOTNET_SDK_VERSION:-}" ]]; then
-    DOTNET_SDK_VERSION="$(dotnet --version)"
-fi
-
-export DOTNET_ROOT
-export DOTNET_SDK_VERSION
 
 exec "$BXL" \
     /c:config.dsc \

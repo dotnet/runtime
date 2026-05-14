@@ -11,6 +11,7 @@ on:
       - 'bxl.sh'
       - 'config.dsc'
       - 'defs/**'
+      - 'src/tests/Common/**'
       - 'src/tests/coreclr_test/**'
       - 'src/tests/baseservices/TieredCompilation/**'
   push:
@@ -20,17 +21,18 @@ on:
       - 'bxl.sh'
       - 'config.dsc'
       - 'defs/**'
+      - 'src/tests/Common/**'
       - 'src/tests/coreclr_test/**'
       - 'src/tests/baseservices/TieredCompilation/**'
   workflow_dispatch:
 
 jobs:
   buildxl-coreclr-tests:
+    if: github.repository == 'agocke/rbz'
     runs-on: ubuntu-latest
 
     env:
-      BXL_TOOL_VERSION: '0.2.0-ci.5.b2e4b6e'
-      BXL_CACHE_DIR: ${{ runner.temp }}/bxl-cache
+      BXL_TOOL_VERSION: '0.2.0-ci.6.496a287'
 
     steps:
       - name: Checkout runtime
@@ -39,7 +41,7 @@ jobs:
       - name: Install .NET SDK
         uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: '11.0.100-preview.3.26207.106'
+          dotnet-version: '11.0.100-preview.5.26227.104'
 
       - name: Install BuildXL bootstrap tool
         shell: bash
@@ -52,14 +54,58 @@ jobs:
 
           echo "$RUNNER_TEMP/bxl-tools" >> "$GITHUB_PATH"
 
-      - name: Run BuildXL CoreCLR tests
+      - name: Install native build dependencies
         shell: bash
         run: |
           set -euo pipefail
-          chmod +x ./bxl.sh
-          ./bxl.sh
+          sudo ./eng/common/native/install-dependencies.sh
 
-      - name: Upload BuildXL logs
+      - name: Build clr+libs prerequisites
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build.sh clr+libs -c Release
+
+      - name: Show BuildXL test set
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          summary_file="$(mktemp)"
+          {
+            echo "## BuildXL TieredCompilation test set"
+            echo
+            echo "These are the test assemblies this workflow currently compiles:"
+            echo
+            awk -F'"' '
+              /name:/ { name=$2 }
+              /srcs:/ { printf "- `%s` from `%s`\n", name, $2 }
+            ' src/tests/baseservices/TieredCompilation/BUILD.dsc
+          } | tee "$summary_file"
+
+          cat "$summary_file" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Build
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          export BXL_CACHE_DIR="$RUNNER_TEMP/bxl-cache"
+          chmod +x ./bxl.sh
+          ./bxl.sh "/f:output='*.build.stamp'"
+
+      - name: Test
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          export BXL_CACHE_DIR="$RUNNER_TEMP/bxl-cache"
+          chmod +x ./bxl.sh
+
+          src/tests/build.sh -GenerateLayoutOnly x64 Release
+          ./bxl.sh "/f:output='*.test.stamp'"
+
+      - name: Upload workflow logs
         if: failure()
         uses: actions/upload-artifact@v7
         with:
@@ -67,4 +113,7 @@ jobs:
           path: |
             ${{ github.workspace }}/Out/Logs/**
             ${{ github.workspace }}/Out/Objects/**/*_run/*.log
+            ${{ github.workspace }}/artifacts/log/**
+            ${{ github.workspace }}/artifacts/tests/coreclr/**/*.log
+            ${{ github.workspace }}/artifacts/tests/coreclr/**/*.xml
           if-no-files-found: ignore

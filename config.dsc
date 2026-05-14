@@ -35,6 +35,9 @@ config({
                 // Repo-specific definitions
                 f`defs/module.config.dsc`,
 
+                // Common test support libraries
+                f`src/tests/Common/module.config.dsc`,
+
                 // Repo-specific test macro (like src/tests/live_test.bzl)
                 f`src/tests/coreclr_test/module.config.dsc`,
 
@@ -46,7 +49,7 @@ config({
             kind: "Download",
             downloads: [{
                 moduleName: "DotNetSdk",
-                url: "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.201/dotnet-sdk-10.0.201-linux-x64.tar.gz",
+                url: "https://ci.dot.net/public/Sdk/11.0.100-preview.5.26227.104/dotnet-sdk-11.0.100-preview.5.26227.104-linux-x64.tar.gz",
                 archiveType: "tgz",
             }],
         },

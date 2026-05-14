@@ -74,21 +74,24 @@ export const XUNIT_DEPS: File[] = [
     importFrom("xunit.abstractions").Contents.all.getFile(r`lib/netstandard1.0/xunit.abstractions.dll`)
 ];
 
-// ============================================================================
-//  TEST_LIBRARY
-// ============================================================================
-
-@@public
-export const TEST_LIBRARY: Rules.Label =
-    "//artifacts/tests/coreclr/linux.x64.Release/Common/CoreCLRTestLibrary/CoreCLRTestLibrary:TestLibrary.dll";
-
-// ============================================================================
-//  XUNIT_WRAPPER_GENERATOR — source generator that creates test Main()
+//  XUNIT_RUNTIME_DEPS — runtime files staged beside executable tests
 // ============================================================================
 
 @@public
-export const XUNIT_WRAPPER_GENERATOR: File =
-    f`${Context.getMount("SourceRoot").path}/artifacts/tests/coreclr/linux.x64.Release/Common/XUnitWrapperGenerator/XUnitWrapperGenerator/XUnitWrapperGenerator.dll`;
+export const XUNIT_RUNTIME_DEPS: File[] = [
+    ...XUNIT_DEPS
+];
+
+//  CORE_ROOT paths used by BuildXL-backed CoreCLR test execution
+// ============================================================================
+
+@@public
+export const CORE_ROOT_DIR: Directory =
+    d`${Context.getMount("SourceRoot").path}/artifacts/tests/coreclr/linux.x64.Release/Tests/Core_Root`;
+
+@@public
+export const CORE_ROOT_CORERUN: File =
+    f`${CORE_ROOT_DIR}/corerun`;
 
 // ============================================================================
 //  CORECLR_TEST_COMMON_DEPS — label-based deps baked into coreclr_test
@@ -97,7 +100,6 @@ export const XUNIT_WRAPPER_GENERATOR: File =
 @@public
 export const CORECLR_TEST_COMMON_DEPS: Rules.Label[] = [
     ...CORE_ROOT_REFPACK_DEPS,
-    TEST_LIBRARY
 ];
 
 // ============================================================================
