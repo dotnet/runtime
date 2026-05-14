@@ -15012,6 +15012,31 @@ GenTree* Compiler::gtFoldExprUnary(GenTreeUnOp* tree)
     {
         return gtFoldExprConst(tree);
     }
+
+    genTreeOps oper = tree->OperGet();
+
+    switch (oper)
+    {
+        case GT_NOT:
+        case GT_NEG:
+        {
+            if (op1->OperIs(oper))
+            {
+                JITDUMP("Remove double negation/not\n")
+                GenTree* op1op1 = op1->gtGetOp1();
+                DEBUG_DESTROY_NODE(tree);
+                DEBUG_DESTROY_NODE(op1);
+                return op1op1;
+            }
+            break;
+        }
+
+        default:
+        {
+            break;
+        }
+    }
+
     return tree;
 }
 
@@ -15067,6 +15092,7 @@ GenTree* Compiler::gtFoldExprBinary(GenTreeOp* tree)
         // comparisons of two local variables can sometimes be folded
         return gtFoldExprCompare(tree);
     }
+
     return tree;
 }
 
