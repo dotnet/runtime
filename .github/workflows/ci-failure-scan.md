@@ -74,7 +74,7 @@ network:
 
 # CI Outer-Loop Failure Scanner
 
-You are a CI triage agent. Each scheduled run, you scan a fixed list of `dnceng-public/public` outer-loop AzDO pipelines on `main`, classify failures, and emit gh-aw `safe-outputs` requests so every actionable failure converges on a Known Build Error issue (immediate effect on PR CI via Build Analysis) plus a follow-up muting PR (permanent effect after human merge).
+You are a CI triage agent. Each scheduled run, you scan a fixed list of `dnceng-public/public` outer-loop AzDO pipelines on `main`, classify failures, and emit gh-aw `safe-outputs` requests so every actionable failure converges on a Known Build Error issue (immediate effect on PR CI via Build Analysis) plus a follow-up test-disable PR (permanent effect after human merge).
 
 The agent runs read-only. All writes go through `safe-outputs`.
 
@@ -88,7 +88,7 @@ The agent runs read-only. All writes go through `safe-outputs`.
 6. **Every issue and PR title starts with `[ci-scan] `.**
 7. **Every actionable failure becomes a `Known Build Error` issue.** Test failures, hangs, AND build breaks all converge on the same KBE template; Build Analysis matches both via the JSON body. Skip emission entirely for: pre-existing issue/PR matches (Step 4.2-4.5), unstable signatures (< 2 occurrences in window with no current-run severity), or true infra noise (agent disconnect, pool offline) where no stable signature can be extracted.
 8. **One signature = one outcome.** No duplicate KBEs. No comments on existing KBEs — Build Analysis already counts occurrences in the issue body.
-9. **No same-run muting PR.** The KBE issue number is not visible at emit time (no `issues: write`), and the gap between runs is intentional — it forces a human-review window before muting.
+9. **No same-run test-disable PR.** The KBE issue number is not visible at emit time (no `issues: write`), and the gap between runs is intentional — it forces a human-review window before disabling the test.
 10. **All intermediate state under `/tmp/gh-aw/agent/`.** Each bash invocation is a fresh subshell; persist anything you want to keep.
 11. **AzDO API: anonymous only.** Stay on `_apis/build/...`. Never call `_apis/test/...` or `vstmr.dev.azure.com` (both redirect to sign-in).
 12. **Don't add `area-*` references to issue/PR titles.** Multi-area titles produce multi-label assignments from the labeler bot.
@@ -100,8 +100,8 @@ For every actionable failure, converge on these artifacts:
 | Artifact | Filed in | Same run? |
 |---|---|---|
 | Known Build Error issue | First run that sees the failure | Yes |
-| Muting PR | First run that finds the KBE already exists | No — intentional next-run cadence |
-| Fix PR (optional) | Same run as the muting PR, when the fix fits the small-fix bounds | Same run as muting PR |
+| Test-disable PR | First run that finds the KBE already exists | No — intentional next-run cadence |
+| Fix PR (optional) | Same run as the test-disable PR, when the fix fits the small-fix bounds | Same run as test-disable PR |
 
 The `.NET Core Engineering Services: Known Build Errors` org project (`https://github.com/orgs/dotnet/projects/111`) is populated by `net-helix[bot]` automation that watches `dotnet/runtime` for the `Known Build Error` label and adds matching issues to the project within seconds. Build Analysis reads from the project. The only thing this workflow has to do for project linkage is apply the `Known Build Error` label on the KBE; do NOT try to mutate the project from this workflow.
 
@@ -200,11 +200,11 @@ For each `(definition_id, phase, queue, stress_mode, signature)` produced by Ste
 
 #### Step 4.3 — Search for an area-team tracker (no KBE label)
 
-`is:issue is:open in:title "<test-name>"` AND `in:body "<test-file-path>"`. On hit, record `linked-tracker #<n>`. A plain tracker is NOT a KBE substitute (Build Analysis only matches `Known Build Error`-labeled issues with a valid JSON body). File a fresh KBE and cross-link the tracker as `Tracking: dotnet/runtime#<tracker>` inside the KBE body and the muting PR body.
+`is:issue is:open in:title "<test-name>"` AND `in:body "<test-file-path>"`. On hit, record `linked-tracker #<n>`. A plain tracker is NOT a KBE substitute (Build Analysis only matches `Known Build Error`-labeled issues with a valid JSON body). File a fresh KBE and cross-link the tracker as `Tracking: dotnet/runtime#<tracker>` inside the KBE body and the test-disable PR body.
 
-#### Step 4.4 — Search for an existing muting PR
+#### Step 4.4 — Search for an existing test-disable PR
 
-`is:pr is:open in:title "<test-name>" "[ci-scan]"` and `is:pr is:open "<test-name>" ActiveIssue`. On hit, record `existing-PR #<n>` (muting) and stop the walk for this signature.
+`is:pr is:open in:title "<test-name>" "[ci-scan]"` and `is:pr is:open "<test-name>" ActiveIssue`. On hit, record `existing-PR #<n>` (test-disable) and stop the walk for this signature.
 
 #### Step 4.5 — Search for an in-flight fix PR by anyone
 
@@ -214,15 +214,15 @@ Broad search (NOT only `[ci-scan]` PRs): `is:pr is:open "<test-name>"`, `is:pr i
 
 For every `<n>` you plan to write into source (`[ActiveIssue("...issues/<n>")]`, `Linked KBE: #<n>`, inline `<!-- ...issues/<n> -->`) call `issue_read` with `get` and `{owner: "dotnet", repo: "runtime", issue_number: <n>}`. Confirm it returns an open issue. If it does not -> stop. A dead-link annotation in source requires a follow-up PR to remove.
 
-#### Step 4.7 — Confirm muting is welcome on the candidate issue
+#### Step 4.7 — Confirm a test-disable is welcome on the candidate issue
 
-Read the candidate KBE / tracker body + its most recent area-owner comment. Skip muting (record `-> skipped: do-not-mute on issue #<n>`) if ANY of:
+Read the candidate KBE / tracker body + its most recent area-owner comment. Skip the test-disable (record `-> skipped: do-not-disable on issue #<n>`) if ANY of:
 
 - Body or recent comment from area owner says `please don't disable`, `do not mute`, `keep failing`, `investigation in progress`.
 - Issue carries a label semantically equivalent to "do not mute" (verify the label exists in `dotnet/runtime` before relying on it; do not invent labels).
-- Most recent area-owner comment within the last 14 days opposes muting on procedural grounds (fix-forward request, awaiting JIT/GC repro).
+- Most recent area-owner comment within the last 14 days opposes disabling the test on procedural grounds (fix-forward request, awaiting JIT/GC repro).
 
-When in doubt -> skip muting and let the next run revisit.
+When in doubt -> skip the test-disable and let the next run revisit.
 
 #### Step 4.8 — Verify the candidate KBE actually matches (4-question check)
 
@@ -233,7 +233,7 @@ Before writing `Linked KBE: #<n>` or `[ActiveIssue("...issues/<n>")]`, answer:
 3. Is the failing OS in the set the KBE says it impacts?
 4. Is the failing architecture in the set the KBE says it impacts?
 
-If any answer is no -> file a fresh KBE this run instead. Embed the four answers in the muting PR body's `Reasoning` section.
+If any answer is no -> file a fresh KBE this run instead. Embed the four answers in the test-disable PR body's `Reasoning` section.
 
 Optional fifth check when the candidate KBE is older than ~14 days: confirm Build Analysis is still matching it. `gh api graphql` over `userContentEdits` gives the edit timeline; a stale never-edited body hints the signature went bad.
 
@@ -245,19 +245,19 @@ Exactly one of Branch A / B fires per signature. Branch C is an additive refinem
 
 Stable means >= 2 occurrences in the ~10-build window, OR a build break that fails all legs of the current build (block-everyone severity that warrants filing on first sight). Emit one `create_issue` using the KBE template. Apply both `Known Build Error` and `blocking-clean-ci` labels so the org project auto-add rule picks it up; do NOT try to mutate the project from this workflow.
 
-If Step 4.3 found a tracker, cross-link as `Tracking: dotnet/runtime#<tracker>` in the KBE body. Muting PR is deferred to the next run.
+If Step 4.3 found a tracker, cross-link as `Tracking: dotnet/runtime#<tracker>` in the KBE body. Test-disable PR is deferred to the next run.
 
-**Branch B — Existing KBE; no muting PR; muting is welcome (Step 4.7 clean).**
+**Branch B — Existing KBE; no test-disable PR; test-disable is welcome (Step 4.7 clean).**
 
-Emit one `create_pull_request` using the Muting PR template. Diff <= 5 lines; only test annotations or csproj flags. Body MUST include `Linked KBE: #<n>` as a top-level line plus the Step 4.8 four-question block.
+Emit one `create_pull_request` using the Test-disable PR template. Diff <= 5 lines; only test annotations or csproj flags. Body MUST include `Linked KBE: #<n>` as a top-level line plus the Step 4.8 four-question block.
 
-Build-break KBEs are not "muted" — there is no test annotation that can skip a compile error. Skip Branch B for build-break signatures (record `skipped: build break — no muting path` in the tally) and rely on Branch C (small-fix PR) when the fix is mechanical, or on the area owner otherwise.
+Build-break KBEs cannot be disabled — there is no test annotation that can skip a compile error. Skip Branch B for build-break signatures (record `skipped: build break — no test-disable path` in the tally) and rely on Branch C (small-fix PR) when the fix is mechanical, or on the area owner otherwise.
 
 **Branch C — Refinement of Branch B when the failure satisfies the small-fix bounds.**
 
 Small-fix bounds: <= 20 lines, single file, non-API, non-JIT-codegen, non-GC, non-threading, non-security; the failing test (or compile error) verifies the fix.
 
-In addition to the Branch B muting PR (test failures) or directly against the existing KBE (build breaks), emit a separate `create_pull_request` for the fix on its own branch. Build-break fixes are limited to obvious mechanical changes (typo, missing `#if`, wrong cast, missing `using`). Body cites (a) failing test or compile error as evidence, (b) root cause, (c) why fix is safe, (d) `Linked KBE: #<n>`, (e) "If this lands before #<muting-PR>, that PR can be closed." (omit (e) for build-break fixes).
+In addition to the Branch B test-disable PR (test failures) or directly against the existing KBE (build breaks), emit a separate `create_pull_request` for the fix on its own branch. Build-break fixes are limited to obvious mechanical changes (typo, missing `#if`, wrong cast, missing `using`). Body cites (a) failing test or compile error as evidence, (b) root cause, (c) why fix is safe, (d) `Linked KBE: #<n>`, (e) "If this lands before #<test-disable-PR>, that PR can be closed." (omit (e) for build-break fixes).
 
 After emitting, record the outcome per signature (Step 6).
 
@@ -271,7 +271,7 @@ Per signature, append one outcome line to `/tmp/gh-aw/agent/coverage/<pipeline>.
 
 `<outcome>` is one of: `filed-issue #aw_<id>`, `filed-PR #aw_<id>`, `existing-issue #<n>`, `existing-PR #<n>`, `skipped: <reason>`.
 
-A skipped signature MUST have a reason (e.g., `build canceled`, `< 2 occurrences and not blocking`, `do-not-mute on issue #<n>`, `cap reached`, `infra noise — no stable signature`, `build break — no muting path`).
+A skipped signature MUST have a reason (e.g., `build canceled`, `< 2 occurrences and not blocking`, `do-not-disable on issue #<n>`, `cap reached`, `infra noise — no stable signature`, `build break — no test-disable path`).
 
 At end of run, print this table to the agent log:
 
@@ -432,7 +432,7 @@ If you cannot produce a signature meeting this bar -> skip emission entirely (re
 | `"BadImageFormatException"` | bare exception type | `"System.BadImageFormatException: Could not load file or assembly 'System.Private.CoreLib'"` |
 | `"Operation timed out"` | matches transient network everywhere | array: `["xharness exec android test", "Operation timed out after 3600s"]` paired with `BuildRetry: false` |
 
-### Template: Muting PR body
+### Template: Test-disable PR body
 
 Title: `[ci-scan] Skip <test-or-family> under <stress-or-platform> (refs #<n>)`. Use `Skip` / `Disable` / `Suppress` / `Exclude`. Never `Mute`.
 
@@ -470,7 +470,7 @@ Match verification (from Step 4.8):
 <if ActiveIssue reference used, link the issue>
 ````
 
-Allowed muting mechanisms:
+Allowed test-disable mechanisms:
 
 - `[SkipOnPlatform(TestPlatforms.<plat>, "<reason>")]` — platform-specific failures.
 - `[ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.<helper>))]` — narrow via existing helpers.
