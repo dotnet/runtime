@@ -1882,21 +1882,6 @@ static LPCWSTR GetSignalName(int signal)
     }
 }
 
-const char* PROCGetSignalNameAscii(int signal)
-{
-    switch (signal)
-    {
-        case SIGSEGV: return "SIGSEGV";
-        case SIGBUS:  return "SIGBUS";
-        case SIGFPE:  return "SIGFPE";
-        case SIGILL:  return "SIGILL";
-        case SIGABRT: return "SIGABRT";
-        case SIGTRAP: return "SIGTRAP";
-        case SIGTERM: return "SIGTERM";
-        default:      return "Unknown signal";
-    }
-}
-
 /*++
 Function:
   PROCLogManagedCallstackForSignal

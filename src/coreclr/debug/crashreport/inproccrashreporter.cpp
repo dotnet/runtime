@@ -26,7 +26,6 @@
 #include <sys/sysctl.h>
 #endif
 
-extern "C" const char* PROCGetSignalNameAscii(int signal);
 
 static const char CRASHREPORT_PROTOCOL_VERSION[] = "1.0.0";
 static constexpr uint32_t CRASHREPORT_COR_E_STACKOVERFLOW = 0x800703E9;
@@ -97,6 +96,22 @@ static char sccsid[] = "@(#)Version N/A";
 
 static char s_versionScratch[sizeof(sccsid)];
 static char s_jsonFrameCallbackMethodNameScratch[CRASHREPORT_STRING_BUFFER_SIZE];
+
+static const char*
+GetSignalNameAscii(int signal)
+{
+    switch (signal)
+    {
+        case SIGSEGV: return "SIGSEGV";
+        case SIGBUS:  return "SIGBUS";
+        case SIGFPE:  return "SIGFPE";
+        case SIGILL:  return "SIGILL";
+        case SIGABRT: return "SIGABRT";
+        case SIGTRAP: return "SIGTRAP";
+        case SIGTERM: return "SIGTERM";
+        default:      return "Unknown signal";
+    }
+}
 
 static void CopyStringToBuffer(char* buffer, size_t bufferSize, const char* value)
 {
@@ -1918,7 +1933,7 @@ InProcCrashReporter::EmitConsoleHeader(int signal)
     s_consoleWriter.AppendStr("signal ");
     s_consoleWriter.AppendSignedDecimal(signal);
     s_consoleWriter.AppendStr(" (");
-    s_consoleWriter.AppendStr(PROCGetSignalNameAscii(signal));
+    s_consoleWriter.AppendStr(GetSignalNameAscii(signal));
     s_consoleWriter.AppendChar(')');
     s_consoleWriter.EndLine();
 }
