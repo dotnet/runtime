@@ -21,6 +21,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
     private readonly ExecutionManagerHelpers.RangeSectionMap _rangeSectionMapLookup;
     private readonly EEJitManager _eeJitManager;
     private readonly ReadyToRunJitManager _r2rJitManager;
+    private readonly InterpreterJitManager _interpreterJitManager;
 
     public ExecutionManagerCore(Target target, Data.RangeSectionMap topRangeSectionMap)
     {
@@ -30,6 +31,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         INibbleMap nibbleMap = T.Create(_target);
         _eeJitManager = new EEJitManager(_target, nibbleMap);
         _r2rJitManager = new ReadyToRunJitManager(_target);
+        _interpreterJitManager = new InterpreterJitManager(_target, nibbleMap);
     }
 
     public void Flush()
@@ -60,6 +62,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
     {
         CodeHeap = 0x02,
         RangeList = 0x04,
+        Interpreter = 0x08,
     }
 
     // Mirrors the native CodeHeap::CodeHeapType enum in codeman.h.
@@ -133,6 +136,9 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         private bool HasFlags(RangeSectionFlags mask) => (Data!.Flags & (int)mask) != 0;
         internal bool IsRangeList => HasFlags(RangeSectionFlags.RangeList);
         internal bool IsCodeHeap => HasFlags(RangeSectionFlags.CodeHeap);
+        internal bool IsInterpreter => HasFlags(RangeSectionFlags.Interpreter);
+
+        internal bool HasR2RModule => Data!.R2RModule != TargetPointer.Null;
 
         internal static bool IsStubCodeBlock(Target target, TargetPointer codeHeaderIndirect)
         {
@@ -170,7 +176,11 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
 
     private JitManager? GetJitManager(RangeSection rangeSection)
     {
-        if (rangeSection.Data!.R2RModule != TargetPointer.Null)
+        if (rangeSection.IsInterpreter)
+        {
+            return _interpreterJitManager;
+        }
+        else if (rangeSection.Data!.R2RModule != TargetPointer.Null)
         {
             return _r2rJitManager;
         }
@@ -308,7 +318,12 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
 
     bool IExecutionManager.IsFunclet(CodeBlockHandle codeInfoHandle)
     {
-        return ((IExecutionManager)this).GetStartAddress(codeInfoHandle) !=
+        // Interpreter code has no native unwind info and therefore no funclets.
+        TargetCodePointer startAddress = ((IExecutionManager)this).GetStartAddress(codeInfoHandle);
+        if (((IExecutionManager)this).GetCodeKind(startAddress) == CodeKind.Interpreter)
+            return false;
+
+        return startAddress !=
                ((IExecutionManager)this).GetFuncletStartAddress(codeInfoHandle);
     }
 
