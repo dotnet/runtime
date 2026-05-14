@@ -5,6 +5,7 @@ include(configure.cmake)
 
 # CMake does not recommend using globbing since it messes with the freshness checks
 set(SOURCES
+    ${CMAKE_CURRENT_LIST_DIR}/fx_ver.c
     ${CMAKE_CURRENT_LIST_DIR}/trace.c
     ${CMAKE_CURRENT_LIST_DIR}/utils.c
     ${CMAKE_CURRENT_LIST_DIR}/utils.cpp
@@ -12,11 +13,11 @@ set(SOURCES
 )
 
 set(HEADERS
+    ${CMAKE_CURRENT_LIST_DIR}/fx_ver.h
     ${CMAKE_CURRENT_LIST_DIR}/trace.h
     ${CMAKE_CURRENT_LIST_DIR}/utils.h
     ${CMAKE_CURRENT_LIST_DIR}/pal.h
     ${CMAKE_CURRENT_LIST_DIR}/../error_codes.h
-    ${CMAKE_CURRENT_LIST_DIR}/../fxr/fx_ver.h
 )
 
 if(CLR_CMAKE_TARGET_WIN32)
