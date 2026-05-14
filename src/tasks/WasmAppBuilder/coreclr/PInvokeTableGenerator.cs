@@ -450,9 +450,9 @@ internal sealed class PInvokeTableGenerator
                 $$"""
 
 
-                extern "C" {{MapType(cb.ReturnType)}} {{cb.EntryPoint}}({{parametersDeclaration}})
+                extern "C" void {{cb.EntryPoint}}({{parametersDeclaration}})
                 {
-                    {{(cb.IsVoid ? "" : "return ")}}Call_{{cb.EntrySymbol}}({{cb.Parameters.Join(", ", (info, i) => $"arg{i}")}});
+                    Call_{{cb.EntrySymbol}}({{cb.Parameters.Join(", ", (info, i) => $"arg{i}")}});
                 }
                 """ : string.Empty;
             w.Write(
