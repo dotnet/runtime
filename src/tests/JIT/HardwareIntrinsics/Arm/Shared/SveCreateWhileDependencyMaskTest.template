@@ -17,7 +17,7 @@ namespace {Namespace}
         [Fact]
         public static void {TestName}()
         {
-            var test = new CreateWhileRWMaskTest__{TestName}();
+            var test = new CreateWhileDependencyMaskTest__{TestName}();
 
             if (test.IsSupported)
             {
@@ -43,7 +43,7 @@ namespace {Namespace}
         }
     }
 
-    public sealed unsafe class CreateWhileRWMaskTest__{TestName}
+    public sealed unsafe class CreateWhileDependencyMaskTest__{TestName}
     {
         public bool IsSupported => {Isa}.IsSupported;
 
