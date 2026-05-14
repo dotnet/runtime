@@ -195,6 +195,12 @@ namespace Mono.Linker.Steps
             _context.Annotations.MarkIndirectlyCalledMethod(method);
             _context.Annotations.SetAction(method, MethodAction.Parse);
 
+            // A descriptor-preserved method is reflection-visible, which means its declaring type
+            // is also accessible (e.g., via MethodBase.GetCurrentMethod().DeclaringType) and could
+            // be used as a generic argument in constrained calls. Mark the declaring type as relevant
+            // to variant casting so its static abstract interface implementations are preserved.
+            _context.Annotations.MarkRelevantToVariantCasting(type);
+
             if (customData is bool required && !required)
             {
                 _context.Annotations.AddPreservedMethod(type, method);
