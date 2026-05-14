@@ -2139,18 +2139,30 @@ struct simdscalable_t
     SimdScalableKind gtSimdScalableKind;
     union
     {
-        uint8_t  gtSimdScalableIndexU8[8];
-        uint32_t gtSimdScalableIndexU32[2];
         float    gtSimdScalableIndexF32[2];
         double   gtSimdScalableIndexF64[1];
+        int8_t   gtSimdScalableIndexI8[8];
+        int16_t  gtSimdScalableIndexI16[4];
+        int32_t  gtSimdScalableIndexI32[2];
+        int64_t  gtSimdScalableIndexI64[1];
+        uint8_t  gtSimdScalableIndexU8[8];
+        uint16_t gtSimdScalableIndexU16[4];
+        uint32_t gtSimdScalableIndexU32[2];
+        uint64_t gtSimdScalableIndexU64[1];
         uint64_t gtSimdScalableIndex;
     };
     union
     {
-        uint8_t  gtSimdScalableStepU8[8];
-        uint32_t gtSimdScalableStepU32[2];
         float    gtSimdScalableStepF32[2];
         double   gtSimdScalableStepF64[1];
+        int8_t   gtSimdScalableStepI8[8];
+        int16_t  gtSimdScalableStepI16[4];
+        int32_t  gtSimdScalableStepI32[2];
+        int64_t  gtSimdScalableStepI64[1];
+        uint8_t  gtSimdScalableStepU8[8];
+        uint16_t gtSimdScalableStepU16[4];
+        uint32_t gtSimdScalableStepU32[2];
+        uint64_t gtSimdScalableStepU64[1];
         uint64_t gtSimdScalableStep;
     };
 

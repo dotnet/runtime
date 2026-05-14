@@ -24648,41 +24648,33 @@ GenTree* Compiler::gtNewSimdCreateSequenceNode(
 #if defined(TARGET_ARM64)
     if (type == TYP_SIMD)
     {
-        // Only optimize when both op1 and op2 are constant
-        if (op1->OperIsConst() && op2->OperIsConst())
+        // SVE can do this in a single instruction
+        if (varTypeIsIntegral(simdBaseType))
         {
-            GenTreeVecCon* scalableVecCon = gtNewSimdVconNode(type, simdBaseType, SimdScalableSequence, 0);
-
-            if (varTypeIsIntegral(simdBaseType))
+            // Optimize when both op1 and op2 are constant
+            if (op1->OperIsConst() && op2->OperIsConst())
             {
+                GenTreeVecCon* scalableVecCon = gtNewSimdVconNode(type, simdBaseType, SimdScalableSequence, 0);
+
                 scalableVecCon->gtSimdScalableVal.gtSimdScalableIndex =
                     static_cast<uint64_t>(op1->AsIntConCommon()->IntegralValue());
                 scalableVecCon->gtSimdScalableVal.gtSimdScalableStep =
                     static_cast<uint64_t>(op2->AsIntConCommon()->IntegralValue());
-            }
-            else if (simdBaseType == TYP_FLOAT)
-            {
-                scalableVecCon->gtSimdScalableVal.gtSimdScalableIndexF32[0] =
-                    static_cast<float>(op1->AsDblCon()->DconValue());
-                scalableVecCon->gtSimdScalableVal.gtSimdScalableStepF32[0] =
-                    static_cast<float>(op2->AsDblCon()->DconValue());
-            }
-            else if (simdBaseType == TYP_DOUBLE)
-            {
-                scalableVecCon->gtSimdScalableVal.gtSimdScalableIndexF64[0] =
-                    static_cast<double>(op1->AsDblCon()->DconValue());
-                scalableVecCon->gtSimdScalableVal.gtSimdScalableStepF64[0] =
-                    static_cast<double>(op2->AsDblCon()->DconValue());
+                return scalableVecCon;
             }
             else
             {
-                unreached();
+                return gtNewSimdHWIntrinsicNode(type, op1, op2, NI_VectorT_CreateSequence, simdBaseType, simdSize);
             }
-            return scalableVecCon;
         }
-
-        // SVE can do this in a single instruction
-        return gtNewSimdHWIntrinsicNode(type, op1, op2, NI_VectorT_CreateSequence, simdBaseType, simdSize);
+        else
+        {
+            GenTree* indices = gtNewSimdGetIndicesNode(type, simdBaseType, simdSize);
+            result           = gtNewSimdBinOpNode(GT_MUL, type, indices, op2, simdBaseType, simdSize);
+            GenTree* start   = gtNewSimdCreateBroadcastNode(type, op1, simdBaseType, simdSize);
+            result           = gtNewSimdBinOpNode(GT_ADD, type, result, start, simdBaseType, simdSize);
+            return result;
+        }
     }
 #endif // TARGET_ARM64
 
