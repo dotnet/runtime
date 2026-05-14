@@ -8003,59 +8003,6 @@ DONE_MORPHING_CHILDREN:
                     goto CM_ADD_OP;
                 }
             }
-
-            // Skip optimization if non-NEG operand is constant.
-            // Both op1 and op2 are not constant because it was already checked above.
-            if (opts.OptimizationEnabled())
-            {
-                if (!op2->OperIs(GT_NEG))
-                {
-                    break;
-                }
-
-                if (op1->OperIs(GT_NEG) && gtCanSwapOrder(op1, op2))
-                {
-                    // -a - -b = > b - a
-                    // SUB(NEG(a), NEG(b)) => SUB(b, a)
-
-                    // tree: SUB
-                    // op1: NEG
-                    // op1Child: a
-                    // op2: NEG
-                    // op2Child: b
-
-                    GenTree* op1Child   = op1->AsOp()->gtOp1; // a
-                    GenTree* op2Child   = op2->AsOp()->gtOp1; // b
-                    tree->AsOp()->gtOp1 = op2Child;
-                    tree->AsOp()->gtOp2 = op1Child;
-
-                    DEBUG_DESTROY_NODE(op1);
-                    DEBUG_DESTROY_NODE(op2);
-
-                    op1 = op2Child;
-                    op2 = op1Child;
-                }
-                else
-                {
-                    // a - -b = > a + b
-                    // SUB(a, NEG(b)) => ADD(a, b)
-
-                    // tree: SUB
-                    // op1: a
-                    // op2: NEG
-                    // op2Child: b
-
-                    GenTree* op2Child = op2->AsOp()->gtOp1; // b
-                    oper              = GT_ADD;
-                    tree->SetOper(oper, GenTree::PRESERVE_VN);
-                    tree->AsOp()->gtOp2 = op2Child;
-
-                    DEBUG_DESTROY_NODE(op2);
-
-                    op2 = op2Child;
-                }
-            }
-
             break;
 
         case GT_DIV:

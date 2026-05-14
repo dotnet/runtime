@@ -15113,10 +15113,53 @@ GenTree* Compiler::gtFoldExprBinary(GenTreeOp* tree)
             return gtFoldExprSpecial(tree);
         }
     }
-    else if (tree->OperIsCompare())
+
+    genTreeOps oper = tree->OperGet();
+
+    if (GenTree::OperIsCompare(oper))
     {
         // comparisons of two local variables can sometimes be folded
         return gtFoldExprCompare(tree);
+    }
+
+    switch (oper)
+    {
+        case GT_SUB:
+        {
+            if (tree->gtOverflow())
+            {
+                break;
+            }
+
+            if (op2->OperIs(GT_NEG))
+            {
+                if (op1->OperIs(GT_NEG))
+                {
+                    JITDUMP("Folding (-a) - (-b) => b - a\n")
+
+                    tree->gtOp1 = op2->gtGetOp1();
+                    tree->gtOp2 = op1->gtGetOp1();
+
+                    tree->ToggleReverseOp();
+                    return tree;
+                }
+                else
+                {
+                    JITDUMP("Folding a - (-b) => a + b\n")
+
+                    tree->gtOp2 = op2->gtGetOp1();
+                    tree->SetOper(GT_ADD, GenTree::PRESERVE_VN);
+
+                    return tree;
+                }
+            }
+            break;
+        }
+
+        default:
+        {
+            break;
+        }
     }
 
     return tree;

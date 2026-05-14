@@ -2265,6 +2265,11 @@ public:
         gtFlags &= ~GTF_REVERSE_OPS;
     }
 
+    void ToggleReverseOp()
+    {
+        gtFlags ^= GTF_REVERSE_OPS;
+    }
+
 #if defined(TARGET_XARCH)
     void SetDontExtend()
     {
