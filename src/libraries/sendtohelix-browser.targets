@@ -62,6 +62,8 @@
 
     <NeedsWorkload Condition="'$(Scenario)' == 'BuildWasmApps'">true</NeedsWorkload>
     <NeedsEMSDK Condition="'$(NeedsToBuildWasmAppsOnHelix)' == 'true'">true</NeedsEMSDK>
+    <!-- CoreCLR WBT re-links dotnet.native.wasm per-app via emcc, so it needs the full EMSDK payload too. -->
+    <NeedsEMSDK Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(Scenario)' == 'BuildWasmApps'">true</NeedsEMSDK>
     <NeedsEMSDKNode Condition="'$(Scenario)' == 'BuildWasmApps'">false</NeedsEMSDKNode>
     <NeedsToRunOnChrome Condition="'$(Scenario)' == 'WasmTestOnChrome' or '$(Scenario)' == 'BuildWasmApps'">true</NeedsToRunOnChrome>
     <NeedsToRunOnFirefox Condition="'$(Scenario)' == 'WasmTestOnFirefox'">true</NeedsToRunOnFirefox>
@@ -88,13 +90,22 @@
     <_HelixLocalNodePath Condition="'$(NeedsEMSDK)' == 'true' and '$(WindowsShell)' == 'true'">%HELIX_CORRELATION_PAYLOAD%\build\emsdk\node</_HelixLocalNodePath>
   </PropertyGroup>
 
-  <ItemGroup>
+  <!--
+    Stage emsdk as a Helix dependency so it ends up at $(EmSdkDirForHelixPayload) and can be
+    packaged into the correlation payload. This is needed for CoreCLR WBT agents, which do not
+    build the wasm runtime locally and therefore do not pre-populate emsdk at $(ProvisionEmscriptenDir).
+    Those agents provision emsdk in a separate pipeline step before sendtohelix runs, at which
+    point AcquireEmscriptenSdk.props/targets set $(EMSDK_PATH) during project evaluation.
+
+    This ItemGroup must be at project-evaluation scope (not inside a target), because
+    StageDependenciesForHelix guards its body with a condition over @(HelixDependenciesToStage)
+    that is evaluated before any BeforeTargets hook can populate the item.
+  -->
+  <ItemGroup Condition="('$(NeedsEMSDK)' == 'true' or '$(IncludeNodePayload)' == 'true') and '$(EMSDK_PATH)' != ''">
     <HelixDependenciesToStage
           Name="emsdk"
           Include="$(EmSdkDirForHelixPayload)"
-          Condition="'$(NeedsEMSDK)' == 'true' or '$(IncludeNodePayload)' == 'true'"
-          SourcePath="$(EMSDK_PATH)"
-    />
+          SourcePath="$(EMSDK_PATH)" />
   </ItemGroup>
 
   <ItemGroup>
@@ -133,6 +144,27 @@
   <ItemGroup Condition="'$(NeedsEMSDKNode)' == 'true' and '$(WindowsShell)' == 'true'">
     <HelixPreCommand Include="for /f %%i in ('dir $(_HelixLocalNodePath) /b') do $(EnvVarCommand) _HELIX_NODEJS_VERSION=%%i" />
     <HelixPreCommand Include="$(EnvVarCommand) PATH=$(_HelixLocalNodePath)/%_HELIX_NODEJS_VERSION%/bin%3B%PATH%" />
+  </ItemGroup>
+
+  <!--
+    CoreCLR WBT (BuildWasmApps) needs BrowserWasmApp.CoreCLR.targets and its import chain on Helix.
+    The NeedsEMSDK payload already ships BrowserBuildTargetsDir (build/wasm), WasmAppBuilderDir
+    (build/WasmAppBuilder) and EmSdk (build/emsdk); eng/native.wasm.targets + AcquireEmscriptenSdk.targets
+    are shipped as build/eng. These env vars bridge those payload locations to the MSBuild properties
+    consumed by BrowserWasmApp.CoreCLR.targets when the test-created project imports it.
+  -->
+  <ItemGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(Scenario)' == 'BuildWasmApps' and '$(WindowsShell)' != 'true'">
+    <HelixPreCommand Include="$(EnvVarCommand) REPOSITORY_ENGINEERING_DIR=$HELIX_CORRELATION_PAYLOAD/build/eng/" />
+    <HelixPreCommand Include="$(EnvVarCommand) BROWSER_BUILD_TARGETS_DIR=$HELIX_CORRELATION_PAYLOAD/build/wasm/" />
+    <HelixPreCommand Include="$(EnvVarCommand) WASM_APP_BUILDER_TASKS_ASSEMBLY_PATH=$HELIX_CORRELATION_PAYLOAD/build/WasmAppBuilder/WasmAppBuilder.dll" />
+    <HelixPreCommand Include="$(EnvVarCommand) EMSDK_PATH=$HELIX_CORRELATION_PAYLOAD/build/emsdk/" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(Scenario)' == 'BuildWasmApps' and '$(WindowsShell)' == 'true'">
+    <HelixPreCommand Include="$(EnvVarCommand) REPOSITORY_ENGINEERING_DIR=%HELIX_CORRELATION_PAYLOAD%\build\eng\" />
+    <HelixPreCommand Include="$(EnvVarCommand) BROWSER_BUILD_TARGETS_DIR=%HELIX_CORRELATION_PAYLOAD%\build\wasm\" />
+    <HelixPreCommand Include="$(EnvVarCommand) WASM_APP_BUILDER_TASKS_ASSEMBLY_PATH=%HELIX_CORRELATION_PAYLOAD%\build\WasmAppBuilder\WasmAppBuilder.dll" />
+    <HelixPreCommand Include="$(EnvVarCommand) EMSDK_PATH=%HELIX_CORRELATION_PAYLOAD%\build\emsdk\" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
@@ -214,15 +246,41 @@
     <ItemGroup Condition="'$(NeedsEMSDK)' == 'true'">
       <HelixCorrelationPayload Include="$(EmSdkDirForHelixPayload)"              Destination="build/emsdk" />
       <HelixCorrelationPayload Include="$(WasmAppBuilderDir)"                    Destination="build/WasmAppBuilder" />
-      <HelixCorrelationPayload Include="$(MonoAOTCompilerDir)"                   Destination="build/MonoAOTCompiler" />
-      <HelixCorrelationPayload Include="$(MicrosoftNetCoreAppRuntimePackDir)"    Destination="build/microsoft.netcore.app.runtime.browser-wasm" />
       <HelixCorrelationPayload Include="$(BrowserBuildTargetsDir)"               Destination="build/wasm" />
+
+      <!-- WebAssembly SDK pack is required by the `dotnet new wasmbrowser` template regardless of runtime flavor. -->
+      <HelixCorrelationPayload Include="$(MonoProjectRoot)\nuget\Microsoft.NET.Sdk.WebAssembly.Pack\build\" Destination="build/WasmSdkTargets" />
+      <HelixCorrelationPayload Include="$(ArtifactsBinDir)\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\$(RuntimeConfiguration)\" Destination="build/WasmSdkTools" />
+    </ItemGroup>
+
+    <!-- Mono-only build-tooling payloads. CoreCLR per-app relink does not use MonoAOT / Mono build tasks,
+         and acquires the runtime pack on the Helix worker via the downloaded nupkg instead of shipping
+         the raw pack layout as a correlation payload. -->
+    <ItemGroup Condition="'$(NeedsEMSDK)' == 'true' and '$(RuntimeFlavor)' != 'CoreCLR'">
+      <HelixCorrelationPayload Include="$(MicrosoftNetCoreAppRuntimePackDir)"    Destination="build/microsoft.netcore.app.runtime.browser-wasm" />
+      <HelixCorrelationPayload Include="$(MonoAOTCompilerDir)"                   Destination="build/MonoAOTCompiler" />
       <HelixCorrelationPayload Include="$(WasmBuildTargetsDir)"                  Destination="build/wasm-shared" />
       <HelixCorrelationPayload Include="$(MonoAotCrossDir)"                      Destination="build/cross" />
       <HelixCorrelationPayload Include="$(MonoTargetsTasksDir)"                  Destination="build/MonoTargetsTasks" />
+    </ItemGroup>
 
-      <HelixCorrelationPayload Include="$(MonoProjectRoot)\nuget\Microsoft.NET.Sdk.WebAssembly.Pack\build\" Destination="build/WasmSdkTargets" />
-      <HelixCorrelationPayload Include="$(ArtifactsBinDir)\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\$(RuntimeConfiguration)\" Destination="build/WasmSdkTools" />
+    <!-- CoreCLR WBT needs eng/native.wasm.targets + eng/AcquireEmscriptenSdk.targets (the import chain
+         of BrowserWasmApp.CoreCLR.targets) shipped alongside BrowserBuildTargetsDir. Stage them into
+         a directory first — HelixCorrelationPayload on individual files causes the Helix client to
+         try unzipping them as archives. -->
+    <PropertyGroup Condition="'$(NeedsEMSDK)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
+      <_CoreCLRWbtEngPayloadDir>$(ArtifactsObjDir)helix-staging\coreclr-wbt-eng\</_CoreCLRWbtEngPayloadDir>
+    </PropertyGroup>
+    <ItemGroup Condition="'$(NeedsEMSDK)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
+      <_CoreCLRWbtEngFiles Include="$(RepositoryEngineeringDir)native.wasm.targets" />
+      <_CoreCLRWbtEngFiles Include="$(RepositoryEngineeringDir)AcquireEmscriptenSdk.targets" />
+    </ItemGroup>
+    <Copy Condition="'$(NeedsEMSDK)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'"
+          SourceFiles="@(_CoreCLRWbtEngFiles)"
+          DestinationFolder="$(_CoreCLRWbtEngPayloadDir)"
+          SkipUnchangedFiles="true" />
+    <ItemGroup Condition="'$(NeedsEMSDK)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
+      <HelixCorrelationPayload Include="$(_CoreCLRWbtEngPayloadDir)" Destination="build/eng" />
     </ItemGroup>
 
     <!-- copy node separately only if EMSDK is not being included -->

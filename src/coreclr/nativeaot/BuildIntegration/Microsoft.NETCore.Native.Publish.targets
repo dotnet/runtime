@@ -8,7 +8,7 @@
     <ItemGroup>
       <_IlcManagedInputAssemblies Include="@(ResolvedFileToPublish)" Condition="'%(ResolvedFileToPublish.PostprocessAssembly)' == 'true'" />
       <IlcReference Include="@(_IlcManagedInputAssemblies)" />
-      <IlcSatelliteAssembly Include="@(_SatelliteAssembliesToPublish)" />
+      <IlcSatelliteAssembly Include="@(ResolvedFileToPublish)" Condition="'%(ResolvedFileToPublish.AssetType)' == 'resources'" />
       <IlcSatelliteAssembly Include="@(IntermediateSatelliteAssembliesWithTargetPath)" />
     </ItemGroup>
   </Target>
@@ -35,7 +35,7 @@
       <ResolvedFileToPublish Remove="@(_IlcManagedInputAssemblies)" />
       <!-- dotnet CLI produces managed debug symbols, which we will replace with native symbols instead -->
       <ResolvedFileToPublish Remove="@(_DebugSymbolsIntermediatePath)" />
-      <ResolvedFileToPublish Remove="@(IntermediateSatelliteAssembliesWithTargetPath)" />
+      <ResolvedFileToPublish Remove="@(IlcSatelliteAssembly)" />
       <!-- replace apphost with binary we generated during native compilation -->
       <ResolvedFileToPublish Include="$(NativeBinary)">
         <RelativePath>$(NativeBinaryPrefix)$(TargetName)$(NativeBinaryExt)</RelativePath>
@@ -122,7 +122,6 @@
       SdkAssemblies="@(PrivateSdkAssemblies)"
       FrameworkAssemblies="@(FrameworkAssemblies)">
 
-      <Output TaskParameter="SatelliteAssemblies" ItemName="_SatelliteAssembliesToPublish" />
       <Output TaskParameter="RuntimePackFilesToSkipPublish" ItemName="_RuntimePackFilesToSkipPublish" />
     </ComputeManagedAssembliesToCompileToNative>
 

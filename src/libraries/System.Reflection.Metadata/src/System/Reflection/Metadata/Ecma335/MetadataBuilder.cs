@@ -57,10 +57,7 @@ namespace System.Reflection.Metadata.Ecma335
             builder.WriteByte(0);
             int metadataVersionEnd = builder.Count;
 
-            for (int i = 0; i < sizes.MetadataVersionPaddedLength - (metadataVersionEnd - metadataVersionStart); i++)
-            {
-                builder.WriteByte(0);
-            }
+            builder.WriteBytes(0, sizes.MetadataVersionPaddedLength - (metadataVersionEnd - metadataVersionStart));
 
             // reserved
             builder.WriteUInt16(0);
@@ -74,45 +71,39 @@ namespace System.Reflection.Metadata.Ecma335
             // emit the #Pdb stream first so that only a single page has to be read in order to find out PDB ID
             if (sizes.IsStandaloneDebugMetadata)
             {
-                SerializeStreamHeader(ref offsetFromStartOfMetadata, sizes.StandalonePdbStreamSize, "#Pdb", builder);
+                SerializeStreamHeader(ref offsetFromStartOfMetadata, sizes.StandalonePdbStreamSize, "#Pdb"u8, builder);
             }
 
             // Spec: Some compilers store metadata in a #- stream, which holds an uncompressed, or non-optimized, representation of metadata tables;
             // this includes extra metadata -Ptr tables. Such PE files do not form part of ECMA-335 standard.
             //
             // Note: EnC delta is stored as uncompressed metadata stream.
-            SerializeStreamHeader(ref offsetFromStartOfMetadata, sizes.MetadataTableStreamSize, (sizes.IsCompressed ? "#~" : "#-"), builder);
+            SerializeStreamHeader(ref offsetFromStartOfMetadata, sizes.MetadataTableStreamSize, (sizes.IsCompressed ? "#~"u8 : "#-"u8), builder);
 
-            SerializeStreamHeader(ref offsetFromStartOfMetadata, sizes.GetAlignedHeapSize(HeapIndex.String), "#Strings", builder);
-            SerializeStreamHeader(ref offsetFromStartOfMetadata, sizes.GetAlignedHeapSize(HeapIndex.UserString), "#US", builder);
-            SerializeStreamHeader(ref offsetFromStartOfMetadata, sizes.GetAlignedHeapSize(HeapIndex.Guid), "#GUID", builder);
-            SerializeStreamHeader(ref offsetFromStartOfMetadata, sizes.GetAlignedHeapSize(HeapIndex.Blob), "#Blob", builder);
+            SerializeStreamHeader(ref offsetFromStartOfMetadata, sizes.GetAlignedHeapSize(HeapIndex.String), "#Strings"u8, builder);
+            SerializeStreamHeader(ref offsetFromStartOfMetadata, sizes.GetAlignedHeapSize(HeapIndex.UserString), "#US"u8, builder);
+            SerializeStreamHeader(ref offsetFromStartOfMetadata, sizes.GetAlignedHeapSize(HeapIndex.Guid), "#GUID"u8, builder);
+            SerializeStreamHeader(ref offsetFromStartOfMetadata, sizes.GetAlignedHeapSize(HeapIndex.Blob), "#Blob"u8, builder);
 
             if (sizes.IsEncDelta)
             {
-                SerializeStreamHeader(ref offsetFromStartOfMetadata, 0, "#JTD", builder);
+                SerializeStreamHeader(ref offsetFromStartOfMetadata, 0, "#JTD"u8, builder);
             }
 
             int endOffset = builder.Count;
             Debug.Assert(endOffset - startOffset == sizes.MetadataHeaderSize);
         }
 
-        private static void SerializeStreamHeader(ref int offsetFromStartOfMetadata, int alignedStreamSize, string streamName, BlobBuilder builder)
+        private static void SerializeStreamHeader(ref int offsetFromStartOfMetadata, int alignedStreamSize, ReadOnlySpan<byte> streamName, BlobBuilder builder)
         {
             // 4 for the first uint (offset), 4 for the second uint (padded size), length of stream name + 1 for null terminator (then padded)
             int sizeOfStreamHeader = MetadataSizes.GetMetadataStreamHeaderSize(streamName);
             builder.WriteInt32(offsetFromStartOfMetadata);
             builder.WriteInt32(alignedStreamSize);
-            foreach (char ch in streamName)
-            {
-                builder.WriteByte((byte)ch);
-            }
+            builder.WriteBytes(streamName);
 
             // After offset, size, and stream name, write 0-bytes until we reach our padded size.
-            for (uint i = 8 + (uint)streamName.Length; i < sizeOfStreamHeader; i++)
-            {
-                builder.WriteByte(0);
-            }
+            builder.WriteBytes(0, sizeOfStreamHeader - (8 + streamName.Length));
 
             offsetFromStartOfMetadata += alignedStreamSize;
         }

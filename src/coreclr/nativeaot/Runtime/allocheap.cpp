@@ -14,7 +14,6 @@
 #include "allocheap.h"
 
 #include "CommonMacros.inl"
-#include "slist.inl"
 
 //-------------------------------------------------------------------------------------------------
 AllocHeap::AllocHeap()
@@ -39,7 +38,7 @@ void AllocHeap::Destroy()
 {
     while (!m_blockList.IsEmpty())
     {
-        BlockListElem *pCur = m_blockList.PopHead();
+        BlockListElem *pCur = m_blockList.RemoveHead();
         delete[] (uint8_t*)pCur;
     }
     m_lock.Destroy();
@@ -88,7 +87,7 @@ bool AllocHeap::_AllocNewBlock(uintptr_t cbMem, uintptr_t alignment)
     BlockListElem *pBlockListElem = reinterpret_cast<BlockListElem*>(pbMem);
     pBlockListElem->m_cbMem = cbBlockSize;
 
-    m_blockList.PushHead(pBlockListElem);
+    m_blockList.InsertHead(pBlockListElem);
     m_cbCurBlockUsed = sizeof(BlockListElem);
 
     return true;

@@ -29,7 +29,6 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <param name="managed">The managed array.</param>
         /// <param name="numElements">The unmanaged element count.</param>
         /// <returns>The unmanaged pointer to the allocated memory.</returns>
-        [RequiresUnsafe]
         public static TUnmanagedElement* AllocateContainerForUnmanagedElements(T[]? managed, out int numElements)
         {
             if (managed is null)
@@ -59,7 +58,6 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <param name="unmanaged">The unmanaged allocation.</param>
         /// <param name="numElements">The unmanaged element count.</param>
         /// <returns>The <see cref="Span{TUnmanagedElement}"/> of unmanaged elements.</returns>
-        [RequiresUnsafe]
         public static Span<TUnmanagedElement> GetUnmanagedValuesDestination(TUnmanagedElement* unmanaged, int numElements)
         {
             if (unmanaged is null)
@@ -96,7 +94,6 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <param name="unmanagedValue">The unmanaged array.</param>
         /// <param name="numElements">The unmanaged element count.</param>
         /// <returns>The <see cref="ReadOnlySpan{TUnmanagedElement}"/> containing the unmanaged elements to marshal.</returns>
-        [RequiresUnsafe]
         public static ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(TUnmanagedElement* unmanagedValue, int numElements)
         {
             if (unmanagedValue is null)
@@ -109,7 +106,6 @@ namespace System.Runtime.InteropServices.Marshalling
         /// Frees memory for the unmanaged array.
         /// </summary>
         /// <param name="unmanaged">The unmanaged array.</param>
-        [RequiresUnsafe]
         public static void Free(TUnmanagedElement* unmanaged)
             => Marshal.FreeCoTaskMem((IntPtr)unmanaged);
 
@@ -188,7 +184,6 @@ namespace System.Runtime.InteropServices.Marshalling
             /// Returns the unmanaged value representing the array.
             /// </summary>
             /// <returns>A pointer to the beginning of the unmanaged value.</returns>
-            [RequiresUnsafe]
             public TUnmanagedElement* ToUnmanaged()
             {
                 // Unsafe.AsPointer is safe since buffer must be pinned

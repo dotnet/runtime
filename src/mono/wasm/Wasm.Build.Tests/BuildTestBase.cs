@@ -300,6 +300,12 @@ namespace Wasm.Build.Tests
             if (Directory.Exists(dir))
                 Directory.Delete(dir, recursive: true);
             Directory.CreateDirectory(dir);
+
+            // Create an empty global.json so the SDK resolver doesn't walk up
+            // to the repo root's global.json which may contain relative "paths"
+            // entries that don't apply in the test directory.
+            File.WriteAllText(Path.Combine(dir, "global.json"), "{}");
+
             File.WriteAllText(Path.Combine(dir, "Directory.Build.props"), s_buildEnv.DirectoryBuildPropsContents);
             File.WriteAllText(Path.Combine(dir, "Directory.Build.targets"), s_buildEnv.DirectoryBuildTargetsContents);
             if (UseWBTOverridePackTargets)

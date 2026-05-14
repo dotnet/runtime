@@ -260,7 +260,7 @@ namespace System.Net.NameResolution.Tests
         [InlineData(1)]
         [InlineData(2)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/107339", TestPlatforms.Wasi)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/124079", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124079", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst | TestPlatforms.Android)]
         public async Task DnsGetHostEntry_LocalHost_ReturnsFqdnAndLoopbackIPs(int mode)
         {
             IPHostEntry entry = mode switch
@@ -353,6 +353,7 @@ namespace System.Net.NameResolution.Tests
         [InlineData("test.localhost")]
         [InlineData("FOO.LOCALHOST")]
         [InlineData("Test.LocalHost")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/126456", TestPlatforms.Android)]
         public async Task DnsGetHostEntry_LocalhostSubdomain_ReturnsLoopback(string hostName)
         {
             // The subdomain goes to OS resolver first. If it fails (likely on most systems),
@@ -414,7 +415,6 @@ namespace System.Net.NameResolution.Tests
         [Theory]
         [InlineData(AddressFamily.InterNetwork)]
         [InlineData(AddressFamily.InterNetworkV6)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/124751", TestPlatforms.Android)]
         public async Task DnsGetHostEntry_LocalhostSubdomain_RespectsAddressFamily(AddressFamily addressFamily)
         {
             // Skip IPv6 test if OS doesn't support it.
@@ -476,6 +476,7 @@ namespace System.Net.NameResolution.Tests
         [Theory]
         [InlineData("foo.localhost.")]
         [InlineData("bar.test.localhost.")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/126456", TestPlatforms.Android)]
         public async Task DnsGetHostEntry_LocalhostSubdomainWithTrailingDot_ReturnsLoopback(string hostName)
         {
             IPHostEntry entry = Dns.GetHostEntry(hostName);

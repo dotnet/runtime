@@ -103,6 +103,17 @@ public class DispatchTesting : Server.Contract.IDispatchTesting
         return ret;
     }
 
+    public int Sum_IntArray_SafeArray(int[] d)
+    {
+        int sum = 0;
+        foreach (int val in d)
+        {
+            sum += val;
+        }
+
+        return sum;
+    }
+
     [DispId(1000)]
     public string GetDispIdAsString()
     {

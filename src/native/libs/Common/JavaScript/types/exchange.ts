@@ -5,7 +5,7 @@ import type { EmsAmbientSymbolsType } from "../types";
 
 import type { check, error, info, warn, debug, fastCheck, normalizeException } from "../loader/logging";
 import type { resolveRunMainPromise, rejectRunMainPromise, getRunMainPromise, abortStartup } from "../loader/run";
-import type { addOnExitListener, isExited, isRuntimeRunning, quitNow } from "../loader/exit";
+import type { addOnExitListener, exit, isExited, isRuntimeRunning, quitNow } from "../loader/exit";
 
 import type { initializeCoreCLR } from "../host/host";
 import type { instantiateWasm, installVfsFile, registerDllBytes, loadIcuData, registerPdbBytes, instantiateWebcilModule } from "../host/assets";
@@ -77,6 +77,7 @@ export type LoaderExports = {
     addOnExitListener: typeof addOnExitListener,
     abortStartup: typeof abortStartup,
     quitNow: typeof quitNow,
+    exit: typeof exit,
     normalizeException: typeof normalizeException,
     fetchSatelliteAssemblies: typeof fetchSatelliteAssemblies,
     fetchLazyAssembly: typeof fetchLazyAssembly,
@@ -100,6 +101,7 @@ export type LoaderExportsTable = [
     typeof addOnExitListener,
     typeof abortStartup,
     typeof quitNow,
+    typeof exit,
     typeof normalizeException,
     typeof fetchSatelliteAssemblies,
     typeof fetchLazyAssembly,

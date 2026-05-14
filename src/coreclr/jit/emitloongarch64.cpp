@@ -2165,6 +2165,50 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
     appendToCurIG(id);
 }
 
+//--------------------------------------------------------------------
+// emitIns_R_L: Emit an instruction with a label operand.
+//
+// Arguments:
+//   ins - The instruction
+//   attr - Size of the instruction
+//   dst - Instruction group
+//   reg - Register destination
+//
+void emitter::emitIns_R_L(instruction ins, emitAttr attr, insGroup* dst, regNumber reg)
+{
+    assert(dst != nullptr);
+
+    // if for reloc!  2-ins:
+    //   pcaddu12i reg, offset-hi20
+    //   addi_d  reg, reg, offset-lo12
+    //
+    // else:  3-ins:
+    //   lu12i_w r21, addr_bits[31:12]
+    //   ori     reg, r21, addr_bits[11:0]
+    //   lu32i_d reg, addr_bits[50:32]
+
+    instrDesc* id = emitNewInstr(attr);
+
+    id->idIns(ins);
+    id->idInsOpt(INS_OPTS_RL);
+    id->idAddr()->iiaIGlabel = dst;
+    id->idSetIsBound(); // Mark as bound since we already have the target insGroup directly
+
+    if (m_compiler->opts.compReloc)
+    {
+        id->idSetIsDspReloc();
+        id->idCodeSize(8);
+    }
+    else
+    {
+        id->idCodeSize(12);
+    }
+
+    id->idReg1(reg);
+
+    appendToCurIG(id);
+}
+
 void emitter::emitIns_J_R(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg)
 {
     NYI_LOONGARCH64("emitIns_J_R-----unimplemented/unused on LOONGARCH64 yet----");
@@ -2840,8 +2884,7 @@ AGAIN:
         assert(lastSJ == nullptr || lastIG != jmp->idjIG || lastSJ->idjOffs < (jmp->idjOffs + adjSJ));
         lastSJ = (lastIG == jmp->idjIG) ? jmp : nullptr;
 
-        assert(lastIG == nullptr || lastIG->igNum <= jmp->idjIG->igNum || jmp->idjIG == prologIG ||
-               emitNxtIGnum > unsigned(0xFFFF)); // igNum might overflow
+        assert(lastIG == nullptr || lastIG->IsBeforeOrEqual(jmp->idjIG) || jmp->idjIG == prologIG);
         lastIG = jmp->idjIG;
 #endif // DEBUG
 
@@ -2870,8 +2913,8 @@ AGAIN:
 #ifdef DEBUG
                     if (EMITVERBOSE)
                     {
-                        printf("Adjusted offset of " FMT_BB " from %04X to %04X\n", lstIG->igNum, lstIG->igOffs,
-                               lstIG->igOffs + adjIG);
+                        printf("Adjusted offset of " FMT_BB " from %04X to %04X\n", lstIG->GetDisplayId(),
+                               lstIG->igOffs, lstIG->igOffs + adjIG);
                     }
 #endif // DEBUG
                     lstIG->igOffs += adjIG;
@@ -2955,7 +2998,7 @@ AGAIN:
 
         srcEncodingOffs = srcInstrOffs + ssz; // Encoding offset of relative offset for small branch
 
-        if (jmpIG->igNum < tgtIG->igNum)
+        if (jmpIG->IsBefore(tgtIG))
         {
             /* Forward jump */
 
@@ -3156,7 +3199,7 @@ AGAIN:
 #ifdef DEBUG
             if (EMITVERBOSE)
             {
-                printf("Adjusted offset of " FMT_BB " from %04X to %04X\n", lstIG->igNum, lstIG->igOffs,
+                printf("Adjusted offset of " FMT_BB " from %04X to %04X\n", lstIG->GetDisplayId(), lstIG->igOffs,
                        lstIG->igOffs + adjIG);
             }
 #endif // DEBUG
@@ -3546,8 +3589,14 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             //   ori     reg, r21, addr_bits[11:0]
             //   lu32i_d reg, addr_bits[50:32]
 
-            insGroup* tgtIG          = (insGroup*)emitCodeGetCookie(id->idAddr()->iiaBBlabel);
-            id->idAddr()->iiaIGlabel = tgtIG;
+            if (!id->idIsBound())
+            {
+                insGroup* tgtIG          = (insGroup*)emitCodeGetCookie(id->idAddr()->iiaBBlabel);
+                id->idAddr()->iiaIGlabel = tgtIG;
+                id->idSetIsBound();
+            }
+
+            insGroup* tgtIG = id->idAddr()->iiaIGlabel;
 
             regNumber reg1 = id->idReg1();
             assert(isGeneralRegister(reg1));
@@ -5206,7 +5255,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
     result.insThroughput       = PERFSCORE_THROUGHPUT_ILLEGAL;
     result.insLatency          = PERFSCORE_LATENCY_ILLEGAL;
-    result.insMemoryAccessKind = PERFSCORE_MEMORY_NONE;
+    result.insMemoryAccessKind = PerfScoreMemoryAccessKind::None;
 
     // Calculate merge emit instructions cost.
     unsigned CombinedInsCnt = id->idCodeSize() / sizeof(code_t);
@@ -5223,7 +5272,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             else // ins == load
             {    // pcaddu12i + load or lu12i.w + lu32i.d + load
-                result.insMemoryAccessKind = PERFSCORE_MEMORY_READ;
+                result.insMemoryAccessKind = PerfScoreMemoryAccessKind::Read;
                 result.insThroughput       = (CombinedInsCnt == 2) ? PERFSCORE_THROUGHPUT_4C : PERFSCORE_THROUGHPUT_7C;
                 if ((INS_ld_b <= ins) && (ins <= INS_ld_wu))
                 {
@@ -5272,9 +5321,10 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         }
         else if (id->idInsOpt() == INS_OPTS_RELOC)
         { // pcalau12i + (addi.d or ld.d)
-            result.insLatency          = id->idIsCnsReloc() ? PERFSCORE_LATENCY_2C : PERFSCORE_LATENCY_5C;
-            result.insThroughput       = id->idIsCnsReloc() ? PERFSCORE_THROUGHPUT_6C : PERFSCORE_THROUGHPUT_4C;
-            result.insMemoryAccessKind = id->idIsCnsReloc() ? PERFSCORE_MEMORY_NONE : PERFSCORE_MEMORY_READ;
+            result.insLatency    = id->idIsCnsReloc() ? PERFSCORE_LATENCY_2C : PERFSCORE_LATENCY_5C;
+            result.insThroughput = id->idIsCnsReloc() ? PERFSCORE_THROUGHPUT_6C : PERFSCORE_THROUGHPUT_4C;
+            result.insMemoryAccessKind =
+                id->idIsCnsReloc() ? PerfScoreMemoryAccessKind::None : PerfScoreMemoryAccessKind::Read;
         }
         else
         {
@@ -5290,12 +5340,13 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
     {
         if (emitInsIsLoad(ins))
         {
-            result.insMemoryAccessKind = emitInsIsStore(ins) ? PERFSCORE_MEMORY_READ_WRITE : PERFSCORE_MEMORY_READ;
+            result.insMemoryAccessKind =
+                emitInsIsStore(ins) ? PerfScoreMemoryAccessKind::ReadWrite : PerfScoreMemoryAccessKind::Read;
         }
         else
         {
             assert(emitInsIsStore(ins));
-            result.insMemoryAccessKind = PERFSCORE_MEMORY_WRITE;
+            result.insMemoryAccessKind = PerfScoreMemoryAccessKind::Write;
         }
     }
 

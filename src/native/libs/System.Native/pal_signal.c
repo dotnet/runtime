@@ -83,7 +83,7 @@ static bool IsSigIgn(struct sigaction* action)
             action->sa_handler == SIG_IGN;
 }
 
-static bool TryConvertSignalCodeToPosixSignal(int signalCode, PosixSignal* posixSignal)
+bool TryConvertSignalCodeToPosixSignal(int signalCode, PosixSignal* posixSignal)
 {
     assert(posixSignal != NULL);
 

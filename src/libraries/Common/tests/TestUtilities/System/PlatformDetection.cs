@@ -253,7 +253,7 @@ namespace System
         public static bool IsInvokingFinalizersSupported => !IsNativeAot;
         public static bool IsTypeEquivalenceSupported => !IsNativeAot && !IsMonoRuntime && IsWindows;
 
-        public static bool IsMetadataUpdateSupported => !IsNativeAot;
+        public static bool IsMetadataUpdateSupported => !IsBuiltWithAggressiveTrimming;
 
         // System.Security.Cryptography.Xml.XmlDsigXsltTransform.GetOutput() relies on XslCompiledTransform which relies
         // heavily on Reflection.Emit
