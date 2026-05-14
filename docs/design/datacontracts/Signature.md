@@ -81,7 +81,7 @@ TypeHandle ISignature.DecodeFieldSignature(BlobHandle blobHandle, ModuleHandle m
 
 ### Vararg call cookies
 
-`GetVarArgArgsBase` and `GetVarArgSignature` decode a `VASigCookie*` slot pushed by a vararg call site and are used by the DAC/DBI `GetVarArgSig` API to recover the location of the first argument and the raw vararg signature blob for a vararg call frame.
+`GetVarArgArgsBase` and `GetVarArgSignature` decode a `VASigCookie*` slot pushed by a vararg call site.
 
 ```csharp
 TargetPointer ISignature.GetVarArgArgsBase(TargetPointer vaSigCookieAddr)
