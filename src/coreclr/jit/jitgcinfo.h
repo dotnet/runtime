@@ -327,11 +327,6 @@ public:
         WBF_BarrierUnknown,                // A barrier is required, no information on checked/unchecked.
         WBF_BarrierChecked,                // A checked barrier is required.
         WBF_BarrierUnchecked,              // An unchecked barrier is required.
-        WBF_NoBarrier_CheckNotHeapInDebug, // We believe that no barrier is required because the
-                                           // target is not in the heap -- but in debug build use a
-                                           // barrier call that verifies this property.  (Because the
-                                           // target not being in the heap relies on a convention that
-                                           // might accidentally be violated in the future.)
     };
 
     WriteBarrierForm gcIsWriteBarrierCandidate(GenTreeStoreInd* store);
