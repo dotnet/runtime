@@ -257,14 +257,7 @@ internal static class SignatureMapper
     {
         char? c = TypeToChar(t, log, out _);
         if (c is null)
-        {
-            if (t.IsValueType)
-            {
-                return CharToNameType('n');
-            }
-
             throw new InvalidSignatureCharException('?');
-        }
 
         return CharToNameType(c.Value);
     }
