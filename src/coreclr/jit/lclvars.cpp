@@ -5115,9 +5115,15 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
                 unsigned alignTo = lclAlignTo[lcl];
 
                 // Simulate alignment padding (mirrors lvaAllocLocalAndSetVirtualOffset).
-                if ((alignTo != 0) && ((simOff % static_cast<int>(alignTo)) != 0))
+                // Use signed arithmetic throughout: simOff is negative, and the remainder
+                // (simOff % alignment) is non-positive, so pad = alignment + remainder
+                // yields a small positive value in [1, alignment-1]. Mixing unsigned alignTo
+                // with the signed remainder would convert the negative remainder to a huge
+                // unsigned value and corrupt simOff.
+                int signedAlign = static_cast<int>(alignTo);
+                if ((signedAlign != 0) && ((simOff % signedAlign) != 0))
                 {
-                    simOff -= static_cast<int>(alignTo + (simOff % static_cast<int>(alignTo)));
+                    simOff -= signedAlign + (simOff % signedAlign);
                 }
 
                 simOff -= static_cast<int>(size);
@@ -5688,9 +5694,12 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 #ifdef TARGET_XARCH
     // Multi-strategy frame layout optimization for x86/x64.
     // See lvaComputeOptimalFrameLayoutOrder for details.
-    assert(lvaDoneFrameLayout == FINAL_FRAME_LAYOUT);
+    // Only attempt the optimization during the final layout pass; earlier passes
+    // (PRE_REGALLOC/REGALLOC/TENTATIVE) may invoke lvaAssignVirtualFrameOffsetsToLocals
+    // for size estimation, and the cost-model assumptions only hold for the final pass.
     unsigned* lclVarSortOrder = nullptr;
-    if (lvaLocalVarRefCounted() && !opts.compDbgEnC && codeGen->isFramePointerUsed())
+    if ((lvaDoneFrameLayout == FINAL_FRAME_LAYOUT) && lvaLocalVarRefCounted() && !opts.compDbgEnC &&
+        codeGen->isFramePointerUsed())
     {
         lclVarSortOrder = lvaComputeOptimalFrameLayoutOrder(stkOffs, alloc_order);
     }
