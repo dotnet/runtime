@@ -187,7 +187,7 @@ namespace Microsoft.Interop
             }
             if (namedArguments.TryGetValue(nameof(MarshalAsAttribute.IidParameterIndex), out TypedConstant iidParameterIndexArg))
             {
-                if (!elementInfoProvider.TryGetInfoForParamIndex(attributeData, (short)iidParameterIndexArg.Value!, marshallingInfoCallback, out iidParameterIndexInfo)
+                if (!elementInfoProvider.TryGetInfoForParamIndex(attributeData, (int)iidParameterIndexArg.Value!, marshallingInfoCallback, out iidParameterIndexInfo)
                     || !IsGuidType(iidParameterIndexInfo))
                 {
                     _diagnostics.ReportConfigurationNotSupported(attributeData, IidParameterIndexConfigurationNameWithSupportedShape);
