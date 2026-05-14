@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
@@ -898,6 +899,30 @@ namespace ComInterfaceGenerator.Unit.Tests
                 partial interface I
                 {
                     void M(in Guid iid, [{|#0:MarshalAs(UnmanagedType.Interface, IidParameterIndex = 0)|}] ref object o);
+                }
+                """;
+
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(
+                source,
+                VerifyComInterfaceGenerator
+                    .Diagnostic(GeneratorDiagnostics.ConfigurationNotSupported)
+                    .WithLocation(0)
+                    .WithArguments($"{nameof(MarshalAsAttribute)}{Type.Delimiter}{nameof(MarshalAsAttribute.IidParameterIndex)} (supported only on [MarshalAs(UnmanagedType.Interface)] out object parameters)"));
+        }
+
+        [Fact]
+        public async Task MarshalAsIidParameterIndexWithoutInterfaceUnmanagedType_ReportsDiagnostic()
+        {
+            string source = """
+                using System;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("85E4DFAA-2E8B-4A7A-9D56-DAA54CC8BF3B")]
+                partial interface I
+                {
+                    void M(in Guid iid, [{|#0:MarshalAs(UnmanagedType.Struct, IidParameterIndex = 0)|}] out object o);
                 }
                 """;
 
