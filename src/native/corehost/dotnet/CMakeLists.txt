@@ -17,6 +17,7 @@ add_executable(dotnet ${SOURCES})
 target_link_libraries(dotnet PRIVATE hostmisc fxr_resolver)
 
 add_sanitizer_runtime_support(dotnet)
+enable_dead_code_elimination(dotnet)
 
 if(NOT CLR_CMAKE_TARGET_WIN32)
     disable_pax_mprotect(dotnet)

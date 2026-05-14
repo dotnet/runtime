@@ -38,6 +38,8 @@ target_link_libraries(libnethost PRIVATE hostmisc::public fxr_resolver)
 target_compile_definitions(nethost PRIVATE FEATURE_LIBHOST NETHOST_EXPORT)
 target_compile_definitions(libnethost PRIVATE FEATURE_LIBHOST NETHOST_EXPORT)
 
+enable_dead_code_elimination(nethost)
+
 set_target_properties(nethost PROPERTIES MACOSX_RPATH TRUE)
 set_target_properties(libnethost PROPERTIES MACOSX_RPATH TRUE)
 set_target_properties(libnethost PROPERTIES PREFIX "")

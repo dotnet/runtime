@@ -655,6 +655,24 @@ function(link_natvis_sources_for_target targetName linkKind)
     endforeach()
 endfunction()
 
+# Enable linker dead code elimination for the given target in CHECKED/RELEASE/RELWITHDEBINFO
+function(enable_dead_code_elimination targetName)
+  set(dce_configs "$<OR:$<CONFIG:Checked>,$<CONFIG:Release>,$<CONFIG:RelWithDebInfo>>")
+
+  if (MSVC)
+    target_link_options(${targetName} PRIVATE $<${dce_configs}:/OPT:REF>)
+    return()
+  endif()
+
+  target_compile_options(${targetName} PRIVATE $<${dce_configs}:-fdata-sections>)
+
+  if (CLR_CMAKE_HOST_APPLE)
+    target_link_options(${targetName} PRIVATE $<${dce_configs}:LINKER:-dead_strip>)
+  else()
+    target_link_options(${targetName} PRIVATE $<${dce_configs}:LINKER:--gc-sections>)
+  endif()
+endfunction()
+
 # Add sanitizer runtime support code to the target.
 function(add_sanitizer_runtime_support targetName)
   # Add sanitizer support functions.

@@ -34,6 +34,7 @@ add_executable(apphost ${SOURCES} ${RESOURCES})
 target_link_libraries(apphost PRIVATE hostmisc fxr_resolver)
 
 add_sanitizer_runtime_support(apphost)
+enable_dead_code_elimination(apphost)
 
 if(NOT CLR_CMAKE_TARGET_WIN32)
     disable_pax_mprotect(apphost)
