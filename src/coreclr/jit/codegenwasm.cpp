@@ -394,10 +394,8 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
         GetEmitter()->emitIns(INS_I_sub);
         GetEmitter()->emitIns_I(INS_local_set, EA_PTRSIZE, GetStackPointerRegIndex());
 
-        // TODO-WASM: Save the funclet index. For now we save a fixed constant
-        //
         GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetStackPointerRegIndex());
-        GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 0xAAAA);
+        GetEmitter()->emitFuncletAddressConstant((cnsval_ssize_t)funcletIndex);
         GetEmitter()->emitIns_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE, 0);
     }
 }
