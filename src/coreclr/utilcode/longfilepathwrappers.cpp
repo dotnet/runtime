@@ -362,7 +362,7 @@ MemoryMappedFile* CreateMappedFileWrapper(const WCHAR* filename)
     }
     EX_CATCH
     {
-        return nullptr;
+        // Swallow all exceptions
     }
     EX_END_CATCH
 
@@ -388,7 +388,7 @@ int u16_fopen_wrapper(FILE** stream, const WCHAR* filename, const WCHAR* mode)
     }
     EX_CATCH
     {
-        return -1;
+        // Swallow all exceptions
     }
     EX_END_CATCH
 
