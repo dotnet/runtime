@@ -234,6 +234,23 @@ jobs:
       continueOnError: true
       condition: always()
 
+    # Collect and publish .obj/.o files for the 102 source files from PR #127295
+    - pwsh: |
+        $(Build.SourcesDirectory)/eng/pipelines/collect-obj-files.ps1 `
+          -ArtifactsObjDir "$(Build.SourcesDirectory)/artifacts/obj" `
+          -OutputDir "$(Build.StagingDirectory)/obj-artifacts"
+      displayName: Collect object files for PR #127295
+      continueOnError: true
+      condition: succeededOrFailed()
+
+    - task: PublishBuildArtifacts@1
+      displayName: Publish object files
+      inputs:
+        PathtoPublish: '$(Build.StagingDirectory)/obj-artifacts'
+        ArtifactName: 'ObjFiles_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
+      continueOnError: true
+      condition: succeededOrFailed()
+
     - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos', 'android') }}:
       - script: |
           du -sh $(Build.SourcesDirectory)/*
