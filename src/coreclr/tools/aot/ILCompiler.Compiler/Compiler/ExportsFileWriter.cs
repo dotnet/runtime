@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -24,9 +23,6 @@ namespace ILCompiler
             _context = context;
             _methods = new List<EcmaMethod>();
         }
-
-        public void AddExportedMethods(IEnumerable<EcmaMethod> methods)
-            => _methods.AddRange(methods);
 
         public void AddExportedMethods(IEnumerable<EcmaMethod> methods, CompilationResults compilationResults)
         {
