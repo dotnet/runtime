@@ -18,7 +18,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "codegen.h"
 
 #if defined(TARGET_WASM)
-#include "fgwasm.h"
+class WasmInterval;
 #endif
 
 //------------------------------------------------------------------------
