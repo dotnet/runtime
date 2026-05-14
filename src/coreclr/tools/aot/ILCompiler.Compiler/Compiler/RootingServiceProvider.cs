@@ -77,10 +77,10 @@ namespace ILCompiler
             }
         }
 
-        public void AddCompilationRoot(object o, string reason)
+        public void AddCompilationRoot(object root, string reason)
         {
-            Debug.Assert(o is IDependencyNode<NodeFactory>);
-            _rootAdder(o, reason);
+            Debug.Assert(root is IDependencyNode<NodeFactory>);
+            _rootAdder(root, reason);
         }
 
         public void RootThreadStaticBaseForType(TypeDesc type, string reason)

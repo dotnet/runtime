@@ -28,13 +28,15 @@ namespace ILCompiler
 
         public static IEnumerable<DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry> GetMaximallyConstructableTypeDependencies(NodeFactory context, TypeDesc type, string reason)
         {
+            // Associated source types are conditioned on the exact type that can exist in the program, unlike
+            // external type map trim targets where non-array parameterized wrappers are stripped.
             foreach (DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry dependency in GetDependencies(context, context.MaximallyConstructableType(type), type, reason, useNecessaryTypeSymbol: false))
                 yield return dependency;
         }
 
         private static IEnumerable<DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry> GetDependencies(
             NodeFactory context,
-            object typeNode,
+            object conditionalDependencyNode,
             TypeDesc type,
             string reason,
             bool useNecessaryTypeSymbol)
@@ -43,7 +45,7 @@ namespace ILCompiler
             if (canonType != type && GenericTypesTemplateMap.IsEligibleToHaveATemplate(canonType))
             {
                 yield return new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(
-                    typeNode,
+                    conditionalDependencyNode,
                     context.NativeLayout.TemplateTypeLayout(canonType),
                     reason);
             }
@@ -54,7 +56,7 @@ namespace ILCompiler
                 if (canonElementType != effectiveElementType && GenericTypesTemplateMap.IsEligibleToHaveATemplate(canonElementType))
                 {
                     yield return new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(
-                        typeNode,
+                        conditionalDependencyNode,
                         context.NativeLayout.TemplateTypeLayout(canonElementType),
                         reason);
                 }
@@ -62,7 +64,7 @@ namespace ILCompiler
                 if (!GenericTypesTemplateMap.IsArrayTypeEligibleForTemplate(arrayType))
                 {
                     yield return new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(
-                        typeNode,
+                        conditionalDependencyNode,
                         useNecessaryTypeSymbol ? context.NecessaryTypeSymbol(effectiveElementType) : context.MaximallyConstructableType(effectiveElementType),
                         reason);
                 }
