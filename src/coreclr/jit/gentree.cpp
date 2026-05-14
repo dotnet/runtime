@@ -15015,18 +15015,27 @@ GenTree* Compiler::gtFoldExprUnary(GenTreeUnOp* tree)
 
     genTreeOps oper = tree->OperGet();
 
+    // We intentionally do not destroy the nodes as some places check if
+    // folding produces a constant and throws the result away otherwise
+
     switch (oper)
     {
         case GT_NOT:
+        {
+            if (op1->OperIs(oper))
+            {
+                JITDUMP("Folding ~(~a) => a\n")
+                return op1->gtGetOp1();
+            }
+            break;
+        }
+
         case GT_NEG:
         {
             if (op1->OperIs(oper))
             {
-                JITDUMP("Remove double negation/not\n")
-                GenTree* op1op1 = op1->gtGetOp1();
-                DEBUG_DESTROY_NODE(tree);
-                DEBUG_DESTROY_NODE(op1);
-                return op1op1;
+                JITDUMP("Folding -(-a) => a\n")
+                return op1->gtGetOp1();
             }
             break;
         }
