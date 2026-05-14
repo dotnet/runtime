@@ -97,11 +97,18 @@ private:
 
     void EmitStackOverflowCrashThread();
 
-    void EmitConsoleHeader(int signal);
-    void EmitConsoleModulesAndFooter();
+    void EmitThreads(
+        InProcCrashReportCrashKind crashKind,
+        void* context);
 
-    void EmitJsonHeader();
-    void EmitJsonFooter(int signal);
+    void BeginConsoleReport(int signal);
+    void EndConsoleReport();
+
+    void BeginJsonReport();
+    void EndJsonReport(
+        int signal,
+        bool jsonEnabled,
+        int fd);
 
     SignalSafeJsonWriter m_jsonWriter;
     InProcCrashReportIsManagedThreadCallback m_isManagedThreadCallback = nullptr;
