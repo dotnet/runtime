@@ -126,6 +126,9 @@ namespace ComInterfaceGenerator.Tests
                     hr = ((delegate* unmanaged[MemberFunction]<void*, Guid*, void**, int>)vtable[3])((void*)activationFactoryPtr, (Guid*)(&supportedIid), (void**)(&result));
                     Assert.Equal(0, hr);
                     Assert.NotEqual(0, result);
+                    Assert.Equal(0, Marshal.QueryInterface(result, supportedIid, out nint sameRequestedInterface));
+                    Assert.Equal(result, sameRequestedInterface);
+                    Marshal.Release(sameRequestedInterface);
                     Marshal.Release(result);
                 }
                 finally

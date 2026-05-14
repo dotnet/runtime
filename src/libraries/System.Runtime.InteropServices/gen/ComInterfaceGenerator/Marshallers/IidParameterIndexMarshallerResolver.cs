@@ -6,6 +6,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
+using static Microsoft.Interop.SyntaxFactoryExtensions;
 
 namespace Microsoft.Interop
 {
@@ -14,7 +15,7 @@ namespace Microsoft.Interop
         public ResolvedGenerator Create(TypePositionInfo info, StubCodeContext context)
         {
             if (info.MarshallingAttributeInfo is not IidParameterIndexNativeMarshallingInfo iidInfo
-                || context.Direction != MarshalDirection.ManagedToUnmanaged)
+                || context.Direction != MarshalDirection.UnmanagedToManaged)
             {
                 return ResolvedGenerator.UnresolvedGenerator;
             }
@@ -49,27 +50,93 @@ namespace Microsoft.Interop
                 string queriedInterfaceIdentifier = context.GetAdditionalIdentifier(info, "queriedInterface");
 
                 ExpressionSyntax iidExpression = MarshallerHelpers.GetIndexedManagedElementExpression(iidParameterIndexInfo, codeContext, context);
-                string iidExpressionText = iidExpression.NormalizeWhitespace().ToFullString();
+                yield return LocalDeclarationStatement(
+                    VariableDeclaration(PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword))))
+                        .AddVariables(
+                            VariableDeclarator(Identifier(unknownIdentifier))
+                                .WithInitializer(
+                                    EqualsValueClause(
+                                        CastExpression(
+                                            PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword))),
+                                            InvocationExpression(
+                                                    MemberAccessExpression(
+                                                        SyntaxKind.SimpleMemberAccessExpression,
+                                                        ParseTypeName("global::System.Runtime.InteropServices.Marshalling.ComInterfaceMarshaller<object>"),
+                                                        IdentifierName("ConvertToUnmanaged")))
+                                                .AddArgumentListArguments(
+                                                    Argument(IdentifierName(managedIdentifier))))))));
 
-                yield return ParseStatement($"void* {unknownIdentifier} = (void*)global::System.Runtime.InteropServices.Marshalling.ComInterfaceMarshaller<object>.ConvertToUnmanaged({managedIdentifier});");
-                yield return ParseStatement($$"""
-                    if ({{unknownIdentifier}} != null)
-                    {
-                        int {{queryInterfaceHResultIdentifier}} = global::System.Runtime.InteropServices.Marshal.QueryInterface((nint){{unknownIdentifier}}, in {{iidExpressionText}}, out nint {{queriedInterfaceIdentifier}});
-                        global::System.Runtime.InteropServices.Marshal.Release((nint){{unknownIdentifier}});
-                        if ({{queryInterfaceHResultIdentifier}} != 0)
-                        {
-                            if ({{queriedInterfaceIdentifier}} != 0)
-                                global::System.Runtime.InteropServices.Marshal.Release({{queriedInterfaceIdentifier}});
-                            throw new global::System.Runtime.InteropServices.COMException("QueryInterface failed for requested IID.", {{queryInterfaceHResultIdentifier}});
-                        }
-                        {{nativeIdentifier}} = (void*){{queriedInterfaceIdentifier}};
-                    }
-                    else
-                    {
-                        {{nativeIdentifier}} = null;
-                    }
-                    """);
+                yield return IfStatement(
+                    BinaryExpression(
+                        SyntaxKind.NotEqualsExpression,
+                        IdentifierName(unknownIdentifier),
+                        LiteralExpression(SyntaxKind.NullLiteralExpression)),
+                    Block(
+                        LocalDeclarationStatement(
+                            VariableDeclaration(TypeSyntaxes.System_IntPtr)
+                                .AddVariables(
+                                    VariableDeclarator(Identifier(queriedInterfaceIdentifier))
+                                        .WithInitializer(
+                                            EqualsValueClause(
+                                                LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(0)))))),
+                        LocalDeclarationStatement(
+                            VariableDeclaration(PredefinedType(Token(SyntaxKind.IntKeyword)))
+                                .AddVariables(
+                                    VariableDeclarator(Identifier(queryInterfaceHResultIdentifier))
+                                        .WithInitializer(
+                                            EqualsValueClause(
+                                                InvocationExpression(
+                                                        MemberAccessExpression(
+                                                            SyntaxKind.SimpleMemberAccessExpression,
+                                                            TypeSyntaxes.System_Runtime_InteropServices_Marshal,
+                                                            IdentifierName("QueryInterface")))
+                                                    .AddArgumentListArguments(
+                                                        Argument(CastExpression(TypeSyntaxes.System_IntPtr, IdentifierName(unknownIdentifier))),
+                                                        Argument(iidExpression).WithRefKindKeyword(Token(SyntaxKind.InKeyword)),
+                                                        Argument(IdentifierName(queriedInterfaceIdentifier)).WithRefKindKeyword(Token(SyntaxKind.OutKeyword))))))),
+                        MethodInvocationStatement(
+                            TypeSyntaxes.System_Runtime_InteropServices_Marshal,
+                            IdentifierName("Release"),
+                            Argument(CastExpression(TypeSyntaxes.System_IntPtr, IdentifierName(unknownIdentifier)))),
+                        IfStatement(
+                            BinaryExpression(
+                                SyntaxKind.NotEqualsExpression,
+                                IdentifierName(queryInterfaceHResultIdentifier),
+                                LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(0))),
+                            Block(
+                                IfStatement(
+                                    BinaryExpression(
+                                        SyntaxKind.NotEqualsExpression,
+                                        IdentifierName(queriedInterfaceIdentifier),
+                                        LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(0))),
+                                    ExpressionStatement(
+                                        InvocationExpression(
+                                                MemberAccessExpression(
+                                                    SyntaxKind.SimpleMemberAccessExpression,
+                                                    TypeSyntaxes.System_Runtime_InteropServices_Marshal,
+                                                    IdentifierName("Release")))
+                                            .AddArgumentListArguments(
+                                                Argument(IdentifierName(queriedInterfaceIdentifier))))),
+                                ExpressionStatement(
+                                    AssignmentExpression(
+                                        SyntaxKind.SimpleAssignmentExpression,
+                                        IdentifierName(nativeIdentifier),
+                                        LiteralExpression(SyntaxKind.NullLiteralExpression))),
+                                ReturnStatement(IdentifierName(queryInterfaceHResultIdentifier)))),
+                        ExpressionStatement(
+                            AssignmentExpression(
+                                SyntaxKind.SimpleAssignmentExpression,
+                                IdentifierName(nativeIdentifier),
+                                CastExpression(
+                                    PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword))),
+                                    IdentifierName(queriedInterfaceIdentifier))))),
+                    ElseClause(
+                        Block(
+                            ExpressionStatement(
+                                AssignmentExpression(
+                                    SyntaxKind.SimpleAssignmentExpression,
+                                    IdentifierName(nativeIdentifier),
+                                    LiteralExpression(SyntaxKind.NullLiteralExpression))))));
             }
         }
     }
