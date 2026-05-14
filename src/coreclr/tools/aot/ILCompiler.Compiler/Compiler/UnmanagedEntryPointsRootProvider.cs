@@ -40,7 +40,7 @@ namespace ILCompiler
 
         public void AddCompilationRoots(IRootingServiceProvider rootProvider)
         {
-            rootProvider.AddCompilationRoot(new UnmanagedEntryPointsNode(_module, Hidden));
+            rootProvider.AddCompilationRoot(new UnmanagedEntryPointsNode(_module, Hidden), "Unmanaged entry points");
         }
 
         private sealed class UnmanagedEntryPointsNode : DependencyNodeCore<NodeFactory>
@@ -130,25 +130,8 @@ namespace ILCompiler
                         context.MaximallyConstructableType(associatedSourceType),
                         "Native callable with associated source type");
 
-                    MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                    if (canonMethod != method && method.HasInstantiation)
-                    {
-                        yield return new CombinedDependencyListEntry(
-                            context.MethodGenericDictionary(method),
-                            context.MaximallyConstructableType(associatedSourceType),
-                            "Native callable generic dictionary with associated source type");
-                    }
-
-                    // If the associated source type has a canonical form, it could be created at runtime by the type loader.
-                    // If there is a type loader template for it, create the generic type instantiation eagerly.
-                    TypeDesc canonAssociatedSourceType = associatedSourceType.ConvertToCanonForm(CanonicalFormKind.Specific);
-                    if (canonAssociatedSourceType != associatedSourceType && GenericTypesTemplateMap.IsEligibleToHaveATemplate(canonAssociatedSourceType))
-                    {
-                        yield return new CombinedDependencyListEntry(
-                            context.MaximallyConstructableType(associatedSourceType),
-                            context.NativeLayout.TemplateTypeLayout(canonAssociatedSourceType),
-                            "Associated source type that could be loaded at runtime");
-                    }
+                    foreach (CombinedDependencyListEntry dependency in RuntimeConstructableTypeDependencies.GetMaximallyConstructableTypeDependencies(context, associatedSourceType, "Associated source type that could be loaded at runtime"))
+                        yield return dependency;
                 }
             }
 
@@ -159,15 +142,11 @@ namespace ILCompiler
                 IMethodNode methodEntryPoint = GetMethodEntrypointAndAddAlias(context, method, exportName);
 
                 yield return new DependencyListEntry(methodEntryPoint, reason);
-
-                MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                if (canonMethod != method && method.HasInstantiation)
-                    yield return new DependencyListEntry(context.MethodGenericDictionary(method), reason);
             }
 
             private IMethodNode GetMethodEntrypointAndAddAlias(NodeFactory context, EcmaMethod method, Utf8String exportName)
             {
-                IMethodNode methodEntryPoint = context.MethodEntrypoint(method.GetCanonMethodTarget(CanonicalFormKind.Specific));
+                IMethodNode methodEntryPoint = context.MethodEntrypoint(method);
 
                 if (!exportName.IsNull)
                 {

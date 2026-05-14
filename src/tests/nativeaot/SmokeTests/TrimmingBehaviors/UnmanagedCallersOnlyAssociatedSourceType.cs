@@ -13,6 +13,7 @@ class UnmanagedCallersOnlyAssociatedSourceType
     private const string UsedSourceExport = "UnmanagedCallersOnlyAssociatedSourceType_UsedSource";
     private const string UnusedSourceExport = "UnmanagedCallersOnlyAssociatedSourceType_UnusedSource";
     private const string DynamicSourceExport = "UnmanagedCallersOnlyAssociatedSourceType_DynamicSource";
+    private const string DynamicArraySourceExport = "UnmanagedCallersOnlyAssociatedSourceType_DynamicArraySource";
 
     [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode",
         Justification = "The test verifies runtime creation of the generic type through a type loader template.")]
@@ -20,12 +21,14 @@ class UnmanagedCallersOnlyAssociatedSourceType
     {
         GC.KeepAlive(new UsedSource());
         typeof(UnmanagedCallersOnlyAssociatedSourceType).GetMethod(nameof(CreateDynamicSource))!.MakeGenericMethod([GetDynamicAtom()]).Invoke(null, []);
+        typeof(UnmanagedCallersOnlyAssociatedSourceType).GetMethod(nameof(CreateDynamicSourceArray))!.MakeGenericMethod([GetDynamicAtom()]).Invoke(null, []);
 
         IntPtr programHandle = NativeLibrary.GetMainProgramHandle();
 
         AssertExportReturns(programHandle, UnconditionalExport, 1);
         AssertExportReturns(programHandle, UsedSourceExport, 2);
         AssertExportReturns(programHandle, DynamicSourceExport, 4);
+        AssertExportReturns(programHandle, DynamicArraySourceExport, 5);
         AssertNoExport(programHandle, UnusedSourceExport);
 
         return 100;
@@ -33,6 +36,9 @@ class UnmanagedCallersOnlyAssociatedSourceType
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static object CreateDynamicSource<T>() => new DynamicSource<T>();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static object CreateDynamicSourceArray<T>() => new DynamicSource<T>[1, 1];
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static Type GetDynamicAtom() => typeof(DynamicAtom);
@@ -74,6 +80,9 @@ class UnmanagedCallersOnlyAssociatedSourceType
 
     [UnmanagedCallersOnly(EntryPoint = DynamicSourceExport, AssociatedSourceType = typeof(DynamicSource<DynamicAtom>))]
     private static int DynamicSourceEntryPoint() => 4;
+
+    [UnmanagedCallersOnly(EntryPoint = DynamicArraySourceExport, AssociatedSourceType = typeof(DynamicSource<DynamicAtom>[,]))]
+    private static int DynamicArraySourceEntryPoint() => 5;
 
     private sealed class UsedSource;
 
