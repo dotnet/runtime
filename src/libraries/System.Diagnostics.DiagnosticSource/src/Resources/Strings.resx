@@ -171,9 +171,6 @@
   <data name="Arg_BufferTooSmall" xml:space="preserve">
     <value>Destination buffer is not long enough to copy all the items in the list.</value>
   </data>
-  <data name="Arg_UnreachableException" xml:space="preserve">
-    <value>The program executed an instruction that was thought to be unreachable.</value>
-  </data>
   <data name="InvalidInstrumentType" xml:space="preserve">
     <value>The instrument is of different generic type.</value>
   </data>

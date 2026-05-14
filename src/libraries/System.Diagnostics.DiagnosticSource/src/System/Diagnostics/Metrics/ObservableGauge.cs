@@ -52,10 +52,6 @@ namespace System.Diagnostics.Metrics
         /// <summary>
         /// Observe() fetches the current measurements being tracked by this observable counter.
         /// </summary>
-        protected override IEnumerable<Measurement<T>> Observe()
-        {
-            Debug.Assert(false);
-            throw new InvalidOperationException(SR.Arg_UnreachableException);
-        }
+        protected override IEnumerable<Measurement<T>> Observe() => ((Func<IEnumerable<Measurement<T>>>)_callback)();
     }
 }

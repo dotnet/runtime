@@ -76,23 +76,8 @@ namespace System.Diagnostics.Metrics
                 return;
             }
 
-            if (callback is Func<IEnumerable<Measurement<T>>> enumerableFunc)
-            {
-                IEnumerable<Measurement<T>> result = enumerableFunc();
-                if (result is null)
-                {
-                    return;
-                }
-
-                foreach (Measurement<T> measurement in result)
-                {
-                    listener.NotifyMeasurement(this, measurement.Value, measurement.Tags, state);
-                }
-
-                return;
-            }
-
-            // Fallback path: user-defined ObservableInstrument<T> subclasses with their own Observe() override.
+            // Func<IEnumerable<Measurement<T>>> built-ins and user-defined ObservableInstrument<T> subclasses
+            // both fall through to the virtual Observe() override.
             IEnumerable<Measurement<T>> measurements = Observe();
             if (measurements is null)
             {
