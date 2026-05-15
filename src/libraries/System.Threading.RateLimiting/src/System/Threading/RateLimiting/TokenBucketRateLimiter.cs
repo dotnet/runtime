@@ -34,7 +34,7 @@ namespace System.Threading.RateLimiting
         private static readonly RateLimitLease FailedLease = new TokenBucketLease(false, null);
 
         /// <inheritdoc />
-        public override TimeSpan? IdleDuration => RateLimiterHelper.GetElapsedTime(_idleSince);
+        public override TimeSpan? IdleDuration => Stopwatch.GetElapsedTime(_idleSince);
 
         /// <inheritdoc />
         public override bool IsAutoReplenishing => _options.AutoReplenishment;
@@ -308,7 +308,7 @@ namespace System.Threading.RateLimiting
                 }
                 else
                 {
-                    add = _fillRate * RateLimiterHelper.GetElapsedTime(_lastReplenishmentTick, nowTicks).Ticks;
+                    add = _fillRate * Stopwatch.GetElapsedTime(_lastReplenishmentTick, nowTicks).Ticks;
                 }
 
                 _tokenCount = Math.Min(_options.TokenLimit, _tokenCount + add);

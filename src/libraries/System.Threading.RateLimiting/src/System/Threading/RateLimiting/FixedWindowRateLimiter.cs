@@ -24,10 +24,10 @@ namespace System.Threading.RateLimiting
 
         /// <summary>
         /// Function to calculate elapsed time from a given tick value.
-        /// Defaults to <see cref="RateLimiterHelper.GetElapsedTime(long?)"/>.
+        /// Defaults to <see cref="Stopwatch.GetElapsedTime(long?)"/>.
         /// In tests, this field can be reassigned via reflection to inject custom time behavior without modifying the public API.
         /// </summary>
-        private readonly Func<long?, TimeSpan?> _getElapsedTime = RateLimiterHelper.GetElapsedTime;
+        private readonly Func<long?, TimeSpan?> _getElapsedTime = Stopwatch.GetElapsedTime;
 
         private readonly Timer? _renewTimer;
         private readonly FixedWindowRateLimiterOptions _options;
@@ -39,7 +39,7 @@ namespace System.Threading.RateLimiting
         private static readonly RateLimitLease FailedLease = new FixedWindowLease(false, null);
 
         /// <inheritdoc />
-        public override TimeSpan? IdleDuration => RateLimiterHelper.GetElapsedTime(_idleSince);
+        public override TimeSpan? IdleDuration => Stopwatch.GetElapsedTime(_idleSince);
 
         /// <inheritdoc />
         public override bool IsAutoReplenishing => _options.AutoReplenishment;
@@ -301,7 +301,7 @@ namespace System.Threading.RateLimiting
                     return;
                 }
 
-                if (RateLimiterHelper.GetElapsedTime(_lastReplenishmentTick, nowTicks) < _options.Window && !_options.AutoReplenishment)
+                if (Stopwatch.GetElapsedTime(_lastReplenishmentTick, nowTicks) < _options.Window && !_options.AutoReplenishment)
                 {
                     return;
                 }
