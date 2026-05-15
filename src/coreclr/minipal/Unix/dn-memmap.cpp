@@ -22,7 +22,6 @@ MemoryMappedFile* MemoryMappedFile::OpenImpl(const WCHAR* path, bool readWrite, 
     pathU8[ret] = '\0';
 
     void* address = nullptr;
-    MemoryMappedFile* result = nullptr;
 
     int fd = open(pathU8, readWrite ? (O_RDWR | O_CREAT) : O_RDONLY, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
     delete[] pathU8;
@@ -51,10 +50,7 @@ MemoryMappedFile* MemoryMappedFile::OpenImpl(const WCHAR* path, bool readWrite, 
         goto Fail;
     
     close(fd);
-    result = new MemoryMappedFile();
-    result->m_address = address;
-    result->m_size = (size_t)st.st_size;
-    return result;
+    return new MemoryMappedFile(address, (uint32_t)st.st_size);
 
 Fail:
     if (fd != -1)

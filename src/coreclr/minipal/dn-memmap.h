@@ -12,7 +12,10 @@ class MemoryMappedFile final
     uint32_t m_size;
     void* m_address;
     
-    MemoryMappedFile() = default;
+    MemoryMappedFile(void* address, uint32_t size)
+        : m_address(address)
+        , m_size(size)
+    {}
     static MemoryMappedFile* OpenImpl(const WCHAR* path, bool readWrite, uint32_t desiredSize, void* desiredAddress);
 
 public:

@@ -48,10 +48,7 @@ MemoryMappedFile* MemoryMappedFile::OpenImpl(const WCHAR* path, bool readWrite, 
     CloseHandle(hFile);
     CloseHandle(hFileMapping);
 
-    MemoryMappedFile* result = new MemoryMappedFile();
-    result->m_address = address;
-    result->m_size = size;
-    return result;
+    return new MemoryMappedFile(address, size);
 
 Fail:
     if (hFile != INVALID_HANDLE_VALUE)
