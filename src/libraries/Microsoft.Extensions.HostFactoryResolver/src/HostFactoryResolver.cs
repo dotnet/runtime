@@ -64,7 +64,7 @@ namespace Microsoft.Extensions.Hosting
                                                                  bool stopApplication = true,
                                                                  Action<object>? configureHostBuilder = null,
                                                                  Action<Exception?>? entrypointCompleted = null,
-                                                                 Dictionary<string, Action<object?>>? arbitraryActions = null)
+                                                                 IDictionary<string, Action<object?>>? arbitraryActions = null)
         {
             if (assembly.EntryPoint is null)
             {
@@ -205,7 +205,7 @@ namespace Microsoft.Extensions.Hosting
             private IDisposable? _disposable;
             private readonly Action<object>? _configure;
             private readonly Action<Exception?>? _entrypointCompleted;
-            private readonly Dictionary<string, Action<object?>>? _arbitraryActions;
+            private readonly IDictionary<string, Action<object?>>? _arbitraryActions;
             private static readonly AsyncLocal<HostingListener> _currentListener = new();
 
             public HostingListener(
@@ -215,7 +215,7 @@ namespace Microsoft.Extensions.Hosting
                 bool stopApplication,
                 Action<object>? configure,
                 Action<Exception?>? entrypointCompleted,
-                Dictionary<string, Action<object?>>? arbitraryActions)
+                IDictionary<string, Action<object?>>? arbitraryActions)
             {
                 _args = args;
                 _entryPoint = entryPoint;
