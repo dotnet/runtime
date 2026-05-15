@@ -28,7 +28,7 @@ namespace ILCompiler
         {
             foreach (EcmaMethod method in methods)
             {
-                if (compilationResults.IsMethodEntrypointMarked(method))
+                if (compilationResults.IsMethodBodyCompiled(method))
                     _methods.Add(method);
             }
         }

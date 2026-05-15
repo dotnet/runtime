@@ -107,7 +107,7 @@ namespace ILCompiler
                         continue;
                     }
 
-                    if (method.GetUnmanagedCallersOnlyAssociatedSourceType() is not null)
+                    if (!TryGetAssociatedSourceType(method, out TypeDesc associatedSourceType) || associatedSourceType is not null)
                         continue;
 
                     foreach (DependencyListEntry dependency in GetMethodStaticDependencies(context, method, "Native callable", new Utf8String(method.GetUnmanagedCallersOnlyExportName())))
@@ -117,22 +117,27 @@ namespace ILCompiler
 
             public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context)
             {
+                List<CombinedDependencyListEntry> dependencies = [];
+
                 foreach (EcmaMethod method in GetExportedMethods(_module))
                 {
-                    TypeDesc associatedSourceType = method.GetUnmanagedCallersOnlyAssociatedSourceType();
+                    if (!TryGetAssociatedSourceType(method, out TypeDesc associatedSourceType))
+                        continue;
+
                     if (associatedSourceType is null)
                         continue;
 
                     IMethodNode methodEntryPoint = GetMethodEntrypointAndAddAlias(context, method, new Utf8String(method.GetUnmanagedCallersOnlyExportName()));
 
-                    yield return new CombinedDependencyListEntry(
+                    dependencies.Add(new CombinedDependencyListEntry(
                         methodEntryPoint,
                         context.MaximallyConstructableType(associatedSourceType),
-                        "Native callable with associated source type");
+                        "Native callable with associated source type"));
 
-                    foreach (CombinedDependencyListEntry dependency in RuntimeConstructableTypeDependencies.GetMaximallyConstructableTypeDependencies(context, associatedSourceType, "Associated source type that could be loaded at runtime"))
-                        yield return dependency;
+                    RuntimeConstructableTypeDependencies.GetMaximallyConstructableTypeDependencies(dependencies, context, associatedSourceType, "Associated source type that could be loaded at runtime");
                 }
+
+                return dependencies;
             }
 
             public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => Array.Empty<CombinedDependencyListEntry>();
@@ -155,6 +160,20 @@ namespace ILCompiler
                 }
 
                 return methodEntryPoint;
+            }
+
+            private static bool TryGetAssociatedSourceType(EcmaMethod method, out TypeDesc associatedSourceType)
+            {
+                try
+                {
+                    associatedSourceType = method.GetUnmanagedCallersOnlyAssociatedSourceType();
+                    return true;
+                }
+                catch (TypeSystemException)
+                {
+                    associatedSourceType = null;
+                    return false;
+                }
             }
 
             protected override string GetName(NodeFactory context) => $"Unmanaged entry points: {_module}";

@@ -33,6 +33,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context)
         {
+            List<CombinedDependencyListEntry> dependencies = [];
+
             foreach (var entry in _mapEntries)
             {
                 var (targetType, trimmingTargetType) = entry.Value;
@@ -40,15 +42,16 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     TypeDesc effectiveTrimTargetType = RuntimeConstructableTypeDependencies.GetEffectiveTrimTargetType(trimmingTargetType);
 
-                    yield return new CombinedDependencyListEntry(
+                    dependencies.Add(new CombinedDependencyListEntry(
                         context.MetadataTypeSymbol(targetType),
                         context.NecessaryTypeSymbol(effectiveTrimTargetType),
-                        "Type in external type map is cast target");
+                        "Type in external type map is cast target"));
 
-                    foreach (CombinedDependencyListEntry dependency in RuntimeConstructableTypeDependencies.GetNecessaryTypeDependencies(context, effectiveTrimTargetType, "External type map trim target that could be loaded at runtime"))
-                        yield return dependency;
+                    RuntimeConstructableTypeDependencies.GetNecessaryTypeDependencies(dependencies, context, effectiveTrimTargetType, "External type map trim target that could be loaded at runtime");
                 }
             }
+
+            return dependencies;
         }
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
