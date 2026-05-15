@@ -1221,6 +1221,8 @@ protected:
                 case INS_ble:
                 case INS_blt:
                 case INS_bge:
+                case INS_sllg:
+                case INS_srag:
                     size = 6;
                     break;
                 default:

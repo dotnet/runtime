@@ -380,13 +380,18 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
 
     if (ins == INS_dr)
     {
-        // 32-bit signed: load into odd, SRDA from even to sign-extend
-        emit->emitIns_R_R(INS_lgr,  attr,     dividendOdd,  src1->GetRegNum());
+        // 32-bit signed: load into even, SRDA to sign-extend
+        emit->emitIns_R_R(INS_lgfr,  EA_8BYTE, dividendEven,  src1->GetRegNum());
         emit->emitIns_R_I(INS_srda, EA_8BYTE, dividendEven, 32);
     }
     else if (ins == INS_dsgr)
     {
         emit->emitIns_R_R(INS_lgr, EA_8BYTE, dividendOdd, src1->GetRegNum());
+    }
+    else if(ins == INS_dlr)
+    {
+        emit->emitIns_R_R(INS_llgfr,  EA_8BYTE, dividendEven,  src1->GetRegNum());
+        emit->emitIns_R_I(INS_srdl, EA_8BYTE, dividendEven, 32);
     }
     else
     {
@@ -400,7 +405,14 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
 
     if (targetReg != resultReg)
     {
-        emit->emitIns_R_R(INS_lgr, EA_8BYTE, targetReg, resultReg);
+        if (attr == EA_4BYTE)
+        {
+            emit->emitIns_R_R(INS_lgfr, EA_8BYTE, targetReg, resultReg);
+        }
+        else
+        {
+            emit->emitIns_R_R(INS_lgr, EA_8BYTE, targetReg, resultReg);
+        }
     }
 
     genProduceReg(tree);
@@ -4948,11 +4960,11 @@ instruction CodeGen::genGetInsForOper(GenTree* treeNode)
             {
                 if ((attr == EA_8BYTE) || (attr == EA_BYREF))
                 {
-                    ins = INS_mul;
+                    ins = INS_msgrkc;
                 }
                 else
                 {
-                    ins = INS_msgrkc;
+                    ins = INS_mul;
                 }
             }
             break;
