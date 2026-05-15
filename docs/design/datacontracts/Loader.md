@@ -88,7 +88,7 @@ TargetPointer GetPEAssembly(ModuleHandle handle);
 bool TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddress, out uint size, out uint imageFlags);
 TargetPointer GetILAddr(TargetPointer peAssemblyPtr, int rva);
 TargetPointer GetFieldAddressFromRva(TargetPointer peAssemblyPtr, int rva);
-bool TryGetSymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint size);
+bool GetInMemorySymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint size);
 IEnumerable<TargetPointer> GetAvailableTypeParams(ModuleHandle handle);
 IEnumerable<TargetPointer> GetInstantiatedMethods(ModuleHandle handle);
 
@@ -573,7 +573,7 @@ uint WebcilRvaToOffset(int rva, Data.PEImageLayout imageLayout)
     throw new InvalidOperationException("Failed to resolve RVA in Webcil image.");
 }
 
-bool TryGetSymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint size)
+bool GetInMemorySymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint size)
 {
     buffer = TargetPointer.Null;
     size = 0;

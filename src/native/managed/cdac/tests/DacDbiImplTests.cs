@@ -397,4 +397,106 @@ public unsafe class DacDbiImplTests
         Assert.Equal(System.HResults.S_OK, hr);
         Assert.Empty(assemblies);
     }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetSymbolsBuffer_NoStream(MockTarget.Architecture arch)
+    {
+        TargetPointer moduleAddr = TargetPointer.Null;
+        var (dacDbi, _) = CreateDacDbiWithLoader(arch, (loader, _) =>
+        {
+            moduleAddr = new TargetPointer(loader.AddModule().Address);
+        });
+
+        DacDbiTargetBuffer targetBuffer;
+        int symbolFormat;
+        int hr = dacDbi.GetSymbolsBuffer(moduleAddr, &targetBuffer, &symbolFormat);
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(0UL, targetBuffer.pAddress);
+        Assert.Equal(0u, targetBuffer.cbSize);
+        Assert.Equal(0 /* kSymbolFormatNone */, symbolFormat);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetSymbolsBuffer_WithSymbols(MockTarget.Architecture arch)
+    {
+        byte[] symbolBytes = [0xDE, 0xAD, 0xBE, 0xEF, 0xCA, 0xFE];
+        TargetPointer moduleAddr = TargetPointer.Null;
+        ulong expectedBufferAddr = 0;
+        var (dacDbi, _) = CreateDacDbiWithLoader(arch, (loader, _) =>
+        {
+            MockLoaderModule module = loader.AddModule();
+            MockCGrowableSymbolStream stream = loader.AddInMemorySymbolStream(module, symbolBytes);
+            moduleAddr = new TargetPointer(module.Address);
+            expectedBufferAddr = stream.Buffer;
+        });
+
+        DacDbiTargetBuffer targetBuffer;
+        int symbolFormat;
+        int hr = dacDbi.GetSymbolsBuffer(moduleAddr, &targetBuffer, &symbolFormat);
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(expectedBufferAddr, targetBuffer.pAddress);
+        Assert.Equal((uint)symbolBytes.Length, targetBuffer.cbSize);
+        Assert.Equal(1 /* kSymbolFormatPDB */, symbolFormat);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetSymbolsBuffer_EmptyStream(MockTarget.Architecture arch)
+    {
+        // Stream object exists but contains no bytes - treated like no symbols.
+        TargetPointer moduleAddr = TargetPointer.Null;
+        var (dacDbi, _) = CreateDacDbiWithLoader(arch, (loader, _) =>
+        {
+            MockLoaderModule module = loader.AddModule();
+            loader.AddInMemorySymbolStream(module, symbols: null);
+            moduleAddr = new TargetPointer(module.Address);
+        });
+
+        DacDbiTargetBuffer targetBuffer;
+        int symbolFormat;
+        int hr = dacDbi.GetSymbolsBuffer(moduleAddr, &targetBuffer, &symbolFormat);
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(0UL, targetBuffer.pAddress);
+        Assert.Equal(0u, targetBuffer.cbSize);
+        Assert.Equal(0 /* kSymbolFormatNone */, symbolFormat);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetSymbolsBuffer_ZeroModule_Fails(MockTarget.Architecture arch)
+    {
+        var mockLoader = new Mock<ILoader>();
+        DacDbiImpl dacDbi = CreateDacDbiWithMockLoader(arch, mockLoader);
+
+        DacDbiTargetBuffer targetBuffer;
+        int symbolFormat;
+        int hr = dacDbi.GetSymbolsBuffer(0, &targetBuffer, &symbolFormat);
+        Assert.NotEqual(System.HResults.S_OK, hr);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetSymbolsBuffer_NullTargetBuffer_Fails(MockTarget.Architecture arch)
+    {
+        var mockLoader = new Mock<ILoader>();
+        DacDbiImpl dacDbi = CreateDacDbiWithMockLoader(arch, mockLoader);
+
+        int symbolFormat;
+        int hr = dacDbi.GetSymbolsBuffer(0x1000, null, &symbolFormat);
+        Assert.NotEqual(System.HResults.S_OK, hr);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetSymbolsBuffer_NullSymbolFormat_Fails(MockTarget.Architecture arch)
+    {
+        var mockLoader = new Mock<ILoader>();
+        DacDbiImpl dacDbi = CreateDacDbiWithMockLoader(arch, mockLoader);
+
+        DacDbiTargetBuffer targetBuffer;
+        int hr = dacDbi.GetSymbolsBuffer(0x1000, &targetBuffer, null);
+        Assert.NotEqual(System.HResults.S_OK, hr);
+    }
 }
