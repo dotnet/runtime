@@ -170,7 +170,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         [InlineData(false)]
         public void ArbitraryActionsCustomEventCallbackIsCalled(bool stopApplication)
         {
-            var callbackCalled = new ManualResetEventSlim(false);
+            using var callbackCalled = new ManualResetEventSlim(false);
             object? callbackValue = null;
             void CustomCallback(object? value)
             {
@@ -190,7 +190,7 @@ namespace Microsoft.Extensions.Hosting.Tests
                 arbitraryActions: arbitraryActions);
 
             Assert.NotNull(factory);
-            Assert.IsAssignableFrom<IHost>(factory(Array.Empty<string>()));
+            using var host = Assert.IsAssignableFrom<IHost>(factory(Array.Empty<string>()));
             Assert.True(callbackCalled.Wait(s_WaitTimeout));
             Assert.Equal(42, callbackValue);
         }

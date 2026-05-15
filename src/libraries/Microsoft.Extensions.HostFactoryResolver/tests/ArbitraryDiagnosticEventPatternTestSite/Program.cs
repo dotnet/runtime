@@ -10,10 +10,10 @@ namespace ArbitraryDiagnosticEventPatternTestSite
     {
         public static void Main(string[] args)
         {
-            var listener = new DiagnosticListener("Microsoft.Extensions.Hosting");
+            using var listener = new DiagnosticListener("Microsoft.Extensions.Hosting");
             listener.Write("CustomEvent", 42);
 
-            var host = new HostBuilder().Build();
+            new HostBuilder().Build().Dispose();
         }
     }
 }
