@@ -113,7 +113,7 @@ public:
     //
     void SequenceCall(GenTreeCall* call)
     {
-        auto moveToEnd = [&](GenTree* def) {
+        auto moveToEnd = [&](GenTreeLclVarCommon* def) {
             MoveNodeToEnd(def);
             return GenTree::VisitResult::Continue;
             };

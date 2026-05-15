@@ -845,9 +845,9 @@ void Liveness<TLiveness>::PerNodeLocalVarLiveness(GenTree* tree)
         case GT_LCL_ADDR:
             if (TLiveness::IsLIR)
             {
-                // If this is a definition of a retbuf then we process it as
-                // part of the GT_CALL node.
-                if (IsTrackedRetBufferAddress(LIR::AsRange(m_compiler->compCurBB), tree))
+                // If this is a call definition then we process it as part of
+                // the GT_CALL node.
+                if (IsTrackedCallDefinition(LIR::AsRange(m_compiler->compCurBB), tree))
                 {
                     break;
                 }

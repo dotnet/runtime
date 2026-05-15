@@ -261,7 +261,7 @@ unsigned PromotionLiveness::GetSizeOfStructLocal(Statement* stmt, GenTreeLclVarC
         // LCL_ADDRs. Find the definition size from the containing call.
         Compiler::FindLinkData data = m_compiler->gtFindLink(stmt, lcl);
         assert((data.parent != nullptr) && data.parent->IsCall());
-               //(m_compiler->gtCallGetDefinedRetBufLclAddr(data.parent->AsCall()) == lcl));
+
         unsigned defSize = UINT_MAX;
         auto findDef = [&](const LocalDef& def) {
             if (def.Def == lcl)
