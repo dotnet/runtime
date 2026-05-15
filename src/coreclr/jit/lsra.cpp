@@ -2601,6 +2601,16 @@ void LinearScan::setFrameType()
     }
 #endif // TARGET_ARM
 
+#if defined(TARGET_ARM64)
+    if (m_compiler->compUsesUnknownSizeFrame)
+    {
+        // We reserve x19 for addressing vector and mask locals on the UnknownSizeFrame.
+        m_compiler->codeGen->regSet.rsMaskResvd |= RBM_UNKBASE;
+        JITDUMP("  Reserved REG_UNKBASE (%s) due to presence of UnknownSizeFrame\n", getRegName(REG_UNKBASE));
+        removeMask |= RBM_UNKBASE.GetIntRegSet();
+    }
+#endif
+
     if ((removeMask != RBM_NONE) && ((availableIntRegs & removeMask) != 0))
     {
         // We know that we're already in "read mode" for availableIntRegs. However,

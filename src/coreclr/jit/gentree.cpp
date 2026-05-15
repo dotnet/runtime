@@ -857,44 +857,46 @@ bool GenTree::gtHasReg(Compiler* comp) const
 int GenTree::GetRegisterDstCount(Compiler* compiler) const
 {
     assert(!isContained());
-    if (!IsMultiRegNode())
-    {
-        return IsValue() ? 1 : 0;
-    }
-    else if (IsMultiRegCall())
+
+#if FEATURE_MULTIREG_RET
+    if (IsMultiRegCall())
     {
         return AsCall()->GetReturnTypeDesc()->GetReturnRegCount();
     }
-    else if (IsCopyOrReload())
-    {
-        return gtGetOp1()->GetRegisterDstCount(compiler);
-    }
+
 #if !defined(TARGET_64BIT)
-    else if (OperIsMultiRegOp())
+    if (OperIsMultiRegOp())
     {
         assert(OperIs(GT_MUL_LONG));
         return 2;
     }
 #endif
-#ifdef FEATURE_HW_INTRINSICS
-    else if (OperIsHWIntrinsic())
+#endif // FEATURE_MULTIREG_RET
+
+    if (IsCopyOrReload())
     {
-        assert(TypeIs(TYP_STRUCT));
+        return gtGetOp1()->GetRegisterDstCount(compiler);
+    }
 
-        const GenTreeHWIntrinsic* intrinsic   = AsHWIntrinsic();
-        const NamedIntrinsic      intrinsicId = intrinsic->GetHWIntrinsicId();
-        assert(HWIntrinsicInfo::IsMultiReg(intrinsicId));
+#ifdef FEATURE_HW_INTRINSICS
+    if (OperIsHWIntrinsic())
+    {
+        const NamedIntrinsic intrinsicId = AsHWIntrinsic()->GetHWIntrinsicId();
 
-        return HWIntrinsicInfo::GetMultiRegCount(intrinsicId);
+        if (HWIntrinsicInfo::IsMultiReg(intrinsicId))
+        {
+            return HWIntrinsicInfo::GetMultiRegCount(intrinsicId);
+        }
     }
 #endif // FEATURE_HW_INTRINSICS
 
-    if (OperIsScalarLocal())
+    if (IsMultiRegLclVar())
     {
         return AsLclVar()->GetFieldCount(compiler);
     }
-    assert(!"Unexpected multi-reg node");
-    return 0;
+
+    assert(!IsMultiRegNode());
+    return IsValue() ? 1 : 0;
 }
 
 //-----------------------------------------------------------------------------------
@@ -927,7 +929,7 @@ bool GenTree::IsMultiRegNode() const
 #endif
 #endif // FEATURE_MULTIREG_RET
 
-    if (OperIs(GT_COPY, GT_RELOAD))
+    if (IsCopyOrReload())
     {
         return true;
     }
@@ -2045,8 +2047,8 @@ bool GenTreeCall::IsPure(Compiler* compiler) const
 }
 
 //------------------------------------------------------------------------------
-// getArrayLengthFromAllocation: Return the array length for an array allocation
-//                               helper call.
+// getArrayLengthFromAllocation: Return the length for an allocation whose length
+//                               is represented by GT_ARR_LENGTH.
 //
 // Arguments:
 //    tree - The array allocation helper call.
@@ -2085,6 +2087,13 @@ GenTree* Compiler::getArrayLengthFromAllocation(GenTree* tree)
             }
 
             assert((arrayLength == nullptr) || ((optMethodFlags & OMF_HAS_NEWARRAY) != 0));
+        }
+        else if (call->IsSpecialIntrinsic(this, NI_System_String_FastAllocateString))
+        {
+            // String characters start at a different offset than array data, but string length itself is a
+            // GT_ARR_LENGTH.
+            assert(call->gtArgs.CountUserArgs() == 2);
+            arrayLength = call->gtArgs.GetUserArgByIndex(1)->GetNode();
         }
     }
 
@@ -5017,7 +5026,7 @@ bool Compiler::gtIsLikelyRegVar(GenTree* tree)
 
     // If this is an EH-live var, return false if it is a def,
     // as it will have to go to memory.
-    if (varDsc->lvLiveInOutOfHndlr && ((tree->gtFlags & GTF_VAR_DEF) != 0))
+    if (varDsc->lvTracked && varDsc->lvLiveInOutOfHndlr && ((tree->gtFlags & GTF_VAR_DEF) != 0))
     {
         return false;
     }
@@ -7914,7 +7923,7 @@ bool Compiler::gtTreeHasLocalRead(GenTree* tree, unsigned lclNum)
 //   lclNum - The local to look for.
 //
 // Returns:
-//   True if there is any GT_STORE_LCL_VAR or GT_STORE_LCL_FLD that affects "lclNum".
+//   True if there is any definition that affects "lclNum".
 //
 bool Compiler::gtTreeHasLocalStore(GenTree* tree, unsigned lclNum)
 {
@@ -7923,8 +7932,7 @@ bool Compiler::gtTreeHasLocalStore(GenTree* tree, unsigned lclNum)
     public:
         enum
         {
-            DoPreOrder    = true,
-            DoLclVarsOnly = true,
+            DoPreOrder = true,
         };
 
         unsigned   m_lclNum;
@@ -7946,25 +7954,26 @@ bool Compiler::gtTreeHasLocalStore(GenTree* tree, unsigned lclNum)
                 return WALK_SKIP_SUBTREES;
             }
 
-            if (node->OperIsLocalStore())
+            auto visit = [&](GenTreeLclVarCommon* lclVar) {
+                if (lclVar->GetLclNum() == m_lclNum)
+                {
+                    return GenTree::VisitResult::Abort;
+                }
+                if (m_lclDsc->lvIsStructField && (lclVar->GetLclNum() == m_lclDsc->lvParentLcl))
+                {
+                    return GenTree::VisitResult::Abort;
+                }
+                if (m_lclDsc->lvPromoted && (lclVar->GetLclNum() >= m_lclDsc->lvFieldLclStart) &&
+                    (lclVar->GetLclNum() < m_lclDsc->lvFieldLclStart + m_lclDsc->lvFieldCnt))
+                {
+                    return GenTree::VisitResult::Abort;
+                }
+                return GenTree::VisitResult::Continue;
+            };
+
+            if (node->VisitLocalDefNodes(m_compiler, visit) == GenTree::VisitResult::Abort)
             {
-                if (node->AsLclVarCommon()->GetLclNum() == m_lclNum)
-                {
-                    return WALK_ABORT;
-                }
-
-                if (m_lclDsc->lvIsStructField && (node->AsLclVarCommon()->GetLclNum() == m_lclDsc->lvParentLcl))
-                {
-                    // Store to parent local also affects the field
-                    return WALK_ABORT;
-                }
-
-                if (m_lclDsc->lvPromoted && (node->AsLclVarCommon()->GetLclNum() >= m_lclDsc->lvFieldLclStart) &&
-                    (node->AsLclVarCommon()->GetLclNum() < m_lclDsc->lvFieldLclStart + m_lclDsc->lvFieldCnt))
-                {
-                    // Store to field also affects the parent
-                    return WALK_ABORT;
-                }
+                return WALK_ABORT;
             }
 
             return WALK_CONTINUE;
@@ -8093,239 +8102,175 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
     assert(operand != nullptr);
     assert(pUse != nullptr);
 
-    switch (OperGet())
+    if (OperIsLeaf())
     {
-        // Leaf nodes
-        case GT_LCL_VAR:
-        case GT_LCL_FLD:
-        case GT_LCL_ADDR:
-        case GT_CATCH_ARG:
-        case GT_ASYNC_CONTINUATION:
-        case GT_ASYNC_RESUME_INFO:
-        case GT_LABEL:
-        case GT_FTN_ADDR:
-        case GT_FTN_ENTRY:
-        case GT_RET_EXPR:
-        case GT_CNS_INT:
-        case GT_CNS_LNG:
-        case GT_CNS_DBL:
-        case GT_CNS_STR:
-#if defined(FEATURE_SIMD)
-        case GT_CNS_VEC:
-#endif // FEATURE_SIMD
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
-        case GT_CNS_MSK:
-#endif // FEATURE_MASKED_HW_INTRINSICS
-        case GT_MEMORYBARRIER:
-        case GT_JMP:
-        case GT_JCC:
-        case GT_SETCC:
-        case GT_NO_OP:
-        case GT_START_NONGC:
-        case GT_START_PREEMPTGC:
-        case GT_PROF_HOOK:
-        case GT_PHI_ARG:
-        case GT_JMPTABLE:
-        case GT_PHYSREG:
-        case GT_IL_OFFSET:
-        case GT_RECORD_ASYNC_RESUME:
-        case GT_NOP:
-        case GT_SWIFT_ERROR:
-        case GT_GCPOLL:
-        case GT_WASM_THROW_REF:
-        case GT_WASM_JEXCEPT:
-            return false;
+        return false;
+    }
 
-        // Standard unary operators
-        case GT_STORE_LCL_VAR:
-        case GT_STORE_LCL_FLD:
-        case GT_NOT:
-        case GT_NEG:
-        case GT_COPY:
-        case GT_RELOAD:
-        case GT_ARR_LENGTH:
-        case GT_MDARR_LENGTH:
-        case GT_MDARR_LOWER_BOUND:
-        case GT_CAST:
-        case GT_BITCAST:
-        case GT_CKFINITE:
-        case GT_LCLHEAP:
-        case GT_IND:
-        case GT_BLK:
-        case GT_BOX:
-        case GT_ALLOCOBJ:
-        case GT_RUNTIMELOOKUP:
-        case GT_ARR_ADDR:
-        case GT_INIT_VAL:
-        case GT_JTRUE:
-        case GT_SWITCH:
-        case GT_NULLCHECK:
-        case GT_PUTARG_REG:
-        case GT_PUTARG_STK:
-        case GT_RETURNTRAP:
-        case GT_RETURN:
-        case GT_RETFILT:
-        case GT_RETURN_SUSPEND:
-        case GT_PATCHPOINT_FORCED:
-        case GT_NONLOCAL_JMP:
-        case GT_BSWAP:
-        case GT_BSWAP16:
-        case GT_KEEPALIVE:
-        case GT_INC_SATURATE:
-            if (operand == this->AsUnOp()->gtOp1)
-            {
-                *pUse = &this->AsUnOp()->gtOp1;
-                return true;
-            }
-            return false;
-
+    if (OperIsSpecial())
+    {
+        switch (OperGet())
+        {
 #if defined(FEATURE_HW_INTRINSICS)
-        case GT_HWINTRINSIC:
-            for (GenTree** opUse : this->AsMultiOp()->UseEdges())
-            {
-                if (*opUse == operand)
+            case GT_HWINTRINSIC:
+                for (GenTree** opUse : AsMultiOp()->UseEdges())
                 {
-                    *pUse = opUse;
-                    return true;
+                    if (*opUse == operand)
+                    {
+                        *pUse = opUse;
+                        return true;
+                    }
                 }
-            }
-            return false;
+                return false;
 #endif // FEATURE_HW_INTRINSICS
 
-        // Special nodes
-        case GT_PHI:
-            for (GenTreePhi::Use& phiUse : AsPhi()->Uses())
+            // Special nodes
+            case GT_PHI:
             {
-                if (phiUse.GetNode() == operand)
+                for (GenTreePhi::Use& phiUse : AsPhi()->Uses())
                 {
-                    *pUse = &phiUse.NodeRef();
-                    return true;
+                    if (phiUse.GetNode() == operand)
+                    {
+                        *pUse = &phiUse.NodeRef();
+                        return true;
+                    }
                 }
+                return false;
             }
-            return false;
 
-        case GT_FIELD_LIST:
-            for (GenTreeFieldList::Use& fieldUse : AsFieldList()->Uses())
+            case GT_FIELD_LIST:
             {
-                if (fieldUse.GetNode() == operand)
+                for (GenTreeFieldList::Use& fieldUse : AsFieldList()->Uses())
                 {
-                    *pUse = &fieldUse.NodeRef();
-                    return true;
+                    if (fieldUse.GetNode() == operand)
+                    {
+                        *pUse = &fieldUse.NodeRef();
+                        return true;
+                    }
                 }
+                return false;
             }
-            return false;
 
-        case GT_CMPXCHG:
-        {
-            GenTreeCmpXchg* const cmpXchg = this->AsCmpXchg();
-            if (operand == cmpXchg->Addr())
+            case GT_CMPXCHG:
             {
-                *pUse = &cmpXchg->Addr();
-                return true;
-            }
-            if (operand == cmpXchg->Data())
-            {
-                *pUse = &cmpXchg->Data();
-                return true;
-            }
-            if (operand == cmpXchg->Comparand())
-            {
-                *pUse = &cmpXchg->Comparand();
-                return true;
-            }
-            return false;
-        }
+                GenTreeCmpXchg* const cmpXchg = AsCmpXchg();
 
-        case GT_ARR_ELEM:
-        {
-            GenTreeArrElem* const arrElem = this->AsArrElem();
-            if (operand == arrElem->gtArrObj)
-            {
-                *pUse = &arrElem->gtArrObj;
-                return true;
-            }
-            for (unsigned i = 0; i < arrElem->gtArrRank; i++)
-            {
-                if (operand == arrElem->gtArrInds[i])
+                if (operand == cmpXchg->Addr())
                 {
-                    *pUse = &arrElem->gtArrInds[i];
+                    *pUse = &cmpXchg->Addr();
                     return true;
                 }
-            }
-            return false;
-        }
 
-        case GT_CALL:
-        {
-            GenTreeCall* const call = this->AsCall();
-            if (operand == call->gtControlExpr)
-            {
-                *pUse = &call->gtControlExpr;
-                return true;
-            }
-            for (CallArg& arg : call->gtArgs.Args())
-            {
-                if (arg.GetEarlyNode() == operand)
+                if (operand == cmpXchg->Data())
                 {
-                    *pUse = &arg.EarlyNodeRef();
+                    *pUse = &cmpXchg->Data();
                     return true;
                 }
-                if (arg.GetLateNode() == operand)
+
+                if (operand == cmpXchg->Comparand())
                 {
-                    *pUse = &arg.LateNodeRef();
+                    *pUse = &cmpXchg->Comparand();
                     return true;
                 }
+                return false;
             }
-            return false;
-        }
+
+            case GT_ARR_ELEM:
+            {
+                GenTreeArrElem* const arrElem = AsArrElem();
+
+                if (operand == arrElem->gtArrObj)
+                {
+                    *pUse = &arrElem->gtArrObj;
+                    return true;
+                }
+
+                for (unsigned i = 0; i < arrElem->gtArrRank; i++)
+                {
+                    if (operand == arrElem->gtArrInds[i])
+                    {
+                        *pUse = &arrElem->gtArrInds[i];
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            case GT_CALL:
+            {
+                GenTreeCall* const call = AsCall();
+
+                if (operand == call->gtControlExpr)
+                {
+                    *pUse = &call->gtControlExpr;
+                    return true;
+                }
+
+                for (CallArg& arg : call->gtArgs.Args())
+                {
+                    if (arg.GetEarlyNode() == operand)
+                    {
+                        *pUse = &arg.EarlyNodeRef();
+                        return true;
+                    }
+                    if (arg.GetLateNode() == operand)
+                    {
+                        *pUse = &arg.LateNodeRef();
+                        return true;
+                    }
+                }
+                return false;
+            }
+
 #ifdef TARGET_ARM64
-        case GT_SELECT_NEG:
-        case GT_SELECT_INV:
-        case GT_SELECT_INC:
+            case GT_SELECT_NEG:
+            case GT_SELECT_INV:
+            case GT_SELECT_INC:
 #endif
-        case GT_SELECT:
-        {
-            GenTreeConditional* const conditional = this->AsConditional();
-            if (operand == conditional->gtCond)
+            case GT_SELECT:
             {
-                *pUse = &conditional->gtCond;
-                return true;
+                GenTreeConditional* const conditional = AsConditional();
+
+                if (operand == conditional->gtCond)
+                {
+                    *pUse = &conditional->gtCond;
+                    return true;
+                }
+
+                if (operand == conditional->gtOp1)
+                {
+                    *pUse = &conditional->gtOp1;
+                    return true;
+                }
+
+                if (operand == conditional->gtOp2)
+                {
+                    *pUse = &conditional->gtOp2;
+                    return true;
+                }
+                return false;
             }
-            if (operand == conditional->gtOp1)
+
+            default:
             {
-                *pUse = &conditional->gtOp1;
-                return true;
+                assert(!"unhandled special oper");
+                return false;
             }
-            if (operand == conditional->gtOp2)
-            {
-                *pUse = &conditional->gtOp2;
-                return true;
-            }
-            return false;
         }
-
-        // Binary nodes
-        default:
-            assert(this->OperIsBinary());
-            return TryGetUseBinOp(operand, pUse);
     }
-}
 
-bool GenTree::TryGetUseBinOp(GenTree* operand, GenTree*** pUse)
-{
-    assert(operand != nullptr);
-    assert(pUse != nullptr);
-    assert(this->OperIsBinary());
+    assert(OperIsUnary() || OperIsBinary());
+    GenTreeOp* const opNode = AsOp();
 
-    GenTreeOp* const binOp = this->AsOp();
-    if (operand == binOp->gtOp1)
+    if (operand == opNode->gtOp1)
     {
-        *pUse = &binOp->gtOp1;
+        *pUse = &opNode->gtOp1;
         return true;
     }
-    if (operand == binOp->gtOp2)
+
+    if (OperIsBinary() && (operand == opNode->gtOp2))
     {
-        *pUse = &binOp->gtOp2;
+        *pUse = &opNode->gtOp2;
         return true;
     }
     return false;
@@ -9912,7 +9857,7 @@ GenTreeCall* Compiler::gtNewCallNode(gtCallTypes           callType,
         node->gtFlags |= GTF_CALL_POP_ARGS;
 #endif // UNIX_X86_ABI
     node->gtCallType = callType;
-    INDEBUG(node->callSig = nullptr;)
+    INDEBUG_OR_WASM(node->callSig = nullptr;)
     node->tailCallInfo    = nullptr;
     node->gtRetClsHnd     = nullptr;
     node->gtCallMoreFlags = GTF_CALL_M_EMPTY;
@@ -10164,35 +10109,18 @@ void Compiler::gtInitializeStoreNode(GenTree* store, GenTree* value)
     assert(store->Data() == value);
 
 #if defined(FEATURE_SIMD)
-#ifndef TARGET_X86
-    if (varTypeIsSIMD(store))
+    if (varTypeIsSIMDOrMask(store))
     {
         // TODO-ASG: delete this zero-diff quirk.
         if (!value->IsCall() || !value->AsCall()->ShouldHaveRetBufArg())
         {
-            // We want to track SIMD stores as being intrinsics since they are
-            // functionally SIMD `mov` instructions and are more efficient when
+            // We want to track SIMD/Mask stores as being intrinsics since they
+            // are functionally `mov` instructions and are more efficient when
             // we don't promote, particularly when it occurs due to inlining.
             SetOpLclRelatedToSIMDIntrinsic(store);
             SetOpLclRelatedToSIMDIntrinsic(value);
         }
     }
-#else // TARGET_X86
-    // TODO-Cleanup: merge into the all-arch.
-    if (varTypeIsSIMD(value) || varTypeIsMask(value))
-    {
-        bool isRelatedToSimdIntrinsic = value->OperIs(GT_HWINTRINSIC, GT_CNS_VEC);
-
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
-        isRelatedToSimdIntrinsic |= value->OperIs(GT_CNS_MSK);
-#endif // FEATURE_MASKED_HW_INTRINSICS
-
-        if (isRelatedToSimdIntrinsic)
-        {
-            SetOpLclRelatedToSIMDIntrinsic(store);
-        }
-    }
-#endif // TARGET_X86
 #endif // FEATURE_SIMD
 }
 
@@ -11506,7 +11434,7 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree)
     // we only really need one physical copy of it. Therefore a shallow pointer copy will suffice.
     // (Note that this still holds even if the tree we are cloning was created by an inlinee compiler,
     // because the inlinee still uses the inliner's memory allocator anyway.)
-    INDEBUG(copy->callSig = tree->callSig;)
+    INDEBUG_OR_WASM(copy->callSig = tree->callSig;)
 
     if (tree->IsUnmanaged())
     {
@@ -13151,7 +13079,6 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
     }
 }
 
-#if FEATURE_MULTIREG_RET
 //----------------------------------------------------------------------------------
 // gtDispMultiRegCount: determine how many registers to print for a multi-reg node
 //
@@ -13197,7 +13124,6 @@ unsigned Compiler::gtDispMultiRegCount(GenTree* tree)
         return tree->GetMultiRegCount(this);
     }
 }
-#endif // FEATURE_MULTIREG_RET
 
 //----------------------------------------------------------------------------------
 // gtDispRegVal: Print the register(s) defined by the given node
@@ -13220,7 +13146,6 @@ void Compiler::gtDispRegVal(GenTree* tree)
             return;
     }
 
-#if FEATURE_MULTIREG_RET
     if (tree->IsMultiRegNode())
     {
         // 0th reg is GetRegNum(), which is already printed above.
@@ -13234,7 +13159,6 @@ void Compiler::gtDispRegVal(GenTree* tree)
             printf(",%s", genIsValidReg(reg) ? compRegVarName(reg) : "NA");
         }
     }
-#endif
 }
 
 // We usually/commonly don't expect to print anything longer than this string,
@@ -19794,6 +19718,15 @@ bool GenTreeIntConCommon::ImmedValCanBeFolded(Compiler* comp, genTreeOps op)
     // There are cases where we do want to allow folding of handle comparisons
     // (e.g., typeof(T) == typeof(int)).
     return !ImmedValNeedsReloc(comp) || (op == GT_EQ) || (op == GT_NE);
+}
+
+UINT64 GenTreeIntConCommon::UnsignedIntegralValue() const
+{
+    uint64_t mask = (UINT64_MAX >> (64 - (genTypeSize(this) * BITS_PER_BYTE)));
+
+    int64_t  signExtended = IntegralValue();
+    uint64_t zeroExtended = signExtended & mask;
+    return zeroExtended;
 }
 
 #if defined(TARGET_AMD64) || defined(TARGET_RISCV64)

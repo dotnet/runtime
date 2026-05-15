@@ -59,6 +59,21 @@ readonly struct LoaderHeapBlockData
     TargetNUInt Size { get; init; }
     TargetPointer NextBlock { get; init; }
 }
+
+enum LoaderAllocatorHeapType
+{
+    Unknown,
+    LowFrequencyHeap,
+    HighFrequencyHeap,
+    StaticsHeap,
+    StubHeap,
+    ExecutableHeap,
+    FixupPrecodeHeap,
+    NewStubPrecodeHeap,
+    DynamicHelpersStubHeap,
+    IndcellHeap,
+    CacheEntryHeap,
+}
 ```
 
 ``` csharp
@@ -80,7 +95,7 @@ IEnumerable<TargetPointer> GetInstantiatedMethods(ModuleHandle handle);
 bool IsProbeExtensionResultValid(ModuleHandle handle);
 ModuleFlags GetFlags(ModuleHandle handle);
 bool IsReadyToRun(ModuleHandle handle);
-bool TryGetSimpleName(ModuleHandle handle, out string simpleName);
+string GetSimpleName(ModuleHandle handle);
 string GetPath(ModuleHandle handle);
 string GetFileName(ModuleHandle handle);
 TargetPointer GetLoaderAllocator(ModuleHandle handle);
@@ -105,7 +120,7 @@ TargetPointer GetDynamicIL(ModuleHandle handle, uint token);
 TargetPointer GetFirstLoaderHeapBlock(TargetPointer loaderHeap);
 // Returns the data for the given loader heap block (address, size, and next block pointer).
 LoaderHeapBlockData GetLoaderHeapBlockData(TargetPointer block);
-IReadOnlyDictionary<string, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer);
+IReadOnlyDictionary<LoaderAllocatorHeapType, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer);
 
 DebuggerAssemblyControlFlags GetDebuggerInfoBits(ModuleHandle handle);
 void SetDebuggerInfoBits(ModuleHandle handle, DebuggerAssemblyControlFlags newBits);
@@ -622,14 +637,11 @@ ModuleFlags GetFlags(ModuleHandle handle)
     return GetFlags(target.Read<uint>(handle.Address + /* Module::Flags offset */));
 }
 
-bool TryGetSimpleName(ModuleHandle handle, out string simpleName)
+string GetSimpleName(ModuleHandle handle)
 {
     TargetPointer simpleNameStart = target.ReadPointer(handle.Address + /* Module::SimpleName offset */);
-    if (simpleNameStart == TargetPointer.Null)
-        return false;
     byte[] simpleNameBytes = // Read<byte> from target starting at simpleNameStart until null terminator
-    simpleName = // convert to string, throw on invalid UTF-8
-    return true;
+    return // convert to string, throw on invalid UTF-8
 }
 
 string GetPath(ModuleHandle handle)
@@ -787,39 +799,39 @@ TargetPointer GetObjectHandle(TargetPointer loaderAllocatorPointer)
     return target.ReadPointer(loaderAllocatorPointer + /* LoaderAllocator::ObjectHandle offset */);
 }
 
-IReadOnlyDictionary<string, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer)
+IReadOnlyDictionary<LoaderAllocatorHeapType, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer)
 {
     // Read LoaderAllocator data
     LoaderAllocator la = // read LoaderAllocator object at loaderAllocatorPointer
 
     // Always-present heaps
-    Dictionary<string, TargetPointer> heaps = {
-        ["LowFrequencyHeap"] = la.LowFrequencyHeap,
-        ["HighFrequencyHeap"] = la.HighFrequencyHeap,
-        ["StaticsHeap"] = la.StaticsHeap,
-        ["StubHeap"] = la.StubHeap,
-        ["ExecutableHeap"] = la.ExecutableHeap,
+    Dictionary<LoaderAllocatorHeapType, TargetPointer> heaps = {
+        [LoaderAllocatorHeapType.LowFrequencyHeap] = la.LowFrequencyHeap,
+        [LoaderAllocatorHeapType.HighFrequencyHeap] = la.HighFrequencyHeap,
+        [LoaderAllocatorHeapType.StaticsHeap] = la.StaticsHeap,
+        [LoaderAllocatorHeapType.StubHeap] = la.StubHeap,
+        [LoaderAllocatorHeapType.ExecutableHeap] = la.ExecutableHeap,
     };
 
     // Feature-conditional heaps: only included when the data descriptor field exists
     if (LoaderAllocator type has "FixupPrecodeHeap" field)
-        heaps["FixupPrecodeHeap"] = la.FixupPrecodeHeap;
+        heaps[LoaderAllocatorHeapType.FixupPrecodeHeap] = la.FixupPrecodeHeap;
 
     if (LoaderAllocator type has "NewStubPrecodeHeap" field)
-        heaps["NewStubPrecodeHeap"] = la.NewStubPrecodeHeap;
+        heaps[LoaderAllocatorHeapType.NewStubPrecodeHeap] = la.NewStubPrecodeHeap;
 
     if (LoaderAllocator type has "DynamicHelpersStubHeap" field)
-        heaps["DynamicHelpersStubHeap"] = la.DynamicHelpersStubHeap;
+        heaps[LoaderAllocatorHeapType.DynamicHelpersStubHeap] = la.DynamicHelpersStubHeap;
 
     // VirtualCallStubManager heaps: only included when VirtualCallStubManager is non-null
     if (la.VirtualCallStubManager != null)
     {
         VirtualCallStubManager vcsMgr = // read VirtualCallStubManager object at la.VirtualCallStubManager
 
-        heaps["IndcellHeap"] = vcsMgr.IndcellHeap;
+        heaps[LoaderAllocatorHeapType.IndcellHeap] = vcsMgr.IndcellHeap;
 
         if (VirtualCallStubManager type has "CacheEntryHeap" field)
-            heaps["CacheEntryHeap"] = vcsMgr.CacheEntryHeap;
+            heaps[LoaderAllocatorHeapType.CacheEntryHeap] = vcsMgr.CacheEntryHeap;
     }
 
     return heaps;

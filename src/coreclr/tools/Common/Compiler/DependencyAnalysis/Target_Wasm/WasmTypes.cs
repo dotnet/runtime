@@ -145,6 +145,42 @@ namespace ILCompiler.DependencyAnalysis.Wasm
         }
     }
 
+    public readonly struct WasmSignature : IEquatable<WasmSignature>, IComparable<WasmSignature>
+    {
+        public WasmFuncType FuncType { get; }
+        public string SignatureString { get; }
+
+        public WasmSignature(WasmFuncType funcType, string signatureString)
+        {
+            FuncType = funcType;
+            SignatureString = signatureString;
+        }
+
+        public bool Equals(WasmSignature other)
+        {
+            bool result = SignatureString.Equals(other.SignatureString, StringComparison.Ordinal);
+            Debug.Assert(!result || FuncType.Equals(other.FuncType),
+                "WasmSignature strings match but FuncTypes differ");
+
+            return result;
+        }
+
+        public override bool Equals(object? obj) => obj is WasmSignature other && Equals(other);
+
+        public override int GetHashCode() => StringComparer.Ordinal.GetHashCode(SignatureString);
+
+        public int CompareTo(WasmSignature other)
+        {
+            int result = string.Compare(SignatureString, other.SignatureString, StringComparison.Ordinal);
+            Debug.Assert(result != 0 || FuncType.Equals(other.FuncType),
+                "WasmSignature strings match but FuncTypes differ");
+            return result;
+        }
+
+        public static bool operator ==(WasmSignature left, WasmSignature right) => left.Equals(right);
+        public static bool operator !=(WasmSignature left, WasmSignature right) => !left.Equals(right);
+    }
+
     public struct WasmFuncType : IEquatable<WasmFuncType>, IComparable<WasmFuncType>
     {
         private readonly WasmResultType _params;

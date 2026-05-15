@@ -554,20 +554,6 @@ Initialize(
             }
         }
 
-#ifndef TARGET_WASM
-        if (flags & PAL_INITIALIZE_SYNC_THREAD)
-        {
-            //
-            // Tell the synchronization manager to start its worker thread
-            //
-            palError = CPalSynchMgrController::StartWorker(pThread);
-            if (NO_ERROR != palError)
-            {
-                ERROR("Synch manager failed to start worker thread\n");
-                goto CLEANUP13;
-            }
-        }
-#endif // !TARGET_WASM
         /* initialize structured exception handling stuff (signals, etc) */
         if (FALSE == SEHInitialize(pThread, flags))
         {

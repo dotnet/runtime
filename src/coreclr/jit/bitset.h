@@ -20,23 +20,6 @@ class BitSetSupport
 public:
     static const unsigned BitsInByte = 8;
 
-    // This maps 4-bit ("nibble") values into the number of 1 bits they contain.
-    static unsigned BitCountTable[16];
-
-    // Returns the number of 1 bits in the binary representation of "u".
-    template <typename T>
-    static unsigned CountBitsInIntegral(T u)
-    {
-        unsigned res = 0;
-        // We process "u" in 4-bit nibbles, hence the "*2" below.
-        for (unsigned int i = 0; i < sizeof(T) * 2; i++)
-        {
-            res += BitCountTable[u & 0xf];
-            u >>= 4;
-        }
-        return res;
-    }
-
 #ifdef DEBUG
     // This runs the "TestSuite" method for a few important instantiations of BitSet.
     static void TestSuite(CompAllocator env);
@@ -73,19 +56,6 @@ public:
         void RecordOp(Operation op);
     };
 };
-
-template <>
-FORCEINLINE unsigned BitSetSupport::CountBitsInIntegral<unsigned>(unsigned c)
-{
-    // Make sure we're 32 bit.
-    assert(sizeof(unsigned) == 4);
-    c = (c & 0x55555555) + ((c >> 1) & 0x55555555);
-    c = (c & 0x33333333) + ((c >> 2) & 0x33333333);
-    c = (c & 0x0f0f0f0f) + ((c >> 4) & 0x0f0f0f0f);
-    c = (c & 0x00ff00ff) + ((c >> 8) & 0x00ff00ff);
-    c = (c & 0x0000ffff) + ((c >> 16) & 0x0000ffff);
-    return c;
-}
 
 // A "BitSet" represents a set of integers from a "universe" [0..N-1].  This implementation assumes that "N"
 // (the "Size") is provided by the "Env" template argument type discussed below, and accessed from the Env

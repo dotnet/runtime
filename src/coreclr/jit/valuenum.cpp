@@ -2670,8 +2670,10 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
             }
 
             // Case 4: ARR_LENGTH(new T[(long)size]) -> size
+            //         ARR_LENGTH(String.FastAllocateString(pMT, (long)size)) -> size
             VNFuncApp newArrFuncApp;
-            if (GetVNFunc(arg0VN, &newArrFuncApp) && (newArrFuncApp.m_func == VNF_JitNewArr))
+            if (GetVNFunc(arg0VN, &newArrFuncApp) &&
+                ((newArrFuncApp.m_func == VNF_JitNewArr) || (newArrFuncApp.m_func == VNF_StrFastAllocate)))
             {
                 ValueNum actualSizeVN = VNIgnoreIntToLongCast(newArrFuncApp.m_args[1]);
                 if (TypeOfVN(actualSizeVN) == TYP_INT)
@@ -5430,7 +5432,7 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
         opVN  = arg0VN;
     }
 
-    auto identityForAddition = [=]() -> ValueNum {
+    auto identityForAddition = [=](bool ovf) -> ValueNum {
         ValueNum ZeroVN = VNZeroForType(typ);
 
         if (!varTypeIsFloating(typ))
@@ -5439,6 +5441,25 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
             if (cnsVN == ZeroVN)
             {
                 return opVN;
+            }
+
+            if (!ovf)
+            {
+                // (a - x) + x == a   and   x + (a - x) == a
+                // (x - a) + a == x   and   a + (x - a) == x
+                //
+                // Since ADD is commutative, the args have already been canonicalized,
+                // but we don't know which side is the SUB. Check both arrangements.
+                for (int i = 0; i < 2; i++)
+                {
+                    ValueNum  subVN   = (i == 0) ? arg0VN : arg1VN;
+                    ValueNum  otherVN = (i == 0) ? arg1VN : arg0VN;
+                    VNFuncApp sub;
+                    if (GetVNFunc(subVN, &sub) && (sub.m_func == VNF_SUB) && (sub.m_args[1] == otherVN))
+                    {
+                        return sub.m_args[0];
+                    }
+                }
             }
         }
         else if (cnsVN == NoVN)
@@ -5511,6 +5532,15 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
                     if (arg1Op2 == arg0VN)
                     {
                         return VNForFunc(typ, VNF_NEG, arg1Op1);
+                    }
+                }
+
+                // a - (a - x) == x
+                if (IsVNBinFunc(arg1VN, VNF_SUB, &arg1Op1, &arg1Op2))
+                {
+                    if (arg1Op1 == arg0VN)
+                    {
+                        return arg1Op2;
                     }
                 }
 
@@ -5643,7 +5673,7 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
         {
             case GT_ADD:
             {
-                resultVN = identityForAddition();
+                resultVN = identityForAddition(/* ovf */ false);
                 break;
             }
 
@@ -6149,7 +6179,7 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
             case VNF_ADD_OVF:
             case VNF_ADD_UN_OVF:
             {
-                resultVN = identityForAddition();
+                resultVN = identityForAddition(/* ovf */ true);
                 break;
             }
 
@@ -14515,6 +14545,41 @@ bool Compiler::fgValueNumberSpecialIntrinsic(GenTreeCall* call)
 
     switch (lookupNamedIntrinsic(call->gtCallMethHnd))
     {
+        case NI_System_String_FastAllocateString:
+        {
+            assert(call->gtArgs.CountUserArgs() == 2);
+
+            GenTree* methodTableArg = call->gtArgs.GetUserArgByIndex(0)->GetNode();
+            GenTree* lengthArg      = call->gtArgs.GetUserArgByIndex(1)->GetNode();
+
+            // Unpack the exception sets of the arguments, as we will need to include them in the result.
+            ValueNumPair methodTableVNP;
+            ValueNumPair methodTableExc;
+            ValueNumPair lengthVNP;
+            ValueNumPair lengthExc;
+            vnStore->VNPUnpackExc(methodTableArg->gtVNPair, &methodTableVNP, &methodTableExc);
+            vnStore->VNPUnpackExc(lengthArg->gtVNPair, &lengthVNP, &lengthExc);
+
+            // Union the exception sets of the arguments with the potential exceptions of the intrinsic itself.
+            // NOTE: if the length is known to be within [0..CORINFO_String_MaxLength] we can skip it.
+            ValueNumPair overflowVnp =
+                vnStore->VNPExcSetSingleton(vnStore->VNPairForFunc(TYP_REF, VNF_NewStringOverflowExc, lengthVNP));
+            ValueNumPair vnpExc =
+                vnStore->VNPExcSetUnion(vnStore->VNPExcSetUnion(methodTableExc, lengthExc), overflowVnp);
+
+            // Lastly, we need to generate a unique VN for this intrinsic, as it always returns a new string instance.
+            ValueNumPair uniqueVNP;
+            uniqueVNP.SetBoth(vnStore->VNForExpr(compCurBB, call->TypeGet()));
+
+            // Now we can compute the VN for the call itself.
+            ValueNumPair vnp =
+                vnStore->VNPairForFunc(call->TypeGet(), VNF_StrFastAllocate, methodTableVNP, lengthVNP, uniqueVNP);
+            call->gtVNPair = vnStore->VNPWithExc(vnp, vnpExc);
+
+            fgMutateGcHeap(call DEBUGARG("NI_System_String_FastAllocateString"));
+            return true;
+        }
+
         case NI_System_Type_GetTypeFromHandle:
         {
             // Optimize Type.GetTypeFromHandle(TypeHandleToRuntimeTypeHandle(clsHandle)) to a frozen handle.
