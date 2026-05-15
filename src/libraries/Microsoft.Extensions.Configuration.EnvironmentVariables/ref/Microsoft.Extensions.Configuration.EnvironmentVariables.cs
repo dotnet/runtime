@@ -20,6 +20,7 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
     {
         public EnvironmentVariablesConfigurationProvider() { }
         public EnvironmentVariablesConfigurationProvider(string? prefix) { }
+        public EnvironmentVariablesConfigurationProvider(string? prefix, System.Func<string, string>? variableNameTransformation) { }
         public override void Load() { }
         public override string ToString() { throw null; }
     }

@@ -54,7 +54,7 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
         /// <param name="prefix">A prefix used to filter the environment variables.</param>
         /// <param name="variableNameTransformation">A function that transforms environment variable names.
         /// When <see langword="null"/>, <see cref="EnvironmentVariablesConfigurationSource.DefaultTransformation"/> is used.</param>
-        internal EnvironmentVariablesConfigurationProvider(string? prefix, Func<string, string>? variableNameTransformation)
+        public EnvironmentVariablesConfigurationProvider(string? prefix, Func<string, string>? variableNameTransformation)
         {
             _prefix = prefix ?? string.Empty;
             _transformation = variableNameTransformation ?? EnvironmentVariablesConfigurationSource.DefaultTransformation;
