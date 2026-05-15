@@ -32,8 +32,8 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      BXL_TOOL_VERSION: '0.2.0-ci.7.b93871e'
-      BXL_CACHE_DIR: ${{ runner.temp }}/bxl-cache
+      BXL_TOOL_VERSION: '0.2.0-ci.8.5f00873'
+      RUNTIME_PACKAGE_VERSION: '11.0.0-preview.5.26264.105'
 
     steps:
       - name: Checkout runtime
@@ -43,6 +43,13 @@ jobs:
         uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '11.0.100-preview.5.26227.104'
+
+      # NOTE: BXL caching via actions/cache is currently disabled because
+      # restoring ~/.cache/bxl through actions/cache loses symlink semantics
+      # (e.g. Out/frontend/Download/DotNetSdk/c/host/fxr disappears), causing
+      # csc invocations to fail with exit code 131. Re-enable once BXL CAS
+      # can round-trip symlinks through tar-based caching, or once we can
+      # exclude the Download outputs from the cached state.
 
       - name: Install BuildXL bootstrap tool
         shell: bash
@@ -61,11 +68,50 @@ jobs:
           set -euo pipefail
           sudo ./eng/common/native/install-dependencies.sh
 
-      - name: Build clr+libs prerequisites
+      - name: Build corerun test host
         shell: bash
         run: |
           set -euo pipefail
-          ./build.sh clr+libs -c Release
+          ./build.sh clr.hosts -c Release
+
+      - name: Assemble Core_Root from NuGet runtime package
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          CORE_ROOT="artifacts/tests/coreclr/linux.x64.Release/Tests/Core_Root"
+          mkdir -p "$CORE_ROOT"
+
+          # Download the runtime NuGet package
+          pkg_url="https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet11/nuget/v3/flat2"
+          pkg_url+="/microsoft.netcore.app.runtime.linux-x64"
+          pkg_url+="/${RUNTIME_PACKAGE_VERSION}/microsoft.netcore.app.runtime.linux-x64.${RUNTIME_PACKAGE_VERSION}.nupkg"
+
+          pkg_dir="$(mktemp -d)"
+          curl -sSL "$pkg_url" -o "$pkg_dir/runtime.nupkg"
+
+          # Extract managed and native files into Core_Root
+          python3 -c "
+          import zipfile, shutil, os, sys
+          core_root = sys.argv[1]
+          with zipfile.ZipFile(sys.argv[2]) as z:
+              for info in z.infolist():
+                  if info.filename.startswith('runtimes/linux-x64/lib/net11.0/') and info.filename.endswith('.dll'):
+                      with z.open(info) as src, open(os.path.join(core_root, os.path.basename(info.filename)), 'wb') as dst:
+                          shutil.copyfileobj(src, dst)
+                  elif info.filename.startswith('runtimes/linux-x64/native/'):
+                      name = os.path.basename(info.filename)
+                      if name:
+                          target = os.path.join(core_root, name)
+                          with z.open(info) as src, open(target, 'wb') as dst:
+                              shutil.copyfileobj(src, dst)
+                          os.chmod(target, 0o755)
+          " "$CORE_ROOT" "$pkg_dir/runtime.nupkg"
+
+          # Copy corerun from build output
+          cp artifacts/bin/coreclr/linux.x64.Release/corerun "$CORE_ROOT/"
+
+          echo "Core_Root assembled: $(ls "$CORE_ROOT"/*.dll | wc -l) managed + $(ls "$CORE_ROOT"/*.so | wc -l) native files"
 
       - name: Show BuildXL test set
         shell: bash
@@ -91,20 +137,59 @@ jobs:
         run: |
           set -euo pipefail
 
-          export BXL_CACHE_DIR="$RUNNER_TEMP/bxl-cache"
           chmod +x ./bxl.sh
           ./bxl.sh "/f:output='*.build.stamp'"
 
       - name: Test
         shell: bash
         run: |
-          set -euo pipefail
+          set -uo pipefail
 
-          export BXL_CACHE_DIR="$RUNNER_TEMP/bxl-cache"
           chmod +x ./bxl.sh
-
-          src/tests/build.sh -GenerateLayoutOnly x64 Release
           ./bxl.sh "/f:output='*.test.stamp'"
+          bxl_exit=$?
+
+          log="Out/Logs/BuildXL.Dev.log"
+          if [[ -f "$log" ]]; then
+            mapfile -t all_tests < <(
+              grep -oE 'run coreclr test: [A-Za-z_0-9]+' "$log" \
+                | awk '{print $NF}' | sort -u
+            )
+            mapfile -t failed_tests < <(
+              grep -E 'error DX0064:.*run coreclr test: [A-Za-z_0-9]+.*failed with exit code' "$log" \
+                | grep -oE 'run coreclr test: [A-Za-z_0-9]+' \
+                | awk '{print $NF}' | sort -u
+            )
+
+            total=${#all_tests[@]}
+            failed=${#failed_tests[@]}
+            passed=$((total - failed))
+
+            echo
+            echo "============================================================"
+            echo " BuildXL test results: ${passed} passed, ${failed} failed (of ${total} total)"
+            echo "============================================================"
+            if (( failed > 0 )); then
+              echo "Failed tests:"
+              for t in "${failed_tests[@]}"; do echo "  - $t"; done
+            fi
+            echo
+
+            if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
+              {
+                echo "## BuildXL test results"
+                echo
+                echo "**${passed} passed, ${failed} failed (of ${total} total)**"
+                if (( failed > 0 )); then
+                  echo
+                  echo "### Failed tests"
+                  for t in "${failed_tests[@]}"; do echo "- \`$t\`"; done
+                fi
+              } >> "$GITHUB_STEP_SUMMARY"
+            fi
+          fi
+
+          exit "$bxl_exit"
 
       - name: Upload workflow logs
         if: failure()

@@ -10,6 +10,8 @@ config({
             modules: [
                 f`${Environment.getPathValue("BUILDXL_BIN")}/Sdk/Sdk.Prelude/package.config.dsc`,
                 f`${Environment.getPathValue("BUILDXL_BIN")}/Sdk/Sdk.Transformers/package.config.dsc`,
+                f`${Environment.getPathValue("BUILDXL_BIN")}/Sdk/Sdk.Deployment/module.config.dsc`,
+                f`${Environment.getPathValue("BUILDXL_BIN")}/Sdk/Sdk.Managed.Shared/module.config.dsc`,
             ]
         },
         {
@@ -19,13 +21,13 @@ config({
                     moduleName: "bxl_rules_repo",
                     owner: "agocke",
                     repository: "bxl_rules",
-                    commit: "684f3255dcbd4ca08acede8eda932347bb6f9578",
+                    commit: "3a494442b296c7459a4efdcfdccda5d66b6fe41a",
                 },
                 {
                     moduleName: "bxl_rules_dotnet_repo",
                     owner: "agocke",
                     repository: "bxl_rules_dotnet",
-                    commit: "c1434b76c42f427f3431cba270096a600b263844",
+                    commit: "5528cd0c8f9a661bda18869b1fec1090fc0d5011",
                 },
             ],
         },
@@ -41,8 +43,10 @@ config({
                 // Repo-specific test macro (like src/tests/live_test.bzl)
                 f`src/tests/coreclr_test/module.config.dsc`,
 
-                // Test modules
-                f`src/tests/baseservices/TieredCompilation/module.config.dsc`
+                // Repo test root: owns all BUILD.dsc files under src/tests/
+                // (recursively, stopping at nested module boundaries like
+                // src/tests/Common/ and src/tests/coreclr_test/).
+                f`src/tests/module.config.dsc`
             ]
         },
         {
@@ -63,6 +67,8 @@ config({
                 "dotnet11": "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet11/nuget/v3/index.json"
             },
             packages: [
+                { id: "Microsoft.NETCore.App.Ref", version: "11.0.0-preview.5.26264.105", tfm: ".NETCoreApp,Version=v11.0",
+                  dependentPackageIdsToSkip: ["*"], dependentPackageIdsToIgnore: ["*"] },
                 { id: "Microsoft.DotNet.XUnitAssert", version: "3.2.2-beta.26211.102", tfm: ".NETCoreApp,Version=v10.0",
                   dependentPackageIdsToSkip: ["*"], dependentPackageIdsToIgnore: ["*"] },
                 { id: "xunit.extensibility.core", version: "2.9.3", tfm: ".NETStandard,Version=v1.1",

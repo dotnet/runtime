@@ -4,22 +4,12 @@
 import * as CSharp from "Sdk.Rules.CSharp";
 import * as Defs from "Defs";
 
-const dotnetSdk = importFrom("DotNetSdk").extracted;
 const sdkVersion = "11.0.100-preview.5.26227.104";
-
-function sdkFile(path: string): File {
-    return dotnetSdk.assertExistence(r`sdk/${sdkVersion}/${path}`);
-}
-
-const roslynDeps = [
-    sdkFile("Microsoft.CodeAnalysis.dll"),
-    sdkFile("Microsoft.CodeAnalysis.CSharp.dll"),
-];
 
 @@public
 export const csharpToolchain = CSharp.csharpToolchainFromContents({
     name: "dotnet-sdk",
-    contents: dotnetSdk,
+    contents: importFrom("DotNetSdk").extracted,
     compilerPath: `sdk/${sdkVersion}/Roslyn/bincore/csc.dll`,
 });
 
@@ -42,9 +32,10 @@ export const testLibrary = CSharp.csharp_library({
     ],
     refs: [
         ...Defs.CORE_ROOT_REFPACK_DEPS,
-        "//artifacts/bin/System.Text.Json/ref/Release/net11.0:System.Text.Json.dll",
+        ...Defs.XUNIT_DEPS,
+        "@Microsoft.NETCore.App.Ref//ref/net11.0:System.Text.Json.dll",
     ],
-    fileRefs: Defs.XUNIT_DEPS,
+    externalPackages: Defs.EXTERNAL_PACKAGES,
     allowUnsafe: true,
     nowarn: [
         "CS0419",
@@ -69,8 +60,9 @@ export const xunitWrapperLibrary = CSharp.csharp_library({
     ],
     refs: [
         ...Defs.CORE_ROOT_REFPACK_DEPS,
-        "//artifacts/bin/System.Xml.ReaderWriter/ref/Release/net11.0:System.Xml.ReaderWriter.dll",
+        "@Microsoft.NETCore.App.Ref//ref/net11.0:System.Xml.ReaderWriter.dll",
     ],
+    externalPackages: Defs.EXTERNAL_PACKAGES,
     allowUnsafe: true,
 });
 
@@ -94,6 +86,10 @@ export const xunitWrapperGenerator = CSharp.csharp_library({
         "XUnitWrapperGenerator/XUnitWrapperGenerator.cs",
         "XUnitWrapperLibrary/TestFilter.cs",
     ],
-    refs: Defs.CORE_ROOT_REFPACK_DEPS,
-    fileRefs: roslynDeps,
+    refs: [
+        ...Defs.CORE_ROOT_REFPACK_DEPS,
+        `@DotNetSdk//sdk/${sdkVersion}:Microsoft.CodeAnalysis.dll`,
+        `@DotNetSdk//sdk/${sdkVersion}:Microsoft.CodeAnalysis.CSharp.dll`,
+    ],
+    externalPackages: Defs.EXTERNAL_PACKAGES,
 });

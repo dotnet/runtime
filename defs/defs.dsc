@@ -2,22 +2,35 @@
 // Licensed under the MIT License.
 
 /**
- * Repo-level definitions — pure label constants and NuGet package refs.
+ * Repo-level definitions — pure label constants and external package map.
  *
  * Framework refs use labels that encode workspace-relative paths.
- * NuGet packages use importFrom() — resolved by the NuGet resolver
- * declared in config.dsc.
+ * External packages (NuGet, SDK) use @pkg//path:file labels resolved
+ * against the EXTERNAL_PACKAGES map.
  */
 
 import * as Rules from "Sdk.Rules";
 
 // ============================================================================
-//  CORE_ROOT_REFPACK_DEPS — framework refs available in this repo
-//  Convention: artifacts/bin/<Name>/ref/Release/net11.0/<Name>.dll
+//  EXTERNAL_PACKAGES — StaticDirectory map for @pkg label resolution
+// ============================================================================
+
+@@public
+export const EXTERNAL_PACKAGES: Map<string, StaticDirectory> = Map.empty<string, StaticDirectory>()
+    .add("DotNetSdk", importFrom("DotNetSdk").extracted)
+    .add("Microsoft.NETCore.App.Ref", importFrom("Microsoft.NETCore.App.Ref").Contents.all)
+    .add("Microsoft.DotNet.XUnitAssert", importFrom("Microsoft.DotNet.XUnitAssert").Contents.all)
+    .add("xunit.extensibility.core", importFrom("xunit.extensibility.core").Contents.all)
+    .add("Microsoft.DotNet.XUnitExtensions", importFrom("Microsoft.DotNet.XUnitExtensions").Contents.all)
+    .add("xunit.abstractions", importFrom("xunit.abstractions").Contents.all);
+
+// ============================================================================
+//  CORE_ROOT_REFPACK_DEPS — framework refs from Microsoft.NETCore.App.Ref
+//  Convention: @Microsoft.NETCore.App.Ref//ref/net11.0:<Name>.dll
 // ============================================================================
 
 function refLabel(name: string): Rules.Label {
-    return `//artifacts/bin/${name}/ref/Release/net11.0:${name}.dll`;
+    return `@Microsoft.NETCore.App.Ref//ref/net11.0:${name}.dll`;
 }
 
 @@public
@@ -63,23 +76,29 @@ export const CORE_ROOT_REFPACK_DEPS: Rules.Label[] = [
 ];
 
 // ============================================================================
-//  XUNIT_DEPS — xunit compile-time refs (from NuGet resolver)
+//  XUNIT_DEPS — xunit compile-time refs (label-based)
 // ============================================================================
 
 @@public
-export const XUNIT_DEPS: File[] = [
-    importFrom("Microsoft.DotNet.XUnitAssert").Contents.all.getFile(r`lib/net10.0/xunit.assert.dll`),
-    importFrom("xunit.extensibility.core").Contents.all.getFile(r`lib/netstandard1.1/xunit.core.dll`),
-    importFrom("Microsoft.DotNet.XUnitExtensions").Contents.all.getFile(r`lib/net10.0/Microsoft.DotNet.XUnitExtensions.dll`),
-    importFrom("xunit.abstractions").Contents.all.getFile(r`lib/netstandard1.0/xunit.abstractions.dll`)
+export const XUNIT_DEPS: Rules.Label[] = [
+    "@Microsoft.DotNet.XUnitAssert//lib/net10.0:xunit.assert.dll",
+    "@xunit.extensibility.core//lib/netstandard1.1:xunit.core.dll",
+    "@Microsoft.DotNet.XUnitExtensions//lib/net10.0:Microsoft.DotNet.XUnitExtensions.dll",
+    "@xunit.abstractions//lib/netstandard1.0:xunit.abstractions.dll"
 ];
 
+// ============================================================================
 //  XUNIT_RUNTIME_DEPS — runtime files staged beside executable tests
+//  These are resolved File objects (not labels) because they are staged
+//  directly into the test output directory by the test runner.
 // ============================================================================
 
 @@public
 export const XUNIT_RUNTIME_DEPS: File[] = [
-    ...XUNIT_DEPS
+    EXTERNAL_PACKAGES.get("Microsoft.DotNet.XUnitAssert").assertExistence(r`lib/net10.0/xunit.assert.dll`),
+    EXTERNAL_PACKAGES.get("xunit.extensibility.core").assertExistence(r`lib/netstandard1.1/xunit.core.dll`),
+    EXTERNAL_PACKAGES.get("Microsoft.DotNet.XUnitExtensions").assertExistence(r`lib/net10.0/Microsoft.DotNet.XUnitExtensions.dll`),
+    EXTERNAL_PACKAGES.get("xunit.abstractions").assertExistence(r`lib/netstandard1.0/xunit.abstractions.dll`),
 ];
 
 //  CORE_ROOT paths used by BuildXL-backed CoreCLR test execution
@@ -100,13 +119,5 @@ export const CORE_ROOT_CORERUN: File =
 @@public
 export const CORECLR_TEST_COMMON_DEPS: Rules.Label[] = [
     ...CORE_ROOT_REFPACK_DEPS,
-];
-
-// ============================================================================
-//  CORECLR_TEST_COMMON_REFS — file-based refs (NuGet packages)
-// ============================================================================
-
-@@public
-export const CORECLR_TEST_COMMON_REFS: File[] = [
     ...XUNIT_DEPS
 ];

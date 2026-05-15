@@ -1,4 +1,4 @@
 module({
-    name: "Tests.BaseServices.TieredCompilation",
+    name: "Tests",
     nameResolutionSemantics: NameResolutionSemantics.implicitProjectReferences,
 });
