@@ -95,8 +95,8 @@ void Compiler::eePrintCorInfoType(StringPrinter* printer, CorInfoType corInfoTyp
                                                                 "<UNDEF>", "void",       "bool",   "char",  "sbyte",
                                                                 "byte",    "short",      "ushort", "int",   "uint",
                                                                 "long",    "ulong",      "nint",   "nuint", "float",
-                                                                "double",  "string",     "ptr",    "byref", "struct",
-                                                                "class",   "typedbyref", "var"};
+                                                                 "double",  "ptr",        "byref",  "class", "struct",
+                                                                 "var"};
 
     const char* corInfoTypeName = "CORINFO_TYPE_INVALID";
     if (corInfoType >= 0 && corInfoType < CORINFO_TYPE_COUNT)

@@ -729,10 +729,10 @@ namespace Internal.JitInterface
         CORINFO_TYPE_NATIVEUINT = 0xd,
         CORINFO_TYPE_FLOAT = 0xe,
         CORINFO_TYPE_DOUBLE = 0xf,
-        CORINFO_TYPE_CLASS = 0x10,
-        CORINFO_TYPE_PTR = 0x11,
-        CORINFO_TYPE_BYREF = 0x12,
-        CORINFO_TYPE_VALUECLASS = 0x15,
+        CORINFO_TYPE_PTR = 0x10,
+        CORINFO_TYPE_BYREF = 0x11,
+        CORINFO_TYPE_CLASS = 0x12,
+        CORINFO_TYPE_VALUECLASS = 0x13,
 
         // CORINFO_TYPE_VAR is for a generic type variable.
         // Generic type variables only appear when the JIT is doing
@@ -740,7 +740,7 @@ namespace Internal.JitInterface
         // for the EE, in which case we're running
         // the JIT in "import only" mode.
 
-        CORINFO_TYPE_VAR = 0x16,
+        CORINFO_TYPE_VAR = 0x14,
         CORINFO_TYPE_COUNT,                         // number of jit types
     }
 
