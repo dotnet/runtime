@@ -270,6 +270,15 @@ namespace System.Net.Security.Tests
                         AuthenticateAsClientAsync(client, CredentialCache.DefaultNetworkCredentials, string.Empty),
                         AuthenticateAsServerAsync(server));
 
+                    // The mid-frame failure scenario only applies when NegotiateStream is actually
+                    // framing the payload (i.e., encryption or signing is in effect). With
+                    // ProtectionLevel.None, NegotiateStream.Read forwards directly to the inner stream
+                    // and there is no _readBufferCount to leave stale.
+                    if (!client.IsEncrypted && !client.IsSigned)
+                    {
+                        return;
+                    }
+
                     // Inject only a frame header that promises a body, then close the inner stream so the
                     // client's body read fails mid-frame. With the bug, NegotiateStream pre-populates
                     // _readBufferCount with the announced body size, and a subsequent Read returns up to
