@@ -324,6 +324,7 @@ Pull request: <link to the PR if the build was a PR build, otherwise omit this l
 ```json
 {
   "ErrorMessage": "<exact substring from the failure log; the assertion or exception message text — never a bare test name>",
+  "ErrorPattern": "",
   "BuildRetry": false,
   "ExcludeConsoleLog": false
 }
@@ -356,6 +357,7 @@ Pull request: <link, omit if not a PR build>
 
 ```json
 {
+  "ErrorMessage": "",
   "ErrorPattern": "<single-line anchored regex; use `[^\\n]*` instead of `.*`>",
   "BuildRetry": false,
   "ExcludeConsoleLog": false
@@ -371,7 +373,7 @@ Walk all nine before submission. Canonical reference: [`dotnet/arcade-skills/...
 2. Exactly ONE fenced JSON block.
 3. Opening fence is exactly three backticks + `json`, lowercase, nothing else on the line.
 4. Closing fence is exactly three backticks, same length as open.
-5. Exactly one of `ErrorMessage` / `ErrorPattern` is present and non-empty. The unused field is DELETED, not set to `""`.
+5. **All four keys** (`ErrorMessage`, `ErrorPattern`, `BuildRetry`, `ExcludeConsoleLog`) are present. Exactly one of `ErrorMessage` / `ErrorPattern` is non-empty; the unused one is `""` (empty string), NOT deleted. Build Analysis only treats an issue as a tracking KBE when the full schema is intact — omitting a key silently breaks `Tracking` linkage even though the JSON itself is valid.
 6. The signature is NOT a bare identifier. A fully-qualified test name, a stack-frame line, or a bare exception type all appear in `[PASS]` and `[SKIP]` lines for the same test. Applies to BOTH `ErrorMessage` and `ErrorPattern`.
 7. Negative-match smoke test against the failure log:
 
@@ -401,7 +403,10 @@ Both `ErrorMessage` and `ErrorPattern` accept arrays — each element matches a 
   "ErrorMessage": [
     "<test name on one line>",
     "<exception message on a later line>"
-  ]
+  ],
+  "ErrorPattern": "",
+  "BuildRetry": false,
+  "ExcludeConsoleLog": false
 }
 ```
 
