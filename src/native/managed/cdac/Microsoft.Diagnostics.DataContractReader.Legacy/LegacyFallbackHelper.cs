@@ -25,15 +25,6 @@ internal static class LegacyFallbackHelper
     {
         // Dump creation — the cDAC does not implement memory enumeration.
         nameof(ICLRDataEnumMemoryRegions.EnumMemoryRegions),
-
-        // IXCLRDataModule — not yet implemented in the cDAC.
-        nameof(IXCLRDataModule.GetMethodDefinitionByToken),
-
-        // GC heap analysis — not yet implemented in the cDAC (PR #125895).
-        nameof(ISOSDacInterface11.IsTrackedType),
-
-        // Loader heap traversal — not yet implemented in the cDAC (PR #125129).
-        nameof(ISOSDacInterface.TraverseLoaderHeap),
     };
 
     // Files whose methods are all allowed to fall back.

@@ -32,7 +32,8 @@ namespace BINDER_SPACE
                                     /* in */  AssemblyName        *pAssemblyName,
                                     /* in */  bool                 excludeAppPaths,
                                     /* out */ Assembly           **ppAssembly,
-                                    /* [out, optional] */ Assembly **ppExistingAssemblyOnFailure = nullptr);
+                                    /* [out, optional] */ Assembly **ppExistingAssemblyOnFailure = nullptr,
+                                    /* out */ SString            *pDiagnosticInfo = NULL);
 
         static HRESULT BindToSystem(/* in */ SString    &systemDirectory,
                                     /* out */ Assembly **ppSystemAssembly);
@@ -45,7 +46,8 @@ namespace BINDER_SPACE
         static HRESULT GetAssembly(/* in */  SString     &assemblyPath,
                                    /* in */  BOOL         fIsInTPA,
                                    /* out */ Assembly   **ppAssembly,
-                                   /* in */  ProbeExtensionResult probeExtensionResult = ProbeExtensionResult::Invalid());
+                                   /* in */  ProbeExtensionResult probeExtensionResult = ProbeExtensionResult::Invalid(),
+                                   /* out */ SString    *pDiagnosticInfo = NULL);
 
 #if !defined(DACCESS_COMPILE)
         static HRESULT BindUsingHostAssemblyResolver (/* in */ INT_PTR pAssemblyLoadContextToBindWithin,
