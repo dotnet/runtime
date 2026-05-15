@@ -502,7 +502,7 @@ namespace Mono.Linker.Steps
                 ApplyPreserveInfo(type);
             }
 
-            foreach (var method in Annotations.GetPendingReflectionVisibleMethods())
+            foreach (var method in Annotations.PendingReflectionVisibleMethods)
             {
                 marked = true;
                 var origin = new MessageOrigin(method);
@@ -514,14 +514,16 @@ namespace Mono.Linker.Steps
                 // be used as a generic argument in constrained calls via MakeGenericMethod.
                 MarkTypeVisibleToReflection(method.DeclaringType, new DependencyInfo(DependencyKind.DeclaringType, method), origin);
             }
+            Annotations.PendingReflectionVisibleMethods.Clear();
 
-            foreach (var field in Annotations.GetPendingReflectionVisibleFields())
+            foreach (var field in Annotations.PendingReflectionVisibleFields)
             {
                 marked = true;
                 var origin = new MessageOrigin(field);
                 MarkFieldVisibleToReflection(field, new DependencyInfo(DependencyKind.XmlDescriptor, field), origin);
                 MarkTypeVisibleToReflection(field.DeclaringType, new DependencyInfo(DependencyKind.DeclaringType, field), origin);
             }
+            Annotations.PendingReflectionVisibleFields.Clear();
 
             return marked;
         }

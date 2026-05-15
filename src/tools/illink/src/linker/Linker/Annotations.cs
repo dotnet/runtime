@@ -246,25 +246,17 @@ namespace Mono.Linker
         }
 
         /// <summary>
-        /// Schedules a method for reflection-visible treatment by MarkStep.
-        /// Used by DescriptorMarker to defer to MarkStep which owns MarkMethodVisibleToReflection.
+        /// Schedules a method for reflection-visible marking by MarkStep.
         /// </summary>
         public void MarkPendingReflectionVisibleMethod(MethodDefinition method) => pending_reflection_visible_methods.Add(method);
+
+        /// <summary>
+        /// Schedules a field for reflection-visible marking by MarkStep.
+        /// </summary>
         public void MarkPendingReflectionVisibleField(FieldDefinition field) => pending_reflection_visible_fields.Add(field);
 
-        public MethodDefinition[] GetPendingReflectionVisibleMethods()
-        {
-            var result = pending_reflection_visible_methods.ToArray();
-            pending_reflection_visible_methods.Clear();
-            return result;
-        }
-
-        public FieldDefinition[] GetPendingReflectionVisibleFields()
-        {
-            var result = pending_reflection_visible_fields.ToArray();
-            pending_reflection_visible_fields.Clear();
-            return result;
-        }
+        public HashSet<MethodDefinition> PendingReflectionVisibleMethods => pending_reflection_visible_methods;
+        public HashSet<FieldDefinition> PendingReflectionVisibleFields => pending_reflection_visible_fields;
 
         public bool SetProcessed(IMetadataTokenProvider provider)
         {

@@ -74,11 +74,9 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods
 		[Kept]
 		static void UseViaReflection ()
 		{
-#pragma warning disable IL2060
 			typeof (IStaticAbstract).GetMethod (nameof (IStaticAbstract.Call))
 				.MakeGenericMethod (ExplicitLayoutPreservedViaDescriptor.GetMyType ())
 				.Invoke (null, null);
-#pragma warning restore IL2060
 		}
 
 		[Kept]

@@ -12,7 +12,6 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods
 	/// When a type is preserved via an XML descriptor, its static abstract interface
 	/// implementations should be kept if the static abstract methods are used through
 	/// constrained calls elsewhere in the program.
-	/// Regression test for https://github.com/dotnet/runtime/issues/128120
 	/// </summary>
 	[SetupLinkerDescriptorFile ("StaticAbstractMethodsPreservedViaDescriptor.xml")]
 	[ExpectedNoWarnings]
@@ -64,18 +63,14 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods
 			public static Type GetMyType () => MethodBase.GetCurrentMethod ().DeclaringType;
 		}
 
-		// Mirrors the pattern from the original repro (dotnet/runtime#128120):
-		// typeof(IStaticAbstract).GetMethod("Call").MakeGenericMethod(preservedType).Invoke(...)
-		// The descriptor-preserved method GetMyType returns its DeclaringType, which is then
-		// used as a type argument to MakeGenericMethod on a method constrained by IStaticAbstract.
+		// Mirrors the pattern where a descriptor-preserved method's DeclaringType is used
+		// as a type argument to MakeGenericMethod on a method constrained by IStaticAbstract.
 		[Kept]
 		static void UseViaReflection ()
 		{
-#pragma warning disable IL2060
 			typeof (IStaticAbstract).GetMethod (nameof (IStaticAbstract.Call))
 				.MakeGenericMethod (PreservedViaDescriptorOnly.GetMyType ())
 				.Invoke (null, null);
-#pragma warning restore IL2060
 		}
 
 		[Kept]
