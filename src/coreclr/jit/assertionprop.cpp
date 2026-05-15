@@ -5374,6 +5374,13 @@ bool Compiler::optWriteBarrierAssertionProp_StoreBlk(ASSERT_VALARG_TP assertions
         return true;
     }
 
+    if (barrierType == GCInfo::WriteBarrierForm::WBF_BarrierUnchecked)
+    {
+        JITDUMP("can use an unchecked barrier.\n");
+        store->gtFlags |= GTF_IND_TGT_HEAP;
+        return true;
+    }
+
     JITDUMP("unknown.\n");
     return false;
 }
