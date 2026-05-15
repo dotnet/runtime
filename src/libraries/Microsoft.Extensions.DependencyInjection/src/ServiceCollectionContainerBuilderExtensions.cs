@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -91,17 +92,25 @@ namespace Microsoft.Extensions.DependencyInjection
 
             IReadOnlyList<ServiceDescriptor> descriptors = services is IReadOnlyList<ServiceDescriptor> readOnly
                 ? readOnly
-                : new List<ServiceDescriptor>(services);
+                : new ReadOnlyCollection<ServiceDescriptor>((IList<ServiceDescriptor>)services);
 
             List<string>? errors = null;
-            foreach (IServiceCollectionValidator validator in validators)
+            try
             {
-                ValidationResult result = validator.Validate(descriptors);
-                if (!result.IsSuccess)
+                foreach (IServiceCollectionValidator validator in validators)
                 {
-                    errors ??= new List<string>();
-                    errors.AddRange(result.Errors);
+                    ValidationResult result = validator.Validate(descriptors);
+                    if (!result.IsSuccess)
+                    {
+                        errors ??= new List<string>();
+                        errors.AddRange(result.Errors);
+                    }
                 }
+            }
+            catch
+            {
+                provider.Dispose();
+                throw;
             }
 
             if (errors is not null)

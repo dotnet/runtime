@@ -820,12 +820,12 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
             public ValidationResult Validate(IReadOnlyList<ServiceDescriptor> services)
             {
-                if (_foo is null)
+                if (_foo is not null)
                 {
-                    return ValidationResult.Fail("IFoo was not injected");
+                    return ValidationResult.Success;
                 }
 
-                return ValidationResult.Success;
+                return ValidationResult.Fail("IFoo was not injected");
             }
         }
 

@@ -104,6 +104,12 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>
         /// A new <see cref="ValidationResult"/> whose <see cref="Errors"/> contains the errors from both operands.
         /// </returns>
+        /// <remarks>
+        /// Each application of this operator allocates a new array to hold the combined errors.
+        /// When aggregating many <see cref="ValidationResult"/> values, prefer collecting all errors
+        /// manually and constructing a single <see cref="ValidationResult"/> via
+        /// <see cref="Fail(IReadOnlyList{string})"/> to avoid repeated allocations.
+        /// </remarks>
         public static ValidationResult operator +(ValidationResult left, ValidationResult right)
         {
             if (left.IsSuccess)
