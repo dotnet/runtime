@@ -8,12 +8,12 @@ if(MSVC)
     set(HAVE_ENDIAN_H 1)
 
     # MSVC compiler is currently missing C11 stdalign.h header
-    # Fake it until support is added. Place fakes under a libunwind-private
-    # subdir so they only land on libunwind's own compile include path
-    # (added in libunwind_extras/CMakeLists.txt) and not on the include path
-    # of libunwind consumers (e.g. CoreCLR PAL when cross-compiling for
-    # Android), which would otherwise risk shadowing the real headers from
-    # the target sysroot.
+    # Fake it until support is added. Place fakes under a msvc-shim
+    # subdir that is added to the include path only for libunwind's own
+    # compile (see libunwind_extras/CMakeLists.txt) and not for libunwind
+    # consumers (e.g. CoreCLR PAL when cross-compiling for Android), which
+    # would otherwise risk shadowing the real headers from the target
+    # sysroot.
     check_include_files(stdalign.h HAVE_STDALIGN_H)
     if (NOT HAVE_STDALIGN_H)
         configure_file(${CLR_SRC_NATIVE_DIR}/external/libunwind/include/remote/win/fakestdalign.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/msvc-shim/stdalign.h COPYONLY)
