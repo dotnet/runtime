@@ -4112,10 +4112,10 @@ bool StructMarshalStubs::TryGenerateStructMarshallingMethod(MethodDesc* pMD, Dyn
 
     _ASSERTE(pStructMT->IsValueType());
 
-    if (pStructMT->IsBlittable())
+    if (pStructMT->IsBlittable() || pStructMT->IsEnum())
     {
-        // No need to generate stubs for blittable types since they can be marshaled by value without any transformation.
-        // The default IL implementation is correct.
+        // No need to generate stubs for blittable types or enums since they can be marshaled
+        // by value without any transformation. The default IL implementation is correct.
         return false;
     }
 
@@ -5912,6 +5912,12 @@ PCODE JitILStub(MethodDesc* pStubMD)
     {
         // We need an entry point that can be called multiple times
         pCode = pStubMD->GetMultiCallableAddrOfCode();
+    }
+    else
+    {
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(pStubMD->GetPortableEntryPoint());
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
     }
 
     return pCode;

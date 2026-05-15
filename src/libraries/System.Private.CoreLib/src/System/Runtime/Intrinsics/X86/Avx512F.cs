@@ -782,84 +782,72 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>__m128d _mm_mask_compressstoreu_pd (void * a, __mmask8 k, __m128d a)</para>
             ///   <para>  VCOMPRESSPD m128 {k1}{z}, xmm2</para>
             /// </summary>
-            [RequiresUnsafe]
             public static unsafe void CompressStore(double* address, Vector128<double> mask, Vector128<double> source) => CompressStore(address, mask, source);
 
             /// <summary>
             ///   <para>__m128i _mm_mask_compressstoreu_epi32 (void * a, __mask8 k, __m128i a)</para>
             ///   <para>  VPCOMPRESSD m128 {k1}{z}, xmm2</para>
             /// </summary>
-            [RequiresUnsafe]
             public static unsafe void CompressStore(int* address, Vector128<int> mask, Vector128<int> source) => CompressStore(address, mask, source);
 
             /// <summary>
             ///   <para>__m128i _mm_mask_compressstoreu_epi64 (void * a, __mask8 k, __m128i a)</para>
             ///   <para>  VPCOMPRESSQ m128 {k1}{z}, xmm2</para>
             /// </summary>
-            [RequiresUnsafe]
             public static unsafe void CompressStore(long* address, Vector128<long> mask, Vector128<long> source) => CompressStore(address, mask, source);
 
             /// <summary>
             ///   <para>__m128 _mm_mask_compressstoreu_ps (void * a, __mmask8 k, __m128 a)</para>
             ///   <para>  VCOMPRESSPS m128 {k1}{z}, xmm2</para>
             /// </summary>
-            [RequiresUnsafe]
             public static unsafe void CompressStore(float* address, Vector128<float> mask, Vector128<float> source) => CompressStore(address, mask, source);
 
             /// <summary>
             ///   <para>__m128i _mm_mask_compressstoreu_epi32 (void * a, __mask8 k, __m128i a)</para>
             ///   <para>  VPCOMPRESSD m128 {k1}{z}, xmm2</para>
             /// </summary>
-            [RequiresUnsafe]
             public static unsafe void CompressStore(uint* address, Vector128<uint> mask, Vector128<uint> source) => CompressStore(address, mask, source);
 
             /// <summary>
             ///   <para>__m128i _mm_mask_compressstoreu_epi64 (void * a, __mask8 k, __m128i a)</para>
             ///   <para>  VPCOMPRESSQ m128 {k1}{z}, xmm2</para>
             /// </summary>
-            [RequiresUnsafe]
             public static unsafe void CompressStore(ulong* address, Vector128<ulong> mask, Vector128<ulong> source) => CompressStore(address, mask, source);
 
             /// <summary>
             ///   <para>__m256d _mm256_mask_compressstoreu_pd (void * a, __mmask8 k, __m256d a)</para>
             ///   <para>  VCOMPRESSPD m256 {k1}{z}, ymm2</para>
             /// </summary>
-            [RequiresUnsafe]
             public static unsafe void CompressStore(double* address, Vector256<double> mask, Vector256<double> source) => CompressStore(address, mask, source);
 
             /// <summary>
             ///   <para>void _mm256_mask_compressstoreu_epi32 (void * a, __mmask8 k, __m256i a)</para>
             ///   <para>  VPCOMPRESSD m256 {k1}{z}, ymm2</para>
             /// </summary>
-            [RequiresUnsafe]
             public static unsafe void CompressStore(int* address, Vector256<int> mask, Vector256<int> source) => CompressStore(address, mask, source);
 
             /// <summary>
             ///   <para>void _mm256_mask_compressstoreu_epi64 (void * a, __mmask8 k, __m256i a)</para>
             ///   <para>  VPCOMPRESSQ m256 {k1}{z}, ymm2</para>
             /// </summary>
-            [RequiresUnsafe]
             public static unsafe void CompressStore(long* address, Vector256<long> mask, Vector256<long> source) => CompressStore(address, mask, source);
 
             /// <summary>
             ///   <para>__m256 _mm256_mask_compressstoreu_ps (void * a, __mmask8 k, __m256 a)</para>
             ///   <para>  VCOMPRESSPS m256 {k1}{z}, ymm2</para>
             /// </summary>
-            [RequiresUnsafe]
             public static unsafe void CompressStore(float* address, Vector256<float> mask, Vector256<float> source) => CompressStore(address, mask, source);
 
             /// <summary>
             ///   <para>void _mm256_mask_compressstoreu_epi32 (void * a, __mmask8 k, __m256i a)</para>
             ///   <para>  VPCOMPRESSD m256 {k1}{z}, ymm2</para>
             /// </summary>
-            [RequiresUnsafe]
             public static unsafe void CompressStore(uint* address, Vector256<uint> mask, Vector256<uint> source) => CompressStore(address, mask, source);
 
             /// <summary>
             ///   <para>void _mm256_mask_compressstoreu_epi64 (void * a, __mmask8 k, __m256i a)</para>
             ///   <para>  VPCOMPRESSQ m256 {k1}{z}, ymm2</para>
             /// </summary>
-            [RequiresUnsafe]
             public static unsafe void CompressStore(ulong* address, Vector256<ulong> mask, Vector256<ulong> source) => CompressStore(address, mask, source);
 
             /// <summary>
@@ -1298,7 +1286,6 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>  VEXPANDPD xmm1 {k1}{z}, m128</para>
             /// </summary>
             /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-            [RequiresUnsafe]
             public static unsafe Vector128<double> ExpandLoad(double* address, Vector128<double> mask, Vector128<double> merge) => ExpandLoad(address, mask, merge);
 
             /// <summary>
@@ -1306,7 +1293,6 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>  VPEXPANDD xmm1 {k1}{z}, m128</para>
             /// </summary>
             /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-            [RequiresUnsafe]
             public static unsafe Vector128<int> ExpandLoad(int* address, Vector128<int> mask, Vector128<int> merge) => ExpandLoad(address, mask, merge);
 
             /// <summary>
@@ -1314,7 +1300,6 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>  VPEXPANDQ xmm1 {k1}{z}, m128</para>
             /// </summary>
             /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-            [RequiresUnsafe]
             public static unsafe Vector128<long> ExpandLoad(long* address, Vector128<long> mask, Vector128<long> merge) => ExpandLoad(address, mask, merge);
 
             /// <summary>
@@ -1322,7 +1307,6 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>  VEXPANDPS xmm1 {k1}{z}, m128</para>
             /// </summary>
             /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-            [RequiresUnsafe]
             public static unsafe Vector128<float> ExpandLoad(float* address, Vector128<float> mask, Vector128<float> merge) => ExpandLoad(address, mask, merge);
 
             /// <summary>
@@ -1330,7 +1314,6 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>  VPEXPANDD xmm1 {k1}{z}, m128</para>
             /// </summary>
             /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-            [RequiresUnsafe]
             public static unsafe Vector128<uint> ExpandLoad(uint* address, Vector128<uint> mask, Vector128<uint> merge) => ExpandLoad(address, mask, merge);
 
             /// <summary>
@@ -1338,7 +1321,6 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>  VPEXPANDQ xmm1 {k1}{z}, m128</para>
             /// </summary>
             /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-            [RequiresUnsafe]
             public static unsafe Vector128<ulong> ExpandLoad(ulong* address, Vector128<ulong> mask, Vector128<ulong> merge) => ExpandLoad(address, mask, merge);
 
             /// <summary>
@@ -1346,7 +1328,6 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>  VEXPANDPD ymm1 {k1}{z}, m256</para>
             /// </summary>
             /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-            [RequiresUnsafe]
             public static unsafe Vector256<double> ExpandLoad(double* address, Vector256<double> mask, Vector256<double> merge) => ExpandLoad(address, mask, merge);
 
             /// <summary>
@@ -1354,7 +1335,6 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>  VPEXPANDD ymm1 {k1}{z}, m256</para>
             /// </summary>
             /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-            [RequiresUnsafe]
             public static unsafe Vector256<int> ExpandLoad(int* address, Vector256<int> mask, Vector256<int> merge) => ExpandLoad(address, mask, merge);
 
             /// <summary>
@@ -1362,7 +1342,6 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>  VPEXPANDQ ymm1 {k1}{z}, m256</para>
             /// </summary>
             /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-            [RequiresUnsafe]
             public static unsafe Vector256<long> ExpandLoad(long* address, Vector256<long> mask, Vector256<long> merge) => ExpandLoad(address, mask, merge);
 
             /// <summary>
@@ -1370,7 +1349,6 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>  VEXPANDPS ymm1 {k1}{z}, m256</para>
             /// </summary>
             /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-            [RequiresUnsafe]
             public static unsafe Vector256<float> ExpandLoad(float* address, Vector256<float> mask, Vector256<float> merge) => ExpandLoad(address, mask, merge);
 
             /// <summary>
@@ -1378,7 +1356,6 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>  VPEXPANDD ymm1 {k1}{z}, m256</para>
             /// </summary>
             /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-            [RequiresUnsafe]
             public static unsafe Vector256<uint> ExpandLoad(uint* address, Vector256<uint> mask, Vector256<uint> merge) => ExpandLoad(address, mask, merge);
 
             /// <summary>
@@ -1386,7 +1363,6 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>  VPEXPANDQ ymm1 {k1}{z}, m256</para>
             /// </summary>
             /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-            [RequiresUnsafe]
             public static unsafe Vector256<ulong> ExpandLoad(ulong* address, Vector256<ulong> mask, Vector256<ulong> merge) => ExpandLoad(address, mask, merge);
 
             /// <summary>
@@ -1457,7 +1433,6 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>  VMOVUPD xmm1 {k1}{z}, m128</para>
             /// </summary>
             /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-            [RequiresUnsafe]
             public static unsafe Vector128<double> MaskLoad(double* address, Vector128<double> mask, Vector128<double> merge) => MaskLoad(address, mask, merge);
 
             /// <summary>
@@ -1465,7 +1440,6 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>  VMOVDQU32 xmm1 {k1}{z}, m128</para>
             /// </summary>
             /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-            [RequiresUnsafe]
             public static unsafe Vector128<int> MaskLoad(int* address, Vector128<int> mask, Vector128<int> merge) => MaskLoad(address, mask, merge);
 
             /// <summary>
@@ -1473,7 +1447,6 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>  VMOVDQU64 xmm1 {k1}{z}, m128</para>
             /// </summary>
             /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-            [RequiresUnsafe]
             public static unsafe Vector128<long> MaskLoad(long* address, Vector128<long> mask, Vector128<long> merge) => MaskLoad(address, mask, merge);
 
             /// <summary>
@@ -1481,7 +1454,6 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>  VMOVUPS xmm1 {k1}{z}, m128</para>
             /// </summary>
             /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-            [RequiresUnsafe]
             public static unsafe Vector128<float> MaskLoad(float* address, Vector128<float> mask, Vector128<float> merge) => MaskLoad(address, mask, merge);
 
             /// <summary>
@@ -1489,7 +1461,6 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>  VMOVDQU32 xmm1 {k1}{z}, m128</para>
             /// </summary>
             /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-            [RequiresUnsafe]
             public static unsafe Vector128<uint> MaskLoad(uint* address, Vector128<uint> mask, Vector128<uint> merge) => MaskLoad(address, mask, merge);
 
             /// <summary>
@@ -1497,7 +1468,6 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>  VMOVDQU64 xmm1 {k1}{z}, m128</para>
             /// </summary>
             /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-            [RequiresUnsafe]
             public static unsafe Vector128<ulong> MaskLoad(ulong* address, Vector128<ulong> mask, Vector128<ulong> merge) => MaskLoad(address, mask, merge);
 
             /// <summary>
@@ -1505,14 +1475,12 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>  VMOVUPD ymm1 {k1}{z}, m256</para>
             /// </summary>
             /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-            [RequiresUnsafe]
             public static unsafe Vector256<double> MaskLoad(double* address, Vector256<double> mask, Vector256<double> merge) => MaskLoad(address, mask, merge);
 
             /// <summary>
             ///   <para>__m256i _mm256_mask_loadu_epi32 (__m256i s, __mmask8 k, void const * mem_addr)</para>
             ///   <para>  VMOVDQU32 ymm1 {k1}{z}, m256</para>
             /// </summary>
-            [RequiresUnsafe]
             public static unsafe Vector256<int> MaskLoad(int* address, Vector256<int> mask, Vector256<int> merge) => MaskLoad(address, mask, merge);
 
             /// <summary>
@@ -1520,7 +1488,6 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>  VMOVDQU64 ymm1 {k1}{z}, m256</para>
             /// </summary>
             /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-            [RequiresUnsafe]
             public static unsafe Vector256<long> MaskLoad(long* address, Vector256<long> mask, Vector256<long> merge) => MaskLoad(address, mask, merge);
 
             /// <summary>
@@ -1528,7 +1495,6 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>  VMOVUPS ymm1 {k1}{z}, m256</para>
             /// </summary>
             /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-            [RequiresUnsafe]
             public static unsafe Vector256<float> MaskLoad(float* address, Vector256<float> mask, Vector256<float> merge) => MaskLoad(address, mask, merge);
 
             /// <summary>
@@ -1536,7 +1502,6 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>  VMOVDQU32 ymm1 {k1}{z}, m256</para>
             /// </summary>
             /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-            [RequiresUnsafe]
             public static unsafe Vector256<uint> MaskLoad(uint* address, Vector256<uint> mask, Vector256<uint> merge) => MaskLoad(address, mask, merge);
 
             /// <summary>
@@ -1544,7 +1509,6 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>  VMOVDQU64 ymm1 {k1}{z}, m256</para>
             /// </summary>
             /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-            [RequiresUnsafe]
             public static unsafe Vector256<ulong> MaskLoad(ulong* address, Vector256<ulong> mask, Vector256<ulong> merge) => MaskLoad(address, mask, merge);
 
             /// <summary>
@@ -1552,7 +1516,6 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>  VMOVAPD xmm1 {k1}{z}, m128</para>
             /// </summary>
             /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-            [RequiresUnsafe]
             public static unsafe Vector128<double> MaskLoadAligned(double* address, Vector128<double> mask, Vector128<double> merge) => MaskLoadAligned(address, mask, merge);
 
             /// <summary>
@@ -1560,7 +1523,6 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>  VMOVDQA32 xmm1 {k1}{z}, m128</para>
             /// </summary>
             /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-            [RequiresUnsafe]
             public static unsafe Vector128<int> MaskLoadAligned(int* address, Vector128<int> mask, Vector128<int> merge) => MaskLoadAligned(address, mask, merge);
 
             /// <summary>
@@ -1568,7 +1530,6 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>  VMOVDQA64 xmm1 {k1}{z}, m128</para>
             /// </summary>
             /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-            [RequiresUnsafe]
             public static unsafe Vector128<long> MaskLoadAligned(long* address, Vector128<long> mask, Vector128<long> merge) => MaskLoadAligned(address, mask, merge);
 
             /// <summary>
@@ -1576,7 +1537,6 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>  VMOVAPS xmm1 {k1}{z}, m128</para>
             /// </summary>
             /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-            [RequiresUnsafe]
             public static unsafe Vector128<float> MaskLoadAligned(float* address, Vector128<float> mask, Vector128<float> merge) => MaskLoadAligned(address, mask, merge);
 
             /// <summary>
@@ -1584,7 +1544,6 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>  VMOVDQA32 xmm1 {k1}{z}, m128</para>
             /// </summary>
             /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-            [RequiresUnsafe]
             public static unsafe Vector128<uint> MaskLoadAligned(uint* address, Vector128<uint> mask, Vector128<uint> merge) => MaskLoadAligned(address, mask, merge);
 
             /// <summary>
@@ -1592,7 +1551,6 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>  VMOVDQA64 xmm1 {k1}{z}, m128</para>
             /// </summary>
             /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-            [RequiresUnsafe]
             public static unsafe Vector128<ulong> MaskLoadAligned(ulong* address, Vector128<ulong> mask, Vector128<ulong> merge) => MaskLoadAligned(address, mask, merge);
 
             /// <summary>
@@ -1600,7 +1558,6 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>  VMOVAPD ymm1 {k1}{z}, m256</para>
             /// </summary>
             /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-            [RequiresUnsafe]
             public static unsafe Vector256<double> MaskLoadAligned(double* address, Vector256<double> mask, Vector256<double> merge) => MaskLoadAligned(address, mask, merge);
 
             /// <summary>
@@ -1608,7 +1565,6 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>  VMOVDQA32 ymm1 {k1}{z}, m256</para>
             /// </summary>
             /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-            [RequiresUnsafe]
             public static unsafe Vector256<int> MaskLoadAligned(int* address, Vector256<int> mask, Vector256<int> merge) => MaskLoadAligned(address, mask, merge);
 
             /// <summary>
@@ -1616,7 +1572,6 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>  VMOVDQA64 ymm1 {k1}{z}, m256</para>
             /// </summary>
             /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-            [RequiresUnsafe]
             public static unsafe Vector256<long> MaskLoadAligned(long* address, Vector256<long> mask, Vector256<long> merge) => MaskLoadAligned(address, mask, merge);
 
             /// <summary>
@@ -1624,7 +1579,6 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>  VMOVAPS ymm1 {k1}{z}, m256</para>
             /// </summary>
             /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-            [RequiresUnsafe]
             public static unsafe Vector256<float> MaskLoadAligned(float* address, Vector256<float> mask, Vector256<float> merge) => MaskLoadAligned(address, mask, merge);
 
             /// <summary>
@@ -1632,7 +1586,6 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>  VMOVDQA32 ymm1 {k1}{z}, m256</para>
             /// </summary>
             /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-            [RequiresUnsafe]
             public static unsafe Vector256<uint> MaskLoadAligned(uint* address, Vector256<uint> mask, Vector256<uint> merge) => MaskLoadAligned(address, mask, merge);
 
             /// <summary>
@@ -1640,175 +1593,150 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>  VMOVDQA64 ymm1 {k1}{z}, m256</para>
             /// </summary>
             /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-            [RequiresUnsafe]
             public static unsafe Vector256<ulong> MaskLoadAligned(ulong* address, Vector256<ulong> mask, Vector256<ulong> merge) => MaskLoadAligned(address, mask, merge);
 
             /// <summary>
             ///   <para>void _mm_mask_storeu_pd (void * mem_addr, __mmask8 k, __m128d a)</para>
             ///   <para>  VMOVUPD m128 {k1}{z}, xmm1</para>
             /// </summary>
-            [RequiresUnsafe]
             public static unsafe void MaskStore(double* address, Vector128<double> mask, Vector128<double> source) => MaskStore(address, mask, source);
 
             /// <summary>
             ///   <para>void _mm_mask_storeu_epi32 (void * mem_addr, __mmask8 k, __m128i a)</para>
             ///   <para>  VMOVDQU32 m128 {k1}{z}, xmm1</para>
             /// </summary>
-            [RequiresUnsafe]
             public static unsafe void MaskStore(int* address, Vector128<int> mask, Vector128<int> source) => MaskStore(address, mask, source);
 
             /// <summary>
             ///   <para>void _mm_mask_storeu_epi64 (void * mem_addr, __mmask8 k, __m128i a)</para>
             ///   <para>  VMOVDQU64 m128 {k1}{z}, xmm1</para>
             /// </summary>
-            [RequiresUnsafe]
             public static unsafe void MaskStore(long* address, Vector128<long> mask, Vector128<long> source) => MaskStore(address, mask, source);
 
             /// <summary>
             ///   <para>void _mm_mask_storeu_ps (void * mem_addr, __mmask8 k, __m128 a)</para>
             ///   <para>  VMOVUPS m128 {k1}{z}, xmm1</para>
             /// </summary>
-            [RequiresUnsafe]
             public static unsafe void MaskStore(float* address, Vector128<float> mask, Vector128<float> source) => MaskStore(address, mask, source);
 
             /// <summary>
             ///   <para>void _mm_mask_storeu_epi32 (void * mem_addr, __mmask8 k, __m128i a)</para>
             ///   <para>  VMOVDQU32 m128 {k1}{z}, xmm1</para>
             /// </summary>
-            [RequiresUnsafe]
             public static unsafe void MaskStore(uint* address, Vector128<uint> mask, Vector128<uint> source) => MaskStore(address, mask, source);
 
             /// <summary>
             ///   <para>void _mm_mask_storeu_epi64 (void * mem_addr, __mmask8 k, __m128i a)</para>
             ///   <para>  VMOVDQU64 m128 {k1}{z}, xmm1</para>
             /// </summary>
-            [RequiresUnsafe]
             public static unsafe void MaskStore(ulong* address, Vector128<ulong> mask, Vector128<ulong> source) => MaskStore(address, mask, source);
 
             /// <summary>
             ///   <para>void _mm256_mask_storeu_pd (void * mem_addr, __mmask8 k, __m256d a)</para>
             ///   <para>  VMOVUPD m256 {k1}{z}, ymm1</para>
             /// </summary>
-            [RequiresUnsafe]
             public static unsafe void MaskStore(double* address, Vector256<double> mask, Vector256<double> source) => MaskStore(address, mask, source);
 
             /// <summary>
             ///   <para>void _mm256_mask_storeu_epi32 (void * mem_addr, __mmask8 k, __m256i a)</para>
             ///   <para>  VMOVDQU32 m256 {k1}{z}, ymm1</para>
             /// </summary>
-            [RequiresUnsafe]
             public static unsafe void MaskStore(int* address, Vector256<int> mask, Vector256<int> source) => MaskStore(address, mask, source);
 
             /// <summary>
             ///   <para>void _mm256_mask_storeu_epi64 (void * mem_addr, __mmask8 k, __m256i a)</para>
             ///   <para>  VMOVDQU64 m256 {k1}{z}, ymm1</para>
             /// </summary>
-            [RequiresUnsafe]
             public static unsafe void MaskStore(long* address, Vector256<long> mask, Vector256<long> source) => MaskStore(address, mask, source);
 
             /// <summary>
             ///   <para>void _mm256_mask_storeu_ps (void * mem_addr, __mmask8 k, __m256 a)</para>
             ///   <para>  VMOVUPS m256 {k1}{z}, ymm1</para>
             /// </summary>
-            [RequiresUnsafe]
             public static unsafe void MaskStore(float* address, Vector256<float> mask, Vector256<float> source) => MaskStore(address, mask, source);
 
             /// <summary>
             ///   <para>void _mm256_mask_storeu_epi32 (void * mem_addr, __mmask8 k, __m256i a)</para>
             ///   <para>  VMOVDQU32 m256 {k1}{z}, ymm1</para>
             /// </summary>
-            [RequiresUnsafe]
             public static unsafe void MaskStore(uint* address, Vector256<uint> mask, Vector256<uint> source) => MaskStore(address, mask, source);
 
             /// <summary>
             ///   <para>void _mm256_mask_storeu_epi64 (void * mem_addr, __mmask8 k, __m256i a)</para>
             ///   <para>  VMOVDQU64 m256 {k1}{z}, ymm1</para>
             /// </summary>
-            [RequiresUnsafe]
             public static unsafe void MaskStore(ulong* address, Vector256<ulong> mask, Vector256<ulong> source) => MaskStore(address, mask, source);
 
             /// <summary>
             ///   <para>void _mm_mask_store_pd (void * mem_addr, __mmask8 k, __m128d a)</para>
             ///   <para>  VMOVAPD m128 {k1}{z}, xmm1</para>
             /// </summary>
-            [RequiresUnsafe]
             public static unsafe void MaskStoreAligned(double* address, Vector128<double> mask, Vector128<double> source) => MaskStoreAligned(address, mask, source);
 
             /// <summary>
             ///   <para>void _mm_mask_store_epi32 (void * mem_addr, __mmask8 k, __m128i a)</para>
             ///   <para>  VMOVDQA32 m128 {k1}{z}, xmm1</para>
             /// </summary>
-            [RequiresUnsafe]
             public static unsafe void MaskStoreAligned(int* address, Vector128<int> mask, Vector128<int> source) => MaskStoreAligned(address, mask, source);
 
             /// <summary>
             ///   <para>void _mm_mask_store_epi64 (void * mem_addr, __mmask8 k, __m128i a)</para>
             ///   <para>  VMOVDQA32 m128 {k1}{z}, xmm1</para>
             /// </summary>
-            [RequiresUnsafe]
             public static unsafe void MaskStoreAligned(long* address, Vector128<long> mask, Vector128<long> source) => MaskStoreAligned(address, mask, source);
 
             /// <summary>
             ///   <para>void _mm_mask_store_ps (void * mem_addr, __mmask8 k, __m128 a)</para>
             ///   <para>  VMOVAPS m128 {k1}{z}, xmm1</para>
             /// </summary>
-            [RequiresUnsafe]
             public static unsafe void MaskStoreAligned(float* address, Vector128<float> mask, Vector128<float> source) => MaskStoreAligned(address, mask, source);
 
             /// <summary>
             ///   <para>void _mm_mask_store_epi32 (void * mem_addr, __mmask8 k, __m128i a)</para>
             ///   <para>  VMOVDQA32 m128 {k1}{z}, xmm1</para>
             /// </summary>
-            [RequiresUnsafe]
             public static unsafe void MaskStoreAligned(uint* address, Vector128<uint> mask, Vector128<uint> source) => MaskStoreAligned(address, mask, source);
 
             /// <summary>
             ///   <para>void _mm_mask_store_epi64 (void * mem_addr, __mmask8 k, __m128i a)</para>
             ///   <para>  VMOVDQA32 m128 {k1}{z}, xmm1</para>
             /// </summary>
-            [RequiresUnsafe]
             public static unsafe void MaskStoreAligned(ulong* address, Vector128<ulong> mask, Vector128<ulong> source) => MaskStoreAligned(address, mask, source);
 
             /// <summary>
             ///   <para>void _mm256_mask_store_pd (void * mem_addr, __mmask8 k, __m256d a)</para>
             ///   <para>  VMOVAPD m256 {k1}{z}, ymm1</para>
             /// </summary>
-            [RequiresUnsafe]
             public static unsafe void MaskStoreAligned(double* address, Vector256<double> mask, Vector256<double> source) => MaskStoreAligned(address, mask, source);
 
             /// <summary>
             ///   <para>void _mm256_mask_store_epi32 (void * mem_addr, __mmask8 k, __m256i a)</para>
             ///   <para>  VMOVDQA32 m256 {k1}{z}, ymm1</para>
             /// </summary>
-            [RequiresUnsafe]
             public static unsafe void MaskStoreAligned(int* address, Vector256<int> mask, Vector256<int> source) => MaskStoreAligned(address, mask, source);
 
             /// <summary>
             ///   <para>void _mm256_mask_store_epi64 (void * mem_addr, __mmask8 k, __m256i a)</para>
             ///   <para>  VMOVDQA32 m256 {k1}{z}, ymm1</para>
             /// </summary>
-            [RequiresUnsafe]
             public static unsafe void MaskStoreAligned(long* address, Vector256<long> mask, Vector256<long> source) => MaskStoreAligned(address, mask, source);
 
             /// <summary>
             ///   <para>void _mm256_mask_store_ps (void * mem_addr, __mmask8 k, __m256 a)</para>
             ///   <para>  VMOVAPS m256 {k1}{z}, ymm1</para>
             /// </summary>
-            [RequiresUnsafe]
             public static unsafe void MaskStoreAligned(float* address, Vector256<float> mask, Vector256<float> source) => MaskStoreAligned(address, mask, source);
 
             /// <summary>
             ///   <para>void _mm256_mask_store_epi32 (void * mem_addr, __mmask8 k, __m256i a)</para>
             ///   <para>  VMOVDQA32 m256 {k1}{z}, ymm1</para>
             /// </summary>
-            [RequiresUnsafe]
             public static unsafe void MaskStoreAligned(uint* address, Vector256<uint> mask, Vector256<uint> source) => MaskStoreAligned(address, mask, source);
 
             /// <summary>
             ///   <para>void _mm256_mask_store_epi64 (void * mem_addr, __mmask8 k, __m256i a)</para>
             ///   <para>  VMOVDQA32 m256 {k1}{z}, ymm1</para>
             /// </summary>
-            [RequiresUnsafe]
             public static unsafe void MaskStoreAligned(ulong* address, Vector256<ulong> mask, Vector256<ulong> source) => MaskStoreAligned(address, mask, source);
 
             /// <summary>
@@ -2704,42 +2632,36 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>__m512i _mm512_broadcast_i32x4 (__m128i const * mem_addr)</para>
         ///   <para>  VBROADCASTI32x4 zmm1 {k1}{z}, m128</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector512<int> BroadcastVector128ToVector512(int* address) => BroadcastVector128ToVector512(address);
 
         /// <summary>
         ///   <para>__m512i _mm512_broadcast_i32x4 (__m128i const * mem_addr)</para>
         ///   <para>  VBROADCASTI32x4 zmm1 {k1}{z}, m128</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector512<uint> BroadcastVector128ToVector512(uint* address) => BroadcastVector128ToVector512(address);
 
         /// <summary>
         ///   <para>__m512 _mm512_broadcast_f32x4 (__m128 const * mem_addr)</para>
         ///   <para>  VBROADCASTF32x4 zmm1 {k1}{z}, m128</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector512<float> BroadcastVector128ToVector512(float* address) => BroadcastVector128ToVector512(address);
 
         /// <summary>
         ///   <para>__m512i _mm512_broadcast_i64x4 (__m256i const * mem_addr)</para>
         ///   <para>  VBROADCASTI64x4 zmm1 {k1}{z}, m256</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector512<long> BroadcastVector256ToVector512(long* address) => BroadcastVector256ToVector512(address);
 
         /// <summary>
         ///   <para>__m512i _mm512_broadcast_i64x4 (__m256i const * mem_addr)</para>
         ///   <para>  VBROADCASTI64x4 zmm1 {k1}{z}, m256</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector512<ulong> BroadcastVector256ToVector512(ulong* address) => BroadcastVector256ToVector512(address);
 
         /// <summary>
         ///   <para>__m512d _mm512_broadcast_f64x4 (__m256d const * mem_addr)</para>
         ///   <para>  VBROADCASTF64x4 zmm1 {k1}{z}, m256</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector512<double> BroadcastVector256ToVector512(double* address) => BroadcastVector256ToVector512(address);
 
         /// <summary>
@@ -3057,42 +2979,36 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>__m512d _mm512_mask_compressstoreu_pd (void * s, __mmask8 k, __m512d a)</para>
         ///   <para>  VCOMPRESSPD m512 {k1}{z}, zmm2</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void CompressStore(double* address, Vector512<double> mask, Vector512<double> source) => CompressStore(address, mask, source);
 
         /// <summary>
         ///   <para>void _mm512_mask_compressstoreu_epi32 (void * s, __mmask16 k, __m512i a)</para>
         ///   <para>  VPCOMPRESSD m512 {k1}{z}, zmm2</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void CompressStore(int* address, Vector512<int> mask, Vector512<int> source) => CompressStore(address, mask, source);
 
         /// <summary>
         ///   <para>void _mm512_mask_compressstoreu_epi64 (void * s, __mmask8 k, __m512i a)</para>
         ///   <para>  VPCOMPRESSQ m512 {k1}{z}, zmm2</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void CompressStore(long* address, Vector512<long> mask, Vector512<long> source) => CompressStore(address, mask, source);
 
         /// <summary>
         ///   <para>__m512 _mm512_mask_compressstoreu_ps (void * s, __mmask16 k, __m512 a)</para>
         ///   <para>  VCOMPRESSPS m512 {k1}{z}, zmm2</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void CompressStore(float* address, Vector512<float> mask, Vector512<float> source) => CompressStore(address, mask, source);
 
         /// <summary>
         ///   <para>void _mm512_mask_compressstoreu_epi32 (void * s, __mmask16 k, __m512i a)</para>
         ///   <para>  VPCOMPRESSD m512 {k1}{z}, zmm2</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void CompressStore(uint* address, Vector512<uint> mask, Vector512<uint> source) => CompressStore(address, mask, source);
 
         /// <summary>
         ///   <para>void _mm512_mask_compressstoreu_epi64 (void * s, __mmask8 k, __m512i a)</para>
         ///   <para>  VPCOMPRESSQ m512 {k1}{z}, zmm2</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void CompressStore(ulong* address, Vector512<ulong> mask, Vector512<ulong> source) => CompressStore(address, mask, source);
 
         /// <summary>
@@ -3610,7 +3526,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VEXPANDPD zmm1 {k1}{z}, m512</para>
         /// </summary>
         /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-        [RequiresUnsafe]
         public static unsafe Vector512<double> ExpandLoad(double* address, Vector512<double> mask, Vector512<double> merge) => ExpandLoad(address, mask, merge);
 
         /// <summary>
@@ -3618,7 +3533,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPEXPANDD zmm1 {k1}{z}, m512</para>
         /// </summary>
         /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-        [RequiresUnsafe]
         public static unsafe Vector512<int> ExpandLoad(int* address, Vector512<int> mask, Vector512<int> merge) => ExpandLoad(address, mask, merge);
 
         /// <summary>
@@ -3626,7 +3540,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPEXPANDQ zmm1 {k1}{z}, m512</para>
         /// </summary>
         /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-        [RequiresUnsafe]
         public static unsafe Vector512<long> ExpandLoad(long* address, Vector512<long> mask, Vector512<long> merge) => ExpandLoad(address, mask, merge);
 
         /// <summary>
@@ -3634,7 +3547,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VEXPANDPS zmm1 {k1}{z}, m512</para>
         /// </summary>
         /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-        [RequiresUnsafe]
         public static unsafe Vector512<float> ExpandLoad(float* address, Vector512<float> mask, Vector512<float> merge) => ExpandLoad(address, mask, merge);
 
         /// <summary>
@@ -3642,7 +3554,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPEXPANDD zmm1 {k1}{z}, m512</para>
         /// </summary>
         /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-        [RequiresUnsafe]
         public static unsafe Vector512<uint> ExpandLoad(uint* address, Vector512<uint> mask, Vector512<uint> merge) => ExpandLoad(address, mask, merge);
 
         /// <summary>
@@ -3650,7 +3561,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPEXPANDQ zmm1 {k1}{z}, m512</para>
         /// </summary>
         /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-        [RequiresUnsafe]
         public static unsafe Vector512<ulong> ExpandLoad(ulong* address, Vector512<ulong> mask, Vector512<ulong> merge) => ExpandLoad(address, mask, merge);
 
         /// <summary>
@@ -4117,196 +4027,168 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>__m512i _mm512_load_si512 (__m512i const * mem_addr)</para>
         ///   <para>  VMOVDQA32 zmm1, m512</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector512<byte> LoadAlignedVector512(byte* address) => LoadAlignedVector512(address);
 
         /// <summary>
         ///   <para>__m512i _mm512_load_si512 (__m512i const * mem_addr)</para>
         ///   <para>  VMOVDQA32 zmm1, m512</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector512<sbyte> LoadAlignedVector512(sbyte* address) => LoadAlignedVector512(address);
 
         /// <summary>
         ///   <para>__m512i _mm512_load_si512 (__m512i const * mem_addr)</para>
         ///   <para>  VMOVDQA32 zmm1, m512</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector512<short> LoadAlignedVector512(short* address) => LoadAlignedVector512(address);
 
         /// <summary>
         ///   <para>__m512i _mm512_load_si512 (__m512i const * mem_addr)</para>
         ///   <para>  VMOVDQA32 zmm1, m512</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector512<ushort> LoadAlignedVector512(ushort* address) => LoadAlignedVector512(address);
 
         /// <summary>
         ///   <para>__m512i _mm512_load_epi32 (__m512i const * mem_addr)</para>
         ///   <para>  VMOVDQA32 zmm1, m512</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector512<int> LoadAlignedVector512(int* address) => LoadAlignedVector512(address);
 
         /// <summary>
         ///   <para>__m512i _mm512_load_epi32 (__m512i const * mem_addr)</para>
         ///   <para>  VMOVDQA32 zmm1, m512</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector512<uint> LoadAlignedVector512(uint* address) => LoadAlignedVector512(address);
 
         /// <summary>
         ///   <para>__m512i _mm512_load_epi64 (__m512i const * mem_addr)</para>
         ///   <para>  VMOVDQA64 zmm1, m512</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector512<long> LoadAlignedVector512(long* address) => LoadAlignedVector512(address);
 
         /// <summary>
         ///   <para>__m512i _mm512_load_epi64 (__m512i const * mem_addr)</para>
         ///   <para>  VMOVDQA64 zmm1, m512</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector512<ulong> LoadAlignedVector512(ulong* address) => LoadAlignedVector512(address);
 
         /// <summary>
         ///   <para>__m512 _mm512_load_ps (float const * mem_addr)</para>
         ///   <para>  VMOVAPS zmm1, m512</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector512<float> LoadAlignedVector512(float* address) => LoadAlignedVector512(address);
 
         /// <summary>
         ///   <para>__m512d _mm512_load_pd (double const * mem_addr)</para>
         ///   <para>  VMOVAPD zmm1, m512</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector512<double> LoadAlignedVector512(double* address) => LoadAlignedVector512(address);
 
         /// <summary>
         ///   <para>__m512i _mm512_stream_load_si512 (__m512i const* mem_addr)</para>
         ///   <para>  VMOVNTDQA zmm1, m512</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector512<sbyte> LoadAlignedVector512NonTemporal(sbyte* address) => LoadAlignedVector512NonTemporal(address);
 
         /// <summary>
         ///   <para>__m512i _mm512_stream_load_si512 (__m512i const* mem_addr)</para>
         ///   <para>  VMOVNTDQA zmm1, m512</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector512<byte> LoadAlignedVector512NonTemporal(byte* address) => LoadAlignedVector512NonTemporal(address);
 
         /// <summary>
         ///   <para>__m512i _mm512_stream_load_si512 (__m512i const* mem_addr)</para>
         ///   <para>  VMOVNTDQA zmm1, m512</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector512<short> LoadAlignedVector512NonTemporal(short* address) => LoadAlignedVector512NonTemporal(address);
 
         /// <summary>
         ///   <para>__m512i _mm512_stream_load_si512 (__m512i const* mem_addr)</para>
         ///   <para>  VMOVNTDQA zmm1, m512</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector512<ushort> LoadAlignedVector512NonTemporal(ushort* address) => LoadAlignedVector512NonTemporal(address);
 
         /// <summary>
         ///   <para>__m512i _mm512_stream_load_si512 (__m512i const* mem_addr)</para>
         ///   <para>  VMOVNTDQA zmm1, m512</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector512<int> LoadAlignedVector512NonTemporal(int* address) => LoadAlignedVector512NonTemporal(address);
 
         /// <summary>
         ///   <para>__m512i _mm512_stream_load_si512 (__m512i const* mem_addr)</para>
         ///   <para>  VMOVNTDQA zmm1, m512</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector512<uint> LoadAlignedVector512NonTemporal(uint* address) => LoadAlignedVector512NonTemporal(address);
 
         /// <summary>
         ///   <para>__m512i _mm512_stream_load_si512 (__m512i const* mem_addr)</para>
         ///   <para>  VMOVNTDQA zmm1, m512</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector512<long> LoadAlignedVector512NonTemporal(long* address) => LoadAlignedVector512NonTemporal(address);
 
         /// <summary>
         ///   <para>__m512i _mm512_stream_load_si512 (__m512i const* mem_addr)</para>
         ///   <para>  VMOVNTDQA zmm1, m512</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector512<ulong> LoadAlignedVector512NonTemporal(ulong* address) => LoadAlignedVector512NonTemporal(address);
 
         /// <summary>
         ///   <para>__m512i _mm512_loadu_si512 (__m512i const * mem_addr)</para>
         ///   <para>  VMOVDQU32 zmm1, m512</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector512<sbyte> LoadVector512(sbyte* address) => LoadVector512(address);
 
         /// <summary>
         ///   <para>__m512i _mm512_loadu_si512 (__m512i const * mem_addr)</para>
         ///   <para>  VMOVDQU32 zmm1, m512</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector512<byte> LoadVector512(byte* address) => LoadVector512(address);
 
         /// <summary>
         ///   <para>__m512i _mm512_loadu_si512 (__m512i const * mem_addr)</para>
         ///   <para>  VMOVDQU32 zmm1, m512</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector512<short> LoadVector512(short* address) => LoadVector512(address);
 
         /// <summary>
         ///   <para>__m512i _mm512_loadu_si512 (__m512i const * mem_addr)</para>
         ///   <para>  VMOVDQU32 zmm1, m512</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector512<ushort> LoadVector512(ushort* address) => LoadVector512(address);
 
         /// <summary>
         ///   <para>__m512i _mm512_loadu_epi32 (__m512i const * mem_addr)</para>
         ///   <para>  VMOVDQU32 zmm1, m512</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector512<int> LoadVector512(int* address) => LoadVector512(address);
 
         /// <summary>
         ///   <para>__m512i _mm512_loadu_epi32 (__m512i const * mem_addr)</para>
         ///   <para>  VMOVDQU32 zmm1, m512</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector512<uint> LoadVector512(uint* address) => LoadVector512(address);
 
         /// <summary>
         ///   <para>__m512i _mm512_loadu_epi64 (__m512i const * mem_addr)</para>
         ///   <para>  VMOVDQU64 zmm1, m512</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector512<long> LoadVector512(long* address) => LoadVector512(address);
 
         /// <summary>
         ///   <para>__m512i _mm512_loadu_epi64 (__m512i const * mem_addr)</para>
         ///   <para>  VMOVDQU64 zmm1 , m512</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector512<ulong> LoadVector512(ulong* address) => LoadVector512(address);
 
         /// <summary>
         ///   <para>__m512 _mm512_loadu_ps (float const * mem_addr)</para>
         ///   <para>  VMOVUPS zmm1, m512</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector512<float> LoadVector512(float* address) => LoadVector512(address);
 
         /// <summary>
         ///   <para>__m512d _mm512_loadu_pd (double const * mem_addr)</para>
         ///   <para>  VMOVUPD zmm1, m512</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector512<double> LoadVector512(double* address) => LoadVector512(address);
 
         /// <summary>
@@ -4314,7 +4196,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVUPD zmm1 {k1}{z}, m512</para>
         /// </summary>
         /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-        [RequiresUnsafe]
         public static unsafe Vector512<double> MaskLoad(double* address, Vector512<double> mask, Vector512<double> merge) => MaskLoad(address, mask, merge);
 
         /// <summary>
@@ -4322,7 +4203,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVDQU32 zmm1 {k1}{z}, m512</para>
         /// </summary>
         /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-        [RequiresUnsafe]
         public static unsafe Vector512<int> MaskLoad(int* address, Vector512<int> mask, Vector512<int> merge) => MaskLoad(address, mask, merge);
 
         /// <summary>
@@ -4330,7 +4210,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVDQU64 zmm1 {k1}{z}, m512</para>
         /// </summary>
         /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-        [RequiresUnsafe]
         public static unsafe Vector512<long> MaskLoad(long* address, Vector512<long> mask, Vector512<long> merge) => MaskLoad(address, mask, merge);
 
         /// <summary>
@@ -4338,7 +4217,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVUPS zmm1 {k1}{z}, m512</para>
         /// </summary>
         /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-        [RequiresUnsafe]
         public static unsafe Vector512<float> MaskLoad(float* address, Vector512<float> mask, Vector512<float> merge) => MaskLoad(address, mask, merge);
 
         /// <summary>
@@ -4346,7 +4224,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVDQU32 zmm1 {k1}{z}, m512</para>
         /// </summary>
         /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-        [RequiresUnsafe]
         public static unsafe Vector512<uint> MaskLoad(uint* address, Vector512<uint> mask, Vector512<uint> merge) => MaskLoad(address, mask, merge);
 
         /// <summary>
@@ -4354,7 +4231,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVDQU64 zmm1 {k1}{z}, m512</para>
         /// </summary>
         /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-        [RequiresUnsafe]
         public static unsafe Vector512<ulong> MaskLoad(ulong* address, Vector512<ulong> mask, Vector512<ulong> merge) => MaskLoad(address, mask, merge);
 
         /// <summary>
@@ -4362,7 +4238,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVAPD zmm1 {k1}{z}, m512</para>
         /// </summary>
         /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-        [RequiresUnsafe]
         public static unsafe Vector512<double> MaskLoadAligned(double* address, Vector512<double> mask, Vector512<double> merge) => MaskLoadAligned(address, mask, merge);
 
         /// <summary>
@@ -4370,7 +4245,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVDQA32 zmm1 {k1}{z}, m512</para>
         /// </summary>
         /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-        [RequiresUnsafe]
         public static unsafe Vector512<int> MaskLoadAligned(int* address, Vector512<int> mask, Vector512<int> merge) => MaskLoadAligned(address, mask, merge);
 
         /// <summary>
@@ -4378,7 +4252,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVDQA64 zmm1 {k1}{z}, m512</para>
         /// </summary>
         /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-        [RequiresUnsafe]
         public static unsafe Vector512<long> MaskLoadAligned(long* address, Vector512<long> mask, Vector512<long> merge) => MaskLoadAligned(address, mask, merge);
 
         /// <summary>
@@ -4386,7 +4259,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVAPS zmm1 {k1}{z}, m512</para>
         /// </summary>
         /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-        [RequiresUnsafe]
         public static unsafe Vector512<float> MaskLoadAligned(float* address, Vector512<float> mask, Vector512<float> merge) => MaskLoadAligned(address, mask, merge);
 
         /// <summary>
@@ -4394,7 +4266,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVDQA32 zmm1 {k1}{z}, m512</para>
         /// </summary>
         /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-        [RequiresUnsafe]
         public static unsafe Vector512<uint> MaskLoadAligned(uint* address, Vector512<uint> mask, Vector512<uint> merge) => MaskLoadAligned(address, mask, merge);
 
         /// <summary>
@@ -4402,91 +4273,78 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVDQA64 zmm1 {k1}{z}, m512</para>
         /// </summary>
         /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
-        [RequiresUnsafe]
         public static unsafe Vector512<ulong> MaskLoadAligned(ulong* address, Vector512<ulong> mask, Vector512<ulong> merge) => MaskLoadAligned(address, mask, merge);
 
         /// <summary>
         ///   <para>void _mm512_mask_storeu_pd (void * mem_addr, __mmask8 k, __m512d a)</para>
         ///   <para>  VMOVUPD m512 {k1}{z}, zmm1</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void MaskStore(double* address, Vector512<double> mask, Vector512<double> source) => MaskStore(address, mask, source);
 
         /// <summary>
         ///   <para>void _mm512_mask_storeu_epi32 (void * mem_addr, __mmask16 k, __m512i a)</para>
         ///   <para>  VMOVDQU32 m512 {k1}{z}, zmm1</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void MaskStore(int* address, Vector512<int> mask, Vector512<int> source) => MaskStore(address, mask, source);
 
         /// <summary>
         ///   <para>void _mm512_mask_storeu_epi64 (void * mem_addr, __mmask8 k, __m512i a)</para>
         ///   <para>  VMOVDQU64 m512 {k1}{z}, zmm1</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void MaskStore(long* address, Vector512<long> mask, Vector512<long> source) => MaskStore(address, mask, source);
 
         /// <summary>
         ///   <para>void _mm512_mask_storeu_ps (void * mem_addr, __mmask16 k, __m512 a)</para>
         ///   <para>  VMOVUPS m512 {k1}{z}, zmm1</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void MaskStore(float* address, Vector512<float> mask, Vector512<float> source) => MaskStore(address, mask, source);
 
         /// <summary>
         ///   <para>void _mm512_mask_storeu_epi32 (void * mem_addr, __mmask16 k, __m512i a)</para>
         ///   <para>  VMOVDQU32 m512 {k1}{z}, zmm1</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void MaskStore(uint* address, Vector512<uint> mask, Vector512<uint> source) => MaskStore(address, mask, source);
 
         /// <summary>
         ///   <para>void _mm512_mask_storeu_epi64 (void * mem_addr, __mmask8 k, __m512i a)</para>
         ///   <para>  VMOVDQU64 m512 {k1}{z}, zmm1</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void MaskStore(ulong* address, Vector512<ulong> mask, Vector512<ulong> source) => MaskStore(address, mask, source);
 
         /// <summary>
         ///   <para>void _mm512_mask_store_pd (void * mem_addr, __mmask8 k, __m512d a)</para>
         ///   <para>  VMOVAPD m512 {k1}{z}, zmm1</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void MaskStoreAligned(double* address, Vector512<double> mask, Vector512<double> source) => MaskStoreAligned(address, mask, source);
 
         /// <summary>
         ///   <para>void _mm512_mask_store_epi32 (void * mem_addr, __mmask16 k, __m512i a)</para>
         ///   <para>  VMOVDQA32 m512 {k1}{z}, zmm1</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void MaskStoreAligned(int* address, Vector512<int> mask, Vector512<int> source) => MaskStoreAligned(address, mask, source);
 
         /// <summary>
         ///   <para>void _mm512_mask_store_epi64 (void * mem_addr, __mmask8 k, __m512i a)</para>
         ///   <para>  VMOVDQA32 m512 {k1}{z}, zmm1</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void MaskStoreAligned(long* address, Vector512<long> mask, Vector512<long> source) => MaskStoreAligned(address, mask, source);
 
         /// <summary>
         ///   <para>void _mm512_mask_store_ps (void * mem_addr, __mmask16 k, __m512 a)</para>
         ///   <para>  VMOVAPS m512 {k1}{z}, zmm1</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void MaskStoreAligned(float* address, Vector512<float> mask, Vector512<float> source) => MaskStoreAligned(address, mask, source);
 
         /// <summary>
         ///   <para>void _mm512_mask_store_epi32 (void * mem_addr, __mmask16 k, __m512i a)</para>
         ///   <para>  VMOVDQA32 m512 {k1}{z}, zmm1</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void MaskStoreAligned(uint* address, Vector512<uint> mask, Vector512<uint> source) => MaskStoreAligned(address, mask, source);
 
         /// <summary>
         ///   <para>void _mm512_mask_store_epi64 (void * mem_addr, __mmask8 k, __m512i a)</para>
         ///   <para>  VMOVDQA32 m512 {k1}{z}, zmm1</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void MaskStoreAligned(ulong* address, Vector512<ulong> mask, Vector512<ulong> source) => MaskStoreAligned(address, mask, source);
 
         /// <summary>
@@ -5271,210 +5129,180 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>void _mm512_storeu_si512 (void * mem_addr, __m512i a)</para>
         ///   <para>  VMOVDQU32 m512, zmm1</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void Store(sbyte* address, Vector512<sbyte> source) => Store(address, source);
 
         /// <summary>
         ///   <para>void _mm512_storeu_si512 (void * mem_addr, __m512i a)</para>
         ///   <para>  VMOVDQU32 m512, zmm1</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void Store(byte* address, Vector512<byte> source) => Store(address, source);
 
         /// <summary>
         ///   <para>void _mm512_storeu_si512 (void * mem_addr, __m512i a)</para>
         ///   <para>  VMOVDQU32 m512, zmm1</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void Store(short* address, Vector512<short> source) => Store(address, source);
 
         /// <summary>
         ///   <para>void _mm512_storeu_si512 (void * mem_addr, __m512i a)</para>
         ///   <para>  VMOVDQU32 m512, zmm1</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void Store(ushort* address, Vector512<ushort> source) => Store(address, source);
 
         /// <summary>
         ///   <para>void _mm512_storeu_epi32 (void * mem_addr, __m512i a)</para>
         ///   <para>  VMOVDQU32 m512, zmm1</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void Store(int* address, Vector512<int> source) => Store(address, source);
 
         /// <summary>
         ///   <para>void _mm512_storeu_epi32 (void * mem_addr, __m512i a)</para>
         ///   <para>  VMOVDQU32 m512, zmm1</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void Store(uint* address, Vector512<uint> source) => Store(address, source);
 
         /// <summary>
         ///   <para>void _mm512_storeu_epi64 (void * mem_addr, __m512i a)</para>
         ///   <para>  VMOVDQU64 m512, zmm1</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void Store(long* address, Vector512<long> source) => Store(address, source);
 
         /// <summary>
         ///   <para>void _mm512_storeu_epi64 (void * mem_addr, __m512i a)</para>
         ///   <para>  VMOVDQU64 m512, zmm1</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void Store(ulong* address, Vector512<ulong> source) => Store(address, source);
 
         /// <summary>
         ///   <para>void _mm512_storeu_ps (float * mem_addr, __m512 a)</para>
         ///   <para>  VMOVUPS m512, zmm1</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void Store(float* address, Vector512<float> source) => Store(address, source);
 
         /// <summary>
         ///   <para>void _mm512_storeu_pd (double * mem_addr, __m512d a)</para>
         ///   <para>  VMOVUPD m512, zmm1</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void Store(double* address, Vector512<double> source) => Store(address, source);
 
         /// <summary>
         ///   <para>void _mm512_store_si512 (void * mem_addr, __m512i a)</para>
         ///   <para>  VMOVDQA32 m512, zmm1</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void StoreAligned(byte* address, Vector512<byte> source) => StoreAligned(address, source);
 
         /// <summary>
         ///   <para>void _mm512_store_si512 (void * mem_addr, __m512i a)</para>
         ///   <para>  VMOVDQA32 m512, zmm1</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void StoreAligned(sbyte* address, Vector512<sbyte> source) => StoreAligned(address, source);
 
         /// <summary>
         ///   <para>void _mm512_store_si512 (void * mem_addr, __m512i a)</para>
         ///   <para>  VMOVDQA32 m512, zmm1</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void StoreAligned(short* address, Vector512<short> source) => StoreAligned(address, source);
 
         /// <summary>
         ///   <para>void _mm512_store_si512 (void * mem_addr, __m512i a)</para>
         ///   <para>  VMOVDQA32 m512, zmm1</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void StoreAligned(ushort* address, Vector512<ushort> source) => StoreAligned(address, source);
 
         /// <summary>
         ///   <para>void _mm512_store_epi32 (void * mem_addr, __m512i a)</para>
         ///   <para>  VMOVDQA32 m512, zmm1</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void StoreAligned(int* address, Vector512<int> source) => StoreAligned(address, source);
 
         /// <summary>
         ///   <para>void _mm512_store_epi32 (void * mem_addr, __m512i a)</para>
         ///   <para>  VMOVDQA32 m512, zmm1</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void StoreAligned(uint* address, Vector512<uint> source) => StoreAligned(address, source);
 
         /// <summary>
         ///   <para>void _mm512_store_epi64 (void * mem_addr, __m512i a)</para>
         ///   <para>  VMOVDQA32 m512, zmm1</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void StoreAligned(long* address, Vector512<long> source) => StoreAligned(address, source);
 
         /// <summary>
         ///   <para>void _mm512_store_epi64 (void * mem_addr, __m512i a)</para>
         ///   <para>  VMOVDQA32 m512, zmm1</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void StoreAligned(ulong* address, Vector512<ulong> source) => StoreAligned(address, source);
 
         /// <summary>
         ///   <para>void _mm512_store_ps (float * mem_addr, __m512 a)</para>
         ///   <para>  VMOVAPS m512, zmm1</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void StoreAligned(float* address, Vector512<float> source) => StoreAligned(address, source);
 
         /// <summary>
         ///   <para>void _mm512_store_pd (double * mem_addr, __m512d a)</para>
         ///   <para>  VMOVAPD m512, zmm1</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void StoreAligned(double* address, Vector512<double> source) => StoreAligned(address, source);
 
         /// <summary>
         ///   <para>void _mm512_stream_si512 (void * mem_addr, __m512i a)</para>
         ///   <para>  VMOVNTDQ m512, zmm1</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void StoreAlignedNonTemporal(sbyte* address, Vector512<sbyte> source) => StoreAlignedNonTemporal(address, source);
 
         /// <summary>
         ///   <para>void _mm512_stream_si512 (void * mem_addr, __m512i a)</para>
         ///   <para>  VMOVNTDQ m512, zmm1</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void StoreAlignedNonTemporal(byte* address, Vector512<byte> source) => StoreAlignedNonTemporal(address, source);
 
         /// <summary>
         ///   <para>void _mm512_stream_si512 (void * mem_addr, __m512i a)</para>
         ///   <para>  VMOVNTDQ m512, zmm1</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void StoreAlignedNonTemporal(short* address, Vector512<short> source) => StoreAlignedNonTemporal(address, source);
 
         /// <summary>
         ///   <para>void _mm512_stream_si512 (void * mem_addr, __m512i a)</para>
         ///   <para>  VMOVNTDQ m512, zmm1</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void StoreAlignedNonTemporal(ushort* address, Vector512<ushort> source) => StoreAlignedNonTemporal(address, source);
 
         /// <summary>
         ///   <para>void _mm512_stream_si512 (void * mem_addr, __m512i a)</para>
         ///   <para>  VMOVNTDQ m512, zmm1</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void StoreAlignedNonTemporal(int* address, Vector512<int> source) => StoreAlignedNonTemporal(address, source);
 
         /// <summary>
         ///   <para>void _mm512_stream_si512 (void * mem_addr, __m512i a)</para>
         ///   <para>  VMOVNTDQ m512, zmm1</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void StoreAlignedNonTemporal(uint* address, Vector512<uint> source) => StoreAlignedNonTemporal(address, source);
 
         /// <summary>
         ///   <para>void _mm512_stream_si512 (void * mem_addr, __m512i a)</para>
         ///   <para>  VMOVNTDQ m512, zmm1</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void StoreAlignedNonTemporal(long* address, Vector512<long> source) => StoreAlignedNonTemporal(address, source);
 
         /// <summary>
         ///   <para>void _mm512_stream_si512 (void * mem_addr, __m512i a)</para>
         ///   <para>  VMOVNTDQ m512, zmm1</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void StoreAlignedNonTemporal(ulong* address, Vector512<ulong> source) => StoreAlignedNonTemporal(address, source);
 
         /// <summary>
         ///   <para>void _mm512_stream_ps (float * mem_addr, __m512 a)</para>
         ///   <para>  VMOVNTPS m512, zmm1</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void StoreAlignedNonTemporal(float* address, Vector512<float> source) => StoreAlignedNonTemporal(address, source);
 
         /// <summary>
         ///   <para>void _mm512_stream_pd (double * mem_addr, __m512d a)</para>
         ///   <para>  VMOVNTPD m512, zmm1</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void StoreAlignedNonTemporal(double* address, Vector512<double> source) => StoreAlignedNonTemporal(address, source);
 
         /// <summary>

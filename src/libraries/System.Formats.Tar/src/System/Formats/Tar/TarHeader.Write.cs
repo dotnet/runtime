@@ -576,7 +576,7 @@ namespace System.Formats.Tar
         // 'https://www.freebsd.org/cgi/man.cgi?tar(5)'
         // If the path name is too long to fit in the 100 bytes provided by the standard format,
         // it can be split at any / character with the first portion going into the prefix field.
-        private int WriteUstarName(Span<byte> buffer)
+        private unsafe int WriteUstarName(Span<byte> buffer)
         {
             // We can have a path name as big as 256, prefix + '/' + name,
             // the separator in between can be neglected as the reader will append it when it joins both fields.
@@ -807,7 +807,7 @@ namespace System.Formats.Tar
         }
 
         // Calculates the padding for the current entry and writes it after the data.
-        private void WriteEmptyPadding(Stream archiveStream)
+        private unsafe void WriteEmptyPadding(Stream archiveStream)
         {
             int paddingAfterData = TarHelpers.CalculatePadding(_size);
             if (paddingAfterData != 0)
@@ -861,7 +861,7 @@ namespace System.Formats.Tar
 
         // Generates a data stream (seekable) containing the extended attribute metadata of the entry it precedes.
         // Returns a null stream if the extended attributes dictionary is empty.
-        private static MemoryStream? GenerateExtendedAttributesDataStream(Dictionary<string, string> extendedAttributes)
+        private static unsafe MemoryStream? GenerateExtendedAttributesDataStream(Dictionary<string, string> extendedAttributes)
         {
             MemoryStream? dataStream = null;
 
@@ -955,7 +955,7 @@ namespace System.Formats.Tar
         // The checksum accumulator first adds up the byte values of eight space chars, then the final number
         // is written on top of those spaces on the specified span as ascii.
         // At the end, it's saved in the header field and the final value returned.
-        private static int WriteChecksum(int checksum, Span<byte> buffer)
+        private static unsafe int WriteChecksum(int checksum, Span<byte> buffer)
         {
             // The checksum field is also counted towards the total sum
             // but as an array filled with spaces
@@ -1117,7 +1117,7 @@ namespace System.Formats.Tar
         }
 
         // Writes the specified decimal number as a right-aligned octal number and returns its checksum.
-        private static int FormatOctal(long value, Span<byte> destination)
+        private static unsafe int FormatOctal(long value, Span<byte> destination)
         {
             ulong remaining = (ulong)value;
             Span<byte> digits = stackalloc byte[32]; // longer than any possible octal formatting of a ulong

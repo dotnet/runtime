@@ -153,8 +153,11 @@ private:
     bool     LowerCallMemcmp(GenTreeCall* call, GenTree** next);
     bool     LowerCallMemset(GenTreeCall* call, GenTree** next);
     void     LowerCFGCall(GenTreeCall* call);
-    void     MovePutArgNodesUpToCall(GenTreeCall* call);
-    void     MovePutArgUpToCall(GenTreeCall* call, GenTree* node);
+#ifdef TARGET_WASM
+    void LowerPEPCall(GenTreeCall* call);
+#endif
+    void MovePutArgNodesUpToCall(GenTreeCall* call);
+    void MovePutArgUpToCall(GenTreeCall* call, GenTree* node);
 #ifndef TARGET_64BIT
     GenTree* DecomposeLongCompare(GenTree* cmp);
 #endif
@@ -605,8 +608,11 @@ private:
     // Checks and makes 'childNode' contained in the 'parentNode'
     bool CheckImmedAndMakeContained(GenTree* parentNode, GenTree* childNode);
 
-    bool IsInvariantInRange(GenTree* node, GenTree* endExclusive) const;
-    bool IsInvariantInRange(GenTree* node, GenTree* endExclusive, GenTree* ignoreNode) const;
+    bool IsInvariantInRange(GenTree* node, GenTree* endExclusive, GenTreeFlags ignoreFlagsOnNode = GTF_EMPTY) const;
+    bool IsInvariantInRange(GenTree*     node,
+                            GenTree*     endExclusive,
+                            GenTree*     ignoreNode,
+                            GenTreeFlags ignoreFlagsOnNode = GTF_EMPTY) const;
     bool IsRangeInvariantInRange(GenTree* rangeStart,
                                  GenTree* rangeEnd,
                                  GenTree* endExclusive,

@@ -4,6 +4,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
+using System.Linq;
 using System.Reflection;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
@@ -22,25 +23,25 @@ namespace System.Threading.Tasks.Tests
         private static readonly FieldInfo s_activeFlagsField = GetCorLibClassStaticField("System.Runtime.CompilerServices.AsyncInstrumentation", "s_activeFlags");
 
         private static readonly object s_debuggerLock = new object();
-        private static TestEventListener? s_debuggerTplInstance;
 
         // AsyncDebugger(0x2000000) | all event flags(0x7F)
         private const uint EnabledInstrumentationFlags = 0x200007F;
         private const uint DisabledInstrumentationFlags = 0x0;
-        private const uint UninitializedInstrumentationFlags = 0x80000000;
+        private const uint SynchronizeInstrumentationFlags = 0x80000000;
 
         private static void AttachDebugger()
         {
-            // Simulate a debugger attach to process, creating TPL event source session + setting s_asyncDebuggingEnabled.
+            // Simulate a debugger attach to process by setting s_asyncDebuggingEnabled
+            // and triggering a flag synchronization via the Synchronize bit.
             lock (s_debuggerLock)
             {
                 uint flags = Convert.ToUInt32(s_activeFlagsField.GetValue(null));
-                Assert.True(flags == UninitializedInstrumentationFlags || flags == DisabledInstrumentationFlags, $"ActiveFlags equals {flags}, expected {UninitializedInstrumentationFlags} || {DisabledInstrumentationFlags}");
+                Assert.True(flags == SynchronizeInstrumentationFlags || flags == DisabledInstrumentationFlags, $"ActiveFlags equals {flags}, expected {SynchronizeInstrumentationFlags} || {DisabledInstrumentationFlags}");
 
-                s_debuggerTplInstance = new TestEventListener("System.Threading.Tasks.TplEventSource", EventLevel.Verbose);
                 s_asyncDebuggingEnabledField.SetValue(null, true);
+                s_activeFlagsField.SetValue(null, flags | SynchronizeInstrumentationFlags);
 
-                // Initialize flags and collections.
+                // Run an async method to trigger SyncActiveFlags which will pick up the Synchronize bit.
                 Func().GetAwaiter().GetResult();
 
                 flags = Convert.ToUInt32(s_activeFlagsField.GetValue(null));
@@ -62,11 +63,15 @@ namespace System.Threading.Tasks.Tests
             // Simulate a debugger detach from process.
             lock (s_debuggerLock)
             {
-                s_asyncDebuggingEnabledField.SetValue(null, false);
-                s_debuggerTplInstance?.Dispose();
-                s_debuggerTplInstance = null;
-
                 uint flags = Convert.ToUInt32(s_activeFlagsField.GetValue(null));
+                s_asyncDebuggingEnabledField.SetValue(null, false);
+                s_activeFlagsField.SetValue(null, flags | SynchronizeInstrumentationFlags);
+
+                // Run an async method to trigger SyncActiveFlags which will detect
+                // s_asyncDebuggingEnabled is false and clear the debugger flags.
+                Func().GetAwaiter().GetResult();
+
+                flags = Convert.ToUInt32(s_activeFlagsField.GetValue(null));
                 Assert.True(flags == DisabledInstrumentationFlags, $"ActiveFlags equals {flags}, expected {DisabledInstrumentationFlags}");
             }
         }
@@ -173,6 +178,48 @@ namespace System.Threading.Tasks.Tests
             callback();
         }
 
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+        static async Task FuncWithNestedDelays(List<long> observedTimestamps)
+        {
+            var continuationTimestamps = (Dictionary<object, long>)s_continuationTimestampsField.GetValue(null);
+
+            await Task.Delay(50);
+            lock (continuationTimestamps)
+            {
+                foreach (long ts in continuationTimestamps.Values)
+                    observedTimestamps.Add(ts);
+            }
+
+            await NestedDelay1(observedTimestamps);
+            await NestedDelay2(observedTimestamps);
+        }
+
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+        static async Task NestedDelay1(List<long> observedTimestamps)
+        {
+            var continuationTimestamps = (Dictionary<object, long>)s_continuationTimestampsField.GetValue(null);
+
+            await Task.Delay(50);
+            lock (continuationTimestamps)
+            {
+                foreach (long ts in continuationTimestamps.Values)
+                    observedTimestamps.Add(ts);
+            }
+        }
+
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+        static async Task NestedDelay2(List<long> observedTimestamps)
+        {
+            var continuationTimestamps = (Dictionary<object, long>)s_continuationTimestampsField.GetValue(null);
+
+            await Task.Delay(50);
+            lock (continuationTimestamps)
+            {
+                foreach (long ts in continuationTimestamps.Values)
+                    observedTimestamps.Add(ts);
+            }
+        }
+
         static void ValidateTimestampsCleared()
         {
             // some other tasks may be created by the runtime, so this is just using a reasonably small upper bound
@@ -181,7 +228,6 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(RuntimeAsyncTests), nameof(IsRemoteExecutorAndRuntimeAsyncSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/124072", typeof(PlatformDetection), nameof(PlatformDetection.IsInterpreter))]
         public void RuntimeAsync_TaskCompleted()
         {
             RemoteExecutor.Invoke(async () =>
@@ -201,7 +247,6 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(RuntimeAsyncTests), nameof(IsRemoteExecutorAndRuntimeAsyncSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/124072", typeof(PlatformDetection), nameof(PlatformDetection.IsInterpreter))]
         public void RuntimeAsync_ExceptionCleanup()
         {
             RemoteExecutor.Invoke(async () =>
@@ -227,7 +272,6 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(RuntimeAsyncTests), nameof(IsRemoteExecutorAndRuntimeAsyncSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/124072", typeof(PlatformDetection), nameof(PlatformDetection.IsInterpreter))]
         public void RuntimeAsync_DebuggerDetach()
         {
             RemoteExecutor.Invoke(async () =>
@@ -288,7 +332,6 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(RuntimeAsyncTests), nameof(IsRemoteExecutorAndRuntimeAsyncSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/124072", typeof(PlatformDetection), nameof(PlatformDetection.IsInterpreter))]
         public void RuntimeAsync_ValueTypeResult()
         {
             RemoteExecutor.Invoke(async () =>
@@ -309,7 +352,6 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(RuntimeAsyncTests), nameof(IsRemoteExecutorAndRuntimeAsyncSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/124072", typeof(PlatformDetection), nameof(PlatformDetection.IsInterpreter))]
         public void RuntimeAsync_HandledExceptionPartialUnwind()
         {
             RemoteExecutor.Invoke(async () =>
@@ -329,7 +371,6 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(RuntimeAsyncTests), nameof(IsRemoteExecutorAndRuntimeAsyncSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/124072", typeof(PlatformDetection), nameof(PlatformDetection.IsInterpreter))]
         public void RuntimeAsync_CancellationCleanup()
         {
             RemoteExecutor.Invoke(async () =>
@@ -358,7 +399,6 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(RuntimeAsyncTests), nameof(IsRemoteExecutorAndRuntimeAsyncSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/124072", typeof(PlatformDetection), nameof(PlatformDetection.IsInterpreter))]
         public void RuntimeAsync_TimestampsTrackedWhileInFlight()
         {
             RemoteExecutor.Invoke(async () =>
@@ -421,7 +461,6 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(RuntimeAsyncTests), nameof(IsRemoteExecutorAndRuntimeAsyncSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/124072", typeof(PlatformDetection), nameof(PlatformDetection.IsInterpreter))]
         public void RuntimeAsync_ContinuationTimestampObservedDuringResume()
         {
             RemoteExecutor.Invoke(async () =>
@@ -454,7 +493,6 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(RuntimeAsyncTests), nameof(IsRemoteExecutorAndRuntimeAsyncSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/124072", typeof(PlatformDetection), nameof(PlatformDetection.IsInterpreter))]
         public void RuntimeAsync_InFlightInstrumentationUpgrade()
         {
             RemoteExecutor.Invoke(async () =>
@@ -504,7 +542,6 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(RuntimeAsyncTests), nameof(IsRemoteExecutorAndRuntimeAsyncSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/124072", typeof(PlatformDetection), nameof(PlatformDetection.IsInterpreter))]
         public void RuntimeAsync_TplEvents()
         {
             RemoteExecutor.Invoke(() =>
@@ -539,7 +576,27 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(RuntimeAsyncTests), nameof(IsRemoteExecutorAndRuntimeAsyncSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/124072", typeof(PlatformDetection), nameof(PlatformDetection.IsInterpreter))]
+        public void RuntimeAsync_SuspensionTimestampsAreDistinct()
+        {
+            RemoteExecutor.Invoke(async () =>
+            {
+                AttachDebugger();
+
+                var observedTimestamps = new List<long>();
+                await FuncWithNestedDelays(observedTimestamps);
+
+                // Each suspension across nested async methods should produce a fresh, non-zero
+                // timestamp — not one inherited from a parent continuation.
+                Assert.True(observedTimestamps.Count >= 3, $"Expected at least 3 observed timestamps, got {observedTimestamps.Count}");
+                Assert.All(observedTimestamps, ts => Assert.True(ts > 0, "Expected non-zero timestamp"));
+                Assert.True(observedTimestamps.Distinct().Count() > 1, "Expected timestamps from different suspensions to not all be identical");
+
+                DetachDebugger();
+
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RuntimeAsyncTests), nameof(IsRemoteExecutorAndRuntimeAsyncSupported))]
         public void RuntimeAsync_NoTplEventsWithoutDebugger()
         {
             RemoteExecutor.Invoke(() =>

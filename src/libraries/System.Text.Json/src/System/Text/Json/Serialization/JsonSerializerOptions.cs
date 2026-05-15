@@ -1100,6 +1100,21 @@ namespace System.Text.Json
             };
         }
 
+        // Per JSON Lines spec (https://jsonlines.org/) every value must occupy a single line.
+        // Indentation must be suppressed regardless of the user-configured WriteIndented setting,
+        // and the JsonWriterOptions.NewLine setting is irrelevant when Indented is false.
+        internal JsonWriterOptions GetWriterOptionsForJsonLines()
+        {
+            return new JsonWriterOptions
+            {
+                Encoder = Encoder,
+                MaxDepth = EffectiveMaxDepth,
+#if !DEBUG
+                SkipValidation = true
+#endif
+            };
+        }
+
         internal void VerifyMutable()
         {
             if (_isReadOnly)

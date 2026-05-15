@@ -893,8 +893,19 @@ HRESULT ClrDataAccess::GetThreadData(CLRDATA_ADDRESS threadAddr, struct DacpThre
     // TEB is no longer provided by the runtime. Consumers should look up the TEB
     // from the OS thread ID via the debugger's native API (e.g., IDebuggerServices::GetThreadTeb).
     threadData->teb = (CLRDATA_ADDRESS)NULL;
-    threadData->lastThrownObjectHandle =
-        TO_CDADDR(thread->m_LastThrownObjectHandle);
+    // Prefer the active exception from ExInfo (pseudo-handle to m_exception field).
+    // After the removal of SetThrowable/m_hThrowable, m_LastThrownObjectHandle is only
+    // updated after exception dispatch completes, so during active dispatch it may be
+    // stale.  GetThrowableAsPseudoHandle returns the address of ExInfo::m_exception
+    // which has the same dereference semantics as a real GC handle.
+    {
+        OBJECTHANDLE ohException = thread->GetThrowableAsPseudoHandle();
+        if (ohException == (OBJECTHANDLE)NULL)
+        {
+            ohException = thread->m_LastThrownObjectHandle;
+        }
+        threadData->lastThrownObjectHandle = TO_CDADDR(ohException);
+    }
     threadData->nextThread =
         HOST_CDADDR(ThreadStore::s_pThreadStore->m_ThreadList.GetNext(thread));
     if (thread->m_ExceptionState.m_pCurrentTracker)
@@ -3308,7 +3319,7 @@ ClrDataAccess::GetNestedExceptionData(CLRDATA_ADDRESS exception, CLRDATA_ADDRESS
     }
     else
     {
-        *exceptionObject = TO_CDADDR(*PTR_TADDR(pExData->m_hThrowable));
+        *exceptionObject = dac_cast<TADDR>(pExData->m_exception);
         *nextNestedException = PTR_HOST_TO_TADDR(pExData->m_pPrevNestedInfo);
     }
 
@@ -4051,35 +4062,30 @@ HRESULT ClrDataAccess::GetClrWatsonBucketsWorker(Thread * pThread, GenericModeBl
     // By default, there are no buckets
     PTR_VOID pBuckets = NULL;
 
-    // Get the handle to the throwble
-    OBJECTHANDLE ohThrowable = pThread->GetThrowableAsHandle();
-    if (ohThrowable != NULL)
+    // Get the current throwable
+    OBJECTREF oThrowable = pThread->GetExceptionState()->GetThrowable();
+    if (oThrowable != NULL)
     {
-        // Get the object from handle and check if the throwable is preallocated or not
-        OBJECTREF oThrowable = ObjectFromHandle(ohThrowable);
-        if (oThrowable != NULL)
+        // Does the throwable have buckets?
+        U1ARRAYREF refWatsonBucketArray = ((EXCEPTIONREF)oThrowable)->GetWatsonBucketReference();
+        if (refWatsonBucketArray != NULL)
         {
-            // Does the throwable have buckets?
-            U1ARRAYREF refWatsonBucketArray = ((EXCEPTIONREF)oThrowable)->GetWatsonBucketReference();
-            if (refWatsonBucketArray != NULL)
+            // Get the watson buckets from the throwable for non-preallocated
+            // exceptions
+            pBuckets = dac_cast<PTR_VOID>(refWatsonBucketArray->GetDataPtr());
+        }
+        else
+        {
+            // This is a preallocated exception object - check if the UE Watson bucket tracker
+            // has any bucket details
+            pBuckets = pThread->GetExceptionState()->GetUEWatsonBucketTracker()->RetrieveWatsonBuckets();
+            if (pBuckets == NULL)
             {
-                // Get the watson buckets from the throwable for non-preallocated
-                // exceptions
-                pBuckets = dac_cast<PTR_VOID>(refWatsonBucketArray->GetDataPtr());
-            }
-            else
-            {
-                // This is a preallocated exception object - check if the UE Watson bucket tracker
-                // has any bucket details
-                pBuckets = pThread->GetExceptionState()->GetUEWatsonBucketTracker()->RetrieveWatsonBuckets();
-                if (pBuckets == NULL)
+                // Since the UE watson bucket tracker does not have them, look up the current
+                // exception tracker
+                if (pThread->GetExceptionState()->GetCurrentExceptionTracker() != NULL)
                 {
-                    // Since the UE watson bucket tracker does not have them, look up the current
-                    // exception tracker
-                    if (pThread->GetExceptionState()->GetCurrentExceptionTracker() != NULL)
-                    {
-                        pBuckets = pThread->GetExceptionState()->GetCurrentExceptionTracker()->GetWatsonBucketTracker()->RetrieveWatsonBuckets();
-                    }
+                    pBuckets = pThread->GetExceptionState()->GetCurrentExceptionTracker()->GetWatsonBucketTracker()->RetrieveWatsonBuckets();
                 }
             }
         }

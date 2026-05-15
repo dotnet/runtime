@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "pal_evp_pkey.h"
+#include "pal_evp_pkey_ecdh.h"
 #include "pal_evp_pkey_x25519.h"
 #include "pal_utilities.h"
 #include "openssl.h"
@@ -118,4 +119,54 @@ EVP_PKEY* CryptoNative_X25519ImportPublicKey(const uint8_t* source, int32_t sour
         NULL,
         source,
         Int32ToSizeT(sourceLength));
+}
+
+int32_t CryptoNative_X25519DeriveSecretAgreementWithBytes(EVP_PKEY* pkey,
+                                                          void* extraHandle,
+                                                          const uint8_t* peerKey,
+                                                          int32_t peerKeyLength,
+                                                          uint8_t* secret,
+                                                          uint32_t secretLength)
+{
+    if (pkey == NULL || peerKey == NULL || peerKeyLength <= 0 || secret == NULL || secretLength == 0)
+    {
+        return 0;
+    }
+
+    EVP_PKEY* peerPKey = CryptoNative_X25519ImportPublicKey(peerKey, peerKeyLength);
+
+    if (peerPKey == NULL)
+    {
+        return 0;
+    }
+
+    int32_t ret = CryptoNative_EvpPKeyDeriveSecretAgreement(pkey, extraHandle, peerPKey, secret, secretLength);
+    EVP_PKEY_free(peerPKey);
+    return ret;
+}
+
+int32_t CryptoNative_X25519IsValidHandle(const EVP_PKEY* key, int32_t* hasPrivateKey)
+{
+    assert(key != NULL && hasPrivateKey != NULL);
+    ERR_clear_error();
+
+    *hasPrivateKey = 0;
+
+    if (EVP_PKEY_get_base_id(key) != EVP_PKEY_X25519)
+    {
+        return 0;
+    }
+
+    size_t privateKeyLength = 0;
+
+    if (EVP_PKEY_get_raw_private_key(key, NULL, &privateKeyLength) == 1)
+    {
+        *hasPrivateKey = 1;
+    }
+    else
+    {
+        ERR_clear_error();
+    }
+
+    return 1;
 }
