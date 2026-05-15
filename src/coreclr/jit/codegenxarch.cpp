@@ -8546,7 +8546,7 @@ void CodeGen::genCreateAndStoreGCInfoX64(unsigned codeSize, unsigned prologSize 
         //  -return address
         //  -saved RBP
         //  -saved bool for synchronized methods
-        //  -async contexts for async methods
+        //  -thread/async contexts for async methods
 
         // slots for ret address + FP + EnC callee-saves
         int preservedAreaSize = (2 + genCountBits(RBM_ENC_CALLEE_SAVED)) * REGSIZE_BYTES;

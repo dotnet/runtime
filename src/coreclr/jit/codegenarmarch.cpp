@@ -3831,7 +3831,7 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned            codeSize,
         //  -saved off FP
         //  -all callee-preserved registers in case of varargs
         //  -saved bool for synchronized methods
-        //  -async contexts for async methods
+        //  -thread/async contexts for async methods
 
         int preservedAreaSize = (2 + genCountBits((uint64_t)RBM_ENC_CALLEE_SAVED)) * REGSIZE_BYTES;
 
