@@ -1,4 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CompositeCrossGenTest>false</CompositeCrossGenTest>
+  </PropertyGroup>
+
   <ItemGroup>
     <MergedWrapperProjectReference Include="opt/**/*.??proj" />
   </ItemGroup>
