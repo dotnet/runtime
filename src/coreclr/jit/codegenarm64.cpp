@@ -2468,9 +2468,30 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                             break;
                         }
 
+                        case TYP_FLOAT:
+                        {
+                            uint32_t indexBits = 0;
+                            uint32_t stepBits  = 0;
+                            memcpy(&indexBits, &simdVal.gtSimdScalableIndexF32[0], sizeof(indexBits));
+                            memcpy(&stepBits, &simdVal.gtSimdScalableStepF32[0], sizeof(stepBits));
+                            index = static_cast<ssize_t>(indexBits);
+                            step  = static_cast<ssize_t>(stepBits);
+                            break;
+                        }
+                        case TYP_DOUBLE:
+                        {
+                            uint64_t indexBits = 0;
+                            uint64_t stepBits  = 0;
+                            memcpy(&indexBits, &simdVal.gtSimdScalableIndexF64[0], sizeof(indexBits));
+                            memcpy(&stepBits, &simdVal.gtSimdScalableStepF64[0], sizeof(stepBits));
+                            index = static_cast<ssize_t>(indexBits);
+                            step  = static_cast<ssize_t>(stepBits);
+                            break;
+                        }
+
                         default:
                         {
-                            assert(varTypeIsFloating(simdVal.gtSimdScalableBaseType));
+                            unreached();
                         }
                     }
 
