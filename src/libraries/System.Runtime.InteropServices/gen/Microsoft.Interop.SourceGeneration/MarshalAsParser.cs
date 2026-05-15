@@ -227,7 +227,14 @@ namespace Microsoft.Interop
                         _diagnostics.ReportConfigurationNotSupported(attributeData, $"{attributeData.AttributeClass!.Name}{Type.Delimiter}{namedArg.Key}");
                         break;
                     case nameof(MarshalAsAttribute.IidParameterIndex):
-                        hasIidParameterIndex = true;
+                        if (isArrayType)
+                        {
+                            _diagnostics.ReportConfigurationNotSupported(attributeData, IidParameterIndexConfigurationNameWithSupportedShape);
+                        }
+                        else
+                        {
+                            hasIidParameterIndex = true;
+                        }
                         break;
                     case nameof(MarshalAsAttribute.ArraySubType):
                         if (!isArrayType)
