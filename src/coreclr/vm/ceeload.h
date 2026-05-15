@@ -62,6 +62,15 @@ class JITInlineTrackingMap;
 
 #ifdef FEATURE_METADATA_UPDATER
 class EnCEEClassData;
+struct EnCData;
+typedef DPTR(struct EnCData) PTR_EnCData;
+struct EnCData
+{
+    TADDR addrOfCode;
+    mdMethodDef token;
+    SIZE_T encVersion;
+    PTR_EnCData pNext;
+};
 #endif // FEATURE_METADATA_UPDATER
 
 // Hash table parameter of available classes (name -> module/class) hash
@@ -326,7 +335,7 @@ typedef DPTR(class MemberRef) PTR_MemberRef;
 
 
 // flag used to mark member ref pointers to field descriptors in the member ref cache
-#define IS_FIELD_MEMBER_REF ((TADDR)0x00000002)
+#define IS_FIELD_MEMBER_REF ((TADDR)0x00000002) // [cDAC] [Loader]: Contract depends on this value.
 
 
 //
@@ -949,6 +958,48 @@ protected:
 #ifdef FEATURE_METADATA_UPDATER
     // Holds a table of EnCEEClassData object for classes in this module that have been modified
     CUnorderedArray<EnCEEClassData*, 5> m_ClassList;
+
+    PTR_EnCData m_pEnCDataList = nullptr;
+
+public:
+    void AddEncData(EnCData* pData)
+    {
+        LIMITED_METHOD_CONTRACT;
+        pData->pNext = m_pEnCDataList;
+        m_pEnCDataList = dac_cast<PTR_EnCData>(pData);
+    }
+
+    PTR_EnCData FindEncData(mdMethodDef token, TADDR addrOfCode)
+    {
+        LIMITED_METHOD_CONTRACT;
+        SUPPORTS_DAC;
+        for (PTR_EnCData pCur = m_pEnCDataList; pCur != nullptr; pCur = pCur->pNext)
+        {
+            if (pCur->token == token && pCur->addrOfCode == addrOfCode)
+            {
+                return pCur;
+            }
+        }
+
+        return nullptr;
+    }
+
+    PTR_EnCData FindLatestEncData(mdMethodDef token)
+    {
+        LIMITED_METHOD_CONTRACT;
+        SUPPORTS_DAC;
+        for (PTR_EnCData pCur = m_pEnCDataList; pCur != nullptr; pCur = pCur->pNext)
+        {
+            if (pCur->token == token)
+            {
+                return pCur;
+            }
+        }
+
+        return nullptr;
+    }
+
+protected:
 #endif // FEATURE_METADATA_UPDATER
 
 private:
@@ -1728,6 +1779,9 @@ struct cdac_data<Module>
     static constexpr size_t MethodDefToILCodeVersioningStateMap = offsetof(Module, m_ILCodeVersioningStateMap);
 #endif // FEATURE_CODE_VERSIONING
     static constexpr size_t DynamicILBlobTable = offsetof(Module, m_debuggerSpecificData.m_pDynamicILBlobTable);
+#ifdef FEATURE_METADATA_UPDATER
+    static constexpr size_t EnCDataList = offsetof(Module, m_pEnCDataList);
+#endif // FEATURE_METADATA_UPDATER
 };
 
 //

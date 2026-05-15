@@ -509,7 +509,7 @@ public:
     VMPTR_MethodDesc vmNativeCodeMethodDescToken;
 
     // EnC version number of the function
-    SIZE_T           encVersion;
+    ULONG64          encVersion;
 };
 
 //----------------------------------------------------------------------------------

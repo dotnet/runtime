@@ -1255,8 +1255,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetNativeCodeInfo(VMPTR_Assembly 
             if (pCodeInfo->m_rgCodeRegions[kHot].pAddress != (CORDB_ADDRESS)NULL)
             {
                 pCodeInfo->isInstantiatedGeneric = pMethodDesc->HasClassOrMethodInstantiation();
-                LookupEnCVersions(pModule,
-                                  pCodeInfo->vmNativeCodeMethodDescToken,
+                LookupEnCVersions(pCodeInfo->vmNativeCodeMethodDescToken,
                                   functionToken,
                                   pCodeInfo->m_rgCodeRegions[kHot].pAddress,
                                   &(pCodeInfo->encVersion));
@@ -1337,11 +1336,10 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetNativeCodeInfoForAddr(CORDB_AD
         pCodeInfo->isInstantiatedGeneric = pMethodDesc->HasClassOrMethodInstantiation();
         pCodeInfo->vmNativeCodeMethodDescToken = vmMethodDesc;
 
-        SIZE_T unusedLatestEncVersion;
+        ULONG64 unusedLatestEncVersion;
         Module * pModule = pMethodDesc->GetModule();
         _ASSERTE(pModule != NULL);
-        LookupEnCVersions(pModule,
-                          vmMethodDesc,
+        LookupEnCVersions(vmMethodDesc,
                           pMethodDesc->GetMemberDef(),
                           codeStartAddr,
                           &unusedLatestEncVersion, //unused by caller
@@ -5602,60 +5600,23 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetPartialUserState(VMPTR_Thread 
 //    thinking is that some of the RS data structures will remain, most likely in a reduced form.
 //
 
-void DacDbiInterfaceImpl::LookupEnCVersions(Module*          pModule,
-                                            VMPTR_MethodDesc vmMethodDesc,
+void DacDbiInterfaceImpl::LookupEnCVersions(VMPTR_MethodDesc vmMethodDesc,
                                             mdMethodDef      mdMethod,
                                             CORDB_ADDRESS    pNativeStartAddress,
-                                            SIZE_T *         pLatestEnCVersion,
-                                            SIZE_T *         pJittedInstanceEnCVersion /* = NULL */)
+                                            ULONG64 *        pLatestEnCVersion,
+                                            ULONG64 *        pJittedInstanceEnCVersion /* = NULL */)
 {
-    MethodDesc * pMD     = vmMethodDesc.GetDacPtr();
-
-    // make sure the vmMethodDesc and mdMethod match
-    _ASSERTE(pMD->GetMemberDef() == mdMethod);
-
+    MethodDesc * pMD = vmMethodDesc.GetDacPtr();
     _ASSERTE(pLatestEnCVersion != NULL);
 
-    // @dbgtodo  inspection - once we do EnC, stop using DMIs.
-    // If the method wasn't EnCed, DMIs may not exist. And since this is DAC, we can't create them.
-
-    // We may not have the memory for the DebuggerMethodInfos in a minidump.
-    // When dump debugging EnC information isn't very useful so just fallback
-    // to default version.
-    DebuggerMethodInfo * pDMI = NULL;
-    DebuggerJitInfo * pDJI = NULL;
-    EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY
+    Module* pLoaderModule = pMD->GetLoaderModule();
+    PTR_EnCData pEnCData = pLoaderModule->FindEncData(mdMethod, CORDB_ADDRESS_TO_TADDR(pNativeStartAddress));
+    PTR_EnCData pLatestEncData = pLoaderModule->FindLatestEncData(mdMethod);
+    if (pJittedInstanceEnCVersion != NULL)
     {
-        if (g_pDebugger != NULL)
-        {
-            pDMI = g_pDebugger->GetOrCreateMethodInfo(pModule, mdMethod);
-            if (pDMI != NULL)
-            {
-                pDJI = pDMI->FindJitInfo(pMD, CORDB_ADDRESS_TO_TADDR(pNativeStartAddress));
-            }
-        }
+        *pJittedInstanceEnCVersion = (pEnCData != NULL) ? pEnCData->encVersion : CorDB_DEFAULT_ENC_FUNCTION_VERSION;
     }
-    EX_END_CATCH_ALLOW_DATATARGET_MISSING_MEMORY;
-    if (pDJI != NULL)
-    {
-        if (pJittedInstanceEnCVersion != NULL)
-        {
-            *pJittedInstanceEnCVersion = pDJI->m_encVersion;
-        }
-        *pLatestEnCVersion = pDMI->GetCurrentEnCVersion();
-    }
-    else
-    {
-        // If we have no DMI/DJI, then we must never have EnCed. So we can use default EnC info
-        // Several cases where we don't have a DMI/DJI:
-        // - LCG methods
-        // - method was never "touched" by debugger. (DJIs are created lazily).
-        if (pJittedInstanceEnCVersion != NULL)
-        {
-            *pJittedInstanceEnCVersion = CorDB_DEFAULT_ENC_FUNCTION_VERSION;
-        }
-        *pLatestEnCVersion = CorDB_DEFAULT_ENC_FUNCTION_VERSION;
-    }
+    *pLatestEnCVersion = (pLatestEncData != NULL) ? pLatestEncData->encVersion : CorDB_DEFAULT_ENC_FUNCTION_VERSION;
 }
 
 // Get the address of the Debugger control block on the helper thread

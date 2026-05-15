@@ -3902,7 +3902,7 @@ HRESULT CordbVariableHome::GetOffset(LONG *pOffset)
 CordbNativeCode::CordbNativeCode(CordbFunction *                pFunction,
                                  const NativeCodeFunctionData * pJitData,
                                  BOOL                           fIsInstantiatedGeneric)
-  : CordbCode(pFunction, (UINT_PTR)pJitData->m_rgCodeRegions[kHot].pAddress, pJitData->encVersion, FALSE),
+  : CordbCode(pFunction, (UINT_PTR)pJitData->m_rgCodeRegions[kHot].pAddress, (SIZE_T)pJitData->encVersion, FALSE),
     m_vmNativeCodeMethodDescToken(pJitData->vmNativeCodeMethodDescToken),
     m_fCodeAvailable(TRUE),
     m_fIsInstantiatedGeneric(fIsInstantiatedGeneric != FALSE)
@@ -5093,7 +5093,7 @@ CordbNativeCode * CordbModule::LookupOrCreateNativeCode(mdMethodDef methodToken,
              codeInfo.m_rgCodeRegions[kHot].cbSize));
 
         // Lookup the function object that this code should be bound to
-        CordbFunction* pFunction = CordbModule::LookupOrCreateFunction(methodToken, codeInfo.encVersion);
+        CordbFunction* pFunction = CordbModule::LookupOrCreateFunction(methodToken, (SIZE_T)codeInfo.encVersion);
         _ASSERTE(pFunction != NULL);
 
         // There are bugs with the on-demand class load performed by CordbFunction in some cases. The old stack

@@ -883,12 +883,11 @@ private:
     BOOL UnwindRuntimeStackFrame(StackFrameIterator * pIter);
 
     // Look up the EnC version number of a particular jitted instance of a managed method.
-    void LookupEnCVersions(Module*          pModule,
-                           VMPTR_MethodDesc vmMethodDesc,
+    void LookupEnCVersions(VMPTR_MethodDesc vmMethodDesc,
                            mdMethodDef      mdMethod,
                            CORDB_ADDRESS    pNativeStartAddress,
-                           SIZE_T *         pLatestEnCVersion,
-                           SIZE_T *         pJittedInstanceEnCVersion = NULL);
+                           ULONG64 *        pLatestEnCVersion,
+                           ULONG64 *        pJittedInstanceEnCVersion = NULL);
 
     // @dbgtodo - This method should be removed once CordbFunctionBreakpoint and SetIP are moved OOP and
     // no longer use nativeCodeJITInfoToken.

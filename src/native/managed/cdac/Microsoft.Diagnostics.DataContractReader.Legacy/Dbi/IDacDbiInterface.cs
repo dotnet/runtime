@@ -33,6 +33,18 @@ public struct DacDbiTargetBuffer
     public uint cbSize;
 }
 
+// Mirrors the native NativeCodeFunctionData class defined in
+// src/coreclr/debug/inc/dacdbistructures.h.
+[StructLayout(LayoutKind.Sequential)]
+public struct NativeCodeFunctionData
+{
+    public DacDbiTargetBuffer hotRegion;
+    public DacDbiTargetBuffer coldRegion;
+    public Interop.BOOL isInstantiatedGeneric;
+    public ulong vmNativeCodeMethodDescToken;
+    public ulong encVersion;
+}
+
 [StructLayout(LayoutKind.Sequential)]
 public struct DacDbiAssemblyInfo
 {
@@ -372,10 +384,10 @@ public unsafe partial interface IDacDbiInterface
     int GetILCodeAndSig(ulong vmAssembly, uint functionToken, DacDbiTargetBuffer* pTargetBuffer, uint* pLocalSigToken);
 
     [PreserveSig]
-    int GetNativeCodeInfo(ulong vmAssembly, uint functionToken, nint pJitManagerList);
+    int GetNativeCodeInfo(ulong vmAssembly, uint functionToken, NativeCodeFunctionData* pCodeInfo);
 
     [PreserveSig]
-    int GetNativeCodeInfoForAddr(ulong codeAddress, nint pCodeInfo, ulong* pVmModule, uint* pFunctionToken);
+    int GetNativeCodeInfoForAddr(ulong codeAddress, NativeCodeFunctionData* pCodeInfo, ulong* pVmModule, uint* pFunctionToken);
 
     [PreserveSig]
     int IsValueType(ulong vmTypeHandle, Interop.BOOL* pResult);

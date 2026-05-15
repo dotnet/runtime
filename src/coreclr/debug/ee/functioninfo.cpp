@@ -1226,6 +1226,15 @@ void DebuggerJitInfo::Init(TADDR newAddress)
     this->m_sizeOfCode =  this->m_codeRegionInfo.getSizeOfTotalCode();
 
     this->m_encVersion = this->m_methodInfo->GetCurrentEnCVersion();
+    if (this->m_encVersion != CorDB_DEFAULT_ENC_FUNCTION_VERSION)
+    {
+        Module* pModule = this->m_pLoaderModule;
+        EnCData* pEnCData = (EnCData*)(void*)pModule->GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(EnCData)));
+        pEnCData->addrOfCode = this->m_addrOfCode;
+        pEnCData->token = this->m_methodInfo->m_token;
+        pEnCData->encVersion = this->m_encVersion;
+        pModule->AddEncData(pEnCData);
+    }
 
     this->InitFuncletAddress();
 
