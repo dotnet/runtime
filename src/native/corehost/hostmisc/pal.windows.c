@@ -4,25 +4,44 @@
 // C implementations of the pal_* APIs needed by trace.c on Windows.
 
 #include "pal.h"
+#include "trace.h"
 
-bool pal_get_own_executable_path(pal_char_t* recv, size_t recv_len)
+#include <stdlib.h>
+
+pal_char_t* pal_get_own_executable_path(void)
 {
-    if (recv_len == 0)
-        return false;
+    // GetModuleFileNameW returns 0 on failure, the number of characters
+    // written (not including the terminating null) on success, and the buffer
+    // size to signal that the buffer was too small. Start with MAX_PATH and
+    // double until the result fits.
+    DWORD size = MAX_PATH / 2;
+    pal_char_t* buf = NULL;
+    DWORD size_written;
+    do
+    {
+        size *= 2;
+        pal_char_t* new_buf = (pal_char_t*)realloc(buf, size * sizeof(pal_char_t));
+        if (new_buf == NULL)
+        {
+            free(buf);
+            return NULL;
+        }
+        buf = new_buf;
 
-    DWORD result = GetModuleFileNameW(NULL, recv, (DWORD)recv_len);
-    // result == 0 means failure; result == recv_len means the buffer was too small
-    // and the path was truncated (the function returns the buffer size in that case
-    // and ERROR_INSUFFICIENT_BUFFER is set). The caller-supplied buffer is sized
-    // for APPHOST_PATH_MAX which is plenty for any reasonable executable path.
-    return result > 0 && result < (DWORD)recv_len;
+        size_written = GetModuleFileNameW(NULL, buf, size);
+    } while (size_written == size);
+
+    if (size_written == 0)
+    {
+        free(buf);
+        return NULL;
+    }
+
+    return buf;
 }
 
 bool pal_directory_exists(const pal_char_t* path)
 {
-    // Use GetFileAttributesW directly for a true "is a directory" check, matching
-    // Unix stat() + S_ISDIR semantics. The C++ pal::directory_exists is an alias
-    // for pal::file_exists which would also return true for regular files.
     DWORD attributes = GetFileAttributesW(path);
     return attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
 }
@@ -31,7 +50,14 @@ pal_char_t* pal_getenv(const pal_char_t* name)
 {
     DWORD needed = GetEnvironmentVariableW(name, NULL, 0);
     if (needed == 0)
-        return NULL; // unset, empty, or other failure
+    {
+        DWORD err = GetLastError();
+        if (err != ERROR_ENVVAR_NOT_FOUND)
+        {
+            trace_warning(_X("Failed to read environment variable [%s], HRESULT: 0x%X"), name, HRESULT_FROM_WIN32(err));
+        }
+        return NULL;
+    }
 
     pal_char_t* result = (pal_char_t*)malloc(needed * sizeof(pal_char_t));
     if (result == NULL)
@@ -40,8 +66,11 @@ pal_char_t* pal_getenv(const pal_char_t* name)
     DWORD written = GetEnvironmentVariableW(name, result, needed);
     if (written == 0 || written >= needed)
     {
-        // The variable disappeared between the probe and the read, or some
-        // other failure occurred. Don't return a partial buffer.
+        DWORD err = GetLastError();
+        if (err != ERROR_ENVVAR_NOT_FOUND)
+        {
+            trace_warning(_X("Failed to read environment variable [%s], HRESULT: 0x%X"), name, HRESULT_FROM_WIN32(err));
+        }
         free(result);
         return NULL;
     }

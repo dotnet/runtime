@@ -12,25 +12,9 @@
 
 #include <minipal/getexepath.h>
 
-bool pal_get_own_executable_path(pal_char_t* recv, size_t recv_len)
+pal_char_t* pal_get_own_executable_path(void)
 {
-    if (recv_len == 0)
-        return false;
-
-    char* path = minipal_getexepath();
-    if (path == NULL)
-        return false;
-
-    size_t len = strlen(path);
-    if (len >= recv_len)
-    {
-        free(path);
-        return false;
-    }
-
-    memcpy(recv, path, len + 1);
-    free(path);
-    return true;
+    return minipal_getexepath();
 }
 
 bool pal_directory_exists(const pal_char_t* path)

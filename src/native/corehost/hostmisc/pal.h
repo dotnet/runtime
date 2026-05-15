@@ -117,7 +117,11 @@ extern "C" {
 #endif
 
 // pal_char_t-based C-callable APIs.
-bool pal_get_own_executable_path(pal_char_t* recv, size_t recv_len);
+
+// Returns a heap-allocated, NUL-terminated copy of the current process's
+// executable path, or NULL on failure. Caller must free() the returned pointer.
+pal_char_t* pal_get_own_executable_path(void);
+
 bool pal_directory_exists(const pal_char_t* path);
 
 // Returns a heap-allocated, NUL-terminated copy of the named environment

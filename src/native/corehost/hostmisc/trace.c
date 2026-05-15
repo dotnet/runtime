@@ -230,12 +230,13 @@ bool trace_enable(void)
         {
             // If the trace file path is a directory, construct a file path:
             // <dir>/<exe_name>.<pid>.log
-            pal_char_t exe_path[APPHOST_PATH_MAX];
+            pal_char_t* exe_path = pal_get_own_executable_path();
             pal_char_t exe_name[256];
             exe_name[0] = _X('\0');
-            if (pal_get_own_executable_path(exe_path, ARRAY_SIZE(exe_path)))
+            if (exe_path != NULL)
             {
                 utils_get_filename(exe_path, exe_name, ARRAY_SIZE(exe_name));
+                free(exe_path);
                 // Strip extension from exe_name.
                 pal_char_t* dot = pal_strrchr(exe_name, _X('.'));
                 if (dot != NULL)
