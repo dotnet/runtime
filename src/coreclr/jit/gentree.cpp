@@ -857,44 +857,46 @@ bool GenTree::gtHasReg(Compiler* comp) const
 int GenTree::GetRegisterDstCount(Compiler* compiler) const
 {
     assert(!isContained());
-    if (!IsMultiRegNode())
-    {
-        return IsValue() ? 1 : 0;
-    }
-    else if (IsMultiRegCall())
+
+#if FEATURE_MULTIREG_RET
+    if (IsMultiRegCall())
     {
         return AsCall()->GetReturnTypeDesc()->GetReturnRegCount();
     }
-    else if (IsCopyOrReload())
-    {
-        return gtGetOp1()->GetRegisterDstCount(compiler);
-    }
+
 #if !defined(TARGET_64BIT)
-    else if (OperIsMultiRegOp())
+    if (OperIsMultiRegOp())
     {
         assert(OperIs(GT_MUL_LONG));
         return 2;
     }
 #endif
-#ifdef FEATURE_HW_INTRINSICS
-    else if (OperIsHWIntrinsic())
+#endif // FEATURE_MULTIREG_RET
+
+    if (IsCopyOrReload())
     {
-        assert(TypeIs(TYP_STRUCT));
+        return gtGetOp1()->GetRegisterDstCount(compiler);
+    }
 
-        const GenTreeHWIntrinsic* intrinsic   = AsHWIntrinsic();
-        const NamedIntrinsic      intrinsicId = intrinsic->GetHWIntrinsicId();
-        assert(HWIntrinsicInfo::IsMultiReg(intrinsicId));
+#ifdef FEATURE_HW_INTRINSICS
+    if (OperIsHWIntrinsic())
+    {
+        const NamedIntrinsic intrinsicId = AsHWIntrinsic()->GetHWIntrinsicId();
 
-        return HWIntrinsicInfo::GetMultiRegCount(intrinsicId);
+        if (HWIntrinsicInfo::IsMultiReg(intrinsicId))
+        {
+            return HWIntrinsicInfo::GetMultiRegCount(intrinsicId);
+        }
     }
 #endif // FEATURE_HW_INTRINSICS
 
-    if (OperIsScalarLocal())
+    if (IsMultiRegLclVar())
     {
         return AsLclVar()->GetFieldCount(compiler);
     }
-    assert(!"Unexpected multi-reg node");
-    return 0;
+
+    assert(!IsMultiRegNode());
+    return IsValue() ? 1 : 0;
 }
 
 //-----------------------------------------------------------------------------------
@@ -927,7 +929,7 @@ bool GenTree::IsMultiRegNode() const
 #endif
 #endif // FEATURE_MULTIREG_RET
 
-    if (OperIs(GT_COPY, GT_RELOAD))
+    if (IsCopyOrReload())
     {
         return true;
     }
@@ -9782,7 +9784,7 @@ GenTreeCall* Compiler::gtNewCallNode(gtCallTypes           callType,
         node->gtFlags |= GTF_CALL_POP_ARGS;
 #endif // UNIX_X86_ABI
     node->gtCallType = callType;
-    INDEBUG(node->callSig = nullptr;)
+    INDEBUG_OR_WASM(node->callSig = nullptr;)
     node->tailCallInfo    = nullptr;
     node->gtRetClsHnd     = nullptr;
     node->gtCallMoreFlags = GTF_CALL_M_EMPTY;
@@ -10034,35 +10036,18 @@ void Compiler::gtInitializeStoreNode(GenTree* store, GenTree* value)
     assert(store->Data() == value);
 
 #if defined(FEATURE_SIMD)
-#ifndef TARGET_X86
-    if (varTypeIsSIMD(store))
+    if (varTypeIsSIMDOrMask(store))
     {
         // TODO-ASG: delete this zero-diff quirk.
         if (!value->IsCall() || !value->AsCall()->ShouldHaveRetBufArg())
         {
-            // We want to track SIMD stores as being intrinsics since they are
-            // functionally SIMD `mov` instructions and are more efficient when
+            // We want to track SIMD/Mask stores as being intrinsics since they
+            // are functionally `mov` instructions and are more efficient when
             // we don't promote, particularly when it occurs due to inlining.
             SetOpLclRelatedToSIMDIntrinsic(store);
             SetOpLclRelatedToSIMDIntrinsic(value);
         }
     }
-#else // TARGET_X86
-    // TODO-Cleanup: merge into the all-arch.
-    if (varTypeIsSIMD(value) || varTypeIsMask(value))
-    {
-        bool isRelatedToSimdIntrinsic = value->OperIs(GT_HWINTRINSIC, GT_CNS_VEC);
-
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
-        isRelatedToSimdIntrinsic |= value->OperIs(GT_CNS_MSK);
-#endif // FEATURE_MASKED_HW_INTRINSICS
-
-        if (isRelatedToSimdIntrinsic)
-        {
-            SetOpLclRelatedToSIMDIntrinsic(store);
-        }
-    }
-#endif // TARGET_X86
 #endif // FEATURE_SIMD
 }
 
@@ -11376,7 +11361,7 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree)
     // we only really need one physical copy of it. Therefore a shallow pointer copy will suffice.
     // (Note that this still holds even if the tree we are cloning was created by an inlinee compiler,
     // because the inlinee still uses the inliner's memory allocator anyway.)
-    INDEBUG(copy->callSig = tree->callSig;)
+    INDEBUG_OR_WASM(copy->callSig = tree->callSig;)
 
     if (tree->IsUnmanaged())
     {
@@ -13021,7 +13006,6 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
     }
 }
 
-#if FEATURE_MULTIREG_RET
 //----------------------------------------------------------------------------------
 // gtDispMultiRegCount: determine how many registers to print for a multi-reg node
 //
@@ -13067,7 +13051,6 @@ unsigned Compiler::gtDispMultiRegCount(GenTree* tree)
         return tree->GetMultiRegCount(this);
     }
 }
-#endif // FEATURE_MULTIREG_RET
 
 //----------------------------------------------------------------------------------
 // gtDispRegVal: Print the register(s) defined by the given node
@@ -13090,7 +13073,6 @@ void Compiler::gtDispRegVal(GenTree* tree)
             return;
     }
 
-#if FEATURE_MULTIREG_RET
     if (tree->IsMultiRegNode())
     {
         // 0th reg is GetRegNum(), which is already printed above.
@@ -13104,7 +13086,6 @@ void Compiler::gtDispRegVal(GenTree* tree)
             printf(",%s", genIsValidReg(reg) ? compRegVarName(reg) : "NA");
         }
     }
-#endif
 }
 
 // We usually/commonly don't expect to print anything longer than this string,
@@ -19612,6 +19593,15 @@ bool GenTreeIntConCommon::ImmedValCanBeFolded(Compiler* comp, genTreeOps op)
     // There are cases where we do want to allow folding of handle comparisons
     // (e.g., typeof(T) == typeof(int)).
     return !ImmedValNeedsReloc(comp) || (op == GT_EQ) || (op == GT_NE);
+}
+
+UINT64 GenTreeIntConCommon::UnsignedIntegralValue() const
+{
+    uint64_t mask = (UINT64_MAX >> (64 - (genTypeSize(this) * BITS_PER_BYTE)));
+
+    int64_t  signExtended = IntegralValue();
+    uint64_t zeroExtended = signExtended & mask;
+    return zeroExtended;
 }
 
 #if defined(TARGET_AMD64) || defined(TARGET_RISCV64)

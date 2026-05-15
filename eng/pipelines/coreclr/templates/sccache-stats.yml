@@ -12,7 +12,7 @@ parameters:
   osSubgroup: ''
 
 steps:
-  - ${{ if and(eq(parameters.osGroup, 'linux'), eq(parameters.osSubgroup, ''), eq(parameters.archType, 'x64')) }}:
+  - ${{ if and(eq(parameters.osGroup, 'linux'), or(eq(parameters.osSubgroup, ''), eq(parameters.osSubgroup, '_musl')), eq(parameters.archType, 'x64')) }}:
     - script: sccache --show-stats || true
       displayName: Sccache stats
       condition: always()

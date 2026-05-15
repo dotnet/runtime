@@ -500,7 +500,12 @@ namespace System.Security.Cryptography
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
         }
 
-        protected override partial void DeriveRawSecretAgreementCore(X25519DiffieHellman otherParty, Span<byte> destination)
+        protected override unsafe partial void DeriveRawSecretAgreementCore(X25519DiffieHellman otherParty, Span<byte> destination)
+        {
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
+        }
+
+        protected override partial void DeriveRawSecretAgreementCore(ReadOnlySpan<byte> otherPartyPublicKey, Span<byte> destination)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
         }

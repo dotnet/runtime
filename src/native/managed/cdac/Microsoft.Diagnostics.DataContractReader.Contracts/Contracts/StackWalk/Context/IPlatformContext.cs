@@ -15,6 +15,8 @@ public interface IPlatformContext
     TargetPointer InstructionPointer { get; set; }
     TargetPointer FramePointer { get; set; }
 
+    uint RawContextFlags { get; set; }
+
     void Unwind(Target target);
 
     bool TrySetRegister(string name, TargetNUInt value);

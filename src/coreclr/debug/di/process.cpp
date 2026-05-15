@@ -665,7 +665,7 @@ CordbProcess::CreateDacDbiInterface()
     // same directory as DBI
     if (m_hDacModule == NULL)
     {
-        m_hDacModule.Assign(ShimProcess::GetDacModule(m_cordb->GetDacModulePath()));
+        m_hDacModule = ShimProcess::GetDacModule(m_cordb->GetDacModulePath());
     }
 
     //
@@ -1541,7 +1541,7 @@ void CordbProcess::FreeDac()
     if (m_hDacModule != NULL)
     {
         LOG((LF_CORDB, LL_INFO1000, "Unloading DAC\n"));
-        m_hDacModule.Clear();
+        m_hDacModule.Free();
     }
 }
 
@@ -2094,10 +2094,6 @@ HRESULT CordbProcess::QueryInterface(REFIID id, void **pInterface)
     {
         *pInterface = static_cast<ICorDebugProcess8*>(this);
     }
-    else if (id == IID_ICorDebugProcess11)
-    {
-        *pInterface = static_cast<ICorDebugProcess11*>(this);
-    }
     else if (id == IID_ICorDebugProcess12)
     {
         *pInterface = static_cast<ICorDebugProcess12*>(this);
@@ -2165,18 +2161,9 @@ HRESULT CordbProcess::EnumerateHeap(ICorDebugHeapEnum **ppObjects)
 
     EX_TRY
     {
-        BOOL gcValid;
-        IfFailThrow(m_pDacPrimitives->AreGCStructuresValid(&gcValid));
-        if (gcValid)
-        {
-            CordbHeapEnum *pHeapEnum = new CordbHeapEnum(this);
-            GetContinueNeuterList()->Add(this, pHeapEnum);
-            hr = pHeapEnum->QueryInterface(__uuidof(ICorDebugHeapEnum), (void**)ppObjects);
-        }
-        else
-        {
-            hr = CORDBG_E_GC_STRUCTURES_INVALID;
-        }
+        CordbHeapEnum *pHeapEnum = new CordbHeapEnum(this);
+        GetContinueNeuterList()->Add(this, pHeapEnum);
+        hr = pHeapEnum->QueryInterface(__uuidof(ICorDebugHeapEnum), (void**)ppObjects);
     }
     EX_CATCH_HRESULT(hr);
 
@@ -2467,35 +2454,6 @@ COM_METHOD CordbProcess::EnableGCNotificationEvents(BOOL fEnable)
     PUBLIC_API_BEGIN(this)
     {
         hr = this->m_pDacPrimitives->EnableGCNotificationEvents(fEnable);
-    }
-    PUBLIC_API_END(hr);
-    return hr;
-}
-
-//-----------------------------------------------------------
-// ICorDebugProcess11
-//-----------------------------------------------------------
-COM_METHOD CordbProcess::EnumerateLoaderHeapMemoryRegions(ICorDebugMemoryRangeEnum **ppRanges)
-{
-    VALIDATE_POINTER_TO_OBJECT(ppRanges, ICorDebugMemoryRangeEnum **);
-    FAIL_IF_NEUTERED(this);
-
-    HRESULT hr = S_OK;
-
-    PUBLIC_API_BEGIN(this);
-    {
-        DacDbiArrayList<COR_MEMORY_RANGE> heapRanges;
-
-        hr = GetDAC()->GetLoaderHeapMemoryRanges(&heapRanges);
-
-        if (SUCCEEDED(hr))
-        {
-            RSInitHolder<CordbMemoryRangeEnumerator> heapSegmentEnumerator(
-                new CordbMemoryRangeEnumerator(this, &heapRanges[0], (DWORD)heapRanges.Count()));
-
-            GetContinueNeuterList()->Add(this, heapSegmentEnumerator);
-            heapSegmentEnumerator.TransferOwnershipExternal(ppRanges);
-        }
     }
     PUBLIC_API_END(hr);
     return hr;

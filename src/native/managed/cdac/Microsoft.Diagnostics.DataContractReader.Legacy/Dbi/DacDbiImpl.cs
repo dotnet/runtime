@@ -713,7 +713,38 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetThreadAllocInfo(vmThread, pThreadAllocInfo) : HResults.E_NOTIMPL;
 
     public int SetDebugState(ulong vmThread, int debugState)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.SetDebugState(vmThread, debugState) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            TargetPointer threadPtr = new TargetPointer(vmThread);
+
+            if (debugState == (int)CorDebugThreadState.ThreadSuspend)
+            {
+                _target.Contracts.Thread.SetDebuggerControlledThreadState(threadPtr, Contracts.DebuggerControlledThreadState.UserSuspend);
+            }
+            else if (debugState == (int)CorDebugThreadState.ThreadRun)
+            {
+                _target.Contracts.Thread.ResetDebuggerControlledThreadState(threadPtr, Contracts.DebuggerControlledThreadState.UserSuspend);
+            }
+            else
+            {
+                throw new ArgumentException("Invalid debug state value.", nameof(debugState));
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            int hrLocal = _legacy.SetDebugState(vmThread, debugState);
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+        return hr;
+    }
 
     public int HasUnhandledException(ulong vmThread, Interop.BOOL* pResult)
     {
@@ -1167,7 +1198,40 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int GetVarArgSig(ulong VASigCookieAddr, ulong* pArgBase, DacDbiTargetBuffer* pRetVal)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetVarArgSig(VASigCookieAddr, pArgBase, pRetVal) : HResults.E_NOTIMPL;
+    {
+        *pArgBase = 0;
+        *pRetVal = default;
+        int hr = HResults.S_OK;
+        try
+        {
+            Contracts.ISignature signature = _target.Contracts.Signature;
+            TargetPointer argBase = signature.GetVarArgArgsBase(new TargetPointer(VASigCookieAddr));
+            signature.GetVarArgSignature(new TargetPointer(VASigCookieAddr), out TargetPointer sigAddr, out uint sigLen);
+
+            *pArgBase = argBase.Value;
+            *pRetVal = new DacDbiTargetBuffer { pAddress = sigAddr.Value, cbSize = sigLen };
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            ulong argBaseLocal;
+            DacDbiTargetBuffer retValLocal = default;
+            int hrLocal = _legacy.GetVarArgSig(VASigCookieAddr, &argBaseLocal, &retValLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(*pArgBase == argBaseLocal, $"cDAC argBase: 0x{*pArgBase:X}, DAC argBase: 0x{argBaseLocal:X}");
+                Debug.Assert(pRetVal->pAddress == retValLocal.pAddress, $"cDAC sigAddr: 0x{pRetVal->pAddress:X}, DAC sigAddr: 0x{retValLocal.pAddress:X}");
+                Debug.Assert(pRetVal->cbSize == retValLocal.cbSize, $"cDAC sigLen: {pRetVal->cbSize}, DAC sigLen: {retValLocal.cbSize}");
+            }
+        }
+#endif
+        return hr;
+    }
 
     public int RequiresAlign8(ulong thExact, Interop.BOOL* pResult)
     {
@@ -1540,23 +1604,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
-    public int IsWinRTModule(ulong vmModule, Interop.BOOL* isWinRT)
-    {
-        *isWinRT = Interop.BOOL.FALSE;
-        int hr = HResults.S_OK;
-#if DEBUG
-        if (_legacy is not null)
-        {
-            Interop.BOOL isWinRTLocal;
-            int hrLocal = _legacy.IsWinRTModule(vmModule, &isWinRTLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*isWinRT == isWinRTLocal, $"cDAC: {*isWinRT}, DAC: {isWinRTLocal}");
-        }
-#endif
-        return hr;
-    }
-
     public int GetHandleAddressFromVmHandle(ulong vmHandle, ulong* pRetVal)
     {
         *pRetVal = vmHandle;
@@ -1615,25 +1662,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
     public int IsThreadSuspendedOrHijacked(ulong vmThread, Interop.BOOL* pResult)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.IsThreadSuspendedOrHijacked(vmThread, pResult) : HResults.E_NOTIMPL;
-
-    public int AreGCStructuresValid(Interop.BOOL* pResult)
-    {
-        // Native DacDbiInterfaceImpl::AreGCStructuresValid always returns TRUE.
-        // DacDbi callers assume the runtime is suspended, so GC structures are always valid.
-        *pResult = Interop.BOOL.TRUE;
-        int hr = HResults.S_OK;
-#if DEBUG
-        if (_legacy is not null)
-        {
-            Interop.BOOL resultLocal;
-            int hrLocal = _legacy.AreGCStructuresValid(&resultLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pResult == resultLocal, $"cDAC: {*pResult}, DAC: {resultLocal}");
-        }
-#endif
-        return hr;
-    }
 
     public int CreateHeapWalk(nuint* pHandle)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.CreateHeapWalk(pHandle) : HResults.E_NOTIMPL;
@@ -2123,9 +2151,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
     public int GetDelegateTargetObject(int delegateType, ulong delegateObject, ulong* ppTargetObj, ulong* ppTargetAppDomain)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetDelegateTargetObject(delegateType, delegateObject, ppTargetObj, ppTargetAppDomain) : HResults.E_NOTIMPL;
-
-    public int GetLoaderHeapMemoryRanges(nint pRanges)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetLoaderHeapMemoryRanges(pRanges) : HResults.E_NOTIMPL;
 
     public int IsModuleMapped(ulong pModule, Interop.BOOL* isModuleMapped)
     {

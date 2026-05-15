@@ -3551,6 +3551,12 @@ void Compiler::fgMarkAddrModeForFieldAddr(GenTreeIndir* indir)
     GenTree*                   addr = indir->Addr();
     ClrSafeInt<target_ssize_t> total((target_ssize_t)0);
 
+    // For stores with a side-effecting value operand, we must not elide an explicit null check
+    // and let it sink to the consuming indirection: morphing of the value happens before the
+    // indirection's null fault, which would reorder the null check past the value's side
+    // effects. Conservatively skip elision in that case unless the base is provably non-null.
+    bool const storeWithSideEffectfulValue = indir->OperIsStore() && ((indir->Data()->gtFlags & GTF_SIDE_EFFECT) != 0);
+
     while (true)
     {
         while (addr->OperIs(GT_ADD) && !addr->gtOverflow())
@@ -3586,7 +3592,10 @@ void Compiler::fgMarkAddrModeForFieldAddr(GenTreeIndir* indir)
         if (fgAddrCouldBeNull(objRef))
         {
             target_ssize_t accessOffset = total.Value();
-            if ((accessOffset < 0) || fgIsBigOffset((size_t)accessOffset))
+            bool const     elidable     = (accessOffset >= 0) && !fgIsBigOffset((size_t)accessOffset);
+            bool const     baseNonNull  = optLocalAssertionProp && optAssertionIsNonNull(objRef, apLocal);
+
+            if (!elidable || (storeWithSideEffectfulValue && !baseNonNull))
             {
                 // The FIELD_ADDR will introduce an explicit NULLCHECK, which acts as a
                 // barrier in the consuming indirection's address chain.
@@ -7633,10 +7642,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
             BitVecOps::Assign(apTraits, origAssertions, apLocal);
         }
 
-        // TODO-Bug: Moving the null check to this indirection should nominally check for interference with
-        // the other operands in case this is a store. However, doing so unconditionally preserves previous
-        // behavior and "fixes up" field store importation that places the null check in the wrong location
-        // (before the 'value' operand is evaluated).
         if (tree->OperIsIndir() && !tree->OperIsAtomicOp())
         {
             // Examine the unmorphed address tree to identify any FIELD_ADDR whose null check
@@ -12229,8 +12234,8 @@ GenTree* Compiler::fgMorphUModToAndSub(GenTreeOp* tree)
 
     const var_types type = tree->TypeGet();
 
-    const size_t   cnsValue = (static_cast<size_t>(tree->gtOp2->AsIntConCommon()->IntegralValue())) - 1;
-    GenTree* const newTree  = gtNewOperNode(GT_AND, type, tree->gtOp1, gtNewIconNodeWithVN(this, cnsValue, type));
+    const size_t   mask    = static_cast<size_t>(tree->gtOp2->AsIntConCommon()->UnsignedIntegralValue() - 1);
+    GenTree* const newTree = gtNewOperNode(GT_AND, type, tree->gtOp1, gtNewIconNodeWithVN(this, mask, type));
 
     newTree->SetMorphed(this);
     DEBUG_DESTROY_NODE(tree->gtOp2);
