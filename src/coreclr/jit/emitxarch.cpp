@@ -271,7 +271,7 @@ bool emitter::HasRex2Encoding(instruction ins)
 bool emitter::IsApxNddCompatibleInstruction(instruction ins)
 {
     insFlags flags = CodeGenInterface::instInfo[ins];
-    return (flags & INS_FLAGS_Has_NDD) != 0;
+    return (flags & INS_Flags_Has_NDD) != 0;
 }
 
 //------------------------------------------------------------------------
@@ -286,7 +286,7 @@ bool emitter::IsApxNddCompatibleInstruction(instruction ins)
 bool emitter::IsApxNfCompatibleInstruction(instruction ins)
 {
     insFlags flags = CodeGenInterface::instInfo[ins];
-    return (flags & INS_FLAGS_Has_NF) != 0;
+    return (flags & INS_Flags_Has_NF) != 0;
 }
 
 //------------------------------------------------------------------------

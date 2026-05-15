@@ -227,10 +227,10 @@ enum insFlags : uint64_t
     Encoding_REX2  = 1ULL << 44,
 
     // APX: EVEX.ND:
-    INS_FLAGS_Has_NDD  = 1ULL << 45,
+    INS_Flags_Has_NDD  = 1ULL << 45,
 
     // APX: EVEX.NF:
-    INS_FLAGS_Has_NF  = 1ULL << 46,
+    INS_Flags_Has_NF  = 1ULL << 46,
 
     // base kmask size used for a 128-bit vector
     // used to determine if we can use embedded masking
