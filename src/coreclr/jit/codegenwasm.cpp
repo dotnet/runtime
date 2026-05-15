@@ -2975,7 +2975,6 @@ void CodeGen::genLclHeap(GenTree* tree)
     }
     else
     {
-        bool const is64Bit = (TARGET_POINTER_SIZE == 8);
         genConsumeReg(size);
 
         // Extend size to pointer size, if necessary
@@ -2996,7 +2995,7 @@ void CodeGen::genLclHeap(GenTree* tree)
 
         // Check for zero-sized requests
         GetEmitter()->emitIns(INS_I_eqz);
-        genEmitIf();
+        genEmitIf(WasmValueType::I);
         {
             // If size is zero, leave a zero on the stack
             GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 0);
@@ -3375,15 +3374,26 @@ void CodeGen::genLoadLocalIntoReg(regNumber targetReg, unsigned lclNum)
 //------------------------------------------------------------------------
 // genEmitIf: Emit an 'if' instruction
 //
+// Arguments:
+//    blockType - simple type for the block, or invalid if none
+//
 // Notes:
-//   This adds a new label to the control flow stack that is not
+//   This emits an `if` instruction and adds a new label to the control flow stack that is not
 //   modelled by the wasmControlFlowStack. Since we won't explicitly branch to the end
 //   of the `if` we just need to understand that the stack is now deeper.
 //
-void CodeGen::genEmitIf()
+void CodeGen::genEmitIf(WasmValueType blockType)
 {
     wasmExtraControlFlowDepth++;
-    GetEmitter()->emitIns(INS_if);
+
+    if (blockType != WasmValueType::Invalid)
+    {
+        GetEmitter()->emitIns_BlockTy(INS_if, blockType);
+    }
+    else
+    {
+        GetEmitter()->emitIns(INS_if);
+    }
 }
 
 //------------------------------------------------------------------------
