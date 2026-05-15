@@ -172,6 +172,8 @@ Classification here drives WHERE the agent reads the signature text from. It doe
 
 For each (1)/(2)/(3) signature, compute the tuple `(definition_id, work_item_or_phase, queue, stress_mode, [FAIL]-or-compile-error signature)`. Look back ~10 prior completed builds in the same definition for first-seen-in-window timestamp and occurrence count.
 
+If the same signature appears in *every* sampled build (100% failure rate in the ~10-build window), the true first occurrence likely predates the window. Widen the build-list query (`&%24skip=10`, `&%24skip=20`, ...) up to ~40 additional builds and stop as soon as you find a build where the signature is absent (`succeeded`/`partiallySucceeded` without this signature). Report the build immediately after that gap as `First build it occurred` in the KBE body. If you hit the 40-build cap without finding a gap, set `First build it occurred` to the oldest build you scanned and add `Persistent across the entire scanned window; true origin may predate <oldest-build-date>.` as a body note.
+
 #### Data sources
 
 - **AzDO REST.** `https://dev.azure.com/dnceng-public/public/_apis/build/...`. Anonymous, no auth.
@@ -264,6 +266,8 @@ Build-break KBEs cannot be disabled — there is no test annotation that can ski
 **Branch C — Refinement of Branch B when the failure satisfies the small-fix bounds.**
 
 Small-fix bounds: <= 20 lines, single file, non-API, non-JIT-codegen, non-GC, non-threading, non-security; the failing test (or compile error) verifies the fix.
+
+Before drafting the fix, read every file you intend to cite or modify at HEAD, and any file the failure log points at, to confirm the change is not already present in `main`. If the recommendation reduces to "do what the cited file already does" (header comment, existing target, existing condition), skip Branch C and record `skipped: recommendation already present in source`.
 
 In addition to the Branch B test-disable PR (test failures) or directly against the existing KBE (build breaks), emit a separate `create_pull_request` for the fix on its own branch. Build-break fixes are limited to obvious mechanical changes (typo, missing `#if`, wrong cast, missing `using`). Body cites (a) failing test or compile error as evidence, (b) root cause, (c) why fix is safe, (d) `Linked KBE: #<n>`, (e) "If this lands before #<test-disable-PR>, that PR can be closed." (omit (e) for build-break fixes).
 
