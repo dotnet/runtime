@@ -326,9 +326,9 @@ endif(CLR_CMAKE_HOST_UNIX)
 # keeps full symbols and incremental linking. Windows uses /OPT:REF, configured above.
 if(CLR_CMAKE_HOST_UNIX)
   if(CLR_CMAKE_HOST_APPLE)
-    add_linker_flag($<$<CONFIG:CHECKED,RELEASE,RELWITHDEBINFO>:-Wl,-dead_strip>)
+    add_linker_flag(-Wl,-dead_strip CHECKED RELEASE RELWITHDEBINFO)
   else()
-    add_linker_flag($<$<CONFIG:CHECKED,RELEASE,RELWITHDEBINFO>:-Wl,--gc-sections>)
+    add_linker_flag(-Wl,--gc-sections CHECKED RELEASE RELWITHDEBINFO)
   endif()
 endif()
 
@@ -753,7 +753,7 @@ if (CLR_CMAKE_HOST_UNIX OR CLR_CMAKE_HOST_WASI)
 
   # Separate functions and data into their own sections so the linker can remove
   # unreferenced ones via --gc-sections (ELF) / -dead_strip (Mach-O), which are
-  # enabled below for non-Debug configurations.
+  # enabled earlier in this file for non-Debug configurations.
   add_compile_options(-ffunction-sections)
   add_compile_options(-fdata-sections)
 
