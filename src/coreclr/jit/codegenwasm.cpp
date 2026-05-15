@@ -1459,7 +1459,7 @@ void CodeGen::genCodeForBinaryOverflow(GenTreeOp* treeNode)
             // TODO-WASM-CQ: consider branchless alternative here (and for sub)
             GetEmitter()->emitIns_I(is64BitOp ? INS_i64_const : INS_i32_const, emitActualTypeSize(treeNode), 0);
             GetEmitter()->emitIns(is64BitOp ? INS_i64_ge_s : INS_i32_ge_s);
-            GetEmitter()->emitIns(INS_if);
+            genEmitIf();
             {
                 // Operands have the same sign. If the sum has a different sign, then the add overflowed.
                 GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(resultReg));
@@ -1469,7 +1469,7 @@ void CodeGen::genCodeForBinaryOverflow(GenTreeOp* treeNode)
                 GetEmitter()->emitIns(is64BitOp ? INS_i64_lt_s : INS_i32_lt_s);
                 genJumpToThrowHlpBlk(SCK_OVERFLOW);
             }
-            GetEmitter()->emitIns(INS_end);
+            genEmitEndIf();
             GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(resultReg));
             break;
         }
@@ -1490,7 +1490,7 @@ void CodeGen::genCodeForBinaryOverflow(GenTreeOp* treeNode)
             GetEmitter()->emitIns(is64BitOp ? INS_i64_xor : INS_i32_xor);
             GetEmitter()->emitIns_I(is64BitOp ? INS_i64_const : INS_i32_const, emitActualTypeSize(treeNode), 0);
             GetEmitter()->emitIns(is64BitOp ? INS_i64_lt_s : INS_i32_lt_s);
-            GetEmitter()->emitIns(INS_if);
+            genEmitIf();
             {
                 // Operands have different signs. If the difference has a different sign than op1, then the subtraction
                 // overflowed.
@@ -1501,7 +1501,7 @@ void CodeGen::genCodeForBinaryOverflow(GenTreeOp* treeNode)
                 GetEmitter()->emitIns(is64BitOp ? INS_i64_lt_s : INS_i32_lt_s);
                 genJumpToThrowHlpBlk(SCK_OVERFLOW);
             }
-            GetEmitter()->emitIns(INS_end);
+            genEmitEndIf();
             GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(resultReg));
             break;
         }
@@ -1915,11 +1915,11 @@ void CodeGen::genJumpToThrowHlpBlk(SpecialCodeKind codeKind)
     }
     else
     {
-        GetEmitter()->emitIns_BlockTy(INS_if);
+        genEmitIf();
         // Throw helpers are managed so we need to push the stack pointer before genEmitHelperCall.
         GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetStackPointerRegIndex());
         genEmitHelperCall(m_compiler->acdHelper(codeKind), 0, EA_UNKNOWN);
-        GetEmitter()->emitIns(INS_end);
+        genEmitEndIf();
     }
 }
 
@@ -2996,7 +2996,7 @@ void CodeGen::genLclHeap(GenTree* tree)
 
         // Check for zero-sized requests
         GetEmitter()->emitIns(INS_I_eqz);
-        GetEmitter()->emitIns_BlockTy(INS_if, is64Bit ? WasmValueType::I64 : WasmValueType::I32);
+        genEmitIf();
         {
             // If size is zero, leave a zero on the stack
             GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 0);
@@ -3053,7 +3053,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         }
 
         // end if
-        GetEmitter()->emitIns(INS_end);
+        genEmitEndIf();
     }
 
     WasmProduceReg(tree);
@@ -3373,6 +3373,33 @@ void CodeGen::genLoadLocalIntoReg(regNumber targetReg, unsigned lclNum)
 }
 
 //------------------------------------------------------------------------
+// genEmitIf: Emit an 'if' instruction
+//
+// Notes:
+//   This adds a new label to the control flow stack that is not
+//   modelled by the wasmControlFlowStack. Since we won't explicitly branch to the end
+//   of the `if` we just need to understand that the stack is now deeper.
+//
+void CodeGen::genEmitIf()
+{
+    wasmExtraControlFlowDepth++;
+    GetEmitter()->emitIns(INS_if);
+}
+
+//------------------------------------------------------------------------
+// genEmitEndIf: Emit an 'end' instruction closing an 'if' block
+//
+// Notes:
+//   Removes the added stack depth from genEmitIf.
+//
+void CodeGen::genEmitEndIf()
+{
+    assert(wasmExtraControlFlowDepth > 0);
+    wasmExtraControlFlowDepth--;
+    GetEmitter()->emitIns(INS_end);
+}
+
+//------------------------------------------------------------------------
 // inst_JMP: Emit a jump instruction.
 //
 // Arguments:
@@ -3382,7 +3409,7 @@ void CodeGen::genLoadLocalIntoReg(regNumber targetReg, unsigned lclNum)
 void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock)
 {
     instruction    instr = emitter::emitJumpKindToIns(jmp);
-    unsigned const depth = findTargetDepth(tgtBlock);
+    unsigned const depth = findTargetDepth(tgtBlock) + wasmExtraControlFlowDepth;
     GetEmitter()->emitIns_J(instr, EA_4BYTE, depth, tgtBlock);
 }
 
