@@ -202,10 +202,6 @@ namespace Mono.Linker.Steps
             }
             else
             {
-                // Required descriptor-preserved methods are reflection-visible. Defer full
-                // treatment to MarkStep via MarkMethodVisibleToReflection (which also marks
-                // the declaring type as reflection-visible, preserving its static abstract
-                // interface implementations, implicit fields for explicit layout, etc.).
                 _context.Annotations.MarkPendingReflectionVisibleMethod(method);
                 _context.Annotations.Mark(method, new DependencyInfo(DependencyKind.XmlDescriptor, _xmlDocumentLocation), GetMessageOriginForPosition(nav));
             }

@@ -508,10 +508,6 @@ namespace Mono.Linker.Steps
                 var origin = new MessageOrigin(method);
                 var reason = new DependencyInfo(DependencyKind.XmlDescriptor, method);
                 MarkMethodVisibleToReflection(method, reason, origin);
-                // A descriptor-preserved method is reflection-visible, so its DeclaringType
-                // is also reflection-visible (e.g., via MethodBase.DeclaringType after a
-                // justified suppression of IL2026 on GetCurrentMethod). The type could then
-                // be used as a generic argument in constrained calls via MakeGenericMethod.
                 MarkTypeVisibleToReflection(method.DeclaringType, new DependencyInfo(DependencyKind.DeclaringType, method), origin);
             }
             Annotations.PendingReflectionVisibleMethods.Clear();
