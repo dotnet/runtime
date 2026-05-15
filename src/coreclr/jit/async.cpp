@@ -1089,7 +1089,7 @@ void AsyncTransformation::LiftLIREdges(BasicBlock*                     block,
             {
                 // No interference by IR invariants
                 LIR::AsRange(block).Remove(tree);
-                LIR::AsRange(block).InsertAfter(use.User(), tree);
+                LIR::AsRange(block).InsertBefore(use.User(), tree);
                 continue;
             }
         }
