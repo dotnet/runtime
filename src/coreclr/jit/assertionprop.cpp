@@ -3892,9 +3892,10 @@ GenTree* Compiler::optAssertionProp_BlockStore(ASSERT_VALARG_TP assertions, GenT
 {
     assert(store->OperIs(GT_STORE_BLK));
 
-    bool didZeroObjProp = optZeroObjAssertionProp(store->Data(), assertions);
-    bool didNonNullProp = optNonNullAssertionProp_Ind(assertions, store);
-    if (didZeroObjProp || didNonNullProp)
+    bool didZeroObjProp      = optZeroObjAssertionProp(store->Data(), assertions);
+    bool didNonNullProp      = optNonNullAssertionProp_Ind(assertions, store);
+    bool didWriteBarrierProp = optWriteBarrierAssertionProp_StoreBlk(assertions, store);
+    if (didZeroObjProp || didNonNullProp || didWriteBarrierProp)
     {
         return optAssertionProp_Update(store, store, stmt);
     }
@@ -5318,6 +5319,62 @@ bool Compiler::optWriteBarrierAssertionProp_StoreInd(ASSERT_VALARG_TP assertions
     }
 
     JITDUMP("unknown (checked).\n");
+    return false;
+}
+
+//------------------------------------------------------------------------
+// optWriteBarrierAssertionProp_StoreBlk: The STORE_BLK counterpart of
+//    optWriteBarrierAssertionProp_StoreInd. For block stores that contain GC
+//    pointers, attempt to prove via VN/assertion analysis that the destination
+//    address is not on the GC heap, and if so, set GTF_IND_TGT_NOT_HEAP. This
+//    enables fast non-barrier codegen for CpObj (genCodeForCpObj's "dstOnStack"
+//    path) and SIMD for InitBlk zeroing (via IsOnHeapAndContainsReferences).
+//
+//    Note: only address-side analysis is performed. We deliberately avoid
+//    setting GTF_IND_TGT_NOT_HEAP based on value-side properties (e.g. zeroing)
+//    because for STORE_BLK, downstream codegen interprets that flag as a fact
+//    about the destination address, not the value. For init blocks the value is
+//    always zero by precondition (asserted in LowerBlockStoreCommon), and per-
+//    slot codegen for init blocks already does not emit barriers.
+//
+// Arguments:
+//    assertions - Active assertions
+//    store      - The STORE_BLK node
+//
+// Return Value:
+//    Whether GTF_IND_TGT_NOT_HEAP was set on the store.
+//
+bool Compiler::optWriteBarrierAssertionProp_StoreBlk(ASSERT_VALARG_TP assertions, GenTreeBlk* store)
+{
+    if (optLocalAssertionProp)
+    {
+        return false;
+    }
+
+    // No barriers are emitted for layouts without GC pointers, so nothing to optimize.
+    if (!store->GetLayout()->HasGCPtr())
+    {
+        return false;
+    }
+
+    // Already known one way or the other.
+    if ((store->gtFlags & (GTF_IND_TGT_NOT_HEAP | GTF_IND_TGT_HEAP)) != 0)
+    {
+        return false;
+    }
+
+    GCInfo::WriteBarrierForm barrierType =
+        GetWriteBarrierForm(this, vnStore->VNConservativeNormalValue(store->Addr()->gtVNPair));
+
+    JITDUMP("Trying to determine the exact type of write barrier for STORE_BLK [%06d]: ", dspTreeID(store));
+    if (barrierType == GCInfo::WriteBarrierForm::WBF_NoBarrier)
+    {
+        JITDUMP("is not needed at all.\n");
+        store->gtFlags |= GTF_IND_TGT_NOT_HEAP;
+        return true;
+    }
+
+    JITDUMP("unknown.\n");
     return false;
 }
 
