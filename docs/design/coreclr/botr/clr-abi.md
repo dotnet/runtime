@@ -714,11 +714,41 @@ The linear stack pointer `$sp` is the first argument to all methods. At a native
 
 A frame pointer, if used, points at the bottom of the "fixed" portion of the stack to facilitate use of Wasm addressing modes, which only allow positive offsets.
 
-Structs are generally passed by-reference, unless they happen to exactly contain a single primitive field (or be a struct exactly containing such a struct). The linear stack provides the backing storage for the by-reference structs.
+Arguments and return values are processed via the Type Lowering algorithm below.
 
-Structs are generally returned via hidden buffers, whose address is supplied by the caller and passed just after the managed `this`, or after `$sp` argument when `this` is not present. In such cases the return value of the method is the address of the return value. But if the struct can be passed on the Wasm stack it is returned on the Wasm stack.
+If a struct is returned via a hidden buffer, the address is supplied by the caller and passed just after the managed `this`, or after `$sp` argument when `this` is not present. In such cases the return value of the method is the address of the return value. But if the struct can be passed on the Wasm stack it is returned on the Wasm stack per the Type Lowering rules.
 
 (TBD: ABI for vector types)
+
+### Type Lowering
+
+Managed types are lowered to WebAssembly value types according to the following rules
+(implemented in `WasmLowering.LowerToAbiType` and `WasmLowering.LowerType`):
+
+| Managed type | Wasm value type |
+|---|---|
+| `bool`, `char`, `sbyte`, `byte`, `short`, `ushort`, `int`, `uint` | `i32` |
+| `long`, `ulong` | `i64` |
+| `float` | `f32` |
+| `double` | `f64` |
+| `nint`, `nuint`, pointer, byref, function pointer | `i32` (pointer-sized) |
+| Reference types (class, string, array, szarray, interface) | `i32` (pointer-sized) |
+| Value type (struct) — single primitive field, no padding | Unwrap recursively to the field's wasm type |
+| Value type (struct) — single field with padding, or multiple fields | Passed by reference (`i32` pointer) |
+| Empty struct (zero instance fields) | Elided from the signature entirely |
+
+**Struct unwrapping** is recursive: a struct containing a single struct field, where the inner struct
+has the same size as the outer, is unwrapped until a primitive is reached or the rule no longer applies.
+For example, a struct `Wrapper { Inner value; }` where `Inner { int x; }` is unwrapped all the way
+to `i32`.
+
+A struct is **not** unwrapped when:
+- It has more than one instance field.
+- It has exactly one instance field but the field's size differs from the struct's size (i.e., the
+  struct has padding due to explicit layout or alignment attributes).
+
+Structs that cannot be unwrapped are passed by reference. The caller allocates space on the linear
+stack and passes a pointer. For return values, the caller provides a hidden return buffer pointer.
 
 ### Prolog
 

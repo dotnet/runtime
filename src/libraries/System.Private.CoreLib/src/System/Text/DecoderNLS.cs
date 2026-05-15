@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -63,7 +63,6 @@ namespace System.Text
                 return GetCharCount(pBytes + index, count, flush);
         }
 
-        [RequiresUnsafe]
         public override unsafe int GetCharCount(byte* bytes, int count, bool flush)
         {
             ArgumentNullException.ThrowIfNull(bytes);
@@ -114,7 +113,6 @@ namespace System.Text
             }
         }
 
-        [RequiresUnsafe]
         public override unsafe int GetChars(byte* bytes, int byteCount,
                                             char* chars, int charCount, bool flush)
         {
@@ -167,7 +165,6 @@ namespace System.Text
 
         // This is the version that used pointers.  We call the base encoding worker function
         // after setting our appropriate internal variables.  This is getting chars
-        [RequiresUnsafe]
         public override unsafe void Convert(byte* bytes, int byteCount,
                                               char* chars, int charCount, bool flush,
                                               out int bytesUsed, out int charsUsed, out bool completed)
@@ -222,7 +219,7 @@ namespace System.Text
             _leftoverByteCount = 0;
         }
 
-        internal int DrainLeftoverDataForGetCharCount(ReadOnlySpan<byte> bytes, out int bytesConsumed)
+        internal unsafe int DrainLeftoverDataForGetCharCount(ReadOnlySpan<byte> bytes, out int bytesConsumed)
         {
             // Quick check: we _should not_ have leftover fallback data from a previous invocation,
             // as we'd end up consuming any such data and would corrupt whatever Convert call happens
@@ -278,7 +275,7 @@ namespace System.Text
             return charCount;
         }
 
-        internal int DrainLeftoverDataForGetChars(ReadOnlySpan<byte> bytes, Span<char> chars, out int bytesConsumed)
+        internal unsafe int DrainLeftoverDataForGetChars(ReadOnlySpan<byte> bytes, Span<char> chars, out int bytesConsumed)
         {
             // Quick check: we _should not_ have leftover fallback data from a previous invocation,
             // as we'd end up consuming any such data and would corrupt whatever Convert call happens

@@ -14076,7 +14076,7 @@ void emitter::emitDispIns(
                 // targetIG is only set for 1st of the series of align instruction
                 if ((alignInstrId->idaLoopHeadPredIG != nullptr) && (alignInstrId->loopHeadIG() != nullptr))
                 {
-                    printf(" for IG%02u", alignInstrId->loopHeadIG()->igNum);
+                    printf(" for IG%02u", alignInstrId->loopHeadIG()->GetDisplayId());
                 }
                 printf("]");
             }
@@ -18451,6 +18451,13 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             {
                 dst = emitOutputData16(dst);
                 sz  = emitSizeOfInsDsc_NONE(id);
+
+                // This may mark the beginning of a TLS access linker
+                // relaxation sequence. The linker can replace these general
+                // sequences by other instructions that trash rax. We need to
+                // eagerly invalidate GC info in rax before the linker's
+                // instructions would trash it.
+                emitGCregDeadUpd(REG_RAX, dst);
                 break;
             }
 
@@ -20109,9 +20116,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 #endif
 
 #if FEATURE_LOOP_ALIGN
-    // Only compensate over-estimated instructions if emitCurIG is before
-    // the last IG that needs alignment.
-    if (emitCurIG->igNum <= emitLastAlignedIgNum)
+    // Only compensate over-estimated instructions if emitCurIG is before the last IG that needs alignment.
+    if ((emitLastAlignedIG != nullptr) && emitCurIG->IsBeforeOrEqual(emitLastAlignedIG))
     {
         int diff = id->idCodeSize() - ((UNATIVE_OFFSET)(dst - *dp));
         assert(diff >= 0);
