@@ -7725,7 +7725,6 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                 dvInfo.virtualMethod               = baseMethod;
                 dvInfo.objClass                    = exactCls;
                 dvInfo.context                     = originalContext;
-                dvInfo.tokenLookupContext          = originalContext;
                 dvInfo.pResolvedTokenVirtualMethod = nullptr;
 
                 JITDUMP("GDV exact: resolveVirtualMethod (method %p class %p context %p)\n", dvInfo.virtualMethod,
@@ -7818,7 +7817,6 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
             dvInfo.virtualMethod               = baseMethod;
             dvInfo.objClass                    = likelyClass;
             dvInfo.context                     = originalContext;
-            dvInfo.tokenLookupContext          = originalContext;
             dvInfo.pResolvedTokenVirtualMethod = nullptr;
 
             JITDUMP("GDV likely: resolveVirtualMethod (method %p class %p context %p)\n", dvInfo.virtualMethod,
@@ -8017,15 +8015,9 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*            call,
 
     // We're all set, proceed with candidate creation.
     //
-    CORINFO_METHOD_HANDLE instantiatingStub =
-        instParamLookup != nullptr ? (CORINFO_METHOD_HANDLE)((size_t)contextHandle & ~CORINFO_CONTEXTFLAGS_MASK)
-                                   : NO_METHOD_HANDLE;
-
     JITDUMP("Marking call [%06u] as guarded devirtualization candidate; will guess for %s %s\n", dspTreeID(call),
             classHandle != NO_CLASS_HANDLE ? "class" : "method",
-            classHandle != NO_CLASS_HANDLE
-                ? eeGetClassName(classHandle)
-                : eeGetMethodFullName(instantiatingStub != NO_METHOD_HANDLE ? instantiatingStub : methodHandle));
+            classHandle != NO_CLASS_HANDLE ? eeGetClassName(classHandle) : eeGetMethodFullName(methodHandle));
 
     setMethodHasGuardedDevirtualization();
 
@@ -8039,16 +8031,15 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*            call,
     //
     InlineCandidateInfo* pInfo = new (this, CMK_Inlining) InlineCandidateInfo;
 
-    pInfo->guardedMethodHandle                  = methodHandle;
-    pInfo->guardedMethodUnboxedEntryHandle      = nullptr;
-    pInfo->guardedMethodInstantiatedEntryHandle = nullptr;
-    pInfo->guardedMethodInstParamLookup         = {};
-    pInfo->guardedMethodResolvedToken           = {};
-    pInfo->guardedMethodUnboxedResolvedToken    = {};
-    pInfo->guardedClassHandle                   = classHandle;
-    pInfo->likelihood                           = likelihood;
-    pInfo->exactContextHandle                   = contextHandle;
-    pInfo->originalMethodHandle                 = originalMethodHandle;
+    pInfo->guardedMethodHandle               = methodHandle;
+    pInfo->guardedMethodUnboxedEntryHandle   = nullptr;
+    pInfo->guardedMethodInstParamLookup      = {};
+    pInfo->guardedMethodResolvedToken        = {};
+    pInfo->guardedMethodUnboxedResolvedToken = {};
+    pInfo->guardedClassHandle                = classHandle;
+    pInfo->likelihood                        = likelihood;
+    pInfo->exactContextHandle                = contextHandle;
+    pInfo->originalMethodHandle              = originalMethodHandle;
 
     if (instParamLookup != nullptr)
     {
@@ -8059,15 +8050,6 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*            call,
     {
         pInfo->guardedMethodResolvedToken        = *pResolvedToken;
         pInfo->guardedMethodUnboxedResolvedToken = *pUnboxedResolvedToken;
-    }
-
-    // If the guarded method is an instantiating stub, find the instantiated method
-    //
-    if (instantiatingStub != NO_METHOD_HANDLE)
-    {
-        JITDUMP("    ... updating GDV candidate with instantiated entry info\n");
-        pInfo->guardedMethodHandle                  = instantiatingStub;
-        pInfo->guardedMethodInstantiatedEntryHandle = methodHandle;
     }
 
     // If the guarded class is a value class, look for an unboxed entry point.
@@ -8364,10 +8346,6 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
         if (gdvCandidate->guardedMethodUnboxedEntryHandle != nullptr)
         {
             fncHandle = gdvCandidate->guardedMethodUnboxedEntryHandle;
-        }
-        else if (gdvCandidate->guardedMethodInstantiatedEntryHandle != nullptr)
-        {
-            fncHandle = gdvCandidate->guardedMethodInstantiatedEntryHandle;
         }
         else
         {
@@ -9042,10 +9020,6 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
     if (derivedMethod != nullptr && needsInstParam && !needsRuntimeLookup)
     {
-        // We should only end up with generic methods that need a method context (eg. array interface, GVM).
-        //
-        assert(((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD);
-
         // If we don't know the array type exactly we may have the wrong interface type here.
         // Bail out.
         //
@@ -9060,9 +9034,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         // For R2R, we don't (yet) support array interface devirtualization.
         assert(call->IsGenericVirtual(this) || !IsAot());
 
-        instParam = (CORINFO_METHOD_HANDLE)((size_t)exactContext & ~CORINFO_CONTEXTFLAGS_MASK);
-
-        assert(instParam != NO_METHOD_HANDLE);
+        instParam = (CORINFO_METHOD_HANDLE)dvInfo.instParamLookup.constLookup.handle;
     }
 
     // If we failed to get a method handle, we can't directly devirtualize.
@@ -9149,7 +9121,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         assert(call->gtArgs.FindWellKnownArg(WellKnownArg::InstParam) == nullptr);
 
         CORINFO_METHOD_HANDLE compileTimeHandle = derivedMethod;
-        if (!needsRuntimeLookup)
+        if (instParam != NO_METHOD_HANDLE)
         {
             compileTimeHandle = instParam;
         }
@@ -10105,15 +10077,14 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
 
             // Null out bits we don't use when we're just inlining
             //
-            pInfo->guardedClassHandle                   = nullptr;
-            pInfo->guardedMethodHandle                  = nullptr;
-            pInfo->guardedMethodUnboxedEntryHandle      = nullptr;
-            pInfo->guardedMethodInstantiatedEntryHandle = nullptr;
-            pInfo->guardedMethodInstParamLookup         = {};
-            pInfo->guardedMethodResolvedToken           = {};
-            pInfo->guardedMethodUnboxedResolvedToken    = {};
-            pInfo->originalMethodHandle                 = nullptr;
-            pInfo->likelihood                           = 0;
+            pInfo->guardedClassHandle                = nullptr;
+            pInfo->guardedMethodHandle               = nullptr;
+            pInfo->guardedMethodUnboxedEntryHandle   = nullptr;
+            pInfo->guardedMethodInstParamLookup      = {};
+            pInfo->guardedMethodResolvedToken        = {};
+            pInfo->guardedMethodUnboxedResolvedToken = {};
+            pInfo->originalMethodHandle              = nullptr;
+            pInfo->likelihood                        = 0;
         }
 
         pInfo->methInfo                       = methInfo;

@@ -596,7 +596,6 @@ struct InlineCandidateInfo : public HandleHistogramProfileCandidateInfo
     CORINFO_CLASS_HANDLE   guardedClassHandle;
     CORINFO_METHOD_HANDLE  guardedMethodHandle;
     CORINFO_METHOD_HANDLE  guardedMethodUnboxedEntryHandle;
-    CORINFO_METHOD_HANDLE  guardedMethodInstantiatedEntryHandle;
     CORINFO_LOOKUP         guardedMethodInstParamLookup;
     CORINFO_RESOLVED_TOKEN guardedMethodResolvedToken;        // Only used by R2R
     CORINFO_RESOLVED_TOKEN guardedMethodUnboxedResolvedToken; // Only used by R2R
