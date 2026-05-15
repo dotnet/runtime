@@ -32,7 +32,8 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      BXL_TOOL_VERSION: '0.2.0-ci.6.496a287'
+      BXL_TOOL_VERSION: '0.2.0-ci.7.b93871e'
+      BXL_CACHE_DIR: ${{ runner.temp }}/bxl-cache
 
     steps:
       - name: Checkout runtime
