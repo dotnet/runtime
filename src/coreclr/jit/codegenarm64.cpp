@@ -2414,57 +2414,57 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                     {
                         case TYP_BYTE:
                         {
-                            index = (size_t)simdVal.gtSimdScalableIndexI8[0];
-                            step  = (size_t)simdVal.gtSimdScalableStepI8[0];
+                            index = static_cast<ssize_t>(simdVal.gtSimdScalableIndexI8[0]);
+                            step  = static_cast<ssize_t>(simdVal.gtSimdScalableStepI8[0]);
                             break;
                         }
 
                         case TYP_SHORT:
                         {
-                            index = (size_t)simdVal.gtSimdScalableIndexI16[0];
-                            step  = (size_t)simdVal.gtSimdScalableStepI16[0];
+                            index = static_cast<ssize_t>(simdVal.gtSimdScalableIndexI16[0]);
+                            step  = static_cast<ssize_t>(simdVal.gtSimdScalableStepI16[0]);
                             break;
                         }
 
                         case TYP_INT:
                         {
-                            index = (size_t)simdVal.gtSimdScalableIndexI32[0];
-                            step  = (size_t)simdVal.gtSimdScalableStepI32[0];
+                            index = static_cast<ssize_t>(simdVal.gtSimdScalableIndexI32[0]);
+                            step  = static_cast<ssize_t>(simdVal.gtSimdScalableStepI32[0]);
                             break;
                         }
 
                         case TYP_LONG:
                         {
-                            index = (size_t)simdVal.gtSimdScalableIndexI64[0];
-                            step  = (size_t)simdVal.gtSimdScalableStepI64[0];
+                            index = static_cast<ssize_t>(simdVal.gtSimdScalableIndexI64[0]);
+                            step  = static_cast<ssize_t>(simdVal.gtSimdScalableStepI64[0]);
                             break;
                         }
 
                         case TYP_UBYTE:
                         {
-                            index = (size_t)simdVal.gtSimdScalableIndexU8[0];
-                            step  = (size_t)simdVal.gtSimdScalableStepU8[0];
+                            index = static_cast<ssize_t>(simdVal.gtSimdScalableIndexU8[0]);
+                            step  = static_cast<ssize_t>(simdVal.gtSimdScalableStepU8[0]);
                             break;
                         }
 
                         case TYP_USHORT:
                         {
-                            index = (size_t)simdVal.gtSimdScalableIndexU16[0];
-                            step  = (size_t)simdVal.gtSimdScalableStepU16[0];
+                            index = static_cast<ssize_t>(simdVal.gtSimdScalableIndexU16[0]);
+                            step  = static_cast<ssize_t>(simdVal.gtSimdScalableStepU16[0]);
                             break;
                         }
 
                         case TYP_UINT:
                         {
-                            index = (size_t)simdVal.gtSimdScalableIndexU32[0];
-                            step  = (size_t)simdVal.gtSimdScalableStepU32[0];
+                            index = static_cast<ssize_t>(simdVal.gtSimdScalableIndexU32[0]);
+                            step  = static_cast<ssize_t>(simdVal.gtSimdScalableStepU32[0]);
                             break;
                         }
 
                         case TYP_ULONG:
                         {
-                            index = (size_t)simdVal.gtSimdScalableIndexU64[0];
-                            step  = (size_t)simdVal.gtSimdScalableStepU64[0];
+                            index = static_cast<ssize_t>(simdVal.gtSimdScalableIndexU64[0]);
+                            step  = static_cast<ssize_t>(simdVal.gtSimdScalableStepU64[0]);
                             break;
                         }
 
