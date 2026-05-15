@@ -314,9 +314,7 @@ private:
         BasicBlock*  m_elseBlock      = nullptr;
         Statement*   stmt             = nullptr;
         GenTreeCall* m_origCall       = nullptr;
-        unsigned     m_likelihood     = HIGH_PROBABILITY;
-
-        const int HIGH_PROBABILITY = 80;
+        unsigned     m_likelihood     = 80;
     };
 
     class FatPointerCallTransformer final : public Transformer
