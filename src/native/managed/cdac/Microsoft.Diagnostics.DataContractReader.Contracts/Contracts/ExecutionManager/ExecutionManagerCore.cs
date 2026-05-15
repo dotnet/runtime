@@ -21,6 +21,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
     private readonly ExecutionManagerHelpers.RangeSectionMap _rangeSectionMapLookup;
     private readonly EEJitManager _eeJitManager;
     private readonly ReadyToRunJitManager _r2rJitManager;
+    private readonly InterpreterJitManager _interpreterJitManager;
 
     public ExecutionManagerCore(Target target, Data.RangeSectionMap topRangeSectionMap)
     {
@@ -30,6 +31,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         INibbleMap nibbleMap = T.Create(_target);
         _eeJitManager = new EEJitManager(_target, nibbleMap);
         _r2rJitManager = new ReadyToRunJitManager(_target);
+        _interpreterJitManager = new InterpreterJitManager(_target, nibbleMap);
     }
 
     public void Flush()
@@ -40,11 +42,11 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
     // Note, because of RelativeOffset, this code info is per code pointer, not per method
     private sealed class CodeBlock
     {
-        public TargetCodePointer StartAddress { get; }
+        public TargetPointer StartAddress { get; }
         public TargetPointer MethodDescAddress { get; }
         public TargetPointer JitManagerAddress { get; }
         public TargetNUInt RelativeOffset { get; }
-        public CodeBlock(TargetCodePointer startAddress, TargetPointer methodDesc, TargetNUInt relativeOffset, TargetPointer jitManagerAddress)
+        public CodeBlock(TargetPointer startAddress, TargetPointer methodDesc, TargetNUInt relativeOffset, TargetPointer jitManagerAddress)
         {
             StartAddress = startAddress;
             MethodDescAddress = methodDesc;
@@ -60,6 +62,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
     {
         CodeHeap = 0x02,
         RangeList = 0x04,
+        Interpreter = 0x08,
     }
 
     // Mirrors the native CodeHeap::CodeHeapType enum in codeman.h.
@@ -133,6 +136,9 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         private bool HasFlags(RangeSectionFlags mask) => (Data!.Flags & (int)mask) != 0;
         internal bool IsRangeList => HasFlags(RangeSectionFlags.RangeList);
         internal bool IsCodeHeap => HasFlags(RangeSectionFlags.CodeHeap);
+        internal bool IsInterpreter => HasFlags(RangeSectionFlags.Interpreter);
+
+        internal bool HasR2RModule => Data!.R2RModule != TargetPointer.Null;
 
         internal static bool IsStubCodeBlock(Target target, TargetPointer codeHeaderIndirect)
         {
@@ -170,7 +176,11 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
 
     private JitManager? GetJitManager(RangeSection rangeSection)
     {
-        if (rangeSection.Data!.R2RModule != TargetPointer.Null)
+        if (rangeSection.IsInterpreter)
+        {
+            return _interpreterJitManager;
+        }
+        else if (rangeSection.Data!.R2RModule != TargetPointer.Null)
         {
             return _r2rJitManager;
         }
@@ -225,7 +235,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         return info.MethodDescAddress;
     }
 
-    TargetCodePointer IExecutionManager.GetStartAddress(CodeBlockHandle codeInfoHandle)
+    TargetPointer IExecutionManager.GetStartAddress(CodeBlockHandle codeInfoHandle)
     {
         if (!_codeInfos.TryGetValue(codeInfoHandle.Address, out CodeBlock? info))
             throw new InvalidOperationException($"{nameof(CodeBlock)} not found for {codeInfoHandle.Address}");
@@ -233,7 +243,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         return info.StartAddress;
     }
 
-    TargetCodePointer IExecutionManager.GetFuncletStartAddress(CodeBlockHandle codeInfoHandle)
+    TargetPointer IExecutionManager.GetFuncletStartAddress(CodeBlockHandle codeInfoHandle)
     {
         RangeSection range = RangeSectionFromCodeBlockHandle(codeInfoHandle);
         if (range.Data == null)
@@ -308,8 +318,12 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
 
     bool IExecutionManager.IsFunclet(CodeBlockHandle codeInfoHandle)
     {
-        return ((IExecutionManager)this).GetStartAddress(codeInfoHandle) !=
-               ((IExecutionManager)this).GetFuncletStartAddress(codeInfoHandle);
+        // Interpreter code has no native unwind info and therefore no funclets.
+        TargetPointer startAddress = ((IExecutionManager)this).GetStartAddress(codeInfoHandle);
+        if (((IExecutionManager)this).GetCodeKind(new TargetCodePointer(startAddress.Value)) == CodeKind.Interpreter)
+            return false;
+
+        return startAddress != ((IExecutionManager)this).GetFuncletStartAddress(codeInfoHandle);
     }
 
     bool IExecutionManager.IsFilterFunclet(CodeBlockHandle codeInfoHandle)
@@ -322,7 +336,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         if (!eman.IsFunclet(codeInfoHandle))
             return false;
 
-        TargetPointer funcletStartAddress = eman.GetFuncletStartAddress(codeInfoHandle).AsTargetPointer;
+        TargetPointer funcletStartAddress = eman.GetFuncletStartAddress(codeInfoHandle);
         uint funcletStartOffset = (uint)(funcletStartAddress - info.StartAddress);
 
         List<ExceptionClauseInfo> clauses = eman.GetExceptionClauses(codeInfoHandle);
