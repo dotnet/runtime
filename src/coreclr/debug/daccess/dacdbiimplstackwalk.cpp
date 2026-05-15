@@ -1123,28 +1123,20 @@ CorDebugInternalFrameType DacDbiInterfaceImpl::GetInternalFrameType(Frame * pFra
     {
     case Frame::StubFrameType::STUB_FRAME_NONE:
         return STUBFRAME_NONE;
-        break;
     case Frame::StubFrameType::STUB_FRAME_M2U:
         return STUBFRAME_M2U;
-        break;
     case Frame::StubFrameType::STUB_FRAME_U2M:
         return STUBFRAME_U2M;
-        break;
     case Frame::StubFrameType::STUB_FRAME_FUNC_EVAL:
         return STUBFRAME_FUNC_EVAL;
-        break;
     case Frame::StubFrameType::STUB_FRAME_INTERNAL_CALL:
         return STUBFRAME_INTERNALCALL;
-        break;
     case Frame::StubFrameType::STUB_FRAME_CLASS_INIT:
         return STUBFRAME_CLASS_INIT;
-        break;
     case Frame::StubFrameType::STUB_FRAME_EXCEPTION:
         return STUBFRAME_EXCEPTION;
-        break;
     case Frame::StubFrameType::STUB_FRAME_JIT_COMPILATION:
         return STUBFRAME_JIT_COMPILATION;
-        break;
     default:
         return STUBFRAME_NONE;
     }
