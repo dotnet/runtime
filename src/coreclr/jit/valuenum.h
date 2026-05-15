@@ -2039,8 +2039,13 @@ private:
             if (val.IsScalable())
             {
                 hash = static_cast<unsigned>(hash ^ val.isScalable);
-                hash = static_cast<unsigned>(hash ^ val.scalable.gtSimdMaskScalableBaseType);
-                hash = static_cast<unsigned>(hash ^ val.scalable.gtSimdMaskScalableIndex);
+                // simdmaskscalable_t::operator== treats all-zero scalable masks as equal
+                // regardless of base type, so canonicalize that case in the hash as well.
+                if (!val.scalable.IsZero())
+                {
+                    hash = static_cast<unsigned>(hash ^ val.scalable.gtSimdMaskScalableBaseType);
+                    hash = static_cast<unsigned>(hash ^ val.scalable.gtSimdMaskScalableIndex);
+                }
             }
             else
 #endif // TARGET_ARM64
