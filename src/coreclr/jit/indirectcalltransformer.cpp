@@ -477,8 +477,8 @@ private:
     class GuardedDevirtualizationTransformer final : public Transformer
     {
     public:
-        GuardedDevirtualizationTransformer(Compiler* m_compiler, BasicBlock* block, Statement* stmt)
-            : Transformer(m_compiler, block, stmt)
+        GuardedDevirtualizationTransformer(Compiler* compiler, BasicBlock* block, Statement* stmt)
+            : Transformer(compiler, block, stmt)
         {
         }
 
@@ -850,17 +850,17 @@ private:
                     // return type.
                     //
                     // Note local vars always live in the root method's symbol table. So we
-                    // need to use the root m_compiler for lookup here.
+                    // need to use the root compiler for lookup here.
                     //
-                    LclVarDsc* const m_returnTempLcl = m_compiler->impInlineRoot()->lvaGetDesc(m_returnTemp);
+                    LclVarDsc* const returnTempLcl = m_compiler->impInlineRoot()->lvaGetDesc(m_returnTemp);
 
-                    if (m_returnTempLcl->lvSingleDef == 1)
+                    if (returnTempLcl->lvSingleDef == 1)
                     {
                         // In this case it's ok if we already updated the type assuming single def,
                         // we just don't want any further updates.
                         //
                         JITDUMP("Return temp V%02u is no longer a single def temp\n", m_returnTemp);
-                        m_returnTempLcl->lvSingleDef = 0;
+                        returnTempLcl->lvSingleDef = 0;
                     }
                 }
                 else
@@ -1453,7 +1453,7 @@ private:
                     if (call->IsGuardedDevirtualizationCandidate() &&
                         (call->GetGDVCandidateInfo(0)->likelihood >= gdvChainLikelihood))
                     {
-                        JITDUMP("GDV call at [%06u] has likelihood %u >= %u; chaining (%u m_stmts, %u nodes to dup).\n",
+                        JITDUMP("GDV call at [%06u] has likelihood %u >= %u; chaining (%u stmts, %u nodes to dup).\n",
                                 m_compiler->dspTreeID(call), call->GetGDVCandidateInfo(0)->likelihood,
                                 gdvChainLikelihood, chainStatementDup, chainNodeDup);
 
