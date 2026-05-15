@@ -884,7 +884,7 @@ IReadOnlyList<GCMemoryRegionData> IGC.GetHandleTableMemoryRegions()
     // Safety caps matching native DAC
     const int MaxHandleTableRegions = 8192;
     const int MaxBookkeepingRegions = 32;
-    const int MaxSegmentListIterations = 2048;
+    const int MaxSegmentListIterations = 65536;
 
     int maxRegions = MaxHandleTableRegions;
     TargetPointer handleTableMap = target.ReadGlobalPointer("HandleTableMap");

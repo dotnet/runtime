@@ -505,7 +505,7 @@ public unsafe partial interface IDacDbiInterface
     int WalkHeap(nuint handle, uint count, COR_HEAPOBJECT* objects, uint* fetched);
 
     [PreserveSig]
-    int EnumerateHeapSegments(delegate* unmanaged<ulong, ulong, int, uint, nint, void> fpCallback, nint pUserData);
+    int EnumerateHeapSegments(/*FP_HEAPSEGMENT_CALLBACK*/ delegate* unmanaged<ulong, ulong, int, uint, nint, void> fpCallback, nint pUserData);
 
     [PreserveSig]
     int IsValidObject(ulong obj, Interop.BOOL* pResult);

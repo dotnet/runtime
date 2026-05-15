@@ -16,7 +16,7 @@ internal readonly struct GC_1 : IGC
     // Safety caps to limit traversals in case of memory corruption, matching native DAC.
     private const int MaxHandleTableRegions = 8192;
     private const int MaxBookkeepingRegions = 32;
-    private const int MaxSegmentListIterations = 2048;
+    private const int MaxSegmentListIterations = 65536;
 
     private enum GCType
     {
