@@ -3344,10 +3344,12 @@ void CodeGen::genEmitGSCookieCheck(bool tailCall)
     NYI_WASM("genEmitGSCookieCheck");
 }
 
+#ifdef PROFILING_SUPPORTED
 void CodeGen::genProfilingLeaveCallback(unsigned helper)
 {
     NYI_WASM("genProfilingLeaveCallback");
 }
+#endif
 
 void CodeGen::genSpillVar(GenTree* tree)
 {

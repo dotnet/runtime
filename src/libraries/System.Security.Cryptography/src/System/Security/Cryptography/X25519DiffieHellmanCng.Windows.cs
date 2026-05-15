@@ -41,17 +41,28 @@ namespace System.Security.Cryptography
         {
             // We intentionally don't special case otherParty being an instance of X25519DiffieHellmanCng and always
             // export the public key into the current instance's provider.
-            scoped Span<byte> publicKeyBuffer;
+            Span<byte> publicKeyBytes = stackalloc byte[PublicKeySizeInBytes];
+            otherParty.ExportPublicKey(publicKeyBytes);
+            DeriveRawSecretAgreementWithPublicKey(publicKeyBytes, destination);
+        }
+
+        protected override partial void DeriveRawSecretAgreementCore(ReadOnlySpan<byte> otherPartyPublicKey, Span<byte> destination)
+        {
+            Debug.Assert(otherPartyPublicKey.Length == PublicKeySizeInBytes);
+            Debug.Assert(destination.Length == SecretAgreementSizeInBytes);
+            DeriveRawSecretAgreementWithPublicKey(otherPartyPublicKey, destination);
+        }
+
+        private void DeriveRawSecretAgreementWithPublicKey(ReadOnlySpan<byte> otherPartyPublicKey, Span<byte> destination)
+        {
+            scoped Span<byte> reducedPublicKey;
 
             unsafe
             {
-                publicKeyBuffer = stackalloc byte[PublicKeySizeInBytes * 2];
+                reducedPublicKey = stackalloc byte[PublicKeySizeInBytes];
             }
 
-            Span<byte> publicKeyBytes = publicKeyBuffer.Slice(0, PublicKeySizeInBytes);
-            Span<byte> reducedPublicKey = publicKeyBuffer.Slice(PublicKeySizeInBytes, PublicKeySizeInBytes);
-            otherParty.ExportPublicKey(publicKeyBytes);
-            X25519WindowsHelpers.ReducePublicKey(publicKeyBytes, reducedPublicKey);
+            X25519WindowsHelpers.ReducePublicKey(otherPartyPublicKey, reducedPublicKey);
 
             // CNG does not permit cross-provider key agreements. Import the public key in to the same provider
             // as the current key.

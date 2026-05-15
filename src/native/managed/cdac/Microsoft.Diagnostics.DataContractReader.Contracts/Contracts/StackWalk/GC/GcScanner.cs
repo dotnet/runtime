@@ -19,12 +19,14 @@ internal class GcScanner
     private readonly Target _target;
     private readonly IExecutionManager _eman;
     private readonly IGCInfo _gcInfo;
+    private readonly FrameHelpers _frameHelpers;
 
     internal GcScanner(Target target)
     {
         _target = target;
         _eman = target.Contracts.ExecutionManager;
         _gcInfo = target.Contracts.GCInfo;
+        _frameHelpers = new FrameHelpers(target);
     }
 
     /// <summary>
@@ -100,11 +102,11 @@ internal class GcScanner
             return;
 
         Data.Frame frameData = _target.ProcessedData.GetOrAdd<Data.Frame>(frameAddress);
-        FrameIterator.FrameType frameType = FrameIterator.GetFrameType(_target, frameData.Identifier);
+        FrameType frameType = _frameHelpers.GetFrameType(frameData.Identifier);
 
         switch (frameType)
         {
-            case FrameIterator.FrameType.StubDispatchFrame:
+            case FrameType.StubDispatchFrame:
             {
                 Data.FramedMethodFrame fmf = _target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(frameAddress);
                 Data.StubDispatchFrame sdf = _target.ProcessedData.GetOrAdd<Data.StubDispatchFrame>(frameAddress);
@@ -120,7 +122,7 @@ internal class GcScanner
                 break;
             }
 
-            case FrameIterator.FrameType.ExternalMethodFrame:
+            case FrameType.ExternalMethodFrame:
             {
                 Data.FramedMethodFrame fmf = _target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(frameAddress);
                 Data.ExternalMethodFrame emf = _target.ProcessedData.GetOrAdd<Data.ExternalMethodFrame>(frameAddress);
@@ -136,7 +138,7 @@ internal class GcScanner
                 break;
             }
 
-            case FrameIterator.FrameType.DynamicHelperFrame:
+            case FrameType.DynamicHelperFrame:
             {
                 Data.FramedMethodFrame fmf = _target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(frameAddress);
                 Data.DynamicHelperFrame dhf = _target.ProcessedData.GetOrAdd<Data.DynamicHelperFrame>(frameAddress);
@@ -144,19 +146,19 @@ internal class GcScanner
                 break;
             }
 
-            case FrameIterator.FrameType.CallCountingHelperFrame:
-            case FrameIterator.FrameType.PrestubMethodFrame:
+            case FrameType.CallCountingHelperFrame:
+            case FrameType.PrestubMethodFrame:
             {
                 Data.FramedMethodFrame fmf = _target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(frameAddress);
                 PromoteCallerStack(frameAddress, fmf.TransitionBlockPtr, scanContext);
                 break;
             }
 
-            case FrameIterator.FrameType.HijackFrame:
+            case FrameType.HijackFrame:
                 // TODO(stackref): Implement HijackFrame scanning (X86 only with FEATURE_HIJACK)
                 break;
 
-            case FrameIterator.FrameType.ProtectValueClassFrame:
+            case FrameType.ProtectValueClassFrame:
                 // TODO(stackref): Implement ProtectValueClassFrame scanning
                 break;
 
