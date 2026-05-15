@@ -467,6 +467,12 @@ namespace System.Net.Security
                             options |= TlsFrameHelper.ProcessingOptions.RawApplicationProtocol;
                         }
 
+                        if (_sslAuthenticationOptions.ServerOptionDelegate != null)
+                        {
+                            // We need to process supported versions extension to pass it to user callback.
+                            options |= TlsFrameHelper.ProcessingOptions.Versions;
+                        }
+
                         // Process SNI from Client Hello message
                         if (!TlsFrameHelper.TryGetFrameInfo(_buffer.EncryptedReadOnlySpan, ref _lastFrame, options))
                         {
