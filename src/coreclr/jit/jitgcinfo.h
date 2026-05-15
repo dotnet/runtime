@@ -323,10 +323,10 @@ public:
     // requires a write barrier:
     enum WriteBarrierForm
     {
-        WBF_NoBarrier,                     // No barrier is required
-        WBF_BarrierUnknown,                // A barrier is required, no information on checked/unchecked.
-        WBF_BarrierChecked,                // A checked barrier is required.
-        WBF_BarrierUnchecked,              // An unchecked barrier is required.
+        WBF_NoBarrier,        // No barrier is required
+        WBF_BarrierUnknown,   // A barrier is required, no information on checked/unchecked.
+        WBF_BarrierChecked,   // A checked barrier is required.
+        WBF_BarrierUnchecked, // An unchecked barrier is required.
     };
 
     WriteBarrierForm gcIsWriteBarrierCandidate(GenTreeStoreInd* store);
