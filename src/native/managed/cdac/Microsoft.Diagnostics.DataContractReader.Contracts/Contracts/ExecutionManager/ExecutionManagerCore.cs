@@ -42,11 +42,11 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
     // Note, because of RelativeOffset, this code info is per code pointer, not per method
     private sealed class CodeBlock
     {
-        public TargetCodePointer StartAddress { get; }
+        public TargetPointer StartAddress { get; }
         public TargetPointer MethodDescAddress { get; }
         public TargetPointer JitManagerAddress { get; }
         public TargetNUInt RelativeOffset { get; }
-        public CodeBlock(TargetCodePointer startAddress, TargetPointer methodDesc, TargetNUInt relativeOffset, TargetPointer jitManagerAddress)
+        public CodeBlock(TargetPointer startAddress, TargetPointer methodDesc, TargetNUInt relativeOffset, TargetPointer jitManagerAddress)
         {
             StartAddress = startAddress;
             MethodDescAddress = methodDesc;
@@ -235,7 +235,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         return info.MethodDescAddress;
     }
 
-    TargetCodePointer IExecutionManager.GetStartAddress(CodeBlockHandle codeInfoHandle)
+    TargetPointer IExecutionManager.GetStartAddress(CodeBlockHandle codeInfoHandle)
     {
         if (!_codeInfos.TryGetValue(codeInfoHandle.Address, out CodeBlock? info))
             throw new InvalidOperationException($"{nameof(CodeBlock)} not found for {codeInfoHandle.Address}");
@@ -243,7 +243,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         return info.StartAddress;
     }
 
-    TargetCodePointer IExecutionManager.GetFuncletStartAddress(CodeBlockHandle codeInfoHandle)
+    TargetPointer IExecutionManager.GetFuncletStartAddress(CodeBlockHandle codeInfoHandle)
     {
         RangeSection range = RangeSectionFromCodeBlockHandle(codeInfoHandle);
         if (range.Data == null)
@@ -319,12 +319,11 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
     bool IExecutionManager.IsFunclet(CodeBlockHandle codeInfoHandle)
     {
         // Interpreter code has no native unwind info and therefore no funclets.
-        TargetCodePointer startAddress = ((IExecutionManager)this).GetStartAddress(codeInfoHandle);
-        if (((IExecutionManager)this).GetCodeKind(startAddress) == CodeKind.Interpreter)
+        TargetPointer startAddress = ((IExecutionManager)this).GetStartAddress(codeInfoHandle);
+        if (((IExecutionManager)this).GetCodeKind(new TargetCodePointer(startAddress.Value)) == CodeKind.Interpreter)
             return false;
 
-        return startAddress !=
-               ((IExecutionManager)this).GetFuncletStartAddress(codeInfoHandle);
+        return startAddress != ((IExecutionManager)this).GetFuncletStartAddress(codeInfoHandle);
     }
 
     bool IExecutionManager.IsFilterFunclet(CodeBlockHandle codeInfoHandle)
@@ -337,7 +336,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         if (!eman.IsFunclet(codeInfoHandle))
             return false;
 
-        TargetPointer funcletStartAddress = eman.GetFuncletStartAddress(codeInfoHandle).AsTargetPointer;
+        TargetPointer funcletStartAddress = eman.GetFuncletStartAddress(codeInfoHandle);
         uint funcletStartOffset = (uint)(funcletStartAddress - info.StartAddress);
 
         List<ExceptionClauseInfo> clauses = eman.GetExceptionClauses(codeInfoHandle);

@@ -1198,7 +1198,40 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int GetVarArgSig(ulong VASigCookieAddr, ulong* pArgBase, DacDbiTargetBuffer* pRetVal)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetVarArgSig(VASigCookieAddr, pArgBase, pRetVal) : HResults.E_NOTIMPL;
+    {
+        *pArgBase = 0;
+        *pRetVal = default;
+        int hr = HResults.S_OK;
+        try
+        {
+            Contracts.ISignature signature = _target.Contracts.Signature;
+            TargetPointer argBase = signature.GetVarArgArgsBase(new TargetPointer(VASigCookieAddr));
+            signature.GetVarArgSignature(new TargetPointer(VASigCookieAddr), out TargetPointer sigAddr, out uint sigLen);
+
+            *pArgBase = argBase.Value;
+            *pRetVal = new DacDbiTargetBuffer { pAddress = sigAddr.Value, cbSize = sigLen };
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            ulong argBaseLocal;
+            DacDbiTargetBuffer retValLocal = default;
+            int hrLocal = _legacy.GetVarArgSig(VASigCookieAddr, &argBaseLocal, &retValLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(*pArgBase == argBaseLocal, $"cDAC argBase: 0x{*pArgBase:X}, DAC argBase: 0x{argBaseLocal:X}");
+                Debug.Assert(pRetVal->pAddress == retValLocal.pAddress, $"cDAC sigAddr: 0x{pRetVal->pAddress:X}, DAC sigAddr: 0x{retValLocal.pAddress:X}");
+                Debug.Assert(pRetVal->cbSize == retValLocal.cbSize, $"cDAC sigLen: {pRetVal->cbSize}, DAC sigLen: {retValLocal.cbSize}");
+            }
+        }
+#endif
+        return hr;
+    }
 
     public int RequiresAlign8(ulong thExact, Interop.BOOL* pResult)
     {
