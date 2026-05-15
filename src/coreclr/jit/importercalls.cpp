@@ -636,8 +636,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             if (sig->retTypeSigClass != actualMethodRetTypeSigClass)
             {
                 if (actualMethodRetTypeSigClass != nullptr && sig->retType != CORINFO_TYPE_CLASS &&
-                    sig->retType != CORINFO_TYPE_BYREF && sig->retType != CORINFO_TYPE_PTR &&
-                    sig->retType != CORINFO_TYPE_VAR)
+                    sig->retType != CORINFO_TYPE_BYREF && sig->retType != CORINFO_TYPE_PTR)
                 {
                     // Make sure that all valuetypes (including enums) that we push are loaded.
                     // This is to guarantee that if a GC is triggered from the prestub of this methods,
@@ -6554,7 +6553,7 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
         params[i].CorType = strip(info.compCompHnd->getArgType(sig, sigArg, &params[i].ClassHandle));
 
         if (params[i].CorType != CORINFO_TYPE_CLASS && params[i].CorType != CORINFO_TYPE_BYREF &&
-            params[i].CorType != CORINFO_TYPE_PTR && params[i].CorType != CORINFO_TYPE_VAR)
+            params[i].CorType != CORINFO_TYPE_PTR)
         {
             CORINFO_CLASS_HANDLE argRealClass = info.compCompHnd->getArgClass(sig, sigArg);
             if (argRealClass != nullptr)
@@ -6572,8 +6571,7 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
     }
 
     if ((sig->retTypeSigClass != nullptr) && (sig->retType != CORINFO_TYPE_CLASS) &&
-        (sig->retType != CORINFO_TYPE_BYREF) && (sig->retType != CORINFO_TYPE_PTR) &&
-        (sig->retType != CORINFO_TYPE_VAR))
+        (sig->retType != CORINFO_TYPE_BYREF) && (sig->retType != CORINFO_TYPE_PTR))
     {
         // Make sure that all valuetypes (including enums) that we push are loaded.
         // This is to guarantee that if a GC is triggered from the prestub of this methods,

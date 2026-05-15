@@ -6197,9 +6197,6 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
             suspendData->asyncMethodReturnTypePrimitiveSize = sizeof(void*);
             break;
 
-        case CORINFO_TYPE_VAR:
-            BADCODE("VAR return types should have been translated before we get here on async methods");
-            break;
         default:
             // Other types are not supported
             BADCODE("Unsupported async method return type");

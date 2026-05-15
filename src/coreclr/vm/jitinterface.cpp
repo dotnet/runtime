@@ -377,7 +377,7 @@ CorInfoType CEEInfo::asCorInfoType(CorElementType eeType,
         CORINFO_TYPE_BYREF,
         CORINFO_TYPE_VALUECLASS,
         CORINFO_TYPE_CLASS,
-        CORINFO_TYPE_VAR,            // VAR (type variable)
+        CORINFO_TYPE_CLASS,          // VAR (type variable)
         CORINFO_TYPE_CLASS,          // ARRAY
         CORINFO_TYPE_CLASS,          // WITH
         CORINFO_TYPE_VALUECLASS,
@@ -390,7 +390,7 @@ CorInfoType CEEInfo::asCorInfoType(CorElementType eeType,
         CORINFO_TYPE_PTR,            // FNPTR
         CORINFO_TYPE_CLASS,          // OBJECT
         CORINFO_TYPE_CLASS,          // SZARRAY
-        CORINFO_TYPE_VAR,            // MVAR
+        CORINFO_TYPE_CLASS,          // MVAR
 
         CORINFO_TYPE_UNDEF,          // CMOD_REQD
         CORINFO_TYPE_UNDEF,          // CMOD_OPT

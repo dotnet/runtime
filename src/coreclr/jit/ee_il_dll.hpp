@@ -217,18 +217,6 @@ inline var_types JITtype2varType(CorInfoType type)
         TYP_BYREF,  // CORINFO_TYPE_BYREF           = 0x11,
         TYP_STRUCT, // CORINFO_TYPE_VALUECLASS      = 0x12,
         TYP_REF,    // CORINFO_TYPE_CLASS           = 0x13,
-        TYP_REF,    // CORINFO_TYPE_VAR             = 0x14,
-
-        // Generic type variables only appear when we're doing
-        // verification of generic code, in which case we're running
-        // in "import only" mode.  Annoyingly the "import only"
-        // mode of the JIT actually does a fair bit of compilation,
-        // so we have to trick the compiler into thinking it's compiling
-        // a real instantiation.  We do that by just pretending we're
-        // compiling the "object" instantiation of the code, i.e. by
-        // turing all generic type variables refs, except for a few
-        // choice places to do with verification, where we use
-        // verification types and CLASS_HANDLEs to track the difference.
 
     };
 
@@ -275,18 +263,6 @@ inline var_types JitType2PreciseVarType(CorInfoType type)
         TYP_BYREF,  // CORINFO_TYPE_BYREF           = 0x11,
         TYP_STRUCT, // CORINFO_TYPE_VALUECLASS      = 0x12,
         TYP_REF,    // CORINFO_TYPE_CLASS           = 0x13,
-        TYP_REF,    // CORINFO_TYPE_VAR             = 0x14,
-
-        // Generic type variables only appear when we're doing
-        // verification of generic code, in which case we're running
-        // in "import only" mode.  Annoyingly the "import only"
-        // mode of the JIT actually does a fair bit of compilation,
-        // so we have to trick the compiler into thinking it's compiling
-        // a real instantiation.  We do that by just pretending we're
-        // compiling the "object" instantiation of the code, i.e. by
-        // turing all generic type variables refs, except for a few
-        // choice places to do with verification, where we use
-        // verification types and CLASS_HANDLEs to track the difference.
 
     };
 

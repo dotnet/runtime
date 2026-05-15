@@ -94,9 +94,6 @@ void DumpPrimToConsoleBare(MethodContext* mc, CorInfoType prim, DWORDLONG classH
 
             return;
         }
-        case CORINFO_TYPE_VAR:
-            printf("var");
-            return;
         default:
             LogWarning("unknown type in PrimToString(0x%x)", prim);
             DEBUG_BREAK;

@@ -51,8 +51,7 @@ void AppendCorInfoType(TArray<char, MallocAllocator>* printer, CorInfoType corIn
         "ptr",
         "byref",
         "struct",
-        "class",
-        "var"
+        "class"
     };
 
     const char *corInfoTypeName = "CORINFO_TYPE_INVALID";
@@ -208,7 +207,6 @@ void AppendMethodName(COMP_HANDLE comp,
             switch (type)
             {
                 case CORINFO_TYPE_CLASS:
-                case CORINFO_TYPE_VAR:
                 case CORINFO_TYPE_VALUECLASS:
                 {
                     CORINFO_CLASS_HANDLE clsHnd = comp->getArgClass(sig, argLst);
@@ -240,7 +238,6 @@ void AppendMethodName(COMP_HANDLE comp,
                 switch (retType)
                 {
                     case CORINFO_TYPE_CLASS:
-                    case CORINFO_TYPE_VAR:
                     case CORINFO_TYPE_VALUECLASS:
                     {
                         CORINFO_CLASS_HANDLE clsHnd = sig->retTypeClass;

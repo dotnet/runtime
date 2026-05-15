@@ -584,8 +584,6 @@ const char* toString(CorInfoType cit)
             return "byref";
         case CORINFO_TYPE_VALUECLASS:
             return "valueclass";
-        case CORINFO_TYPE_VAR:
-            return "var";
         default:
             return "UNKNOWN";
     }

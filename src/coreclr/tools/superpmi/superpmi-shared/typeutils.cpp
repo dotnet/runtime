@@ -62,7 +62,6 @@ const char* TypeUtils::GetCorInfoTypeName(CorInfoType type)
             return "struct";
 
         case CORINFO_TYPE_CLASS:
-        case CORINFO_TYPE_VAR:
             return "ref";
 
         case CORINFO_TYPE_NATIVEINT:

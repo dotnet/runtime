@@ -734,13 +734,6 @@ namespace Internal.JitInterface
         CORINFO_TYPE_VALUECLASS = 0x12,
         CORINFO_TYPE_CLASS = 0x13,
 
-        // CORINFO_TYPE_VAR is for a generic type variable.
-        // Generic type variables only appear when the JIT is doing
-        // verification (not NOT compilation) of generic code
-        // for the EE, in which case we're running
-        // the JIT in "import only" mode.
-
-        CORINFO_TYPE_VAR = 0x14,
         CORINFO_TYPE_COUNT,                         // number of jit types
     }
 
