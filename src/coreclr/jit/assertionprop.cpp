@@ -5343,7 +5343,8 @@ bool Compiler::optWriteBarrierAssertionProp_StoreBlk(ASSERT_VALARG_TP assertions
         return false;
     }
 
-    GCInfo::WriteBarrierForm barrierType = optConservativeNormalVN(store->Addr());
+    GCInfo::WriteBarrierForm barrierType =
+        GetWriteBarrierForm(this, optConservativeNormalVN(store->Addr()));
     if (barrierType == GCInfo::WriteBarrierForm::WBF_NoBarrier)
     {
         JITDUMP("Add GTF_IND_TGT_NOT_HEAP to STORE_BLK [%06d]: ", dspTreeID(store));
