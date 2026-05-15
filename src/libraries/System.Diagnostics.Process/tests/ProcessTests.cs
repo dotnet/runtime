@@ -287,6 +287,7 @@ namespace System.Diagnostics.Tests
             RemoteExecutor.IsSupported;
 
         [ConditionalTheory(typeof(ProcessTests), nameof(IsNotNanoServerAndRemoteExecutorSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/126936", TestPlatforms.Windows)]
         [InlineData(true)]
         [InlineData(false)]
         public void StartDetached_GrandchildSurvivesSignalingParent(bool enable)
