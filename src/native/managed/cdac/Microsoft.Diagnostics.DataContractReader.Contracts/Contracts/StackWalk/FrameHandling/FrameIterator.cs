@@ -297,17 +297,14 @@ internal sealed class FrameIterator
 
     /// <summary>
     /// Returns the InternalFrameType (CorDebugInternalFrameType) of the current Frame.
-    /// Mirrors the native DacDbiInterfaceImpl::GetInternalFrameType logic, which combines
-    /// the Frame's transition type, frame type, and interception kind into a single value.
-    /// Returns InternalFrameType.STUBFRAME_NONE for frames the debugger does not surface.
+    /// Mirrors the native DacDbiInterfaceImpl::GetInternalFrameType logic.
     /// </summary>
     public InternalFrameType GetCurrentInternalFrameType() => GetInternalFrameType(target, currentFramePointer);
 
     /// <summary>
     /// Returns true if the current Frame is an InlinedCallFrame that was set up by
     /// the new exception handling helpers (i.e. its Datum field is tagged with the
-    /// ExceptionHandlingHelper marker). The native iteration over internal frames skips
-    /// these frames.
+    /// ExceptionHandlingHelper marker).
     /// </summary>
     public bool IsExceptionHandlingHelperInlinedCallFrame()
         => IsExceptionHandlingHelperInlinedCallFrame(target, currentFramePointer);
@@ -367,10 +364,6 @@ internal sealed class FrameIterator
         if (frameType != FrameType.InlinedCallFrame)
             return false;
 
-        // Mirrors the EH-helper filter in DacDbiInterfaceImpl::EnumerateInternalFrames
-        // (dacdbiimplstackwalk.cpp): native checks the marker bit on m_Datum regardless
-        // of whether the frame has an active call.
-        // InlinedCallFrameMarker in src/coreclr/vm/exceptionhandling.h:
         //   ExceptionHandlingHelper = 2 on 64-bit, 1 on 32-bit. Mask == ExceptionHandlingHelper.
         Data.InlinedCallFrame icf = target.ProcessedData.GetOrAdd<Data.InlinedCallFrame>(frame.Address);
         ulong mask = (ulong)(target.PointerSize == 8 ? 2 : 1);

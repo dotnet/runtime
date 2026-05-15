@@ -38,14 +38,6 @@ public record struct StackFrameData(
     TargetPointer FrameIdentifier,
     InternalFrameType InternalFrameType);
 
-// Subset of DebuggerEval state exposed to callers (matches the values the
-// debugger needs to populate cStubFrame entries for STUBFRAME_FUNC_EVAL).
-//   MethodToken  - metadata token of the method being evaluated, or
-//                  mdMethodDefNil (0x06000000) for func eval types that
-//                  do not target a specific method (e.g. NewObjectNoCtor,
-//                  NewString, NewArray).
-//   AssemblyPtr  - Assembly* the eval is rooted in (the class's module's
-//                  runtime assembly).
 public record struct DebuggerEvalData(
     uint MethodToken,
     TargetPointer AssemblyPtr);

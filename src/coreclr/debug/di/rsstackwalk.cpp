@@ -646,11 +646,11 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
 
         // currentFuncData contains general information about the method.
         // It has no information about any particular jitted instance of the method.
-        DebuggerIPCE_FuncData * pFuncData = &(frameData.v.funcData);
+        Debugger_FuncData * pFuncData = &(frameData.v.funcData);
 
         // currentJITFuncData contains information about the current jitted instance of the method
         // on the stack.
-        DebuggerIPCE_JITFuncData * pJITFuncData = &(frameData.v.jitFuncData);
+        Debugger_JITFuncData * pJITFuncData = &(frameData.v.jitFuncData);
 
         // Lookup the appdomain that the thread was in when it was executing code for this frame. We pass this
         // to the frame when we create it so we can properly resolve locals in that frame later.

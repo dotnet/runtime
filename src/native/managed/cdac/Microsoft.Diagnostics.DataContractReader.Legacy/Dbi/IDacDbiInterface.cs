@@ -151,34 +151,27 @@ public struct COR_FIELD
     public int fieldType;
 }
 
-// Mirrors the cMethodFrame branch of the union inside Debugger_STRData.
 [StructLayout(LayoutKind.Sequential)]
-public struct DebuggerIPCE_FuncData
+public struct Debugger_FuncData
 {
     public uint funcMetadataToken;       // mdMethodDef
-    public ulong vmAssembly;             // VMPTR_Assembly
-    public uint classMetadataToken;      // mdTypeDef
-    public ulong ilStartAddress;         // void*
-    public ulong ilSize;                 // SIZE_T
-    public ulong currentEnCVersion;      // SIZE_T
-    public uint localVarSigToken;        // mdSignature
+    public ulong vmAssembly;
 }
 
-// Mirrors the cMethodFrame branch of the union inside Debugger_STRData.
 [StructLayout(LayoutKind.Sequential)]
-public struct DebuggerIPCE_JITFuncData
+public struct Debugger_JITFuncData
 {
-    public ulong nativeStartAddressPtr;            // TADDR
-    public ulong nativeHotSize;                    // SIZE_T
-    public ulong nativeStartAddressColdPtr;        // TADDR
-    public ulong nativeColdSize;                   // SIZE_T
-    public ulong nativeOffset;                     // SIZE_T
-    public ulong vmNativeCodeMethodDescToken;      // VMPTR_MethodDesc
+    public ulong nativeStartAddressPtr;
+    public ulong nativeHotSize;
+    public ulong nativeStartAddressColdPtr;
+    public ulong nativeColdSize;
+    public ulong nativeOffset;
+    public ulong vmNativeCodeMethodDescToken;
     public Interop.BOOL fIsFilterFrame;
-    public ulong parentNativeOffset;               // SIZE_T
-    public ulong fpParentOrSelf;                   // FramePointer
+    public ulong parentNativeOffset;
+    public ulong fpParentOrSelf;
     public Interop.BOOL isInstantiatedGeneric;
-    public ulong enCVersion;                       // SIZE_T
+    public ulong enCVersion;
     public Interop.BOOL justAfterILThrow;
 }
 
@@ -186,9 +179,8 @@ public struct DebuggerIPCE_JITFuncData
 [StructLayout(LayoutKind.Sequential)]
 public struct DebuggerIPCE_STRData_MethodFrame
 {
-    public DebuggerIPCE_FuncData funcData;
-    public DebuggerIPCE_JITFuncData jitFuncData;
-    public ulong ILOffset;                         // SIZE_T
+    public Debugger_FuncData funcData;
+    public Debugger_JITFuncData jitFuncData;
     public int mapping;                            // CorDebugMappingResult
     public byte fVarArgs;                          // bool
     public byte fNoMetadata;                       // bool

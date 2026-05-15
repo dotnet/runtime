@@ -236,8 +236,6 @@ public:
         INTERCEPTION_COUNT
     };
 
-    // Classification of an explicit Frame for the purpose of synthesizing
-    // CorDebugInternalFrameType values for the debugger.
     enum StubFrameType
     {
         STUB_FRAME_NONE,
@@ -1515,8 +1513,6 @@ public:
 
     Interception GetInterception_Impl();
 
-    // The debugger special-cases StubDispatchFrame and reports STUBFRAME_NONE
-    // even though the base FramedMethodFrame transition is M2U.
     StubFrameType GetStubFrameType_Impl()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -2132,9 +2128,6 @@ public:
         return TYPE_EXIT;
     }
 
-    // Reports STUB_FRAME_M2U whenever the frame is asked. The debugger-facing
-    // classification additionally gates this on InlinedCallFrame::FrameHasActiveCall;
-    // callers that need the gated value must perform that check themselves.
     StubFrameType GetStubFrameType_Impl()
     {
         LIMITED_METHOD_DAC_CONTRACT;

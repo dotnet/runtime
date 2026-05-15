@@ -835,8 +835,7 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
         // initialize the fields in Debugger_STRData::v
         //
 
-        // These fields will be filled in later.  We don't have the sequence point mapping information here.
-        pFrameData->v.ILOffset = (SIZE_T)(-1);
+        // This field will be filled in later.  We don't have the sequence point mapping information here.
         pFrameData->v.mapping  = MAPPING_NO_INFO;
 
         // Check if this is a vararg method by getting the managed calling convention from the signature.
@@ -880,34 +879,21 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
         }
 
         //
-        // initialize the DebuggerIPCE_FuncData and DebuggerIPCE_JITFuncData
+        // initialize the Debugger_FuncData and Debugger_JITFuncData
         //
 
-        DebuggerIPCE_FuncData *    pFuncData    = &(pFrameData->v.funcData);
-        DebuggerIPCE_JITFuncData * pJITFuncData = &(pFrameData->v.jitFuncData);
+        Debugger_FuncData *    pFuncData    = &(pFrameData->v.funcData);
+        Debugger_JITFuncData * pJITFuncData = &(pFrameData->v.jitFuncData);
 
         //
-        // initialize the "easy" fields of DebuggerIPCE_FuncData
+        // initialize the "easy" fields of Debugger_FuncData
         //
 
         pFuncData->funcMetadataToken = pMD->GetMemberDef();
         pFuncData->vmAssembly.SetHostPtr(pAssembly);
 
-        // PERF: this is expensive to get so I stopped fetching it eagerly
-        // It is only needed if we haven't already got a cached copy
-        pFuncData->classMetadataToken = mdTokenNil;
-
         //
-        // initialize the remaining fields of DebuggerIPCE_FuncData to the default values
-        //
-
-        pFuncData->ilStartAddress = NULL;
-        pFuncData->ilSize = 0;
-        pFuncData->currentEnCVersion = CorDB_DEFAULT_ENC_FUNCTION_VERSION;
-        pFuncData->localVarSigToken = mdSignatureNil;
-
-        //
-        // inititalize the fields of DebuggerIPCE_JITFuncData
+        // inititalize the fields of Debugger_JITFuncData
         //
 
         // For MiniDumpNormal, we do not guarantee method region info for all JIT tokens
@@ -951,17 +937,6 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
             pJITFuncData->isInstantiatedGeneric = pMD->HasClassOrMethodInstantiation();
         );
         pJITFuncData->enCVersion = CorDB_DEFAULT_ENC_FUNCTION_VERSION;
-
-        // PERF: this is expensive to get so I stopped fetching it eagerly
-        // It is only needed if we haven't already got a cached copy
-        pFuncData->localVarSigToken = 0;
-        pFuncData->ilStartAddress = 0;
-        pFuncData->ilSize = 0;
-
-
-        // See the comment for LookupEnCVersions().
-        // PERF: this is expensive to get so I stopped fetching it eagerly
-        pFuncData->currentEnCVersion = 0;
         pJITFuncData->enCVersion = 0;
     }
     else
@@ -981,7 +956,7 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
 //
 
 void DacDbiInterfaceImpl::InitNativeCodeAddrAndSize(TADDR                      taStartAddr,
-                                                    DebuggerIPCE_JITFuncData * pJITFuncData)
+                                                    Debugger_JITFuncData * pJITFuncData)
 {
     PTR_CORDB_ADDRESS_TYPE pAddr = dac_cast<PTR_CORDB_ADDRESS_TYPE>(taStartAddr);
     CodeRegionInfo crInfo = CodeRegionInfo::GetCodeRegionInfo(NULL, NULL, pAddr);
@@ -995,7 +970,7 @@ void DacDbiInterfaceImpl::InitNativeCodeAddrAndSize(TADDR                      t
 
 //---------------------------------------------------------------------------------------
 //
-// Initialize the funclet-related fields of DebuggerIPCE_JITFuncData.  This is an nop on non-WIN64 platforms.
+// Initialize the funclet-related fields of Debugger_JITFuncData.  This is an nop on non-WIN64 platforms.
 //
 // Arguments:
 //    pCF          - the CrawlFrame for the current frame
@@ -1003,7 +978,7 @@ void DacDbiInterfaceImpl::InitNativeCodeAddrAndSize(TADDR                      t
 //
 
 void DacDbiInterfaceImpl::InitParentFrameInfo(CrawlFrame * pCF,
-                                              DebuggerIPCE_JITFuncData * pJITFuncData)
+                                              Debugger_JITFuncData * pJITFuncData)
 {
     pJITFuncData->fIsFilterFrame = pCF->IsFilterFunclet();
 
