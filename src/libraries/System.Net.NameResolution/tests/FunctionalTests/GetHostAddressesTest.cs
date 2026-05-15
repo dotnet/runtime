@@ -292,22 +292,22 @@ namespace System.Net.NameResolution.Tests
         // 1. The OS resolver is tried first for subdomains
         // 2. The OS may return different results (e.g., both IPv4+IPv6 vs IPv4 only)
         // 3. Different systems configure localhost differently
-        // The key requirement is that localhost subdomains return loopback addresses,
-        // except on Android/Apple mobile where the OS resolver may return non-loopback
-        // addresses for *.localhost and we respect that platform behavior.
+        // On Android and Apple mobile the OS resolver may return non-loopback addresses
+        // for both plain "localhost" and "*.localhost" (e.g. link-local IPv6 or
+        // multicast DNS results), so we only require any address to be returned there.
         [Fact]
         public async Task DnsGetHostAddresses_LocalhostAndSubdomain_BothReturnLoopback()
         {
-            bool requireLoopbackForSubdomain = !PlatformDetection.IsAppleMobile && !PlatformDetection.IsAndroid;
+            bool requireLoopback = !PlatformDetection.IsAppleMobile && !PlatformDetection.IsAndroid;
 
             IPAddress[] localhostAddresses = Dns.GetHostAddresses("localhost");
             IPAddress[] subdomainAddresses = Dns.GetHostAddresses("foo.localhost");
 
             Assert.True(localhostAddresses.Length >= 1);
             Assert.True(subdomainAddresses.Length >= 1);
-            Assert.All(localhostAddresses, addr => Assert.True(IPAddress.IsLoopback(addr), $"Expected loopback address but got: {addr}"));
-            if (requireLoopbackForSubdomain)
+            if (requireLoopback)
             {
+                Assert.All(localhostAddresses, addr => Assert.True(IPAddress.IsLoopback(addr), $"Expected loopback address but got: {addr}"));
                 Assert.All(subdomainAddresses, addr => Assert.True(IPAddress.IsLoopback(addr), $"Expected loopback address but got: {addr}"));
             }
 
@@ -316,9 +316,9 @@ namespace System.Net.NameResolution.Tests
 
             Assert.True(localhostAddresses.Length >= 1);
             Assert.True(subdomainAddresses.Length >= 1);
-            Assert.All(localhostAddresses, addr => Assert.True(IPAddress.IsLoopback(addr), $"Expected loopback address but got: {addr}"));
-            if (requireLoopbackForSubdomain)
+            if (requireLoopback)
             {
+                Assert.All(localhostAddresses, addr => Assert.True(IPAddress.IsLoopback(addr), $"Expected loopback address but got: {addr}"));
                 Assert.All(subdomainAddresses, addr => Assert.True(IPAddress.IsLoopback(addr), $"Expected loopback address but got: {addr}"));
             }
         }
