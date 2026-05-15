@@ -2783,7 +2783,7 @@ public:
     // A true primitive is one whose GetInternalCorElementType() ==
     //      ELEMENT_TYPE_I,
     //      ELEMENT_TYPE_I4,
-    //      ELEMENT_TYPE_TYPEDBYREF etc.
+    //      ELEMENT_TYPE_R8, etc.
     //  Note that IsTruePrimitive returns false for enum types.
     bool IsTruePrimitive();
 

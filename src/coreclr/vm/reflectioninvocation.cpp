@@ -1989,7 +1989,7 @@ extern "C" void QCALLTYPE ReflectionInvocation_GetBoxInfo(
 
     MethodTable* pMT = type.AsMethodTable();
 
-    _ASSERTE(pMT->IsValueType() || pMT->IsNullable() || pMT->IsEnum() || pMT->IsTruePrimitive());
+    _ASSERTE(pMT->IsValueType());
 
     *pValueOffset = 0;
 

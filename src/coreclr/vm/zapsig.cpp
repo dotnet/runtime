@@ -270,6 +270,8 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
         elemType = ELEMENT_TYPE_OBJECT;
     else if (pMT == g_pStringClass)
         elemType = ELEMENT_TYPE_STRING;
+    else if (pMT == g_TypedReferenceMT)
+        elemType = ELEMENT_TYPE_TYPEDBYREF;
     else if (pMT == g_pCanonMethodTableClass)
         elemType = (CorElementType) ELEMENT_TYPE_CANON_ZAPSIG;
     else if (pMT->IsArray())

@@ -4450,7 +4450,7 @@ IS_VALUETYPE:
                             SetHasFieldsWhichMustBeInited();
 
 #ifdef FEATURE_READYTORUN
-                        if (!(pByValueClass->IsTruePrimitive() || pByValueClass->IsEnum()))
+                        if (!pByValueClass->IsPrimitive())
                         {
                             CheckLayoutDependsOnOtherModules(pByValueClass);
                         }
@@ -10742,7 +10742,7 @@ void MethodTableBuilder::CheckForSystemTypes()
 
         // Check if it is a primitive type
         CorElementType type = CorTypeInfo::FindPrimitiveType(name);
-        if (type != ELEMENT_TYPE_END)
+        if (type != ELEMENT_TYPE_END && CorTypeInfo::IsPrimitiveType(type))
         {
             pMT->SetInternalCorElementType(type, true);
 
@@ -12018,7 +12018,7 @@ VOID MethodTableBuilder::CheckLayoutDependsOnOtherModules(MethodTable * pDepende
     STANDARD_VM_CONTRACT;
 
     // These cases are expected to be handled by the caller
-    _ASSERTE(!(pDependencyMT == g_pObjectClass || pDependencyMT->IsTruePrimitive() || ((g_pEnumClass != NULL) && pDependencyMT->IsEnum())));
+    _ASSERTE(!(pDependencyMT == g_pObjectClass || pDependencyMT->IsPrimitive()));
 
     //
     // WARNING: Changes in this algorithm are potential ReadyToRun breaking changes !!!
