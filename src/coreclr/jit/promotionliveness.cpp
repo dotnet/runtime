@@ -257,12 +257,25 @@ unsigned PromotionLiveness::GetSizeOfStructLocal(Statement* stmt, GenTreeLclVarC
 {
     if (lcl->OperIs(GT_LCL_ADDR))
     {
-        // Retbuf definition. Find the definition size from the
-        // containing call.
+        // LCL_ADDR definition. Currently we only have calls that define via
+        // LCL_ADDRs. Find the definition size from the containing call.
         Compiler::FindLinkData data = m_compiler->gtFindLink(stmt, lcl);
-        assert((data.parent != nullptr) && data.parent->IsCall() &&
-               (m_compiler->gtCallGetDefinedRetBufLclAddr(data.parent->AsCall()) == lcl));
-        return m_compiler->typGetObjLayout(data.parent->AsCall()->gtRetClsHnd)->GetSize();
+        assert((data.parent != nullptr) && data.parent->IsCall());
+               //(m_compiler->gtCallGetDefinedRetBufLclAddr(data.parent->AsCall()) == lcl));
+        unsigned defSize = UINT_MAX;
+        auto findDef = [&](const LocalDef& def) {
+            if (def.Def == lcl)
+            {
+                defSize = def.Size.GetExact();
+                return GenTree::VisitResult::Abort;
+            }
+
+            return GenTree::VisitResult::Continue;
+            };
+
+        GenTree::VisitResult result = data.parent->VisitLocalDefs(m_compiler, findDef);
+        assert(result == GenTree::VisitResult::Abort);
+        return defSize;
     }
 
     return lcl->GetLayout(m_compiler)->GetSize();

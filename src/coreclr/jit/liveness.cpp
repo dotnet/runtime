@@ -107,7 +107,7 @@ private:
                                          bool* pStoreRemoved DEBUGARG(bool* treeModf));
 
     void ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALARG_TP keepAliveVars);
-    bool IsTrackedRetBufferAddress(LIR::Range& range, GenTree* node);
+    bool IsTrackedCallDefinition(LIR::Range& range, GenTree* node);
     bool TryRemoveDeadStoreLIR(GenTree* store, GenTreeLclVarCommon* lclNode, BasicBlock* block);
     bool TryRemoveNonLocalLIR(GenTree* node, LIR::Range* blockRange);
     bool CanUncontainOrRemoveOperands(GenTree* node);
@@ -2432,12 +2432,11 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
                 }
                 else
                 {
-                    // For LCL_ADDRs that are defined by being passed as a
-                    // retbuf we will handle them when we get to the call. We
-                    // cannot consider them to be defined at the point of the
-                    // LCL_ADDR since there may be uses between the LCL_ADDR
-                    // and call.
-                    if (IsTrackedRetBufferAddress(blockRange, node))
+                    // For LCL_ADDRs that are definitions for the call we will
+                    // handle them when we get to the call. We cannot consider
+                    // them to be defined at the point of the LCL_ADDR since
+                    // there may be uses between the LCL_ADDR and call.
+                    if (IsTrackedCallDefinition(blockRange, node))
                     {
                         break;
                     }
@@ -2639,15 +2638,15 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
 }
 
 //---------------------------------------------------------------------
-// IsTrackedRetBufferAddress - given a LCL_ADDR node, check if it is the
-// return buffer definition of a call.
+// IsTrackedCallDefinition - given a LCL_ADDR node, check if it is an
+// extra definition of a call.
 //
 // Arguments
 //    range - the block range containing the LCL_ADDR
 //    node  - the LCL_ADDR
 //
 template <typename TLiveness>
-bool Liveness<TLiveness>::IsTrackedRetBufferAddress(LIR::Range& range, GenTree* node)
+bool Liveness<TLiveness>::IsTrackedCallDefinition(LIR::Range& range, GenTree* node)
 {
     assert(node->OperIs(GT_LCL_ADDR));
     if ((node->gtFlags & GTF_VAR_DEF) == 0)
@@ -2674,7 +2673,12 @@ bool Liveness<TLiveness>::IsTrackedRetBufferAddress(LIR::Range& range, GenTree* 
 
         if (curNode->IsCall())
         {
-            return m_compiler->gtCallGetDefinedRetBufLclAddr(curNode->AsCall()) == node;
+            auto visit = [=](GenTree* callDef) {
+                return node == callDef ? GenTree::VisitResult::Abort : GenTree::VisitResult::Continue;
+                };
+
+            return
+                curNode->VisitLocalDefNodes(m_compiler, visit) == GenTree::VisitResult::Abort;
         }
     } while (curNode->OperIs(GT_FIELD_LIST) || curNode->OperIsPutArg());
 

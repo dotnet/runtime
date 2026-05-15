@@ -1494,10 +1494,10 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
             arg.SetEarlyNode(setupArg);
             call->gtFlags |= setupArg->gtFlags & GTF_SIDE_EFFECT;
 
-            // Make sure we do not break recognition of retbuf-as-local
-            // optimization here. If this is hit it indicates that we are
-            // unnecessarily creating temps for some ret buf addresses, and
-            // gtCallGetDefinedRetBufLclAddr relies on this not to happen.
+            // Make sure we do not break recognition of defs optimization here.
+            // If this is hit it indicates that we are unnecessarily creating
+            // temps for some ret buf addresses, and call defs rely on this not
+            // to happen.
             noway_assert((arg.GetWellKnownArg() != WellKnownArg::RetBuffer) || !call->IsOptimizingRetBufAsLocal());
         }
 

@@ -102,31 +102,23 @@ public:
     }
 
     //-------------------------------------------------------------------
-    // SequenceCall: Post-process a call that may define a local.
+    // SequenceCall: Post-process a call that may define locals.
     //
     // Arguments:
     //     call - the call
     //
     // Remarks:
-    //     calls may also define a local that we would like to see
-    //     after all other operands of the call have been evaluated.
+    //     calls may also define locals that we would like to see after all
+    //     other operands of the call have been evaluated.
     //
     void SequenceCall(GenTreeCall* call)
     {
-        if (call->IsAsync())
-        {
-            GenTreeLclVarCommon* asyncResumedDef = m_compiler->gtCallGetDefinedAsyncResumedLclAddr(call);
-            if (asyncResumedDef != nullptr)
-            {
-                MoveNodeToEnd(asyncResumedDef);
-            }
-        }
+        auto moveToEnd = [&](GenTree* def) {
+            MoveNodeToEnd(def);
+            return GenTree::VisitResult::Continue;
+            };
 
-        if (call->IsOptimizingRetBufAsLocal())
-        {
-            // Correct the point at which the definition of the retbuf local appears.
-            MoveNodeToEnd(m_compiler->gtCallGetDefinedRetBufLclAddr(call));
-        }
+        call->VisitLocalDefNodes(m_compiler, moveToEnd);
     }
 
     //-------------------------------------------------------------------

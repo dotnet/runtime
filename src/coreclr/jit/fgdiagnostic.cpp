@@ -3814,12 +3814,7 @@ void Compiler::fgDebugCheckLinkedLocals()
             GenTree* node = *use;
             if (ShouldLink(node))
             {
-                if ((user != nullptr) && user->IsCall() &&
-                    ((node == m_compiler->gtCallGetDefinedRetBufLclAddr(user->AsCall())) ||
-                     (node == m_compiler->gtCallGetDefinedAsyncResumedLclAddr(user->AsCall()))))
-                {
-                }
-                else
+                if ((user == nullptr) || !user->IsCall() || !IsDefinedByCall(user->AsCall(), node))
                 {
                     m_locals.Push(node);
                 }
@@ -3827,22 +3822,24 @@ void Compiler::fgDebugCheckLinkedLocals()
 
             if (node->IsCall())
             {
-                GenTree* defined = m_compiler->gtCallGetDefinedAsyncResumedLclAddr(node->AsCall());
-                if (defined != nullptr)
-                {
-                    assert(ShouldLink(defined));
-                    m_locals.Push(defined);
-                }
+                auto linkDefs = [&](GenTree* def) {
+                    assert(ShouldLink(def));
+                    m_locals.Push(def);
+                    return GenTree::VisitResult::Continue;
+                    };
 
-                defined = m_compiler->gtCallGetDefinedRetBufLclAddr(node->AsCall());
-                if (defined != nullptr)
-                {
-                    assert(ShouldLink(defined));
-                    m_locals.Push(defined);
-                }
+                node->VisitLocalDefNodes(m_compiler, linkDefs);
             }
 
             return WALK_CONTINUE;
+        }
+
+        bool IsDefinedByCall(GenTreeCall* call, GenTree* node)
+        {
+            auto defIsNode = [=](GenTree* def) {
+                return node == def ? GenTree::VisitResult::Abort : GenTree::VisitResult::Continue;
+                };
+            return call->VisitLocalDefNodes(m_compiler, defIsNode) == GenTree::VisitResult::Abort;
         }
     };
 
