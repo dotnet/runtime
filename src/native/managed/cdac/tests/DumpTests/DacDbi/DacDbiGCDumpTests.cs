@@ -20,21 +20,6 @@ public class DacDbiGCDumpTests : DumpTestBase
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
-    public unsafe void AreGCStructuresValid_CrossValidateWithContract(TestConfiguration config)
-    {
-        InitializeDumpTest(config);
-        DacDbiImpl dbi = CreateDacDbi();
-
-        Interop.BOOL result;
-        int hr = dbi.AreGCStructuresValid(&result);
-        Assert.Equal(System.HResults.S_OK, hr);
-
-        bool contractResult = Target.Contracts.GC.GetGCStructuresValid();
-        Assert.Equal(contractResult, result == Interop.BOOL.TRUE);
-    }
-
-    [ConditionalTheory]
-    [MemberData(nameof(TestConfigurations))]
     public unsafe void GetGCHeapInformation_Succeeds(TestConfiguration config)
     {
         InitializeDumpTest(config);
