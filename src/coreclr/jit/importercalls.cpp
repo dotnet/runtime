@@ -7049,24 +7049,10 @@ void Compiler::impSetupAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned pref
 // Arguments:
 //    call - The call
 //
-// Remarks:
-//   Should be called before the 'this' arg is inserted, but after other IL args
-//   have been inserted.
-//
 void Compiler::impInsertAsyncContinuationForLdvirtftnCall(GenTreeCall* call)
 {
-    assert(call->AsCall()->IsAsync());
-
-    if (Target::g_tgtArgOrder == Target::ARG_ORDER_R2L)
-    {
-        call->AsCall()->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewNull(), TYP_REF)
-                                                   .WellKnown(WellKnownArg::AsyncContinuation));
-    }
-    else
-    {
-        call->AsCall()->gtArgs.PushBack(this, NewCallArg::Primitive(gtNewNull(), TYP_REF)
-                                                  .WellKnown(WellKnownArg::AsyncContinuation));
-    }
+    assert(call->IsAsync());
+    call->gtArgs.InsertAsyncContinuation(this, gtNewNull());
 }
 
 //------------------------------------------------------------------------

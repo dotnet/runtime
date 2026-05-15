@@ -4992,6 +4992,7 @@ public:
     CallArg* InsertAfter(Compiler* comp, CallArg* after, const NewCallArg& arg);
     CallArg* InsertAfterUnchecked(Compiler* comp, CallArg* after, const NewCallArg& arg);
     CallArg* InsertInstParam(Compiler* comp, GenTree* node);
+    CallArg* InsertAsyncContinuation(Compiler* comp, GenTree* node);
     CallArg* InsertAfterThisOrFirst(Compiler* comp, const NewCallArg& arg);
     void     PushLateBack(CallArg* arg);
     void     Remove(CallArg* arg);

@@ -1785,6 +1785,39 @@ CallArg* CallArgs::InsertInstParam(Compiler* comp, GenTree* node)
 }
 
 //---------------------------------------------------------------
+// InsertAsyncContinuation: Insert async continuation argument.
+//
+// Parameters:
+//   comp         - The compiler.
+//   node         - The IR node for the async continuation argument.
+//
+// Returns:
+//   The created representative for the argument.
+//
+CallArg* CallArgs::InsertAsyncContinuation(Compiler* comp, GenTree* node)
+{
+    NewCallArg newArg = NewCallArg::Primitive(node).WellKnown(WellKnownArg::AsyncContinuation);
+    assert(FindWellKnownArg(WellKnownArg::InstParam) == nullptr);
+
+    if (Target::g_tgtArgOrder == Target::ARG_ORDER_R2L)
+    {
+        CallArg* retBufferArg = GetRetBufferArg();
+        if (retBufferArg != nullptr)
+        {
+            return InsertAfter(comp, retBufferArg, newArg);
+        }
+        else
+        {
+            return InsertAfterThisOrFirst(comp, newArg);
+        }
+    }
+    else
+    {
+        return PushBack(comp, newArg);
+    }
+}
+
+//---------------------------------------------------------------
 // InsertAfterThisOrFirst: Insert an argument after 'this' if the call has a
 //                         'this' argument, or otherwise first.
 //
