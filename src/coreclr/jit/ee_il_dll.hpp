@@ -273,8 +273,8 @@ inline var_types JitType2PreciseVarType(CorInfoType type)
         TYP_DOUBLE, // CORINFO_TYPE_DOUBLE          = 0xf,
         TYP_U_IMPL, // CORINFO_TYPE_PTR             = 0x10,
         TYP_BYREF,  // CORINFO_TYPE_BYREF           = 0x11,
-        TYP_REF,    // CORINFO_TYPE_CLASS           = 0x12,
-        TYP_STRUCT, // CORINFO_TYPE_VALUECLASS      = 0x13,
+        TYP_STRUCT, // CORINFO_TYPE_VALUECLASS      = 0x12,
+        TYP_REF,    // CORINFO_TYPE_CLASS           = 0x13,
         TYP_REF,    // CORINFO_TYPE_VAR             = 0x14,
 
         // Generic type variables only appear when we're doing
