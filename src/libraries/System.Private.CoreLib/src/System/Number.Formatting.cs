@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers.Text;
@@ -744,7 +744,7 @@ namespace System
             vlb.Append(new ReadOnlySpan<TChar>(pExponent, digitCount));
         }
 
-        public static string FormatFloat<TNumber>(TNumber value, string? format, NumberFormatInfo info)
+        public static unsafe string FormatFloat<TNumber>(TNumber value, string? format, NumberFormatInfo info)
             where TNumber : unmanaged, IBinaryFloatParseAndFormatInfo<TNumber>
         {
             var vlb = new ValueListBuilder<char>(stackalloc char[CharStackBufferSize]);
@@ -753,7 +753,7 @@ namespace System
             return result;
         }
 
-        public static bool TryFormatFloat<TNumber, TChar>(TNumber value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<TChar> destination, out int charsWritten)
+        public static unsafe bool TryFormatFloat<TNumber, TChar>(TNumber value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<TChar> destination, out int charsWritten)
             where TNumber : unmanaged, IBinaryFloatParseAndFormatInfo<TNumber>
             where TChar : unmanaged, IUtfChar<TChar>
         {

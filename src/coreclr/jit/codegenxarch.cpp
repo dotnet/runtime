@@ -484,6 +484,15 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                 else if (con->IsIconHandle(GTF_ICON_TLSGD_OFFSET))
                 {
                     attr = EA_SET_FLG(attr, EA_CNS_TLSGD_RELOC);
+
+                    // This marks the start of a TLS access linker relaxation
+                    // sequence for linux-x64. The linker may rewrite to
+                    // instructions that trash rax at this point, so we update
+                    // GC state eagerly here.
+                    // (This is more important for the emitter, but we match it here
+                    // for symmetry and to avoid confusion about the state of the
+                    // registers.)
+                    gcInfo.gcMarkRegSetNpt(RBM_RAX);
                 }
             }
 

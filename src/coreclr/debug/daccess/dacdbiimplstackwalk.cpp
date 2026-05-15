@@ -567,9 +567,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thr
         Frame *     pFrame     = pThread->GetFrame();
         AppDomain * pAppDomain = AppDomain::GetCurrentDomain();
 
-        // This used to be only true for Enter-Managed chains.
-        // Since we don't have chains anymore, this can always be false.
-        frameData.quicklyUnwound = false;
         frameData.eType = DebuggerIPCE_STRData::cStubFrame;
 
         while (pFrame != FRAME_TOP)
@@ -790,10 +787,6 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
     //
 
     pFrameData->fp = GetFramePointerWorker(pIter);
-
-    // This used to be only true for Enter-Managed chains.
-    // Since we don't have chains anymore, this can always be false.
-    pFrameData->quicklyUnwound = false;
 
     pFrameData->vmCurrentAppDomainToken.SetHostPtr(AppDomain::GetCurrentDomain());
 

@@ -424,7 +424,7 @@ public:
                 true,
                 pModule->GetAppDomain()->GetADToken());
 
-            event.MetadataUpdateRequest.pMetadataStart = CORDB_ADDRESS_TO_PTR(bufferMetaData.pAddress);
+            event.MetadataUpdateRequest.pMetadataStart = bufferMetaData.pAddress;
 
             // Note: two-way event here...
             IfFailThrow(pProcess->SendIPCEvent(&event, sizeof(DebuggerIPCEvent)));
@@ -548,7 +548,7 @@ void CordbModule::RefreshMetaData()
         //
         // Update it on the RS
         //
-        bufferMetaData.Init(PTR_TO_CORDB_ADDRESS(event.MetadataUpdateRequest.pMetadataStart), (ULONG) event.MetadataUpdateRequest.nMetadataSize);
+        bufferMetaData.Init(event.MetadataUpdateRequest.pMetadataStart, (ULONG) event.MetadataUpdateRequest.nMetadataSize);
 
         // init the cleanup object to ensure the buffer gets destroyed later
         cleanup.bufferMetaData = bufferMetaData;
@@ -928,7 +928,7 @@ void CordbModule::InitPublicMetaData(TargetBuffer buffer)
     // copy it over from the remote process
 
     CoTaskMemHolder<VOID> pMetaDataCopy;
-    CopyRemoteMetaData(buffer, pMetaDataCopy.GetAddr());
+    CopyRemoteMetaData(buffer, &pMetaDataCopy);
 
 
     //
@@ -955,7 +955,7 @@ void CordbModule::InitPublicMetaData(TargetBuffer buffer)
                                   reinterpret_cast<IUnknown**>( &m_pIMImport ));
 
     // MetaData has taken ownership -don't free the memory
-    pMetaDataCopy.SuppressRelease();
+    pMetaDataCopy.Detach();
 
     // Immediately restore the old setting.
     HRESULT hrRestore = pDisp->SetOption(MetaDataSetUpdate, &valueOld);
@@ -1009,7 +1009,7 @@ void CordbModule::UpdatePublicMetaDataFromRemote(TargetBuffer bufferRemoteMetaDa
 
     // First copy it from the remote process
     CoTaskMemHolder<VOID> pLocalMetaDataPtr;
-    CopyRemoteMetaData(bufferRemoteMetaData, pLocalMetaDataPtr.GetAddr());
+    CopyRemoteMetaData(bufferRemoteMetaData, &pLocalMetaDataPtr);
 
     IMetaDataDispenserEx *  pDisp = GetProcess()->GetDispenser();
     _ASSERTE(pDisp != NULL); // throws on error.
@@ -1037,7 +1037,7 @@ void CordbModule::UpdatePublicMetaDataFromRemote(TargetBuffer bufferRemoteMetaDa
     IfFailThrow(hr);
 
     // Success.  MetaData now owns the metadata memory
-    pLocalMetaDataPtr.SuppressRelease();
+    pLocalMetaDataPtr.Detach();
 }
 
 //---------------------------------------------------------------------------------------
@@ -1058,7 +1058,7 @@ void CordbModule::UpdatePublicMetaDataFromRemote(TargetBuffer bufferRemoteMetaDa
 //    Uses an allocator (CoTaskMemHolder) that lets us hand off the memory to the metadata.
 void CordbModule::CopyRemoteMetaData(
     TargetBuffer buffer,
-    CoTaskMemHolder<VOID> * pLocalBuffer)
+    VOID** pLocalBuffer)
 {
     CONTRACTL
     {
@@ -1071,20 +1071,16 @@ void CordbModule::CopyRemoteMetaData(
 
     // Allocate space for the local copy of the metadata
     // No need to zero out the memory since we'll fill it all here.
-    LPVOID pRawBuffer = CoTaskMemAlloc(buffer.cbSize);
-    if (pRawBuffer == NULL)
+    CoTaskMemHolder<BYTE> pBuffer{ (BYTE*)CoTaskMemAlloc(buffer.cbSize) };
+    if (pBuffer == NULL)
     {
         ThrowOutOfMemory();
     }
 
-    pLocalBuffer->Assign(pRawBuffer);
-
-
-
     // Copy the metadata from the left side
-    GetProcess()->SafeReadBuffer(buffer, (BYTE *)pRawBuffer);
+    GetProcess()->SafeReadBuffer(buffer, pBuffer);
 
-    return;
+    *pLocalBuffer = pBuffer.Detach();
 }
 
 HRESULT CordbModule::QueryInterface(REFIID id, void **pInterface)
@@ -2217,7 +2213,7 @@ HRESULT CordbModule::ApplyChangesInternal(ULONG  cbMetaData,
                      retEvent->type == DB_IPCE_ENC_ADD_FUNCTION)
                 {
                     // Update the function collection to reflect this edit
-                    hr = pModule->UpdateFunction(retEvent->EnCUpdate.memberMetadataToken, retEvent->EnCUpdate.newVersionNumber, NULL);
+                    hr = pModule->UpdateFunction(retEvent->EnCUpdate.memberMetadataToken, (SIZE_T)(ULONG64)retEvent->EnCUpdate.newVersionNumber, NULL);
 
                 }
                 // mark the class and relevant type as old so we update it next time we try to query it
