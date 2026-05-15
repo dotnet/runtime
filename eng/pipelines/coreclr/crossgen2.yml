@@ -31,7 +31,6 @@ extends:
           - windows_x64
           - windows_arm64
           jobParameters:
-            timeoutInMinutes: 90
             buildArgs: -s clr+libs -c $(_BuildConfig) -lc Release
             postBuildSteps:
               - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml

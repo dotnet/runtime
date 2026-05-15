@@ -29,7 +29,6 @@ extends:
           # Adding it here will enable it also
           - osx_arm64
           jobParameters:
-            timeoutInMinutes: 90
             buildArgs: -s clr+libs -c $(_BuildConfig) -lc Release
             postBuildSteps:
               - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml

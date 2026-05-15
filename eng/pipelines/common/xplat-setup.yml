@@ -199,6 +199,9 @@ jobs:
       # macOS hosted pool machines are slower so we need to give a greater timeout than the 60 mins default.
       ${{ if and(eq(parameters.jobParameters.timeoutInMinutes, ''), in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'tvos')) }}:
         timeoutInMinutes: 120
+      # windows-arm64 build legs are cross-builds (arm64 toolchain on an amd64 agent) and exceed the 60 min default.
+      ${{ if and(eq(parameters.jobParameters.timeoutInMinutes, ''), eq(parameters.osGroup, 'windows'), eq(parameters.archType, 'arm64')) }}:
+        timeoutInMinutes: 90
       ${{ insert }}: ${{ parameters.jobParameters }}
     ${{ if ne(parameters.helixQueuesTemplate, '') }}:
       jobTemplate: ${{ parameters.jobTemplate }}
