@@ -42,25 +42,26 @@ static uint8_t* EncodeEcPointFromCoordinates(
     uint8_t* buf = NULL;
     BIGNUM* xBn = BN_bin2bn(x, xLength, NULL);
     BIGNUM* yBn = BN_bin2bn(y, yLength, NULL);
+    EC_POINT* point = NULL;
+
     if (!xBn || !yBn)
         goto done;
 
-    EC_POINT* point = EC_POINT_new(group);
+    point = EC_POINT_new(group);
     if (!point)
         goto done;
 
     if (!EC_POINT_set_affine_coordinates(group, point, xBn, yBn, NULL))
     {
-        EC_POINT_free(point);
         goto done;
     }
 
     buf = EncodeEcPointFromPoint(group, point, outLength);
-    EC_POINT_free(point);
 
 done:
-    BN_free(xBn);
-    BN_free(yBn);
+    if (point) EC_POINT_free(point);
+    if (xBn) BN_free(xBn);
+    if (yBn) BN_free(yBn);
     return buf;
 }
 #endif
@@ -491,6 +492,10 @@ int32_t CryptoNative_EvpPKeyGetEcGroupNid(EVP_PKEY *pkey, int32_t* nidName)
         return (*nidName != NID_undef) ? 1 : 0;
     }
 #endif
+
+#if !defined(NEED_OPENSSL_3_0) && !defined(NEED_OPENSSL_1_1)
+    return 0;
+#endif
 }
 
 int32_t CryptoNative_EvpPKeyEcHasExplicitEncoding(EVP_PKEY* pkey)
@@ -523,6 +528,10 @@ int32_t CryptoNative_EvpPKeyEcHasExplicitEncoding(EVP_PKEY* pkey)
 
         return (nid == NID_undef) ? 1 : 0;
     }
+#endif
+
+#if !defined(NEED_OPENSSL_3_0) && !defined(NEED_OPENSSL_1_1)
+    return -1;
 #endif
 }
 
@@ -612,6 +621,9 @@ int32_t CryptoNative_EvpPKeyGetEcKeyParameters(
     BIGNUM *xBn = NULL;
     BIGNUM *yBn = NULL;
     BIGNUM *dBn = NULL;
+    BIGNUM *ecP = NULL;
+    BIGNUM *ecA = NULL;
+    BIGNUM *ecB = NULL;
     uint8_t* pubKeyBuf = NULL;
     size_t pubKeyLen = 0;
     EC_GROUP* group = NULL;
@@ -653,19 +665,10 @@ int32_t CryptoNative_EvpPKeyGetEcKeyParameters(
     if (group == NULL)
     {
         // Explicit curve — build EC_GROUP from the key's field params.
-        BIGNUM* ecP = NULL;
-        BIGNUM* ecA = NULL;
-        BIGNUM* ecB = NULL;
-
-        EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_EC_P, &ecP);
-        EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_EC_A, &ecA);
-        EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_EC_B, &ecB);
-
-        if (ecP == NULL || ecA == NULL || ecB == NULL)
+        if (!EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_EC_P, &ecP) ||
+            !EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_EC_A, &ecA) ||
+            !EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_EC_B, &ecB))
         {
-            BN_free(ecP);
-            BN_free(ecA);
-            BN_free(ecB);
             goto error;
         }
 
@@ -689,10 +692,6 @@ int32_t CryptoNative_EvpPKeyGetEcKeyParameters(
             group = EC_GROUP_new_curve_GFp(ecP, ecA, ecB, NULL);
         }
 
-        BN_free(ecP);
-        BN_free(ecA);
-        BN_free(ecB);
-
         if (group == NULL)
             goto error;
     }
@@ -713,13 +712,6 @@ int32_t CryptoNative_EvpPKeyGetEcKeyParameters(
     if (!EcPointGetAffineCoordinates(group, point, xBn, yBn))
         goto error;
 
-    *qx = xBn;
-    xBn = NULL;
-    *cbQx = BN_num_bytes(*qx);
-    *qy = yBn;
-    yBn = NULL;
-    *cbQy = BN_num_bytes(*qy);
-
     if (includePrivate)
     {
         if (!EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_PRIV_KEY, &dBn))
@@ -734,6 +726,13 @@ int32_t CryptoNative_EvpPKeyGetEcKeyParameters(
         *d = NULL;
         *cbD = 0;
     }
+
+    *qx = xBn;
+    xBn = NULL;
+    *cbQx = BN_num_bytes(*qx);
+    *qy = yBn;
+    yBn = NULL;
+    *cbQy = BN_num_bytes(*qy);
 
     rc = 1;
     goto exit;
@@ -751,6 +750,9 @@ exit:
     if (pubKeyBuf) OPENSSL_free(pubKeyBuf);
     if (point) EC_POINT_free(point);
     if (group) EC_GROUP_free(group);
+    if (ecP) BN_free(ecP);
+    if (ecA) BN_free(ecA);
+    if (ecB) BN_free(ecB);
     return rc;
 #else
     (void)pkey;
@@ -1251,6 +1253,7 @@ static int32_t EvpPKeyGenerateByEcCurveOid(
 #endif
     int rc = 0;
     EVP_PKEY_CTX* ctx = NULL;
+    const char* groupName = NULL;
 
     int nid = OBJ_txt2nid(oid);
     if (nid == NID_undef)
@@ -1261,7 +1264,7 @@ static int32_t EvpPKeyGenerateByEcCurveOid(
 
     // OpenSSL canonicalizes the nid to a short name internally, so we do the same:
     // https://github.com/openssl/openssl/blob/7836b7d5b6a6b27a441c4e4c8564be6b270580c4/crypto/evp/ctrl_params_translate.c#L1154
-    const char* groupName = OBJ_nid2sn(nid);
+    groupName = OBJ_nid2sn(nid);
     if (!groupName)
         goto error;
 
@@ -1311,6 +1314,8 @@ int32_t CryptoNative_EvpPKeyGenerateByEcCurveOid(
         assert(false);
         return 0;
     }
+
+    *pkey = NULL;
 
     ERR_clear_error();
 
@@ -1475,7 +1480,7 @@ static int32_t EvpPKeyCreateByEcParameters(
             !EC_POINT_mul(group, pubPoint, dBn, NULL, NULL, NULL))
             goto error;
 
-        size_t pubKeyLen;
+        size_t pubKeyLen = 0;
         pubKeyBuf = EncodeEcPointFromPoint(group, pubPoint, &pubKeyLen);
         if (pubKeyBuf == NULL)
             goto error;
@@ -1694,6 +1699,7 @@ static int32_t EvpPKeyCreateByEcExplicitParameters(
     EC_GROUP* group = NULL;
     EC_POINT* G = NULL;
     EC_POINT* pubPoint = NULL;
+    size_t genLen = 0;
 
     const int hasPublicKey = (qx != NULL && qy != NULL);
     const int hasPrivateKey = (d != NULL && dLength > 0);
@@ -1747,6 +1753,10 @@ static int32_t EvpPKeyCreateByEcExplicitParameters(
         group = EC_GROUP_new_curve_GFp(pBn, aBn, bBn, NULL);
     }
 
+    // When HAVE_OPENSSL_EC2M is not defined and curveType is Characteristic2,
+    // group remains NULL here. This matches the old behavior where the legacy
+    // EcKeyCreateByExplicitParameters also returned NULL, surfacing as a
+    // CryptographicException on the managed side.
     if (group == NULL)
         goto error;
 
@@ -1771,7 +1781,6 @@ static int32_t EvpPKeyCreateByEcExplicitParameters(
         goto error;
 
     // Encode generator as uncompressed point for OSSL_PARAM.
-    size_t genLen = 0;
     generatorBuf = EncodeEcPointFromPoint(group, G, &genLen);
     if (generatorBuf == NULL)
         goto error;
@@ -1820,7 +1829,7 @@ static int32_t EvpPKeyCreateByEcExplicitParameters(
             !EC_POINT_mul(group, pubPoint, dBn, NULL, NULL, NULL))
             goto error;
 
-        size_t pubKeyLen;
+        size_t pubKeyLen = 0;
         pubKeyBuf = EncodeEcPointFromPoint(group, pubPoint, &pubKeyLen);
         if (pubKeyBuf == NULL)
             goto error;

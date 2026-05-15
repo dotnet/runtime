@@ -191,11 +191,18 @@ internal static partial class Interop
         private static partial int CryptoNative_EvpPKeyEcHasExplicitEncoding(SafeEvpPKeyHandle pkey);
 
         /// <summary>
-        /// Returns true if the key has explicit encoding, false if named or if encoding could not be determined.
+        /// Returns <see langword="true"/> if the key has explicit encoding, <see langword="false"/> if named.
         /// </summary>
+        /// <exception cref="CryptographicException">The encoding could not be determined from the key.</exception>
         internal static bool EvpPKeyEcHasExplicitEncoding(SafeEvpPKeyHandle pkey)
         {
             int result = CryptoNative_EvpPKeyEcHasExplicitEncoding(pkey);
+
+            if (result < 0)
+            {
+                throw CreateOpenSslCryptographicException();
+            }
+
             return result == 1;
         }
 

@@ -443,7 +443,7 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_OpenSslVersionNumber")]
         internal static extern uint OpenSslVersionNumber();
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPKeyGenerateByEcCurveOid", CharSet = CharSet.Ansi)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPKeyGenerateByEcCurveOid")]
         internal static extern int EvpPKeyGenerateByEcCurveOid(out SafeEvpPKeyHandle pkey, string oid, out int keySize);
     }
 }
