@@ -83,6 +83,40 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
+        ///   Derives a raw secret agreement with the other party's public key.
+        /// </summary>
+        /// <param name="otherPartyPublicKey">
+        ///   The other party's public key.
+        /// </param>
+        /// <returns>
+        ///   The secret agreement.
+        /// </returns>
+        /// <remarks>
+        ///   The raw secret agreement value is expected to be used as input into a Key Derivation Function,
+        ///   and not used directly as key material.
+        /// </remarks>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="otherPartyPublicKey" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="otherPartyPublicKey" /> has a length that is not <see cref="PublicKeySizeInBytes" />.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred during the secret agreement derivation.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        public byte[] DeriveRawSecretAgreement(byte[] otherPartyPublicKey)
+        {
+            ArgumentNullException.ThrowIfNull(otherPartyPublicKey);
+            ThrowIfPublicKeyWrongSize(otherPartyPublicKey, nameof(otherPartyPublicKey));
+            ThrowIfDisposed();
+
+            byte[] buffer = new byte[SecretAgreementSizeInBytes];
+            DeriveRawSecretAgreementCore(otherPartyPublicKey, buffer);
+            return buffer;
+        }
+
+        /// <summary>
         ///   Derives a raw secret agreement with the other party's key, writing it into the provided buffer.
         /// </summary>
         /// <param name="otherParty">
@@ -118,6 +152,43 @@ namespace System.Security.Cryptography
 
             ThrowIfDisposed();
             DeriveRawSecretAgreementCore(otherParty, destination);
+        }
+
+        /// <summary>
+        ///   Derives a raw secret agreement with the other party's public key, writing it into the provided buffer.
+        /// </summary>
+        /// <param name="otherPartyPublicKey">
+        ///   The other party's public key.
+        /// </param>
+        /// <param name="destination">
+        ///   The buffer to receive the secret agreement.
+        /// </param>
+        /// <remarks>
+        ///   The raw secret agreement value is expected to be used as input into a Key Derivation Function,
+        ///   and not used directly as key material.
+        /// </remarks>
+        /// <exception cref="ArgumentException">
+        ///   <para><paramref name="otherPartyPublicKey" /> has a length that is not <see cref="PublicKeySizeInBytes" />.</para>
+        ///   <para>-or-</para>
+        ///   <para><paramref name="destination" /> is the incorrect length to receive the secret agreement.</para>
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred during the secret agreement derivation.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        public void DeriveRawSecretAgreement(ReadOnlySpan<byte> otherPartyPublicKey, Span<byte> destination)
+        {
+            ThrowIfPublicKeyWrongSize(otherPartyPublicKey, nameof(otherPartyPublicKey));
+
+            if (destination.Length != SecretAgreementSizeInBytes)
+            {
+                throw new ArgumentException(
+                    SR.Format(SR.Argument_DestinationImprecise, SecretAgreementSizeInBytes),
+                    nameof(destination));
+            }
+
+            ThrowIfDisposed();
+            DeriveRawSecretAgreementCore(otherPartyPublicKey, destination);
         }
 
         /// <summary>
@@ -735,6 +806,21 @@ namespace System.Security.Cryptography
         ///   An error occurred during the secret agreement derivation.
         /// </exception>
         protected abstract void DeriveRawSecretAgreementCore(X25519DiffieHellman otherParty, Span<byte> destination);
+
+        /// <summary>
+        ///   When overridden in a derived class, derives a raw secret agreement with the other party's public key,
+        ///   writing it into the provided buffer.
+        /// </summary>
+        /// <param name="otherPartyPublicKey">
+        ///   The other party's public key.
+        /// </param>
+        /// <param name="destination">
+        ///   The buffer to receive the secret agreement.
+        /// </param>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred during the secret agreement derivation.
+        /// </exception>
+        protected abstract void DeriveRawSecretAgreementCore(ReadOnlySpan<byte> otherPartyPublicKey, Span<byte> destination);
 
         /// <summary>
         ///   When overridden in a derived class, exports the private key into the provided buffer.
@@ -1484,6 +1570,12 @@ namespace System.Security.Cryptography
         private protected void ThrowIfDisposed()
         {
             ObjectDisposedException.ThrowIf(_disposed, typeof(X25519DiffieHellman));
+        }
+
+        private static void ThrowIfPublicKeyWrongSize(ReadOnlySpan<byte> publicKey, string paramName)
+        {
+            if (publicKey.Length != PublicKeySizeInBytes)
+                throw new ArgumentException(SR.Argument_PublicKeyWrongSizeForAlgorithm, paramName);
         }
 
         private protected static void ThrowIfNotSupported()
