@@ -2408,63 +2408,63 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                         return addrReg;
                     };
 
-                    ssize_t index = 0;
-                    ssize_t step  = 0;
+                    ssize_t index = -1;
+                    ssize_t step  = -1;
                     switch (simdVal.gtSimdScalableBaseType)
                     {
                         case TYP_BYTE:
-                        {
-                            index = (size_t)simdVal.gtSimdScalableIndexU8[0];
-                            step  = (size_t)simdVal.gtSimdScalableStepU8[0];
-                            break;
-                        }
-
-                        case TYP_SHORT:
-                        {
-                            index = (size_t)simdVal.gtSimdScalableIndexU16[0];
-                            step  = (size_t)simdVal.gtSimdScalableStepU16[0];
-                            break;
-                        }
-
-                        case TYP_INT:
-                        {
-                            index = (size_t)simdVal.gtSimdScalableIndexU32[0];
-                            step  = (size_t)simdVal.gtSimdScalableStepU32[0];
-                            break;
-                        }
-
-                        case TYP_LONG:
-                        {
-                            index = (size_t)simdVal.gtSimdScalableIndexU64[0];
-                            step  = (size_t)simdVal.gtSimdScalableStepU64[0];
-                            break;
-                        }
-
-                        case TYP_UBYTE:
                         {
                             index = (size_t)simdVal.gtSimdScalableIndexI8[0];
                             step  = (size_t)simdVal.gtSimdScalableStepI8[0];
                             break;
                         }
 
-                        case TYP_USHORT:
+                        case TYP_SHORT:
                         {
                             index = (size_t)simdVal.gtSimdScalableIndexI16[0];
                             step  = (size_t)simdVal.gtSimdScalableStepI16[0];
                             break;
                         }
 
-                        case TYP_UINT:
+                        case TYP_INT:
                         {
                             index = (size_t)simdVal.gtSimdScalableIndexI32[0];
                             step  = (size_t)simdVal.gtSimdScalableStepI32[0];
                             break;
                         }
 
-                        case TYP_ULONG:
+                        case TYP_LONG:
                         {
                             index = (size_t)simdVal.gtSimdScalableIndexI64[0];
                             step  = (size_t)simdVal.gtSimdScalableStepI64[0];
+                            break;
+                        }
+
+                        case TYP_UBYTE:
+                        {
+                            index = (size_t)simdVal.gtSimdScalableIndexU8[0];
+                            step  = (size_t)simdVal.gtSimdScalableStepU8[0];
+                            break;
+                        }
+
+                        case TYP_USHORT:
+                        {
+                            index = (size_t)simdVal.gtSimdScalableIndexU16[0];
+                            step  = (size_t)simdVal.gtSimdScalableStepU16[0];
+                            break;
+                        }
+
+                        case TYP_UINT:
+                        {
+                            index = (size_t)simdVal.gtSimdScalableIndexU32[0];
+                            step  = (size_t)simdVal.gtSimdScalableStepU32[0];
+                            break;
+                        }
+
+                        case TYP_ULONG:
+                        {
+                            index = (size_t)simdVal.gtSimdScalableIndexU64[0];
+                            step  = (size_t)simdVal.gtSimdScalableStepU64[0];
                             break;
                         }
 
@@ -2483,17 +2483,17 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                             {
                                 emit->emitInsSve_R_I(INS_sve_dup, EA_SCALABLE, targetReg, index, opt);
                             }
-                            else if ((simdVal.gtSimdScalableBaseType == TYP_DOUBLE) &&
-                                     emitter::canEncodeFloatImm8(simdVal.gtSimdScalableIndexF64[0]))
-                            {
-                                emit->emitIns_R_F(INS_sve_fdup, EA_SCALABLE, targetReg,
-                                                  simdVal.gtSimdScalableIndexF64[0], INS_OPTS_SCALABLE_S);
-                            }
                             else if ((simdVal.gtSimdScalableBaseType == TYP_FLOAT) &&
                                      emitter::canEncodeFloatImm8(simdVal.gtSimdScalableIndexF32[0]))
                             {
                                 emit->emitIns_R_F(INS_sve_fdup, EA_SCALABLE, targetReg,
-                                                  static_cast<double>(simdVal.gtSimdScalableIndexF32[0]),
+                                                  simdVal.gtSimdScalableIndexF32[0], INS_OPTS_SCALABLE_S);
+                            }
+                            else if ((simdVal.gtSimdScalableBaseType == TYP_DOUBLE) &&
+                                     emitter::canEncodeFloatImm8(simdVal.gtSimdScalableIndexF64[0]))
+                            {
+                                emit->emitIns_R_F(INS_sve_fdup, EA_SCALABLE, targetReg,
+                                                  static_cast<double>(simdVal.gtSimdScalableIndexF64[0]),
                                                   INS_OPTS_SCALABLE_D);
                             }
                             else
@@ -2546,16 +2546,16 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                             {
                                 emit->emitIns_R_I(INS_mov, EA_16BYTE, targetReg, index);
                             }
-                            else if ((simdVal.gtSimdScalableBaseType == TYP_DOUBLE) &&
-                                     emitter::emitIns_valid_imm_for_fmov(simdVal.gtSimdScalableIndexF64[0]))
-                            {
-                                emit->emitIns_R_F(INS_fmov, EA_16BYTE, targetReg, simdVal.gtSimdScalableIndexF64[0]);
-                            }
                             else if ((simdVal.gtSimdScalableBaseType == TYP_FLOAT) &&
                                      emitter::emitIns_valid_imm_for_fmov(simdVal.gtSimdScalableIndexF32[0]))
                             {
                                 emit->emitIns_R_F(INS_fmov, EA_16BYTE, targetReg,
                                                   static_cast<double>(simdVal.gtSimdScalableIndexF32[0]));
+                            }
+                            else if ((simdVal.gtSimdScalableBaseType == TYP_DOUBLE) &&
+                                     emitter::emitIns_valid_imm_for_fmov(simdVal.gtSimdScalableIndexF64[0]))
+                            {
+                                emit->emitIns_R_F(INS_fmov, EA_16BYTE, targetReg, simdVal.gtSimdScalableIndexF64[0]);
                             }
                             else
                             {
