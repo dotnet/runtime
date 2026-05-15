@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #ifndef _DEBUG
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && !defined(__clang__)
 // optimize for speed
 #pragma optimize( "t", on )
 #endif

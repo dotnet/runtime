@@ -13,7 +13,7 @@
 #define BITONIC_SORT_AVX512_INT64_T_H
 
 
-#ifdef __GNUC__
+#if defined(__GNUC__) || defined(__clang__)
 #ifdef __clang__
 #pragma clang attribute push (__attribute__((target("avx512f"))), apply_to = any(function))
 #else
@@ -1402,7 +1402,7 @@ public:
 #undef s2d
 #undef d2s
 
-#ifdef __GNUC__
+#if defined(__GNUC__) || defined(__clang__)
 #ifdef __clang__
 #pragma clang attribute pop
 #else

@@ -44,6 +44,7 @@
 #define DS_EXIT_BLOCKING_PAL_SECTION
 #endif
 
+
 #undef ep_rt_object_alloc
 #define ep_rt_object_alloc(obj_type) ((obj_type *)calloc(1, sizeof(obj_type)))
 
@@ -192,6 +193,7 @@ ds_ipc_reset (DiagnosticsIpc *ipc)
 	ipc->is_listening = false;
 }
 
+
 int32_t
 ds_ipc_poll (
 	DiagnosticsIpcPollHandle *poll_handles_data,
@@ -233,6 +235,7 @@ ds_ipc_poll (
 				poll_handles_data [i].stream->is_test_reading = true;
 				if (!success) {
 					DWORD error = GetLastError ();
+					bool poll_should_raise_error = false;
 					switch (error) {
 					case ERROR_IO_PENDING:
 						handles [i] = poll_handles_data [i].stream->overlap.hEvent;
@@ -240,11 +243,16 @@ ds_ipc_poll (
 					case ERROR_PIPE_NOT_CONNECTED:
 						poll_handles_data [i].events = (uint8_t)IPC_POLL_EVENTS_HANGUP;
 						result = -1;
-						ep_raise_error ();
+						poll_should_raise_error = true;
+						break;
 					default:
 						if (callback)
 							callback ("0 byte async read on client connection failed", error);
 						result = -1;
+						poll_should_raise_error = true;
+						break;
+					}
+					if (poll_should_raise_error) {
 						ep_raise_error ();
 					}
 				} else {
@@ -353,6 +361,7 @@ ep_on_error:
 
 	ep_exit_error_handler ();
 }
+
 
 bool
 ds_ipc_listen (
@@ -998,6 +1007,8 @@ ds_ipc_stream_to_string (
 	int32_t result = sprintf_s (buffer, buffer_len, "{ _hPipe = %d, _oOverlap.hEvent = %d }", (int32_t)(size_t)ipc_stream->pipe, (int32_t)(size_t)ipc_stream->overlap.hEvent);
 	return (result > 0 && result < (int32_t)buffer_len) ? result : 0;
 }
+
+
 #endif /* HOST_WIN32 */
 #endif /* ENABLE_PERFTRACING */
 

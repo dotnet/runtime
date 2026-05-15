@@ -28,7 +28,7 @@ struct ComMTMethodProps;
 class DispParamMarshaler;
 class MarshalInfo;
 class DispatchInfo;
-enum BinderMethodID;
+enum BinderMethodID : int;
 
 // An enumeration of the types of managed MemberInfo's. This must stay in synch with
 // the ones defined in MemberInfo.cs.

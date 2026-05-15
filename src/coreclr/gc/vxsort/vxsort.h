@@ -5,7 +5,7 @@
 #define VXSORT_VXSORT_H
 
 #if defined(TARGET_AMD64)
-#ifdef __GNUC__
+#if defined(__GNUC__) || defined(__clang__)
 #ifdef __clang__
 #pragma clang attribute push (__attribute__((target("popcnt"))), apply_to = any(function))
 #else

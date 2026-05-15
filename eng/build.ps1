@@ -21,6 +21,7 @@ Param(
   [switch]$usemonoruntime = $false,
   [switch]$ninja,
   [switch]$msbuild,
+  [switch]$clangcl,
   [string]$cmakeargs,
   [switch]$pgoinstrument,
   [string[]]$fsanitize,
@@ -98,6 +99,9 @@ function Get-Help() {
   Write-Host "  -cmakeargs                User-settable additional arguments passed to CMake."
   Write-Host "  -ninja                    Use Ninja to drive the native build. (default)"
   Write-Host "  -msbuild                  Use MSBuild to drive the native build. This is a no-op for Mono."
+  Write-Host "  -clangcl                  (Windows only) Build native components with LLVM clang-cl instead of MSVC."
+  Write-Host "                            Requires clang-cl.exe on PATH or under %ProgramFiles%\LLVM\bin"
+  Write-Host "                            (e.g. winget install LLVM.LLVM). Forces the Ninja generator."
   Write-Host "  -pgoinstrument            Build the CLR with PGO instrumentation."
   Write-Host "  -fsanitize (address)      Build the native components with the specified sanitizers."
   Write-Host "                            Sanitizers can be specified with a comma-separated list."
@@ -367,6 +371,7 @@ foreach ($argument in $PSBoundParameters.Keys)
     # The -ninja switch is a no-op since Ninja is the default generator on Windows.
     "ninja"                  { }
     "msbuild"                { $arguments += " /p:Ninja=false" }
+    "clangcl"                { $env:__UseClangCl = "1" }
     "pgoinstrument"          { $arguments += " /p:PgoInstrument=$($PSBoundParameters[$argument])"}
     # configuration and arch can be specified multiple times, so they should be no-ops here
     "configuration"          {}

@@ -995,6 +995,11 @@ if (MSVC)
   set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
   set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_DEBUG OFF)
   set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_CHECKED OFF)
+  if (CMAKE_C_COMPILER_ID STREQUAL "Clang")
+    # ThinLTO with clang-cl 22.x runs into LLVM compiler crashes (filed upstream as an LLVM bug)
+    # on a couple of CoreCLR functions. Disable IPO/LTO for clang-cl until the upstream fix lands.
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION OFF)
+  endif()
 
   if (CLR_CMAKE_HOST_ARCH_AMD64)
     # The generator expression in the following command means that the /homeparams option is added only for debug builds for C and C++ source files
@@ -1052,14 +1057,20 @@ if (MSVC)
     # would produce that diagnostic under clang-cl.
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-Wno-unused-command-line-argument>)
 
+    # Match the Unix Clang block's behaviour: continue compiling past the first error so we get a
+    # full picture in one build.
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-ferror-limit=4096>)
+
     # Suppress clang-only diagnostics that fire on patterns the runtime sources use widely
     # (MSVC extensions, stricter language conformance, etc.) and that cl.exe does not flag.
     # The list below was derived empirically: each entry corresponds to at least one warning in the
     # current sources. When adding/removing warnings, audit by replacing -Wno- with -Wno-error= and
     # rebuilding to see which categories actually fire.
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-Wno-microsoft>)
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-Wno-pragma-pack>)
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-Wno-unused-variable>)
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-Wno-unused-but-set-variable>)
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-Wno-unused-but-set-parameter>)
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-Wno-unused-function>)
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-Wno-unused-const-variable>)
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-Wno-unused-private-field>)
@@ -1067,6 +1078,13 @@ if (MSVC)
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-Wno-ignored-qualifiers>)
     add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-invalid-offsetof>)
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-Wno-missing-field-initializers>)
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-Wno-sign-compare>)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-deprecated-copy-with-user-provided-copy>)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-nontrivial-memcall>)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-unnecessary-virtual-specifier>)
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-Wno-duplicate-decl-specifier>)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-enum-compare>)
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-Wno-tautological-undefined-compare>)
   endif()
 endif (MSVC)
 

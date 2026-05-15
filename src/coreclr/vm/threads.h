@@ -3688,6 +3688,13 @@ public:
     static void StaticInitialize();
 
 #if defined(TARGET_WINDOWS)
+#if defined(TARGET_AMD64) && defined(__clang__)
+    // clang-cl requires an explicit target attribute to enable the shstk intrinsic _rdsspq;
+    // cl.exe always exposes it. Use a static helper at namespace scope so the attribute is
+    // unambiguously bound to the function definition.
+    [[gnu::target("shstk")]]
+    static bool AreShadowStacksEnabled();
+#else
     static bool AreShadowStacksEnabled()
     {
         LIMITED_METHOD_CONTRACT;
@@ -3702,6 +3709,7 @@ public:
         return false;
 #endif
     }
+#endif
 #endif
 
 #ifdef FEATURE_SPECIAL_USER_MODE_APC

@@ -6459,6 +6459,20 @@ BOOL dbgOnly_IsSpecialEEThread()
 
 #endif // _DEBUG
 
+#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64) && defined(__clang__)
+// Out-of-line definition for clang-cl: the [[gnu::target("shstk")]] attribute on the in-class
+// declaration enables the _rdsspq intrinsic only inside this function body.
+[[gnu::target("shstk")]]
+bool Thread::AreShadowStacksEnabled()
+{
+    LIMITED_METHOD_CONTRACT;
+    // The SSP is null when CET shadow stacks are not enabled. On processors that don't support
+    // shadow stacks, this is a no-op and the intrinsic returns 0. CET shadow stacks are enabled
+    // or disabled for all threads, so the result is the same from any thread.
+    return _rdsspq() != 0;
+}
+#endif
+
 void Thread::StaticInitialize()
 {
     WRAPPER_NO_CONTRACT;
