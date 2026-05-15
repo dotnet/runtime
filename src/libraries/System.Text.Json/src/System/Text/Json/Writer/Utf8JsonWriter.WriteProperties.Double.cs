@@ -141,7 +141,7 @@ namespace System.Text.Json
             }
         }
 
-        private void WriteNumberEscapeProperty(ReadOnlySpan<char> propertyName, double value, int firstEscapeIndexProp)
+        private unsafe void WriteNumberEscapeProperty(ReadOnlySpan<char> propertyName, double value, int firstEscapeIndexProp)
         {
             Debug.Assert(int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping >= propertyName.Length);
             Debug.Assert(firstEscapeIndexProp >= 0 && firstEscapeIndexProp < propertyName.Length);
@@ -164,7 +164,7 @@ namespace System.Text.Json
             }
         }
 
-        private void WriteNumberEscapeProperty(ReadOnlySpan<byte> utf8PropertyName, double value, int firstEscapeIndexProp)
+        private unsafe void WriteNumberEscapeProperty(ReadOnlySpan<byte> utf8PropertyName, double value, int firstEscapeIndexProp)
         {
             Debug.Assert(int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping >= utf8PropertyName.Length);
             Debug.Assert(firstEscapeIndexProp >= 0 && firstEscapeIndexProp < utf8PropertyName.Length);
@@ -367,7 +367,7 @@ namespace System.Text.Json
             BytesPending += bytesWritten;
         }
 
-        internal void WritePropertyName(double value)
+        internal unsafe void WritePropertyName(double value)
         {
             JsonWriterHelper.ValidateDouble(value);
             Span<byte> utf8PropertyName = stackalloc byte[JsonConstants.MaximumFormatDoubleLength];

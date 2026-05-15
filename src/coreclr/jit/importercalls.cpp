@@ -1102,10 +1102,14 @@ DEVIRT:
 
 DONE:
 
-#ifdef DEBUG
+#if defined(DEBUG) || defined(TARGET_WASM)
     // In debug we want to be able to register callsites with the EE.
     assert(call->AsCall()->callSig == nullptr);
-    call->AsCall()->callSig  = new (this, CMK_DebugOnly) CORINFO_SIG_INFO;
+#ifdef TARGET_WASM
+    call->AsCall()->callSig = new (this, CMK_ASTNode) CORINFO_SIG_INFO;
+#else
+    call->AsCall()->callSig = new (this, CMK_DebugOnly) CORINFO_SIG_INFO;
+#endif
     *call->AsCall()->callSig = *sig;
 #endif
 
@@ -3144,6 +3148,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 case NI_IsSupported_True:
                 {
                     assert(sig->numArgs == 0);
+                    impInlineRoot()->m_inlineStrategy->NoteHardwareIntrinsicCheckObserved();
                     return gtNewIconNode(true);
                 }
 
@@ -3155,6 +3160,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
                 case NI_IsSupported_Dynamic:
                 {
+                    impInlineRoot()->m_inlineStrategy->NoteHardwareIntrinsicCheckObserved();
                     break;
                 }
 
@@ -3162,6 +3168,8 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 {
                     CORINFO_CLASS_HANDLE typeArgHnd;
                     CorInfoType          simdBaseJitType;
+
+                    impInlineRoot()->m_inlineStrategy->NoteHardwareIntrinsicCheckObserved();
 
                     typeArgHnd      = info.compCompHnd->getTypeInstantiationArgument(clsHnd, 0);
                     simdBaseJitType = info.compCompHnd->getTypeForPrimitiveNumericClass(typeArgHnd);
@@ -4029,6 +4037,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             }
 
             case NI_System_ArgumentNullException_ThrowIfNull:
+            case NI_System_String_FastAllocateString:
                 isSpecial = true;
                 break;
 
@@ -10793,6 +10802,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         if (strcmp(methodName, "Equals") == 0)
                         {
                             result = NI_System_String_Equals;
+                        }
+                        else if (strcmp(methodName, "FastAllocateString") == 0)
+                        {
+                            result = NI_System_String_FastAllocateString;
                         }
                         else if (strcmp(methodName, "get_Chars") == 0)
                         {

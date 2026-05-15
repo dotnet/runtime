@@ -23,7 +23,7 @@ function(create_standalone_jit)
 
   if(TARGETDETAILS_OS STREQUAL "unix_osx" OR TARGETDETAILS_OS STREQUAL "unix_anyos")
     set(JIT_ARCH_LINK_LIBRARIES gcinfo_unix_${TARGETDETAILS_ARCH})
-  elseif(NOT ${TARGETDETAILS_ARCH} MATCHES "wasm")
+  else()
     set(JIT_ARCH_LINK_LIBRARIES gcinfo_${TARGETDETAILS_OS}_${TARGETDETAILS_ARCH})
   endif()
 
@@ -120,6 +120,8 @@ set( JIT_SOURCES
   fgstmt.cpp
   flowgraph.cpp
   forwardsub.cpp
+  gcdecode.cpp
+  gcencode.cpp
   gcinfo.cpp
   gentree.cpp
   gschecks.cpp
@@ -186,8 +188,6 @@ set ( JIT_NATIVE_TARGET_SOURCES
   lsra.cpp
   lsrabuild.cpp
   regMaskTPOps.cpp
-  gcdecode.cpp
-  gcencode.cpp
   unwind.cpp
 )
 
@@ -718,6 +718,10 @@ if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
     create_standalone_jit(TARGET clrjit_unix_riscv64_${ARCH_HOST_NAME} OS unix ARCH riscv64)
   endif(CLR_CMAKE_BUILD_COMMUNITY_ALTJITS EQUAL 1)
 endif (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
+
+if (CLR_CMAKE_TARGET_ARCH_WASM)
+  create_standalone_jit(TARGET clrjit_universal_wasm_${ARCH_HOST_NAME} OS universal ARCH wasm)
+endif (CLR_CMAKE_TARGET_ARCH_WASM)
 
 if (CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
   create_standalone_jit(TARGET clrjit_unix_loongarch64_${ARCH_HOST_NAME} OS unix ARCH loongarch64)

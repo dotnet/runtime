@@ -21,6 +21,10 @@ namespace ILCompiler.ReadyToRun.TypeSystem
             {
                 return method.GetUnboxedMethod().GetPrimaryMethodDesc();
             }
+            if (method.IsReturnDroppingAsyncThunk())
+            {
+                return method.GetTargetOfReturnDroppingAsyncThunk().GetPrimaryMethodDesc();
+            }
             return method switch
             {
                 PInvokeTargetNativeMethod pinvokeTarget => pinvokeTarget.Target,

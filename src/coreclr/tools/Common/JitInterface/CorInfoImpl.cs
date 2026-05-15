@@ -1870,6 +1870,7 @@ namespace Internal.JitInterface
             else
             {
                 recordToken = (_compilation.CompilationModuleGroup.VersionsWithType(owningType) || _compilation.CompilationModuleGroup.CrossModuleInlineableType(owningType)) && owningType is EcmaType;
+                recordToken &= methodIL.GetMethodILScopeDefinition() is IMethodTokensAreUseableInCompilation || methodIL.GetMethodILScopeDefinition() is IEcmaMethodIL;
             }
 #endif
 
@@ -1882,7 +1883,8 @@ namespace Internal.JitInterface
 #if READYTORUN
                 if (recordToken)
                 {
-                    ModuleToken methodModuleToken = HandleToModuleToken(ref pResolvedToken);
+                    ModuleToken methodModuleToken = HandleToModuleToken(ref pResolvedToken, out bool strippedInstantiation);
+                    Debug.Assert(!strippedInstantiation);
                     var resolver = _compilation.NodeFactory.Resolver;
                     resolver.AddModuleTokenForMethod(method, methodModuleToken);
                     ValidateSafetyOfUsingTypeEquivalenceInSignature(method.Signature);
@@ -1949,7 +1951,8 @@ namespace Internal.JitInterface
 #if READYTORUN
                 if (recordToken)
                 {
-                    _compilation.NodeFactory.Resolver.AddModuleTokenForType(type, HandleToModuleToken(ref pResolvedToken));
+                    _compilation.NodeFactory.Resolver.AddModuleTokenForType(type, HandleToModuleToken(ref pResolvedToken, out bool strippedInstantiation));
+                    Debug.Assert(!strippedInstantiation);
                 }
 #endif
 
@@ -4119,12 +4122,6 @@ namespace Internal.JitInterface
         {
             // We could add some logging here, but for now it's unnecessary.
             // CompileMethod is going to fail with this CorJitResult anyway.
-        }
-
-#pragma warning disable CA1822 // Mark members as static
-        private void recordCallSite(uint instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_STRUCT_* methodHandle)
-#pragma warning restore CA1822 // Mark members as static
-        {
         }
 
         private ArrayBuilder<Relocation> _codeRelocs;
