@@ -248,15 +248,15 @@ namespace Mono.Linker
         /// <summary>
         /// Schedules a method for reflection-visible marking by MarkStep.
         /// </summary>
-        public void MarkPendingReflectionVisibleMethod(MethodDefinition method) => pending_reflection_visible_methods.Add(method);
+        internal void MarkPendingReflectionVisibleMethod(MethodDefinition method) => pending_reflection_visible_methods.Add(method);
 
         /// <summary>
         /// Schedules a field for reflection-visible marking by MarkStep.
         /// </summary>
-        public void MarkPendingReflectionVisibleField(FieldDefinition field) => pending_reflection_visible_fields.Add(field);
+        internal void MarkPendingReflectionVisibleField(FieldDefinition field) => pending_reflection_visible_fields.Add(field);
 
-        public HashSet<MethodDefinition> PendingReflectionVisibleMethods => pending_reflection_visible_methods;
-        public HashSet<FieldDefinition> PendingReflectionVisibleFields => pending_reflection_visible_fields;
+        internal HashSet<MethodDefinition> PendingReflectionVisibleMethods => pending_reflection_visible_methods;
+        internal HashSet<FieldDefinition> PendingReflectionVisibleFields => pending_reflection_visible_fields;
 
         public bool SetProcessed(IMetadataTokenProvider provider)
         {
