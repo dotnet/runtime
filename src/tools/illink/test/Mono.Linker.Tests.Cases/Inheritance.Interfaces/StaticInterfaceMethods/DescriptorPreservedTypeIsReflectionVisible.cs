@@ -17,6 +17,7 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods
 	/// MethodBase.GetCurrentMethod().DeclaringType on a descriptor-preserved method.
 	/// </summary>
 	[SetupLinkerDescriptorFile ("DescriptorPreservedTypeIsReflectionVisible.xml")]
+	[ExpectedNoWarnings]
 	public class DescriptorPreservedTypeIsReflectionVisible
 	{
 		[Kept]
