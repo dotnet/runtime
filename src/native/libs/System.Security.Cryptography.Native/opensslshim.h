@@ -751,7 +751,6 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(SSL_get_certificate) \
     REQUIRED_FUNCTION(SSL_new) \
     REQUIRED_FUNCTION(SSL_peek) \
-    REQUIRED_FUNCTION(SSL_pending) \
     REQUIRED_FUNCTION(SSL_read) \
     REQUIRED_FUNCTION(SSL_renegotiate) \
     REQUIRED_FUNCTION(SSL_renegotiate_pending) \
@@ -1330,7 +1329,6 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define SSL_is_init_finished SSL_is_init_finished_ptr
 #define SSL_new SSL_new_ptr
 #define SSL_peek SSL_peek_ptr
-#define SSL_pending SSL_pending_ptr
 #define SSL_read SSL_read_ptr
 #define SSL_renegotiate SSL_renegotiate_ptr
 #define SSL_renegotiate_pending SSL_renegotiate_pending_ptr

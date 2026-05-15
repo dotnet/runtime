@@ -80,9 +80,6 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslWrite", SetLastError = true)]
         internal static partial int SslWrite(SafeSslHandle ssl, ref byte buf, int num, out SslErrorCode error);
 
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslPending")]
-        internal static partial int SslPending(SafeSslHandle ssl);
-
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslRead", SetLastError = true)]
         internal static partial int SslRead(SafeSslHandle ssl, ref byte buf, int num, out SslErrorCode error);
 

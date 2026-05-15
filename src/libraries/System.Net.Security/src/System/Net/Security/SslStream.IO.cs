@@ -32,12 +32,6 @@ namespace System.Net.Security
 
         private bool _receivedEOF;
 
-        // True when the SSL PAL has plaintext buffered internally (residual from a direct-decrypt SSL_read
-        // whose destination span was smaller than the record's plaintext). When set, the next read must
-        // drain the residual via DecryptMessageDirect with empty input before issuing more network IO.
-        // Guarded by _handshakeLock.
-        private bool _palHasPendingPlaintext;
-
         // Used by Telemetry to ensure we log connection close exactly once
         private enum ConnectionStatus
         {
@@ -221,7 +215,7 @@ namespace System.Net.Security
             token.RentBuffer = true;
             try
             {
-                if (_buffer.ActiveLength > 0 || _palHasPendingPlaintext)
+                if (_buffer.ActiveLength > 0)
                 {
                     throw new InvalidOperationException(SR.net_ssl_renegotiate_buffer);
                 }
@@ -851,75 +845,6 @@ namespace System.Net.Security
             return frameSize;
         }
 
-        // Direct-decrypt variant: when the PAL supports it and we have a non-empty user destination,
-        // decrypt plaintext directly into the user buffer instead of into _buffer. Returns bytes written
-        // to `output` plus any extra reauth bytes via `extraBuffer`.
-        private SecurityStatusPal DecryptDataDirect(int frameSize, Span<byte> output, out int outputWritten, out byte[]? extraBuffer)
-        {
-            Debug.Assert(SslStreamPal.IsDirectDecryptSupported);
-            Debug.Assert(output.Length > 0);
-            outputWritten = 0;
-            extraBuffer = null;
-
-            SecurityStatusPal status;
-            lock (_handshakeLock)
-            {
-                ThrowIfExceptionalOrNotAuthenticated();
-
-                status = SslStreamPal.DecryptMessageDirect(_securityContext!, _buffer.EncryptedReadOnlySpan.Slice(0, frameSize), output, out int written, out bool morePending);
-
-                // OpenSSL consumed the full frame regardless of status; discard from _buffer.
-                _buffer.OnDecrypted(0, 0, frameSize);
-
-                if (status.ErrorCode == SecurityStatusPalErrorCode.OK)
-                {
-                    outputWritten = written;
-                    _palHasPendingPlaintext = morePending;
-                }
-                else
-                {
-                    // Non-OK status: do NOT expose direct-written bytes to the caller via outputWritten.
-                    // The existing error handler in ReadAsyncInternal expects any plaintext produced by a
-                    // failed decrypt to live in `extraBuffer` (for reauth) rather than the user span.
-                    if (written > 0)
-                    {
-                        extraBuffer = new byte[written];
-                        output.Slice(0, written).CopyTo(extraBuffer);
-                    }
-                    // Clear any pending plaintext - on non-OK the morePending semantics are not meaningful.
-                    _palHasPendingPlaintext = false;
-                }
-
-                if (status.ErrorCode == SecurityStatusPalErrorCode.Renegotiate)
-                {
-                    if (_sslAuthenticationOptions.AllowRenegotiation || SslProtocol == SslProtocols.Tls13 || _nestedAuth != NestedState.StreamNotInUse)
-                    {
-                        _handshakeWaiter = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-                    }
-                }
-            }
-
-            return status;
-        }
-
-        // Drain residual plaintext buffered inside the PAL (Unix only). Returns bytes written to `output`.
-        private SecurityStatusPal DrainPendingPlaintextDirect(Span<byte> output, out int outputWritten)
-        {
-            Debug.Assert(SslStreamPal.IsDirectDecryptSupported);
-            Debug.Assert(output.Length > 0);
-
-            SecurityStatusPal status;
-            lock (_handshakeLock)
-            {
-                ThrowIfExceptionalOrNotAuthenticated();
-
-                status = SslStreamPal.DecryptMessageDirect(_securityContext!, ReadOnlySpan<byte>.Empty, output, out outputWritten, out bool morePending);
-                _palHasPendingPlaintext = (status.ErrorCode == SecurityStatusPalErrorCode.OK) && morePending;
-            }
-
-            return status;
-        }
-
         private SecurityStatusPal DecryptData(int frameSize)
         {
             SecurityStatusPal status;
@@ -1000,23 +925,6 @@ namespace System.Net.Security
                     buffer = buffer.Slice(processedLength);
                 }
 
-                // Drain any plaintext the PAL has buffered internally from a prior direct decrypt
-                // whose user-buffer was smaller than the record's plaintext.
-                if (SslStreamPal.IsDirectDecryptSupported && _palHasPendingPlaintext && !buffer.IsEmpty)
-                {
-                    SecurityStatusPal drainStatus = DrainPendingPlaintextDirect(buffer.Span, out int drained);
-                    if (drainStatus.ErrorCode != SecurityStatusPalErrorCode.OK)
-                    {
-                        throw new IOException(SR.net_io_decrypt, SslStreamPal.GetException(drainStatus));
-                    }
-                    processedLength += drained;
-                    buffer = buffer.Slice(drained);
-                    if (buffer.IsEmpty)
-                    {
-                        return processedLength;
-                    }
-                }
-
                 if (_receivedEOF && nextTlsFrameLength == UnknownTlsFrameLength)
                 {
                     // there should be no frames waiting for processing
@@ -1036,28 +944,11 @@ namespace System.Net.Security
                         break;
                     }
 
-                    SecurityStatusPal status;
-                    byte[]? extraBuffer = null;
-                    int directWritten = 0;
-
-                    // Use direct-decrypt only when the PAL supports it, we have user buffer space, and
-                    // no concurrent re-handshake is in progress (which would change the SSL state machine).
-                    bool useDirect = SslStreamPal.IsDirectDecryptSupported
-                                     && !buffer.IsEmpty
-                                     && _handshakeWaiter == null;
-
-                    if (useDirect)
-                    {
-                        status = DecryptDataDirect(payloadBytes, buffer.Span, out directWritten, out extraBuffer);
-                    }
-                    else
-                    {
-                        status = DecryptData(payloadBytes);
-                    }
-
+                    SecurityStatusPal status = DecryptData(payloadBytes);
                     if (status.ErrorCode != SecurityStatusPalErrorCode.OK)
                     {
-                        if (!useDirect && _buffer.DecryptedLength != 0)
+                        byte[]? extraBuffer = null;
+                        if (_buffer.DecryptedLength != 0)
                         {
                             extraBuffer = new byte[_buffer.DecryptedLength];
                             _buffer.DecryptedSpan.CopyTo(extraBuffer);
@@ -1088,19 +979,7 @@ namespace System.Net.Security
                         }
                     }
 
-                    if (useDirect)
-                    {
-                        if (directWritten > 0)
-                        {
-                            processedLength += directWritten;
-                            buffer = buffer.Slice(directWritten);
-                            if (buffer.IsEmpty)
-                            {
-                                break;
-                            }
-                        }
-                    }
-                    else if (_buffer.DecryptedLength > 0)
+                    if (_buffer.DecryptedLength > 0)
                     {
                         // This will either copy data from rented buffer or adjust final buffer as needed.
                         // In both cases _decryptedBytesOffset and _decryptedBytesCount will be updated as needed.

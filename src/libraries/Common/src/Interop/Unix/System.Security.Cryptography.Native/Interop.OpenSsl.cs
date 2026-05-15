@@ -19,7 +19,6 @@ using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
-using System.Threading;
 using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
@@ -837,6 +836,7 @@ internal static partial class Interop
                     outToken.Size += drained;
                 }
             }
+
             return errorCode;
         }
 
@@ -859,6 +859,7 @@ internal static partial class Interop
             {
                 return;
             }
+
             outToken.EnsureAvailableSpace(spillLen);
             Span<byte> dst = outToken.AvailableSpan;
             fixed (byte* dstPtr = dst)
@@ -868,30 +869,21 @@ internal static partial class Interop
             }
         }
 
-        internal static unsafe int Decrypt(SafeSslHandle context, ReadOnlySpan<byte> input, Span<byte> output, out Ssl.SslErrorCode errorCode)
+        internal static unsafe int Decrypt(SafeSslHandle context, Span<byte> buffer, out Ssl.SslErrorCode errorCode)
         {
-            Debug.Assert(output.Length > 0, "Decrypt output buffer must be non-empty");
-
             int retVal;
-            fixed (byte* inputPtr = input)
+            fixed (byte* bufPtr = buffer)
             {
-                if (input.Length > 0)
-                {
-                    Ssl.BioSetReadWindow(context.InputBio!, inputPtr, input.Length);
-                }
+                Ssl.BioSetReadWindow(context.InputBio!, bufPtr, buffer.Length);
                 try
                 {
-                    retVal = Ssl.SslRead(context, ref MemoryMarshal.GetReference(output), output.Length, out errorCode);
+                    retVal = Ssl.SslRead(context, ref MemoryMarshal.GetReference(buffer), buffer.Length, out errorCode);
                 }
                 finally
                 {
-                    if (input.Length > 0)
-                    {
-                        Ssl.BioClearReadWindow(context.InputBio!);
-                    }
+                    Ssl.BioClearReadWindow(context.InputBio!);
                 }
             }
-
             if (retVal > 0)
             {
                 return retVal;

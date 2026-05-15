@@ -81,40 +81,12 @@ namespace System.Net.Security
 
         public static SecurityStatusPal DecryptMessage(SafeDeleteSslContext securityContext, Span<byte> buffer, out int offset, out int count)
         {
-            // In-place decrypt: source ciphertext span doubles as plaintext destination.
-            return DecryptMessageDirectCore((SafeSslHandle)securityContext, buffer, buffer, out offset, out count, out _);
-        }
-
-        // True on this platform: Unix supports decrypting directly into a caller-provided output buffer,
-        // avoiding a copy from the internal SslStream encrypted buffer to the user's Memory<byte>.
-        internal const bool IsDirectDecryptSupported = true;
-
-        public static SecurityStatusPal DecryptMessageDirect(
-            SafeDeleteSslContext securityContext,
-            ReadOnlySpan<byte> input,
-            Span<byte> output,
-            out int outputWritten,
-            out bool morePending)
-        {
-            Debug.Assert(output.Length > 0);
-            return DecryptMessageDirectCore((SafeSslHandle)securityContext, input, output, out _, out outputWritten, out morePending);
-        }
-
-        private static SecurityStatusPal DecryptMessageDirectCore(
-            SafeSslHandle sslHandle,
-            ReadOnlySpan<byte> input,
-            Span<byte> output,
-            out int offset,
-            out int count,
-            out bool morePending)
-        {
             offset = 0;
             count = 0;
-            morePending = false;
 
             try
             {
-                int resultSize = Interop.OpenSsl.Decrypt(sslHandle, input, output, out Interop.Ssl.SslErrorCode errorCode);
+                int resultSize = Interop.OpenSsl.Decrypt((SafeSslHandle)securityContext, buffer, out Interop.Ssl.SslErrorCode errorCode);
 
                 SecurityStatusPal retVal = MapNativeErrorCode(errorCode);
 
@@ -122,11 +94,6 @@ namespace System.Net.Security
                     retVal.ErrorCode == SecurityStatusPalErrorCode.Renegotiate)
                 {
                     count = resultSize;
-                }
-
-                if (resultSize > 0)
-                {
-                    morePending = Interop.Ssl.SslPending(sslHandle) > 0;
                 }
 
                 return retVal;

@@ -409,11 +409,6 @@ int32_t CryptoNative_SslWrite(SSL* ssl, const void* buf, int32_t num, int32_t* e
     return result;
 }
 
-int32_t CryptoNative_SslPending(SSL* ssl)
-{
-    return SSL_pending(ssl);
-}
-
 int32_t CryptoNative_SslRead(SSL* ssl, void* buf, int32_t num, int32_t* error)
 {
     ERR_clear_error();

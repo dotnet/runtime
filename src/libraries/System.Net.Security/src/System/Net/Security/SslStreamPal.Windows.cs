@@ -56,7 +56,6 @@ namespace System.Net.Security
         internal const bool CertValidationInCallback = false;
         internal const bool CanEncryptEmptyMessage = true;
         internal const bool CanGenerateCustomAlerts = true;
-        internal const bool IsDirectDecryptSupported = false;
 
         private static readonly byte[] s_sessionTokenBuffer = InitSessionTokenBuffer();
 
@@ -653,23 +652,6 @@ namespace System.Net.Security
                 return SecurityStatusAdapterPal.GetSecurityStatusPalFromInterop(errorCode);
             }
         }
-        public static SecurityStatusPal DecryptMessageDirect(
-            SafeDeleteSslContext securityContext,
-            ReadOnlySpan<byte> input,
-            Span<byte> output,
-            out int outputWritten,
-            out bool morePending)
-        {
-            // Direct decrypt is not supported on this platform.
-            // Callers must gate on SslStreamPal.IsDirectDecryptSupported before invoking this method.
-            _ = securityContext;
-            _ = input;
-            _ = output;
-            outputWritten = 0;
-            morePending = false;
-            throw new NotSupportedException();
-        }
-
 
         public static SecurityStatusPal ApplyAlertToken(SafeDeleteSslContext? securityContext, TlsAlertType alertType, TlsAlertMessage alertMessage)
         {

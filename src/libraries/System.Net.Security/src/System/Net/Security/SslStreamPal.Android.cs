@@ -27,7 +27,6 @@ namespace System.Net.Security
         // depends on SslStream calling HandshakeInternal one last time when tearing down the connection
         // due to handshake failures.
         internal const bool CanGenerateCustomAlerts = true;
-        internal const bool IsDirectDecryptSupported = false;
 
         public static void VerifyPackageInfo()
         {
@@ -147,23 +146,6 @@ namespace System.Net.Security
                 return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, e);
             }
         }
-        public static SecurityStatusPal DecryptMessageDirect(
-            SafeDeleteSslContext securityContext,
-            ReadOnlySpan<byte> input,
-            Span<byte> output,
-            out int outputWritten,
-            out bool morePending)
-        {
-            // Direct decrypt is not supported on this platform.
-            // Callers must gate on SslStreamPal.IsDirectDecryptSupported before invoking this method.
-            _ = securityContext;
-            _ = input;
-            _ = output;
-            outputWritten = 0;
-            morePending = false;
-            throw new NotSupportedException();
-        }
-
 
         public static ChannelBinding? QueryContextChannelBinding(
             SafeDeleteContext securityContext,
