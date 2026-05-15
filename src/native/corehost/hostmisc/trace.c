@@ -74,17 +74,20 @@ static void trace_lock_release(void)
     minipal_mutex_leave(&g_trace_lock);
 }
 
-static bool get_host_env_var(const pal_char_t* name, pal_char_t* value, size_t value_len)
+// Reads DOTNET_HOST_<name>, falling back to COREHOST_<name> for compat.
+// Returns a heap-allocated NUL-terminated value, or NULL if neither variable
+// is set. Caller must free() the returned pointer.
+static pal_char_t* get_host_env_var(const pal_char_t* name)
 {
-    // DOTNET_HOST_* takes precedence over the legacy COREHOST_* prefix.
-    pal_char_t dotnet_host_name[256];
-    pal_str_printf(dotnet_host_name, ARRAY_SIZE(dotnet_host_name), _X("DOTNET_HOST_%s"), name);
-    if (pal_getenv(dotnet_host_name, value, value_len))
-        return true;
+    pal_char_t full_name[256];
 
-    pal_char_t corehost_name[256];
-    pal_str_printf(corehost_name, ARRAY_SIZE(corehost_name), _X("COREHOST_%s"), name);
-    return pal_getenv(corehost_name, value, value_len);
+    pal_str_printf(full_name, ARRAY_SIZE(full_name), _X("DOTNET_HOST_%s"), name);
+    pal_char_t* value = pal_getenv(full_name);
+    if (value != NULL)
+        return value;
+
+    pal_str_printf(full_name, ARRAY_SIZE(full_name), _X("COREHOST_%s"), name);
+    return pal_getenv(full_name);
 }
 
 static void trace_format_timestamp(pal_char_t* buffer, size_t buffer_len)
@@ -192,11 +195,13 @@ static void trace_out_vprint_line(const pal_char_t* format, va_list vl)
 //
 void trace_setup(void)
 {
-    pal_char_t trace_str[64];
-    if (!get_host_env_var(_X("TRACE"), trace_str, ARRAY_SIZE(trace_str)))
+    pal_char_t* trace_str = get_host_env_var(_X("TRACE"));
+    if (trace_str == NULL)
         return;
 
     int trace_val = pal_xtoi(trace_str);
+    free(trace_str);
+
     if (trace_val > 0)
     {
         if (trace_enable())
@@ -211,8 +216,8 @@ void trace_setup(void)
 bool trace_enable(void)
 {
     bool file_open_error = false;
-    pal_char_t tracefile_str[APPHOST_PATH_MAX];
-    tracefile_str[0] = _X('\0');
+    pal_char_t* tracefile_str = NULL;
+    pal_char_t* tracefile_path_to_open = NULL;
 
     if (g_trace_verbosity)
         return false;
@@ -220,8 +225,10 @@ bool trace_enable(void)
     trace_lock_acquire();
 
     g_trace_file = stderr; // Trace to stderr by default.
-    if (get_host_env_var(_X("TRACEFILE"), tracefile_str, ARRAY_SIZE(tracefile_str)))
+    tracefile_str = get_host_env_var(_X("TRACEFILE"));
+    if (tracefile_str != NULL)
     {
+        tracefile_path_to_open = tracefile_str;
         if (pal_directory_exists(tracefile_str))
         {
             // If the trace file path is a directory, construct a file path:
@@ -259,25 +266,17 @@ bool trace_enable(void)
             // Treat truncation as an open failure rather than silently using a
             // bad path.
             if (written < 0 || (size_t)written >= ARRAY_SIZE(trace_path))
-            {
                 file_open_error = true;
-            }
             else
-            {
-                size_t path_len = (size_t)written;
-                if (path_len < ARRAY_SIZE(tracefile_str))
-                    memcpy(tracefile_str, trace_path, (path_len + 1) * sizeof(pal_char_t));
-                else
-                    file_open_error = true;
-            }
+                tracefile_path_to_open = trace_path;
         }
 
         if (!file_open_error)
         {
 #if defined(_WIN32)
-            FILE* tracefile = _wfsopen(tracefile_str, L"a", _SH_DENYNO);
+            FILE* tracefile = _wfsopen(tracefile_path_to_open, L"a", _SH_DENYNO);
 #else
-            FILE* tracefile = fopen(tracefile_str, "a");
+            FILE* tracefile = fopen(tracefile_path_to_open, "a");
 #endif
             if (tracefile != NULL)
             {
@@ -291,17 +290,23 @@ bool trace_enable(void)
         }
     }
 
-    pal_char_t trace_verbosity_str[64];
-    if (!get_host_env_var(_X("TRACE_VERBOSITY"), trace_verbosity_str, ARRAY_SIZE(trace_verbosity_str)))
+    pal_char_t* trace_verbosity_str = get_host_env_var(_X("TRACE_VERBOSITY"));
+    if (trace_verbosity_str == NULL)
+    {
         g_trace_verbosity = TRACE_VERBOSITY_VERBOSE; // Verbose trace by default.
+    }
     else
+    {
         g_trace_verbosity = pal_xtoi(trace_verbosity_str);
+        free(trace_verbosity_str);
+    }
 
     trace_lock_release();
 
     if (file_open_error)
         trace_error(_X("Unable to open specified trace file for writing: %s"), tracefile_str);
 
+    free(tracefile_str);
     return true;
 }
 

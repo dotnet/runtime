@@ -66,20 +66,7 @@ typedef char pal_char_t;
 #define pal_str_vprintf(buf, count, fmt, args) _vsnwprintf_s(buf, count, _TRUNCATE, fmt, args)
 #define pal_strlen_vprintf(fmt, args) _vscwprintf(fmt, args)
 #define pal_str_printf(buf, count, fmt, ...) _snwprintf_s(buf, count, _TRUNCATE, fmt, ##__VA_ARGS__)
-
-// Static inline helpers (header-only; usable from both C and C++).
-static inline bool pal_getenv(const pal_char_t* name, pal_char_t* recv, size_t recv_len)
-{
-    if (recv_len == 0)
-        return false;
-    recv[0] = L'\0';
-    DWORD result = GetEnvironmentVariableW(name, recv, (DWORD)recv_len);
-    // result > 0 chars written on success (not counting NUL); result >= recv_len
-    // means the buffer was too small (returns required size in that case).
-    return result > 0 && result < (DWORD)recv_len;
-}
-
-static inline int pal_xtoi(const pal_char_t* s) { return _wtoi(s); }
+#define pal_xtoi(s) _wtoi(s)
 
 #else // !_WIN32
 
@@ -110,6 +97,7 @@ static inline int pal_xtoi(const pal_char_t* s) { return _wtoi(s); }
 #define pal_str_vprintf(buf, count, fmt, args) vsnprintf(buf, (size_t)(count), fmt, args)
 #define pal_strlen_vprintf(fmt, args) vsnprintf(NULL, 0, fmt, args)
 #define pal_str_printf(buf, count, fmt, ...) snprintf(buf, (size_t)(count), fmt, ##__VA_ARGS__)
+#define pal_xtoi(s) atoi(s)
 
 #define __cdecl    /* nothing */
 #define __stdcall  /* nothing */
@@ -123,15 +111,14 @@ static inline int pal_xtoi(const pal_char_t* s) { return _wtoi(s); }
 extern "C" {
 #endif
 
-// pal_char_t-based C-callable APIs. Out parameters write a NUL-terminated
-// string and the function returns false on failure (including when recv is
-// too small to hold the result).
+// pal_char_t-based C-callable APIs.
 bool pal_get_own_executable_path(pal_char_t* recv, size_t recv_len);
 bool pal_directory_exists(const pal_char_t* path);
-#if !defined(_WIN32)
-bool pal_getenv(const pal_char_t* name, pal_char_t* recv, size_t recv_len);
-int  pal_xtoi(const pal_char_t* input);
-#endif
+
+// Returns a heap-allocated, NUL-terminated copy of the named environment
+// variable's value, or NULL if the variable is unset or set to the empty
+// string. Caller must free() the returned pointer.
+pal_char_t* pal_getenv(const pal_char_t* name);
 
 #ifdef __cplusplus
 }

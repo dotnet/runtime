@@ -42,24 +42,15 @@ bool pal_directory_exists(const pal_char_t* path)
     return S_ISDIR(sb.st_mode);
 }
 
-bool pal_getenv(const pal_char_t* name, pal_char_t* recv, size_t recv_len)
+pal_char_t* pal_getenv(const pal_char_t* name)
 {
-    if (recv_len > 0)
-        recv[0] = '\0';
-
     const char* result = getenv(name);
     if (result == NULL || result[0] == '\0')
-        return false;
+        return NULL;
 
-    size_t len = strlen(result);
-    if (len >= recv_len)
-        return false;
-
-    memcpy(recv, result, len + 1);
-    return true;
-}
-
-int pal_xtoi(const pal_char_t* input)
-{
-    return atoi(input);
+    size_t needed = strlen(result) + 1;
+    pal_char_t* dup = (pal_char_t*)malloc(needed * sizeof(pal_char_t));
+    if (dup != NULL)
+        memcpy(dup, result, needed);
+    return dup;
 }
