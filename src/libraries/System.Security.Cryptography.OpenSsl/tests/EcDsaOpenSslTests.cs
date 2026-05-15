@@ -137,17 +137,11 @@ namespace System.Security.Cryptography.EcDsa.OpenSsl.Tests
         [InlineData(ECDSA_P521_OID_VALUE, 521)]
         public void CtorEvpPKeyHandle(string oid, int expectedKeySize)
         {
-            int rc = Interop.Crypto.EvpPKeyGenerateByEcKeyOid(out SafeEvpPKeyHandle pkey, oid);
-
-            if (!PlatformDetection.IsOpenSsl3)
-            {
-                Assert.Equal(0, rc);
-                pkey.Dispose();
-                return;
-            }
+            int rc = Interop.Crypto.EvpPKeyGenerateByEcCurveOid(out SafeEvpPKeyHandle pkey, oid, out int keySize);
 
             Assert.Equal(1, rc);
             Assert.False(pkey.IsInvalid);
+            Assert.Equal(expectedKeySize, keySize);
 
             using (pkey)
             using (ECDsaOpenSsl e = new ECDsaOpenSsl(pkey))
@@ -328,7 +322,7 @@ namespace System.Security.Cryptography.EcDsa.OpenSsl.Tests
         [InlineData(ECDSA_P256_OID_VALUE, 256)]
         [InlineData(ECDSA_P384_OID_VALUE, 384)]
         [InlineData(ECDSA_P521_OID_VALUE, 521)]
-        public void EcKeyAndEvpPKeyProduceSameExport(string oid, int expectedKeySize)
+        public void CtorEcKeyExportMatchesReimport(string oid, int expectedKeySize)
         {
             IntPtr ecKey = Interop.Crypto.EcKeyCreateByOid(oid);
             Assert.NotEqual(IntPtr.Zero, ecKey);
@@ -364,7 +358,7 @@ namespace System.Security.Cryptography.EcDsa.OpenSsl.Tests
         [InlineData(ECDSA_P256_OID_VALUE)]
         [InlineData(ECDSA_P384_OID_VALUE)]
         [InlineData(ECDSA_P521_OID_VALUE)]
-        public void EcKeyAndEvpPKeySignVerifyCrossCompatible(string oid)
+        public void CtorEcKeySignVerifyCrossCompatible(string oid)
         {
             byte[] data = ByteUtils.RepeatByte(0x42, 64);
 
@@ -392,26 +386,26 @@ namespace System.Security.Cryptography.EcDsa.OpenSsl.Tests
         }
 
         [Fact]
-        public void ExplicitCurveEcKeyAndEvpPKeyProduceSameExport()
+        public void ExplicitCurveImportExportProducesSameExplicitParams()
         {
             ECCurve explicitCurve = EccTestData.GetNistP256ExplicitCurve();
 
-            using (ECDsa ecKeyBacked = ECDsa.Create(explicitCurve))
+            using (ECDsa original = ECDsa.Create(explicitCurve))
             {
-                ECParameters explicitParams = ecKeyBacked.ExportExplicitParameters(true);
+                ECParameters explicitParams = original.ExportExplicitParameters(true);
 
-                using (ECDsa evpBacked = ECDsa.Create(explicitParams))
+                using (ECDsa reimported = ECDsa.Create(explicitParams))
                 {
-                    ECParameters evpExplicitParams = evpBacked.ExportExplicitParameters(true);
+                    ECParameters reimportedParams = reimported.ExportExplicitParameters(true);
 
-                    ComparePublicKey(explicitParams.Q, evpExplicitParams.Q);
-                    ComparePrivateKey(explicitParams, evpExplicitParams);
+                    ComparePublicKey(explicitParams.Q, reimportedParams.Q);
+                    ComparePrivateKey(explicitParams, reimportedParams);
                 }
             }
         }
 
         [Fact]
-        public void ExplicitCurveEcKeyAndEvpPKeySignVerifyCrossCompatible()
+        public void ExplicitCurveImportAndOriginalSignVerifyCrossCompatible()
         {
             byte[] data = ByteUtils.RepeatByte(0x42, 64);
             ECCurve explicitCurve = EccTestData.GetNistP256ExplicitCurve();
@@ -449,7 +443,7 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_OpenSslVersionNumber")]
         internal static extern uint OpenSslVersionNumber();
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPKeyGenerateByEcKeyOid", CharSet = CharSet.Ansi)]
-        internal static extern int EvpPKeyGenerateByEcKeyOid(out SafeEvpPKeyHandle pkey, string oid);
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPKeyGenerateByEcCurveOid", CharSet = CharSet.Ansi)]
+        internal static extern int EvpPKeyGenerateByEcCurveOid(out SafeEvpPKeyHandle pkey, string oid, out int keySize);
     }
 }

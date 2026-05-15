@@ -135,17 +135,11 @@ namespace System.Security.Cryptography.EcDiffieHellman.OpenSsl.Tests
         [InlineData(ECDSA_P521_OID_VALUE, 521)]
         public void CtorEvpPKeyHandle(string oid, int expectedKeySize)
         {
-            int rc = Interop.Crypto.EvpPKeyGenerateByEcKeyOid(out SafeEvpPKeyHandle pkey, oid);
-
-            if (!PlatformDetection.IsOpenSsl3)
-            {
-                Assert.Equal(0, rc);
-                pkey.Dispose();
-                return;
-            }
+            int rc = Interop.Crypto.EvpPKeyGenerateByEcCurveOid(out SafeEvpPKeyHandle pkey, oid, out int keySize);
 
             Assert.Equal(1, rc);
             Assert.False(pkey.IsInvalid);
+            Assert.Equal(expectedKeySize, keySize);
 
             using (pkey)
             using (ECDiffieHellmanOpenSsl e = new ECDiffieHellmanOpenSsl(pkey))
@@ -309,7 +303,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.OpenSsl.Tests
         [InlineData(ECDSA_P256_OID_VALUE, 256)]
         [InlineData(ECDSA_P384_OID_VALUE, 384)]
         [InlineData(ECDSA_P521_OID_VALUE, 521)]
-        public void EcKeyAndEvpPKeyProduceSameExport(string oid, int expectedKeySize)
+        public void CtorEcKeyExportMatchesReimport(string oid, int expectedKeySize)
         {
             IntPtr ecKey = Interop.Crypto.EcKeyCreateByOid(oid);
             Assert.NotEqual(IntPtr.Zero, ecKey);
@@ -345,7 +339,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.OpenSsl.Tests
         [InlineData(ECDSA_P256_OID_VALUE)]
         [InlineData(ECDSA_P384_OID_VALUE)]
         [InlineData(ECDSA_P521_OID_VALUE)]
-        public void EcKeyAndEvpPKeyDeriveCrossCompatible(string oid)
+        public void CtorEcKeyDeriveCrossCompatibleWithReimport(string oid)
         {
             IntPtr rawKey1 = Interop.Crypto.EcKeyCreateByOid(oid);
             Assert.NotEqual(IntPtr.Zero, rawKey1);
@@ -382,26 +376,26 @@ namespace System.Security.Cryptography.EcDiffieHellman.OpenSsl.Tests
         }
 
         [Fact]
-        public void ExplicitCurveEcKeyAndEvpPKeyProduceSameExport()
+        public void ExplicitCurveImportExportProducesSameExplicitParams()
         {
             ECCurve explicitCurve = EccTestData.GetNistP256ExplicitCurve();
 
-            using (ECDiffieHellman ecKeyBacked = ECDiffieHellman.Create(explicitCurve))
+            using (ECDiffieHellman original = ECDiffieHellman.Create(explicitCurve))
             {
-                ECParameters explicitParams = ecKeyBacked.ExportExplicitParameters(true);
+                ECParameters explicitParams = original.ExportExplicitParameters(true);
 
-                using (ECDiffieHellman evpBacked = ECDiffieHellman.Create(explicitParams))
+                using (ECDiffieHellman reimported = ECDiffieHellman.Create(explicitParams))
                 {
-                    ECParameters evpExplicitParams = evpBacked.ExportExplicitParameters(true);
+                    ECParameters reimportedParams = reimported.ExportExplicitParameters(true);
 
-                    ComparePublicKey(explicitParams.Q, evpExplicitParams.Q);
-                    ComparePrivateKey(explicitParams, evpExplicitParams);
+                    ComparePublicKey(explicitParams.Q, reimportedParams.Q);
+                    ComparePrivateKey(explicitParams, reimportedParams);
                 }
             }
         }
 
         [Fact]
-        public void ExplicitCurveEcKeyAndEvpPKeyDeriveCrossCompatible()
+        public void ExplicitCurveImportAndOriginalDeriveCrossCompatible()
         {
             ECCurve explicitCurve = EccTestData.GetNistP256ExplicitCurve();
 

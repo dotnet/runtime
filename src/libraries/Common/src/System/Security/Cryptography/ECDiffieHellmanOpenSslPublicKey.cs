@@ -52,24 +52,7 @@ namespace System.Security.Cryptography
             get
             {
                 ThrowIfDisposed();
-
-                bool? result = Interop.Crypto.EvpPKeyEcHasExplicitEncoding(GetKey());
-
-                if (result.HasValue)
-                {
-                    return result.Value;
-                }
-
-                // Fallback for EC_KEY-backed handles: check via EC_KEY.
-                using (SafeEcKeyHandle ecKey = Interop.Crypto.EvpPkeyGetEcKey(GetKey()))
-                {
-                    if (ecKey is null || ecKey.IsInvalid)
-                    {
-                        throw new CryptographicException(SR.Cryptography_InvalidHandle);
-                    }
-
-                    return !Interop.Crypto.EcKeyHasCurveName(ecKey);
-                }
+                return Interop.Crypto.EvpPKeyEcHasExplicitEncoding(GetKey());
             }
         }
 
