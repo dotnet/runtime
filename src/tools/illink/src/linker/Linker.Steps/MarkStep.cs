@@ -502,24 +502,19 @@ namespace Mono.Linker.Steps
                 ApplyPreserveInfo(type);
             }
 
-            foreach (var method in Annotations.PendingReflectionVisibleMethods)
+            foreach (var (method, reason, origin) in Annotations.DrainPendingReflectionVisibleMethods())
             {
                 marked = true;
-                var origin = new MessageOrigin(method);
-                var reason = new DependencyInfo(DependencyKind.XmlDescriptor, method);
                 MarkMethodVisibleToReflection(method, reason, origin);
                 MarkTypeVisibleToReflection(method.DeclaringType, new DependencyInfo(DependencyKind.DeclaringType, method), origin);
             }
-            Annotations.PendingReflectionVisibleMethods.Clear();
 
-            foreach (var field in Annotations.PendingReflectionVisibleFields)
+            foreach (var (field, reason, origin) in Annotations.DrainPendingReflectionVisibleFields())
             {
                 marked = true;
-                var origin = new MessageOrigin(field);
-                MarkFieldVisibleToReflection(field, new DependencyInfo(DependencyKind.XmlDescriptor, field), origin);
+                MarkFieldVisibleToReflection(field, reason, origin);
                 MarkTypeVisibleToReflection(field.DeclaringType, new DependencyInfo(DependencyKind.DeclaringType, field), origin);
             }
-            Annotations.PendingReflectionVisibleFields.Clear();
 
             return marked;
         }

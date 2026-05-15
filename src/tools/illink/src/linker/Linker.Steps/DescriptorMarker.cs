@@ -184,8 +184,10 @@ namespace Mono.Linker.Steps
             if (!_preservedMembers.Add(field))
                 LogDuplicatePreserve(field.FullName, nav);
 
-            _context.Annotations.MarkPendingReflectionVisibleField(field);
-            _context.Annotations.Mark(field, new DependencyInfo(DependencyKind.XmlDescriptor, _xmlDocumentLocation), GetMessageOriginForPosition(nav));
+            var reason = new DependencyInfo(DependencyKind.XmlDescriptor, _xmlDocumentLocation);
+            var origin = GetMessageOriginForPosition(nav);
+            _context.Annotations.MarkPendingReflectionVisibleField(field, reason, origin);
+            _context.Annotations.Mark(field, reason, origin);
         }
 
         protected override void ProcessMethod(TypeDefinition type, MethodDefinition method, XPathNavigator nav, object? customData)
@@ -202,8 +204,10 @@ namespace Mono.Linker.Steps
             }
             else
             {
-                _context.Annotations.MarkPendingReflectionVisibleMethod(method);
-                _context.Annotations.Mark(method, new DependencyInfo(DependencyKind.XmlDescriptor, _xmlDocumentLocation), GetMessageOriginForPosition(nav));
+                var reason = new DependencyInfo(DependencyKind.XmlDescriptor, _xmlDocumentLocation);
+                var origin = GetMessageOriginForPosition(nav);
+                _context.Annotations.MarkPendingReflectionVisibleMethod(method, reason, origin);
+                _context.Annotations.Mark(method, reason, origin);
             }
         }
 

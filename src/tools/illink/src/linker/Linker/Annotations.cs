@@ -71,8 +71,8 @@ namespace Mono.Linker
         protected readonly HashSet<MethodDefinition> indirectly_called = new HashSet<MethodDefinition>();
         protected readonly HashSet<TypeDefinition> types_relevant_to_variant_casting = new HashSet<TypeDefinition>();
         readonly HashSet<IMemberDefinition> reflection_used = new();
-        readonly HashSet<MethodDefinition> pending_reflection_visible_methods = new();
-        readonly HashSet<FieldDefinition> pending_reflection_visible_fields = new();
+        readonly List<(MethodDefinition Method, DependencyInfo Reason, MessageOrigin Origin)> pending_reflection_visible_methods = new();
+        readonly List<(FieldDefinition Field, DependencyInfo Reason, MessageOrigin Origin)> pending_reflection_visible_fields = new();
         AssemblyDefinition? entry_assembly;
 
         public AnnotationStore(LinkContext context)
@@ -248,15 +248,28 @@ namespace Mono.Linker
         /// <summary>
         /// Schedules a method for reflection-visible marking by MarkStep.
         /// </summary>
-        internal void MarkPendingReflectionVisibleMethod(MethodDefinition method) => pending_reflection_visible_methods.Add(method);
+        internal void MarkPendingReflectionVisibleMethod(MethodDefinition method, in DependencyInfo reason, in MessageOrigin origin)
+            => pending_reflection_visible_methods.Add((method, reason, origin));
 
         /// <summary>
         /// Schedules a field for reflection-visible marking by MarkStep.
         /// </summary>
-        internal void MarkPendingReflectionVisibleField(FieldDefinition field) => pending_reflection_visible_fields.Add(field);
+        internal void MarkPendingReflectionVisibleField(FieldDefinition field, in DependencyInfo reason, in MessageOrigin origin)
+            => pending_reflection_visible_fields.Add((field, reason, origin));
 
-        internal HashSet<MethodDefinition> PendingReflectionVisibleMethods => pending_reflection_visible_methods;
-        internal HashSet<FieldDefinition> PendingReflectionVisibleFields => pending_reflection_visible_fields;
+        internal List<(MethodDefinition Method, DependencyInfo Reason, MessageOrigin Origin)> DrainPendingReflectionVisibleMethods()
+        {
+            var result = new List<(MethodDefinition, DependencyInfo, MessageOrigin)>(pending_reflection_visible_methods);
+            pending_reflection_visible_methods.Clear();
+            return result;
+        }
+
+        internal List<(FieldDefinition Field, DependencyInfo Reason, MessageOrigin Origin)> DrainPendingReflectionVisibleFields()
+        {
+            var result = new List<(FieldDefinition, DependencyInfo, MessageOrigin)>(pending_reflection_visible_fields);
+            pending_reflection_visible_fields.Clear();
+            return result;
+        }
 
         public bool SetProcessed(IMetadataTokenProvider provider)
         {
