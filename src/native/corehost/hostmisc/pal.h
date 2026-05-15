@@ -50,6 +50,7 @@ typedef char pal_char_t;
 
 #define NOMINMAX
 #include <windows.h>
+#include <share.h>
 
 #define DIR_SEPARATOR L'\\'
 #define DIR_SEPARATOR_STR L"\\"
@@ -67,6 +68,8 @@ typedef char pal_char_t;
 #define pal_strlen_vprintf(fmt, args) _vscwprintf(fmt, args)
 #define pal_str_printf(buf, count, fmt, ...) _snwprintf_s(buf, count, _TRUNCATE, fmt, ##__VA_ARGS__)
 #define pal_xtoi(s) _wtoi(s)
+#define pal_get_pid() ((int)GetCurrentProcessId())
+#define pal_file_open(path, mode) _wfsopen(path, mode, _SH_DENYNO)
 
 #else // !_WIN32
 
@@ -98,6 +101,8 @@ typedef char pal_char_t;
 #define pal_strlen_vprintf(fmt, args) vsnprintf(NULL, 0, fmt, args)
 #define pal_str_printf(buf, count, fmt, ...) snprintf(buf, (size_t)(count), fmt, ##__VA_ARGS__)
 #define pal_xtoi(s) atoi(s)
+#define pal_get_pid() ((int)getpid())
+#define pal_file_open(path, mode) fopen(path, mode)
 
 #define __cdecl    /* nothing */
 #define __stdcall  /* nothing */

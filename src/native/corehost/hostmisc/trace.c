@@ -14,9 +14,6 @@
 
 #if defined(_WIN32)
 #include <locale.h>
-#include <share.h>
-#else
-#include <unistd.h>
 #endif
 
 #define TRACE_VERBOSITY_WARN 2
@@ -251,15 +248,10 @@ bool trace_enable(void)
             if (exe_name[0] == _X('\0'))
                 pal_str_printf(exe_name, ARRAY_SIZE(exe_name), _X("host"));
 
-#if defined(_WIN32)
-            int pid = (int)GetCurrentProcessId();
-#else
-            int pid = (int)getpid();
-#endif
             pal_char_t trace_path[APPHOST_PATH_MAX];
             int written = pal_str_printf(trace_path, ARRAY_SIZE(trace_path),
                 _X("%s") DIR_SEPARATOR_STR _X("%s.%d.log"),
-                tracefile_str, exe_name, pid);
+                tracefile_str, exe_name, pal_get_pid());
 
             // pal_str_printf returns -1 (Windows _snwprintf_s _TRUNCATE) or the
             // would-be length (POSIX snprintf) when the result was truncated.
@@ -277,11 +269,7 @@ bool trace_enable(void)
 
         if (!file_open_error)
         {
-#if defined(_WIN32)
-            FILE* tracefile = _wfsopen(tracefile_path_to_open, L"a", _SH_DENYNO);
-#else
-            FILE* tracefile = fopen(tracefile_path_to_open, "a");
-#endif
+            FILE* tracefile = pal_file_open(tracefile_path_to_open, _X("a"));
             if (tracefile != NULL)
             {
                 setvbuf(tracefile, NULL, _IONBF, 0);
