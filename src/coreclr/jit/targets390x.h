@@ -228,12 +228,12 @@
   #define RBM_PROFILER_TAILCALL_TRASH  RBM_PROFILER_LEAVE_TRASH
 
   // Which register are int and long values returned in ?
-  #define REG_INTRET               REG_R0
-  #define RBM_INTRET               RBM_R0
-  #define RBM_LNGRET               RBM_R0
+  #define REG_INTRET               REG_R2
+  #define RBM_INTRET               RBM_R2
+  #define RBM_LNGRET               RBM_R2
   // second return register for 16-byte structs
-  #define REG_INTRET_1             REG_R1
-  #define RBM_INTRET_1             RBM_R1
+  #define REG_INTRET_1             REG_R3
+  #define RBM_INTRET_1             RBM_R3
 
   #define REG_FLOATRET             REG_V0
   #define RBM_FLOATRET             RBM_V0

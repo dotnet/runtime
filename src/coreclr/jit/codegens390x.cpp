@@ -586,11 +586,11 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_STORE_LCL_VAR:
             genCodeForStoreLclVar(treeNode->AsLclVar());
             break;
-//
-//        case GT_RETFILT:
-//        case GT_RETURN:
-//            genReturn(treeNode);
-//            break;
+
+        case GT_RETFILT:
+        case GT_RETURN:
+            genReturn(treeNode);
+            break;
 
 #ifdef SWIFT_SUPPORT
         case GT_SWIFT_ERROR_RET:
