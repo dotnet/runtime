@@ -1662,61 +1662,14 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<T> Reverse<T>(Vector64<T> vector)
         {
-            if (typeof(T) == typeof(byte))
+            Unsafe.SkipInit(out Vector64<T> result);
+
+            for (int index = 0; index < Vector64<T>.Count; index++)
             {
-                return Shuffle(vector.As<T, byte>(), CreateSequence((byte)(Vector64<byte>.Count - 1), byte.MaxValue)).As<byte, T>();
-            }
-            if (typeof(T) == typeof(double))
-            {
-                return vector;
-            }
-            if (typeof(T) == typeof(short))
-            {
-                return Shuffle(vector.As<T, short>(), CreateSequence((short)(Vector64<short>.Count - 1), (short)-1)).As<short, T>();
-            }
-            if (typeof(T) == typeof(int))
-            {
-                return Shuffle(vector.As<T, int>(), CreateSequence(Vector64<int>.Count - 1, -1)).As<int, T>();
-            }
-            if (typeof(T) == typeof(long))
-            {
-                return vector;
-            }
-            if (typeof(T) == typeof(nint))
-            {
-                return Unsafe.SizeOf<nint>() == sizeof(long)
-                    ? vector
-                    : Shuffle(vector.As<T, int>(), CreateSequence(Vector64<int>.Count - 1, -1)).As<int, T>();
-            }
-            if (typeof(T) == typeof(sbyte))
-            {
-                return Shuffle(vector.As<T, sbyte>(), CreateSequence((sbyte)(Vector64<sbyte>.Count - 1), (sbyte)-1)).As<sbyte, T>();
-            }
-            if (typeof(T) == typeof(float))
-            {
-                return Shuffle(vector.As<T, float>(), CreateSequence(Vector64<int>.Count - 1, -1)).As<float, T>();
-            }
-            if (typeof(T) == typeof(ushort))
-            {
-                return Shuffle(vector.As<T, ushort>(), CreateSequence((ushort)(Vector64<ushort>.Count - 1), ushort.MaxValue)).As<ushort, T>();
-            }
-            if (typeof(T) == typeof(uint))
-            {
-                return Shuffle(vector.As<T, uint>(), CreateSequence((uint)(Vector64<uint>.Count - 1), uint.MaxValue)).As<uint, T>();
-            }
-            if (typeof(T) == typeof(ulong))
-            {
-                return vector;
-            }
-            if (typeof(T) == typeof(nuint))
-            {
-                return Unsafe.SizeOf<nuint>() == sizeof(ulong)
-                    ? vector
-                    : Shuffle(vector.As<T, uint>(), CreateSequence((uint)(Vector64<uint>.Count - 1), uint.MaxValue)).As<uint, T>();
+                result.SetElementUnsafe(index, vector.GetElementUnsafe(Vector64<T>.Count - 1 - index));
             }
 
-            ThrowHelper.ThrowForUnsupportedIntrinsicsVector64BaseType<T>();
-            return default;
+            return result;
         }
 
         internal static Vector64<T> DegreesToRadians<T>(Vector64<T> degrees)
