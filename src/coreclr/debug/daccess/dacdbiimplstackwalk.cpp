@@ -936,8 +936,6 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
         ALLOW_DATATARGET_MISSING_MEMORY(
             pJITFuncData->isInstantiatedGeneric = pMD->HasClassOrMethodInstantiation();
         );
-        pJITFuncData->enCVersion = CorDB_DEFAULT_ENC_FUNCTION_VERSION;
-        pJITFuncData->enCVersion = 0;
     }
     else
     {

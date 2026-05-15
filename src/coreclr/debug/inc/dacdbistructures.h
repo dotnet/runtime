@@ -525,8 +525,6 @@ struct MSLAYOUT Debugger_JITFuncData
     // both!).
     BOOL isInstantiatedGeneric;
 
-    // this is the version of the jitted code
-    ULONG64 enCVersion;
     BOOL justAfterILThrow;
 };
 

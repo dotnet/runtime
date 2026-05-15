@@ -171,7 +171,6 @@ public struct Debugger_JITFuncData
     public ulong parentNativeOffset;
     public ulong fpParentOrSelf;
     public Interop.BOOL isInstantiatedGeneric;
-    public ulong enCVersion;
     public Interop.BOOL justAfterILThrow;
 }
 
