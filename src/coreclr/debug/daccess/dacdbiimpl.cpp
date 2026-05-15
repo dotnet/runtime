@@ -2475,7 +2475,8 @@ void DacDbiInterfaceImpl::TypeHandleToBasicTypeInfo(TypeHandle                  
         case ELEMENT_TYPE_PTR:
         case ELEMENT_TYPE_BYREF:
             pTypeInfo->vmTypeHandle.SetDacTargetPtr(typeHandle.AsTAddr());
-            // metadataToken and vmAssembly stay zero (mdTokenNil / NullPtr)
+            pTypeInfo->metadataToken = mdTokenNil;
+            pTypeInfo->vmAssembly = VMPTR_Assembly::NullPtr();
             break;
 
         case ELEMENT_TYPE_CLASS:
@@ -2488,7 +2489,10 @@ void DacDbiInterfaceImpl::TypeHandleToBasicTypeInfo(TypeHandle                  
             {
                 pTypeInfo->vmTypeHandle.SetDacTargetPtr(typeHandle.AsTAddr());
             }
-            // else: vmTypeHandle stays null
+            else
+            {
+                pTypeInfo->vmTypeHandle = VMPTR_TypeHandle::NullPtr();
+            }
 
             pTypeInfo->metadataToken = typeHandle.GetCl();
             _ASSERTE(pModule);
@@ -2497,7 +2501,9 @@ void DacDbiInterfaceImpl::TypeHandleToBasicTypeInfo(TypeHandle                  
         }
 
         default:
-            // All fields zero
+            pTypeInfo->vmTypeHandle = VMPTR_TypeHandle::NullPtr();
+            pTypeInfo->metadataToken = mdTokenNil;
+            pTypeInfo->vmAssembly = VMPTR_Assembly::NullPtr();
             break;
     }
     return;
@@ -2511,8 +2517,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetObjectExpandedTypeInfo(AreValu
     HRESULT hr = S_OK;
     EX_TRY
     {
-        *pTypeInfo = {};
-
         PTR_Object obj(TO_TADDR(addr));
         TypeHandleToExpandedTypeInfoImpl(boxed, obj->GetGCSafeTypeHandle(), pTypeInfo);
     }
@@ -2528,8 +2532,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::TypeHandleToExpandedTypeInfo(AreV
     HRESULT hr = S_OK;
     EX_TRY
     {
-        *pTypeInfo = {};
-
         TypeHandle typeHandle = TypeHandle::FromPtr((TADDR)vmTypeHandle);
         TypeHandleToExpandedTypeInfoImpl(boxed, typeHandle, pTypeInfo);
     }
@@ -2542,6 +2544,7 @@ void DacDbiInterfaceImpl::TypeHandleToExpandedTypeInfoImpl(AreValueTypesBoxed   
                                                         TypeHandle                      typeHandle,
                                                         DebuggerIPCE_ExpandedTypeData * pTypeInfo)
 {
+    *pTypeInfo = {};
     pTypeInfo->elementType = GetElementType(typeHandle);
 
     switch (pTypeInfo->elementType)

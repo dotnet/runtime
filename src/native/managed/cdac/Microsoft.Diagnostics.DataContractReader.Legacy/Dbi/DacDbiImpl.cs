@@ -1280,7 +1280,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
     public int TypeHandleToExpandedTypeInfo(int boxed, ulong vmTypeHandle, DebuggerIPCE_ExpandedTypeData* pTypeInfo)
     {
-        *pTypeInfo = default;
         int hr = HResults.S_OK;
         try
         {
@@ -1309,7 +1308,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
     public int GetObjectExpandedTypeInfo(int boxed, ulong addr, DebuggerIPCE_ExpandedTypeData* pTypeInfo)
     {
-        *pTypeInfo = default;
         int hr = HResults.S_OK;
         try
         {
@@ -2305,6 +2303,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     // Shared core implementation for TypeHandleToExpandedTypeInfo and GetObjectExpandedTypeInfo.
     private void TypeHandleToExpandedTypeInfoImpl(IRuntimeTypeSystem rts, AreValueTypesBoxed boxed, TypeHandle typeHandle, DebuggerIPCE_ExpandedTypeData* pTypeInfo)
     {
+        *pTypeInfo = default;
         CorElementType elementType = GetElementType(rts, typeHandle);
         WriteInt32LittleEndian(ref pTypeInfo->elementType, (int)elementType);
 
