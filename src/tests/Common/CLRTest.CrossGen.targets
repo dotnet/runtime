@@ -50,7 +50,8 @@ if [ "$(AlwaysUseCrossGen2)" == "true" ]; then
     export CompositeBuildMode=1
 fi
 
-if [ "$(CompositeCrossGenTest)" == "false" ] && [ -n "${CompositeBuildMode+x}" ]; then
+# CompositeBuildMode is an opt-in by variable presence.
+if [ "$(CompositeCrossGenTest)" = "false" ] && [ -n "${CompositeBuildMode+x}" ]; then
     unset RunCrossGen2
 fi
 
@@ -241,6 +242,7 @@ if /i "$(AlwaysUseCrossGen2)" == "true" (
 )
 
 if /i "$(CompositeCrossGenTest)" == "false" (
+    REM CompositeBuildMode is an opt-in by variable presence.
     if defined CompositeBuildMode (
         set RunCrossGen2=
     )
