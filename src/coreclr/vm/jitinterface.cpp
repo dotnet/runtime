@@ -379,8 +379,8 @@ CorInfoType CEEInfo::asCorInfoType(CorElementType eeType,
         CORINFO_TYPE_CLASS,
         CORINFO_TYPE_UNDEF,          // VAR (type variable)
         CORINFO_TYPE_CLASS,          // ARRAY
-        CORINFO_TYPE_CLASS,          // WITH
-        CORINFO_TYPE_VALUECLASS,
+        CORINFO_TYPE_UNDEF,          // GENERICINST
+        CORINFO_TYPE_VALUECLASS, // TYPEDBYREF
         CORINFO_TYPE_UNDEF,          // VALUEARRAY_UNSUPPORTED
         CORINFO_TYPE_NATIVEINT,      // I
         CORINFO_TYPE_NATIVEUINT,     // U
