@@ -143,7 +143,7 @@ void DisplayArchive(_In_z_ WCHAR* szFile, ULONG DumpFilter, _In_opt_z_ WCHAR* sz
     MemoryMappedFile* f = CreateMappedFile(szFile);
     if (f == nullptr)
     {
-        MDInfo::Error("MapViewOfFile failed!");
+        MDInfo::Error("CreateMappedFile failed!");
         return;
     }
 
