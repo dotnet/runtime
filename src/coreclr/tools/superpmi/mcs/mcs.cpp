@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "standardpch.h"
-#include "mcs.h"
 #include "commandline.h"
 #include "verbasmdump.h"
 #include "verbinteg.h"

@@ -4,7 +4,6 @@
 //The logic in this file was ported from https://github.com/dotnet/runtime/blob/17154bd7b8f21d6d8d6fca71b89d7dcb705ec32b/src/coreclr/utilcode/longfilepathwrappers.cpp
 //Please reflect any change here into the above file too!
 #include "pal.h"
-#include "trace.h"
 #include "utils.h"
 #include "longfile.h"
 

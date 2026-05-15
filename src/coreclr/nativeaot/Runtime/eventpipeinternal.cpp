@@ -10,9 +10,7 @@
 #include <eventpipe/ep-event-instance.h>
 #include <eventpipe/ep-session.h>
 #include <eventpipe/ep-session-provider.h>
-#include <eventpipe/ep-metadata-generator.h>
 #include <eventpipe/ep-event-payload.h>
-#include <eventpipe/ep-buffer-manager.h>
 #include "minipal/time.h"
 
 #ifdef FEATURE_PERFTRACING

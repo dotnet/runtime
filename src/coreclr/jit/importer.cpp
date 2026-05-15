@@ -17,8 +17,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
-#include "corexcep.h"
-
 /*****************************************************************************
  *
  *  Pushes the given tree on the stack.

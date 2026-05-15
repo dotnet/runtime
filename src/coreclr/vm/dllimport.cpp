@@ -32,7 +32,6 @@
 #include "typeparse.h"
 #include "typestring.h"
 #include "sigbuilder.h"
-#include "sigformat.h"
 #include "ecall.h"
 #include "qcall.h"
 #include "fieldmarshaler.h"

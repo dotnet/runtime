@@ -15,7 +15,6 @@
 #include "holder.h"
 #include "Crst.h"
 #include "RuntimeInstance.h"
-#include "event.h"
 #include "regdisplay.h"
 #include "StackFrameIterator.h"
 #include "thread.h"

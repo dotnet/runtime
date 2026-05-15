@@ -33,7 +33,6 @@
 #include "typestring.h"
 #include "finalizerthread.h"
 #include "threadsuspend.h"
-#include <minipal/memorybarrierprocesswide.h>
 #include "string.h"
 #include "sstring.h"
 #include "array.h"

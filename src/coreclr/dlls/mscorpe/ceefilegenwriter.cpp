@@ -12,7 +12,6 @@
 #include <limits.h>
 
 #include "corerror.h"
-#include <posterror.h>
 
 // The following block contains a template for the default entry point stubs of a CLR
 // IL only program.  One can emit these stubs (with some fix-ups) and make

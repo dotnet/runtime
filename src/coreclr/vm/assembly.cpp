@@ -22,14 +22,11 @@
 #include "reflectclasswriter.h"
 #include "comdynamic.h"
 
-#include "sha1.h"
-
 #include "eeconfig.h"
 
 #include "assemblynative.hpp"
 #include "threadsuspend.h"
 
-#include "appdomainnative.hpp"
 #include "customattribute.h"
 
 #include "caparser.h"

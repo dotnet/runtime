@@ -14,7 +14,6 @@
 #include "eeconfig.h" // This is here even for retail & free builds...
 #include "vars.hpp"
 #include <limits.h>
-#include "ilformatter.h"
 #include "debuginfostore.h"
 
 
