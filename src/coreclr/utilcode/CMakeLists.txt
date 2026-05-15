@@ -110,7 +110,9 @@ if(CLR_CMAKE_HOST_WIN32)
     target_compile_definitions(utilcodestaticnohost PRIVATE _CRTIMP=) # use static version of crt
 
     link_natvis_sources_for_target(utilcodestaticnohost INTERFACE utilcode.natvis)
-    link_natvis_sources_for_target(utilcode_dac INTERFACE utilcode.natvis)
+    if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
+      link_natvis_sources_for_target(utilcode_dac INTERFACE utilcode.natvis)
+    endif()
     link_natvis_sources_for_target(utilcode INTERFACE utilcode.natvis)
 endif(CLR_CMAKE_HOST_WIN32)
 

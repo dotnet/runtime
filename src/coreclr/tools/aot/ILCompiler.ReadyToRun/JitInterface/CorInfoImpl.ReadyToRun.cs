@@ -2067,7 +2067,7 @@ namespace Internal.JitInterface
                         // emit a Check_VirtualFunctionOverride fixup so that the R2R code is
                         // rejected at runtime if the resolution changes (e.g. a DIM override
                         // is added in an assembly outside the version bubble).
-                        MethodWithToken declMethodWithToken = new MethodWithToken(originalMethod, HandleToModuleToken(ref pResolvedToken), null, false, null);
+                        MethodWithToken declMethodWithToken = new MethodWithToken(originalMethod, HandleToModuleToken(ref pResolvedToken, out _), null, false, null);
 
                         ModuleToken moduleToken = _compilation.NodeFactory.Resolver.GetModuleTokenForMethod(directMethod, false, false);
                         Debug.Assert(!moduleToken.IsNull);
