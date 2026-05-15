@@ -252,13 +252,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     public int GetMetadata(ulong vmModule, DacDbiTargetBuffer* pTargetBuffer)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetMetadata(vmModule, pTargetBuffer) : HResults.E_NOTIMPL;
 
-    public int GetSymbolsBuffer(ulong vmModule, DacDbiTargetBuffer* pTargetBuffer, int* pSymbolFormat)
+    public int GetSymbolsBuffer(ulong vmModule, DacDbiTargetBuffer* pTargetBuffer, SymbolFormat* pSymbolFormat)
     {
-        // SymbolFormat values from IDacDbiInterface::SymbolFormat:
-        //   kSymbolFormatNone = 0, kSymbolFormatPDB = 1.
-        const int kSymbolFormatNone = 0;
-        const int kSymbolFormatPDB = 1;
-
         int hr = HResults.S_OK;
         try
         {
@@ -272,7 +267,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 throw new ArgumentNullException(nameof(pSymbolFormat));
 
             *pTargetBuffer = default;
-            *pSymbolFormat = kSymbolFormatNone;
+            *pSymbolFormat = SymbolFormat.None;
 
             Contracts.ILoader loader = _target.Contracts.Loader;
             Contracts.ModuleHandle handle = loader.GetModuleHandleFromModulePtr(new TargetPointer(vmModule));
@@ -281,7 +276,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             {
                 pTargetBuffer->pAddress = buffer.Value;
                 pTargetBuffer->cbSize = size;
-                *pSymbolFormat = kSymbolFormatPDB;
+                *pSymbolFormat = SymbolFormat.Pdb;
             }
         }
         catch (System.Exception ex)
@@ -292,7 +287,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         if (_legacy is not null)
         {
             DacDbiTargetBuffer bufferLocal;
-            int formatLocal;
+            SymbolFormat formatLocal;
             int hrLocal = _legacy.GetSymbolsBuffer(vmModule, &bufferLocal, &formatLocal);
             Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK)
