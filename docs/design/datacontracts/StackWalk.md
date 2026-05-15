@@ -30,7 +30,6 @@ TargetPointer GetMethodDescPtr(IStackDataFrameHandle stackDataFrameHandle);
 TargetPointer GetInstructionPointer(IStackDataFrameHandle stackDataFrameHandle);
 
 // Walks the Thread's explicit (capital "F") Frame chain and yields a StackFrameData per Frame.
-// Used by DacDbi to enumerate the frames the debugger surfaces as "internal frames".
 IEnumerable<StackFrameData> GetFrames(TargetPointer threadPointer);
 
 // Returns true if the Frame at the given address is an InlinedCallFrame
