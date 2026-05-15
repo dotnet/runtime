@@ -48,12 +48,10 @@ void AppendCorInfoType(TArray<char, MallocAllocator>* printer, CorInfoType corIn
         "nuint",
         "float",
         "double",
-        "string",
         "ptr",
         "byref",
         "struct",
         "class",
-        "typedbyref",
         "var"
     };
 
