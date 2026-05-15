@@ -91,8 +91,3 @@ shifting the rest down. Returns the number of bytes drained.
 */
 PALEXPORT int32_t CryptoNative_BioDrainSpill(BIO* bio, void* dst, int32_t dstLen);
 
-/*
-Resets the managed-span BIO: clears windows, zeroes the spill length,
-and keeps the spill allocation.
-*/
-PALEXPORT void CryptoNative_BioResetManagedSpan(BIO* bio);

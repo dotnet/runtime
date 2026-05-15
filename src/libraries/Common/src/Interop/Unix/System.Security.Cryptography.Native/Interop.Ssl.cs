@@ -149,9 +149,6 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioDrainSpill")]
         internal static unsafe partial int BioDrainSpill(SafeBioHandle bio, byte* dst, int dstLen);
 
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioResetManagedSpan")]
-        internal static partial void BioResetManagedSpan(SafeBioHandle bio);
-
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetPeerCertificate")]
         internal static partial IntPtr SslGetPeerCertificate(SafeSslHandle ssl);
 

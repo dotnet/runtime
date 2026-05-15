@@ -83,6 +83,8 @@ typedef struct
     uint8_t*       spillBuf;
     int32_t        spillCapacity;
     int32_t        spillLen;
+
+    int32_t        readError;   /* set to 1 if a carry allocation failed and bytes were lost */
 } ManagedSpanBioCtx;
 
 #define MANAGED_SPAN_SPILL_INITIAL 4096
@@ -117,6 +119,14 @@ static int ManagedSpanBioRead(BIO* bio, char* buf, int len)
             ctx->readCarryLen = 0;
         }
         return toCopy;
+    }
+
+    if (ctx->readError)
+    {
+        /* A prior BioClearReadWindow could not allocate carry space and dropped
+           unread bytes. Surface this as a hard read failure so it does not look
+           like a transient EAGAIN to the SSL engine. */
+        return -1;
     }
 
     int32_t available = ctx->readLen - ctx->readPos;
@@ -271,9 +281,14 @@ static long ManagedSpanBioCtrl(BIO* bio, int cmd, long num, void* ptr)
             {
                 ctx->readCarryLen = 0;
                 ctx->readCarryPos = 0;
+                ctx->readPtr = NULL;
+                ctx->readLen = 0;
                 ctx->readPos = 0;
+                ctx->writePtr = NULL;
+                ctx->writeCapacity = 0;
                 ctx->writePos = 0;
                 ctx->spillLen = 0;
+                ctx->readError = 0;
                 BIO_clear_retry_flags(bio);
             }
             return 1;
@@ -413,8 +428,13 @@ void CryptoNative_BioClearReadWindow(BIO* bio)
             memcpy(ctx->readCarry + ctx->readCarryLen, ctx->readPtr + ctx->readPos, (size_t)unread);
             ctx->readCarryLen += unread;
         }
-        /* If allocation failed, the unread bytes are dropped. SSL will fail
-           on the next read with a protocol error, which is the safest fallback. */
+        else
+        {
+            /* Carry allocation failed; bytes are lost. Mark the BIO as
+               permanently broken so the next BIO_read surfaces the failure
+               rather than masking it as a protocol error. */
+            ctx->readError = 1;
+        }
     }
 
     ctx->readPtr = NULL;
@@ -497,27 +517,3 @@ int32_t CryptoNative_BioDrainSpill(BIO* bio, void* dst, int32_t dstLen)
     return toCopy;
 }
 
-void CryptoNative_BioResetManagedSpan(BIO* bio)
-{
-    if (bio == NULL)
-    {
-        return;
-    }
-
-    ManagedSpanBioCtx* ctx = (ManagedSpanBioCtx*)BIO_get_data(bio);
-    if (ctx == NULL)
-    {
-        return;
-    }
-
-    ctx->readCarryLen = 0;
-    ctx->readCarryPos = 0;
-    ctx->readPtr = NULL;
-    ctx->readLen = 0;
-    ctx->readPos = 0;
-    ctx->writePtr = NULL;
-    ctx->writeCapacity = 0;
-    ctx->writePos = 0;
-    ctx->spillLen = 0;
-    BIO_clear_retry_flags(bio);
-}

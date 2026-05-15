@@ -697,11 +697,16 @@ internal static partial class Interop
 
                 Ssl.BioSetWriteWindow(context.OutputBio!, windowPtr, windowSpan.Length);
 
-                retVal = Ssl.SslDoHandshake(context, out errorCode);
-
-                Ssl.BioGetWriteResult(context.OutputBio!, out writtenToWindow, out spillLen);
-                Ssl.BioSetWriteWindow(context.OutputBio!, null, 0);
-                Ssl.BioClearReadWindow(context.InputBio!);
+                try
+                {
+                    retVal = Ssl.SslDoHandshake(context, out errorCode);
+                    Ssl.BioGetWriteResult(context.OutputBio!, out writtenToWindow, out spillLen);
+                }
+                finally
+                {
+                    Ssl.BioSetWriteWindow(context.OutputBio!, null, 0);
+                    Ssl.BioClearReadWindow(context.InputBio!);
+                }
             }
 
             token.Size += writtenToWindow;
@@ -772,9 +777,14 @@ internal static partial class Interop
             // write window (e.g. from a prior SSL_read that emitted alerts / KeyUpdate / etc.).
             DrainOutputBioSpill(context, ref outToken);
 
-            // Worst-case TLS output: input bytes + per-record overhead (~128 B) across all records.
+            // Preserve any bytes already in outToken (including those just drained from a prior SSL_read's
+            // alerts / KeyUpdate output). On error we restore Size to this snapshot so those bytes are
+            // still sent rather than overwritten with the partial output of a failed SSL_write.
+            int preWriteSize = outToken.Size;
+
+            // Worst-case TLS output for the user's plaintext.
             int upperBound = ComputeMaxTlsOutput(input.Length);
-            outToken.EnsureAvailableSpace(outToken.Size + upperBound);
+            outToken.EnsureAvailableSpace(upperBound);
 
             int retVal;
             int writtenToWindow;
@@ -785,14 +795,21 @@ internal static partial class Interop
             fixed (byte* windowPtr = windowSpan)
             {
                 Ssl.BioSetWriteWindow(context.OutputBio!, windowPtr, windowSpan.Length);
-                retVal = Ssl.SslWrite(context, ref MemoryMarshal.GetReference(input), input.Length, out errorCode);
-                Ssl.BioGetWriteResult(context.OutputBio!, out writtenToWindow, out spillLen);
-                Ssl.BioSetWriteWindow(context.OutputBio!, null, 0);
+                try
+                {
+                    retVal = Ssl.SslWrite(context, ref MemoryMarshal.GetReference(input), input.Length, out errorCode);
+                    Ssl.BioGetWriteResult(context.OutputBio!, out writtenToWindow, out spillLen);
+                }
+                finally
+                {
+                    Ssl.BioSetWriteWindow(context.OutputBio!, null, 0);
+                }
             }
 
             if (retVal != input.Length)
             {
-                outToken.Size = 0;
+                // Drop any partial output written by the failed SSL_write but keep the drained spill bytes.
+                outToken.Size = preWriteSize;
                 switch (errorCode)
                 {
                     // indicate end-of-file
@@ -826,11 +843,13 @@ internal static partial class Interop
         private static int ComputeMaxTlsOutput(int inputLength)
         {
             // TLS 1.3 record max plaintext = 16384 bytes. Per-record overhead is bounded by
-            // ~128 bytes (record header + AEAD tag + padding + inner content-type byte).
+            // OpenSSL's SSL3_RT_MAX_ENCRYPTED_OVERHEAD (256 bytes, covering record header, AEAD
+            // tag, optional MAC, padding, and the inner content-type byte for TLS 1.3).
             // Always add slack for at least one record's overhead even when inputLength == 0,
             // since SSL_write of an empty buffer can still emit handshake/alert bytes.
+            const int MaxRecordOverhead = 256;
             int records = (inputLength >> 14) + 2;
-            return inputLength + (records * 128);
+            return inputLength + (records * MaxRecordOverhead);
         }
 
         private static unsafe void DrainOutputBioSpill(SafeSslHandle context, ref ProtocolToken outToken)
@@ -856,8 +875,14 @@ internal static partial class Interop
             fixed (byte* bufPtr = buffer)
             {
                 Ssl.BioSetReadWindow(context.InputBio!, bufPtr, buffer.Length);
-                retVal = Ssl.SslRead(context, ref MemoryMarshal.GetReference(buffer), buffer.Length, out errorCode);
-                Ssl.BioClearReadWindow(context.InputBio!);
+                try
+                {
+                    retVal = Ssl.SslRead(context, ref MemoryMarshal.GetReference(buffer), buffer.Length, out errorCode);
+                }
+                finally
+                {
+                    Ssl.BioClearReadWindow(context.InputBio!);
+                }
             }
             if (retVal > 0)
             {

@@ -53,7 +53,6 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_BioNewFile)
     DllImportEntry(CryptoNative_BioNewManagedSpan)
     DllImportEntry(CryptoNative_BioRead)
-    DllImportEntry(CryptoNative_BioResetManagedSpan)
     DllImportEntry(CryptoNative_BioSeek)
     DllImportEntry(CryptoNative_BioSetReadWindow)
     DllImportEntry(CryptoNative_BioSetWriteWindow)
