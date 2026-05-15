@@ -103,7 +103,6 @@ namespace System.Net.Security
             ApplicationProtocol = 0x2,
             Versions = 0x4,
             RawApplicationProtocol = 0x8,
-            All = ServerName | ApplicationProtocol | Versions | RawApplicationProtocol,
         }
 
         [Flags]
@@ -224,7 +223,7 @@ namespace System.Net.Security
         // It is OK to call it again if more data becomes available.
         // It is also possible to limit what information is processed.
         // If callback delegate is provided, it will be called on ALL extensions.
-        public static bool TryGetFrameInfo(ReadOnlySpan<byte> frame, ref TlsFrameInfo info, ProcessingOptions options = ProcessingOptions.All, HelloExtensionCallback? callback = null)
+        public static bool TryGetFrameInfo(ReadOnlySpan<byte> frame, ref TlsFrameInfo info, ProcessingOptions options = ProcessingOptions.ServerName, HelloExtensionCallback? callback = null)
         {
             const int HandshakeTypeOffset = 5;
             if (frame.Length < HeaderSize)
