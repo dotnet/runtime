@@ -871,13 +871,16 @@ void Compiler::lvaInitVarDsc(LclVarDsc*              varDsc,
         case CORINFO_TYPE_PTR:
         case CORINFO_TYPE_BYREF:
         case CORINFO_TYPE_CLASS:
-        case CORINFO_TYPE_STRING:
         case CORINFO_TYPE_VAR:
-        case CORINFO_TYPE_REFANY:
             varDsc->lvIsPtr = 1;
             break;
         default:
             break;
+    }
+
+    if ((corInfoType == CORINFO_TYPE_VALUECLASS) && (typeHnd == info.compCompHnd->getBuiltinClass(CLASSID_TYPED_BYREF)))
+    {
+        varDsc->lvIsPtr = 1;
     }
 
     var_types type = JITtype2varType(corInfoType);

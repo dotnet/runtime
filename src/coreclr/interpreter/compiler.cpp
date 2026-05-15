@@ -2348,7 +2348,6 @@ static InterpType GetInterpType(CorInfoType corInfoType)
             return InterpTypeR4;
         case CORINFO_TYPE_DOUBLE:
             return InterpTypeR8;
-        case CORINFO_TYPE_STRING:
         case CORINFO_TYPE_CLASS:
             return InterpTypeO;
         case CORINFO_TYPE_PTR:
@@ -2356,7 +2355,6 @@ static InterpType GetInterpType(CorInfoType corInfoType)
         case CORINFO_TYPE_BYREF:
             return InterpTypeByRef;
         case CORINFO_TYPE_VALUECLASS:
-        case CORINFO_TYPE_REFANY:
             return InterpTypeVT;
         case CORINFO_TYPE_VOID:
             return InterpTypeVoid;
@@ -6145,13 +6143,18 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
     }
 
     suspendData->asyncMethodReturnType = NULL;
+    CORINFO_CLASS_HANDLE typedByRefClass = m_compHnd->getBuiltinClass(CLASSID_TYPED_BYREF);
     switch (m_methodInfo->args.retType)
     {
         case CORINFO_TYPE_VALUECLASS:
+            if (m_methodInfo->args.retTypeClass == typedByRefClass)
+            {
+                BADCODE("TypedReference return types not supported for async methods");
+            }
+
             suspendData->asyncMethodReturnType = m_methodInfo->args.retTypeClass;
             suspendData->asyncMethodReturnTypePrimitiveSize = 0;
             break;
-        case CORINFO_TYPE_STRING:
         case CORINFO_TYPE_CLASS:
             suspendData->asyncMethodReturnType = m_compHnd->getBuiltinClass(CLASSID_SYSTEM_OBJECT);
             suspendData->asyncMethodReturnTypePrimitiveSize = 0;
@@ -6198,9 +6201,6 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
             break;
         case CORINFO_TYPE_PTR:
             suspendData->asyncMethodReturnTypePrimitiveSize = sizeof(void*);
-            break;
-        case CORINFO_TYPE_REFANY:
-            BADCODE("TypedReference return types not supported for async methods");
             break;
 
         case CORINFO_TYPE_VAR:

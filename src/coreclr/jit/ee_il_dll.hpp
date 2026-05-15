@@ -213,12 +213,12 @@ inline var_types JITtype2varType(CorInfoType type)
         TYP_I_IMPL, // CORINFO_TYPE_NATIVEUINT      = 0xd,
         TYP_FLOAT,  // CORINFO_TYPE_FLOAT           = 0xe,
         TYP_DOUBLE, // CORINFO_TYPE_DOUBLE          = 0xf,
-        TYP_REF,    // CORINFO_TYPE_STRING          = 0x10,         // Not used, should remove
+        TYP_REF,    // CORINFO_TYPE_CLASS           = 0x10,
         TYP_I_IMPL, // CORINFO_TYPE_PTR             = 0x11,
         TYP_BYREF,  // CORINFO_TYPE_BYREF           = 0x12,
-        TYP_STRUCT, // CORINFO_TYPE_VALUECLASS      = 0x13,
-        TYP_REF,    // CORINFO_TYPE_CLASS           = 0x14,
-        TYP_STRUCT, // CORINFO_TYPE_REFANY          = 0x15,
+        TYP_UNDEF,  // unused                        0x13,
+        TYP_UNDEF,  // unused                        0x14,
+        TYP_STRUCT, // CORINFO_TYPE_VALUECLASS      = 0x15,
 
         // Generic type variables only appear when we're doing
         // verification of generic code, in which case we're running
@@ -244,7 +244,6 @@ inline var_types JITtype2varType(CorInfoType type)
     assert(varTypeMap[CORINFO_TYPE_DOUBLE] == TYP_DOUBLE);
     assert(varTypeMap[CORINFO_TYPE_VOID] == TYP_VOID);
     assert(varTypeMap[CORINFO_TYPE_VALUECLASS] == TYP_STRUCT);
-    assert(varTypeMap[CORINFO_TYPE_REFANY] == TYP_STRUCT);
 
     assert(type < CORINFO_TYPE_COUNT);
     assert(varTypeMap[type] != TYP_UNDEF);
@@ -274,12 +273,12 @@ inline var_types JitType2PreciseVarType(CorInfoType type)
         TYP_U_IMPL, // CORINFO_TYPE_NATIVEUINT      = 0xd,
         TYP_FLOAT,  // CORINFO_TYPE_FLOAT           = 0xe,
         TYP_DOUBLE, // CORINFO_TYPE_DOUBLE          = 0xf,
-        TYP_REF,    // CORINFO_TYPE_STRING          = 0x10,         // Not used, should remove
+        TYP_REF,    // CORINFO_TYPE_CLASS           = 0x10,
         TYP_U_IMPL, // CORINFO_TYPE_PTR             = 0x11,
         TYP_BYREF,  // CORINFO_TYPE_BYREF           = 0x12,
-        TYP_STRUCT, // CORINFO_TYPE_VALUECLASS      = 0x13,
-        TYP_REF,    // CORINFO_TYPE_CLASS           = 0x14,
-        TYP_STRUCT, // CORINFO_TYPE_REFANY          = 0x15,
+        TYP_UNDEF,  // unused                        0x13,
+        TYP_UNDEF,  // unused                        0x14,
+        TYP_STRUCT, // CORINFO_TYPE_VALUECLASS      = 0x15,
 
         // Generic type variables only appear when we're doing
         // verification of generic code, in which case we're running
@@ -305,7 +304,6 @@ inline var_types JitType2PreciseVarType(CorInfoType type)
     assert(preciseVarTypeMap[CORINFO_TYPE_DOUBLE] == TYP_DOUBLE);
     assert(preciseVarTypeMap[CORINFO_TYPE_VOID] == TYP_VOID);
     assert(preciseVarTypeMap[CORINFO_TYPE_VALUECLASS] == TYP_STRUCT);
-    assert(preciseVarTypeMap[CORINFO_TYPE_REFANY] == TYP_STRUCT);
 
     assert(type < CORINFO_TYPE_COUNT);
     assert(preciseVarTypeMap[type] != TYP_UNDEF);

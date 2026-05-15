@@ -209,11 +209,9 @@ void AppendMethodName(COMP_HANDLE comp,
             CorInfoType type = strip(withMod);
             switch (type)
             {
-                case CORINFO_TYPE_STRING:
                 case CORINFO_TYPE_CLASS:
                 case CORINFO_TYPE_VAR:
                 case CORINFO_TYPE_VALUECLASS:
-                case CORINFO_TYPE_REFANY:
                 {
                     CORINFO_CLASS_HANDLE clsHnd = comp->getArgClass(sig, argLst);
                     // For some SIMD struct types we can get a nullptr back from eeGetArgClass on Linux/X64
@@ -243,11 +241,9 @@ void AppendMethodName(COMP_HANDLE comp,
                 printer->Add(':');
                 switch (retType)
                 {
-                    case CORINFO_TYPE_STRING:
                     case CORINFO_TYPE_CLASS:
                     case CORINFO_TYPE_VAR:
                     case CORINFO_TYPE_VALUECLASS:
-                    case CORINFO_TYPE_REFANY:
                     {
                         CORINFO_CLASS_HANDLE clsHnd = sig->retTypeClass;
                         if (clsHnd != NO_CLASS_HANDLE)

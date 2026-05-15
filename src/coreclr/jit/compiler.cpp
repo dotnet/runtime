@@ -1723,11 +1723,14 @@ unsigned Compiler::compGetTypeSize(CorInfoType cit, CORINFO_CLASS_HANDLE clsHnd)
     sigSize = genTypeSize(sigType);
     if (cit == CORINFO_TYPE_VALUECLASS)
     {
-        sigSize = info.compCompHnd->getClassSize(clsHnd);
-    }
-    else if (cit == CORINFO_TYPE_REFANY)
-    {
-        sigSize = 2 * TARGET_POINTER_SIZE;
+        if (clsHnd == info.compCompHnd->getBuiltinClass(CLASSID_TYPED_BYREF))
+        {
+            sigSize = 2 * TARGET_POINTER_SIZE;
+        }
+        else
+        {
+            sigSize = info.compCompHnd->getClassSize(clsHnd);
+        }
     }
     return sigSize;
 }
