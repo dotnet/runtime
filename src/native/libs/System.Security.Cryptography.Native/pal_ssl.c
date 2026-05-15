@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "pal_ssl.h"
+#include "pal_bio.h"
 #include "openssl.h"
 #include "pal_evp_pkey.h"
 #include "pal_evp_pkey_rsa.h"
@@ -496,6 +497,117 @@ int32_t CryptoNative_SslDoHandshake(SSL* ssl, int32_t* error)
     else
     {
         *error = CryptoNative_SslGetError(ssl, result);
+    }
+
+    return result;
+}
+
+int32_t CryptoNative_SslHandshake(
+    SSL* ssl,
+    const uint8_t* inputPtr,
+    int32_t inputLen,
+    uint8_t* outputPtr,
+    int32_t outputCap,
+    int32_t* outputWritten,
+    int32_t* outputPending,
+    int32_t* errorCode)
+{
+    if (outputWritten != NULL) *outputWritten = 0;
+    if (outputPending != NULL) *outputPending = 0;
+
+    ERR_clear_error();
+
+    BIO* inputBio = SSL_get_rbio(ssl);
+    BIO* outputBio = SSL_get_wbio(ssl);
+
+    if (inputBio != NULL)
+    {
+        CryptoNative_BioSetReadWindow(inputBio, inputPtr, inputLen);
+    }
+    if (outputBio != NULL)
+    {
+        CryptoNative_BioSetWriteWindow(outputBio, outputPtr, outputCap);
+    }
+
+    int32_t result = SSL_do_handshake(ssl);
+    *errorCode = (result == 1) ? SSL_ERROR_NONE : CryptoNative_SslGetError(ssl, result);
+
+    if (outputBio != NULL)
+    {
+        CryptoNative_BioGetWriteResult(outputBio, outputWritten, outputPending);
+        CryptoNative_BioSetWriteWindow(outputBio, NULL, 0);
+    }
+    if (inputBio != NULL)
+    {
+        CryptoNative_BioClearReadWindow(inputBio);
+    }
+
+    return result;
+}
+
+int32_t CryptoNative_SslEncrypt(
+    SSL* ssl,
+    const uint8_t* plaintextPtr,
+    int32_t plaintextLen,
+    uint8_t* outputPtr,
+    int32_t outputCap,
+    int32_t* outputWritten,
+    int32_t* outputPending,
+    int32_t* errorCode)
+{
+    if (outputWritten != NULL) *outputWritten = 0;
+    if (outputPending != NULL) *outputPending = 0;
+
+    ERR_clear_error();
+
+    BIO* outputBio = SSL_get_wbio(ssl);
+    if (outputBio != NULL)
+    {
+        CryptoNative_BioSetWriteWindow(outputBio, outputPtr, outputCap);
+    }
+
+    int32_t result = SSL_write(ssl, plaintextPtr, plaintextLen);
+    *errorCode = (result > 0) ? SSL_ERROR_NONE : CryptoNative_SslGetError(ssl, result);
+
+    if (outputBio != NULL)
+    {
+        CryptoNative_BioGetWriteResult(outputBio, outputWritten, outputPending);
+        CryptoNative_BioSetWriteWindow(outputBio, NULL, 0);
+    }
+
+    return result;
+}
+
+int32_t CryptoNative_SslDecrypt(
+    SSL* ssl,
+    const uint8_t* inputPtr,
+    int32_t inputLen,
+    uint8_t* outputPtr,
+    int32_t outputCap,
+    int32_t* plaintextPending,
+    int32_t* errorCode)
+{
+    if (plaintextPending != NULL) *plaintextPending = 0;
+
+    ERR_clear_error();
+
+    BIO* inputBio = SSL_get_rbio(ssl);
+    if (inputBio != NULL)
+    {
+        CryptoNative_BioSetReadWindow(inputBio, inputPtr, inputLen);
+    }
+
+    int32_t result = SSL_read(ssl, outputPtr, outputCap);
+    *errorCode = (result > 0) ? SSL_ERROR_NONE : CryptoNative_SslGetError(ssl, result);
+
+    if (plaintextPending != NULL)
+    {
+        *plaintextPending = SSL_pending(ssl);
+    }
+
+    if (inputBio != NULL)
+    {
+        CryptoNative_BioClearReadWindow(inputBio);
     }
 
     return result;

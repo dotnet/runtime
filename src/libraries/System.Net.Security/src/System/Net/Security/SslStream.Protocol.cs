@@ -999,6 +999,17 @@ namespace System.Net.Security
             return status;
         }
 
+        internal SecurityStatusPal DecryptDirect(ReadOnlySpan<byte> input, Span<byte> output, out int outputWritten, out int plaintextPending)
+        {
+            SecurityStatusPal status = SslStreamPal.DecryptMessageDirect(_securityContext!, input, output, out outputWritten, out plaintextPending);
+            if (NetEventSource.Log.IsEnabled() && status.ErrorCode == SecurityStatusPalErrorCode.OK)
+            {
+                NetEventSource.DumpBuffer(this, output.Slice(0, outputWritten));
+            }
+
+            return status;
+        }
+
         /*++
             VerifyRemoteCertificate - Validates the content of a Remote Certificate
 

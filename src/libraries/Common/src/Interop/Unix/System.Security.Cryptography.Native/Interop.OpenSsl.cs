@@ -690,23 +690,15 @@ internal static partial class Interop
             fixed (byte* inputPtr = input)
             fixed (byte* windowPtr = windowSpan)
             {
-                if (input.Length > 0)
-                {
-                    Ssl.BioSetReadWindow(context.InputBio!, inputPtr, input.Length);
-                }
-
-                Ssl.BioSetWriteWindow(context.OutputBio!, windowPtr, windowSpan.Length);
-
-                try
-                {
-                    retVal = Ssl.SslDoHandshake(context, out errorCode);
-                    Ssl.BioGetWriteResult(context.OutputBio!, out writtenToWindow, out spillLen);
-                }
-                finally
-                {
-                    Ssl.BioSetWriteWindow(context.OutputBio!, null, 0);
-                    Ssl.BioClearReadWindow(context.InputBio!);
-                }
+                retVal = Ssl.SslHandshake(
+                    context,
+                    inputPtr,
+                    input.Length,
+                    windowPtr,
+                    windowSpan.Length,
+                    out writtenToWindow,
+                    out spillLen,
+                    out errorCode);
             }
 
             token.Size += writtenToWindow;
@@ -792,18 +784,18 @@ internal static partial class Interop
             Ssl.SslErrorCode errorCode;
 
             Span<byte> windowSpan = outToken.AvailableSpan;
+            fixed (byte* plaintextPtr = input)
             fixed (byte* windowPtr = windowSpan)
             {
-                Ssl.BioSetWriteWindow(context.OutputBio!, windowPtr, windowSpan.Length);
-                try
-                {
-                    retVal = Ssl.SslWrite(context, ref MemoryMarshal.GetReference(input), input.Length, out errorCode);
-                    Ssl.BioGetWriteResult(context.OutputBio!, out writtenToWindow, out spillLen);
-                }
-                finally
-                {
-                    Ssl.BioSetWriteWindow(context.OutputBio!, null, 0);
-                }
+                retVal = Ssl.SslEncrypt(
+                    context,
+                    plaintextPtr,
+                    input.Length,
+                    windowPtr,
+                    windowSpan.Length,
+                    out writtenToWindow,
+                    out spillLen,
+                    out errorCode);
             }
 
             if (retVal != input.Length)
@@ -869,20 +861,25 @@ internal static partial class Interop
             }
         }
 
-        internal static unsafe int Decrypt(SafeSslHandle context, Span<byte> buffer, out Ssl.SslErrorCode errorCode)
+        internal static unsafe int Decrypt(
+            SafeSslHandle context,
+            ReadOnlySpan<byte> input,
+            Span<byte> output,
+            out int plaintextPending,
+            out Ssl.SslErrorCode errorCode)
         {
             int retVal;
-            fixed (byte* bufPtr = buffer)
+            fixed (byte* inputPtr = input)
+            fixed (byte* outputPtr = output)
             {
-                Ssl.BioSetReadWindow(context.InputBio!, bufPtr, buffer.Length);
-                try
-                {
-                    retVal = Ssl.SslRead(context, ref MemoryMarshal.GetReference(buffer), buffer.Length, out errorCode);
-                }
-                finally
-                {
-                    Ssl.BioClearReadWindow(context.InputBio!);
-                }
+                retVal = Ssl.SslDecrypt(
+                    context,
+                    inputPtr,
+                    input.Length,
+                    outputPtr,
+                    output.Length,
+                    out plaintextPending,
+                    out errorCode);
             }
             if (retVal > 0)
             {

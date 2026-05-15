@@ -601,6 +601,19 @@ namespace System.Net.Security
             return token;
         }
 
+        // Direct-decrypt to user buffer is supported only on the OpenSSL-backed Unix PAL.
+        internal const bool IsDirectDecryptSupported = false;
+
+        public static SecurityStatusPal DecryptMessageDirect(
+            SafeDeleteSslContext securityContext,
+            ReadOnlySpan<byte> input,
+            Span<byte> output,
+            out int outputWritten,
+            out int plaintextPending)
+        {
+            throw new System.PlatformNotSupportedException();
+        }
+
         public static unsafe SecurityStatusPal DecryptMessage(SafeDeleteSslContext? securityContext, Span<byte> buffer, out int offset, out int count)
         {
             const int NumSecBuffers = 4; // data + empty + empty + empty

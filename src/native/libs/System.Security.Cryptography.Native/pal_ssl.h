@@ -326,6 +326,65 @@ and by the specifications of the TLS/SSL protocol;
 PALEXPORT int32_t CryptoNative_SslDoHandshake(SSL* ssl, int32_t* error);
 
 /*
+Atomically performs SSL_do_handshake with the input/output BIO windows set up
+and torn down in a single P/Invoke. The input BIO window points at inputPtr
+(ciphertext from peer, may be NULL/0). The output BIO window receives outgoing
+handshake bytes into outputPtr/outputCap; outputWritten reports the count
+placed there. If the handshake emitted more bytes than outputCap, those
+overflow into the BIO spill and outputPending reports their size (caller drains
+via CryptoNative_BioDrainSpill).
+
+Returns the SSL_do_handshake return value; errorCode receives SSL_get_error.
+*/
+PALEXPORT int32_t CryptoNative_SslHandshake(
+    SSL* ssl,
+    const uint8_t* inputPtr,
+    int32_t inputLen,
+    uint8_t* outputPtr,
+    int32_t outputCap,
+    int32_t* outputWritten,
+    int32_t* outputPending,
+    int32_t* errorCode);
+
+/*
+Atomically performs SSL_write with the output BIO window set up and torn down
+in a single P/Invoke. plaintextPtr/plaintextLen is the plaintext. outputPtr/
+outputCap is the ciphertext destination window; outputWritten reports bytes
+written, outputPending reports any overflow now in the BIO spill (drain via
+CryptoNative_BioDrainSpill).
+
+Returns the SSL_write return value; errorCode receives SSL_get_error.
+*/
+PALEXPORT int32_t CryptoNative_SslEncrypt(
+    SSL* ssl,
+    const uint8_t* plaintextPtr,
+    int32_t plaintextLen,
+    uint8_t* outputPtr,
+    int32_t outputCap,
+    int32_t* outputWritten,
+    int32_t* outputPending,
+    int32_t* errorCode);
+
+/*
+Atomically performs SSL_read with the input BIO window set up and torn down
+in a single P/Invoke. inputPtr/inputLen is incoming ciphertext (may be 0 to
+drain plaintext already buffered inside SSL from a prior partial read).
+outputPtr/outputCap is the plaintext destination. plaintextPending receives
+SSL_pending after the read (bytes still buffered inside the SSL object).
+
+Returns the SSL_read return value (>0 = bytes written to outputPtr); errorCode
+receives SSL_get_error.
+*/
+PALEXPORT int32_t CryptoNative_SslDecrypt(
+    SSL* ssl,
+    const uint8_t* inputPtr,
+    int32_t inputLen,
+    uint8_t* outputPtr,
+    int32_t outputCap,
+    int32_t* plaintextPending,
+    int32_t* errorCode);
+
+/*
 Gets a value indicating whether the SSL_state is SSL_ST_OK.
 
 Returns 1 if the state is OK, otherwise 0.

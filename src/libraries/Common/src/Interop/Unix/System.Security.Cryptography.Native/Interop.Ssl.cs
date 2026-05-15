@@ -120,6 +120,38 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslDoHandshake", SetLastError = true)]
         internal static partial int SslDoHandshake(SafeSslHandle ssl, out SslErrorCode error);
 
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslHandshake", SetLastError = true)]
+        internal static unsafe partial int SslHandshake(
+            SafeSslHandle ssl,
+            byte* inputPtr,
+            int inputLen,
+            byte* outputPtr,
+            int outputCap,
+            out int outputWritten,
+            out int outputPending,
+            out SslErrorCode errorCode);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslEncrypt", SetLastError = true)]
+        internal static unsafe partial int SslEncrypt(
+            SafeSslHandle ssl,
+            byte* plaintextPtr,
+            int plaintextLen,
+            byte* outputPtr,
+            int outputCap,
+            out int outputWritten,
+            out int outputPending,
+            out SslErrorCode errorCode);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslDecrypt", SetLastError = true)]
+        internal static unsafe partial int SslDecrypt(
+            SafeSslHandle ssl,
+            byte* inputPtr,
+            int inputLen,
+            byte* outputPtr,
+            int outputCap,
+            out int plaintextPending,
+            out SslErrorCode errorCode);
+
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_IsSslStateOK")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool IsSslStateOK(SafeSslHandle ssl);

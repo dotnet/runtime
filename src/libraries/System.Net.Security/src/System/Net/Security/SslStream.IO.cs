@@ -24,11 +24,20 @@ namespace System.Net.Security
 
         private object _handshakeLock => _sslAuthenticationOptions;
         private volatile TaskCompletionSource<bool>? _handshakeWaiter;
+        // Set when a direct-decrypt left plaintext buffered inside OpenSSL (SSL_pending > 0).
+        // Guarded by _handshakeLock for writes; advisory for unlocked reads.
+        private bool _palHasPendingPlaintext;
 
         private const int HandshakeTypeOffsetSsl2 = 2;                       // Offset of HelloType in Sslv2 and Unified frames
         private const int HandshakeTypeOffsetTls = 5;                        // Offset of HelloType in Sslv3 and TLS frames
 
         private const int UnknownTlsFrameLength = int.MaxValue;              // frame too short to determine length
+
+        // Maximum plaintext length of a single TLS record (2^14 per RFC 5246/8446).
+        // Direct decrypt requires the user buffer to be at least this large so that
+        // a single SSL_read fully drains the decrypted record (no residual SSL_pending),
+        // keeping the read path free of partial-record / drain state.
+        private const int MaxTlsRecordPlaintextLength = 16384;
 
         private bool _receivedEOF;
 
@@ -215,7 +224,7 @@ namespace System.Net.Security
             token.RentBuffer = true;
             try
             {
-                if (_buffer.ActiveLength > 0)
+                if (_buffer.ActiveLength > 0 || _palHasPendingPlaintext)
                 {
                     throw new InvalidOperationException(SR.net_ssl_renegotiate_buffer);
                 }
@@ -885,6 +894,46 @@ namespace System.Net.Security
             return status;
         }
 
+        private SecurityStatusPal DecryptDataDirect(int frameSize, Span<byte> output, out int outputWritten)
+        {
+            SecurityStatusPal status;
+
+            lock (_handshakeLock)
+            {
+                ThrowIfExceptionalOrNotAuthenticated();
+
+                status = DecryptDirect(_buffer.EncryptedSpanSliced(frameSize), output, out outputWritten, out int plaintextPending);
+                // Consume the whole ciphertext frame; no plaintext was deposited into _buffer.
+                _buffer.OnDecrypted(0, 0, frameSize);
+                _palHasPendingPlaintext = plaintextPending > 0;
+
+                if (status.ErrorCode == SecurityStatusPalErrorCode.Renegotiate)
+                {
+                    if (_sslAuthenticationOptions.AllowRenegotiation || SslProtocol == SslProtocols.Tls13 || _nestedAuth != NestedState.StreamNotInUse)
+                    {
+                        _handshakeWaiter = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                    }
+                }
+            }
+
+            return status;
+        }
+
+        private SecurityStatusPal DrainPendingPlaintextDirect(Span<byte> output, out int outputWritten)
+        {
+            SecurityStatusPal status;
+
+            lock (_handshakeLock)
+            {
+                ThrowIfExceptionalOrNotAuthenticated();
+
+                status = DecryptDirect(ReadOnlySpan<byte>.Empty, output, out outputWritten, out int plaintextPending);
+                _palHasPendingPlaintext = plaintextPending > 0;
+            }
+
+            return status;
+        }
+
         [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
         private async ValueTask<int> ReadAsyncInternal<TIOAdapter>(Memory<byte> buffer, CancellationToken cancellationToken)
             where TIOAdapter : IReadWriteAdapter
@@ -925,6 +974,8 @@ namespace System.Net.Security
                     buffer = buffer.Slice(processedLength);
                 }
 
+
+
                 if (_receivedEOF && nextTlsFrameLength == UnknownTlsFrameLength)
                 {
                     // there should be no frames waiting for processing
@@ -937,6 +988,28 @@ namespace System.Net.Security
 
                 while (true)
                 {
+                    // Drain any plaintext OpenSSL retained internally from a prior partial direct-decrypt
+                    // before fetching or decrypting any new ciphertext. If we proceeded to decrypt a fresh
+                    // frame while SSL still holds buffered plaintext, SSL_read would return the buffered
+                    // plaintext (ignoring the new frame's ciphertext) and we would incorrectly discard the
+                    // unprocessed frame from _buffer.
+                    while (_palHasPendingPlaintext && !buffer.IsEmpty && _handshakeWaiter == null)
+                    {
+                        SecurityStatusPal drainStatus = DrainPendingPlaintextDirect(buffer.Span, out int drained);
+                        if (drainStatus.ErrorCode != SecurityStatusPalErrorCode.OK || drained == 0)
+                        {
+                            // Either an SSL error happened (will resurface on next decrypt) or SSL has no more
+                            // pending plaintext available right now; stop draining and proceed.
+                            break;
+                        }
+                        processedLength += drained;
+                        buffer = buffer.Slice(drained);
+                    }
+                    if (buffer.IsEmpty && processedLength > 0)
+                    {
+                        // User buffer is full; any remaining pending plaintext will be drained on the next ReadAsync.
+                        break;
+                    }
                     int payloadBytes = await EnsureFullTlsFrameAsync<TIOAdapter>(cancellationToken, ReadBufferSize).ConfigureAwait(false);
                     if (payloadBytes == 0)
                     {
@@ -944,7 +1017,17 @@ namespace System.Net.Security
                         break;
                     }
 
-                    SecurityStatusPal status = DecryptData(payloadBytes);
+                    SecurityStatusPal status;
+                    int directWritten = 0;
+                    bool useDirect = SslStreamPal.IsDirectDecryptSupported && buffer.Length >= MaxTlsRecordPlaintextLength && _handshakeWaiter == null;
+                    if (useDirect)
+                    {
+                        status = DecryptDataDirect(payloadBytes, buffer.Span, out directWritten);
+                    }
+                    else
+                    {
+                        status = DecryptData(payloadBytes);
+                    }
                     if (status.ErrorCode != SecurityStatusPalErrorCode.OK)
                     {
                         byte[]? extraBuffer = null;
@@ -979,7 +1062,21 @@ namespace System.Net.Security
                         }
                     }
 
-                    if (_buffer.DecryptedLength > 0)
+                    if (useDirect)
+                    {
+                        if (directWritten > 0)
+                        {
+                            processedLength += directWritten;
+                            buffer = buffer.Slice(directWritten);
+                            if (buffer.IsEmpty)
+                            {
+                                // User buffer is full. Any residual plaintext is captured by SSL_pending
+                                // and will be drained on the next ReadAsync via _palHasPendingPlaintext.
+                                break;
+                            }
+                        }
+                    }
+                    else if (_buffer.DecryptedLength > 0)
                     {
                         // This will either copy data from rented buffer or adjust final buffer as needed.
                         // In both cases _decryptedBytesOffset and _decryptedBytesCount will be updated as needed.

@@ -81,19 +81,59 @@ namespace System.Net.Security
 
         public static SecurityStatusPal DecryptMessage(SafeDeleteSslContext securityContext, Span<byte> buffer, out int offset, out int count)
         {
+            // In-place decrypt: pass the same span as both input ciphertext and output plaintext.
+            // OpenSSL fully consumes the ciphertext via BIO_read before writing plaintext through
+            // SSL_read, so this aliasing is safe.
+            return DecryptMessageCore((SafeSslHandle)securityContext, buffer, buffer, out offset, out count, out _);
+        }
+
+        // True on Unix: the OpenSSL-backed PAL supports decrypting directly into a caller-provided
+        // output buffer that is disjoint from the source ciphertext, avoiding a copy from
+        // SslStream's internal encrypted buffer to the user's Memory<byte>.
+        internal const bool IsDirectDecryptSupported = true;
+
+        // Direct-decrypt variant. `input` is the ciphertext frame and `output` is the user's
+        // plaintext destination. `outputWritten` is the number of bytes written to `output`.
+        // `plaintextPending` is non-zero when SSL retains additional plaintext that the next call
+        // can drain by passing `input` of length 0.
+        public static SecurityStatusPal DecryptMessageDirect(
+            SafeDeleteSslContext securityContext,
+            ReadOnlySpan<byte> input,
+            Span<byte> output,
+            out int outputWritten,
+            out int plaintextPending)
+        {
+            Debug.Assert(output.Length > 0);
+            return DecryptMessageCore((SafeSslHandle)securityContext, input, output, out _, out outputWritten, out plaintextPending);
+        }
+
+        private static SecurityStatusPal DecryptMessageCore(
+            SafeSslHandle sslHandle,
+            ReadOnlySpan<byte> input,
+            Span<byte> output,
+            out int offset,
+            out int count,
+            out int plaintextPending)
+        {
             offset = 0;
             count = 0;
+            plaintextPending = 0;
 
             try
             {
-                int resultSize = Interop.OpenSsl.Decrypt((SafeSslHandle)securityContext, buffer, out Interop.Ssl.SslErrorCode errorCode);
+                int resultSize = Interop.OpenSsl.Decrypt(
+                    sslHandle,
+                    input,
+                    output,
+                    out int pending,
+                    out Interop.Ssl.SslErrorCode errorCode);
 
                 SecurityStatusPal retVal = MapNativeErrorCode(errorCode);
 
-                if (retVal.ErrorCode == SecurityStatusPalErrorCode.OK ||
-                    retVal.ErrorCode == SecurityStatusPalErrorCode.Renegotiate)
+                if (retVal.ErrorCode is SecurityStatusPalErrorCode.OK or SecurityStatusPalErrorCode.Renegotiate)
                 {
                     count = resultSize;
+                    plaintextPending = pending;
                 }
 
                 return retVal;
