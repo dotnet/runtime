@@ -2484,7 +2484,6 @@ FORCEINLINE simdmask_t ValueNumStore::ConstantValueInternal<simdmask_t>(ValueNum
     return SafeGetConstantValue<simdmask_t>(c, offset);
 }
 
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
 template <>
 FORCEINLINE simdmaskvalue_t ValueNumStore::ConstantValueInternal<simdmaskvalue_t>(ValueNum vn DEBUGARG(bool coerce))
 {
@@ -2498,7 +2497,6 @@ FORCEINLINE simdmaskvalue_t ValueNumStore::ConstantValueInternal<simdmaskvalue_t
 
     return SafeGetConstantValue<simdmaskvalue_t>(c, offset);
 }
-#endif
 
 #if defined(TARGET_ARM64)
 template <>
