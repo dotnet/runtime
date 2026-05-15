@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Security.Cryptography.EcDiffieHellman.Tests;
+using System.Security.Cryptography.Tests;
 using Test.Cryptography;
 using Xunit;
 
@@ -372,6 +373,73 @@ namespace System.Security.Cryptography.EcDiffieHellman.OpenSsl.Tests
             {
                 Interop.Crypto.EcKeyDestroy(rawKey1);
                 Interop.Crypto.EcKeyDestroy(rawKey2);
+            }
+        }
+
+        [Fact]
+        public void CtorEcKeyDeriveLeftAndRightSide()
+        {
+            ECParameters testData = EccTestData.GetNistP256ReferenceKey();
+
+            IntPtr ecKey;
+            int rc = Interop.Crypto.EcKeyCreateByKeyParameters(
+                out ecKey,
+                testData.Curve.Oid.Value!,
+                testData.Q.X, testData.Q.X!.Length,
+                testData.Q.Y, testData.Q.Y!.Length,
+                testData.D, testData.D!.Length);
+
+            Assert.Equal(1, rc);
+            Assert.NotEqual(IntPtr.Zero, ecKey);
+
+            try
+            {
+                using (ECDiffieHellmanOpenSsl ecKeyBacked = new ECDiffieHellmanOpenSsl(ecKey))
+                using (ECDiffieHellman peer = ECDiffieHellman.Create(ECCurve.NamedCurves.nistP256))
+                using (ECDiffieHellmanPublicKey ecKeyPub = ecKeyBacked.PublicKey)
+                using (ECDiffieHellmanPublicKey peerPub = peer.PublicKey)
+                {
+                    byte[] derivedLeft = ecKeyBacked.DeriveKeyFromHash(peerPub, HashAlgorithmName.SHA256);
+                    byte[] derivedRight = peer.DeriveKeyFromHash(ecKeyPub, HashAlgorithmName.SHA256);
+
+                    Assert.Equal(derivedLeft, derivedRight);
+                }
+            }
+            finally
+            {
+                Interop.Crypto.EcKeyDestroy(ecKey);
+            }
+        }
+
+        [Fact]
+        public void CtorEcKeyPublicOnlyFailsDerive()
+        {
+            ECParameters testData = EccTestData.GetNistP256ReferenceKey();
+
+            IntPtr ecKey;
+            int rc = Interop.Crypto.EcKeyCreateByKeyParameters(
+                out ecKey,
+                testData.Curve.Oid.Value!,
+                testData.Q.X, testData.Q.X!.Length,
+                testData.Q.Y, testData.Q.Y!.Length,
+                null, 0);
+
+            Assert.Equal(1, rc);
+            Assert.NotEqual(IntPtr.Zero, ecKey);
+
+            try
+            {
+                using (ECDiffieHellmanOpenSsl ecKeyBacked = new ECDiffieHellmanOpenSsl(ecKey))
+                using (ECDiffieHellman peer = ECDiffieHellman.Create(ECCurve.NamedCurves.nistP256))
+                using (ECDiffieHellmanPublicKey peerPub = peer.PublicKey)
+                {
+                    Assert.ThrowsAny<CryptographicException>(() =>
+                        ecKeyBacked.DeriveKeyFromHash(peerPub, HashAlgorithmName.SHA256));
+                }
+            }
+            finally
+            {
+                Interop.Crypto.EcKeyDestroy(ecKey);
             }
         }
 

@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.EcDsa.Tests;
+using System.Security.Cryptography.Tests;
 using Test.Cryptography;
 using Xunit;
 
@@ -385,6 +386,263 @@ namespace System.Security.Cryptography.EcDsa.OpenSsl.Tests
             }
         }
 
+        [Theory]
+        [InlineData(ECDSA_P256_OID_VALUE, 256)]
+        [InlineData(ECDSA_P384_OID_VALUE, 384)]
+        [InlineData(ECDSA_P521_OID_VALUE, 521)]
+        public void CtorEcKeyNamedCurveExportIsCorrect(string oid, int expectedKeySize)
+        {
+            IntPtr ecKey = Interop.Crypto.EcKeyCreateByOid(oid);
+            Assert.NotEqual(IntPtr.Zero, ecKey);
+
+            try
+            {
+                Assert.NotEqual(0, Interop.Crypto.EcKeyGenerateKey(ecKey));
+
+                using (ECDsaOpenSsl ecKeyBacked = new ECDsaOpenSsl(ecKey))
+                {
+                    Assert.Equal(expectedKeySize, ecKeyBacked.KeySize);
+
+                    ECParameters exportedParams = ecKeyBacked.ExportParameters(true);
+
+                    Assert.True(exportedParams.Curve.IsNamed);
+                    Assert.Equal(oid, exportedParams.Curve.Oid.Value);
+                    Assert.NotNull(exportedParams.Q.X);
+                    Assert.NotNull(exportedParams.Q.Y);
+                    Assert.NotNull(exportedParams.D);
+                    exportedParams.Validate();
+                }
+            }
+            finally
+            {
+                Interop.Crypto.EcKeyDestroy(ecKey);
+            }
+        }
+
+        [Fact]
+        public void CtorEcKeyNamedCurveImportExportIsCorrect()
+        {
+            ECParameters testData = EccTestData.GetNistP256ReferenceKey();
+
+            IntPtr ecKey;
+            int rc = Interop.Crypto.EcKeyCreateByKeyParameters(
+                out ecKey,
+                testData.Curve.Oid.Value!,
+                testData.Q.X, testData.Q.X!.Length,
+                testData.Q.Y, testData.Q.Y!.Length,
+                testData.D, testData.D!.Length);
+
+            Assert.Equal(1, rc);
+            Assert.NotEqual(IntPtr.Zero, ecKey);
+
+            try
+            {
+                using (ECDsaOpenSsl ecKeyBacked = new ECDsaOpenSsl(ecKey))
+                {
+                    Assert.Equal(256, ecKeyBacked.KeySize);
+
+                    ECParameters exported = ecKeyBacked.ExportParameters(true);
+
+                    Assert.True(exported.Curve.IsNamed);
+                    Assert.Equal(testData.Curve.Oid.Value, exported.Curve.Oid.Value);
+
+                    ComparePublicKey(testData.Q, exported.Q);
+                    ComparePrivateKey(testData, exported);
+                }
+            }
+            finally
+            {
+                Interop.Crypto.EcKeyDestroy(ecKey);
+            }
+        }
+
+        [ConditionalFact(nameof(ECExplicitCurvesSupported))]
+        public void CtorEcKeyExplicitPrimeCurveExportIsCorrect()
+        {
+            ECParameters testData = EccTestData.GetNistP256ExplicitTestData();
+            ECCurve curve = testData.Curve;
+
+            IntPtr ecKey = Interop.Crypto.EcKeyCreateByExplicitParameters(
+                curve.CurveType,
+                testData.Q.X, testData.Q.X!.Length,
+                testData.Q.Y, testData.Q.Y!.Length,
+                testData.D, testData.D?.Length ?? 0,
+                curve.Prime, curve.Prime!.Length,
+                curve.A, curve.A!.Length,
+                curve.B, curve.B!.Length,
+                curve.G.X, curve.G.X!.Length,
+                curve.G.Y, curve.G.Y!.Length,
+                curve.Order, curve.Order!.Length,
+                curve.Cofactor, curve.Cofactor!.Length,
+                curve.Seed, curve.Seed?.Length ?? 0);
+
+            Assert.NotEqual(IntPtr.Zero, ecKey);
+
+            try
+            {
+                using (ECDsaOpenSsl ecKeyBacked = new ECDsaOpenSsl(ecKey))
+                {
+                    Assert.Equal(256, ecKeyBacked.KeySize);
+
+                    ECParameters exported = ecKeyBacked.ExportExplicitParameters(true);
+
+                    Assert.True(exported.Curve.IsPrime);
+                    Assert.Equal(curve.Prime, exported.Curve.Prime);
+                    Assert.Equal(curve.A, exported.Curve.A);
+                    Assert.Equal(curve.B, exported.Curve.B);
+                    Assert.Equal(curve.G.X, exported.Curve.G.X);
+                    Assert.Equal(curve.G.Y, exported.Curve.G.Y);
+                    Assert.Equal(curve.Order, exported.Curve.Order);
+                    Assert.Equal(curve.Cofactor, exported.Curve.Cofactor);
+
+                    ComparePublicKey(testData.Q, exported.Q);
+                    ComparePrivateKey(testData, exported);
+                }
+            }
+            finally
+            {
+                Interop.Crypto.EcKeyDestroy(ecKey);
+            }
+        }
+
+        [ConditionalFact(nameof(ECExplicitCurvesSupported))]
+        public void CtorEcKeyExplicitChar2CurveExportIsCorrect()
+        {
+            ECParameters testData = EccTestData.Sect163k1Key1Explicit;
+
+            if (!ECDsaFactory.IsCurveValid(EccTestData.Sect163k1Key1.Curve.Oid))
+            {
+                return;
+            }
+
+            ECCurve curve = testData.Curve;
+
+            IntPtr ecKey = Interop.Crypto.EcKeyCreateByExplicitParameters(
+                curve.CurveType,
+                testData.Q.X, testData.Q.X!.Length,
+                testData.Q.Y, testData.Q.Y!.Length,
+                testData.D, testData.D?.Length ?? 0,
+                curve.Polynomial, curve.Polynomial!.Length,
+                curve.A, curve.A!.Length,
+                curve.B, curve.B!.Length,
+                curve.G.X, curve.G.X!.Length,
+                curve.G.Y, curve.G.Y!.Length,
+                curve.Order, curve.Order!.Length,
+                curve.Cofactor, curve.Cofactor!.Length,
+                null, 0);
+
+            Assert.NotEqual(IntPtr.Zero, ecKey);
+
+            try
+            {
+                using (ECDsaOpenSsl ecKeyBacked = new ECDsaOpenSsl(ecKey))
+                {
+                    Assert.Equal(163, ecKeyBacked.KeySize);
+
+                    ECParameters exported = ecKeyBacked.ExportExplicitParameters(true);
+
+                    Assert.True(exported.Curve.IsCharacteristic2);
+                    Assert.Equal(curve.Polynomial, exported.Curve.Polynomial);
+                    Assert.Equal(curve.A, exported.Curve.A);
+                    Assert.Equal(curve.B, exported.Curve.B);
+                    Assert.Equal(curve.G.X, exported.Curve.G.X);
+                    Assert.Equal(curve.G.Y, exported.Curve.G.Y);
+                    Assert.Equal(curve.Order, exported.Curve.Order);
+                    Assert.Equal(curve.Cofactor, exported.Curve.Cofactor);
+
+                    ComparePublicKey(testData.Q, exported.Q);
+                    ComparePrivateKey(testData, exported);
+                }
+            }
+            finally
+            {
+                Interop.Crypto.EcKeyDestroy(ecKey);
+            }
+        }
+
+        [Fact]
+        public void CtorEcKeyNamedCurveImportPublicKey()
+        {
+            ECParameters testData = EccTestData.GetNistP256ReferenceKey();
+            byte[] data = ByteUtils.RepeatByte(0x42, 64);
+
+            byte[] signature;
+            using (ECDsa signer = ECDsa.Create(testData))
+            {
+                signature = signer.SignData(data, HashAlgorithmName.SHA256);
+            }
+
+            ECParameters publicOnly = new ECParameters
+            {
+                Curve = testData.Curve,
+                Q = testData.Q,
+            };
+
+            IntPtr ecKey;
+            int rc = Interop.Crypto.EcKeyCreateByKeyParameters(
+                out ecKey,
+                publicOnly.Curve.Oid.Value!,
+                publicOnly.Q.X, publicOnly.Q.X!.Length,
+                publicOnly.Q.Y, publicOnly.Q.Y!.Length,
+                null, 0);
+
+            Assert.Equal(1, rc);
+            Assert.NotEqual(IntPtr.Zero, ecKey);
+
+            try
+            {
+                using (ECDsaOpenSsl ecKeyBacked = new ECDsaOpenSsl(ecKey))
+                {
+                    Assert.True(ecKeyBacked.VerifyData(data, signature, HashAlgorithmName.SHA256));
+
+                    byte[] wrongData = ByteUtils.RepeatByte(0x43, 64);
+                    Assert.False(ecKeyBacked.VerifyData(wrongData, signature, HashAlgorithmName.SHA256));
+
+                    Assert.ThrowsAny<CryptographicException>(() =>
+                        ecKeyBacked.SignData(data, HashAlgorithmName.SHA256));
+                }
+            }
+            finally
+            {
+                Interop.Crypto.EcKeyDestroy(ecKey);
+            }
+        }
+
+        [Fact]
+        public void CtorEcKeyNamedCurveImportPrivateKey()
+        {
+            ECParameters testData = EccTestData.GetNistP256ReferenceKey();
+            byte[] data = ByteUtils.RepeatByte(0x42, 64);
+
+            IntPtr ecKey;
+            int rc = Interop.Crypto.EcKeyCreateByKeyParameters(
+                out ecKey,
+                testData.Curve.Oid.Value!,
+                testData.Q.X, testData.Q.X!.Length,
+                testData.Q.Y, testData.Q.Y!.Length,
+                testData.D, testData.D!.Length);
+
+            Assert.Equal(1, rc);
+            Assert.NotEqual(IntPtr.Zero, ecKey);
+
+            try
+            {
+                using (ECDsaOpenSsl ecKeyBacked = new ECDsaOpenSsl(ecKey))
+                {
+                    byte[] signature = ecKeyBacked.SignData(data, HashAlgorithmName.SHA256);
+
+                    using (ECDsa verifier = ECDsa.Create(testData))
+                    {
+                        Assert.True(verifier.VerifyData(data, signature, HashAlgorithmName.SHA256));
+                    }
+                }
+            }
+            finally
+            {
+                Interop.Crypto.EcKeyDestroy(ecKey);
+            }
+        }
+
         [Fact]
         public void ExplicitCurveImportExportProducesSameExplicitParams()
         {
@@ -434,6 +692,14 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyCreateByOid")]
         internal static extern IntPtr EcKeyCreateByOid(string oid);
 
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyCreateByKeyParameters")]
+        internal static extern int EcKeyCreateByKeyParameters(
+            out IntPtr key,
+            string oid,
+            byte[]? qx, int qxLength,
+            byte[]? qy, int qyLength,
+            byte[]? d, int dLength);
+
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyGenerateKey")]
         internal static extern int EcKeyGenerateKey(IntPtr ecKey);
 
@@ -445,5 +711,20 @@ internal static partial class Interop
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPKeyGenerateByEcCurveOid")]
         internal static extern int EvpPKeyGenerateByEcCurveOid(out SafeEvpPKeyHandle pkey, string oid, out int keySize);
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyCreateByExplicitParameters")]
+        internal static extern IntPtr EcKeyCreateByExplicitParameters(
+            ECCurve.ECCurveType curveType,
+            byte[]? qx, int qxLength,
+            byte[]? qy, int qyLength,
+            byte[]? d, int dLength,
+            byte[] p, int pLength,
+            byte[] a, int aLength,
+            byte[] b, int bLength,
+            byte[] gx, int gxLength,
+            byte[] gy, int gyLength,
+            byte[] order, int orderLength,
+            byte[] cofactor, int cofactorLength,
+            byte[]? seed, int seedLength);
     }
 }
