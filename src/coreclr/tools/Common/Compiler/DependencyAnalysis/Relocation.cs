@@ -579,12 +579,24 @@ namespace ILCompiler.DependencyAnalysis
             int hi20 = (int)(offset - lo12);
             Debug.Assert((long)lo12 + (long)hi20 == offset);
 
-            // Debug.Assert(GetRiscV64AuipcCombo(pCode, isStype) == 0);
-            pCode[0] |= (uint)hi20;
-            int bottomBitsPos = isStype ? 7 : 20;
-            pCode[1] |= (uint)((lo12 >> 5) << 25); // top 7 bits are in the same spot
-            pCode[1] |= (uint)((lo12 & 0x1F) << bottomBitsPos);
-            // Debug.Assert(GetRiscV64AuipcCombo(pCode, isStype) == offset);
+            // Replace existing immediate bits because RISC-V relocation placeholders may already carry addends.
+            pCode[0] &= 0x00000FFF;
+            pCode[0] |= (uint)hi20 & 0xFFFFF000;
+
+            uint lo12Bits = (uint)lo12 & 0xFFF;
+            if (isStype)
+            {
+                pCode[1] &= 0x01FFF07F;
+                pCode[1] |= (lo12Bits & 0xFE0) << 20;
+                pCode[1] |= (lo12Bits & 0x01F) << 7;
+            }
+            else
+            {
+                pCode[1] &= 0x000FFFFF;
+                pCode[1] |= lo12Bits << 20;
+            }
+
+            Debug.Assert(GetRiscV64AuipcCombo(pCode, isStype) == offset);
         }
 
         public Relocation(RelocType relocType, int offset, ISymbolNode target)
