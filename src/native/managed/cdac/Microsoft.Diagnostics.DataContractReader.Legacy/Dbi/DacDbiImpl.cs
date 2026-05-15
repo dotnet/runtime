@@ -277,7 +277,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             Contracts.ILoader loader = _target.Contracts.Loader;
             Contracts.ModuleHandle handle = loader.GetModuleHandleFromModulePtr(new TargetPointer(vmModule));
 
-            if (loader.GetInMemorySymbolStream(handle, out TargetPointer buffer, out uint size) && size != 0)
+            if (loader.TryGetSymbolStream(handle, out TargetPointer buffer, out uint size) && size != 0)
             {
                 pTargetBuffer->pAddress = buffer.Value;
                 pTargetBuffer->cbSize = size;

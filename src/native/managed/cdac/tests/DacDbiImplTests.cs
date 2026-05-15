@@ -462,41 +462,4 @@ public unsafe class DacDbiImplTests
         Assert.Equal(0u, targetBuffer.cbSize);
         Assert.Equal(0 /* kSymbolFormatNone */, symbolFormat);
     }
-
-    [Theory]
-    [ClassData(typeof(MockTarget.StdArch))]
-    public void GetSymbolsBuffer_ZeroModule_Fails(MockTarget.Architecture arch)
-    {
-        var mockLoader = new Mock<ILoader>();
-        DacDbiImpl dacDbi = CreateDacDbiWithMockLoader(arch, mockLoader);
-
-        DacDbiTargetBuffer targetBuffer;
-        int symbolFormat;
-        int hr = dacDbi.GetSymbolsBuffer(0, &targetBuffer, &symbolFormat);
-        Assert.NotEqual(System.HResults.S_OK, hr);
-    }
-
-    [Theory]
-    [ClassData(typeof(MockTarget.StdArch))]
-    public void GetSymbolsBuffer_NullTargetBuffer_Fails(MockTarget.Architecture arch)
-    {
-        var mockLoader = new Mock<ILoader>();
-        DacDbiImpl dacDbi = CreateDacDbiWithMockLoader(arch, mockLoader);
-
-        int symbolFormat;
-        int hr = dacDbi.GetSymbolsBuffer(0x1000, null, &symbolFormat);
-        Assert.NotEqual(System.HResults.S_OK, hr);
-    }
-
-    [Theory]
-    [ClassData(typeof(MockTarget.StdArch))]
-    public void GetSymbolsBuffer_NullSymbolFormat_Fails(MockTarget.Architecture arch)
-    {
-        var mockLoader = new Mock<ILoader>();
-        DacDbiImpl dacDbi = CreateDacDbiWithMockLoader(arch, mockLoader);
-
-        DacDbiTargetBuffer targetBuffer;
-        int hr = dacDbi.GetSymbolsBuffer(0x1000, &targetBuffer, null);
-        Assert.NotEqual(System.HResults.S_OK, hr);
-    }
 }

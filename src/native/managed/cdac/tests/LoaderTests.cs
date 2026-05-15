@@ -1025,7 +1025,7 @@ public unsafe class LoaderTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void GetInMemorySymbolStream_NoStream(MockTarget.Architecture arch)
+    public void TryGetSymbolStream_NoStream(MockTarget.Architecture arch)
     {
         TargetPointer moduleAddr = TargetPointer.Null;
         ILoader contract = CreateLoaderContract(arch, loader =>
@@ -1035,7 +1035,7 @@ public unsafe class LoaderTests
         });
 
         Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
-        bool result = contract.GetInMemorySymbolStream(handle, out TargetPointer buffer, out uint size);
+        bool result = contract.TryGetSymbolStream(handle, out TargetPointer buffer, out uint size);
         Assert.False(result);
         Assert.Equal(TargetPointer.Null, buffer);
         Assert.Equal(0u, size);
@@ -1043,7 +1043,7 @@ public unsafe class LoaderTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void GetInMemorySymbolStream_WithSymbols(MockTarget.Architecture arch)
+    public void TryGetSymbolStream_WithSymbols(MockTarget.Architecture arch)
     {
         byte[] symbolBytes = [1, 2, 3, 4, 5, 6, 7, 8];
         TargetPointer moduleAddr = TargetPointer.Null;
@@ -1057,7 +1057,7 @@ public unsafe class LoaderTests
         });
 
         Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
-        bool result = contract.GetInMemorySymbolStream(handle, out TargetPointer buffer, out uint size);
+        bool result = contract.TryGetSymbolStream(handle, out TargetPointer buffer, out uint size);
         Assert.True(result);
         Assert.Equal(expectedBuffer, buffer);
         Assert.Equal((uint)symbolBytes.Length, size);
@@ -1065,7 +1065,7 @@ public unsafe class LoaderTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void GetInMemorySymbolStream_EmptyStream(MockTarget.Architecture arch)
+    public void TryGetSymbolStream_EmptyStream(MockTarget.Architecture arch)
     {
         TargetPointer moduleAddr = TargetPointer.Null;
         ILoader contract = CreateLoaderContract(arch, loader =>
@@ -1077,7 +1077,7 @@ public unsafe class LoaderTests
         });
 
         Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
-        bool result = contract.GetInMemorySymbolStream(handle, out TargetPointer buffer, out uint size);
+        bool result = contract.TryGetSymbolStream(handle, out TargetPointer buffer, out uint size);
         // The stream pointer is non-null so the API returns true even though the buffer is empty.
         Assert.True(result);
         Assert.Equal(TargetPointer.Null, buffer);

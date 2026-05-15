@@ -786,7 +786,7 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
             }
         }
 
-        if (contract.GetInMemorySymbolStream(moduleHandle, out TargetPointer symbolBuffer, out uint symbolBufferSize))
+        if (contract.TryGetSymbolStream(moduleHandle, out TargetPointer symbolBuffer, out uint symbolBufferSize))
         {
             getModuleData->InMemoryPdbAddress = symbolBuffer.ToClrDataAddress(_target);
             getModuleData->InMemoryPdbSize = symbolBufferSize;

@@ -327,7 +327,7 @@ internal readonly struct Loader_1 : ILoader
 
     TargetPointer ILoader.GetFieldAddressFromRva(TargetPointer peAssemblyPtr, int rva) => GetRvaData(peAssemblyPtr, rva, true);
 
-    bool ILoader.GetInMemorySymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint size)
+    bool ILoader.TryGetSymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint size)
     {
         buffer = TargetPointer.Null;
         size = 0;
