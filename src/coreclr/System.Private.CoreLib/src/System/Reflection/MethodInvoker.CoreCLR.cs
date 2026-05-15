@@ -31,11 +31,9 @@ namespace System.Reflection
             _invocationFlags = constructor.ComputeAndUpdateInvocationFlags();
         }
 
-        [RequiresUnsafe]
         private unsafe object? InterpretedInvoke_Method(object? obj, IntPtr* args) =>
             RuntimeMethodHandle.InvokeMethod(obj, (void**)args, _signature!, isConstructor: false);
 
-        [RequiresUnsafe]
         private unsafe object? InterpretedInvoke_Constructor(object? obj, IntPtr* args) =>
             RuntimeMethodHandle.InvokeMethod(obj, (void**)args, _signature!, isConstructor: obj is null);
     }

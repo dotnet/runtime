@@ -46,6 +46,8 @@ export type EmscriptenInternals = {
 export type EmscriptenModuleInternal = EmscriptenModule & DotnetModuleConfig & {
     runtimeKeepalivePush(): void;
     runtimeKeepalivePop(): void;
+    print(message: string): void;
+    printErr(message: string): void;
     instantiateWasm?: InstantiateWasmCallBack;
     onAbort?: (reason: any, extraJson?: string) => void;
     onExit?: (code: number) => void;

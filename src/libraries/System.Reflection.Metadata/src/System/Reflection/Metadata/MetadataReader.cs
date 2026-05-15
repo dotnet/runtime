@@ -1080,8 +1080,7 @@ namespace System.Reflection.Metadata
 
         public ImmutableArray<byte> GetBlobContent(BlobHandle handle)
         {
-            // TODO: We can skip a copy for virtual blobs.
-            byte[]? bytes = GetBlobBytes(handle);
+            byte[]? bytes = BlobHeap.GetBytes(handle, unique: false);
             return ImmutableCollectionsMarshal.AsImmutableArray(bytes);
         }
 

@@ -854,7 +854,9 @@ bool CodeGen::genIsSameLocalVar(GenTree* op1, GenTree* op2)
 // inline
 void CodeGenInterface::genUpdateRegLife(const LclVarDsc* varDsc, bool isBorn, bool isDying DEBUGARG(GenTree* tree))
 {
-#if EMIT_GENERATE_GCINFO // The regset being updated here is only needed for codegen-level GCness tracking
+    // Targets like Wasm do not have a fixed set of registers so the regset logic in this method is unnecessary.
+#if EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
+    // The regset being updated here is only needed for codegen-level GCness tracking.
     regMaskTP regMask = genGetRegMask(varDsc);
 
 #ifdef DEBUG
@@ -884,7 +886,7 @@ void CodeGenInterface::genUpdateRegLife(const LclVarDsc* varDsc, bool isBorn, bo
         assert(varDsc->IsAlwaysAliveInMemory() || ((regSet.GetMaskVars() & regMask) == 0));
         regSet.AddMaskVars(regMask);
     }
-#endif // EMIT_GENERATE_GCINFO
+#endif // EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
 }
 
 #ifndef TARGET_WASM
@@ -1032,6 +1034,7 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
         bool isByRef    = varDsc->TypeIs(TYP_BYREF);
         bool isInReg    = varDsc->lvIsInReg();
         bool isInMemory = !isInReg || varDsc->IsAlwaysAliveInMemory();
+#ifndef TARGET_WASM
         if (isInReg)
         {
             // TODO-Cleanup: Move the code from compUpdateLifeVar to genUpdateRegLife that updates the
@@ -1047,7 +1050,8 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
             }
             codeGen->genUpdateRegLife(varDsc, false /*isBorn*/, true /*isDying*/ DEBUGARG(nullptr));
         }
-        // Update the gcVarPtrSetCur if it is in memory.
+#endif // !TARGET_WASM
+       // Update the gcVarPtrSetCur if it is in memory.
         if (isInMemory && (isGCRef || isByRef))
         {
             VarSetOps::RemoveElemD(this, codeGen->gcInfo.gcVarPtrSetCur, deadVarIndex);
@@ -1070,6 +1074,7 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
         bool isByRef = varDsc->TypeIs(TYP_BYREF);
         if (varDsc->lvIsInReg())
         {
+#ifndef TARGET_WASM
             // If this variable is going live in a register, it is no longer live on the stack,
             // unless it is an EH/"spill at single-def" var, which always remains live on the stack.
             if (!varDsc->IsAlwaysAliveInMemory())
@@ -1092,6 +1097,7 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
             {
                 codeGen->gcInfo.gcRegByrefSetCur |= regMask;
             }
+#endif // !TARGET_WASM
         }
         else if (lvaIsGCTracked(varDsc))
         {
@@ -1769,7 +1775,7 @@ void CodeGen::genExitCode(BasicBlock* block)
 
     genIPmappingAdd(IPmappingDscKind::Epilog, DebugInfo(), true);
 
-#if EMIT_GENERATE_GCINFO && defined(DEBUG)
+#if EMIT_GENERATE_GCINFO && defined(DEBUG) && !defined(TARGET_WASM)
     // For returnining epilogs do some validation that the GC info looks right.
     if (!block->HasFlag(BBF_HAS_JMP))
     {
@@ -1791,7 +1797,7 @@ void CodeGen::genExitCode(BasicBlock* block)
             }
         }
     }
-#endif // EMIT_GENERATE_GCINFO && defined(DEBUG)
+#endif // EMIT_GENERATE_GCINFO && defined(DEBUG) && !defined(TARGET_WASM)
 
     if (m_compiler->getNeedsGSSecurityCookie())
     {
@@ -2304,6 +2310,12 @@ void CodeGen::genEmitMachineCode()
 
     m_compiler->unwindReserve();
 
+#if defined(TARGET_WASM)
+    // For Wasm we know know the exact size of each function and funclet.
+    //
+    GetEmitter()->emitUpdateFuncletLocations();
+#endif
+
     bool trackedStackPtrsContig; // are tracked stk-ptrs contiguous ?
 
 #ifdef TARGET_64BIT
@@ -2422,11 +2434,6 @@ void CodeGen::genEmitMachineCode()
 //
 void CodeGen::genEmitUnwindDebugGCandEH()
 {
-#ifdef TARGET_WASM
-    // TODO-WASM: Fix this phase causing an assertion failure even for methods with no GC locals or EH clauses
-    return;
-#endif
-
     /* Now that the code is issued, we can finalize and emit the unwind data */
 
     m_compiler->unwindEmit(*codePtr, coldCodePtr);
@@ -2533,11 +2540,9 @@ void CodeGen::genEmitUnwindDebugGCandEH()
 }
 
 #ifndef TARGET_WASM
-/*****************************************************************************
- *
- *  Report EH clauses to the VM
- */
-
+//----------------------------------------------------------------------
+// genReportEH: create and report EH info to the VM
+//
 void CodeGen::genReportEH()
 {
     if (m_compiler->compHndBBtabCount == 0)
@@ -2549,14 +2554,6 @@ void CodeGen::genReportEH()
     if (m_compiler->opts.dspEHTable)
     {
         printf("*************** EH table for %s\n", m_compiler->info.compFullName);
-    }
-#endif // DEBUG
-
-    unsigned XTnum;
-
-#ifdef DEBUG
-    if (m_compiler->opts.dspEHTable)
-    {
         printf("%d EH table entries\n", m_compiler->compHndBBtabCount);
     }
 #endif // DEBUG
@@ -2565,19 +2562,14 @@ void CodeGen::genReportEH()
     m_compiler->eeSetEHcount(m_compiler->compHndBBtabCount);
     m_compiler->Metrics.EHClauseCount = (int)m_compiler->compHndBBtabCount;
 
-    struct EHClauseInfo
-    {
-        CORINFO_EH_CLAUSE clause;
-        EHblkDsc*         HBtab;
-    };
-
     EHClauseInfo* clauses = new (m_compiler, CMK_Codegen) EHClauseInfo[m_compiler->compHndBBtabCount];
 
     // Set up EH clause table, but don't report anything to the VM, yet.
-    XTnum = 0;
-    for (EHblkDsc* const HBtab : EHClauses(m_compiler))
+    //
+    for (unsigned int XTnum = 0; XTnum < m_compiler->compHndBBtabCount; XTnum++)
     {
-        UNATIVE_OFFSET tryBeg, tryEnd, hndBeg, hndEnd, hndTyp;
+        EHblkDsc* const HBtab = &m_compiler->compHndBBtab[XTnum];
+        UNATIVE_OFFSET  tryBeg, tryEnd, hndBeg, hndEnd, hndTyp;
 
         tryBeg = m_compiler->ehCodeOffset(HBtab->ebdTryBeg);
         hndBeg = m_compiler->ehCodeOffset(HBtab->ebdHndBeg);
@@ -2606,42 +2598,58 @@ void CodeGen::genReportEH()
         clause.TryLength     = tryEnd;
         clause.HandlerOffset = hndBeg;
         clause.HandlerLength = hndEnd;
-        clauses[XTnum++]     = {clause, HBtab};
+
+        unsigned const vmIndex = m_compiler->compEHTabOrderToVMClauseOrder[XTnum];
+
+        clauses[vmIndex] = {clause, HBtab};
     }
 
-    // The JIT's ordering of EH clauses does not guarantee that clauses covering the same try region are contiguous.
-    // We need this property to hold true so the CORINFO_EH_CLAUSE_SAMETRY flag is accurate.
-    jitstd::sort(clauses, clauses + m_compiler->compHndBBtabCount,
-                 [this](const EHClauseInfo& left, const EHClauseInfo& right) {
-        const unsigned short leftTryIndex  = left.HBtab->ebdTryBeg->bbTryIndex;
-        const unsigned short rightTryIndex = right.HBtab->ebdTryBeg->bbTryIndex;
+    genReportEHClauses(clauses);
+}
 
-        if (leftTryIndex == rightTryIndex)
-        {
-            // We have two clauses mapped to the same try region.
-            // Make sure we report the clause with the smaller index first.
-            const ptrdiff_t leftIndex  = left.HBtab - this->m_compiler->compHndBBtab;
-            const ptrdiff_t rightIndex = right.HBtab - this->m_compiler->compHndBBtab;
-            return leftIndex < rightIndex;
-        }
+#endif // !defined(TARGET_WASM)
 
-        return leftTryIndex < rightTryIndex;
-    });
+//----------------------------------------------------------------------
+// genReportEH: create and report EH info to the VM
+//
+// Arguments:
+//    clauses -- eh clause data to fill in and report
+//
+void CodeGen::genReportEHClauses(EHClauseInfo* clauses)
+{
+    // Now, report EH clauses to the VM
+    //
+    INDEBUG(unsigned lastFuncletIndex = 0);
 
-    // Now, report EH clauses to the VM in order of increasing try region index.
-    for (XTnum = 0; XTnum < m_compiler->compHndBBtabCount; XTnum++)
+    for (unsigned vmIndex = 0; vmIndex < m_compiler->compHndBBtabCount; vmIndex++)
     {
-        CORINFO_EH_CLAUSE& clause = clauses[XTnum].clause;
-        EHblkDsc* const    HBtab  = clauses[XTnum].HBtab;
+        CORINFO_EH_CLAUSE& clause = clauses[vmIndex].clause;
+        unsigned const     XTnum  = m_compiler->compVMClauseOrderToEHTabOrder[vmIndex];
+        EHblkDsc* const    HBtab  = &m_compiler->compHndBBtab[XTnum];
 
-        if (XTnum > 0)
+#ifdef DEBUG
+        // We should be seeing funclet numbers increase predictably
+        // as we go through the EH table in VM order.
+        //
+        if (HBtab->HasFilter())
+        {
+            assert(HBtab->ebdFuncIndex == (lastFuncletIndex + 2));
+        }
+        else
+        {
+            assert(HBtab->ebdFuncIndex == (lastFuncletIndex + 1));
+        }
+        lastFuncletIndex = HBtab->ebdFuncIndex;
+#endif
+
+        if (vmIndex > 0)
         {
             // CORINFO_EH_CLAUSE_SAMETRY flag means that the current clause covers same
             // try block as the previous one. The runtime cannot reliably infer this information from
             // native code offsets because of different try blocks can have same offsets. Alternative
             // solution to this problem would be inserting extra nops to ensure that different try
             // blocks have different offsets.
-            if (EHblkDsc::ebdIsSameTry(HBtab, clauses[XTnum - 1].HBtab))
+            if (EHblkDsc::ebdIsSameTry(HBtab, clauses[vmIndex - 1].HBtab))
             {
                 // The SAMETRY bit should only be set on catch clauses. This is ensured in IL, where only 'catch' is
                 // allowed to be mutually-protect. E.g., the C# "try {} catch {} catch {} finally {}" actually exists in
@@ -2651,11 +2659,11 @@ void CodeGen::genReportEH()
             }
         }
 
-        m_compiler->eeSetEHinfo(XTnum, &clause);
+        m_compiler->eeSetEHinfo(vmIndex, &clause);
     }
-
-    assert(XTnum == m_compiler->compHndBBtabCount);
 }
+
+#ifndef TARGET_WASM
 
 //----------------------------------------------------------------------
 // genUseOptimizedWriteBarriers: Determine if an optimized write barrier
@@ -3712,6 +3720,11 @@ void CodeGen::genCheckUseBlockInit()
             continue;
         }
 
+        if (m_compiler->lvaIsUnknownSizeLocal(varNum))
+        {
+            continue;
+        }
+
         if (m_compiler->fgVarIsNeverZeroInitializedInProlog(varNum))
         {
             varDsc->lvMustInit = 0;
@@ -4068,6 +4081,12 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
             }
 
             noway_assert(varDsc->lvOnFrame);
+
+            if (m_compiler->lvaIsUnknownSizeLocal(varNum))
+            {
+                // This local will belong on the UnknownSizeFrame, which will handle zeroing instead.
+                continue;
+            }
 
             // lvMustInit can only be set for GC types or TYP_STRUCT types
             // or when compInitMem is true
@@ -4807,6 +4826,11 @@ void CodeGen::genFinalizeFrame()
             regSet.rsSetRegsModified(maskPairRegs);
         }
     }
+
+    if (m_compiler->compUsesUnknownSizeFrame)
+    {
+        regSet.rsSetRegsModified(RBM_UNKBASE);
+    }
 #endif
 
 #ifdef DEBUG
@@ -5114,6 +5138,11 @@ void CodeGen::genFnProlog()
             continue;
         }
 
+        if (m_compiler->lvaIsUnknownSizeLocal(varNum))
+        {
+            continue;
+        }
+
         signed int loOffs = varDsc->GetStackOffset();
         signed int hiOffs = varDsc->GetStackOffset() + m_compiler->lvaLclStackHomeSize(varNum);
 
@@ -5389,6 +5418,10 @@ void CodeGen::genFnProlog()
         // allocating the local frame.
         //
         extraFrameSize = m_compiler->compCalleeRegsPushed * REGSIZE_BYTES;
+
+        // Simulate a return address being pushed by a call to get expected misalignment on entry.
+        GetEmitter()->emitIns_R(INS_push, EA_PTRSIZE, REG_EAX);
+        m_compiler->unwindAllocStack(REGSIZE_BYTES);
 #endif
     }
 
@@ -5534,6 +5567,13 @@ void CodeGen::genFnProlog()
     // This is the end of the OS-reported prolog for purposes of unwinding
     //
     //-------------------------------------------------------------------------
+
+#ifdef TARGET_ARM64
+    if (m_compiler->compUsesUnknownSizeFrame)
+    {
+        genUnknownSizeFrame();
+    }
+#endif
 
 #ifdef TARGET_ARM
     if (needToEstablishFP)
@@ -7202,12 +7242,12 @@ void CodeGen::genReturn(GenTree* treeNode)
         }
     }
 
-#if EMIT_GENERATE_GCINFO
+#if EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
     if (treeNode->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET))
     {
         genMarkReturnGCInfo();
     }
-#endif // EMIT_GENERATE_GCINFO
+#endif // EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
 
 #ifdef PROFILING_SUPPORTED
 
@@ -7294,6 +7334,61 @@ void CodeGen::genReturnSuspend(GenTreeUnOp* treeNode)
     }
 
     genMarkReturnGCInfo();
+}
+
+//------------------------------------------------------------------------
+// genPatchpoint:
+//   Generate code for GT_PATCHPOINT / GT_PATCHPOINT_FORCED nodes.
+//   Emits a call to the patchpoint helper followed by an unconditional jump
+//   to the returned address.
+//
+// Arguments:
+//   treeNode - The patchpoint node (GT_PATCHPOINT or GT_PATCHPOINT_FORCED)
+//
+void CodeGen::genPatchpoint(GenTreeOp* treeNode)
+{
+    assert(treeNode->OperIs(GT_PATCHPOINT, GT_PATCHPOINT_FORCED));
+
+    genConsumeOperands(treeNode);
+
+    // Move operands into the expected argument registers if needed.
+    genCopyRegIfNeeded(treeNode->gtGetOp1(), REG_ARG_0);
+    if (treeNode->OperIs(GT_PATCHPOINT))
+    {
+        genCopyRegIfNeeded(treeNode->gtGetOp2(), REG_ARG_1);
+    }
+
+    CorInfoHelpFunc helper = treeNode->OperIs(GT_PATCHPOINT) ? CORINFO_HELP_PATCHPOINT : CORINFO_HELP_PATCHPOINT_FORCED;
+
+    genEmitHelperCall(helper, 0, EA_UNKNOWN);
+
+    // On non-x64 targets, mark the method as having tail calls so that
+    // return-address hijacking is disabled — after the jump the return
+    // address may have moved in the frame and unhijacking will write
+    // to the wrong slot.
+    // On x64 this is unnecessary because the return address is always at
+    // the same stack slot regardless of tail calls.
+#ifndef TARGET_XARCH
+    SetHasTailCalls(true);
+#endif
+
+    // Jump to the address returned by the patchpoint helper.
+    // Must not use INS_tail_i_jmp: it is a REX-prefixed jump that the
+    // win-x64 unwinder detects as an epilog instruction, which would
+    // incorrectly signal that callee saves / RSP have been restored.
+#ifdef TARGET_XARCH
+    GetEmitter()->emitIns_R(INS_i_jmp, EA_PTRSIZE, REG_INTRET);
+#elif defined(TARGET_ARM64)
+    GetEmitter()->emitIns_R(INS_br, EA_PTRSIZE, REG_INTRET);
+#elif defined(TARGET_ARM)
+    GetEmitter()->emitIns_R(INS_bx, EA_PTRSIZE, REG_INTRET);
+#elif defined(TARGET_LOONGARCH64)
+    GetEmitter()->emitIns_R_R_I(INS_jirl, EA_PTRSIZE, REG_R0, REG_INTRET, 0);
+#elif defined(TARGET_RISCV64)
+    GetEmitter()->emitIns_R_R_I(INS_jalr, EA_PTRSIZE, REG_R0, REG_INTRET, 0);
+#else
+#error "Unsupported target architecture for GT_PATCHPOINT"
+#endif
 }
 
 //------------------------------------------------------------------------

@@ -220,7 +220,7 @@
       <_Crossgen2InCoreRootTime>$([System.IO.File]::GetLastWriteTime('$(_Crossgen2DstPath)').Ticks)</_Crossgen2InCoreRootTime>
     </PropertyGroup>
 
-    <ItemGroup>
+    <ItemGroup Condition="'@(_IlCg2DoneFiles)' != ''">
       <_StaleIlCg2DoneFile Include="@(_IlCg2DoneFiles)"
           Condition="$([System.IO.File]::GetLastWriteTime('%(Identity)').Ticks) &lt; $(_Crossgen2InCoreRootTime)" />
     </ItemGroup>

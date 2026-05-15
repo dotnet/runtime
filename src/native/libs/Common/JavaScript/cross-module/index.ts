@@ -136,9 +136,10 @@ export function dotnetUpdateInternalsSubscriber() {
             addOnExitListener: table[14],
             abortStartup: table[15],
             quitNow: table[16],
-            normalizeException: table[17],
-            fetchSatelliteAssemblies: table[18],
-            fetchLazyAssembly: table[19],
+            exit: table[17],
+            normalizeException: table[18],
+            fetchSatelliteAssemblies: table[19],
+            fetchLazyAssembly: table[20],
         };
         Object.assign(dotnetLoaderExports, loaderExportsLocal);
         Object.assign(logger, loggerLocal);

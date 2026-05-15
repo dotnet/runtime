@@ -87,7 +87,6 @@ namespace System
         [DoesNotReturn]
         private static partial void FailFast(StackCrawlMarkHandle mark, string? message, ObjectHandleOnStack exception, string? errorMessage);
 
-        [RequiresUnsafe]
         private static unsafe string[] InitializeCommandLineArgs(char* exePath, int argc, char** argv) // invoked from VM
         {
             string[] commandLineArgs = new string[argc + 1];
@@ -105,7 +104,6 @@ namespace System
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void InitializeCommandLineArgs(char* exePath, int argc, char** argv, string[]* pResult, Exception* pException)
         {
             try
@@ -122,7 +120,6 @@ namespace System
         internal static partial int GetProcessorCount();
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void GetResourceString(char* pKey, string* pResult, Exception* pException)
         {
             try
@@ -137,7 +134,6 @@ namespace System
 
         [UnmanagedCallersOnly]
         [StackTraceHidden]
-        [RequiresUnsafe]
         internal static unsafe void CallEntryPoint(IntPtr entryPoint, string[]* pArgument, int* pReturnValue, bool captureException, Exception* pException)
         {
             try
@@ -175,7 +171,6 @@ namespace System
 
         [UnmanagedCallersOnly]
         [StackTraceHidden]
-        [RequiresUnsafe]
         internal static unsafe int ExecuteInDefaultAppDomain(IntPtr entryPoint, char* pArgument, Exception* pException)
         {
             try

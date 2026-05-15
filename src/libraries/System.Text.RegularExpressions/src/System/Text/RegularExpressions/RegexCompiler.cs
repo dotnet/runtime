@@ -387,7 +387,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Generates the implementation for TryFindNextPossibleStartingPosition.</summary>
-        protected void EmitTryFindNextPossibleStartingPosition()
+        protected unsafe void EmitTryFindNextPossibleStartingPosition()
         {
             Debug.Assert(_regexTree != null);
             _int32LocalsPool?.Clear();
@@ -1426,7 +1426,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Generates the implementation for TryMatchAtCurrentPosition.</summary>
-        protected void EmitTryMatchAtCurrentPosition()
+        protected unsafe void EmitTryMatchAtCurrentPosition()
         {
             // In .NET Framework and up through .NET Core 3.1, the code generated for RegexOptions.Compiled was effectively an unrolled
             // version of what RegexInterpreter would process.  The RegexNode tree would be turned into a series of opcodes via
@@ -3189,7 +3189,7 @@ namespace System.Text.RegularExpressions
                 }
 
                 // Gets the node to treat as the subsequent one to node.Child(index)
-                static RegexNode? GetSubsequent(int index, RegexNode node, RegexNode? subsequent)
+                static unsafe RegexNode? GetSubsequent(int index, RegexNode node, RegexNode? subsequent)
                 {
                     int childCount = node.ChildCount();
                     for (int i = index + 1; i < childCount; i++)
@@ -5782,7 +5782,7 @@ namespace System.Text.RegularExpressions
 
         /// <summary>Emits a check for whether the character is in the specified character class.</summary>
         /// <remarks>The character to be checked has already been loaded onto the stack.</remarks>
-        private void EmitMatchCharacterClass(string charClass)
+        private unsafe void EmitMatchCharacterClass(string charClass)
         {
             // We need to perform the equivalent of calling RegexRunner.CharInClass(ch, charClass),
             // but that call is relatively expensive.  Before we fall back to it, we try to optimize

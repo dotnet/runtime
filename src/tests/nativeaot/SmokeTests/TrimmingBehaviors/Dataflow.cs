@@ -28,7 +28,6 @@ class Dataflow
         TestObjectGetTypeDataflow.Run();
         TestMakeGenericDataflow.Run();
         TestMakeGenericDataflowInvalid.Run();
-        TestMakeGenericConstrainedDataflow.Run();
         TestMarshalIntrinsics.Run();
         Regression97758.Run();
         TestMakeGenericDataflowInLocalMethod.Run();
@@ -697,26 +696,6 @@ class Dataflow
                 typeof(Gen).GetMethod("Bridge").MakeGenericMethod([typeof(float), typeof(double)]);
             }
             catch (ArgumentException) { }
-        }
-    }
-
-    class TestMakeGenericConstrainedDataflow
-    {
-        struct Atom;
-
-        class Gen<T, U, V> where U : IFoo, new();
-
-        interface IFoo;
-        class Foo : IFoo;
-
-        public static object Handle<T, U>() where U : new()
-        {
-            return Activator.CreateInstance(typeof(Gen<,,>).MakeGenericType(typeof(T), typeof(U), typeof(object)));
-        }
-
-        public static void Run()
-        {
-            Handle<Atom, Foo>().ToString();
         }
     }
 
