@@ -674,7 +674,7 @@ private:
             // Note it's important that we clone/copy the temp assign above, if we created one,
             // because flow along the "cold path" is going to bypass the check block.
             //
-            m_lastStmt = m_checkBlock->m_lastStmt();
+            m_lastStmt = m_checkBlock->lastStmt();
 
             // In case if GDV candidates are "exact" (e.g. we have the full list of classes implementing
             // the given interface in the app - NativeAOT only at this moment) we assume the last
