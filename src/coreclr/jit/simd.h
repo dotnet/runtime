@@ -2207,6 +2207,7 @@ static_assert(sizeof(simd_t) >= sizeof(simdscalable_t));
 struct simdmaskscalable_t
 {
     var_types gtSimdMaskScalableBaseType;
+    // Only 0 and 1 are valid values
     uint8_t   gtSimdMaskScalableIndex;
 
     bool operator==(const simdmaskscalable_t& other) const
