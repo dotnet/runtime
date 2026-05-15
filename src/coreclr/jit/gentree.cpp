@@ -26861,8 +26861,7 @@ GenTree* Compiler::gtNewSimdCreateGeometricSequenceNode(
 
             for (uint32_t index = 0; index < simdCount; index++)
             {
-                vecCon->gtSimdVal.f32[index] = initial;
-                initial *= multiplier;
+                vecCon->gtSimdVal.f32[index] = initial * powf(multiplier, static_cast<float>(index));
             }
             break;
         }
@@ -26874,8 +26873,7 @@ GenTree* Compiler::gtNewSimdCreateGeometricSequenceNode(
 
             for (uint32_t index = 0; index < simdCount; index++)
             {
-                vecCon->gtSimdVal.f64[index] = initial;
-                initial *= multiplier;
+                vecCon->gtSimdVal.f64[index] = initial * pow(multiplier, static_cast<double>(index));
             }
             break;
         }

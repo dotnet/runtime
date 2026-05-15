@@ -891,7 +891,7 @@ namespace System.Numerics
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="initial">The value that element 0 will be initialized to.</param>
         /// <param name="multiplier">The value that indicates how each element should be scaled from the previous.</param>
-        /// <returns>A new <see cref="Vector{T}" /> instance with the first element initialized to <paramref name="initial" /> and each subsequent element initialized to the value of the previous element multiplied by <paramref name="multiplier" />.</returns>
+        /// <returns>A new <see cref="Vector{T}" /> instance with each element initialized to <paramref name="initial" /> multiplied by <paramref name="multiplier" /> raised to the element index.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="initial"/> and <paramref name="multiplier"/> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -924,10 +924,10 @@ namespace System.Numerics
         {
             Unsafe.SkipInit(out Vector<T> result);
 
-            for (int index = 0; index < Vector<T>.Count; index += 2)
+            for (int index = 1; index < Vector<T>.Count; index += 2)
             {
-                result.SetElementUnsafe(index, even);
-                result.SetElementUnsafe(index + 1, odd);
+                result.SetElementUnsafe(index - 1, even);
+                result.SetElementUnsafe(index, odd);
             }
 
             return result;

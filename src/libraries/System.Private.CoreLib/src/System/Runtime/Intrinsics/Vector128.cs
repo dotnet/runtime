@@ -1591,32 +1591,35 @@ namespace System.Runtime.Intrinsics
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="initial">The value that element 0 will be initialized to.</param>
         /// <param name="multiplier">The value that indicates how each element should be scaled from the previous.</param>
-        /// <returns>A new <see cref="Vector128{T}" /> instance with the first element initialized to <paramref name="initial" /> and each subsequent element initialized to the value of the previous element multiplied by <paramref name="multiplier" />.</returns>
+        /// <returns>A new <see cref="Vector128{T}" /> instance with each element initialized to <paramref name="initial" /> multiplied by <paramref name="multiplier" /> raised to the element index.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="initial"/> and <paramref name="multiplier"/> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> CreateGeometricSequence<T>(T initial, [ConstantExpected] T multiplier)
         {
-            var lower = Vector64.CreateGeometricSequence(initial, multiplier);
-            T upperMultiplier = multiplier;
+            Unsafe.SkipInit(out Vector128<T> result);
 
-            if (Vector128<T>.Count >= 4)
+            if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
             {
-                upperMultiplier = Scalar<T>.Multiply(upperMultiplier, upperMultiplier);
+                for (int index = 0; index < Vector128<T>.Count; index++)
+                {
+                    T power = Scalar<T>.Pow(multiplier, Scalar<T>.Convert(index));
+                    T value = Scalar<T>.Multiply(initial, power);
+                    result.SetElementUnsafe(index, value);
+                }
+
+                return result;
             }
 
-            if (Vector128<T>.Count >= 8)
+            result.SetElementUnsafe(0, initial);
+
+            for (int index = 1; index < Vector128<T>.Count; index++)
             {
-                upperMultiplier = Scalar<T>.Multiply(upperMultiplier, upperMultiplier);
+                initial = Scalar<T>.Multiply(initial, multiplier);
+                result.SetElementUnsafe(index, initial);
             }
 
-            if (Vector128<T>.Count >= 16)
-            {
-                upperMultiplier = Scalar<T>.Multiply(upperMultiplier, upperMultiplier);
-            }
-
-            var upper = Vector64.CreateGeometricSequence(Scalar<T>.Multiply(initial, upperMultiplier), multiplier);
-            return Create(lower, upper);
+            return result;
         }
 
         /// <summary>Creates a new <see cref="Vector128{T}" /> instance whose elements alternate between two specified values.</summary>
@@ -1635,7 +1638,7 @@ namespace System.Runtime.Intrinsics
             }
 
             Vector64<T> sequence = Vector64.CreateAlternatingSequence(even, odd);
-            return Create(sequence, sequence);
+            return Create(sequence);
         }
 
         /// <summary>Creates a new <see cref="Vector128{T}" /> instance whose elements are the reciprocal of an arithmetic sequence.</summary>
@@ -1733,30 +1736,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (Vector128<T> Even, Vector128<T> Odd) Unzip<T>(Vector128<T> left, Vector128<T> right) => (UnzipEven(left, right), UnzipOdd(left, right));
-
-        private static Vector128<T> Unzip<T>(Vector128<T> left, Vector128<T> right, bool odd)
-        {
-            int start = odd ? 1 : 0;
-            int lowerCount = (Vector128<T>.Count - start + 1) / 2;
-
-            if (lowerCount == 0)
-            {
-                return Vector128<T>.Zero;
-            }
-
-            Unsafe.SkipInit(out Vector128<T> result);
-
-            for (int index = 0; index < Vector128<T>.Count; index++)
-            {
-                T value = (index < lowerCount)
-                    ? left.GetElementUnsafe(start + (index * 2))
-                    : right.GetElementUnsafe(start + ((index - lowerCount) * 2));
-
-                result.SetElementUnsafe(index, value);
-            }
-
-            return result;
-        }
 
         /// <inheritdoc cref="Vector.Reverse{T}(Vector{T})" />
         [Intrinsic]

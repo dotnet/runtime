@@ -4563,12 +4563,10 @@ namespace System.Numerics.Tests
             const float multiplier = 1.0064822f;
             float initial = GetNonConstant(1.0059024f);
             Vector<float> sequence = Vector.CreateGeometricSequence(initial, multiplier);
-            float expected = initial;
-
             for (int index = 0; index < Vector<float>.Count; index++)
             {
-                AssertExtensions.Equal(expected, sequence.GetElement(index), 1e-6f);
-                expected *= multiplier;
+                float expected = initial * float.Pow(multiplier, index);
+                AssertExtensions.Equal(expected, sequence.GetElement(index));
             }
         }
 
@@ -4578,12 +4576,10 @@ namespace System.Numerics.Tests
             const double multiplier = 1e-50;
             double initial = GetNonConstant(1e-154);
             Vector<double> sequence = Vector.CreateGeometricSequence(initial, multiplier);
-            double expected = initial;
-
             for (int index = 0; index < Vector<double>.Count; index++)
             {
-                AssertExtensions.Equal(expected, sequence.GetElement(index), 1e-12);
-                expected *= multiplier;
+                double expected = initial * double.Pow(multiplier, index);
+                AssertExtensions.Equal(expected, sequence.GetElement(index));
             }
         }
 

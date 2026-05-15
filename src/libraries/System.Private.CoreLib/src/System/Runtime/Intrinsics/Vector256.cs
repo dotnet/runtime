@@ -1670,37 +1670,36 @@ namespace System.Runtime.Intrinsics
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="initial">The value that element 0 will be initialized to.</param>
         /// <param name="multiplier">The value that indicates how each element should be scaled from the previous.</param>
-        /// <returns>A new <see cref="Vector256{T}" /> instance with the first element initialized to <paramref name="initial" /> and each subsequent element initialized to the value of the previous element multiplied by <paramref name="multiplier" />.</returns>
+        /// <returns>A new <see cref="Vector256{T}" /> instance with each element initialized to <paramref name="initial" /> multiplied by <paramref name="multiplier" /> raised to the element index.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="initial"/> and <paramref name="multiplier"/> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> CreateGeometricSequence<T>(T initial, [ConstantExpected] T multiplier)
         {
-            var lower = Vector128.CreateGeometricSequence(initial, multiplier);
-            T upperMultiplier = multiplier;
+            Unsafe.SkipInit(out Vector256<T> result);
 
-            if (Vector256<T>.Count >= 4)
+            if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
             {
-                upperMultiplier = Scalar<T>.Multiply(upperMultiplier, upperMultiplier);
+
+                for (int index = 0; index < Vector256<T>.Count; index++)
+                {
+                    T power = Scalar<T>.Pow(multiplier, Scalar<T>.Convert(index));
+                    T value = Scalar<T>.Multiply(initial, power);
+                    result.SetElementUnsafe(index, value);
+                }
+
+                return result;
             }
 
-            if (Vector256<T>.Count >= 8)
+            result.SetElementUnsafe(0, initial);
+
+            for (int index = 1; index < Vector256<T>.Count; index++)
             {
-                upperMultiplier = Scalar<T>.Multiply(upperMultiplier, upperMultiplier);
+                initial = Scalar<T>.Multiply(initial, multiplier);
+                result.SetElementUnsafe(index, initial);
             }
 
-            if (Vector256<T>.Count >= 16)
-            {
-                upperMultiplier = Scalar<T>.Multiply(upperMultiplier, upperMultiplier);
-            }
-
-            if (Vector256<T>.Count >= 32)
-            {
-                upperMultiplier = Scalar<T>.Multiply(upperMultiplier, upperMultiplier);
-            }
-
-            var upper = Vector128.CreateGeometricSequence(Scalar<T>.Multiply(initial, upperMultiplier), multiplier);
-            return Create(lower, upper);
+            return result;
         }
 
         /// <summary>Creates a new <see cref="Vector256{T}" /> instance whose elements alternate between two specified values.</summary>

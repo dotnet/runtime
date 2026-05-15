@@ -6513,12 +6513,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             const float multiplier = 1.0064822f;
             float initial = GetNonConstant(1.0059024f);
             Vector256<float> sequence = Vector256.CreateGeometricSequence(initial, multiplier);
-            float expected = initial;
-
             for (int index = 0; index < Vector256<float>.Count; index++)
             {
-                AssertExtensions.Equal(expected, sequence.GetElement(index), 1e-6f);
-                expected *= multiplier;
+                float expected = initial * float.Pow(multiplier, index);
+                AssertExtensions.Equal(expected, sequence.GetElement(index));
             }
         }
 
@@ -6528,12 +6526,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             const double multiplier = 1e-50;
             double initial = GetNonConstant(1e-154);
             Vector256<double> sequence = Vector256.CreateGeometricSequence(initial, multiplier);
-            double expected = initial;
-
             for (int index = 0; index < Vector256<double>.Count; index++)
             {
-                AssertExtensions.Equal(expected, sequence.GetElement(index), 1e-12);
-                expected *= multiplier;
+                double expected = initial * double.Pow(multiplier, index);
+                AssertExtensions.Equal(expected, sequence.GetElement(index));
             }
         }
 

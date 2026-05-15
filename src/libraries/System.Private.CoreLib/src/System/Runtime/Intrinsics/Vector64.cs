@@ -1398,7 +1398,7 @@ namespace System.Runtime.Intrinsics
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="initial">The value that element 0 will be initialized to.</param>
         /// <param name="multiplier">The value that indicates how each element should be scaled from the previous.</param>
-        /// <returns>A new <see cref="Vector64{T}" /> instance with the first element initialized to <paramref name="initial" /> and each subsequent element initialized to the value of the previous element multiplied by <paramref name="multiplier" />.</returns>
+        /// <returns>A new <see cref="Vector64{T}" /> instance with each element initialized to <paramref name="initial" /> multiplied by <paramref name="multiplier" /> raised to the element index.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="initial"/> and <paramref name="multiplier"/> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1406,37 +1406,24 @@ namespace System.Runtime.Intrinsics
         {
             Unsafe.SkipInit(out Vector64<T> result);
 
-            T value = initial;
-            result.SetElementUnsafe(0, value);
-
-            if (Vector64<T>.Count >= 2)
+            if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
             {
-                value = Scalar<T>.Multiply(value, multiplier);
-                result.SetElementUnsafe(1, value);
+                for (int index = 0; index < Vector64<T>.Count; index++)
+                {
+                    T power = Scalar<T>.Pow(multiplier, Scalar<T>.Convert(index));
+                    T value = Scalar<T>.Multiply(initial, power);
+                    result.SetElementUnsafe(index, value);
+                }
+
+                return result;
             }
 
-            if (Vector64<T>.Count >= 4)
+            result.SetElementUnsafe(0, initial);
+
+            for (int index = 1; index < Vector64<T>.Count; index++)
             {
-                value = Scalar<T>.Multiply(value, multiplier);
-                result.SetElementUnsafe(2, value);
-
-                value = Scalar<T>.Multiply(value, multiplier);
-                result.SetElementUnsafe(3, value);
-            }
-
-            if (Vector64<T>.Count >= 8)
-            {
-                value = Scalar<T>.Multiply(value, multiplier);
-                result.SetElementUnsafe(4, value);
-
-                value = Scalar<T>.Multiply(value, multiplier);
-                result.SetElementUnsafe(5, value);
-
-                value = Scalar<T>.Multiply(value, multiplier);
-                result.SetElementUnsafe(6, value);
-
-                value = Scalar<T>.Multiply(value, multiplier);
-                result.SetElementUnsafe(7, value);
+                initial = Scalar<T>.Multiply(initial, multiplier);
+                result.SetElementUnsafe(index, initial);
             }
 
             return result;
@@ -1460,10 +1447,10 @@ namespace System.Runtime.Intrinsics
                 return result;
             }
 
-            for (int index = 0; index < Vector64<T>.Count; index += 2)
+            for (int index = 1; index < Vector64<T>.Count; index += 2)
             {
-                result.SetElementUnsafe(index, even);
-                result.SetElementUnsafe(index + 1, odd);
+                result.SetElementUnsafe(index - 1, even);
+                result.SetElementUnsafe(index, odd);
             }
 
             return result;
@@ -1575,10 +1562,10 @@ namespace System.Runtime.Intrinsics
 
             Unsafe.SkipInit(out Vector64<T> result);
 
-            for (int index = 0; index < Vector64<T>.Count; index += 2)
+            for (int index = 1; index < Vector64<T>.Count; index += 2)
             {
-                result.SetElementUnsafe(index, left.GetElementUnsafe(index / 2));
-                result.SetElementUnsafe(index + 1, right.GetElementUnsafe(index / 2));
+                result.SetElementUnsafe(index - 1, left.GetElementUnsafe(index / 2));
+                result.SetElementUnsafe(index, right.GetElementUnsafe(index / 2));
             }
 
             return result;
@@ -1596,10 +1583,10 @@ namespace System.Runtime.Intrinsics
 
             Unsafe.SkipInit(out Vector64<T> result);
 
-            for (int index = 0; index < Vector64<T>.Count; index += 2)
+            for (int index = 1; index < Vector64<T>.Count; index += 2)
             {
-                result.SetElementUnsafe(index, left.GetElementUnsafe(Vector64<T>.Count / 2 + index / 2));
-                result.SetElementUnsafe(index + 1, right.GetElementUnsafe(Vector64<T>.Count / 2 + index / 2));
+                result.SetElementUnsafe(index - 1, left.GetElementUnsafe(Vector64<T>.Count / 2 + index / 2));
+                result.SetElementUnsafe(index, right.GetElementUnsafe(Vector64<T>.Count / 2 + index / 2));
             }
 
             return result;
