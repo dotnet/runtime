@@ -56,7 +56,7 @@ namespace System.IO
                 s += Environment.NewLineConst + SR.Format(SR.IO_FileName_Name, FileName);
 
             if (!string.IsNullOrEmpty(_requestingAssemblyChain))
-                s += Environment.NewLineConst + SR.Format(SR.IO_FileLoad_RequestedBy, _requestingAssemblyChain.ReplaceLineEndings());
+                s += Environment.NewLineConst + SR.Format(SR.IO_FileLoad_RequestedBy, _requestingAssemblyChain);
 
             if (InnerException != null)
                 s += Environment.NewLineConst + InnerExceptionPrefix + InnerException.ToString();
