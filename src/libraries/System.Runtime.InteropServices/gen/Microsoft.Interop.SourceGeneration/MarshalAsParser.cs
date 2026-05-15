@@ -154,8 +154,8 @@ namespace Microsoft.Interop
     {
         private static readonly string IidParameterIndexConfigurationName
             = $"{nameof(MarshalAsAttribute)}{Type.Delimiter}{nameof(MarshalAsAttribute.IidParameterIndex)}";
-        private static readonly string IidParameterIndexConfigurationNameWithSupportedShape
-            = $"{IidParameterIndexConfigurationName} (supported only on [MarshalAs(UnmanagedType.Interface)] out object parameters)";
+        private static string IidParameterIndexConfigurationNameWithSupportedShape
+            => SR.Format(SR.IidParameterIndexUnsupportedConfigurationName, IidParameterIndexConfigurationName);
 
         private readonly GeneratorDiagnosticsBag _diagnostics;
         private readonly DefaultMarshallingInfo _defaultInfo;
@@ -188,7 +188,7 @@ namespace Microsoft.Interop
             if (namedArguments.TryGetValue(nameof(MarshalAsAttribute.IidParameterIndex), out TypedConstant iidParameterIndexArg))
             {
                 if (!elementInfoProvider.TryGetInfoForParamIndex(attributeData, (int)iidParameterIndexArg.Value!, marshallingInfoCallback, out iidParameterIndexInfo)
-                    || !IsGuidType(iidParameterIndexInfo))
+                    || !IsValidIidParameter(iidParameterIndexInfo))
                 {
                     _diagnostics.ReportConfigurationNotSupported(attributeData, IidParameterIndexConfigurationNameWithSupportedShape);
                     iidParameterIndexInfo = null;
@@ -289,6 +289,12 @@ namespace Microsoft.Interop
         private static bool IsGuidType(TypePositionInfo info)
             => info.ManagedType.FullTypeName is TypeNames.System_Guid
                 or $"{TypeNames.GlobalAlias}{TypeNames.System_Guid}";
+
+        // The IID parameter referenced by 'IidParameterIndex' must be a 'Guid' passed either by value
+        // or as 'in' (REFIID semantics) or 'ref'.
+        private static bool IsValidIidParameter(TypePositionInfo info)
+            => IsGuidType(info)
+                && info.RefKind is RefKind.None or RefKind.In or RefKind.Ref;
 
         private static bool IsOutParameter(AttributeData attributeData)
             => attributeData.ApplicationSyntaxReference?.GetSyntax() is AttributeSyntax

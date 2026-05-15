@@ -477,6 +477,11 @@
         <target state="translated">Ce type sera traité en tant que struct dans la signature native, et non en tant que HRESULT natif</target>
         <note />
       </trans-unit>
+      <trans-unit id="IidParameterIndexUnsupportedConfigurationName">
+        <source>{0} (supported only on [MarshalAs(UnmanagedType.Interface)] out object parameters)</source>
+        <target state="new">{0} (supported only on [MarshalAs(UnmanagedType.Interface)] out object parameters)</target>
+        <note>Configuration name reported via the 'configuration not supported' diagnostic when 'MarshalAs.IidParameterIndex' is used on an unsupported parameter shape. {0} is the dotted attribute member name, e.g. 'MarshalAsAttribute.IidParameterIndex'.</note>
+      </trans-unit>
       <trans-unit id="InAttributeNotSupportedOnByValueParameters">
         <source>The '[In]' attribute is only supported on array parameters. By-value parameters are considered read-only by default.</source>
         <target state="translated">L'attribut '[In]' n'est pris en charge que sur les paramètres de tableau. Les paramètres par valeur sont considérés comme en lecture seule par défaut.</target>

@@ -122,7 +122,15 @@ namespace Microsoft.Interop
                                         SyntaxKind.SimpleAssignmentExpression,
                                         IdentifierName(nativeIdentifier),
                                         LiteralExpression(SyntaxKind.NullLiteralExpression))),
-                                ReturnStatement(IdentifierName(queryInterfaceHResultIdentifier)))),
+                                // Throw a managed exception derived from the failing HRESULT. The stub's
+                                // existing exception-to-HRESULT infrastructure (see
+                                // ManagedHResultExceptionGeneratorResolver) catches this on the way out
+                                // and returns the HRESULT to the unmanaged caller while also running
+                                // the normal cleanup stages.
+                                MethodInvocationStatement(
+                                    TypeSyntaxes.System_Runtime_InteropServices_Marshal,
+                                    IdentifierName("ThrowExceptionForHR"),
+                                    Argument(IdentifierName(queryInterfaceHResultIdentifier))))),
                         ExpressionStatement(
                             AssignmentExpression(
                                 SyntaxKind.SimpleAssignmentExpression,
