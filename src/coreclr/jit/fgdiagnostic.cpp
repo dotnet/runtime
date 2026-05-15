@@ -3826,7 +3826,7 @@ void Compiler::fgDebugCheckLinkedLocals()
                     assert(ShouldLink(def));
                     m_locals.Push(def);
                     return GenTree::VisitResult::Continue;
-                    };
+                };
 
                 node->VisitLocalDefNodes(m_compiler, linkDefs);
             }
@@ -3838,7 +3838,7 @@ void Compiler::fgDebugCheckLinkedLocals()
         {
             auto defIsNode = [=](GenTree* def) {
                 return node == def ? GenTree::VisitResult::Abort : GenTree::VisitResult::Continue;
-                };
+            };
             return call->VisitLocalDefNodes(m_compiler, defIsNode) == GenTree::VisitResult::Abort;
         }
     };

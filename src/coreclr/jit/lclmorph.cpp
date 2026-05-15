@@ -116,7 +116,7 @@ public:
         auto moveToEnd = [&](GenTreeLclVarCommon* def) {
             MoveNodeToEnd(def);
             return GenTree::VisitResult::Continue;
-            };
+        };
 
         call->VisitLocalDefNodes(m_compiler, moveToEnd);
     }

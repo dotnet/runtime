@@ -2675,10 +2675,9 @@ bool Liveness<TLiveness>::IsTrackedCallDefinition(LIR::Range& range, GenTree* no
         {
             auto visit = [=](GenTree* callDef) {
                 return node == callDef ? GenTree::VisitResult::Abort : GenTree::VisitResult::Continue;
-                };
+            };
 
-            return
-                curNode->VisitLocalDefNodes(m_compiler, visit) == GenTree::VisitResult::Abort;
+            return curNode->VisitLocalDefNodes(m_compiler, visit) == GenTree::VisitResult::Abort;
         }
     } while (curNode->OperIs(GT_FIELD_LIST) || curNode->OperIsPutArg());
 

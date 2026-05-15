@@ -263,7 +263,7 @@ unsigned PromotionLiveness::GetSizeOfStructLocal(Statement* stmt, GenTreeLclVarC
         assert((data.parent != nullptr) && data.parent->IsCall());
 
         unsigned defSize = UINT_MAX;
-        auto findDef = [&](const LocalDef& def) {
+        auto     findDef = [&](const LocalDef& def) {
             if (def.Def == lcl)
             {
                 defSize = def.Size.GetExact();
@@ -271,7 +271,7 @@ unsigned PromotionLiveness::GetSizeOfStructLocal(Statement* stmt, GenTreeLclVarC
             }
 
             return GenTree::VisitResult::Continue;
-            };
+        };
 
         GenTree::VisitResult result = data.parent->VisitLocalDefs(m_compiler, findDef);
         assert(result == GenTree::VisitResult::Abort);
