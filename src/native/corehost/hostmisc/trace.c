@@ -266,9 +266,13 @@ bool trace_enable(void)
             // Treat truncation as an open failure rather than silently using a
             // bad path.
             if (written < 0 || (size_t)written >= ARRAY_SIZE(trace_path))
+            {
                 file_open_error = true;
+            }
             else
+            {
                 tracefile_path_to_open = trace_path;
+            }
         }
 
         if (!file_open_error)
@@ -369,9 +373,13 @@ void trace_error_v(const pal_char_t* format, va_list args)
         const pal_char_t fallback[] = _X("Trace error: failed to format message");
         trace_lock_acquire();
         if (g_error_writer == NULL)
+        {
             trace_err_print_line(fallback);
+        }
         else
+        {
             g_error_writer(fallback);
+        }
         trace_lock_release();
         va_end(trace_args);
         va_end(dup_args);
@@ -384,9 +392,13 @@ void trace_error_v(const pal_char_t* format, va_list args)
         const pal_char_t fallback[] = _X("Trace error: out of memory while formatting message");
         trace_lock_acquire();
         if (g_error_writer == NULL)
+        {
             trace_err_print_line(fallback);
+        }
         else
+        {
             g_error_writer(fallback);
+        }
         trace_lock_release();
         va_end(trace_args);
         va_end(dup_args);
@@ -401,9 +413,13 @@ void trace_error_v(const pal_char_t* format, va_list args)
 
     trace_lock_acquire();
     if (g_error_writer == NULL)
+    {
         trace_err_print_line(buffer);
+    }
     else
+    {
         g_error_writer(buffer);
+    }
 
     if (g_trace_verbosity && ((g_trace_file != stderr) || g_error_writer != NULL))
         trace_file_vprintf(g_trace_file, format, trace_args);
