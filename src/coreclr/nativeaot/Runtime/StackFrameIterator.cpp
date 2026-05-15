@@ -71,9 +71,9 @@ extern "C" void* PacStripPtr(void* ptr);
 static TADDR ReturnAddressToCanonicalPC(TADDR returnAddress)
 {
 #if defined(TARGET_ARM64)
-    return (TADDR)PacStripPtr((void*)returnAddress);
+    returnAddress = (TADDR)PacStripPtr((void*)returnAddress);
 #endif // TARGET_ARM64
-    return returnAddress;
+    return PCODEToPINSTR(dac_cast<PCODE>(returnAddress));
 }
 
 StackFrameIterator::StackFrameIterator(Thread * pThreadToWalk, PInvokeTransitionFrame* pInitialTransitionFrame)
