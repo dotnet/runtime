@@ -97,8 +97,8 @@ public interface IExecutionManager : IContract
     static string IContract.Name { get; } = nameof(ExecutionManager);
     CodeBlockHandle? GetCodeBlockHandle(TargetCodePointer ip) => throw new NotImplementedException();
     TargetPointer GetMethodDesc(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
-    TargetCodePointer GetStartAddress(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
-    TargetCodePointer GetFuncletStartAddress(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
+    TargetPointer GetStartAddress(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
+    TargetPointer GetFuncletStartAddress(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     void GetMethodRegionInfo(CodeBlockHandle codeInfoHandle, out uint hotSize, out TargetPointer coldStart, out uint coldSize) => throw new NotImplementedException();
     TargetPointer NonVirtualEntry2MethodDesc(TargetCodePointer entrypoint) => throw new NotImplementedException();
     bool IsFunclet(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();

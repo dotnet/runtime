@@ -181,6 +181,7 @@ public enum DataType
     ComInterfaceEntry,
     InternalComInterfaceDispatch,
     AuxiliarySymbolInfo,
+    VASigCookie,
     CodeRangeMapRangeList,
 
     /* GC Data Types */
@@ -196,4 +197,10 @@ public enum DataType
     TableSegment,
     CardTableInfo,
     RegionFreeList,
+}
+
+public static class DataTypeTargetExtensions
+{
+    public static Target.TypeInfo GetTypeInfo(this Target target, DataType type)
+        => target.GetTypeInfo(type.ToString());
 }
