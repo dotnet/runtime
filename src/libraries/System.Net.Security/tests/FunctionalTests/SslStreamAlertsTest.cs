@@ -298,10 +298,16 @@ namespace System.Net.Security.Tests
                 Task serverTask = server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None);
                 Task clientTask = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
 
-                await Assert.ThrowsAsync<AuthenticationException>(() => clientTask).WaitAsync(TestConfiguration.PassingTestTimeout);
+                AuthenticationException clientException = await Assert.ThrowsAsync<AuthenticationException>(() => clientTask).WaitAsync(TestConfiguration.PassingTestTimeout);
                 await ObservePeerAlertAsync(serverTask, server);
 
                 Assert.True(recordingServerStream.ContainsAlert(TlsAlertDescription.UnknownCA), recordingServerStream.GetRecordedAlerts());
+
+                // Cross-platform parity: the cert validation exception should surface directly
+                // to the caller (matching Windows/Linux/Android behavior via SendAuthResetSignal),
+                // not wrapped in a generic AuthenticationException(SR.net_auth_SSPI, ...).
+                Assert.Null(clientException.InnerException);
+                Assert.Contains("certificate", clientException.Message, StringComparison.OrdinalIgnoreCase);
             }
         }
 
@@ -414,10 +420,16 @@ namespace System.Net.Security.Tests
                 Task serverTask = server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None);
                 Task clientTask = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
 
-                await Assert.ThrowsAsync<AuthenticationException>(() => serverTask).WaitAsync(TestConfiguration.PassingTestTimeout);
+                AuthenticationException serverException = await Assert.ThrowsAsync<AuthenticationException>(() => serverTask).WaitAsync(TestConfiguration.PassingTestTimeout);
                 await ObservePeerAlertAsync(clientTask, client);
 
                 Assert.True(recordingClientStream.ContainsAlert(TlsAlertDescription.UnknownCA), recordingClientStream.GetRecordedAlerts());
+
+                // Cross-platform parity: the cert validation exception should surface directly
+                // to the caller (matching Windows/Linux/Android behavior via SendAuthResetSignal),
+                // not wrapped in a generic AuthenticationException(SR.net_auth_SSPI, ...).
+                Assert.Null(serverException.InnerException);
+                Assert.Contains("certificate", serverException.Message, StringComparison.OrdinalIgnoreCase);
             }
         }
 

@@ -949,8 +949,7 @@ namespace System.Net.Security
 
             if (!VerifyRemoteCertificate(_sslAuthenticationOptions.CertificateContext?.Trust, ref alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus))
             {
-                _handshakeCompleted = false;
-                alertToken.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, CreateCertificateValidationException(_sslAuthenticationOptions, sslPolicyErrors, chainStatus));
+                alertToken.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.CertValidationFailed, CreateCertificateValidationException(_sslAuthenticationOptions, sslPolicyErrors, chainStatus));
                 return alertToken;
             }
 

@@ -406,6 +406,7 @@ namespace System.Net.Security
             TlsAlertMessage alertMessage)
         {
             Debug.Assert(CanGenerateCustomAlerts);
+            Debug.Assert(alertType == TlsAlertType.Fatal, $"SecureTransport derives the alert level from the OSStatus and emits only fatal alerts; unexpected alertType: {alertType}");
 
             if (securityContext is not SafeDeleteSslContext context)
             {
