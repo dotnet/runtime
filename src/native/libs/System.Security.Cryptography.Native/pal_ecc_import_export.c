@@ -526,7 +526,7 @@ int32_t CryptoNative_EvpPKeyEcHasExplicitEncoding(EVP_PKEY* pkey)
 #endif
 }
 
-// TODO does this need to be public still?
+// Exported for managed interop to query the EC field degree from an EVP_PKEY.
 int32_t CryptoNative_EvpPKeyGetEcFieldDegree(EVP_PKEY* pkey)
 {
     if (!pkey || EVP_PKEY_get_base_id(pkey) != EVP_PKEY_EC)
