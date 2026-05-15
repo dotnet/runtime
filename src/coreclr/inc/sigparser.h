@@ -66,6 +66,7 @@ class SigParser
         }
 
         SigParser(const SigParser &sig);
+        SigParser& operator=(const SigParser &sig) = default;
 
         //------------------------------------------------------------------------
         // Initialize

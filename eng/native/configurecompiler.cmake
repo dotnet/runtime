@@ -1043,6 +1043,31 @@ if (MSVC)
   set(CMAKE_RC_FLAGS "${CMAKE_RC_FLAGS} /nologo")
   # Don't display the output header when building asm files.
   set(CMAKE_ASM_MASM_FLAGS "${CMAKE_ASM_MASM_FLAGS} /nologo")
+
+  # clang-cl-specific overrides. clang-cl simulates MSVC (so MSVC is true and the flags above are
+  # sent to clang-cl), but clang-cl does not implement every MSVC switch and emits its own diagnostics.
+  if (CMAKE_C_COMPILER_ID STREQUAL "Clang")
+    # /WX maps to -Werror, which turns clang-cl's -Wunused-command-line-argument into an error.
+    # Several MSVC-only switches we pass (e.g. /Gm-, /MP, /Zm200) are silently ignored by cl.exe but
+    # would produce that diagnostic under clang-cl.
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-Wno-unused-command-line-argument>)
+
+    # Suppress clang-only diagnostics that fire on patterns the runtime sources use widely
+    # (MSVC extensions, stricter language conformance, etc.) and that cl.exe does not flag.
+    # The list below was derived empirically: each entry corresponds to at least one warning in the
+    # current sources. When adding/removing warnings, audit by replacing -Wno- with -Wno-error= and
+    # rebuilding to see which categories actually fire.
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-Wno-pragma-pack>)
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-Wno-unused-variable>)
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-Wno-unused-but-set-variable>)
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-Wno-unused-function>)
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-Wno-unused-const-variable>)
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-Wno-unused-private-field>)
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-Wno-unknown-pragmas>)
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-Wno-ignored-qualifiers>)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-invalid-offsetof>)
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-Wno-missing-field-initializers>)
+  endif()
 endif (MSVC)
 
 # Configure non-MSVC compiler flags that apply to all platforms (unix-like or otherwise)

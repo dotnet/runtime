@@ -4184,7 +4184,7 @@ public:
             return;
         }
 
-        if (strBufferSize > bufferSize)
+        if (strBufferSize > (int)bufferSize)
         {
             m_pBuffer = new WCHAR[strBufferSize];
         }

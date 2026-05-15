@@ -16,7 +16,7 @@
 namespace FString
 {
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && !defined(__clang__)
 #pragma optimize("t", on)
 #endif // _MSC_VER
 

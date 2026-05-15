@@ -72,6 +72,7 @@ set __HostArch=
 set __PgoOptDataPath=
 set __CMakeArgs=
 set __Ninja=1
+if not defined __UseClangCl set __UseClangCl=0
 set __RequestedBuildComponents=
 set __TargetRid=
 set __SubDir=
@@ -150,6 +151,7 @@ if /i "%1" == "-skipnative"          (set __BuildNative=0&shift&goto Arg_Loop)
 REM -ninja is a no-op option since Ninja is now the default generator on Windows.
 if /i "%1" == "-ninja"               (shift&goto Arg_Loop)
 if /i "%1" == "-msbuild"             (set __Ninja=0&shift&goto Arg_Loop)
+if /i "%1" == "-clangcl"             (set __UseClangCl=1&shift&goto Arg_Loop)
 if /i "%1" == "-pgoinstrument"       (set __PgoInstrument=1&shift&goto Arg_Loop)
 if /i "%1" == "-enforcepgo"          (set __EnforcePgo=1&shift&goto Arg_Loop)
 if /i "%1" == "-pgodatapath"         (set __PgoOptDataPath=%~2&set __PgoOptimize=1&shift&shift&goto Arg_Loop)
@@ -203,6 +205,13 @@ if %__TotalSpecifiedBuildType% GTR 1 (
 if %__BuildTypeDebug%==1    set __BuildType=Debug
 if %__BuildTypeChecked%==1  set __BuildType=Checked
 if %__BuildTypeRelease%==1  set __BuildType=Release
+
+if %__UseClangCl%==1 (
+    if %__Ninja%==0 (
+        echo Error: -clangcl requires the Ninja generator and is incompatible with -msbuild.
+        goto Usage
+    )
+)
 
 if %__EnforcePgo%==1 (
     if %__TargetArchArm%==1 (
@@ -601,6 +610,7 @@ echo -configureonly: skip all builds; only run CMake ^(default: CMake and builds
 echo -skipconfigure: skip CMake ^(default: CMake is run^)
 echo -skipnative: skip building native components ^(default: native components are built^).
 echo -fsanitize ^<name^>: Enable the specified sanitizers. This script does not handle converting 'true' to the default sanitizers.
+echo -clangcl: Build the native components with LLVM clang-cl instead of MSVC ^(Windows only, requires Ninja generator and clang-cl.exe on PATH or under %%ProgramFiles%%\LLVM\bin^).
 echo.
 echo Examples:
 echo     build-runtime

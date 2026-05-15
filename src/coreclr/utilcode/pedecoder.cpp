@@ -978,7 +978,7 @@ inline PTR_STORAGESTREAM NextStorageStream(PTR_STORAGESTREAM pSS)
 
     SUPPORTS_DAC;
     TADDR pc = dac_cast<TADDR>(pSS);
-    pc += (sizeof(STORAGESTREAM) - 32 /*sizeof(STORAGESTREAM::rcName)*/ + strlen(pSS->rcName)+1+3)&~3;
+    pc += (sizeof(STORAGESTREAM) - 32 /*sizeof(STORAGESTREAM::rcName)*/ + strlen((const char *)pSS->rcName)+1+3)&~3;
     return PTR_STORAGESTREAM(pc);
 }
 //-------------------------------------------------------------------------------
@@ -2260,8 +2260,8 @@ BOOL PEDecoder::GetForceRelocs()
 BOOL PEDecoder::ForceRelocForDLL(LPCWSTR lpFileName)
 {
 #ifdef _DEBUG
-		STATIC_CONTRACT_NOTHROW;                                        \
-		STATIC_CONTRACT_CANNOT_TAKE_LOCK;
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_CANNOT_TAKE_LOCK;
 #endif
 
 #if defined(DACCESS_COMPILE) || defined(TARGET_UNIX)

@@ -50,6 +50,38 @@ if /i "%__Ninja%" == "1" (
     )
 )
 
+if /i "%__UseClangCl%" == "1" (
+    if /i NOT "%__CmakeGenerator%" == "Ninja" (
+        echo Error: -clangcl requires the Ninja generator.
+        exit /B 1
+    )
+
+    set "__ClangClPath="
+    where.exe clang-cl.exe >nul 2>&1
+    if "!errorlevel!" == "0" (
+        for /f "delims=" %%I in ('where.exe clang-cl.exe') do (
+            if not defined __ClangClPath set "__ClangClPath=%%I"
+        )
+    )
+    if not defined __ClangClPath (
+        if exist "%ProgramFiles%\LLVM\bin\clang-cl.exe" (
+            set "__ClangClPath=%ProgramFiles%\LLVM\bin\clang-cl.exe"
+        )
+    )
+    if not defined __ClangClPath (
+        echo Error: clang-cl.exe not found. Install LLVM ^(e.g. winget install LLVM.LLVM^) and ensure clang-cl.exe is on PATH or under "%%ProgramFiles%%\LLVM\bin".
+        exit /B 1
+    )
+
+    REM CMake requires forward slashes in the compiler path.
+    set "__ClangClPathFwd=!__ClangClPath:\=/!"
+
+    echo Using clang-cl from: !__ClangClPath!
+    set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCMAKE_C_COMPILER=!__ClangClPathFwd!" "-DCMAKE_CXX_COMPILER=!__ClangClPathFwd!"
+
+    REM clang-cl emits LLD-style depfiles when used with Ninja - cmake handles this automatically.
+)
+
 if /i "%__Arch%" == "wasm" (
     if "%__Os%" == "" (
         echo Error: Please add target OS parameter
