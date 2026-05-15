@@ -314,7 +314,7 @@ private:
         BasicBlock*  m_thenBlock      = nullptr;
         BasicBlock*  m_elseBlock      = nullptr;
         GenTreeCall* m_origCall       = nullptr;
-        unsigned     m_likelihood     = 0;
+        unsigned     m_likelihood     = 80; // High likelihood that check succeeds
     };
 
     class FatPointerCallTransformer final : public Transformer
