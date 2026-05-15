@@ -9,8 +9,8 @@
 
 class MemoryMappedFile final
 {
-    uint32_t m_size;
     void* m_address;
+    uint32_t m_size;
     
     MemoryMappedFile(void* address, uint32_t size)
         : m_address(address)
