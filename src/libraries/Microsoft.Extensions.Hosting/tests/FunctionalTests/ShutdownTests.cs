@@ -50,11 +50,7 @@ namespace Microsoft.AspNetCore.Hosting.FunctionalTests
                 builder.AddXunit(_output);
             });
 
-            // TODO refactor deployers to not depend on source code
-            // see https://github.com/dotnet/extensions/issues/1697 and https://github.com/dotnet/aspnetcore/issues/10268
-#pragma warning disable 0618
-            var applicationPath = string.Empty; // disabled for now
-#pragma warning restore 0618
+            string applicationPath = GetApplicationPath();
 
             Version version = Environment.Version;
             var deploymentParameters = new DeploymentParameters(
@@ -62,6 +58,7 @@ namespace Microsoft.AspNetCore.Hosting.FunctionalTests
                 RuntimeFlavor.CoreClr,
                 RuntimeArchitecture.x64)
             {
+                ApplicationName = "Microsoft.Extensions.Hosting.TestApp",
                 TargetFramework = $"net{version.Major}.{version.Minor}",
                 ApplicationType = ApplicationType.Portable,
                 PublishApplicationBeforeDeployment = true,
@@ -153,6 +150,26 @@ namespace Microsoft.AspNetCore.Hosting.FunctionalTests
             }
 
             Assert.Equal(0, process.ExitCode);
+        }
+
+        private static string GetApplicationPath()
+        {
+            const string testAppProjectName = "Microsoft.Extensions.Hosting.TestApp.csproj";
+            const string relativeTestAppPath = "src/libraries/Microsoft.Extensions.Hosting/tests/TestApp";
+
+            DirectoryInfo directory = new DirectoryInfo(AppContext.BaseDirectory);
+            while (directory is not null)
+            {
+                string candidate = Path.Combine(directory.FullName, relativeTestAppPath);
+                if (File.Exists(Path.Combine(candidate, testAppProjectName)))
+                {
+                    return candidate;
+                }
+
+                directory = directory.Parent;
+            }
+
+            throw new DirectoryNotFoundException($"Could not find {testAppProjectName} from base directory '{AppContext.BaseDirectory}'.");
         }
     }
 }
