@@ -1395,8 +1395,8 @@ private:
                 GenTree* m_unclonableNode;
                 unsigned m_nodeCount;
 
-                ClonabilityVisitor(Compiler* m_compiler)
-                    : GenTreeVisitor(m_compiler)
+                ClonabilityVisitor(Compiler* compiler)
+                    : GenTreeVisitor(compiler)
                     , m_unclonableNode(nullptr)
                     , m_nodeCount(0)
                 {
