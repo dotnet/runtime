@@ -5339,7 +5339,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
         // ILC and crossgen2 defines method symbols with the thumb bit already set, so don't add it here.
         // Assume compilations with relocs will put the thumb bit in the symbol.
         // For non-relocatable code (runtime JIT), we set it ourselves.
-        if (!(m_compiler->compReloc))
+        if (!(m_compiler->opts.compReloc))
         {
             distVal += 1;
         }
