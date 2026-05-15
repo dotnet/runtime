@@ -32,6 +32,10 @@ WARNING:   When setting properties based on their current state (for example:
     Tests can opt out of ahead-of-time (AOT) compilation from crossgen / crossgen2 by setting this property in their project:
 
       <CrossGenTest>false</CrossGenTest>
+
+    Tests can opt out of composite crossgen2 only by setting this property in their project:
+
+      <CompositeCrossGenTest>false</CompositeCrossGenTest>
   -->
   <Target Name="GetCrossgenBashScript">
 
@@ -44,6 +48,10 @@ WARNING:   When setting properties based on their current state (for example:
 if [ "$(AlwaysUseCrossGen2)" == "true" ]; then
     export RunCrossGen2=1
     export CompositeBuildMode=1
+fi
+
+if [ "$(CompositeCrossGenTest)" == "false" ] && [ ! -z ${CompositeBuildMode+x} ]; then
+    unset RunCrossGen2
 fi
 
 # CrossGen2 Script
@@ -230,6 +238,12 @@ fi
 if /i "$(AlwaysUseCrossGen2)" == "true" (
     set RunCrossGen2=1
     set CompositeBuildMode=1
+)
+
+if /i "$(CompositeCrossGenTest)" == "false" (
+    if defined CompositeBuildMode (
+        set RunCrossGen2=
+    )
 )
 
 REM CrossGen2 Script
