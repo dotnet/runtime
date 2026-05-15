@@ -7439,13 +7439,21 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
 //            break;
 
         case INS_st:
+        case INS_stg:
         case INS_l:
+        case INS_lg:
         case INS_ley:
         case INS_ldy:
             assert(isValidGeneralDatasize(size) || isValidVectorDatasize(size));
             scale    = genLog2(EA_SIZE_IN_BYTES(size));
             isLdrStr = true;
             break;
+
+        case INS_lay:
+	    assert(size == EA_8BYTE);
+	    isSimple = false;
+	    scale    = 0;
+	    break;
 #if 0
         case INS_lea:
             assert(size == EA_8BYTE);
@@ -7691,6 +7699,7 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
             break;
 
         case INS_st:
+        case INS_stg:
         case INS_stey:
         case INS_stdy:
             if (isGeneralRegister(reg1))
@@ -10190,6 +10199,12 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             assert((imm >= 0) && (imm <= 2047)); // unsigned 11 bits
             op = emitInsCode(ins, fmt);
             S390_RX_a(dst, op, id->idReg1(), 0, id->idReg2(), imm);
+            break;
+
+        case INS_lg:
+            op = emitInsCode(ins, fmt);
+            imm = emitGetInsSC(id);
+            S390_RXY_a(dst, op, id->idReg1(), 0, id->idReg2(), imm);
             break;
 
         case INS_ley:

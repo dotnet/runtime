@@ -567,9 +567,9 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 //            genCodeForBitCast(treeNode->AsOp());
 //            break;
 //
-//        case GT_LCL_ADDR:
-//            genCodeForLclAddr(treeNode->AsLclFld());
-//            break;
+        case GT_LCL_ADDR:
+            genCodeForLclAddr(treeNode->AsLclFld());
+            break;
 //
 //        case GT_LCL_FLD:
 //            genCodeForLclFld(treeNode->AsLclFld());
@@ -706,9 +706,9 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 //            genCodeForReturnTrap(treeNode->AsOp());
 //            break;
 
-//        case GT_STOREIND:
-//            genCodeForStoreInd(treeNode->AsStoreInd());
-//            break;
+        case GT_STOREIND:
+            genCodeForStoreInd(treeNode->AsStoreInd());
+            break;
 
 //        case GT_COPY:
 //            // This is handled at the time we call genConsumeReg() on the GT_COPY
@@ -1931,22 +1931,17 @@ void CodeGen::genCodeForShift(GenTree* tree)
 //
 void CodeGen::genCodeForLclAddr(GenTreeLclFld* lclAddrNode)
 {
-
-    _ASSERTE("!NYI");
-/*
     assert(lclAddrNode->OperIs(GT_LCL_ADDR));
 
     var_types targetType = lclAddrNode->TypeGet();
     emitAttr  size       = emitTypeSize(targetType);
     regNumber targetReg  = lclAddrNode->GetRegNum();
 
-    // Address of a local var.
     noway_assert((targetType == TYP_BYREF) || (targetType == TYP_I_IMPL));
 
-    GetEmitter()->emitIns_R_S(INS_lea, size, targetReg, lclAddrNode->GetLclNum(), lclAddrNode->GetLclOffs());
+    GetEmitter()->emitIns_R_S(INS_lay, size, targetReg, lclAddrNode->GetLclNum(), lclAddrNode->GetLclOffs());
 
     genProduceReg(lclAddrNode);
-*/
 }
 
 //------------------------------------------------------------------------
@@ -2258,6 +2253,27 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
     GetEmitter()->emitIns_R_R_I(ins, emitActualTypeSize(type), targetReg, addrReg, 0);
     
     genProduceReg(tree);
+}
+
+void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
+{
+    GenTree* data = tree->Data();
+    GenTree* addr = tree->Addr();
+
+    genConsumeAddress(addr);
+
+    if (!data->isContained())
+    {
+        genConsumeRegs(data);
+    }
+
+    regNumber dataReg = data->GetRegNum();
+    regNumber addrReg = addr->GetRegNum();
+
+    var_types   type = tree->TypeGet();
+    instruction ins  = ins_Store(type);
+
+    GetEmitter()->emitIns_R_R_I(ins, emitActualTypeSize(type), dataReg, addrReg, 0);
 }
 
 //#ifdef TARGET_ARM64

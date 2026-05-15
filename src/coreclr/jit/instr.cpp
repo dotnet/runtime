@@ -1850,11 +1850,7 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
                 ins = INS_ldrsh;
         }
 #elif defined(TARGET_S390X)
-        if (!varTypeIsSmall(srcType))
-        {
-            ins = INS_l;
-        }
-        else if (varTypeIsByte(srcType))
+        if (varTypeIsByte(srcType))
         {
             if (varTypeIsUnsigned(srcType))
                 ins = INS_llgc;
@@ -1867,6 +1863,14 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
                 ins = INS_llgh;
             else
                 ins = INS_lgh;
+        }
+        else if (TYP_INT == srcType)
+        {
+            ins = INS_l;
+        }
+        else
+        {
+            ins = INS_lg;
         }
 #elif defined(TARGET_LOONGARCH64)
         if (varTypeIsByte(srcType))
@@ -2241,12 +2245,14 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
         else if (varTypeIsShort(dstType))
             ins = INS_strh;
 #elif defined(TARGET_S390X)
-        if (!varTypeIsSmall(dstType))
-            ins = INS_st;
-        else if (varTypeIsByte(dstType))
+        if (varTypeIsByte(dstType))
             ins = INS_stc;
         else if (varTypeIsShort(dstType))
             ins = INS_sth;
+        else if (TYP_INT == dstType)
+            ins = INS_st;
+        else
+            ins = INS_stg;
 #elif defined(TARGET_LOONGARCH64)
         if (varTypeIsByte(dstType))
             ins = aligned ? INS_stx_b : INS_st_b;

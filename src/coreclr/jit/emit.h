@@ -1205,6 +1205,7 @@ protected:
                 case INS_iihf:
                 case INS_iilf:
                 case INS_stg:
+                case INS_lg:
                 case INS_lay:
                 case INS_ley:
                 case INS_ldy:

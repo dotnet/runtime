@@ -2685,13 +2685,6 @@ void Lowering::ContainCheckCallOperands(GenTreeCall* call)
 //
 void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
 {
-    _ASSERTE(!"NYI");
-    GenTree* src = node->Data();
-    if (src->IsIntegralConst(0))
-    {
-        // an integer zero for 'src' can be contained.
-        MakeSrcContained(node, src);
-    }
     ContainCheckIndir(node);
 }
 
