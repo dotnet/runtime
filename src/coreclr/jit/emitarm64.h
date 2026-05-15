@@ -1073,8 +1073,18 @@ static bool canEncodeFloatImm8(double immDbl, emitter::floatImm8* wbFPI = nullpt
 template <const size_t bits>
 static bool isValidSimm(ssize_t value)
 {
-    constexpr ssize_t max = 1 << (bits - 1);
-    return (-max <= value) && (value < max);
+    constexpr size_t ssize_t_bits = sizeof(ssize_t) * BITS_PER_BYTE;
+    static_assert(bits > 0);
+    static_assert(bits <= ssize_t_bits);
+    if constexpr (bits == ssize_t_bits)
+    {
+        return true;
+    }
+    else
+    {
+        constexpr size_t max = size_t{1} << (bits - 1);
+        return (-static_cast<ssize_t>(max) <= value) && (value < static_cast<ssize_t>(max));
+    }
 }
 
 // Returns true if 'value' is a legal signed multiple of 'mod' immediate with 'bits' number of bits.
