@@ -301,7 +301,7 @@ internal partial struct RuntimeTypeSystem_1
         Category_Array = 0x00080000,
         Category_ValueType = 0x00040000,
         Category_Nullable = 0x00050000,
-        Category_PrimitiveValueType = 0x00060000,
+        Category_Enum = 0x00060000,
         Category_TruePrimitive = 0x00070000,
         Category_Interface = 0x000C0000,
         Collectible = 0x00200000,
@@ -822,7 +822,7 @@ Contracts used:
                     return CorElementType.SzArray;
                 case WFLAGS_HIGH.Category_ValueType:
                 case WFLAGS_HIGH.Category_Nullable:
-                case WFLAGS_HIGH.Category_PrimitiveValueType:
+                case WFLAGS_HIGH.Category_Enum:
                     return CorElementType.ValueType;
                 case WFLAGS_HIGH.Category_TruePrimitive:
                     return (CorElementType)GetClassData(typeHandle).InternalCorElementType;
