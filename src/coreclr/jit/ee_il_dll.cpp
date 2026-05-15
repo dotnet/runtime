@@ -401,10 +401,6 @@ unsigned Compiler::eeGetArgSize(CorInfoType corInfoType, CORINFO_CLASS_HANDLE ty
         isHfa               = (hfaType != TYP_UNDEF);
         unsigned structSize = info.compCompHnd->getClassSize(typeHnd);
 
-        // make certain the EE passes us back the right thing for refanys
-        assert(typeHnd != info.compCompHnd->getBuiltinClass(CLASSID_TYPED_BYREF) ||
-               structSize == 2 * TARGET_POINTER_SIZE);
-
         // For each target that supports passing struct args in multiple registers
         // apply the target specific rules for them here:
 

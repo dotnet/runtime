@@ -6143,15 +6143,9 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
     }
 
     suspendData->asyncMethodReturnType = NULL;
-    CORINFO_CLASS_HANDLE typedByRefClass = m_compHnd->getBuiltinClass(CLASSID_TYPED_BYREF);
     switch (m_methodInfo->args.retType)
     {
         case CORINFO_TYPE_VALUECLASS:
-            if (m_methodInfo->args.retTypeClass == typedByRefClass)
-            {
-                BADCODE("TypedReference return types not supported for async methods");
-            }
-
             suspendData->asyncMethodReturnType = m_methodInfo->args.retTypeClass;
             suspendData->asyncMethodReturnTypePrimitiveSize = 0;
             break;

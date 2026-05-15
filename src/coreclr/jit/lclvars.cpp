@@ -878,11 +878,6 @@ void Compiler::lvaInitVarDsc(LclVarDsc*              varDsc,
             break;
     }
 
-    if ((corInfoType == CORINFO_TYPE_VALUECLASS) && (typeHnd == info.compCompHnd->getBuiltinClass(CLASSID_TYPED_BYREF)))
-    {
-        varDsc->lvIsPtr = 1;
-    }
-
     var_types type = JITtype2varType(corInfoType);
     if (varTypeIsFloating(type))
     {
