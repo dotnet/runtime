@@ -131,7 +131,7 @@ namespace ILCompiler
 
                     dependencies.Add(new CombinedDependencyListEntry(
                         methodEntryPoint,
-                        context.MaximallyConstructableType(associatedSourceType),
+                        RuntimeConstructableTypeDependencies.GetRuntimeConstructableTypeNode(context, associatedSourceType),
                         "Native callable with associated source type"));
 
                     RuntimeConstructableTypeDependencies.GetMaximallyConstructableTypeDependencies(dependencies, context, associatedSourceType, "Associated source type that could be loaded at runtime");

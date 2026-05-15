@@ -27,9 +27,15 @@ namespace ILCompiler
 
         public static void GetMaximallyConstructableTypeDependencies(List<DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry> dependencies, NodeFactory context, TypeDesc type, string reason)
         {
-            // Associated source types are conditioned on the exact type that can exist in the program, unlike
-            // external type map trim targets where non-array parameterized wrappers are stripped.
-            AddDependencies(dependencies, context, context.MaximallyConstructableType(type), type, reason, useNecessaryTypeSymbol: false);
+            AddDependencies(dependencies, context, GetRuntimeConstructableTypeNode(context, type), type, reason, useNecessaryTypeSymbol: false);
+        }
+
+        public static object GetRuntimeConstructableTypeNode(NodeFactory context, TypeDesc type)
+        {
+            if (type is ArrayType arrayType)
+                return context.MaximallyConstructableType(GetEffectiveTrimTargetType(arrayType.ElementType));
+
+            return context.MaximallyConstructableType(type);
         }
 
         private static void AddDependencies(

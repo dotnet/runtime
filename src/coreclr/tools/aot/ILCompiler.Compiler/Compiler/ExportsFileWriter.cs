@@ -28,6 +28,8 @@ namespace ILCompiler
         {
             foreach (EcmaMethod method in methods)
             {
+                // Some of the exported methods could be conditioned with UnmanagedCallersOnly.AssociatedSourceType
+                // so need to filter down to compiled methods.
                 if (compilationResults.IsMethodBodyCompiled(method))
                     _methods.Add(method);
             }
