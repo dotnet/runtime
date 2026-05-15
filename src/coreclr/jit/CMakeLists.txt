@@ -16,14 +16,14 @@ if (MSVC)
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/permissive->)
 endif()
 
-# The JIT enforces -Wunused-function and -Wtautological-compare (overriding the
-# repo-wide -Wno-* counterparts from configurecompiler.cmake) so that dead helpers
-# and always-true/always-false comparisons are caught early. Any helper or
-# comparison that is only meaningful under a target/DEBUG #ifdef must be guarded
-# by the same condition.
+# The JIT enforces -Wunused-function, -Wtautological-compare and -Wunused-value
+# (overriding the repo-wide -Wno-* counterparts from configurecompiler.cmake) so
+# that dead helpers, always-true/always-false comparisons and discarded
+# expressions are caught early. Any helper or comparison that is only meaningful
+# under a target/DEBUG #ifdef must be guarded by the same condition.
 if (CLR_CMAKE_HOST_UNIX OR CLR_CMAKE_HOST_WASI)
   get_directory_property(JIT_COMPILE_OPTIONS COMPILE_OPTIONS)
-  list(REMOVE_ITEM JIT_COMPILE_OPTIONS -Wno-unused-function -Wno-tautological-compare)
+  list(REMOVE_ITEM JIT_COMPILE_OPTIONS -Wno-unused-function -Wno-tautological-compare -Wno-unused-value)
   set_directory_properties(PROPERTIES COMPILE_OPTIONS "${JIT_COMPILE_OPTIONS}")
 endif()
 
