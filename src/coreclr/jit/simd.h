@@ -2246,39 +2246,6 @@ struct simdmaskscalable_t
     bool IsAllBitsSet(var_types simdBaseType) const;
 };
 
-struct simdmaskvalue_t
-{
-    uint8_t            isScalable;
-    simdmaskscalable_t scalable;
-    simdmask_t         fixed;
-
-    static simdmaskvalue_t FromFixed(const simdmask_t& mask)
-    {
-        simdmaskvalue_t result = {};
-
-        result.isScalable = 0;
-        result.fixed      = mask;
-
-        return result;
-    }
-
-    static simdmaskvalue_t FromScalable(const simdmaskscalable_t& mask)
-    {
-        simdmaskvalue_t result = {};
-
-        result.isScalable = 1;
-        result.scalable   = mask;
-        result.fixed      = simdmask_t::Zero();
-
-        return result;
-    }
-
-    bool IsScalable() const
-    {
-        return isScalable != 0;
-    }
-};
-
 static_assert(sizeof(simdmask_t) >= sizeof(simdmaskscalable_t));
 
 bool EvaluateSimdCvtScalableVectorToMask(var_types baseType, simdmaskscalable_t* maskCon, simdscalable_t vecCon);

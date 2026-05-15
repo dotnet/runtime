@@ -1918,15 +1918,17 @@ ValueNum ValueNumStore::VNForSimdScalableCon(const simdscalable_t& cnsVal)
 #endif // TARGET_XARCH
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
-ValueNum ValueNumStore::VNForSimdMaskScalableCon(const simdmaskscalable_t& cnsVal)
-{
-    return VnForConst(simdmaskvalue_t::FromScalable(cnsVal), GetSimdMaskCnsMap(), TYP_MASK);
-}
-
 ValueNum ValueNumStore::VNForSimdMaskCon(const simdmask_t& cnsVal)
 {
     return VnForConst(simdmaskvalue_t::FromFixed(cnsVal), GetSimdMaskCnsMap(), TYP_MASK);
 }
+
+#if defined(TARGET_ARM64)
+ValueNum ValueNumStore::VNForSimdMaskScalableCon(const simdmaskscalable_t& cnsVal)
+{
+    return VnForConst(simdmaskvalue_t::FromScalable(cnsVal), GetSimdMaskCnsMap(), TYP_MASK);
+}
+#endif // TARGET_ARM64
 #endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
@@ -10921,17 +10923,16 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
             case TYP_MASK:
             {
                 simdmaskvalue_t cnsVal = GetConstantSimdMaskValue(vn);
-                if (cnsVal.IsScalable()
+
 #if defined(TARGET_ARM64) && defined(DEBUG)
-                    && JitConfig.JitUseScalableVectorT()
-#endif
-                )
+                if (cnsVal.IsScalable() && JitConfig.JitUseScalableVectorT())
                 {
                     printf("SimdMaskScalableCns[base:%s idx:%u]",
                            varTypeName(cnsVal.scalable.gtSimdMaskScalableBaseType),
                            cnsVal.scalable.gtSimdMaskScalableIndex);
                 }
                 else
+#endif // TARGET_ARM64 && DEBUG
                 {
                     printf("SimdMaskCns[0x%08x, 0x%08x]", cnsVal.fixed.u32[0], cnsVal.fixed.u32[1]);
                 }

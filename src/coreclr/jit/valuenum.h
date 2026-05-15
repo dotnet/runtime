@@ -158,6 +158,7 @@
 // Defines the type SmallHashTable.
 #include "compiler.h"
 #include "smallhash.h"
+#include "simd.h"
 
 // A "ValueNumStore" represents the "universe" of value numbers used in a single
 // compilation.
@@ -242,6 +243,50 @@ static const var_types TYP_MEM = TYP_UNDEF;
 
 // We will use this placeholder type for memory maps representing "the heap" (GcHeap/ByrefExposed).
 static const var_types TYP_HEAP = TYP_UNKNOWN;
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+// Wrapper to hold a mask. The VN can only store a single type for each TYP (in order for
+// VarTypConv and others to work), but on ARM64 the mask can be scalable or fixed.
+struct simdmaskvalue_t
+{
+    uint8_t    isScalable;
+    simdmask_t fixed;
+#if defined(TARGET_ARM64)
+    simdmaskscalable_t scalable;
+#endif // TARGET_ARM64
+
+    static simdmaskvalue_t FromFixed(const simdmask_t& mask)
+    {
+        simdmaskvalue_t result = {};
+
+        result.isScalable = 0;
+        result.fixed      = mask;
+
+        return result;
+    }
+
+#if defined(TARGET_ARM64)
+    static simdmaskvalue_t FromScalable(const simdmaskscalable_t& mask)
+    {
+        simdmaskvalue_t result = {};
+
+        result.isScalable = 1;
+        result.scalable   = mask;
+        result.fixed      = simdmask_t::Zero();
+
+        return result;
+    }
+#endif // TARGET_ARM64
+
+    bool IsScalable() const
+    {
+#if !defined(TARGET_ARM64)
+        assert(isScalable == 0);
+#endif // !TARGET_ARM64
+        return isScalable != 0;
+    }
+};
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
 class ValueNumStore
 {
@@ -1967,23 +2012,30 @@ private:
         }
         return m_simdScalableCnsMap;
     }
+#endif // TARGET_XARCH
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
     struct SimdMaskPrimitiveKeyFuncs : public JitKeyFuncsDefEquals<simdmaskvalue_t>
     {
         static bool Equals(const simdmaskvalue_t& x, const simdmaskvalue_t& y)
         {
+#if defined(TARGET_ARM64)
             if (x.IsScalable() != y.IsScalable())
             {
                 return false;
             }
 
             return x.IsScalable() ? (x.scalable == y.scalable) : (x.fixed == y.fixed);
+#else
+            return x.fixed == y.fixed;
+#endif // TARGET_ARM64
         }
 
         static unsigned GetHashCode(const simdmaskvalue_t& val)
         {
             unsigned hash = 0;
 
+#if defined(TARGET_ARM64)
             if (val.IsScalable())
             {
                 hash = static_cast<unsigned>(hash ^ val.isScalable);
@@ -1991,6 +2043,7 @@ private:
                 hash = static_cast<unsigned>(hash ^ val.scalable.gtSimdMaskScalableIndex);
             }
             else
+#endif // TARGET_ARM64
             {
                 hash = static_cast<unsigned>(hash ^ val.isScalable);
                 hash = static_cast<unsigned>(hash ^ val.fixed.u32[0]);
@@ -2012,6 +2065,7 @@ private:
         return m_simdMaskCnsMap;
     }
 #endif // FEATURE_MASKED_HW_INTRINSICS
+
 #endif // FEATURE_SIMD
 
     template <size_t NumArgs>
