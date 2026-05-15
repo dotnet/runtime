@@ -20,10 +20,13 @@ internal static class SignatureMapper
     // and PInvoke signatures.
     private static readonly Dictionary<string, int> s_knownStructSizes = new()
     {
+        ["PairStruct"] = 8, // Used by WBT tests
+        ["S"] = 8, // Used by WBT tests
         ["System.Runtime.CompilerServices.QCallModule"] = 8,
         ["System.Runtime.CompilerServices.QCallAssembly"] = 8,
         ["System.Runtime.CompilerServices.QCallTypeHandle"] = 8,
         ["System.GC+GCHeapHardLimitInfo"] = 64,
+        ["Test+S"] = 8, // Used by WBT tests
     };
 
     internal static char? TypeToChar(Type t, LogAdapter log, out bool isByRefStruct, out int structSize, int depth = 0)
