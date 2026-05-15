@@ -457,23 +457,25 @@ namespace System.Net.Security
                         _sslAuthenticationOptions!.IsServer) // guard against malicious endpoints. We should not see ClientHello on client.
 #pragma warning restore CS0618
                     {
-                        TlsFrameHelper.ProcessingOptions options = TlsFrameHelper.ProcessingOptions.All;
+                        TlsFrameHelper.ProcessingOptions options = TlsFrameHelper.ProcessingOptions.ServerName;
 
-                        if (!NetEventSource.Log.IsEnabled())
+                        if (OperatingSystem.IsMacOS() && _sslAuthenticationOptions.IsServer)
                         {
-                            options = TlsFrameHelper.ProcessingOptions.ServerName;
-                            if (OperatingSystem.IsMacOS() && _sslAuthenticationOptions.IsServer)
-                            {
-                                // macOS cannot process ALPN on server at the moment.
-                                // We fallback to our own process similar to SNI bellow.
-                                options |= TlsFrameHelper.ProcessingOptions.RawApplicationProtocol;
-                            }
+                            // macOS cannot process ALPN on server at the moment.
+                            // We fallback to our own process similar to SNI bellow.
+                            // This will allocate.
+                            options |= TlsFrameHelper.ProcessingOptions.RawApplicationProtocol;
+                        }
 
-                            if (_sslAuthenticationOptions.ServerOptionDelegate != null)
-                            {
-                                // We need to process supported versions extension to pass it to user callback.
-                                options |= TlsFrameHelper.ProcessingOptions.Versions;
-                            }
+                        if (NetEventSource.Log.IsEnabled())
+                        {
+                            options |= TlsFrameHelper.ProcessingOptions.ApplicationProtocol | TlsFrameHelper.ProcessingOptions.Versions;
+                        }
+
+                        if (_sslAuthenticationOptions.ServerOptionDelegate != null)
+                        {
+                            // We need to process supported versions extension to pass it to user callback.
+                            options |= TlsFrameHelper.ProcessingOptions.Versions;
                         }
 
                         // Process SNI from Client Hello message
