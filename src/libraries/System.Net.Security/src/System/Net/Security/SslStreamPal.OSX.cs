@@ -33,6 +33,7 @@ namespace System.Net.Security
         // special case of an empty array being passed to the `fixed` statement.
         internal const bool CanEncryptEmptyMessage = false;
         internal const bool CanGenerateCustomAlerts = false;
+        internal const bool IsDirectDecryptSupported = false;
 
         public static void VerifyPackageInfo()
         {
@@ -257,6 +258,23 @@ namespace System.Net.Security
                 return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, e);
             }
         }
+        public static SecurityStatusPal DecryptMessageDirect(
+            SafeDeleteContext securityContext,
+            ReadOnlySpan<byte> input,
+            Span<byte> output,
+            out int outputWritten,
+            out bool morePending)
+        {
+            // Direct decrypt is not supported on this platform.
+            // Callers must gate on SslStreamPal.IsDirectDecryptSupported before invoking this method.
+            _ = securityContext;
+            _ = input;
+            _ = output;
+            outputWritten = 0;
+            morePending = false;
+            throw new NotSupportedException();
+        }
+
 
         public static ChannelBinding? QueryContextChannelBinding(
             SafeDeleteContext securityContext,

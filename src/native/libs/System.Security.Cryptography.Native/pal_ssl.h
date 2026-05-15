@@ -283,6 +283,7 @@ Shims the SSL_read method.
 Returns the positive number of bytes read when successful, 0 or a negative number
 when an error is encountered.
 */
+PALEXPORT int32_t CryptoNative_SslPending(SSL* ssl);
 PALEXPORT int32_t CryptoNative_SslRead(SSL* ssl, void* buf, int32_t num, int32_t* error);
 
 /*
