@@ -370,10 +370,10 @@ CorInfoType CEEInfo::asCorInfoType(CorElementType eeType,
         CORINFO_TYPE_BYREF,
         CORINFO_TYPE_VALUECLASS,
         CORINFO_TYPE_CLASS,
-        CORINFO_TYPE_VAR,            // VAR (type variable)
+        CORINFO_TYPE_VAR,            // VAR
         CORINFO_TYPE_CLASS,          // ARRAY
-        CORINFO_TYPE_CLASS,          // WITH
-        CORINFO_TYPE_REFANY,
+        CORINFO_TYPE_CLASS,          // GENERICINST
+        CORINFO_TYPE_VALUECLASS,     // TypedReference
         CORINFO_TYPE_UNDEF,          // VALUEARRAY_UNSUPPORTED
         CORINFO_TYPE_NATIVEINT,      // I
         CORINFO_TYPE_NATIVEUINT,     // U
@@ -396,7 +396,7 @@ CorInfoType CEEInfo::asCorInfoType(CorElementType eeType,
         // spot check of the map
     _ASSERTE((CorInfoType) map[ELEMENT_TYPE_I4] == CORINFO_TYPE_INT);
     _ASSERTE((CorInfoType) map[ELEMENT_TYPE_PTR] == CORINFO_TYPE_PTR);
-    _ASSERTE((CorInfoType) map[ELEMENT_TYPE_TYPEDBYREF] == CORINFO_TYPE_REFANY);
+    _ASSERTE((CorInfoType) map[ELEMENT_TYPE_TYPEDBYREF] == CORINFO_TYPE_VALUECLASS);
 
     CorInfoType res = ((unsigned)eeType < ELEMENT_TYPE_MAX) ? ((CorInfoType) map[(unsigned)eeType]) : CORINFO_TYPE_UNDEF;
 
