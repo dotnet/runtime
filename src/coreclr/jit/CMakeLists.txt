@@ -16,6 +16,16 @@ if (MSVC)
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/permissive->)
 endif()
 
+# The JIT enforces -Wunused-function (overriding the repo-wide -Wno-unused-function
+# from configurecompiler.cmake) so that dead helpers are caught early. Any helper
+# that is only referenced under a target/DEBUG #ifdef must be guarded by the same
+# condition.
+if (CLR_CMAKE_HOST_UNIX OR CLR_CMAKE_HOST_WASI)
+  get_directory_property(JIT_COMPILE_OPTIONS COMPILE_OPTIONS)
+  list(REMOVE_ITEM JIT_COMPILE_OPTIONS -Wno-unused-function)
+  set_directory_properties(PROPERTIES COMPILE_OPTIONS "${JIT_COMPILE_OPTIONS}")
+endif()
+
 function(create_standalone_jit)
 
   set(oneValueArgs TARGET OS ARCH)

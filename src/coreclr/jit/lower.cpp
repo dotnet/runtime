@@ -10437,6 +10437,7 @@ static bool IsStoreCoalescingInvariantNode(Compiler* compiler, GenTree* node, bo
     return node->OperIs(GT_LCL_VAR) && !compiler->lvaVarAddrExposed(node->AsLclVar()->GetLclNum());
 }
 
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
 //------------------------------------------------------------------------
 // TryGetStoreCoalescingConstantBits: get the raw bits for a constant used by store
 //    coalescing.
@@ -10479,6 +10480,7 @@ static bool TryGetStoreCoalescingConstantBits(GenTree* value, uint64_t* bits)
 
     return false;
 }
+#endif // TARGET_XARCH || TARGET_ARM64
 
 //------------------------------------------------------------------------
 // GetLoadStoreCoalescingData: given a STOREIND/IND node, get the data needed to perform
