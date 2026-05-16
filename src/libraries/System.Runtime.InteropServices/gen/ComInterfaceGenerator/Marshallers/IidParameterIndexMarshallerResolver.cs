@@ -94,13 +94,17 @@ namespace Microsoft.Interop
                                                         Argument(CastExpression(TypeSyntaxes.System_IntPtr, IdentifierName(unknownIdentifier))),
                                                         Argument(iidExpression).WithRefKindKeyword(Token(SyntaxKind.InKeyword)),
                                                         Argument(IdentifierName(queriedInterfaceIdentifier)).WithRefKindKeyword(Token(SyntaxKind.OutKeyword))))))),
-                        MethodInvocationStatement(
-                            TypeSyntaxes.System_Runtime_InteropServices_Marshal,
-                            IdentifierName("Release"),
-                            Argument(CastExpression(TypeSyntaxes.System_IntPtr, IdentifierName(unknownIdentifier)))),
+                        ExpressionStatement(
+                            InvocationExpression(
+                                    MemberAccessExpression(
+                                        SyntaxKind.SimpleMemberAccessExpression,
+                                        ParseTypeName("global::System.Runtime.InteropServices.Marshalling.ComInterfaceMarshaller<object>"),
+                                        IdentifierName("Free")))
+                                .AddArgumentListArguments(
+                                    Argument(IdentifierName(unknownIdentifier)))),
                         IfStatement(
                             BinaryExpression(
-                                SyntaxKind.NotEqualsExpression,
+                                SyntaxKind.LessThanExpression,
                                 IdentifierName(queryInterfaceHResultIdentifier),
                                 LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(0))),
                             Block(
