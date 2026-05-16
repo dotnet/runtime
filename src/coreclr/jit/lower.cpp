@@ -141,17 +141,19 @@ bool Lowering::CheckImmedAndMakeContained(GenTree* parentNode, GenTree* childNod
 // computation changing values?
 //
 // Arguments:
-//    node         -  The node.
-//    endExclusive -  The exclusive end of the range to check invariance for.
+//    node              -  The node.
+//    endExclusive      -  The exclusive end of the range to check invariance for.
+//    ignoreFlagsOnNode -  GTF flags to mask off the node's own side-effect set.
+//                         See SideEffectSet::IsLirInvariantInRange for details.
 //
 // Returns:
 //    True if 'node' can be evaluated at any point between its current
 //    location and 'endExclusive' without giving a different result; otherwise
 //    false.
 //
-bool Lowering::IsInvariantInRange(GenTree* node, GenTree* endExclusive) const
+bool Lowering::IsInvariantInRange(GenTree* node, GenTree* endExclusive, GenTreeFlags ignoreFlagsOnNode) const
 {
-    return m_scratchSideEffects.IsLirInvariantInRange(m_compiler, node, endExclusive);
+    return m_scratchSideEffects.IsLirInvariantInRange(m_compiler, node, endExclusive, ignoreFlagsOnNode);
 }
 
 //------------------------------------------------------------------------
@@ -159,18 +161,22 @@ bool Lowering::IsInvariantInRange(GenTree* node, GenTree* endExclusive) const
 // ignoring conflicts with one particular node.
 //
 // Arguments:
-//    node         - The node.
-//    endExclusive - The exclusive end of the range to check invariance for.
-//    ignoreNode   - A node to ignore interference checks with, for example
-//                   because it will retain its relative order with 'node'.
+//    node              - The node.
+//    endExclusive      - The exclusive end of the range to check invariance for.
+//    ignoreNode        - A node to ignore interference checks with, for example
+//                        because it will retain its relative order with 'node'.
+//    ignoreFlagsOnNode - GTF flags to mask off the node's own side-effect set.
 //
 // Returns:
 //    True if 'node' can be evaluated at any point between its current location
 //    and 'endExclusive' without giving a different result; otherwise false.
 //
-bool Lowering::IsInvariantInRange(GenTree* node, GenTree* endExclusive, GenTree* ignoreNode) const
+bool Lowering::IsInvariantInRange(GenTree*     node,
+                                  GenTree*     endExclusive,
+                                  GenTree*     ignoreNode,
+                                  GenTreeFlags ignoreFlagsOnNode) const
 {
-    return m_scratchSideEffects.IsLirInvariantInRange(m_compiler, node, endExclusive, ignoreNode);
+    return m_scratchSideEffects.IsLirInvariantInRange(m_compiler, node, endExclusive, ignoreNode, ignoreFlagsOnNode);
 }
 
 //------------------------------------------------------------------------
@@ -11191,8 +11197,12 @@ GenTree* Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
 
 #if defined(TARGET_ARM64)
     // Verify containment safety before creating an LEA that must be contained.
+    // Ignore GTF_ORDER_SIDEEFF on the addr itself: when the address ADD is
+    // folded into a contained addressing mode, no intermediate byref register
+    // is materialized, so any ordering hint placed on the ADD (e.g. by morph
+    // for an explicit FIELD_ADDR null check) does not block containment.
     //
-    const bool isContainable = IsInvariantInRange(ind->Addr(), ind);
+    const bool isContainable = IsInvariantInRange(ind->Addr(), ind, GTF_ORDER_SIDEEFF);
 #else
     const bool isContainable = true;
 #endif
@@ -11263,8 +11273,9 @@ GenTree* Lowering::LowerIndir(GenTreeIndir* ind)
             var_types targetType = ind->TypeGet();
             ind->ChangeType(ind->TypeIs(TYP_DOUBLE) ? TYP_LONG : TYP_INT);
 
-            // Now it might be eligible for some addressing modes with LDAPUR:
-            const bool isContainable = IsInvariantInRange(ind->Addr(), ind);
+            // Now it might be eligible for some addressing modes with LDAPUR.
+            // See LowerStoreIndirCommon for why GTF_ORDER_SIDEEFF on the addr is ignored.
+            const bool isContainable = IsInvariantInRange(ind->Addr(), ind, GTF_ORDER_SIDEEFF);
             TryCreateAddrMode(ind->Addr(), isContainable, ind);
 
             // Wrap the resulting IND into BITCAST:
@@ -11281,8 +11292,9 @@ GenTree* Lowering::LowerIndir(GenTreeIndir* ind)
 
 #if defined(TARGET_ARM64)
         // Verify containment safety before creating an LEA that must be contained.
+        // See LowerStoreIndirCommon for why GTF_ORDER_SIDEEFF on the addr is ignored.
         //
-        const bool isContainable = IsInvariantInRange(ind->Addr(), ind);
+        const bool isContainable = IsInvariantInRange(ind->Addr(), ind, GTF_ORDER_SIDEEFF);
 #else
         const bool isContainable = true;
 #endif

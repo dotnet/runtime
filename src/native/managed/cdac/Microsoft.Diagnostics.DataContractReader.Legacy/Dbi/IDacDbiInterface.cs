@@ -160,6 +160,12 @@ public enum DynamicMethodType
     kLCGMethod = 2,
 }
 
+public enum CorDebugThreadState
+{
+    ThreadRun = 0,
+    ThreadSuspend = 1,
+}
+
 [Flags]
 public enum CorDebugUserState
 {
@@ -179,6 +185,18 @@ public enum CorDebugGenerationTypes
     CorDebug_POH = 4,
     CorDebug_NonGC = 0x7FFFFFFF,
 }
+
+public enum IlNum : int
+{
+    TYPECTXT_ILNUM = -3,Implements four DacDbi APIs in the managed cDAC.
+
+### cDAC DacDbi implementations
+- `GetSimpleType` — resolves CorElementType to its metadata token + module via `_target.Contracts.RuntimeTypeSystem`.
+- `ResolveAssembly` — looks up an assembly ref token through the loader contract.
+- `ResolveExactGenericArgsToken` — walks the generic dictionary to recover the exact instantiation token.
+- `GetGenericArgTokenIndex` — mirrors the native three-state result (`S_FALSE` / `*pIndex = 0` / `*pIndex = TYPECTXT_ILNUM`).
+
+Each implementation is gated by the existing `#if DEBUG` legacy cross-check pattern.}
 
 // Name-surface projection of IDacDbiInterface in native method order for COM binding validation.
 // Parameter shapes are intentionally coarse placeholders and will be refined with method implementation work.
@@ -469,9 +487,6 @@ public unsafe partial interface IDacDbiInterface
     int IsVmObjectHandleValid(ulong vmHandle, Interop.BOOL* pResult);
 
     [PreserveSig]
-    int IsWinRTModule(ulong vmModule, Interop.BOOL* isWinRT);
-
-    [PreserveSig]
     int GetHandleAddressFromVmHandle(ulong vmHandle, ulong* pRetVal);
 
     [PreserveSig]
@@ -491,9 +506,6 @@ public unsafe partial interface IDacDbiInterface
 
     [PreserveSig]
     int IsThreadSuspendedOrHijacked(ulong vmThread, Interop.BOOL* pResult);
-
-    [PreserveSig]
-    int AreGCStructuresValid(Interop.BOOL* pResult);
 
     [PreserveSig]
     int CreateHeapWalk(nuint* pHandle);
@@ -575,9 +587,6 @@ public unsafe partial interface IDacDbiInterface
 
     [PreserveSig]
     int GetDelegateTargetObject(int delegateType, ulong delegateObject, ulong* ppTargetObj, ulong* ppTargetAppDomain);
-
-    [PreserveSig]
-    int GetLoaderHeapMemoryRanges(nint pRanges);
 
     [PreserveSig]
     int IsModuleMapped(ulong pModule, Interop.BOOL* isModuleMapped);

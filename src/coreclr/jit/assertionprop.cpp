@@ -899,13 +899,8 @@ void Compiler::optPrintAssertion(const AssertionDsc& curAssertion, AssertionInde
             IntegralRange::Print(curAssertion.GetOp2().GetIntegralRange());
             break;
 
-        case O2K_CHECKED_BOUND_ADD_CNS:
-            printf("(Checked_Bnd_BinOp " FMT_VN " + %d)", curAssertion.GetOp2().GetCheckedBound(),
-                   curAssertion.GetOp2().GetCheckedBoundConstant());
-            break;
-
-        case O2K_VN:
-            printf("VN " FMT_VN "", curAssertion.GetOp2().GetVN());
+        case O2K_VN_ADD_CNS:
+            printf("(VN_ADD_CNS " FMT_VN " + %d)", curAssertion.GetOp2().GetVN(), curAssertion.GetOp2().GetCns());
             break;
 
         default:
@@ -1413,9 +1408,9 @@ AssertionIndex Compiler::optAddAssertion(const AssertionDsc& newAssertion)
         bool mayHaveDuplicates =
             optAssertionHasAssertionsForVN(newAssertion.GetOp1().GetVN(), /* addIfNotFound */ canAddNewAssertions);
         // We need to register op2.vn too, even if we know for sure there are no duplicates
-        if (newAssertion.GetOp2().KindIs(O2K_CHECKED_BOUND_ADD_CNS))
+        if (newAssertion.GetOp2().KindIs(O2K_VN_ADD_CNS))
         {
-            mayHaveDuplicates |= optAssertionHasAssertionsForVN(newAssertion.GetOp2().GetCheckedBound(),
+            mayHaveDuplicates |= optAssertionHasAssertionsForVN(newAssertion.GetOp2().GetVN(),
                                                                 /* addIfNotFound */ canAddNewAssertions);
 
             // Additionally, check for the pattern of "VN + const == checkedBndVN" and register "VN" as well.
@@ -1424,13 +1419,6 @@ AssertionIndex Compiler::optAddAssertion(const AssertionDsc& newAssertion)
             {
                 mayHaveDuplicates |= optAssertionHasAssertionsForVN(addOpVN, /* addIfNotFound */ canAddNewAssertions);
             }
-        }
-        else if (newAssertion.GetOp2().KindIs(O2K_VN))
-        {
-            // For VN <relop> VN assertions, register op2's VN too so consumers can find
-            // the assertion when iterating from the op2 side.
-            mayHaveDuplicates |= optAssertionHasAssertionsForVN(newAssertion.GetOp2().GetVN(),
-                                                                /* addIfNotFound */ canAddNewAssertions);
         }
 
         if (mayHaveDuplicates)
@@ -1561,7 +1549,7 @@ void Compiler::optDebugCheckAssertion(const AssertionDsc& assertion) const
             assert(optLocalAssertionProp);
             break;
 
-        case O2K_VN:
+        case O2K_VN_ADD_CNS:
             assert(!optLocalAssertionProp);
             assert(assertion.GetOp1().KindIs(O1K_VN));
             assert(assertion.IsRelop());
@@ -1650,8 +1638,7 @@ void Compiler::optCreateComplementaryAssertion(AssertionIndex assertionIndex)
         AssertionDsc reversed = candidateAssertion.Reverse();
         optMapComplementary(optAddAssertion(reversed), assertionIndex);
     }
-    else if (candidateAssertion.KindIs(OAK_LT_UN, OAK_LE_UN) &&
-             candidateAssertion.GetOp2().KindIs(O2K_CHECKED_BOUND_ADD_CNS))
+    else if (candidateAssertion.KindIs(OAK_LT_UN, OAK_LE_UN) && candidateAssertion.GetOp2().KindIs(O2K_VN_ADD_CNS))
     {
         // Assertions such as "X > checkedBndVN" aren't very useful.
         return;
@@ -4360,11 +4347,13 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
             // Look for a relop-like assertion that matches the current relop exactly.
             // Example: currentTree is "X >= Y" and we have an assertion "X >= Y" (or its inverse "X < Y").
             //
+            // For O2K_VN_ADD_CNS the assertion stores op2 as "vn + cns".
+            // - When cns == 0, the stored VN equals the original op2 VN, so direct match works.
+            // - When cns != 0, we'd need to assemble ADD(vn, cns) at the VN level; skip for now.
+            //
             if (curAssertion.IsRelop() && (curAssertion.GetOp1().GetVN() == op1VN) &&
-                // O2K_CHECKED_BOUND_ADD_CNS means op2 is decomposed into op2.vn being checked bound
-                // and op2.cns being the constant offset. We assemble the original relop VN if we want.
-                // For now, just skip such assertions here.
-                !curAssertion.GetOp2().KindIs(O2K_CHECKED_BOUND_ADD_CNS) && (curAssertion.GetOp2().GetVN() == op2VN))
+                (!curAssertion.GetOp2().KindIs(O2K_VN_ADD_CNS) || (curAssertion.GetOp2().GetCns() == 0)) &&
+                (curAssertion.GetOp2().GetVN() == op2VN))
             {
                 bool       isUnsigned;
                 genTreeOps assertionOper = AssertionDsc::ToCompareOper(curAssertion.GetKind(), &isUnsigned);
@@ -4800,9 +4789,41 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions,
         }
     }
 
-    bool removeCast = false;
     if (!optLocalAssertionProp)
     {
+        // Decide whether removing this cast (vs only clearing GTF_OVERFLOW) is safe.
+        // The cast is a value-no-op when the operand is provably in the cast's input range,
+        // but we still need to be careful about:
+        //   1. Representation-changing casts (genActualType differs) - cannot drop.
+        //   2. NOL locals - the LCL_VAR holds a TYP_INT value with potentially undefined
+        //      upper bits (per the normalize-on-load contract). VN-based subrange proofs
+        //      do NOT imply that a JIT-controlled store normalized the register, so we
+        //      cannot safely drop the cast in this path. (Local-prop has stronger
+        //      semantics and handles NOL retyping below.)
+        //   3. Casts to small types wrapping arbitrary (non-LCL_VAR) expressions act as
+        //      codegen hints for narrow operations (e.g., byte OR vs 32-bit OR + movzx).
+        //      Dropping them is semantically correct but pessimizes codegen, so we avoid it.
+        bool canDropCast = (genActualType(cast) == genActualType(lcl));
+        if (canDropCast && lcl->OperIs(GT_LCL_VAR))
+        {
+            if (lvaGetDesc(lcl->AsLclVar())->lvNormalizeOnLoad())
+            {
+                canDropCast = false;
+            }
+        }
+        else if (canDropCast && varTypeIsSmall(cast->CastToType()))
+        {
+            // Preserve small-type casts wrapping non-LCL_VAR expressions; they help codegen
+            // pick narrow operations.
+            canDropCast = false;
+        }
+
+        if (!canDropCast && !cast->gtOverflow())
+        {
+            // Nothing we can do for this cast.
+            return nullptr;
+        }
+
         // Get the non-overflowing input range for a cast. ForCastInput takes care of special cases like
         // small types and IsUnsigned flag for checked casts.
         IntegralRange castRng = IntegralRange::ForCastInput(cast);
@@ -4822,33 +4843,26 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions,
                 int castToLo   = castToTypeRange.LowerLimit().GetConstant();
                 int castToHi   = castToTypeRange.UpperLimit().GetConstant();
 
-                if (castOpRng.IsConstantRange() && (castFromLo >= castToLo) && (castFromHi <= castToHi))
+                if ((castFromLo >= castToLo) && (castFromHi <= castToHi))
                 {
-                    removeCast = true;
-                    if (!lcl->OperIs(GT_LCL_VAR))
+                    if (canDropCast)
                     {
-                        // We cannot remove the cast, but can we just remove the GTF_OVERFLOW flag?
-                        if (!cast->gtOverflow())
-                        {
-                            return nullptr;
-                        }
-
-                        // Just clear the overflow flag then.
-                        JITDUMP("Clearing overflow flag for cast %06u based on assertions.\n", dspTreeID(cast));
-                        cast->ClearOverflow();
-                        return optAssertionProp_Update(cast, cast, stmt);
+                        JITDUMP("Removing cast %06u as redundant based on VN assertions.\n", dspTreeID(cast));
+                        return optAssertionProp_Update(cast->CastOp(), cast, stmt);
                     }
+
+                    assert(cast->gtOverflow());
+                    JITDUMP("Clearing overflow flag for cast %06u based on VN assertions.\n", dspTreeID(cast));
+                    cast->ClearOverflow();
+                    return optAssertionProp_Update(cast, cast, stmt);
                 }
             }
         }
-    }
-    else
-    {
-        removeCast = lcl->OperIs(GT_LCL_VAR) &&
-                     optAssertionIsSubrange(lcl, IntegralRange::ForCastInput(cast), assertions) != NO_ASSERTION_INDEX;
+        return nullptr;
     }
 
-    if (removeCast)
+    if (lcl->OperIs(GT_LCL_VAR) &&
+        optAssertionIsSubrange(lcl, IntegralRange::ForCastInput(cast), assertions) != NO_ASSERTION_INDEX)
     {
         LclVarDsc* varDsc = lvaGetDesc(lcl->AsLclVarCommon());
 
@@ -5424,12 +5438,11 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
             continue;
         }
 
-        assert(curAssertion.GetOp2().GetCheckedBoundConstant() == 0);
-        assert(curAssertion.GetOp2().IsCheckedBoundNeverNegative());
+        assert(curAssertion.GetOp2().GetCns() == 0);
+        assert(curAssertion.GetOp2().IsVNNeverNegative());
 
         // Do we have a previous range check involving the same 'vnLen' upper bound?
-        if (curAssertion.GetOp2().GetCheckedBound() ==
-            vnStore->VNConservativeNormalValue(arrBndsChk->GetArrayLength()->gtVNPair))
+        if (curAssertion.GetOp2().GetVN() == optConservativeNormalVN(arrBndsChk->GetArrayLength()))
         {
             // Do we have the exact same lower bound 'vnIdx'?
             //       a[i] followed by a[i]
