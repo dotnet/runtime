@@ -486,12 +486,12 @@ namespace ILCompiler.ObjectWriter
                         // for DWARF .eh_frame section.
 
                         // Apple ld-prime linker needs a quirk where we restrict the addend to
-                        // signed 20-bit integer. We generate temporary label every time the
+                        // signed 20-bit integer. We generate a temporary label every time the
                         // addend would overflow and adjust the addend to be relative to that label.
                         var temporaryLabelOffset = _sections[sectionIndex].TemporaryLabelOffset;
                         var temporaryLabelIndex = _sections[sectionIndex].TemporaryLabelIndex;
                         addend -= offset - temporaryLabelOffset;
-                        if ((int)addend != (((int)addend << 12) >> 12))
+                        if (addend != ((addend << 44) >> 44))
                         {
                             addend += offset - temporaryLabelOffset;
                             _temporaryLabels.Add(new SymbolDefinition(sectionIndex, offset, 0, false));
@@ -499,12 +499,17 @@ namespace ILCompiler.ObjectWriter
                             _sections[sectionIndex].TemporaryLabelIndex = temporaryLabelIndex = (uint)_temporaryLabels.Count;
                         }
 
+                        Debug.Assert(addend >= int.MinValue && addend <= int.MaxValue);
                         BinaryPrimitives.WriteInt32LittleEndian(
                             data,
                             BinaryPrimitives.ReadInt32LittleEndian(data) +
                             (int)addend);
 
-                        // Abuse the addend to store the temporary label index.
+                        // The SymbolicRelocation.Addend field is repurposed to carry the
+                        // 1-based temporary label index (0 means no temporary label). This
+                        // avoids introducing a side table and is consumed by
+                        // EmitRelocationsX64/EmitRelocationsArm64 when building the
+                        // subtractor relocation pair.
                         addend = temporaryLabelIndex;
                     }
                     else
@@ -694,6 +699,7 @@ namespace ILCompiler.ObjectWriter
                 {
                     // Addend is used to encode the temporary label index for ld-prime quirk. See
                     // EmitRelocation for details.
+                    Debug.Assert(symbolicRelocation.Addend == 0 || _temporaryLabelsBaseIndex > 0);
                     uint baseSymbolIndex =
                         symbolicRelocation.Addend != 0 ?
                         (uint)(_temporaryLabelsBaseIndex + symbolicRelocation.Addend - 1) :
@@ -864,6 +870,7 @@ namespace ILCompiler.ObjectWriter
                 {
                     // Addend is used to encode the temporary label index for ld-prime quirk. See
                     // EmitRelocation for details.
+                    Debug.Assert(symbolicRelocation.Addend == 0 || _temporaryLabelsBaseIndex > 0);
                     uint baseSymbolIndex =
                         symbolicRelocation.Addend != 0 ?
                         (uint)(_temporaryLabelsBaseIndex + symbolicRelocation.Addend - 1) :
