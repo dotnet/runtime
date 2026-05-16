@@ -2052,8 +2052,7 @@ TargetPointer GetFieldDescStaticAddress(TargetPointer fieldDescPointer, bool unb
     // then applies the field's metadata-based offset within that region.
     // Uses GetGCStaticsBasePointer / GetNonGCStaticsBasePointer depending on the field's CorElementType.
     // When unboxValueTypes is true (default), value-type statics are dereferenced to the unboxed
-    // payload inside the boxed object. Pass false to obtain the address of the boxed reference itself
-    // (required for collectible-type static field addresses).
+    // payload inside the boxed object. Pass false to obtain the address of the boxed reference itself.
 }
 
 TargetPointer GetFieldDescThreadStaticAddress(TargetPointer fieldDescPointer, TargetPointer thread, bool unboxValueTypes = true)

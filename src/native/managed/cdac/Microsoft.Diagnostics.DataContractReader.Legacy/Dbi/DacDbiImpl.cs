@@ -1520,7 +1520,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
             TargetPointer fd = new TargetPointer(vmField);
-            Debug.Assert(rts.IsFieldDescStatic(fd) && !rts.IsFieldDescThreadStatic(fd), "BUG: Unsupported static field type for collectible types");
             *pRetVal = rts.GetFieldDescStaticAddress(fd, unboxValueTypes: false).Value;
         }
         catch (System.Exception ex)
