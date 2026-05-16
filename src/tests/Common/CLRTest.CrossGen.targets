@@ -33,6 +33,10 @@ WARNING:   When setting properties based on their current state (for example:
 
       <CrossGenTest>false</CrossGenTest>
 
+    Tests can opt out of composite crossgen2 only by setting this property in their project:
+
+      <CompositeCrossGenTest>false</CompositeCrossGenTest>
+
   -->
   <Target Name="GetCrossgenBashScript">
 
@@ -45,6 +49,11 @@ WARNING:   When setting properties based on their current state (for example:
 if [ "$(AlwaysUseCrossGen2)" == "true" ]; then
     export RunCrossGen2=1
     export CompositeBuildMode=1
+fi
+
+# CompositeBuildMode is an opt-in by variable presence.
+if [ "$(CompositeCrossGenTest)" = "false" ] && [ -n "${CompositeBuildMode+x}" ]; then
+    unset CompositeBuildMode
 fi
 
 # CrossGen2 Script
@@ -231,6 +240,13 @@ fi
 if /i "$(AlwaysUseCrossGen2)" == "true" (
     set RunCrossGen2=1
     set CompositeBuildMode=1
+)
+
+if /i "$(CompositeCrossGenTest)" == "false" (
+    REM CompositeBuildMode is an opt-in by variable presence.
+    if defined CompositeBuildMode (
+        set CompositeBuildMode=
+    )
 )
 
 REM CrossGen2 Script
