@@ -3515,138 +3515,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetDelegateTargetObject(
     return hr;
 }
 
-static bool TrackMemoryRangeHelper(PTR_VOID pvArgs, PTR_VOID pvAllocationBase, SIZE_T cbReserved)
-{
-    // The pvArgs is really pointing to a debugger-side container. Sadly the callback only takes a PTR_VOID.
-    CQuickArrayList<COR_MEMORY_RANGE> *rangeCollection =
-                                        (CQuickArrayList<COR_MEMORY_RANGE>*)(dac_cast<TADDR>(pvArgs));
-    TADDR rangeStart = dac_cast<TADDR>(pvAllocationBase);
-    TADDR rangeEnd = rangeStart + cbReserved;
-    rangeCollection->Push({rangeStart, rangeEnd});
-
-    // This is a tracking function, not a search callback. Pretend we never found what we were looking for
-    // to get all possible ranges.
-    return false;
-}
-
-void DacDbiInterfaceImpl::EnumerateMemRangesForLoaderAllocator(PTR_LoaderAllocator pLoaderAllocator, CQuickArrayList<COR_MEMORY_RANGE> *rangeAcummulator)
-{
-    CQuickArrayList<PTR_LoaderHeap> heapsToEnumerate;
-
-    // We always expect to see these three heaps
-    _ASSERTE(pLoaderAllocator->GetLowFrequencyHeap() != NULL);
-    heapsToEnumerate.Push(pLoaderAllocator->GetLowFrequencyHeap());
-
-    _ASSERTE(pLoaderAllocator->GetHighFrequencyHeap() != NULL);
-    heapsToEnumerate.Push(pLoaderAllocator->GetHighFrequencyHeap());
-
-    _ASSERTE(pLoaderAllocator->GetStubHeap() != NULL);
-    heapsToEnumerate.Push(pLoaderAllocator->GetStubHeap());
-
-    // GetVirtualCallStubManager returns VirtualCallStubManager*, but it's really an address to target as
-    // pLoaderAllocator is DACized. Cast it so we don't try to a Host to Target translation.
-    VirtualCallStubManager *pVcsMgr = pLoaderAllocator->GetVirtualCallStubManager();
-    LOG((LF_CORDB, LL_INFO10000, "DDBII::EMRFLA: VirtualCallStubManager 0x%x\n", PTR_HOST_TO_TADDR(pVcsMgr)));
-    if (pVcsMgr)
-    {
-        if (pVcsMgr->indcell_heap != NULL) heapsToEnumerate.Push(pVcsMgr->indcell_heap);
-#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
-        if (pVcsMgr->cache_entry_heap != NULL) heapsToEnumerate.Push(pVcsMgr->cache_entry_heap);
-#endif // FEATURE_VIRTUAL_STUB_DISPATCH
-    }
-
-    TADDR rangeAccumAsTaddr = TO_TADDR(rangeAcummulator);
-    for (uint32_t i = 0; i < (uint32_t)heapsToEnumerate.Size(); i++)
-    {
-        LOG((LF_CORDB, LL_INFO10000, "DDBII::EMRFLA: LoaderHeap 0x%x\n", heapsToEnumerate[i].GetAddr()));
-        heapsToEnumerate[i]->EnumPageRegions(TrackMemoryRangeHelper, rangeAccumAsTaddr);
-    }
-}
-
-void DacDbiInterfaceImpl::EnumerateMemRangesForJitCodeHeaps(CQuickArrayList<COR_MEMORY_RANGE> *rangeAcummulator)
-{
-    // We should always have a valid EEJitManager with at least one code heap.
-    EEJitManager *pEM = ExecutionManager::GetEEJitManager();
-    _ASSERTE(pEM != NULL && pEM->m_pAllCodeHeaps.IsValid());
-
-    PTR_HeapList pHeapList = pEM->m_pAllCodeHeaps;
-    while (pHeapList != NULL)
-    {
-        CodeHeap *pHeap = pHeapList->pHeap;
-        DacpJitCodeHeapInfo jitCodeHeapInfo = DACGetHeapInfoForCodeHeap(pHeap);
-
-        switch (jitCodeHeapInfo.codeHeapType)
-        {
-            case CODEHEAP_LOADER:
-            {
-                TADDR targetLoaderHeap = CLRDATA_ADDRESS_TO_TADDR(jitCodeHeapInfo.LoaderHeap);
-                LOG((LF_CORDB, LL_INFO10000,
-                    "DDBII::EMRFJCH: LoaderCodeHeap 0x%x with LoaderHeap at 0x%x\n",
-                    PTR_HOST_TO_TADDR(pHeap), targetLoaderHeap));
-                PTR_ExplicitControlLoaderHeap pLoaderHeap = PTR_ExplicitControlLoaderHeap(targetLoaderHeap);
-                pLoaderHeap->EnumPageRegions(TrackMemoryRangeHelper, TO_TADDR(rangeAcummulator));
-                break;
-            }
-
-            case CODEHEAP_HOST:
-            {
-                LOG((LF_CORDB, LL_INFO10000,
-                    "DDBII::EMRFJCH: HostCodeHeap 0x%x\n",
-                    PTR_HOST_TO_TADDR(pHeap)));
-                rangeAcummulator->Push({
-                    CLRDATA_ADDRESS_TO_TADDR(jitCodeHeapInfo.HostData.baseAddr),
-                    CLRDATA_ADDRESS_TO_TADDR(jitCodeHeapInfo.HostData.currentAddr)
-                });
-                break;
-            }
-
-            default:
-            {
-                LOG((LF_CORDB, LL_INFO10000, "DDBII::EMRFJCH: unknown heap type at 0x%x\n\n", pHeap));
-                _ASSERTE("Unknown heap type enumerating code ranges.");
-                break;
-            }
-        }
-
-        pHeapList = pHeapList->GetNext();
-    }
-}
-
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetLoaderHeapMemoryRanges(DacDbiArrayList<COR_MEMORY_RANGE> *pRanges)
-{
-    LOG((LF_CORDB, LL_INFO10000, "DDBII::GLHMR\n"));
-    DD_ENTER_MAY_THROW;
-
-    HRESULT hr = S_OK;
-
-    EX_TRY
-    {
-        CQuickArrayList<COR_MEMORY_RANGE> memoryRanges;
-
-        // Anything that's loaded in the SystemDomain or into the main AppDomain's default context in .NET Core
-        // and after uses only one global allocator. Enumerating that one is enough for most purposes.
-        // This doesn't consider any uses of AssemblyLoadingContexts (Unloadable or not). Each context has
-        // it's own LoaderAllocator, but there's no easy way of getting a hand at them other than going through
-        // the heap, getting a managed LoaderAllocators, from there getting a Scout, and from there getting a native
-        // pointer to the LoaderAllocator tos enumerate.
-        PTR_LoaderAllocator pGlobalAllocator = SystemDomain::GetGlobalLoaderAllocator();
-        _ASSERTE(pGlobalAllocator);
-        EnumerateMemRangesForLoaderAllocator(pGlobalAllocator, &memoryRanges);
-
-        EnumerateMemRangesForJitCodeHeaps(&memoryRanges);
-
-        // This code doesn't enumerate module thunk heaps to support IJW.
-        // It's a fairly rare scenario and requires to enumerate all modules.
-        // The return for such added time is minimal.
-
-        _ASSERTE(memoryRanges.Size() < INT_MAX);
-        pRanges->Init(memoryRanges.Ptr(), (UINT) memoryRanges.Size());
-    }
-    EX_CATCH_HRESULT(hr);
-
-    return hr;
-}
-
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetStackFramesFromException(VMPTR_Object vmObject, DacDbiArrayList<DacExceptionCallStackData>* pDacStackFrames)
 {
     if (pDacStackFrames == NULL)
@@ -4717,7 +4585,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetThreadAllocInfo(VMPTR_Thread v
     return hr;
 }
 
-// Set and reset the TSNC_DebuggerUserSuspend bit on the state of the specified thread
+// Set and reset the DCTS_UserSuspend bit on the DebuggerControlledThreadState of the specified thread
 // according to the CorDebugThreadState.
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::SetDebugState(VMPTR_Thread vmThread, CorDebugThreadState debugState)
 {
@@ -4732,11 +4600,11 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::SetDebugState(VMPTR_Thread vmThre
         // update the field on the host copy
         if (debugState == THREAD_SUSPEND)
         {
-            pThread->SetThreadStateNC(Thread::TSNC_DebuggerUserSuspend);
+            pThread->SetDebuggerControlledThreadState(Thread::DCTS_UserSuspend);
         }
         else if (debugState == THREAD_RUN)
         {
-            pThread->ResetThreadStateNC(Thread::TSNC_DebuggerUserSuspend);
+            pThread->ResetDebuggerControlledThreadState(Thread::DCTS_UserSuspend);
         }
         else
         {
@@ -4744,8 +4612,9 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::SetDebugState(VMPTR_Thread vmThre
         }
 
         // update the field on the target copy
-        TADDR taThreadState = PTR_HOST_MEMBER_TADDR(Thread, pThread, m_StateNC);
-        SafeWriteStructOrThrow<Thread::ThreadStateNoConcurrency>(taThreadState, &(pThread->m_StateNC));
+        TADDR taThreadState = PTR_HOST_MEMBER_TADDR(Thread, pThread, m_DebuggerControlledThreadState);
+        Thread::DebuggerControlledThreadState localState = pThread->m_DebuggerControlledThreadState.Load();
+        SafeWriteStructOrThrow<Thread::DebuggerControlledThreadState>(taThreadState, &localState);
     }
     EX_CATCH_HRESULT(hr);
     return hr;
