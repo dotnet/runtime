@@ -1106,9 +1106,9 @@ private:
                             CallArg* retBufArg = m_awaitingCall->gtArgs.GetRetBufferArg();
                             assert(retBufArg != nullptr);
 
-                            NewCallArg newRetBuf =
-                                NewCallArg::Primitive(compiler->gtCloneExpr(retBufArg->GetNode()), retBufArg->GetSignatureType())
-                                .WellKnown(WellKnownArg::RetBuffer);
+                            NewCallArg newRetBuf = NewCallArg::Primitive(compiler->gtCloneExpr(retBufArg->GetNode()),
+                                                                         retBufArg->GetSignatureType())
+                                                       .WellKnown(WellKnownArg::RetBuffer);
 
                             call->gtArgs.InsertAfterThisOrFirst(compiler, newRetBuf);
                         }
@@ -1248,7 +1248,8 @@ private:
                     // RET_EXPR.
                     if (inlineInfo->retExpr != nullptr)
                     {
-                        m_awaitReturnTemp = CreateOrGetLocalForRetExpr(awaitNode->AsCall(), inlineInfo, &m_awaitReturnValueUnused);
+                        m_awaitReturnTemp =
+                            CreateOrGetLocalForRetExpr(awaitNode->AsCall(), inlineInfo, &m_awaitReturnValueUnused);
 
                         inlineInfo->retExpr =
                             compiler->gtNewInlineCandidateReturnExpr(awaitNode->AsCall(), awaitNode->TypeGet());
