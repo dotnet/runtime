@@ -1116,7 +1116,16 @@ void emitter::emitDispIns(
 
         case IF_CODE_SIZE:
         {
-            FuncInfoDsc* const func = m_compiler->funGetFunc(emitCurIG->igFuncIdx);
+            // We should either have a non-null ig parameter, or emitCurIG should be set
+            insGroup* curIG = ig;
+            if (curIG == nullptr)
+            {
+                curIG = emitCurIG;
+            }
+            assert(curIG != nullptr);
+
+            FuncInfoDsc* const func = m_compiler->funGetFunc(curIG->igFuncIdx);
+            assert(func != nullptr);
 
             emitLocation* const startLoc = func->startLoc;
             emitLocation* const endLoc   = func->endLoc;
