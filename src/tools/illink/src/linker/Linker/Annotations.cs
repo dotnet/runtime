@@ -259,15 +259,15 @@ namespace Mono.Linker
 
         internal List<(MethodDefinition Method, DependencyInfo Reason, MessageOrigin Origin)> DrainPendingReflectionVisibleMethods()
         {
-            var result = new List<(MethodDefinition, DependencyInfo, MessageOrigin)>(pending_reflection_visible_methods);
-            pending_reflection_visible_methods.Clear();
+            var result = pending_reflection_visible_methods;
+            pending_reflection_visible_methods = new List<(MethodDefinition, DependencyInfo, MessageOrigin)>();
             return result;
         }
 
         internal List<(FieldDefinition Field, DependencyInfo Reason, MessageOrigin Origin)> DrainPendingReflectionVisibleFields()
         {
-            var result = new List<(FieldDefinition, DependencyInfo, MessageOrigin)>(pending_reflection_visible_fields);
-            pending_reflection_visible_fields.Clear();
+            var result = pending_reflection_visible_fields;
+            pending_reflection_visible_fields = new List<(FieldDefinition, DependencyInfo, MessageOrigin)>();
             return result;
         }
 
