@@ -1102,7 +1102,8 @@ IEnumerable<GCHeapSegmentInfo> IGC.EnumerateHeapSegments(GCHeapData heapData)
                 type = GCSegmentClassification.NonGC;
             else
                 type = GCSegmentClassification.Gen2;
-            yield return new GCHeapSegmentInfo(seg.Mem, seg.Allocated, type);
+            TargetPointer end = segAddr == ephemeralSegment ? allocAllocated : seg.Allocated;
+            yield return new GCHeapSegmentInfo(seg.Mem, end, type);
         }
     }
 
