@@ -2,36 +2,27 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
 public class Async2Pgo
 {
     [Fact]
-    public static void EntryPoint()
+    public static void Interface()
     {
-        AsyncEntryPoint().Wait();
-    }
+        int[] arr = Enumerable.Range(0, TestLibrary.Utilities.IsCoreClrInterpreter ? 100 : 2_500).ToArray();
 
-    internal static async Task<int> AsyncEntryPoint()
-    {
-        int[] arr = Enumerable.Range(0, TestLibrary.Utilities.IsCoreClrInterpreter ? 100 : 10_000).ToArray();
-
-        int sum = 0;
         int jCount = TestLibrary.Utilities.IsCoreClrInterpreter ? 10 : 100;
         for (int i = 0; i < 4; i++)
         {
             for (int j = 0; j < jCount; j++)
-                sum += await AggregateDelegateAsync(arr, new AggregateSum(), 0);
+                AggregateInterfaceAsync(arr, new AggregateSum(), 0).GetAwaiter().GetResult();
 
-            await Task.Delay(100);
+            Thread.Sleep(100);
         }
-
-        return sum;
     }
 
     private class AggregateSum : I<int>
@@ -45,11 +36,124 @@ public class Async2Pgo
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static async Task<T> AggregateDelegateAsync<T>(T[] arr, I<T> aggregate, T seed)
+    private static async Task<T> AggregateInterfaceAsync<T>(T[] arr, I<T> aggregate, T seed)
     {
         foreach (T val in arr)
             seed = await aggregate.Aggregate(seed, val);
 
         return seed;
+    }
+
+    [Fact]
+    public static void IntDelegate()
+    {
+        Func<int, int, Task<int>> del = async (cur, val) => cur + val * val;
+
+        int[] arr = [.. Enumerable.Range(0, TestLibrary.Utilities.IsCoreClrInterpreter ? 100 : 2_500)];
+
+        int jCount = TestLibrary.Utilities.IsCoreClrInterpreter ? 10 : 100;
+        for (int i = 0; i < 4; i++)
+        {
+            for (int j = 0; j < jCount; j++)
+                AggregateIntDelegateAsync(arr, del, 0).GetAwaiter().GetResult();
+
+            Thread.Sleep(100);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static async Task<T> AggregateIntDelegateAsync<T>(T[] arr, Func<T, T, Task<T>> aggregate, T seed)
+    {
+        foreach (T val in arr)
+            seed = await aggregate(seed, val);
+
+        return seed;
+    }
+
+    [Fact]
+    public static void RetBufStructDelegate()
+    {
+        Func<RetBufStruct, int, Task<RetBufStruct>> del = async (cur, val) => new RetBufStruct { A = cur.A + val * val };
+
+        int[] arr = Enumerable.Range(0, TestLibrary.Utilities.IsCoreClrInterpreter ? 100 : 2_500).ToArray();
+
+        int jCount = TestLibrary.Utilities.IsCoreClrInterpreter ? 10 : 100;
+        for (int i = 0; i < 4; i++)
+        {
+            for (int j = 0; j < jCount; j++)
+                AggregateRetBufStructDelegateAsync(arr, del, new RetBufStruct()).GetAwaiter().GetResult();
+
+            Thread.Sleep(100);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static async Task<TVal> AggregateRetBufStructDelegateAsync<TElem, TVal>(TElem[] arr, Func<TVal, TElem, Task<TVal>> aggregate, TVal seed)
+    {
+        foreach (TElem val in arr)
+            seed = await aggregate(seed, val);
+
+        return seed;
+    }
+
+    private struct RetBufStruct
+    {
+        public long A, B, C, D, E, F;
+    }
+
+    [Fact]
+    public static void MultiRegStructDelegate()
+    {
+        Func<MultiRegStruct, int, Task<MultiRegStruct>> del = async (cur, val) => new MultiRegStruct { A = cur.A + val * val };
+
+        int[] arr = Enumerable.Range(0, TestLibrary.Utilities.IsCoreClrInterpreter ? 100 : 2_500).ToArray();
+
+        int jCount = TestLibrary.Utilities.IsCoreClrInterpreter ? 10 : 100;
+        for (int i = 0; i < 4; i++)
+        {
+            for (int j = 0; j < jCount; j++)
+                AggregateMultiRegStructDelegateAsync(arr, del, new MultiRegStruct()).GetAwaiter().GetResult();
+
+            Thread.Sleep(100);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static async Task<TVal> AggregateMultiRegStructDelegateAsync<TElem, TVal>(TElem[] arr, Func<TVal, TElem, Task<TVal>> aggregate, TVal seed)
+    {
+        foreach (TElem val in arr)
+            seed = await aggregate(seed, val);
+
+        return seed;
+    }
+
+    private struct MultiRegStruct
+    {
+        public long A, B;
+    }
+
+    [Fact]
+    public static void VoidDelegate()
+    {
+        int sum = 0;
+        Func<int, Task> del = async val => sum += val * val;
+
+        int[] arr = Enumerable.Range(0, TestLibrary.Utilities.IsCoreClrInterpreter ? 100 : 2_500).ToArray();
+
+        int jCount = TestLibrary.Utilities.IsCoreClrInterpreter ? 10 : 100;
+        for (int i = 0; i < 4; i++)
+        {
+            for (int j = 0; j < jCount; j++)
+                AggregateVoidDelegateAsync(arr, del).GetAwaiter().GetResult();
+
+            Thread.Sleep(100);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static async Task AggregateVoidDelegateAsync<T>(T[] arr, Func<T, Task> aggregate)
+    {
+        foreach (T val in arr)
+            await aggregate(val);
     }
 }
