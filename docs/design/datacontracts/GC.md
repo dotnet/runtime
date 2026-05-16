@@ -126,9 +126,9 @@ public readonly struct GCOomData
     // Gets GC free regions (free region lists and freeable segments)
     IReadOnlyList<GCMemoryRegionData> GetGCFreeRegions();
 
-    // Enumerates every GC heap segment of every heap. Each yielded GCHeapSegmentInfo describes a
-    // single segment with the inclusive start and exclusive end of its memory range, its generation
-    // tag (or Ephemeral), and the index of the heap that owns it (always 0 for workstation GC).
+    // Enumerates every GC heap segment for the supplied heap data. Each yielded GCHeapSegmentInfo
+    // describes a single segment with the inclusive start and exclusive end of its memory range
+    // and its generation tag (or Ephemeral).
     IEnumerable<GCHeapSegmentInfo> EnumerateHeapSegments(GCHeapData heapData);
 ```
 
@@ -1116,7 +1116,7 @@ IEnumerable<GCHeapSegmentInfo> IGC.EnumerateHeapSegments(GCHeapData heapData)
 IEnumerable<(HeapSegment Segment, TargetPointer Address)> WalkSegmentList(TargetPointer startSegment)
 {
     // Bounded traversal of the singly-linked HeapSegment list, guarding against cycles or
-    // corrupt links via a fixed iteration cap (MaxSegmentListIterations = 2048).
+    // corrupt links via a fixed iteration cap (MaxSegmentListIterations = 65536).
     int iterationMax = MaxSegmentListIterations;
     TargetPointer current = startSegment;
     while (current != TargetPointer.Null)

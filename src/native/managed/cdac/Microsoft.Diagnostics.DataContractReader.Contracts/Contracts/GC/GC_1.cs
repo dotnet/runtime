@@ -409,7 +409,9 @@ internal readonly struct GC_1 : IGC
                     type = GCSegmentClassification.NonGC;
                 else
                     type = GCSegmentClassification.Gen2;
-                yield return new GCHeapSegmentInfo(seg.Mem, seg.Allocated, type);
+
+                TargetPointer end = segAddr == ephemeralSegment ? allocAllocated : seg.Allocated;
+                yield return new GCHeapSegmentInfo(seg.Mem, end, type);
             }
         }
 
