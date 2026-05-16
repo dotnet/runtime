@@ -48,9 +48,20 @@ internal static partial class Interop
             Debug.Assert(res <= certPtrs.Length);
 
             var certs = new X509Certificate2[certPtrs.Length];
-            for (int i = 0; i < res; i++)
+            try
             {
-                certs[i] = new X509Certificate2(certPtrs[i]);
+                for (int i = 0; i < res; i++)
+                {
+                    // X509Certificate2 duplicates these JNI global refs; the native-returned refs remain caller-owned.
+                    certs[i] = new X509Certificate2(certPtrs[i]);
+                }
+            }
+            finally
+            {
+                for (int i = 0; i < res; i++)
+                {
+                    Interop.JObjectLifetime.DeleteGlobalReference(certPtrs[i]);
+                }
             }
 
             if (res == certPtrs.Length)
