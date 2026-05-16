@@ -122,6 +122,7 @@ namespace ILCompiler.DependencyAnalysis
                 TypeDesc elementType = ((ArrayType)type).ElementType;
                 if (!elementType.UnderlyingType.IsPrimitive && !elementType.IsString)
                 {
+                    // DecodeValue always produces ImmutableArray<...> for SzArray types.
                     var arrayElements = (ImmutableArray<CustomAttributeTypedArgument<TypeDesc>>)value;
                     foreach (CustomAttributeTypedArgument<TypeDesc> element in arrayElements)
                     {
