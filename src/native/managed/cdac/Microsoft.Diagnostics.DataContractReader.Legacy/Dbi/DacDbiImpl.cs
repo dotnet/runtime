@@ -2333,18 +2333,19 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
             Contracts.MethodDescHandle md = rts.GetMethodDescHandle(new TargetPointer(vmMethod));
 
-            if (!rts.IsSharedByGenericInstantiations(md))
+            switch (rts.GetGenericContextLoc(md))
             {
-                // Not a shared generic method, so there is no generic context arg.
-                hr = HResults.S_FALSE;
-            }
-            else
-            {
-                // The method is shared by generic instantiations. If it requires an explicit
-                // hidden inst arg, the token is passed via the IL-level generics ctxt slot;
-                // otherwise the token is acquired from the MethodTable of the 'this' pointer
-                // (parameter index 0).
-                *pIndex = rts.RequiresInstArg(md) ? unchecked((uint)IlNum.TYPECTXT_ILNUM) : 0u;
+                case GenericContextLoc.None:
+                    hr = HResults.S_FALSE;
+                    break;
+                case GenericContextLoc.InstArg:
+                    *pIndex = unchecked((uint)IlNum.TYPECTXT_ILNUM);
+                    break;
+                case GenericContextLoc.ThisPtr:
+                    *pIndex = 0u;
+                    break;
+                default:
+                    throw new InvalidOperationException($"Unexpected generic context location: {rts.GetGenericContextLoc(md)}");
             }
         }
         catch (System.Exception ex)
