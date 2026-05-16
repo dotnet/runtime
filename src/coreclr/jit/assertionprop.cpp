@@ -5227,25 +5227,6 @@ static GCInfo::WriteBarrierForm GetWriteBarrierForm(Compiler* comp, ValueNum vn)
             {
                 return GetWriteBarrierForm(comp, funcApp.m_args[0]);
             }
-
-            // For an ADD producing a TYP_BYREF, identify the operand that is the actual
-            // base (TYP_BYREF/TYP_REF) and recurse on it - mirroring the analysis in
-            // GCInfo::gcWriteBarrierFormFromTargetAddress. This catches patterns where
-            // the offset is a non-constant integer expression (e.g. byrefBase + nonConstIndex)
-            // which the constant-based recursion above misses.
-            const var_types arg0Type   = vnStore->TypeOfVN(funcApp.m_args[0]);
-            const var_types arg1Type   = vnStore->TypeOfVN(funcApp.m_args[1]);
-            const bool      isArg0Base = (arg0Type == TYP_BYREF) || (arg0Type == TYP_REF);
-            const bool      isArg1Base = (arg1Type == TYP_BYREF) || (arg1Type == TYP_REF);
-
-            if (isArg0Base && !isArg1Base)
-            {
-                return GetWriteBarrierForm(comp, funcApp.m_args[0]);
-            }
-            if (isArg1Base && !isArg0Base)
-            {
-                return GetWriteBarrierForm(comp, funcApp.m_args[1]);
-            }
         }
     }
     return GCInfo::WriteBarrierForm::WBF_BarrierUnknown;
