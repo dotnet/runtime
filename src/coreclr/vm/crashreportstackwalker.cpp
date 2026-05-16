@@ -10,6 +10,8 @@
 #include "peassembly.h"
 #include <clrconfignocache.h>
 #include <minipal/guid.h>
+#include <errno.h>
+#include <stdlib.h>
 
 #ifdef FEATURE_INPROC_CRASHREPORT
 
@@ -24,6 +26,9 @@ struct WalkContext
 };
 
 static void BuildTypeName(LPUTF8 buffer, size_t bufferSize, LPCUTF8 namespaceName, LPCUTF8 className);
+// Parses configuration during CrashReportConfigure initialization. This is not
+// async-signal-safe and must not be called from the crash-reporting path.
+static DWORD GetCrashReportTimeoutSeconds();
 
 static
 StackWalkAction
@@ -434,6 +439,7 @@ CrashReportConfigure()
 
     InProcCrashReporterSettings settings = {};
     settings.reportPath = dumpName;
+    settings.timeoutSeconds = GetCrashReportTimeoutSeconds();
     settings.isManagedThreadCallback = CrashReportIsCurrentThreadManaged;
     settings.walkStackCallback = CrashReportWalkStack;
     settings.enumerateThreadsCallback = CrashReportEnumerateThreads;
@@ -441,6 +447,38 @@ CrashReportConfigure()
     // Initialize the reporter and register the PAL signal-path callback last
     // so PAL only observes the reporter after all VM callbacks are wired in.
     InProcCrashReportInitialize(settings);
+}
+
+// Parses configuration during CrashReportConfigure initialization. This is not
+// async-signal-safe and must not be called from the crash-reporting path.
+static DWORD
+GetCrashReportTimeoutSeconds()
+{
+    // Keep the default conservative: successful reports can be large, while 0
+    // remains available to disable the watchdog for diagnostics.
+    static constexpr DWORD DefaultTimeoutSeconds = 30;
+
+    CLRConfigNoCache timeoutCfg = CLRConfigNoCache::Get("CrashReportTimeoutSeconds", /*noprefix*/ false, &getenv);
+    if (!timeoutCfg.IsSet())
+    {
+        return DefaultTimeoutSeconds;
+    }
+
+    const char* timeoutString = timeoutCfg.AsString();
+    if (timeoutString == nullptr || timeoutString[0] == '\0')
+    {
+        return DefaultTimeoutSeconds;
+    }
+
+    errno = 0;
+    char* end = nullptr;
+    unsigned long timeoutSeconds = strtoul(timeoutString, &end, 10);
+    if (errno != 0 || end == timeoutString || *end != '\0' || timeoutSeconds > UINT32_MAX)
+    {
+        return DefaultTimeoutSeconds;
+    }
+
+    return static_cast<DWORD>(timeoutSeconds);
 }
 
 #endif // FEATURE_INPROC_CRASHREPORT

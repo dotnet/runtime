@@ -60,6 +60,7 @@ using InProcCrashReportEnumerateThreadsCallback = void (*)(
 struct InProcCrashReporterSettings
 {
     const char* reportPath;
+    uint32_t timeoutSeconds;
     InProcCrashReportIsManagedThreadCallback isManagedThreadCallback;
     InProcCrashReportWalkStackCallback walkStackCallback;
     InProcCrashReportEnumerateThreadsCallback enumerateThreadsCallback;

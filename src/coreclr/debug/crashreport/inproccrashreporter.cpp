@@ -6,12 +6,14 @@
 // Streams a createdump-shaped JSON skeleton to a crashreport.json file.
 
 #include "inproccrashreporter.h"
+#include "inproccrashreportwatchdog.h"
 #include "signalsafejsonwriter.h"
 
 #include "pal.h"
 
 #include <fcntl.h>
 #include <errno.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
 #include <time.h>
@@ -233,6 +235,7 @@ InProcCrashReporter::CreateReport(
     {
         return;
     }
+    CrashReportWatchdogScope watchdogScope;
 
     char reportPath[CRASHREPORT_PATH_BUFFER_SIZE];
     reportPath[0] = '\0';
@@ -344,6 +347,8 @@ InProcCrashReporter::Initialize(
     m_walkStackCallback = settings.walkStackCallback;
     m_enumerateThreadsCallback = settings.enumerateThreadsCallback;
     CrashReportHelpers::CopyString(m_reportPath, sizeof(m_reportPath), settings.reportPath);
+
+    (void)CrashReportWatchdogTryInitialize(settings.timeoutSeconds);
 
     m_processName[0] = '\0';
 #if defined(__ANDROID__)
