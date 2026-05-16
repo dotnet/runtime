@@ -1919,15 +1919,9 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         align = INTERP_STACK_SLOT_SIZE;
     }
 
-    if (HasRetBuffArg())
-    {
-        // the slot for retbuf arg will be removed before the actual call
-        m_ofsStack = ALIGN_UP(m_ofsStack - INTERP_STACK_SLOT_SIZE, align) + INTERP_STACK_SLOT_SIZE;
-    }
-    else
-    {
-        m_ofsStack = ALIGN_UP(m_ofsStack, align);
-    }
+    _ASSERTE(!HasRetBuffArg());
+
+    m_ofsStack = ALIGN_UP(m_ofsStack, align);
 
     int cbArg = ALIGN_UP(argSize, INTERP_STACK_SLOT_SIZE);
     int argOfs = TransitionBlock::GetOffsetOfArgs() + m_ofsStack;
@@ -2074,6 +2068,11 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ComputeReturnFlags()
     default:
         break;
     }
+
+#ifdef TARGET_WASM
+    // WebAssembly ArgIterator follows the Interpreter calling convention which does not use a return buffer arg in the normal argument stream
+    flags &= ~RETURN_HAS_RET_BUFFER;
+#endif
 
     m_dwFlags |= flags;
 }
