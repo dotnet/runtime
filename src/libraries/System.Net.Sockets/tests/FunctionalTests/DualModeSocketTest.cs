@@ -330,6 +330,7 @@ namespace System.Net.Sockets.Tests
     [Trait("IPv4", "true")]
     [Trait("IPv6", "true")]
     [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support DualMode")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/127986", TestPlatforms.Android)]
     public class DualModeConnectToHostString : DualModeBase
     {
         [ConditionalTheory(typeof(DualModeConnectToHostString), nameof(LocalhostIsBothIPv4AndIPv6))]
@@ -349,6 +350,7 @@ namespace System.Net.Sockets.Tests
     [Trait("IPv4", "true")]
     [Trait("IPv6", "true")]
     [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support DualMode")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/127986", TestPlatforms.Android)]
     public class DualModeConnectToDnsEndPoint : DualModeBase
     {
         [ConditionalTheory(typeof(DualModeConnectToDnsEndPoint), nameof(LocalhostIsBothIPv4AndIPv6))]
@@ -520,6 +522,7 @@ namespace System.Net.Sockets.Tests
     [Trait("IPv4", "true")]
     [Trait("IPv6", "true")]
     [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support DualMode")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/127986", TestPlatforms.Android)]
     public class DualModeConnectAsync : DualModeBase
     {
         [Fact] // Base case

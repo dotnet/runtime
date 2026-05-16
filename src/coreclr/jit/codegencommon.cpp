@@ -2680,11 +2680,7 @@ void CodeGen::genReportEHClauses(EHClauseInfo* clauses)
 bool CodeGenInterface::genUseOptimizedWriteBarriers(GCInfo::WriteBarrierForm wbf)
 {
 #if defined(TARGET_X86) && NOGC_WRITE_BARRIERS
-#ifdef DEBUG
-    return (wbf != GCInfo::WBF_NoBarrier_CheckNotHeapInDebug); // This one is always a call to a C++ method.
-#else
     return true;
-#endif
 #else
     return false;
 #endif
@@ -2709,12 +2705,7 @@ bool CodeGenInterface::genUseOptimizedWriteBarriers(GCInfo::WriteBarrierForm wbf
 bool CodeGenInterface::genUseOptimizedWriteBarriers(GenTreeStoreInd* store)
 {
 #if defined(TARGET_X86) && NOGC_WRITE_BARRIERS
-#ifdef DEBUG
-    GCInfo::WriteBarrierForm wbf = m_compiler->codeGen->gcInfo.gcIsWriteBarrierCandidate(store);
-    return (wbf != GCInfo::WBF_NoBarrier_CheckNotHeapInDebug); // This one is always a call to a C++ method.
-#else
     return true;
-#endif
 #else
     return false;
 #endif
@@ -2745,11 +2736,6 @@ CorInfoHelpFunc CodeGenInterface::genWriteBarrierHelperForWriteBarrierForm(GCInf
 
         case GCInfo::WBF_BarrierUnchecked:
             return CORINFO_HELP_ASSIGN_REF;
-
-#ifdef DEBUG
-        case GCInfo::WBF_NoBarrier_CheckNotHeapInDebug:
-            return CORINFO_HELP_ASSIGN_REF_ENSURE_NONHEAP;
-#endif // DEBUG
 
         default:
             unreached();

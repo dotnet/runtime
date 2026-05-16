@@ -2498,7 +2498,30 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         params.sigInfo = call->callSig;
     }
 #endif // DEBUG
+
     GenTree* target = getCallTarget(call, &params.methHnd);
+
+    // Report managed call signatures to the R2R compiler for thunk generation.
+    if (!call->IsHelperCall() && !call->IsUnmanaged())
+    {
+        CORINFO_SIG_INFO  sigInfoLocal;
+        CORINFO_SIG_INFO* sigInfoCall = call->callSig;
+
+        if (sigInfoCall == nullptr)
+        {
+            if ((params.methHnd != NO_METHOD_HANDLE) &&
+                (Compiler::eeGetHelperNum(params.methHnd) == CORINFO_HELP_UNDEF))
+            {
+                m_compiler->eeGetMethodSig(params.methHnd, &sigInfoLocal);
+                sigInfoCall = &sigInfoLocal;
+            }
+        }
+
+        if (sigInfoCall != nullptr)
+        {
+            m_compiler->info.compCompHnd->recordWasmManagedCallSig(sigInfoCall);
+        }
+    }
 
     ArrayStack<CorInfoWasmType> typeStack(m_compiler->getAllocator(CMK_Codegen));
 
@@ -2645,9 +2668,6 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         // RhpCheckedAssignRef
         HELPER_SIG(CORINFO_HELP_CHECKED_ASSIGN_REF, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I,
                    CORINFO_WASM_TYPE_I);
-        // JIT_WriteBarrierEnsureNonHeapTarget
-        HELPER_SIG(CORINFO_HELP_ASSIGN_REF_ENSURE_NONHEAP, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */,
-                   CORINFO_WASM_TYPE_I, CORINFO_WASM_TYPE_I);
         // RhpByRefAssignRef
         HELPER_SIG(CORINFO_HELP_ASSIGN_BYREF, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I,
                    CORINFO_WASM_TYPE_I);
@@ -3321,10 +3341,12 @@ void CodeGen::genEmitGSCookieCheck(bool tailCall)
     NYI_WASM("genEmitGSCookieCheck");
 }
 
+#ifdef PROFILING_SUPPORTED
 void CodeGen::genProfilingLeaveCallback(unsigned helper)
 {
     NYI_WASM("genProfilingLeaveCallback");
 }
+#endif
 
 void CodeGen::genSpillVar(GenTree* tree)
 {

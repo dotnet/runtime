@@ -1381,6 +1381,10 @@ public:
     }
     void tdAdjustTempOffs(int offs)
     {
+#ifdef TARGET_ARM64
+        // Cannot adjust temporary offsets on the UnknownSizeFrame.
+        assert(!varTypeHasUnknownSize(tdType));
+#endif
         tdOffs += offs;
         assert(tdLegalOffset());
     }
@@ -3944,6 +3948,8 @@ public:
     //-------------------------------------------------------------------------
 
     GenTree* gtFoldExpr(GenTree* tree);
+    GenTree* gtFoldExprUnary(GenTreeUnOp* tree);
+    GenTree* gtFoldExprBinary(GenTreeOp* tree);
     GenTree* gtFoldExprConst(GenTree* tree);
     GenTree* gtFoldIndirConst(GenTreeIndir* indir);
     GenTree* gtFoldExprSpecial(GenTree* tree);
@@ -4002,9 +4008,7 @@ public:
     void gtDispLeaf(GenTree* tree, IndentStack* indentStack);
     void gtDispLocal(GenTreeLclVarCommon* tree, IndentStack* indentStack);
     void gtDispNodeName(GenTree* tree);
-#if FEATURE_MULTIREG_RET
     unsigned gtDispMultiRegCount(GenTree* tree);
-#endif
     void gtDispRegVal(GenTree* tree);
     void gtDispVN(GenTree* tree);
     void gtDispCommonEndLine(GenTree* tree);
@@ -4328,6 +4332,7 @@ public:
     void lvaAlignFrame();
     void lvaAssignFrameOffsetsToPromotedStructs();
     int lvaAllocateTemps(int stkOffs, bool mustDoubleAlign);
+    void lvaAllocateUnknownSizeTemp(TempDsc* temp);
 
 #ifdef DEBUG
     void lvaDumpRegLocation(unsigned lclNum);
@@ -4527,6 +4532,13 @@ public:
         int GetAddressingOffset(LclVarDsc* varDsc)
         {
             return GetOffset(varDsc->GetUnknownSizeFrameIndex(), varDsc->TypeIs(TYP_MASK));
+        }
+
+        int GetAddressingOffset(TempDsc* tmpDsc)
+        {
+            assert(tmpDsc->tdTempOffs() >= 0);
+            assert(varTypeHasUnknownSize(tmpDsc->tdTempType()));
+            return GetOffset((unsigned)tmpDsc->tdTempOffs(), tmpDsc->tdTempType() == TYP_MASK);
         }
 
         // This system ensures we don't try and generate an address on the frame
@@ -7024,18 +7036,7 @@ private:
     GenTree* fgMorphIntoHelperCall(
         GenTree* tree, int helper, bool morphArgs, GenTree* arg1 = nullptr, GenTree* arg2 = nullptr);
 
-    // A "MorphAddrContext" carries information from the surrounding context.  If we are evaluating a byref address,
-    // it is useful to know whether the address will be immediately dereferenced, or whether the address value will
-    // be used, perhaps by passing it as an argument to a called method.  This affects how null checking is done:
-    // for sufficiently small offsets, we can rely on OS page protection to implicitly null-check addresses that we
-    // know will be dereferenced.  To know that reliance on implicit null checking is sound, we must further know that
-    // all offsets between the top-level indirection and the bottom are constant, and that their sum is sufficiently
-    // small; hence the other fields of MorphAddrContext.
-    struct MorphAddrContext
-    {
-        GenTreeIndir* m_user = nullptr;  // Indirection using this address.
-        size_t        m_totalOffset = 0; // Sum of offsets between the top-level indirection and here (current context).
-    };
+    void fgMarkAddrModeForFieldAddr(GenTreeIndir* indir);
 
 #ifdef FEATURE_SIMD
     GenTree* getSIMDStructFromField(GenTree*  tree,
@@ -7070,8 +7071,8 @@ public:
     void fgAssignSetVarDef(GenTree* tree);
 
 private:
-    GenTree* fgMorphFieldAddr(GenTree* tree, MorphAddrContext* mac);
-    GenTree* fgMorphExpandInstanceField(GenTree* tree, MorphAddrContext* mac);
+    GenTree* fgMorphFieldAddr(GenTree* tree);
+    GenTree* fgMorphExpandInstanceField(GenTree* tree);
     GenTree* fgMorphExpandTlsFieldAddr(GenTree* tree);
     bool fgCanFastTailCall(GenTreeCall* call, const char** failReason);
 #if FEATURE_FASTTAILCALL
@@ -7126,7 +7127,7 @@ public:
     GenTree* fgMorphInitBlock(GenTree* tree);
     GenTree* fgMorphCopyBlock(GenTree* tree);
 private:
-    GenTree* fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optAssertionPropDone = nullptr);
+    GenTree* fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone = nullptr);
     bool fgTryReplaceStructLocalWithFields(GenTree** use);
     GenTree* fgMorphFinalizeIndir(GenTreeIndir* indir);
     GenTree* fgOptimizeCast(GenTreeCast* cast);
@@ -7163,7 +7164,7 @@ private:
     GenTree* fgMorphReduceAddOps(GenTree* tree);
 
 public:
-    GenTree* fgMorphTree(GenTree* tree, MorphAddrContext* mac = nullptr);
+    GenTree* fgMorphTree(GenTree* tree);
 
 private:
     void fgAssertionGen(GenTree* tree);
@@ -8201,13 +8202,10 @@ public:
         O2K_CONST_INT,
         O2K_CONST_DOUBLE,
 
-        O2K_CHECKED_BOUND_ADD_CNS, // "checkedBndVN + cns" where op2.vn holds the "checkedBndVN"
-                                   // and op2.iconVal holds the "cns".
-                                   // "Checked bound" alone doesn't mean anything,
-                                   // nor it implies that it's never negative.
+        O2K_VN_ADD_CNS, // op2 represents an arbitrary VN (op2.GetVN()) plus a constant (op2.GetCns()).
         O2K_ZEROOBJ,
         O2K_SUBRANGE,
-        O2K_CONST_VEC
+        O2K_CONST_VEC,
     };
 
     struct AssertionDsc
@@ -8266,7 +8264,7 @@ public:
         private:
             INDEBUG(const Compiler* m_compiler);
             optOp2Kind m_kind;
-            bool       m_checkedBoundIsNeverNegative; // only meaningful for O2K_CHECKED_BOUND_ADD_CNS kind
+            bool       m_isVNNeverNegative; // only meaningful for O2K_VN_ADD_CNS kind
             union
             {
                 uint16_t m_encodedIconFlags; // encoded icon gtFlags; only meaningful for O2K_CONST_INT.
@@ -8353,35 +8351,26 @@ public:
             ValueNum GetVN() const
             {
                 assert(!m_compiler->optLocalAssertionProp);
-                assert(KindIs(O2K_CONST_INT, O2K_CONST_DOUBLE, O2K_ZEROOBJ, O2K_CONST_VEC));
+                assert(KindIs(O2K_CONST_INT, O2K_CONST_DOUBLE, O2K_ZEROOBJ, O2K_CONST_VEC, O2K_VN_ADD_CNS));
                 assert(m_vn != ValueNumStore::NoVN);
                 return m_vn;
             }
 
-            // For "checkedBndVN + cns" form, return the "cns" part.
-            int GetCheckedBoundConstant() const
+            // For "vn + cns" form, return the "cns" part.
+            int GetCns() const
             {
                 assert(!m_compiler->optLocalAssertionProp);
-                assert(KindIs(O2K_CHECKED_BOUND_ADD_CNS));
+                assert(KindIs(O2K_VN_ADD_CNS));
                 assert(FitsIn<int>(m_icon.m_iconVal));
                 return (int)m_icon.m_iconVal;
             }
 
-            // For "checkedBndVN + cns" form, return the "checkedBndVN" part.
-            // We intentionally don't allow to use it via GetVN() to avoid confusion.
-            ValueNum GetCheckedBound() const
+            // For "vn + cns" form, true iff the JIT has proven the "vn" part to be non-negative.
+            bool IsVNNeverNegative() const
             {
                 assert(!m_compiler->optLocalAssertionProp);
-                assert(KindIs(O2K_CHECKED_BOUND_ADD_CNS));
-                assert(m_vn != ValueNumStore::NoVN);
-                return m_vn;
-            }
-
-            bool IsCheckedBoundNeverNegative() const
-            {
-                assert(!m_compiler->optLocalAssertionProp);
-                assert(KindIs(O2K_CHECKED_BOUND_ADD_CNS));
-                return m_checkedBoundIsNeverNegative;
+                assert(KindIs(O2K_VN_ADD_CNS));
+                return m_isVNNeverNegative;
             }
 
             optOp2Kind GetKind() const
@@ -8508,10 +8497,10 @@ public:
 
         bool IsBoundsCheckNoThrow() const
         {
-            // O1K_VN (idx) u< O2K_VN (len) where len is never negative.
+            // O1K_VN (idx) u< O2K_VN_ADD_CNS (len) where len is never negative.
             // Effectively, it's "idx >= 0 && idx < len"
-            return GetOp1().KindIs(O1K_VN) && KindIs(OAK_LT_UN) && GetOp2().KindIs(O2K_CHECKED_BOUND_ADD_CNS) &&
-                   (GetOp2().GetCheckedBoundConstant() == 0) && GetOp2().IsCheckedBoundNeverNegative();
+            return GetOp1().KindIs(O1K_VN) && KindIs(OAK_LT_UN) && GetOp2().KindIs(O2K_VN_ADD_CNS) &&
+                   (GetOp2().GetCns() == 0) && GetOp2().IsVNNeverNegative();
         }
 
         // Convert VNFunc to optAssertionKind
@@ -8693,10 +8682,9 @@ public:
                 case O2K_ZEROOBJ:
                     return true;
 
-                case O2K_CHECKED_BOUND_ADD_CNS:
-                    return GetOp2().GetCheckedBound() == that.GetOp2().GetCheckedBound() &&
-                           GetOp2().GetCheckedBoundConstant() == that.GetOp2().GetCheckedBoundConstant() &&
-                           GetOp2().IsCheckedBoundNeverNegative() == that.GetOp2().IsCheckedBoundNeverNegative();
+                case O2K_VN_ADD_CNS:
+                    return GetOp2().GetVN() == that.GetOp2().GetVN() && GetOp2().GetCns() == that.GetOp2().GetCns() &&
+                           GetOp2().IsVNNeverNegative() == that.GetOp2().IsVNNeverNegative();
 
                 case O2K_LCLVAR_COPY:
                     return GetOp2().GetLclNum() == that.GetOp2().GetLclNum();
@@ -8919,12 +8907,13 @@ public:
             dsc.m_assertionKind = OAK_LT_UN;
             dsc.m_op1.m_kind    = O1K_VN;
             dsc.m_op1.m_vn      = idxVN;
-            dsc.m_op2.m_kind    = O2K_CHECKED_BOUND_ADD_CNS;
+            dsc.m_op2.m_kind    = O2K_VN_ADD_CNS;
             dsc.m_op2.m_vn      = lenVN;
 
-            // Normally, "Checked bound" doesn't mean it's never negative, but in this particular case we know it is.
-            dsc.m_op2.m_checkedBoundIsNeverNegative = true;
-            dsc.m_op2.m_icon.m_iconVal              = 0;
+            // Normally, the VN of an O2K_VN_ADD_CNS assertion isn't proven non-negative, but
+            // in this particular case we know it is (it's a length).
+            dsc.m_op2.m_isVNNeverNegative = true;
+            dsc.m_op2.m_icon.m_iconVal    = 0;
             return dsc;
         }
 
@@ -8939,7 +8928,7 @@ public:
             dsc.m_assertionKind        = FromVNFunc(relop);
             dsc.m_op1.m_kind           = O1K_VN;
             dsc.m_op1.m_vn             = op1VN;
-            dsc.m_op2.m_kind           = O2K_CHECKED_BOUND_ADD_CNS;
+            dsc.m_op2.m_kind           = O2K_VN_ADD_CNS;
             dsc.m_op2.m_vn             = checkedBndVN;
             dsc.m_op2.m_icon.m_iconVal = cns;
             return dsc;
@@ -8961,6 +8950,26 @@ public:
             dsc.m_op2.m_kind           = O2K_CONST_INT;
             dsc.m_op2.m_vn             = cnsVN;
             dsc.m_op2.m_icon.m_iconVal = cns;
+            return dsc;
+        }
+
+        // Create "op1VN <relop> op2VN" assertion where both operands are arbitrary value numbers
+        // (used by global assertion prop for VN-to-VN signed comparisons of int32 and smaller).
+        static AssertionDsc CreateRelopVN(const Compiler* comp, VNFunc relop, ValueNum op1VN, ValueNum op2VN)
+        {
+            assert(!comp->optLocalAssertionProp);
+            assert(op1VN != ValueNumStore::NoVN);
+            assert(op2VN != ValueNumStore::NoVN);
+            assert(op1VN != op2VN);
+
+            AssertionDsc dsc              = CreateEmptyAssertion(comp);
+            dsc.m_assertionKind           = FromVNFunc(relop);
+            dsc.m_op1.m_kind              = O1K_VN;
+            dsc.m_op1.m_vn                = op1VN;
+            dsc.m_op2.m_kind              = O2K_VN_ADD_CNS;
+            dsc.m_op2.m_vn                = op2VN;
+            dsc.m_op2.m_icon.m_iconVal    = 0; // TODO-CQ: consider decomposing VN to VN* + CNS if beneficial.
+            dsc.m_op2.m_isVNNeverNegative = false;
             return dsc;
         }
     };
@@ -12697,306 +12706,245 @@ public:
             }
         }
 
-        switch (node->OperGet())
+        if (node->OperIsLeaf())
         {
-            // Leaf lclVars
-            case GT_LCL_VAR:
-            case GT_LCL_FLD:
-            case GT_LCL_ADDR:
-                if (TVisitor::DoLclVarsOnly)
-                {
-                    result = reinterpret_cast<TVisitor*>(this)->PreOrderVisit(use, user);
-                    if (result == fgWalkResult::WALK_ABORT)
-                    {
-                        return result;
-                    }
-                }
-                FALLTHROUGH;
-
-            // Leaf nodes
-            case GT_CATCH_ARG:
-            case GT_ASYNC_CONTINUATION:
-            case GT_ASYNC_RESUME_INFO:
-            case GT_LABEL:
-            case GT_FTN_ADDR:
-            case GT_FTN_ENTRY:
-            case GT_RET_EXPR:
-            case GT_CNS_INT:
-            case GT_CNS_LNG:
-            case GT_CNS_DBL:
-            case GT_CNS_STR:
-#if defined(FEATURE_SIMD)
-            case GT_CNS_VEC:
-#endif // FEATURE_SIMD
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
-            case GT_CNS_MSK:
-#endif // FEATURE_MASKED_HW_INTRINSICS
-            case GT_MEMORYBARRIER:
-            case GT_JMP:
-            case GT_JCC:
-            case GT_SETCC:
-            case GT_NO_OP:
-            case GT_START_NONGC:
-            case GT_START_PREEMPTGC:
-            case GT_PROF_HOOK:
-            case GT_PHI_ARG:
-            case GT_JMPTABLE:
-            case GT_PHYSREG:
-            case GT_IL_OFFSET:
-            case GT_RECORD_ASYNC_RESUME:
-            case GT_NOP:
-            case GT_SWIFT_ERROR:
-            case GT_GCPOLL:
-            case GT_WASM_THROW_REF:
-            case GT_WASM_JEXCEPT:
-                break;
-
-            // Lclvar unary operators
-            case GT_STORE_LCL_VAR:
-            case GT_STORE_LCL_FLD:
-                if (TVisitor::DoLclVarsOnly)
-                {
-                    result = reinterpret_cast<TVisitor*>(this)->PreOrderVisit(use, user);
-                    if (result == fgWalkResult::WALK_ABORT)
-                    {
-                        return result;
-                    }
-                }
-                FALLTHROUGH;
-
-            // Standard unary operators
-            case GT_NOT:
-            case GT_NEG:
-            case GT_BSWAP:
-            case GT_BSWAP16:
-            case GT_COPY:
-            case GT_RELOAD:
-            case GT_ARR_LENGTH:
-            case GT_MDARR_LENGTH:
-            case GT_MDARR_LOWER_BOUND:
-            case GT_CAST:
-            case GT_BITCAST:
-            case GT_CKFINITE:
-            case GT_LCLHEAP:
-            case GT_IND:
-            case GT_BLK:
-            case GT_BOX:
-            case GT_ALLOCOBJ:
-            case GT_INIT_VAL:
-            case GT_JTRUE:
-            case GT_SWITCH:
-            case GT_NULLCHECK:
-            case GT_PUTARG_REG:
-            case GT_PUTARG_STK:
-            case GT_RETURNTRAP:
-            case GT_FIELD_ADDR:
-            case GT_RETURN:
-            case GT_RETURN_SUSPEND:
-            case GT_PATCHPOINT_FORCED:
-            case GT_NONLOCAL_JMP:
-            case GT_RETFILT:
-            case GT_RUNTIMELOOKUP:
-            case GT_ARR_ADDR:
-            case GT_KEEPALIVE:
-            case GT_INC_SATURATE:
+            if (TVisitor::DoLclVarsOnly && node->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_LCL_ADDR))
             {
-                GenTreeUnOp* const unOp = node->AsUnOp();
-                if (unOp->gtOp1 != nullptr)
-                {
-                    result = WalkTree(&unOp->gtOp1, unOp);
-                    if (result == fgWalkResult::WALK_ABORT)
-                    {
-                        return result;
-                    }
-                }
-                break;
-            }
-
-            // Special nodes
-            case GT_PHI:
-                for (GenTreePhi::Use& use : node->AsPhi()->Uses())
-                {
-                    result = WalkTree(&use.NodeRef(), node);
-                    if (result == fgWalkResult::WALK_ABORT)
-                    {
-                        return result;
-                    }
-                }
-                break;
-
-            case GT_FIELD_LIST:
-                for (GenTreeFieldList::Use& use : node->AsFieldList()->Uses())
-                {
-                    result = WalkTree(&use.NodeRef(), node);
-                    if (result == fgWalkResult::WALK_ABORT)
-                    {
-                        return result;
-                    }
-                }
-                break;
-
-            case GT_CMPXCHG:
-            {
-                GenTreeCmpXchg* const cmpXchg = node->AsCmpXchg();
-
-                result = WalkTree(&cmpXchg->Addr(), cmpXchg);
+                result = reinterpret_cast<TVisitor*>(this)->PreOrderVisit(use, user);
                 if (result == fgWalkResult::WALK_ABORT)
                 {
                     return result;
                 }
-                result = WalkTree(&cmpXchg->Data(), cmpXchg);
-                if (result == fgWalkResult::WALK_ABORT)
-                {
-                    return result;
-                }
-                result = WalkTree(&cmpXchg->Comparand(), cmpXchg);
-                if (result == fgWalkResult::WALK_ABORT)
-                {
-                    return result;
-                }
-                break;
             }
+        }
+        else if (node->OperIsBinary())
+        {
+            GenTreeOp* const op = node->AsOp();
 
-            case GT_ARR_ELEM:
+            GenTree** op1Use = &op->gtOp1;
+            GenTree** op2Use = &op->gtOp2;
+
+            if (TVisitor::UseExecutionOrder && node->IsReverseOp())
             {
-                GenTreeArrElem* const arrElem = node->AsArrElem();
+                std::swap(op1Use, op2Use);
+            }
 
-                result = WalkTree(&arrElem->gtArrObj, arrElem);
+            if (*op1Use != nullptr)
+            {
+                result = WalkTree(op1Use, op);
                 if (result == fgWalkResult::WALK_ABORT)
                 {
                     return result;
                 }
-
-                const unsigned rank = arrElem->gtArrRank;
-                for (unsigned dim = 0; dim < rank; dim++)
-                {
-                    result = WalkTree(&arrElem->gtArrInds[dim], arrElem);
-                    if (result == fgWalkResult::WALK_ABORT)
-                    {
-                        return result;
-                    }
-                }
-                break;
             }
-
-            case GT_CALL:
+            else
             {
-                GenTreeCall* const call = node->AsCall();
-
-                for (CallArg& arg : call->gtArgs.EarlyArgs())
-                {
-                    result = WalkTree(&arg.EarlyNodeRef(), call);
-                    if (result == fgWalkResult::WALK_ABORT)
-                    {
-                        return result;
-                    }
-                }
-
-                for (CallArg& arg : call->gtArgs.LateArgs())
-                {
-                    result = WalkTree(&arg.LateNodeRef(), call);
-                    if (result == fgWalkResult::WALK_ABORT)
-                    {
-                        return result;
-                    }
-                }
-
-                if (call->gtControlExpr != nullptr)
-                {
-                    result = WalkTree(&call->gtControlExpr, call);
-                    if (result == fgWalkResult::WALK_ABORT)
-                    {
-                        return result;
-                    }
-                }
-                break;
+                assert(node->NullOp1Legal());
             }
 
-#if defined(FEATURE_HW_INTRINSICS)
-            case GT_HWINTRINSIC:
-                if (TVisitor::UseExecutionOrder && node->IsReverseOp())
+            // We can have null op1 and non-null op2 for some nodes, such as GT_LEA
+
+            if (*op2Use != nullptr)
+            {
+                result = WalkTree(op2Use, op);
+                if (result == fgWalkResult::WALK_ABORT)
                 {
-                    assert(node->AsMultiOp()->GetOperandCount() == 2);
-                    result = WalkTree(&node->AsMultiOp()->Op(2), node);
-                    if (result == fgWalkResult::WALK_ABORT)
-                    {
-                        return result;
-                    }
-                    result = WalkTree(&node->AsMultiOp()->Op(1), node);
-                    if (result == fgWalkResult::WALK_ABORT)
-                    {
-                        return result;
-                    }
+                    return result;
                 }
-                else
+            }
+            else
+            {
+                assert(node->NullOp2Legal());
+            }
+        }
+        else if (node->OperIsUnary())
+        {
+            if (TVisitor::DoLclVarsOnly && node->OperIsLocalStore())
+            {
+                result = reinterpret_cast<TVisitor*>(this)->PreOrderVisit(use, user);
+                if (result == fgWalkResult::WALK_ABORT)
                 {
-                    for (GenTree** use : node->AsMultiOp()->UseEdges())
+                    return result;
+                }
+            }
+
+            GenTreeUnOp* const unOp = node->AsUnOp();
+
+            if (unOp->gtOp1 != nullptr)
+            {
+                result = WalkTree(&unOp->gtOp1, unOp);
+                if (result == fgWalkResult::WALK_ABORT)
+                {
+                    return result;
+                }
+            }
+            else
+            {
+                assert(node->NullOp1Legal());
+            }
+        }
+        else
+        {
+            assert(node->OperIsSpecial());
+
+            switch (node->OperGet())
+            {
+                case GT_PHI:
+                    for (GenTreePhi::Use& use : node->AsPhi()->Uses())
                     {
-                        result = WalkTree(use, node);
+                        result = WalkTree(&use.NodeRef(), node);
                         if (result == fgWalkResult::WALK_ABORT)
                         {
                             return result;
                         }
                     }
+                    break;
+
+                case GT_FIELD_LIST:
+                    for (GenTreeFieldList::Use& use : node->AsFieldList()->Uses())
+                    {
+                        result = WalkTree(&use.NodeRef(), node);
+                        if (result == fgWalkResult::WALK_ABORT)
+                        {
+                            return result;
+                        }
+                    }
+                    break;
+
+                case GT_CMPXCHG:
+                {
+                    GenTreeCmpXchg* const cmpXchg = node->AsCmpXchg();
+
+                    result = WalkTree(&cmpXchg->Addr(), cmpXchg);
+                    if (result == fgWalkResult::WALK_ABORT)
+                    {
+                        return result;
+                    }
+                    result = WalkTree(&cmpXchg->Data(), cmpXchg);
+                    if (result == fgWalkResult::WALK_ABORT)
+                    {
+                        return result;
+                    }
+                    result = WalkTree(&cmpXchg->Comparand(), cmpXchg);
+                    if (result == fgWalkResult::WALK_ABORT)
+                    {
+                        return result;
+                    }
+                    break;
                 }
-                break;
+
+                case GT_ARR_ELEM:
+                {
+                    GenTreeArrElem* const arrElem = node->AsArrElem();
+
+                    result = WalkTree(&arrElem->gtArrObj, arrElem);
+                    if (result == fgWalkResult::WALK_ABORT)
+                    {
+                        return result;
+                    }
+
+                    const unsigned rank = arrElem->gtArrRank;
+                    for (unsigned dim = 0; dim < rank; dim++)
+                    {
+                        result = WalkTree(&arrElem->gtArrInds[dim], arrElem);
+                        if (result == fgWalkResult::WALK_ABORT)
+                        {
+                            return result;
+                        }
+                    }
+                    break;
+                }
+
+                case GT_CALL:
+                {
+                    GenTreeCall* const call = node->AsCall();
+
+                    for (CallArg& arg : call->gtArgs.EarlyArgs())
+                    {
+                        result = WalkTree(&arg.EarlyNodeRef(), call);
+                        if (result == fgWalkResult::WALK_ABORT)
+                        {
+                            return result;
+                        }
+                    }
+
+                    for (CallArg& arg : call->gtArgs.LateArgs())
+                    {
+                        result = WalkTree(&arg.LateNodeRef(), call);
+                        if (result == fgWalkResult::WALK_ABORT)
+                        {
+                            return result;
+                        }
+                    }
+
+                    if (call->gtControlExpr != nullptr)
+                    {
+                        result = WalkTree(&call->gtControlExpr, call);
+                        if (result == fgWalkResult::WALK_ABORT)
+                        {
+                            return result;
+                        }
+                    }
+                    break;
+                }
+
+#if defined(FEATURE_HW_INTRINSICS)
+                case GT_HWINTRINSIC:
+                    if (TVisitor::UseExecutionOrder && node->IsReverseOp())
+                    {
+                        assert(node->AsMultiOp()->GetOperandCount() == 2);
+                        result = WalkTree(&node->AsMultiOp()->Op(2), node);
+                        if (result == fgWalkResult::WALK_ABORT)
+                        {
+                            return result;
+                        }
+                        result = WalkTree(&node->AsMultiOp()->Op(1), node);
+                        if (result == fgWalkResult::WALK_ABORT)
+                        {
+                            return result;
+                        }
+                    }
+                    else
+                    {
+                        for (GenTree** use : node->AsMultiOp()->UseEdges())
+                        {
+                            result = WalkTree(use, node);
+                            if (result == fgWalkResult::WALK_ABORT)
+                            {
+                                return result;
+                            }
+                        }
+                    }
+                    break;
 #endif // defined(FEATURE_HW_INTRINSICS)
 
-            case GT_SELECT:
-            {
-                GenTreeConditional* const conditional = node->AsConditional();
-
-                result = WalkTree(&conditional->gtCond, conditional);
-                if (result == fgWalkResult::WALK_ABORT)
+                case GT_SELECT:
                 {
-                    return result;
-                }
-                result = WalkTree(&conditional->gtOp1, conditional);
-                if (result == fgWalkResult::WALK_ABORT)
-                {
-                    return result;
-                }
-                result = WalkTree(&conditional->gtOp2, conditional);
-                if (result == fgWalkResult::WALK_ABORT)
-                {
-                    return result;
-                }
-                break;
-            }
+                    GenTreeConditional* const conditional = node->AsConditional();
 
-            // Binary nodes
-            default:
-            {
-                assert(node->OperIsBinary());
-
-                GenTreeOp* const op = node->AsOp();
-
-                GenTree** op1Use = &op->gtOp1;
-                GenTree** op2Use = &op->gtOp2;
-
-                if (TVisitor::UseExecutionOrder && node->IsReverseOp())
-                {
-                    std::swap(op1Use, op2Use);
-                }
-
-                if (*op1Use != nullptr)
-                {
-                    result = WalkTree(op1Use, op);
+                    result = WalkTree(&conditional->gtCond, conditional);
                     if (result == fgWalkResult::WALK_ABORT)
                     {
                         return result;
                     }
-                }
-
-                if (*op2Use != nullptr)
-                {
-                    result = WalkTree(op2Use, op);
+                    result = WalkTree(&conditional->gtOp1, conditional);
                     if (result == fgWalkResult::WALK_ABORT)
                     {
                         return result;
                     }
+                    result = WalkTree(&conditional->gtOp2, conditional);
+                    if (result == fgWalkResult::WALK_ABORT)
+                    {
+                        return result;
+                    }
+                    break;
                 }
-                break;
+
+                default:
+                {
+                    assert(!"unhandled special node");
+                    break;
+                }
             }
         }
 

@@ -208,18 +208,24 @@ internal sealed class MethodValidation
                 TargetCodePointer jitCodeAddr = GetCodePointer(umd);
                 Contracts.IExecutionManager executionManager = _target.Contracts.ExecutionManager;
                 CodeBlockHandle? codeInfo = executionManager.GetCodeBlockHandle(jitCodeAddr);
-                if (!codeInfo.HasValue)
+                if (codeInfo.HasValue)
                 {
-                    return false;
+                    TargetPointer methodDesc = executionManager.GetMethodDesc(codeInfo.Value);
+                    if (methodDesc != methodDescPointer)
+                    {
+                        return false;
+                    }
                 }
-                TargetPointer methodDesc = executionManager.GetMethodDesc(codeInfo.Value);
-                if (methodDesc == TargetPointer.Null)
+                else
                 {
-                    return false;
-                }
-                if (methodDesc != methodDescPointer)
-                {
-                    return false;
+                    // The NativeCodeSlot may point to a precode or portable entry point
+                    // (e.g., interpreter methods with FEATURE_PORTABLE_ENTRYPOINTS).
+                    // See DacValidateMD for more details.
+                    TargetPointer methodDesc = executionManager.NonVirtualEntry2MethodDesc(jitCodeAddr);
+                    if (methodDesc != methodDescPointer)
+                    {
+                        return false;
+                    }
                 }
             }
         }

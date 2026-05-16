@@ -47,6 +47,16 @@ internal static class MockGCFieldNames
     internal const string GCHeapSvrCompactReasons = "CompactReasons";
     internal const string GCHeapSvrExpandMechanisms = "ExpandMechanisms";
     internal const string GCHeapSvrInterestingMechanismBits = "InterestingMechanismBits";
+
+    internal const string HeapSegmentAllocated = "Allocated";
+    internal const string HeapSegmentCommitted = "Committed";
+    internal const string HeapSegmentReserved = "Reserved";
+    internal const string HeapSegmentUsed = "Used";
+    internal const string HeapSegmentMem = "Mem";
+    internal const string HeapSegmentFlags = "Flags";
+    internal const string HeapSegmentNext = "Next";
+    internal const string HeapSegmentBackgroundAllocated = "BackgroundAllocated";
+    internal const string HeapSegmentHeap = "Heap";
 }
 
 internal sealed class MockGeneration : TypedView
@@ -190,12 +200,63 @@ internal sealed class MockGCHeapSVR : TypedView
         set => WritePointerField(FinalizeQueueFieldName, value);
     }
 
+    public ulong AllocAllocated
+    {
+        get => ReadPointerField(AllocAllocatedFieldName);
+        set => WritePointerField(AllocAllocatedFieldName, value);
+    }
+
+    public ulong EphemeralHeapSegment
+    {
+        get => ReadPointerField(EphemeralHeapSegmentFieldName);
+        set => WritePointerField(EphemeralHeapSegmentFieldName, value);
+    }
+
     public MockGeneration GetGeneration(Layout<MockGeneration> generationLayout, int index)
     {
         LayoutField generationTableField = Layout.GetField(GenerationTableFieldName);
         int offset = checked(generationTableField.Offset + (index * generationLayout.Size));
         return generationLayout.Create(Memory.Slice(offset, generationLayout.Size), Address + (ulong)offset);
     }
+}
+
+internal sealed class MockHeapSegment : TypedView
+{
+    private const string AllocatedFieldName = MockGCFieldNames.HeapSegmentAllocated;
+    private const string CommittedFieldName = MockGCFieldNames.HeapSegmentCommitted;
+    private const string ReservedFieldName = MockGCFieldNames.HeapSegmentReserved;
+    private const string UsedFieldName = MockGCFieldNames.HeapSegmentUsed;
+    private const string MemFieldName = MockGCFieldNames.HeapSegmentMem;
+    private const string FlagsFieldName = MockGCFieldNames.HeapSegmentFlags;
+    private const string NextFieldName = MockGCFieldNames.HeapSegmentNext;
+    private const string BackgroundAllocatedFieldName = MockGCFieldNames.HeapSegmentBackgroundAllocated;
+    private const string HeapFieldName = MockGCFieldNames.HeapSegmentHeap;
+
+    public static Layout<MockHeapSegment> CreateLayout(MockTarget.Architecture architecture, bool includeHeapField)
+    {
+        SequentialLayoutBuilder b = new SequentialLayoutBuilder("HeapSegment", architecture)
+            .AddPointerField(AllocatedFieldName)
+            .AddPointerField(CommittedFieldName)
+            .AddPointerField(ReservedFieldName)
+            .AddPointerField(UsedFieldName)
+            .AddPointerField(MemFieldName)
+            .AddNUIntField(FlagsFieldName)
+            .AddPointerField(NextFieldName)
+            .AddPointerField(BackgroundAllocatedFieldName);
+        if (includeHeapField)
+            b = b.AddPointerField(HeapFieldName);
+        return b.Build<MockHeapSegment>();
+    }
+
+    public ulong Allocated { get => ReadPointerField(AllocatedFieldName); set => WritePointerField(AllocatedFieldName, value); }
+    public ulong Committed { get => ReadPointerField(CommittedFieldName); set => WritePointerField(CommittedFieldName, value); }
+    public ulong Reserved { get => ReadPointerField(ReservedFieldName); set => WritePointerField(ReservedFieldName, value); }
+    public ulong Used { get => ReadPointerField(UsedFieldName); set => WritePointerField(UsedFieldName, value); }
+    public ulong Mem { get => ReadPointerField(MemFieldName); set => WritePointerField(MemFieldName, value); }
+    public ulong Next { get => ReadPointerField(NextFieldName); set => WritePointerField(NextFieldName, value); }
+    public ulong BackgroundAllocated { get => ReadPointerField(BackgroundAllocatedFieldName); set => WritePointerField(BackgroundAllocatedFieldName, value); }
+    public ulong Flags { get => ReadPointerField(FlagsFieldName); set => WritePointerField(FlagsFieldName, value); }
+    public ulong Heap { get => ReadPointerField(HeapFieldName); set => WritePointerField(HeapFieldName, value); }
 }
 
 internal sealed class MockGCBuilder
@@ -325,6 +386,25 @@ internal sealed class MockGCBuilder
 
     internal Layout<MockGCHeapSVR> GetGCHeapSVRLayout(uint generationCount)
         => MockGCHeapSVR.CreateLayout(Builder.TargetTestHelpers.Arch, GenerationLayout, OomHistoryLayout, generationCount);
+
+    internal Layout<MockHeapSegment> GetHeapSegmentLayout(bool includeHeapField)
+        => MockHeapSegment.CreateLayout(Builder.TargetTestHelpers.Arch, includeHeapField);
+
+    internal MockHeapSegment AddHeapSegment(Layout<MockHeapSegment> layout, ulong mem, ulong allocated, ulong next, ulong flags = 0, ulong heap = 0, string name = "HeapSegment")
+    {
+        MockHeapSegment seg = Add(layout, name);
+        seg.Mem = mem;
+        seg.Allocated = allocated;
+        seg.Committed = allocated;
+        seg.Reserved = allocated;
+        seg.Used = allocated;
+        seg.BackgroundAllocated = allocated;
+        seg.Next = next;
+        seg.Flags = flags;
+        if (Array.Exists(layout.Fields, f => f.Name == MockGCFieldNames.HeapSegmentHeap))
+            seg.Heap = heap;
+        return seg;
+    }
 
     internal MockGCHeapSVR AddGCHeapSVR(
         Generation[] generations,

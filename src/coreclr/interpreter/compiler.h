@@ -707,6 +707,10 @@ private:
 
     TArray<InterpAsyncSuspendData*, MemPoolAllocator> m_asyncSuspendDataItems;
 
+    TArray<int32_t, MemPoolAllocator> m_suspensionPointIPOffsets;
+    TArray<ICorDebugInfo::AsyncSuspensionPoint, MemPoolAllocator> m_asyncDebugSuspensionPoints;
+    TArray<ICorDebugInfo::AsyncContinuationVarInfo, MemPoolAllocator> m_asyncDebugContinuationVars;
+
     // Tracks which data items contain pointers to async suspend data
     // First = data item index, Second = index into m_asyncSuspendDataItems
     struct DataItemAsyncSuspendRef
@@ -1045,6 +1049,7 @@ private:
     void AllocOffsets();
     int32_t ComputeCodeSize();
     void EmitCode();
+    void ReportAsyncDebugInfo();
     int32_t* EmitBBCode(int32_t *ip, InterpBasicBlock *bb, TArray<Reloc*, MemPoolAllocator> *relocs);
     int32_t* EmitCodeIns(int32_t *ip, InterpInst *pIns, TArray<Reloc*, MemPoolAllocator> *relocs);
     void PatchRelocations(TArray<Reloc*, MemPoolAllocator> *relocs);
