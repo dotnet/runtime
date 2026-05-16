@@ -1259,6 +1259,7 @@ namespace System.Text.Json.Serialization.Tests
             Value
         }
 
+        [Flags]
         public enum EnumWithInvalidMemberName2
         {
             [JsonStringEnumMemberName("")]
@@ -1288,6 +1289,29 @@ namespace System.Text.Json.Serialization.Tests
         {
             [JsonStringEnumMemberName("Comma separators not allowed, in flags enums")]
             Value
+        }
+
+        [Theory]
+        [InlineData(YesOrNoOrEmpty.Yes, "\"y\"")]
+        [InlineData(YesOrNoOrEmpty.No, "\"n\"")]
+        [InlineData(YesOrNoOrEmpty.Empty, "\"\"")]
+        public static void EnumWithEmptyStringMemberName_NonFlags_RoundtripsAsExpected(YesOrNoOrEmpty value, string expectedJson)
+        {
+            string json = JsonSerializer.Serialize(value, s_optionsWithStringEnumConverter);
+            Assert.Equal(expectedJson, json);
+            Assert.Equal(value, JsonSerializer.Deserialize<YesOrNoOrEmpty>(json, s_optionsWithStringEnumConverter));
+        }
+
+        public enum YesOrNoOrEmpty
+        {
+            [JsonStringEnumMemberName("y")]
+            Yes,
+
+            [JsonStringEnumMemberName("n")]
+            No,
+
+            [JsonStringEnumMemberName("")]
+            Empty,
         }
 
         [Theory]
