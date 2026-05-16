@@ -167,6 +167,8 @@ namespace Wasm.Build.Tests
                     EnvVars["EMSDK_PATH"] = EnvironmentVariables.EmsdkPath;
                 if (!string.IsNullOrEmpty(EnvironmentVariables.MinipalIncludeDir))
                     EnvVars["MINIPAL_INCLUDE_DIR"] = EnvironmentVariables.MinipalIncludeDir;
+                if (!string.IsNullOrEmpty(EnvironmentVariables.CoreCLRVmWasmIncludeDir))
+                    EnvVars["CORECLR_VM_WASM_INCLUDE_DIR"] = EnvironmentVariables.CoreCLRVmWasmIncludeDir;
             }
 
             DotNet = Path.Combine(sdkForWorkloadPath!, "dotnet");

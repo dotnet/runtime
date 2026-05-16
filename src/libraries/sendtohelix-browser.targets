@@ -159,6 +159,7 @@
     <HelixPreCommand Include="$(EnvVarCommand) WASM_APP_BUILDER_TASKS_ASSEMBLY_PATH=$HELIX_CORRELATION_PAYLOAD/build/WasmAppBuilder/WasmAppBuilder.dll" />
     <HelixPreCommand Include="$(EnvVarCommand) EMSDK_PATH=$HELIX_CORRELATION_PAYLOAD/build/emsdk/" />
     <HelixPreCommand Include="$(EnvVarCommand) MINIPAL_INCLUDE_DIR=$HELIX_CORRELATION_PAYLOAD/build/minipal/" />
+    <HelixPreCommand Include="$(EnvVarCommand) CORECLR_VM_WASM_INCLUDE_DIR=$HELIX_CORRELATION_PAYLOAD/build/coreclr-vm-wasm/" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(Scenario)' == 'BuildWasmApps' and '$(WindowsShell)' == 'true'">
@@ -167,6 +168,7 @@
     <HelixPreCommand Include="$(EnvVarCommand) WASM_APP_BUILDER_TASKS_ASSEMBLY_PATH=%HELIX_CORRELATION_PAYLOAD%\build\WasmAppBuilder\WasmAppBuilder.dll" />
     <HelixPreCommand Include="$(EnvVarCommand) EMSDK_PATH=%HELIX_CORRELATION_PAYLOAD%\build\emsdk\" />
     <HelixPreCommand Include="$(EnvVarCommand) MINIPAL_INCLUDE_DIR=%HELIX_CORRELATION_PAYLOAD%\build\minipal\" />
+    <HelixPreCommand Include="$(EnvVarCommand) CORECLR_VM_WASM_INCLUDE_DIR=%HELIX_CORRELATION_PAYLOAD%\build\coreclr-vm-wasm\" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
@@ -285,22 +287,32 @@
       <HelixCorrelationPayload Include="$(_CoreCLRWbtEngPayloadDir)" Destination="build/eng" />
     </ItemGroup>
 
-    <!-- CoreCLR WBT: ship src/native/minipal/utils.h into the payload so per-app native re-link
-         (BrowserWasmApp.CoreCLR.targets) can force-include it for ManagedToNativeGenerator output
-         (NOINLINE etc.). Stage into a directory first because HelixCorrelationPayload on individual
-         files causes the Helix client to try unzipping them as archives. -->
+    <!-- CoreCLR WBT: ship src/native/minipal/{utils.h,entrypoints.h} and
+         src/coreclr/vm/wasm/callhelpers.hpp into the payload so per-app native
+         re-link (BrowserWasmApp.CoreCLR.targets) can resolve the #include lines
+         emitted by ManagedToNativeGenerator output. Stage into directories first
+         because HelixCorrelationPayload on individual files causes the Helix
+         client to try unzipping them as archives. -->
     <PropertyGroup Condition="'$(NeedsEMSDK)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
       <_CoreCLRWbtMinipalPayloadDir>$(ArtifactsObjDir)helix-staging\coreclr-wbt-minipal\</_CoreCLRWbtMinipalPayloadDir>
+      <_CoreCLRWbtVmWasmPayloadDir>$(ArtifactsObjDir)helix-staging\coreclr-wbt-vm-wasm\</_CoreCLRWbtVmWasmPayloadDir>
     </PropertyGroup>
     <ItemGroup Condition="'$(NeedsEMSDK)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
       <_CoreCLRWbtMinipalFiles Include="$(RepoRoot)src\native\minipal\utils.h" />
+      <_CoreCLRWbtMinipalFiles Include="$(RepoRoot)src\native\minipal\entrypoints.h" />
+      <_CoreCLRWbtVmWasmFiles Include="$(RepoRoot)src\coreclr\vm\wasm\callhelpers.hpp" />
     </ItemGroup>
     <Copy Condition="'$(NeedsEMSDK)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'"
           SourceFiles="@(_CoreCLRWbtMinipalFiles)"
           DestinationFolder="$(_CoreCLRWbtMinipalPayloadDir)"
           SkipUnchangedFiles="true" />
+    <Copy Condition="'$(NeedsEMSDK)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'"
+          SourceFiles="@(_CoreCLRWbtVmWasmFiles)"
+          DestinationFolder="$(_CoreCLRWbtVmWasmPayloadDir)"
+          SkipUnchangedFiles="true" />
     <ItemGroup Condition="'$(NeedsEMSDK)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
       <HelixCorrelationPayload Include="$(_CoreCLRWbtMinipalPayloadDir)" Destination="build/minipal" />
+      <HelixCorrelationPayload Include="$(_CoreCLRWbtVmWasmPayloadDir)" Destination="build/coreclr-vm-wasm" />
     </ItemGroup>
 
     <!-- copy node separately only if EMSDK is not being included -->

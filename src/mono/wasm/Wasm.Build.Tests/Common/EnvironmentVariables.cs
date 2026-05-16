@@ -33,5 +33,6 @@ namespace Wasm.Build.Tests
         internal static readonly string? WasmAppBuilderTasksAssemblyPath = Environment.GetEnvironmentVariable("WASM_APP_BUILDER_TASKS_ASSEMBLY_PATH");
         internal static readonly string? EmsdkPath                     = Environment.GetEnvironmentVariable("EMSDK_PATH");
         internal static readonly string? MinipalIncludeDir             = Environment.GetEnvironmentVariable("MINIPAL_INCLUDE_DIR");
+        internal static readonly string? CoreCLRVmWasmIncludeDir       = Environment.GetEnvironmentVariable("CORECLR_VM_WASM_INCLUDE_DIR");
     }
 }
