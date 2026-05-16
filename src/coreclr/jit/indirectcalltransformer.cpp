@@ -793,7 +793,7 @@ private:
 
             if (retExprNode == nullptr)
             {
-                // We do not produce GT_RET_EXPRs for CTOR calls, so there is nothing to patch.
+                // We do not produce GT_RET_EXPRs for CTOR/void calls, so there is nothing to patch.
                 return;
             }
 
@@ -820,15 +820,14 @@ private:
             // bash the associated GT_RET_EXPR to refer to the temp instead
             // of the call.
             //
-            // Note implicit by-ref returns should have already been converted
+            // Note retbuffer returns should have already been converted
             // so any struct copy we induce here should be cheap.
-            m_returnTemp = CreateOrGetLocalForRetExpr(m_origCall, &m_returnValueUnused);
+            m_returnTemp = CreateOrGetLocalForRetExpr(m_origCall, inlineInfo, &m_returnValueUnused);
         }
 
-        unsigned CreateOrGetLocalForRetExpr(GenTreeCall* call, bool* isUnused)
+        unsigned CreateOrGetLocalForRetExpr(GenTreeCall* call, InlineCandidateInfo* inlineInfo, bool* isUnused)
         {
-            InlineCandidateInfo* const inlineInfo  = call->GetGDVCandidateInfo(0);
-            GenTree* const             retExprNode = inlineInfo->retExpr;
+            GenTree* const retExprNode = inlineInfo->retExpr;
 
             assert(retExprNode != nullptr);
 
@@ -860,13 +859,13 @@ private:
             if (noReturnValue)
             {
                 JITDUMP("Linking GT_RET_EXPR [%06u] for VOID return to NOP\n",
-                        compiler->dspTreeID(inlineInfo->retExpr));
+                        Compiler::dspTreeID(inlineInfo->retExpr));
                 inlineInfo->retExpr->gtSubstExpr = compiler->gtNewNothingNode();
             }
-            else if (m_returnValueUnused)
+            else if (*isUnused)
             {
                 JITDUMP("Linking GT_RET_EXPR [%06u] for UNUSED return to NOP\n",
-                        compiler->dspTreeID(inlineInfo->retExpr));
+                        Compiler::dspTreeID(inlineInfo->retExpr));
                 inlineInfo->retExpr->gtSubstExpr = compiler->gtNewNothingNode();
             }
             else
@@ -1099,6 +1098,20 @@ private:
                         call->gtType       = m_awaitingCall->gtType;
                         call->gtReturnType = m_awaitingCall->gtReturnType;
                         call->gtRetClsHnd  = m_awaitingCall->gtRetClsHnd;
+                        call->gtCallMoreFlags &= ~GTF_CALL_M_RETBUFFARG;
+                        call->gtCallMoreFlags |= m_awaitingCall->gtCallMoreFlags & GTF_CALL_M_RETBUFFARG;
+
+                        if (call->ShouldHaveRetBufArg())
+                        {
+                            CallArg* retBufArg = m_awaitingCall->gtArgs.GetRetBufferArg();
+                            assert(retBufArg != nullptr);
+
+                            NewCallArg newRetBuf =
+                                NewCallArg::Primitive(compiler->gtCloneExpr(retBufArg->GetNode()), retBufArg->GetSignatureType())
+                                .WellKnown(WellKnownArg::RetBuffer);
+
+                            call->gtArgs.InsertAfterThisOrFirst(compiler, newRetBuf);
+                        }
 
                         AsyncCallInfo* callInfo = new (compiler, CMK_Async) AsyncCallInfo;
                         // No configuration is currently matched for the awaiter.
@@ -1176,18 +1189,17 @@ private:
 
                 // Re-establish this call as an inline candidate.
                 //
-                GenTreeRetExpr* oldRetExpr       = inlineInfo->retExpr;
                 inlineInfo->clsHandle            = compiler->info.compCompHnd->getMethodClass(methodHnd);
                 inlineInfo->exactContextHandle   = context;
                 inlineInfo->preexistingSpillTemp = returnTemp;
                 call->SetSingleInlineCandidateInfo(inlineInfo);
 
-                // If there was a ret expr for this call, we need to create a new one
+                // If we have a result then we need to create a new RET_EXPR
                 // and append it just after the call.
                 //
-                // Note the original GT_RET_EXPR has been linked to a temp.
+                // Note that the original GT_RET_EXPR has been linked to a temp.
                 // we set all this up in FixupRetExpr().
-                if (oldRetExpr != nullptr)
+                if (call->gtReturnType != TYP_VOID)
                 {
                     inlineInfo->retExpr = compiler->gtNewInlineCandidateReturnExpr(call, call->TypeGet());
                     GenTree* newRetExpr = inlineInfo->retExpr;
@@ -1200,7 +1212,7 @@ private:
                     {
                         // We should always have a return temp if we return results by value
                         // and that value is used.
-                        assert(m_origCall->TypeIs(TYP_VOID) || returnValueUnused);
+                        assert(call->TypeIs(TYP_VOID) || returnValueUnused);
                         newRetExpr = compiler->gtUnusedValNode(newRetExpr);
                     }
                     compiler->fgNewStmtAtEnd(block, newRetExpr);
@@ -1227,16 +1239,20 @@ private:
             {
                 if (awaitNode->AsCall()->IsInlineCandidate())
                 {
-                    m_awaitReturnTemp = CreateOrGetLocalForRetExpr(awaitNode->AsCall(), &m_awaitReturnValueUnused);
-
-                    // Give the AsyncHelpers.Await a new RET_EXPR right after
-                    // its. It will be substituted later when we process the
-                    // inline candidate.
                     InlineCandidateInfo* inlineInfo = awaitNode->AsCall()->GetSingleInlineCandidateInfo();
+
+                    // If this is an await with a result then we will have a
+                    // RET_EXPR that may have floated to a downstream tree. Set
+                    // things up so we substitute that RET_EXPR with a local
+                    // that is stored right after the await from a new
+                    // RET_EXPR.
                     if (inlineInfo->retExpr != nullptr)
                     {
+                        m_awaitReturnTemp = CreateOrGetLocalForRetExpr(awaitNode->AsCall(), inlineInfo, &m_awaitReturnValueUnused);
+
                         inlineInfo->retExpr =
                             compiler->gtNewInlineCandidateReturnExpr(awaitNode->AsCall(), awaitNode->TypeGet());
+
                         GenTree* newRetExpr = inlineInfo->retExpr;
 
                         if (m_awaitReturnTemp != BAD_VAR_NUM)
