@@ -112,8 +112,7 @@ namespace ILCompiler.DependencyAnalysis
         private static void GetDependenciesFromCustomAttributeArgument(DependencyList dependencies, NodeFactory factory, TypeDesc type, object value)
         {
             // Report the type itself (e.g. enum types that need to be kept for boxing)
-            if (factory.ReflectedType(type) is DependencyNode typeNode)
-                dependencies.Add(typeNode, "Custom attribute blob");
+            dependencies.Add(factory.ReflectedType(type), "Custom attribute blob");
 
             if (type.UnderlyingType.IsPrimitive || type.IsString || value is null)
                 return;
@@ -121,9 +120,9 @@ namespace ILCompiler.DependencyAnalysis
             if (type.IsSzArray)
             {
                 TypeDesc elementType = ((ArrayType)type).ElementType;
-                if (!elementType.UnderlyingType.IsPrimitive && !elementType.IsString
-                    && value is ImmutableArray<CustomAttributeTypedArgument<TypeDesc>> arrayElements)
+                if (!elementType.UnderlyingType.IsPrimitive && !elementType.IsString)
                 {
+                    var arrayElements = (ImmutableArray<CustomAttributeTypedArgument<TypeDesc>>)value;
                     foreach (CustomAttributeTypedArgument<TypeDesc> element in arrayElements)
                     {
                         GetDependenciesFromCustomAttributeArgument(dependencies, factory, element.Type, element.Value);
@@ -133,8 +132,7 @@ namespace ILCompiler.DependencyAnalysis
             else if (value is TypeDesc typeofType)
             {
                 // typeof() - the value is a TypeDesc
-                if (factory.ReflectedType(typeofType) is DependencyNode typeofNode)
-                    dependencies.Add(typeofNode, "Custom attribute blob");
+                dependencies.Add(factory.ReflectedType(typeofType), "Custom attribute blob");
             }
         }
 
@@ -152,10 +150,9 @@ namespace ILCompiler.DependencyAnalysis
                 if (reader.StringComparer.Equals(propDef.Name, propertyName))
                 {
                     PropertyAccessors accessors = propDef.GetAccessors();
-                    if (!accessors.Setter.IsNil
-                        && factory.ReflectedMethod(ecmaType.Module.GetMethod(accessors.Setter)) is DependencyNode methodNode)
+                    if (!accessors.Setter.IsNil)
                     {
-                        dependencies.Add(methodNode, "Custom attribute blob");
+                        dependencies.Add(factory.ReflectedMethod(ecmaType.Module.GetMethod(accessors.Setter)), "Custom attribute blob");
                     }
 
                     return;
@@ -173,8 +170,7 @@ namespace ILCompiler.DependencyAnalysis
             FieldDesc field = attributeType.GetField(Encoding.UTF8.GetBytes(fieldName));
             if (field is not null)
             {
-                if (factory.ReflectedField(field) is DependencyNode fieldNode)
-                    dependencies.Add(fieldNode, "Custom attribute blob");
+                dependencies.Add(factory.ReflectedField(field), "Custom attribute blob");
             }
             else
             {
