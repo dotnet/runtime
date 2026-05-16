@@ -1023,6 +1023,10 @@ namespace ILCompiler.ObjectWriter
             public Stream Stream => dataStream;
             public byte SectionIndex { get; set; }
 
+            // Variables used for tracking a temporary label created within the section
+            // for the purpose of creating relocations with smaller addends. The emitted
+            // addends are relative to the last temporary label instead of the section
+            // start.
             public long TemporaryLabelOffset { get; set; }
             public uint TemporaryLabelIndex { get; set; }
 
