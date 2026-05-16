@@ -38,24 +38,17 @@ public class DacDbiMultiModuleDumpTests : DumpTestBase
         DacDbiImpl dbi = CreateDacDbi();
         ILoader loader = Target.Contracts.Loader;
 
-        // SymbolFormat values from IDacDbiInterface::SymbolFormat:
-        //   kSymbolFormatNone = 0, kSymbolFormatPDB = 1.
-        const int kSymbolFormatPDB = 1;
-
         bool foundInMemorySymbols = false;
         foreach (ModuleHandle module in GetAllModules())
         {
             TargetPointer moduleAddr = loader.GetModule(module);
 
             DacDbiTargetBuffer targetBuffer;
-            int symbolFormat;
+            SymbolFormat symbolFormat;
             int hr = dbi.GetSymbolsBuffer(moduleAddr.Value, &targetBuffer, &symbolFormat);
             Assert.Equal(System.HResults.S_OK, hr);
 
-            // Format must be either kSymbolFormatNone (0) or kSymbolFormatPDB (1).
-            Assert.InRange(symbolFormat, 0, 1);
-
-            if (symbolFormat == kSymbolFormatPDB)
+            if (symbolFormat == SymbolFormat.Pdb)
             {
                 // When PDB symbols are reported, the buffer must be non-empty.
                 Assert.NotEqual(0UL, targetBuffer.pAddress);
