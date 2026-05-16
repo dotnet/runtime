@@ -6875,10 +6875,14 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::WalkHeap(HeapWalkHandle handle,
 
 
 
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetHeapSegments(OUT DacDbiArrayList<COR_SEGMENT> *pSegments)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateHeapSegments(
+    FP_HEAPSEGMENT_CALLBACK fpCallback,
+    CALLBACK_DATA pUserData)
 {
     DD_ENTER_MAY_THROW;
 
+    if (fpCallback == NULL)
+        return E_POINTER;
 
     size_t heapCount = 0;
     HeapData *heaps = 0;
@@ -6893,53 +6897,28 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetHeapSegments(OUT DacDbiArrayLi
 
     NewArrayHolder<HeapData> _heapHolder = heaps;
 
-    // Count the number of segments to know how much to allocate.
-    int total = 0;
+    if (FAILED(hr))
+        return hr;
+
+    // Now walk all segments and emit them through the callback.
     for (size_t i = 0; i < heapCount; ++i)
     {
-        total += (int)heaps[i].SegmentCount;
-        if (!region)
-        {
-            // SegmentCount is +1 due to the ephemeral segment containing more than one
-            // generation (Gen1 + Gen0, and sometimes part of Gen2).
-            total++;
-
-            // It's possible that part of Gen2 lives on the ephemeral segment.  If so,
-            // we need to add one more to the output.
-            const size_t eph = heaps[i].EphemeralSegment;
-            _ASSERTE(eph < heaps[i].SegmentCount);
-            if (heaps[i].Segments[eph].Start != heaps[i].Gen1Start)
-                total++;
-        }
-    }
-
-    pSegments->Alloc(total);
-
-    // Now walk all segments and write them to the array.
-    int curr = 0;
-    for (size_t i = 0; i < heapCount; ++i)
-    {
-        _ASSERTE(curr < total);
         if (!region)
         {
             // Generation 0 is not in the segment list.
-            COR_SEGMENT &seg = (*pSegments)[curr++];
-            seg.start = heaps[i].Gen0Start;
-            seg.end = heaps[i].Gen0End;
-            seg.type = CorDebug_Gen0;
-            seg.heap = (ULONG)i;
+            fpCallback(heaps[i].Gen0Start, heaps[i].Gen0End, (int)CorDebug_Gen0, (ULONG)i, pUserData);
         }
 
         for (size_t j = 0; j < heaps[i].SegmentCount; ++j)
         {
             if (region)
             {
-                _ASSERTE(curr < total);
-                COR_SEGMENT &seg = (*pSegments)[curr++];
-                seg.start = heaps[i].Segments[j].Start;
-                seg.end = heaps[i].Segments[j].End;
-                seg.type = (CorDebugGenerationTypes)heaps[i].Segments[j].Generation;
-                seg.heap = (ULONG)i;
+                fpCallback(
+                    heaps[i].Segments[j].Start,
+                    heaps[i].Segments[j].End,
+                    (int)heaps[i].Segments[j].Generation,
+                    (ULONG)i,
+                    pUserData);
             }
             else if (heaps[i].Segments[j].Generation == 1)
             {
@@ -6948,43 +6927,29 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetHeapSegments(OUT DacDbiArrayLi
                 _ASSERTE(heaps[i].Segments[j].Start <= heaps[i].Gen1Start);
                 _ASSERTE(heaps[i].Segments[j].End > heaps[i].Gen1Start);
 
-                {
-                    _ASSERTE(curr < total);
-                    COR_SEGMENT &seg = (*pSegments)[curr++];
-                    seg.start = heaps[i].Gen1Start;
-                    seg.end = heaps[i].Gen0Start;
-                    seg.type = CorDebug_Gen1;
-                    seg.heap = (ULONG)i;
-                }
+                fpCallback(heaps[i].Gen1Start, heaps[i].Gen0Start, (int)CorDebug_Gen1, (ULONG)i, pUserData);
 
                 // It's possible for Gen2 to take up a portion of the ephemeral segment.
                 // We test for that here.
                 if (heaps[i].Segments[j].Start != heaps[i].Gen1Start)
                 {
-                    _ASSERTE(curr < total);
-                    COR_SEGMENT &seg = (*pSegments)[curr++];
-                    seg.start = heaps[i].Segments[j].Start;
-                    seg.end = heaps[i].Gen1Start;
-                    seg.type = CorDebug_Gen2;
-                    seg.heap = (ULONG)i;
+                    fpCallback(heaps[i].Segments[j].Start, heaps[i].Gen1Start, (int)CorDebug_Gen2, (ULONG)i, pUserData);
                 }
             }
             else
             {
                 // Otherwise, we have a gen2, POH, LOH or NonGC
-                _ASSERTE(curr < total);
-                COR_SEGMENT &seg = (*pSegments)[curr++];
-                seg.start = heaps[i].Segments[j].Start;
-                seg.end = heaps[i].Segments[j].End;
-
                 _ASSERTE(heaps[i].Segments[j].Generation <= CorDebug_NonGC);
-                seg.type = (CorDebugGenerationTypes)heaps[i].Segments[j].Generation;
-                seg.heap = (ULONG)i;
+                fpCallback(
+                    heaps[i].Segments[j].Start,
+                    heaps[i].Segments[j].End,
+                    (int)heaps[i].Segments[j].Generation,
+                    (ULONG)i,
+                    pUserData);
             }
         }
     }
 
-    _ASSERTE(total == curr);
     return hr;
 }
 

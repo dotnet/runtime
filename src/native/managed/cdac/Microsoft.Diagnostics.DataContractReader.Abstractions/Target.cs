@@ -319,7 +319,7 @@ public abstract class Target
     /// Clear all cached data held by this target, including processed data and contract caches.
     /// Called when the target process state may have changed (e.g. on resume).
     /// </summary>
-    public void Flush()
+    public virtual void Flush()
     {
         ProcessedData.Clear();
         Contracts.Flush();
