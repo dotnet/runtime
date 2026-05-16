@@ -414,6 +414,10 @@ namespace ILCompiler
                     string rtrHeaderSymbolName = Get(_command.ReadyToRunHeaderSymbolName);
 
                     ReadyToRunContainerFormat format = Get(_command.OutputFormat);
+                    if (format == ReadyToRunContainerFormat.PE && typeSystemContext.Target.Architecture == TargetArchitecture.Wasm32)
+                    {
+                        format = ReadyToRunContainerFormat.Wasm;
+                    }
                     if (!composite && format != ReadyToRunContainerFormat.PE && format != ReadyToRunContainerFormat.Wasm)
                     {
                         throw new Exception(string.Format(SR.ErrorContainerFormatRequiresComposite, format));
