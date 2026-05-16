@@ -572,7 +572,6 @@ NativeCodeFunctionData::NativeCodeFunctionData(Debugger_JITFuncData * source)
     // copy the other function information
     isInstantiatedGeneric = source->isInstantiatedGeneric;
     vmNativeCodeMethodDescToken = source->vmNativeCodeMethodDescToken;
-    encVersion = 0;
 }
 
 
