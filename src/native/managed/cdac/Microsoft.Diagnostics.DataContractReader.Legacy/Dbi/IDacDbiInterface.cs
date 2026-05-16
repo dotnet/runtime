@@ -188,15 +188,8 @@ public enum CorDebugGenerationTypes
 
 public enum IlNum : int
 {
-    TYPECTXT_ILNUM = -3,Implements four DacDbi APIs in the managed cDAC.
-
-### cDAC DacDbi implementations
-- `GetSimpleType` — resolves CorElementType to its metadata token + module via `_target.Contracts.RuntimeTypeSystem`.
-- `ResolveAssembly` — looks up an assembly ref token through the loader contract.
-- `ResolveExactGenericArgsToken` — walks the generic dictionary to recover the exact instantiation token.
-- `GetGenericArgTokenIndex` — mirrors the native three-state result (`S_FALSE` / `*pIndex = 0` / `*pIndex = TYPECTXT_ILNUM`).
-
-Each implementation is gated by the existing `#if DEBUG` legacy cross-check pattern.}
+    TYPECTXT_ILNUM = -3,
+}
 
 // Name-surface projection of IDacDbiInterface in native method order for COM binding validation.
 // Parameter shapes are intentionally coarse placeholders and will be refined with method implementation work.
