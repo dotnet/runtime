@@ -352,6 +352,9 @@ internal sealed class FrameHelpers
 
         //   ExceptionHandlingHelper = 2 on 64-bit, 1 on 32-bit. Mask == ExceptionHandlingHelper.
         Data.InlinedCallFrame icf = _target.ProcessedData.GetOrAdd<Data.InlinedCallFrame>(frame.Address);
+        if (!InlinedCallFrameHasActiveCall(icf))
+            return false;
+
         ulong mask = (ulong)(_target.PointerSize == 8 ? 2 : 1);
         return (icf.Datum.Value & mask) == mask;
     }
