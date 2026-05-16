@@ -8174,16 +8174,6 @@ DONE_MORPHING_CHILDREN:
                 break;
             }
 
-            // Remove double negation/not.
-            if (op1->OperIs(oper))
-            {
-                JITDUMP("Remove double negation/not\n")
-                GenTree* op1op1 = op1->gtGetOp1();
-                DEBUG_DESTROY_NODE(tree);
-                DEBUG_DESTROY_NODE(op1);
-                return op1op1;
-            }
-
             // Distribute negation over simple multiplication/division expressions
             if (tree->OperIs(GT_NEG) && op1->OperIs(GT_MUL, GT_DIV))
             {
