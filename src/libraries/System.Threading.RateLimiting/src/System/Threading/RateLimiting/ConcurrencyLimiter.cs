@@ -32,7 +32,7 @@ namespace System.Threading.RateLimiting
         private object Lock => _queue;
 
         /// <inheritdoc />
-        public override TimeSpan? IdleDuration => Stopwatch.GetElapsedTime(_idleSince);
+        public override TimeSpan? IdleDuration => RateLimiterHelper.GetElapsedTime(_idleSince);
         /// <summary>
         /// Initializes the <see cref="ConcurrencyLimiter"/>.
         /// </summary>

@@ -36,7 +36,7 @@ namespace System.Threading.RateLimiting
         private static readonly RateLimitLease FailedLease = new SlidingWindowLease(false, null);
 
         /// <inheritdoc />
-        public override TimeSpan? IdleDuration => Stopwatch.GetElapsedTime(_idleSince);
+        public override TimeSpan? IdleDuration => RateLimiterHelper.GetElapsedTime(_idleSince);
 
         /// <inheritdoc />
         public override bool IsAutoReplenishing => _options.AutoReplenishment;

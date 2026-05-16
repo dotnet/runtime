@@ -7,17 +7,14 @@ namespace System.Threading.RateLimiting
 {
     internal static class RateLimiterHelper
     {
-        extension(Stopwatch)
+        public static TimeSpan? GetElapsedTime(long? startTimestamp)
         {
-            public static TimeSpan? GetElapsedTime(long? startTimestamp)
+            if (startTimestamp is null)
             {
-                if (startTimestamp is null)
-                {
-                    return null;
-                }
-
-                return Stopwatch.GetElapsedTime(startTimestamp.Value);
+                return null;
             }
+
+            return Stopwatch.GetElapsedTime(startTimestamp.Value);
         }
     }
 }
