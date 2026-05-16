@@ -54,6 +54,25 @@ export interface CoreClrTestArguments {
     env?: {name: string, value: string}[];
     referenceXunitWrapperGenerator?: boolean;
     run?: boolean;
+    // ------------------------------------------------------------------
+    // Bazel-compat attributes, mostly absorbed as no-ops at this layer.
+    // Kept on the interface so the generator can pass them through
+    // 1:1 without having to know which ones the BXL macro acts on.
+    // ------------------------------------------------------------------
+    pri?: number;
+    size?: string;
+    debugType?: string;
+    nullable?: string;
+    async_?: boolean;
+    flaky?: boolean;
+    visibility?: string[];
+    compilerOptions?: string[];
+    testDeps?: CSharp.CSharpInfo[];
+    // `tags` participates in skip-running ("manual") but is otherwise opaque.
+    tags?: string[];
+    // `targetCompatibleWith` is enforced at generation time (incompatible
+    // targets are not emitted on this host); accepted here for completeness.
+    targetCompatibleWith?: string[];
 }
 
 @@public
@@ -142,12 +161,15 @@ const runCoreClrTest = Rules.rule<RunCoreClrTestAttrs, RunCoreClrTestAttrs, Rule
                 "#!/usr/bin/env bash",
                 "set -euo pipefail",
                 "set +e",
-                "\"$2\" \"$3\"",
+                "timeout --foreground --kill-after=10 60 \"$2\" \"$3\"",
                 "exit_code=$?",
                 "set -e",
                 "if [[ \"$exit_code\" -eq 100 ]]; then",
                 "  printf 'passed\\n' > \"$1\"",
                 "  exit 0",
+                "fi",
+                "if [[ \"$exit_code\" -eq 124 || \"$exit_code\" -eq 137 ]]; then",
+                "  echo \"Test timed out after 60s\" >&2",
                 "fi",
                 "echo \"Expected exit code 100, got $exit_code\" >&2",
                 "exit \"$exit_code\"",
@@ -196,7 +218,7 @@ export function coreclr_test(args: CoreClrTestArguments): CoreClrTestResult {
         ? [generatorGlobalConfig]
         : undefined;
 
-    const deps = [Common.testLibrary, ...(referenceXunitWrapperGenerator ? [Common.xunitWrapperLibrary] : []), ...(args.deps || [])];
+    const deps = [Common.testLibrary, ...(referenceXunitWrapperGenerator ? [Common.xunitWrapperLibrary] : []), ...(args.deps || []), ...(args.testDeps || [])];
     const csInfo = CSharp.csharp_binary({
         name: args.name,
         toolchain: Common.csharpToolchain,
@@ -222,7 +244,10 @@ export function coreclr_test(args: CoreClrTestArguments): CoreClrTestResult {
         ...(referenceXunitWrapperGenerator ? [Common.xunitWrapperLibrary.binary] : []),
         ...Defs.XUNIT_RUNTIME_DEPS,
     ];
-    const testStamp = args.run === false
+    // Tests carrying the bazel "manual" tag are compiled but not run by default.
+    const taggedManual = (args.tags || []).filter(t => t === "manual").length > 0;
+    const shouldRun = args.run !== false && !taggedManual;
+    const testStamp = !shouldRun
         ? undefined
         : runCoreClrTest({
             name: `${args.name}_test`,

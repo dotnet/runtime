@@ -44,12 +44,13 @@ jobs:
         with:
           dotnet-version: '11.0.100-preview.5.26227.104'
 
-      # NOTE: BXL caching via actions/cache is currently disabled because
-      # restoring ~/.cache/bxl through actions/cache loses symlink semantics
-      # (e.g. Out/frontend/Download/DotNetSdk/c/host/fxr disappears), causing
-      # csc invocations to fail with exit code 131. Re-enable once BXL CAS
-      # can round-trip symlinks through tar-based caching, or once we can
-      # exclude the Download outputs from the cached state.
+      - name: Restore BuildXL cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/bxl
+          key: bxl-cache-${{ github.sha }}
+          restore-keys: bxl-cache-
+          save-always: true
 
       - name: Install BuildXL bootstrap tool
         shell: bash
@@ -113,25 +114,6 @@ jobs:
 
           echo "Core_Root assembled: $(ls "$CORE_ROOT"/*.dll | wc -l) managed + $(ls "$CORE_ROOT"/*.so | wc -l) native files"
 
-      - name: Show BuildXL test set
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          summary_file="$(mktemp)"
-          {
-            echo "## BuildXL TieredCompilation test set"
-            echo
-            echo "These are the test assemblies this workflow currently compiles:"
-            echo
-            awk -F'"' '
-              /name:/ { name=$2 }
-              /srcs:/ { printf "- `%s` from `%s`\n", name, $2 }
-            ' src/tests/baseservices/TieredCompilation/BUILD.dsc
-          } | tee "$summary_file"
-
-          cat "$summary_file" >> "$GITHUB_STEP_SUMMARY"
-
       - name: Build
         shell: bash
         run: |
@@ -149,44 +131,73 @@ jobs:
           ./bxl.sh "/f:output='*.test.stamp'"
           bxl_exit=$?
 
+          # Source of truth: every enabled coreclr_test target produces a
+          # *.test.stamp output on success. Cached pips re-emit the stamp,
+          # so this count is correct on warm-cache runs too.
+          mapfile -t passed_stamps < <(find Out/Objects -name '*.test.stamp' | sort)
+          mapfile -t passed_tests < <(
+            printf '%s\n' "${passed_stamps[@]}" \
+              | awk -F/ '{ n=$NF; sub(/\.test\.stamp$/,"",n); print n }' \
+              | sort -u
+          )
+
           log="Out/Logs/BuildXL.Dev.log"
-          if [[ -f "$log" ]]; then
-            mapfile -t all_tests < <(
-              grep -oE 'run coreclr test: [A-Za-z_0-9]+' "$log" \
-                | awk '{print $NF}' | sort -u
-            )
-            mapfile -t failed_tests < <(
-              grep -E 'error DX0064:.*run coreclr test: [A-Za-z_0-9]+.*failed with exit code' "$log" \
-                | grep -oE 'run coreclr test: [A-Za-z_0-9]+' \
-                | awk '{print $NF}' | sort -u
-            )
+          mapfile -t failed_tests < <(
+            [[ -f "$log" ]] && grep -E 'error DX0064:.*run coreclr test: [A-Za-z_0-9]+.*failed with exit code' "$log" \
+              | grep -oE 'run coreclr test: [A-Za-z_0-9]+' \
+              | awk '{print $NF}' | sort -u
+          )
 
-            total=${#all_tests[@]}
-            failed=${#failed_tests[@]}
-            passed=$((total - failed))
+          passed=${#passed_tests[@]}
+          failed=${#failed_tests[@]}
+          total=$((passed + failed))
 
-            echo
-            echo "============================================================"
-            echo " BuildXL test results: ${passed} passed, ${failed} failed (of ${total} total)"
-            echo "============================================================"
-            if (( failed > 0 )); then
-              echo "Failed tests:"
-              for t in "${failed_tests[@]}"; do echo "  - $t"; done
-            fi
-            echo
+          # Whole-build cache stats from BuildXL.stats. Per-pip cached-vs-executed
+          # for test pips specifically would require parsing the XLG; the build-wide
+          # numbers convey the cache effectiveness clearly enough.
+          stats="Out/Logs/BuildXL.stats"
+          total_pips=$(awk -F= '$1=="TotalProcessPips"{print $2}' "$stats" 2>/dev/null)
+          cache_hits=$(awk -F= '$1=="ProcessPipCacheHits"{print $2}' "$stats" 2>/dev/null)
+          cache_misses=$(awk -F= '$1=="ProcessPipCacheMisses"{print $2}' "$stats" 2>/dev/null)
+          : "${total_pips:=?}"; : "${cache_hits:=?}"; : "${cache_misses:=?}"
 
-            if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
-              {
-                echo "## BuildXL test results"
+          if [[ "$cache_hits" =~ ^[0-9]+$ && "$total_pips" =~ ^[0-9]+$ && "$total_pips" -gt 0 ]]; then
+            hit_pct=$(awk -v h="$cache_hits" -v t="$total_pips" 'BEGIN{printf "%.1f", (h*100)/t}')
+            cache_line="${cache_hits} cache hits / ${cache_misses} executed of ${total_pips} process pips (${hit_pct}% hit)"
+          else
+            cache_line="cache stats unavailable"
+          fi
+
+          echo
+          echo "============================================================"
+          echo " BuildXL test results: ${passed} passed, ${failed} failed (of ${total} total)"
+          echo " Build cache:          ${cache_line}"
+          echo "============================================================"
+          if (( failed > 0 )); then
+            echo "Failed tests:"
+            for t in "${failed_tests[@]}"; do echo "  - $t"; done
+          fi
+          echo
+
+          if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
+            {
+              echo "## BuildXL test results"
+              echo
+              echo "**${passed} passed, ${failed} failed (of ${total} total)**"
+              echo
+              echo "Build cache: ${cache_line}"
+              if (( failed > 0 )); then
                 echo
-                echo "**${passed} passed, ${failed} failed (of ${total} total)**"
-                if (( failed > 0 )); then
-                  echo
-                  echo "### Failed tests"
-                  for t in "${failed_tests[@]}"; do echo "- \`$t\`"; done
-                fi
-              } >> "$GITHUB_STEP_SUMMARY"
-            fi
+                echo "### Failed tests"
+                for t in "${failed_tests[@]}"; do echo "- \`$t\`"; done
+              fi
+              echo
+              echo "<details><summary>All ${passed} passed tests</summary>"
+              echo
+              for t in "${passed_tests[@]}"; do echo "- \`$t\`"; done
+              echo
+              echo "</details>"
+            } >> "$GITHUB_STEP_SUMMARY"
           fi
 
           exit "$bxl_exit"
