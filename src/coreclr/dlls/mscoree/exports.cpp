@@ -74,6 +74,17 @@ public:
     }
 };
 
+// Returns true for known host properties that do not need to be stored as CLR configuration.
+// The runtime parses these into binder/AppDomain structures during AppDomain creation, so it
+// does not need to also keep the original raw strings around in the CLR config knobs.
+static bool IsKnownHostProperty(LPCSTR key)
+{
+    return strcmp(key, HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES) == 0
+        || strcmp(key, HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES) == 0
+        || strcmp(key, HOST_PROPERTY_PLATFORM_RESOURCE_ROOTS) == 0
+        || strcmp(key, HOST_PROPERTY_APP_PATHS) == 0;
+}
+
 // Convert 8 bit string to unicode
 static LPCWSTR StringToUnicode(LPCSTR str)
 {
@@ -294,8 +305,29 @@ int coreclr_initialize(
         Bundle::AppBundle = &bundle;
     }
 
-    // This will take ownership of propertyKeysWTemp and propertyValuesWTemp
-    Configuration::InitializeConfigurationKnobs(propertyCount, propertyKeysW, propertyValuesW);
+    // Build a filtered set of properties for the CLR config knobs that excludes probing path
+    // properties (TPA, NATIVE_DLL_SEARCH_DIRECTORIES, PLATFORM_RESOURCE_ROOTS, APP_PATHS).
+    // Those are parsed into binder/AppDomain structures during CreateAppDomainWithManager,
+    // so the runtime does not need a duplicate copy held forever in the CLR config knobs.
+    // The TPA list in particular can be tens of KB.
+    LPCWSTR* configKeysW = new (nothrow) LPCWSTR[propertyCount];
+    ASSERTE_ALL_BUILDS(configKeysW != nullptr);
+    LPCWSTR* configValuesW = new (nothrow) LPCWSTR[propertyCount];
+    ASSERTE_ALL_BUILDS(configValuesW != nullptr);
+
+    int configPropertyCount = 0;
+    for (int i = 0; i < propertyCount; ++i)
+    {
+        if (IsKnownHostProperty(propertyKeys[i]))
+            continue;
+
+        configKeysW[configPropertyCount] = propertyKeysW[i];
+        configValuesW[configPropertyCount] = propertyValuesW[i];
+        ++configPropertyCount;
+    }
+
+    // Configuration takes ownership of the filtered arrays and the strings they reference.
+    Configuration::InitializeConfigurationKnobs(configPropertyCount, configKeysW, configValuesW);
 
 #ifdef TARGET_UNIX
     if (Configuration::GetKnobBooleanValue(W("System.Runtime.CrashReportBeforeSignalChaining"), CLRConfig::INTERNAL_CrashReportBeforeSignalChaining))
@@ -323,6 +355,21 @@ int coreclr_initialize(
         propertyKeysW,
         propertyValuesW,
         (DWORD *)domainId);
+
+    // The binder/AppDomain has now parsed the host probing path properties into its own
+    // structures and the managed AppContext.Setup has copied each property value into a
+    // managed string. Free the wide-string copies for the excluded properties (the rest are
+    // owned by the CLR config above) and the full property arrays themselves.
+    for (int i = 0; i < propertyCount; ++i)
+    {
+        if (IsKnownHostProperty(propertyKeys[i]))
+        {
+            delete[] (WCHAR*)propertyKeysW[i];
+            delete[] (WCHAR*)propertyValuesW[i];
+        }
+    }
+    delete[] propertyKeysW;
+    delete[] propertyValuesW;
 
     if (SUCCEEDED(hr))
     {
