@@ -899,13 +899,8 @@ void Compiler::optPrintAssertion(const AssertionDsc& curAssertion, AssertionInde
             IntegralRange::Print(curAssertion.GetOp2().GetIntegralRange());
             break;
 
-        case O2K_CHECKED_BOUND_ADD_CNS:
-            printf("(Checked_Bnd_BinOp " FMT_VN " + %d)", curAssertion.GetOp2().GetCheckedBound(),
-                   curAssertion.GetOp2().GetCheckedBoundConstant());
-            break;
-
-        case O2K_VN:
-            printf("VN " FMT_VN "", curAssertion.GetOp2().GetVN());
+        case O2K_VN_ADD_CNS:
+            printf("(VN_ADD_CNS " FMT_VN " + %d)", curAssertion.GetOp2().GetVN(), curAssertion.GetOp2().GetCns());
             break;
 
         default:
@@ -1413,9 +1408,9 @@ AssertionIndex Compiler::optAddAssertion(const AssertionDsc& newAssertion)
         bool mayHaveDuplicates =
             optAssertionHasAssertionsForVN(newAssertion.GetOp1().GetVN(), /* addIfNotFound */ canAddNewAssertions);
         // We need to register op2.vn too, even if we know for sure there are no duplicates
-        if (newAssertion.GetOp2().KindIs(O2K_CHECKED_BOUND_ADD_CNS))
+        if (newAssertion.GetOp2().KindIs(O2K_VN_ADD_CNS))
         {
-            mayHaveDuplicates |= optAssertionHasAssertionsForVN(newAssertion.GetOp2().GetCheckedBound(),
+            mayHaveDuplicates |= optAssertionHasAssertionsForVN(newAssertion.GetOp2().GetVN(),
                                                                 /* addIfNotFound */ canAddNewAssertions);
 
             // Additionally, check for the pattern of "VN + const == checkedBndVN" and register "VN" as well.
@@ -1424,13 +1419,6 @@ AssertionIndex Compiler::optAddAssertion(const AssertionDsc& newAssertion)
             {
                 mayHaveDuplicates |= optAssertionHasAssertionsForVN(addOpVN, /* addIfNotFound */ canAddNewAssertions);
             }
-        }
-        else if (newAssertion.GetOp2().KindIs(O2K_VN))
-        {
-            // For VN <relop> VN assertions, register op2's VN too so consumers can find
-            // the assertion when iterating from the op2 side.
-            mayHaveDuplicates |= optAssertionHasAssertionsForVN(newAssertion.GetOp2().GetVN(),
-                                                                /* addIfNotFound */ canAddNewAssertions);
         }
 
         if (mayHaveDuplicates)
@@ -1561,7 +1549,7 @@ void Compiler::optDebugCheckAssertion(const AssertionDsc& assertion) const
             assert(optLocalAssertionProp);
             break;
 
-        case O2K_VN:
+        case O2K_VN_ADD_CNS:
             assert(!optLocalAssertionProp);
             assert(assertion.GetOp1().KindIs(O1K_VN));
             assert(assertion.IsRelop());
@@ -1650,8 +1638,7 @@ void Compiler::optCreateComplementaryAssertion(AssertionIndex assertionIndex)
         AssertionDsc reversed = candidateAssertion.Reverse();
         optMapComplementary(optAddAssertion(reversed), assertionIndex);
     }
-    else if (candidateAssertion.KindIs(OAK_LT_UN, OAK_LE_UN) &&
-             candidateAssertion.GetOp2().KindIs(O2K_CHECKED_BOUND_ADD_CNS))
+    else if (candidateAssertion.KindIs(OAK_LT_UN, OAK_LE_UN) && candidateAssertion.GetOp2().KindIs(O2K_VN_ADD_CNS))
     {
         // Assertions such as "X > checkedBndVN" aren't very useful.
         return;
@@ -4360,11 +4347,13 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
             // Look for a relop-like assertion that matches the current relop exactly.
             // Example: currentTree is "X >= Y" and we have an assertion "X >= Y" (or its inverse "X < Y").
             //
+            // For O2K_VN_ADD_CNS the assertion stores op2 as "vn + cns".
+            // - When cns == 0, the stored VN equals the original op2 VN, so direct match works.
+            // - When cns != 0, we'd need to assemble ADD(vn, cns) at the VN level; skip for now.
+            //
             if (curAssertion.IsRelop() && (curAssertion.GetOp1().GetVN() == op1VN) &&
-                // O2K_CHECKED_BOUND_ADD_CNS means op2 is decomposed into op2.vn being checked bound
-                // and op2.cns being the constant offset. We assemble the original relop VN if we want.
-                // For now, just skip such assertions here.
-                !curAssertion.GetOp2().KindIs(O2K_CHECKED_BOUND_ADD_CNS) && (curAssertion.GetOp2().GetVN() == op2VN))
+                (!curAssertion.GetOp2().KindIs(O2K_VN_ADD_CNS) || (curAssertion.GetOp2().GetCns() == 0)) &&
+                (curAssertion.GetOp2().GetVN() == op2VN))
             {
                 bool       isUnsigned;
                 genTreeOps assertionOper = AssertionDsc::ToCompareOper(curAssertion.GetKind(), &isUnsigned);
@@ -5449,12 +5438,11 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
             continue;
         }
 
-        assert(curAssertion.GetOp2().GetCheckedBoundConstant() == 0);
-        assert(curAssertion.GetOp2().IsCheckedBoundNeverNegative());
+        assert(curAssertion.GetOp2().GetCns() == 0);
+        assert(curAssertion.GetOp2().IsVNNeverNegative());
 
         // Do we have a previous range check involving the same 'vnLen' upper bound?
-        if (curAssertion.GetOp2().GetCheckedBound() ==
-            vnStore->VNConservativeNormalValue(arrBndsChk->GetArrayLength()->gtVNPair))
+        if (curAssertion.GetOp2().GetVN() == optConservativeNormalVN(arrBndsChk->GetArrayLength()))
         {
             // Do we have the exact same lower bound 'vnIdx'?
             //       a[i] followed by a[i]
