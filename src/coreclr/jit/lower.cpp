@@ -8200,8 +8200,11 @@ bool Lowering::TryLowerConstIntUDivOrUMod(GenTreeOp* divMod)
     {
         // If the divisor is greater or equal than 2^(N - 1) then the result is 1
         // iff the dividend is greater or equal than the divisor.
-        if (((type == TYP_INT) && (divisorValue > (UINT32_MAX / 2))) ||
-            ((type == TYP_LONG) && (divisorValue > (UINT64_MAX / 2))))
+        if (((type == TYP_INT) && (divisorValue > (UINT32_MAX / 2)))
+#if defined(TARGET_64BIT)
+            || ((type == TYP_LONG) && (divisorValue > (UINT64_MAX / 2)))
+#endif
+        )
         {
             divMod->ChangeOper(GT_GE);
             divMod->SetUnsigned();
@@ -8491,7 +8494,11 @@ bool Lowering::TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode)
 
     if (isDiv)
     {
-        if ((type == TYP_INT && divisorValue == INT_MIN) || (type == TYP_LONG && divisorValue == INT64_MIN))
+        if ((type == TYP_INT && divisorValue == INT_MIN)
+#if defined(TARGET_64BIT)
+            || (type == TYP_LONG && divisorValue == INT64_MIN)
+#endif
+        )
         {
             // If the divisor is the minimum representable integer value then we can use a compare,
             // the result is 1 iff the dividend equals divisor.

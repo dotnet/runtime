@@ -5768,7 +5768,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
 
             regNumber baseReg = id->idReg2();
-            if (baseReg != REG_SP || baseReg != REG_FP)
+            if ((baseReg != REG_SP) && (baseReg != REG_FP))
                 result.insLatency += PERFSCORE_LATENCY_1C; // assume non-stack load/stores are more likely to cache-miss
 
             result.insThroughput += immediateBuildingCost;
