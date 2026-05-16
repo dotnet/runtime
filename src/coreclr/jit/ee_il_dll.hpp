@@ -217,7 +217,6 @@ inline var_types JITtype2varType(CorInfoType type)
         TYP_BYREF,  // CORINFO_TYPE_BYREF           = 0x11,
         TYP_STRUCT, // CORINFO_TYPE_VALUECLASS      = 0x12,
         TYP_REF,    // CORINFO_TYPE_CLASS           = 0x13,
-
     };
 
     // spot check to make certain enumerations have not changed
