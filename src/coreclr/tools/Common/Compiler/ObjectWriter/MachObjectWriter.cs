@@ -488,10 +488,12 @@ namespace ILCompiler.ObjectWriter
                         // Apple ld-prime linker needs a quirk where we restrict the addend to
                         // signed 20-bit integer. We generate a temporary label every time the
                         // addend would overflow and adjust the addend to be relative to that label.
+                        const int signedAddendBitWidth = 20;
+                        const int signedAddendShift = (sizeof(long) * 8) - signedAddendBitWidth;
                         var temporaryLabelOffset = _sections[sectionIndex].TemporaryLabelOffset;
                         var temporaryLabelIndex = _sections[sectionIndex].TemporaryLabelIndex;
                         addend -= offset - temporaryLabelOffset;
-                        if (addend != ((addend << 44) >> 44))
+                        if (addend != ((addend << signedAddendShift) >> signedAddendShift))
                         {
                             addend += offset - temporaryLabelOffset;
                             _temporaryLabels.Add(new SymbolDefinition(sectionIndex, offset, 0, false));
@@ -874,11 +876,12 @@ namespace ILCompiler.ObjectWriter
                 {
                     // Addend is used to encode the temporary label index for ld-prime quirk. See
                     // EmitRelocation for details.
-                    Debug.Assert(symbolicRelocation.Addend == 0 || _temporaryLabelsBaseIndex > 0);
+                    Debug.Assert(symbolicRelocation.Addend == 0 || symbolicRelocation.Addend <= _temporaryLabels.Count);
                     uint baseSymbolIndex =
                         symbolicRelocation.Addend != 0 ?
                         (uint)(_temporaryLabelsBaseIndex + symbolicRelocation.Addend - 1) :
                         (uint)sectionIndex;
+                    Debug.Assert(baseSymbolIndex < _symbolTable.Count);
 
                     // This one is tough... needs to be represented by ARM64_RELOC_SUBTRACTOR + ARM64_RELOC_UNSIGNED.
                     sectionRelocations.Add(
