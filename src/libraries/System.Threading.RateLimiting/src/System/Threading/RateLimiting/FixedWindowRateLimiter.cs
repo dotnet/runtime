@@ -24,7 +24,7 @@ namespace System.Threading.RateLimiting
 
         /// <summary>
         /// Function to calculate elapsed time from a given tick value.
-        /// Defaults to <see cref="Stopwatch.GetElapsedTime(long?)"/>.
+        /// Defaults to <see cref="Stopwatch.GetElapsedTime(long)"/> when has value.
         /// In tests, this field can be reassigned via reflection to inject custom time behavior without modifying the public API.
         /// </summary>
         private readonly Func<long?, TimeSpan?> _getElapsedTime = Stopwatch.GetElapsedTime;
