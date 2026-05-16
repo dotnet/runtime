@@ -1348,18 +1348,8 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return AsInstantiatedMethodDesc(methodDesc).Instantiation;
     }
 
-    /// <summary>
-    /// Returns true if the method requires a hidden instantiation argument (generic context parameter).
-    /// Matches native MethodDesc::RequiresInstArg().
-    /// </summary>
-    public bool RequiresInstArg(MethodDescHandle methodDescHandle)
+    private bool RequiresInstArg(MethodDesc methodDesc)
     {
-        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
-
-        // RequiresInstArg = IsSharedByGenericInstantiations && (HasMethodInstantiation || IsStatic || IsValueType || IsInterface)
-        if (!IsSharedByGenericInstantiations(methodDesc))
-            return false;
-
         if (HasMethodInstantiation(methodDesc))
             return true;
 
@@ -1367,13 +1357,24 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             return true;
 
         MethodTable mt = _methodTables[methodDesc.MethodTable];
-        if (mt.Flags.IsInterface)
-            return true;
-
         if (mt.Flags.IsValueType)
             return true;
 
+        if (mt.Flags.IsInterface && !IsAbstract(methodDesc))
+            return true;
+
         return false;
+    }
+
+    public GenericContextLoc GetGenericContextLoc(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+        if (!IsSharedByGenericInstantiations(methodDesc))
+            return GenericContextLoc.None;
+        else if (RequiresInstArg(methodDesc))
+            return GenericContextLoc.InstArg;
+        else
+            return GenericContextLoc.ThisPtr;
     }
 
     private bool IsSharedByGenericInstantiations(MethodDesc methodDesc)
@@ -1395,6 +1396,25 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         // Check class-level sharing: canonical MethodTable with generic instantiation
         MethodTable mt = _methodTables[methodDesc.MethodTable];
         return mt.IsCanonMT && mt.Flags.HasInstantiation;
+    }
+
+    private bool IsAbstract(MethodDesc methodDesc)
+    {
+        if (methodDesc.Classification == MethodClassification.Array || methodDesc.Classification == MethodClassification.Dynamic)
+            return false;
+        uint token = methodDesc.Token;
+        if (EcmaMetadataUtils.GetRowId(token) == 0)
+            return false;
+
+        TargetPointer modulePtr = _methodTables[methodDesc.MethodTable].Module;
+        ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
+        MetadataReader? mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle);
+        if (mdReader is null)
+            return false;
+
+        MethodDefinitionHandle methodDefHandle = MetadataTokens.MethodDefinitionHandle((int)EcmaMetadataUtils.GetRowId(token));
+        MethodDefinition methodDef = mdReader.GetMethodDefinition(methodDefHandle);
+        return (methodDef.Attributes & MethodAttributes.Abstract) != 0;
     }
 
     public bool IsAsyncMethod(MethodDescHandle methodDescHandle)
