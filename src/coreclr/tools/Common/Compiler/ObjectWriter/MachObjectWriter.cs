@@ -550,12 +550,15 @@ namespace ILCompiler.ObjectWriter
             // these symbols are local and we need to account for them.
             uint symbolIndex = (uint)_symbolTable.Count;
             _temporaryLabelsBaseIndex = symbolIndex;
+            Utf8StringBuilder temporaryLabelNameBuilder = new Utf8StringBuilder();
             foreach (SymbolDefinition definition in _temporaryLabels)
             {
+                temporaryLabelNameBuilder.Clear();
+                temporaryLabelNameBuilder.Append("ltemp"u8).Append((int)(symbolIndex - _temporaryLabelsBaseIndex));
                 MachSection section = _sections[definition.SectionIndex];
                 _symbolTable.Add(new MachSymbol
                 {
-                    Name = new Utf8StringBuilder().Append("ltemp"u8).Append((int)(symbolIndex - _temporaryLabelsBaseIndex)).ToUtf8String(),
+                    Name = temporaryLabelNameBuilder.ToUtf8String(),
                     Section = section,
                     Value = section.VirtualAddress + (ulong)definition.Value,
                     Descriptor = N_NO_DEAD_STRIP,
@@ -699,11 +702,12 @@ namespace ILCompiler.ObjectWriter
                 {
                     // Addend is used to encode the temporary label index for ld-prime quirk. See
                     // EmitRelocation for details.
-                    Debug.Assert(symbolicRelocation.Addend == 0 || _temporaryLabelsBaseIndex > 0);
+                    Debug.Assert(symbolicRelocation.Addend == 0 || symbolicRelocation.Addend <= _temporaryLabels.Count);
                     uint baseSymbolIndex =
                         symbolicRelocation.Addend != 0 ?
                         (uint)(_temporaryLabelsBaseIndex + symbolicRelocation.Addend - 1) :
                         (uint)sectionIndex;
+                    Debug.Assert(baseSymbolIndex < (uint)_symbolTable.Count);
 
                     sectionRelocations.Add(
                         new MachRelocation
