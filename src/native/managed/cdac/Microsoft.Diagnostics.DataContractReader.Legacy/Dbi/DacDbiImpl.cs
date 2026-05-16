@@ -1793,8 +1793,128 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     public int WalkHeap(nuint handle, uint count, COR_HEAPOBJECT* objects, uint* fetched)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.WalkHeap(handle, count, objects, fetched) : HResults.E_NOTIMPL;
 
-    public int GetHeapSegments(nint pSegments)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetHeapSegments(pSegments) : HResults.E_NOTIMPL;
+#if DEBUG
+    [ThreadStatic]
+    private static List<(ulong Start, ulong End, int Generation, uint Heap)>? _debugEnumerateHeapSegments;
+
+    private static List<(ulong Start, ulong End, int Generation, uint Heap)> DebugEnumerateHeapSegments
+        => _debugEnumerateHeapSegments ??= new();
+
+    [UnmanagedCallersOnly]
+    private static void EnumerateHeapSegmentsDebugCallback(ulong start, ulong end, int generation, uint heap, nint _)
+    {
+        DebugEnumerateHeapSegments.Add((start, end, generation, heap));
+    }
+#endif
+
+    public int EnumerateHeapSegments(delegate* unmanaged<ulong, ulong, int, uint, nint, void> fpCallback, nint pUserData)
+    {
+        int hr = HResults.S_OK;
+        List<(ulong Start, ulong End, int Generation, uint Heap)> segments = new();
+        try
+        {
+            if (fpCallback is null)
+                throw new ArgumentNullException(nameof(fpCallback));
+
+            IGC gc = _target.Contracts.GC;
+            string[] gcIdentifiers = gc.GetGCIdentifiers();
+            bool regions = gcIdentifiers.Contains(GCIdentifiers.Regions);
+            bool isWorkstation = gcIdentifiers.Contains(GCIdentifiers.Workstation);
+
+            uint heapIndex = 0;
+            foreach (GCHeapData heapData in EnumerateHeaps(gc, isWorkstation))
+            {
+                TargetPointer gen0AllocStart = heapData.GenerationTable[0].AllocationStart;
+                TargetPointer gen1AllocStart = heapData.GenerationTable[1].AllocationStart;
+
+                // In segments mode, Gen0 lives outside the segment list - synthesize it as a
+                // heap-level entry bracketed by [gen0.AllocationStart, alloc_allocated).
+                if (!regions)
+                    segments.Add((gen0AllocStart.Value, heapData.AllocAllocated.Value, (int)CorDebugGenerationTypes.CorDebug_Gen0, heapIndex));
+
+                foreach (GCHeapSegmentInfo raw in gc.EnumerateHeapSegments(heapData))
+                {
+                    if (raw.Generation != GCSegmentClassification.Ephemeral)
+                    {
+                        segments.Add((raw.Start.Value, raw.End.Value, (int)ToCorDebugGenerationType(raw.Generation), heapIndex));
+                    }
+                    else
+                    {
+                        // Segments mode only: split the ephemeral marker into the Gen1 piece
+                        // ([gen1.AllocationStart, gen0.AllocationStart)) plus an optional Gen2
+                        // prefix ([raw.Start, gen1.AllocationStart)).
+                        segments.Add((gen1AllocStart.Value, gen0AllocStart.Value, (int)CorDebugGenerationTypes.CorDebug_Gen1, heapIndex));
+                        if (raw.Start != gen1AllocStart)
+                            segments.Add((raw.Start.Value, gen1AllocStart.Value, (int)CorDebugGenerationTypes.CorDebug_Gen2, heapIndex));
+                    }
+                }
+
+                heapIndex++;
+            }
+
+            foreach ((ulong start, ulong end, int generation, uint heap) in segments)
+                fpCallback(start, end, generation, heap, pUserData);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacy is not null)
+        {
+            DebugEnumerateHeapSegments.Clear();
+            delegate* unmanaged<ulong, ulong, int, uint, nint, void> debugCallbackPtr = &EnumerateHeapSegmentsDebugCallback;
+            int hrLocal = _legacy.EnumerateHeapSegments(debugCallbackPtr, 0);
+            Debug.ValidateHResult(hr, hrLocal);
+
+            if (hr == HResults.S_OK && hrLocal == HResults.S_OK)
+            {
+                List<(ulong Start, ulong End, int Generation, uint Heap)> legacySegments = DebugEnumerateHeapSegments;
+                if (!segments.SequenceEqual(legacySegments))
+                {
+                    Debug.Assert(segments.Count == legacySegments.Count,
+                        $"cDAC: {segments.Count} segments, DAC: {legacySegments.Count} segments");
+
+                    int compareCount = Math.Min(segments.Count, legacySegments.Count);
+                    for (int i = 0; i < compareCount; i++)
+                    {
+                        Debug.Assert(segments[i] == legacySegments[i],
+                            $"Segment {i} mismatch - cDAC: (0x{segments[i].Start:x}, 0x{segments[i].End:x}, gen={segments[i].Generation}, heap={segments[i].Heap}), DAC: (0x{legacySegments[i].Start:x}, 0x{legacySegments[i].End:x}, gen={legacySegments[i].Generation}, heap={legacySegments[i].Heap})");
+                    }
+                }
+            }
+            DebugEnumerateHeapSegments.Clear();
+        }
+#endif
+        return hr;
+    }
+
+    private static IEnumerable<GCHeapData> EnumerateHeaps(IGC gc, bool isWorkstation)
+    {
+        if (isWorkstation)
+        {
+            yield return gc.GetHeapData();
+        }
+        else
+        {
+            foreach (TargetPointer heapAddress in gc.GetGCHeaps())
+                yield return gc.GetHeapData(heapAddress);
+        }
+    }
+
+    private static CorDebugGenerationTypes ToCorDebugGenerationType(GCSegmentClassification generation) => generation switch
+    {
+        GCSegmentClassification.Gen0 => CorDebugGenerationTypes.CorDebug_Gen0,
+        GCSegmentClassification.Gen1 => CorDebugGenerationTypes.CorDebug_Gen1,
+        GCSegmentClassification.Gen2 => CorDebugGenerationTypes.CorDebug_Gen2,
+        GCSegmentClassification.LOH => CorDebugGenerationTypes.CorDebug_LOH,
+        GCSegmentClassification.POH => CorDebugGenerationTypes.CorDebug_POH,
+        GCSegmentClassification.NonGC => CorDebugGenerationTypes.CorDebug_NonGC,
+        // Ephemeral is an internal marker that must be split by the caller; it never appears in
+        // emitted output.
+        _ => throw new ArgumentOutOfRangeException(nameof(generation), generation, null),
+    };
 
     public int IsValidObject(ulong obj, Interop.BOOL* pResult)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.IsValidObject(obj, pResult) : HResults.E_NOTIMPL;
