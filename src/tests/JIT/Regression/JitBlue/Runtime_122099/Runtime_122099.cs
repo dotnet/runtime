@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using Xunit;
+using TestLibrary;
 
 namespace Runtime_122099;
 
@@ -13,6 +14,7 @@ public class Runtime_122099
     // Verifies that an interface call on a boxed value type whose target returns an
     // `[UnscopedRef]` ref to an instance field keeps the boxed receiver alive long
     // enough for the returned ref to remain valid after the call returns.
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/122099", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime))]
     [Fact]
     public static int TestEntryPoint()
     {
