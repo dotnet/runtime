@@ -275,30 +275,31 @@ namespace Internal.IL
             for (int i = 0; i < _exceptionRegions.Length; i++)
             {
                 var r = _exceptionRegions[i];
-
-                // Check try region bounds (avoiding integer overflow)
-                if ((uint)r.ILRegion.TryOffset >= (uint)_basicBlocks.Length ||
-                    (uint)r.ILRegion.TryLength > (uint)_basicBlocks.Length - (uint)r.ILRegion.TryOffset)
-                {
-                    ReportInvalidExceptionRegion();
-                }
-                CreateBasicBlock(r.ILRegion.TryOffset).TryStart = true;
+                bool hasOutOfRangeBounds =
+                    (uint)r.ILRegion.TryOffset >= (uint)_basicBlocks.Length ||
+                    (uint)r.ILRegion.TryLength > (uint)_basicBlocks.Length - (uint)r.ILRegion.TryOffset;
 
                 // Check filter region bounds (for filter exception handlers)
                 if (r.ILRegion.Kind == ILExceptionRegionKind.Filter)
                 {
-                    if ((uint)r.ILRegion.FilterOffset >= (uint)_basicBlocks.Length)
-                    {
-                        ReportInvalidExceptionRegion();
-                    }
-                    CreateBasicBlock(r.ILRegion.FilterOffset).FilterStart = true;
+                    hasOutOfRangeBounds |= (uint)r.ILRegion.FilterOffset >= (uint)_basicBlocks.Length;
                 }
 
                 // Check handler region bounds (avoiding integer overflow)
-                if ((uint)r.ILRegion.HandlerOffset >= (uint)_basicBlocks.Length ||
-                    (uint)r.ILRegion.HandlerLength > (uint)_basicBlocks.Length - (uint)r.ILRegion.HandlerOffset)
+                hasOutOfRangeBounds |=
+                    (uint)r.ILRegion.HandlerOffset >= (uint)_basicBlocks.Length ||
+                    (uint)r.ILRegion.HandlerLength > (uint)_basicBlocks.Length - (uint)r.ILRegion.HandlerOffset;
+
+                if (hasOutOfRangeBounds)
                 {
                     ReportInvalidExceptionRegion();
+                    continue;
+                }
+                CreateBasicBlock(r.ILRegion.TryOffset).TryStart = true;
+
+                if (r.ILRegion.Kind == ILExceptionRegionKind.Filter)
+                {
+                    CreateBasicBlock(r.ILRegion.FilterOffset).FilterStart = true;
                 }
                 CreateBasicBlock(r.ILRegion.HandlerOffset).HandlerStart = true;
             }
