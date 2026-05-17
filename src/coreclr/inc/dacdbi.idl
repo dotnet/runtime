@@ -144,6 +144,7 @@ typedef void (*FP_MODULE_ENUMERATION_CALLBACK)(VMPTR_Assembly vmAssembly, CALLBA
 typedef void (*FP_THREAD_ENUMERATION_CALLBACK)(VMPTR_Thread vmThread, CALLBACK_DATA pUserData);
 typedef BOOL (*FP_INTERNAL_FRAME_ENUMERATION_CALLBACK)(FramePointer fpFrame, CALLBACK_DATA pUserData);
 typedef void (*FP_HEAPSEGMENT_CALLBACK)(CORDB_ADDRESS rangeStart, CORDB_ADDRESS rangeEnd, int generation, ULONG heap, CALLBACK_DATA pUserData);
+typedef void (*FP_RCW_INTERFACE_CALLBACK)(CORDB_ADDRESS itfPtr, CALLBACK_DATA pUserData);
 
 
 //
@@ -336,7 +337,7 @@ interface IDacDbiInterface : IUnknown
     HRESULT IsExceptionObject([in] VMPTR_Object vmObject, [out] BOOL * pResult);
     HRESULT GetStackFramesFromException([in] VMPTR_Object vmObject, [out] DacDbiArrayList_DacExceptionCallStackData * pDacStackFrames);
     HRESULT IsRcw([in] VMPTR_Object vmObject, [out] BOOL * pResult);
-    HRESULT GetRcwCachedInterfacePointers([in] VMPTR_Object vmObject, [in] BOOL bIInspectableOnly, [out] DacDbiArrayList_CORDB_ADDRESS * pDacItfPtrs);
+    HRESULT EnumerateRcwCachedInterfacePointers([in] VMPTR_Object vmObject, [in] FP_RCW_INTERFACE_CALLBACK fpCallback, [in] CALLBACK_DATA pUserData);
 
     // Object Data
     HRESULT GetTypedByRefInfo([in] CORDB_ADDRESS pTypedByRef, [out] struct DebuggerIPCE_ObjectData * pObjectData);

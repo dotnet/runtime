@@ -317,7 +317,7 @@ public:
     // retrieves the list of interfaces pointers implemented by vmObject, as it is known at
     // the time of the call (the list may change as new interface types become available
     // in the runtime)
-    HRESULT STDMETHODCALLTYPE GetRcwCachedInterfacePointers(VMPTR_Object vmObject, BOOL bIInspectableOnly, OUT DacDbiArrayList<CORDB_ADDRESS> * pDacItfPtrs);
+    HRESULT STDMETHODCALLTYPE EnumerateRcwCachedInterfacePointers(VMPTR_Object vmObject, FP_RCW_INTERFACE_CALLBACK fpCallback, CALLBACK_DATA pUserData);
 
 private:
     // Given a pointer to a managed function, obtain the method desc for it.

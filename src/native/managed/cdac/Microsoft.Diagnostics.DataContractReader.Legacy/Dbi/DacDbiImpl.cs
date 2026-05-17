@@ -1599,8 +1599,68 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
-    public int GetRcwCachedInterfacePointers(ulong vmObject, Interop.BOOL bIInspectableOnly, nint pDacItfPtrs)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetRcwCachedInterfacePointers(vmObject, bIInspectableOnly, pDacItfPtrs) : HResults.E_NOTIMPL;
+#if DEBUG
+    [ThreadStatic]
+    private static List<ulong>? _debugEnumerateRcwCachedInterfacePointers;
+
+    private static List<ulong> DebugEnumerateRcwCachedInterfacePointers
+        => _debugEnumerateRcwCachedInterfacePointers ??= new();
+
+    [UnmanagedCallersOnly]
+    private static void EnumerateRcwCachedInterfacePointersDebugCallback(ulong itfPtr, nint _)
+    {
+        DebugEnumerateRcwCachedInterfacePointers.Add(itfPtr);
+    }
+#endif
+
+    public int EnumerateRcwCachedInterfacePointers(ulong vmObject, delegate* unmanaged<ulong, nint, void> fpCallback, nint pUserData)
+    {
+        int hr = HResults.S_OK;
+        List<ulong> itfPtrs = new();
+        try
+        {
+            if (fpCallback is null)
+                throw new ArgumentNullException(nameof(fpCallback));
+
+            IObject obj = _target.Contracts.Object;
+            _ = obj.GetBuiltInComData(new TargetPointer(vmObject), out TargetPointer rcw, out _, out _);
+            if (rcw != TargetPointer.Null)
+            {
+                IBuiltInCOM builtInCom = _target.Contracts.BuiltInCOM;
+                foreach ((TargetPointer methodTable, TargetPointer unknown) in builtInCom.GetRCWInterfaces(rcw))
+                {
+                    if (methodTable != TargetPointer.Null && unknown != TargetPointer.Null)
+                        itfPtrs.Add(unknown.Value);
+                }
+            }
+
+            foreach (ulong itfPtr in itfPtrs)
+                fpCallback(itfPtr, pUserData);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacy is not null)
+        {
+            DebugEnumerateRcwCachedInterfacePointers.Clear();
+            delegate* unmanaged<ulong, nint, void> debugCallbackPtr = &EnumerateRcwCachedInterfacePointersDebugCallback;
+            int hrLocal = _legacy.EnumerateRcwCachedInterfacePointers(vmObject, debugCallbackPtr, 0);
+            Debug.ValidateHResult(hr, hrLocal);
+
+            if (hr == HResults.S_OK && hrLocal == HResults.S_OK)
+            {
+                List<ulong> legacyItfPtrs = DebugEnumerateRcwCachedInterfacePointers;
+                Debug.Assert(itfPtrs.SequenceEqual(legacyItfPtrs),
+                    $"cDAC: [{string.Join(",", itfPtrs.Select(p => $"0x{p:x}"))}], DAC: [{string.Join(",", legacyItfPtrs.Select(p => $"0x{p:x}"))}]");
+            }
+            DebugEnumerateRcwCachedInterfacePointers.Clear();
+        }
+#endif
+        return hr;
+    }
 
     public int GetTypedByRefInfo(ulong pTypedByRef, nint pObjectData)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetTypedByRefInfo(pTypedByRef, pObjectData) : HResults.E_NOTIMPL;

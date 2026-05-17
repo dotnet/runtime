@@ -1712,10 +1712,13 @@ public:
     // Check whether the argument is a runtime callable wrapper.
     virtual HRESULT STDMETHODCALLTYPE IsRcw(VMPTR_Object vmObject, OUT BOOL * pResult) = 0;
 
-    // retrieves the list of interfaces pointers implemented by vmObject, as it is known at
-    // the time of the call (the list may change as new interface types become available
-    // in the runtime)
-    virtual HRESULT STDMETHODCALLTYPE GetRcwCachedInterfacePointers(VMPTR_Object vmObject, BOOL bIInspectableOnly, OUT DacDbiArrayList<CORDB_ADDRESS> * pDacItfPtrs) = 0;
+    // Callback invoked for each cached interface pointer held by an RCW.
+    typedef void (*FP_RCW_INTERFACE_CALLBACK)(CORDB_ADDRESS itfPtr, CALLBACK_DATA pUserData);
+
+    // Enumerates the interface pointers cached by the RCW associated with vmObject, as known at
+    // the time of the call (the list may change as new interface types become available in the
+    // runtime). If vmObject is not an RCW the enumeration is empty. The callback must not throw.
+    virtual HRESULT STDMETHODCALLTYPE EnumerateRcwCachedInterfacePointers(VMPTR_Object vmObject, FP_RCW_INTERFACE_CALLBACK fpCallback, CALLBACK_DATA pUserData) = 0;
 
     // ----------------------------------------------------------------------------
     // functions to get information about reference/handle referents for ICDValue

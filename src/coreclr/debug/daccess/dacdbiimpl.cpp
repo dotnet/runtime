@@ -3616,42 +3616,39 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsRcw(VMPTR_Object vmObject, OUT 
 #endif // FEATURE_COMINTEROP
 }
 
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetRcwCachedInterfacePointers(VMPTR_Object vmObject, BOOL bIInspectableOnly, OUT DacDbiArrayList<CORDB_ADDRESS> * pDacItfPtrs)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateRcwCachedInterfacePointers(VMPTR_Object vmObject, FP_RCW_INTERFACE_CALLBACK fpCallback, CALLBACK_DATA pUserData)
 {
 #ifdef FEATURE_COMINTEROP
 
     DD_ENTER_MAY_THROW;
 
+    if (fpCallback == NULL)
+        return E_POINTER;
+
     HRESULT hr = S_OK;
     EX_TRY
     {
-
-        Object* objPtr = vmObject.GetDacPtr();
-
-        InlineSArray<TADDR, INTERFACE_ENTRY_CACHE_SIZE> rgUnks;
-
         PTR_RCW pRCW = GetRcwFromVmptrObject(vmObject);
         if (pRCW != NULL)
         {
-            pRCW->GetCachedInterfacePointers(bIInspectableOnly, &rgUnks);
-
-            pDacItfPtrs->Alloc(rgUnks.GetCount());
-
-            for (COUNT_T i = 0; i < rgUnks.GetCount(); ++i)
+            RCW::CachedInterfaceEntryIterator it = pRCW->IterateCachedInterfacePointers();
+            while (it.Next())
             {
-                (*pDacItfPtrs)[i] = (CORDB_ADDRESS)(rgUnks[i]);
+                PTR_MethodTable pMT = dac_cast<PTR_MethodTable>((TADDR)(it.GetEntry()->m_pMT.Load()));
+                if (pMT != NULL)
+                {
+                    TADDR taUnk = (TADDR)(it.GetEntry()->m_pUnknown.Load());
+                    if (taUnk != NULL)
+                    {
+                        fpCallback((CORDB_ADDRESS)taUnk, pUserData);
+                    }
+                }
             }
-
-        }
-        else
-        {
-            pDacItfPtrs->Alloc(0);
         }
     }
     EX_CATCH_HRESULT(hr);
     return hr;
 #else
-    pDacItfPtrs->Alloc(0);
     return S_OK;
 #endif // FEATURE_COMINTEROP
 }

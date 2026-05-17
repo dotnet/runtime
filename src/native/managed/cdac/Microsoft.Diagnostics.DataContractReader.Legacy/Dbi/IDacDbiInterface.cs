@@ -450,7 +450,7 @@ public unsafe partial interface IDacDbiInterface
     int IsRcw(ulong vmObject, Interop.BOOL* pResult);
 
     [PreserveSig]
-    int GetRcwCachedInterfacePointers(ulong vmObject, Interop.BOOL bIInspectableOnly, nint pDacItfPtrs);
+    int EnumerateRcwCachedInterfacePointers(ulong vmObject, /*FP_RCW_INTERFACE_CALLBACK*/ delegate* unmanaged<ulong, nint, void> fpCallback, nint pUserData);
 
     [PreserveSig]
     int GetTypedByRefInfo(ulong pTypedByRef, nint pObjectData);
