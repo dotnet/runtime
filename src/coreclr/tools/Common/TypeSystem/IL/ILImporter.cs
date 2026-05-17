@@ -282,10 +282,7 @@ namespace Internal.IL
                 {
                     ReportInvalidExceptionRegion();
                 }
-                else
-                {
-                    CreateBasicBlock(r.ILRegion.TryOffset).TryStart = true;
-                }
+                CreateBasicBlock(r.ILRegion.TryOffset).TryStart = true;
 
                 // Check filter region bounds (for filter exception handlers)
                 if (r.ILRegion.Kind == ILExceptionRegionKind.Filter)
@@ -294,10 +291,7 @@ namespace Internal.IL
                     {
                         ReportInvalidExceptionRegion();
                     }
-                    else
-                    {
-                        CreateBasicBlock(r.ILRegion.FilterOffset).FilterStart = true;
-                    }
+                    CreateBasicBlock(r.ILRegion.FilterOffset).FilterStart = true;
                 }
 
                 // Check handler region bounds (avoiding integer overflow)
@@ -306,10 +300,7 @@ namespace Internal.IL
                 {
                     ReportInvalidExceptionRegion();
                 }
-                else
-                {
-                    CreateBasicBlock(r.ILRegion.HandlerOffset).HandlerStart = true;
-                }
+                CreateBasicBlock(r.ILRegion.HandlerOffset).HandlerStart = true;
             }
         }
 
