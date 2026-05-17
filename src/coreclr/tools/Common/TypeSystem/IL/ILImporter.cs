@@ -295,8 +295,8 @@ namespace Internal.IL
                     ReportInvalidExceptionRegion();
                     continue;
                 }
-                CreateBasicBlock(r.ILRegion.TryOffset).TryStart = true;
 
+                CreateBasicBlock(r.ILRegion.TryOffset).TryStart = true;
                 if (r.ILRegion.Kind == ILExceptionRegionKind.Filter)
                 {
                     CreateBasicBlock(r.ILRegion.FilterOffset).FilterStart = true;
