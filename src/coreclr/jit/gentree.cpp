@@ -15122,6 +15122,11 @@ GenTree* Compiler::gtFoldExprBinary(GenTreeOp* tree)
         return gtFoldExprCompare(tree);
     }
 
+    if (!opts.OptimizationEnabled())
+    {
+        return tree;
+    }
+
     switch (oper)
     {
         case GT_ADD:
