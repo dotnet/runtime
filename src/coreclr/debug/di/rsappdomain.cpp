@@ -862,6 +862,7 @@ void CordbAppDomain::PrepopulateModules()
 
         if (isModuleLoaded)
         {
+            _ASSERTE(!vmModule.IsNull());
             LookupOrCreateModule(vmAssembly, vmModule);
         }
     }
