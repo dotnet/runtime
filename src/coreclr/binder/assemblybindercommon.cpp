@@ -37,7 +37,8 @@ extern HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pAssemblyLoadContextToB
 
 STDAPI BinderAcquirePEImage(LPCTSTR            szAssemblyPath,
     PEImage** ppPEImage,
-    ProbeExtensionResult probeExtensionResult);
+    ProbeExtensionResult probeExtensionResult,
+    SString *pDiagnosticInfo = NULL);
 
 namespace BINDER_SPACE
 {
@@ -193,7 +194,8 @@ namespace BINDER_SPACE
                                                /* in */  AssemblyName        *pAssemblyName,
                                                /* in */  bool                 excludeAppPaths,
                                                /* out */ Assembly           **ppAssembly,
-                                               /* [out, optional] */ Assembly **ppExistingAssemblyOnFailure)
+                                               /* [out, optional] */ Assembly **ppExistingAssemblyOnFailure,
+                                               /* out */ SString            *pDiagnosticInfo)
     {
         HRESULT hr = S_OK;
         LONG kContextVersion = 0;
@@ -224,6 +226,11 @@ namespace BINDER_SPACE
 
     Exit:
         tracer.TraceBindResult(bindResult);
+
+        if (pDiagnosticInfo != NULL)
+        {
+            pDiagnosticInfo->Append(bindResult.GetDiagnosticInfo());
+        }
 
         if (bindResult.HaveResult())
         {
@@ -405,7 +412,9 @@ namespace BINDER_SPACE
         pAssemblyName->GetDisplayName(assemblyDisplayName,
                                       AssemblyName::INCLUDE_VERSION);
 
-        hr = pApplicationContext->GetFailureCache()->Lookup(assemblyDisplayName);
+        SString cachedFailureInfo;
+        hr = pApplicationContext->GetFailureCache()->Lookup(assemblyDisplayName, &cachedFailureInfo);
+        pBindResult->AppendDiagnosticInfo(cachedFailureInfo);
         if (FAILED(hr))
         {
             if ((hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)) && skipFailureCaching)
@@ -459,7 +468,7 @@ namespace BINDER_SPACE
                 }
             }
 
-            hr = pApplicationContext->AddToFailureCache(assemblyDisplayName, hr);
+            hr = pApplicationContext->AddToFailureCache(assemblyDisplayName, hr, pBindResult->GetDiagnosticInfo());
         }
 
     LogExit:
@@ -866,10 +875,13 @@ namespace BINDER_SPACE
 
                     assemblyFilePath.Append(assemblyFileName);
 
+                    SString getAssemblyDiag;
                     hr = GetAssembly(assemblyFilePath,
                                         TRUE,  // fIsInTPA
                                         &pTPAAssembly,
-                                        probeExtensionResult);
+                                        probeExtensionResult,
+                                        &getAssemblyDiag);
+                    pBindResult->AppendDiagnosticInfo(getAssemblyDiag);
 
                     BinderTracing::PathProbed(assemblyFilePath, BinderTracing::PathSource::Bundle, hr);
 
@@ -897,9 +909,13 @@ namespace BINDER_SPACE
                 _ASSERTE(pTpaEntry->m_wszILFileName != nullptr);
                 SString fileName(pTpaEntry->m_wszILFileName);
 
+                SString getAssemblyDiag;
                 hr = GetAssembly(fileName,
                                     TRUE,  // fIsInTPA
-                                    &pTPAAssembly);
+                                    &pTPAAssembly,
+                                    ProbeExtensionResult::Invalid(),
+                                    &getAssemblyDiag);
+                pBindResult->AppendDiagnosticInfo(getAssemblyDiag);
                 BinderTracing::PathProbed(fileName, BinderTracing::PathSource::ApplicationAssemblies, hr);
 
                 pBindResult->SetAttemptResult(hr, pTPAAssembly);
@@ -985,7 +1001,8 @@ namespace BINDER_SPACE
     HRESULT AssemblyBinderCommon::GetAssembly(SString            &assemblyPath,
                                               BOOL               fIsInTPA,
                                               Assembly           **ppAssembly,
-                                              ProbeExtensionResult probeExtensionResult)
+                                              ProbeExtensionResult probeExtensionResult,
+                                              SString            *pDiagnosticInfo)
     {
         HRESULT hr = S_OK;
 
@@ -1001,12 +1018,24 @@ namespace BINDER_SPACE
         {
             LPCTSTR szAssemblyPath = const_cast<LPCTSTR>(assemblyPath.GetUnicode());
 
-            hr = BinderAcquirePEImage(szAssemblyPath, &pPEImage, probeExtensionResult);
+            hr = BinderAcquirePEImage(szAssemblyPath, &pPEImage, probeExtensionResult, pDiagnosticInfo);
             IF_FAIL_GO(hr);
         }
 
         // Initialize assembly object
-        IF_FAIL_GO(pAssembly->Init(pPEImage, fIsInTPA));
+        hr = pAssembly->Init(pPEImage, fIsInTPA);
+        if (FAILED(hr))
+        {
+            if (pDiagnosticInfo != NULL)
+            {
+                StackSString format;
+                format.LoadResource(IDS_BINDING_FAILED_TO_INIT_ASSEMBLY);
+                StackSString hrMsg;
+                GetHRMsg(hr, hrMsg);
+                pDiagnosticInfo->Printf(format.GetUTF8(), assemblyPath.GetUTF8(), hrMsg.GetUTF8());
+            }
+            goto Exit;
+        }
 
         // We're done
         *ppAssembly = pAssembly.Extract();

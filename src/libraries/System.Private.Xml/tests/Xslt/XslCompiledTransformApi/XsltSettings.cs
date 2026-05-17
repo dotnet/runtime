@@ -14,7 +14,6 @@ namespace System.Xml.XslCompiledTransformApiTests
     //[TestCase(Name = "XsltSettings-Retail", Desc = "This testcase tests the different settings on XsltSettings and the corresponding behavior in retail mode", Param = "Retail")]
     //[TestCase(Name = "XsltSettings-Debug", Desc = "This testcase tests the different settings on XsltSettings and the corresponding behavior in debug mode", Param = "Debug")]
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
     public class CXsltSettings : XsltApiTestCaseBase2
     {
         private ITestOutputHelper _output;

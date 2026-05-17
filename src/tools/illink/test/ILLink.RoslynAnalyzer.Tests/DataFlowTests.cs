@@ -29,6 +29,12 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
+        public Task AssemblyGetTypeDataFlow()
+        {
+            return RunTest();
+        }
+
+        [Fact]
         public Task AssemblyQualifiedNameDataflow()
         {
             return RunTest(nameof(AssemblyQualifiedNameDataflow));

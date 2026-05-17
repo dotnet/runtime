@@ -10,10 +10,19 @@ using Xunit;
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 
 /// <summary>
-/// A single resolved stack frame, carrying both the method name and the raw
-/// MethodDesc pointer so that callers can perform ad-hoc assertions.
+/// A single resolved stack frame, carrying the method name, the raw
+/// MethodDesc pointer, the runtime Frame name (if this is a capital-F Frame),
+/// and the underlying <see cref="IStackDataFrameHandle"/>
+/// so that callers can perform ad-hoc assertions (e.g. frame type checks).
 /// </summary>
-internal readonly record struct ResolvedFrame(string? Name, TargetPointer MethodDescPtr);
+/// <param name="Name">The resolved method name, or <c>null</c> if unavailable.</param>
+/// <param name="MethodDescPtr">The raw MethodDesc pointer for this frame.</param>
+/// <param name="FrameName">
+/// The runtime Frame name (e.g. "InterpreterFrame", "InlinedCallFrame") when this
+/// frame has a non-null frame address, or <c>null</c> for native/managed code frames.
+/// </param>
+/// <param name="FrameHandle">The underlying stack data frame handle for raw access.</param>
+internal readonly record struct ResolvedFrame(string? Name, TargetPointer MethodDescPtr, string? FrameName, IStackDataFrameHandle FrameHandle);
 
 /// <summary>
 /// Encapsulates a resolved stack walk for a thread, providing a builder-pattern
@@ -94,7 +103,16 @@ internal sealed class DumpTestStackWalker
         {
             TargetPointer methodDescPtr = stackWalk.GetMethodDescPtr(frame);
             string? name = DumpTestHelpers.GetMethodName(target, methodDescPtr);
-            frames.Add(new ResolvedFrame(name, methodDescPtr));
+
+            string? frameName = null;
+            TargetPointer frameAddress = stackWalk.GetFrameAddress(frame);
+            if (frameAddress != TargetPointer.Null)
+            {
+                TargetPointer frameIdentifier = target.ReadPointer(frameAddress);
+                frameName = stackWalk.GetFrameName(frameIdentifier);
+            }
+
+            frames.Add(new ResolvedFrame(name, methodDescPtr, frameName, frame));
         }
 
         return new DumpTestStackWalker(target, frames);
@@ -139,7 +157,8 @@ internal sealed class DumpTestStackWalker
             string md = f.MethodDescPtr != TargetPointer.Null
                 ? $"0x{(ulong)f.MethodDescPtr:X}"
                 : "null";
-            writer($"  [{i}] {name} (MethodDesc: {md})");
+            string frameInfo = f.FrameName is not null ? $" [{f.FrameName}]" : "";
+            writer($"  [{i}] {name}{frameInfo} (MethodDesc: {md})");
         }
 
         return this;
@@ -187,6 +206,48 @@ internal sealed class DumpTestStackWalker
         Assert.True(_expectations.Count > 0,
             "ExpectAdjacentFrameWhere must follow a prior expectation.");
         _expectations.Add(new Expectation(predicate, description, adjacent: true, assert));
+        return this;
+    }
+
+    /// <summary>
+    /// Expects a runtime Frame (capital-F) with the given <paramref name="frameName"/>
+    /// (e.g. "InterpreterFrame", "InlinedCallFrame") after the previous expectation.
+    /// Gaps between this and the previous expectation are allowed.
+    /// </summary>
+    public DumpTestStackWalker ExpectRuntimeFrame(string frameName, Action<ResolvedFrame>? assert = null)
+    {
+        _expectations.Add(new Expectation(
+            f => string.Equals(f.FrameName, frameName, StringComparison.Ordinal),
+            $"RuntimeFrame:{frameName}",
+            adjacent: false,
+            assert));
+        return this;
+    }
+
+    /// <summary>
+    /// Expects a runtime Frame (capital-F) with the given <paramref name="frameName"/>
+    /// immediately after the previously matched frame (no gaps allowed).
+    /// </summary>
+    public DumpTestStackWalker ExpectAdjacentRuntimeFrame(string frameName, Action<ResolvedFrame>? assert = null)
+    {
+        Assert.True(_expectations.Count > 0,
+            "ExpectAdjacentRuntimeFrame must follow a prior expectation.");
+        _expectations.Add(new Expectation(
+            f => string.Equals(f.FrameName, frameName, StringComparison.Ordinal),
+            $"RuntimeFrame:{frameName}",
+            adjacent: true,
+            assert));
+        return this;
+    }
+
+    /// <summary>
+    /// Asserts that the call stack contains a runtime Frame (capital-F) with the given
+    /// <paramref name="frameName"/>, regardless of position or order.
+    /// </summary>
+    public DumpTestStackWalker AssertHasRuntimeFrame(string frameName)
+    {
+        Assert.True(_frames.Any(f => string.Equals(f.FrameName, frameName, StringComparison.Ordinal)),
+            $"Expected runtime frame '{frameName}' not found. Call stack: [{FormatCallStack(_frames)}]");
         return this;
     }
 
@@ -257,7 +318,11 @@ internal sealed class DumpTestStackWalker
     }
 
     private static string FormatCallStack(List<ResolvedFrame> frames)
-        => string.Join(", ", frames.Select(f => f.Name ?? "<null>"));
+        => string.Join(", ", frames.Select(f =>
+        {
+            string name = f.Name ?? "<null>";
+            return f.FrameName is not null ? $"{name}[{f.FrameName}]" : name;
+        }));
 
     private sealed class Expectation
     {

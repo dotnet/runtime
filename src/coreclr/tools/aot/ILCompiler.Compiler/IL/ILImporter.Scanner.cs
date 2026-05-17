@@ -432,23 +432,6 @@ namespace Internal.IL
                 return;
             }
 
-            string reason = null;
-            switch (opcode)
-            {
-                case ILOpcode.newobj:
-                    reason = "newobj"; break;
-                case ILOpcode.call:
-                    reason = "call"; break;
-                case ILOpcode.callvirt:
-                    reason = "callvirt"; break;
-                case ILOpcode.ldftn:
-                    reason = "ldftn"; break;
-                case ILOpcode.ldvirtftn:
-                    reason = "ldvirtftn"; break;
-                default:
-                    Debug.Assert(false); break;
-            }
-
             // Are we scanning a call within a state machine?
             if (opcode is ILOpcode.call or ILOpcode.callvirt
                 && _canonMethod.IsAsyncCall())
@@ -475,8 +458,10 @@ namespace Internal.IL
                     _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("FinishSuspensionWithContinuationContext"u8, null)), asyncReason);
                 }
 
-                // If this is the task await pattern, we're actually going to call the variant
-                // so switch our focus to the variant.
+                // If this is the task await pattern, the JIT will first resolve the call to the
+                // async variant, then may switch back to the original if the async variant is just
+                // a thunk (for non-runtime-async methods). Report both variants as dependencies such
+                // that the JIT can pick either one.
 
                 // in rare cases a method that returns Task is not actually TaskReturning (i.e. returns T).
                 // we cannot resolve to an Async variant in such case.
@@ -487,9 +472,32 @@ namespace Internal.IL
 
                 if (allowAsyncVariant && MatchTaskAwaitPattern())
                 {
-                    runtimeDeterminedMethod = _factory.TypeSystemContext.GetAsyncVariantMethod(runtimeDeterminedMethod);
-                    method = _factory.TypeSystemContext.GetAsyncVariantMethod(method);
+                    MethodDesc asyncVariantMethod = _factory.TypeSystemContext.GetAsyncVariantMethod(method);
+                    MethodDesc asyncVariantRuntimeDeterminedMethod = _factory.TypeSystemContext.GetAsyncVariantMethod(runtimeDeterminedMethod);
+                    ImportCall(opcode, asyncVariantMethod, asyncVariantRuntimeDeterminedMethod);
                 }
+            }
+
+            ImportCall(opcode, method, runtimeDeterminedMethod);
+        }
+
+        private void ImportCall(ILOpcode opcode, MethodDesc method, MethodDesc runtimeDeterminedMethod)
+        {
+            string reason = null;
+            switch (opcode)
+            {
+                case ILOpcode.newobj:
+                    reason = "newobj"; break;
+                case ILOpcode.call:
+                    reason = "call"; break;
+                case ILOpcode.callvirt:
+                    reason = "callvirt"; break;
+                case ILOpcode.ldftn:
+                    reason = "ldftn"; break;
+                case ILOpcode.ldvirtftn:
+                    reason = "ldvirtftn"; break;
+                default:
+                    Debug.Assert(false); break;
             }
 
             if (opcode == ILOpcode.newobj)

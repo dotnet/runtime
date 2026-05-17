@@ -28,6 +28,7 @@
     <Compile Include="..\..\Common\Internal\Runtime\ReadyToRunInstructionSet.cs" Link="Common\ReadyToRunInstructionSet.cs" />
     <Compile Include="..\..\Common\MachO\**\*.cs" Link="MachO\%(RecursiveDir)%(Filename)%(Extension)" />
     <Compile Include="..\..\Common\Pgo\PgoFormat.cs" Link="Common\PgoFormat.cs" />
+    <Compile Include="..\..\Common\Wasm\Webcil.cs" Link="Webcil\Webcil.cs" />
   </ItemGroup>
 
 </Project>
