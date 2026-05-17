@@ -135,6 +135,8 @@ namespace System.Collections.Frozen
                 {
                     IDictionary<TKey, TValue> dictionary => dictionary.Count,
                     IReadOnlyDictionary<TKey, TValue> readOnlyDictionary => readOnlyDictionary.Count,
+                    ICollection<KeyValuePair<TKey, TValue>> collection => collection.Count,
+                    IReadOnlyCollection<KeyValuePair<TKey, TValue>> readOnlyCollection => readOnlyCollection.Count,
                     _ => 0,
                 };
                 newDictionary = new Dictionary<TKey, TValue>(capacity, comparer);
