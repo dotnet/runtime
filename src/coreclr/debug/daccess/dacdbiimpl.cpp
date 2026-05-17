@@ -2414,7 +2414,7 @@ void DacDbiInterfaceImpl::GetClassTypeInfo(TypeHandle                      typeH
     {
         pTypeInfo->ClassTypeData.typeHandle.SetDacTargetPtr(typeHandle.AsTAddr());
     }
-   else // non-generic
+    else // non-generic
     {
         pTypeInfo->ClassTypeData.typeHandle = VMPTR_TypeHandle::NullPtr();
     }
