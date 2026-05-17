@@ -13348,6 +13348,18 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         if ((lengthVN != ValueNumStore::NoVN) && !vnStore->IsVNConstant(lengthVN))
                         {
                             vnStore->SetVNIsCheckedBound(lengthVN);
+
+                            // If the bound is "X + 1" (e.g. emitted by the Span.Slice(int) intrinsic to encode
+                            // "throw if start > X" as BOUNDS_CHECK(start, X + 1)), also register X as a checked
+                            // bound so the assertion creator decomposes "(i + k) <= X - m" against X rather than
+                            // falling back to an opaque RelopVN that range-check elimination cannot see through.
+                            ValueNum innerVN;
+                            int      addCns;
+                            if (vnStore->IsVNBinFuncWithConst(lengthVN, VNF_ADD, &innerVN, &addCns) &&
+                                (addCns == 1) && !vnStore->IsVNConstant(innerVN))
+                            {
+                                vnStore->SetVNIsCheckedBound(innerVN);
+                            }
                         }
                     }
                     break;

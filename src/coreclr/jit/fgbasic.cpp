@@ -1594,8 +1594,13 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     else if (ni != NI_Illegal)
                     {
                         // Otherwise note "intrinsic" (most likely will be lowered as single instructions)
-                        // except Math where only a few intrinsics won't end up as normal calls
-                        if (!IsMathIntrinsic(ni) || IsTargetIntrinsic(ni))
+                        // except Math where only a few intrinsics won't end up as normal calls.
+                        // Span.Slice(int) / ReadOnlySpan.Slice(int) are tagged [Intrinsic] only so the
+                        // JIT can replace their managed bodies with a GT_BOUNDS_CHECK + byref form;
+                        // they are not lowered to a single instruction, so excluding them here keeps
+                        // the caller's inlining profitability identical to the pre-[Intrinsic] world.
+                        if ((!IsMathIntrinsic(ni) || IsTargetIntrinsic(ni)) && (ni != NI_System_Span_Slice) &&
+                            (ni != NI_System_ReadOnlySpan_Slice))
                         {
                             compInlineResult->Note(InlineObservation::CALLEE_INTRINSIC);
                         }

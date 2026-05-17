@@ -130,8 +130,6 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal Span(ref T reference, int length)
         {
-            Debug.Assert(length >= 0);
-
             _reference = ref reference;
             _length = length;
         }
@@ -393,6 +391,7 @@ namespace System
         /// Thrown when the specified <paramref name="start"/> index is not in range (&lt;0 or &gt;Length).
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public Span<T> Slice(int start)
         {
             if ((uint)start > (uint)_length)

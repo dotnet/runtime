@@ -1232,6 +1232,25 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
             {
                 cmpOper = Compiler::AssertionDsc::ToCompareOper(curAssertion.GetKind(), &isUnsigned);
                 limit   = Limit(Limit::keBinOpArray, boundVN, boundCns);
+
+                // If the assertion's bound VN differs from preferredBoundVN but they are
+                // related by a small constant, normalize the limit to use preferredBoundVN.
+                // This commonly arises with the Span.Slice(int) intrinsic, which emits
+                // BOUNDS_CHECK(start, length + 1) -- so preferredBoundVN is "length + 1"
+                // while loop assertions decompose against "length" itself.
+                // Without normalization, TightenLimit's "prefer preferredBound" heuristic
+                // would pick a looser non-asserted limit over this tighter assertion.
+                ValueNum addOpVN;
+                int      addOpCns;
+                if ((boundVN != preferredBoundVN) && (preferredBoundVN != ValueNumStore::NoVN) &&
+                    (boundCns > INT32_MIN) &&
+                    comp->vnStore->IsVNBinFuncWithConst(preferredBoundVN, VNF_ADD, &addOpVN, &addOpCns) &&
+                    (addOpVN == boundVN) && (addOpCns == 1))
+                {
+                    // preferredBoundVN = boundVN + 1, so "boundVN + boundCns" is equivalent to
+                    // "preferredBoundVN + (boundCns - 1)".
+                    limit = Limit(Limit::keBinOpArray, preferredBoundVN, boundCns - 1);
+                }
             }
             else if (normalLclVNMatchesOp2)
             {

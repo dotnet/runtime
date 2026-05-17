@@ -3447,8 +3447,10 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             case NI_System_String_get_Length:
             case NI_System_Span_get_Item:
             case NI_System_Span_get_Length:
+            case NI_System_Span_Slice:
             case NI_System_ReadOnlySpan_get_Item:
             case NI_System_ReadOnlySpan_get_Length:
+            case NI_System_ReadOnlySpan_Slice:
             case NI_System_BitConverter_DoubleToInt64Bits:
             case NI_System_BitConverter_Int32BitsToSingle:
             case NI_System_BitConverter_Int64BitsToDouble:
@@ -3882,6 +3884,132 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 result->SetHasOrderingSideEffect();
                 retNode = gtNewOperNode(GT_COMMA, resultType, boundsCheck, result);
 
+                break;
+            }
+
+            case NI_System_Span_Slice:
+            case NI_System_ReadOnlySpan_Slice:
+            {
+                optMethodFlags |= OMF_HAS_ARRAYREF;
+
+                // Have start, stack pointer-to Span<T> s on the stack. Expand to:
+                //
+                // For Span<T>
+                //   BoundsCheck(start, s->_length + 1)                  // ArgumentOutOfRange on failure
+                //   tmp._reference = s->_reference + (nuint)(uint)start * sizeof(T)
+                //   tmp._length    = s->_length - start
+                //   tmp
+                //
+                // For ReadOnlySpan<T> -- same expansion, the only difference is the result type.
+                //
+                // Signature should show one class type parameter, which
+                // we need to examine.
+                assert(sig->sigInst.classInstCount == 1);
+                assert(sig->numArgs == 1);
+                CORINFO_CLASS_HANDLE spanElemHnd = sig->sigInst.classInst[0];
+                const unsigned       elemSize    = info.compCompHnd->getClassSize(spanElemHnd);
+                assert(elemSize > 0);
+
+                const bool isReadOnly = (ni == NI_System_ReadOnlySpan_Slice);
+
+                JITDUMP("\nimpIntrinsic: Expanding %sSpan<T>.Slice(int), T=%s, sizeof(T)=%u\n",
+                        isReadOnly ? "ReadOnly" : "", eeGetClassName(spanElemHnd), elemSize);
+
+                GenTree* start          = impPopStack().val;
+                GenTree* ptrToSpan      = impPopStack().val;
+                GenTree* startClone     = nullptr;
+                GenTree* ptrToSpanClone = nullptr;
+                assert(genActualType(start) == TYP_INT);
+                assert(ptrToSpan->TypeIs(TYP_BYREF, TYP_I_IMPL));
+
+#if defined(DEBUG)
+                if (verbose)
+                {
+                    printf("with ptr-to-span\n");
+                    gtDispTree(ptrToSpan);
+                    printf("and start\n");
+                    gtDispTree(start);
+                }
+#endif // defined(DEBUG)
+
+                // We need 'start' three times (bounds check, byref offset, new length),
+                // so spill it once and clone the resulting LclVar reads as needed.
+                start = impCloneExpr(start, &startClone, CHECK_SPILL_ALL, nullptr DEBUGARG("Span.Slice start"));
+                GenTree* startClone2 = gtCloneExpr(startClone);
+
+                if (impIsAddressInLocal(ptrToSpan))
+                {
+                    ptrToSpanClone = gtCloneExpr(ptrToSpan);
+                }
+                else
+                {
+                    ptrToSpan = impCloneExpr(ptrToSpan, &ptrToSpanClone, CHECK_SPILL_ALL,
+                                             nullptr DEBUGARG("Span.Slice ptrToSpan"));
+                }
+
+                // Read input length.
+                CORINFO_FIELD_HANDLE lengthHnd    = info.compCompHnd->getFieldInClass(clsHnd, 1);
+                const unsigned       lengthOffset = info.compCompHnd->getFieldOffset(lengthHnd);
+
+                GenTreeFieldAddr* lengthFieldAddr = gtNewFieldAddrNode(lengthHnd, ptrToSpan, lengthOffset);
+                GenTree*          length          = gtNewIndir(TYP_INT, lengthFieldAddr);
+                lengthFieldAddr->SetIsSpanLength(true);
+
+                // Length is needed twice: once for the bounds check (as length + 1)
+                // and once for the new length (length - start).
+                GenTree* lengthClone = nullptr;
+                length = impCloneExpr(length, &lengthClone, CHECK_SPILL_ALL, nullptr DEBUGARG("Span.Slice length"));
+
+                // Bounds check: throw ArgumentOutOfRangeException if (uint)start > (uint)length,
+                // which is equivalent to (uint)start >= (uint)(length + 1).
+                //
+                // Use TYP_INT (not widened to TYP_LONG) so that downstream range-check
+                // elimination (rangecheck.cpp) can actually reason about the bound -- it bails on
+                // TYP_LONG. The (length + 1) addition is in TYP_INT and would wrap to int.MinValue
+                // when _length == int.MaxValue; codegen still does the comparison unsigned and
+                // produces the correct result, but assertion-prop / range-check passes lose some
+                // information at that boundary (a Span<byte> with int.MaxValue elements is the
+                // only case that could be affected).
+                GenTree* boundInt    = gtNewOperNode(GT_ADD, TYP_INT, length, gtNewIconNode(1));
+                GenTree* boundsCheck =
+                    new (this, GT_BOUNDS_CHECK) GenTreeBoundsChk(start, boundInt, SCK_ARG_RNG_EXCPN);
+
+                // Read input reference.
+                CORINFO_FIELD_HANDLE ptrHnd        = info.compCompHnd->getFieldInClass(clsHnd, 0);
+                const unsigned       ptrOffset     = info.compCompHnd->getFieldOffset(ptrHnd);
+                GenTreeFieldAddr*    dataFieldAddr = gtNewFieldAddrNode(ptrHnd, ptrToSpanClone, ptrOffset);
+                GenTree*             oldRef        = gtNewIndir(TYP_BYREF, dataFieldAddr);
+
+                // newRef = oldRef + (nuint)(uint)start * sizeof(T)
+                GenTree* offset = impImplicitIorI4Cast(startClone, TYP_I_IMPL, /* zeroExtend */ true);
+                if (elemSize != 1)
+                {
+                    GenTree* sizeofNode = gtNewIconNode(static_cast<ssize_t>(elemSize), TYP_I_IMPL);
+                    offset              = gtNewOperNode(GT_MUL, TYP_I_IMPL, offset, sizeofNode);
+                }
+                GenTree* newRef = gtNewOperNode(GT_ADD, TYP_BYREF, oldRef, offset);
+
+                // newLength = length - start
+                GenTree* newLength = gtNewOperNode(GT_SUB, TYP_INT, lengthClone, startClone2);
+
+                // Allocate a temp local for the result Span and initialize its fields.
+                CORINFO_CLASS_HANDLE retSpanHnd  = sig->retTypeClass;
+                unsigned             spanTempNum = lvaGrabTemp(true DEBUGARG("Span<T> for Slice"));
+                lvaSetStruct(spanTempNum, retSpanHnd, false);
+
+                GenTree* lengthFieldStore =
+                    gtNewStoreLclFldNode(spanTempNum, TYP_INT, OFFSETOF__CORINFO_Span__length, newLength);
+                GenTree* dataFieldStore =
+                    gtNewStoreLclFldNode(spanTempNum, TYP_BYREF, OFFSETOF__CORINFO_Span__reference, newRef);
+
+                // Statements are appended in order, and GT_BOUNDS_CHECK carries GTF_EXCEPT, so the
+                // check executes before any of the temp-span field stores. Match the field-store
+                // order used by impCreateSpanIntrinsic (length, then reference).
+                impAppendTree(boundsCheck, CHECK_SPILL_NONE, impCurStmtDI);
+                impAppendTree(lengthFieldStore, CHECK_SPILL_NONE, impCurStmtDI);
+                impAppendTree(dataFieldStore, CHECK_SPILL_NONE, impCurStmtDI);
+
+                retNode = impCreateLocalNode(spanTempNum DEBUGARG(0));
                 break;
             }
 
@@ -10672,6 +10800,18 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         {
                             result = NI_System_ReadOnlySpan_get_Length;
                         }
+                        else if (strcmp(methodName, "Slice") == 0)
+                        {
+                            // Only the single-argument Slice(int) overload is intrinsic; the
+                            // two-argument Slice(int, int) overload shares the same method name
+                            // but is not [Intrinsic] and must not be matched here.
+                            CORINFO_SIG_INFO sliceSig;
+                            info.compCompHnd->getMethodSig(method, &sliceSig);
+                            if (sliceSig.numArgs == 1)
+                            {
+                                result = NI_System_ReadOnlySpan_Slice;
+                            }
+                        }
                     }
                     else if (strcmp(className, "RuntimeType") == 0)
                     {
@@ -10709,6 +10849,18 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         else if (strcmp(methodName, "get_Length") == 0)
                         {
                             result = NI_System_Span_get_Length;
+                        }
+                        else if (strcmp(methodName, "Slice") == 0)
+                        {
+                            // Only the single-argument Slice(int) overload is intrinsic; the
+                            // two-argument Slice(int, int) overload shares the same method name
+                            // but is not [Intrinsic] and must not be matched here.
+                            CORINFO_SIG_INFO sliceSig;
+                            info.compCompHnd->getMethodSig(method, &sliceSig);
+                            if (sliceSig.numArgs == 1)
+                            {
+                                result = NI_System_Span_Slice;
+                            }
                         }
                     }
                     else if (strcmp(className, "SpanHelpers") == 0)
