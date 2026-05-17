@@ -2381,6 +2381,17 @@ bool Compiler::optCanonicalizeLoops()
         changed |= optCreatePreheader(loop);
     }
 
+    // After preheader creation, canonicalize backedges so that every loop has
+    // at most one backedge. Running this before exit canonicalization avoids
+    // operating on stale BackEdges lists that exit canonicalization can
+    // invalidate (e.g., when an inner-loop exit is also an outer-loop
+    // backedge).
+    //
+    for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
+    {
+        changed |= optCanonicalizeBackedges(loop);
+    }
+
     // At this point we've created preheaders. That means we are working with
     // stale loop and DFS data. However, we can do exit canonicalization even
     // on the stale data; this relies on the fact that exiting blocks do not
@@ -2818,6 +2829,83 @@ bool Compiler::optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit)
 
     JITDUMP("Created new exit " FMT_BB " to replace " FMT_BB " exit for " FMT_LP "\n", newExit->bbNum, exit->bbNum,
             loop->GetIndex());
+    return true;
+}
+
+//-----------------------------------------------------------------------------
+// optCanonicalizeBackedges: If a loop has more than one backedge, redirect all
+// backedge sources through a single new "latch" block that branches to the
+// loop header.
+//
+// Parameters:
+//   loop - The loop
+//
+// Returns:
+//   True if a new latch block was created.
+//
+bool Compiler::optCanonicalizeBackedges(FlowGraphNaturalLoop* loop)
+{
+    if (loop->BackEdges().size() <= 1)
+    {
+        return false;
+    }
+
+    BasicBlock* const header = loop->GetHeader();
+
+    // The latch will live in the same EH region as the header. That placement
+    // is only safe when every backedge source is in the same EH region as the
+    // header: if a source is outside the header's region, its original branch
+    // is legal only because the header is an EH-region entry, and the new
+    // latch (a non-entry block in the header's region) cannot be the target
+    // of such a branch.
+    //
+    for (FlowEdge* const backEdge : loop->BackEdges())
+    {
+        BasicBlock* const source = backEdge->getSourceBlock();
+        if (!BasicBlock::sameEHRegion(source, header))
+        {
+            JITDUMP("Skip backedge canonicalization for " FMT_LP ": backedge source " FMT_BB
+                    " is not in the same EH region as header " FMT_BB "\n",
+                    loop->GetIndex(), source->bbNum, header->bbNum);
+            return false;
+        }
+    }
+
+    // Snapshot the backedge sources before any redirection mutates the
+    // predecessor lists.
+    //
+    ArrayStack<BasicBlock*> sources(getAllocator(CMK_LoopOpt));
+    for (FlowEdge* const backEdge : loop->BackEdges())
+    {
+        sources.Push(backEdge->getSourceBlock());
+    }
+
+    // Create the latch in the same EH region as the header. Any block that can
+    // branch to the header can also branch to a block in the header's EH
+    // region, so this placement is always legal for backedge sources.
+    //
+    BasicBlock* const latch = fgNewBBinRegion(BBJ_ALWAYS, header);
+    latch->SetFlags(BBF_INTERNAL);
+    latch->bbCodeOffs = header->bbCodeOffs;
+
+    FlowEdge* const newEdge = fgAddRefPred(header, latch);
+    latch->SetTargetEdge(newEdge);
+
+    JITDUMP("Created new latch " FMT_BB " for " FMT_LP " to merge %u backedges\n", latch->bbNum, loop->GetIndex(),
+            (unsigned)sources.Height());
+
+    // Redirect each backedge through the new latch.
+    //
+    for (int i = 0; i < sources.Height(); i++)
+    {
+        BasicBlock* const source = sources.Bottom(i);
+        JITDUMP("  Backedge " FMT_BB " -> " FMT_BB " becomes " FMT_BB " -> " FMT_BB "\n", source->bbNum, header->bbNum,
+                source->bbNum, latch->bbNum);
+        fgReplaceJumpTarget(source, header, latch);
+    }
+
+    optSetWeightForPreheaderOrExit(loop, latch);
+
     return true;
 }
 
