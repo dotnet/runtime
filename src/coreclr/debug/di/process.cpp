@@ -4377,93 +4377,6 @@ void CordbProcess::GetAssembliesInLoadOrder(
     // pAssemblies array has now been updated.
 }
 
-// Callback data for code:CordbProcess::GetModulesInLoadOrder
-class ShimModuleCallbackData
-{
-public:
-    // Ctor to initialize callback data
-    //
-    // Arguments:
-    //   pAssembly - assembly that the Modules are in.
-    //   pModules - preallocated array of smart pointers to hold Modules
-    //   countModules - size of pModules in elements.
-    ShimModuleCallbackData(
-        CordbAssembly * pAssembly,
-        RSExtSmartPtr<ICorDebugModule>* pModules,
-        ULONG countModules)
-    {
-        _ASSERTE(pAssembly != NULL);
-        _ASSERTE(pModules != NULL);
-
-        m_pProcess = pAssembly->GetAppDomain()->GetProcess();
-        m_pAssembly = pAssembly;
-        m_pModules = pModules;
-        m_countElements = countModules;
-        m_index = 0;
-
-        // Just to be safe, clear them all out
-        for(ULONG i = 0; i < countModules; i++)
-        {
-            pModules[i].Clear();
-        }
-    }
-
-    // Dtor
-    //
-    // Notes:
-    //   This can assert end-of-enumeration invariants.
-    ~ShimModuleCallbackData()
-    {
-        // Ensure that we went through all Modules.
-        _ASSERTE(m_index == m_countElements);
-    }
-
-    // Callback invoked from DAC enumeration.
-    //
-    // arguments:
-    //    vmAssembly - VMPTR for Assembly
-    //    pData - a 'this' pointer
-    //
-    static void Callback(VMPTR_Assembly vmAssembly, void * pData)
-    {
-        ShimModuleCallbackData * pThis = static_cast<ShimModuleCallbackData *> (pData);
-        INTERNAL_DAC_CALLBACK(pThis->m_pProcess);
-
-        CordbModule * pModule = pThis->m_pAssembly->GetAppDomain()->LookupOrCreateModule(vmAssembly);
-
-        pThis->SetAndMoveNext(pModule);
-    }
-
-    // Set the current index in the table and increment the cursor.
-    //
-    // Arguments:
-    //    pModule - Module from DAC enumerator
-    void SetAndMoveNext(CordbModule * pModule)
-    {
-        _ASSERTE(pModule != NULL);
-
-        if (m_index >= m_countElements)
-        {
-            // Enumerating the Modules in the target should be fixed since
-            // the target is not running.
-            // We should never get here unless the target is unstable.
-            // The caller (the shim) pre-allocated the table of Modules.
-            m_pProcess->TargetConsistencyCheck(!"Target changed Module count");
-            return;
-        }
-
-        m_pModules[m_index].Assign(pModule);
-        m_index++;
-    }
-
-protected:
-    CordbProcess * m_pProcess;
-    CordbAssembly * m_pAssembly;
-    RSExtSmartPtr<ICorDebugModule>* m_pModules;
-    ULONG m_countElements;
-    ULONG m_index;
-};
-
 //---------------------------------------------------------------------------------------
 // Shim Helper to enumerate the Modules in the load-order
 //
@@ -4492,10 +4405,10 @@ protected:
 //    that rely on manifest metadata (eg. GetSimpleName).
 //
 //    @dbgtodo : This is almost identical to GetAssembliesInLoadOrder, and
-//    (together wih the CallbackData classes) seems a HUGE amount of code and
-//    complexity for such a simple thing.  We also have extra code to order
-//    AppDomains and Threads.  We should try and rip all of this extra complexity
-//    out, and replace it with better data structures for storing these items.
+//    seems a HUGE amount of code and complexity for such a simple thing.
+//    We also have extra code to order AppDomains and Threads.  We should try
+//    and rip all of this extra complexity out, and replace it with better data
+//    structures for storing these items.
 //    Eg., if we used std::map, we could have efficient lookups and ordered
 //    enumerations.  However, we do need to be careful about exposing new invariants
 //    through ICorDebug that customers may depend on, which could place a long-term
@@ -4512,18 +4425,36 @@ void CordbProcess::GetModulesInLoadOrder(
     RSLockHolder lockHolder(GetProcessLock());
 
     _ASSERTE(GetShim() != NULL);
+    _ASSERTE(pModules != NULL);
 
     CordbAssembly * pAssemblyInternal = static_cast<CordbAssembly *> (pAssembly);
+    VMPTR_Assembly vmAssembly = pAssemblyInternal->GetAssemblyPtr();
 
-    ShimModuleCallbackData data(pAssemblyInternal, pModules, countModules);
+    // Just to be safe, clear them all out.
+    for (ULONG i = 0; i < countModules; i++)
+    {
+        pModules[i].Clear();
+    }
 
-    // Enumerate through and fill out pModules table.
-    IfFailThrow(GetDAC()->EnumerateModulesInAssembly(
-        pAssemblyInternal->GetAssemblyPtr(),
-        ShimModuleCallbackData::Callback,
-        &data)); // user data
+    VMPTR_Module vmModule = VMPTR_Module::NullPtr();
+    BOOL isModuleLoaded = FALSE;
+    IfFailThrow(GetDAC()->GetModuleForAssembly(vmAssembly, &vmModule, &isModuleLoaded));
 
-    // pModules array has now been updated.
+    ULONG expectedCount = isModuleLoaded ? 1 : 0;
+    if (countModules != expectedCount)
+    {
+        // Enumerating the Modules in the target should be fixed since the target is not running.
+        // We should never get here unless the target is unstable.
+        TargetConsistencyCheck(!"Target changed Module count");
+        return;
+    }
+
+    if (isModuleLoaded)
+    {
+        CordbModule * pModule = pAssemblyInternal->GetAppDomain()->LookupOrCreateModule(vmAssembly, vmModule);
+        _ASSERTE(pModule != NULL);
+        pModules[0].Assign(pModule);
+    }
 }
 
 
@@ -14768,7 +14699,7 @@ CordbClass * CordbProcess::LookupClass(ICorDebugAppDomain * pAppDomain, VMPTR_As
     if (pAppDomain != NULL)
     {
         VMPTR_Module vmModule = VMPTR_Module::NullPtr();
-        IfFailThrow(GetProcess()->GetDAC()->GetModuleForAssembly(vmAssembly, &vmModule));
+        IfFailThrow(GetProcess()->GetDAC()->GetModuleForAssembly(vmAssembly, &vmModule, NULL));
         _ASSERTE(!vmModule.IsNull());
         CordbModule * pModule = ((CordbAppDomain *)pAppDomain)->m_modules.GetBase(VmPtrToCookie(vmModule));
         if (pModule != NULL)

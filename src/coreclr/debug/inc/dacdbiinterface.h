@@ -475,7 +475,15 @@ public:
     //
     virtual HRESULT STDMETHODCALLTYPE GetModuleData(VMPTR_Module vmModule, OUT ModuleInfo * pData) = 0;
 
-    virtual HRESULT STDMETHODCALLTYPE GetModuleForAssembly(VMPTR_Assembly vmAssembly, OUT VMPTR_Module * pModule) = 0;
+    //
+    // Get the Module within an Assembly and whether the module is loaded.
+    //
+    // Arguments:
+    //    vmAssembly - assembly to query
+    //    pModule - required out parameter that receives the module
+    //    pIsModuleLoaded - optional out parameter that receives whether the assembly/module is loaded
+    //
+    virtual HRESULT STDMETHODCALLTYPE GetModuleForAssembly(VMPTR_Assembly vmAssembly, OUT VMPTR_Module * pModule, OUT BOOL * pIsModuleLoaded) = 0;
 
     //.........................................................................
     // These methods were the methods that DBI was calling from IXClrData in V2.
@@ -592,35 +600,6 @@ public:
 
     typedef void (*FP_ASSEMBLY_ENUMERATION_CALLBACK)(VMPTR_Assembly vmAssembly, CALLBACK_DATA pUserData);
     virtual HRESULT STDMETHODCALLTYPE EnumerateAssembliesInAppDomain(VMPTR_AppDomain vmAppDomain, FP_ASSEMBLY_ENUMERATION_CALLBACK fpCallback, CALLBACK_DATA pUserData) = 0;
-
-
-
-    //
-    // Callback function for EnumerateModulesInAssembly
-    //
-    // Returns an appropriate failure HRESULT on error.
-    //
-    // Arguments:
-    //    vmAssembly - new vmAssembly from the enumeration
-    //    pUserData - user data passed to EnumerateModulesInAssembly
-    typedef void (*FP_MODULE_ENUMERATION_CALLBACK)(VMPTR_Assembly vmAssembly, CALLBACK_DATA pUserData);
-
-    //
-    // Enumerates all the code Modules in an assembly.
-    //
-    // Arguments:
-    //    vmAssembly - assembly to enumerate within
-    //    fpCallback - callback function to invoke on each module
-    //    pUserData - arbitrary data passed to the callback
-    //
-    // Notes:
-    //    This only enumerates "code" modules (ie, modules that have executable code in them). That
-    //    includes normal file-based, ngenned, in-memory, and even dynamic modules.
-    //    That excludes:
-    //    - Resource modules (which have no code or metadata)
-    //    - Inspection-only modules. These are viewed as pure data from the debugger's perspective.
-    //
-    virtual HRESULT STDMETHODCALLTYPE EnumerateModulesInAssembly(VMPTR_Assembly vmAssembly, FP_MODULE_ENUMERATION_CALLBACK fpCallback, CALLBACK_DATA pUserData) = 0;
 
 
 

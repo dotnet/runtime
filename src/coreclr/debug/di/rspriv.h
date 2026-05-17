@@ -2457,9 +2457,6 @@ public:
     // Lookup a module from the cache.  Create and to the cache if needed.
     CordbModule * LookupOrCreateModule(VMPTR_Assembly vmAssemblyToken, VMPTR_Module vmModuleToken = VMPTR_Module::NullPtr());
 
-    // Callback from DAC for module enumeration
-    static void ModuleEnumerationCallback(VMPTR_Assembly vmAssembly, void * pUserData);
-
     // Use DAC to add any modules for this assembly.
     void PrepopulateModules();
 

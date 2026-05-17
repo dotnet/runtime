@@ -305,16 +305,25 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 #endif
         return hr;
     }
-    public int GetModuleForAssembly(ulong vmAssembly, ulong* pModule)
+    public int GetModuleForAssembly(ulong vmAssembly, ulong* pModule, Interop.BOOL* pIsModuleLoaded)
     {
-        *pModule = 0;
         int hr = HResults.S_OK;
         try
         {
+            if (pModule == null)
+                throw new ArgumentNullException(nameof(pModule));
+
+            *pModule = 0;
+            if (pIsModuleLoaded != null)
+                *pIsModuleLoaded = Interop.BOOL.FALSE;
+
             Contracts.ILoader loader = _target.Contracts.Loader;
             Contracts.ModuleHandle handle = loader.GetModuleHandleFromAssemblyPtr(new TargetPointer(vmAssembly));
             TargetPointer modulePtr = loader.GetModule(handle);
             *pModule = modulePtr.Value;
+
+            if (pIsModuleLoaded != null)
+                *pIsModuleLoaded = loader.IsAssemblyLoaded(handle) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
         }
         catch (System.Exception ex)
         {
@@ -324,10 +333,15 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         if (_legacy is not null)
         {
             ulong moduleLocal;
-            int hrLocal = _legacy.GetModuleForAssembly(vmAssembly, &moduleLocal);
+            Interop.BOOL isModuleLoadedLocal;
+            int hrLocal = _legacy.GetModuleForAssembly(vmAssembly, &moduleLocal, &isModuleLoadedLocal);
             Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK)
+            {
                 Debug.Assert(*pModule == moduleLocal, $"cDAC: {*pModule:x}, DAC: {moduleLocal:x}");
+                if (pIsModuleLoaded != null)
+                    Debug.Assert(*pIsModuleLoaded == isModuleLoadedLocal, $"cDAC: {*pIsModuleLoaded}, DAC: {isModuleLoadedLocal}");
+            }
         }
 #endif
         return hr;
@@ -481,9 +495,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 #endif
         return hr;
     }
-
-    public int EnumerateModulesInAssembly(ulong vmAssembly, nint fpCallback, nint pUserData)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.EnumerateModulesInAssembly(vmAssembly, fpCallback, pUserData) : HResults.E_NOTIMPL;
 
     public int RequestSyncAtEvent()
     {
@@ -2458,7 +2469,38 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int GetAssemblyFromModule(ulong vmModule, ulong* pVmAssembly)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetAssemblyFromModule(vmModule, pVmAssembly) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (vmModule == 0)
+                throw new ArgumentException("Module pointer must not be zero.", nameof(vmModule));
+
+            if (pVmAssembly == null)
+                throw new ArgumentNullException(nameof(pVmAssembly));
+
+            *pVmAssembly = 0;
+            Contracts.ILoader loader = _target.Contracts.Loader;
+            Contracts.ModuleHandle handle = loader.GetModuleHandleFromModulePtr(new TargetPointer(vmModule));
+            TargetPointer assemblyPtr = loader.GetAssembly(handle);
+            *pVmAssembly = assemblyPtr.Value;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            ulong assemblyLocal;
+            int hrLocal = _legacy.GetAssemblyFromModule(vmModule, &assemblyLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pVmAssembly == assemblyLocal, $"cDAC: {*pVmAssembly:x}, DAC: {assemblyLocal:x}");
+        }
+#endif
+        return hr;
+    }
 
     public int ParseContinuation(ulong continuationAddress, ulong* pDiagnosticIP, ulong* pNextContinuation, uint* pState)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.ParseContinuation(continuationAddress, pDiagnosticIP, pNextContinuation, pState) : HResults.E_NOTIMPL;

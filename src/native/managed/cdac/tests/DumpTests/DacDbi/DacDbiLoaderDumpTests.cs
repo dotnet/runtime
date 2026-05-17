@@ -55,12 +55,15 @@ public class DacDbiLoaderDumpTests : DumpTestBase
         {
             TargetPointer assemblyPtr = loader.GetAssembly(module);
             TargetPointer expectedModulePtr = loader.GetModule(module);
+            bool expectedIsLoaded = loader.IsAssemblyLoaded(module);
 
             ulong resultModule;
-            int hr = dbi.GetModuleForAssembly(assemblyPtr.Value, &resultModule);
+            Interop.BOOL resultIsLoaded;
+            int hr = dbi.GetModuleForAssembly(assemblyPtr.Value, &resultModule, &resultIsLoaded);
             Assert.Equal(System.HResults.S_OK, hr);
             Assert.NotEqual(0UL, resultModule);
             Assert.Equal(expectedModulePtr.Value, resultModule);
+            Assert.Equal(expectedIsLoaded ? Interop.BOOL.TRUE : Interop.BOOL.FALSE, resultIsLoaded);
             testedAtLeastOne = true;
         }
         Assert.True(testedAtLeastOne, "Expected at least one module in the dump");
@@ -74,7 +77,8 @@ public class DacDbiLoaderDumpTests : DumpTestBase
         DacDbiImpl dbi = CreateDacDbi();
 
         ulong resultModule = ulong.MaxValue;
-        int hr = dbi.GetModuleForAssembly(0, &resultModule);
+        Interop.BOOL resultIsLoaded = Interop.BOOL.TRUE;
+        int hr = dbi.GetModuleForAssembly(0, &resultModule, &resultIsLoaded);
         Assert.NotEqual(System.HResults.S_OK, hr);
         Assert.Equal(0UL, resultModule);
     }
