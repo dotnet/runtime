@@ -133,8 +133,6 @@ namespace System.Collections.Frozen
             {
                 int capacity = source switch
                 {
-                    IDictionary<TKey, TValue> dictionary => dictionary.Count,
-                    IReadOnlyDictionary<TKey, TValue> readOnlyDictionary => readOnlyDictionary.Count,
                     ICollection<KeyValuePair<TKey, TValue>> collection => collection.Count,
                     IReadOnlyCollection<KeyValuePair<TKey, TValue>> readOnlyCollection => readOnlyCollection.Count,
                     _ => 0,
