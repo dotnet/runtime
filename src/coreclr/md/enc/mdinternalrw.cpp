@@ -1566,9 +1566,12 @@ MDInternalRW::GetCustomAttributeProps( // S_OK or error.
     mdToken     *pTkType)               // Put attribute type here.
 {
     HRESULT hr;
-    // Getting the custom value prop with a token, no need to lock!
 
     _ASSERTE(TypeFromToken(at) == mdtCustomAttribute);
+
+    *pTkType = mdTokenNil;
+
+    LOCKREADIFFAILRET();
 
     // Do a linear search on compressed version as we do not want to
     // depend on ICR.
@@ -1591,9 +1594,13 @@ MDInternalRW::GetCustomAttributeAsBlob(
     void const  **ppBlob,               // [OUT] return the pointer to internal blob
     ULONG       *pcbSize)               // [OUT] return the size of the blob
 {
-    // Getting the custom value prop with a token, no need to lock!
     HRESULT hr;
     _ASSERTE(ppBlob && pcbSize && TypeFromToken(cv) == mdtCustomAttribute);
+
+    *ppBlob = NULL;
+    *pcbSize = 0;
+
+    LOCKREADIFFAILRET();
 
     CustomAttributeRec *pCustomAttributeRec;
 
@@ -1805,7 +1812,6 @@ MDInternalRW::GetNameOfTypeDef(     // return hresult
     LPCSTR*     pszname,            // pointer to an internal UTF8 string
     LPCSTR*     psznamespace)       // pointer to the namespace.
 {
-    // No need to lock this method.
     HRESULT hr;
 
     if (pszname != NULL)
@@ -1819,6 +1825,8 @@ MDInternalRW::GetNameOfTypeDef(     // return hresult
 
     if (TypeFromToken(classdef) == mdtTypeDef)
     {
+        LOCKREADIFFAILRET();
+
         TypeDefRec *pTypeDefRec;
         IfFailRet(m_pStgdb->m_MiniMd.GetTypeDefRecord(RidFromToken(classdef), &pTypeDefRec));
 
@@ -1898,10 +1906,12 @@ MDInternalRW::GetNameOfMethodDef(
     mdMethodDef md,
     LPCSTR     *pszMethodName)
 {
-    // name of method will not change. So no need to lock
     HRESULT      hr;
-    MethodRec *pMethodRec;
     *pszMethodName = NULL;
+
+    LOCKREADIFFAILRET();
+
+    MethodRec *pMethodRec;
     IfFailRet(m_pStgdb->m_MiniMd.GetMethodRecord(RidFromToken(md), &pMethodRec));
     IfFailRet(m_pStgdb->m_MiniMd.getNameOfMethod(pMethodRec, pszMethodName));
     return S_OK;
@@ -1946,11 +1956,12 @@ MDInternalRW::GetNameOfFieldDef(    // return hresult
     mdFieldDef fd,                  // given field
     LPCSTR    *pszFieldName)
 {
-    // we don't need lock here because name of field will not change
     HRESULT hr;
+    *pszFieldName = NULL;
+
+    LOCKREADIFFAILRET();
 
     FieldRec *pFieldRec;
-    *pszFieldName = NULL;
     IfFailRet(m_pStgdb->m_MiniMd.GetFieldRecord(RidFromToken(fd), &pFieldRec));
     IfFailRet(m_pStgdb->m_MiniMd.getNameOfField(pFieldRec, pszFieldName));
     return S_OK;
@@ -1973,7 +1984,7 @@ MDInternalRW::GetNameOfTypeRef(     // return TypeDef's name
     *psznamespace = NULL;
     *pszname = NULL;
 
-    // we don't need lock here because name of a typeref will not change
+    LOCKREADIFFAILRET();
 
     TypeRefRec *pTypeRefRec;
     IfFailRet(m_pStgdb->m_MiniMd.GetTypeRefRecord(RidFromToken(classref), &pTypeRefRec));
@@ -2584,11 +2595,12 @@ MDInternalRW::GetTypeOfInterfaceImpl( // return hresult
     mdToken        *ptkType)
 {
     HRESULT hr;
-    // no need to lock this function.
 
     _ASSERTE(TypeFromToken(iiImpl) == mdtInterfaceImpl);
 
     *ptkType = mdTypeDefNil;
+
+    LOCKREADIFFAILRET();
 
     InterfaceImplRec *pIIRec;
     IfFailRet(m_pStgdb->m_MiniMd.GetInterfaceImplRecord(RidFromToken(iiImpl), &pIIRec));
@@ -2610,6 +2622,15 @@ HRESULT MDInternalRW::GetMethodSpecProps(         // S_OK or error.
     MethodSpecRec  *pMethodSpecRec;
 
     _ASSERTE(TypeFromToken(mi) == mdtMethodSpec);
+
+    if (tkParent)
+        *tkParent = mdTokenNil;
+    if (ppvSigBlob)
+        *ppvSigBlob = NULL;
+    if (pcbSigBlob)
+        *pcbSigBlob = 0;
+
+    LOCKREADIFFAILRET();
 
     IfFailGo(m_pStgdb->m_MiniMd.GetMethodSpecRecord(RidFromToken(mi), &pMethodSpecRec));
 
@@ -3777,8 +3798,13 @@ HRESULT MDInternalRW::GetTypeSpecFromToken(   // S_OK or error.
     _ASSERTE(TypeFromToken(typespec) == mdtTypeSpec);
     _ASSERTE(ppvSig && pcbSig);
 
+    *ppvSig = NULL;
+    *pcbSig = 0;
+
     if (!IsValidToken(typespec))
         return E_INVALIDARG;
+
+    LOCKREADIFFAILRET();
 
     TypeSpecRec *pRec;
     IfFailRet(m_pStgdb->m_MiniMd.GetTypeSpecRecord(RidFromToken(typespec), &pRec));
