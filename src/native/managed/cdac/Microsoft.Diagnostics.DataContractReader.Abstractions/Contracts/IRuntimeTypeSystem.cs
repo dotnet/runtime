@@ -89,6 +89,13 @@ public enum OptimizationTier : uint
     OptimizationTier1Instrumented,
 }
 
+public enum GenericContextLoc
+{
+    None,
+    InstArg,
+    ThisPtr,
+}
+
 
 public interface IRuntimeTypeSystem : IContract
 {
@@ -193,9 +200,7 @@ public interface IRuntimeTypeSystem : IContract
     bool IsGenericMethodDefinition(MethodDescHandle methodDesc) => throw new NotImplementedException();
     ReadOnlySpan<TypeHandle> GetGenericMethodInstantiation(MethodDescHandle methodDesc) => throw new NotImplementedException();
 
-    // Return true if the method requires a hidden instantiation argument (generic context parameter).
-    // This corresponds to native MethodDesc::RequiresInstArg().
-    bool RequiresInstArg(MethodDescHandle methodDesc) => throw new NotImplementedException();
+    GenericContextLoc GetGenericContextLoc(MethodDescHandle methodDescHandle) => throw new NotImplementedException();
 
     // Return true if the method uses the async calling convention (CORINFO_CALLCONV_ASYNCCALL).
     // This corresponds to native MethodDesc::IsAsyncMethod().
