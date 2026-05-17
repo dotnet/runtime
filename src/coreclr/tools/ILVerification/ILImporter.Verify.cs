@@ -2827,6 +2827,7 @@ namespace Internal.IL
         void ReportInvalidExceptionRegion()
         {
             VerificationError(VerifierError.EHClauseOutOfRange);
+            AbortMethodVerification();
         }
 
         //
