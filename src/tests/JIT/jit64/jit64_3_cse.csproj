@@ -1,8 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <ItemGroup>
-    <MergedWrapperProjectReference Include="opt/cse/**/*.??proj" />
-    <MergedWrapperProjectReference Remove="opt/cse/Huge*.??proj" />
-  </ItemGroup>
-
-  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
-</Project>
