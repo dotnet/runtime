@@ -81,6 +81,7 @@ public class DacDbiLoaderDumpTests : DumpTestBase
         int hr = dbi.GetModuleForAssembly(0, &resultModule, &resultIsLoaded);
         Assert.NotEqual(System.HResults.S_OK, hr);
         Assert.Equal(0UL, resultModule);
+        Assert.Equal(Interop.BOOL.FALSE, resultIsLoaded);
     }
 
     [ConditionalTheory]

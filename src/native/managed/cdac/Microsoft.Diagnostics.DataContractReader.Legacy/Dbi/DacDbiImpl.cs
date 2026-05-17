@@ -2473,13 +2473,14 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         int hr = HResults.S_OK;
         try
         {
-            if (vmModule == 0)
-                throw new ArgumentException("Module pointer must not be zero.", nameof(vmModule));
-
             if (pVmAssembly == null)
                 throw new ArgumentNullException(nameof(pVmAssembly));
 
             *pVmAssembly = 0;
+
+            if (vmModule == 0)
+                throw new ArgumentException("Module pointer must not be zero.", nameof(vmModule));
+
             Contracts.ILoader loader = _target.Contracts.Loader;
             Contracts.ModuleHandle handle = loader.GetModuleHandleFromModulePtr(new TargetPointer(vmModule));
             TargetPointer assemblyPtr = loader.GetAssembly(handle);
