@@ -29,9 +29,7 @@ namespace Wasm.Build.Tests
                 .UnwrapItemsAsArrays();
 
         // TODO: check that icu bits have been linked out
-        // Gated to Mono until CoreCLR-Wasm provides a stub for libSystem.Globalization.Native
-        // when InvariantGlobalization=true. See https://github.com/dotnet/runtime/issues/128219
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsMonoRuntime))]
+        [Theory]
         [MemberData(nameof(InvariantGlobalizationTestData), parameters: new object[] { /*aot*/ false })]
         [MemberData(nameof(InvariantGlobalizationTestData), parameters: new object[] { /*aot*/ true })]
         [TestCategory("native")]
@@ -39,11 +37,9 @@ namespace Wasm.Build.Tests
             => await TestInvariantGlobalization(config, aot, invariantGlobalization);
 
         // TODO: What else should we use to verify a relinked build?
-        // Gated to Mono until CoreCLR-Wasm provides a stub for libSystem.Globalization.Native
-        // when InvariantGlobalization=true. See https://github.com/dotnet/runtime/issues/128219
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsMonoRuntime))]
+        [Theory]
         [MemberData(nameof(InvariantGlobalizationTestData), parameters: new object[] { /*aot*/ false })]
-        [TestCategory("native-coreclr")]
+        [TestCategory("native")]
         public async Task RelinkingWithoutAOT(Configuration config, bool aot, bool? invariantGlobalization)
             => await TestInvariantGlobalization(config, aot, invariantGlobalization, isNativeBuild: true);
 

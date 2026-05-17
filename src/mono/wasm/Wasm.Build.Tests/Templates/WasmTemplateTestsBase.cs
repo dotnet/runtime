@@ -432,7 +432,7 @@ public class WasmTemplateTestsBase : BuildTestBase
     protected void ReplaceMainJsWithMinimalRunMain()
     {
         string mainJsPath = Path.Combine(_projectDir, "wwwroot", "main.js");
-        File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "icu_main.js"), mainJsPath, overwrite: true);
+        File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "minimal_main.js"), mainJsPath, overwrite: true);
     }
 
     protected void UpdateBrowserMainJs(string? targetFramework = null, string runtimeAssetsRelativePath = DefaultRuntimeAssetsRelativePath, bool forwardConsole = false)
