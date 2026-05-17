@@ -42,6 +42,5 @@ namespace System.Reflection
 
             return emitDelegate(obj, args);
         }
-
     }
 }

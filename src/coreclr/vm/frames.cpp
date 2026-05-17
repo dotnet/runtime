@@ -554,14 +554,14 @@ VOID Frame::Push(Thread *pThread)
 
     m_Next = pThread->GetFrame();
 
-    // GetOsPageSize() is used to relax the assert for cases where two Frames are
+    // minipal_getpagesize() is used to relax the assert for cases where two Frames are
     // declared in the same source function. We cannot predict the order
     // in which the C compiler will lay them out in the stack frame.
-    // So GetOsPageSize() is a guess of the maximum stack frame size of any method
+    // So minipal_getpagesize() is a guess of the maximum stack frame size of any method
     // with multiple Frames in coreclr.dll
     _ASSERTE((pThread->IsExecutingOnAltStack() ||
              (m_Next == FRAME_TOP) ||
-             (PBYTE(m_Next) + (2 * GetOsPageSize())) > PBYTE(this)) &&
+             (PBYTE(m_Next) + (2 * minipal_getpagesize())) > PBYTE(this)) &&
              "Pushing a frame out of order ?");
 
     _ASSERTE(// If AssertOnFailFast is set, the test expects to do stack overrun
@@ -1114,7 +1114,7 @@ void DynamicHelperFrame::GcScanRoots_Impl(promote_func *fn, ScanContext* sc)
 //--------------------------------------------------------------------
 // This constructor pushes a new GCFrame on the frame chain.
 //--------------------------------------------------------------------
-GCFrame::GCFrame(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, BOOL maybeInterior)
+GCFrame::GCFrame(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, UINT gcFlags)
 {
     CONTRACTL
     {
@@ -1130,7 +1130,7 @@ GCFrame::GCFrame(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, BOOL may
 #endif
 
 #ifdef USE_CHECKED_OBJECTREFS
-    if (!maybeInterior) {
+    if (!gcFlags) {
         UINT i;
         for(i = 0; i < numObjRefs; i++)
             Thread::ObjectRefProtected(&pObjRefs[i]);
@@ -1159,7 +1159,7 @@ GCFrame::GCFrame(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, BOOL may
 
     m_pObjRefs      = pObjRefs;
     m_numObjRefs    = numObjRefs;
-    m_MaybeInterior = maybeInterior;
+    m_gcFlags       = gcFlags;
 
     Push(pThread);
 }
@@ -1214,13 +1214,13 @@ void GCFrame::Push(Thread* pThread)
     m_Next = pThread->GetGCFrame();
     m_pCurThread = pThread;
 
-    // GetOsPageSize() is used to relax the assert for cases where two Frames are
+    // minipal_getpagesize() is used to relax the assert for cases where two Frames are
     // declared in the same source function. We cannot predict the order
     // in which the compiler will lay them out in the stack frame.
-    // So GetOsPageSize() is a guess of the maximum stack frame size of any method
+    // So minipal_getpagesize() is a guess of the maximum stack frame size of any method
     // with multiple GCFrames in coreclr.dll
     _ASSERTE(((m_Next == GCFRAME_TOP) ||
-              (PBYTE(m_Next->GetOSStackLocation()) + (2 * GetOsPageSize())) > PBYTE(this->GetOSStackLocation())) &&
+              (PBYTE(m_Next->GetOSStackLocation()) + (2 * minipal_getpagesize())) > PBYTE(this->GetOSStackLocation())) &&
              "Pushing a GCFrame out of order ?");
 
     pThread->SetGCFrame(this);
@@ -1314,9 +1314,10 @@ void GCFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
     for (UINT i = 0; i < m_numObjRefs; i++)
     {
         auto fromAddress = OBJECTREF_TO_UNCHECKED_OBJECTREF(m_pObjRefs[i]);
-        if (m_MaybeInterior)
+        if (m_gcFlags != 0)
         {
-            PromoteCarefully(fn, pRefs + i, sc, GC_CALL_INTERIOR | CHECK_APP_DOMAIN);
+            _ASSERTE(m_gcFlags & GC_CALL_INTERIOR);
+            PromoteCarefully(fn, pRefs + i, sc, m_gcFlags | CHECK_APP_DOMAIN);
         }
         else
         {

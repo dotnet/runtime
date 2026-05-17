@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -4089,7 +4089,7 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
 
         // Given a specified format character, parse and update the parsing result.
         //
-        private static bool ParseByFormat(
+        private static unsafe bool ParseByFormat(
             ref __DTString str,
             ref __DTString format,
             scoped ref ParsingInfo parseInfo,

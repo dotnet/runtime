@@ -10,6 +10,7 @@ namespace System.Collections.Tests
 {
     public static class HashSet_NonGeneric_Tests
     {
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public static void HashSet_CopyConstructor_ShouldWorkWithRandomizedEffectiveComparer()
         {

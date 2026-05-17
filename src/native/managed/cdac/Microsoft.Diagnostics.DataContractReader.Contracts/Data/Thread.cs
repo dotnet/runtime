@@ -23,10 +23,9 @@ internal sealed class Thread : IData<Thread>
         CachedStackBase = target.ReadPointerField(address, type, nameof(CachedStackBase));
         CachedStackLimit = target.ReadPointerField(address, type, nameof(CachedStackLimit));
 
-        // TEB does not exist on certain platforms
-        TEB = target.ReadPointerFieldOrNull(address, type, nameof(TEB));
-        LastThrownObject = target.ProcessedData.GetOrAdd<ObjectHandle>(
-            target.ReadPointerField(address, type, nameof(LastThrownObject)));
+        ExposedObject = target.ReadDataField<ObjectHandle>(address, type, nameof(ExposedObject));
+        LastThrownObject = target.ReadDataField<ObjectHandle>(address, type, nameof(LastThrownObject));
+        LastThrownObjectIsUnhandled = target.ReadField<uint>(address, type, nameof(LastThrownObjectIsUnhandled));
         LinkNext = target.ReadPointerField(address, type, nameof(LinkNext));
 
         // Address of the exception tracker
@@ -35,23 +34,25 @@ internal sealed class Thread : IData<Thread>
         UEWatsonBucketTrackerBuckets = target.ReadPointerFieldOrNull(address, type, nameof(UEWatsonBucketTrackerBuckets));
         ThreadLocalDataPtr = target.ReadPointerField(address, type, nameof(ThreadLocalDataPtr));
         DebuggerFilterContext = target.ReadPointerField(address, type, nameof(DebuggerFilterContext));
-        ProfilerFilterContext = target.ReadPointerFieldOrNull(address, type, nameof(ProfilerFilterContext));
+        CurrentCustomDebuggerNotification = target.ReadDataField<ObjectHandle>(address, type, nameof(CurrentCustomDebuggerNotification));
     }
 
     public uint Id { get; init; }
     public TargetNUInt OSId { get; init; }
     public uint State { get; init; }
+    public uint DebuggerControlledThreadState { get; } // Used for nameof only
     public uint PreemptiveGCDisabled { get; init; }
     public RuntimeThreadLocals? RuntimeThreadLocals { get; init; }
     public TargetPointer Frame { get; init; }
     public TargetPointer CachedStackBase { get; init; }
     public TargetPointer CachedStackLimit { get; init; }
-    public TargetPointer TEB { get; init; }
+    public ObjectHandle ExposedObject { get; init; }
     public ObjectHandle LastThrownObject { get; init; }
+    public uint LastThrownObjectIsUnhandled { get; init; }
     public TargetPointer LinkNext { get; init; }
     public TargetPointer ExceptionTracker { get; init; }
     public TargetPointer UEWatsonBucketTrackerBuckets { get; init; }
     public TargetPointer ThreadLocalDataPtr { get; init; }
     public TargetPointer DebuggerFilterContext { get; init; }
-    public TargetPointer ProfilerFilterContext { get; init; }
+    public ObjectHandle CurrentCustomDebuggerNotification { get; init; }
 }

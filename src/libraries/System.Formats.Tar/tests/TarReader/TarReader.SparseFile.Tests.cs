@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
-using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -34,13 +35,10 @@ namespace System.Formats.Tar.Tests
                 ["GNU.sparse.name"] = realName,
             };
             var entry = new PaxTarEntry(TarEntryType.RegularFile, "GNUSparseFile.0/" + realName, gnuSparseAttributes);
-            // Inject GNU.sparse.realsize into the internal _header.ExtendedAttributes dictionary via
-            // reflection, bypassing the public ReadOnlyDictionary façade and constructor validation.
-            // This allows intentionally-invalid archives (negative realsize) to be constructed for tests.
-            var headerField = typeof(TarEntry).GetField("_header", BindingFlags.NonPublic | BindingFlags.Instance)!;
-            var header = headerField.GetValue(entry)!;
-            var eaProp = header.GetType().GetProperty("ExtendedAttributes", BindingFlags.NonPublic | BindingFlags.Instance)!;
-            var ea = (Dictionary<string, string>)eaProp.GetValue(header)!;
+            // Inject GNU.sparse.realsize into the internal EA dictionary via UnsafeAccessor, bypassing
+            // the public ReadOnlyDictionary façade and constructor validation. This allows
+            // intentionally-invalid archives (negative realsize) to be constructed for tests.
+            var ea = (Dictionary<string, string>)ReadOnlyDictionaryAccessors<string, string>.GetInnerDictionary((ReadOnlyDictionary<string, string>)entry.ExtendedAttributes);
             ea["GNU.sparse.realsize"] = realSize.ToString();
             entry.DataStream = new MemoryStream(rawSparseData);
             writer.WriteEntry(entry);
@@ -545,6 +543,12 @@ namespace System.Formats.Tar.Tests
             {
                 Assert.Equal(0, buf[i]);
             }
+        }
+
+        private static class ReadOnlyDictionaryAccessors<TKey, TValue> where TKey : notnull
+        {
+            [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "m_dictionary")]
+            public static extern ref IDictionary<TKey, TValue> GetInnerDictionary(ReadOnlyDictionary<TKey, TValue> d);
         }
     }
 

@@ -9,6 +9,10 @@
 #ifndef __CALLHELPERS_H__
 #define __CALLHELPERS_H__
 
+#ifdef TARGET_WASM
+#include "wasm/callhelpers.hpp"
+#endif
+
 struct CallDescrData
 {
     // Input arguments

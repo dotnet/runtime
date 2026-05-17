@@ -460,3 +460,21 @@ public unsafe class Validate
         });
     }
 }
+
+[InlineArray(LengthConst)]
+public ref struct SpanArr
+{
+    private const int LengthConst = 100;
+    public Span<object> element;
+
+    public int Length => LengthConst;
+
+    [UnscopedRef]
+    public unsafe Span<object>* At(int index)
+    {
+        fixed (Span<object>* ptr = &element)
+        {
+            return ptr + index;
+        }
+    }
+}

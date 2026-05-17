@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -1343,5 +1344,296 @@ namespace System.IO.Compression.Tests
             }
         }
 
+        private static async Task<byte[]> CreateNonSeekableZip(bool async, byte[] entryData, int entryCount)
+        {
+            using MemoryStream backing = new MemoryStream();
+            using (var nonSeekable = new WrappedStream(backing, canRead: false, canWrite: true, canSeek: false))
+            {
+                ZipArchive createArchive = await CreateZipArchive(async, nonSeekable, ZipArchiveMode.Create);
+
+                for (int i = 0; i < entryCount; i++)
+                {
+                    ZipArchiveEntry entry = createArchive.CreateEntry($"entry{i}.bin", CompressionLevel.NoCompression);
+                    Stream s = await OpenEntryStream(async, entry);
+                    if (async)
+                        await s.WriteAsync(entryData);
+                    else
+                        s.Write(entryData);
+                    s.WriteByte((byte)i);
+                    await DisposeStream(async, s);
+                }
+
+                await DisposeZipArchive(async, createArchive);
+            }
+
+            return backing.ToArray();
+        }
+
+        private static List<(int LocalHeaderOffset, uint CompressedSize)> ParseZipEntryHeaders(byte[] zipBytes, out int totalEntries)
+        {
+            const uint EndOfCentralDirectorySignature = 0x06054B50;
+            const uint CentralDirectoryFileHeaderSignature = 0x02014B50;
+
+            ReadOnlySpan<byte> span = zipBytes.AsSpan();
+
+            int eocdOffset = -1;
+            for (int i = zipBytes.Length - 22; i >= 0; i--)
+            {
+                if (BinaryPrimitives.ReadUInt32LittleEndian(span.Slice(i)) == EndOfCentralDirectorySignature)
+                {
+                    eocdOffset = i;
+                    break;
+                }
+            }
+            Assert.True(eocdOffset >= 0, "EOCD not found.");
+
+            totalEntries = BinaryPrimitives.ReadUInt16LittleEndian(span.Slice(eocdOffset + 10));
+            int centralDirOffset = checked((int)BinaryPrimitives.ReadUInt32LittleEndian(span.Slice(eocdOffset + 16)));
+
+            List<(int LocalHeaderOffset, uint CompressedSize)> entries = new();
+            int cdOffset = centralDirOffset;
+            for (int i = 0; i < totalEntries; i++)
+            {
+                Assert.Equal(CentralDirectoryFileHeaderSignature, BinaryPrimitives.ReadUInt32LittleEndian(span.Slice(cdOffset)));
+                uint compressedSize = BinaryPrimitives.ReadUInt32LittleEndian(span.Slice(cdOffset + 20));
+                ushort fileNameLength = BinaryPrimitives.ReadUInt16LittleEndian(span.Slice(cdOffset + 28));
+                ushort extraFieldLength = BinaryPrimitives.ReadUInt16LittleEndian(span.Slice(cdOffset + 30));
+                ushort fileCommentLength = BinaryPrimitives.ReadUInt16LittleEndian(span.Slice(cdOffset + 32));
+                uint localHeaderOffset = BinaryPrimitives.ReadUInt32LittleEndian(span.Slice(cdOffset + 42));
+                entries.Add((checked((int)localHeaderOffset), compressedSize));
+                cdOffset += 46 + fileNameLength + extraFieldLength + fileCommentLength;
+            }
+
+            return entries;
+        }
+
+        /// <summary>
+        /// Creates a zip archive via a non-seekable stream (which forces data descriptor / bit 3),
+        /// then reopens in Update mode, adds a new entry, and verifies the archive structure remains valid.
+        /// </summary>
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task Update_DataDescriptorSignature_IsCorrectlyWrittenAndPreserved(bool async)
+        {
+            const uint LocalFileHeaderSignature = 0x04034b50;
+            const uint DataDescriptorSignature = 0x08074b50;
+            const ushort DataDescriptorBitFlag = 0x0008;
+
+            byte[] entryData = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+            int originalEntryCount = 3;
+
+            byte[] zipBytes = await CreateNonSeekableZip(async, entryData, originalEntryCount);
+
+            // Reopen in Update mode and add a new entry
+            byte[] updatedZipBytes;
+            using (MemoryStream ms = new MemoryStream())
+            {
+                ms.Write(zipBytes);
+                ms.Position = 0;
+
+                ZipArchive updateArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Update, leaveOpen: true);
+                Assert.Equal(originalEntryCount, updateArchive.Entries.Count);
+
+                ZipArchiveEntry added = updateArchive.CreateEntry("added.bin");
+                Stream addedStream = await OpenEntryStream(async, added);
+                if (async)
+                    await addedStream.WriteAsync(entryData);
+                else
+                    addedStream.Write(entryData);
+                addedStream.WriteByte(0xFF);
+                await DisposeStream(async, addedStream);
+
+                await DisposeZipArchive(async, updateArchive);
+
+                updatedZipBytes = ms.ToArray();
+            }
+
+            // Validate the updated archive structurally
+            List<(int LocalHeaderOffset, uint CompressedSize)> updatedEntries = ParseZipEntryHeaders(updatedZipBytes, out int updatedTotalEntries);
+            ReadOnlySpan<byte> updatedSpan = updatedZipBytes.AsSpan();
+
+            int dataDescriptorCount = 0;
+            int entriesWithDataDescriptorBit = 0;
+            foreach ((int localHeaderOffset, uint compressedSize) in updatedEntries)
+            {
+                Assert.Equal(LocalFileHeaderSignature, BinaryPrimitives.ReadUInt32LittleEndian(updatedSpan.Slice(localHeaderOffset)));
+                ushort flags = BinaryPrimitives.ReadUInt16LittleEndian(updatedSpan.Slice(localHeaderOffset + 6));
+
+                if ((flags & DataDescriptorBitFlag) != 0)
+                {
+                    entriesWithDataDescriptorBit++;
+
+                    ushort localFileNameLength = BinaryPrimitives.ReadUInt16LittleEndian(updatedSpan.Slice(localHeaderOffset + 26));
+                    ushort localExtraFieldLength = BinaryPrimitives.ReadUInt16LittleEndian(updatedSpan.Slice(localHeaderOffset + 28));
+                    int descriptorOffset = localHeaderOffset + 30 + localFileNameLength + localExtraFieldLength + (int)compressedSize;
+                    Assert.Equal(DataDescriptorSignature, BinaryPrimitives.ReadUInt32LittleEndian(updatedSpan.Slice(descriptorOffset)));
+
+                    dataDescriptorCount++;
+                }
+            }
+
+            Assert.Equal(originalEntryCount + 1, updatedTotalEntries);
+            Assert.Equal(originalEntryCount, entriesWithDataDescriptorBit);
+            Assert.Equal(originalEntryCount, dataDescriptorCount);
+        }
+
+        /// <summary>
+        /// Creates a zip archive via a non-seekable stream (which forces data descriptor / bit 3),
+        /// reopens in Update mode, deletes an entry from the middle, and verifies the remaining
+        /// entries are intact. This exercises the EndOfLocalEntryData values computed while reading
+        /// the central directory, which are then used to correctly shift subsequent entries after
+        /// an entry with a data descriptor is removed.
+        /// </summary>
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task Update_DataDescriptorWithDeletedEntry_PreservesArchive(bool async)
+        {
+            byte[] entryData = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+            int originalEntryCount = 5;
+
+            byte[] zipBytes = await CreateNonSeekableZip(async, entryData, originalEntryCount);
+
+            byte[] updatedZipBytes;
+            using (MemoryStream ms = new MemoryStream())
+            {
+                ms.Write(zipBytes);
+                ms.Position = 0;
+
+                ZipArchive updateArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Update, leaveOpen: true);
+                Assert.Equal(originalEntryCount, updateArchive.Entries.Count);
+
+                ZipArchiveEntry toDelete = updateArchive.GetEntry("entry1.bin");
+                Assert.NotNull(toDelete);
+                toDelete.Delete();
+
+                await DisposeZipArchive(async, updateArchive);
+
+                updatedZipBytes = ms.ToArray();
+            }
+
+            using (MemoryStream ms = new MemoryStream(updatedZipBytes))
+            {
+                ZipArchive readArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Read, leaveOpen: true);
+                Assert.Equal(originalEntryCount - 1, readArchive.Entries.Count);
+                Assert.Null(readArchive.GetEntry("entry1.bin"));
+
+                for (int i = 0; i < originalEntryCount; i++)
+                {
+                    if (i == 1)
+                        continue;
+
+                    ZipArchiveEntry entry = readArchive.GetEntry($"entry{i}.bin");
+                    Assert.NotNull(entry);
+                    byte[] expected = [.. entryData, (byte)i];
+                    byte[] actual = new byte[expected.Length];
+                    Stream rs = await OpenEntryStream(async, entry);
+                    if (async)
+                        await rs.ReadExactlyAsync(actual);
+                    else
+                        rs.ReadExactly(actual);
+                    Assert.Equal(expected, actual);
+                    await DisposeStream(async, rs);
+                }
+
+                await DisposeZipArchive(async, readArchive);
+            }
+        }
+
+        /// <summary>
+        /// Creates a zip archive via a non-seekable stream (which forces data descriptor / bit 3),
+        /// reopens in Update mode, modifies only metadata (LastWriteTime) on a middle entry without
+        /// reading its data, adds a new entry, and verifies all entries are intact.
+        /// This exercises the metadata-only rewrite path which must seek past data descriptors.
+        /// </summary>
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task Update_DataDescriptorWithMetadataOnlyChange_PreservesArchive(bool async)
+        {
+            byte[] entryData = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+            int originalEntryCount = 3;
+
+            byte[] zipBytes = await CreateNonSeekableZip(async, entryData, originalEntryCount);
+
+            // Reopen in Update mode, change metadata on the middle entry, and add a new entry
+            byte[] updatedZipBytes;
+            DateTimeOffset newTimestamp = new DateTimeOffset(2020, 6, 15, 12, 0, 0, TimeSpan.Zero);
+            using (MemoryStream ms = new MemoryStream())
+            {
+                ms.Write(zipBytes);
+                ms.Position = 0;
+
+                ZipArchive updateArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Update, leaveOpen: true);
+                Assert.Equal(originalEntryCount, updateArchive.Entries.Count);
+
+                // Only change metadata — do NOT open the entry stream (exercises the metadata-only rewrite path)
+                ZipArchiveEntry middleEntry = updateArchive.GetEntry("entry1.bin");
+                Assert.NotNull(middleEntry);
+                middleEntry.LastWriteTime = newTimestamp;
+
+                ZipArchiveEntry added = updateArchive.CreateEntry("added.bin");
+                Stream addedStream = await OpenEntryStream(async, added);
+                if (async)
+                    await addedStream.WriteAsync(entryData);
+                else
+                    addedStream.Write(entryData);
+                addedStream.WriteByte(0xFF);
+                await DisposeStream(async, addedStream);
+
+                await DisposeZipArchive(async, updateArchive);
+
+                updatedZipBytes = ms.ToArray();
+            }
+
+            // Verify the metadata change was preserved (compare DateTime only — DOS time format
+            // does not preserve timezone offset)
+            using (MemoryStream ms = new MemoryStream(updatedZipBytes))
+            {
+                ZipArchive readArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Read, leaveOpen: true);
+                ZipArchiveEntry verifyMiddle = readArchive.GetEntry("entry1.bin");
+                Assert.NotNull(verifyMiddle);
+                Assert.Equal(newTimestamp.DateTime, verifyMiddle.LastWriteTime.DateTime);
+                await DisposeZipArchive(async, readArchive);
+            }
+
+            // Validate structural integrity — original entries must retain bit 3 and
+            // have CRC/sizes zeroed in the local header (values live in the data descriptor).
+            const uint LocalFileHeaderSignature = 0x04034b50;
+            const uint DataDescriptorSignature = 0x08074b50;
+            const ushort DataDescriptorBitFlag = 0x0008;
+
+            List<(int LocalHeaderOffset, uint CompressedSize)> entries = ParseZipEntryHeaders(updatedZipBytes, out int totalEntries);
+            Assert.Equal(originalEntryCount + 1, totalEntries);
+
+            ReadOnlySpan<byte> span = updatedZipBytes.AsSpan();
+            for (int i = 0; i < entries.Count; i++)
+            {
+                (int localHeaderOffset, uint compressedSize) = entries[i];
+                Assert.Equal(LocalFileHeaderSignature, BinaryPrimitives.ReadUInt32LittleEndian(span.Slice(localHeaderOffset)));
+                ushort flags = BinaryPrimitives.ReadUInt16LittleEndian(span.Slice(localHeaderOffset + 6));
+                uint localCrc = BinaryPrimitives.ReadUInt32LittleEndian(span.Slice(localHeaderOffset + 14));
+                uint localCompSize = BinaryPrimitives.ReadUInt32LittleEndian(span.Slice(localHeaderOffset + 18));
+                uint localUncompSize = BinaryPrimitives.ReadUInt32LittleEndian(span.Slice(localHeaderOffset + 22));
+
+                if (i < originalEntryCount)
+                {
+                    // Original entries must preserve bit 3 and have zeroed CRC/sizes in the local header.
+                    Assert.True((flags & DataDescriptorBitFlag) != 0, $"Entry {i}: bit 3 should be preserved.");
+                    Assert.True(localCrc == 0, $"Entry {i}: local header CRC should be 0 when bit 3 is set.");
+                    Assert.True(localCompSize == 0, $"Entry {i}: local header compressed size should be 0 when bit 3 is set.");
+                    Assert.True(localUncompSize == 0, $"Entry {i}: local header uncompressed size should be 0 when bit 3 is set.");
+
+                    // Verify the data descriptor is present with the correct signature.
+                    ushort fileNameLength = BinaryPrimitives.ReadUInt16LittleEndian(span.Slice(localHeaderOffset + 26));
+                    ushort extraFieldLength = BinaryPrimitives.ReadUInt16LittleEndian(span.Slice(localHeaderOffset + 28));
+                    int descriptorOffset = localHeaderOffset + 30 + fileNameLength + extraFieldLength + (int)compressedSize;
+                    Assert.Equal(DataDescriptorSignature, BinaryPrimitives.ReadUInt32LittleEndian(span.Slice(descriptorOffset)));
+                }
+                else
+                {
+                    // Newly added entry should NOT have bit 3 (written on seekable stream).
+                    Assert.True((flags & DataDescriptorBitFlag) == 0, $"Entry {i}: added entry should not have bit 3.");
+                }
+            }
+        }
     }
 }

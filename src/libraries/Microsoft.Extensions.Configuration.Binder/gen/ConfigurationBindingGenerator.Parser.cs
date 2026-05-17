@@ -723,13 +723,16 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             }
 
                             TypeRef propertyTypeRef = EnqueueTransitiveType(typeParseInfo, property.Type, DiagnosticDescriptors.PropertyNotSupported, propertyName);
+                            ImmutableArray<AttributeData> attributes = property.GetAttributes();
 
-                            AttributeData? attributeData = property.GetAttributes().FirstOrDefault(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, _typeSymbols.ConfigurationKeyNameAttribute));
+                            AttributeData? attributeData = attributes.FirstOrDefault(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, _typeSymbols.ConfigurationKeyNameAttribute));
                             string configKeyName = attributeData?.ConstructorArguments.FirstOrDefault().Value as string ?? propertyName;
+                            bool isIgnored = attributes.Any(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, _typeSymbols.ConfigurationIgnoreAttribute));
 
                             PropertySpec spec = new(property, propertyTypeRef)
                             {
-                                ConfigurationKeyName = configKeyName
+                                ConfigurationKeyName = configKeyName,
+                                IsIgnored = isIgnored,
                             };
 
                             (properties ??= new(StringComparer.OrdinalIgnoreCase))[propertyName] = spec;
@@ -750,7 +753,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     {
                         string parameterName = parameter.Name;
 
-                        if (properties?.TryGetValue(parameterName, out PropertySpec? propertySpec) is not true)
+                        if (properties?.TryGetValue(parameterName, out PropertySpec? propertySpec) is not true || propertySpec.IsIgnored)
                         {
                             (missingParameters ??= new()).Add(parameterName);
                         }

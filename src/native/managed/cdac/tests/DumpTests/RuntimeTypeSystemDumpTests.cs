@@ -230,6 +230,32 @@ public class RuntimeTypeSystemDumpTests : DumpTestBase
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
+    public void RuntimeTypeSystem_IsObjRef_AreConsistent(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
+        ILoader loader = Target.Contracts.Loader;
+
+        TargetPointer objectMT = Target.ReadPointer(Target.ReadGlobalPointer("ObjectMethodTable"));
+        TargetPointer stringMT = Target.ReadPointer(Target.ReadGlobalPointer("StringMethodTable"));
+        TargetPointer objectArrayMT = Target.ReadPointer(Target.ReadGlobalPointer("ObjectArrayMethodTable"));
+
+        TypeHandle objectHandle = rts.GetTypeHandle(objectMT);
+        TypeHandle stringHandle = rts.GetTypeHandle(stringMT);
+        TypeHandle objectArrayHandle = rts.GetTypeHandle(objectArrayMT);
+
+        TargetPointer systemAssembly = loader.GetSystemAssembly();
+        ModuleHandle coreLibModule = loader.GetModuleHandleFromAssemblyPtr(systemAssembly);
+        TypeHandle intPtrHandle = rts.GetTypeByNameAndModule("IntPtr", "System", coreLibModule);
+
+        Assert.True(rts.IsObjRef(objectHandle));
+        Assert.True(rts.IsObjRef(stringHandle));
+        Assert.True(rts.IsObjRef(objectArrayHandle));
+        Assert.False(rts.IsObjRef(intPtrHandle));
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
     public void RuntimeTypeSystem_ObjectMethodTableHasIntroducedMethods(TestConfiguration config)
     {
         InitializeDumpTest(config);
@@ -314,10 +340,45 @@ public class RuntimeTypeSystemDumpTests : DumpTestBase
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
+    public void RuntimeTypeSystem_IsValueType(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
+        ILoader loader = Target.Contracts.Loader;
+
+        // Object and String are not value types
+        TargetPointer objectMTGlobal = Target.ReadGlobalPointer("ObjectMethodTable");
+        TargetPointer objectMT = Target.ReadPointer(objectMTGlobal);
+        Assert.False(rts.IsValueType(rts.GetTypeHandle(objectMT)));
+
+        TargetPointer stringMTGlobal = Target.ReadGlobalPointer("StringMethodTable");
+        TargetPointer stringMT = Target.ReadPointer(stringMTGlobal);
+        Assert.False(rts.IsValueType(rts.GetTypeHandle(stringMT)));
+
+        // Int32 is a value type (TruePrimitive category)
+        TargetPointer systemAssembly = loader.GetSystemAssembly();
+        ModuleHandle coreLibModule = loader.GetModuleHandleFromAssemblyPtr(systemAssembly);
+        TypeHandle int32Type = rts.GetTypeByNameAndModule(
+            "Int32",
+            "System",
+            coreLibModule);
+        Assert.True(int32Type.Address != 0, "Could not find Int32 type in CoreLib");
+        Assert.True(rts.IsValueType(int32Type));
+
+        // Nullable<> is a value type (Category_Nullable) — loaded because Container<int>.Value is int?
+        TypeHandle nullableType = rts.GetTypeByNameAndModule(
+            "Nullable`1",
+            "System",
+            coreLibModule);
+        Assert.True(nullableType.Address != 0, "Could not find Nullable<> type in CoreLib");
+        Assert.True(rts.IsValueType(nullableType));
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
     public void RuntimeTypeSystem_GenericTypeDefinitionContainsGenericVariables(TestConfiguration config)
     {
-        // TODO: use default debuggee as soon as heap dumps are fixed
-        InitializeDumpTest(config, "LocalVariables", "full");
+        InitializeDumpTest(config);
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
         ILoader loader = Target.Contracts.Loader;
 

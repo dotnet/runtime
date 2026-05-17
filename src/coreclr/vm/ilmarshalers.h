@@ -3268,24 +3268,16 @@ protected:
     const BinderMethodID m_idClearManaged;
 };
 
-class ILNativeArrayMarshaler : public ILMngdMarshaler
+class ILNativeArrayMarshaler : public ILMarshaler
 {
 public:
     enum
     {
         c_fInOnly               = FALSE,
+        c_nativeSize            = TARGET_POINTER_SIZE,
     };
 
-    ILNativeArrayMarshaler() :
-        ILMngdMarshaler(
-            METHOD__MNGD_NATIVE_ARRAY_MARSHALER__CONVERT_SPACE_TO_MANAGED,
-            METHOD__MNGD_NATIVE_ARRAY_MARSHALER__CONVERT_CONTENTS_TO_MANAGED,
-            METHOD__MNGD_NATIVE_ARRAY_MARSHALER__CONVERT_SPACE_TO_NATIVE,
-            METHOD__MNGD_NATIVE_ARRAY_MARSHALER__CONVERT_CONTENTS_TO_NATIVE,
-            METHOD__MNGD_NATIVE_ARRAY_MARSHALER__CLEAR_NATIVE,
-            METHOD__MNGD_NATIVE_ARRAY_MARSHALER__CLEAR_NATIVE_CONTENTS,
-            METHOD__NIL
-            )
+    ILNativeArrayMarshaler()
     {
         LIMITED_METHOD_CONTRACT;
         m_dwSavedSizeArg = LOCAL_NUM_UNUSED;
@@ -3297,6 +3289,8 @@ public:
     void EmitSetupArgumentForMarshalling(ILCodeStream* pslILEmit) override;
     void EmitConvertSpaceNativeToCLR(ILCodeStream* pslILEmit) override;
     void EmitConvertSpaceCLRToNative(ILCodeStream* pslILEmit) override;
+    void EmitConvertContentsCLRToNative(ILCodeStream* pslILEmit) override;
+    void EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit) override;
     void EmitClearNative(ILCodeStream* pslILEmit) override;
     void EmitClearNativeContents(ILCodeStream* pslILEmit) override;
 
@@ -3305,39 +3299,39 @@ public:
         LIMITED_METHOD_CONTRACT;
         return false;
     }
+
 protected:
+
+    LocalDesc GetNativeType() override
+    {
+        LIMITED_METHOD_CONTRACT;
+        return LocalDesc(ELEMENT_TYPE_I);
+    }
+
+    LocalDesc GetManagedType() override
+    {
+        LIMITED_METHOD_CONTRACT;
+        return LocalDesc(ELEMENT_TYPE_OBJECT);
+    }
+
+    bool NeedsClearNative() override
+    {
+        LIMITED_METHOD_CONTRACT;
+        return true;
+    }
 
     BOOL CheckSizeParamIndexArg(const CREATE_MARSHALER_CARRAY_OPERANDS &mops, CorElementType *pElementType);
 
     // Calculate element count and load it on evaluation stack
     void EmitLoadElementCount(ILCodeStream* pslILEmit);
 
-    void EmitCreateMngdMarshaler(ILCodeStream* pslILEmit) override;
-
     void EmitLoadNativeSize(ILCodeStream* pslILEmit);
     void EmitNewSavedSizeArgLocal(ILCodeStream* pslILEmit);
 
-private :
     DWORD m_dwSavedSizeArg;
 };
 
-struct MngdNativeArrayMarshaler
-{
-    MethodTable*            m_pElementMT;
-    TypeHandle              m_Array;
-    BOOL                    m_NativeDataValid;
-    BOOL                    m_BestFitMap;
-    BOOL                    m_ThrowOnUnmappableChar;
-    VARTYPE                 m_vt;
-};
-
-extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ConvertSpaceToNative(MngdNativeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome);
-extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ConvertContentsToNative(MngdNativeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome);
-extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ConvertSpaceToManaged(MngdNativeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome, INT32 cElements);
-extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ConvertContentsToManaged(MngdNativeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome);
-extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ClearNativeContents(MngdNativeArrayMarshaler* pThis, void** pNativeHome, INT32 cElements);
-
-class ILFixedArrayMarshaler : public ILMngdMarshaler
+class ILFixedArrayMarshaler : public ILMarshaler
 {
 public:
     enum
@@ -3345,20 +3339,6 @@ public:
         c_nativeSize = VARIABLESIZE,
         c_fInOnly = FALSE
     };
-
-    ILFixedArrayMarshaler() :
-        ILMngdMarshaler(
-            METHOD__MNGD_FIXED_ARRAY_MARSHALER__CONVERT_SPACE_TO_MANAGED,
-            METHOD__MNGD_FIXED_ARRAY_MARSHALER__CONVERT_CONTENTS_TO_MANAGED,
-            METHOD__MNGD_FIXED_ARRAY_MARSHALER__CONVERT_SPACE_TO_NATIVE,
-            METHOD__MNGD_FIXED_ARRAY_MARSHALER__CONVERT_CONTENTS_TO_NATIVE,
-            METHOD__MNGD_FIXED_ARRAY_MARSHALER__CLEAR_NATIVE_CONTENTS,
-            METHOD__MNGD_FIXED_ARRAY_MARSHALER__CLEAR_NATIVE_CONTENTS,
-            METHOD__NIL
-        )
-    {
-        LIMITED_METHOD_CONTRACT;
-    }
 
     bool SupportsArgumentMarshal(DWORD dwMarshalFlags, UINT* pErrorResID) override
     {
@@ -3374,23 +3354,32 @@ public:
 
 protected:
 
-    void EmitCreateMngdMarshaler(ILCodeStream* pslILEmit) override;
-};
+    LocalDesc GetNativeType() override
+    {
+        LIMITED_METHOD_CONTRACT;
+        return LocalDesc(ELEMENT_TYPE_I);
+    }
 
-struct MngdFixedArrayMarshaler
-{
-    MethodTable* m_pElementMT;
-    TypeHandle   m_Array;
-    BOOL         m_BestFitMap;
-    BOOL         m_ThrowOnUnmappableChar;
-    VARTYPE      m_vt;
-    UINT32       m_cElements;
-};
+    LocalDesc GetManagedType() override
+    {
+        LIMITED_METHOD_CONTRACT;
+        return LocalDesc(ELEMENT_TYPE_OBJECT);
+    }
 
-extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ConvertContentsToNative(MngdFixedArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void* pNativeHome);
-extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ConvertSpaceToManaged(MngdFixedArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void* pNativeHome);
-extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ConvertContentsToManaged(MngdFixedArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void* pNativeHome);
-extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ClearNativeContents(MngdFixedArrayMarshaler* pThis, void* pNativeHome);
+    bool NeedsClearNative() override
+    {
+        LIMITED_METHOD_CONTRACT;
+        return true;
+    }
+
+    void EmitConvertSpaceCLRToNative(ILCodeStream* pslILEmit) override;
+    void EmitConvertSpaceNativeToCLR(ILCodeStream* pslILEmit) override;
+    void EmitConvertContentsCLRToNative(ILCodeStream* pslILEmit) override;
+    void EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit) override;
+    void EmitLoadNativeSize(ILCodeStream* pslILEmit);
+    void EmitClearNativeContents(ILCodeStream* pslILEmit) override;
+    void EmitClearNative(ILCodeStream* pslILEmit) override;
+};
 
 #ifdef FEATURE_COMINTEROP
 class ILSafeArrayMarshaler : public ILMngdMarshaler
@@ -3469,9 +3458,11 @@ public:
     VARTYPE         m_vt;
     BYTE            m_fStatic;     // StaticCheckStateFlags
     BYTE            m_nolowerbounds;
+    PCODE           m_pConvertContentsToNativeCode;
+    PCODE           m_pConvertContentsToManagedCode;
 };
 
-extern "C" void QCALLTYPE MngdSafeArrayMarshaler_CreateMarshaler(MngdSafeArrayMarshaler* pThis, MethodTable* pMT, UINT32 iRank, UINT32 dwFlags);
+extern "C" void QCALLTYPE MngdSafeArrayMarshaler_CreateMarshaler(MngdSafeArrayMarshaler* pThis, MethodTable* pMT, UINT32 iRank, UINT32 dwFlags, PCODE pConvertToNative, PCODE pConvertToManaged);
 extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertSpaceToNative(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome);
 extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertContentsToNative(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome, QCall::ObjectHandleOnStack pOriginalManaged);
 extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertSpaceToManaged(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome);

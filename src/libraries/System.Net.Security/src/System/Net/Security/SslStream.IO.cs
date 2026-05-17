@@ -616,11 +616,35 @@ namespace System.Net.Security
             }
 #endif
 
-            if (!VerifyRemoteCertificate(_sslAuthenticationOptions.CertValidationDelegate, _sslAuthenticationOptions.CertificateContext?.Trust, ref alertToken, out sslPolicyErrors, out chainStatus))
+#pragma warning disable CS0162 // unreachable code on some platforms
+            if (!SslStreamPal.CertValidationInCallback)
             {
-                _handshakeCompleted = false;
-                return false;
+                if (!VerifyRemoteCertificate(_sslAuthenticationOptions.CertificateContext?.Trust, ref alertToken, out sslPolicyErrors, out chainStatus))
+                {
+                    _handshakeCompleted = false;
+                    return false;
+                }
             }
+            else if (_remoteCertificate is null)
+            {
+                // CertVerifyCallback was not called during the handshake. This happens when:
+                // 1. The session was resumed — the cert is available from the SSL handle
+                //    but OpenSSL skips the verify callback.
+                // 2. The peer didn't provide a certificate at all.
+                // In both cases, run VerifyRemoteCertificate to invoke the user's callback
+                // and perform full validation.
+                if (!VerifyRemoteCertificate(_sslAuthenticationOptions.CertificateContext?.Trust, ref alertToken, out sslPolicyErrors, out chainStatus))
+                {
+                    _handshakeCompleted = false;
+                    return false;
+                }
+            }
+            else
+            {
+                sslPolicyErrors = SslPolicyErrors.None;
+                chainStatus = X509ChainStatusFlags.NoError;
+            }
+#pragma warning restore CS0162 // unreachable code on some platforms
 
             _handshakeCompleted = true;
             return true;
@@ -631,21 +655,26 @@ namespace System.Net.Security
             ProtocolToken alertToken = default;
             if (!CompleteHandshake(ref alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus))
             {
-                if (sslAuthenticationOptions!.CertValidationDelegate != null)
-                {
-                    // there may be some chain errors but the decision was made by custom callback. Details should be tracing if enabled.
-                    SendAuthResetSignal(new ReadOnlySpan<byte>(alertToken.Payload), ExceptionDispatchInfo.Capture(new AuthenticationException(SR.net_ssl_io_cert_custom_validation, null)));
-                }
-                else if (sslPolicyErrors == SslPolicyErrors.RemoteCertificateChainErrors && chainStatus != X509ChainStatusFlags.NoError)
-                {
-                    // We failed only because of chain and we have some insight.
-                    SendAuthResetSignal(new ReadOnlySpan<byte>(alertToken.Payload), ExceptionDispatchInfo.Capture(new AuthenticationException(SR.Format(SR.net_ssl_io_cert_chain_validation, chainStatus), null)));
-                }
-                else
-                {
-                    // Simple add sslPolicyErrors as crude info.
-                    SendAuthResetSignal(new ReadOnlySpan<byte>(alertToken.Payload), ExceptionDispatchInfo.Capture(new AuthenticationException(SR.Format(SR.net_ssl_io_cert_validation, sslPolicyErrors), null)));
-                }
+                SendAuthResetSignal(new ReadOnlySpan<byte>(alertToken.Payload), ExceptionDispatchInfo.Capture(CreateCertificateValidationException(sslAuthenticationOptions, sslPolicyErrors, chainStatus)));
+            }
+        }
+
+        internal static Exception CreateCertificateValidationException(SslAuthenticationOptions options, SslPolicyErrors sslPolicyErrors, X509ChainStatusFlags chainStatus)
+        {
+            if (options.CertValidationDelegate != null)
+            {
+                // there may be some chain errors but the decision was made by custom callback. Details should be tracing if enabled.
+                return ExceptionDispatchInfo.SetCurrentStackTrace(new AuthenticationException(SR.net_ssl_io_cert_custom_validation, null));
+            }
+            else if (sslPolicyErrors == SslPolicyErrors.RemoteCertificateChainErrors && chainStatus != X509ChainStatusFlags.NoError)
+            {
+                // We failed only because of chain and we have some insight.
+                return ExceptionDispatchInfo.SetCurrentStackTrace(new AuthenticationException(SR.Format(SR.net_ssl_io_cert_chain_validation, chainStatus), null));
+            }
+            else
+            {
+                // Simple add sslPolicyErrors as crude info.
+                return ExceptionDispatchInfo.SetCurrentStackTrace(new AuthenticationException(SR.Format(SR.net_ssl_io_cert_validation, sslPolicyErrors), null));
             }
         }
 
