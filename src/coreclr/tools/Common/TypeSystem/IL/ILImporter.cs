@@ -275,17 +275,16 @@ namespace Internal.IL
             for (int i = 0; i < _exceptionRegions.Length; i++)
             {
                 var r = _exceptionRegions[i];
+
                 bool hasOutOfRangeBounds =
                     (uint)r.ILRegion.TryOffset >= (uint)_basicBlocks.Length ||
                     (uint)r.ILRegion.TryLength > (uint)_basicBlocks.Length - (uint)r.ILRegion.TryOffset;
 
-                // Check filter region bounds (for filter exception handlers)
                 if (r.ILRegion.Kind == ILExceptionRegionKind.Filter)
                 {
                     hasOutOfRangeBounds |= (uint)r.ILRegion.FilterOffset >= (uint)_basicBlocks.Length;
                 }
 
-                // Check handler region bounds (avoiding integer overflow)
                 hasOutOfRangeBounds |=
                     (uint)r.ILRegion.HandlerOffset >= (uint)_basicBlocks.Length ||
                     (uint)r.ILRegion.HandlerLength > (uint)_basicBlocks.Length - (uint)r.ILRegion.HandlerOffset;
