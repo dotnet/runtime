@@ -4261,8 +4261,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetModuleData(VMPTR_Module vmModu
 }
 
 
-// Enumerate all Assemblies in an appdomain.
-// Implementation of IDacDbiInterface::EnumerateAssembliesInAppDomain,
+// Implementation of IDacDbiInterface::EnumerateAssembliesInAppDomain.
 // Enumerate all the assemblies in the appdomain.
 //   - If the containing appdomain is unloading, then don't enumerate any assemblies in the domain.
 //     This is to enforce rules at code:IDacDbiInterface#Enumeration.
