@@ -983,7 +983,7 @@ GenTree* OptIfConversionDsc::TrySelectToCondOpLcl(GenTreeConditional* select)
 
 //-----------------------------------------------------------------------------
 // TrySelectToBitwiseOp: Try to optimize:
-// SELECT(x !=  3,  x > 3, 1) -> (x ==  3) | (x > 3)
+// SELECT(x !=  3,  x > 3, 1) -> (x ==  3) | (x >  3)
 // SELECT(x == 13, y == 4, 0) -> (x == 13) & (y == 4)
 //
 // Arguments:
@@ -1003,8 +1003,8 @@ GenTree* OptIfConversionDsc::TrySelectToBitwiseOp(GenTreeConditional* select)
         return nullptr;
     }
 
-    int64_t trueVal = falseInput->AsIntConCommon()->IntegralValue();
-    genTreeOps bitOp = (trueVal == 1) ? GT_OR : ((trueVal == 0) ? GT_AND : GT_NONE);
+    int64_t    trueVal = falseInput->AsIntConCommon()->IntegralValue();
+    genTreeOps bitOp   = (trueVal == 1) ? GT_OR : ((trueVal == 0) ? GT_AND : GT_NONE);
     if (bitOp == GT_NONE)
     {
         return nullptr;
@@ -1012,6 +1012,8 @@ GenTree* OptIfConversionDsc::TrySelectToBitwiseOp(GenTreeConditional* select)
 
     if (bitOp == GT_OR)
     {
+        // Need to reverse for OR because of:
+        // SELECT(x != 3, x > 3, 1) -> (x == 3) | (x > 3)
         cond = m_compiler->gtReverseCond(cond);
     }
 

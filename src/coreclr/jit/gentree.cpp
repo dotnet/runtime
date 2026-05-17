@@ -15381,6 +15381,16 @@ GenTree* Compiler::gtFoldAndOrXor(GenTree* tree)
 
         GenTree* op1 = tree->gtGetOp1();
         GenTree* op2 = tree->gtGetOp2();
+
+        auto supportedOp = [](GenTree* op) {
+            return op->OperIsAnyLocal() || op->OperIsConst();
+        };
+        if (!supportedOp(op1->gtGetOp1()) || !supportedOp(op1->gtGetOp2()) || !supportedOp(op2->gtGetOp1()) ||
+            !supportedOp(op2->gtGetOp2()))
+        {
+            return tree;
+        }
+
         if (!op1->OperIs(GT_EQ))
         {
             std::swap(op1, op2);
@@ -15399,8 +15409,8 @@ GenTree* Compiler::gtFoldAndOrXor(GenTree* tree)
             }
         }
 
-        if (fusedCmp != GT_NONE && GenTree::Compare(op1->gtGetOp1(), op2->gtGetOp1()) &&
-            GenTree::Compare(op1->gtGetOp2(), op2->gtGetOp2()))
+        if (fusedCmp != GT_NONE && GenTree::Compare(op1->gtGetOp2(), op2->gtGetOp2()) &&
+            GenTree::Compare(op1->gtGetOp1(), op2->gtGetOp1()))
         {
             return gtNewOperNode(fusedCmp, tree->TypeGet(), op1->gtGetOp1(), op1->gtGetOp2());
         }
