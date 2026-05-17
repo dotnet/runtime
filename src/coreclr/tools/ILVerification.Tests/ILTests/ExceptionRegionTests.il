@@ -814,4 +814,17 @@
         // Handler region ends at offset 1000 which is beyond code size (code size is 2)
         .try 0 to 1 catch [System.Runtime]System.Exception handler 1 to 1000
     }
+
+    .method public hidebysig instance void FilterOffset.NotBeforeHandlerOffset_Invalid_EHClauseOutOfRange() cil managed
+    {
+        .maxstack 1
+
+        ldc.i4.0
+        endfilter
+        leave.s IL_0004
+        IL_0004: ret
+        // Filter region starts at the same offset as handler region.
+        .try 0 to 2 filter 2 handler 2 to 4
+    }
+
 }

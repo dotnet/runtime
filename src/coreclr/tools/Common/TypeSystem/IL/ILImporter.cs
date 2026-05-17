@@ -282,7 +282,9 @@ namespace Internal.IL
 
                 if (r.ILRegion.Kind == ILExceptionRegionKind.Filter)
                 {
-                    hasOutOfRangeBounds |= (uint)r.ILRegion.FilterOffset >= (uint)_basicBlocks.Length;
+                    hasOutOfRangeBounds |=
+                        (uint)r.ILRegion.FilterOffset >= (uint)_basicBlocks.Length ||
+                        (uint)r.ILRegion.FilterOffset >= (uint)r.ILRegion.HandlerOffset;
                 }
 
                 hasOutOfRangeBounds |=
