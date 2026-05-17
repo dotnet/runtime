@@ -131,7 +131,8 @@ namespace System.Collections.Frozen
             newDictionary = source as Dictionary<TKey, TValue>;
             if (newDictionary is null || (newDictionary.Count != 0 && !newDictionary.Comparer.Equals(comparer)))
             {
-                newDictionary = new Dictionary<TKey, TValue>(comparer);
+                int capacity = source is ICollection<KeyValuePair<TKey, TValue>> collection ? collection.Count : 0;
+                newDictionary = new Dictionary<TKey, TValue>(capacity, comparer);
                 foreach (KeyValuePair<TKey, TValue> pair in source)
                 {
                     // Dictionary's constructor uses Add, which will throw on duplicates.
