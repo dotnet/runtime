@@ -64,6 +64,11 @@ namespace ILCompiler.DependencyAnalysis
                             factory.TypeDefinition(targetEcmaType.Module, targetEcmaType.Handle),
                             "Debugger attribute target type"));
                     }
+                    else if (targetType is not null)
+                    {
+                        dependencies ??= new DependencyList();
+                        dependencies.Add(factory.CustomAttribute(module, customAttribute), "Debugger attribute target type");
+                    }
 
                     continue;
                 }
@@ -196,7 +201,7 @@ namespace ILCompiler.DependencyAnalysis
                     object constructorArgument = decodedValue.FixedArguments[0].Value;
                     proxyType = constructorArgument as TypeDesc;
                     if (proxyType is null && constructorArgument is string proxyTypeName)
-                        proxyType = _module.GetTypeByCustomAttributeTypeName(proxyTypeName, throwIfNotFound: false);
+                        proxyType = targetEcmaType.Module.GetTypeByCustomAttributeTypeName(proxyTypeName, throwIfNotFound: false);
                 }
 
                 if (proxyType?.GetTypeDefinition() is EcmaType proxyEcmaType)
