@@ -926,6 +926,13 @@ bool EvaluateSimdCvtScalableMaskToVector(var_types baseType, simdscalable_t* vec
         return false;
     }
 
+    // Only zero and one are valid
+    if (maskCon.gtSimdMaskScalableIndex != 1)
+    {
+        assert(false);
+        return false;
+    }
+
     vecCon->gtSimdScalableBaseType = baseType;
     vecCon->gtSimdScalableKind     = SimdScalableRepeated;
     vecCon->gtSimdScalableStep     = 0;
