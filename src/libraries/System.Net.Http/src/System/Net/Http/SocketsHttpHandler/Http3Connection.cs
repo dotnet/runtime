@@ -511,7 +511,7 @@ namespace System.Net.Http
             }
         }
 
-        public static byte[] BuildSettingsFrame(HttpConnectionSettings settings)
+        public static unsafe byte[] BuildSettingsFrame(HttpConnectionSettings settings)
         {
             Span<byte> buffer = stackalloc byte[4 + VariableLengthIntegerHelper.MaximumEncodedLength];
 

@@ -857,44 +857,46 @@ bool GenTree::gtHasReg(Compiler* comp) const
 int GenTree::GetRegisterDstCount(Compiler* compiler) const
 {
     assert(!isContained());
-    if (!IsMultiRegNode())
-    {
-        return IsValue() ? 1 : 0;
-    }
-    else if (IsMultiRegCall())
+
+#if FEATURE_MULTIREG_RET
+    if (IsMultiRegCall())
     {
         return AsCall()->GetReturnTypeDesc()->GetReturnRegCount();
     }
-    else if (IsCopyOrReload())
-    {
-        return gtGetOp1()->GetRegisterDstCount(compiler);
-    }
+
 #if !defined(TARGET_64BIT)
-    else if (OperIsMultiRegOp())
+    if (OperIsMultiRegOp())
     {
         assert(OperIs(GT_MUL_LONG));
         return 2;
     }
 #endif
-#ifdef FEATURE_HW_INTRINSICS
-    else if (OperIsHWIntrinsic())
+#endif // FEATURE_MULTIREG_RET
+
+    if (IsCopyOrReload())
     {
-        assert(TypeIs(TYP_STRUCT));
+        return gtGetOp1()->GetRegisterDstCount(compiler);
+    }
 
-        const GenTreeHWIntrinsic* intrinsic   = AsHWIntrinsic();
-        const NamedIntrinsic      intrinsicId = intrinsic->GetHWIntrinsicId();
-        assert(HWIntrinsicInfo::IsMultiReg(intrinsicId));
+#ifdef FEATURE_HW_INTRINSICS
+    if (OperIsHWIntrinsic())
+    {
+        const NamedIntrinsic intrinsicId = AsHWIntrinsic()->GetHWIntrinsicId();
 
-        return HWIntrinsicInfo::GetMultiRegCount(intrinsicId);
+        if (HWIntrinsicInfo::IsMultiReg(intrinsicId))
+        {
+            return HWIntrinsicInfo::GetMultiRegCount(intrinsicId);
+        }
     }
 #endif // FEATURE_HW_INTRINSICS
 
-    if (OperIsScalarLocal())
+    if (IsMultiRegLclVar())
     {
         return AsLclVar()->GetFieldCount(compiler);
     }
-    assert(!"Unexpected multi-reg node");
-    return 0;
+
+    assert(!IsMultiRegNode());
+    return IsValue() ? 1 : 0;
 }
 
 //-----------------------------------------------------------------------------------
@@ -927,7 +929,7 @@ bool GenTree::IsMultiRegNode() const
 #endif
 #endif // FEATURE_MULTIREG_RET
 
-    if (OperIs(GT_COPY, GT_RELOAD))
+    if (IsCopyOrReload())
     {
         return true;
     }
@@ -5000,7 +5002,7 @@ bool Compiler::gtIsLikelyRegVar(GenTree* tree)
 
     // If this is an EH-live var, return false if it is a def,
     // as it will have to go to memory.
-    if (varDsc->lvLiveInOutOfHndlr && ((tree->gtFlags & GTF_VAR_DEF) != 0))
+    if (varDsc->lvTracked && varDsc->IsLiveInOutOfHandler() && ((tree->gtFlags & GTF_VAR_DEF) != 0))
     {
         return false;
     }
@@ -5027,6 +5029,22 @@ bool Compiler::gtIsLikelyRegVar(GenTree* tree)
 #endif
 
     return true;
+}
+
+//------------------------------------------------------------------------
+// IsEHVarARegCandidate:
+//   Check if a local is a candidate to go in a register even though it is live
+//   into EH.
+//
+// Arguments:
+//   varDsc - Info about the local
+//
+// Returns:
+//   True if so.
+//
+bool Compiler::IsEHVarARegCandidate(LclVarDsc* varDsc)
+{
+    return lvaEnregEHVars && varDsc->lvSingleDefRegCandidate && varDsc->lvRefCnt() > 1;
 }
 
 //------------------------------------------------------------------------
@@ -9782,7 +9800,7 @@ GenTreeCall* Compiler::gtNewCallNode(gtCallTypes           callType,
         node->gtFlags |= GTF_CALL_POP_ARGS;
 #endif // UNIX_X86_ABI
     node->gtCallType = callType;
-    INDEBUG(node->callSig = nullptr;)
+    INDEBUG_OR_WASM(node->callSig = nullptr;)
     node->tailCallInfo    = nullptr;
     node->gtRetClsHnd     = nullptr;
     node->gtCallMoreFlags = GTF_CALL_M_EMPTY;
@@ -10034,35 +10052,18 @@ void Compiler::gtInitializeStoreNode(GenTree* store, GenTree* value)
     assert(store->Data() == value);
 
 #if defined(FEATURE_SIMD)
-#ifndef TARGET_X86
-    if (varTypeIsSIMD(store))
+    if (varTypeIsSIMDOrMask(store))
     {
         // TODO-ASG: delete this zero-diff quirk.
         if (!value->IsCall() || !value->AsCall()->ShouldHaveRetBufArg())
         {
-            // We want to track SIMD stores as being intrinsics since they are
-            // functionally SIMD `mov` instructions and are more efficient when
+            // We want to track SIMD/Mask stores as being intrinsics since they
+            // are functionally `mov` instructions and are more efficient when
             // we don't promote, particularly when it occurs due to inlining.
             SetOpLclRelatedToSIMDIntrinsic(store);
             SetOpLclRelatedToSIMDIntrinsic(value);
         }
     }
-#else // TARGET_X86
-    // TODO-Cleanup: merge into the all-arch.
-    if (varTypeIsSIMD(value) || varTypeIsMask(value))
-    {
-        bool isRelatedToSimdIntrinsic = value->OperIs(GT_HWINTRINSIC, GT_CNS_VEC);
-
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
-        isRelatedToSimdIntrinsic |= value->OperIs(GT_CNS_MSK);
-#endif // FEATURE_MASKED_HW_INTRINSICS
-
-        if (isRelatedToSimdIntrinsic)
-        {
-            SetOpLclRelatedToSIMDIntrinsic(store);
-        }
-    }
-#endif // TARGET_X86
 #endif // FEATURE_SIMD
 }
 
@@ -11376,7 +11377,7 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree)
     // we only really need one physical copy of it. Therefore a shallow pointer copy will suffice.
     // (Note that this still holds even if the tree we are cloning was created by an inlinee compiler,
     // because the inlinee still uses the inliner's memory allocator anyway.)
-    INDEBUG(copy->callSig = tree->callSig;)
+    INDEBUG_OR_WASM(copy->callSig = tree->callSig;)
 
     if (tree->IsUnmanaged())
     {
@@ -13021,7 +13022,6 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
     }
 }
 
-#if FEATURE_MULTIREG_RET
 //----------------------------------------------------------------------------------
 // gtDispMultiRegCount: determine how many registers to print for a multi-reg node
 //
@@ -13067,7 +13067,6 @@ unsigned Compiler::gtDispMultiRegCount(GenTree* tree)
         return tree->GetMultiRegCount(this);
     }
 }
-#endif // FEATURE_MULTIREG_RET
 
 //----------------------------------------------------------------------------------
 // gtDispRegVal: Print the register(s) defined by the given node
@@ -13090,7 +13089,6 @@ void Compiler::gtDispRegVal(GenTree* tree)
             return;
     }
 
-#if FEATURE_MULTIREG_RET
     if (tree->IsMultiRegNode())
     {
         // 0th reg is GetRegNum(), which is already printed above.
@@ -13104,7 +13102,6 @@ void Compiler::gtDispRegVal(GenTree* tree)
             printf(",%s", genIsValidReg(reg) ? compRegVarName(reg) : "NA");
         }
     }
-#endif
 }
 
 // We usually/commonly don't expect to print anything longer than this string,
@@ -14961,25 +14958,32 @@ void Compiler::gtDispLIRNode(GenTree* node, const char* prefixMsg /* = nullptr *
 
 GenTree* Compiler::gtFoldExpr(GenTree* tree)
 {
-    unsigned kind = tree->OperKind();
-
-    /* We must have a simple operation to fold */
-
-    // If we're in CSE, it's not safe to perform tree
-    // folding given that it can will potentially
-    // change considered CSE candidates.
-    if (optValnumCSE_phase)
-    {
-        return tree;
-    }
+    // We should never be called from CSE. Various optimizations below
+    // assume that it is safe to swap operands if one is a constant.
+    assert(!optValnumCSE_phase);
 
     if (!opts.Tier0OptimizationEnabled())
     {
         return tree;
     }
 
-    if (!(kind & GTK_SMPOP))
+    if (tree->OperIsLeaf())
     {
+        // Nothing to fold
+        return tree;
+    }
+    else if (tree->OperIsBinary())
+    {
+        return gtFoldExprBinary(tree->AsOp());
+    }
+    else if (tree->OperIsUnary())
+    {
+        return gtFoldExprUnary(tree->AsUnOp());
+    }
+    else
+    {
+        assert(tree->OperIsSpecial());
+
         if (tree->OperIsConditional())
         {
             return gtFoldExprConditional(tree);
@@ -14994,65 +14998,126 @@ GenTree* Compiler::gtFoldExpr(GenTree* tree)
 
         return tree;
     }
+}
 
-    GenTree* op1 = tree->AsOp()->gtOp1;
+//------------------------------------------------------------------------
+// gtFoldExprUnary: see if an unary operation is foldable
+//
+// Arguments:
+//    tree - tree to examine
+//
+// Returns:
+//    The original tree if no folding happened.
+//    An alternative tree if folding happens.
+//
+GenTree* Compiler::gtFoldExprUnary(GenTreeUnOp* tree)
+{
+    assert(tree->OperIsUnary());
+    assert(!optValnumCSE_phase);
+    assert(opts.Tier0OptimizationEnabled());
 
-    /* Filter out non-foldable trees that can have constant children */
+    GenTree* op1 = tree->gtGetOp1();
 
-    assert(kind & (GTK_UNOP | GTK_BINOP));
-    switch (tree->gtOper)
+    if ((op1 == nullptr) || tree->OperIs(GT_RETFILT, GT_RETURN, GT_IND))
     {
-        case GT_RETFILT:
-        case GT_RETURN:
-        case GT_IND:
-            return tree;
-        default:
-            break;
+        // Filter out non-foldable trees
+        return tree;
     }
 
-    /* try to fold the current node */
-
-    if ((kind & GTK_UNOP) && op1)
+    if (op1->OperIsConst())
     {
-        if (op1->OperIsConst())
-        {
-            return gtFoldExprConst(tree);
-        }
+        return gtFoldExprConst(tree);
     }
-    else if ((kind & GTK_BINOP) && op1 && tree->AsOp()->gtOp2)
+
+    genTreeOps oper = tree->OperGet();
+
+    // We intentionally do not destroy the nodes as some places check if
+    // folding produces a constant and throws the result away otherwise
+
+    switch (oper)
     {
-        GenTree* op2 = tree->AsOp()->gtOp2;
-
-        // The atomic operations are exempted here because they are never computable statically;
-        // one of their arguments is an address.
-        if (op1->OperIsConst() && op2->OperIsConst() && !tree->OperIsAtomicOp())
+        case GT_NOT:
         {
-            /* both nodes are constants - fold the expression */
-            return gtFoldExprConst(tree);
-        }
-        else if (op1->OperIsConst() || op2->OperIsConst())
-        {
-            // At least one is a constant - see if we have a
-            // special operator that can use only one constant
-            // to fold - e.g. booleans
-
-            if (opts.OptimizationDisabled())
+            if (op1->OperIs(oper))
             {
-                // Too heavy for tier0
-                return tree;
+                JITDUMP("Folding ~(~a) => a\n")
+                return op1->gtGetOp1();
             }
+            break;
+        }
 
+        case GT_NEG:
+        {
+            if (op1->OperIs(oper))
+            {
+                JITDUMP("Folding -(-a) => a\n")
+                return op1->gtGetOp1();
+            }
+            break;
+        }
+
+        default:
+        {
+            break;
+        }
+    }
+
+    return tree;
+}
+
+//------------------------------------------------------------------------
+// gtFoldExprBinary: see if a binary operation is foldable
+//
+// Arguments:
+//    tree - tree to examine
+//
+// Returns:
+//    The original tree if no folding happened.
+//    An alternative tree if folding happens.
+//
+GenTree* Compiler::gtFoldExprBinary(GenTreeOp* tree)
+{
+    assert(tree->OperIsBinary());
+    assert(!optValnumCSE_phase);
+    assert(opts.Tier0OptimizationEnabled());
+
+    GenTree* op1 = tree->gtGetOp1();
+    GenTree* op2 = tree->gtGetOp2();
+
+    if ((op1 == nullptr) || (op2 == nullptr) || tree->OperIsAtomicOp())
+    {
+        // Filter out non-foldable trees
+        // The atomic operations are exempted here because they are never computable statically; one of their arguments
+        // is an address.
+        return tree;
+    }
+
+    if (op1->OperIsConst())
+    {
+        if (op2->OperIsConst())
+        {
+            // both nodes are constants - fold the expression
+            return gtFoldExprConst(tree);
+        }
+        else if (opts.OptimizationEnabled())
+        {
+            // Too heavy for tier0, so only do when opts are enabled
             return gtFoldExprSpecial(tree);
         }
-        else if (tree->OperIsCompare())
+    }
+    else if (op2->OperIsConst())
+    {
+        if (opts.OptimizationEnabled())
         {
-            /* comparisons of two local variables can sometimes be folded */
-
-            return gtFoldExprCompare(tree);
+            // Too heavy for tier0, so only do when opts are enabled
+            return gtFoldExprSpecial(tree);
         }
     }
-
-    /* Return the original node (folded/bashed or not) */
+    else if (tree->OperIsCompare())
+    {
+        // comparisons of two local variables can sometimes be folded
+        return gtFoldExprCompare(tree);
+    }
 
     return tree;
 }
@@ -19612,6 +19677,15 @@ bool GenTreeIntConCommon::ImmedValCanBeFolded(Compiler* comp, genTreeOps op)
     // There are cases where we do want to allow folding of handle comparisons
     // (e.g., typeof(T) == typeof(int)).
     return !ImmedValNeedsReloc(comp) || (op == GT_EQ) || (op == GT_NE);
+}
+
+UINT64 GenTreeIntConCommon::UnsignedIntegralValue() const
+{
+    uint64_t mask = (UINT64_MAX >> (64 - (genTypeSize(this) * BITS_PER_BYTE)));
+
+    int64_t  signExtended = IntegralValue();
+    uint64_t zeroExtended = signExtended & mask;
+    return zeroExtended;
 }
 
 #if defined(TARGET_AMD64) || defined(TARGET_RISCV64)

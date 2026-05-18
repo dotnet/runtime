@@ -1071,23 +1071,28 @@ void AsyncTransformation::LiftLIREdges(BasicBlock*                     block,
 
     for (GenTree* tree : defs)
     {
-        // TODO-CQ: Enable this. It currently breaks our recognition of how the
-        // call is stored.
-        // if (tree->OperIs(GT_LCL_VAR))
-        //{
-        //    LclVarDsc* dsc = m_compiler->lvaGetDesc(tree->AsLclVarCommon());
-        //    if (!dsc->IsAddressExposed())
-        //    {
-        //        // No interference by IR invariants.
-        //        LIR::AsRange(block).Remove(tree);
-        //        LIR::AsRange(block).InsertAfter(beyond, tree);
-        //        continue;
-        //    }
-        //}
-
         LIR::Use use;
         bool     gotUse = LIR::AsRange(block).TryGetUse(tree, &use);
         assert(gotUse); // Defs list should not contain unused values.
+
+        if (tree->IsInvariant())
+        {
+            LIR::AsRange(block).Remove(tree);
+            LIR::AsRange(block).InsertBefore(use.User(), tree);
+            continue;
+        }
+
+        if (tree->OperIs(GT_LCL_VAR))
+        {
+            LclVarDsc* dsc = m_compiler->lvaGetDesc(tree->AsLclVarCommon());
+            if (!dsc->IsAddressExposed())
+            {
+                // No interference by IR invariants
+                LIR::AsRange(block).Remove(tree);
+                LIR::AsRange(block).InsertBefore(use.User(), tree);
+                continue;
+            }
+        }
 
         unsigned newLclNum = use.ReplaceWithLclVar(m_compiler);
         layoutBuilder->AddLocal(newLclNum);

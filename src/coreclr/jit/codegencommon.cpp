@@ -2680,11 +2680,7 @@ void CodeGen::genReportEHClauses(EHClauseInfo* clauses)
 bool CodeGenInterface::genUseOptimizedWriteBarriers(GCInfo::WriteBarrierForm wbf)
 {
 #if defined(TARGET_X86) && NOGC_WRITE_BARRIERS
-#ifdef DEBUG
-    return (wbf != GCInfo::WBF_NoBarrier_CheckNotHeapInDebug); // This one is always a call to a C++ method.
-#else
     return true;
-#endif
 #else
     return false;
 #endif
@@ -2709,12 +2705,7 @@ bool CodeGenInterface::genUseOptimizedWriteBarriers(GCInfo::WriteBarrierForm wbf
 bool CodeGenInterface::genUseOptimizedWriteBarriers(GenTreeStoreInd* store)
 {
 #if defined(TARGET_X86) && NOGC_WRITE_BARRIERS
-#ifdef DEBUG
-    GCInfo::WriteBarrierForm wbf = m_compiler->codeGen->gcInfo.gcIsWriteBarrierCandidate(store);
-    return (wbf != GCInfo::WBF_NoBarrier_CheckNotHeapInDebug); // This one is always a call to a C++ method.
-#else
     return true;
-#endif
 #else
     return false;
 #endif
@@ -2745,11 +2736,6 @@ CorInfoHelpFunc CodeGenInterface::genWriteBarrierHelperForWriteBarrierForm(GCInf
 
         case GCInfo::WBF_BarrierUnchecked:
             return CORINFO_HELP_ASSIGN_REF;
-
-#ifdef DEBUG
-        case GCInfo::WBF_NoBarrier_CheckNotHeapInDebug:
-            return CORINFO_HELP_ASSIGN_REF_ENSURE_NONHEAP;
-#endif // DEBUG
 
         default:
             unreached();
@@ -3229,7 +3215,7 @@ void CodeGen::genSpillOrAddRegisterParam(
     }
 
     LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
-    if (varDsc->lvOnFrame && (!varDsc->lvIsInReg() || varDsc->lvLiveInOutOfHndlr))
+    if (varDsc->lvOnFrame && (!varDsc->lvIsInReg() || varDsc->IsLiveInOutOfHandler()))
     {
         LclVarDsc* paramVarDsc = m_compiler->lvaGetDesc(paramLclNum);
 
@@ -3291,7 +3277,7 @@ void CodeGen::genSpillOrAddRegisterParam(
 void CodeGen::genSpillOrAddNonStandardRegisterParam(unsigned lclNum, regNumber sourceReg, RegGraph* graph)
 {
     LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
-    if (varDsc->lvOnFrame && (!varDsc->lvIsInReg() || varDsc->lvLiveInOutOfHndlr))
+    if (varDsc->lvOnFrame && (!varDsc->lvIsInReg() || varDsc->IsLiveInOutOfHandler()))
     {
         GetEmitter()->emitIns_S_R(ins_Store(varDsc->TypeGet()), emitActualTypeSize(varDsc), sourceReg, lclNum, 0);
     }
@@ -3720,6 +3706,11 @@ void CodeGen::genCheckUseBlockInit()
             continue;
         }
 
+        if (m_compiler->lvaIsUnknownSizeLocal(varNum))
+        {
+            continue;
+        }
+
         if (m_compiler->fgVarIsNeverZeroInitializedInProlog(varNum))
         {
             varDsc->lvMustInit = 0;
@@ -3774,7 +3765,7 @@ void CodeGen::genCheckUseBlockInit()
                     {
                         if (!varDsc->lvRegister)
                         {
-                            if (!varDsc->lvIsInReg() || varDsc->lvLiveInOutOfHndlr)
+                            if (!varDsc->lvIsInReg() || varDsc->IsLiveInOutOfHandler())
                             {
                                 // Var is on the stack at entry.
                                 initStkLclCnt +=
@@ -4070,12 +4061,18 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
             // Locals that are (only) in registers to begin with do not need
             // their stack home zeroed. Their register will be zeroed later in
             // the prolog.
-            if (varDsc->lvIsInReg() && !varDsc->lvLiveInOutOfHndlr)
+            if (varDsc->lvIsInReg() && !varDsc->IsLiveInOutOfHandler())
             {
                 continue;
             }
 
             noway_assert(varDsc->lvOnFrame);
+
+            if (m_compiler->lvaIsUnknownSizeLocal(varNum))
+            {
+                // This local will belong on the UnknownSizeFrame, which will handle zeroing instead.
+                continue;
+            }
 
             // lvMustInit can only be set for GC types or TYP_STRUCT types
             // or when compInitMem is true
@@ -4815,6 +4812,11 @@ void CodeGen::genFinalizeFrame()
             regSet.rsSetRegsModified(maskPairRegs);
         }
     }
+
+    if (m_compiler->compUsesUnknownSizeFrame)
+    {
+        regSet.rsSetRegsModified(RBM_UNKBASE);
+    }
 #endif
 
 #ifdef DEBUG
@@ -5122,6 +5124,11 @@ void CodeGen::genFnProlog()
             continue;
         }
 
+        if (m_compiler->lvaIsUnknownSizeLocal(varNum))
+        {
+            continue;
+        }
+
         signed int loOffs = varDsc->GetStackOffset();
         signed int hiOffs = varDsc->GetStackOffset() + m_compiler->lvaLclStackHomeSize(varNum);
 
@@ -5155,7 +5162,7 @@ void CodeGen::genFnProlog()
         }
 
         bool isInReg    = varDsc->lvIsInReg();
-        bool isInMemory = !isInReg || varDsc->lvLiveInOutOfHndlr;
+        bool isInMemory = !isInReg || varDsc->IsLiveInOutOfHandler();
 
         // Note that 'lvIsInReg()' will only be accurate for variables that are actually live-in to
         // the first block. This will include all possibly-uninitialized locals, whose liveness
@@ -5165,7 +5172,7 @@ void CodeGen::genFnProlog()
         // occupying it on entry.
         if (isInReg)
         {
-            if (m_compiler->lvaEnregEHVars && varDsc->lvLiveInOutOfHndlr)
+            if (m_compiler->lvaEnregEHVars && varDsc->IsLiveInOutOfHandler())
             {
                 isInReg = VarSetOps::IsMember(m_compiler, m_compiler->fgFirstBB->bbLiveIn, varDsc->lvVarIndex);
             }
@@ -5546,6 +5553,13 @@ void CodeGen::genFnProlog()
     // This is the end of the OS-reported prolog for purposes of unwinding
     //
     //-------------------------------------------------------------------------
+
+#ifdef TARGET_ARM64
+    if (m_compiler->compUsesUnknownSizeFrame)
+    {
+        genUnknownSizeFrame();
+    }
+#endif
 
 #ifdef TARGET_ARM
     if (needToEstablishFP)

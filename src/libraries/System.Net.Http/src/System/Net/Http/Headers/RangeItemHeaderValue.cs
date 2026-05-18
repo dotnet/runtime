@@ -49,7 +49,7 @@ namespace System.Net.Http.Headers
             _to = source._to;
         }
 
-        public override string ToString()
+        public override unsafe string ToString()
         {
             Span<char> stackBuffer = stackalloc char[128];
 

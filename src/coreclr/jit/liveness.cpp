@@ -82,6 +82,7 @@ private:
 
     void                 InterBlockLocalVarLiveness();
     void                 DoLiveVarAnalysis();
+    void                 MarkMustInitAndEHVars(VARSET_VALARG_TP finallyVars, VARSET_VALARG_TP exceptVars);
     bool                 PerBlockAnalysis(BasicBlock* block, bool keepAliveThis);
     void                 ComputeLife(VARSET_TP& tp,
                                      GenTree*   startNode,
@@ -157,26 +158,6 @@ void Liveness<TLiveness>::Init()
     JITDUMP("In Liveness::Init\n");
 
     SelectTrackedLocals();
-
-    // We mark a lcl as must-init in a first pass of local variable
-    // liveness (Liveness1), then assertion prop eliminates the
-    // uninit-use of a variable Vk, asserting it will be init'ed to
-    // null.  Then, in a second local-var liveness (Liveness2), the
-    // variable Vk is no longer live on entry to the method, since its
-    // uses have been replaced via constant propagation.
-    //
-    // This leads to a bug: since Vk is no longer live on entry, the
-    // register allocator sees Vk and an argument Vj as having
-    // disjoint lifetimes, and allocates them to the same register.
-    // But Vk is still marked "must-init", and this initialization (of
-    // the register) trashes the value in Vj.
-    //
-    // Therefore, initialize must-init to false for all variables in
-    // each liveness phase.
-    for (unsigned lclNum = 0; lclNum < m_compiler->lvaCount; ++lclNum)
-    {
-        m_compiler->lvaTable[lclNum].lvMustInit = false;
-    }
 
     for (BasicBlock* const block : m_compiler->Blocks())
     {
@@ -424,124 +405,41 @@ void Liveness<TLiveness>::SelectTrackedLocals()
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
 
         // Start by assuming that the variable will be tracked.
-        varDsc->lvTracked = 1;
+        bool isTracked = true;
         INDEBUG(varDsc->lvTrackedWithoutIndex = 0);
 
         if (varDsc->lvRefCnt(m_compiler->lvaRefCountState) == 0)
         {
             // Zero ref count, make this untracked.
-            varDsc->lvTracked = 0;
+            isTracked = false;
             varDsc->setLvRefCntWtd(0, m_compiler->lvaRefCountState);
         }
 
-#if !defined(TARGET_64BIT)
-        if (varTypeIsLong(varDsc) && varDsc->lvPromoted)
-        {
-            varDsc->lvTracked = 0;
-        }
-#endif // !defined(TARGET_64BIT)
-
-        // Variables that are address-exposed, and all struct locals, are never enregistered, or tracked.
-        // (The struct may be promoted, and its field variables enregistered/tracked, or the VM may "normalize"
-        // its type so that its not seen by the JIT as a struct.)
-        // Pinned variables may not be tracked (a condition of the GCInfo representation)
-        // or enregistered, on x86 -- it is believed that we can enregister pinned (more properly, "pinning")
-        // references when using the general GC encoding.
+        // Variables that are address-exposed are not tracked except for special cases.
         if (!TLiveness::TrackAddressExposedLocals && varDsc->IsAddressExposed())
         {
-            varDsc->lvTracked = 0;
-            assert(varDsc->lvType != TYP_STRUCT || varDsc->lvDoNotEnregister); // For structs, should have set this when
-                                                                               // we set m_addrExposed.
+            isTracked = false;
         }
-        if (varTypeIsStruct(varDsc))
+
+        // Liveness for promoted structs are tracked more precisely for their fields.
+        if (varDsc->lvPromoted)
         {
-            // Promoted structs will never be considered for enregistration anyway,
-            // and the DoNotEnregister flag was used to indicate whether promotion was
-            // independent or dependent.
-            if (varDsc->lvPromoted)
-            {
-                varDsc->lvTracked = 0;
-            }
-            else if (!varDsc->IsEnregisterableType())
-            {
-                m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::NotRegSizeStruct));
-            }
-            else if (varDsc->lvType == TYP_STRUCT)
-            {
-                if (!varDsc->lvRegStruct && !m_compiler->compEnregStructLocals())
-                {
-                    m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::DontEnregStructs));
-                }
-                else if (varDsc->lvIsMultiRegArgOrRet())
-                {
-                    // Prolog and return generators do not support SIMD<->general register moves.
-                    m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::IsStructArg));
-                }
-#if defined(TARGET_ARM)
-                else if (varDsc->lvIsParam)
-                {
-                    // On arm we prespill all struct args,
-                    // TODO-Arm-CQ: keep them in registers, it will need a fix
-                    // to "On the ARM we will spill any incoming struct args" logic in codegencommon.
-                    m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::IsStructArg));
-                }
-#endif // TARGET_ARM
-            }
+            isTracked = false;
         }
-        if (varDsc->lvIsStructField &&
-            (m_compiler->lvaGetParentPromotionType(lclNum) != Compiler::PROMOTION_TYPE_INDEPENDENT))
-        {
-            m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::DepField));
-        }
+
+        // Pinned variables are never tracked since they effectively have
+        // invisible uses by the runtime that we currently do not reason about.
+        // For example, the nulling of these will look like dead stores, but
+        // these are actually observed by GC and important to keep.
+        // Furthermore, x86 GC encoding does not support enregistering these.
         if (varDsc->lvPinned)
         {
-            varDsc->lvTracked = 0;
-#ifdef JIT32_GCENCODER
-            m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::PinningRef));
-#endif
-        }
-        if (!m_compiler->compEnregLocals())
-        {
-            m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::NoRegVars));
+            isTracked = false;
         }
 
-        var_types type = genActualType(varDsc->TypeGet());
+        varDsc->lvTracked = isTracked;
 
-        switch (type)
-        {
-            case TYP_FLOAT:
-            case TYP_DOUBLE:
-            case TYP_INT:
-            case TYP_LONG:
-            case TYP_REF:
-            case TYP_BYREF:
-#ifdef FEATURE_SIMD
-            case TYP_SIMD8:
-            case TYP_SIMD12:
-            case TYP_SIMD16:
-#ifdef TARGET_XARCH
-            case TYP_SIMD32:
-            case TYP_SIMD64:
-#endif // TARGET_XARCH
-#ifdef FEATURE_MASKED_HW_INTRINSICS
-            case TYP_MASK:
-#endif // FEATURE_MASKED_HW_INTRINSICS
-#endif // FEATURE_SIMD
-            case TYP_STRUCT:
-                break;
-
-            case TYP_UNDEF:
-            case TYP_UNKNOWN:
-                noway_assert(!"lvType not set correctly");
-                varDsc->lvType = TYP_INT;
-
-                FALLTHROUGH;
-
-            default:
-                varDsc->lvTracked = 0;
-        }
-
-        if (varDsc->lvTracked)
+        if (isTracked)
         {
             trackedCandidates[trackedCandidateCount++] = lclNum;
         }
@@ -1174,60 +1072,7 @@ void Liveness<TLiveness>::InterBlockLocalVarLiveness()
         }
     }
 
-    if (!TLiveness::IsEarly)
-    {
-        LclVarDsc* varDsc;
-        unsigned   varNum;
-
-        for (varNum = 0, varDsc = m_compiler->lvaTable; varNum < m_compiler->lvaCount; varNum++, varDsc++)
-        {
-            // Ignore the variable if it's not tracked
-
-            if (!varDsc->lvTracked)
-            {
-                continue;
-            }
-
-            // Fields of dependently promoted structs may be tracked. We shouldn't set lvMustInit on them since
-            // the whole parent struct will be initialized; however, lvLiveInOutOfHndlr should be set on them
-            // as appropriate.
-
-            bool fieldOfDependentlyPromotedStruct = m_compiler->lvaIsFieldOfDependentlyPromotedStruct(varDsc);
-
-            // Un-init locals may need auto-initialization. Note that the
-            // liveness of such locals will bubble to the top (fgFirstBB)
-            // in fgInterBlockLocalVarLiveness()
-
-            if (!varDsc->lvIsParam && !varDsc->lvIsParamRegTarget &&
-                VarSetOps::IsMember(m_compiler, m_compiler->fgFirstBB->bbLiveIn, varDsc->lvVarIndex) &&
-                (m_compiler->info.compInitMem || varTypeIsGC(varDsc->TypeGet())) && !fieldOfDependentlyPromotedStruct)
-            {
-                varDsc->lvMustInit = true;
-            }
-
-            // Mark all variables that are live on entry to an exception handler
-            // or on exit from a filter handler or finally.
-
-            bool isFinallyVar = VarSetOps::IsMember(m_compiler, finallyVars, varDsc->lvVarIndex);
-            if (isFinallyVar || VarSetOps::IsMember(m_compiler, exceptVars, varDsc->lvVarIndex))
-            {
-                // Mark the variable appropriately.
-                m_compiler->lvaSetVarLiveInOutOfHandler(varNum);
-
-                // Mark all pointer variables live on exit from a 'finally' block as
-                // 'explicitly initialized' (must-init) for GC-ref types.
-
-                if (isFinallyVar)
-                {
-                    // Set lvMustInit only if we have a non-arg, GC pointer.
-                    if (!varDsc->lvIsParam && !varDsc->lvIsParamRegTarget && varTypeIsGC(varDsc->TypeGet()))
-                    {
-                        varDsc->lvMustInit = true;
-                    }
-                }
-            }
-        }
-    }
+    MarkMustInitAndEHVars(finallyVars, exceptVars);
 
     /*-------------------------------------------------------------------------
      * Now fill in liveness info within each basic block - Backward DataFlow
@@ -1483,6 +1328,71 @@ void Liveness<TLiveness>::DoLiveVarAnalysis()
         m_compiler->fgDispBBLiveness();
     }
 #endif // DEBUG
+}
+
+//------------------------------------------------------------------------
+// MarkMustInitAndEHVars:
+//   Set lvLiveInOutOfHandler / IsLiveInOutOfHandler() state and lvMustInit
+//   for variables based on liveness results.
+//
+// Arguments:
+//    finallyVars - Locals live into finally blocks
+//    exceptVars  - Locals live into catch handlers
+//
+template <typename TLiveness>
+void Liveness<TLiveness>::MarkMustInitAndEHVars(VARSET_VALARG_TP finallyVars, VARSET_VALARG_TP exceptVars)
+{
+    for (unsigned varNum = 0; varNum < m_compiler->lvaCount; varNum++)
+    {
+        LclVarDsc* varDsc            = m_compiler->lvaGetDesc(varNum);
+        varDsc->lvLiveInOutOfHandler = false;
+        varDsc->lvMustInit           = false;
+
+        if (!varDsc->lvTracked)
+        {
+            continue;
+        }
+
+        // Fields of dependently promoted structs may be tracked. We shouldn't set lvMustInit on them since
+        // the whole parent struct will be initialized; however, lvLiveInOutOfHandler should be set on them
+        // as appropriate.
+
+        bool fieldOfDependentlyPromotedStruct = m_compiler->lvaIsFieldOfDependentlyPromotedStruct(varDsc);
+
+        // Un-init locals may need auto-initialization. Note that the
+        // liveness of such locals will bubble to the top (fgFirstBB)
+        // in fgInterBlockLocalVarLiveness()
+
+        if (!varDsc->lvIsParam && !varDsc->lvIsParamRegTarget &&
+            VarSetOps::IsMember(m_compiler, m_compiler->fgFirstBB->bbLiveIn, varDsc->lvVarIndex) &&
+            (m_compiler->info.compInitMem || varTypeIsGC(varDsc->TypeGet())) && !fieldOfDependentlyPromotedStruct)
+        {
+            varDsc->lvMustInit = true;
+        }
+
+        // Mark all variables that are live on entry to an exception handler
+        // or on exit from a filter handler or finally.
+
+        bool isFinallyVar = VarSetOps::IsMember(m_compiler, finallyVars, varDsc->lvVarIndex);
+        if (isFinallyVar || VarSetOps::IsMember(m_compiler, exceptVars, varDsc->lvVarIndex))
+        {
+            // Mark the variable appropriately.
+            varDsc->lvLiveInOutOfHandler = true;
+            assert(!varDsc->lvPromoted);
+
+            // Mark all pointer variables live on exit from a 'finally' block as
+            // 'explicitly initialized' (must-init) for GC-ref types.
+
+            if (isFinallyVar)
+            {
+                // Set lvMustInit only if we have a non-arg, GC pointer.
+                if (!varDsc->lvIsParam && !varDsc->lvIsParamRegTarget && varTypeIsGC(varDsc->TypeGet()))
+                {
+                    varDsc->lvMustInit = true;
+                }
+            }
+        }
+    }
 }
 
 template <typename TLiveness>

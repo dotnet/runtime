@@ -9,11 +9,27 @@ using System.Text;
 
 namespace Microsoft.WebAssembly.Build.Tasks.CoreClr;
 
+// Computes Wasm signature strings from reflection metadata.
+// The signature string format is documented in docs/design/coreclr/botr/readytorun-format.md
+// (section "Wasm Signature String Encoding").
 internal static class SignatureMapper
 {
-    internal static char? TypeToChar(Type t, LogAdapter log, out bool isByRefStruct, int depth = 0)
+    // Hardcoded struct sizes for types that crossgen2 encodes as S<N>.
+    // The fully general case is handled by crossgen2's type system; these
+    // cover the small set of multi-field structs that appear in InternalCall
+    // and PInvoke signatures.
+    private static readonly Dictionary<string, int> s_knownStructSizes = new()
+    {
+        ["System.Runtime.CompilerServices.QCallModule"] = 8,
+        ["System.Runtime.CompilerServices.QCallAssembly"] = 8,
+        ["System.Runtime.CompilerServices.QCallTypeHandle"] = 8,
+        ["System.GC+GCHeapHardLimitInfo"] = 64,
+    };
+
+    internal static char? TypeToChar(Type t, LogAdapter log, out bool isByRefStruct, out int structSize, int depth = 0)
     {
         isByRefStruct = false;
+        structSize = 0;
 
         if (depth > 5) {
             log.Warning("WASM0064", $"Unbounded recursion detected through parameter type '{t.Name}'");
@@ -60,7 +76,7 @@ internal static class SignatureMapper
         else if (t.IsEnum)
         {
             Type underlyingType = t.GetEnumUnderlyingType();
-            c = TypeToChar(underlyingType, log, out _, ++depth);
+            c = TypeToChar(underlyingType, log, out _, out structSize, ++depth);
         }
         else if (t.IsPointer)
             c = 'i';
@@ -72,10 +88,24 @@ internal static class SignatureMapper
             if (fields.Length == 1)
             {
                 Type fieldType = fields[0].FieldType;
-                return TypeToChar(fieldType, log, out isByRefStruct, ++depth);
+                return TypeToChar(fieldType, log, out isByRefStruct, out structSize, ++depth);
             }
-            else if (PInvokeTableGenerator.IsBlittable(t, log))
-                c = 'n';
+            else
+            {
+                string fullName = t.FullName ?? t.Name;
+                if (s_knownStructSizes.TryGetValue(fullName, out int size))
+                {
+                    structSize = size;
+                }
+                else
+                {
+                    log.Error("WASM0067",
+                        $"SignatureMapper: unknown multi-field struct '{fullName}' (fields: {fields.Length}) — add its size to s_knownStructSizes in SignatureMapper.cs");
+                    return null;
+                }
+
+                c = 'S';
+            }
 
             isByRefStruct = true;
         }
@@ -85,77 +115,149 @@ internal static class SignatureMapper
         return c;
     }
 
+    internal static char? TypeToChar(Type t, LogAdapter log, out bool isByRefStruct, int depth = 0)
+        => TypeToChar(t, log, out isByRefStruct, out _, depth);
+
+    /// <summary>
+    /// Builds the multi-char token for a type in the signature string.
+    /// For most types this is a single character; for multi-field structs it is "S&lt;N&gt;".
+    /// </summary>
+    private static string? TypeToSignatureToken(Type t, LogAdapter log, out bool isByRefStruct)
+    {
+        char? c = TypeToChar(t, log, out isByRefStruct, out int structSize);
+        if (c is null)
+            return null;
+
+        if (c == 'S' && structSize > 0)
+            return $"S{structSize}";
+
+        return c.Value.ToString();
+    }
+
     public static string? MethodToSignature(MethodInfo method, LogAdapter log, bool includeThis = false)
     {
-        string? result = TypeToChar(method.ReturnType, log, out bool resultIsByRef)?.ToString();
-        if (result == null)
-        {
+        string? returnToken = TypeToSignatureToken(method.ReturnType, log, out bool resultIsByRef);
+        if (returnToken is null)
             return null;
-        }
+
+        var sb = new StringBuilder();
 
         if (resultIsByRef)
         {
-            result = "n";
+            // Struct return — encode as S<N> (the return type token already has the size)
+            sb.Append(returnToken);
+        }
+        else
+        {
+            sb.Append(returnToken);
         }
 
         if (includeThis && !method.IsStatic)
         {
-            result += 'i';
+            sb.Append('T');
         }
 
         foreach (var parameter in method.GetParameters())
         {
-            char? parameterChar = TypeToChar(parameter.ParameterType, log, out _);
-            if (parameterChar == null)
-            {
+            string? paramToken = TypeToSignatureToken(parameter.ParameterType, log, out _);
+            if (paramToken is null)
                 return null;
-            }
 
-            result += parameterChar;
+            sb.Append(paramToken);
         }
 
-        return result;
+        return sb.ToString();
     }
 
-    public static string CharToNativeType(char c) => c switch
+    /// <summary>
+    /// Parses a signature string into individual tokens.
+    /// Single-char types produce one-char tokens; S&lt;N&gt; produces a multi-char token like "S8" or "S64".
+    /// The 'p' suffix is included as its own token.
+    /// </summary>
+    public static List<string> ParseSignatureTokens(string signature)
+    {
+        var tokens = new List<string>();
+        int i = 0;
+        while (i < signature.Length)
+        {
+            if (signature[i] == 'S')
+            {
+                int start = i;
+                i++; // skip 'S'
+                while (i < signature.Length && char.IsDigit(signature[i]))
+                    i++;
+                tokens.Add(signature.Substring(start, i - start));
+            }
+            else
+            {
+                tokens.Add(signature[i].ToString());
+                i++;
+            }
+        }
+
+        return tokens;
+    }
+
+    public static string TokenToNativeType(string token) => token[0] switch
     {
         'v' => "void",
         'i' => "int32_t",
         'l' => "int64_t",
         'f' => "float",
         'd' => "double",
-        'n' => "int32_t",
-        _ => throw new InvalidSignatureCharException(c)
+        'S' => "int32_t",
+        'T' => "int32_t",
+        'p' => "PCODE",
+        _ => throw new InvalidSignatureCharException(token[0])
     };
 
-    public static string CharToNameType(char c) => c switch
+    public static string TokenToNameType(string token) => token[0] switch
     {
         'v' => "Void",
         'i' => "I32",
         'l' => "I64",
         'f' => "F32",
         'd' => "F64",
-        'n' => "IND",
-        _ => throw new InvalidSignatureCharException(c)
+        'S' => token, // e.g. "S8", "S64" — encodes size in the name
+        'T' => "This",
+        'p' => "PE",
+        _ => throw new InvalidSignatureCharException(token[0])
     };
 
-    public static string CharToArgType(char c) => c switch
+    public static string TokenToArgType(string token) => token[0] switch
     {
         'i' => "ARG_I32",
         'l' => "ARG_I64",
         'f' => "ARG_F32",
         'd' => "ARG_F64",
-        'n' => "ARG_IND",
-        _ => throw new InvalidSignatureCharException(c)
+        'S' => "ARG_IND",
+        'T' => "ARG_I32",
+        _ => throw new InvalidSignatureCharException(token[0])
     };
+
+    /// <summary>
+    /// Returns the number of INTERP_STACK_SLOT_SIZE slots consumed by a token.
+    /// Struct tokens (S&lt;N&gt;) consume max((size + 7) / 8, 1) slots; all others consume 1.
+    /// </summary>
+    public static int TokenToSlotCount(string token)
+    {
+        if (token[0] != 'S' || token.Length < 2)
+            return 1;
+
+        int size = int.Parse(token.Substring(1));
+        return Math.Max((size + 7) / 8, 1);
+    }
+
+    // Legacy single-char overloads — still used by consumers that don't encounter S<N> tokens.
+    public static string CharToNativeType(char c) => TokenToNativeType(c.ToString());
+    public static string CharToNameType(char c) => TokenToNameType(c.ToString());
+    public static string CharToArgType(char c) => TokenToArgType(c.ToString());
 
     public static string TypeToNameType(Type t, LogAdapter log)
     {
         char? c = TypeToChar(t, log, out _);
-        if (c == null)
-        {
+        if (c is null)
             throw new InvalidSignatureCharException('?');
-        }
 
         return CharToNameType(c.Value);
     }
