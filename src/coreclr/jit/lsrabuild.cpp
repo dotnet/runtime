@@ -3083,22 +3083,9 @@ RefPosition* LinearScan::BuildDef(GenTree* tree, SingleTypeRegSet dstCandidates,
     }
 
 #ifndef TARGET_ARM
-    // Some paths can have multiple operands as the tgtPref
-    // but we only want to track one of them and to preference
-    // the first use as that improves CQ the most.
-
-    if (tgtPrefUse != nullptr)
-    {
-        setTgtPref(interval, tgtPrefUse);
-    }
-    else if (tgtPrefUse2 != nullptr)
-    {
-        setTgtPref(interval, tgtPrefUse2);
-    }
-    else if (tgtPrefUse3 != nullptr)
-    {
-        setTgtPref(interval, tgtPrefUse3);
-    }
+    setTgtPref(interval, tgtPrefUse);
+    setTgtPref(interval, tgtPrefUse2);
+    setTgtPref(interval, tgtPrefUse3);
 #endif // !TARGET_ARM
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
