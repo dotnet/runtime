@@ -4,6 +4,7 @@ parameters:
   isWasmOnlyBuild: false
   platforms: []
   extraBuildArgs: ''
+  useHelixMonitor: false
 
 jobs:
 
@@ -48,5 +49,6 @@ jobs:
             creator: dotnet-bot
             testRunNamePrefixSuffix: Mono_$(_BuildConfig)
             testBuildArgs: /p:InstallV8ForTests=false
+            useHelixMonitor: ${{ parameters.useHelixMonitor }}
       extraVariablesTemplates:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml

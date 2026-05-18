@@ -958,6 +958,7 @@ extends:
           scenarios:
             - WasmTestOnChrome
             - WasmTestOnFirefox
+          useHelixMonitor: true
 
       - template: /eng/pipelines/common/templates/wasm-library-tests.yml
         parameters:
@@ -967,6 +968,7 @@ extends:
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           scenarios:
             - WasmTestOnChrome
+          useHelixMonitor: true
 
       # WebAssembly CoreCLR
       - template: /eng/pipelines/common/templates/wasm-coreclr-library-tests.yml
@@ -977,6 +979,7 @@ extends:
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           scenarios:
             - WasmTestOnChrome
+          useHelixMonitor: true
 
       # WebAssembly CoreCLR - smoke tests only on Firefox and V8
       - template: /eng/pipelines/common/templates/wasm-coreclr-library-tests.yml
@@ -990,6 +993,7 @@ extends:
           scenarios:
             - WasmTestOnFirefox
             - WasmTestOnV8
+          useHelixMonitor: true
 
       # EAT Library tests - only run on linux
       - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
@@ -1002,6 +1006,7 @@ extends:
           shouldRunSmokeOnly: false
           alwaysRun: ${{ variables.isRollingBuild }}
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS) /maxcpucount:2
+          useHelixMonitor: true
 
       # AOT Library tests
       - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
@@ -1015,6 +1020,7 @@ extends:
           shouldRunSmokeOnly: true
           alwaysRun: ${{ variables.isRollingBuild }}
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          useHelixMonitor: true
 
       # For Wasm.Build.Tests - runtime pack builds
       - template: /eng/pipelines/common/templates/wasm-build-only.yml
@@ -1047,6 +1053,7 @@ extends:
             - browser_wasm_win
           alwaysRun: ${{ variables.isRollingBuild }}
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          useHelixMonitor: true
 
       # Wasm runtime tests
       - template: /eng/pipelines/common/templates/wasm-runtime-tests.yml
