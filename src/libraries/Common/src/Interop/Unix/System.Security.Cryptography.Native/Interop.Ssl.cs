@@ -169,14 +169,8 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioNewManagedSpan")]
         internal static partial SafeBioHandle BioNewManagedSpan();
 
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioSetReadWindow")]
-        internal static unsafe partial void BioSetReadWindow(SafeBioHandle bio, byte* ptr, int len);
 
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioClearReadWindow")]
-        internal static partial void BioClearReadWindow(SafeBioHandle bio);
 
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioSetWriteWindow")]
-        internal static unsafe partial void BioSetWriteWindow(SafeBioHandle bio, byte* ptr, int capacity);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioGetWriteResult")]
         internal static partial void BioGetWriteResult(SafeBioHandle bio, out int writtenToWindow, out int spillLen);

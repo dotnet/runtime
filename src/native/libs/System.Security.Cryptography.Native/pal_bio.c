@@ -76,8 +76,6 @@ typedef struct
     uint8_t*       spillBuf;
     int32_t        spillCapacity;
     int32_t        spillLen;
-
-    int32_t        readError;   /* set to 1 if a carry allocation failed and bytes were lost */
 } ManagedSpanBioCtx;
 
 #define MANAGED_SPAN_SPILL_INITIAL 4096
@@ -97,14 +95,6 @@ static int ManagedSpanBioRead(BIO* bio, char* buf, int len)
     ManagedSpanBioCtx* ctx = (ManagedSpanBioCtx*)BIO_get_data(bio);
     if (ctx == NULL)
     {
-        return -1;
-    }
-
-    if (ctx->readError)
-    {
-        /* A prior BioClearReadWindow could not allocate carry space and dropped
-           unread bytes. Surface this as a hard read failure so it does not look
-           like a transient EAGAIN to the SSL engine. */
         return -1;
     }
 
@@ -236,7 +226,6 @@ static long ManagedSpanBioCtrl(BIO* bio, int cmd, long num, void* ptr)
                 ctx->writeCapacity = 0;
                 ctx->writePos = 0;
                 ctx->spillLen = 0;
-                ctx->readError = 0;
                 BIO_clear_retry_flags(bio);
             }
             return 1;

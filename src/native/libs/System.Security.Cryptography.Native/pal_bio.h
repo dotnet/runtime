@@ -62,22 +62,12 @@ caller-supplied buffer windows (with a heap spill on write overflow).
 PALEXPORT BIO* CryptoNative_BioNewManagedSpan(void);
 
 /*
-Sets the read window on a managed-span BIO. Subsequent BIO_read calls
-consume from ptr[0..len). Passing ptr=NULL/len=0 clears the window.
+Internal helpers used by pal_ssl.c to drive the managed-span BIO during
+atomic SSL handshake/encrypt/decrypt operations. Not exported.
 */
-PALEXPORT void CryptoNative_BioSetReadWindow(BIO* bio, const void* ptr, int32_t len);
-
-/*
-Clears the read window on a managed-span BIO.
-*/
-PALEXPORT void CryptoNative_BioClearReadWindow(BIO* bio, int32_t* leftoverLength);
-
-/*
-Sets the write window on a managed-span BIO. BIO_write fills this window
-first, then spills the remainder to a heap buffer. Passing ptr=NULL/cap=0
-clears the window so all writes go to the spill buffer.
-*/
-PALEXPORT void CryptoNative_BioSetWriteWindow(BIO* bio, void* ptr, int32_t capacity);
+void CryptoNative_BioSetReadWindow(BIO* bio, const void* ptr, int32_t len);
+void CryptoNative_BioClearReadWindow(BIO* bio, int32_t* leftoverLength);
+void CryptoNative_BioSetWriteWindow(BIO* bio, void* ptr, int32_t capacity);
 
 /*
 Returns the number of bytes written into the window and into the spill

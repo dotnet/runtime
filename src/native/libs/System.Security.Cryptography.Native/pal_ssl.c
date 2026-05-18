@@ -9,8 +9,6 @@
 #include "pal_utilities.h"
 #include "pal_x509.h"
 
-#include <dlfcn.h>
-
 #include <assert.h>
 #include <string.h>
 #include <stdbool.h>
