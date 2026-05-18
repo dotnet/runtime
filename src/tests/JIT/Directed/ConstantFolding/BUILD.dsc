@@ -12,8 +12,8 @@ export const jIT_Directed_ConstantFolding_value_numbering_checked_arithmetic_wit
     srcs: ["value_numbering_checked_integer_arithmetic_with_constants.cs"],
     optimize: true,
     pri: 1,
-    size: "medium",
     run: false,
+    size: "medium",
 });
 
 @@public
@@ -23,6 +23,14 @@ export const jIT_Directed_ConstantFolding_value_numbering_unordered_comparisons_
     optimize: true,
     pri: 1,
     size: "medium",
+});
+
+@@public
+export const jIT_Directed_ConstantFolding_handlesInAddrModes = CoreClr.il_coreclr_test({
+    name: "HandlesInAddrModes",
+    srcs: ["HandlesInAddrModes.il"],
+    debugType: "pdbonly",
+    optimize: true,
 });
 
 @@public

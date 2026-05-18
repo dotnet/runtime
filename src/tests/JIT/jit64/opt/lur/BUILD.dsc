@@ -14,3 +14,13 @@ export const jIT_jit64_opt_lur_lur_02 = CoreClr.coreclr_test({
     pri: 1,
     size: "medium",
 });
+
+@@public
+export const jIT_jit64_opt_lur_lur_01 = CoreClr.il_coreclr_test({
+    name: "lur_01",
+    srcs: ["lur_01.il"],
+    debugType: "pdbonly",
+    optimize: true,
+    pri: 1,
+    size: "medium",
+});

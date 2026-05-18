@@ -11,6 +11,6 @@ export const regressions_coreclr_GitHub_66005_test66005 = CoreClr.coreclr_test({
     name: "test66005",
     srcs: ["test66005.cs"],
     pri: 1,
-    size: "medium",
     run: false,
+    size: "medium",
 });

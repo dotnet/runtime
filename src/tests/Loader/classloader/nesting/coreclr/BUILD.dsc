@@ -14,3 +14,21 @@ export const loader_classloader_nesting_coreclr_vSW491577 = CoreClr.coreclr_test
     size: "medium",
     tags: ["manual"],
 });
+
+@@public
+export const loader_classloader_nesting_coreclr_nesting18 = CoreClr.il_coreclr_test({
+    name: "nesting18",
+    srcs: ["nesting18.il"],
+    pri: 1,
+    size: "medium",
+    tags: ["manual"],
+});
+
+@@public
+export const loader_classloader_nesting_coreclr_nesting31 = CoreClr.il_coreclr_test({
+    name: "nesting31",
+    srcs: ["nesting31.il"],
+    pri: 1,
+    size: "medium",
+    tags: ["manual"],
+});

@@ -11,8 +11,8 @@ export const loader_classloader_generics_Layout_Specific_negative002 = CoreClr.c
     name: "Negative002",
     srcs: ["Negative002.cs"],
     pri: 1,
-    size: "medium",
     run: false,
+    size: "medium",
 });
 
 @@public
@@ -20,8 +20,8 @@ export const loader_classloader_generics_Layout_Specific_negative004 = CoreClr.c
     name: "Negative004",
     srcs: ["Negative004.cs"],
     pri: 1,
-    size: "medium",
     run: false,
+    size: "medium",
 });
 
 @@public
@@ -29,8 +29,8 @@ export const loader_classloader_generics_Layout_Specific_negative_ExplicitGen = 
     name: "Negative_ExplicitGen",
     srcs: ["Negative_ExplicitGen.cs"],
     pri: 1,
-    size: "medium",
     run: false,
+    size: "medium",
 });
 
 @@public

@@ -7,7 +7,57 @@
 import * as CoreClr from "CoreClrTest";
 
 @@public
+export const loader_classloader_MethodImpl_CovariantReturns_UnitTest_attributeTesting = CoreClr.il_coreclr_test({
+    name: "AttributeTesting",
+    srcs: ["AttributeTesting.il"],
+});
+
+@@public
+export const loader_classloader_MethodImpl_CovariantReturns_UnitTest_compatibleWithTest = CoreClr.il_coreclr_test({
+    name: "CompatibleWithTest",
+    srcs: ["CompatibleWithTest.il"],
+});
+
+@@public
+export const loader_classloader_MethodImpl_CovariantReturns_UnitTest_compatibleWithTest_TypeLoadException = CoreClr.il_coreclr_test({
+    name: "CompatibleWithTest_TypeLoadException",
+    srcs: ["CompatibleWithTest_TypeLoadException.il"],
+    run: false,
+});
+
+@@public
+export const loader_classloader_MethodImpl_CovariantReturns_UnitTest_overrideMoreDerivedReturn = CoreClr.il_coreclr_test({
+    name: "OverrideMoreDerivedReturn",
+    srcs: ["OverrideMoreDerivedReturn.il"],
+});
+
+@@public
 export const loader_classloader_MethodImpl_CovariantReturns_UnitTest_overrideReabstracted = CoreClr.coreclr_test({
     name: "OverrideReabstracted",
     srcs: ["OverrideReabstracted.cs"],
+});
+
+@@public
+export const loader_classloader_MethodImpl_CovariantReturns_UnitTest_unitTest = CoreClr.il_coreclr_test({
+    name: "UnitTest",
+    srcs: ["UnitTest.il"],
+});
+
+@@public
+export const loader_classloader_MethodImpl_CovariantReturns_UnitTest_unitTestDelegates = CoreClr.il_coreclr_test({
+    name: "UnitTestDelegates",
+    srcs: ["UnitTestDelegates.il"],
+});
+
+@@public
+export const loader_classloader_MethodImpl_CovariantReturns_UnitTest_unitTest_GVM = CoreClr.il_coreclr_test({
+    name: "UnitTest_GVM",
+    srcs: ["UnitTest_GVM.il"],
+});
+
+@@public
+export const loader_classloader_MethodImpl_CovariantReturns_UnitTest_unitTest_GVM_TypeLoadException = CoreClr.il_coreclr_test({
+    name: "UnitTest_GVM_TypeLoadException",
+    srcs: ["UnitTest_GVM_TypeLoadException.il"],
+    run: false,
 });

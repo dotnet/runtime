@@ -11,6 +11,6 @@ export const baseservices_exceptions_regressions_V1_SEH_coverage_exceptions = Co
     name: "Exceptions",
     srcs: ["Exceptions.cs"],
     pri: 1,
-    size: "medium",
     run: false,
+    size: "medium",
 });

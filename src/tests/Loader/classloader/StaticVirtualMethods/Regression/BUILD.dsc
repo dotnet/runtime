@@ -19,6 +19,12 @@ export const loader_classloader_StaticVirtualMethods_Regression_gitHub_59432 = C
 });
 
 @@public
+export const loader_classloader_StaticVirtualMethods_Regression_gitHub_70385 = CoreClr.il_coreclr_test({
+    name: "GitHub_70385",
+    srcs: ["GitHub_70385.il"],
+});
+
+@@public
 export const loader_classloader_StaticVirtualMethods_Regression_gitHub_71319 = CoreClr.coreclr_test({
     name: "GitHub_71319",
     srcs: ["GitHub_71319.cs"],

@@ -15,3 +15,13 @@ export const jIT_Regression_CLR_x86_JIT_v2_1_DDB_b170362_b170362 = CoreClr.corec
     pri: 1,
     size: "medium",
 });
+
+@@public
+export const jIT_Regression_CLR_x86_JIT_v2_1_DDB_b170362_b170362_il = CoreClr.il_coreclr_test({
+    name: "b170362_il",
+    srcs: ["b170362_il.il"],
+    debugType: "pdbonly",
+    optimize: true,
+    pri: 1,
+    size: "medium",
+});

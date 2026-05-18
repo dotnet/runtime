@@ -15,9 +15,23 @@ export const loader_classloader_TypeInitialization_CircularCctors_circularCctorF
 });
 
 @@public
+export const loader_classloader_TypeInitialization_CircularCctors_circularCctorFourThreadsBFI = CoreClr.il_coreclr_test({
+    name: "CircularCctorFourThreadsBFI",
+    srcs: ["CircularCctorFourThreadsBFI.il"],
+});
+
+@@public
 export const loader_classloader_TypeInitialization_CircularCctors_circularCctorThreeThreads01 = CoreClr.coreclr_test({
     name: "CircularCctorThreeThreads01",
     srcs: ["CircularCctorThreeThreads01.cs"],
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const loader_classloader_TypeInitialization_CircularCctors_circularCctorThreeThreads01BFI = CoreClr.il_coreclr_test({
+    name: "CircularCctorThreeThreads01BFI",
+    srcs: ["CircularCctorThreeThreads01BFI.il"],
     pri: 1,
     size: "medium",
 });
@@ -31,9 +45,25 @@ export const loader_classloader_TypeInitialization_CircularCctors_circularCctorT
 });
 
 @@public
+export const loader_classloader_TypeInitialization_CircularCctors_circularCctorThreeThreads02BFI = CoreClr.il_coreclr_test({
+    name: "CircularCctorThreeThreads02BFI",
+    srcs: ["CircularCctorThreeThreads02BFI.il"],
+    pri: 1,
+    size: "medium",
+});
+
+@@public
 export const loader_classloader_TypeInitialization_CircularCctors_circularCctorThreeThreads03 = CoreClr.coreclr_test({
     name: "CircularCctorThreeThreads03",
     srcs: ["CircularCctorThreeThreads03.cs"],
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const loader_classloader_TypeInitialization_CircularCctors_circularCctorThreeThreads03BFI = CoreClr.il_coreclr_test({
+    name: "CircularCctorThreeThreads03BFI",
+    srcs: ["CircularCctorThreeThreads03BFI.il"],
     pri: 1,
     size: "medium",
 });

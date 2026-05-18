@@ -30,6 +30,15 @@ export const jIT_opt_Casts_intCast = CoreClr.coreclr_test({
 });
 
 @@public
+export const jIT_opt_Casts_castclass_valuetype = CoreClr.il_coreclr_test({
+    name: "castclass_valuetype",
+    srcs: ["castclass_valuetype.il"],
+    debugType: "pdbonly",
+    pri: 1,
+    size: "medium",
+});
+
+@@public
 export const jIT_opt_Casts_shared_Casts = CoreClr.coreclr_test({
     name: "shared_Casts",
     srcs: ["shared.cs"],

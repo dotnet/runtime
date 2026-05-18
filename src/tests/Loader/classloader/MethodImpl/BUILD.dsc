@@ -12,3 +12,52 @@ export const loader_classloader_MethodImpl_internalMethodImplTest = CoreClr.core
     srcs: ["InternalMethodImplTest.cs"],
     run: false,
 });
+
+@@public
+export const loader_classloader_MethodImpl_generics_override1 = CoreClr.il_coreclr_test({
+    name: "generics_override1",
+    srcs: ["generics_override1.il"],
+    run: false,
+});
+
+@@public
+export const loader_classloader_MethodImpl_override_override1 = CoreClr.il_coreclr_test({
+    name: "override_override1",
+    srcs: ["override_override1.il"],
+    pri: 1,
+    size: "medium",
+    run: false,
+});
+
+@@public
+export const loader_classloader_MethodImpl_self_override1 = CoreClr.il_coreclr_test({
+    name: "self_override1",
+    srcs: ["self_override1.il"],
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const loader_classloader_MethodImpl_self_override2 = CoreClr.il_coreclr_test({
+    name: "self_override2",
+    srcs: ["Desktop/self_override2.il"],
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const loader_classloader_MethodImpl_self_override3 = CoreClr.il_coreclr_test({
+    name: "self_override3",
+    srcs: ["self_override3.il"],
+    pri: 1,
+    size: "medium",
+    run: false,
+});
+
+@@public
+export const loader_classloader_MethodImpl_self_override5 = CoreClr.il_coreclr_test({
+    name: "self_override5",
+    srcs: ["Desktop/self_override5.il"],
+    pri: 1,
+    size: "medium",
+});

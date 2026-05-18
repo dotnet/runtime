@@ -31,6 +31,15 @@ export const coreMangLib_system_delegate_miscellaneous_co6031GetHashCode = CoreC
 });
 
 @@public
+export const coreMangLib_system_delegate_miscellaneous_invokeNull = CoreClr.il_coreclr_test({
+    name: "InvokeNull",
+    srcs: ["InvokeNull.il"],
+    pri: 1,
+    size: "medium",
+    run: false,
+});
+
+@@public
 export const coreMangLib_system_delegate_miscellaneous_secondLevelIndirection = CoreClr.coreclr_test({
     name: "SecondLevelIndirection",
     srcs: ["SecondLevelIndirection.cs"],

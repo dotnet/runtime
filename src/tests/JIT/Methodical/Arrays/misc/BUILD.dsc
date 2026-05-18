@@ -7,11 +7,130 @@
 import * as CoreClr from "CoreClrTest";
 
 @@public
+export const jIT_Methodical_Arrays_misc_arrres_il_r = CoreClr.il_coreclr_test({
+    name: "arrres_il_r",
+    srcs: ["arrres.il"],
+    debugType: "pdbonly",
+    env: [{name: "DOTNET_TieredCompilation", value: "0"}],
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Methodical_Arrays_misc_address_r = CoreClr.il_coreclr_test({
+    name: "address_r",
+    srcs: ["address_r.il", "address.il"],
+    debugType: "pdbonly",
+    run: false,
+});
+
+@@public
+export const jIT_Methodical_Arrays_misc_lengthm2_r = CoreClr.il_coreclr_test({
+    name: "lengthm2_r",
+    srcs: ["lengthm2_r.il", "lengthm2.il"],
+    debugType: "pdbonly",
+    run: false,
+});
+
+@@public
+export const jIT_Methodical_Arrays_misc_selfref_il_r = CoreClr.il_coreclr_test({
+    name: "selfref_il_r",
+    srcs: ["selfref_r.il", "selfref.il"],
+    debugType: "pdbonly",
+    pri: 1,
+    size: "medium",
+});
+
+@@public
 export const jIT_Methodical_Arrays_misc_arrres_r = CoreClr.coreclr_test({
     name: "arrres_r",
     srcs: ["arrres.cs"],
     pri: 1,
     size: "medium",
+});
+
+@@public
+export const jIT_Methodical_Arrays_misc_initializearray_enum_d = CoreClr.il_coreclr_test({
+    name: "initializearray_enum_d",
+    srcs: ["initializearray_enum_d.il", "initializearray_enum.il"],
+    debugType: "full",
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Methodical_Arrays_misc_length0_r = CoreClr.il_coreclr_test({
+    name: "length0_r",
+    srcs: ["length0_r.il", "length0.il"],
+    debugType: "pdbonly",
+    run: false,
+});
+
+@@public
+export const jIT_Methodical_Arrays_misc_ldelem_get_r = CoreClr.il_coreclr_test({
+    name: "ldelem_get_r",
+    srcs: ["ldelem_get_r.il", "ldelem_get.il"],
+    debugType: "pdbonly",
+    run: false,
+});
+
+@@public
+export const jIT_Methodical_Arrays_misc_initializearray_d = CoreClr.il_coreclr_test({
+    name: "initializearray_d",
+    srcs: ["initializearray_d.il", "initializearray.il"],
+    debugType: "full",
+    optimize: false,
+    run: false,
+});
+
+@@public
+export const jIT_Methodical_Arrays_misc_gcarr_il_d = CoreClr.il_coreclr_test({
+    name: "gcarr_il_d",
+    srcs: ["gcarr_d.il", "gcarr.il"],
+    debugType: "full",
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Methodical_Arrays_misc_gcarr_il_r = CoreClr.il_coreclr_test({
+    name: "gcarr_il_r",
+    srcs: ["gcarr_r.il", "gcarr.il"],
+    debugType: "pdbonly",
+});
+
+@@public
+export const jIT_Methodical_Arrays_misc_initializearray_r = CoreClr.il_coreclr_test({
+    name: "initializearray_r",
+    srcs: ["initializearray_r.il", "initializearray.il"],
+    debugType: "pdbonly",
+    optimize: true,
+    run: false,
+});
+
+@@public
+export const jIT_Methodical_Arrays_misc_address_d = CoreClr.il_coreclr_test({
+    name: "address_d",
+    srcs: ["address_d.il", "address.il"],
+    debugType: "full",
+    run: false,
+});
+
+@@public
+export const jIT_Methodical_Arrays_misc_initializearray_enum_r = CoreClr.il_coreclr_test({
+    name: "initializearray_enum_r",
+    srcs: ["initializearray_enum_r.il", "initializearray_enum.il"],
+    debugType: "pdbonly",
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Methodical_Arrays_misc_ldelem_get_d = CoreClr.il_coreclr_test({
+    name: "ldelem_get_d",
+    srcs: ["ldelem_get_d.il", "ldelem_get.il"],
+    debugType: "full",
+    run: false,
 });
 
 @@public
@@ -41,4 +160,29 @@ export const jIT_Methodical_Arrays_misc_arrres_d = CoreClr.coreclr_test({
     optimize: false,
     pri: 1,
     size: "medium",
+});
+
+@@public
+export const jIT_Methodical_Arrays_misc_length0_d = CoreClr.il_coreclr_test({
+    name: "length0_d",
+    srcs: ["length0_d.il", "length0.il"],
+    debugType: "full",
+    run: false,
+});
+
+@@public
+export const jIT_Methodical_Arrays_misc_selfref_il_d = CoreClr.il_coreclr_test({
+    name: "selfref_il_d",
+    srcs: ["selfref_d.il", "selfref.il"],
+    debugType: "full",
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Methodical_Arrays_misc_lengthm2_d = CoreClr.il_coreclr_test({
+    name: "lengthm2_d",
+    srcs: ["lengthm2_d.il", "lengthm2.il"],
+    debugType: "full",
+    run: false,
 });

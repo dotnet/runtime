@@ -7,6 +7,14 @@
 import * as CoreClr from "CoreClrTest";
 
 @@public
+export const loader_classloader_generics_VSD_class_ExplicitOverrideVirtualNewslot = CoreClr.il_coreclr_test({
+    name: "Class_ExplicitOverrideVirtualNewslot",
+    srcs: ["Class_ExplicitOverrideVirtualNewslot.il"],
+    pri: 1,
+    size: "medium",
+});
+
+@@public
 export const loader_classloader_generics_VSD_class_ExplicitOverrideVirtualNewslotFinal = CoreClr.coreclr_test({
     name: "Class_ExplicitOverrideVirtualNewslotFinal",
     srcs: ["Class_ExplicitOverrideVirtualNewslotFinal.cs"],
@@ -31,9 +39,25 @@ export const loader_classloader_generics_VSD_class_ImplicitOverrideVirtualNewslo
 });
 
 @@public
+export const loader_classloader_generics_VSD_struct_ExplicitOverrideVirtualNewslot = CoreClr.il_coreclr_test({
+    name: "Struct_ExplicitOverrideVirtualNewslot",
+    srcs: ["Struct_ExplicitOverrideVirtualNewslot.il"],
+    pri: 1,
+    size: "medium",
+});
+
+@@public
 export const loader_classloader_generics_VSD_struct_ExplicitOverrideVirtualNewslotFinal = CoreClr.coreclr_test({
     name: "Struct_ExplicitOverrideVirtualNewslotFinal",
     srcs: ["Struct_ExplicitOverrideVirtualNewslotFinal.cs"],
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const loader_classloader_generics_VSD_struct_ImplicitOverrideVirtualNewslot = CoreClr.il_coreclr_test({
+    name: "Struct_ImplicitOverrideVirtualNewslot",
+    srcs: ["Struct_ImplicitOverrideVirtualNewslot.il"],
     pri: 1,
     size: "medium",
 });

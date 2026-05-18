@@ -7,6 +7,176 @@
 import * as CoreClr from "CoreClrTest";
 
 @@public
+export const jIT_Directed_nullabletypes_boxunboxenum_d = CoreClr.coreclr_test({
+    name: "boxunboxenum_d",
+    srcs: ["boxunboxenum.cs", "//src/tests/JIT/Directed/nullabletypes/Desktop:StructDefinitions.cs"],
+    debugType: "full",
+    optimize: false,
+    run: false,
+});
+
+@@public
+export const jIT_Directed_nullabletypes_boxunboxenum_do = CoreClr.coreclr_test({
+    name: "boxunboxenum_do",
+    srcs: ["boxunboxenum.cs", "//src/tests/JIT/Directed/nullabletypes/Desktop:StructDefinitions.cs"],
+    debugType: "full",
+    optimize: true,
+    run: false,
+});
+
+@@public
+export const jIT_Directed_nullabletypes_boxunboxenum_r = CoreClr.coreclr_test({
+    name: "boxunboxenum_r",
+    srcs: ["boxunboxenum.cs", "//src/tests/JIT/Directed/nullabletypes/Desktop:StructDefinitions.cs"],
+    optimize: false,
+    run: false,
+});
+
+@@public
+export const jIT_Directed_nullabletypes_boxunboxenum_ro = CoreClr.coreclr_test({
+    name: "boxunboxenum_ro",
+    srcs: ["boxunboxenum.cs", "//src/tests/JIT/Directed/nullabletypes/Desktop:StructDefinitions.cs"],
+    optimize: true,
+    run: false,
+});
+
+@@public
+export const jIT_Directed_nullabletypes_boxunboxinterface_d = CoreClr.coreclr_test({
+    name: "boxunboxinterface_d",
+    srcs: ["boxunboxinterface.cs", "//src/tests/JIT/Directed/nullabletypes/Desktop:StructDefinitions.cs"],
+    debugType: "full",
+    optimize: false,
+    run: false,
+});
+
+@@public
+export const jIT_Directed_nullabletypes_boxunboxinterface_do = CoreClr.coreclr_test({
+    name: "boxunboxinterface_do",
+    srcs: ["boxunboxinterface.cs", "//src/tests/JIT/Directed/nullabletypes/Desktop:StructDefinitions.cs"],
+    debugType: "full",
+    optimize: true,
+    run: false,
+});
+
+@@public
+export const jIT_Directed_nullabletypes_boxunboxinterface_r = CoreClr.coreclr_test({
+    name: "boxunboxinterface_r",
+    srcs: ["boxunboxinterface.cs", "//src/tests/JIT/Directed/nullabletypes/Desktop:StructDefinitions.cs"],
+    optimize: false,
+    run: false,
+});
+
+@@public
+export const jIT_Directed_nullabletypes_boxunboxinterface_ro = CoreClr.coreclr_test({
+    name: "boxunboxinterface_ro",
+    srcs: ["boxunboxinterface.cs", "//src/tests/JIT/Directed/nullabletypes/Desktop:StructDefinitions.cs"],
+    optimize: true,
+    run: false,
+});
+
+@@public
+export const jIT_Directed_nullabletypes_castclassenum_d = CoreClr.coreclr_test({
+    name: "castclassenum_d",
+    srcs: ["castclassenum.cs", "//src/tests/JIT/Directed/nullabletypes/Desktop:StructDefinitions.cs"],
+    debugType: "full",
+    optimize: false,
+    run: false,
+});
+
+@@public
+export const jIT_Directed_nullabletypes_castclassenum_do = CoreClr.coreclr_test({
+    name: "castclassenum_do",
+    srcs: ["castclassenum.cs", "//src/tests/JIT/Directed/nullabletypes/Desktop:StructDefinitions.cs"],
+    debugType: "full",
+    optimize: true,
+    run: false,
+});
+
+@@public
+export const jIT_Directed_nullabletypes_castclassenum_r = CoreClr.coreclr_test({
+    name: "castclassenum_r",
+    srcs: ["castclassenum.cs", "//src/tests/JIT/Directed/nullabletypes/Desktop:StructDefinitions.cs"],
+    optimize: false,
+    run: false,
+});
+
+@@public
+export const jIT_Directed_nullabletypes_castclassenum_ro = CoreClr.coreclr_test({
+    name: "castclassenum_ro",
+    srcs: ["castclassenum.cs", "//src/tests/JIT/Directed/nullabletypes/Desktop:StructDefinitions.cs"],
+    optimize: true,
+    run: false,
+});
+
+@@public
+export const jIT_Directed_nullabletypes_castclassinterface_d = CoreClr.coreclr_test({
+    name: "castclassinterface_d",
+    srcs: ["castclassinterface.cs", "//src/tests/JIT/Directed/nullabletypes/Desktop:StructDefinitions.cs"],
+    debugType: "full",
+    optimize: false,
+    run: false,
+});
+
+@@public
+export const jIT_Directed_nullabletypes_castclassinterface_do = CoreClr.coreclr_test({
+    name: "castclassinterface_do",
+    srcs: ["castclassinterface.cs", "//src/tests/JIT/Directed/nullabletypes/Desktop:StructDefinitions.cs"],
+    debugType: "full",
+    optimize: true,
+    run: false,
+});
+
+@@public
+export const jIT_Directed_nullabletypes_castclassinterface_r = CoreClr.coreclr_test({
+    name: "castclassinterface_r",
+    srcs: ["castclassinterface.cs", "//src/tests/JIT/Directed/nullabletypes/Desktop:StructDefinitions.cs"],
+    optimize: false,
+    run: false,
+});
+
+@@public
+export const jIT_Directed_nullabletypes_castclassinterface_ro = CoreClr.coreclr_test({
+    name: "castclassinterface_ro",
+    srcs: ["castclassinterface.cs", "//src/tests/JIT/Directed/nullabletypes/Desktop:StructDefinitions.cs"],
+    optimize: true,
+    run: false,
+});
+
+@@public
+export const jIT_Directed_nullabletypes_castclassvaluetype_d = CoreClr.coreclr_test({
+    name: "castclassvaluetype_d",
+    srcs: ["castclassvaluetype.cs", "//src/tests/JIT/Directed/nullabletypes/Desktop:StructDefinitions.cs"],
+    debugType: "full",
+    optimize: false,
+    run: false,
+});
+
+@@public
+export const jIT_Directed_nullabletypes_castclassvaluetype_do = CoreClr.coreclr_test({
+    name: "castclassvaluetype_do",
+    srcs: ["castclassvaluetype.cs", "//src/tests/JIT/Directed/nullabletypes/Desktop:StructDefinitions.cs"],
+    debugType: "full",
+    optimize: true,
+    run: false,
+});
+
+@@public
+export const jIT_Directed_nullabletypes_castclassvaluetype_r = CoreClr.coreclr_test({
+    name: "castclassvaluetype_r",
+    srcs: ["castclassvaluetype.cs", "//src/tests/JIT/Directed/nullabletypes/Desktop:StructDefinitions.cs"],
+    optimize: false,
+    run: false,
+});
+
+@@public
+export const jIT_Directed_nullabletypes_castclassvaluetype_ro = CoreClr.coreclr_test({
+    name: "castclassvaluetype_ro",
+    srcs: ["castclassvaluetype.cs", "//src/tests/JIT/Directed/nullabletypes/Desktop:StructDefinitions.cs"],
+    optimize: true,
+    run: false,
+});
+
+@@public
 export const jIT_Directed_nullabletypes_constructor_do = CoreClr.coreclr_test({
     name: "constructor_do",
     srcs: ["constructor.cs", "invokecommon.cs"],
@@ -32,8 +202,8 @@ export const jIT_Directed_nullabletypes_gettype_d = CoreClr.coreclr_test({
     debugType: "full",
     optimize: false,
     pri: 1,
-    size: "medium",
     run: false,
+    size: "medium",
 });
 
 @@public
@@ -43,8 +213,8 @@ export const jIT_Directed_nullabletypes_gettype_do = CoreClr.coreclr_test({
     debugType: "full",
     optimize: true,
     pri: 1,
-    size: "medium",
     run: false,
+    size: "medium",
 });
 
 @@public
@@ -53,8 +223,8 @@ export const jIT_Directed_nullabletypes_gettype_r = CoreClr.coreclr_test({
     srcs: ["gettype.cs"],
     optimize: false,
     pri: 1,
-    size: "medium",
     run: false,
+    size: "medium",
 });
 
 @@public
@@ -63,8 +233,8 @@ export const jIT_Directed_nullabletypes_gettype_ro = CoreClr.coreclr_test({
     srcs: ["gettype.cs"],
     optimize: true,
     pri: 1,
-    size: "medium",
     run: false,
+    size: "medium",
 });
 
 @@public
@@ -115,6 +285,268 @@ export const jIT_Directed_nullabletypes_invocation_do = CoreClr.coreclr_test({
 export const jIT_Directed_nullabletypes_invocation_ro = CoreClr.coreclr_test({
     name: "invocation_ro",
     srcs: ["invocation.cs", "invokecommon.cs"],
+    optimize: true,
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Directed_nullabletypes_isinst2_d = CoreClr.coreclr_test({
+    name: "isinst2_d",
+    srcs: ["isinst2.cs", "//src/tests/JIT/Directed/nullabletypes/Desktop:StructDefinitions.cs"],
+    debugType: "full",
+    optimize: false,
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Directed_nullabletypes_isinst2_do = CoreClr.coreclr_test({
+    name: "isinst2_do",
+    srcs: ["isinst2.cs", "//src/tests/JIT/Directed/nullabletypes/Desktop:StructDefinitions.cs"],
+    debugType: "full",
+    optimize: true,
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Directed_nullabletypes_isinst2_r = CoreClr.coreclr_test({
+    name: "isinst2_r",
+    srcs: ["isinst2.cs", "//src/tests/JIT/Directed/nullabletypes/Desktop:StructDefinitions.cs"],
+    optimize: false,
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Directed_nullabletypes_isinst2_ro = CoreClr.coreclr_test({
+    name: "isinst2_ro",
+    srcs: ["isinst2.cs", "//src/tests/JIT/Directed/nullabletypes/Desktop:StructDefinitions.cs"],
+    optimize: true,
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Directed_nullabletypes_isinst_d = CoreClr.coreclr_test({
+    name: "isinst_d",
+    srcs: ["isinst.cs", "//src/tests/JIT/Directed/nullabletypes/Desktop:StructDefinitions.cs"],
+    debugType: "full",
+    optimize: false,
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Directed_nullabletypes_isinst_do = CoreClr.coreclr_test({
+    name: "isinst_do",
+    srcs: ["isinst.cs", "//src/tests/JIT/Directed/nullabletypes/Desktop:StructDefinitions.cs"],
+    debugType: "full",
+    optimize: true,
+});
+
+@@public
+export const jIT_Directed_nullabletypes_isinst_r = CoreClr.coreclr_test({
+    name: "isinst_r",
+    srcs: ["isinst.cs", "//src/tests/JIT/Directed/nullabletypes/Desktop:StructDefinitions.cs"],
+    optimize: false,
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Directed_nullabletypes_isinst_ro = CoreClr.coreclr_test({
+    name: "isinst_ro",
+    srcs: ["isinst.cs", "//src/tests/JIT/Directed/nullabletypes/Desktop:StructDefinitions.cs"],
+    optimize: true,
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Directed_nullabletypes_isinstboxed_d = CoreClr.coreclr_test({
+    name: "isinstboxed_d",
+    srcs: ["isinstboxed.cs", "//src/tests/JIT/Directed/nullabletypes/Desktop:StructDefinitions.cs"],
+    debugType: "full",
+    optimize: false,
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Directed_nullabletypes_isinstboxed_do = CoreClr.coreclr_test({
+    name: "isinstboxed_do",
+    srcs: ["isinstboxed.cs", "//src/tests/JIT/Directed/nullabletypes/Desktop:StructDefinitions.cs"],
+    debugType: "full",
+    optimize: true,
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Directed_nullabletypes_isinstboxed_r = CoreClr.coreclr_test({
+    name: "isinstboxed_r",
+    srcs: ["isinstboxed.cs", "//src/tests/JIT/Directed/nullabletypes/Desktop:StructDefinitions.cs"],
+    optimize: false,
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Directed_nullabletypes_isinstboxed_ro = CoreClr.coreclr_test({
+    name: "isinstboxed_ro",
+    srcs: ["isinstboxed.cs", "//src/tests/JIT/Directed/nullabletypes/Desktop:StructDefinitions.cs"],
+    optimize: true,
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Directed_nullabletypes_isinstenum_d = CoreClr.coreclr_test({
+    name: "isinstenum_d",
+    srcs: ["isinstenum.cs", "//src/tests/JIT/Directed/nullabletypes/Desktop:StructDefinitions.cs"],
+    debugType: "full",
+    optimize: false,
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Directed_nullabletypes_isinstenum_do = CoreClr.coreclr_test({
+    name: "isinstenum_do",
+    srcs: ["isinstenum.cs", "//src/tests/JIT/Directed/nullabletypes/Desktop:StructDefinitions.cs"],
+    debugType: "full",
+    optimize: true,
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Directed_nullabletypes_isinstenum_r = CoreClr.coreclr_test({
+    name: "isinstenum_r",
+    srcs: ["isinstenum.cs", "//src/tests/JIT/Directed/nullabletypes/Desktop:StructDefinitions.cs"],
+    optimize: false,
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Directed_nullabletypes_isinstenum_ro = CoreClr.coreclr_test({
+    name: "isinstenum_ro",
+    srcs: ["isinstenum.cs", "//src/tests/JIT/Directed/nullabletypes/Desktop:StructDefinitions.cs"],
+    optimize: true,
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Directed_nullabletypes_isinstgenerics_d = CoreClr.coreclr_test({
+    name: "isinstgenerics_d",
+    srcs: ["isinstgenerics.cs", "//src/tests/JIT/Directed/nullabletypes/Desktop:StructDefinitions.cs"],
+    debugType: "full",
+    optimize: false,
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Directed_nullabletypes_isinstgenerics_do = CoreClr.coreclr_test({
+    name: "isinstgenerics_do",
+    srcs: ["isinstgenerics.cs", "//src/tests/JIT/Directed/nullabletypes/Desktop:StructDefinitions.cs"],
+    debugType: "full",
+    optimize: true,
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Directed_nullabletypes_isinstgenerics_r = CoreClr.coreclr_test({
+    name: "isinstgenerics_r",
+    srcs: ["isinstgenerics.cs", "//src/tests/JIT/Directed/nullabletypes/Desktop:StructDefinitions.cs"],
+    optimize: false,
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Directed_nullabletypes_isinstgenerics_ro = CoreClr.coreclr_test({
+    name: "isinstgenerics_ro",
+    srcs: ["isinstgenerics.cs", "//src/tests/JIT/Directed/nullabletypes/Desktop:StructDefinitions.cs"],
+    optimize: true,
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Directed_nullabletypes_isinstinterface_d = CoreClr.coreclr_test({
+    name: "isinstinterface_d",
+    srcs: ["isinstinterface.cs", "//src/tests/JIT/Directed/nullabletypes/Desktop:StructDefinitions.cs"],
+    debugType: "full",
+    optimize: false,
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Directed_nullabletypes_isinstinterface_do = CoreClr.coreclr_test({
+    name: "isinstinterface_do",
+    srcs: ["isinstinterface.cs", "//src/tests/JIT/Directed/nullabletypes/Desktop:StructDefinitions.cs"],
+    debugType: "full",
+    optimize: true,
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Directed_nullabletypes_isinstinterface_r = CoreClr.coreclr_test({
+    name: "isinstinterface_r",
+    srcs: ["isinstinterface.cs", "//src/tests/JIT/Directed/nullabletypes/Desktop:StructDefinitions.cs"],
+    optimize: false,
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Directed_nullabletypes_isinstinterface_ro = CoreClr.coreclr_test({
+    name: "isinstinterface_ro",
+    srcs: ["isinstinterface.cs", "//src/tests/JIT/Directed/nullabletypes/Desktop:StructDefinitions.cs"],
+    optimize: true,
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Directed_nullabletypes_isinstvaluetype_d = CoreClr.coreclr_test({
+    name: "isinstvaluetype_d",
+    srcs: ["isinstvaluetype.cs", "//src/tests/JIT/Directed/nullabletypes/Desktop:StructDefinitions.cs"],
+    debugType: "full",
+    optimize: false,
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Directed_nullabletypes_isinstvaluetype_do = CoreClr.coreclr_test({
+    name: "isinstvaluetype_do",
+    srcs: ["isinstvaluetype.cs", "//src/tests/JIT/Directed/nullabletypes/Desktop:StructDefinitions.cs"],
+    debugType: "full",
+    optimize: true,
+});
+
+@@public
+export const jIT_Directed_nullabletypes_isinstvaluetype_r = CoreClr.coreclr_test({
+    name: "isinstvaluetype_r",
+    srcs: ["isinstvaluetype.cs", "//src/tests/JIT/Directed/nullabletypes/Desktop:StructDefinitions.cs"],
+    optimize: false,
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Directed_nullabletypes_isinstvaluetype_ro = CoreClr.coreclr_test({
+    name: "isinstvaluetype_ro",
+    srcs: ["isinstvaluetype.cs", "//src/tests/JIT/Directed/nullabletypes/Desktop:StructDefinitions.cs"],
     optimize: true,
     pri: 1,
     size: "medium",

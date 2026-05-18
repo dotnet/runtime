@@ -7,6 +7,16 @@
 import * as CoreClr from "CoreClrTest";
 
 @@public
+export const jIT_Regression_CLR_x86_JIT_V1_2_Beta1_b180381_b180381b = CoreClr.il_coreclr_test({
+    name: "b180381b",
+    srcs: ["b180381b.il"],
+    debugType: "pdbonly",
+    optimize: true,
+    pri: 1,
+    size: "medium",
+});
+
+@@public
 export const jIT_Regression_CLR_x86_JIT_V1_2_Beta1_b180381_b180381a = CoreClr.coreclr_test({
     name: "b180381a",
     srcs: ["constrained1.cs"],

@@ -11,6 +11,6 @@ export const regressions_coreclr_0487_test = CoreClr.coreclr_test({
     name: "test",
     srcs: ["test.cs"],
     pri: 1,
-    size: "medium",
     run: false,
+    size: "medium",
 });

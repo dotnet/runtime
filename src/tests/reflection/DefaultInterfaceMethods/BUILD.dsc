@@ -12,3 +12,4 @@ export const reflection_DefaultInterfaceMethods_emit = CoreClr.coreclr_test({
     srcs: ["Emit.cs"],
     tags: ["manual"],
 });
+

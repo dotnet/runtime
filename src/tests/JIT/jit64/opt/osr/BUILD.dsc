@@ -7,6 +7,15 @@
 import * as CoreClr from "CoreClrTest";
 
 @@public
+export const jIT_jit64_opt_osr_osr015 = CoreClr.il_coreclr_test({
+    name: "osr015",
+    srcs: ["osr015.il"],
+    debugType: "pdbonly",
+    optimize: true,
+    run: false,
+});
+
+@@public
 export const jIT_jit64_opt_osr_osr001 = CoreClr.coreclr_test({
     name: "osr001",
     srcs: ["osr001.cs"],

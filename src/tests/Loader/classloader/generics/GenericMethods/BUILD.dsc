@@ -15,6 +15,14 @@ export const loader_classloader_generics_GenericMethods_genericParams10k = CoreC
 });
 
 @@public
+export const loader_classloader_generics_GenericMethods_arity01 = CoreClr.il_coreclr_test({
+    name: "arity01",
+    srcs: ["arity01.il"],
+    pri: 1,
+    size: "medium",
+});
+
+@@public
 export const loader_classloader_generics_GenericMethods_method001 = CoreClr.coreclr_test({
     name: "method001",
     srcs: ["method001.cs"],
@@ -199,9 +207,25 @@ export const loader_classloader_generics_GenericMethods_method013 = CoreClr.core
 });
 
 @@public
+export const loader_classloader_generics_GenericMethods_method014 = CoreClr.il_coreclr_test({
+    name: "method014",
+    srcs: ["method014.il"],
+    pri: 1,
+    size: "medium",
+});
+
+@@public
 export const loader_classloader_generics_GenericMethods_method015 = CoreClr.coreclr_test({
     name: "method015",
     srcs: ["method015.cs"],
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const loader_classloader_generics_GenericMethods_method016 = CoreClr.il_coreclr_test({
+    name: "method016",
+    srcs: ["method016.il"],
     pri: 1,
     size: "medium",
 });

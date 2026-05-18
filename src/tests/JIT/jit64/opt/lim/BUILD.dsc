@@ -7,6 +7,16 @@
 import * as CoreClr from "CoreClrTest";
 
 @@public
+export const jIT_jit64_opt_lim_lim_001 = CoreClr.il_coreclr_test({
+    name: "lim_001",
+    srcs: ["lim_001.il"],
+    debugType: "pdbonly",
+    optimize: true,
+    pri: 1,
+    size: "medium",
+});
+
+@@public
 export const jIT_jit64_opt_lim_lim_002 = CoreClr.coreclr_test({
     name: "lim_002",
     srcs: ["lim_002.cs"],

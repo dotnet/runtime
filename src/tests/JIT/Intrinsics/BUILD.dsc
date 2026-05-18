@@ -43,6 +43,14 @@ export const jIT_Intrinsics_mathFloorDouble_r = CoreClr.coreclr_test({
 });
 
 @@public
+export const jIT_Intrinsics_typeIntrinsics_il = CoreClr.il_coreclr_test({
+    name: "TypeIntrinsics_il",
+    srcs: ["TypeIntrinsics_il.il"],
+    debugType: "pdbonly",
+    optimize: true,
+});
+
+@@public
 export const jIT_Intrinsics_mathRoundSingle_ro = CoreClr.coreclr_test({
     name: "MathRoundSingle_ro",
     srcs: ["MathRoundSingle.cs"],
@@ -107,6 +115,14 @@ export const jIT_Intrinsics_typeEqualitySealed_ro = CoreClr.coreclr_test({
 export const jIT_Intrinsics_bitOperationsIntrinsics_r = CoreClr.coreclr_test({
     name: "BitOperationsIntrinsics_r",
     srcs: ["BitOperationsPopCount.cs"],
+});
+
+@@public
+export const jIT_Intrinsics_bitCast = CoreClr.il_coreclr_test({
+    name: "BitCast",
+    srcs: ["BitCast.il"],
+    debugType: "pdbonly",
+    optimize: true,
 });
 
 @@public
@@ -195,6 +211,14 @@ export const jIT_Intrinsics_mathCeilingDouble_r = CoreClr.coreclr_test({
     name: "MathCeilingDouble_r",
     srcs: ["MathCeilingDouble.cs"],
     allowUnsafe: true,
+});
+
+@@public
+export const jIT_Intrinsics_createSpan_il = CoreClr.il_coreclr_test({
+    name: "CreateSpan_il",
+    srcs: ["CreateSpan_il.il"],
+    debugType: "pdbonly",
+    optimize: true,
 });
 
 @@public

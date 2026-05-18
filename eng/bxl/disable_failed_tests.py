@@ -19,8 +19,11 @@ import sys
 from pathlib import Path
 
 
-_BUILD_FAILED_RE = re.compile(
+_BUILD_FAILED_CSC_RE = re.compile(
     r"\bcsc \[exe\]: ([^,]+), (/[^,]+/BUILD\.dsc), [^]]+] - failed with exit code"
+)
+_BUILD_FAILED_ILASM_RE = re.compile(
+    r"\|\| ilasm (\S+), (/[^,]+/BUILD\.dsc), [^]]+] - failed with exit code"
 )
 _TEST_FAILED_RE = re.compile(
     r"\brun coreclr test: ([^,]+), (/[^,]+/BUILD\.dsc), [^]]+] - failed with exit code"
@@ -30,16 +33,20 @@ _TEST_FAILED_RE = re.compile(
 def _collect_failures(log_path: Path, mode: str) -> dict[Path, set[str]]:
     failures: dict[Path, set[str]] = {}
     text = log_path.read_text(errors="replace")
-    rx = _BUILD_FAILED_RE if mode == "build" else _TEST_FAILED_RE
-    for m in rx.finditer(text):
-        target_name = m.group(1).strip()
-        build_path = Path(m.group(2).strip())
-        failures.setdefault(build_path, set()).add(target_name)
+    if mode == "build":
+        regexes = [_BUILD_FAILED_CSC_RE, _BUILD_FAILED_ILASM_RE]
+    else:
+        regexes = [_TEST_FAILED_RE]
+    for rx in regexes:
+        for m in rx.finditer(text):
+            target_name = m.group(1).strip()
+            build_path = Path(m.group(2).strip())
+            failures.setdefault(build_path, set()).add(target_name)
     return failures
 
 
 _BLOCK_RE = re.compile(
-    r"@@public\s*\n\s*export\s+const\s+\w+\s*=\s*CoreClr\.coreclr_test\(\s*\{"
+    r"@@public\s*\n\s*export\s+const\s+\w+\s*=\s*CoreClr\.(?:coreclr_test|il_coreclr_test)\(\s*\{"
     r"(?P<body>[^}]*)"
     r"\}\s*\)\s*;\s*\n?",
     re.MULTILINE,
@@ -113,7 +120,7 @@ def main():
             print(f"  skip (no match in file): {build_path}: {sorted(names)}")
             continue
         total += count
-        if args.mode == "build" and "CoreClr.coreclr_test" not in new_text:
+        if args.mode == "build" and "CoreClr.coreclr_test" not in new_text and "CoreClr.il_coreclr_test" not in new_text:
             build_path.unlink()
             files_deleted += 1
         else:

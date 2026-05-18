@@ -11,6 +11,6 @@ export const regressions_coreclr_0080_delete_next_card_table = CoreClr.coreclr_t
     name: "delete_next_card_table",
     srcs: ["delete_next_card_table.cs"],
     pri: 1,
-    size: "medium",
     run: false,
+    size: "medium",
 });

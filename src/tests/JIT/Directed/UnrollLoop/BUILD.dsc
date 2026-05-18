@@ -7,6 +7,13 @@
 import * as CoreClr from "CoreClrTest";
 
 @@public
+export const jIT_Directed_UnrollLoop_loop3_r = CoreClr.il_coreclr_test({
+    name: "loop3_r",
+    srcs: ["loop3_r.il", "loop3.il"],
+    debugType: "pdbonly",
+});
+
+@@public
 export const jIT_Directed_UnrollLoop_loop6_cs_ro = CoreClr.coreclr_test({
     name: "loop6_cs_ro",
     srcs: ["loop6.cs"],
@@ -75,6 +82,15 @@ export const jIT_Directed_UnrollLoop_loop4_cs_d = CoreClr.coreclr_test({
     srcs: ["loop4.cs"],
     debugType: "full",
     optimize: false,
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Directed_UnrollLoop_loop3_d = CoreClr.il_coreclr_test({
+    name: "loop3_d",
+    srcs: ["loop3_d.il", "loop3.il"],
+    debugType: "full",
     pri: 1,
     size: "medium",
 });

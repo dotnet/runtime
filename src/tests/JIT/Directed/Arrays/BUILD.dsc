@@ -31,8 +31,8 @@ export const jIT_Directed_Arrays_loopCloning = CoreClr.coreclr_test({
     allowUnsafe: true,
     debugType: "pdbonly",
     pri: 1,
-    size: "medium",
     run: false,
+    size: "medium",
 });
 
 @@public

@@ -17,6 +17,16 @@ export const jIT_jit64_opt_cprop_cprop001_do = CoreClr.coreclr_test({
 });
 
 @@public
+export const jIT_jit64_opt_cprop_dev10_844071 = CoreClr.il_coreclr_test({
+    name: "Dev10_844071",
+    srcs: ["Dev10_844071.il"],
+    debugType: "full",
+    optimize: false,
+    pri: 1,
+    size: "medium",
+});
+
+@@public
 export const jIT_jit64_opt_cprop_cprop001_r = CoreClr.coreclr_test({
     name: "cprop001_r",
     srcs: ["cprop001.cs"],
@@ -38,6 +48,26 @@ export const jIT_jit64_opt_cprop_implicitDownConv = CoreClr.coreclr_test({
 export const jIT_jit64_opt_cprop_cprop001_ro = CoreClr.coreclr_test({
     name: "cprop001_ro",
     srcs: ["cprop001.cs"],
+    optimize: true,
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_jit64_opt_cprop_dev10_884217_IL = CoreClr.il_coreclr_test({
+    name: "Dev10_884217_IL",
+    srcs: ["Dev10_884217_IL.il"],
+    debugType: "full",
+    optimize: false,
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_jit64_opt_cprop_cprop002 = CoreClr.il_coreclr_test({
+    name: "cprop002",
+    srcs: ["cprop002.il"],
+    debugType: "pdbonly",
     optimize: true,
     pri: 1,
     size: "medium",

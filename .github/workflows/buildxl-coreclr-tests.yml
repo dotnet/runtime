@@ -69,11 +69,11 @@ jobs:
           set -euo pipefail
           sudo ./eng/common/native/install-dependencies.sh
 
-      - name: Build corerun test host
+      - name: Build corerun test host and IL tools
         shell: bash
         run: |
           set -euo pipefail
-          ./build.sh clr.hosts -c Release
+          ./build.sh clr.hosts+clr.iltools -c Release
 
       - name: Assemble Core_Root from NuGet runtime package
         shell: bash
@@ -109,8 +109,9 @@ jobs:
                           os.chmod(target, 0o755)
           " "$CORE_ROOT" "$pkg_dir/runtime.nupkg"
 
-          # Copy corerun from build output
+          # Copy corerun and ilasm from the build output
           cp artifacts/bin/coreclr/linux.x64.Release/corerun "$CORE_ROOT/"
+          cp artifacts/bin/coreclr/linux.x64.Release/ilasm "$CORE_ROOT/"
 
           echo "Core_Root assembled: $(ls "$CORE_ROOT"/*.dll | wc -l) managed + $(ls "$CORE_ROOT"/*.so | wc -l) native files"
 
@@ -120,7 +121,7 @@ jobs:
           set -euo pipefail
 
           chmod +x ./bxl.sh
-          ./bxl.sh "/f:output='*.build.stamp'"
+          ./bxl.sh build
 
       - name: Test
         shell: bash
@@ -128,10 +129,10 @@ jobs:
           set -uo pipefail
 
           chmod +x ./bxl.sh
-          ./bxl.sh "/f:output='*.test.stamp'"
+          ./bxl.sh test
           bxl_exit=$?
 
-          # Source of truth: every enabled coreclr_test target produces a
+          # Source of truth: every enabled test target produces a
           # *.test.stamp output on success. Cached pips re-emit the stamp,
           # so this count is correct on warm-cache runs too.
           mapfile -t passed_stamps < <(find Out/Objects -name '*.test.stamp' | sort)

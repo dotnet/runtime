@@ -11,6 +11,6 @@ export const baseservices_threading_delegate_beginInvokeEndInvoke = CoreClr.core
     name: "BeginInvokeEndInvoke",
     srcs: ["BeginInvokeEndInvoke.cs"],
     pri: 1,
-    size: "medium",
     run: false,
+    size: "medium",
 });

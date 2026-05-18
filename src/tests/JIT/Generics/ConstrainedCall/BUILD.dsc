@@ -7,6 +7,15 @@
 import * as CoreClr from "CoreClrTest";
 
 @@public
+export const jIT_Generics_ConstrainedCall_class2_d = CoreClr.il_coreclr_test({
+    name: "class2_d",
+    srcs: ["class2_d.il", "class2.il"],
+    debugType: "full",
+    pri: 1,
+    size: "medium",
+});
+
+@@public
 export const jIT_Generics_ConstrainedCall_class1_cs_d = CoreClr.coreclr_test({
     name: "class1_cs_d",
     srcs: ["class1.cs"],
@@ -30,6 +39,15 @@ export const jIT_Generics_ConstrainedCall_vt4_cs_d = CoreClr.coreclr_test({
 export const jIT_Generics_ConstrainedCall_class1_cs_r = CoreClr.coreclr_test({
     name: "class1_cs_r",
     srcs: ["class1.cs"],
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Generics_ConstrainedCall_vt4_r = CoreClr.il_coreclr_test({
+    name: "vt4_r",
+    srcs: ["vt4_r.il", "vt4.il"],
+    debugType: "pdbonly",
     pri: 1,
     size: "medium",
 });
@@ -102,12 +120,28 @@ export const jIT_Generics_ConstrainedCall_vt1_cs_ro = CoreClr.coreclr_test({
 });
 
 @@public
+export const jIT_Generics_ConstrainedCall_class1_r = CoreClr.il_coreclr_test({
+    name: "class1_r",
+    srcs: ["class1_r.il", "class1.il"],
+    debugType: "pdbonly",
+    pri: 1,
+    size: "medium",
+});
+
+@@public
 export const jIT_Generics_ConstrainedCall_class2_cs_ro = CoreClr.coreclr_test({
     name: "class2_cs_ro",
     srcs: ["class2.cs"],
     optimize: true,
     pri: 1,
     size: "medium",
+});
+
+@@public
+export const jIT_Generics_ConstrainedCall_vt2_r = CoreClr.il_coreclr_test({
+    name: "vt2_r",
+    srcs: ["vt2_r.il", "vt2.il"],
+    debugType: "pdbonly",
 });
 
 @@public
@@ -123,6 +157,13 @@ export const jIT_Generics_ConstrainedCall_vt2_cs_d = CoreClr.coreclr_test({
     srcs: ["vt2.cs"],
     debugType: "full",
     optimize: false,
+});
+
+@@public
+export const jIT_Generics_ConstrainedCall_vt2_d = CoreClr.il_coreclr_test({
+    name: "vt2_d",
+    srcs: ["vt2_d.il", "vt2.il"],
+    debugType: "full",
 });
 
 @@public
@@ -160,9 +201,36 @@ export const jIT_Generics_ConstrainedCall_vt1_cs_do = CoreClr.coreclr_test({
 });
 
 @@public
+export const jIT_Generics_ConstrainedCall_class2_r = CoreClr.il_coreclr_test({
+    name: "class2_r",
+    srcs: ["class2_r.il", "class2.il"],
+    debugType: "pdbonly",
+    pri: 1,
+    size: "medium",
+});
+
+@@public
 export const jIT_Generics_ConstrainedCall_vt4_cs_r = CoreClr.coreclr_test({
     name: "vt4_cs_r",
     srcs: ["vt4.cs"],
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Generics_ConstrainedCall_vt1_d = CoreClr.il_coreclr_test({
+    name: "vt1_d",
+    srcs: ["vt1_d.il", "vt1.il"],
+    debugType: "full",
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Generics_ConstrainedCall_class1_d = CoreClr.il_coreclr_test({
+    name: "class1_d",
+    srcs: ["class1_d.il", "class1.il"],
+    debugType: "full",
     pri: 1,
     size: "medium",
 });
@@ -173,6 +241,24 @@ export const jIT_Generics_ConstrainedCall_vt4_cs_do = CoreClr.coreclr_test({
     srcs: ["vt4.cs"],
     debugType: "full",
     optimize: true,
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Generics_ConstrainedCall_vt3_r = CoreClr.il_coreclr_test({
+    name: "vt3_r",
+    srcs: ["vt3_r.il", "vt3.il"],
+    debugType: "pdbonly",
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Generics_ConstrainedCall_vt1_r = CoreClr.il_coreclr_test({
+    name: "vt1_r",
+    srcs: ["vt1_r.il", "vt1.il"],
+    debugType: "pdbonly",
     pri: 1,
     size: "medium",
 });
@@ -204,9 +290,27 @@ export const jIT_Generics_ConstrainedCall_class1_cs_ro = CoreClr.coreclr_test({
 });
 
 @@public
+export const jIT_Generics_ConstrainedCall_vt4_d = CoreClr.il_coreclr_test({
+    name: "vt4_d",
+    srcs: ["vt4_d.il", "vt4.il"],
+    debugType: "full",
+    pri: 1,
+    size: "medium",
+});
+
+@@public
 export const jIT_Generics_ConstrainedCall_class2_cs_r = CoreClr.coreclr_test({
     name: "class2_cs_r",
     srcs: ["class2.cs"],
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Generics_ConstrainedCall_vt3_d = CoreClr.il_coreclr_test({
+    name: "vt3_d",
+    srcs: ["vt3_d.il", "vt3.il"],
+    debugType: "full",
     pri: 1,
     size: "medium",
 });

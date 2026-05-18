@@ -7,6 +7,15 @@
 import * as CoreClr from "CoreClrTest";
 
 @@public
+export const baseservices_exceptions_simple_fault = CoreClr.il_coreclr_test({
+    name: "fault",
+    srcs: ["fault.il"],
+    pri: 1,
+    size: "medium",
+    tags: ["manual"],
+});
+
+@@public
 export const baseservices_exceptions_simple_finally_ = CoreClr.coreclr_test({
     name: "finally",
     srcs: ["finally.cs"],

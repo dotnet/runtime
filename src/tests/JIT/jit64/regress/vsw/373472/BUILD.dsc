@@ -7,6 +7,15 @@
 import * as CoreClr from "CoreClrTest";
 
 @@public
+export const jIT_jit64_regress_vsw_373472_test_il = CoreClr.il_coreclr_test({
+    name: "test_il",
+    srcs: ["test.il"],
+    debugType: "full",
+    optimize: false,
+    run: false,
+});
+
+@@public
 export const jIT_jit64_regress_vsw_373472_test_373472 = CoreClr.coreclr_test({
     name: "test_373472",
     srcs: ["test.cs"],

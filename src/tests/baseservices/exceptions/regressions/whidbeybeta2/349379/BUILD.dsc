@@ -11,6 +11,6 @@ export const baseservices_exceptions_regressions_whidbeybeta2_349379__349379 = C
     name: "349379",
     srcs: ["349379.cs"],
     pri: 1,
-    size: "medium",
     run: false,
+    size: "medium",
 });

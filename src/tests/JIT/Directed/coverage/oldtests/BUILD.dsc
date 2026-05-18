@@ -16,9 +16,43 @@ export const jIT_Directed_coverage_oldtests_lclfldadd_cs_ro = CoreClr.coreclr_te
 });
 
 @@public
+export const jIT_Directed_coverage_oldtests_subbyref_r = CoreClr.il_coreclr_test({
+    name: "subbyref_r",
+    srcs: ["subbyref_r.il", "subbyref.il"],
+    debugType: "pdbonly",
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Directed_coverage_oldtests_ovflrem2_d = CoreClr.il_coreclr_test({
+    name: "ovflrem2_d",
+    srcs: ["ovflrem2_d.il", "ovflrem2.il"],
+    debugType: "full",
+    run: false,
+});
+
+@@public
 export const jIT_Directed_coverage_oldtests_lclfldrem_cs_r = CoreClr.coreclr_test({
     name: "lclfldrem_cs_r",
     srcs: ["lclfldrem.cs"],
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Directed_coverage_oldtests_ovfldiv1_d = CoreClr.il_coreclr_test({
+    name: "ovfldiv1_d",
+    srcs: ["ovfldiv1_d.il", "ovfldiv1.il"],
+    debugType: "full",
+    run: false,
+});
+
+@@public
+export const jIT_Directed_coverage_oldtests_ldsshrstsfld_r = CoreClr.il_coreclr_test({
+    name: "ldsshrstsfld_r",
+    srcs: ["ldsshrstsfld_r.il", "ldsshrstsfld.il"],
+    debugType: "pdbonly",
     pri: 1,
     size: "medium",
 });
@@ -29,6 +63,76 @@ export const jIT_Directed_coverage_oldtests__33objref_cs_do = CoreClr.coreclr_te
     srcs: ["33objref.cs"],
     debugType: "full",
     optimize: true,
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Directed_coverage_oldtests_ovflrem2_r = CoreClr.il_coreclr_test({
+    name: "ovflrem2_r",
+    srcs: ["ovflrem2_r.il", "ovflrem2.il"],
+    debugType: "pdbonly",
+    run: false,
+});
+
+@@public
+export const jIT_Directed_coverage_oldtests_zeroinit_d = CoreClr.il_coreclr_test({
+    name: "zeroinit_d",
+    srcs: ["zeroinit_d.il", "zeroinit.il"],
+    debugType: "full",
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Directed_coverage_oldtests_switchdefaultonly1_r = CoreClr.il_coreclr_test({
+    name: "switchdefaultonly1_r",
+    srcs: ["switchdefaultonly1_r.il", "switchdefaultonly1.il"],
+    debugType: "pdbonly",
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Directed_coverage_oldtests_subbyref_d = CoreClr.il_coreclr_test({
+    name: "subbyref_d",
+    srcs: ["subbyref_d.il", "subbyref.il"],
+    debugType: "full",
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Directed_coverage_oldtests_ovflrem1_r = CoreClr.il_coreclr_test({
+    name: "ovflrem1_r",
+    srcs: ["ovflrem1_r.il", "ovflrem1.il"],
+    debugType: "pdbonly",
+    run: false,
+});
+
+@@public
+export const jIT_Directed_coverage_oldtests_ldfldstatic_r = CoreClr.il_coreclr_test({
+    name: "ldfldstatic_r",
+    srcs: ["ldfldstatic_r.il", "ldfldstatic.il"],
+    debugType: "pdbonly",
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Directed_coverage_oldtests_stfldstatic2_d = CoreClr.il_coreclr_test({
+    name: "stfldstatic2_d",
+    srcs: ["stfldstatic2_d.il", "stfldstatic2.il"],
+    debugType: "full",
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Directed_coverage_oldtests_switchdefaultonly2_r = CoreClr.il_coreclr_test({
+    name: "switchdefaultonly2_r",
+    srcs: ["switchdefaultonly2_r.il", "switchdefaultonly2.il"],
+    debugType: "pdbonly",
     pri: 1,
     size: "medium",
 });
@@ -55,6 +159,15 @@ export const jIT_Directed_coverage_oldtests_lclflddiv_cs_do = CoreClr.coreclr_te
 });
 
 @@public
+export const jIT_Directed_coverage_oldtests_switchdefaultonly1_d = CoreClr.il_coreclr_test({
+    name: "switchdefaultonly1_d",
+    srcs: ["switchdefaultonly1_d.il", "switchdefaultonly1.il"],
+    debugType: "full",
+    pri: 1,
+    size: "medium",
+});
+
+@@public
 export const jIT_Directed_coverage_oldtests__33objref_cs_ro = CoreClr.coreclr_test({
     name: "33objref_cs_ro",
     srcs: ["33objref.cs"],
@@ -68,6 +181,15 @@ export const jIT_Directed_coverage_oldtests_lclfldrem_cs_ro = CoreClr.coreclr_te
     name: "lclfldrem_cs_ro",
     srcs: ["lclfldrem.cs"],
     optimize: true,
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Directed_coverage_oldtests_stfldstatic1_oldtests_d = CoreClr.il_coreclr_test({
+    name: "stfldstatic1_oldtests_d",
+    srcs: ["stfldstatic1_d.il", "stfldstatic1.il"],
+    debugType: "full",
     pri: 1,
     size: "medium",
 });
@@ -101,11 +223,28 @@ export const jIT_Directed_coverage_oldtests_lclfldmul_cs_d = CoreClr.coreclr_tes
 });
 
 @@public
+export const jIT_Directed_coverage_oldtests_volatilecpobj_d = CoreClr.il_coreclr_test({
+    name: "volatilecpobj_d",
+    srcs: ["volatilecpobj_d.il", "volatilecpobj.il"],
+    debugType: "full",
+    pri: 1,
+    size: "medium",
+});
+
+@@public
 export const jIT_Directed_coverage_oldtests_lclfldmul_cs_r = CoreClr.coreclr_test({
     name: "lclfldmul_cs_r",
     srcs: ["lclfldmul.cs"],
     pri: 1,
     size: "medium",
+});
+
+@@public
+export const jIT_Directed_coverage_oldtests_trashreg_d = CoreClr.il_coreclr_test({
+    name: "trashreg_d",
+    srcs: ["trashreg_d.il", "trashreg.il"],
+    debugType: "full",
+    run: false,
 });
 
 @@public
@@ -134,6 +273,15 @@ export const jIT_Directed_coverage_oldtests_lclfldadd_cs_d = CoreClr.coreclr_tes
     srcs: ["lclfldadd.cs"],
     debugType: "full",
     optimize: false,
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Directed_coverage_oldtests_zeroinit_r = CoreClr.il_coreclr_test({
+    name: "zeroinit_r",
+    srcs: ["zeroinit_r.il", "zeroinit.il"],
+    debugType: "pdbonly",
     pri: 1,
     size: "medium",
 });
@@ -176,12 +324,38 @@ export const jIT_Directed_coverage_oldtests__33objref_cs_r = CoreClr.coreclr_tes
 });
 
 @@public
+export const jIT_Directed_coverage_oldtests_switchdefaultonly3_d = CoreClr.il_coreclr_test({
+    name: "switchdefaultonly3_d",
+    srcs: ["switchdefaultonly3_d.il", "switchdefaultonly3.il"],
+    debugType: "full",
+    pri: 1,
+    size: "medium",
+});
+
+@@public
 export const jIT_Directed_coverage_oldtests_cse2_cs_do = CoreClr.coreclr_test({
     name: "cse2_cs_do",
     srcs: ["cse2.cs"],
     allowUnsafe: true,
     debugType: "full",
     optimize: true,
+});
+
+@@public
+export const jIT_Directed_coverage_oldtests_ovfldiv2_d = CoreClr.il_coreclr_test({
+    name: "ovfldiv2_d",
+    srcs: ["ovfldiv2_d.il", "ovfldiv2.il"],
+    debugType: "full",
+    run: false,
+});
+
+@@public
+export const jIT_Directed_coverage_oldtests_ldvirtftncalli_r = CoreClr.il_coreclr_test({
+    name: "ldvirtftncalli_r",
+    srcs: ["ldvirtftncalli_r.il", "ldvirtftncalli.il"],
+    debugType: "pdbonly",
+    pri: 1,
+    size: "medium",
 });
 
 @@public
@@ -226,11 +400,91 @@ export const jIT_Directed_coverage_oldtests_lclflddiv_cs_r = CoreClr.coreclr_tes
 });
 
 @@public
+export const jIT_Directed_coverage_oldtests_ldsshrstsfld_d = CoreClr.il_coreclr_test({
+    name: "ldsshrstsfld_d",
+    srcs: ["ldsshrstsfld_d.il", "ldsshrstsfld.il"],
+    debugType: "full",
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Directed_coverage_oldtests_ovfldiv2_r = CoreClr.il_coreclr_test({
+    name: "ovfldiv2_r",
+    srcs: ["ovfldiv2_r.il", "ovfldiv2.il"],
+    debugType: "pdbonly",
+    run: false,
+});
+
+@@public
 export const jIT_Directed_coverage_oldtests_lclfldrem_cs_d = CoreClr.coreclr_test({
     name: "lclfldrem_cs_d",
     srcs: ["lclfldrem.cs"],
     debugType: "full",
     optimize: false,
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Directed_coverage_oldtests_switchdefaultonly2_d = CoreClr.il_coreclr_test({
+    name: "switchdefaultonly2_d",
+    srcs: ["switchdefaultonly2_d.il", "switchdefaultonly2.il"],
+    debugType: "full",
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Directed_coverage_oldtests_stfldstatic2_r = CoreClr.il_coreclr_test({
+    name: "stfldstatic2_r",
+    srcs: ["stfldstatic2_r.il", "stfldstatic2.il"],
+    debugType: "pdbonly",
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Directed_coverage_oldtests_stfldstatic1_oldtests_r = CoreClr.il_coreclr_test({
+    name: "stfldstatic1_oldtests_r",
+    srcs: ["stfldstatic1_r.il", "stfldstatic1.il"],
+    debugType: "pdbonly",
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Directed_coverage_oldtests_ldfldstatic_d = CoreClr.il_coreclr_test({
+    name: "ldfldstatic_d",
+    srcs: ["ldfldstatic_d.il", "ldfldstatic.il"],
+    debugType: "full",
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Directed_coverage_oldtests_switchdefaultonly3_r = CoreClr.il_coreclr_test({
+    name: "switchdefaultonly3_r",
+    srcs: ["switchdefaultonly3_r.il", "switchdefaultonly3.il"],
+    debugType: "pdbonly",
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Directed_coverage_oldtests_lcliimpl_r = CoreClr.il_coreclr_test({
+    name: "lcliimpl_r",
+    srcs: ["lcliimpl_r.il", "lcliimpl.il"],
+    debugType: "pdbonly",
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Directed_coverage_oldtests_ldvirtftncalli_d = CoreClr.il_coreclr_test({
+    name: "ldvirtftncalli_d",
+    srcs: ["ldvirtftncalli_d.il", "ldvirtftncalli.il"],
+    debugType: "full",
     pri: 1,
     size: "medium",
 });
@@ -243,6 +497,48 @@ export const jIT_Directed_coverage_oldtests_lclflddiv_cs_d = CoreClr.coreclr_tes
     optimize: false,
     pri: 1,
     size: "medium",
+});
+
+@@public
+export const jIT_Directed_coverage_oldtests_lcliimpl_d = CoreClr.il_coreclr_test({
+    name: "lcliimpl_d",
+    srcs: ["lcliimpl_d.il", "lcliimpl.il"],
+    debugType: "full",
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Directed_coverage_oldtests_ovfldiv1_r = CoreClr.il_coreclr_test({
+    name: "ovfldiv1_r",
+    srcs: ["ovfldiv1_r.il", "ovfldiv1.il"],
+    debugType: "pdbonly",
+    run: false,
+});
+
+@@public
+export const jIT_Directed_coverage_oldtests_trashreg_r = CoreClr.il_coreclr_test({
+    name: "trashreg_r",
+    srcs: ["trashreg_r.il", "trashreg.il"],
+    debugType: "pdbonly",
+    run: false,
+});
+
+@@public
+export const jIT_Directed_coverage_oldtests_arrgetlen_d = CoreClr.il_coreclr_test({
+    name: "arrgetlen_d",
+    srcs: ["arrgetlen_d.il", "arrgetlen.il"],
+    debugType: "full",
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Directed_coverage_oldtests_ovflrem1_d = CoreClr.il_coreclr_test({
+    name: "ovflrem1_d",
+    srcs: ["ovflrem1_d.il", "ovflrem1.il"],
+    debugType: "full",
+    run: false,
 });
 
 @@public
@@ -283,6 +579,15 @@ export const jIT_Directed_coverage_oldtests_lclfldsub_cs_do = CoreClr.coreclr_te
 });
 
 @@public
+export const jIT_Directed_coverage_oldtests_volatilecpobj_r = CoreClr.il_coreclr_test({
+    name: "volatilecpobj_r",
+    srcs: ["volatilecpobj_r.il", "volatilecpobj.il"],
+    debugType: "pdbonly",
+    pri: 1,
+    size: "medium",
+});
+
+@@public
 export const jIT_Directed_coverage_oldtests_lclfldsub_cs_r = CoreClr.coreclr_test({
     name: "lclfldsub_cs_r",
     srcs: ["lclfldsub.cs"],
@@ -296,6 +601,15 @@ export const jIT_Directed_coverage_oldtests_lclfldadd_cs_do = CoreClr.coreclr_te
     srcs: ["lclfldadd.cs"],
     debugType: "full",
     optimize: true,
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Directed_coverage_oldtests_arrgetlen_r = CoreClr.il_coreclr_test({
+    name: "arrgetlen_r",
+    srcs: ["arrgetlen_r.il", "arrgetlen.il"],
+    debugType: "pdbonly",
     pri: 1,
     size: "medium",
 });

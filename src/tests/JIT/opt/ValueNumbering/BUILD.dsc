@@ -42,8 +42,8 @@ export const jIT_opt_ValueNumbering_exceptionSetsPropagation_Hwi = CoreClr.corec
     srcs: ["ExceptionSetsPropagation_Hwi.cs"],
     optimize: true,
     pri: 1,
-    size: "medium",
     run: false,
+    size: "medium",
 });
 
 @@public
@@ -52,8 +52,8 @@ export const jIT_opt_ValueNumbering_exceptionSets = CoreClr.coreclr_test({
     srcs: ["ExceptionSets.cs"],
     optimize: true,
     pri: 1,
-    size: "medium",
     run: false,
+    size: "medium",
 });
 
 @@public
@@ -63,6 +63,16 @@ export const jIT_opt_ValueNumbering_exposedLocalsNumbering = CoreClr.coreclr_tes
     allowUnsafe: true,
     optimize: true,
     tags: ["flaky"],
+});
+
+@@public
+export const jIT_opt_ValueNumbering_exceptionSetsPropagation_LclHeap = CoreClr.il_coreclr_test({
+    name: "ExceptionSetsPropagation_LclHeap",
+    srcs: ["ExceptionSetsPropagation_LclHeap.il"],
+    optimize: true,
+    pri: 1,
+    size: "medium",
+    run: false,
 });
 
 @@public

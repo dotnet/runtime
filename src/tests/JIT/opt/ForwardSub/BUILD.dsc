@@ -42,6 +42,15 @@ export const jIT_opt_ForwardSub_callArgInterference2 = CoreClr.coreclr_test({
 });
 
 @@public
+export const jIT_opt_ForwardSub_normalizeOnStore = CoreClr.il_coreclr_test({
+    name: "normalizeOnStore",
+    srcs: ["normalizeOnStore.il"],
+    optimize: true,
+    pri: 1,
+    size: "medium",
+});
+
+@@public
 export const jIT_opt_ForwardSub_andnotcontained = CoreClr.coreclr_test({
     name: "andnotcontained",
     srcs: ["andnotcontained.cs"],

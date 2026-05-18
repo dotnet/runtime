@@ -4,9 +4,12 @@
 /**
  * coreclr_test — repo-specific build macro for CoreCLR xunit tests.
  *
- * The macro builds a standalone test assembly with the same common CoreCLR
- * test references used by the repo and optionally wires a BuildXL-backed
- * execution pip that runs the resulting test via corerun.
+ * The macro builds a standalone test assembly via `csharp_binary`, then
+ * wires test execution through an internal `kind: "test"` rule that
+ * generates a runner script, stages the test DLL + deps, and runs via
+ * corerun. The test runner pip is auto-tagged `bxl-kind:test` by the
+ * framework so `bxl /f:tag='bxl-kind:test'` selects test execution
+ * while a plain build only compiles.
  */
 
 import * as Rules from "Sdk.Rules";
@@ -14,9 +17,6 @@ import * as CSharp from "Sdk.Rules.CSharp";
 import {Cmd, Transformer} from "Sdk.Transformers";
 import * as Defs from "Defs";
 import * as Common from "Tests.Common";
-
-const supportToolchain: Rules.Toolchain = { kind: "Toolchain", name: "coreclr-test-support" };
-const bashExe = f`/bin/bash`;
 
 // ============================================================================
 //  XUnitWrapperGenerator analyzer config
@@ -78,129 +78,74 @@ export interface CoreClrTestArguments {
 @@public
 export interface CoreClrTestResult extends Rules.Provider {
     binary: File;
-    buildStamp: File;
-    testStamp?: File;
+    testInfo?: Rules.TestInfo;
     csInfo: CSharp.CSharpInfo;
     defaultInfo: Rules.DefaultInfo;
 }
 
-interface BuildStampAttrs {
-    name: string;
-    binary: CSharp.CSharpInfo;
-}
+// ============================================================================
+//  Internal test runner rule (kind: "test" → auto-tagged bxl-kind:test)
+// ============================================================================
 
-interface BuildStampResult extends Rules.Provider {
-    stamp: File;
-    defaultInfo: Rules.DefaultInfo;
-}
-
-interface RunCoreClrTestAttrs {
+interface CoreClrTestRunnerAttrs {
     name: string;
-    binary: CSharp.CSharpInfo;
+    binary: File;
     runtimeFiles: File[];
-    environmentVariables: {name: string, value: string}[];
+    env?: {name: string, value: string}[];
+    flaky?: boolean;
+    tags?: string[];
 }
 
-interface RunCoreClrTestResult extends Rules.Provider {
-    stamp: File;
+interface CoreClrTestRunnerResult extends Rules.Provider {
+    testInfo: Rules.TestInfo;
     defaultInfo: Rules.DefaultInfo;
 }
 
-function stageFile(actions: Rules.Actions, file: File): Rules.Artifact {
-    return actions.copyFile(
-        Rules.sourceArtifact(file),
-        actions.declareOutput(file.path.name.toString()));
-}
+const testRunnerToolchain: Rules.Toolchain = { kind: "Toolchain", name: "coreclr-test-runner" };
 
-const emitBuildStamp = Rules.rule<BuildStampAttrs, BuildStampAttrs, Rules.Toolchain, BuildStampResult>({
-    doc: "Mark a CoreCLR test assembly as built.",
-    toolchain: supportToolchain,
+const coreclrTestRunner = Rules.rule<CoreClrTestRunnerAttrs, CoreClrTestRunnerAttrs, Rules.Toolchain, CoreClrTestRunnerResult>({
+    doc: "Run a CoreCLR test DLL via corerun.",
+    kind: "test",
+    toolchain: testRunnerToolchain,
     resolve: (attrs, _resolver) => attrs,
     impl: (ctx) => {
-        const stamp = ctx.actions.declareOutput(`${ctx.args.binary.binary.nameWithoutExtension}.build.stamp`);
-        const script = ctx.actions.writeFile(
-            ctx.actions.declareOutput(`${ctx.args.name}.build.sh`),
+        const corerunPath = Defs.CORE_ROOT_CORERUN.path.toDiagnosticString();
+        const dllName = ctx.args.binary.name.toString();
+
+        // Generate a runner script that invokes corerun with the test DLL.
+        // The framework will stage this + deps into the output directory.
+        const runner = ctx.runActions.writeFile(
+            ctx.runActions.declareOutput(`${ctx.args.name}.runner.sh`),
             [
                 "#!/usr/bin/env bash",
-                "set -euo pipefail",
-                "printf 'built\\n' > \"$1\"",
+                `exec "${corerunPath}" "$(dirname "$0")/${dllName}" "$@"`,
             ]);
 
-        const produced = ctx.actions.run({
-            tool: bashExe,
-            arguments: [
-                Cmd.argument(Rules.cmdInput(script)),
-                Cmd.argument(Rules.cmdOutput(stamp)),
+        // Let the framework handle timeout, stamp, runat, success codes.
+        const ti = Rules.scheduleTestRunner(ctx.args.name, Rules.testRunInfo({
+            executable: runner,
+            successExitCodes: [100],
+            env: ctx.args.env,
+            deps: [
+                Rules.sourceArtifact(ctx.args.binary),
+                ...ctx.args.runtimeFiles.map(f => Rules.sourceArtifact(f)),
             ],
-            outputs: [stamp],
-            dependencies: [Rules.sourceArtifact(ctx.args.binary.binary)],
-            description: `mark coreclr test build: ${ctx.args.binary.binary.nameWithoutExtension}`,
-        });
+            size: "small",
+            flaky: ctx.args.flaky,
+            tags: ctx.args.tags,
+        }), ctx.runActions);
 
-        const stampFile = Rules.getFile(produced[0]);
         return {
-            kind: "BuildStampResult",
-            stamp: stampFile,
-            defaultInfo: Rules.defaultInfo({ files: [stampFile] }),
+            kind: "CoreClrTestRunnerResult",
+            testInfo: ti,
+            defaultInfo: Rules.defaultInfo({ files: [] }),
         };
     },
 });
 
-const runCoreClrTest = Rules.rule<RunCoreClrTestAttrs, RunCoreClrTestAttrs, Rules.Toolchain, RunCoreClrTestResult>({
-    doc: "Run a CoreCLR standalone test via corerun and capture a BuildXL-visible stamp.",
-    toolchain: supportToolchain,
-    resolve: (attrs, _resolver) => attrs,
-    impl: (ctx) => {
-        const stagedBinary = stageFile(ctx.actions, ctx.args.binary.binary);
-        const stagedRuntimeFiles = ctx.args.runtimeFiles.map(file => stageFile(ctx.actions, file));
-
-        const stamp = ctx.actions.declareOutput(`${ctx.args.binary.binary.nameWithoutExtension}.test.stamp`);
-        const script = ctx.actions.writeFile(
-            ctx.actions.declareOutput(`${ctx.args.name}.run.sh`),
-            [
-                "#!/usr/bin/env bash",
-                "set -euo pipefail",
-                "set +e",
-                "timeout --foreground --kill-after=10 60 \"$2\" \"$3\"",
-                "exit_code=$?",
-                "set -e",
-                "if [[ \"$exit_code\" -eq 100 ]]; then",
-                "  printf 'passed\\n' > \"$1\"",
-                "  exit 0",
-                "fi",
-                "if [[ \"$exit_code\" -eq 124 || \"$exit_code\" -eq 137 ]]; then",
-                "  echo \"Test timed out after 60s\" >&2",
-                "fi",
-                "echo \"Expected exit code 100, got $exit_code\" >&2",
-                "exit \"$exit_code\"",
-            ]);
-
-        const produced = ctx.actions.run({
-            tool: bashExe,
-            arguments: [
-                Cmd.argument(Rules.cmdInput(script)),
-                Cmd.argument(Rules.cmdOutput(stamp)),
-                Cmd.argument(Rules.cmdInput(Rules.sourceArtifact(Defs.CORE_ROOT_CORERUN))),
-                Cmd.argument(Rules.cmdInput(stagedBinary)),
-            ],
-            outputs: [stamp],
-            dependencies: [
-                stagedBinary,
-                ...stagedRuntimeFiles,
-            ],
-            environmentVariables: ctx.args.environmentVariables,
-            workingDirectory: Defs.CORE_ROOT_DIR,
-            description: `run coreclr test: ${ctx.args.binary.binary.nameWithoutExtension}`,
-        });
-
-        const stampFile = Rules.getFile(produced[0]);
-        return {
-            kind: "RunCoreClrTestResult",
-            stamp: stampFile,
-            defaultInfo: Rules.defaultInfo({ files: [stampFile] }),
-        };
-    },
-});
+// ============================================================================
+//  coreclr_test — public macro
+// ============================================================================
 
 @@public
 export function coreclr_test(args: CoreClrTestArguments): CoreClrTestResult {
@@ -234,37 +179,31 @@ export function coreclr_test(args: CoreClrTestArguments): CoreClrTestResult {
         analyzerConfigs: analyzerConfigs,
     });
 
-    const buildStamp = emitBuildStamp({
-        name: `${args.name}_build`,
-        binary: csInfo,
-    }).stamp;
-
     const runtimeFiles = [
         Common.testLibrary.binary,
         ...(referenceXunitWrapperGenerator ? [Common.xunitWrapperLibrary.binary] : []),
         ...Defs.XUNIT_RUNTIME_DEPS,
     ];
+
     // Tests carrying the bazel "manual" tag are compiled but not run by default.
     const taggedManual = (args.tags || []).filter(t => t === "manual").length > 0;
     const shouldRun = args.run !== false && !taggedManual;
-    const testStamp = !shouldRun
+    const testResult = !shouldRun
         ? undefined
-        : runCoreClrTest({
+        : coreclrTestRunner({
             name: `${args.name}_test`,
-            binary: csInfo,
+            binary: csInfo.binary,
             runtimeFiles: runtimeFiles,
-            environmentVariables: args.env || [],
-        }).stamp;
+            env: args.env,
+            flaky: args.flaky,
+            tags: args.tags,
+        });
 
     return {
         kind: "CoreClrTestResult",
         binary: csInfo.binary,
-        buildStamp: buildStamp,
-        testStamp: testStamp,
+        testInfo: testResult !== undefined ? testResult.testInfo : undefined,
         csInfo: csInfo,
-        defaultInfo: Rules.defaultInfo({
-            files: testStamp !== undefined ? [buildStamp, testStamp] : [buildStamp],
-            runfiles: csInfo.defaultInfo.runfiles,
-        }),
+        defaultInfo: csInfo.defaultInfo,
     };
 }

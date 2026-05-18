@@ -38,6 +38,13 @@ export const loader_classloader_TypeInitialization_CctorsWithSideEffects_cctorTh
 });
 
 @@public
+export const loader_classloader_TypeInitialization_CctorsWithSideEffects_cctorThrowLDFTNStaticMethod = CoreClr.il_coreclr_test({
+    name: "CctorThrowLDFTNStaticMethod",
+    srcs: ["CctorThrowLDFTNStaticMethod.il"],
+    run: false,
+});
+
+@@public
 export const loader_classloader_TypeInitialization_CctorsWithSideEffects_cctorThrowMethodAccess = CoreClr.coreclr_test({
     name: "CctorThrowMethodAccess",
     srcs: ["CctorThrowMethodAccess.cs"],
@@ -52,8 +59,37 @@ export const loader_classloader_TypeInitialization_CctorsWithSideEffects_cctorTh
 });
 
 @@public
+export const loader_classloader_TypeInitialization_CctorsWithSideEffects_cctorThrowStaticFieldBFI = CoreClr.il_coreclr_test({
+    name: "CctorThrowStaticFieldBFI",
+    srcs: ["CctorThrowStaticFieldBFI.il"],
+    run: false,
+});
+
+@@public
+export const loader_classloader_TypeInitialization_CctorsWithSideEffects_resetGlobalFields = CoreClr.il_coreclr_test({
+    name: "ResetGlobalFields",
+    srcs: ["ResetGlobalFields.il"],
+    pri: 1,
+    size: "medium",
+});
+
+@@public
 export const loader_classloader_TypeInitialization_CctorsWithSideEffects_typeLoadInitExcep = CoreClr.coreclr_test({
     name: "TypeLoadInitExcep",
     srcs: ["TypeLoadInitExcep.cs"],
+    run: false,
+});
+
+@@public
+export const loader_classloader_TypeInitialization_CctorsWithSideEffects_typeLoadInitExcepBFI = CoreClr.il_coreclr_test({
+    name: "TypeLoadInitExcepBFI",
+    srcs: ["TypeLoadInitExcepBFI.il"],
+    run: false,
+});
+
+@@public
+export const loader_classloader_TypeInitialization_CctorsWithSideEffects_untrustedCodeBFI = CoreClr.il_coreclr_test({
+    name: "UntrustedCodeBFI",
+    srcs: ["UntrustedCodeBFI.il"],
     run: false,
 });

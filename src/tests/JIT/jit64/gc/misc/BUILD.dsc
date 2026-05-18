@@ -121,8 +121,8 @@ export const jIT_jit64_gc_misc_fgtest1 = CoreClr.coreclr_test({
     debugType: "full",
     optimize: false,
     pri: 1,
-    size: "medium",
     run: false,
+    size: "medium",
 });
 
 @@public
@@ -192,8 +192,8 @@ export const jIT_jit64_gc_misc_fgtest2 = CoreClr.coreclr_test({
     debugType: "full",
     optimize: false,
     pri: 1,
-    size: "medium",
     run: false,
+    size: "medium",
 });
 
 @@public
@@ -263,8 +263,8 @@ export const jIT_jit64_gc_misc_eh1 = CoreClr.coreclr_test({
     debugType: "full",
     optimize: false,
     pri: 1,
-    size: "medium",
     run: false,
+    size: "medium",
 });
 
 @@public
@@ -505,8 +505,8 @@ export const jIT_jit64_gc_misc_structfpseh6_1 = CoreClr.coreclr_test({
     debugType: "full",
     optimize: false,
     pri: 1,
-    size: "medium",
     run: false,
+    size: "medium",
 });
 
 @@public
@@ -547,8 +547,8 @@ export const jIT_jit64_gc_misc_structfpseh5_1 = CoreClr.coreclr_test({
     debugType: "full",
     optimize: false,
     pri: 1,
-    size: "medium",
     run: false,
+    size: "medium",
 });
 
 @@public

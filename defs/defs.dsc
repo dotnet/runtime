@@ -112,6 +112,10 @@ export const CORE_ROOT_DIR: Directory =
 export const CORE_ROOT_CORERUN: File =
     f`${CORE_ROOT_DIR}/corerun`;
 
+@@public
+export const CORE_ROOT_ILASM: File =
+    f`${CORE_ROOT_DIR}/ilasm`;
+
 // ============================================================================
 //  CORECLR_TEST_COMMON_DEPS — label-based deps baked into coreclr_test
 // ============================================================================

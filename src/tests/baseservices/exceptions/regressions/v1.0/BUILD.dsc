@@ -7,10 +7,19 @@
 import * as CoreClr from "CoreClrTest";
 
 @@public
+export const baseservices_exceptions_regressions_v1_0__15266 = CoreClr.il_coreclr_test({
+    name: "15266",
+    srcs: ["15266.il"],
+    pri: 1,
+    size: "medium",
+    run: false,
+});
+
+@@public
 export const baseservices_exceptions_regressions_v1_0__19896 = CoreClr.coreclr_test({
     name: "19896",
     srcs: ["19896.cs"],
     pri: 1,
-    size: "medium",
     run: false,
+    size: "medium",
 });

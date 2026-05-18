@@ -7,6 +7,13 @@
 import * as CoreClr from "CoreClrTest";
 
 @@public
+export const jIT_Regression_JitBlue_GitHub_15319_gitHub_15319_1 = CoreClr.il_coreclr_test({
+    name: "GitHub_15319_1",
+    srcs: ["GitHub_15319_1.il"],
+    optimize: true,
+});
+
+@@public
 export const jIT_Regression_JitBlue_GitHub_15319_gitHub_15319 = CoreClr.coreclr_test({
     name: "GitHub_15319",
     srcs: ["GitHub_15319.cs"],

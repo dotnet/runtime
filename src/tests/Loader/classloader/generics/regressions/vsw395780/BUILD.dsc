@@ -13,3 +13,11 @@ export const loader_classloader_generics_regressions_vsw395780_testExplicitOverr
     pri: 1,
     size: "medium",
 });
+
+@@public
+export const loader_classloader_generics_regressions_vsw395780_testExplicitOverride2 = CoreClr.il_coreclr_test({
+    name: "testExplicitOverride2",
+    srcs: ["testExplicitOverride2.il"],
+    pri: 1,
+    size: "medium",
+});

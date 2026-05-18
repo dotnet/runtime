@@ -13,8 +13,8 @@ export const jIT_opt_Enum_shared_Enum = CoreClr.coreclr_test({
     debugType: "pdbonly",
     optimize: true,
     pri: 1,
-    size: "medium",
     run: false,
+    size: "medium",
 });
 
 @@public

@@ -12,6 +12,6 @@ export const regressions_coreclr_25057_byref = CoreClr.coreclr_test({
     srcs: ["byref.cs"],
     optimize: false,
     pri: 1,
-    size: "medium",
     run: false,
+    size: "medium",
 });

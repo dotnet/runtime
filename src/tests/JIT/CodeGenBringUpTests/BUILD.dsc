@@ -1273,8 +1273,8 @@ export const jIT_CodeGenBringUpTests_recursiveTailCall_r = CoreClr.coreclr_test(
     srcs: ["RecursiveTailCall.cs"],
     debugType: "pdbonly",
     pri: 1,
-    size: "medium",
     run: false,
+    size: "medium",
 });
 
 @@public
@@ -3054,8 +3054,8 @@ export const jIT_CodeGenBringUpTests_recursiveTailCall_do = CoreClr.coreclr_test
     debugType: "full",
     optimize: true,
     pri: 1,
-    size: "medium",
     run: false,
+    size: "medium",
 });
 
 @@public
@@ -3410,8 +3410,8 @@ export const jIT_CodeGenBringUpTests_recursiveTailCall_ro = CoreClr.coreclr_test
     debugType: "pdbonly",
     optimize: true,
     pri: 1,
-    size: "medium",
     run: false,
+    size: "medium",
 });
 
 @@public
@@ -4822,8 +4822,8 @@ export const jIT_CodeGenBringUpTests_recursiveTailCall_d = CoreClr.coreclr_test(
     debugType: "full",
     optimize: false,
     pri: 1,
-    size: "medium",
     run: false,
+    size: "medium",
 });
 
 @@public

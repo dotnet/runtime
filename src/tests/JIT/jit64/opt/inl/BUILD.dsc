@@ -7,6 +7,16 @@
 import * as CoreClr from "CoreClrTest";
 
 @@public
+export const jIT_jit64_opt_inl_inl001 = CoreClr.il_coreclr_test({
+    name: "inl001",
+    srcs: ["inl001.il"],
+    debugType: "pdbonly",
+    optimize: true,
+    pri: 1,
+    size: "medium",
+});
+
+@@public
 export const jIT_jit64_opt_inl_caninline_do = CoreClr.coreclr_test({
     name: "caninline_do",
     srcs: ["caninline.cs"],

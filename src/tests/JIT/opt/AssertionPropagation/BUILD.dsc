@@ -42,6 +42,16 @@ export const jIT_opt_AssertionPropagation_nullCheckAssertion1 = CoreClr.coreclr_
 });
 
 @@public
+export const jIT_opt_AssertionPropagation_cPropOverflow = CoreClr.il_coreclr_test({
+    name: "CPropOverflow",
+    srcs: ["CPropOverflow.il"],
+    debugType: "full",
+    optimize: false,
+    pri: 1,
+    size: "medium",
+});
+
+@@public
 export const jIT_opt_AssertionPropagation_nullCheckAssertion6 = CoreClr.coreclr_test({
     name: "NullCheckAssertion6",
     srcs: ["NullCheckAssertion6.cs"],

@@ -156,6 +156,24 @@ export const jIT_opt_Devirtualization_gitHub_59668 = CoreClr.coreclr_test({
 });
 
 @@public
+export const jIT_opt_Devirtualization_override = CoreClr.il_coreclr_test({
+    name: "override",
+    srcs: ["override.il"],
+    optimize: true,
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_opt_Devirtualization_genericArrayOverride = CoreClr.il_coreclr_test({
+    name: "GenericArrayOverride",
+    srcs: ["GenericArrayOverride.il"],
+    optimize: true,
+    pri: 1,
+    size: "medium",
+});
+
+@@public
 export const jIT_opt_Devirtualization_generic_noinline = CoreClr.coreclr_test({
     name: "generic_noinline",
     srcs: ["generic_noinline.cs"],
@@ -306,6 +324,15 @@ export const jIT_opt_Devirtualization_readonlystatic = CoreClr.coreclr_test({
     name: "readonlystatic",
     srcs: ["readonlystatic.cs"],
     optimize: true,
+});
+
+@@public
+export const jIT_opt_Devirtualization_gitHub_9945_2 = CoreClr.il_coreclr_test({
+    name: "GitHub_9945_2",
+    srcs: ["GitHub_9945_2.il"],
+    optimize: true,
+    pri: 1,
+    size: "medium",
 });
 
 @@public

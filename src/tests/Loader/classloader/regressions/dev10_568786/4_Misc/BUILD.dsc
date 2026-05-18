@@ -13,3 +13,43 @@ export const loader_classloader_regressions_dev10_568786_4_Misc_constrainedMetho
     pri: 1,
     size: "medium",
 });
+
+@@public
+export const loader_classloader_regressions_dev10_568786_4_Misc_methodCalls = CoreClr.il_coreclr_test({
+    name: "MethodCalls",
+    srcs: ["MethodCalls.il"],
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const loader_classloader_regressions_dev10_568786_4_Misc_recursiveGen = CoreClr.il_coreclr_test({
+    name: "RecursiveGen",
+    srcs: ["RecursiveGen.il"],
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const loader_classloader_regressions_dev10_568786_4_Misc_sealedTypes = CoreClr.il_coreclr_test({
+    name: "SealedTypes",
+    srcs: ["SealedTypes.il"],
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const loader_classloader_regressions_dev10_568786_4_Misc_variance1 = CoreClr.il_coreclr_test({
+    name: "Variance1",
+    srcs: ["Variance1.il"],
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const loader_classloader_regressions_dev10_568786_4_Misc_variance2 = CoreClr.il_coreclr_test({
+    name: "Variance2",
+    srcs: ["Variance2.il"],
+    pri: 1,
+    size: "medium",
+});

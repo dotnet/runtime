@@ -12,6 +12,6 @@ export const jIT_IL_Conformance_Convert_testConvertFromIntegral = CoreClr.corecl
     srcs: ["TestConvertFromIntegral.cs"],
     optimize: true,
     pri: 1,
-    size: "medium",
     run: false,
+    size: "medium",
 });

@@ -11,8 +11,8 @@ export const baseservices_exceptions_regressions_V1_SEH_VJ_externalException = C
     name: "ExternalException",
     srcs: ["ExternalException.cs"],
     pri: 1,
-    size: "medium",
     run: false,
+    size: "medium",
 });
 
 @@public
@@ -20,8 +20,8 @@ export const baseservices_exceptions_regressions_V1_SEH_VJ_handlerException = Co
     name: "HandlerException",
     srcs: ["HandlerException.cs"],
     pri: 1,
-    size: "medium",
     run: false,
+    size: "medium",
 });
 
 @@public
@@ -29,8 +29,8 @@ export const baseservices_exceptions_regressions_V1_SEH_VJ_multipleException = C
     name: "MultipleException",
     srcs: ["MultipleException.cs"],
     pri: 1,
-    size: "medium",
     run: false,
+    size: "medium",
 });
 
 @@public
@@ -38,8 +38,8 @@ export const baseservices_exceptions_regressions_V1_SEH_VJ_nestedEx1 = CoreClr.c
     name: "NestedEx1",
     srcs: ["NestedEx1.cs"],
     pri: 1,
-    size: "medium",
     run: false,
+    size: "medium",
 });
 
 @@public
@@ -47,8 +47,8 @@ export const baseservices_exceptions_regressions_V1_SEH_VJ_nestedEx2 = CoreClr.c
     name: "NestedEx2",
     srcs: ["NestedEx2.cs"],
     pri: 1,
-    size: "medium",
     run: false,
+    size: "medium",
 });
 
 @@public
@@ -56,8 +56,8 @@ export const baseservices_exceptions_regressions_V1_SEH_VJ_nestedException = Cor
     name: "NestedException",
     srcs: ["NestedException.cs"],
     pri: 1,
-    size: "medium",
     run: false,
+    size: "medium",
 });
 
 @@public
@@ -65,8 +65,8 @@ export const baseservices_exceptions_regressions_V1_SEH_VJ_normalException = Cor
     name: "NormalException",
     srcs: ["NormalException.cs"],
     pri: 1,
-    size: "medium",
     run: false,
+    size: "medium",
 });
 
 @@public
@@ -74,8 +74,8 @@ export const baseservices_exceptions_regressions_V1_SEH_VJ_recursiveException = 
     name: "RecursiveException",
     srcs: ["RecursiveException.cs"],
     pri: 1,
-    size: "medium",
     run: false,
+    size: "medium",
 });
 
 @@public
@@ -83,8 +83,8 @@ export const baseservices_exceptions_regressions_V1_SEH_VJ_tryCatch = CoreClr.co
     name: "TryCatch",
     srcs: ["TryCatch.cs"],
     pri: 1,
-    size: "medium",
     run: false,
+    size: "medium",
 });
 
 @@public
@@ -92,8 +92,8 @@ export const baseservices_exceptions_regressions_V1_SEH_VJ_tryCatchFinally = Cor
     name: "TryCatchFinally",
     srcs: ["TryCatchFinally.cs"],
     pri: 1,
-    size: "medium",
     run: false,
+    size: "medium",
 });
 
 @@public
@@ -101,8 +101,8 @@ export const baseservices_exceptions_regressions_V1_SEH_VJ_userException = CoreC
     name: "UserException",
     srcs: ["UserException.cs"],
     pri: 1,
-    size: "medium",
     run: false,
+    size: "medium",
 });
 
 @@public
@@ -110,6 +110,6 @@ export const baseservices_exceptions_regressions_V1_SEH_VJ_userExceptionThread =
     name: "UserExceptionThread",
     srcs: ["UserExceptionThread.cs"],
     pri: 1,
-    size: "medium",
     run: false,
+    size: "medium",
 });

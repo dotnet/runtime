@@ -50,6 +50,15 @@ export const jIT_Directed_shift_uint64Opt_do = CoreClr.coreclr_test({
 });
 
 @@public
+export const jIT_Directed_shift_nativeint_d = CoreClr.il_coreclr_test({
+    name: "nativeint_d",
+    srcs: ["nativeint_d.il", "nativeint.il"],
+    debugType: "full",
+    pri: 1,
+    size: "medium",
+});
+
+@@public
 export const jIT_Directed_shift_int32_cs_ro = CoreClr.coreclr_test({
     name: "int32_cs_ro",
     srcs: ["int32.cs"],
@@ -124,6 +133,15 @@ export const jIT_Directed_shift_uint8_cs_ro = CoreClr.coreclr_test({
 });
 
 @@public
+export const jIT_Directed_shift_nativeuint_d = CoreClr.il_coreclr_test({
+    name: "nativeuint_d",
+    srcs: ["nativeuint_d.il", "nativeuint.il"],
+    debugType: "full",
+    pri: 1,
+    size: "medium",
+});
+
+@@public
 export const jIT_Directed_shift_uint8_cs_d = CoreClr.coreclr_test({
     name: "uint8_cs_d",
     srcs: ["uint8.cs"],
@@ -156,6 +174,15 @@ export const jIT_Directed_shift_int64_do = CoreClr.coreclr_test({
 export const jIT_Directed_shift_uint64_r = CoreClr.coreclr_test({
     name: "uint64_r",
     srcs: ["uint64.cs"],
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Directed_shift_int8_r = CoreClr.il_coreclr_test({
+    name: "int8_r",
+    srcs: ["int8_r.il", "int8.il"],
+    debugType: "pdbonly",
     pri: 1,
     size: "medium",
 });
@@ -261,6 +288,15 @@ export const jIT_Directed_shift_uint64Opt_ro = CoreClr.coreclr_test({
 });
 
 @@public
+export const jIT_Directed_shift_int8_d = CoreClr.il_coreclr_test({
+    name: "int8_d",
+    srcs: ["int8_d.il", "int8.il"],
+    debugType: "full",
+    pri: 1,
+    size: "medium",
+});
+
+@@public
 export const jIT_Directed_shift_uint64_do = CoreClr.coreclr_test({
     name: "uint64_do",
     srcs: ["uint64.cs"],
@@ -309,6 +345,15 @@ export const jIT_Directed_shift_uint32_cs_d = CoreClr.coreclr_test({
 export const jIT_Directed_shift_uint16_r = CoreClr.coreclr_test({
     name: "uint16_r",
     srcs: ["uint16.cs"],
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Directed_shift_nativeint_r = CoreClr.il_coreclr_test({
+    name: "nativeint_r",
+    srcs: ["nativeint_r.il", "nativeint.il"],
+    debugType: "pdbonly",
     pri: 1,
     size: "medium",
 });
@@ -381,6 +426,15 @@ export const jIT_Directed_shift_uint64Opt_d = CoreClr.coreclr_test({
     srcs: ["uint64Opt.cs"],
     debugType: "full",
     optimize: false,
+    pri: 1,
+    size: "medium",
+});
+
+@@public
+export const jIT_Directed_shift_nativeuint_r = CoreClr.il_coreclr_test({
+    name: "nativeuint_r",
+    srcs: ["nativeuint_r.il", "nativeuint.il"],
+    debugType: "pdbonly",
     pri: 1,
     size: "medium",
 });

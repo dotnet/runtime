@@ -66,8 +66,8 @@ export const jIT_jit64_opt_rngchk_rngchkStress3 = CoreClr.coreclr_test({
     srcs: ["RngchkStress3.cs"],
     debugType: "full",
     optimize: false,
-    size: "medium",
     run: false,
+    size: "medium",
 });
 
 @@public

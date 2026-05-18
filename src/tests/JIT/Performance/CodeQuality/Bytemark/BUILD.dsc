@@ -12,6 +12,6 @@ export const jIT_Performance_CodeQuality_Bytemark_bytemark = CoreClr.coreclr_tes
     srcs: ["ByteMark.cs", "Huffman.cs", "StringSort.cs", "assign_jagged.cs", "assign_rect.cs", "bitops.cs", "emfloat.cs", "emfloatclass.cs", "fourier.cs", "idea.cs", "ludecomp.cs", "neural.cs", "neuraljagged.cs", "neural-dat.cs", "numericsort.cs", "utility.cs"],
     debugType: "pdbonly",
     optimize: true,
-    size: "large",
     run: false,
+    size: "large",
 });

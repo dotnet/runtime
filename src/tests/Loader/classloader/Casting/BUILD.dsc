@@ -19,3 +19,11 @@ export const loader_classloader_Casting_normalization = CoreClr.coreclr_test({
     srcs: ["Normalization.cs"],
     tags: ["manual"],
 });
+
+@@public
+export const loader_classloader_Casting_castclasspointer = CoreClr.il_coreclr_test({
+    name: "castclasspointer",
+    srcs: ["castclasspointer.il"],
+    tags: ["manual"],
+});
+

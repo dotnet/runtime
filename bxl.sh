@@ -1,6 +1,34 @@
 #!/bin/bash
-# Build using BuildXL with a shared cache under ~/.cache/bxl
+# BuildXL wrapper — mirrors `bazel build` / `bazel test` subcommands.
+#
+# Usage:
+#   ./bxl.sh build [extra-bxl-args...]   — compile everything (no test execution)
+#   ./bxl.sh test  [extra-bxl-args...]   — compile and run tests
 set -euo pipefail
+
+if [[ $# -eq 0 ]]; then
+    echo "Usage: ./bxl.sh <command> [args...]" >&2
+    echo "Commands:" >&2
+    echo "  build   Compile all targets (excludes test/binary execution)" >&2
+    echo "  test    Compile and run tests" >&2
+    exit 1
+fi
+
+command="$1"
+shift
+
+case "$command" in
+    build)
+        filter="/f:~(tag='bxl-kind:binary')and~(tag='bxl-kind:test')"
+        ;;
+    test)
+        filter="/f:tag='bxl-kind:test'"
+        ;;
+    *)
+        echo "ERROR: unknown command '$command'. Use 'build' or 'test'." >&2
+        exit 1
+        ;;
+esac
 
 default_bxl="$(command -v bxl || true)"
 if [[ -z "$default_bxl" ]]; then
@@ -52,4 +80,5 @@ exec "$BXL" \
     /enableLinuxEBPFSandbox- \
     /cacheDirectory:"$CACHE_DIR" \
     /logOutput:FullOutputOnError \
+    "$filter" \
     "$@"

@@ -273,8 +273,8 @@ export const jIT_opt_Inline_tests_inline_handler = CoreClr.coreclr_test({
     name: "Inline_handler",
     srcs: ["Inline_handler.cs"],
     pri: 1,
-    size: "medium",
     run: false,
+    size: "medium",
 });
 
 @@public
@@ -340,6 +340,13 @@ export const jIT_opt_Inline_tests_inline = CoreClr.coreclr_test({
 export const jIT_opt_Inline_tests_mathfunc = CoreClr.coreclr_test({
     name: "mathfunc",
     srcs: ["mathfunc.cs"],
+});
+
+@@public
+export const jIT_opt_Inline_tests_calli = CoreClr.il_coreclr_test({
+    name: "calli",
+    srcs: ["calli.il"],
+    debugType: "pdbonly",
 });
 
 @@public
