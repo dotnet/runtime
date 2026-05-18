@@ -847,17 +847,24 @@ void emitter::emitIns_R_R(instruction     ins,
             assert(isFloatReg(reg2));
             fmt = IF_RR_1A;  // Will set proper format later
             break;
-            
- case INS_cmpd:
+  
+  	case INS_fcmpu:
+        case INS_fcmpo:
+            // Floating-point comparison - fcmpu/fcmpo crD, fA, fB
+            assert(isFloatReg(reg1));
+            assert(isFloatReg(reg2));
+            fmt = IF_CMP_2A;  // Floating-point comparison format
+            break;	    
+ 	case INS_cmpd:
     	case INS_cmpw:
             // Comparison instructions - these are X-form instructions
             // cmpd rA, rB compares two registers
             fmt = IF_RR_2B;  // Will set proper format later
             break;
             
- default:
-     fmt = IF_RR_2A;
-     break;
+ 	default:
+     	fmt = IF_RR_2A;
+     	break;
     }
 
     // Create instruction descriptor AFTER the switch (like ARM64 does)
@@ -1557,6 +1564,18 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
        case INS_fdiv:
            // fdiv fD, fA, fB - Floating Divide Double
            ppc_fdiv (dstRW, id->idReg1() - REG_F0, id->idReg2() - REG_F0, id->idReg3() - REG_F0);
+           break;
+
+	case INS_fcmpu:
+           // fcmpu cr0, fA, fB - Floating Compare Unordered
+           // Result goes to CR0 (crD = 0)
+           ppc_fcmpu (dstRW, 0, id->idReg1() - REG_F0, id->idReg2() - REG_F0);
+           break;
+
+       case INS_fcmpo:
+           // fcmpo cr0, fA, fB - Floating Compare Ordered
+           // Result goes to CR0 (crD = 0)
+           ppc_fcmpo (dstRW, 0, id->idReg1() - REG_F0, id->idReg2() - REG_F0);
            break;
 
        // Integer arithmetic instructions

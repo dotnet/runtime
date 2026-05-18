@@ -89,6 +89,12 @@
 // Format: opcode(6) | fD(5) | 0(5) | fB(5) | XO(10) | Rc(1)
 #define ppc_fmr(c,D,B)     ppc_emit32 (c, (63 << 26) | ((D) << 21) | (0 << 16) | ((B) << 11) | (72 << 1) | 0)
 
+// Floating-point comparison instructions (X-form)
+// Format: opcode(6) | crD(3) | 0(2) | fA(5) | fB(5) | XO(10) | 0(1)
+// crD specifies which CR field to update (0-7), typically use 0 for CR0
+#define ppc_fcmpu(c,crD,A,B)  ppc_emit32 (c, (63 << 26) | ((crD) << 23) | ((A) << 16) | ((B) << 11) | (0 << 1) | 0)
+#define ppc_fcmpo(c,crD,A,B)  ppc_emit32 (c, (63 << 26) | ((crD) << 23) | ((A) << 16) | ((B) << 11) | (32 << 1) | 0)
+
 // Integer arithmetic instructions (XO-form)
 // Format: opcode(6) | rD(5) | rA(5) | rB(5) | OE(1) | XO(9) | Rc(1)
 #define ppc_add(c,D,A,B)   ppc_emit32 (c, (31 << 26) | ((D) << 21) | ((A) << 16) | ((B) << 11) | (0 << 10) | (266 << 1) | 0) 

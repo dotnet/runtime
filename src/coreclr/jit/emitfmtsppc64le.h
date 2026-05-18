@@ -70,6 +70,11 @@ IF_DEF(LS_2H, IS_NONE, SCNS)   // lfd fD, disp(rA)
 IF_DEF(LS_2I, IS_NONE, SCNS)   // stfs fS, disp(rA)
 IF_DEF(LS_2J, IS_NONE, SCNS)   // stfd fS, disp(rA)
 
+
+// Floating-point comparison formats
+IF_DEF(CMP_2A, IS_NONE, NONE)  // fcmpu crD, fA, fB
+IF_DEF(CMP_2B, IS_NONE, NONE)  // fcmpo crD, fA, fB
+			       //
 // Special formats
 IF_DEF(SR_1A, IS_NONE, NONE)   // mflr rD
 IF_DEF(SR_1B, IS_NONE, NONE)   // mtlr rS

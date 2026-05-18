@@ -202,7 +202,26 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 
     if (varTypeIsFloating(op1Type))
     {
-	abort();
+	// Floating-point comparison
+    	assert(varTypeIsFloating(op2Type));
+    	assert(!op1->isContainedIntOrIImmed());
+    	assert(!op2->isContainedIntOrIImmed());
+
+    	// PowerPC floating-point comparison instructions:
+    	// fcmpu - Floating Compare Unordered (doesn't trap on NaN)
+    	// fcmpo - Floating Compare Ordered (traps on NaN)
+    	// Use fcmpu for standard comparisons (matches C# semantics)
+
+    	ins = INS_fcmpu;
+
+    	// fcmpu cr0, fA, fB
+   	 // Sets CR0 condition register bits:
+   	 //   CR0[LT] (bit 0) = fA < fB
+    	//   CR0[GT] (bit 1) = fA > fB
+    	//   CR0[EQ] (bit 2) = fA == fB
+    	//   CR0[UN] (bit 3) = unordered (one or both operands are NaN)
+
+    	emit->emitIns_R_R(ins, cmpSize, op1->GetRegNum(), op2->GetRegNum());
     }
     else
     {
@@ -224,9 +243,20 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 
     if (targetReg != REG_NA)
     {
-	// Need to materialize the comparison result into a register
-        // Use inst_SETCC to convert CR0 flags to 0 or 1
-        GenCondition condition = GenCondition::FromIntegralRelop(tree);
+ 	 // Need to materialize the comparison result into a register
+   	 // Use inst_SETCC to convert CR0 flags to 0 or 1
+    
+   	 GenCondition condition;
+    	if (varTypeIsFloating(op1Type))
+    	{
+        	// Floating-point comparison
+        	condition = GenCondition::FromFloatRelop(tree);
+    	}
+    	else
+    	{
+        	// Integer comparison
+        	condition = GenCondition::FromIntegralRelop(tree);
+    	}
         inst_SETCC(condition, tree->TypeGet(), targetReg);
         genProduceReg(tree);
     }
