@@ -150,7 +150,7 @@ namespace System.Security.AccessControl
                         exception = isContainer switch
                         {
                             false => new FileNotFoundException(name),
-                            true  => new DirectoryNotFoundException(name)
+                            true  => new DirectoryNotFoundException(null, name)
                         };
                     }
                     else if (error == Interop.Errors.ERROR_NO_SECURITY_ON_OBJECT)

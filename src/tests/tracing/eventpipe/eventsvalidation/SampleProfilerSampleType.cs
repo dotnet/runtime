@@ -22,7 +22,6 @@ namespace Tracing.Tests.SampleProfilerSampleType
         private const uint SampleTypeExternal = 1;
         private const uint SampleTypeManaged = 2;
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/125217", typeof(Utilities), nameof(Utilities.IsNativeAot))]
         [Fact]
         public static int TestEntryPoint()
         {

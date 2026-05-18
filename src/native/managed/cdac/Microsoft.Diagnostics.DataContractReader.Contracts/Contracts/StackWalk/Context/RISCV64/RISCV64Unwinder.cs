@@ -731,40 +731,7 @@ internal class RISCV64Unwinder(Target target)
 
     private static void SetRegisterValue(ref RISCV64Context context, uint regNum, ulong value)
     {
-        switch (regNum)
-        {
-            case 1: context.Ra = value; break;
-            case 2: context.Sp = value; break;
-            case 3: context.Gp = value; break;
-            case 4: context.Tp = value; break;
-            case 5: context.T0 = value; break;
-            case 6: context.T1 = value; break;
-            case 7: context.T2 = value; break;
-            case 8: context.Fp = value; break;
-            case 9: context.S1 = value; break;
-            case 10: context.A0 = value; break;
-            case 11: context.A1 = value; break;
-            case 12: context.A2 = value; break;
-            case 13: context.A3 = value; break;
-            case 14: context.A4 = value; break;
-            case 15: context.A5 = value; break;
-            case 16: context.A6 = value; break;
-            case 17: context.A7 = value; break;
-            case 18: context.S2 = value; break;
-            case 19: context.S3 = value; break;
-            case 20: context.S4 = value; break;
-            case 21: context.S5 = value; break;
-            case 22: context.S6 = value; break;
-            case 23: context.S7 = value; break;
-            case 24: context.S8 = value; break;
-            case 25: context.S9 = value; break;
-            case 26: context.S10 = value; break;
-            case 27: context.S11 = value; break;
-            case 28: context.T3 = value; break;
-            case 29: context.T4 = value; break;
-            case 30: context.T5 = value; break;
-            case 31: context.T6 = value; break;
-        }
+        context.TrySetRegister((int)regNum, new TargetNUInt(value));
     }
 
     #endregion

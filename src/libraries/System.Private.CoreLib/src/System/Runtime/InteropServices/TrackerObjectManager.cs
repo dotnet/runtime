@@ -61,7 +61,8 @@ namespace System.Runtime.InteropServices
 
             IntPtr contextToken = GetContextToken();
 
-            List<object> objects = new List<object>();
+            List<ReferenceTrackerNativeObjectWrapper> wrappersToRemove = [];
+            List<object> objects = [];
 
             // Here we aren't part of a GC callback, so other threads can still be running
             // who are adding and removing from the collection. This means we can possibly race
@@ -76,10 +77,20 @@ namespace System.Runtime.InteropServices
                     if (nativeObjectWrapper != null &&
                         nativeObjectWrapper._contextToken == contextToken)
                     {
-                        object? target = nativeObjectWrapper.ProxyHandle.Target;
-                        if (target != null)
+                        // If this object is associated with the global instance for tracker support,
+                        // then we can request that instance to clear out the native object wrapper's state
+                        // to ensure the object gets released now.
+                        // Also, we will remove the wrappers from the cache to ensure a stale wrapper
+                        // isn't returned in the future.
+                        if (nativeObjectWrapper.ComWrappers == GlobalInstanceForTrackerSupport)
                         {
-                            objects.Add(target);
+                            wrappersToRemove.Add(nativeObjectWrapper);
+
+                            object? target = nativeObjectWrapper.ProxyHandle.Target;
+                            if (target != null)
+                            {
+                                objects.Add(target);
+                            }
                         }
 
                         // Separate the wrapper from the tracker runtime prior to
@@ -89,6 +100,10 @@ namespace System.Runtime.InteropServices
                 }
             }
 
+            // Remove the native object wrappers from the cache
+            // so we don't return released wrappers to the user if the native COM object
+            // happens to be reused.
+            GlobalInstanceForTrackerSupport.RemoveWrappersFromCache(wrappersToRemove);
             GlobalInstanceForTrackerSupport.ReleaseObjects(objects);
         }
 

@@ -48,7 +48,7 @@
     <CrossConfigH Condition="'$(BuildMonoAOTCrossCompiler)' == 'true'">$([MSBuild]::NormalizePath('$(MonoObjCrossDir)', 'config.h'))</CrossConfigH>
     <MonoBundleLLVMOptimizer Condition="'$(MonoEnableLLVM)' == 'true'">true</MonoBundleLLVMOptimizer>
     <MonoAOTBundleLLVMOptimizer Condition="'$(MonoAOTEnableLLVM)' == 'true' and '$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true'">true</MonoAOTBundleLLVMOptimizer>
-    <MonoCCompiler>$(Compiler)</MonoCCompiler>
+    <MonoCCompiler>$(CppCompilerAndLinker)</MonoCCompiler>
     <MonoCCompiler Condition="'$(MonoCCompiler)' == ''">clang</MonoCCompiler>
     <_CompilerTargetArch Condition="'$(AotHostArchitecture)' == ''">$(Platform)</_CompilerTargetArch>
     <_CompilerTargetArch Condition="'$(AotHostArchitecture)' != ''">$(AotHostArchitecture)</_CompilerTargetArch>

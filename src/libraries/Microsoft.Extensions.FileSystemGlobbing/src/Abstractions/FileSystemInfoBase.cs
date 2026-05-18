@@ -9,17 +9,22 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Abstractions
     public abstract class FileSystemInfoBase
     {
         /// <summary>
-        /// A string containing the name of the file or directory
+        /// Initializes a new instance of the <see cref="FileSystemInfoBase" /> class.
+        /// </summary>
+        protected FileSystemInfoBase() { }
+
+        /// <summary>
+        /// Gets the name of the file or directory.
         /// </summary>
         public abstract string Name { get; }
 
         /// <summary>
-        /// A string containing the full path of the file or directory
+        /// Gets the full path of the file or directory.
         /// </summary>
         public abstract string FullName { get; }
 
         /// <summary>
-        /// The parent directory for the current file or directory
+        /// Gets the parent directory for the current file or directory.
         /// </summary>
         public abstract DirectoryInfoBase? ParentDirectory { get; }
     }

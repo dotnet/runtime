@@ -181,8 +181,17 @@
   <data name="SmtpCommandParameterNotImplemented" xml:space="preserve">
     <value>Command parameter not implemented.</value>
   </data>
+  <data name="SmtpCannotVerifyUserWillAttemptDelivery" xml:space="preserve">
+    <value>Cannot verify user, but will attempt delivery.</value>
+  </data>
   <data name="SmtpCommandUnrecognized" xml:space="preserve">
     <value>Syntax error, command unrecognized.</value>
+  </data>
+  <data name="SmtpGeneralFailure" xml:space="preserve">
+    <value>General failure.</value>
+  </data>
+  <data name="SmtpUnknownStatusCode" xml:space="preserve">
+    <value>Unknown SMTP status code.</value>
   </data>
   <data name="SmtpExceededStorageAllocation" xml:space="preserve">
     <value>Exceeded storage allocation.</value>

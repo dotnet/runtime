@@ -552,10 +552,9 @@ void Compiler::unwindReserve()
     assert(!compGeneratingProlog);
     assert(!compGeneratingEpilog);
 
-    assert(compFuncInfoCount > 0);
-    for (unsigned funcIdx = 0; funcIdx < compFuncInfoCount; funcIdx++)
+    for (FuncInfoDsc* const func : Funcs())
     {
-        unwindReserveFunc(funGetFunc(funcIdx));
+        unwindReserveFunc(func);
     }
 }
 
@@ -642,10 +641,9 @@ void Compiler::unwindReserveFunc(FuncInfoDsc* func)
 
 void Compiler::unwindEmit(void* pHotCode, void* pColdCode)
 {
-    assert(compFuncInfoCount > 0);
-    for (unsigned funcIdx = 0; funcIdx < compFuncInfoCount; funcIdx++)
+    for (FuncInfoDsc* const func : Funcs())
     {
-        unwindEmitFunc(funGetFunc(funcIdx), pHotCode, pColdCode);
+        unwindEmitFunc(func, pHotCode, pColdCode);
     }
 }
 

@@ -868,9 +868,6 @@
     <value>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' on interface '{0}' is invalid. {1}</value>
     <comment>{1} is a message containing additional details about what is not valid</comment>
   </data>
-  <data name="InOutAttributes" xml:space="preserve">
-    <value>[In] and [Out] attributes</value>
-  </data>
   <data name="OutAttributeNotSupportedOnByValueParameters" xml:space="preserve">
     <value>The '[Out]' attribute is only supported on array parameters. Consider using 'out' or 'ref' keywords to make the parameter mutable.</value>
   </data>

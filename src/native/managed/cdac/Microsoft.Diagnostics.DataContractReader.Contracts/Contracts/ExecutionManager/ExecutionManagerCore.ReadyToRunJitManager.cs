@@ -44,7 +44,11 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             Data.RuntimeFunction function = _runtimeFunctions.GetRuntimeFunction(r2rInfo.RuntimeFunctions, index);
 
             TargetPointer addr = CodePointerUtils.AddressFromCodePointer(jittedCodeAddress, Target);
-            TargetCodePointer startAddress = imageBase + function.BeginAddress;
+            // The R2R RUNTIME_FUNCTION.BeginAddress encodes thumb code with the thumb bit set on
+            // ARM32. Native RUNTIME_FUNCTION__BeginAddress uses ThumbCodeToDataPointer to strip it
+            // (clrnt.h, ARM32 branch). Mirror that so we store a raw TADDR-style start address.
+            TargetPointer startAddress = CodePointerUtils.AddressFromCodePointer(
+                new TargetCodePointer(imageBase.Value + function.BeginAddress), Target);
             TargetNUInt relativeOffset = new TargetNUInt(addr - startAddress);
 
             // Take hot/cold splitting into account for the relative offset
@@ -52,7 +56,8 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             {
                 Debug.Assert(coldFunctionIndex < r2rInfo.NumRuntimeFunctions);
                 Data.RuntimeFunction coldFunction = _runtimeFunctions.GetRuntimeFunction(r2rInfo.RuntimeFunctions, coldFunctionIndex);
-                TargetPointer coldStart = imageBase + coldFunction.BeginAddress;
+                TargetPointer coldStart = CodePointerUtils.AddressFromCodePointer(
+                    new TargetCodePointer(imageBase.Value + coldFunction.BeginAddress), Target);
                 if (addr >= coldStart)
                 {
                     // If the address is in the cold part, the relative offset is the size of the
@@ -62,7 +67,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
                 }
             }
 
-            info = new CodeBlock(startAddress.Value, methodDesc, relativeOffset, rangeSection.Data!.JitManager);
+            info = new CodeBlock(startAddress, methodDesc, relativeOffset, rangeSection.Data!.JitManager);
             return true;
         }
 
@@ -140,6 +145,13 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
                 debugInfoOffset = (uint)offset - lookBack;
 
             return imageBase + debugInfoOffset;
+        }
+
+        public override CodeKind GetCodeKind(RangeSection rangeSection, TargetCodePointer codeAddress)
+        {
+            if (rangeSection.Data == null)
+                return CodeKind.Unknown;
+            return IsStubCodeBlockThunk(rangeSection.Data, GetReadyToRunInfo(rangeSection), codeAddress) ? CodeKind.MethodCallThunk : CodeKind.ReadyToRun;
         }
 
         public override void GetGCInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, out TargetPointer gcInfo, out uint gcVersion)
@@ -276,36 +288,23 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             if (count < 2)
                 return;
 
-            uint low = 0;
-            uint high = count - 2;
             uint entrySize = Target.GetTypeInfo(DataType.ExceptionLookupTableEntry).Size!.Value;
-            while (high - low > 10)
-            {
-                uint mid = low + ((high - low) / 2);
-                Data.ExceptionLookupTableEntry middleEntry = Target.ProcessedData.GetOrAdd<Data.ExceptionLookupTableEntry>(exceptionLookupTableAddr + (mid * entrySize));
 
-                if (methodRVA < middleEntry.MethodStartRVA)
-                {
-                    high = mid - 1;
-                }
-                else
-                {
-                    low = mid;
-                }
-            }
+            Data.ExceptionLookupTableEntry GetEntry(uint index)
+                => Target.ProcessedData.GetOrAdd<Data.ExceptionLookupTableEntry>(exceptionLookupTableAddr + (index * entrySize));
 
-            for (uint i = low; i <= high; i++)
-            {
-                Data.ExceptionLookupTableEntry entry = Target.ProcessedData.GetOrAdd<Data.ExceptionLookupTableEntry>(exceptionLookupTableAddr + (i * entrySize));
-                if (entry.MethodStartRVA == methodRVA)
-                {
-                    Data.ExceptionLookupTableEntry nextEntry = Target.ProcessedData.GetOrAdd<Data.ExceptionLookupTableEntry>(exceptionLookupTableAddr + ((i + 1) * entrySize));
-                    startExInfoRVA = new TargetPointer(entry.ExceptionInfoRVA + rangeStart);
-                    endExInfoRVA = new TargetPointer(nextEntry.ExceptionInfoRVA + rangeStart);
-                    return;
-                }
-            }
+            if (!BinaryThenLinearSearch.Search(
+                0,
+                count - 2,
+                index => methodRVA < GetEntry(index).MethodStartRVA,
+                index => methodRVA == GetEntry(index).MethodStartRVA,
+                out uint foundIndex))
+                return;
 
+            Data.ExceptionLookupTableEntry entry = GetEntry(foundIndex);
+            Data.ExceptionLookupTableEntry nextEntry = GetEntry(foundIndex + 1);
+            startExInfoRVA = new TargetPointer(entry.ExceptionInfoRVA + rangeStart);
+            endExInfoRVA = new TargetPointer(nextEntry.ExceptionInfoRVA + rangeStart);
         }
 
         public override void GetExceptionClauses(RangeSection range, CodeBlockHandle cbh, out TargetPointer startAddr, out TargetPointer endAddr)
@@ -342,7 +341,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
         private void GetMethodRVAAndRangeStart(CodeBlockHandle cbh, out TargetPointer methodStart, out TargetPointer rangeStart)
         {
             IExecutionManager executionManager = Target.Contracts.ExecutionManager;
-            methodStart = executionManager.GetStartAddress(cbh).AsTargetPointer;
+            methodStart = executionManager.GetStartAddress(cbh);
             rangeStart = executionManager.GetUnwindInfoBaseAddress(cbh);
         }
 

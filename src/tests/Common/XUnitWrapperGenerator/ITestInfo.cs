@@ -295,9 +295,11 @@ public sealed class MemberDataTest : ITestInfo
                           string externAlias,
                           string argumentLoopVarIdentifier)
     {
-        TestNameExpression = innerTest.TestNameExpression;
         Method = innerTest.Method;
         ContainingType = innerTest.ContainingType;
+        // Use a static expression that doesn't reference the loop variable since it may be used
+        // outside the foreach loop scope (e.g., in a ConditionalTest's else branch).
+        TestNameExpression = $"\"{externAlias}::{ContainingType}.{Method}(...)\"";
         DisplayNameForFiltering = $"{ContainingType}.{Method}(...)";
 
         _innerTest = innerTest;

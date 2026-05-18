@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
@@ -13,20 +11,18 @@ namespace System.Runtime.Serialization
         internal int m_currentCount;
         internal int[] m_ids;
         internal object?[] m_objs;
-        internal bool[] m_isWrapped;
 
         public ObjectToIdCache()
         {
             m_currentCount = 1;
             m_ids = new int[GetPrime(1)];
             m_objs = new object[m_ids.Length];
-            m_isWrapped = new bool[m_ids.Length];
         }
 
         public int GetId(object obj, ref bool newId)
         {
-            bool isEmpty, isWrapped;
-            int position = FindElement(obj, out isEmpty, out isWrapped);
+            bool isEmpty;
+            int position = FindElement(obj, out isEmpty);
             if (!isEmpty)
             {
                 newId = false;
@@ -38,7 +34,6 @@ namespace System.Runtime.Serialization
             int id = m_currentCount++;
             m_objs[position] = obj;
             m_ids[position] = id;
-            m_isWrapped[position] = isWrapped;
             if (m_currentCount >= (m_objs.Length - 1))
                 Rehash();
             return id;
@@ -47,8 +42,8 @@ namespace System.Runtime.Serialization
         // (oldObjId, oldObj-id, newObj-newObjId) => (oldObj-oldObjId, newObj-id, newObjId )
         public int ReassignId(int oldObjId, object oldObj, object newObj)
         {
-            bool isEmpty, isWrapped;
-            int position = FindElement(oldObj, out isEmpty, out _);
+            bool isEmpty;
+            int position = FindElement(oldObj, out isEmpty);
             if (isEmpty)
                 return 0;
             int id = m_ids[position];
@@ -56,19 +51,17 @@ namespace System.Runtime.Serialization
                 m_ids[position] = oldObjId;
             else
                 RemoveAt(position);
-            position = FindElement(newObj, out isEmpty, out isWrapped);
+            position = FindElement(newObj, out isEmpty);
             int newObjId = 0;
             if (!isEmpty)
                 newObjId = m_ids[position];
             m_objs[position] = newObj;
             m_ids[position] = id;
-            m_isWrapped[position] = isWrapped;
             return newObjId;
         }
 
-        private int FindElement(object obj, out bool isEmpty, out bool isWrapped)
+        private int FindElement(object obj, out bool isEmpty)
         {
-            isWrapped = false;
             int position = ComputeStartPosition(obj);
             for (int i = position; i != (position - 1); i++)
             {
@@ -84,7 +77,6 @@ namespace System.Runtime.Serialization
                 }
                 if (i == (m_objs.Length - 1))
                 {
-                    isWrapped = true;
                     i = -1;
                 }
             }
@@ -103,23 +95,19 @@ namespace System.Runtime.Serialization
                 {
                     m_objs[lastVacantPosition] = null;
                     m_ids[lastVacantPosition] = 0;
-                    m_isWrapped[lastVacantPosition] = false;
                     return;
                 }
                 int nextStartPosition = ComputeStartPosition(m_objs[next]);
-                // If we wrapped while placing an object, then it must be that the start position wasn't wrapped to begin with
-                bool isNextStartPositionWrapped = next < position && !m_isWrapped[next];
-                bool isLastVacantPositionWrapped = lastVacantPosition < position;
-
-                // We want to avoid moving objects in the cache if the next bucket position is wrapped, but the last vacant position isn't
-                // and we want to make sure to move objects in the cache when the last vacant position is wrapped but the next bucket position isn't
-                if ((nextStartPosition <= lastVacantPosition && !(isNextStartPositionWrapped && !isLastVacantPositionWrapped)) ||
-                    (isLastVacantPositionWrapped && !isNextStartPositionWrapped))
+                // Determine whether the element at 'next' should be moved to fill the vacancy at 'lastVacantPosition'.
+                // An element with home position h at slot 'next' must be moved when the probe sequence from h to 'next'
+                // passes through 'lastVacantPosition' (i.e., 'lastVacantPosition' is in the circular range [h, next]).
+                bool shouldMove = (lastVacantPosition <= next)
+                    ? (nextStartPosition <= lastVacantPosition || nextStartPosition > next)
+                    : (nextStartPosition <= lastVacantPosition && nextStartPosition > next);
+                if (shouldMove)
                 {
                     m_objs[lastVacantPosition] = m_objs[next];
                     m_ids[lastVacantPosition] = m_ids[next];
-                    // A wrapped object might become unwrapped if it moves from the front of the array to the end of the array
-                    m_isWrapped[lastVacantPosition] = m_isWrapped[next] && next > lastVacantPosition;
                     lastVacantPosition = next;
                 }
                 if (next == (cacheSize - 1))
@@ -144,18 +132,15 @@ namespace System.Runtime.Serialization
             object?[] oldObjs = m_objs;
             m_ids = new int[size];
             m_objs = new object[size];
-            m_isWrapped = new bool[size];
 
             for (int j = 0; j < oldObjs.Length; j++)
             {
                 object? obj = oldObjs[j];
                 if (obj != null)
                 {
-                    bool isWrapped;
-                    int position = FindElement(obj, out _, out isWrapped);
+                    int position = FindElement(obj, out _);
                     m_objs[position] = obj;
                     m_ids[position] = oldIds[j];
-                    m_isWrapped[position] = isWrapped;
                 }
             }
         }

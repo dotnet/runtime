@@ -115,15 +115,7 @@
 #define FCDECL6(rettype, funcname, a1, a2, a3, a4, a5, a6) rettype F_CALL_CONV funcname(int /* EAX */, a2, a1, a6, a5, a4, a3)
 #define FCDECL7(rettype, funcname, a1, a2, a3, a4, a5, a6, a7) rettype F_CALL_CONV funcname(int /* EAX */, a2, a1, a7, a6, a5, a4, a3)
 #define FCDECL8(rettype, funcname, a1, a2, a3, a4, a5, a6, a7, a8) rettype F_CALL_CONV funcname(int /* EAX */, a2, a1, a8, a7, a6, a5, a4, a3)
-#define FCDECL9(rettype, funcname, a1, a2, a3, a4, a5, a6, a7, a8, a9) rettype F_CALL_CONV funcname(int /* EAX */, a2, a1, a9, a8, a7, a6, a5, a4, a3)
-#define FCDECL10(rettype,funcname, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10) rettype F_CALL_CONV funcname(int /* EAX */, a2, a1, a10, a9, a8, a7, a6, a5, a4, a3)
-#define FCDECL11(rettype,funcname, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11) rettype F_CALL_CONV funcname(int /* EAX */, a2, a1, a11, a10, a9, a8, a7, a6, a5, a4, a3)
-#define FCDECL12(rettype,funcname, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12) rettype F_CALL_CONV funcname(int /* EAX */, a2, a1, a12, a11, a10, a9, a8, a7, a6, a5, a4, a3)
-#define FCDECL13(rettype,funcname, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13) rettype F_CALL_CONV funcname(int /* EAX */, a2, a1, a13, a12, a11, a10, a9, a8, a7, a6, a5, a4, a3)
-#define FCDECL14(rettype,funcname, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14) rettype F_CALL_CONV funcname(int /* EAX */, a2, a1, a14, a13, a12, a11, a10, a9, a8, a7, a6, a5, a4, a3)
 
-#define FCDECL5_IVI(rettype, funcname, a1, a2, a3, a4, a5) rettype F_CALL_CONV funcname(int /* EAX */, a3, a1, a5, a4, a2)
-#define FCDECL5_VII(rettype, funcname, a1, a2, a3, a4, a5) rettype F_CALL_CONV funcname(int /* EAX */, a3, a2, a5, a4, a1)
 
 #else // SWIZZLE_REGARG_ORDER
 
@@ -131,7 +123,6 @@
 #define FCDECL1(rettype, funcname, a1) rettype F_CALL_CONV funcname(a1)
 #define FCDECL1_V(rettype, funcname, a1) rettype F_CALL_CONV funcname(a1)
 #define FCDECL2(rettype, funcname, a1, a2) rettype F_CALL_CONV funcname(a1, a2)
-#define FCDECL2VA(rettype, funcname, a1, a2) rettype F_CALL_VA_CONV funcname(a1, a2, ...)
 #define FCDECL2_VV(rettype, funcname, a1, a2) rettype F_CALL_CONV funcname(a2, a1)
 #define FCDECL2_VI(rettype, funcname, a1, a2) rettype F_CALL_CONV funcname(a2, a1)
 #define FCDECL2_IV(rettype, funcname, a1, a2) rettype F_CALL_CONV funcname(a1, a2)
@@ -147,17 +138,32 @@
 #define FCDECL6(rettype, funcname, a1, a2, a3, a4, a5, a6) rettype F_CALL_CONV funcname(a1, a2, a6, a5, a4, a3)
 #define FCDECL7(rettype, funcname, a1, a2, a3, a4, a5, a6, a7) rettype F_CALL_CONV funcname(a1, a2, a7, a6, a5, a4, a3)
 #define FCDECL8(rettype, funcname, a1, a2, a3, a4, a5, a6, a7, a8) rettype F_CALL_CONV funcname(a1, a2, a8, a7, a6, a5, a4, a3)
-#define FCDECL9(rettype, funcname, a1, a2, a3, a4, a5, a6, a7, a8, a9) rettype F_CALL_CONV funcname(a1, a2, a9, a8, a7, a6, a5, a4, a3)
-#define FCDECL10(rettype,funcname, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10) rettype F_CALL_CONV funcname(a1, a2, a10, a9, a8, a7, a6, a5, a4, a3)
-#define FCDECL11(rettype,funcname, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11) rettype F_CALL_CONV funcname(a1, a2, a11, a10, a9, a8, a7, a6, a5, a4, a3)
-#define FCDECL12(rettype,funcname, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12) rettype F_CALL_CONV funcname(a1, a2, a12, a11, a10, a9, a8, a7, a6, a5, a4, a3)
-#define FCDECL13(rettype,funcname, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13) rettype F_CALL_CONV funcname(a1, a2, a13, a12, a11, a10, a9, a8, a7, a6, a5, a4, a3)
-#define FCDECL14(rettype,funcname, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14) rettype F_CALL_CONV funcname(a1, a2, a14, a13, a12, a11, a10, a9, a8, a7, a6, a5, a4, a3)
 
-#define FCDECL5_IVI(rettype, funcname, a1, a2, a3, a4, a5) rettype F_CALL_CONV funcname(a1, a3, a5, a4, a2)
-#define FCDECL5_VII(rettype, funcname, a1, a2, a3, a4, a5) rettype F_CALL_CONV funcname(a2, a3, a5, a4, a1)
 
 #endif // !SWIZZLE_REGARG_ORDER
+
+#elif defined(TARGET_WASM)
+
+#define FCDECL0(rettype, funcname) rettype F_CALL_CONV funcname(uintptr_t callersStackPointer, PCODE portableEntryPointContext); rettype F_CALL_CONV funcname ## _IMPL(uintptr_t callersStackPointer, PCODE portableEntryPointContext)
+#define FCDECL1(rettype, funcname, a1) rettype F_CALL_CONV funcname(uintptr_t callersStackPointer, a1, PCODE portableEntryPointContext); rettype F_CALL_CONV funcname ## _IMPL(uintptr_t callersStackPointer, a1, PCODE portableEntryPointContext)
+#define FCDECL1_V(rettype, funcname, a1) rettype F_CALL_CONV funcname(uintptr_t callersStackPointer, a1, PCODE portableEntryPointContext); rettype F_CALL_CONV funcname ## _IMPL(uintptr_t callersStackPointer, a1, PCODE portableEntryPointContext)
+#define FCDECL2(rettype, funcname, a1, a2) rettype F_CALL_CONV funcname(uintptr_t callersStackPointer, a1, a2, PCODE portableEntryPointContext); rettype F_CALL_CONV funcname ## _IMPL(uintptr_t callersStackPointer, a1, a2, PCODE portableEntryPointContext)
+#define FCDECL2_VV(rettype, funcname, a1, a2) rettype F_CALL_CONV funcname(uintptr_t callersStackPointer, a1, a2, PCODE portableEntryPointContext); rettype F_CALL_CONV funcname ## _IMPL(uintptr_t callersStackPointer, a1, a2, PCODE portableEntryPointContext)
+#define FCDECL2_VI(rettype, funcname, a1, a2) rettype F_CALL_CONV funcname(uintptr_t callersStackPointer, a1, a2, PCODE portableEntryPointContext); rettype F_CALL_CONV funcname ## _IMPL(uintptr_t callersStackPointer, a1, a2, PCODE portableEntryPointContext)
+#define FCDECL2_IV(rettype, funcname, a1, a2) rettype F_CALL_CONV funcname(uintptr_t callersStackPointer, a1, a2, PCODE portableEntryPointContext); rettype F_CALL_CONV funcname ## _IMPL(uintptr_t callersStackPointer, a1, a2, PCODE portableEntryPointContext)
+#define FCDECL3(rettype, funcname, a1, a2, a3) rettype F_CALL_CONV funcname(uintptr_t callersStackPointer, a1, a2, a3, PCODE portableEntryPointContext); rettype F_CALL_CONV funcname ## _IMPL(uintptr_t callersStackPointer, a1, a2, a3, PCODE portableEntryPointContext)
+#define FCDECL3_IIV(rettype, funcname, a1, a2, a3) rettype F_CALL_CONV funcname(uintptr_t callersStackPointer, a1, a2, a3, PCODE portableEntryPointContext); rettype F_CALL_CONV funcname ## _IMPL(uintptr_t callersStackPointer, a1, a2, a3, PCODE portableEntryPointContext)
+#define FCDECL3_VII(rettype, funcname, a1, a2, a3) rettype F_CALL_CONV funcname(uintptr_t callersStackPointer, a1, a2, a3, PCODE portableEntryPointContext); rettype F_CALL_CONV funcname ## _IMPL(uintptr_t callersStackPointer, a1, a2, a3, PCODE portableEntryPointContext)
+#define FCDECL3_IVV(rettype, funcname, a1, a2, a3) rettype F_CALL_CONV funcname(uintptr_t callersStackPointer, a1, a2, a3, PCODE portableEntryPointContext); rettype F_CALL_CONV funcname ## _IMPL(uintptr_t callersStackPointer, a1, a2, a3, PCODE portableEntryPointContext)
+#define FCDECL3_IVI(rettype, funcname, a1, a2, a3) rettype F_CALL_CONV funcname(uintptr_t callersStackPointer, a1, a2, a3, PCODE portableEntryPointContext); rettype F_CALL_CONV funcname ## _IMPL(uintptr_t callersStackPointer, a1, a2, a3, PCODE portableEntryPointContext)
+#define FCDECL3_VVI(rettype, funcname, a1, a2, a3) rettype F_CALL_CONV funcname(uintptr_t callersStackPointer, a1, a2, a3, PCODE portableEntryPointContext); rettype F_CALL_CONV funcname ## _IMPL(uintptr_t callersStackPointer, a1, a2, a3, PCODE portableEntryPointContext)
+#define FCDECL3_VVV(rettype, funcname, a1, a2, a3) rettype F_CALL_CONV funcname(uintptr_t callersStackPointer, a1, a2, a3, PCODE portableEntryPointContext); rettype F_CALL_CONV funcname ## _IMPL(uintptr_t callersStackPointer, a1, a2, a3, PCODE portableEntryPointContext)
+#define FCDECL4(rettype, funcname, a1, a2, a3, a4) rettype F_CALL_CONV funcname(uintptr_t callersStackPointer, a1, a2, a3, a4, PCODE portableEntryPointContext); rettype F_CALL_CONV funcname ## _IMPL(uintptr_t callersStackPointer, a1, a2, a3, a4, PCODE portableEntryPointContext)
+#define FCDECL5(rettype, funcname, a1, a2, a3, a4, a5) rettype F_CALL_CONV funcname(uintptr_t callersStackPointer, a1, a2, a3, a4, a5, PCODE portableEntryPointContext); rettype F_CALL_CONV funcname ## _IMPL(uintptr_t callersStackPointer, a1, a2, a3, a4, a5, PCODE portableEntryPointContext)
+#define FCDECL6(rettype, funcname, a1, a2, a3, a4, a5, a6) rettype F_CALL_CONV funcname(uintptr_t callersStackPointer, a1, a2, a3, a4, a5, a6, PCODE portableEntryPointContext); rettype F_CALL_CONV funcname ## _IMPL(uintptr_t callersStackPointer, a1, a2, a3, a4, a5, a6, PCODE portableEntryPointContext)
+#define FCDECL7(rettype, funcname, a1, a2, a3, a4, a5, a6, a7) rettype F_CALL_CONV funcname(uintptr_t callersStackPointer, a1, a2, a3, a4, a5, a6, a7, PCODE portableEntryPointContext); rettype F_CALL_CONV funcname ## _IMPL(uintptr_t callersStackPointer, a1, a2, a3, a4, a5, a6, a7, PCODE portableEntryPointContext)
+#define FCDECL8(rettype, funcname, a1, a2, a3, a4, a5, a6, a7, a8) rettype F_CALL_CONV funcname(uintptr_t callersStackPointer, a1, a2, a3, a4, a5, a6, a7, a8, PCODE portableEntryPointContext); rettype F_CALL_CONV funcname ## _IMPL(uintptr_t callersStackPointer, a1, a2, a3, a4, a5, a6, a7, a8, PCODE portableEntryPointContext)
+
 
 #else // !SWIZZLE_STKARG_ORDER
 
@@ -165,7 +171,6 @@
 #define FCDECL1(rettype, funcname, a1) rettype F_CALL_CONV funcname(a1)
 #define FCDECL1_V(rettype, funcname, a1) rettype F_CALL_CONV funcname(a1)
 #define FCDECL2(rettype, funcname, a1, a2) rettype F_CALL_CONV funcname(a1, a2)
-#define FCDECL2VA(rettype, funcname, a1, a2) rettype F_CALL_CONV funcname(a1, a2, ...)
 #define FCDECL2_VV(rettype, funcname, a1, a2) rettype F_CALL_CONV funcname(a1, a2)
 #define FCDECL2_VI(rettype, funcname, a1, a2) rettype F_CALL_CONV funcname(a1, a2)
 #define FCDECL2_IV(rettype, funcname, a1, a2) rettype F_CALL_CONV funcname(a1, a2)
@@ -181,15 +186,7 @@
 #define FCDECL6(rettype, funcname, a1, a2, a3, a4, a5, a6) rettype F_CALL_CONV funcname(a1, a2, a3, a4, a5, a6)
 #define FCDECL7(rettype, funcname, a1, a2, a3, a4, a5, a6, a7) rettype F_CALL_CONV funcname(a1, a2, a3, a4, a5, a6, a7)
 #define FCDECL8(rettype, funcname, a1, a2, a3, a4, a5, a6, a7, a8) rettype F_CALL_CONV funcname(a1, a2, a3, a4, a5, a6, a7, a8)
-#define FCDECL9(rettype, funcname, a1, a2, a3, a4, a5, a6, a7, a8, a9) rettype F_CALL_CONV funcname(a1, a2, a3, a4, a5, a6, a7, a8, a9)
-#define FCDECL10(rettype,funcname, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10) rettype F_CALL_CONV funcname(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10)
-#define FCDECL11(rettype,funcname, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11) rettype F_CALL_CONV funcname(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11)
-#define FCDECL12(rettype,funcname, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12) rettype F_CALL_CONV funcname(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12)
-#define FCDECL13(rettype,funcname, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13) rettype F_CALL_CONV funcname(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13)
-#define FCDECL14(rettype,funcname, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14) rettype F_CALL_CONV funcname(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14)
 
-#define FCDECL5_IVI(rettype, funcname, a1, a2, a3, a4, a5) rettype F_CALL_CONV funcname(a1, a2, a3, a4, a5)
-#define FCDECL5_VII(rettype, funcname, a1, a2, a3, a4, a5) rettype F_CALL_CONV funcname(a1, a2, a3, a4, a5)
 
 #endif // !SWIZZLE_STKARG_ORDER
 
@@ -294,15 +291,6 @@ public:
 #define FCIMPL6(rettype, funcname, a1, a2, a3, a4, a5, a6) rettype F_CALL_CONV funcname(int /* EAX */, a2, a1, a6, a5, a4, a3) { FCIMPL_PROLOG(funcname)
 #define FCIMPL7(rettype, funcname, a1, a2, a3, a4, a5, a6, a7) rettype F_CALL_CONV funcname(int /* EAX */, a2, a1, a7, a6, a5, a4, a3) { FCIMPL_PROLOG(funcname)
 #define FCIMPL8(rettype, funcname, a1, a2, a3, a4, a5, a6, a7, a8) rettype F_CALL_CONV funcname(int /* EAX */, a2, a1, a8, a7, a6, a5, a4, a3) { FCIMPL_PROLOG(funcname)
-#define FCIMPL9(rettype, funcname, a1, a2, a3, a4, a5, a6, a7, a8, a9) rettype F_CALL_CONV funcname(int /* EAX */, a2, a1, a9, a8, a7, a6, a5, a4, a3) { FCIMPL_PROLOG(funcname)
-#define FCIMPL10(rettype,funcname, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10) rettype F_CALL_CONV funcname(int /* EAX */, a2, a1, a10, a9, a8, a7, a6, a5, a4, a3) { FCIMPL_PROLOG(funcname)
-#define FCIMPL11(rettype,funcname, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11) rettype F_CALL_CONV funcname(int /* EAX */, a2, a1, a11, a10, a9, a8, a7, a6, a5, a4, a3) { FCIMPL_PROLOG(funcname)
-#define FCIMPL12(rettype,funcname, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12) rettype F_CALL_CONV funcname(int /* EAX */, a2, a1, a12, a11, a10, a9, a8, a7, a6, a5, a4, a3) { FCIMPL_PROLOG(funcname)
-#define FCIMPL13(rettype,funcname, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13) rettype F_CALL_CONV funcname(int /* EAX */, a2, a1, a13, a12, a11, a10, a9, a8, a7, a6, a5, a4, a3) { FCIMPL_PROLOG(funcname)
-#define FCIMPL14(rettype,funcname, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14) rettype F_CALL_CONV funcname(int /* EAX */, a2, a1, a14, a13, a12, a11, a10, a9, a8, a7, a6, a5, a4, a3) { FCIMPL_PROLOG(funcname)
-
-#define FCIMPL5_IVI(rettype, funcname, a1, a2, a3, a4, a5) rettype F_CALL_CONV funcname(int /* EAX */, a3, a1, a5, a4, a2) { FCIMPL_PROLOG(funcname)
-#define FCIMPL5_VII(rettype, funcname, a1, a2, a3, a4, a5) rettype F_CALL_CONV funcname(int /* EAX */, a3, a2, a5, a4, a1) { FCIMPL_PROLOG(funcname)
 
 #else // SWIZZLE_REGARG_ORDER
 
@@ -346,25 +334,98 @@ public:
     rettype F_CALL_CONV funcname(a1, a2, a7, a6, a5, a4, a3) { FCIMPL_PROLOG(funcname)
 #define FCIMPL8(rettype, funcname, a1, a2, a3, a4, a5, a6, a7, a8) FCSIGCHECK(funcname, #rettype "," #a1 "," #a2 "," #a3 "," #a4 "," #a5 "," #a6 "," #a7 "," #a8) \
     rettype F_CALL_CONV funcname(a1, a2, a8, a7, a6, a5, a4, a3) { FCIMPL_PROLOG(funcname)
-#define FCIMPL9(rettype, funcname, a1, a2, a3, a4, a5, a6, a7, a8, a9) FCSIGCHECK(funcname, #rettype "," #a1 "," #a2 "," #a3 "," #a4 "," #a5 "," #a6 "," #a7 "," #a8 "," #a9) \
-    rettype F_CALL_CONV funcname(a1, a2, a9, a8, a7, a6, a5, a4, a3) { FCIMPL_PROLOG(funcname)
-#define FCIMPL10(rettype,funcname, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10) FCSIGCHECK(funcname, #rettype "," #a1 "," #a2 "," #a3 "," #a4 "," #a5 "," #a6 "," #a7 "," #a8 "," #a9 "," #a10) \
-    rettype F_CALL_CONV funcname(a1, a2, a10, a9, a8, a7, a6, a5, a4, a3) { FCIMPL_PROLOG(funcname)
-#define FCIMPL11(rettype,funcname, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11) FCSIGCHECK(funcname, #rettype "," #a1 "," #a2 "," #a3 "," #a4 "," #a5 "," #a6 "," #a7 "," #a8 "," #a9 "," #a10 "," #a11) \
-    rettype F_CALL_CONV funcname(a1, a2, a11, a10, a9, a8, a7, a6, a5, a4, a3) { FCIMPL_PROLOG(funcname)
-#define FCIMPL12(rettype,funcname, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12) FCSIGCHECK(funcname, #rettype "," #a1 "," #a2 "," #a3 "," #a4 "," #a5 "," #a6 "," #a7 "," #a8 "," #a9 "," #a10 "," #a11 "," #a12) \
-    rettype F_CALL_CONV funcname(a1, a2, a12, a11, a10, a9, a8, a7, a6, a5, a4, a3) { FCIMPL_PROLOG(funcname)
-#define FCIMPL13(rettype,funcname, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13) FCSIGCHECK(funcname, #rettype "," #a1 "," #a2 "," #a3 "," #a4 "," #a5 "," #a6 "," #a7 "," #a8 "," #a9 "," #a10 "," #a11 "," #a12 "," #a13) \
-    rettype F_CALL_CONV funcname(a1, a2, a13, a12, a11, a10, a9, a8, a7, a6, a5, a4, a3) { FCIMPL_PROLOG(funcname)
-#define FCIMPL14(rettype,funcname, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14) FCSIGCHECK(funcname, #rettype "," #a1 "," #a2 "," #a3 "," #a4 "," #a5 "," #a6 "," #a7 "," #a8 "," #a9 "," #a10 "," #a11 "," #a12 "," #a13 "," #a14) \
-    rettype F_CALL_CONV funcname(a1, a2, a14, a13, a12, a11, a10, a9, a8, a7, a6, a5, a4, a3) { FCIMPL_PROLOG(funcname)
-
-#define FCIMPL5_IVI(rettype, funcname, a1, a2, a3, a4, a5) FCSIGCHECK(funcname, #rettype "," #a1 "," "V" #a2 "," #a3 "," #a4 "," #a5) \
-    rettype F_CALL_CONV funcname(a1, a3, a5, a4, a2) { FCIMPL_PROLOG(funcname)
-#define FCIMPL5_VII(rettype, funcname, a1, a2, a3, a4, a5) FCSIGCHECK(funcname, #rettype "," "V" #a1 "," #a2 "," #a3 "," #a4 "," #a5) \
-    rettype F_CALL_CONV funcname(a2, a3, a5, a4, a1) { FCIMPL_PROLOG(funcname)
 
 #endif // !SWIZZLE_REGARG_ORDER
+
+#elif defined(TARGET_WASM)
+
+#define WASM_WRAPPER_FUNC_INITIAL \
+{ \
+    asm ("local.get 0\n" /* Capture callersStackPointer onto the stack for calling _IMPL function*/ \
+         "local.get 0\n" /* Capture callersStackPointer onto the stack for setting the __stack_pointer */ \
+         "global.get __stack_pointer\n" /* Get current value of stack global */ \
+         "local.set 0\n"  /* Store current stack global into callersStackPointer local */ \
+         "global.set __stack_pointer\n" /* Set stack global to the initial value of callersStackPointer, which is the current stack pointer for the interpreter call */
+
+#define WASM_WRAPPER_FUNC_EPILOG(_method) \
+             "call %0\n" /* Call the actual implementation function*/ \
+             "local.get 0\n" /* Load the original stack pointer from stack Arg local */ \
+             "global.set __stack_pointer\n" /* Restore the original stack pointer to the stack global */ \
+             "return" :: "i" (_method ## _IMPL)); \
+}
+
+#define WASM_WRAPPER_FUNC_0(_rettype, _method) __attribute__((naked)) _rettype _method(uintptr_t callersStackPointer) WASM_WRAPPER_FUNC_INITIAL WASM_WRAPPER_FUNC_EPILOG(_method)
+#define WASM_WRAPPER_FUNC_1(_rettype, _method, a) __attribute__((naked)) _rettype _method(uintptr_t callersStackPointer, a) WASM_WRAPPER_FUNC_INITIAL "local.get 1\n" WASM_WRAPPER_FUNC_EPILOG(_method)
+#define WASM_WRAPPER_FUNC_2(_rettype, _method, a, b) __attribute__((naked)) _rettype _method(uintptr_t callersStackPointer, a, b) WASM_WRAPPER_FUNC_INITIAL "local.get 1\nlocal.get 2\n" WASM_WRAPPER_FUNC_EPILOG(_method)
+#define WASM_WRAPPER_FUNC_3(_rettype, _method, a, b, c) __attribute__((naked)) _rettype _method(uintptr_t callersStackPointer, a, b, c) WASM_WRAPPER_FUNC_INITIAL "local.get 1\nlocal.get 2\nlocal.get 3\n" WASM_WRAPPER_FUNC_EPILOG(_method)
+#define WASM_WRAPPER_FUNC_4(_rettype, _method, a, b, c, d) __attribute__((naked)) _rettype _method(uintptr_t callersStackPointer, a, b, c, d) WASM_WRAPPER_FUNC_INITIAL "local.get 1\nlocal.get 2\nlocal.get 3\nlocal.get 4\n" WASM_WRAPPER_FUNC_EPILOG(_method)
+#define WASM_WRAPPER_FUNC_5(_rettype, _method, a, b, c, d, e) __attribute__((naked)) _rettype _method(uintptr_t callersStackPointer, a, b, c, d, e) WASM_WRAPPER_FUNC_INITIAL "local.get 1\nlocal.get 2\nlocal.get 3\nlocal.get 4\nlocal.get 5\n" WASM_WRAPPER_FUNC_EPILOG(_method)
+#define WASM_WRAPPER_FUNC_6(_rettype, _method, a, b, c, d, e, f) __attribute__((naked)) _rettype _method(uintptr_t callersStackPointer, a, b, c, d, e, f) WASM_WRAPPER_FUNC_INITIAL "local.get 1\nlocal.get 2\nlocal.get 3\nlocal.get 4\nlocal.get 5\nlocal.get 6\n" WASM_WRAPPER_FUNC_EPILOG(_method)
+#define WASM_WRAPPER_FUNC_7(_rettype, _method, a, b, c, d, e, f, g) __attribute__((naked)) _rettype _method(uintptr_t callersStackPointer, a, b, c, d, e, f, g) WASM_WRAPPER_FUNC_INITIAL "local.get 1\nlocal.get 2\nlocal.get 3\nlocal.get 4\nlocal.get 5\nlocal.get 6\nlocal.get 7\n" WASM_WRAPPER_FUNC_EPILOG(_method)
+#define WASM_WRAPPER_FUNC_8(_rettype, _method, a, b, c, d, e, f, g, h) __attribute__((naked)) _rettype _method(uintptr_t callersStackPointer, a, b, c, d, e, f, g, h) WASM_WRAPPER_FUNC_INITIAL "local.get 1\nlocal.get 2\nlocal.get 3\nlocal.get 4\nlocal.get 5\nlocal.get 6\nlocal.get 7\nlocal.get 8\n" WASM_WRAPPER_FUNC_EPILOG(_method)
+#define WASM_WRAPPER_FUNC_9(_rettype, _method, a, b, c, d, e, f, g, h, i) __attribute__((naked)) _rettype _method(uintptr_t callersStackPointer, a, b, c, d, e, f, g, h, i) WASM_WRAPPER_FUNC_INITIAL "local.get 1\nlocal.get 2\nlocal.get 3\nlocal.get 4\nlocal.get 5\nlocal.get 6\nlocal.get 7\nlocal.get 8\nlocal.get 9\n" WASM_WRAPPER_FUNC_EPILOG(_method)
+
+#define WASM_CALLABLE_FUNC_0(_rettype, _method) \
+    WASM_WRAPPER_FUNC_0(_rettype, _method) \
+    _rettype _method ## _IMPL (uintptr_t callersStackPointer)
+
+#define WASM_CALLABLE_FUNC_1(_rettype, _method, a) \
+    WASM_WRAPPER_FUNC_1(_rettype, _method, a) \
+    _rettype _method ## _IMPL (uintptr_t callersStackPointer, a)
+
+#define WASM_CALLABLE_FUNC_2(_rettype, _method, a, b) \
+    WASM_WRAPPER_FUNC_2(_rettype, _method, a, b) \
+    _rettype _method ## _IMPL (uintptr_t callersStackPointer, a, b)
+
+#define WASM_CALLABLE_FUNC_3(_rettype, _method, a, b, c) \
+    WASM_WRAPPER_FUNC_3(_rettype, _method, a, b, c) \
+    _rettype _method ## _IMPL (uintptr_t callersStackPointer, a, b, c)
+
+#define WASM_CALLABLE_FUNC_4(_rettype, _method, a, b, c, d) \
+    WASM_WRAPPER_FUNC_4(_rettype, _method, a, b, c, d) \
+    _rettype _method ## _IMPL (uintptr_t callersStackPointer, a, b, c, d)
+
+#define WASM_CALLABLE_FUNC_5(_rettype, _method, a, b, c, d, e) \
+    WASM_WRAPPER_FUNC_5(_rettype, _method, a, b, c, d, e) \
+    _rettype _method ## _IMPL (uintptr_t callersStackPointer, a, b, c, d, e)
+
+#define WASM_CALLABLE_FUNC_6(_rettype, _method, a, b, c, d, e, f) \
+    WASM_WRAPPER_FUNC_6(_rettype, _method, a, b, c, d, e, f) \
+    _rettype _method ## _IMPL (uintptr_t callersStackPointer, a, b, c, d, e, f)
+
+#define WASM_CALLABLE_FUNC_7(_rettype, _method, a, b, c, d, e, f, g) \
+    WASM_WRAPPER_FUNC_7(_rettype, _method, a, b, c, d, e, f, g) \
+    _rettype _method ## _IMPL (uintptr_t callersStackPointer, a, b, c, d, e, f, g)
+
+#define WASM_CALLABLE_FUNC_8(_rettype, _method, a, b, c, d, e, f, g, h) \
+    WASM_WRAPPER_FUNC_8(_rettype, _method, a, b, c, d, e, f, g, h) \
+    _rettype _method ## _IMPL (uintptr_t callersStackPointer, a, b, c, d, e, f, g, h)
+
+#define WASM_CALLABLE_FUNC_9(_rettype, _method, a, b, c, d, e, f, g, h, i) \
+    WASM_WRAPPER_FUNC_9(_rettype, _method, a, b, c, d, e, f, g, h, i) \
+    _rettype _method ## _IMPL (uintptr_t callersStackPointer, a, b, c, d, e, f, g, h, i)
+
+
+#define FCIMPL0(rettype, funcname) WASM_CALLABLE_FUNC_1(rettype, funcname, PCODE portableEntryPointContext) { FCIMPL_PROLOG(funcname)
+#define FCIMPL1(rettype, funcname, a1) WASM_CALLABLE_FUNC_2(rettype, funcname, a1, PCODE portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
+#define FCIMPL1_V(rettype, funcname, a1) WASM_CALLABLE_FUNC_2(rettype, funcname, a1, PCODE portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
+#define FCIMPL2(rettype, funcname, a1, a2) WASM_CALLABLE_FUNC_3(rettype, funcname, a1, a2, PCODE portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
+#define FCIMPL2VA(rettype, funcname, a1, a2) WASM_CALLABLE_FUNC_3(rettype, funcname, a1, a2, PCODE portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
+#define FCIMPL2_VV(rettype, funcname, a1, a2) WASM_CALLABLE_FUNC_3(rettype, funcname, a1, a2, PCODE portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
+#define FCIMPL2_VI(rettype, funcname, a1, a2) WASM_CALLABLE_FUNC_3(rettype, funcname, a1, a2, PCODE portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
+#define FCIMPL2_IV(rettype, funcname, a1, a2) WASM_CALLABLE_FUNC_3(rettype, funcname, a1, a2, PCODE portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
+#define FCIMPL3(rettype, funcname, a1, a2, a3) WASM_CALLABLE_FUNC_4(rettype, funcname, a1, a2, a3, PCODE portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
+#define FCIMPL3_IIV(rettype, funcname, a1, a2, a3) WASM_CALLABLE_FUNC_4(rettype, funcname, a1, a2, a3, PCODE portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
+#define FCIMPL3_IVV(rettype, funcname, a1, a2, a3) WASM_CALLABLE_FUNC_4(rettype, funcname, a1, a2, a3, PCODE portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
+#define FCIMPL3_VII(rettype, funcname, a1, a2, a3) WASM_CALLABLE_FUNC_4(rettype, funcname, a1, a2, a3, PCODE portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
+#define FCIMPL3_IVI(rettype, funcname, a1, a2, a3) WASM_CALLABLE_FUNC_4(rettype, funcname, a1, a2, a3, PCODE portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
+#define FCIMPL3_VVI(rettype, funcname, a1, a2, a3) WASM_CALLABLE_FUNC_4(rettype, funcname, a1, a2, a3, PCODE portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
+#define FCIMPL3_VVV(rettype, funcname, a1, a2, a3) WASM_CALLABLE_FUNC_4(rettype, funcname, a1, a2, a3, PCODE portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
+#define FCIMPL4(rettype, funcname, a1, a2, a3, a4) WASM_CALLABLE_FUNC_5(rettype, funcname, a1, a2, a3, a4, PCODE portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
+#define FCIMPL5(rettype, funcname, a1, a2, a3, a4, a5) WASM_CALLABLE_FUNC_6(rettype, funcname, a1, a2, a3, a4, a5, PCODE portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
+#define FCIMPL6(rettype, funcname, a1, a2, a3, a4, a5, a6) WASM_CALLABLE_FUNC_7(rettype, funcname, a1, a2, a3, a4, a5, a6, PCODE portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
+#define FCIMPL7(rettype, funcname, a1, a2, a3, a4, a5, a6, a7) WASM_CALLABLE_FUNC_8(rettype, funcname, a1, a2, a3, a4, a5, a6, a7, PCODE portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
+#define FCIMPL8(rettype, funcname, a1, a2, a3, a4, a5, a6, a7, a8) WASM_CALLABLE_FUNC_9(rettype, funcname, a1, a2, a3, a4, a5, a6, a7, a8, PCODE portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
 
 #else // SWIZZLE_STKARG_ORDER
 
@@ -388,15 +449,6 @@ public:
 #define FCIMPL6(rettype, funcname, a1, a2, a3, a4, a5, a6) rettype funcname(a1, a2, a3, a4, a5, a6) {  FCIMPL_PROLOG(funcname)
 #define FCIMPL7(rettype, funcname, a1, a2, a3, a4, a5, a6, a7) rettype funcname(a1, a2, a3, a4, a5, a6, a7) {  FCIMPL_PROLOG(funcname)
 #define FCIMPL8(rettype, funcname, a1, a2, a3, a4, a5, a6, a7, a8) rettype funcname(a1, a2, a3, a4, a5, a6, a7, a8) {  FCIMPL_PROLOG(funcname)
-#define FCIMPL9(rettype, funcname, a1, a2, a3, a4, a5, a6, a7, a8, a9) rettype funcname(a1, a2, a3, a4, a5, a6, a7, a8, a9) {  FCIMPL_PROLOG(funcname)
-#define FCIMPL10(rettype,funcname, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10) rettype funcname(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10) {  FCIMPL_PROLOG(funcname)
-#define FCIMPL11(rettype,funcname, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11) rettype funcname(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11) {  FCIMPL_PROLOG(funcname)
-#define FCIMPL12(rettype,funcname, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12) rettype funcname(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12) {  FCIMPL_PROLOG(funcname)
-#define FCIMPL13(rettype,funcname, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13) rettype funcname(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13) {  FCIMPL_PROLOG(funcname)
-#define FCIMPL14(rettype,funcname, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14) rettype funcname(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14) {  FCIMPL_PROLOG(funcname)
-
-#define FCIMPL5_IVI(rettype, funcname, a1, a2, a3, a4, a5) rettype funcname(a1, a2, a3, a4, a5) { FCIMPL_PROLOG(funcname)
-#define FCIMPL5_VII(rettype, funcname, a1, a2, a3, a4, a5) rettype funcname(a1, a2, a3, a4, a5) { FCIMPL_PROLOG(funcname)
 
 #endif // !SWIZZLE_STKARG_ORDER
 
@@ -435,6 +487,18 @@ public:
 #define HCIMPL3(rettype, funcname, a1, a2, a3) rettype F_CALL_CONV funcname(a1, a2, a3) { HCIMPL_PROLOG(funcname)
 #define HCIMPL3_RAW(rettype, funcname, a1, a2, a3) rettype F_CALL_CONV funcname(a1, a2, a3) {
 #endif // !SWIZZLE_REGARG_ORDER
+#elif defined(TARGET_WASM)
+
+#define HCIMPL0(rettype, funcname) rettype F_CALL_CONV funcname(uintptr_t callersStackPointer, PCODE portableEntryPointContext) { HCIMPL_PROLOG(funcname)
+#define HCIMPL1(rettype, funcname, a1) rettype F_CALL_CONV funcname(uintptr_t callersStackPointer, a1, PCODE portableEntryPointContext) { HCIMPL_PROLOG(funcname)
+#define HCIMPL1_RAW(rettype, funcname, a1) rettype F_CALL_CONV funcname(uintptr_t callersStackPointer, a1, PCODE portableEntryPointContext) {
+#define HCIMPL1_V(rettype, funcname, a1) rettype F_CALL_CONV funcname(uintptr_t callersStackPointer, a1, PCODE portableEntryPointContext) { HCIMPL_PROLOG(funcname)
+#define HCIMPL2(rettype, funcname, a1, a2) rettype F_CALL_CONV funcname(uintptr_t callersStackPointer, a1, a2, PCODE portableEntryPointContext) { HCIMPL_PROLOG(funcname)
+#define HCIMPL2_RAW(rettype, funcname, a1, a2) rettype F_CALL_CONV funcname(uintptr_t callersStackPointer, a1, a2, PCODE portableEntryPointContext) {
+#define HCIMPL2_VV(rettype, funcname, a1, a2) rettype F_CALL_CONV funcname(uintptr_t callersStackPointer, a1, a2, PCODE portableEntryPointContext) { HCIMPL_PROLOG(funcname)
+#define HCIMPL3(rettype, funcname, a1, a2, a3) rettype F_CALL_CONV funcname(uintptr_t callersStackPointer, a1, a2, a3, PCODE portableEntryPointContext) { HCIMPL_PROLOG(funcname)
+#define HCIMPL3_RAW(rettype, funcname, a1, a2, a3) rettype F_CALL_CONV funcname(uintptr_t callersStackPointer, a1, a2, a3, PCODE portableEntryPointContext) {
+
 #else // SWIZZLE_STKARG_ORDER
 
 #define HCIMPL0(rettype, funcname) rettype F_CALL_CONV funcname() { HCIMPL_PROLOG(funcname)

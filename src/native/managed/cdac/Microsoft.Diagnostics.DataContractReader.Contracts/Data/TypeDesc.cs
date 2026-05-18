@@ -9,7 +9,7 @@ internal sealed class TypeDesc : IData<TypeDesc>
     public TypeDesc(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.TypeDesc);
-        TypeAndFlags = target.Read<uint>(address + (ulong)type.Fields[nameof(TypeAndFlags)].Offset);
+        TypeAndFlags = target.ReadField<uint>(address, type, nameof(TypeAndFlags));
     }
 
     public uint TypeAndFlags { get; init; }
@@ -21,10 +21,10 @@ internal sealed class ParamTypeDesc : IData<ParamTypeDesc>
     public ParamTypeDesc(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.TypeDesc);
-        TypeAndFlags = target.Read<uint>(address + (ulong)type.Fields[nameof(TypeAndFlags)].Offset);
+        TypeAndFlags = target.ReadField<uint>(address, type, nameof(TypeAndFlags));
 
         type = target.GetTypeInfo(DataType.ParamTypeDesc);
-        TypeArg = target.ReadPointer(address + (ulong)type.Fields[nameof(TypeArg)].Offset);
+        TypeArg = target.ReadPointerField(address, type, nameof(TypeArg));
     }
 
     public uint TypeAndFlags { get; init; }
@@ -37,12 +37,12 @@ internal sealed class TypeVarTypeDesc : IData<TypeVarTypeDesc>
     public TypeVarTypeDesc(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.TypeDesc);
-        TypeAndFlags = target.Read<uint>(address + (ulong)type.Fields[nameof(TypeAndFlags)].Offset);
+        TypeAndFlags = target.ReadField<uint>(address, type, nameof(TypeAndFlags));
 
         type = target.GetTypeInfo(DataType.TypeVarTypeDesc);
 
-        Module = target.ReadPointer(address + (ulong)type.Fields[nameof(Module)].Offset);
-        Token = target.Read<uint>(address + (ulong)type.Fields[nameof(Token)].Offset);
+        Module = target.ReadPointerField(address, type, nameof(Module));
+        Token = target.ReadField<uint>(address, type, nameof(Token));
     }
 
     public uint TypeAndFlags { get; init; }
@@ -56,14 +56,14 @@ internal sealed class FnPtrTypeDesc : IData<FnPtrTypeDesc>
     public FnPtrTypeDesc(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.TypeDesc);
-        TypeAndFlags = target.Read<uint>(address + (ulong)type.Fields[nameof(TypeAndFlags)].Offset);
+        TypeAndFlags = target.ReadField<uint>(address, type, nameof(TypeAndFlags));
 
         type = target.GetTypeInfo(DataType.FnPtrTypeDesc);
 
-        NumArgs = target.Read<uint>(address + (ulong)type.Fields[nameof(NumArgs)].Offset);
-        CallConv = target.Read<uint>(address + (ulong)type.Fields[nameof(CallConv)].Offset);
+        NumArgs = target.ReadField<uint>(address, type, nameof(NumArgs));
+        CallConv = target.ReadField<uint>(address, type, nameof(CallConv));
         RetAndArgTypes = (TargetPointer)(address + (ulong)type.Fields[nameof(RetAndArgTypes)].Offset);
-        LoaderModule = target.ReadPointer(address + (ulong)type.Fields[nameof(LoaderModule)].Offset);
+        LoaderModule = target.ReadPointerField(address, type, nameof(LoaderModule));
     }
 
     public uint TypeAndFlags { get; init; }

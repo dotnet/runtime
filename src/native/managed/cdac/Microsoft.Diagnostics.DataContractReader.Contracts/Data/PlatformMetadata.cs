@@ -12,7 +12,7 @@ internal sealed class PlatformMetadata : IData<PlatformMetadata>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.PlatformMetadata);
         PrecodeMachineDescriptor = address + (ulong)type.Fields[nameof(PrecodeMachineDescriptor)].Offset;
-        CodePointerFlags = target.Read<byte>(address + (ulong)type.Fields[nameof(CodePointerFlags)].Offset);
+        CodePointerFlags = target.ReadField<byte>(address, type, nameof(CodePointerFlags));
     }
 
     /* Address of */

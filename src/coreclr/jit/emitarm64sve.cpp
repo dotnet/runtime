@@ -1903,6 +1903,75 @@ void emitter::emitInsSve_R_F(
     appendToCurIG(id);
 }
 
+//------------------------------------------------------------------------
+// emitInsSve_Mov: Emits a SVE move instruction
+//
+// Arguments:
+//    ins     -- The instruction being emitted
+//    attr    -- The emit attribute
+//    dstReg  -- The destination register
+//    srcReg  -- The source register
+//    canSkip -- true if the move can be elided when dstReg == srcReg, otherwise false
+//    opt     -- The instruction options
+//    mopt    -- The sve mov options
+//    mskReg  -- The mask register if using the predicated variant, defaults to REG_NA
+//
+void emitter::emitInsSve_Mov(instruction   ins,
+                             emitAttr      attr,
+                             regNumber     dstReg,
+                             regNumber     srcReg,
+                             bool          canSkip,
+                             insOpts       opt /* = INS_OPTS_NONE */,
+                             insSveMovOpts mopt /* = INS_SVE_MOV_OPTS_UNPRED */,
+                             regNumber     mskReg /* = REG_NA */)
+{
+    assert(IsMovInstruction(ins));
+
+    emitAttr size = EA_SIZE(attr);
+
+    switch (ins)
+    {
+        case INS_sve_mov:
+            if (isPredicateRegister(dstReg))
+            {
+                assert((opt == INS_OPTS_SCALABLE_B) || insOptsNone(opt));
+                opt  = INS_OPTS_SCALABLE_B;
+                attr = EA_SCALABLE;
+            }
+            break;
+
+        case INS_sve_movprfx:
+            if (mopt == INS_SVE_MOV_OPTS_UNPRED)
+            {
+                opt = INS_OPTS_NONE;
+            }
+            break;
+
+        default:
+            unreached();
+            break;
+    }
+
+    if (mopt == INS_SVE_MOV_OPTS_UNPRED)
+    {
+        // Unpredicated
+        if (IsRedundantMov(ins, size, dstReg, srcReg, canSkip))
+        {
+            return;
+        }
+        emitInsSve_R_R(ins, attr, dstReg, srcReg, opt);
+    }
+    else
+    {
+        // Predicated (zeroing/merging)
+        assert(isPredicateRegister(mskReg));
+
+        insScalableOpts sopt =
+            (mopt == INS_SVE_MOV_OPTS_MERGING) ? INS_SCALABLE_OPTS_PREDICATE_MERGE : INS_SCALABLE_OPTS_NONE;
+        emitInsSve_R_R_R(ins, attr, dstReg, mskReg, srcReg, opt, sopt);
+    }
+}
+
 /*****************************************************************************
  *
  *  Add a SVE instruction referencing two registers
@@ -1968,6 +2037,13 @@ void emitter::emitInsSve_R_R(instruction     ins,
 #endif // DEBUG
                 reg2 = encodingSPtoZR(reg2);
                 fmt  = IF_SVE_CB_2A;
+            }
+            else if (isVectorRegister(reg1))
+            {
+                assert(insOptsScalable(opt));
+                assert(insScalableOptsNone(sopt));
+                assert(isVectorRegister(reg2)); // nnnnn
+                fmt = IF_SVE_AU_3A;
             }
             else
             {
@@ -2926,7 +3002,8 @@ void emitter::emitInsSve_R_R_R(instruction     ins,
                                regNumber       reg2,
                                regNumber       reg3,
                                insOpts         opt /* = INS_OPTS_NONE */,
-                               insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */)
+                               insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */,
+                               insSveMovOpts   mopt /* = INS_SVE_MOV_OPTS_UNPRED */)
 {
     emitAttr  size           = EA_SIZE(attr);
     bool      pmerge         = false;
@@ -2936,6 +3013,39 @@ void emitter::emitInsSve_R_R_R(instruction     ins,
     /* Figure out the encoding format of the instruction */
     switch (ins)
     {
+        case INS_sve_pfirst:
+        case INS_sve_pnext:
+            // Explicit masked RMW predicate instructions
+            assert(insSveMovOptsUnpredicated(mopt));
+            emitInsSve_Mov(INS_sve_mov, EA_SCALABLE, reg1, reg3, /* canSkip */ true);
+            emitInsSve_R_R(ins, attr, reg1, reg2, opt, sopt);
+            return;
+
+        case INS_sve_sqincp:
+        case INS_sve_uqincp:
+        case INS_sve_sqdecp:
+        case INS_sve_uqdecp:
+            if (isGeneralRegister(reg1))
+            {
+                // Scalar variant, with 64-bit destination register
+                assert(isGeneralRegister(reg2));
+                emitIns_Mov(INS_mov, EA_8BYTE, reg1, reg2, /* canSkip */ true);
+                emitInsSve_R_R(ins, attr, reg1, reg3, opt, sopt);
+                return;
+            }
+            // Vector variant
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            FALLTHROUGH;
+
+        case INS_sve_insr:
+            // RMW instructions
+            assert(insSveMovOptsUnpredicated(mopt));
+            assert(isValidMovprfxReg(mopt, reg1, reg2, reg3));
+            emitInsSve_Mov(INS_sve_movprfx, EA_SCALABLE, reg1, reg2, /* canSkip */ true, INS_OPTS_NONE, mopt);
+            emitInsSve_R_R(ins, attr, reg1, reg3, opt, sopt);
+            return;
+
         case INS_sve_and:
         case INS_sve_bic:
         case INS_sve_eor:
@@ -4458,7 +4568,8 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
                                  regNumber       reg3,
                                  ssize_t         imm,
                                  insOpts         opt /* = INS_OPTS_NONE */,
-                                 insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */)
+                                 insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */,
+                                 insSveMovOpts   mopt /* = INS_SVE_MOV_OPTS_UNPRED */)
 {
     emitAttr  size     = EA_SIZE(attr);
     emitAttr  elemsize = EA_UNKNOWN;
@@ -4467,6 +4578,52 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
     /* Figure out the encoding format of the instruction */
     switch (ins)
     {
+        case INS_sve_asr:
+        case INS_sve_asrd:
+        case INS_sve_lsl:
+        case INS_sve_lsr:
+        case INS_sve_sqshl:
+        case INS_sve_sqshlu:
+        case INS_sve_srshr:
+        case INS_sve_uqshl:
+        case INS_sve_urshr:
+            // Embedded masked RMW instructions
+            emitInsSve_Mov(INS_sve_movprfx, EA_SCALABLE, reg1, reg3, /* canSkip */ true, opt, mopt, reg2);
+            emitInsSve_R_R_I(ins, attr, reg1, reg2, imm, opt, sopt);
+            return;
+
+        case INS_sve_ext:
+        case INS_sve_rshrnt:
+        case INS_sve_shrnt:
+        case INS_sve_sli:
+        case INS_sve_sqrshrnt:
+        case INS_sve_sqrshrunt:
+        case INS_sve_sqshrnt:
+        case INS_sve_sqshrunt:
+        case INS_sve_sri:
+        case INS_sve_uqshrnt:
+        case INS_sve_uqrshrnt:
+            // RMW instructions without movprfx support, use mov instead
+            assert(insSveMovOptsUnpredicated(mopt));
+            emitInsSve_Mov(INS_sve_mov, attr, reg1, reg2, /* canSkip */ true, opt);
+            emitInsSve_R_R_I(ins, attr, reg1, reg3, imm, opt, sopt);
+            return;
+
+        case INS_sve_cadd:
+        case INS_sve_ftmad:
+        case INS_sve_sqcadd:
+        case INS_sve_srsra:
+        case INS_sve_ssra:
+        case INS_sve_ursra:
+        case INS_sve_usra:
+        case INS_sve_xar:
+            // RMW instructions
+            assert(insSveMovOptsUnpredicated(mopt));
+            assert(isValidMovprfxReg(mopt, reg1, reg2, reg3));
+            emitInsSve_Mov(INS_sve_movprfx, EA_SCALABLE, reg1, reg2, /* canSkip */ true, INS_OPTS_NONE, mopt);
+            emitInsSve_R_R_I(ins, attr, reg1, reg3, imm, opt, sopt);
+            return;
+
         case INS_sve_adr:
             assert(isVectorRegister(reg1)); // ddddd
             assert(isVectorRegister(reg2)); // nnnnn
@@ -5903,7 +6060,8 @@ void emitter::emitInsSve_R_R_R_R(instruction     ins,
                                  regNumber       reg3,
                                  regNumber       reg4,
                                  insOpts         opt /* = INS_OPTS_NONE*/,
-                                 insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */)
+                                 insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */,
+                                 insSveMovOpts   mopt /* = INS_SVE_MOV_OPTS_UNPRED */)
 {
     emitAttr  size = EA_SIZE(attr);
     insFormat fmt  = IF_NONE;
@@ -5911,6 +6069,255 @@ void emitter::emitInsSve_R_R_R_R(instruction     ins,
     /* Figure out the encoding format of the instruction */
     switch (ins)
     {
+        case INS_sve_fcvt:
+        case INS_sve_fcvtx:
+        case INS_sve_fcvtzs:
+        case INS_sve_fcvtzu:
+        case INS_sve_scvtf:
+        case INS_sve_ucvtf:
+            // Embedded masked convert instructions
+            assert(isValidMovprfxReg(mopt, reg1, reg3, reg4));
+            emitInsSve_Mov(INS_sve_movprfx, EA_SCALABLE, reg1, reg3, /* canSkip */ true,
+                           insOptsScalableStandard(opt) ? opt : optGetSveInsOpt(optGetDstsize(opt)), mopt, reg2);
+            emitInsSve_R_R_R(ins, attr, reg1, reg2, reg4, opt, sopt);
+            return;
+
+        case INS_sve_fcvtlt:
+        case INS_sve_fcvtnt:
+        case INS_sve_fcvtxnt:
+            // Embedded masked convert instructions that cannot use movprfx.
+            assert(insOptsConvertFloatToFloat(opt));
+            assert(insSveMovOptsUnpredicated(mopt));
+            emitInsSve_Mov(INS_sve_mov, EA_SCALABLE, reg1, reg3, /* canSkip */ true,
+                           optGetSveInsOpt(optGetDstsize(opt)), mopt, reg2);
+            emitInsSve_R_R_R(ins, attr, reg1, reg2, reg4, opt, sopt);
+            return;
+
+        case INS_sve_abs:
+        case INS_sve_cls:
+        case INS_sve_clz:
+        case INS_sve_cnot:
+        case INS_sve_cnt:
+        case INS_sve_fabs:
+        case INS_sve_fexpa:
+        case INS_sve_flogb:
+        case INS_sve_fneg:
+        case INS_sve_frecpx:
+        case INS_sve_frinta:
+        case INS_sve_frinti:
+        case INS_sve_frintm:
+        case INS_sve_frintn:
+        case INS_sve_frintp:
+        case INS_sve_frintx:
+        case INS_sve_frintz:
+        case INS_sve_fsqrt:
+        case INS_sve_neg:
+        case INS_sve_not:
+        case INS_sve_rbit:
+        case INS_sve_revb:
+        case INS_sve_revd:
+        case INS_sve_revh:
+        case INS_sve_revw:
+        case INS_sve_sqabs:
+        case INS_sve_sqneg:
+        case INS_sve_sxtb:
+        case INS_sve_sxth:
+        case INS_sve_sxtw:
+        case INS_sve_urecpe:
+        case INS_sve_ursqrte:
+        case INS_sve_uxtb:
+        case INS_sve_uxth:
+        case INS_sve_uxtw:
+            // Embedded masked instructions with single operand
+            assert(isValidMovprfxReg(mopt, reg1, reg3, reg4));
+            emitInsSve_Mov(INS_sve_movprfx, EA_SCALABLE, reg1, reg3, /* canSkip */ true, opt, mopt, reg2);
+            emitInsSve_R_R_R(ins, attr, reg1, reg2, reg4, opt, sopt);
+            return;
+
+        case INS_sve_brkn:
+            // RMW on second source register
+            assert(insSveMovOptsUnpredicated(mopt));
+            emitInsSve_Mov(INS_sve_mov, EA_SCALABLE, reg1, reg4, /* canSkip */ true, opt);
+            emitInsSve_R_R_R(ins, attr, reg1, reg2, reg3, opt, sopt);
+            return;
+
+        case INS_sve_fadda:
+            emitIns_Mov(INS_fmov, optGetSveElemsize(opt), reg1, reg3, /* canSkip */ true);
+            emitInsSve_R_R_R(ins, attr, reg1, reg2, reg4, opt, sopt);
+            return;
+
+        case INS_sve_addp:
+        case INS_sve_faddp:
+        case INS_sve_fmaxnmp:
+        case INS_sve_fmaxp:
+        case INS_sve_fminnmp:
+        case INS_sve_fminp:
+        case INS_sve_smaxp:
+        case INS_sve_sminp:
+        case INS_sve_umaxp:
+        case INS_sve_uminp:
+            // Unpredicated movprfx only
+            assert(insSveMovOptsUnpredicated(mopt));
+            assert(isValidMovprfxReg(mopt, reg1, reg3, reg4));
+            emitInsSve_Mov(INS_sve_movprfx, EA_SCALABLE, reg1, reg3, /* canSkip */ true);
+            emitInsSve_R_R_R(ins, attr, reg1, reg2, reg4, opt, sopt);
+            return;
+
+        case INS_sve_and:
+        case INS_sve_bic:
+        case INS_sve_eor:
+        case INS_sve_orr:
+            if (isPredicateRegister(reg1))
+            {
+                // Predicate variants
+                assert(opt == INS_OPTS_SCALABLE_B);
+                assert(isPredicateRegister(reg1)); // dddd
+                assert(isPredicateRegister(reg2)); // gggg
+                assert(isPredicateRegister(reg3)); // nnnn
+                assert(isPredicateRegister(reg4)); // mmmm
+                fmt = IF_SVE_CZ_4A;
+                break;
+            }
+            // Otherwise (predicated) vector variants
+            FALLTHROUGH;
+
+        case INS_sve_add:
+        case INS_sve_asr:
+        case INS_sve_fabd:
+        case INS_sve_fadd:
+        case INS_sve_fdiv:
+        case INS_sve_fmax:
+        case INS_sve_fmaxnm:
+        case INS_sve_fmin:
+        case INS_sve_fminnm:
+        case INS_sve_fmul:
+        case INS_sve_fmulx:
+        case INS_sve_fscale:
+        case INS_sve_fsub:
+        case INS_sve_lsl:
+        case INS_sve_lsr:
+        case INS_sve_mul:
+        case INS_sve_sabd:
+        case INS_sve_sadalp:
+        case INS_sve_sdiv:
+        case INS_sve_shadd:
+        case INS_sve_shsub:
+        case INS_sve_smax:
+        case INS_sve_smin:
+        case INS_sve_sqadd:
+        case INS_sve_sqrshl:
+        case INS_sve_sqshl:
+        case INS_sve_sqsub:
+        case INS_sve_srhadd:
+        case INS_sve_srshl:
+        case INS_sve_sub:
+        case INS_sve_suqadd:
+        case INS_sve_uabd:
+        case INS_sve_uadalp:
+        case INS_sve_udiv:
+        case INS_sve_uhadd:
+        case INS_sve_uhsub:
+        case INS_sve_umax:
+        case INS_sve_umin:
+        case INS_sve_uqadd:
+        case INS_sve_uqrshl:
+        case INS_sve_uqshl:
+        case INS_sve_uqsub:
+        case INS_sve_urhadd:
+        case INS_sve_urshl:
+        case INS_sve_usqadd:
+            // Embedded masked RMW instructions
+            assert(isValidMovprfxReg(mopt, reg1, reg3, reg4));
+            emitInsSve_Mov(INS_sve_movprfx, EA_SCALABLE, reg1, reg3, /* canSkip */ true, opt, mopt, reg2);
+            emitInsSve_R_R_R(ins, attr, reg1, reg2, reg4, opt, sopt);
+            return;
+
+        case INS_sve_clasta:
+        case INS_sve_clastb:
+            if (isGeneralRegisterOrZR(reg1))
+            {
+                // Scalar variant
+                emitIns_Mov(INS_mov, attr, reg1, reg3, /* canSkip */ true);
+                emitInsSve_R_R_R(ins, attr, reg1, reg2, reg4, opt, sopt);
+                return;
+            }
+            else if (sopt == INS_SCALABLE_OPTS_WITH_SIMD_SCALAR)
+            {
+                // SIMD&FP scalar variant
+                emitIns_Mov(INS_sve_mov, EA_SCALABLE, reg1, reg3, /* canSkip */ true, opt);
+                emitInsSve_R_R_R(ins, attr, reg1, reg2, reg4, opt, sopt);
+                return;
+            }
+            // Vector variant
+            FALLTHROUGH;
+
+        case INS_sve_splice:
+            // Explicit masked RMW instructions
+            assert(insSveMovOptsUnpredicated(mopt));
+            assert(isValidMovprfxReg(mopt, reg1, reg3, reg2, reg4));
+            emitInsSve_Mov(INS_sve_movprfx, EA_SCALABLE, reg1, reg3, /* canSkip */ true);
+            emitInsSve_R_R_R(ins, attr, reg1, reg2, reg4, opt, sopt);
+            return;
+
+        case INS_sve_adclb:
+        case INS_sve_adclt:
+            // RMW instructions destructive on the third source register
+            assert(insSveMovOptsUnpredicated(mopt));
+            assert(isValidMovprfxReg(mopt, reg1, reg4, reg2, reg3));
+            emitInsSve_Mov(INS_sve_movprfx, EA_SCALABLE, reg1, reg4, /* canSkip */ true);
+            emitInsSve_R_R_R(ins, attr, reg1, reg2, reg3, opt, sopt);
+            return;
+
+        case INS_sve_addhnt:
+        case INS_sve_raddhnt:
+        case INS_sve_rsubhnt:
+        case INS_sve_subhnt:
+        case INS_sve_tbx:
+            // RMW instructions without movprfx support, use mov instead
+            emitIns_Mov(INS_sve_mov, attr, reg1, reg2, /* canSkip */ true, opt);
+            emitInsSve_R_R_R(ins, attr, reg1, reg3, reg4, opt, sopt);
+            return;
+
+        case INS_sve_bcax:
+        case INS_sve_bsl:
+        case INS_sve_bsl1n:
+        case INS_sve_bsl2n:
+        case INS_sve_eor3:
+        case INS_sve_eorbt:
+        case INS_sve_eortb:
+        case INS_sve_saba:
+        case INS_sve_sabalb:
+        case INS_sve_sabalt:
+        case INS_sve_sbclb:
+        case INS_sve_sbclt:
+        case INS_sve_sdot:
+        case INS_sve_smlalb:
+        case INS_sve_smlalt:
+        case INS_sve_smlslb:
+        case INS_sve_smlslt:
+        case INS_sve_sqdmlalb:
+        case INS_sve_sqdmlalbt:
+        case INS_sve_sqdmlalt:
+        case INS_sve_sqdmlslb:
+        case INS_sve_sqdmlslbt:
+        case INS_sve_sqdmlslt:
+        case INS_sve_sqrdmlah:
+        case INS_sve_sqrdmlsh:
+        case INS_sve_uaba:
+        case INS_sve_uabalb:
+        case INS_sve_uabalt:
+        case INS_sve_udot:
+        case INS_sve_umlalb:
+        case INS_sve_umlalt:
+        case INS_sve_umlslb:
+        case INS_sve_umlslt:
+            // RMW instructions
+            assert(insSveMovOptsUnpredicated(mopt));
+            assert(isValidMovprfxReg(mopt, reg1, reg2, reg3, reg4));
+            emitInsSve_Mov(INS_sve_movprfx, EA_SCALABLE, reg1, reg2, /* canSkip */ true);
+            emitInsSve_R_R_R(ins, attr, reg1, reg3, reg4, opt, sopt);
+            return;
+
         case INS_sve_sel:
             assert(insScalableOptsNone(sopt));
             if (isVectorRegister(reg1))
@@ -5966,11 +6373,7 @@ void emitter::emitInsSve_R_R_R_R(instruction     ins,
             }
             break;
 
-        case INS_sve_and:
-        case INS_sve_orr:
-        case INS_sve_eor:
         case INS_sve_ands:
-        case INS_sve_bic:
         case INS_sve_orn:
         case INS_sve_bics:
         case INS_sve_eors:
@@ -7002,14 +7405,16 @@ void emitter::emitInsSve_R_R_R_R(instruction     ins,
  *  Add a SVE instruction referencing four registers and a constant.
  */
 
-void emitter::emitInsSve_R_R_R_R_I(instruction ins,
-                                   emitAttr    attr,
-                                   regNumber   reg1,
-                                   regNumber   reg2,
-                                   regNumber   reg3,
-                                   regNumber   reg4,
-                                   ssize_t     imm,
-                                   insOpts     opt /* = INS_OPT_NONE*/)
+void emitter::emitInsSve_R_R_R_R_I(instruction     ins,
+                                   emitAttr        attr,
+                                   regNumber       reg1,
+                                   regNumber       reg2,
+                                   regNumber       reg3,
+                                   regNumber       reg4,
+                                   ssize_t         imm,
+                                   insOpts         opt /* = INS_OPTS_NONE */,
+                                   insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */,
+                                   insSveMovOpts   mopt /* = INS_SVE_MOV_OPTS_UNPRED */)
 {
     emitAttr  size = EA_SIZE(attr);
     insFormat fmt  = IF_NONE;
@@ -7017,6 +7422,49 @@ void emitter::emitInsSve_R_R_R_R_I(instruction ins,
     /* Figure out the encoding format of the instruction */
     switch (ins)
     {
+        case INS_sve_fcadd:
+        case INS_sve_fmla:
+        case INS_sve_fmls:
+        case INS_sve_fmul:
+        case INS_sve_mla:
+        case INS_sve_mls:
+            if (isPredicateRegister(reg2))
+            {
+                // Embededd masked RMW instructions
+                assert(isValidMovprfxReg(mopt, reg1, reg3, reg4));
+                emitInsSve_Mov(INS_sve_movprfx, EA_SCALABLE, reg1, reg3, /* canSkip */ true, opt, mopt, reg2);
+                emitInsSve_R_R_R_I(ins, attr, reg1, reg2, reg4, imm, opt);
+                return;
+            }
+            // Unmasked RMW instructions
+            FALLTHROUGH;
+
+        case INS_sve_cdot:
+        case INS_sve_cmla:
+        case INS_sve_sdot:
+        case INS_sve_smlalb:
+        case INS_sve_smlalt:
+        case INS_sve_smlslb:
+        case INS_sve_smlslt:
+        case INS_sve_sqdmlalb:
+        case INS_sve_sqdmlalt:
+        case INS_sve_sqdmlslb:
+        case INS_sve_sqdmlslt:
+        case INS_sve_sqrdcmlah:
+        case INS_sve_sqrdmlah:
+        case INS_sve_sqrdmlsh:
+        case INS_sve_udot:
+        case INS_sve_umlalb:
+        case INS_sve_umlalt:
+        case INS_sve_umlslb:
+        case INS_sve_umlslt:
+            // RMW instructions
+            assert(insSveMovOptsUnpredicated(mopt));
+            assert(isValidMovprfxReg(mopt, reg1, reg2, reg3, reg4));
+            emitInsSve_Mov(INS_sve_movprfx, EA_SCALABLE, reg1, reg2, /* canSkip */ true);
+            emitInsSve_R_R_R_I(ins, attr, reg1, reg3, reg4, imm, opt);
+            return;
+
         case INS_sve_fcmla:
             assert(insOptsScalableAtLeastHalf(opt));
             assert(isVectorRegister(reg1));
@@ -7082,6 +7530,120 @@ void emitter::emitInsSve_R_R_R_R_I(instruction ins,
 
     dispIns(id);
     appendToCurIG(id);
+}
+
+/*****************************************************************************
+ *
+ *  Add a SVE instruction referencing four registers and two constants.
+ */
+
+void emitter::emitInsSve_R_R_R_R_I_I(instruction     ins,
+                                     emitAttr        attr,
+                                     regNumber       reg1,
+                                     regNumber       reg2,
+                                     regNumber       reg3,
+                                     regNumber       reg4,
+                                     ssize_t         imm1,
+                                     ssize_t         imm2,
+                                     insOpts         opt /* = INS_OPTS_NONE */,
+                                     insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */,
+                                     insSveMovOpts   mopt /* = INS_SVE_MOV_OPTS_UNPRED */)
+{
+    switch (ins)
+    {
+        case INS_sve_cmla:
+        case INS_sve_fcmla:
+        case INS_sve_sqrdcmlah:
+        case INS_sve_cdot:
+            // RMW instructions
+            assert(insSveMovOptsUnpredicated(mopt));
+            assert(isValidMovprfxReg(mopt, reg1, reg2, reg3, reg4));
+            emitInsSve_Mov(INS_sve_movprfx, EA_SCALABLE, reg1, reg2, /* canSkip */ true);
+            emitInsSve_R_R_R_I_I(ins, attr, reg1, reg3, reg4, imm1, imm2, opt);
+            return;
+
+        default:
+            unreached();
+            break;
+    }
+}
+
+/*****************************************************************************
+ *
+ *  Add a SVE instruction referencing five registers.
+ */
+
+void emitter::emitInsSve_R_R_R_R_R(instruction     ins,
+                                   emitAttr        attr,
+                                   regNumber       reg1,
+                                   regNumber       reg2,
+                                   regNumber       reg3,
+                                   regNumber       reg4,
+                                   regNumber       reg5,
+                                   insOpts         opt /* = INS_OPTS_NONE */,
+                                   insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */,
+                                   insSveMovOpts   mopt /* = INS_SVE_MOV_OPTS_UNPRED */)
+{
+    switch (ins)
+    {
+        case INS_sve_and:
+        case INS_sve_bic:
+        case INS_sve_eor:
+        case INS_sve_fmad:
+        case INS_sve_fmla:
+        case INS_sve_fmls:
+        case INS_sve_fmsb:
+        case INS_sve_fnmad:
+        case INS_sve_fnmla:
+        case INS_sve_fnmls:
+        case INS_sve_fnmsb:
+        case INS_sve_mad:
+        case INS_sve_mla:
+        case INS_sve_mls:
+        case INS_sve_msb:
+        case INS_sve_orr:
+            // Embedded masked RMW instructions
+            assert(isValidMovprfxReg(mopt, reg1, reg3, reg4, reg5));
+            emitInsSve_Mov(INS_sve_movprfx, EA_SCALABLE, reg1, reg3, /* canSkip */ true, opt, mopt, reg2);
+            emitInsSve_R_R_R_R(ins, attr, reg1, reg2, reg4, reg5, opt, sopt);
+            return;
+
+        default:
+            unreached();
+            break;
+    }
+}
+
+/*****************************************************************************
+ *
+ *  Add a SVE instruction referencing five registers and a constant.
+ */
+
+void emitter::emitInsSve_R_R_R_R_R_I(instruction     ins,
+                                     emitAttr        attr,
+                                     regNumber       reg1,
+                                     regNumber       reg2,
+                                     regNumber       reg3,
+                                     regNumber       reg4,
+                                     regNumber       reg5,
+                                     ssize_t         imm,
+                                     insOpts         opt /* = INS_OPTS_NONE */,
+                                     insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */,
+                                     insSveMovOpts   mopt /* = INS_SVE_MOV_OPTS_UNPRED */)
+{
+    switch (ins)
+    {
+        case INS_sve_fcmla:
+            // Embedded masked RMW instructions
+            assert(isValidMovprfxReg(mopt, reg1, reg3, reg4, reg5));
+            emitInsSve_Mov(INS_sve_movprfx, EA_SCALABLE, reg1, reg3, /* canSkip */ true, opt, mopt, reg2);
+            emitInsSve_R_R_R_R_I(ins, attr, reg1, reg2, reg4, reg5, imm, opt, sopt);
+            return;
+
+        default:
+            unreached();
+            break;
+    }
 }
 
 /*****************************************************************************
@@ -7243,6 +7805,61 @@ void emitter::emitIns_R_PATTERN_I(instruction   ins,
 
     dispIns(id);
     appendToCurIG(id);
+}
+
+/*****************************************************************************
+ *
+ *  Add a SVE instruction referencing two registers, a SVE Pattern and an immediate.
+ */
+
+void emitter::emitIns_R_R_PATTERN_I(instruction     ins,
+                                    emitAttr        attr,
+                                    regNumber       reg1,
+                                    regNumber       reg2,
+                                    insSvePattern   pattern,
+                                    ssize_t         imm,
+                                    insOpts         opt /* = INS_OPTS_NONE */,
+                                    insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */,
+                                    insSveMovOpts   mopt /* = INS_SVE_MOV_OPTS_UNPRED */)
+{
+    switch (ins)
+    {
+        case INS_sve_sqinch:
+        case INS_sve_uqinch:
+        case INS_sve_sqdech:
+        case INS_sve_uqdech:
+        case INS_sve_sqincw:
+        case INS_sve_uqincw:
+        case INS_sve_sqdecw:
+        case INS_sve_uqdecw:
+        case INS_sve_sqincd:
+        case INS_sve_uqincd:
+        case INS_sve_sqdecd:
+        case INS_sve_uqdecd:
+            // RMW instructions
+            if (!insOptsNone(opt))
+            {
+                // Vector variant
+                assert(insSveMovOptsUnpredicated(mopt));
+                emitInsSve_Mov(INS_sve_movprfx, EA_SCALABLE, reg1, reg2, /* canSkip */ true);
+                emitIns_R_PATTERN_I(ins, attr, reg1, pattern, imm, opt);
+                return;
+            }
+            // Scalar variant
+            FALLTHROUGH;
+
+        case INS_sve_sqincb:
+        case INS_sve_uqincb:
+        case INS_sve_sqdecb:
+        case INS_sve_uqdecb:
+            emitIns_Mov(INS_mov, attr, reg1, reg2, /* canSkip */ true);
+            emitIns_R_PATTERN_I(ins, attr, reg1, pattern, imm, opt);
+            return;
+
+        default:
+            unreached();
+            break;
+    }
 }
 
 /*****************************************************************************
@@ -14620,15 +15237,15 @@ void emitter::emitDispInsSveHelp(instrDesc* id)
 
         // <Zd>.D, <Zn>.D, <Zm>.D
         case IF_SVE_AU_3A: // ...........mmmmm ......nnnnnddddd -- SVE bitwise logical operations (unpredicated)
-            emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
+            emitDispSveReg(id->idReg1(), INS_OPTS_SCALABLE_D, true); // ddddd
             if (id->idIns() == INS_sve_mov)
             {
-                emitDispSveReg(id->idReg2(), id->idInsOpt(), false); // nnnnn/mmmmm
+                emitDispSveReg(id->idReg2(), INS_OPTS_SCALABLE_D, false); // nnnnn/mmmmm
             }
             else
             {
-                emitDispSveReg(id->idReg2(), id->idInsOpt(), true);  // nnnnn/mmmmm
-                emitDispSveReg(id->idReg3(), id->idInsOpt(), false); // mmmmm/aaaaa
+                emitDispSveReg(id->idReg2(), INS_OPTS_SCALABLE_D, true);  // nnnnn/mmmmm
+                emitDispSveReg(id->idReg3(), INS_OPTS_SCALABLE_D, false); // mmmmm/aaaaa
             }
             break;
 
@@ -14904,7 +15521,6 @@ void emitter::emitDispInsSveHelp(instrDesc* id)
             break;
 
         // <R><dn>, <Pg>, <R><dn>, <Zm>.<T>
-        case IF_SVE_CN_3A: // ........xx...... ...gggmmmmmddddd -- SVE conditionally extract element to SIMD&FP scalar
         case IF_SVE_CO_3A: // ........xx...... ...gggmmmmmddddd -- SVE conditionally extract element to general register
             emitDispReg(id->idReg1(), size, true);                                                 // ddddd
             emitDispLowPredicateReg(id->idReg2(), insGetPredicateType(fmt), id->idInsOpt(), true); // ggg
@@ -14913,10 +15529,11 @@ void emitter::emitDispInsSveHelp(instrDesc* id)
             break;
 
         // <V><dn>, <Pg>, <V><dn>, <Zm>.<T>
+        case IF_SVE_CN_3A: // ........xx...... ...gggmmmmmddddd -- SVE conditionally extract element to SIMD&FP scalar
         case IF_SVE_HJ_3A: // ........xx...... ...gggmmmmmddddd -- SVE floating-point serial reduction (predicated)
-            emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);                                 // ddddd
+            emitDispReg(id->idReg1(), optGetSveElemsize(id->idInsOpt()), true);                    // ddddd
             emitDispLowPredicateReg(id->idReg2(), insGetPredicateType(fmt), id->idInsOpt(), true); // ggg
-            emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);                                 // ddddd
+            emitDispReg(id->idReg1(), optGetSveElemsize(id->idInsOpt()), true);                    // ddddd
             emitDispSveReg(id->idReg3(), id->idInsOpt(), false);                                   // mmmmm
             break;
 
@@ -14925,7 +15542,7 @@ void emitter::emitDispInsSveHelp(instrDesc* id)
         case IF_SVE_AK_3A: // ........xx...... ...gggnnnnnddddd -- SVE integer min/max reduction (predicated)
         case IF_SVE_CR_3A: // ........xx...... ...gggnnnnnddddd -- SVE extract element to SIMD&FP scalar register
         case IF_SVE_HE_3A: // ........xx...... ...gggnnnnnddddd -- SVE floating-point recursive reduction
-            emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);                                 // ddddd
+            emitDispReg(id->idReg1(), optGetSveElemsize(id->idInsOpt()), true);                    // ddddd
             emitDispLowPredicateReg(id->idReg2(), insGetPredicateType(fmt), id->idInsOpt(), true); // ggg
             emitDispSveReg(id->idReg3(), id->idInsOpt(), false);                                   // mmmmm
             break;
@@ -18612,6 +19229,7 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
         case IF_SVE_AC_3A: // <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
         case IF_SVE_AO_3A: // <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.D
         case IF_SVE_CM_3A: // <Zdn>.<T>, <Pg>, <Zdn>.<T>, <Zm>.<T>
+        case IF_SVE_CV_3B: // <Zdn>.<T>, <Pv>, <Zdn>.<T>, <Zm>.<T>
         case IF_SVE_GP_3A: // <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>, <const>
         case IF_SVE_GR_3A: // <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
         case IF_SVE_HL_3A: // <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>

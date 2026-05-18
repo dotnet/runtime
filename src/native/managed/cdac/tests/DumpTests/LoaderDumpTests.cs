@@ -15,7 +15,6 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 public class LoaderDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "MultiModule";
-    protected override string DumpType => "full";
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]

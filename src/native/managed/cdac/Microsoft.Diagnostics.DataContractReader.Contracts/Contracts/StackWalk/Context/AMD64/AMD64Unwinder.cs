@@ -51,7 +51,12 @@ internal class AMD64Unwinder(Target target)
         TargetPointer controlPC = context.InstructionPointer;
 
         TargetPointer imageBase = _eman.GetUnwindInfoBaseAddress(cbh);
-        Data.RuntimeFunction functionEntry = _target.ProcessedData.GetOrAdd<Data.RuntimeFunction>(_eman.GetUnwindInfo(cbh));
+        TargetPointer unwindInfoAddr = _eman.GetUnwindInfo(cbh);
+
+        if (unwindInfoAddr == TargetPointer.Null)
+            return false;
+
+        Data.RuntimeFunction functionEntry = _target.ProcessedData.GetOrAdd<Data.RuntimeFunction>(unwindInfoAddr);
         if (functionEntry.EndAddress is null)
             return false;
         if (GetUnwindInfoHeader(imageBase + functionEntry.UnwindData) is not UnwindInfoHeader unwindInfo)
@@ -1262,50 +1267,13 @@ internal class AMD64Unwinder(Target target)
 
     private static bool IsRexPrefix(byte b) => (b & 0xf0) == 0x40;
 
-    private static TargetPointer GetRegister(AMD64Context context, byte register) => register switch
-    {
-        0 => context.Rax,
-        1 => context.Rcx,
-        2 => context.Rdx,
-        3 => context.Rbx,
-        4 => context.Rsp,
-        5 => context.Rbp,
-        6 => context.Rsi,
-        7 => context.Rdi,
-        8 => context.R8,
-        9 => context.R9,
-        10 => context.R10,
-        11 => context.R11,
-        12 => context.R12,
-        13 => context.R13,
-        14 => context.R14,
-        15 => context.R15,
-        _ => throw new ArgumentOutOfRangeException(nameof(register), "Invalid register number for AMD64 context.")
-    };
+    private static TargetPointer GetRegister(AMD64Context context, byte register)
+        => context.TryReadRegister(register, out TargetNUInt value) ? value.Value : throw new ArgumentOutOfRangeException(nameof(register), "Invalid register number for AMD64 context.");
 
     private static void SetRegister(ref AMD64Context context, byte register, TargetPointer value)
     {
-        switch (register)
-        {
-            case 0: context.Rax = value; break;
-            case 1: context.Rcx = value; break;
-            case 2: context.Rdx = value; break;
-            case 3: context.Rbx = value; break;
-            case 4: context.Rsp = value; break;
-            case 5: context.Rbp = value; break;
-            case 6: context.Rsi = value; break;
-            case 7: context.Rdi = value; break;
-            case 8: context.R8 = value; break;
-            case 9: context.R9 = value; break;
-            case 10: context.R10 = value; break;
-            case 11: context.R11 = value; break;
-            case 12: context.R12 = value; break;
-            case 13: context.R13 = value; break;
-            case 14: context.R14 = value; break;
-            case 15: context.R15 = value; break;
-            default:
-                throw new ArgumentOutOfRangeException(nameof(register), "Invalid register number for AMD64 context.");
-        }
+        if (!context.TrySetRegister(register, new TargetNUInt(value)))
+            throw new ArgumentOutOfRangeException(nameof(register), "Invalid register number for AMD64 context.");
     }
 
     private static void UnwinderAssert(bool condition, string? message = null)

@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
-
-
 Module Name:
 
     seh-unwind.cpp
@@ -13,9 +10,6 @@ Abstract:
 
     Implementation of exception API functions based on
     the Unwind API.
-
-
-
 --*/
 
 #ifdef HOST_UNIX
@@ -504,142 +498,6 @@ void UnwindContextToWinContext(unw_cursor_t *cursor, CONTEXT *winContext)
 #endif
 }
 
-static void GetContextPointer(unw_cursor_t *cursor, unw_context_t *unwContext, int reg, SIZE_T **contextPointer)
-{
-#if defined(HAVE_UNW_GET_SAVE_LOC)
-    unw_save_loc_t saveLoc;
-    unw_get_save_loc(cursor, reg, &saveLoc);
-    if (saveLoc.type == UNW_SLT_MEMORY)
-    {
-        SIZE_T *pLoc = (SIZE_T *)saveLoc.u.addr;
-        // Filter out fake save locations that point to unwContext
-        if (unwContext == NULL || (pLoc < (SIZE_T *)unwContext) || ((SIZE_T *)(unwContext + 1) <= pLoc))
-            *contextPointer = (SIZE_T *)saveLoc.u.addr;
-    }
-#else
-    // Returning NULL indicates that we don't have context pointers available
-    *contextPointer = NULL;
-#endif
-}
-
-void GetContextPointers(unw_cursor_t *cursor, unw_context_t *unwContext, KNONVOLATILE_CONTEXT_POINTERS *contextPointers)
-{
-#if (defined(HOST_UNIX) && defined(HOST_AMD64)) || (defined(HOST_WINDOWS) && defined(TARGET_AMD64))
-    GetContextPointer(cursor, unwContext, UNW_X86_64_RBP, (SIZE_T **)&contextPointers->Rbp);
-    GetContextPointer(cursor, unwContext, UNW_X86_64_RBX, (SIZE_T **)&contextPointers->Rbx);
-    GetContextPointer(cursor, unwContext, UNW_X86_64_R12, (SIZE_T **)&contextPointers->R12);
-    GetContextPointer(cursor, unwContext, UNW_X86_64_R13, (SIZE_T **)&contextPointers->R13);
-    GetContextPointer(cursor, unwContext, UNW_X86_64_R14, (SIZE_T **)&contextPointers->R14);
-    GetContextPointer(cursor, unwContext, UNW_X86_64_R15, (SIZE_T **)&contextPointers->R15);
-#elif (defined(HOST_UNIX) && defined(HOST_X86)) || (defined(HOST_WINDOWS) && defined(TARGET_X86))
-    GetContextPointer(cursor, unwContext, UNW_X86_EBX, &contextPointers->Ebx);
-    GetContextPointer(cursor, unwContext, UNW_X86_EBP, &contextPointers->Ebp);
-    GetContextPointer(cursor, unwContext, UNW_X86_ESI, &contextPointers->Esi);
-    GetContextPointer(cursor, unwContext, UNW_X86_EDI, &contextPointers->Edi);
-#elif (defined(HOST_UNIX) && defined(HOST_ARM)) || (defined(HOST_WINDOWS) && defined(TARGET_ARM))
-    GetContextPointer(cursor, unwContext, UNW_ARM_R4, &contextPointers->R4);
-    GetContextPointer(cursor, unwContext, UNW_ARM_R5, &contextPointers->R5);
-    GetContextPointer(cursor, unwContext, UNW_ARM_R6, &contextPointers->R6);
-    GetContextPointer(cursor, unwContext, UNW_ARM_R7, &contextPointers->R7);
-    GetContextPointer(cursor, unwContext, UNW_ARM_R8, &contextPointers->R8);
-    GetContextPointer(cursor, unwContext, UNW_ARM_R9, &contextPointers->R9);
-    GetContextPointer(cursor, unwContext, UNW_ARM_R10, &contextPointers->R10);
-    GetContextPointer(cursor, unwContext, UNW_ARM_R11, &contextPointers->R11);
-    GetContextPointer(cursor, unwContext, UNW_ARM_D8, (SIZE_T **)&contextPointers->D8);
-    GetContextPointer(cursor, unwContext, UNW_ARM_D9, (SIZE_T **)&contextPointers->D9);
-    GetContextPointer(cursor, unwContext, UNW_ARM_D10, (SIZE_T **)&contextPointers->D10);
-    GetContextPointer(cursor, unwContext, UNW_ARM_D11, (SIZE_T **)&contextPointers->D11);
-    GetContextPointer(cursor, unwContext, UNW_ARM_D12, (SIZE_T **)&contextPointers->D12);
-    GetContextPointer(cursor, unwContext, UNW_ARM_D13, (SIZE_T **)&contextPointers->D13);
-    GetContextPointer(cursor, unwContext, UNW_ARM_D14, (SIZE_T **)&contextPointers->D14);
-    GetContextPointer(cursor, unwContext, UNW_ARM_D15, (SIZE_T **)&contextPointers->D15);
-#elif (defined(HOST_UNIX) && defined(HOST_ARM64)) || (defined(HOST_WINDOWS) && defined(TARGET_ARM64))
-    GetContextPointer(cursor, unwContext, UNW_AARCH64_X19, (SIZE_T**)&contextPointers->X19);
-    GetContextPointer(cursor, unwContext, UNW_AARCH64_X20, (SIZE_T**)&contextPointers->X20);
-    GetContextPointer(cursor, unwContext, UNW_AARCH64_X21, (SIZE_T**)&contextPointers->X21);
-    GetContextPointer(cursor, unwContext, UNW_AARCH64_X22, (SIZE_T**)&contextPointers->X22);
-    GetContextPointer(cursor, unwContext, UNW_AARCH64_X23, (SIZE_T**)&contextPointers->X23);
-    GetContextPointer(cursor, unwContext, UNW_AARCH64_X24, (SIZE_T**)&contextPointers->X24);
-    GetContextPointer(cursor, unwContext, UNW_AARCH64_X25, (SIZE_T**)&contextPointers->X25);
-    GetContextPointer(cursor, unwContext, UNW_AARCH64_X26, (SIZE_T**)&contextPointers->X26);
-    GetContextPointer(cursor, unwContext, UNW_AARCH64_X27, (SIZE_T**)&contextPointers->X27);
-    GetContextPointer(cursor, unwContext, UNW_AARCH64_X28, (SIZE_T**)&contextPointers->X28);
-    GetContextPointer(cursor, unwContext, UNW_AARCH64_X29, (SIZE_T**)&contextPointers->Fp);
-    GetContextPointer(cursor, unwContext, UNW_AARCH64_V8, (SIZE_T**)&contextPointers->D8);
-    GetContextPointer(cursor, unwContext, UNW_AARCH64_V9, (SIZE_T**)&contextPointers->D9);
-    GetContextPointer(cursor, unwContext, UNW_AARCH64_V10, (SIZE_T**)&contextPointers->D10);
-    GetContextPointer(cursor, unwContext, UNW_AARCH64_V11, (SIZE_T**)&contextPointers->D11);
-    GetContextPointer(cursor, unwContext, UNW_AARCH64_V12, (SIZE_T**)&contextPointers->D12);
-    GetContextPointer(cursor, unwContext, UNW_AARCH64_V13, (SIZE_T**)&contextPointers->D13);
-    GetContextPointer(cursor, unwContext, UNW_AARCH64_V14, (SIZE_T**)&contextPointers->D14);
-    GetContextPointer(cursor, unwContext, UNW_AARCH64_V15, (SIZE_T**)&contextPointers->D15);
-#elif (defined(HOST_UNIX) && defined(HOST_S390X))
-    GetContextPointer(cursor, unwContext, UNW_S390X_R6, (SIZE_T **)&contextPointers->R6);
-    GetContextPointer(cursor, unwContext, UNW_S390X_R7, (SIZE_T **)&contextPointers->R7);
-    GetContextPointer(cursor, unwContext, UNW_S390X_R8, (SIZE_T **)&contextPointers->R8);
-    GetContextPointer(cursor, unwContext, UNW_S390X_R9, (SIZE_T **)&contextPointers->R9);
-    GetContextPointer(cursor, unwContext, UNW_S390X_R10, (SIZE_T **)&contextPointers->R10);
-    GetContextPointer(cursor, unwContext, UNW_S390X_R11, (SIZE_T **)&contextPointers->R11);
-    GetContextPointer(cursor, unwContext, UNW_S390X_R12, (SIZE_T **)&contextPointers->R12);
-    GetContextPointer(cursor, unwContext, UNW_S390X_R13, (SIZE_T **)&contextPointers->R13);
-    GetContextPointer(cursor, unwContext, UNW_S390X_R14, (SIZE_T **)&contextPointers->R14);
-    GetContextPointer(cursor, unwContext, UNW_S390X_R15, (SIZE_T **)&contextPointers->R15);
-#elif (defined(HOST_UNIX) && defined(HOST_LOONGARCH64))
-    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R1, (SIZE_T **)&contextPointers->Ra);
-    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R22, (SIZE_T **)&contextPointers->Fp);
-    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R23, (SIZE_T **)&contextPointers->S0);
-    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R24, (SIZE_T **)&contextPointers->S1);
-    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R25, (SIZE_T **)&contextPointers->S2);
-    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R26, (SIZE_T **)&contextPointers->S3);
-    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R27, (SIZE_T **)&contextPointers->S4);
-    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R28, (SIZE_T **)&contextPointers->S5);
-    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R29, (SIZE_T **)&contextPointers->S6);
-    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R30, (SIZE_T **)&contextPointers->S7);
-    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R31, (SIZE_T **)&contextPointers->S8);
-#elif (defined(HOST_UNIX) && defined(HOST_RISCV64))
-    // https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/2d865a2964fe06bfc569ab00c74e152b582ed764/riscv-cc.adoc
-
-    GetContextPointer(cursor, unwContext, UNW_RISCV_X1, (SIZE_T **)&contextPointers->Ra);
-    GetContextPointer(cursor, unwContext, UNW_RISCV_X3, (SIZE_T **)&contextPointers->Gp);
-    GetContextPointer(cursor, unwContext, UNW_RISCV_X4, (SIZE_T **)&contextPointers->Tp);
-    GetContextPointer(cursor, unwContext, UNW_RISCV_X8, (SIZE_T **)&contextPointers->Fp);
-    GetContextPointer(cursor, unwContext, UNW_RISCV_X9, (SIZE_T **)&contextPointers->S1);
-    GetContextPointer(cursor, unwContext, UNW_RISCV_X18, (SIZE_T **)&contextPointers->S2);
-    GetContextPointer(cursor, unwContext, UNW_RISCV_X19, (SIZE_T **)&contextPointers->S3);
-    GetContextPointer(cursor, unwContext, UNW_RISCV_X20, (SIZE_T **)&contextPointers->S4);
-    GetContextPointer(cursor, unwContext, UNW_RISCV_X21, (SIZE_T **)&contextPointers->S5);
-    GetContextPointer(cursor, unwContext, UNW_RISCV_X22, (SIZE_T **)&contextPointers->S6);
-    GetContextPointer(cursor, unwContext, UNW_RISCV_X23, (SIZE_T **)&contextPointers->S7);
-    GetContextPointer(cursor, unwContext, UNW_RISCV_X24, (SIZE_T **)&contextPointers->S8);
-    GetContextPointer(cursor, unwContext, UNW_RISCV_X25, (SIZE_T **)&contextPointers->S9);
-    GetContextPointer(cursor, unwContext, UNW_RISCV_X26, (SIZE_T **)&contextPointers->S10);
-    GetContextPointer(cursor, unwContext, UNW_RISCV_X27, (SIZE_T **)&contextPointers->S11);
-#elif (defined(HOST_UNIX) && defined(HOST_POWERPC64))
-    GetContextPointer(cursor, unwContext, UNW_PPC64_R14, (SIZE_T **)&contextPointers->R14);
-    GetContextPointer(cursor, unwContext, UNW_PPC64_R15, (SIZE_T **)&contextPointers->R15);
-    GetContextPointer(cursor, unwContext, UNW_PPC64_R16, (SIZE_T **)&contextPointers->R16);
-    GetContextPointer(cursor, unwContext, UNW_PPC64_R17, (SIZE_T **)&contextPointers->R17);
-    GetContextPointer(cursor, unwContext, UNW_PPC64_R18, (SIZE_T **)&contextPointers->R18);
-    GetContextPointer(cursor, unwContext, UNW_PPC64_R19, (SIZE_T **)&contextPointers->R19);
-    GetContextPointer(cursor, unwContext, UNW_PPC64_R20, (SIZE_T **)&contextPointers->R20);
-    GetContextPointer(cursor, unwContext, UNW_PPC64_R21, (SIZE_T **)&contextPointers->R21);
-    GetContextPointer(cursor, unwContext, UNW_PPC64_R22, (SIZE_T **)&contextPointers->R22);
-    GetContextPointer(cursor, unwContext, UNW_PPC64_R23, (SIZE_T **)&contextPointers->R23);
-    GetContextPointer(cursor, unwContext, UNW_PPC64_R24, (SIZE_T **)&contextPointers->R24);
-    GetContextPointer(cursor, unwContext, UNW_PPC64_R25, (SIZE_T **)&contextPointers->R25);
-    GetContextPointer(cursor, unwContext, UNW_PPC64_R26, (SIZE_T **)&contextPointers->R26);
-    GetContextPointer(cursor, unwContext, UNW_PPC64_R27, (SIZE_T **)&contextPointers->R27);
-    GetContextPointer(cursor, unwContext, UNW_PPC64_R28, (SIZE_T **)&contextPointers->R28);
-    GetContextPointer(cursor, unwContext, UNW_PPC64_R29, (SIZE_T **)&contextPointers->R29);
-    GetContextPointer(cursor, unwContext, UNW_PPC64_R30, (SIZE_T **)&contextPointers->R30);
-    GetContextPointer(cursor, unwContext, UNW_PPC64_R31, (SIZE_T **)&contextPointers->R31);
-#elif defined(HOST_WASM)
-    ASSERT("GetContextPointers not implemented for WASM");
-#else
-#error unsupported architecture
-#endif
-}
-
 #ifndef HOST_WINDOWS
 
 // Frame pointer relative offset of a local containing a pointer to the windows style context of a location
@@ -649,7 +507,7 @@ int g_hardware_exception_context_locvar_offset = 0;
 // where an activation signal interrupted the thread.
 int g_inject_activation_context_locvar_offset = 0;
 
-BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextPointers)
+BOOL PAL_VirtualUnwind(CONTEXT *context)
 {
     int st;
     unw_context_t unwContext;
@@ -779,10 +637,6 @@ BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextP
         CONTEXTSetPC(context, 0);
     }
 
-    if (contextPointers != NULL)
-    {
-        GetContextPointers(&cursor, &unwContext, contextPointers);
-    }
     return TRUE;
 }
 
@@ -952,7 +806,7 @@ RaiseException(IN DWORD dwExceptionCode,
     CONTEXT_CaptureContext(contextRecord);
 
     // We have to unwind one level to get the actual context user code could be resumed at.
-    PAL_VirtualUnwind(contextRecord, NULL);
+    PAL_VirtualUnwind(contextRecord);
 #endif // !TARGET_WASM
 
     exceptionRecord->ExceptionAddress = (void *)CONTEXTGetPC(contextRecord);

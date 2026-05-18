@@ -49,7 +49,7 @@ public static partial class DataContractSerializerTests
             dcs.WriteObject(ms, myFamily);
             ms.Position = 0;
             var newFamily = (FamilyForStress)dcs.ReadObject(ms);
-            Assert.StrictEqual(myFamily.Members.Length, newFamily.Members.Length);
+            Assert.Equal(myFamily.Members.Length, newFamily.Members.Length);
             for (int i = 0; i < myFamily.Members.Length; ++i)
             {
                 Assert.Equal(myFamily.Members[i].Name, newFamily.Members[i].Name);
@@ -60,6 +60,43 @@ public static partial class DataContractSerializerTests
             {
                 Assert.Equal(resultMembers[i], resultMembers[i + length]);
             }
+        }
+    }
+
+    // Parameterized coverage for ObjectToIdCache across different hash-table sizes.
+    // count controls how many shared objects are in the graph, which determines the
+    // fill level of the internal open-addressing table and exercises both the normal
+    // and wrap-around probe chains through the public API.
+    [Theory]
+    [InlineData(3)]
+    [InlineData(10)]
+    [InlineData(50)]
+    [InlineData(500)]
+    public static void DCS_SurrogateSharedReferences_RoundTrips(int count)
+    {
+        DataContractSerializer dcs = new DataContractSerializer(typeof(FamilyForStress));
+        dcs.SetSerializationSurrogateProvider(new MyPersonSurrogateProvider());
+
+        var members = new NonSerializablePersonForStress[2 * count];
+        for (int i = 0; i < count; i++)
+        {
+            // Each object appears at position i and i+count; IsReference=true means
+            // the second occurrence is emitted as an objref back to the first.
+            var m = new NonSerializablePersonForStress("person" + i, i);
+            members[i] = m;
+            members[i + count] = m;
+        }
+
+        MemoryStream ms = new MemoryStream();
+        dcs.WriteObject(ms, new FamilyForStress { Members = members });
+        ms.Position = 0;
+        var resultMembers = ((FamilyForStress)dcs.ReadObject(ms)).Members;
+
+        Assert.Equal(members.Length, resultMembers.Length);
+        for (int i = 0; i < count; i++)
+        {
+            // Reference equality: both slots must point to the same deserialized object.
+            Assert.Same(resultMembers[i], resultMembers[i + count]);
         }
     }
 }

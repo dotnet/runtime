@@ -110,12 +110,27 @@ namespace System.IO.Compression
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(destinationFileName);
 
+            long preallocationSize = 0;
+            try
+            {
+                // .Length can throw if the entry stream has been opened for write.
+                // For archives in Update mode, we have no way to check if the entry
+                // was opened for write, so we attempt to get the length and if it fails
+                // we just skip preallocation.
+                if (source.Archive is ZipArchive archive && archive.Mode != ZipArchiveMode.Create)
+                {
+                    preallocationSize = source.Length;
+                }
+            }
+            catch (InvalidOperationException) { }
+
             fileStreamOptions = new()
             {
                 Access = FileAccess.Write,
                 Mode = overwrite ? FileMode.Create : FileMode.CreateNew,
                 Share = FileShare.None,
                 BufferSize = ZipFile.FileStreamBufferSize,
+                PreallocationSize = preallocationSize,
                 Options = useAsync ? FileOptions.Asynchronous : FileOptions.None
             };
 

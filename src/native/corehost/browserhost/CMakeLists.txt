@@ -76,7 +76,7 @@ list(APPEND NATIVE_LIBS
     ${CMAKE_ICU_DIR}/lib/libicudata.a
     ${SHARED_LIB_DESTINATION}/libSystem.IO.Compression.Native.a
     ${SHARED_LIB_DESTINATION}/libz.a
-    # WASM-TODO respect  $(InvariantTimezone)
+    # WASM-TODO respect  $(InvariantTimezone) - https://github.com/dotnet/runtime/issues/126101
     # libSystem.Native.TimeZoneData.Invariant.a
     ${SHARED_LIB_DESTINATION}/libSystem.Native.TimeZoneData.a
 )
@@ -107,10 +107,10 @@ if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)
 endif ()
 
 target_link_options(browserhost PRIVATE
-    -sINITIAL_MEMORY=134217728
+    -sINITIAL_MEMORY=33554432
     -sMAXIMUM_MEMORY=2147483648
     -sALLOW_MEMORY_GROWTH=1
-    -sSTACK_SIZE=5MB
+    -sSTACK_SIZE=2MB
     -sWASM_BIGINT=1
     -sMODULARIZE=1
     -sEXPORT_ES6=1
@@ -121,7 +121,7 @@ target_link_options(browserhost PRIVATE
     -sEXPORT_NAME=createDotnetRuntime
     -sENVIRONMENT=web,webview,worker,node,shell
     --emit-symbol-map
-    -Wl,-error-limit=0)
+    -Wl,--error-limit=0)
 
 target_link_libraries(browserhost PRIVATE
     BrowserHost-Static

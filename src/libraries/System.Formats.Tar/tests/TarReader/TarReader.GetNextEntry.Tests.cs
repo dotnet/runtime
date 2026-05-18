@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using Xunit;
@@ -9,6 +10,8 @@ namespace System.Formats.Tar.Tests
 {
     public class TarReader_GetNextEntry_Tests : TarTestsBase
     {
+        private const int MaxMetadataBlockSize = 1024 * 1024;
+
         [Fact]
         public void MalformedArchive_TooSmall()
         {
@@ -415,6 +418,84 @@ namespace System.Formats.Tar.Tests
             Assert.Null(reader.GetNextEntry());
         }
 
+        public static IEnumerable<object[]> EAPathOverrideData()
+        {
+            // (headerName, eaPath, expectedName)
+            yield return new object[] { "data/report.txt", "config/settings.txt", "config/settings.txt" };
+            yield return new object[] { "../../escape.txt", "safe.txt", "safe.txt" };
+            yield return new object[] { "safe.txt", "../../escape.txt", "../../escape.txt" };
+        }
+
+        [Theory]
+        [MemberData(nameof(EAPathOverrideData))]
+        public void PaxReader_EAPathOverridesHeaderName(string headerName, string eaPath, string expectedName)
+        {
+            byte[] content = "test data"u8.ToArray();
+            byte[] archive = BuildRawPaxArchiveWithEAPathOverride(headerName, eaPath, content);
+
+            using var stream = new MemoryStream(archive);
+            using var reader = new TarReader(stream);
+            TarEntry entry = reader.GetNextEntry();
+
+            Assert.NotNull(entry);
+            Assert.Equal(expectedName, entry.Name);
+        }
+
+        [Fact]
+        public void PaxReader_EALinkpathOverridesHeaderLinkname()
+        {
+            byte[] archive = BuildRawPaxArchiveSymlink("mylink", "mylink", "./safe.txt", "./other.txt");
+
+            using var stream = new MemoryStream(archive);
+            using var reader = new TarReader(stream);
+            TarEntry entry = reader.GetNextEntry();
+
+            Assert.NotNull(entry);
+            Assert.Equal("./other.txt", entry.LinkName);
+        }
+
+        public static IEnumerable<object[]> EASizeOverrideData()
+        {
+            // (actualDataSize, headerSize, eaSize) — EA size always takes precedence
+            yield return new object[] { 10, 10L, 50L };   // eaSize > headerSize (larger)
+            yield return new object[] { 100, 100L, 25L }; // eaSize < headerSize (smaller)
+        }
+
+        [Theory]
+        [MemberData(nameof(EASizeOverrideData))]
+        public void PaxReader_EASizeOverridesHeaderSize(int actualDataSize, long headerSize, long eaSize)
+        {
+            byte[] actualData = new byte[actualDataSize];
+            Array.Fill<byte>(actualData, (byte)'X');
+
+            byte[] archive = BuildRawPaxArchiveWithSizeOverride("file.bin", "file.bin", actualData, headerSize, eaSize);
+
+            using var stream = new MemoryStream(archive);
+            using var reader = new TarReader(stream);
+            TarEntry entry = reader.GetNextEntry(copyData: true);
+
+            Assert.NotNull(entry);
+            Assert.Equal(eaSize, entry.Length);
+        }
+
+        [Fact]
+        public void PaxReader_EntryLengthAndDataStreamLengthAreConsistent()
+        {
+            byte[] actualData = "ABCDEFGHIJ"u8.ToArray();
+            long headerSize = 10;
+            long eaSize = 50;
+
+            byte[] archive = BuildRawPaxArchiveWithSizeOverride("file.bin", "file.bin", actualData, headerSize, eaSize);
+
+            using var stream = new MemoryStream(archive);
+            using var reader = new TarReader(stream);
+            TarEntry entry = reader.GetNextEntry(copyData: true);
+
+            Assert.NotNull(entry);
+            Assert.NotNull(entry.DataStream);
+            Assert.Equal(entry.Length, entry.DataStream.Length);
+        }
+
         [Fact]
         public void Read_Archive_With_Unsupported_EntryType()
         {
@@ -544,6 +625,71 @@ namespace System.Formats.Tar.Tests
             Assert.Equal(longLinkTarget, entry.LinkName);
             Assert.Equal(TarEntryType.SymbolicLink, entry.EntryType);
             Assert.Null(reader2.GetNextEntry());
+        }
+
+        [Theory]
+        [InlineData("PaxExtendedAttributes", MaxMetadataBlockSize - 100)]
+        [InlineData("GnuLongPath", MaxMetadataBlockSize)]
+        [InlineData("GnuLongLink", MaxMetadataBlockSize)]
+        public void MetadataBlock_UnderMaxSize_Succeeds(string metadataType, int size)
+        {
+            using MemoryStream archive = new MemoryStream();
+            WriteMetadataEntry(archive, metadataType, size);
+
+            archive.Seek(0, SeekOrigin.Begin);
+            using TarReader reader = new TarReader(archive);
+            Assert.NotNull(reader.GetNextEntry());
+        }
+
+        [Theory]
+        [InlineData("PaxExtendedAttributes", MaxMetadataBlockSize)]
+        [InlineData("GnuLongPath", MaxMetadataBlockSize + 1)]
+        [InlineData("GnuLongLink", MaxMetadataBlockSize + 1)]
+        public void MetadataBlock_ExceedsMaxSize_Throws(string metadataType, int size)
+        {
+            using MemoryStream archive = new MemoryStream();
+            WriteMetadataEntry(archive, metadataType, size);
+
+            archive.Seek(0, SeekOrigin.Begin);
+            using TarReader reader = new TarReader(archive);
+            Assert.Throws<InvalidOperationException>(() => reader.GetNextEntry());
+        }
+
+        // Writes a TAR entry with metadata of the specified size.
+        // For GNU types, size is the on-disk block size (string length = size - 1 for null terminator).
+        // For PAX, size is the extended attribute value length; the total block will be
+        // slightly larger due to framing overhead (length prefixes, key names, default attributes).
+        private static void WriteMetadataEntry(MemoryStream archive, string metadataType, int size)
+        {
+            switch (metadataType)
+            {
+                case "PaxExtendedAttributes":
+                    var extendedAttributes = new Dictionary<string, string>
+                    {
+                        ["bigkey"] = new string('x', size)
+                    };
+                    using (TarWriter paxWriter = new TarWriter(archive, TarEntryFormat.Pax, leaveOpen: true))
+                    {
+                        paxWriter.WriteEntry(new PaxTarEntry(TarEntryType.RegularFile, "test.txt", extendedAttributes));
+                    }
+                    break;
+
+                case "GnuLongPath":
+                    using (TarWriter gnuPathWriter = new TarWriter(archive, TarEntryFormat.Gnu, leaveOpen: true))
+                    {
+                        gnuPathWriter.WriteEntry(new GnuTarEntry(TarEntryType.RegularFile, new string('a', size - 1)));
+                    }
+                    break;
+
+                case "GnuLongLink":
+                    using (TarWriter gnuLinkWriter = new TarWriter(archive, TarEntryFormat.Gnu, leaveOpen: true))
+                    {
+                        GnuTarEntry entry = new GnuTarEntry(TarEntryType.SymbolicLink, "test.txt");
+                        entry.LinkName = new string('a', size - 1);
+                        gnuLinkWriter.WriteEntry(entry);
+                    }
+                    break;
+            }
         }
     }
 }

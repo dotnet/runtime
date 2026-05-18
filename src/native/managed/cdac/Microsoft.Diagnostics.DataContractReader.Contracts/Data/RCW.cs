@@ -12,17 +12,17 @@ internal sealed class RCW : IData<RCW>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.RCW);
 
-        NextCleanupBucket = target.ReadPointer(address + (ulong)type.Fields[nameof(NextCleanupBucket)].Offset);
-        NextRCW = target.ReadPointer(address + (ulong)type.Fields[nameof(NextRCW)].Offset);
-        Flags = target.Read<uint>(address + (ulong)type.Fields[nameof(Flags)].Offset);
-        CtxCookie = target.ReadPointer(address + (ulong)type.Fields[nameof(CtxCookie)].Offset);
-        CtxEntry = target.ReadPointer(address + (ulong)type.Fields[nameof(CtxEntry)].Offset);
-        IdentityPointer = target.ReadPointer(address + (ulong)type.Fields[nameof(IdentityPointer)].Offset);
-        SyncBlockIndex = target.Read<uint>(address + (ulong)type.Fields[nameof(SyncBlockIndex)].Offset);
-        VTablePtr = target.ReadPointer(address + (ulong)type.Fields[nameof(VTablePtr)].Offset);
-        CreatorThread = target.ReadPointer(address + (ulong)type.Fields[nameof(CreatorThread)].Offset);
-        RefCount = target.Read<uint>(address + (ulong)type.Fields[nameof(RefCount)].Offset);
-        UnknownPointer = target.ReadPointer(address + (ulong)type.Fields[nameof(UnknownPointer)].Offset);
+        NextCleanupBucket = target.ReadPointerField(address, type, nameof(NextCleanupBucket));
+        NextRCW = target.ReadPointerField(address, type, nameof(NextRCW));
+        Flags = target.ReadField<uint>(address, type, nameof(Flags));
+        CtxCookie = target.ReadPointerField(address, type, nameof(CtxCookie));
+        CtxEntry = target.ReadPointerField(address, type, nameof(CtxEntry));
+        IdentityPointer = target.ReadPointerField(address, type, nameof(IdentityPointer));
+        SyncBlockIndex = target.ReadField<uint>(address, type, nameof(SyncBlockIndex));
+        VTablePtr = target.ReadPointerField(address, type, nameof(VTablePtr));
+        CreatorThread = target.ReadPointerField(address, type, nameof(CreatorThread));
+        RefCount = target.ReadField<uint>(address, type, nameof(RefCount));
+        UnknownPointer = target.ReadPointerField(address, type, nameof(UnknownPointer));
         TargetPointer interfaceEntriesAddr = address + (ulong)type.Fields[nameof(InterfaceEntries)].Offset;
 
         uint cacheSize = target.ReadGlobal<uint>(Constants.Globals.RCWInterfaceCacheSize);

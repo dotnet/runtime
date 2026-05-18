@@ -55,3 +55,10 @@
 #elif defined(HOST_RISCV64)
 #include "unixasmmacrosriscv64.inc"
 #endif
+
+// Mark the stack as non-executable for ELF targets.
+// https://github.com/dotnet/runtime/issues/125469
+#if !defined(__APPLE__)
+.pushsection .note.GNU-stack,"",%progbits
+.popsection
+#endif

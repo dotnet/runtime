@@ -21,7 +21,21 @@ namespace System.Diagnostics
             return Interop.libproc.proc_pidpath(processId);
         }
 
-        internal static ProcessInfo? CreateProcessInfo(int pid, string? processNameFilter = null)
+        internal static string? GetProcessName(int processId, string _ /* machineName */, bool __ /* isRemoteMachine */, ref ProcessInfo? processInfo)
+        {
+            if (processInfo is not null)
+            {
+                return processInfo.ProcessName;
+            }
+            // Return empty string rather than null when the process name can't be determined
+            // to preserve existing macOS behavior where the name defaults to "".
+            return GetProcessName(processId) ?? "";
+        }
+
+        internal static string? GetProcessName(int pid)
+            => GetProcessName(pid, out _);
+
+        private static string? GetProcessName(int pid, out Interop.libproc.proc_taskallinfo? taskInfo, bool getInfo = false)
         {
             // Negative PIDs aren't valid
             ArgumentOutOfRangeException.ThrowIfNegative(pid);
@@ -40,22 +54,32 @@ namespace System.Diagnostics
                 // Ignored
             }
 
-            // Try to get the task info. This can fail if the user permissions don't permit
-            // this user context to query the specified process
-            Interop.libproc.proc_taskallinfo? info = Interop.libproc.GetProcessInfoById(pid);
-
-            // If we could not get the process name from its path, attempt to use the old 15-char
-            // limited process name
-            if (string.IsNullOrEmpty(processName) && info != null)
+            if (string.IsNullOrEmpty(processName) || getInfo)
             {
-                Interop.libproc.proc_taskallinfo temp = info.Value;
-                unsafe { processName = Utf8StringMarshaller.ConvertToManaged(temp.pbsd.pbi_comm); }
+                // Try to get the task info. This can fail if the user permissions don't permit
+                // this user context to query the specified process
+                taskInfo = Interop.libproc.GetProcessInfoById(pid);
+
+                if (taskInfo.HasValue && string.IsNullOrEmpty(processName))
+                {
+                    Interop.libproc.proc_taskallinfo temp = taskInfo.Value;
+                    unsafe { processName = Utf8StringMarshaller.ConvertToManaged(temp.pbsd.pbi_comm); }
+                }
+            }
+            else
+            {
+                taskInfo = default;
             }
 
-            // Fallback to empty string if the process name could not be retrieved in any way
-            processName ??= "";
+            return processName;
+        }
 
-            if (!string.IsNullOrEmpty(processNameFilter) && !string.Equals(processName, processNameFilter, StringComparison.OrdinalIgnoreCase))
+        internal static ProcessInfo? CreateProcessInfo(int pid, string? processNameFilter = null)
+        {
+            Interop.libproc.proc_taskallinfo? info;
+            string processName = GetProcessName(pid, out info, getInfo: true) ?? "";
+
+            if (processNameFilter != null && !processNameFilter.Equals(processName, StringComparison.OrdinalIgnoreCase))
             {
                 return null;
             }

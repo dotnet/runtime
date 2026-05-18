@@ -11,7 +11,7 @@ internal class ResumableFrame : IData<ResumableFrame>
     public ResumableFrame(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.ResumableFrame);
-        TargetContextPtr = target.ReadPointer(address + (ulong)type.Fields[nameof(TargetContextPtr)].Offset);
+        TargetContextPtr = target.ReadPointerField(address, type, nameof(TargetContextPtr));
         Address = address;
     }
 

@@ -147,14 +147,12 @@ inline void CORDbgSetSP(DT_CONTEXT *context, LPVOID rsp)
 #define CORDbgSetFP(context, rbp)
 #define CORDbgGetFP(context) 0
 
-// compare the RIP, RSP, and RBP
 inline BOOL CompareControlRegisters(const DT_CONTEXT * pCtx1, const DT_CONTEXT * pCtx2)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
     if ((pCtx1->Rip == pCtx2->Rip) &&
-        (pCtx1->Rsp == pCtx2->Rsp) &&
-        (pCtx1->Rbp == pCtx2->Rbp))
+        (pCtx1->Rsp == pCtx2->Rsp))
     {
         return TRUE;
     }

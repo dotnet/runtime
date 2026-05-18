@@ -371,4 +371,10 @@
   <data name="IO_SeekBeforeBegin" xml:space="preserve">
     <value>An attempt was made to move the position before the beginning of the stream.</value>
   </data>
+  <data name="CrcMismatch" xml:space="preserve">
+    <value>The CRC32 checksum of the extracted data does not match the expected value from the archive.</value>
+  </data>
+  <data name="UnexpectedStreamLength" xml:space="preserve">
+    <value>The decompressed data length does not match the expected value from the archive.</value>
+  </data>
 </root>

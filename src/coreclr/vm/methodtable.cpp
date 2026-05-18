@@ -375,7 +375,7 @@ BOOL MethodTable::ValidateWithPossibleAV()
     }
 
     // generic instantiation check
-    return (HasInstantiation() || IsArray() || IsContinuation()) && (pEEClassFromMethodTable->GetClassWithPossibleAV() == pEEClass);
+    return (HasInstantiation() || IsArray() || IsContinuationWithoutMetadata()) && (pEEClassFromMethodTable->GetClassWithPossibleAV() == pEEClass);
 }
 
 
@@ -421,7 +421,7 @@ WORD MethodTable::GetNumMethods()
 PTR_MethodTable MethodTable::GetTypicalMethodTable()
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    if (IsArray() || IsContinuation())
+    if (IsArray() || IsContinuationWithoutMetadata())
         return (PTR_MethodTable)this;
 
     PTR_MethodTable methodTableMaybe = GetModule()->LookupTypeDef(GetCl()).AsMethodTable();
@@ -707,44 +707,6 @@ MethodTable* CreateMinimalMethodTable(Module* pContainingModule,
 
     return pMT;
 }
-
-
-#ifdef FEATURE_COMINTEROP
-//==========================================================================================
-OBJECTREF MethodTable::GetObjCreateDelegate()
-{
-    CONTRACTL
-    {
-        MODE_COOPERATIVE;
-        GC_NOTRIGGER;
-        NOTHROW;
-    }
-    CONTRACTL_END;
-    _ASSERT(!IsInterface());
-    if (GetOHDelegate())
-        return ObjectFromHandle(GetOHDelegate());
-    else
-        return NULL;
-}
-
-//==========================================================================================
-void MethodTable::SetObjCreateDelegate(OBJECTREF orDelegate)
-{
-    CONTRACTL
-    {
-        MODE_COOPERATIVE;
-        GC_NOTRIGGER;
-        THROWS; // From CreateHandle
-    }
-    CONTRACTL_END;
-
-    if (GetOHDelegate())
-        StoreObjectInHandle(GetOHDelegate(), orDelegate);
-    else
-        SetOHDelegate (GetAppDomain()->CreateHandle(orDelegate));
-}
-#endif // FEATURE_COMINTEROP
-
 
 //==========================================================================================
 void MethodTable::SetInterfaceMap(WORD wNumInterfaces, InterfaceInfo_t* iMap)
@@ -1335,7 +1297,7 @@ BOOL MethodTable::CanCastToClass(MethodTable *pTargetMT, TypeHandlePairList *pVi
         PRECONDITION(CheckPointer(pTargetMT));
         PRECONDITION(!pTargetMT->IsArray());
         PRECONDITION(!pTargetMT->IsInterface());
-        PRECONDITION(!pTargetMT->IsContinuation());
+        PRECONDITION(!pTargetMT->IsContinuationWithoutMetadata());
     }
     CONTRACTL_END
 
@@ -4889,22 +4851,6 @@ BOOL MethodTable::IsExtensibleRCW()
 }
 
 //==========================================================================================
-OBJECTHANDLE MethodTable::GetOHDelegate()
-{
-    WRAPPER_NO_CONTRACT;
-    _ASSERTE(GetClass());
-    return GetClass()->GetOHDelegate();
-}
-
-//==========================================================================================
-void MethodTable::SetOHDelegate (OBJECTHANDLE _ohDelegate)
-{
-    LIMITED_METHOD_CONTRACT;
-    _ASSERTE(GetClass());
-    GetClass()->SetOHDelegate(_ohDelegate);
-}
-
-//==========================================================================================
 // Helper to skip over COM class in the hierarchy
 MethodTable* MethodTable::GetComPlusParentMethodTable()
 {
@@ -5749,7 +5695,6 @@ namespace
                 FALSE,                  // allowInstParam
                 TRUE,                   // forceRemoteableMethod
                 TRUE,                   // allowCreate
-                AsyncVariantLookup::MatchingAsyncVariant,
                 level                   // level
             );
         }
@@ -6451,9 +6396,16 @@ BOOL MethodTable::SanityCheck()
     if (GetNumGenericArgs() != 0)
         return (pCanonMT->GetClass() == pClass);
     else
-        return (pCanonMT == this) || IsArray() || IsContinuation();
+        return (pCanonMT == this) || IsArray() || IsContinuationWithoutMetadata();
 }
 
+BOOL MethodTable::IsContinuationWithoutMetadata()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    PTR_MethodTable contClass = g_pContinuationClassIfSubTypeCreated;
+    return contClass != NULL && m_pParentMethodTable == contClass && GetClass() == g_singletonContinuationEEClass;
+}
 
 //==========================================================================================
 void MethodTable::SetCl(mdTypeDef token)
@@ -7697,7 +7649,7 @@ CHECK MethodTable::CheckInstanceActivated()
 {
     WRAPPER_NO_CONTRACT;
 
-    if (IsArray() || IsContinuation())
+    if (IsArray() || IsContinuationWithoutMetadata())
         CHECK_OK;
 
 
@@ -7843,14 +7795,6 @@ MethodTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         }
     }
 
-    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE && flags != CLRDATA_ENUM_MEM_HEAP2)
-    {
-        DispatchMap * pMap = GetDispatchMap();
-        if (pMap != NULL)
-        {
-            pMap->EnumMemoryRegions(flags);
-        }
-    }
 } // MethodTable::EnumMemoryRegions
 
 #endif // DACCESS_COMPILE
@@ -7973,6 +7917,26 @@ namespace
     }
 }
 
+MethodDesc* MethodTable::GetParallelMethodDesc(MethodDesc* pDefMD)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+#ifdef FEATURE_METADATA_UPDATER
+    if (pDefMD->IsEnCAddedMethod())
+    {
+        return GetParallelMethodDescForEnC(this, pDefMD);
+    }
+#endif // FEATURE_METADATA_UPDATER
+
+    return GetMethodDescForSlot_NoThrow(pDefMD->GetSlot());
+}
+
 MethodDesc* MethodTable::GetParallelMethodDesc(MethodDesc* pDefMD, AsyncVariantLookup asyncVariantLookup)
 {
     CONTRACTL
@@ -7983,30 +7947,23 @@ MethodDesc* MethodTable::GetParallelMethodDesc(MethodDesc* pDefMD, AsyncVariantL
     }
     CONTRACTL_END;
 
-    if (asyncVariantLookup == AsyncVariantLookup::MatchingAsyncVariant)
+    if (pDefMD->MatchesAsyncVariantLookup(asyncVariantLookup))
     {
-#ifdef FEATURE_METADATA_UPDATER
-        if (pDefMD->IsEnCAddedMethod())
-            return GetParallelMethodDescForEnC(this, pDefMD);
-#endif // FEATURE_METADATA_UPDATER
-
-        return GetMethodDescForSlot_NoThrow(pDefMD->GetSlot()); // TODO! We should probably use the throwing variant where possible
+        return GetParallelMethodDesc(pDefMD);
     }
     else
     {
-        // Slow path for finding the Async variant (or not-Async variant, if we start from Async one)
+        // Slow path for finding the matching async variant.
         // This could be optimized with some trickery around slot numbers, but doing so is ... confusing, so I'm not implementing this yet
         mdMethodDef tkMethod = pDefMD->GetMemberDef();
         Module* mod = pDefMD->GetModule();
-        bool isAsyncVariantMethod = pDefMD->IsAsyncVariantMethod();
-
         MethodTable::IntroducedMethodIterator it(this);
         for (; it.IsValid(); it.Next())
         {
             MethodDesc* pMD = it.GetMethodDesc();
             if (pMD->GetMemberDef() == tkMethod
                 && pMD->GetModule() == mod
-                && pMD->IsAsyncVariantMethod() != isAsyncVariantMethod)
+                && (pMD->MatchesAsyncVariantLookup(asyncVariantLookup)))
             {
                 return pMD;
             }
@@ -8395,18 +8352,19 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
         }
 
         bool differsByAsyncVariant = false;
+        _ASSERTE(!pMethodDecl->IsAsyncVariantMethod());
         if (!pMethodDecl->HasSameMethodDefAs(pInterfaceMD))
         {
             if (pMethodDecl->GetMemberDef() == pInterfaceMD->GetMemberDef() &&
                 pMethodDecl->GetModule() == pInterfaceMD->GetModule() &&
-                pMethodDecl->IsAsyncVariantMethod() != pInterfaceMD->IsAsyncVariantMethod())
+                pInterfaceMD->IsAsyncVariantMethod())
             {
                 differsByAsyncVariant = true;
-                pMethodDecl = pMethodDecl->GetAsyncOtherVariant();
+                pMethodDecl = pMethodDecl->GetAsyncVariant();
                 if (verifyImplemented)
                 {
                     // if only asked to verify, return pMethodDecl as a success (not NULL)
-                    // otherwise GetAsyncOtherVariant down below will trigger verifying again and we will keep coming here
+                    // otherwise GetAsyncVariant down below will trigger verifying again and we will keep coming here
                     _ASSERTE(pMethodDecl != NULL);
                     return pMethodDecl;
                 }
@@ -8442,7 +8400,7 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
 
         if (differsByAsyncVariant)
         {
-            pMethodImpl = pMethodImpl->GetAsyncOtherVariant();
+            pMethodImpl = pMethodImpl->GetAsyncVariant();
         }
 
         if (!verifyImplemented && instantiateMethodParameters)
@@ -8455,7 +8413,6 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
                 /* allowInstParam */ FALSE,
                 /* forceRemotableMethod */ FALSE,
                 /* allowCreate */ TRUE,
-                AsyncVariantLookup::MatchingAsyncVariant,
                 /* level */ level);
         }
         if (pMethodImpl != nullptr)

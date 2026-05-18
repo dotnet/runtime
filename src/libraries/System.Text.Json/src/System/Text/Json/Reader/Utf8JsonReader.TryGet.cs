@@ -140,7 +140,7 @@ namespace System.Text.Json
             return CopyValue(destination);
         }
 
-        internal readonly int CopyValue(Span<char> destination)
+        internal readonly unsafe int CopyValue(Span<char> destination)
         {
             Debug.Assert(_tokenType is JsonTokenType.String or JsonTokenType.PropertyName or JsonTokenType.Number);
             Debug.Assert(_tokenType != JsonTokenType.Number || !ValueIsEscaped, "Numbers can't contain escape characters.");
@@ -192,7 +192,7 @@ namespace System.Text.Json
             return charsWritten;
         }
 
-        private readonly bool TryCopyEscapedString(Span<byte> destination, out int bytesWritten)
+        private readonly unsafe bool TryCopyEscapedString(Span<byte> destination, out int bytesWritten)
         {
             Debug.Assert(_tokenType is JsonTokenType.String or JsonTokenType.PropertyName);
             Debug.Assert(ValueIsEscaped);
@@ -605,7 +605,7 @@ namespace System.Text.Json
             // The following logic reconciles the two implementations to enforce consistent behavior.
             if (!(Utf8Parser.TryParse(span, out value, out int bytesConsumed)
                   && span.Length == bytesConsumed
-                  && JsonHelpers.IsFinite(value)))
+                  && float.IsFinite(value)))
             {
                 ThrowHelper.ThrowFormatException(NumericType.Single);
             }
@@ -662,7 +662,7 @@ namespace System.Text.Json
             // The following logic reconciles the two implementations to enforce consistent behavior.
             if (!(Utf8Parser.TryParse(span, out value, out int bytesConsumed)
                   && span.Length == bytesConsumed
-                  && JsonHelpers.IsFinite(value)))
+                  && double.IsFinite(value)))
             {
                 ThrowHelper.ThrowFormatException(NumericType.Double);
             }
@@ -1241,7 +1241,7 @@ namespace System.Text.Json
             return TryGetDateTimeCore(out value);
         }
 
-        internal bool TryGetDateTimeCore(out DateTime value)
+        internal unsafe bool TryGetDateTimeCore(out DateTime value)
         {
             scoped ReadOnlySpan<byte> span;
 
@@ -1286,7 +1286,7 @@ namespace System.Text.Json
             return TryGetDateTimeOffsetCore(out value);
         }
 
-        internal bool TryGetDateTimeOffsetCore(out DateTimeOffset value)
+        internal unsafe bool TryGetDateTimeOffsetCore(out DateTimeOffset value)
         {
             scoped ReadOnlySpan<byte> span;
 
@@ -1332,7 +1332,7 @@ namespace System.Text.Json
             return TryGetGuidCore(out value);
         }
 
-        internal bool TryGetGuidCore(out Guid value)
+        internal unsafe bool TryGetGuidCore(out Guid value)
         {
             scoped ReadOnlySpan<byte> span;
 

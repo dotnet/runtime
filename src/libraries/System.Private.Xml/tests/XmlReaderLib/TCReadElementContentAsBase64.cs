@@ -138,6 +138,12 @@ namespace System.Xml.Tests
                 this.AddChild(new CVariation(ReadBase64RunsIntoOverflow) { Attribute = new Variation("ReadBase64 runs into an Overflow") { Params = new object[] { "10000000" } } });
             }
 
+            // for function TestReadBase64_InvalidChar_ErrorMessageBounded
+            {
+                this.AddChild(new CVariation(TestReadBase64_InvalidChar_ErrorMessageBounded) { Attribute = new Variation("ReadBase64 with invalid char has bounded error message") { Params = new object[] { "1000000" } } });
+                this.AddChild(new CVariation(TestReadBase64_InvalidChar_ErrorMessageBounded) { Attribute = new Variation("ReadBase64 with invalid char has bounded error message") { Params = new object[] { "10000000" } } });
+            }
+
 
             // for function TestReadBase64ReadsTheContent
             {
