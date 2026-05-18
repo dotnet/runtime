@@ -99,13 +99,20 @@ namespace System.Runtime.CompilerServices
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe ExecutionContext? GetExecutionContext()
+        public unsafe bool TryGetExecutionContext(out ExecutionContext? execContext)
         {
             const uint mask = (1u << (int)ContinuationFlags.ExecutionContextIndexNumBits) - 1;
             uint index = ((uint)Flags >> (int)ContinuationFlags.ExecutionContextIndexFirstBit) & mask;
+            if (index == 0)
+            {
+                execContext = null;
+                return false;
+            }
+
             Debug.Assert(index != 0);
             ref byte data = ref RuntimeHelpers.GetRawData(this);
-            return Unsafe.As<byte, ExecutionContext?>(ref Unsafe.Add(ref data, (DataOffset - PointerSize) + index * PointerSize));
+            execContext = Unsafe.As<byte, ExecutionContext?>(ref Unsafe.Add(ref data, (DataOffset - PointerSize) + index * PointerSize));
+            return true;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -127,16 +134,6 @@ namespace System.Runtime.CompilerServices
                 return ref Unsafe.NullRef<byte>();
             ref byte data = ref RuntimeHelpers.GetRawData(this);
             return ref Unsafe.Add(ref data, (DataOffset - PointerSize) + index * PointerSize);
-        }
-
-        protected void EncodeFieldOffsetInFlags(ref byte field, ContinuationFlags firstBit, ContinuationFlags numBits)
-        {
-            int offset = (int)Unsafe.ByteOffset(ref RuntimeHelpers.GetRawData(this), ref field);
-            offset -= DataOffset;
-            Debug.Assert(offset >= 0 && offset % PointerSize == 0);
-            uint index = 1 + (uint)offset / PointerSize;
-            Debug.Assert(index < (1 << (int)numBits));
-            Flags |= (ContinuationFlags)((uint)index << (int)firstBit);
         }
     }
 
@@ -373,7 +370,6 @@ namespace System.Runtime.CompilerServices
 
             Debug.Assert(valueTask._obj != null);
             vtsCont.Initialize(valueTask._obj, valueTask._token);
-            vtsCont.ExecutionContext = ExecutionContext.CaptureForSuspension(state.CurrentThread!);
 
             sentinelContinuation.Next = vtsCont;
             state.StackState->ValueTaskContinuation = vtsCont;
@@ -401,7 +397,6 @@ namespace System.Runtime.CompilerServices
 
             Debug.Assert(valueTask._obj != null);
             vtsCont.Initialize<T>(valueTask._obj, valueTask._token);
-            vtsCont.ExecutionContext = ExecutionContext.CaptureForSuspension(state.CurrentThread!);
 
             sentinelContinuation.Next = vtsCont;
             state.StackState->ValueTaskContinuation = vtsCont;
@@ -660,7 +655,11 @@ namespace System.Runtime.CompilerServices
                         asyncDispatcherInfo.NextContinuation = nextContinuation;
 
                         Debug.Assert(awaitState.CurrentThread != null);
-                        RestoreExecutionContext(awaitState.CurrentThread, curContinuation.GetExecutionContext());
+                        if (curContinuation.TryGetExecutionContext(out ExecutionContext? execContext))
+                        {
+                            RestoreExecutionContext(awaitState.CurrentThread, execContext);
+                        }
+
                         ref byte resultLoc = ref nextContinuation != null ? ref nextContinuation.GetResultStorageOrNull() : ref GetResultStorage();
 
                         Continuation? newContinuation = curContinuation.ResumeInfo->Resume(curContinuation, ref resultLoc);
@@ -766,7 +765,11 @@ namespace System.Runtime.CompilerServices
                         asyncDispatcherInfo.NextContinuation = nextContinuation;
 
                         Debug.Assert(awaitState.CurrentThread != null);
-                        RestoreExecutionContext(awaitState.CurrentThread, curContinuation.GetExecutionContext());
+                        if (curContinuation.TryGetExecutionContext(out ExecutionContext? execContext))
+                        {
+                            RestoreExecutionContext(awaitState.CurrentThread, execContext);
+                        }
+
                         ref byte resultLoc = ref nextContinuation != null ? ref nextContinuation.GetResultStorageOrNull() : ref GetResultStorage();
 
                         RuntimeAsyncInstrumentationHelpers.ResumeRuntimeAsyncMethod(ref asyncDispatcherInfo, flags, curContinuation);
