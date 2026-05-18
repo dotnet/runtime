@@ -175,23 +175,7 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
 //
 int LinearScan::BuildCast(GenTreeCast* cast)
 {
-    GenTree* src = cast->gtGetOp1();
-
-    const var_types srcType  = genActualType(src->TypeGet());
-    const var_types castType = cast->gtCastType;
-
-    // For PowerPC64LE, floating point to integer casts may need a temporary register
-    // to hold intermediate values during conversion
-    if (varTypeIsFloating(srcType) && !varTypeIsFloating(castType))
-    {
-        buildInternalFloatRegisterDefForNode(cast, RBM_ALLFLOAT.GetFloatRegSet());
-        setInternalRegsDelayFree = true;
-    }
-
-    int srcCount = BuildCastUses(cast, RBM_NONE);
-    buildInternalRegisterUses();
-    BuildDef(cast);
-    return srcCount;
+	_ASSERTE(!"NYI");
 }
 
 //------------------------------------------------------------------------

@@ -379,9 +379,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genConsumeOperands(treeNode->AsOp());
             genCodeForBinary(treeNode->AsOp());
             break;
-        case GT_CAST:
-            genCodeForCast(treeNode->AsOp());
-            break;
         default:
 	    printf("ERROR: Unhandled tree node operation: %s (oper=%d)\n",
                    GenTree::OpName(treeNode->gtOper), treeNode->gtOper);
@@ -2418,60 +2415,8 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
 //
 void CodeGen::genIntToFloatCast(GenTree* treeNode)
 {
-    // int type --> float/double conversions are always non-overflow ones
-    assert(treeNode->OperGet() == GT_CAST);
-    assert(!treeNode->gtOverflow());
-
-    regNumber targetReg = treeNode->GetRegNum();
-    assert(genIsValidFloatReg(targetReg));
-
-    GenTree* op1 = treeNode->AsOp()->gtOp1;
-    assert(!op1->isContained());
-    assert(genIsValidIntReg(op1->GetRegNum()));
-
-    var_types dstType = treeNode->CastToType();
-    var_types srcType = genActualType(op1->TypeGet());
-    assert(!varTypeIsFloating(srcType) && varTypeIsFloating(dstType));
-
-    // force the srcType to unsigned if GT_UNSIGNED flag is set
-    if (treeNode->gtFlags & GTF_UNSIGNED)
-    {
-        srcType = varTypeToUnsigned(srcType);
-    }
-
-    emitAttr srcSize = EA_ATTR(genTypeSize(srcType));
-    noway_assert((srcSize == EA_4BYTE) || (srcSize == EA_8BYTE));
-
-    genConsumeOperands(treeNode->AsOp());
-
-    regNumber srcReg = op1->GetRegNum();
-    
-    // PowerPC requires the integer to be in a float register for conversion
-    // We need to move it there first via stack or direct move
-    // For now, use a simple approach: extend to 64-bit if needed, then convert
-    
-    // Determine the conversion instruction
-    instruction ins;
-    if (varTypeIsUnsigned(srcType))
-    {
-        // Unsigned conversion
-        ins = (dstType == TYP_FLOAT) ? INS_fcfidus : INS_fcfidu;
-    }
-    else
-    {
-        // Signed conversion
-        ins = (dstType == TYP_FLOAT) ? INS_fcfids : INS_fcfid;
-    }
-
-    // For 32-bit source, we need to sign/zero extend to 64-bit first
-    // This is typically handled by earlier phases, but we emit the conversion
-    
-    // Emit the conversion instruction
-    // Note: PowerPC conversion instructions expect the integer in a float register
-    // This requires a move from GPR to FPR, which we'll handle via emitIns_R_R
-    GetEmitter()->emitIns_R_R(ins, emitActualTypeSize(dstType), targetReg, srcReg);
-
-    genProduceReg(treeNode);
+    //_ASSERTE("!NYI");
+    abort();
 }
 
 //-----------------------------------------------------------------------------

@@ -308,29 +308,8 @@ void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
 //    i) GT_CAST(float/double, int type with overflow detection)
 //
 GenTree* Lowering::LowerCast(GenTree* tree)
-{
-    assert(tree->OperGet() == GT_CAST);
-
-    JITDUMP("LowerCast for: ");
-    DISPNODE(tree);
-    JITDUMP("\n");
-
-    GenTree*  op1     = tree->AsOp()->gtOp1;
-    var_types dstType = tree->CastToType();
-    var_types srcType = genActualType(op1->TypeGet());
-
-    if (varTypeIsFloating(srcType))
-    {
-        noway_assert(!tree->gtOverflow());
-        assert(!varTypeIsSmall(dstType)); // fgMorphCast creates intermediate casts when converting from float to small int.
-    }
-
-    assert(!varTypeIsSmall(srcType));
-
-    // Now determine if we have operands that should be contained.
-    ContainCheckCast(tree->AsCast());
-
-    return nullptr;
+{ 
+	_ASSERTE(!"NYI");
 }
 
 //------------------------------------------------------------------------
@@ -609,13 +588,9 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
 //
 void Lowering::ContainCheckCast(GenTreeCast* node)
 {
-    // For PowerPC64LE, we don't contain cast operands
-    // The cast will be handled by appropriate conversion instructions
-    // (e.g., fcfid for int->float, fctiwz for float->int)
-    
-    // Nothing to contain for now
-    return;
+	_ASSERTE(!"NYI");
 }
+
 
 //------------------------------------------------------------------------
 // ContainCheckCompare: determine whether the sources of a compare node should be contained.
