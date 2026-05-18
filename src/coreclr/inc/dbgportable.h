@@ -132,8 +132,8 @@ public:
     // Forwarders to T's methods. Each one goes through operator=/operator T().
     // Each is templated (or has a Dummy default) so it isn't instantiated for T's that don't define
     // the underlying method (e.g. Portable<CORDB_ADDRESS>). Intended to be used for Portable<VMPTR>.
-    template <typename TPtr>
-    void SetRawPtr(TPtr * ptr)
+    template <typename TPtr, typename Dummy = T>
+    auto SetRawPtr(TPtr * ptr) -> decltype(Dummy::MakePtr(ptr), void())
     {
         *this = T::MakePtr(ptr);
     }
@@ -152,10 +152,10 @@ public:
         return tmp.GetDacPtr();
     }
 
-    template <typename TAddr>
-    void SetDacTargetPtr(TAddr addr)
+    template <typename TAddr, typename Dummy = T>
+    auto SetDacTargetPtr(TAddr addr) -> decltype(Dummy().SetDacTargetPtr(addr))
     {
-        T tmp;
+        Dummy tmp;
         tmp.SetDacTargetPtr(addr);
         *this = tmp;
     }

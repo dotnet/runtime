@@ -1211,7 +1211,7 @@ public:
     // CordbChain are really FramePointers.
     LPVOID GetSPValue() const
     {
-        return CORDB_ADDRESS_TO_PTR(m_sp);
+        return m_sp;
     }
 
 
@@ -1656,11 +1656,11 @@ struct MSLAYOUT DebuggerIPCE_FuncEvalArgData
 //
 struct MSLAYOUT DebuggerIPCE_FuncEvalInfo
 {
-    VMPTR_Thread vmThreadToken;
+    Portable<VMPTR_Thread> vmThreadToken;
     Portable<DebuggerIPCE_FuncEvalType> funcEvalType;
     Portable<mdMethodDef> funcMetadataToken;
     Portable<mdTypeDef> funcClassMetadataToken;
-    VMPTR_Assembly vmAssembly;
+    Portable<VMPTR_Assembly> vmAssembly;
     RSPTR_CORDBEVAL funcEvalKey;
     Portable<bool> evalDuringException;
 
