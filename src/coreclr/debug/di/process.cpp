@@ -2094,10 +2094,6 @@ HRESULT CordbProcess::QueryInterface(REFIID id, void **pInterface)
     {
         *pInterface = static_cast<ICorDebugProcess8*>(this);
     }
-    else if (id == IID_ICorDebugProcess11)
-    {
-        *pInterface = static_cast<ICorDebugProcess11*>(this);
-    }
     else if (id == IID_ICorDebugProcess12)
     {
         *pInterface = static_cast<ICorDebugProcess12*>(this);
@@ -2192,6 +2188,43 @@ HRESULT CordbProcess::GetGCHeapInformation(COR_HEAPINFO *pHeapInfo)
     return hr;
 }
 
+namespace
+{
+    struct HeapSegmentAccumulator
+    {
+        CQuickArrayList<COR_SEGMENT> segments;
+        HRESULT                      hrError;
+    };
+
+    void HeapSegmentCallback(
+        CORDB_ADDRESS rangeStart,
+        CORDB_ADDRESS rangeEnd,
+        int generation,
+        ULONG heap,
+        CALLBACK_DATA pUserData)
+    {
+        HeapSegmentAccumulator *acc =
+            reinterpret_cast<HeapSegmentAccumulator*>(pUserData);
+
+        if (FAILED(acc->hrError))
+            return;
+
+        COR_SEGMENT s;
+        s.start = rangeStart;
+        s.end = rangeEnd;
+        s.type = (CorDebugGenerationTypes)generation;
+        s.heap = heap;
+        HRESULT hr = S_OK;
+        EX_TRY
+        {
+            acc->segments.Push(s);
+        }
+        EX_CATCH_HRESULT(hr);
+        if (FAILED(hr))
+            acc->hrError = hr;
+    }
+}
+
 HRESULT CordbProcess::EnumerateHeapRegions(ICorDebugHeapSegmentEnum **ppRegions)
 {
     if (!ppRegions)
@@ -2203,14 +2236,18 @@ HRESULT CordbProcess::EnumerateHeapRegions(ICorDebugHeapSegmentEnum **ppRegions)
 
     EX_TRY
     {
-        DacDbiArrayList<COR_SEGMENT> segments;
-        hr = GetDAC()->GetHeapSegments(&segments);
+        HeapSegmentAccumulator acc;
+        acc.hrError = S_OK;
+
+        hr = GetDAC()->EnumerateHeapSegments(&HeapSegmentCallback, &acc);
+        if (SUCCEEDED(hr) && FAILED(acc.hrError))
+            hr = acc.hrError;
 
         if (SUCCEEDED(hr))
         {
-            if (!segments.IsEmpty())
+            if (acc.segments.Size() != 0)
             {
-                CordbHeapSegmentEnumerator *segEnum = new CordbHeapSegmentEnumerator(this, &segments[0], (DWORD)segments.Count());
+                CordbHeapSegmentEnumerator *segEnum = new CordbHeapSegmentEnumerator(this, acc.segments.Ptr(), (DWORD)acc.segments.Size());
                 GetContinueNeuterList()->Add(this, segEnum);
                 hr = segEnum->QueryInterface(__uuidof(ICorDebugHeapSegmentEnum), (void**)ppRegions);
             }
@@ -2458,35 +2495,6 @@ COM_METHOD CordbProcess::EnableGCNotificationEvents(BOOL fEnable)
     PUBLIC_API_BEGIN(this)
     {
         hr = this->m_pDacPrimitives->EnableGCNotificationEvents(fEnable);
-    }
-    PUBLIC_API_END(hr);
-    return hr;
-}
-
-//-----------------------------------------------------------
-// ICorDebugProcess11
-//-----------------------------------------------------------
-COM_METHOD CordbProcess::EnumerateLoaderHeapMemoryRegions(ICorDebugMemoryRangeEnum **ppRanges)
-{
-    VALIDATE_POINTER_TO_OBJECT(ppRanges, ICorDebugMemoryRangeEnum **);
-    FAIL_IF_NEUTERED(this);
-
-    HRESULT hr = S_OK;
-
-    PUBLIC_API_BEGIN(this);
-    {
-        DacDbiArrayList<COR_MEMORY_RANGE> heapRanges;
-
-        hr = GetDAC()->GetLoaderHeapMemoryRanges(&heapRanges);
-
-        if (SUCCEEDED(hr))
-        {
-            RSInitHolder<CordbMemoryRangeEnumerator> heapSegmentEnumerator(
-                new CordbMemoryRangeEnumerator(this, &heapRanges[0], (DWORD)heapRanges.Count()));
-
-            GetContinueNeuterList()->Add(this, heapSegmentEnumerator);
-            heapSegmentEnumerator.TransferOwnershipExternal(ppRanges);
-        }
     }
     PUBLIC_API_END(hr);
     return hr;

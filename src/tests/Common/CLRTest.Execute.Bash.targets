@@ -270,8 +270,20 @@ fi
       <CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"$CORE_ROOT/corerun" $(CoreRunArgs)  ${__DotEnvArg}</CLRTestRunFile>
       <WatcherRunFile>"$CORE_ROOT/watchdog" $_WatcherTimeoutMins</WatcherRunFile>
 
-      <!-- Note that this overwrites CLRTestBashPreCommands rather than adding to it. -->
+      <!-- CoreCLR on browser defaults to running tests with Node.js -->
+      <BashDefaultRunWithNodeJS Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'"><![CDATA[
+if [ -z "${RunWithNodeJS:-}" ] ; then
+    export RunWithNodeJS=1
+fi
+]]></BashDefaultRunWithNodeJS>
+
       <CLRTestBashPreCommands Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(TargetArchitecture)' == 'wasm'"><![CDATA[
+$(CLRTestBashPreCommands)
+$(BashDefaultRunWithNodeJS)
+if [ ! -z ${RunCrossGen2+x} ]%3B then
+  TakeLock
+fi
+
 if [ -z "${RunWithNodeJS:-}" ] ; then
     # Build wasm app containing the test dll
     __Command=""
@@ -285,6 +297,10 @@ if [ -z "${RunWithNodeJS:-}" ] ; then
     export DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER=1
 
     $__Command msbuild $CORE_ROOT/wasm-test-runner/WasmTestRunner.proj /p:NetCoreAppCurrent=$(NetCoreAppCurrent) /p:TestAssemblyFileName=$(MsBuildProjectName).dll /p:TestBinDir=`pwd` $(CLRTestMSBuildArgs) || exit $?
+fi
+
+if [ ! -z ${RunCrossGen2+x} ]%3B then
+  ReleaseLock
 fi
    ]]>
       </CLRTestBashPreCommands>
@@ -370,6 +386,10 @@ run_with_timeout() {
   fi
 }
 
+if [ ! -z ${RunCrossGen2+x} ]%3B then
+  TakeLock
+fi
+
 if [ -z ${RunWithNodeJS+x} ] ; then
     cd WasmApp
     ./run-v8.sh
@@ -389,6 +409,10 @@ else
     run_with_timeout $__TestTimeout "${cmd[@]}"
 fi
 CLRTestExitCode=$?
+
+if [ ! -z ${RunCrossGen2+x} ]%3B then
+  ReleaseLock
+fi
       ]]>
       </BashCLRTestLaunchCmds>
       <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' == 'android'">

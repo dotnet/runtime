@@ -921,7 +921,7 @@ public:
 
 #ifdef FEATURE_INTERPRETER
 public:
-    InterpThreadContext *m_pInterpThreadContext;
+    PTR_InterpThreadContext m_pInterpThreadContext;
     InterpThreadContext* GetInterpThreadContext();
     InterpThreadContext* GetOrCreateInterpThreadContext();
 #endif // FEATURE_INTERPRETER
