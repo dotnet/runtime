@@ -969,10 +969,16 @@ namespace Microsoft.Extensions.Logging.Test
             {
                 writer.WriteStartObject();
 
-                for (int j = 0; j < dictProperty.Keys.Count; j++)
+                using IEnumerator<string> keys = dictProperty.Keys.GetEnumerator();
+                using IEnumerator<object> values = dictProperty.Values.GetEnumerator();
+
+                while (keys.MoveNext())
                 {
-                    writer.WritePropertyName(dictProperty.Keys.ElementAt(j));
-                    WriteValue(writer, dictProperty.Values.ElementAt(j));
+                    bool hasValue = values.MoveNext();
+                    Debug.Assert(hasValue);
+
+                    writer.WritePropertyName(keys.Current);
+                    WriteValue(writer, values.Current);
                 }
 
                 writer.WriteEndObject();
@@ -984,20 +990,25 @@ namespace Microsoft.Extensions.Logging.Test
                 {
                     writer.WriteNull();
                 }
-                else if (IsPrimitive(value.GetType()))
+                else
                 {
-                    if (value.GetType().IsEnum)
+                    Type valueType = value.GetType();
+
+                    if (IsPrimitive(valueType))
                     {
-                        writer.WriteValue(Convert.ToInt32(value, CultureInfo.InvariantCulture));
+                        if (valueType.IsEnum)
+                        {
+                            writer.WriteValue(Convert.ToInt32(value, CultureInfo.InvariantCulture));
+                        }
+                        else
+                        {
+                            writer.WriteValue(value);
+                        }
                     }
                     else
                     {
-                        writer.WriteValue(value);
+                        WriteComplexValue(writer, value);
                     }
-                }
-                else
-                {
-                    WriteComplexValue(writer, value);
                 }
             }
 
