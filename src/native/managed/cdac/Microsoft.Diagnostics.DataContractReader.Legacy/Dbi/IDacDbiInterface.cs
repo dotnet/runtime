@@ -202,7 +202,7 @@ public struct DebuggerIPCE_STRData_StubFrame
 // the DI during a stack walk. Mirrors the native Debugger_STRData struct
 // defined in src/coreclr/debug/inc/dbgipcevents.h.
 //
-// `ctx` and `rd` are CORDB_ADDRESS values that point into dbi-allocated memory.
+// `ctx` and `rd` are pointers into dbi-allocated memory.
 // The DAC writes the populated context/regdisplay through these pointers rather
 // than storing them inline. Code paths that do not produce a context/regdisplay
 // (e.g. EnumerateInternalFrames for cStubFrame entries) leave them as 0.
@@ -217,8 +217,8 @@ public struct Debugger_STRData
     }
 
     [FieldOffset(0)] public ulong fp;                           // FramePointer
-    [FieldOffset(8)] public ulong ctx;                          // CORDB_ADDRESS (DT_CONTEXT*)
-    [FieldOffset(16)] public ulong rd;                          // CORDB_ADDRESS (DebuggerREGDISPLAY*)
+    [FieldOffset(8)] public ulong ctx;                          // DT_CONTEXT*
+    [FieldOffset(16)] public ulong rd;                          // DebuggerREGDISPLAY*
     [FieldOffset(24)] public ulong vmCurrentAppDomainToken;     // VMPTR_AppDomain
     [FieldOffset(32)] public EType eType;
     [FieldOffset(40)] public DebuggerIPCE_STRData_MethodFrame v;

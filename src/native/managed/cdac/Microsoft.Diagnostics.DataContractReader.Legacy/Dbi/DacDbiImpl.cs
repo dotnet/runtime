@@ -1073,6 +1073,15 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     public int GetStackWalkCurrentFrameInfo(nuint pSFIHandle, nint pFrameData, int* pRetVal)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetStackWalkCurrentFrameInfo(pSFIHandle, pFrameData, pRetVal) : HResults.E_NOTIMPL;
 
+    // Filter used by GetCountOfInternalFrames and EnumerateInternalFrames to decide
+    // which entries from IStackWalk.GetFrames should be surfaced to the DBI as internal frames.
+    private static bool IsReportedInternalFrame(IStackWalk stackwalk, Contracts.StackFrameData frame)
+    {
+        return frame.InternalFrameType != Contracts.InternalFrameType.None
+            && stackwalk.GetFrameName(frame.FrameIdentifier) != "InterpreterFrame"
+            && !stackwalk.IsExceptionHandlingHelperInlinedCallFrame(frame.FrameAddress);
+    }
+
     public int GetCountOfInternalFrames(ulong vmThread, uint* pRetVal)
     {
         int hr = HResults.S_OK;
@@ -1085,9 +1094,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             IStackWalk stackwalk = _target.Contracts.StackWalk;
             foreach (Contracts.StackFrameData frame in stackwalk.GetFrames(new TargetPointer(vmThread)))
             {
-                if (frame.InternalFrameType != Contracts.InternalFrameType.None
-                    && stackwalk.GetFrameName(frame.FrameIdentifier) != "InterpreterFrame"
-                    && !stackwalk.IsExceptionHandlingHelperInlinedCallFrame(frame.FrameAddress))
+                if (IsReportedInternalFrame(stackwalk, frame))
                     count++;
             }
             *pRetVal = count;
@@ -1123,9 +1130,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
             foreach (Contracts.StackFrameData frame in stackwalk.GetFrames(threadPtr))
             {
-                if (frame.InternalFrameType == Contracts.InternalFrameType.None
-                     || stackwalk.GetFrameName(frame.FrameIdentifier) == "InterpreterFrame"
-                     || stackwalk.IsExceptionHandlingHelperInlinedCallFrame(frame.FrameAddress))
+                if (!IsReportedInternalFrame(stackwalk, frame))
                     continue;
 
                 TargetPointer vmAssembly;

@@ -540,8 +540,8 @@ struct MSLAYOUT Debugger_STRData
 {
     FramePointer            fp;
     // @dbgtodo  stackwalker/shim- Ideally we should be able to get rid of the DebuggerREGDISPLAY and just use the CONTEXT.
-    CORDB_ADDRESS           ctx;    // points to a dbi-allocated DT_CONTEXT
-    CORDB_ADDRESS           rd;     // points to a dbi-allocated DebuggerREGDISPLAY
+    DT_CONTEXT *            ctx;
+    DebuggerREGDISPLAY *    rd;
     VMPTR_AppDomain         vmCurrentAppDomainToken;
 
 

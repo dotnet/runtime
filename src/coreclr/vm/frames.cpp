@@ -213,6 +213,7 @@ Frame::Interception Frame::GetInterception()
     }
 }
 
+#ifdef DACCESS_COMPILE
 Frame::StubFrameType Frame::GetStubFrameType()
 {
     switch (GetFrameIdentifier())
@@ -224,6 +225,7 @@ Frame::StubFrameType Frame::GetStubFrameType()
         return STUB_FRAME_NONE;
     }
 }
+#endif // DACCESS_COMPILE
 
 void Frame::GetUnmanagedCallSite(TADDR* ip, TADDR* returnIP, TADDR* returnSP)
 {

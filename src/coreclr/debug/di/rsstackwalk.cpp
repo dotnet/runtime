@@ -586,8 +586,8 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
     DebuggerREGDISPLAY  frameRd;
     ZeroMemory(&frameCtx, sizeof(frameCtx));
     ZeroMemory(&frameRd,  sizeof(frameRd));
-    frameData.ctx = PTR_TO_CORDB_ADDRESS(&frameCtx);
-    frameData.rd  = PTR_TO_CORDB_ADDRESS(&frameRd);
+    frameData.ctx = &frameCtx;
+    frameData.rd  = &frameRd;
 
     IDacDbiInterface::FrameType ft = IDacDbiInterface::kInvalid;
 

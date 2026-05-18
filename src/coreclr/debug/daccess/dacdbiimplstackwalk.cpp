@@ -794,8 +794,8 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
     {
         pFrameData->eType = Debugger_STRData::cRuntimeNativeFrame;
 
-        _ASSERTE(pFrameData->ctx != (CORDB_ADDRESS)0);
-        GetStackWalkCurrentContext(pIter, reinterpret_cast<DT_CONTEXT *>(CORDB_ADDRESS_TO_PTR(pFrameData->ctx)));
+        _ASSERTE(pFrameData->ctx != NULL);
+        GetStackWalkCurrentContext(pIter, pFrameData->ctx);
     }
     else if (ft == kManagedStackFrame)
     {
@@ -825,11 +825,11 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
 
         pFrameData->eType = Debugger_STRData::cMethodFrame;
 
-        _ASSERTE(pFrameData->rd != (CORDB_ADDRESS)0);
-        SetDebuggerREGDISPLAYFromREGDISPLAY(reinterpret_cast<DebuggerREGDISPLAY *>(CORDB_ADDRESS_TO_PTR(pFrameData->rd)), pCF->GetRegisterSet());
+        _ASSERTE(pFrameData->rd != NULL);
+        SetDebuggerREGDISPLAYFromREGDISPLAY(pFrameData->rd, pCF->GetRegisterSet());
 
-        _ASSERTE(pFrameData->ctx != (CORDB_ADDRESS)0);
-        GetStackWalkCurrentContext(pIter, reinterpret_cast<DT_CONTEXT *>(CORDB_ADDRESS_TO_PTR(pFrameData->ctx)));
+        _ASSERTE(pFrameData->ctx != NULL);
+        GetStackWalkCurrentContext(pIter, pFrameData->ctx);
 
         //
         // initialize the fields in Debugger_STRData::v

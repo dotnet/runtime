@@ -3,7 +3,7 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
-internal sealed class MockFrame : TypedView
+internal class MockFrame : TypedView
 {
     private const string IdentifierFieldName = "Identifier";
     private const string NextFieldName = "Next";
@@ -27,38 +27,22 @@ internal sealed class MockFrame : TypedView
     }
 }
 
-internal sealed class MockInlinedCallFrame : TypedView
+internal sealed class MockInlinedCallFrame : MockFrame
 {
     // Field order mirrors src/coreclr/vm/frames.h InlinedCallFrame so that the cDAC
     // InlinedCallFrame data adapter can read the same field offsets in tests.
-    private const string IdentifierFieldName = "Identifier";
-    private const string NextFieldName = "Next";
     private const string DatumFieldName = "Datum";
     private const string CallSiteSPFieldName = "CallSiteSP";
     private const string CallerReturnAddressFieldName = "CallerReturnAddress";
     private const string CalleeSavedFPFieldName = "CalleeSavedFP";
 
-    public static Layout<MockInlinedCallFrame> CreateLayout(MockTarget.Architecture architecture)
-        => new SequentialLayoutBuilder("InlinedCallFrame", architecture)
-            .AddPointerField(IdentifierFieldName)
-            .AddPointerField(NextFieldName)
+    public static Layout<MockInlinedCallFrame> CreateLayout(Layout<MockFrame> baseLayout)
+        => new SequentialLayoutBuilder("InlinedCallFrame", baseLayout.Architecture, baseLayout)
             .AddPointerField(DatumFieldName)
             .AddPointerField(CallSiteSPFieldName)
             .AddPointerField(CallerReturnAddressFieldName)
             .AddPointerField(CalleeSavedFPFieldName)
             .Build<MockInlinedCallFrame>();
-
-    public ulong Identifier
-    {
-        get => ReadPointerField(IdentifierFieldName);
-        set => WritePointerField(IdentifierFieldName, value);
-    }
-
-    public ulong Next
-    {
-        get => ReadPointerField(NextFieldName);
-        set => WritePointerField(NextFieldName, value);
-    }
 
     public ulong Datum
     {
@@ -73,32 +57,16 @@ internal sealed class MockInlinedCallFrame : TypedView
     }
 }
 
-internal sealed class MockFramedMethodFrame : TypedView
+internal sealed class MockFramedMethodFrame : MockFrame
 {
-    private const string IdentifierFieldName = "Identifier";
-    private const string NextFieldName = "Next";
     private const string TransitionBlockPtrFieldName = "TransitionBlockPtr";
     private const string MethodDescPtrFieldName = "MethodDescPtr";
 
-    public static Layout<MockFramedMethodFrame> CreateLayout(MockTarget.Architecture architecture)
-        => new SequentialLayoutBuilder("FramedMethodFrame", architecture)
-            .AddPointerField(IdentifierFieldName)
-            .AddPointerField(NextFieldName)
+    public static Layout<MockFramedMethodFrame> CreateLayout(Layout<MockFrame> baseLayout)
+        => new SequentialLayoutBuilder("FramedMethodFrame", baseLayout.Architecture, baseLayout)
             .AddPointerField(TransitionBlockPtrFieldName)
             .AddPointerField(MethodDescPtrFieldName)
             .Build<MockFramedMethodFrame>();
-
-    public ulong Identifier
-    {
-        get => ReadPointerField(IdentifierFieldName);
-        set => WritePointerField(IdentifierFieldName, value);
-    }
-
-    public ulong Next
-    {
-        get => ReadPointerField(NextFieldName);
-        set => WritePointerField(NextFieldName, value);
-    }
 
     public ulong MethodDescPtr
     {
@@ -107,33 +75,17 @@ internal sealed class MockFramedMethodFrame : TypedView
     }
 }
 
-internal sealed class MockFuncEvalFrame : TypedView
+internal sealed class MockFuncEvalFrame : MockFrame
 {
-    // Mirrors the cDAC FuncEvalFrame data class which only reads DebuggerEvalPtr. The
-    // Identifier/Next fields belong to the base Frame layout - mock them at the same
-    // pointer-sized offsets so FrameIterator.Next() can walk the chain.
-    private const string IdentifierFieldName = "Identifier";
-    private const string NextFieldName = "Next";
+    // Mirrors the cDAC FuncEvalFrame data class which only reads DebuggerEvalPtr.
+    // Identifier/Next are inherited from the base MockFrame layout so the
+    // FrameIterator.Next() chain walk works the same as for a plain Frame.
     private const string DebuggerEvalPtrFieldName = "DebuggerEvalPtr";
 
-    public static Layout<MockFuncEvalFrame> CreateLayout(MockTarget.Architecture architecture)
-        => new SequentialLayoutBuilder("FuncEvalFrame", architecture)
-            .AddPointerField(IdentifierFieldName)
-            .AddPointerField(NextFieldName)
+    public static Layout<MockFuncEvalFrame> CreateLayout(Layout<MockFrame> baseLayout)
+        => new SequentialLayoutBuilder("FuncEvalFrame", baseLayout.Architecture, baseLayout)
             .AddPointerField(DebuggerEvalPtrFieldName)
             .Build<MockFuncEvalFrame>();
-
-    public ulong Identifier
-    {
-        get => ReadPointerField(IdentifierFieldName);
-        set => WritePointerField(IdentifierFieldName, value);
-    }
-
-    public ulong Next
-    {
-        get => ReadPointerField(NextFieldName);
-        set => WritePointerField(NextFieldName, value);
-    }
 
     public ulong DebuggerEvalPtr
     {
@@ -223,9 +175,9 @@ internal sealed class MockFrameBuilder
         _terminator = _helpers.Arch.Is64Bit ? ulong.MaxValue : uint.MaxValue;
 
         FrameLayout = MockFrame.CreateLayout(_helpers.Arch);
-        InlinedCallFrameLayout = MockInlinedCallFrame.CreateLayout(_helpers.Arch);
-        FramedMethodFrameLayout = MockFramedMethodFrame.CreateLayout(_helpers.Arch);
-        FuncEvalFrameLayout = MockFuncEvalFrame.CreateLayout(_helpers.Arch);
+        InlinedCallFrameLayout = MockInlinedCallFrame.CreateLayout(FrameLayout);
+        FramedMethodFrameLayout = MockFramedMethodFrame.CreateLayout(FrameLayout);
+        FuncEvalFrameLayout = MockFuncEvalFrame.CreateLayout(FrameLayout);
         DebuggerEvalLayout = MockDebuggerEval.CreateLayout(_helpers.Arch);
     }
 
