@@ -42,14 +42,15 @@ internal static partial class Interop
             var certPtrs = new IntPtr[count];
 
             int res = Interop.AndroidCrypto.X509ChainGetCertificates(ctx, certPtrs, certPtrs.Length);
-            if (res == 0)
-                throw new CryptographicException();
-
-            Debug.Assert(res <= certPtrs.Length);
 
             var certs = new X509Certificate2[certPtrs.Length];
             try
             {
+                if (res == 0)
+                    throw new CryptographicException();
+
+                Debug.Assert(res <= certPtrs.Length);
+
                 for (int i = 0; i < res; i++)
                 {
                     // X509Certificate2 duplicates these JNI global refs; the native-returned refs remain caller-owned.
@@ -58,9 +59,15 @@ internal static partial class Interop
             }
             finally
             {
-                for (int i = 0; i < res; i++)
+                // The native side can populate part of certPtrs and then fail (returning 0) if a JNI
+                // exception is thrown mid-loop, so release every non-null entry rather than only the
+                // first `res` entries.
+                for (int i = 0; i < certPtrs.Length; i++)
                 {
-                    Interop.JObjectLifetime.DeleteGlobalReference(certPtrs[i]);
+                    if (certPtrs[i] != IntPtr.Zero)
+                    {
+                        Interop.JObjectLifetime.DeleteGlobalReference(certPtrs[i]);
+                    }
                 }
             }
 
