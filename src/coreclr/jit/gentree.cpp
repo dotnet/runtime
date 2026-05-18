@@ -14985,7 +14985,7 @@ GenTree* Compiler::gtFoldExpr(GenTree* tree)
 }
 
 //------------------------------------------------------------------------
-// gtFoldExprUnary: see if an unary operation is foldable
+// gtFoldExprUnary: see if a unary operation is foldable
 //
 // Arguments:
 //    tree - tree to examine
@@ -16964,7 +16964,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 }
 
 //------------------------------------------------------------------------
-// gtFoldExprUnaryConst: see if an unary const operation is foldable
+// gtFoldExprUnaryConst: see if a unary const operation is foldable
 //
 // Arguments:
 //    tree - tree to examine
@@ -17013,7 +17013,7 @@ GenTree* Compiler::gtFoldExprUnaryConst(GenTreeUnOp* tree)
 }
 
 //------------------------------------------------------------------------
-// gtFoldExprUnaryConst: see if an unary const operation for TYP_INT is foldable
+// gtFoldExprUnaryConst: see if a unary const operation for TYP_INT is foldable
 //
 // Arguments:
 //    tree   - tree to examine
@@ -17050,14 +17050,15 @@ GenTree* Compiler::gtFoldExprUnaryConstInt(GenTreeUnOp* tree, GenTreeIntCon* int
 
         case GT_NEG:
         {
-            iconVal = -iconVal;
+            iconVal = static_cast<int32_t>(0 - static_cast<uint32_t>(iconVal));
             break;
         }
 
         case GT_BSWAP:
         {
-            iconVal = ((iconVal >> 24) & 0xFF) | ((iconVal >> 8) & 0xFF00) | ((iconVal << 8) & 0xFF0000) |
-                      ((iconVal << 24) & 0xFF000000);
+            uint32_t uconVal = static_cast<uint32_t>(iconVal);
+            iconVal          = static_cast<int32_t>(((uconVal >> 24) & 0xFF) | ((uconVal >> 8) & 0xFF00) |
+                                           ((uconVal << 8) & 0xFF0000) | ((uconVal << 24) & 0xFF000000));
             break;
         }
 
@@ -17160,6 +17161,7 @@ GenTree* Compiler::gtFoldExprUnaryConstInt(GenTreeUnOp* tree, GenTreeIntCon* int
                     return tree;
                 }
             }
+            break;
         }
 
         default:
@@ -17172,7 +17174,7 @@ GenTree* Compiler::gtFoldExprUnaryConstInt(GenTreeUnOp* tree, GenTreeIntCon* int
 }
 
 //------------------------------------------------------------------------
-// gtFoldExprUnaryConst: see if an unary const operation for TYP_LONG is foldable
+// gtFoldExprUnaryConst: see if a unary const operation for TYP_LONG is foldable
 //
 // Arguments:
 //    tree   - tree to examine
@@ -17209,16 +17211,17 @@ GenTree* Compiler::gtFoldExprUnaryConstLng(GenTreeUnOp* tree, GenTreeIntConCommo
 
         case GT_NEG:
         {
-            lconVal = -lconVal;
+            lconVal = static_cast<int64_t>(0 - static_cast<uint64_t>(lconVal));
             break;
         }
 
         case GT_BSWAP:
         {
-            lconVal = ((lconVal >> 56) & 0xFF) | ((lconVal >> 40) & 0xFF00) | ((lconVal >> 24) & 0xFF0000) |
-                      ((lconVal >> 8) & 0xFF000000) | ((lconVal << 8) & 0xFF00000000) |
-                      ((lconVal << 24) & 0xFF0000000000) | ((lconVal << 40) & 0xFF000000000000) |
-                      ((lconVal << 56) & 0xFF00000000000000);
+            uint64_t uconVal = static_cast<uint64_t>(lconVal);
+            lconVal          = static_cast<int64_t>(
+                ((uconVal >> 56) & 0xFF) | ((uconVal >> 40) & 0xFF00) | ((uconVal >> 24) & 0xFF0000) |
+                ((uconVal >> 8) & 0xFF000000) | ((uconVal << 8) & 0xFF00000000) | ((uconVal << 24) & 0xFF0000000000) |
+                ((uconVal << 40) & 0xFF000000000000) | ((uconVal << 56) & 0xFF00000000000000));
             break;
         }
 
@@ -17326,7 +17329,7 @@ GenTree* Compiler::gtFoldExprUnaryConstLng(GenTreeUnOp* tree, GenTreeIntConCommo
 }
 
 //------------------------------------------------------------------------
-// gtFoldExprUnaryConstDbl: see if an unary const operation for TYP_DOUBLE or TYP_FLOAT is foldable
+// gtFoldExprUnaryConstDbl: see if a unary const operation for TYP_DOUBLE or TYP_FLOAT is foldable
 //
 // Arguments:
 //    tree   - tree to examine
@@ -17744,7 +17747,7 @@ GenTree* Compiler::gtFoldExprBinaryConstInt(GenTreeOp* tree, GenTreeIntCon* intC
                 return gtFoldExprForOverflow(tree);
             }
 
-            iconVal1 += iconVal2;
+            iconVal1 = static_cast<int32_t>(static_cast<uint32_t>(iconVal1) + static_cast<uint32_t>(iconVal2));
 
             FieldSeq* fieldSeq = GetFieldSeqStore()->Append(intCon1->gtFieldSeq, intCon2->gtFieldSeq);
             return gtBashTreeToConstInt(tree, iconVal1, fieldSeq);
@@ -17757,7 +17760,7 @@ GenTree* Compiler::gtFoldExprBinaryConstInt(GenTreeOp* tree, GenTreeIntCon* intC
                 return gtFoldExprForOverflow(tree);
             }
 
-            iconVal1 -= iconVal2;
+            iconVal1 = static_cast<int32_t>(static_cast<uint32_t>(iconVal1) - static_cast<uint32_t>(iconVal2));
             break;
         }
 
@@ -17768,7 +17771,7 @@ GenTree* Compiler::gtFoldExprBinaryConstInt(GenTreeOp* tree, GenTreeIntCon* intC
                 return gtFoldExprForOverflow(tree);
             }
 
-            iconVal1 *= iconVal2;
+            iconVal1 = static_cast<int32_t>(static_cast<uint32_t>(iconVal1) * static_cast<uint32_t>(iconVal2));
             break;
         }
 
@@ -17792,7 +17795,7 @@ GenTree* Compiler::gtFoldExprBinaryConstInt(GenTreeOp* tree, GenTreeIntCon* intC
 
         case GT_LSH:
         {
-            iconVal1 <<= (iconVal2 & 0x1F);
+            iconVal1 = static_cast<int32_t>(static_cast<uint32_t>(iconVal1) << (iconVal2 & 0x1F));
             break;
         }
 
@@ -17810,17 +17813,17 @@ GenTree* Compiler::gtFoldExprBinaryConstInt(GenTreeOp* tree, GenTreeIntCon* intC
 
         case GT_ROL:
         {
+            uint32_t uconVal1 = static_cast<uint32_t>(iconVal1);
             iconVal2 &= 0x1F;
-            iconVal1 = (iconVal1 << iconVal2) |
-                       static_cast<int32_t>(static_cast<uint32_t>(iconVal1) >> ((32 - iconVal2) & 0x1F));
+            iconVal1 = static_cast<int32_t>((uconVal1 << iconVal2) | (uconVal1 >> ((32 - iconVal2) & 0x1F)));
             break;
         }
 
         case GT_ROR:
         {
+            uint32_t uconVal1 = static_cast<uint32_t>(iconVal1);
             iconVal2 &= 0x1F;
-            iconVal1 = (iconVal1 << ((32 - iconVal2) & 0x1F)) |
-                       static_cast<int32_t>(static_cast<uint32_t>(iconVal1) >> iconVal2);
+            iconVal1 = static_cast<int32_t>((uconVal1 << ((32 - iconVal2) & 0x1F)) | (uconVal1 >> iconVal2));
             break;
         }
 
@@ -17872,7 +17875,7 @@ GenTree* Compiler::gtFoldExprBinaryConstInt(GenTreeOp* tree, GenTreeIntCon* intC
 }
 
 //------------------------------------------------------------------------
-// gtFoldExprBinaryConstInt: see if a binary const operation for TYP_LONG is foldable
+// gtFoldExprBinaryConstLng: see if a binary const operation for TYP_LONG is foldable
 //
 // Arguments:
 //    tree          - tree to examine
@@ -17993,7 +17996,7 @@ GenTree* Compiler::gtFoldExprBinaryConstLng(GenTreeOp*           tree,
                 return gtFoldExprForOverflow(tree);
             }
 
-            lconVal1 += lconVal2;
+            lconVal1 = static_cast<int64_t>(static_cast<uint64_t>(lconVal1) + static_cast<uint64_t>(lconVal2));
 
 #if defined(TARGET_64BIT)
             FieldSeq* fieldSeq = GetFieldSeqStore()->Append(intConCommon1->AsIntCon()->gtFieldSeq,
@@ -18011,7 +18014,7 @@ GenTree* Compiler::gtFoldExprBinaryConstLng(GenTreeOp*           tree,
                 return gtFoldExprForOverflow(tree);
             }
 
-            lconVal1 -= lconVal2;
+            lconVal1 = static_cast<int64_t>(static_cast<uint64_t>(lconVal1) - static_cast<uint64_t>(lconVal2));
             break;
         }
 
@@ -18022,7 +18025,7 @@ GenTree* Compiler::gtFoldExprBinaryConstLng(GenTreeOp*           tree,
                 return gtFoldExprForOverflow(tree);
             }
 
-            lconVal1 *= lconVal2;
+            lconVal1 = static_cast<int64_t>(static_cast<uint64_t>(lconVal1) * static_cast<uint64_t>(lconVal2));
             break;
         }
 
@@ -18046,7 +18049,7 @@ GenTree* Compiler::gtFoldExprBinaryConstLng(GenTreeOp*           tree,
 
         case GT_LSH:
         {
-            lconVal1 <<= (lconVal2 & 0x3F);
+            lconVal1 = static_cast<int64_t>(static_cast<uint64_t>(lconVal1) << (lconVal2 & 0x3F));
             break;
         }
 
@@ -18064,17 +18067,17 @@ GenTree* Compiler::gtFoldExprBinaryConstLng(GenTreeOp*           tree,
 
         case GT_ROL:
         {
+            uint64_t uconVal1 = static_cast<uint64_t>(lconVal1);
             lconVal2 &= 0x3F;
-            lconVal1 = (lconVal1 << lconVal2) |
-                       static_cast<int64_t>(static_cast<uint64_t>(lconVal1) >> ((64 - lconVal2) & 0x3F));
+            lconVal1 = static_cast<int64_t>((uconVal1 << lconVal2) | (uconVal1 >> ((64 - lconVal2) & 0x3F)));
             break;
         }
 
         case GT_ROR:
         {
+            uint64_t uconVal1 = static_cast<uint64_t>(lconVal1);
             lconVal2 &= 0x3F;
-            lconVal1 = (lconVal1 << ((64 - lconVal2) & 0x3F)) |
-                       static_cast<int64_t>(static_cast<uint64_t>(lconVal1) >> lconVal2);
+            lconVal1 = static_cast<int64_t>((uconVal1 << ((64 - lconVal2) & 0x3F)) | (uconVal1 >> lconVal2));
             break;
         }
 
@@ -18126,12 +18129,12 @@ GenTree* Compiler::gtFoldExprBinaryConstLng(GenTreeOp*           tree,
 }
 
 //------------------------------------------------------------------------
-// gtFoldExprBinaryConstInt: see if a binary const operation for TYP_INT is foldable
+// gtFoldExprBinaryConstDbl: see if a binary const operation for TYP_DOUBLE or TYP_FLOAT is foldable
 //
 // Arguments:
 //    tree    - tree to examine
-//    intCon1 - the first integer constant operand for tree
-//    intCon2 - the second integer constant operand for tree
+//    dblCon1 - the first floating-point constant operand for tree
+//    dblCon2 - the second floating-point constant operand for tree
 //
 // Returns:
 //    The original tree if no folding happened.
@@ -18234,6 +18237,12 @@ GenTree* Compiler::gtFoldExprBinaryConstDbl(GenTreeOp* tree, GenTreeDblCon* dblC
 
         case GT_DIV:
         {
+            if (dconVal2 == 0)
+            {
+                // We do not fold division by zero, even for floating point.
+                // This is because the result will be platform-dependent for an expression like 0d / 0d.
+                return tree;
+            }
             dconVal1 /= dconVal2;
             break;
         }
@@ -18325,7 +18334,6 @@ GenTree* Compiler::gtBashTreeToConstLng(GenTree* tree, int64_t lconVal, FieldSeq
 // Arguments:
 //    tree     - the tree to bash
 //    dconVal  - the value of the constant
-//    fieldSeq - the field sequence, if any
 //
 // Returns:
 //    tree, bashed to GT_CNS_DBL node
@@ -33315,7 +33323,7 @@ bool GenTree::IsVectorPerElementMask(var_types simdBaseType, unsigned simdSize) 
 
         case GT_NOT:
         {
-            // We are an unary bitwise operation where the input is a per-element mask
+            // We are a unary bitwise operation where the input is a per-element mask
             return intrinsic->Op(1)->IsVectorPerElementMask(simdBaseType, simdSize);
         }
 
