@@ -963,11 +963,9 @@ namespace System.Text.Unicode
 
                     prevIncomplete = Vector128.SubtractSaturate(currentBlock, maxValue);
 
-                    // For Arm64, use vecContinuationBytes and vecFourByteSequences to accumulate the sum for better performance.
-                    // Otherwise, increment the adjustments directly on every iteration.
-
                     if (AdvSimd.Arm64.IsSupported)
                     {
+                        // For Arm64, use vecContinuationBytes and vecFourByteSequences to accumulate the sum for better performance.
                         vecContinuationBytes += Vector128.LessThanOrEqual(currentBlock.AsSByte(), largestContinuationByte);
                         vecFourByteSequences += Vector128.GreaterThan(currentBlock, fourthByteMinusOne).AsSByte();
                         overflowCounter++;
@@ -990,8 +988,11 @@ namespace System.Text.Unicode
                     }
                     else
                     {
-                        numContinuationBytes += Vector128.CountWhereAllBitsSet(byte2High);
-                        numFourByteSequences += Vector128.CountWhereAllBitsSet(Vector128.SubtractSaturate(currentBlock, fourthByte));
+                        // Otherwise, increment the adjustments directly on every iteration.
+                        // TODO: Support other architectures using CountWhereAllBitsSet.
+                        // numContinuationBytes += Vector128.CountWhereAllBitsSet(byte2High);
+                        // numFourByteSequences += Vector128.CountWhereAllBitsSet(Vector128.SubtractSaturate(currentBlock, fourthByte));
+                        throw new PlatformNotSupportedException();
                     }
                 }
             }
