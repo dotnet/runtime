@@ -11,6 +11,7 @@ using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading.Tasks;
 
 namespace System.Net.Security
 {
@@ -978,10 +979,10 @@ namespace System.Net.Security
             {
                 if (_handshakeWaiter != null)
                 {
-                    ProtocolToken token = default;
+                    ProtocolToken waitToken = default;
                     // avoid waiting under lock.
-                    token.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.TryAgain);
-                    return token;
+                    waitToken.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.TryAgain);
+                    return waitToken;
                 }
 
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.DumpBuffer(this, buffer.Span);
