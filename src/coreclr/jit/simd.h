@@ -2258,6 +2258,7 @@ void BroadcastConstantToSimdScalable(simdscalable_t* result, var_types baseType,
 {
     result->gtSimdScalableBaseType = baseType;
     result->gtSimdScalableKind     = SimdScalableRepeated;
+    result->gtSimdScalableStep     = 0;
     result->gtSimdScalableIndex    = 0;
     memcpy(&result->gtSimdScalableIndex, &arg0, sizeof(TBase));
 }
