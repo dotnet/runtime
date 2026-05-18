@@ -947,6 +947,13 @@ namespace
             pos++;
         }
 
+        if (sig.HasGenericContextArg())
+        {
+            if (pos < maxSize)
+                keyBuffer[pos] = 'i';
+            pos++;
+        }
+
         for (CorElementType argType = sig.NextArg();
             argType != ELEMENT_TYPE_END;
             argType = sig.NextArg())
