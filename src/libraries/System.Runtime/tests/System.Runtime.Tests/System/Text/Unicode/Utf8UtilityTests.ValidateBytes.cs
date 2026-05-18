@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
-using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -21,6 +21,10 @@ namespace System.Text.Unicode.Tests
         private const string E_ACUTE = "C3A9"; // U+00E9 LATIN SMALL LETTER E WITH ACUTE, 2 bytes
         private const string EURO_SYMBOL = "E282AC"; // U+20AC EURO SIGN, 3 bytes
         private const string GRINNING_FACE = "F09F9880"; // U+1F600 GRINNING FACE, 4 bytes
+
+        private static readonly byte[] validTwoByteSequence = Utf8Tests.DecodeHex(E_ACUTE + E_ACUTE + E_ACUTE + E_ACUTE + E_ACUTE + E_ACUTE + E_ACUTE + E_ACUTE);
+        private static readonly byte[] validThreeByteSequence = Utf8Tests.DecodeHex(EURO_SYMBOL + EURO_SYMBOL + EURO_SYMBOL + EURO_SYMBOL + EURO_SYMBOL + EURO_SYMBOL);
+        private static readonly byte[] validFourByteSequence = Utf8Tests.DecodeHex(GRINNING_FACE + GRINNING_FACE + GRINNING_FACE + GRINNING_FACE);
 
         [Theory]
         [InlineData("", 0, 0)] // empty string is OK
@@ -289,20 +293,20 @@ namespace System.Text.Unicode.Tests
 
             // Exercise the vectorized codepath and insert the invalid sequence at different positions.
 
-            byte[] byteVector = Utf8Tests.DecodeHex(E_ACUTE + E_ACUTE + E_ACUTE + E_ACUTE + E_ACUTE + E_ACUTE + E_ACUTE + E_ACUTE);
-
             for (int pos = 0; pos <= 16; pos++)
             {
-                ArrayList testList = new ArrayList(byteVector);
+                List<byte> testList = new List<byte>(validTwoByteSequence);
 
                 if (pos % 2 != 0)
                 {
                     // Replace bytes with valid ASCII characters so they can be broken up.
-                    testList.SetRange(pos - pos % 2, new byte[2] {0x20, 0x21});
+                    int replacementStart = pos - pos % 2;
+                    testList[replacementStart] = 0x20;
+                    testList[replacementStart + 1] = 0x21;
                 }
 
                 testList.InsertRange(pos, invalidSequence);
-                byte[] toTest = (byte[])testList.ToArray(typeof(byte));
+                byte[] toTest = testList.ToArray();
                 GetIndexOfFirstInvalidUtf8Sequence_Test_Core(toTest, pos, (pos + 1) / 2, 0);
             }
         }
@@ -313,20 +317,21 @@ namespace System.Text.Unicode.Tests
 
             // Exercise the vectorized codepath and insert the invalid sequence at different positions.
 
-            byte[] byteVector = Utf8Tests.DecodeHex(EURO_SYMBOL + EURO_SYMBOL + EURO_SYMBOL + EURO_SYMBOL + EURO_SYMBOL + EURO_SYMBOL);
-
             for (int pos = 0; pos <= 16; pos++)
             {
-                ArrayList testList = new ArrayList(byteVector);
+                List<byte> testList = new List<byte>(validThreeByteSequence);
 
                 if (pos % 3 != 0)
                 {
                     // Replace bytes with valid ASCII characters so they can be broken up.
-                    testList.SetRange(pos - pos % 3, new byte[3] {0x20, 0x21, 0x22});
+                    int replacementStart = pos - pos % 3;
+                    testList[replacementStart] = 0x20;
+                    testList[replacementStart + 1] = 0x21;
+                    testList[replacementStart + 2] = 0x22;
                 }
 
                 testList.InsertRange(pos, invalidSequence);
-                byte[] toTest = (byte[])testList.ToArray(typeof(byte));
+                byte[] toTest = testList.ToArray();
                 GetIndexOfFirstInvalidUtf8Sequence_Test_Core(toTest, pos, (pos / 3) + (pos % 3), 0);
             }
         }
@@ -337,20 +342,22 @@ namespace System.Text.Unicode.Tests
 
             // Exercise the vectorized codepath and insert the invalid sequence at different positions.
 
-            byte[] byteVector = Utf8Tests.DecodeHex(GRINNING_FACE + GRINNING_FACE + GRINNING_FACE + GRINNING_FACE);
-
             for (int pos = 0; pos <= 16; pos++)
             {
-                ArrayList testList = new ArrayList(byteVector);
+                List<byte> testList = new List<byte>(validFourByteSequence);
 
                 if (pos % 4 != 0)
                 {
                     // Replace bytes with valid ASCII characters so they can be broken up.
-                    testList.SetRange(pos - pos % 4, new byte[4] {0x20, 0x21, 0x22, 0x23});
+                    int replacementStart = pos - pos % 4;
+                    testList[replacementStart] = 0x20;
+                    testList[replacementStart + 1] = 0x21;
+                    testList[replacementStart + 2] = 0x22;
+                    testList[replacementStart + 3] = 0x23;
                 }
 
                 testList.InsertRange(pos, invalidSequence);
-                byte[] toTest = (byte[])testList.ToArray(typeof(byte));
+                byte[] toTest = testList.ToArray();
                 GetIndexOfFirstInvalidUtf8Sequence_Test_Core(toTest, pos, (pos / 4) + (pos % 4), pos / 4);
             }
         }
