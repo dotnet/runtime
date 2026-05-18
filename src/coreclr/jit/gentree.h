@@ -4779,6 +4779,8 @@ enum class WellKnownArg : unsigned
     RuntimeMethodHandle,
     AsyncExecutionContext,
     AsyncSynchronizationContext,
+    AsyncResumedUse,
+    AsyncResumedDef,
     WasmShadowStackPointer,
     WasmPortableEntryPoint
 };

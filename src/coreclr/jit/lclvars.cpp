@@ -2269,9 +2269,7 @@ void Compiler::lvaSetHiddenBufferStructArg(unsigned varNum)
 {
     LclVarDsc* varDsc = lvaGetDesc(varNum);
 
-#ifdef DEBUG
-    varDsc->SetDefinedViaAddress(true);
-#endif
+    INDEBUG(varDsc->SetDefinedViaAddress(true));
 
     if (varDsc->lvPromoted)
     {

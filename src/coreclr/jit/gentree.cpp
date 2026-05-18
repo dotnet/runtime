@@ -1623,6 +1623,8 @@ bool CallArgs::GetCustomRegister(Compiler* comp, CorInfoCallConvExtension cc, We
         case WellKnownArg::StackArrayLocal:
         case WellKnownArg::AsyncExecutionContext:
         case WellKnownArg::AsyncSynchronizationContext:
+        case WellKnownArg::AsyncResumedUse:
+        case WellKnownArg::AsyncResumedDef:
             // These are pseudo-args; they are not actual arguments, but we
             // reuse the argument mechanism to represent them as arbitrary uses
             // that are later expanded out.
@@ -14535,6 +14537,10 @@ const char* Compiler::gtGetWellKnownArgNameForArgMsg(WellKnownArg arg)
             return "exec ctx";
         case WellKnownArg::AsyncSynchronizationContext:
             return "sync ctx";
+        case WellKnownArg::AsyncResumedUse:
+            return "resumed";
+        case WellKnownArg::AsyncResumedDef:
+            return "resumed def";
         case WellKnownArg::WasmShadowStackPointer:
             return "wasm sp";
         case WellKnownArg::WasmPortableEntryPoint:
@@ -21020,6 +21026,34 @@ GenTreeLclVarCommon* Compiler::gtCallGetDefinedRetBufLclAddr(GenTreeCall* call)
 
     assert(node->OperIs(GT_LCL_ADDR) && lvaGetDesc(node->AsLclVarCommon())->IsDefinedViaAddress());
 
+    return node->AsLclVarCommon();
+}
+
+//------------------------------------------------------------------------
+// gtCallGetDefinedAsyncResumedLclAddr:
+//   Get the tree corresponding to the address of the async resumed indicator that this call defines.
+//
+// Parameters:
+//   call - The call node
+//
+// Returns:
+//   A tree representing the address of a local.
+//
+GenTreeLclVarCommon* Compiler::gtCallGetDefinedAsyncResumedLclAddr(GenTreeCall* call)
+{
+    if (!call->IsAsync())
+    {
+        return nullptr;
+    }
+
+    CallArg* arg = call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncResumedDef);
+    if (arg == nullptr)
+    {
+        return nullptr;
+    }
+
+    GenTree* node = arg->GetNode();
+    assert(node->OperIs(GT_LCL_ADDR) && lvaGetDesc(node->AsLclVarCommon())->IsDefinedViaAddress());
     return node->AsLclVarCommon();
 }
 
