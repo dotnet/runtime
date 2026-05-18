@@ -4319,6 +4319,11 @@ namespace System
         /// <param name="span">The span of values to determine the minimum value of.</param>
         /// <returns>The minimum value in the span.</returns>
         /// <exception cref="InvalidOperationException"><paramref name="span"/> is empty and <typeparamref name="T"/> is a non-nullable value type.</exception>
+        /// <remarks>
+        /// <para>If type <typeparamref name="T" /> implements <see cref="System.IComparable{T}" />, the <see cref="Min{T}(ReadOnlySpan{T})" /> method uses that implementation to compare values. Otherwise, if type <typeparamref name="T" /> implements <see cref="System.IComparable" />, that implementation is used to compare values.</para>
+        /// <para>If <typeparamref name="T" /> is a reference type and the span sequence is empty, this method returns <see langword="null" />.</para>
+        /// <para>Null values are ignored when determining the minimum value. If the span contains at least one non-null value, the minimum of those values is returned. If the span does not contain any non-null values, <see langword="null" /> is returned.</para>
+        /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T? Min<T>(this ReadOnlySpan<T> span) =>
             Min(span, Comparer<T>.Default);
@@ -4330,7 +4335,12 @@ namespace System
         /// <param name="span">The span of values to determine the minimum value of.</param>
         /// <param name="comparer">The <see cref="IComparer{T}"/> to compare values.</param>
         /// <returns>The minimum value in the span.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="comparer"/> is <see langword="null"/>.</exception>
         /// <exception cref="InvalidOperationException"><paramref name="span"/> is empty and <typeparamref name="T"/> is a non-nullable value type.</exception>
+        /// <remarks>
+        /// <para>If <typeparamref name="T" /> is a reference type and the span sequence is empty, this method returns <see langword="null" />.</para>
+        /// <para>Null values are ignored when determining the minimum value. If the span contains at least one non-null value, the minimum of those values is returned. If the span does not contain any non-null values, <see langword="null" /> is returned.</para>
+        /// </remarks>
         public static T? Min<T>(this ReadOnlySpan<T> span, IComparer<T> comparer)
         {
             if (comparer is null)
@@ -4377,6 +4387,11 @@ namespace System
         /// <param name="span">The span of values to determine the maximum value of.</param>
         /// <returns>The maximum value in the span.</returns>
         /// <exception cref="InvalidOperationException"><paramref name="span"/> is empty and <typeparamref name="T"/> is a non-nullable value type.</exception>
+        /// <remarks>
+        /// <para>If type <typeparamref name="T" /> implements <see cref="System.IComparable{T}" />, the <see cref="Max{T}(ReadOnlySpan{T})" /> method uses that implementation to compare values. Otherwise, if type <typeparamref name="T" /> implements <see cref="System.IComparable" />, that implementation is used to compare values.</para>
+        /// <para>If <typeparamref name="T" /> is a reference type and the span sequence is empty, this method returns <see langword="null" />.</para>
+        /// <para>Null values are ignored when determining the maximum value. If the span contains at least one non-null value, the maximum of those values is returned. If the span does not contain any non-null values, <see langword="null" /> is returned.</para>
+        /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T? Max<T>(this ReadOnlySpan<T> span) =>
             Max(span, Comparer<T>.Default);
@@ -4388,7 +4403,12 @@ namespace System
         /// <param name="span">The span of values to determine the maximum value of.</param>
         /// <param name="comparer">The <see cref="IComparer{T}"/> to compare values.</param>
         /// <returns>The maximum value in the span.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="comparer"/> is <see langword="null"/>.</exception>
         /// <exception cref="InvalidOperationException"><paramref name="span"/> is empty and <typeparamref name="T"/> is a non-nullable value type.</exception>
+        /// <remarks>
+        /// <para>If <typeparamref name="T" /> is a reference type and the span sequence is empty, this method returns <see langword="null" />.</para>
+        /// <para>Null values are ignored when determining the maximum value. If the span contains at least one non-null value, the maximum of those values is returned. If the span does not contain any non-null values, <see langword="null" /> is returned.</para>
+        /// </remarks>
         public static T? Max<T>(this ReadOnlySpan<T> span, IComparer<T> comparer)
         {
             if (comparer is null)
