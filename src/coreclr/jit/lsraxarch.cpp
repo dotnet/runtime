@@ -860,7 +860,92 @@ int LinearScan::BuildRMWUses(
     GenTree* delayUseOperand = op2;
     if (node->OperIsCommutative())
     {
-        if (op1->isContained() && op2 != nullptr)
+        RefPositionIterator op1UsesPrev = refPositions.backPosition();
+
+        if (op1UsesPrev != refPositions.end())
+        {
+            if (op1->isContained())
+            {
+                srcCount += BuildOperandUses(op1);
+            }
+            else
+            {
+                tgtPrefUse = BuildUse(op1);
+                srcCount++;
+            }
+
+            RefPositionIterator op2UsesPrev = refPositions.backPosition();
+
+            if (op2->isContained())
+            {
+                srcCount += BuildOperandUses(op2);
+            }
+            else
+            {
+                tgtPrefUse2 = BuildUse(op2);
+                srcCount++;
+            }
+
+            if ((tgtPrefUse != nullptr) && (tgtPrefUse2 != nullptr))
+            {
+                // CQ analysis shows that it's best to always prefer only op1 here.
+                tgtPrefUse2 = nullptr;
+            }
+
+            // Codegen will emit something like:
+            //
+            // mov dstReg, op1
+            // ins dstReg, op2
+            //
+            // We need to ensure that dstReg does not interfere with any register that
+            // appears in the second instruction. At the same time we want to
+            // preference the dstReg to be the same register as either op1/op2
+            // to be able to elide the mov whenever possible.
+            //
+            // While we could resolve the situation with either an internal register or
+            // by marking the uses as delay free unconditionally, the logic here tries
+            // to be smarter to avoid the extra register pressure/potential copies.
+            //
+            // We have some flexibility as codegen can swap op1/op2 as needed since it's
+            // commutative. If we can guarantee that the dstReg is used only in one of
+            // op1/op2, then we are good.
+            //
+            // To ensure the above we have some bespoke interference logic here on
+            // intervals for the ref positions we built above. It marks one of the uses
+            // as delay freed when it finds interference (almost never).
+            //
+            RefPositionIterator op1Use = op1UsesPrev;
+
+            while (op1Use != op2UsesPrev)
+            {
+                ++op1Use;
+
+                if (op1Use->refType != RefTypeUse)
+                {
+                    continue;
+                }
+
+                RefPositionIterator op2Use = op2UsesPrev;
+                ++op2Use;
+
+                while (op2Use != refPositions.end())
+                {
+                    if (op2Use->refType == RefTypeUse)
+                    {
+                        if (op1Use->getInterval() == op2Use->getInterval())
+                        {
+                            setDelayFree(&*op1Use);
+                            break;
+                        }
+
+                        ++op2Use;
+                    }
+                }
+            }
+
+            return srcCount;
+        }
+        else if (op1->isContained() && op2 != nullptr)
         {
             delayUseOperand = op1;
         }
