@@ -52,6 +52,8 @@ partial interface IRuntimeTypeSystem : IContract
     // True if the MethodTable is the sentinel value associated with unallocated space in the managed heap
     public virtual bool IsFreeObjectMethodTable(TypeHandle typeHandle);
     public virtual bool IsString(TypeHandle typeHandle);
+    // True if the type is a GC-collectable object reference.
+    public virtual bool IsObjRef(TypeHandle typeHandle);
     // True if the MethodTable represents a type that contains managed references
     public virtual bool ContainsGCPointers(TypeHandle typeHandle);
     // True if the type requires 8-byte alignment on platforms that don't 8-byte align by default (FEATURE_64BIT_ALIGNMENT)
@@ -79,6 +81,8 @@ partial interface IRuntimeTypeSystem : IContract
     public TargetPointer GetGCThreadStaticsBasePointer(TypeHandle typeHandle, TargetPointer threadPtr);
     public TargetPointer GetNonGCThreadStaticsBasePointer(TypeHandle typeHandle, TargetPointer threadPtr);
     public TargetPointer GetFieldDescList(TypeHandle typeHandle);
+    // True if the MethodTable represents a type tracked as an Objective-C reference type with a finalizer
+    public bool IsTrackedReferenceWithFinalizer(TypeHandle typeHandle);
     public TargetPointer GetGCStaticsBasePointer(TypeHandle typeHandle);
     public TargetPointer GetNonGCStaticsBasePointer(TypeHandle typeHandle);
     public virtual ReadOnlySpan<TypeHandle> GetInstantiation(TypeHandle typeHandle);
@@ -94,6 +98,11 @@ partial interface IRuntimeTypeSystem : IContract
     // NOTE: If this returns CorElementType.ValueType it may be a normal valuetype or a "NATIVE" valuetype used to represent an interop view of a structure
     // HasTypeParam will return true for cases where this is the interop view, and false for normal valuetypes.
     public virtual CorElementType GetSignatureCorElementType(TypeHandle typeHandle);
+
+    // Internal element type of the type. Unlike GetSignatureCorElementType, this returns the underlying
+    // primitive type for enums (e.g. I4 for an enum with int underlying type).
+    // For arrays, reference types, and TypeDescs, behaves identically to GetSignatureCorElementType.
+    public virtual CorElementType GetInternalCorElementType(TypeHandle typeHandle);
 
     bool IsValueType(TypeHandle typeHandle);
     // return true if the TypeHandle represents an enum type.
@@ -149,6 +158,15 @@ public enum OptimizationTier
 ```
 
 ```csharp
+public enum GenericContextLoc
+{
+    None,
+    InstArg,
+    ThisPtr,
+}
+```
+
+```csharp
 partial interface IRuntimeTypeSystem : IContract
 {
     public virtual MethodDescHandle GetMethodDescHandle(TargetPointer methodDescPointer);
@@ -190,9 +208,9 @@ partial interface IRuntimeTypeSystem : IContract
     // Return true if a MethodDesc represents an IL stub with a special MethodDesc context arg
     public virtual bool HasMDContextArg(MethodDescHandle);
 
-    // Return true if the method requires a hidden instantiation argument (generic context parameter).
-    // Corresponds to native MethodDesc::RequiresInstArg().
-    public virtual bool RequiresInstArg(MethodDescHandle methodDesc);
+    // Determine where a shared generic method obtains its generic context.
+    // Returns None if not shared, InstArg if via a hidden parameter, or ThisPtr if via the 'this' pointer's MethodTable.
+    public virtual GenericContextLoc GetGenericContextLoc(MethodDescHandle methodDesc);
 
     // Return true if the method uses the async calling convention.
     // Corresponds to native MethodDesc::IsAsyncMethod().
@@ -298,6 +316,7 @@ internal partial struct RuntimeTypeSystem_1
         Collectible = 0x00200000,
         RequiresAlign8 = 0x00800000,
         ContainsGCPointers = 0x01000000,
+        IsTrackedReferenceWithFinalizer = 0x04000000,
         ContainsGenericVariables = 0x20000000,
         HasComponentSize = 0x80000000, // This is set if lower 16 bits is used for the component size,
                                        // otherwise the lower bits are used for WFLAGS_LOW
@@ -346,6 +365,7 @@ internal partial struct RuntimeTypeSystem_1
         public bool RequiresAlign8 => GetFlag(WFLAGS_HIGH.RequiresAlign8) != 0;
         public bool IsCollectible => GetFlag(WFLAGS_HIGH.Collectible) != 0;
         public bool IsDynamicStatics => GetFlag(WFLAGS2_ENUM.DynamicStatics) != 0;
+        public bool IsTrackedReferenceWithFinalizer => GetFlag(WFLAGS_HIGH.IsTrackedReferenceWithFinalizer) != 0;
         public bool IsGenericTypeDefinition => TestFlagWithMask(WFLAGS_LOW.GenericsMask, WFLAGS_LOW.GenericsMask_TypicalInstantiation);
     }
 
@@ -563,6 +583,8 @@ Contracts used:
 
     public bool IsString(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[TypeHandle.Address].Flags.IsString;
 
+    public bool IsObjRef(TypeHandle typeHandle) => // Returns true if GetSignatureCorElementType returns Class, Array, or SzArray.
+
     public bool ContainsGCPointers(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[TypeHandle.Address].Flags.ContainsGCPointers;
 
     public bool RequiresAlign8(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.RequiresAlign8;
@@ -655,6 +677,8 @@ Contracts used:
     public ushort GetNumThreadStaticFields(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (ushort)0 : GetClassData(typeHandle).NumThreadStaticFields;
 
     public TargetPointer GetFieldDescList(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? TargetPointer.Null : GetClassData(typeHandle).FieldDescList;
+
+    public bool IsTrackedReferenceWithFinalizer(TypeHandle typeHandle) => typeHandle.IsMethodTable() && _methodTables[typeHandle.Address].Flags.IsTrackedReferenceWithFinalizer;
 
     public TargetPointer GetGCStaticsBasePointer(TypeHandle typeHandle)
     {
@@ -821,6 +845,19 @@ Contracts used:
             return (CorElementType)(TypeAndFlags & 0xFF);
         }
         return default(CorElementType);
+    }
+
+    // Internal element type: returns the underlying primitive type for enums. For all other types, identical to GetSignatureCorElementType.
+    public CorElementType GetInternalCorElementType(TypeHandle typeHandle)
+    {
+        CorElementType sigType = GetSignatureCorElementType(typeHandle);
+        if (sigType == CorElementType.ValueType && typeHandle.IsMethodTable())
+        {
+            CorElementType internalType = (CorElementType)GetClassData(typeHandle).InternalCorElementType;
+            if (internalType != CorElementType.ValueType)
+                return internalType;
+        }
+        return sigType;
     }
 
     public bool IsValueType(TypeHandle typeHandle)
@@ -1609,26 +1646,36 @@ Determining if a method is an async thunk method:
     }
 ```
 
-Determining if a method requires a hidden instantiation argument (generic context parameter):
+Determining where a shared generic method obtains its generic context:
 
 ```csharp
-    public bool RequiresInstArg(MethodDescHandle methodDescHandle)
+    public GenericContextLoc GetGenericContextLoc(MethodDescHandle methodDescHandle)
     {
         MethodDesc md = _methodDescs[methodDescHandle.Address];
-
-        // RequiresInstArg = IsSharedByGenericInstantiations && (HasMethodInstantiation || IsStatic || IsValueType || IsInterface)
         if (!IsSharedByGenericInstantiations(md))
-            return false;
+            return GenericContextLoc.None;
+        else if (RequiresInstArg(md))
+            return GenericContextLoc.InstArg;
+        else
+            return GenericContextLoc.ThisPtr;
+    }
 
+    private bool RequiresInstArg(MethodDesc md)
+    {
         if (HasMethodInstantiation(md))
             return true;
 
-        // md.IsStatic reads from MethodDescFlags.Static (0x0080)
         if (md.IsStatic)
             return true;
 
         MethodTable mt = _methodTables[md.MethodTable];
-        return mt.Flags.IsInterface || mt.Flags.IsValueType;
+        if (mt.Flags.IsValueType)
+            return true;
+
+        if (mt.Flags.IsInterface && !IsAbstract(md) /* checked from md classification and metadata attributes */)
+            return true;
+
+        return false;
     }
 
     private bool IsSharedByGenericInstantiations(MethodDesc md)

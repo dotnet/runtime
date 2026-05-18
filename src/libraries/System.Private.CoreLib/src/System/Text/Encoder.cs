@@ -92,7 +92,6 @@ namespace System.Text
         // unfortunately for existing overrides, it has to call the [] version,
         // which is really slow, so avoid this method if you might be calling external encodings.
         [CLSCompliant(false)]
-        [RequiresUnsafe]
         public virtual unsafe int GetByteCount(char* chars, int count, bool flush)
         {
             ArgumentNullException.ThrowIfNull(chars);
@@ -154,7 +153,6 @@ namespace System.Text
         // could easily overflow our output buffer.  Therefore we do an extra test
         // when we copy the buffer so that we don't overflow byteCount either.
         [CLSCompliant(false)]
-        [RequiresUnsafe]
         public virtual unsafe int GetBytes(char* chars, int charCount,
                                            byte* bytes, int byteCount, bool flush)
         {
@@ -268,7 +266,6 @@ namespace System.Text
         // that its likely that we didn't consume as many chars as we could have.  For some
         // applications this could be slow.  (Like trying to exactly fill an output buffer from a bigger stream)
         [CLSCompliant(false)]
-        [RequiresUnsafe]
         public virtual unsafe void Convert(char* chars, int charCount,
                                            byte* bytes, int byteCount, bool flush,
                                            out int charsUsed, out int bytesUsed, out bool completed)

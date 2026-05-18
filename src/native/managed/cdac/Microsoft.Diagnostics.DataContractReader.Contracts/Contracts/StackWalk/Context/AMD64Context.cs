@@ -53,6 +53,8 @@ internal struct AMD64Context : IPlatformContext
         set => Rbp = value.Value;
     }
 
+    public uint RawContextFlags { readonly get => ContextFlags; set => ContextFlags = value; }
+
     public void Unwind(Target target)
     {
         AMD64Unwinder unwinder = new(target);

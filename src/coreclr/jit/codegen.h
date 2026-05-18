@@ -214,8 +214,9 @@ protected:
     void genCodeForBlock(BasicBlock* block);
 
 #if defined(TARGET_WASM)
-    ArrayStack<WasmInterval*>* wasmControlFlowStack = nullptr;
-    unsigned                   wasmCursor           = 0;
+    ArrayStack<WasmInterval*>* wasmControlFlowStack      = nullptr;
+    unsigned                   wasmCursor                = 0;
+    unsigned                   wasmExtraControlFlowDepth = 0;
     unsigned                   findTargetDepth(BasicBlock* target);
     void                       WasmProduceReg(GenTree* node);
     regNumber                  GetMultiUseOperandReg(GenTree* operand);
@@ -223,6 +224,8 @@ protected:
     unsigned                   GetStackPointerRegIndex() const;
     unsigned                   GetFramePointerRegIndex() const;
     void                       ensureCurrentFuncIsUnwindable();
+    void                       genEmitIf(WasmValueType blockType = WasmValueType::Invalid);
+    void                       genEmitEndIf();
 #endif
 
     void genEmitStartBlock(BasicBlock* block);
@@ -435,6 +438,10 @@ protected:
 
     void genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowestCalleeSavedOffset, int spDelta);
     void genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, int lowestCalleeSavedOffset, int spDelta);
+
+#if defined(TARGET_ARM64)
+    void genUnknownSizeFrame();
+#endif
 
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     bool genInstrWithConstant(instruction ins,
