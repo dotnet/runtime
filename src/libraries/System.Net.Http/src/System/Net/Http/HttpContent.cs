@@ -846,9 +846,6 @@ namespace System.Net.Http
                 // User code must never dispose this stream. It is an internal implementation detail
                 // exposed to user-provided HttpContent.SerializeToStream(Async) overrides, and the
                 // lifetime of the underlying pooled buffers is owned by HttpContent, not the user.
-                // Returning those buffers more than once would corrupt ArrayPool.Shared process-wide
-                // and also break other HttpContent operations (e.g. ReadAsByteArrayAsync, ReadBufferAsString,
-                // ReadAsStreamAsync) which assume the stream is still populated.
                 // All internal cleanup goes through ReturnAllPooledBuffers directly.
                 throw new InvalidOperationException();
             }
