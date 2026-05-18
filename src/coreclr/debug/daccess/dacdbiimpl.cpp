@@ -6974,7 +6974,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsValidObject(CORDB_ADDRESS obj, 
 
                 if (mt == cls->GetMethodTable())
                     isValid = TRUE;
-                else if (!mt->IsCanonicalMethodTable() || mt->IsContinuation())
+                else if (!mt->IsCanonicalMethodTable() || mt->IsContinuationWithoutMetadata())
                     isValid = cls->GetMethodTable()->GetClass() == cls;
             }
             EX_CATCH
