@@ -11,7 +11,7 @@ public class EnCContractTests
 {
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void GetLatestEnCVersion_ReturnsFirstEntryForTokenAndDefaultForMissingToken(MockTarget.Architecture arch)
+    public void GetLatestEnCVersion_ReturnsLatestVersionForKnownToken_DefaultForUnknownToken(MockTarget.Architecture arch)
     {
         const ulong defaultVersion = 1;
         const uint methodToken = 0x06000042;
@@ -33,7 +33,7 @@ public class EnCContractTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void GetEnCVersion_ReturnsVersionForMatchingAddressOrDefaultForMismatch(MockTarget.Architecture arch)
+    public void GetEnCVersion_ReturnsVersionForMatchingAddress_DefaultForNonMatchingOrNullAddress(MockTarget.Architecture arch)
     {
         const ulong defaultVersion = 1;
         const uint methodToken = 0x06000042;
