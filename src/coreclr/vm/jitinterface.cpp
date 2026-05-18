@@ -3483,7 +3483,7 @@ size_t CEEInfo::printClassName(CORINFO_CLASS_HANDLE cls, char* buffer, size_t bu
     mdTypeDef td = th.GetCl();
     if (IsNilToken(td))
     {
-        if (th.IsContinuation())
+        if (th.IsContinuationWithoutMetadata())
         {
             AsyncContinuationsManager::PrintContinuationName(
                 th.AsMethodTable(),

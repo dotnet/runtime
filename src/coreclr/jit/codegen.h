@@ -214,8 +214,9 @@ protected:
     void genCodeForBlock(BasicBlock* block);
 
 #if defined(TARGET_WASM)
-    ArrayStack<WasmInterval*>* wasmControlFlowStack = nullptr;
-    unsigned                   wasmCursor           = 0;
+    ArrayStack<WasmInterval*>* wasmControlFlowStack      = nullptr;
+    unsigned                   wasmCursor                = 0;
+    unsigned                   wasmExtraControlFlowDepth = 0;
     unsigned                   findTargetDepth(BasicBlock* target);
     void                       WasmProduceReg(GenTree* node);
     regNumber                  GetMultiUseOperandReg(GenTree* operand);
@@ -223,6 +224,8 @@ protected:
     unsigned                   GetStackPointerRegIndex() const;
     unsigned                   GetFramePointerRegIndex() const;
     void                       ensureCurrentFuncIsUnwindable();
+    void                       genEmitIf(WasmValueType blockType = WasmValueType::Invalid);
+    void                       genEmitEndIf();
 #endif
 
     void genEmitStartBlock(BasicBlock* block);

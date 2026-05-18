@@ -375,7 +375,7 @@ BOOL MethodTable::ValidateWithPossibleAV()
     }
 
     // generic instantiation check
-    return (HasInstantiation() || IsArray() || IsContinuation()) && (pEEClassFromMethodTable->GetClassWithPossibleAV() == pEEClass);
+    return (HasInstantiation() || IsArray() || IsContinuationWithoutMetadata()) && (pEEClassFromMethodTable->GetClassWithPossibleAV() == pEEClass);
 }
 
 
@@ -421,7 +421,7 @@ WORD MethodTable::GetNumMethods()
 PTR_MethodTable MethodTable::GetTypicalMethodTable()
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    if (IsArray() || IsContinuation())
+    if (IsArray() || IsContinuationWithoutMetadata())
         return (PTR_MethodTable)this;
 
     PTR_MethodTable methodTableMaybe = GetModule()->LookupTypeDef(GetCl()).AsMethodTable();
@@ -1297,7 +1297,7 @@ BOOL MethodTable::CanCastToClass(MethodTable *pTargetMT, TypeHandlePairList *pVi
         PRECONDITION(CheckPointer(pTargetMT));
         PRECONDITION(!pTargetMT->IsArray());
         PRECONDITION(!pTargetMT->IsInterface());
-        PRECONDITION(!pTargetMT->IsContinuation());
+        PRECONDITION(!pTargetMT->IsContinuationWithoutMetadata());
     }
     CONTRACTL_END
 
@@ -6396,9 +6396,16 @@ BOOL MethodTable::SanityCheck()
     if (GetNumGenericArgs() != 0)
         return (pCanonMT->GetClass() == pClass);
     else
-        return (pCanonMT == this) || IsArray() || IsContinuation();
+        return (pCanonMT == this) || IsArray() || IsContinuationWithoutMetadata();
 }
 
+BOOL MethodTable::IsContinuationWithoutMetadata()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    PTR_MethodTable contClass = g_pContinuationClassIfSubTypeCreated;
+    return contClass != NULL && m_pParentMethodTable == contClass && GetClass() == g_singletonContinuationEEClass;
+}
 
 //==========================================================================================
 void MethodTable::SetCl(mdTypeDef token)
@@ -7642,7 +7649,7 @@ CHECK MethodTable::CheckInstanceActivated()
 {
     WRAPPER_NO_CONTRACT;
 
-    if (IsArray() || IsContinuation())
+    if (IsArray() || IsContinuationWithoutMetadata())
         CHECK_OK;
 
 
