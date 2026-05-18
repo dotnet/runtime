@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -61,6 +62,176 @@ internal static class R2RAssert
             : $"Expected assembly reference '{assemblyName}' not found. " +
               $"Found: [{string.Join(", ", allRefs.OrderBy(s => s))}]";
         return found;
+    }
+
+    /// <summary>
+    /// Returns true if ARM R2R relocations preserve the Thumb bit only for raw runtime function
+    /// start RVAs, while non-code pointers keep even RVAs.
+    /// </summary>
+    public static bool HasExpectedArmThumbBitTargets(ReadyToRunReader reader, out string diagnostic)
+    {
+        if (reader.Machine != Machine.ArmThumb2)
+        {
+            diagnostic = $"Expected ARM Thumb2 image, but found {reader.Machine}.";
+            return false;
+        }
+
+        var failures = new List<string>();
+
+        bool result = true;
+        result &= SectionRVAIsEven(reader, ReadyToRunSectionType.ExceptionInfo, failures);
+        result &= SectionRVAIsEven(reader, ReadyToRunSectionType.DelayLoadMethodCallThunks, failures);
+        result &= DelayLoadHelperImportTargetsAreOdd(reader, failures);
+        result &= ExceptionInfoMethodRVAsAreEven(reader, failures);
+        result &= RuntimeFunctionStartRVAsAreOdd(reader, failures);
+
+        diagnostic = result
+            ? "ARM Thumb-bit relocation targets are encoded as expected."
+            : string.Join(Environment.NewLine, failures);
+        return result;
+    }
+
+    private static bool SectionRVAIsEven(ReadyToRunReader reader, ReadyToRunSectionType sectionType, List<string> failures)
+    {
+        if (!reader.ReadyToRunHeader.Sections.TryGetValue(sectionType, out ReadyToRunSection section))
+        {
+            failures.Add($"Expected {sectionType} section not found.");
+            return false;
+        }
+
+        bool result = true;
+        if (section.Size <= 0)
+        {
+            failures.Add($"Expected {sectionType} section to be non-empty.");
+            result = false;
+        }
+
+        if ((section.RelativeVirtualAddress & 1) != 0)
+        {
+            failures.Add($"{sectionType} section RVA 0x{section.RelativeVirtualAddress:X8} should be even.");
+            result = false;
+        }
+
+        return result;
+    }
+
+    private static bool ExceptionInfoMethodRVAsAreEven(ReadyToRunReader reader, List<string> failures)
+    {
+        if (!reader.ReadyToRunHeader.Sections.TryGetValue(ReadyToRunSectionType.ExceptionInfo, out ReadyToRunSection section))
+        {
+            return true;
+        }
+
+        bool result = true;
+        int offset = reader.CompositeReader.GetOffset(section.RelativeVirtualAddress);
+        int endOffset = offset + section.Size;
+        int entries = 0;
+        for (; offset + 2 * sizeof(int) <= endOffset; offset += 2 * sizeof(int))
+        {
+            int methodRva = BitConverter.ToInt32(reader.Image, offset);
+            if (methodRva == -1)
+            {
+                break;
+            }
+
+            entries++;
+            if ((methodRva & 1) != 0)
+            {
+                failures.Add($"ExceptionInfo method RVA 0x{methodRva:X8} should be even.");
+                result = false;
+            }
+        }
+
+        if (entries == 0)
+        {
+            failures.Add("Expected ExceptionInfo to contain at least one method entry.");
+            result = false;
+        }
+
+        return result;
+    }
+
+    private static bool DelayLoadHelperImportTargetsAreOdd(ReadyToRunReader reader, List<string> failures)
+    {
+        bool result = true;
+        int entries = 0;
+        foreach (ReadyToRunImportSection section in reader.ImportSections)
+        {
+            if ((section.Flags & ReadyToRunImportSectionFlags.PCode) == 0)
+            {
+                continue;
+            }
+
+            int offset = reader.CompositeReader.GetOffset(section.SectionRVA);
+            int endOffset = offset + section.SectionSize;
+            for (; offset + section.EntrySize <= endOffset; offset += section.EntrySize)
+            {
+                int targetAddress = BinaryPrimitives.ReadInt32LittleEndian(reader.Image.AsSpan(offset));
+                if (targetAddress == 0)
+                {
+                    continue;
+                }
+
+                entries++;
+                if ((targetAddress & 1) == 0)
+                {
+                    failures.Add($"PCode import target 0x{targetAddress:X8} should have the Thumb bit set.");
+                    result = false;
+                }
+            }
+        }
+
+        if (entries == 0)
+        {
+            failures.Add("Expected at least one non-empty PCode import target.");
+            result = false;
+        }
+
+        return result;
+    }
+
+    private static bool RuntimeFunctionStartRVAsAreOdd(ReadyToRunReader reader, List<string> failures)
+    {
+        if (!reader.ReadyToRunHeader.Sections.TryGetValue(ReadyToRunSectionType.RuntimeFunctions, out ReadyToRunSection section))
+        {
+            failures.Add("Expected RuntimeFunctions section not found.");
+            return false;
+        }
+
+        int runtimeFunctionSize = 2 * sizeof(int);
+        if (section.Size < runtimeFunctionSize)
+        {
+            failures.Add($"Expected RuntimeFunctions section to contain at least one entry, but size is {section.Size}.");
+            return false;
+        }
+
+        bool result = true;
+        int offset = reader.CompositeReader.GetOffset(section.RelativeVirtualAddress);
+        int count = section.Size / runtimeFunctionSize;
+        int entries = 0;
+        for (int index = 0; index < count; index++, offset += runtimeFunctionSize)
+        {
+            int startRva = BitConverter.ToInt32(reader.Image, offset);
+            if (startRva == -1)
+            {
+                break;
+            }
+
+            entries++;
+            if ((startRva & 1) == 0)
+            {
+                failures.Add($"RuntimeFunctions[{index}] start RVA 0x{startRva:X8} should have the Thumb bit set.");
+                result = false;
+            }
+        }
+
+        if (entries == 0)
+        {
+            failures.Add("Expected RuntimeFunctions to contain at least one entry.");
+            result = false;
+        }
+
+        return result;
     }
 
     /// <summary>
