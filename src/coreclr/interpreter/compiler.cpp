@@ -2700,6 +2700,8 @@ void InterpCompiler::CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo)
             }
             else if (opcode == CEE_LOCALLOC)
             {
+                // Set here rather than at CEE_LOCALLOC emit time because GenerateCode processes
+                // IL sequentially — a call;ret before localloc would miss the flag.
                 m_hasLocalloc = true;
             }
             break;
@@ -2714,6 +2716,8 @@ void InterpCompiler::CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo)
             ip += 5;
             break;
         case InlineVar:
+            // Set here rather than at EmitLdLocA time because GenerateCode processes IL
+            // sequentially — a call;ret before ldloca/ldarga would miss the flag.
             if (opcode == CEE_LDLOCA || opcode == CEE_LDARGA)
                 m_hasAddressExposedLocals = true;
             ip += 3;
@@ -5061,6 +5065,8 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
     if (!tailcall && !newObj && !isJmp
         && !isCalli && !isVirtual
         && *m_ip == CEE_RET
+        && !m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE)
+        && !m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MIN_OPT)
         && !(callInfo.methodFlags & CORINFO_FLG_PINVOKE)
         && !m_hasAddressExposedLocals
         && !m_hasLocalloc)
@@ -6834,8 +6840,6 @@ void InterpCompiler::EmitLdLocA(int32_t var)
     {
         m_shadowCopyOfThisPointerActuallyNeeded = true;
     }
-
-    m_hasAddressExposedLocals = true;
 
     if (m_pCBB->clauseType == BBClauseFilter)
     {
