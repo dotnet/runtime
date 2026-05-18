@@ -56,6 +56,9 @@ namespace System.Security.Cryptography
         protected override unsafe partial void DeriveRawSecretAgreementCore(X25519DiffieHellman otherParty, Span<byte> destination);
 
         /// <inheritdoc/>
+        protected override partial void DeriveRawSecretAgreementCore(ReadOnlySpan<byte> otherPartyPublicKey, Span<byte> destination);
+
+        /// <inheritdoc/>
         protected override partial void ExportPublicKeyCore(Span<byte> destination);
 
         /// <inheritdoc/>

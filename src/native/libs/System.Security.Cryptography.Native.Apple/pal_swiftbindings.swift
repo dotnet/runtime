@@ -561,6 +561,28 @@ public func AppleCryptoNative_DigestCurrent(ctx: UnsafeMutableRawPointer?, pOutp
 //   0: key agreement failed (e.g. peer is a low-order point and the shared
 //      secret would be all-zero; CryptoKit raises an error)
 //  -1: invalid arguments or unexpected error
+private func deriveRawSecretAgreement(
+    key: Curve25519.KeyAgreement.PrivateKey,
+    peerKey: Curve25519.KeyAgreement.PublicKey,
+    pOutput: UnsafeMutablePointer<UInt8>,
+    cbOutput: Int32) -> Int32 {
+    let destination = UnsafeMutableRawBufferPointer(start: pOutput, count: Int(cbOutput))
+
+    guard let sharedSecret = try? key.sharedSecretFromKeyAgreement(with: peerKey) else {
+        return 0
+    }
+
+    let copied = sharedSecret.withUnsafeBytes { rawSecret in
+        return rawSecret.copyBytes(to: destination) == rawSecret.count
+    }
+
+    if (!copied) {
+        return -1
+    }
+
+    return 1
+}
+
 @_silgen_name("AppleCryptoNative_X25519DeriveRawSecretAgreement")
 public func AppleCryptoNative_X25519DeriveRawSecretAgreement(
     keyPtr: UnsafeMutableRawPointer?,
@@ -579,21 +601,33 @@ public func AppleCryptoNative_X25519DeriveRawSecretAgreement(
     }
 
     let peerKey = peerBox.value.getPublic()
-    let destination = UnsafeMutableRawBufferPointer(start: pOutput, count: Int(cbOutput))
+    return deriveRawSecretAgreement(key: key, peerKey: peerKey, pOutput: pOutput, cbOutput: cbOutput)
+}
 
-    guard let sharedSecret = try? key.sharedSecretFromKeyAgreement(with: peerKey) else {
-        return 0
-    }
-
-    let copied = sharedSecret.withUnsafeBytes { rawSecret in
-        return rawSecret.copyBytes(to: destination) == rawSecret.count
-    }
-
-    if (!copied) {
+@_silgen_name("AppleCryptoNative_X25519DeriveRawSecretAgreementWithBytes")
+public func AppleCryptoNative_X25519DeriveRawSecretAgreementWithBytes(
+    keyPtr: UnsafeMutableRawPointer?,
+    peerKeyPtr: UnsafeMutableRawPointer?,
+    cbPeerKey: Int32,
+    pOutput: UnsafeMutablePointer<UInt8>?,
+    cbOutput: Int32) -> Int32 {
+    guard let keyPtr, let peerKeyPtr, let pOutput else {
         return -1
     }
 
-    return 1
+    let keyBox = Unmanaged<X25519KeyBox>.fromOpaque(keyPtr).takeUnretainedValue()
+
+    guard case .privateKey(let key) = keyBox.value else {
+        return -1
+    }
+
+    let source = Data(bytesNoCopy: peerKeyPtr, count: Int(cbPeerKey), deallocator: Data.Deallocator.none)
+
+    guard let peerKey = try? Curve25519.KeyAgreement.PublicKey.init(rawRepresentation: source) else {
+        return -1
+    }
+
+    return deriveRawSecretAgreement(key: key, peerKey: peerKey, pOutput: pOutput, cbOutput: cbOutput)
 }
 
 @_silgen_name("AppleCryptoNative_X25519FreeKey")
