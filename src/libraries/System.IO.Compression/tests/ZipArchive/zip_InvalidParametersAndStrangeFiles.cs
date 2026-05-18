@@ -410,15 +410,14 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
-        public static async Task ZipArchiveEntry_OpenInUpdateMode_UncompressedSizeGreaterThanIntMaxValue_DoesNotThrow(bool async)
+        public static async Task ZipArchiveEntry_OpenInUpdateMode_UncompressedSizeGreaterThanArrayMaxLength_ThrowsInvalidData(bool async)
         {
-            // Regression test for https://github.com/dotnet/runtime/issues/127834
-            // When _uncompressedSize > int.MaxValue (e.g. for a Zip64 entry whose declared
-            // uncompressed size exceeds int.MaxValue), GetUncompressedData() passed an
-            // unchecked (int) cast to the MemoryStream constructor. That cast wrapped to a
-            // negative number, causing ArgumentOutOfRangeException to be thrown from the
-            // MemoryStream constructor before any data was loaded. The capacity argument is
-            // only a pre-sizing hint and must be clamped to a valid MemoryStream capacity.
+            // When _uncompressedSize > Array.MaxLength, the entry's uncompressed payload
+            // cannot be loaded into a MemoryStream (which is backed by a single byte[] and
+            // therefore bounded by Array.MaxLength). The entry must be rejected up front
+            // with a descriptive InvalidDataException when opened in Update mode, rather
+            // than failing later from the MemoryStream constructor with a misleading
+            // argument-out-of-range exception caused by the (int) cast wrapping negative.
             byte[] payload = [0xCA, 0xFE, 0xBA, 0xBE, 0xDE, 0xAD, 0xBE, 0xEF];
             MemoryStream stream = new MemoryStream();
 
@@ -435,14 +434,16 @@ namespace System.IO.Compression.Tests
 
             FieldInfo uncompressedSizeField = typeof(ZipArchiveEntry).GetField("_uncompressedSize", BindingFlags.NonPublic | BindingFlags.Instance);
             Assert.NotNull(uncompressedSizeField);
-            uncompressedSizeField.SetValue(entry, (long)int.MaxValue + 100L);
+            uncompressedSizeField.SetValue(entry, (long)Array.MaxLength + 1L);
 
-            // Previously this threw ArgumentOutOfRangeException from the MemoryStream
-            // constructor inside GetUncompressedData because (int)_uncompressedSize wrapped
-            // to a negative value. With the fix it must succeed (the actual stored bytes are
-            // small, so loading completes normally).
-            Stream openStream = await OpenEntryStream(async, entry);
-            await DisposeStream(async, openStream);
+            if (async)
+            {
+                await Assert.ThrowsAsync<InvalidDataException>(() => entry.OpenAsync());
+            }
+            else
+            {
+                Assert.Throws<InvalidDataException>(() => entry.Open());
+            }
 
             await DisposeZipArchive(async, archive);
         }
