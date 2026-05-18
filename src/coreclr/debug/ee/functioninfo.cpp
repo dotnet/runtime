@@ -1231,7 +1231,7 @@ void DebuggerJitInfo::Init(TADDR newAddress)
     {
         Module* pModule = this->m_pLoaderModule;
         EnCData* pEnCData = (EnCData*)(void*)pModule->GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(EnCData)));
-        pEnCData->addrOfCode = this->m_addrOfCode;
+        pEnCData->addrOfCode = (TADDR)this->m_addrOfCode;
         pEnCData->token = this->m_methodInfo->m_token;
         pEnCData->encVersion = this->m_encVersion;
         pModule->AddEncData(pEnCData);

@@ -5608,7 +5608,7 @@ void DacDbiInterfaceImpl::LookupEnCVersions(VMPTR_MethodDesc vmMethodDesc,
 {
     MethodDesc * pMD = vmMethodDesc.GetDacPtr();
     _ASSERTE(pLatestEnCVersion != NULL);
-#ifdef FEATURE_METADATA_UPDATER
+#ifndef FEATURE_METADATA_UPDATER
     if (pJittedInstanceEnCVersion != NULL)
     {
         *pJittedInstanceEnCVersion = CorDB_DEFAULT_ENC_FUNCTION_VERSION;
