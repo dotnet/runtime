@@ -62,6 +62,10 @@ public abstract class ContractRegistry
     /// </summary>
     public virtual IReJIT ReJIT => GetContract<IReJIT>();
     /// <summary>
+    /// Gets an instance of the EnC contract for the target.
+    /// </summary>
+    public virtual IEnC EnC => GetContract<IEnC>();
+    /// <summary>
     /// Gets an instance of the StackWalk contract for the target.
     /// </summary>
     public virtual IStackWalk StackWalk => GetContract<IStackWalk>();

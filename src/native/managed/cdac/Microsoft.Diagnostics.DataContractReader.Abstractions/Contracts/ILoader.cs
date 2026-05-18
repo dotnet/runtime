@@ -126,6 +126,7 @@ public interface ILoader : IContract
     TargetPointer GetAssemblyLoadContext(ModuleHandle handle) => throw new NotImplementedException();
     ModuleLookupTables GetLookupTables(ModuleHandle handle) => throw new NotImplementedException();
     TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags) => throw new NotImplementedException();
+    TargetPointer LookupMemberRefAsMethod(ModuleHandle handle, uint memberRefToken) => throw new NotImplementedException();
     IEnumerable<(TargetPointer, uint)> EnumerateModuleLookupMap(TargetPointer table) => throw new NotImplementedException();
     bool IsCollectible(ModuleHandle handle) => throw new NotImplementedException();
     bool IsDynamic(ModuleHandle handle) => throw new NotImplementedException();

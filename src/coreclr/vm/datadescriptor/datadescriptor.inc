@@ -277,7 +277,20 @@ CDAC_TYPE_FIELD(Module, T_POINTER, TypeRefToMethodTableMap, cdac_data<Module>::T
 CDAC_TYPE_FIELD(Module, T_POINTER, MethodDefToILCodeVersioningStateMap, cdac_data<Module>::MethodDefToILCodeVersioningStateMap)
 #endif // FEATURE_CODE_VERSIONING
 CDAC_TYPE_FIELD(Module, T_POINTER, DynamicILBlobTable, cdac_data<Module>::DynamicILBlobTable)
+#ifdef FEATURE_METADATA_UPDATER
+CDAC_TYPE_FIELD(Module, T_POINTER, EnCDataList, cdac_data<Module>::EnCDataList)
+#endif // FEATURE_METADATA_UPDATER
 CDAC_TYPE_END(Module)
+
+#ifdef FEATURE_METADATA_UPDATER
+CDAC_TYPE_BEGIN(EnCData)
+CDAC_TYPE_INDETERMINATE(EnCData)
+CDAC_TYPE_FIELD(EnCData, T_POINTER, AddrOfCode, offsetof(EnCData, addrOfCode))
+CDAC_TYPE_FIELD(EnCData, T_UINT32, Token, offsetof(EnCData, token))
+CDAC_TYPE_FIELD(EnCData, T_NUINT, EnCVersion, offsetof(EnCData, encVersion))
+CDAC_TYPE_FIELD(EnCData, T_POINTER, Next, offsetof(EnCData, pNext))
+CDAC_TYPE_END(EnCData)
+#endif // FEATURE_METADATA_UPDATER
 
 CDAC_TYPE_BEGIN(ModuleLookupMap)
 CDAC_TYPE_FIELD(ModuleLookupMap, T_POINTER, TableData, offsetof(LookupMapBase, pTable))
@@ -1520,6 +1533,7 @@ CDAC_GLOBAL(DirectorySeparator, T_UINT8, (uint8_t)DIRECTORY_SEPARATOR_CHAR_A)
 CDAC_GLOBAL(HashMapSlotsPerBucket, T_UINT32, SLOTS_PER_BUCKET)
 CDAC_GLOBAL(HashMapValueMask, T_UINT64, VALUE_MASK)
 CDAC_GLOBAL(MethodDescAlignment, T_UINT64, MethodDesc::ALIGNMENT)
+CDAC_GLOBAL(CorDBDefaultEnCFunctionVersion, T_NUINT, CorDB_DEFAULT_ENC_FUNCTION_VERSION)
 CDAC_GLOBAL(ArrayBaseSize, T_UINT32, ARRAYBASE_BASESIZE)
 CDAC_GLOBAL(SyncBlockValueToObjectOffset, T_UINT16, OBJHEADER_SIZE - cdac_data<ObjHeader>::SyncBlockValue)
 CDAC_GLOBAL(StubCodeBlockLast, T_UINT8, STUB_CODE_BLOCK_LAST)
@@ -1622,6 +1636,9 @@ CDAC_GLOBAL_CONTRACT(Debugger, c1)
 #endif // DEBUGGING_SUPPORTED && !TARGET_WASM
 CDAC_GLOBAL_CONTRACT(DebugInfo, c2)
 CDAC_GLOBAL_CONTRACT(EcmaMetadata, c1)
+#ifdef FEATURE_METADATA_UPDATER
+CDAC_GLOBAL_CONTRACT(EnC, c1)
+#endif // FEATURE_METADATA_UPDATER
 CDAC_GLOBAL_CONTRACT(Exception, c1)
 CDAC_GLOBAL_CONTRACT(ExecutionManager, c2)
 CDAC_GLOBAL_CONTRACT(GCInfo, c1)

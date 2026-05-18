@@ -103,6 +103,7 @@ TargetPointer GetILBase(ModuleHandle handle);
 TargetPointer GetAssemblyLoadContext(ModuleHandle handle);
 ModuleLookupTables GetLookupTables(ModuleHandle handle);
 TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags);
+TargetPointer LookupMemberRefAsMethod(ModuleHandle handle, uint memberRefToken);
 IEnumerable<(TargetPointer, uint)> EnumerateModuleLookupMap(TargetPointer table);
 bool IsCollectible(ModuleHandle handle);
 bool IsDynamic(ModuleHandle handle);
@@ -254,6 +255,7 @@ enum ClrModifiableAssemblies : uint
 | `MaxWebcilSections` | ushort | Maximum number of COFF sections supported in a Webcil image (must stay in sync with native `WEBCIL_MAX_SECTIONS`) | `16` |
 | `DebuggerInfoMask` | uint | Mask for the debugger info bits within the Module's transient flags | `0x0000FC00` |
 | `DebuggerInfoShift` | int | Bit shift for the debugger info bits within the Module's transient flags | `10` |
+| `IS_FIELD_MEMBER_REF` | TADDR (target pointer-sized unsigned int) | Flag on `MemberRefToDescMap` entries indicating the entry is a FieldDesc, not a MethodDesc | `0x00000002` |
 | `DEBUGGER_ALLOW_JIT_OPTS_PRIV` | uint | Debugger allows JIT optimizations (shifted in transient flags) | `0x00000800` |
 
 Contracts used:
@@ -715,6 +717,15 @@ TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out Tar
         }
     } while (table != TargetPointer.Null);
     return TargetPointer.Null;
+}
+
+// Returns the MethodDesc pointer for the given mdMemberRef token, or TargetPointer.Null
+// if the entry is a FieldDesc (flagged with IS_FIELD_MEMBER_REF) or not present.
+TargetPointer LookupMemberRefAsMethod(ModuleHandle handle, uint memberRefToken)
+{
+    ModuleLookupTables tables = GetLookupTables(handle);
+    TargetPointer ptr = GetModuleLookupMapElement(tables.MemberRefToDesc, memberRefToken, out TargetNUInt flags);
+    return (flags.Value & /* IS_FIELD_MEMBER_REF */) != 0 ? TargetPointer.Null : ptr;
 }
 
 IEnumerable<(TargetPointer, uint)> EnumerateModuleLookupMap(TargetPointer table)

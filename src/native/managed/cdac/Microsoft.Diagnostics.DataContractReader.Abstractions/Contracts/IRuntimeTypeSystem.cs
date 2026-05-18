@@ -256,6 +256,11 @@ public interface IRuntimeTypeSystem : IContract
 
     bool IsAsyncThunkMethod(MethodDescHandle methodDesc) => throw new NotImplementedException();
 
+    // Given an async thunk method, find its async variant counterpart (the MethodDesc with the real async body).
+    // Returns null if the variant is not found (not yet loaded).
+    // Mirrors native GetAsyncVariantNoCreate().
+    MethodDescHandle? GetAsyncVariant(MethodDescHandle methodDesc) => throw new NotImplementedException();
+
     bool IsWrapperStub(MethodDescHandle methodDesc) => throw new NotImplementedException();
     #endregion MethodDesc inspection APIs
     #region FieldDesc inspection APIs

@@ -37,6 +37,10 @@ internal sealed class Module : IData<Module>
         TypeRefToMethodTableMap = address + (ulong)type.Fields[nameof(TypeRefToMethodTableMap)].Offset;
         MethodDefToILCodeVersioningStateMap = address + (ulong)type.Fields[nameof(MethodDefToILCodeVersioningStateMap)].Offset;
         DynamicILBlobTable = target.ReadPointerField(address, type, nameof(DynamicILBlobTable));
+
+        EnCDataList = type.Fields.ContainsKey(nameof(EnCDataList))
+            ? target.ReadPointerField(address, type, nameof(EnCDataList))
+            : TargetPointer.Null;
     }
 
     private readonly TargetPointer _address;
@@ -71,4 +75,6 @@ internal sealed class Module : IData<Module>
     public TargetPointer TypeRefToMethodTableMap { get; init; }
     public TargetPointer MethodDefToILCodeVersioningStateMap { get; init; }
     public TargetPointer DynamicILBlobTable { get; init; }
+
+    public TargetPointer EnCDataList { get; init; }
 }

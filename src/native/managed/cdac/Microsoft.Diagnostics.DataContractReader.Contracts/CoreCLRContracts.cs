@@ -51,6 +51,8 @@ public static class CoreCLRContracts
 
         registry.Register<IReJIT>("c1", static t => new ReJIT_1(t));
 
+        registry.Register<IEnC>("c1", static t => new EnC_1(t));
+
         registry.Register<IGC>("c1", static t => new GC_1(t));
 
         registry.Register<IGCInfo>("c1", static t =>

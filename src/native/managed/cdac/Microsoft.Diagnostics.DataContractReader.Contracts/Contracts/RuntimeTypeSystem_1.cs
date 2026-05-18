@@ -154,9 +154,11 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     [Flags]
     internal enum AsyncMethodFlags : uint
     {
-        None = 0,
+        None = 0x0,
         AsyncCall = 0x1,
-        Thunk = 16,
+        IsAsyncVariant = 0x4,
+        Thunk = 0x10,
+        ReturnDroppingThunk = 0x20,
     }
 
     [Flags]
@@ -1941,6 +1943,42 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
         Data.AsyncMethodData asyncData = _target.ProcessedData.GetOrAdd<Data.AsyncMethodData>(md.GetAddressOfAsyncMethodData());
         return ((AsyncMethodFlags)asyncData.Flags).HasFlag(AsyncMethodFlags.Thunk);
+    }
+
+    /// <summary>
+    /// Returns true if the method matches <c>MatchesAsyncVariantLookup(AsyncVariantLookup::Async)</c>,
+    /// i.e. it has the <c>IsAsyncVariant</c> flag set and is not a <c>ReturnDroppingThunk</c>.
+    /// </summary>
+    private bool IsAsyncVariantMethod(MethodDesc md)
+    {
+        if (!md.HasAsyncMethodData)
+            return false;
+
+        Data.AsyncMethodData asyncData = _target.ProcessedData.GetOrAdd<Data.AsyncMethodData>(md.GetAddressOfAsyncMethodData());
+        AsyncMethodFlags flags = (AsyncMethodFlags)asyncData.Flags;
+        return flags.HasFlag(AsyncMethodFlags.IsAsyncVariant) && !flags.HasFlag(AsyncMethodFlags.ReturnDroppingThunk);
+    }
+
+    public MethodDescHandle? GetAsyncVariant(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc md = _methodDescs[methodDescHandle.Address];
+        uint token = md.Token;
+        TargetPointer mtAddr = GetMethodTable(methodDescHandle);
+        TypeHandle typeHandle = GetTypeHandle(mtAddr);
+
+        // Iterate the introduced methods on the canonical MethodTable looking for a sibling
+        // with the same token that matches AsyncVariantLookup::Async (IsAsyncVariant set and
+        // ReturnDroppingThunk clear). Mirrors MethodTable::GetParallelMethodDesc's slow-path
+        // IntroducedMethodIterator loop.
+        TypeHandle canonMT = GetTypeHandle(GetCanonicalMethodTable(typeHandle));
+        foreach (MethodDescHandle candidate in GetIntroducedMethods(canonMT))
+        {
+            MethodDesc candidateMd = _methodDescs[candidate.Address];
+            if (candidateMd.Token == token && IsAsyncVariantMethod(candidateMd))
+                return candidate;
+        }
+
+        return null;
     }
 
     public bool IsWrapperStub(MethodDescHandle methodDescHandle)

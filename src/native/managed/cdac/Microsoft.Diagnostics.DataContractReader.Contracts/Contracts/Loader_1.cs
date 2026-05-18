@@ -31,6 +31,9 @@ internal readonly struct Loader_1 : ILoader
 
     private const uint DEBUGGER_ALLOW_JIT_OPTS_PRIV = 0x00000800;
 
+    // Flag on MemberRefToDescMap entries indicating the entry is a FieldDesc, not a MethodDesc.
+    private const ulong IS_FIELD_MEMBER_REF = 0x00000002;
+
     private enum PEImageFlags : uint
     {
         FLAG_MAPPED = 0x01, // the file is mapped/hydrated (vs. the raw disk layout)
@@ -544,6 +547,14 @@ internal readonly struct Loader_1 : ILoader
         (TargetPointer rval, uint _) = IterateModuleLookupMap(table, rid, SearchLookupMap).FirstOrDefault();
         flags = new TargetNUInt(rval & supportedFlagsMask);
         return rval & ~supportedFlagsMask;
+    }
+
+    TargetPointer ILoader.LookupMemberRefAsMethod(ModuleHandle handle, uint memberRefToken)
+    {
+        ILoader self = this;
+        ModuleLookupTables tables = self.GetLookupTables(handle);
+        TargetPointer ptr = self.GetModuleLookupMapElement(tables.MemberRefToDesc, memberRefToken, out TargetNUInt flags);
+        return (flags.Value & IS_FIELD_MEMBER_REF) != 0 ? TargetPointer.Null : ptr;
     }
 
     IEnumerable<(TargetPointer, uint)> ILoader.EnumerateModuleLookupMap(TargetPointer table)

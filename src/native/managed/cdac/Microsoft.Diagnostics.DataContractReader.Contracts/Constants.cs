@@ -30,6 +30,7 @@ public static class Constants
         public const string ObjectToMethodTableUnmask = nameof(ObjectToMethodTableUnmask);
         public const string SOSBreakingChangeVersion = nameof(SOSBreakingChangeVersion);
         public const string RecommendedReaderVersion = nameof(RecommendedReaderVersion);
+        public const string CorDBDefaultEnCFunctionVersion = nameof(CorDBDefaultEnCFunctionVersion);
 
         public const string ContinuationMethodTable = nameof(ContinuationMethodTable);
         public const string ExceptionMethodTable = nameof(ExceptionMethodTable);

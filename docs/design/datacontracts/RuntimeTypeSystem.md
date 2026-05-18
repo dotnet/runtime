@@ -253,6 +253,10 @@ partial interface IRuntimeTypeSystem : IContract
     // Return true if the method is an async thunk method.
     public virtual bool IsAsyncThunkMethod(MethodDescHandle methodDesc);
 
+    // Return the async variant MethodDesc for the given method, or null if not found.
+    // Mirrors the no-create path of native MethodDesc::GetAsyncVariantNoCreate.
+    public virtual MethodDescHandle? GetAsyncVariant(MethodDescHandle methodDesc);
+
     // Return true if the method is a wrapper stub (unboxing or instantiating).
     public virtual bool IsWrapperStub(MethodDescHandle methodDesc);
 
@@ -1221,8 +1225,11 @@ And the following enumeration definitions
     [Flags]
     internal enum AsyncMethodFlags : uint
     {
-        None = 0,
-        Thunk = 16,
+        None = 0x0,
+        AsyncCall = 0x1,
+        IsAsyncVariant = 0x4,
+        Thunk = 0x10,
+        ReturnDroppingThunk = 0x20,
     }
 
     [Flags]
@@ -1714,6 +1721,42 @@ Determining if a method is a wrapper stub (unboxing or instantiating):
     {
         MethodDesc md = _methodDescs[methodDescHandle.Address];
         return md.IsUnboxingStub || IsInstantiatingStub(md);
+    }
+```
+
+Resolving the async variant of an async thunk method (no-create):
+
+```csharp
+    // Helper: matches native MatchesAsyncVariantLookup(AsyncVariantLookup::Async).
+    private bool IsAsyncVariantMethod(MethodDesc md)
+    {
+        if (!md.HasAsyncMethodData)
+            return false;
+
+        Data.AsyncMethodData asyncData = // Read AsyncMethodData from the async method data optional slot
+        AsyncMethodFlags flags = (AsyncMethodFlags)asyncData.Flags;
+        return flags.HasFlag(AsyncMethodFlags.IsAsyncVariant) && !flags.HasFlag(AsyncMethodFlags.ReturnDroppingThunk);
+    }
+
+    public MethodDescHandle? GetAsyncVariant(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc md = _methodDescs[methodDescHandle.Address];
+        uint token = md.Token;
+        TypeHandle typeHandle = GetTypeHandle(GetMethodTable(methodDescHandle));
+
+        // For typical method definitions (non-generic or generic-with-formal-vars), native's
+        // FindOrCreateAssociatedMethodDesc returns the result of MethodTable::GetParallelMethodDesc
+        // directly. The canonical MethodTable holds the chunk of sibling MethodDescs that share
+        // a token; one of them carries the async-variant flag combination.
+        TypeHandle canonMT = GetTypeHandle(GetCanonicalMethodTable(typeHandle));
+        foreach (MethodDescHandle candidate in GetIntroducedMethods(canonMT))
+        {
+            MethodDesc candidateMd = _methodDescs[candidate.Address];
+            if (candidateMd.Token == token && IsAsyncVariantMethod(candidateMd))
+                return candidate;
+        }
+
+        return null;
     }
 ```
 

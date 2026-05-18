@@ -23,7 +23,11 @@ public unsafe class DacDbiImplTests
         MockTarget.Architecture arch,
         Action<MockLoaderBuilder, TestPlaceholderTarget.Builder> configure)
     {
-        var (_, target) = LoaderTests.CreateLoaderContractWithTarget(arch, configure);
+        var (_, target) = LoaderTests.CreateLoaderContractWithTarget(arch, (loader, builder) =>
+        {
+            builder.AddGlobals((Constants.Globals.CorDBDefaultEnCFunctionVersion, 1));
+            configure(loader, builder);
+        });
         var dacDbi = new DacDbiImpl(target, legacyObj: null);
         return (dacDbi, target);
     }
@@ -262,6 +266,7 @@ public unsafe class DacDbiImplTests
     {
         var target = new TestPlaceholderTarget.Builder(arch)
             .UseReader((_, _) => -1)
+            .AddGlobals((Constants.Globals.CorDBDefaultEnCFunctionVersion, 1))
             .AddMockContract(mockLoader)
             .Build();
         return new DacDbiImpl(target, legacyObj: null);
@@ -396,5 +401,144 @@ public unsafe class DacDbiImplTests
 
         Assert.Equal(System.HResults.S_OK, hr);
         Assert.Empty(assemblies);
+    }
+
+    private static DacDbiImpl CreateDacDbiWithMocks(
+        MockTarget.Architecture arch,
+        Mock<ILoader> mockLoader,
+        Mock<IRuntimeTypeSystem> mockRuntimeTypeSystem,
+        Mock<IExecutionManager> mockExecutionManager,
+        Mock<IPrecodeStubs> mockPrecodeStubs,
+        Mock<IEnC>? mockEnc = null,
+        ulong defaultEncVersion = 1)
+    {
+        var builder = new TestPlaceholderTarget.Builder(arch)
+            .UseReader((_, _) => -1)
+            .AddGlobals((Constants.Globals.CorDBDefaultEnCFunctionVersion, defaultEncVersion))
+            .AddMockContract(mockLoader)
+            .AddMockContract(mockRuntimeTypeSystem)
+            .AddMockContract(mockExecutionManager)
+            .AddMockContract(mockPrecodeStubs);
+
+        if (mockEnc is not null)
+            builder.AddMockContract(mockEnc);
+
+        var target = builder.Build();
+        return new DacDbiImpl(target, legacyObj: null);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetNativeCodeInfo_UsesLatestEnCVersion(MockTarget.Architecture arch)
+    {
+        const ulong vmAssembly = 0x1000;
+        uint functionToken = EcmaMetadataUtils.CreateMethodDef(0x123);
+        TargetPointer moduleAddr = new(0x2000);
+        TargetPointer methodDescAddr = new(0x3000);
+        TargetPointer methodLoaderModuleAddr = TargetPointer.Null;
+        TargetCodePointer nativeCodeAddr = new(0x6000);
+        TargetCodePointer resolvedCodeAddr = TargetCodePointer.Null;
+        const ulong expectedEncVersion = 42;
+
+        var mockLoader = new Mock<ILoader>();
+        var mockRuntimeTypeSystem = new Mock<IRuntimeTypeSystem>();
+        var mockExecutionManager = new Mock<IExecutionManager>();
+        var mockPrecodeStubs = new Mock<IPrecodeStubs>();
+        var mockEnc = new Mock<IEnC>();
+
+        Contracts.ModuleHandle moduleHandle = new(moduleAddr);
+        TargetPointer methodDefToDescTable = new(0x9000);
+        TargetNUInt mapFlags = default;
+        MethodDescHandle methodDescHandle = new(methodDescAddr);
+
+        mockLoader.Setup(l => l.GetModuleHandleFromAssemblyPtr(new TargetPointer(vmAssembly))).Returns(moduleHandle);
+        mockLoader.Setup(l => l.GetLookupTables(moduleHandle)).Returns(new ModuleLookupTables { MethodDefToDesc = methodDefToDescTable });
+        mockLoader.Setup(l => l.GetModuleLookupMapElement(methodDefToDescTable, functionToken, out mapFlags)).Returns(methodDescAddr);
+
+        mockRuntimeTypeSystem.Setup(r => r.GetMethodDescHandle(methodDescAddr)).Returns(methodDescHandle);
+        mockRuntimeTypeSystem.Setup(r => r.IsAsyncThunkMethod(methodDescHandle)).Returns(false);
+        mockRuntimeTypeSystem.Setup(r => r.GetNativeCode(methodDescHandle)).Returns(nativeCodeAddr);
+        mockRuntimeTypeSystem.Setup(r => r.GetMethodTable(methodDescHandle)).Returns(TargetPointer.Null);
+
+        mockPrecodeStubs.Setup(p => p.GetInterpreterCodeFromInterpreterPrecodeIfPresent(nativeCodeAddr)).Returns(resolvedCodeAddr);
+
+        mockEnc.Setup(e => e.GetLatestEnCVersion(methodLoaderModuleAddr, functionToken)).Returns(new TargetNUInt(expectedEncVersion));
+
+        DacDbiImpl dacDbi = CreateDacDbiWithMocks(
+            arch,
+            mockLoader,
+            mockRuntimeTypeSystem,
+            mockExecutionManager,
+            mockPrecodeStubs,
+            mockEnc);
+
+        NativeCodeFunctionData codeInfo = default;
+        int hr = dacDbi.GetNativeCodeInfo(vmAssembly, functionToken, &codeInfo);
+
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(expectedEncVersion, codeInfo.encVersion);
+        Assert.Equal(methodDescAddr.Value, codeInfo.vmNativeCodeMethodDescToken);
+        Assert.Equal(0ul, codeInfo.hotRegion.pAddress);
+        Assert.Equal(0u, codeInfo.hotRegion.cbSize);
+        Assert.Equal(0ul, codeInfo.coldRegion.pAddress);
+        Assert.Equal(0u, codeInfo.coldRegion.cbSize);
+        mockEnc.Verify(e => e.GetLatestEnCVersion(methodLoaderModuleAddr, functionToken), Times.Once);
+        mockEnc.Verify(e => e.GetEnCVersion(It.IsAny<TargetPointer>(), It.IsAny<uint>(), It.IsAny<TargetCodePointer>()), Times.Never);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetNativeCodeInfoForAddr_UsesAddressSpecificEnCVersion(MockTarget.Architecture arch)
+    {
+        TargetCodePointer requestedAddress = new(0x1000);
+        TargetCodePointer resolvedAddress = new(0x1008);
+        CodeBlockHandle codeBlockHandle = new(new TargetPointer(0x2000));
+        TargetPointer methodDescAddr = new(0x3000);
+        MethodDescHandle methodDescHandle = new(methodDescAddr);
+        TargetCodePointer hotStartAddr = TargetCodePointer.Null;
+        TargetPointer loaderModuleAddr = TargetPointer.Null;
+        uint methodToken = EcmaMetadataUtils.CreateMethodDef(0x111);
+        const ulong expectedEncVersion = 97;
+
+        var mockLoader = new Mock<ILoader>();
+        var mockRuntimeTypeSystem = new Mock<IRuntimeTypeSystem>();
+        var mockExecutionManager = new Mock<IExecutionManager>();
+        var mockPrecodeStubs = new Mock<IPrecodeStubs>();
+        var mockEnc = new Mock<IEnC>();
+
+        mockPrecodeStubs.Setup(p => p.GetInterpreterCodeFromInterpreterPrecodeIfPresent(requestedAddress)).Returns(resolvedAddress);
+
+        mockExecutionManager.Setup(e => e.GetCodeBlockHandle(resolvedAddress)).Returns(codeBlockHandle);
+        mockExecutionManager.Setup(e => e.GetMethodDesc(codeBlockHandle)).Returns(methodDescAddr);
+        mockExecutionManager.Setup(e => e.GetStartAddress(codeBlockHandle)).Returns(hotStartAddr.AsTargetPointer);
+
+        mockRuntimeTypeSystem.Setup(r => r.GetMethodDescHandle(methodDescAddr)).Returns(methodDescHandle);
+        mockRuntimeTypeSystem.Setup(r => r.GetMethodToken(methodDescHandle)).Returns(methodToken);
+        mockRuntimeTypeSystem.Setup(r => r.GetMethodTable(methodDescHandle)).Returns(TargetPointer.Null);
+
+        mockEnc.Setup(e => e.GetEnCVersion(loaderModuleAddr, methodToken, hotStartAddr)).Returns(new TargetNUInt(expectedEncVersion));
+
+        DacDbiImpl dacDbi = CreateDacDbiWithMocks(
+            arch,
+            mockLoader,
+            mockRuntimeTypeSystem,
+            mockExecutionManager,
+            mockPrecodeStubs,
+            mockEnc);
+
+        NativeCodeFunctionData codeInfo = default;
+        uint functionToken = 0;
+        int hr = dacDbi.GetNativeCodeInfoForAddr(requestedAddress.Value, &codeInfo, null, &functionToken);
+
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(expectedEncVersion, codeInfo.encVersion);
+        Assert.Equal(methodDescAddr.Value, codeInfo.vmNativeCodeMethodDescToken);
+        Assert.Equal(0ul, codeInfo.hotRegion.pAddress);
+        Assert.Equal(0u, codeInfo.hotRegion.cbSize);
+        Assert.Equal(0ul, codeInfo.coldRegion.pAddress);
+        Assert.Equal(0u, codeInfo.coldRegion.cbSize);
+        Assert.Equal(methodToken, functionToken);
+        mockEnc.Verify(e => e.GetEnCVersion(loaderModuleAddr, methodToken, hotStartAddr), Times.Once);
+        mockEnc.Verify(e => e.GetLatestEnCVersion(It.IsAny<TargetPointer>(), It.IsAny<uint>()), Times.Never);
     }
 }
