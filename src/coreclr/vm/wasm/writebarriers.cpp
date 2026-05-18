@@ -35,18 +35,18 @@ ASM_HELPER_2(VOID, JIT_WriteBarrier, Object **dst, Object *ref)
         "i32.ge_u\n"
         "i32.or\n"
         "if\n return\n end_if\n"
-        /* ref = ref >> card_byte_shift */
-        "local.get 1\n"
+        /* dst = dst >> card_byte_shift */
+        "local.get 0\n"
         "i32.const %[card_byte_shift]\n"
         "i32.shr_u\n"
-        "local.tee 1\n"
-        /* if (g_card_table[ref] == 255) return */
+        "local.tee 0\n"
+        /* if (g_card_table[dst] == 255) return */
         "i32.load8_u %[g_card_table]\n"
         "i32.const 255\n"
         "i32.eq\n"
         "if\n return\n end_if\n"
-        /* g_card_table[ref] = 255 */
-        "local.get 1\n"
+        /* g_card_table[dst] = 255 */
+        "local.get 0\n"
         "i32.const 255\n"
         "i32.store8 %[g_card_table]\n"
         "return\n"
@@ -79,18 +79,18 @@ ASM_HELPER_2(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref)
         "i32.ge_u\n"
         "i32.or\n"
         "if\n return\n end_if\n"
-        /* ref = ref >> card_byte_shift */
-        "local.get 1\n"
+        /* dst = dst >> card_byte_shift */
+        "local.get 0\n"
         "i32.const %[card_byte_shift]\n"
         "i32.shr_u\n"
-        "local.tee 1\n"
-        /* if (g_card_table[ref] == 255) return */
+        "local.tee 0\n"
+        /* if (g_card_table[dst] == 255) return */
         "i32.load8_u %[g_card_table]\n"
         "i32.const 255\n"
         "i32.eq\n"
         "if\n return\n end_if\n"
-        /* g_card_table[ref] = 255 */
-        "local.get 1\n"
+        /* g_card_table[dst] = 255 */
+        "local.get 0\n"
         "i32.const 255\n"
         "i32.store8 %[g_card_table]\n"
         "return\n"
