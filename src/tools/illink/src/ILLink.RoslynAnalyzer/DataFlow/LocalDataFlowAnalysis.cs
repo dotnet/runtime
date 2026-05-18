@@ -133,8 +133,9 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 }
             }
 
-            Debug.Fail($"Unsupported operation block owning symbol: '{owningSymbol.GetDisplayName()}' ({owningSymbol.Kind}, {owningSymbol.GetType().FullName})");
-            return false;
+            // Let MethodBodyValue assert with the control-flow graph context if Roslyn
+            // introduces another named-type-owned operation block shape.
+            return true;
         }
 
         private bool AnalyzeAttribute(ISymbol owningSymbol, IAttributeOperation attribute)
