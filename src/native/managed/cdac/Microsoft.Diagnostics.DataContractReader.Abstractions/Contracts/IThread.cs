@@ -37,6 +37,13 @@ public enum ThreadState
     Detached            = unchecked((int)0x80000000), // Thread was detached
 }
 
+[Flags]
+public enum DebuggerControlledThreadState
+{
+    None                        = 0x00000000, // Threads are initialized this way
+    UserSuspend                 = 0x00000001, // Marked "suspended" by the debugger
+}
+
 public record struct ThreadData(
     TargetPointer ThreadAddress,
     uint Id,
@@ -58,6 +65,8 @@ public interface IThread : IContract
 {
     static string IContract.Name { get; } = nameof(Thread);
 
+    void SetDebuggerControlledThreadState(TargetPointer thread, DebuggerControlledThreadState state) => throw new NotImplementedException();
+    void ResetDebuggerControlledThreadState(TargetPointer thread, DebuggerControlledThreadState state) => throw new NotImplementedException();
     ThreadStoreData GetThreadStoreData() => throw new NotImplementedException();
     ThreadStoreCounts GetThreadCounts() => throw new NotImplementedException();
     ThreadData GetThreadData(TargetPointer thread) => throw new NotImplementedException();
