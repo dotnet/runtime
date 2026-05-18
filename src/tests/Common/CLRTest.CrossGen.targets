@@ -33,10 +33,9 @@ WARNING:   When setting properties based on their current state (for example:
 
       <CrossGenTest>false</CrossGenTest>
 
-    Tests can opt out of composite crossgen2 only by setting this property in their project:
+    Tests can pass extra crossgen2 arguments only in composite mode by setting this property in their project:
 
-      <CompositeCrossGenTest>false</CompositeCrossGenTest>
-
+      <CompositeCrossGen2TestExtraArguments>...</CompositeCrossGen2TestExtraArguments>
   -->
   <Target Name="GetCrossgenBashScript">
 
@@ -49,11 +48,6 @@ WARNING:   When setting properties based on their current state (for example:
 if [ "$(AlwaysUseCrossGen2)" == "true" ]; then
     export RunCrossGen2=1
     export CompositeBuildMode=1
-fi
-
-# CompositeBuildMode is an opt-in by variable presence.
-if [ "$(CompositeCrossGenTest)" = "false" ] && [ -n "${CompositeBuildMode+x}" ]; then
-    unset CompositeBuildMode
 fi
 
 # CrossGen2 Script
@@ -77,6 +71,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         cp "$CORE_ROOT"/lib*.so "$CORE_ROOT"/lib*.dylib $(scriptPath)
 
         ExtraCrossGen2Args+=" --composite"
+        ExtraCrossGen2Args+=" $(CompositeCrossGen2TestExtraArguments)"
       fi
 
       ExtraCrossGen2Args+=" $(CrossGen2TestExtraArguments)"
@@ -242,13 +237,6 @@ if /i "$(AlwaysUseCrossGen2)" == "true" (
     set CompositeBuildMode=1
 )
 
-if /i "$(CompositeCrossGenTest)" == "false" (
-    REM CompositeBuildMode is an opt-in by variable presence.
-    if defined CompositeBuildMode (
-        set CompositeBuildMode=
-    )
-)
-
 REM CrossGen2 Script
 if defined RunCrossGen2 (
     set ExtraCrossGen2Args=!ExtraCrossGen2Args! $(CrossGen2TestExtraArguments)
@@ -278,6 +266,7 @@ if defined RunCrossGen2 (
 
     if defined CompositeBuildMode (
         set ExtraCrossGen2Args=!ExtraCrossGen2Args! --composite
+        set ExtraCrossGen2Args=!ExtraCrossGen2Args! $(CompositeCrossGen2TestExtraArguments)
         if "$(CrossGen2OutputFormat)"=="wasm" (
             set __OutputFile=!scriptPath!\composite-r2r.wasm
         ) else (

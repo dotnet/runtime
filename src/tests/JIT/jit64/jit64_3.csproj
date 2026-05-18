@@ -1,7 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Huge methods need large native JIT allocations, so limit concurrent Crossgen2 compilations. -->
+    <CompositeCrossGen2TestExtraArguments>$(CompositeCrossGen2TestExtraArguments) --parallelism:2</CompositeCrossGen2TestExtraArguments>
+  </PropertyGroup>
+
   <ItemGroup>
     <MergedWrapperProjectReference Include="opt/**/*.??proj" />
-    <MergedWrapperProjectReference Remove="opt/cse/Huge*.??proj" />
   </ItemGroup>
 
   <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
