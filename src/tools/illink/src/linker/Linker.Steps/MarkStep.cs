@@ -502,17 +502,17 @@ namespace Mono.Linker.Steps
                 ApplyPreserveInfo(type);
             }
 
-            foreach (var (method, reason, origin) in Annotations.DrainPendingReflectionVisibleMethods())
+            foreach (var (method, origin) in Annotations.DrainPendingReflectionVisibleMethods())
             {
                 marked = true;
-                MarkMethodVisibleToReflection(method, reason, origin);
+                MarkMethodVisibleToReflection(method, DependencyInfo.AlreadyMarked, origin);
                 MarkTypeVisibleToReflection(method.DeclaringType, new DependencyInfo(DependencyKind.DeclaringType, method), origin);
             }
 
-            foreach (var (field, reason, origin) in Annotations.DrainPendingReflectionVisibleFields())
+            foreach (var (field, origin) in Annotations.DrainPendingReflectionVisibleFields())
             {
                 marked = true;
-                MarkFieldVisibleToReflection(field, reason, origin);
+                MarkFieldVisibleToReflection(field, DependencyInfo.AlreadyMarked, origin);
                 MarkTypeVisibleToReflection(field.DeclaringType, new DependencyInfo(DependencyKind.DeclaringType, field), origin);
             }
 

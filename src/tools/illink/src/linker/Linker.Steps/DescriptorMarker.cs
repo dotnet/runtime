@@ -186,7 +186,7 @@ namespace Mono.Linker.Steps
 
             var reason = new DependencyInfo(DependencyKind.XmlDescriptor, _xmlDocumentLocation);
             var origin = GetMessageOriginForPosition(nav);
-            _context.Annotations.MarkPendingReflectionVisibleField(field, reason, origin);
+            _context.Annotations.MarkPendingReflectionVisibleField(field, origin);
             _context.Annotations.Mark(field, reason, origin);
         }
 
@@ -206,7 +206,7 @@ namespace Mono.Linker.Steps
             {
                 var reason = new DependencyInfo(DependencyKind.XmlDescriptor, _xmlDocumentLocation);
                 var origin = GetMessageOriginForPosition(nav);
-                _context.Annotations.MarkPendingReflectionVisibleMethod(method, reason, origin);
+                _context.Annotations.MarkPendingReflectionVisibleMethod(method, origin);
                 _context.Annotations.Mark(method, reason, origin);
             }
         }
