@@ -968,9 +968,8 @@ private:
 
             JITDUMP("Direct call [%06u] in block " FMT_BB "\n", compiler->dspTreeID(call), block->bbNum);
 
-            CORINFO_METHOD_HANDLE methodHnd = inlineInfo->guardedMethodHandle;
-            const bool hasInstParam = (inlineInfo->guardedMethodInstParamLookup.constLookup.accessType != IAT_VALUE) ||
-                                      (inlineInfo->guardedMethodInstParamLookup.constLookup.handle != nullptr);
+            CORINFO_METHOD_HANDLE methodHnd    = inlineInfo->guardedMethodHandle;
+            const bool            hasInstParam = inlineInfo->methInfo.args.hasTypeArg();
             if (hasInstParam)
             {
                 assert(call->gtArgs.FindWellKnownArg(WellKnownArg::InstParam) == nullptr);
