@@ -481,9 +481,12 @@ namespace System.IO.Compression
             {
                 // this means we have never opened it before
 
-                // if _uncompressedSize > int.MaxValue, it's still okay, because MemoryStream will just
-                // grow as data is copied into it
-                _storedUncompressedData = new MemoryStream((int)_uncompressedSize);
+                // The initial capacity is only a hint to pre-size the backing buffer. If
+                // _uncompressedSize exceeds the maximum capacity accepted by MemoryStream
+                // (Array.MaxLength), clamp it: MemoryStream will throw on a negative value
+                // produced by an unchecked cast and on values greater than Array.MaxLength.
+                // MemoryStream will grow as data is copied into it, up to Array.MaxLength.
+                _storedUncompressedData = new MemoryStream((int)Math.Min(_uncompressedSize, Array.MaxLength));
 
                 if (_originallyInArchive)
                 {

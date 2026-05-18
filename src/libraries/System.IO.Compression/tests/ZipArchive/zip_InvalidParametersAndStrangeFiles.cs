@@ -410,6 +410,45 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task ZipArchiveEntry_OpenInUpdateMode_UncompressedSizeGreaterThanIntMaxValue_DoesNotThrow(bool async)
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/127834
+            // When _uncompressedSize > int.MaxValue (e.g. for a Zip64 entry whose declared
+            // uncompressed size exceeds int.MaxValue), GetUncompressedData() passed an
+            // unchecked (int) cast to the MemoryStream constructor. That cast wrapped to a
+            // negative number, causing ArgumentOutOfRangeException to be thrown from the
+            // MemoryStream constructor before any data was loaded. The capacity argument is
+            // only a pre-sizing hint and must be clamped to a valid MemoryStream capacity.
+            byte[] payload = [0xCA, 0xFE, 0xBA, 0xBE, 0xDE, 0xAD, 0xBE, 0xEF];
+            MemoryStream stream = new MemoryStream();
+
+            ZipArchive archive = await CreateZipArchive(async, stream, ZipArchiveMode.Create, leaveOpen: true);
+            ZipArchiveEntry entry = archive.CreateEntry("entry.bin", CompressionLevel.NoCompression);
+            Stream entryStream = await OpenEntryStream(async, entry);
+            await entryStream.WriteAsync(payload);
+            await DisposeStream(async, entryStream);
+            await DisposeZipArchive(async, archive);
+
+            stream.Position = 0;
+            archive = await CreateZipArchive(async, stream, ZipArchiveMode.Update, leaveOpen: true);
+            entry = archive.GetEntry("entry.bin");
+
+            FieldInfo uncompressedSizeField = typeof(ZipArchiveEntry).GetField("_uncompressedSize", BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.NotNull(uncompressedSizeField);
+            uncompressedSizeField.SetValue(entry, (long)int.MaxValue + 100L);
+
+            // Previously this threw ArgumentOutOfRangeException from the MemoryStream
+            // constructor inside GetUncompressedData because (int)_uncompressedSize wrapped
+            // to a negative value. With the fix it must succeed (the actual stored bytes are
+            // small, so loading completes normally).
+            Stream openStream = await OpenEntryStream(async, entry);
+            await DisposeStream(async, openStream);
+
+            await DisposeZipArchive(async, archive);
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
         public static async Task UnseekableVeryLargeArchive_DataDescriptor_Read_Zip64(bool async)
         {
             MemoryStream stream = await LocalMemoryStream.ReadAppFileAsync(strange("veryLarge.zip"));
