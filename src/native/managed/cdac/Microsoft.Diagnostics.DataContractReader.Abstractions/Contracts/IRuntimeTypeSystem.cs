@@ -89,6 +89,13 @@ public enum OptimizationTier : uint
     OptimizationTier1Instrumented,
 }
 
+public enum GenericContextLoc
+{
+    None,
+    InstArg,
+    ThisPtr,
+}
+
 
 public interface IRuntimeTypeSystem : IContract
 {
@@ -193,9 +200,7 @@ public interface IRuntimeTypeSystem : IContract
     bool IsGenericMethodDefinition(MethodDescHandle methodDesc) => throw new NotImplementedException();
     ReadOnlySpan<TypeHandle> GetGenericMethodInstantiation(MethodDescHandle methodDesc) => throw new NotImplementedException();
 
-    // Return true if the method requires a hidden instantiation argument (generic context parameter).
-    // This corresponds to native MethodDesc::RequiresInstArg().
-    bool RequiresInstArg(MethodDescHandle methodDesc) => throw new NotImplementedException();
+    GenericContextLoc GetGenericContextLoc(MethodDescHandle methodDescHandle) => throw new NotImplementedException();
 
     // Return true if the method uses the async calling convention (CORINFO_CALLCONV_ASYNCCALL).
     // This corresponds to native MethodDesc::IsAsyncMethod().
@@ -261,8 +266,8 @@ public interface IRuntimeTypeSystem : IContract
     CorElementType GetFieldDescType(TargetPointer fieldDescPointer) => throw new NotImplementedException();
     uint GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition fieldDef) => throw new NotImplementedException();
     TargetPointer GetFieldDescByName(TypeHandle typeHandle, string fieldName) => throw new NotImplementedException();
-    TargetPointer GetFieldDescStaticAddress(TargetPointer fieldDescPointer) => throw new NotImplementedException();
-    TargetPointer GetFieldDescThreadStaticAddress(TargetPointer fieldDescPointer, TargetPointer thread) => throw new NotImplementedException();
+    TargetPointer GetFieldDescStaticAddress(TargetPointer fieldDescPointer, bool unboxValueTypes = true) => throw new NotImplementedException();
+    TargetPointer GetFieldDescThreadStaticAddress(TargetPointer fieldDescPointer, TargetPointer thread, bool unboxValueTypes = true) => throw new NotImplementedException();
     #endregion FieldDesc inspection APIs
     #region Other APIs
     void GetCoreLibFieldDescAndDef(string typeNamespace, string typeName, string fieldName, out TargetPointer fieldDescAddr, out FieldDefinition fieldDef) => throw new NotImplementedException();

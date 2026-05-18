@@ -365,15 +365,15 @@ CorInfoType CEEInfo::asCorInfoType(CorElementType eeType,
         CORINFO_TYPE_ULONG,
         CORINFO_TYPE_FLOAT,
         CORINFO_TYPE_DOUBLE,
-        CORINFO_TYPE_STRING,
+        CORINFO_TYPE_CLASS,
         CORINFO_TYPE_PTR,            // PTR
         CORINFO_TYPE_BYREF,
         CORINFO_TYPE_VALUECLASS,
         CORINFO_TYPE_CLASS,
-        CORINFO_TYPE_VAR,            // VAR
+        CORINFO_TYPE_UNDEF,          // VAR (type variable)
         CORINFO_TYPE_CLASS,          // ARRAY
-        CORINFO_TYPE_CLASS,          // GENERICINST
-        CORINFO_TYPE_VALUECLASS,     // TypedReference
+        CORINFO_TYPE_UNDEF,          // GENERICINST
+        CORINFO_TYPE_VALUECLASS,     // TYPEDBYREF
         CORINFO_TYPE_UNDEF,          // VALUEARRAY_UNSUPPORTED
         CORINFO_TYPE_NATIVEINT,      // I
         CORINFO_TYPE_NATIVEUINT,     // U
@@ -383,7 +383,7 @@ CorInfoType CEEInfo::asCorInfoType(CorElementType eeType,
         CORINFO_TYPE_PTR,            // FNPTR
         CORINFO_TYPE_CLASS,          // OBJECT
         CORINFO_TYPE_CLASS,          // SZARRAY
-        CORINFO_TYPE_VAR,            // MVAR
+        CORINFO_TYPE_UNDEF,          // MVAR
 
         CORINFO_TYPE_UNDEF,          // CMOD_REQD
         CORINFO_TYPE_UNDEF,          // CMOD_OPT
@@ -3476,7 +3476,7 @@ size_t CEEInfo::printClassName(CORINFO_CLASS_HANDLE cls, char* buffer, size_t bu
     mdTypeDef td = th.GetCl();
     if (IsNilToken(td))
     {
-        if (th.IsContinuation())
+        if (th.IsContinuationWithoutMetadata())
         {
             AsyncContinuationsManager::PrintContinuationName(
                 th.AsMethodTable(),
@@ -11499,18 +11499,24 @@ LPVOID CInterpreterJitInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* sz
     InterpreterCalliCookie result = NULL;
     JIT_TO_EE_TRANSITION();
 
-    // When compiling a calli inside an IL stub for a P/Invoke, pass the target
-    // P/Invoke MethodDesc so ComputeCallStub can detect the Swift calling convention.
-    // Do not cache the cookie on pContextMD: MethodDesc::CalliCookie is for
-    // calling the target via managed calling convention. The stub we are about
-    // to generate calls the target via unmanaged calling convention.
+    // Pass the target P/Invoke MethodDesc as pContextMD so ComputeCallStub can
+    // detect the Swift calling convention. Do not cache the cookie on pContextMD:
+    // MethodDesc::CalliCookie is for the managed calling convention; the stub
+    // we generate calls the target via unmanaged calling convention.
     MethodDesc* pContextMD = nullptr;
-    if (m_pMethodBeingCompiled != nullptr && m_pMethodBeingCompiled->IsILStub())
+    if (m_pMethodBeingCompiled != nullptr)
     {
-        MethodDesc* pTargetMD = m_pMethodBeingCompiled->AsDynamicMethodDesc()->GetILStubResolver()->GetStubTargetMethodDesc();
-        if (pTargetMD != nullptr)
+        if (m_pMethodBeingCompiled->IsILStub())
         {
-            pContextMD = pTargetMD;
+            MethodDesc* pTargetMD = m_pMethodBeingCompiled->AsDynamicMethodDesc()->GetILStubResolver()->GetStubTargetMethodDesc();
+            if (pTargetMD != nullptr)
+            {
+                pContextMD = pTargetMD;
+            }
+        }
+        else if (m_pMethodBeingCompiled->IsPInvoke())
+        {
+            pContextMD = m_pMethodBeingCompiled;
         }
     }
 
