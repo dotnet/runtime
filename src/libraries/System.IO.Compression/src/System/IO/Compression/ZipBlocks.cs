@@ -716,7 +716,7 @@ namespace System.IO.Compression
         /// Tries to read a local file header for forward-read mode.
         /// Returns null if EOF is reached or a non-local-header signature is encountered.
         /// </summary>
-        internal static ForwardReadHeaderData? TryReadForForwardRead(Stream stream, Encoding? entryNameEncoding)
+        internal static unsafe ForwardReadHeaderData? TryReadForForwardRead(Stream stream, Encoding? entryNameEncoding)
         {
             Span<byte> header = stackalloc byte[SizeOfLocalHeader];
             int bytesRead = stream.ReadAtLeast(header, SizeOfLocalHeader, throwOnEndOfStream: false);
@@ -795,7 +795,7 @@ namespace System.IO.Compression
         /// <summary>
         /// Reads a data descriptor using signature-first parsing. No seek operations.
         /// </summary>
-        internal static (uint Crc32, long CompressedSize, long UncompressedSize) ReadDataDescriptor(Stream stream, bool isZip64)
+        internal static unsafe (uint Crc32, long CompressedSize, long UncompressedSize) ReadDataDescriptor(Stream stream, bool isZip64)
         {
             Span<byte> firstFour = stackalloc byte[4];
             stream.ReadExactly(firstFour);
@@ -822,7 +822,7 @@ namespace System.IO.Compression
         /// time. The known values from the decompressor let us detect the
         /// correct layout without relying on header signals.
         /// </remarks>
-        internal static (uint Crc32, long CompressedSize, long UncompressedSize) ReadDataDescriptorAdaptive(
+        internal static unsafe (uint Crc32, long CompressedSize, long UncompressedSize) ReadDataDescriptorAdaptive(
             Stream stream, uint knownCrc32, long knownUncompressedSize)
         {
             Span<byte> firstFour = stackalloc byte[4];
