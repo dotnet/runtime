@@ -17013,7 +17013,7 @@ GenTree* Compiler::gtFoldExprUnaryConst(GenTreeUnOp* tree)
 }
 
 //------------------------------------------------------------------------
-// gtFoldExprUnaryConst: see if a unary const operation for TYP_INT is foldable
+// gtFoldExprUnaryConstInt: see if a unary const operation for TYP_INT is foldable
 //
 // Arguments:
 //    tree   - tree to examine
@@ -17064,7 +17064,8 @@ GenTree* Compiler::gtFoldExprUnaryConstInt(GenTreeUnOp* tree, GenTreeIntCon* int
 
         case GT_BSWAP16:
         {
-            iconVal = ((iconVal >> 8) & 0xFF) | ((iconVal << 8) & 0xFF00);
+            uint32_t uconVal = static_cast<uint32_t>(iconVal);
+            iconVal          = static_cast<int32_t>(((uconVal >> 8) & 0xFF) | ((uconVal << 8) & 0xFF00));
             break;
         }
 
@@ -17177,8 +17178,8 @@ GenTree* Compiler::gtFoldExprUnaryConstInt(GenTreeUnOp* tree, GenTreeIntCon* int
 // gtFoldExprUnaryConst: see if a unary const operation for TYP_LONG is foldable
 //
 // Arguments:
-//    tree   - tree to examine
-//    intCon - the integer constant operand for tree
+//    tree         - tree to examine
+//    intConCommon - the integer constant operand for tree
 //
 // Returns:
 //    The original tree if no folding happened.
@@ -18361,7 +18362,7 @@ GenTree* Compiler::gtBashTreeToConstDbl(GenTree* tree, double dconVal)
 }
 
 //------------------------------------------------------------------------
-// gtFoldExprForOverflow: see if a binary const operation is foldable
+// gtFoldExprForOverflow: see if an overflowing operation is foldable
 //
 // Arguments:
 //    tree - tree to examine
