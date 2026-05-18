@@ -477,14 +477,14 @@ TargetPointer GetMethodDescPtr(IStackDataFrameHandle stackDataFrameHandle)
 ```csharp
 public enum InternalFrameType
 {
-    STUBFRAME_NONE,
-    STUBFRAME_M2U,
-    STUBFRAME_U2M,
-    STUBFRAME_FUNC_EVAL,
-    STUBFRAME_INTERNALCALL,
-    STUBFRAME_CLASS_INIT,
-    STUBFRAME_EXCEPTION,
-    STUBFRAME_JIT_COMPILATION,
+    None,
+    M2U,
+    U2M,
+    FuncEval,
+    InternalCall,
+    ClassInit,
+    Exception,
+    JitCompilation,
 }
 
 public record struct StackFrameData(
@@ -499,15 +499,15 @@ public record struct StackFrameData(
 
 | Frame subclass | `InternalFrameType` |
 | --- | --- |
-| `FaultingExceptionFrame`, `SoftwareExceptionFrame` | `STUBFRAME_EXCEPTION` |
-| `DebuggerClassInitMarkFrame` | `STUBFRAME_CLASS_INIT` |
-| `PrestubMethodFrame` | `STUBFRAME_JIT_COMPILATION` |
-| `FuncEvalFrame` | `STUBFRAME_FUNC_EVAL` |
-| `DebuggerU2MCatchHandlerFrame` | `STUBFRAME_U2M` |
-| `DynamicHelperFrame` | `STUBFRAME_INTERNALCALL` |
-| `FramedMethodFrame`, `DebuggerExitFrame`, `PInvokeCalliFrame`, `CallCountingHelperFrame`, `ExternalMethodFrame`, `InterpreterFrame` | `STUBFRAME_M2U` |
-| `InlinedCallFrame` with `FrameHasActiveCall` | `STUBFRAME_M2U` |
-| `InlinedCallFrame` without an active call, `StubDispatchFrame`, all other Frame types | `STUBFRAME_NONE` |
+| `FaultingExceptionFrame`, `SoftwareExceptionFrame` | `Exception` |
+| `DebuggerClassInitMarkFrame` | `ClassInit` |
+| `PrestubMethodFrame` | `JitCompilation` |
+| `FuncEvalFrame` | `FuncEval` |
+| `DebuggerU2MCatchHandlerFrame` | `U2M` |
+| `DynamicHelperFrame` | `InternalCall` |
+| `FramedMethodFrame`, `DebuggerExitFrame`, `PInvokeCalliFrame`, `CallCountingHelperFrame`, `ExternalMethodFrame`, `InterpreterFrame` | `M2U` |
+| `InlinedCallFrame` with `FrameHasActiveCall` | `M2U` |
+| `InlinedCallFrame` without an active call, `StubDispatchFrame`, all other Frame types | `None` |
 
 ```csharp
 IEnumerable<StackFrameData> GetFrames(TargetPointer threadPointer)
@@ -524,7 +524,7 @@ A Frame qualifies when all of the following hold:
 bool IsExceptionHandlingHelperInlinedCallFrame(TargetPointer frameAddress)
 ```
 
-`GetDebuggerEvalData(TargetPointer funcEvalFrameAddress)` reads the `DebuggerEval` referenced by a `FuncEvalFrame` and returns the metadata token and Assembly pointer the eval is rooted in. This is the data the debugger needs to populate `cStubFrame` entries for `STUBFRAME_FUNC_EVAL`.
+`GetDebuggerEvalData(TargetPointer funcEvalFrameAddress)` reads the `DebuggerEval` referenced by a `FuncEvalFrame` and returns the metadata token and Assembly pointer the eval is rooted in. This is the data the debugger needs to populate `cStubFrame` entries for `FuncEval`.
 
 ```csharp
 public record struct DebuggerEvalData(

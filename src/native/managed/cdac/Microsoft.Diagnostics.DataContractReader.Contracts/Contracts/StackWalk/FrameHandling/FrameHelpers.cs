@@ -300,22 +300,22 @@ internal sealed class FrameHelpers
         {
             case FrameType.FaultingExceptionFrame:
             case FrameType.SoftwareExceptionFrame:
-                return InternalFrameType.STUBFRAME_EXCEPTION;
+                return InternalFrameType.Exception;
 
             case FrameType.DebuggerClassInitMarkFrame:
-                return InternalFrameType.STUBFRAME_CLASS_INIT;
+                return InternalFrameType.ClassInit;
 
             case FrameType.PrestubMethodFrame:
-                return InternalFrameType.STUBFRAME_JIT_COMPILATION;
+                return InternalFrameType.JitCompilation;
 
             case FrameType.FuncEvalFrame:
-                return InternalFrameType.STUBFRAME_FUNC_EVAL;
+                return InternalFrameType.FuncEval;
 
             case FrameType.DebuggerU2MCatchHandlerFrame:
-                return InternalFrameType.STUBFRAME_U2M;
+                return InternalFrameType.U2M;
 
             case FrameType.DynamicHelperFrame:
-                return InternalFrameType.STUBFRAME_INTERNALCALL;
+                return InternalFrameType.InternalCall;
 
             case FrameType.DebuggerExitFrame:
             case FrameType.FramedMethodFrame:
@@ -323,18 +323,18 @@ internal sealed class FrameHelpers
             case FrameType.CallCountingHelperFrame:
             case FrameType.ExternalMethodFrame:
             case FrameType.InterpreterFrame:
-                return InternalFrameType.STUBFRAME_M2U;
+                return InternalFrameType.M2U;
 
-            // InlinedCallFrame inherits STUBFRAME_M2U from its _Impl, but the
+            // InlinedCallFrame inherits M2U from its _Impl, but the
             // debugger gates the value on FrameHasActiveCall.
             case FrameType.InlinedCallFrame:
                 Data.InlinedCallFrame icf = _target.ProcessedData.GetOrAdd<Data.InlinedCallFrame>(frame.Address);
                 return InlinedCallFrameHasActiveCall(icf)
-                    ? InternalFrameType.STUBFRAME_M2U
-                    : InternalFrameType.STUBFRAME_NONE;
+                    ? InternalFrameType.M2U
+                    : InternalFrameType.None;
 
             default:
-                return InternalFrameType.STUBFRAME_NONE;
+                return InternalFrameType.None;
         }
     }
 

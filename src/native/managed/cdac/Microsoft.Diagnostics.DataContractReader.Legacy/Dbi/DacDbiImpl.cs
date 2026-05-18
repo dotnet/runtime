@@ -1085,7 +1085,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             IStackWalk stackwalk = _target.Contracts.StackWalk;
             foreach (Contracts.StackFrameData frame in stackwalk.GetFrames(new TargetPointer(vmThread)))
             {
-                if (frame.InternalFrameType != Contracts.InternalFrameType.STUBFRAME_NONE
+                if (frame.InternalFrameType != Contracts.InternalFrameType.None
                     && stackwalk.GetFrameName(frame.FrameIdentifier) != "InterpreterFrame"
                     && !stackwalk.IsExceptionHandlingHelperInlinedCallFrame(frame.FrameAddress))
                     count++;
@@ -1123,7 +1123,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
             foreach (Contracts.StackFrameData frame in stackwalk.GetFrames(threadPtr))
             {
-                if (frame.InternalFrameType == Contracts.InternalFrameType.STUBFRAME_NONE
+                if (frame.InternalFrameType == Contracts.InternalFrameType.None
                      || stackwalk.GetFrameName(frame.FrameIdentifier) == "InterpreterFrame"
                      || stackwalk.IsExceptionHandlingHelperInlinedCallFrame(frame.FrameAddress))
                     continue;
@@ -1131,7 +1131,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 TargetPointer vmAssembly;
                 uint funcMetadataToken;
                 TargetPointer vmMethodDesc;
-                if (frame.InternalFrameType == Contracts.InternalFrameType.STUBFRAME_FUNC_EVAL)
+                if (frame.InternalFrameType == Contracts.InternalFrameType.FuncEval)
                 {
                     Contracts.DebuggerEvalData evalData = stackwalk.GetDebuggerEvalData(frame.FrameAddress);
                     funcMetadataToken = evalData.MethodToken;
@@ -1230,14 +1230,14 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     private static CorDebugInternalFrameType ToCorDebugInternalFrameType(Contracts.InternalFrameType frameType)
         => frameType switch
         {
-            Contracts.InternalFrameType.STUBFRAME_NONE => CorDebugInternalFrameType.STUBFRAME_NONE,
-            Contracts.InternalFrameType.STUBFRAME_M2U => CorDebugInternalFrameType.STUBFRAME_M2U,
-            Contracts.InternalFrameType.STUBFRAME_U2M => CorDebugInternalFrameType.STUBFRAME_U2M,
-            Contracts.InternalFrameType.STUBFRAME_FUNC_EVAL => CorDebugInternalFrameType.STUBFRAME_FUNC_EVAL,
-            Contracts.InternalFrameType.STUBFRAME_INTERNALCALL => CorDebugInternalFrameType.STUBFRAME_INTERNALCALL,
-            Contracts.InternalFrameType.STUBFRAME_CLASS_INIT => CorDebugInternalFrameType.STUBFRAME_CLASS_INIT,
-            Contracts.InternalFrameType.STUBFRAME_EXCEPTION => CorDebugInternalFrameType.STUBFRAME_EXCEPTION,
-            Contracts.InternalFrameType.STUBFRAME_JIT_COMPILATION => CorDebugInternalFrameType.STUBFRAME_JIT_COMPILATION,
+            Contracts.InternalFrameType.None => CorDebugInternalFrameType.STUBFRAME_NONE,
+            Contracts.InternalFrameType.M2U => CorDebugInternalFrameType.STUBFRAME_M2U,
+            Contracts.InternalFrameType.U2M => CorDebugInternalFrameType.STUBFRAME_U2M,
+            Contracts.InternalFrameType.FuncEval => CorDebugInternalFrameType.STUBFRAME_FUNC_EVAL,
+            Contracts.InternalFrameType.InternalCall => CorDebugInternalFrameType.STUBFRAME_INTERNALCALL,
+            Contracts.InternalFrameType.ClassInit => CorDebugInternalFrameType.STUBFRAME_CLASS_INIT,
+            Contracts.InternalFrameType.Exception => CorDebugInternalFrameType.STUBFRAME_EXCEPTION,
+            Contracts.InternalFrameType.JitCompilation => CorDebugInternalFrameType.STUBFRAME_JIT_COMPILATION,
             _ => CorDebugInternalFrameType.STUBFRAME_NONE,
         };
 

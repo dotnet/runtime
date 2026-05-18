@@ -23,14 +23,14 @@ public class StackReferenceData
 
 public enum InternalFrameType
 {
-    STUBFRAME_NONE,
-    STUBFRAME_M2U,
-    STUBFRAME_U2M,
-    STUBFRAME_FUNC_EVAL,
-    STUBFRAME_INTERNALCALL,
-    STUBFRAME_CLASS_INIT,
-    STUBFRAME_EXCEPTION,
-    STUBFRAME_JIT_COMPILATION,
+    None,
+    M2U,
+    U2M,
+    FuncEval,
+    InternalCall,
+    ClassInit,
+    Exception,
+    JitCompilation,
 }
 
 public record struct StackFrameData(

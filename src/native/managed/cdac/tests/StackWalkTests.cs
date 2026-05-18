@@ -155,33 +155,33 @@ public unsafe class StackWalkTests
         Assert.Equal(9, frames.Length);
 
         Assert.Equal(framedMethodAddr, frames[0].FrameAddress.Value);
-        Assert.Equal(InternalFrameType.STUBFRAME_M2U, frames[0].InternalFrameType);
+        Assert.Equal(InternalFrameType.M2U, frames[0].InternalFrameType);
 
         Assert.Equal(prestubAddr, frames[1].FrameAddress.Value);
-        Assert.Equal(InternalFrameType.STUBFRAME_JIT_COMPILATION, frames[1].InternalFrameType);
+        Assert.Equal(InternalFrameType.JitCompilation, frames[1].InternalFrameType);
 
         Assert.Equal(funcEvalAddr, frames[2].FrameAddress.Value);
-        Assert.Equal(InternalFrameType.STUBFRAME_FUNC_EVAL, frames[2].InternalFrameType);
+        Assert.Equal(InternalFrameType.FuncEval, frames[2].InternalFrameType);
 
         Assert.Equal(debuggerExitAddr, frames[3].FrameAddress.Value);
-        Assert.Equal(InternalFrameType.STUBFRAME_M2U, frames[3].InternalFrameType);
+        Assert.Equal(InternalFrameType.M2U, frames[3].InternalFrameType);
 
         Assert.Equal(classInitAddr, frames[4].FrameAddress.Value);
-        Assert.Equal(InternalFrameType.STUBFRAME_CLASS_INIT, frames[4].InternalFrameType);
+        Assert.Equal(InternalFrameType.ClassInit, frames[4].InternalFrameType);
 
         Assert.Equal(softwareExAddr, frames[5].FrameAddress.Value);
-        Assert.Equal(InternalFrameType.STUBFRAME_EXCEPTION, frames[5].InternalFrameType);
+        Assert.Equal(InternalFrameType.Exception, frames[5].InternalFrameType);
 
         Assert.Equal(u2mAddr, frames[6].FrameAddress.Value);
-        Assert.Equal(InternalFrameType.STUBFRAME_U2M, frames[6].InternalFrameType);
+        Assert.Equal(InternalFrameType.U2M, frames[6].InternalFrameType);
 
-        // InterpreterFrame classifies as STUBFRAME_M2U at the StackWalk layer; the
+        // InterpreterFrame classifies as M2U at the StackWalk layer; the
         // debugger-internal-frames consumer filters it out separately.
         Assert.Equal(interpAddr, frames[7].FrameAddress.Value);
-        Assert.Equal(InternalFrameType.STUBFRAME_M2U, frames[7].InternalFrameType);
+        Assert.Equal(InternalFrameType.M2U, frames[7].InternalFrameType);
 
         Assert.Equal(hijackAddr, frames[8].FrameAddress.Value);
-        Assert.Equal(InternalFrameType.STUBFRAME_NONE, frames[8].InternalFrameType);
+        Assert.Equal(InternalFrameType.None, frames[8].InternalFrameType);
     }
 
     [Theory]
