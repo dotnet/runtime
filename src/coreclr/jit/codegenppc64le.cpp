@@ -1773,12 +1773,12 @@ const CodeGen::GenConditionDesc CodeGen::GenConditionDesc::map[32]
     { },       // O     (index 22) - Overflow (not used on PPC)
     { },       // NO    (index 23) - No Overflow (not used on PPC)
 
-    { },       // FEQU  (index 24) - Float Equal Unordered
-    { },       // FNEU  (index 25) - Float Not Equal Unordered
-    { },       // FLTU  (index 26) - Float Less Than Unordered
-    { },       // FLEU  (index 27) - Float Less or Equal Unordered
-    { },       // FGEU  (index 28) - Float Greater or Equal Unordered
-    { },       // FGTU  (index 29) - Float Greater Than Unordered
+    { EJ_eq, GT_OR, EJ_eq },  // FEQU  (index 24) - Float Equal Unordered
+    { EJ_ne },                // FNEU  (index 25) - Float Not Equal Unordered
+    { EJ_lt },                // FLTU  (index 26) - Float Less Than Unordered
+    { EJ_le },                // FLEU  (index 27) - Float Less or Equal Unordered
+    { EJ_ge },                // FGEU  (index 28) - Float Greater or Equal Unordered
+    { EJ_gt },                // FGTU  (index 29) - Float Greater Than Unordered
     { },       // P     (index 30) - Parity (not used on PPC)
     { },       // NP    (index 31) - No Parity (not used on PPC)
 };
