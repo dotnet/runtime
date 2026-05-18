@@ -13,6 +13,9 @@
   <ItemGroup>
     <Compile Include="ObjCPInvokeR2R.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
   <PropertyGroup>
     <CLRTestBatchPreCommands><![CDATA[
 $(CLRTestBatchPreCommands)

@@ -60,8 +60,23 @@ namespace Internal.IL.Stubs
             {
                 MetadataType objcMarshalType = context.SystemModule.GetKnownType(
                     "System.Runtime.InteropServices.ObjectiveC"u8, "ObjectiveCMarshal"u8);
+
+                // Spill the native return value across the pending-exception helper call.
+                ILLocalVariable nativeReturnLocal = (ILLocalVariable)(-1);
+                bool hasNativeReturn = !nativeReturnType.IsVoid;
+                if (hasNativeReturn)
+                {
+                    nativeReturnLocal = emitter.NewLocal(nativeReturnType);
+                    callsiteSetupCodeStream.EmitStLoc(nativeReturnLocal);
+                }
+
                 callsiteSetupCodeStream.Emit(ILOpcode.call, emitter.NewToken(
                     objcMarshalType.GetKnownMethod("ThrowPendingExceptionObject"u8, null)));
+
+                if (hasNativeReturn)
+                {
+                    callsiteSetupCodeStream.EmitLdLoc(nativeReturnLocal);
+                }
             }
 
             static PInvokeTargetNativeMethod AllocateTargetNativeMethod(MethodDesc targetMethod, MethodSignature nativeSigArg)
