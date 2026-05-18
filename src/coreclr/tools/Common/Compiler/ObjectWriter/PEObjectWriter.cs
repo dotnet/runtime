@@ -913,27 +913,11 @@ namespace ILCompiler.ObjectWriter
                             Relocation.WriteValue(reloc.Type, pData, symbolImageOffset - (relocOffset + relocLength) + addend);
                             break;
                         case RelocType.IMAGE_REL_BASED_THUMB_BRANCH24:
-                        {
-                            long delta = (symbolImageOffset & ~1u) - (relocOffset + relocLength) + addend;
-                            if ((int)delta != delta || !Relocation.FitsInThumb2BlRel24((int)delta))
-                            {
-                                throw new InvalidOperationException($"THUMB_BRANCH24 relocation to '{reloc.SymbolName}' is out of range.");
-                            }
-
-                            Relocation.WriteValue(reloc.Type, pData, delta);
+                            Relocation.WriteValue(reloc.Type, pData, (long)(symbolImageOffset & ~1u) - (long)(relocOffset + relocLength) + addend);
                             break;
-                        }
                         case RelocType.IMAGE_REL_BASED_ARM64_BRANCH26:
-                        {
-                            long delta = symbolImageOffset - relocOffset + addend;
-                            if (!Relocation.FitsInArm64Rel28(delta))
-                            {
-                                throw new InvalidOperationException($"ARM64_BRANCH26 relocation to '{reloc.SymbolName}' is out of range.");
-                            }
-
-                            Relocation.WriteValue(reloc.Type, pData, delta);
+                            Relocation.WriteValue(reloc.Type, pData, (long)symbolImageOffset - (long)relocOffset + addend);
                             break;
-                        }
                         case RelocType.IMAGE_REL_FILE_ABSOLUTE:
                             long fileOffset = _sections[definedSymbol.SectionIndex].Header.PointerToRawData + definedSymbol.Value;
                             Relocation.WriteValue(reloc.Type, pData, fileOffset + addend);
