@@ -5608,7 +5608,16 @@ void DacDbiInterfaceImpl::LookupEnCVersions(VMPTR_MethodDesc vmMethodDesc,
 {
     MethodDesc * pMD = vmMethodDesc.GetDacPtr();
     _ASSERTE(pLatestEnCVersion != NULL);
-
+#ifdef FEATURE_METADATA_UPDATER
+    if (pJittedInstanceEnCVersion != NULL)
+    {
+        *pJittedInstanceEnCVersion = CorDB_DEFAULT_ENC_FUNCTION_VERSION;
+    }
+    if (pLatestEnCVersion != NULL)
+    {
+        *pLatestEnCVersion = CorDB_DEFAULT_ENC_FUNCTION_VERSION;
+    }
+#else
     Module* pLoaderModule = pMD->GetLoaderModule();
     PTR_EnCData pEnCData = pLoaderModule->FindEncData(mdMethod, CORDB_ADDRESS_TO_TADDR(pNativeStartAddress));
     PTR_EnCData pLatestEncData = pLoaderModule->FindLatestEncData(mdMethod);
@@ -5617,6 +5626,7 @@ void DacDbiInterfaceImpl::LookupEnCVersions(VMPTR_MethodDesc vmMethodDesc,
         *pJittedInstanceEnCVersion = (pEnCData != NULL) ? pEnCData->encVersion : CorDB_DEFAULT_ENC_FUNCTION_VERSION;
     }
     *pLatestEnCVersion = (pLatestEncData != NULL) ? pLatestEncData->encVersion : CorDB_DEFAULT_ENC_FUNCTION_VERSION;
+#endif // FEATURE_METADATA_UPDATER
 }
 
 // Get the address of the Debugger control block on the helper thread

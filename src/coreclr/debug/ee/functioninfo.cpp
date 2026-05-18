@@ -1226,6 +1226,7 @@ void DebuggerJitInfo::Init(TADDR newAddress)
     this->m_sizeOfCode =  this->m_codeRegionInfo.getSizeOfTotalCode();
 
     this->m_encVersion = this->m_methodInfo->GetCurrentEnCVersion();
+#ifdef FEATURE_METADATA_UPDATER
     if (this->m_encVersion != CorDB_DEFAULT_ENC_FUNCTION_VERSION)
     {
         Module* pModule = this->m_pLoaderModule;
@@ -1235,6 +1236,7 @@ void DebuggerJitInfo::Init(TADDR newAddress)
         pEnCData->encVersion = this->m_encVersion;
         pModule->AddEncData(pEnCData);
     }
+#endif // FEATURE_METADATA_UPDATER
 
     this->InitFuncletAddress();
 
