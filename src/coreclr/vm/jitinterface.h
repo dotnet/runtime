@@ -207,7 +207,6 @@ extern "C" FCDECL2(VOID, RhpByRefAssignRef, Object **dst, Object *ref);
 extern "C" FCDECL2(VOID, RhpAssignRef, Object **dst, Object *ref);
 
 extern "C" FCDECL2(VOID, JIT_WriteBarrier, Object **dst, Object *ref);
-extern "C" FCDECL2(VOID, JIT_WriteBarrierEnsureNonHeapTarget, Object **dst, Object *ref);
 
 EXTERN_C FCDECL2_VV(INT64, JIT_LMul, INT64 val1, INT64 val2);
 

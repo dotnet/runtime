@@ -158,6 +158,15 @@ public enum OptimizationTier
 ```
 
 ```csharp
+public enum GenericContextLoc
+{
+    None,
+    InstArg,
+    ThisPtr,
+}
+```
+
+```csharp
 partial interface IRuntimeTypeSystem : IContract
 {
     public virtual MethodDescHandle GetMethodDescHandle(TargetPointer methodDescPointer);
@@ -199,9 +208,9 @@ partial interface IRuntimeTypeSystem : IContract
     // Return true if a MethodDesc represents an IL stub with a special MethodDesc context arg
     public virtual bool HasMDContextArg(MethodDescHandle);
 
-    // Return true if the method requires a hidden instantiation argument (generic context parameter).
-    // Corresponds to native MethodDesc::RequiresInstArg().
-    public virtual bool RequiresInstArg(MethodDescHandle methodDesc);
+    // Determine where a shared generic method obtains its generic context.
+    // Returns None if not shared, InstArg if via a hidden parameter, or ThisPtr if via the 'this' pointer's MethodTable.
+    public virtual GenericContextLoc GetGenericContextLoc(MethodDescHandle methodDesc);
 
     // Return true if the method uses the async calling convention.
     // Corresponds to native MethodDesc::IsAsyncMethod().
@@ -1637,26 +1646,36 @@ Determining if a method is an async thunk method:
     }
 ```
 
-Determining if a method requires a hidden instantiation argument (generic context parameter):
+Determining where a shared generic method obtains its generic context:
 
 ```csharp
-    public bool RequiresInstArg(MethodDescHandle methodDescHandle)
+    public GenericContextLoc GetGenericContextLoc(MethodDescHandle methodDescHandle)
     {
         MethodDesc md = _methodDescs[methodDescHandle.Address];
-
-        // RequiresInstArg = IsSharedByGenericInstantiations && (HasMethodInstantiation || IsStatic || IsValueType || IsInterface)
         if (!IsSharedByGenericInstantiations(md))
-            return false;
+            return GenericContextLoc.None;
+        else if (RequiresInstArg(md))
+            return GenericContextLoc.InstArg;
+        else
+            return GenericContextLoc.ThisPtr;
+    }
 
+    private bool RequiresInstArg(MethodDesc md)
+    {
         if (HasMethodInstantiation(md))
             return true;
 
-        // md.IsStatic reads from MethodDescFlags.Static (0x0080)
         if (md.IsStatic)
             return true;
 
         MethodTable mt = _methodTables[md.MethodTable];
-        return mt.Flags.IsInterface || mt.Flags.IsValueType;
+        if (mt.Flags.IsValueType)
+            return true;
+
+        if (mt.Flags.IsInterface && !IsAbstract(md) /* checked from md classification and metadata attributes */)
+            return true;
+
+        return false;
     }
 
     private bool IsSharedByGenericInstantiations(MethodDesc md)
