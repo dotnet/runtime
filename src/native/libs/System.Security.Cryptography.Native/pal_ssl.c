@@ -9,6 +9,8 @@
 #include "pal_utilities.h"
 #include "pal_x509.h"
 
+#include <dlfcn.h>
+
 #include <assert.h>
 #include <string.h>
 #include <stdbool.h>
@@ -456,10 +458,8 @@ int32_t CryptoNative_SslRenegotiate(SSL* ssl, int32_t* error)
         if(ret != 1)
         {
             *error = CryptoNative_SslGetError(ssl, ret);
-            return ret;
         }
-
-        return CryptoNative_SslDoHandshake(ssl, error);
+        return ret;
     }
 
     *error = SSL_ERROR_NONE;
@@ -470,7 +470,6 @@ int32_t CryptoNative_IsSslRenegotiatePending(SSL* ssl)
 {
     ERR_clear_error();
 
-    SSL_peek(ssl, NULL, 0);
     return SSL_renegotiate_pending(ssl) != 0;
 }
 
@@ -506,6 +505,7 @@ int32_t CryptoNative_SslHandshake(
     SSL* ssl,
     const uint8_t* inputPtr,
     int32_t inputLen,
+    int32_t* consumed,
     uint8_t* outputPtr,
     int32_t outputCap,
     int32_t* outputWritten,
@@ -529,6 +529,10 @@ int32_t CryptoNative_SslHandshake(
         CryptoNative_BioSetWriteWindow(outputBio, outputPtr, outputCap);
     }
 
+    // this peek ensures that the SSL handshake state machine starts processing
+    // renegotiation and post-handshake client cert requests
+    SSL_peek(ssl, NULL, 0);
+
     int32_t result = SSL_do_handshake(ssl);
     *errorCode = (result == 1) ? SSL_ERROR_NONE : CryptoNative_SslGetError(ssl, result);
 
@@ -539,7 +543,12 @@ int32_t CryptoNative_SslHandshake(
     }
     if (inputBio != NULL)
     {
-        CryptoNative_BioClearReadWindow(inputBio);
+        int32_t leftover = 0;
+        CryptoNative_BioClearReadWindow(inputBio, &leftover);
+        if (consumed != NULL)
+        {
+            *consumed = inputLen - leftover;
+        }
     }
 
     return result;
@@ -582,6 +591,7 @@ int32_t CryptoNative_SslDecrypt(
     SSL* ssl,
     uint8_t* inputPtr,
     int32_t inputLen,
+    int32_t* consumed,
     uint8_t* outputPtr,
     int32_t outputCap,
     int32_t* leftoverOffset,
@@ -616,7 +626,12 @@ int32_t CryptoNative_SslDecrypt(
 
     if (inputBio != NULL)
     {
-        CryptoNative_BioClearReadWindow(inputBio);
+        int32_t leftover = 0;
+        CryptoNative_BioClearReadWindow(inputBio, &leftover);
+        if (consumed != NULL)
+        {
+            *consumed = inputLen - leftover;
+        }
     }
 
     return result;

@@ -65,13 +65,6 @@ int32_t CryptoNative_BioCtrlPending(BIO* bio)
 
 typedef struct
 {
-    /* Carry-over buffer: holds bytes from a prior read window that SSL did
-       not consume before the window was cleared. */
-    uint8_t*       readCarry;
-    int32_t        readCarryCapacity;
-    int32_t        readCarryLen;
-    int32_t        readCarryPos;
-
     const uint8_t* readPtr;
     int32_t        readLen;
     int32_t        readPos;
@@ -107,20 +100,6 @@ static int ManagedSpanBioRead(BIO* bio, char* buf, int len)
         return -1;
     }
 
-    int32_t carryAvail = ctx->readCarryLen - ctx->readCarryPos;
-    if (carryAvail > 0)
-    {
-        int32_t toCopy = len < carryAvail ? len : carryAvail;
-        memcpy(buf, ctx->readCarry + ctx->readCarryPos, (size_t)toCopy);
-        ctx->readCarryPos += toCopy;
-        if (ctx->readCarryPos == ctx->readCarryLen)
-        {
-            ctx->readCarryPos = 0;
-            ctx->readCarryLen = 0;
-        }
-        return toCopy;
-    }
-
     if (ctx->readError)
     {
         /* A prior BioClearReadWindow could not allocate carry space and dropped
@@ -140,35 +119,6 @@ static int ManagedSpanBioRead(BIO* bio, char* buf, int len)
     memcpy(buf, ctx->readPtr + ctx->readPos, (size_t)toCopy);
     ctx->readPos += toCopy;
     return toCopy;
-}
-
-static int ManagedSpanBioGrowCarry(ManagedSpanBioCtx* ctx, int32_t needed)
-{
-    if (ctx->readCarryCapacity >= needed)
-    {
-        return 1;
-    }
-
-    int32_t newCap = ctx->readCarryCapacity > 0 ? ctx->readCarryCapacity : 4096;
-    while (newCap < needed)
-    {
-        if (newCap > INT32_MAX / 2)
-        {
-            newCap = needed;
-            break;
-        }
-        newCap *= 2;
-    }
-
-    uint8_t* newBuf = (uint8_t*)realloc(ctx->readCarry, (size_t)newCap);
-    if (newBuf == NULL)
-    {
-        return 0;
-    }
-
-    ctx->readCarry = newBuf;
-    ctx->readCarryCapacity = newCap;
-    return 1;
 }
 
 static int ManagedSpanBioGrowSpill(ManagedSpanBioCtx* ctx, int32_t needed)
@@ -267,7 +217,7 @@ static long ManagedSpanBioCtrl(BIO* bio, int cmd, long num, void* ptr)
             {
                 return 0;
             }
-            return (long)((ctx->readCarryLen - ctx->readCarryPos) + (ctx->readLen - ctx->readPos));
+            return (long)(ctx->readLen - ctx->readPos);
 
         case BIO_CTRL_WPENDING:
             if (ctx == NULL)
@@ -279,8 +229,6 @@ static long ManagedSpanBioCtrl(BIO* bio, int cmd, long num, void* ptr)
         case BIO_CTRL_RESET:
             if (ctx != NULL)
             {
-                ctx->readCarryLen = 0;
-                ctx->readCarryPos = 0;
                 ctx->readPtr = NULL;
                 ctx->readLen = 0;
                 ctx->readPos = 0;
@@ -324,7 +272,6 @@ static int ManagedSpanBioDestroy(BIO* bio)
     ManagedSpanBioCtx* ctx = (ManagedSpanBioCtx*)BIO_get_data(bio);
     if (ctx != NULL)
     {
-        free(ctx->readCarry);
         free(ctx->spillBuf);
         free(ctx);
         BIO_set_data(bio, NULL);
@@ -397,7 +344,7 @@ void CryptoNative_BioSetReadWindow(BIO* bio, const void* ptr, int32_t len)
     ctx->readPos = 0;
 }
 
-void CryptoNative_BioClearReadWindow(BIO* bio)
+void CryptoNative_BioClearReadWindow(BIO* bio, int32_t* leftoverLength)
 {
     if (bio == NULL)
     {
@@ -410,31 +357,9 @@ void CryptoNative_BioClearReadWindow(BIO* bio)
         return;
     }
 
-    int32_t unread = ctx->readLen - ctx->readPos;
-    if (unread > 0 && ctx->readPtr != NULL)
+    if (leftoverLength != NULL)
     {
-        /* Move existing carry tail down to position 0 first. */
-        int32_t carryTail = ctx->readCarryLen - ctx->readCarryPos;
-        if (carryTail > 0 && ctx->readCarryPos > 0)
-        {
-            memmove(ctx->readCarry, ctx->readCarry + ctx->readCarryPos, (size_t)carryTail);
-        }
-        ctx->readCarryLen = carryTail;
-        ctx->readCarryPos = 0;
-
-        int32_t needed = ctx->readCarryLen + unread;
-        if (ManagedSpanBioGrowCarry(ctx, needed))
-        {
-            memcpy(ctx->readCarry + ctx->readCarryLen, ctx->readPtr + ctx->readPos, (size_t)unread);
-            ctx->readCarryLen += unread;
-        }
-        else
-        {
-            /* Carry allocation failed; bytes are lost. Mark the BIO as
-               permanently broken so the next BIO_read surfaces the failure
-               rather than masking it as a protocol error. */
-            ctx->readError = 1;
-        }
+        *leftoverLength = ctx->readLen - ctx->readPos;
     }
 
     ctx->readPtr = NULL;

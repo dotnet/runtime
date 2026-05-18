@@ -203,8 +203,7 @@ namespace System.Net.Security
                     context = Interop.OpenSsl.AllocateSslHandle(sslAuthenticationOptions);
                 }
 
-                SecurityStatusPalErrorCode errorCode = Interop.OpenSsl.DoSslHandshake((SafeSslHandle)context, inputBuffer, ref token);
-                consumed = inputBuffer.Length;
+                SecurityStatusPalErrorCode errorCode = Interop.OpenSsl.DoSslHandshake((SafeSslHandle)context, inputBuffer, out consumed, ref token);
 
                 if (errorCode == SecurityStatusPalErrorCode.CredentialsNeeded)
                 {
@@ -223,14 +222,16 @@ namespace System.Net.Security
 
                     // set the cert and continue
                     TryUpdateClintCertificate(null, context, sslAuthenticationOptions);
-                    errorCode = Interop.OpenSsl.DoSslHandshake((SafeSslHandle)context, ReadOnlySpan<byte>.Empty, ref token);
+                    errorCode = Interop.OpenSsl.DoSslHandshake((SafeSslHandle)context, inputBuffer.Slice(consumed), out int c, ref token);
+                    consumed += c;
                 }
 
                 // sometimes during renegotiation processing message does not yield new output.
                 // That seems to be flaw in OpenSSL state machine and we have workaround to peek it and try it again.
                 if (token.Size == 0 && Interop.Ssl.IsSslRenegotiatePending((SafeSslHandle)context))
                 {
-                    errorCode = Interop.OpenSsl.DoSslHandshake((SafeSslHandle)context, ReadOnlySpan<byte>.Empty, ref token);
+                    errorCode = Interop.OpenSsl.DoSslHandshake((SafeSslHandle)context, inputBuffer.Slice(consumed), out int c, ref token);
+                    consumed += c;
                 }
 
                 token.Status = new SecurityStatusPal(errorCode);

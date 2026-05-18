@@ -70,7 +70,7 @@ PALEXPORT void CryptoNative_BioSetReadWindow(BIO* bio, const void* ptr, int32_t 
 /*
 Clears the read window on a managed-span BIO.
 */
-PALEXPORT void CryptoNative_BioClearReadWindow(BIO* bio);
+PALEXPORT void CryptoNative_BioClearReadWindow(BIO* bio, int32_t* leftoverLength);
 
 /*
 Sets the write window on a managed-span BIO. BIO_write fills this window

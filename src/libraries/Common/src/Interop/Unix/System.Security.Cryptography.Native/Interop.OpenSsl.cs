@@ -666,19 +666,19 @@ internal static partial class Interop
             return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
         }
 
-        internal static unsafe SecurityStatusPalErrorCode DoSslHandshake(SafeSslHandle context, ReadOnlySpan<byte> input, ref ProtocolToken token)
+        internal static unsafe SecurityStatusPalErrorCode DoSslHandshake(SafeSslHandle context, ReadOnlySpan<byte> input, out int consumed, ref ProtocolToken token)
         {
             token.Size = 0;
+            consumed = 0;
             Exception? handshakeException = null;
-
-            // Reserve a reasonable initial window in the outgoing token; the spill buffer
-            // catches anything that doesn't fit.
-            const int InitialHandshakeWindow = 4096;
-            token.EnsureAvailableSpace(InitialHandshakeWindow);
 
             // Drain any bytes accumulated in the OutputBio's spill from a prior call
             // (e.g. SSL_read emitting alerts before this handshake step).
             DrainOutputBioSpill(context, ref token);
+
+            // Reserve a reasonable initial window in the outgoing token; the spill buffer
+            // catches anything that doesn't fit.
+            const int InitialHandshakeWindow = 4096;
             token.EnsureAvailableSpace(InitialHandshakeWindow);
 
             int retVal;
@@ -686,16 +686,17 @@ internal static partial class Interop
             int spillLen;
             Ssl.SslErrorCode errorCode;
 
-            Span<byte> windowSpan = token.AvailableSpan;
+            Span<byte> outputSpan = token.AvailableSpan;
             fixed (byte* inputPtr = input)
-            fixed (byte* windowPtr = windowSpan)
+            fixed (byte* outputPtr = outputSpan)
             {
                 retVal = Ssl.SslHandshake(
                     context,
                     inputPtr,
                     input.Length,
-                    windowPtr,
-                    windowSpan.Length,
+                    out consumed,
+                    outputPtr,
+                    outputSpan.Length,
                     out writtenToWindow,
                     out spillLen,
                     out errorCode);
@@ -870,6 +871,7 @@ internal static partial class Interop
             out Ssl.SslErrorCode errorCode)
         {
             int retVal;
+            int consumed;
             fixed (byte* inputPtr = input)
             fixed (byte* outputPtr = output)
             {
@@ -877,6 +879,7 @@ internal static partial class Interop
                     context,
                     inputPtr,
                     input.Length,
+                    out consumed,
                     outputPtr,
                     output.Length,
                     out leftoverOffset,
@@ -885,6 +888,7 @@ internal static partial class Interop
             }
             if (retVal + leftoverLength > 0)
             {
+                Debug.Assert(consumed == input.Length, "Expected all input to be consumed.");
                 return retVal;
             }
 
