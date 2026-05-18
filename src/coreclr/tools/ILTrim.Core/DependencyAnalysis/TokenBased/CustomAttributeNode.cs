@@ -77,7 +77,9 @@ namespace ILCompiler.DependencyAnalysis
                 dependencies.Add(factory.CustomAttribute(module, customAttribute), "Custom attribute");
             }
 
-            conditionalDependencies = conditions ?? (IReadOnlyCollection<CombinedDependencyListEntry>)Array.Empty<CombinedDependencyListEntry>();
+            conditionalDependencies = conditions is not null
+                ? conditions
+                : Array.Empty<CombinedDependencyListEntry>();
         }
 
         public static bool IsCustomAttributeForSecurity(EcmaModule module, CustomAttributeHandle handle)
@@ -245,27 +247,29 @@ namespace ILCompiler.DependencyAnalysis
 
             foreach (Match match in DebuggerDisplayAttributeValueRegex.Matches(displayString))
             {
-                string realMatch = match.Value.Substring(1, match.Value.Length - 2);
+                ReadOnlySpan<char> realMatch = match.Value.AsSpan(1, match.Value.Length - 2);
 
                 if (ContainsNqSuffixRegex.IsMatch(realMatch))
-                    realMatch = realMatch.Substring(0, realMatch.LastIndexOf(','));
+                    realMatch = realMatch[..realMatch.LastIndexOf(',')];
 
-                if (realMatch.EndsWith("()"))
+                if (realMatch.EndsWith("()", StringComparison.Ordinal))
                 {
-                    string methodName = realMatch.Substring(0, realMatch.Length - 2);
+                    ReadOnlySpan<char> methodName = realMatch[..^2];
 
                     if (methodName.Contains('.'))
                         continue;
 
-                    if (TryAddDependencyForMethodWithNoParameters(dependencies, factory, type, methodName))
+                    if (TryAddDependencyForMethodWithNoParameters(dependencies, factory, type, methodName.ToString()))
                         continue;
                 }
                 else
                 {
-                    if (TryAddDependencyForField(dependencies, factory, type, realMatch))
+                    string memberName = realMatch.ToString();
+
+                    if (TryAddDependencyForField(dependencies, factory, type, memberName))
                         continue;
 
-                    if (TryAddDependencyForProperty(dependencies, factory, type, realMatch))
+                    if (TryAddDependencyForProperty(dependencies, factory, type, memberName))
                         continue;
                 }
 
