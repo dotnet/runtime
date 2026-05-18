@@ -4421,30 +4421,6 @@ bool InterpCompiler::DisallowTailCall(CORINFO_SIG_INFO* callerSig, CORINFO_SIG_I
     return false;
 }
 
-// Check whether any argument would be invalidated by UpdateFrameForTailCall's memcpy.
-// Reject byref-like structs (e.g. Span) that may hold interior pointers into the caller's
-// frame, as well as pointer and refany args.
-// The method-level m_hasAddressExposedLocals check (set during IL pre-scan in CreateBasicBlocks)
-// catches the common case of byrefs from ldloca/ldarga. This function handles types that are
-// inherently unsafe regardless of provenance.
-bool InterpCompiler::CallHasByrefIntoLocalFrame(CORINFO_SIG_INFO* calleeSig)
-{
-    // Signature-based checks for types that always carry pointers.
-    CORINFO_ARG_LIST_HANDLE args = calleeSig->args;
-    for (unsigned i = 0; i < calleeSig->numArgs; i++)
-    {
-        CORINFO_CLASS_HANDLE classHandle;
-        CorInfoType ciType = strip(m_compHnd->getArgType(calleeSig, args, &classHandle));
-        if (ciType == CORINFO_TYPE_PTR || ciType == CORINFO_TYPE_REFANY)
-            return true;
-        if (ciType == CORINFO_TYPE_VALUECLASS && classHandle != NULL
-            && (m_compHnd->getClassAttribs(classHandle) & CORINFO_FLG_BYREF_LIKE))
-            return true;
-        args = m_compHnd->getArgNext(args);
-    }
-    return false;
-}
-
 void InterpCompiler::EmitCalli(bool isTailCall, void* calliCookie, int callIFunctionPointerVar, CORINFO_SIG_INFO* callSiteSig)
 {
     AddIns(isTailCall ? INTOP_CALLI_TAIL : INTOP_CALLI);
@@ -5087,8 +5063,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         && *m_ip == CEE_RET
         && !(callInfo.methodFlags & CORINFO_FLG_PINVOKE)
         && !m_hasAddressExposedLocals
-        && !m_hasLocalloc
-        && !CallHasByrefIntoLocalFrame(&callInfo.sig))
+        && !m_hasLocalloc)
     {
         tailcall = true;
     }
