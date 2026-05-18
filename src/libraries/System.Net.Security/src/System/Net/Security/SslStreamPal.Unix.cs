@@ -79,16 +79,6 @@ namespace System.Net.Security
             return token;
         }
 
-
-        // Decrypt entry point.
-        //
-        //   encrypted    - the ciphertext frame; may also serve as the in-place plaintext target.
-        //   destination  - optional user-provided plaintext buffer. When non-empty and large enough
-        //                  to hold a full TLS record plaintext, decrypt writes there directly and
-        //                  reports the count via `bytesWritten`.
-        //   bytesWritten - bytes written into `destination`.
-        //   leftoverOffset / leftoverLength - location of the in-place decrypted region inside
-        //                  `encrypted`.
         public static SecurityStatusPal DecryptMessage(
             SafeDeleteSslContext securityContext,
             Span<byte> encrypted,

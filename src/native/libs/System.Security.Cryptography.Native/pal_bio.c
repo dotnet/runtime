@@ -4,6 +4,9 @@
 #include "pal_bio.h"
 
 #include <assert.h>
+#include <pthread.h>
+#include <stdlib.h>
+#include <string.h>
 
 BIO* CryptoNative_CreateMemoryBio(void)
 {
@@ -59,9 +62,66 @@ int32_t CryptoNative_BioCtrlPending(BIO* bio)
     return (int32_t)result;
 }
 
-#include <pthread.h>
-#include <stdlib.h>
-#include <string.h>
+/*
+ * Managed-span BIO
+ * ----------------
+ *
+ * OpenSSL drives TLS by reading ciphertext from an "input BIO" and writing
+ * ciphertext to an "output BIO" that the application owns. The stock
+ * BIO_s_mem() implementation works, but it always copies the caller's data
+ * into an internal heap buffer and then OpenSSL copies again on the way out,
+ * resulting in two memcpys per TLS record in each direction.
+ *
+ * The "managed-span" BIO_METHOD defined below avoids one of those copies in
+ * each direction by letting the SSL operation read from / write to a
+ * caller-supplied buffer "window" directly. It is paired with the atomic
+ * SSL_{Handshake,Encrypt,Decrypt} entry points in pal_ssl.c which install
+ * the windows around an SSL operation and tear them down again afterwards.
+ *
+ * Lifetimes
+ * ~~~~~~~~~
+ * The windows are only valid for the duration of a single SSL_* call and
+ * are installed via the (non-exported) helpers
+ *   CryptoNative_BioSetReadWindow / CryptoNative_BioClearReadWindow
+ *   CryptoNative_BioSetWriteWindow / CryptoNative_BioGetWriteResult
+ * (see pal_ssl.c). The caller pins/fixes the underlying managed buffers for
+ * exactly that scope, then unpins them on return. The BIO context itself
+ * outlives the SSL handle and persists across calls; only the {read,write}Ptr
+ * fields refer to caller memory while a call is in progress.
+ *
+ * Read side
+ * ~~~~~~~~~
+ * BioSetReadWindow records (ptr, len) of the caller's ciphertext span.
+ * BIO_read inside SSL copies from there directly (one memcpy, into OpenSSL's
+ * record decode buffer). After the SSL call returns, BioClearReadWindow
+ * reports how many bytes are still unread (= len - readPos) so the caller
+ * knows what to keep in its own buffer for the next round; the window pointer
+ * is then cleared. If SSL did not advance the BIO at all (e.g. a renegotiate
+ * state-machine quirk that returns SSL_ERROR_NONE without consuming bytes)
+ * the unread tail simply stays in the caller's buffer and is re-supplied on
+ * the next call - the BIO holds no carry buffer of its own.
+ *
+ * Write side
+ * ~~~~~~~~~~
+ * BioSetWriteWindow records (ptr, capacity) of the caller's outgoing-token
+ * buffer. BIO_write fills the window first (one memcpy, from OpenSSL's record
+ * encode buffer into the caller's span). If OpenSSL produces more output than
+ * fits in the window (because our upper-bound estimate was too small, or
+ * because alerts / KeyUpdate frames are emitted out-of-band during an
+ * SSL_read) the overflow goes into the per-BIO heap "spill" buffer. After the
+ * SSL call returns, BioGetWriteResult reports both counts; if any spill is
+ * present the caller drains it with BioDrainSpill (one extra memcpy, but only
+ * on the rare overflow path).
+ *
+ * Spill buffer reuse
+ * ~~~~~~~~~~~~~~~~~~
+ * The spill buffer is owned by the BIO context (allocated lazily, grown by
+ * doubling, freed in BioDestroy). It is also the catch-all for output that
+ * OpenSSL writes outside an explicit window - notably TLS 1.3 KeyUpdate /
+ * post-handshake auth messages emitted while SSL_read is in progress. The
+ * managed wrapper drains the spill at the start of the next outgoing SSL
+ * operation so those bytes are not lost.
+ */
 
 typedef struct
 {
@@ -78,6 +138,11 @@ typedef struct
     int32_t        spillLen;
 } ManagedSpanBioCtx;
 
+static ManagedSpanBioCtx* GetManagedSpanBioCtx(BIO* bio)
+{
+    return (ManagedSpanBioCtx*)BIO_get_data(bio);
+}
+
 #define MANAGED_SPAN_SPILL_INITIAL 4096
 
 static BIO_METHOD* g_managedSpanBioMethod = NULL;
@@ -92,7 +157,7 @@ static int ManagedSpanBioRead(BIO* bio, char* buf, int len)
         return 0;
     }
 
-    ManagedSpanBioCtx* ctx = (ManagedSpanBioCtx*)BIO_get_data(bio);
+    ManagedSpanBioCtx* ctx = GetManagedSpanBioCtx(bio);
     if (ctx == NULL)
     {
         return -1;
@@ -154,7 +219,7 @@ static int ManagedSpanBioWrite(BIO* bio, const char* buf, int len)
         return 0;
     }
 
-    ManagedSpanBioCtx* ctx = (ManagedSpanBioCtx*)BIO_get_data(bio);
+    ManagedSpanBioCtx* ctx = GetManagedSpanBioCtx(bio);
     if (ctx == NULL)
     {
         return -1;
@@ -195,7 +260,7 @@ static long ManagedSpanBioCtrl(BIO* bio, int cmd, long num, void* ptr)
     (void)num;
     (void)ptr;
 
-    ManagedSpanBioCtx* ctx = (ManagedSpanBioCtx*)BIO_get_data(bio);
+    ManagedSpanBioCtx* ctx = GetManagedSpanBioCtx(bio);
 
     switch (cmd)
     {
@@ -240,7 +305,7 @@ static long ManagedSpanBioCtrl(BIO* bio, int cmd, long num, void* ptr)
 
 static int ManagedSpanBioCreate(BIO* bio)
 {
-    ManagedSpanBioCtx* ctx = (ManagedSpanBioCtx*)calloc(1, sizeof(ManagedSpanBioCtx));
+    ManagedSpanBioCtx* ctx = GetManagedSpanBioCtx(bio);
     if (ctx == NULL)
     {
         return 0;
@@ -258,7 +323,7 @@ static int ManagedSpanBioDestroy(BIO* bio)
         return 0;
     }
 
-    ManagedSpanBioCtx* ctx = (ManagedSpanBioCtx*)BIO_get_data(bio);
+    ManagedSpanBioCtx* ctx = GetManagedSpanBioCtx(bio);
     if (ctx != NULL)
     {
         free(ctx->spillBuf);
@@ -322,7 +387,7 @@ void CryptoNative_BioSetReadWindow(BIO* bio, const void* ptr, int32_t len)
         return;
     }
 
-    ManagedSpanBioCtx* ctx = (ManagedSpanBioCtx*)BIO_get_data(bio);
+    ManagedSpanBioCtx* ctx = GetManagedSpanBioCtx(bio);
     if (ctx == NULL)
     {
         return;
@@ -340,7 +405,7 @@ void CryptoNative_BioClearReadWindow(BIO* bio, int32_t* leftoverLength)
         return;
     }
 
-    ManagedSpanBioCtx* ctx = (ManagedSpanBioCtx*)BIO_get_data(bio);
+    ManagedSpanBioCtx* ctx = GetManagedSpanBioCtx(bio);
     if (ctx == NULL)
     {
         return;
@@ -363,7 +428,7 @@ void CryptoNative_BioSetWriteWindow(BIO* bio, void* ptr, int32_t capacity)
         return;
     }
 
-    ManagedSpanBioCtx* ctx = (ManagedSpanBioCtx*)BIO_get_data(bio);
+    ManagedSpanBioCtx* ctx = GetManagedSpanBioCtx(bio);
     if (ctx == NULL)
     {
         return;
@@ -390,7 +455,7 @@ void CryptoNative_BioGetWriteResult(BIO* bio, int32_t* writtenToWindow, int32_t*
         return;
     }
 
-    ManagedSpanBioCtx* ctx = (ManagedSpanBioCtx*)BIO_get_data(bio);
+    ManagedSpanBioCtx* ctx = GetManagedSpanBioCtx(bio);
     if (ctx == NULL)
     {
         return;
@@ -413,7 +478,7 @@ int32_t CryptoNative_BioDrainSpill(BIO* bio, void* dst, int32_t dstLen)
         return 0;
     }
 
-    ManagedSpanBioCtx* ctx = (ManagedSpanBioCtx*)BIO_get_data(bio);
+    ManagedSpanBioCtx* ctx = GetManagedSpanBioCtx(bio);
     if (ctx == NULL || ctx->spillLen == 0)
     {
         return 0;
