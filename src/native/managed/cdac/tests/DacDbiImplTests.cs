@@ -409,12 +409,12 @@ public unsafe class DacDbiImplTests
         });
 
         DacDbiTargetBuffer targetBuffer;
-        int symbolFormat;
+        SymbolFormat symbolFormat;
         int hr = dacDbi.GetSymbolsBuffer(moduleAddr, &targetBuffer, &symbolFormat);
         Assert.Equal(System.HResults.S_OK, hr);
         Assert.Equal(0UL, targetBuffer.pAddress);
         Assert.Equal(0u, targetBuffer.cbSize);
-        Assert.Equal(0 /* kSymbolFormatNone */, symbolFormat);
+        Assert.Equal(SymbolFormat.None, symbolFormat);
     }
 
     [Theory]
@@ -433,12 +433,12 @@ public unsafe class DacDbiImplTests
         });
 
         DacDbiTargetBuffer targetBuffer;
-        int symbolFormat;
+        SymbolFormat symbolFormat;
         int hr = dacDbi.GetSymbolsBuffer(moduleAddr, &targetBuffer, &symbolFormat);
         Assert.Equal(System.HResults.S_OK, hr);
         Assert.Equal(expectedBufferAddr, targetBuffer.pAddress);
         Assert.Equal((uint)symbolBytes.Length, targetBuffer.cbSize);
-        Assert.Equal(1 /* kSymbolFormatPDB */, symbolFormat);
+        Assert.Equal(SymbolFormat.Pdb, symbolFormat);
     }
 
     [Theory]
@@ -455,11 +455,11 @@ public unsafe class DacDbiImplTests
         });
 
         DacDbiTargetBuffer targetBuffer;
-        int symbolFormat;
+        SymbolFormat symbolFormat;
         int hr = dacDbi.GetSymbolsBuffer(moduleAddr, &targetBuffer, &symbolFormat);
         Assert.Equal(System.HResults.S_OK, hr);
         Assert.Equal(0UL, targetBuffer.pAddress);
         Assert.Equal(0u, targetBuffer.cbSize);
-        Assert.Equal(0 /* kSymbolFormatNone */, symbolFormat);
+        Assert.Equal(SymbolFormat.None, symbolFormat);
     }
 }
