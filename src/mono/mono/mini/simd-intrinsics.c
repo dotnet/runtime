@@ -491,9 +491,8 @@ get_underlying_type (MonoType* type)
 	MonoTypeEnum etype;
 	if (type->type == MONO_TYPE_PTR) // e.g. int* => MONO_TYPE_I4
 		etype = m_class_get_byval_arg (m_class_get_element_class (klass))->type;
-	else if (type->type == MONO_TYPE_GENERICINST) { // e.g. Vector128<int> => MONO_TYPE_I4
+	else if (type->type == MONO_TYPE_GENERICINST) // e.g. Vector128<int> => MONO_TYPE_I4
 		etype = mono_class_get_context (klass)->class_inst->type_argv [0]->type;
-	}
 	else
 		etype = type->type;
 

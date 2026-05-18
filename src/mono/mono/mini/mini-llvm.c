@@ -495,6 +495,9 @@ ovr_tag_from_mono_vector_class (MonoClass *klass)
 	}
 
 	MonoType *etype = mono_class_get_context (klass)->class_inst->type_argv [0];
+	if (etype->type == MONO_TYPE_CHAR)
+		etype = m_class_get_byval_arg (mono_defaults.uint16_class);
+
 	switch (etype->type) {
 	case MONO_TYPE_I1: case MONO_TYPE_U1: ret |= INTRIN_int8; break;
 	case MONO_TYPE_I2: case MONO_TYPE_U2: ret |= INTRIN_int16; break;
@@ -685,6 +688,8 @@ simd_class_to_llvm_type (EmitContext *ctx, MonoClass *klass)
 	} else {
 		guint32 nelems;
 		MonoTypeEnum type = mini_get_simd_type_info (klass, &nelems);
+		if (type == MONO_TYPE_CHAR)
+			type = MONO_TYPE_U2;
 		return LLVMVectorType (primitive_type_to_llvm_type (type), nelems);
 	}
 	g_assert_not_reached ();
