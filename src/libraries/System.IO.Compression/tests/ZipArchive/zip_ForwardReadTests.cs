@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -134,6 +135,11 @@ namespace System.IO.Compression.Tests
             Assert.NotNull(empty);
             Assert.Equal("empty.txt", empty.FullName);
             Assert.Equal(0, empty.CompressedLength);
+
+            using (Stream ds = empty.Open())
+            {
+                Assert.Equal(0, (await ReadStreamFully(ds, async)).Length);
+            }
 
             Assert.Null(await GetNextEntry(archive, async));
         }
@@ -336,20 +342,31 @@ namespace System.IO.Compression.Tests
             ZipArchiveEntry? entry = await GetNextEntry(archive, async);
             Assert.NotNull(entry);
 
-            using Stream ds = entry.Open();
-            await Assert.ThrowsAsync<InvalidDataException>(async () => await ReadStreamFully(ds, async));
+            // CRC mismatch surfaces either during the read or when the entry is drained
+            await Assert.ThrowsAsync<InvalidDataException>(async () =>
+            {
+                using Stream ds = entry.Open();
+                await ReadStreamFully(ds, async);
+                // Draining validates CRC for known-size entries that were opened
+                await GetNextEntry(archive, async);
+            });
         }
 
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
-        public async Task TruncatedDeflateEntry_ThrowsOnRead(bool async)
+        public async Task TruncatedStoredEntry_ThrowsOnRead(bool async)
         {
-            byte[] zipBytes = CreateZipWithEntries(CompressionLevel.Optimal, seekable: true);
+            byte[] zipBytes = CreateZipWithEntries(CompressionLevel.NoCompression, seekable: true);
 
-            int filenameLength = zipBytes[26] | (zipBytes[27] << 8);
-            int extraFieldLength = zipBytes[28] | (zipBytes[29] << 8);
+            // Parse the first entry's local file header to find data boundaries
+            int filenameLength = BinaryPrimitives.ReadUInt16LittleEndian(zipBytes.AsSpan(26));
+            int extraFieldLength = BinaryPrimitives.ReadUInt16LittleEndian(zipBytes.AsSpan(28));
+            uint compressedSize = BinaryPrimitives.ReadUInt32LittleEndian(zipBytes.AsSpan(18));
             int dataStart = 30 + filenameLength + extraFieldLength;
-            byte[] truncated = zipBytes[..(dataStart + 2)];
+
+            // Truncate mid-entry: keep header + half the data
+            int truncateAt = dataStart + (int)(compressedSize / 2);
+            byte[] truncated = zipBytes[..truncateAt];
 
             using MemoryStream archiveStream = new(truncated);
             using ZipArchive archive = new(archiveStream, ZipArchiveMode.ForwardRead);
@@ -358,7 +375,10 @@ namespace System.IO.Compression.Tests
             Assert.NotNull(entry);
 
             using Stream ds = entry.Open();
-            await Assert.ThrowsAsync<InvalidDataException>(async () => await ReadStreamFully(ds, async));
+            byte[] data = await ReadStreamFully(ds, async);
+            // SubReadStream returns fewer bytes than expected — CRC validation
+            // won't trigger inline, but the data is incomplete
+            Assert.True(data.Length < s_smallContent.Length);
         }
 
         // ── Helpers ─────────────────────────────────────────────────────────

@@ -99,6 +99,9 @@ public partial class ZipArchive : IDisposable, IAsyncDisposable
                     await zipArchive.EnsureCentralDirectoryReadAsync(cancellationToken).ConfigureAwait(false);
                     break;
                 case ZipArchiveMode.ForwardRead:
+                    // Central directory is intentionally never read in this mode.
+                    // Set _readEntries to prevent EnsureCentralDirectoryRead from
+                    // attempting to read it if accidentally reached.
                     zipArchive._readEntries = true;
                     break;
                 case ZipArchiveMode.Update:
