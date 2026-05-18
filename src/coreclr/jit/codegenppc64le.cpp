@@ -348,6 +348,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForStoreLclVar(treeNode->AsLclVar());
             break;
 
+	case GT_STORE_LCL_FLD:
+            genCodeForStoreLclFld(treeNode->AsLclFld());
+            break;
+
 	case GT_LCL_VAR:
 	    genCodeForLclVar(treeNode->AsLclVar());
 	    break;
@@ -798,6 +802,63 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
         genUpdateLifeStore(lclNode, targetReg, varDsc);
     }
 }
+
+//------------------------------------------------------------------------
+// genCodeForStoreLclFld: Produce code for a GT_STORE_LCL_FLD node.
+//
+// Arguments:
+//    tree - the GT_STORE_LCL_FLD node
+//
+void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
+{
+    var_types targetType = tree->TypeGet();
+    regNumber targetReg  = tree->GetRegNum();
+    emitter*  emit       = GetEmitter();
+    
+    noway_assert(targetType != TYP_STRUCT);
+
+    // record the offset
+    unsigned offset = tree->GetLclOffs();
+
+    // We must have a stack store with GT_STORE_LCL_FLD
+    noway_assert(targetReg == REG_NA);
+
+    unsigned   varNum = tree->GetLclNum();
+    LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
+
+    GenTree* data = tree->gtOp1;
+    genConsumeRegs(data);
+
+    regNumber dataReg = REG_NA;
+    if (data->isContainedIntOrIImmed())
+    {
+        assert(data->IsIntegralConst(0));
+        dataReg = REG_R0;  // Use R0 as zero register
+    }
+    else if (data->isContained())
+    {
+        assert(data->OperIs(GT_BITCAST));
+        const GenTree* bitcastSrc = data->AsUnOp()->gtGetOp1();
+        assert(!bitcastSrc->isContained());
+        dataReg = bitcastSrc->GetRegNum();
+    }
+    else
+    {
+        assert(!data->isContained());
+        dataReg = data->GetRegNum();
+    }
+    assert(dataReg != REG_NA);
+
+    instruction ins  = ins_Store(targetType);
+    emitAttr    attr = emitActualTypeSize(targetType);
+
+    emit->emitIns_S_R(ins, attr, dataReg, varNum, offset);
+
+    genUpdateLife(tree);
+
+    varDsc->SetRegNum(REG_STK);
+}
+
 
 //------------------------------------------------------------------------
 // genSimpleReturn: Generate code for a simple return (non-struct, non-void).

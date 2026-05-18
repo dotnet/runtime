@@ -503,6 +503,7 @@ int LinearScan::BuildNode(GenTree* tree)
             break;
 
 	case GT_STORE_LCL_VAR:
+	case GT_STORE_LCL_FLD:
 	    srcCount = BuildStoreLoc(tree->AsLclVarCommon());
             break;
 
