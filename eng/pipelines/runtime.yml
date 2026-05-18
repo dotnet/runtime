@@ -1062,6 +1062,7 @@ extends:
             - browser_wasm
           alwaysRun: ${{ variables.isRollingBuild }}
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          useHelixMonitor: true
 
       # WASI/WASM
 
