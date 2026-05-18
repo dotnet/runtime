@@ -3,6 +3,7 @@
 
 using System.Net.Sockets;
 using System.Threading.Tasks;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Net.Sockets.Tests
@@ -193,6 +194,7 @@ namespace System.Net.Sockets.Tests
             Assert.False(IsSocketNonBlocking(accepted2));
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/128141", TestPlatforms.Android)]
         [Fact]
         public async Task ConnectAsync_WithBuffer_Succeeds()
         {
