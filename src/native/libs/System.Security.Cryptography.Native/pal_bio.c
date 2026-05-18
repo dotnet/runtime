@@ -305,7 +305,7 @@ static long ManagedSpanBioCtrl(BIO* bio, int cmd, long num, void* ptr)
 
 static int ManagedSpanBioCreate(BIO* bio)
 {
-    ManagedSpanBioCtx* ctx = GetManagedSpanBioCtx(bio);
+    ManagedSpanBioCtx* ctx = (ManagedSpanBioCtx*)calloc(1, sizeof(ManagedSpanBioCtx));
     if (ctx == NULL)
     {
         return 0;
