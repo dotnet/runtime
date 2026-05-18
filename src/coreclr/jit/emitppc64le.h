@@ -95,6 +95,14 @@
 #define ppc_fcmpu(c,crD,A,B)  ppc_emit32 (c, (63 << 26) | ((crD) << 23) | ((A) << 16) | ((B) << 11) | (0 << 1) | 0)
 #define ppc_fcmpo(c,crD,A,B)  ppc_emit32 (c, (63 << 26) | ((crD) << 23) | ((A) << 16) | ((B) << 11) | (32 << 1) | 0)
 
+// Floating-point conversion instructions (X-form)
+// Format: opcode(6) | fD(5) | 0(5) | fB(5) | XO(10) | Rc(1)
+// Note: Source is in GPR (rB), destination is in FPR (fD)
+#define ppc_fcfid(c,D,B)    ppc_emit32 (c, (63 << 26) | ((D) << 21) | (0 << 16) | ((B) << 11) | (846 << 1) | 0)
+#define ppc_fcfids(c,D,B)   ppc_emit32 (c, (59 << 26) | ((D) << 21) | (0 << 16) | ((B) << 11) | (846 << 1) | 0)
+#define ppc_fcfidu(c,D,B)   ppc_emit32 (c, (63 << 26) | ((D) << 21) | (0 << 16) | ((B) << 11) | (974 << 1) | 0)
+#define ppc_fcfidus(c,D,B)  ppc_emit32 (c, (59 << 26) | ((D) << 21) | (0 << 16) | ((B) << 11) | (974 << 1) | 0)
+
 // Integer arithmetic instructions (XO-form)
 // Format: opcode(6) | rD(5) | rA(5) | rB(5) | OE(1) | XO(9) | Rc(1)
 #define ppc_add(c,D,A,B)   ppc_emit32 (c, (31 << 26) | ((D) << 21) | ((A) << 16) | ((B) << 11) | (0 << 10) | (266 << 1) | 0) 

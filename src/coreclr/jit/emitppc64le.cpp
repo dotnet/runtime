@@ -1618,6 +1618,27 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
            // divwu rD, rA, rB - Divide Word Unsigned
            ppc_divwu (dstRW, id->idReg1(), id->idReg2(), id->idReg3());
            break;
+
+       case INS_fcfid:
+           // fcfid fD, fB - Convert signed int64 to double
+           ppc_fcfid (dstRW, id->idReg1() - REG_F0, id->idReg2() - REG_F0);
+           break;
+
+       case INS_fcfids:
+           // fcfids fD, fB - Convert signed int64 to float
+           ppc_fcfids (dstRW, id->idReg1() - REG_F0, id->idReg2() - REG_F0);
+           break;
+
+       case INS_fcfidu:
+           // fcfidu fD, fB - Convert unsigned int64 to double
+           ppc_fcfidu (dstRW, id->idReg1() - REG_F0, id->idReg2() - REG_F0);
+           break;
+
+       case INS_fcfidus:
+           // fcfidus fD, fB - Convert unsigned int64 to float
+           ppc_fcfidus (dstRW, id->idReg1() - REG_F0, id->idReg2() - REG_F0);
+           break;
+
        default:
            _ASSERTE(!"NYI");
     }
