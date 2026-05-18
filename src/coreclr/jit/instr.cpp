@@ -1885,11 +1885,16 @@ bool CodeGen::arm_Valid_Imm_For_Add_SP(target_ssize_t imm)
 
 bool CodeGenInterface::validImmForBL(ssize_t addr)
 {
+    CorInfoReloc relocTypeHint = m_compiler->eeGetRelocTypeHint((void*)addr);
+    if (relocTypeHint != CorInfoReloc::NONE)
+    {
+        return relocTypeHint == CorInfoReloc::ARM32_THUMB_BRANCH24;
+    }
+
     return
         // If we are running the altjit for AOT, then assume we can use the "BL" instruction.
         // This matches the usual behavior for AOT, since we normally do generate "BL".
-        (!m_compiler->info.compMatchedVM && m_compiler->IsAot()) ||
-        (m_compiler->eeGetRelocTypeHint((void*)addr) == CorInfoReloc::ARM32_THUMB_BRANCH24);
+        (!m_compiler->info.compMatchedVM && m_compiler->IsAot());
 }
 
 #endif // TARGET_ARM
