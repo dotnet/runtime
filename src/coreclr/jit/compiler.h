@@ -3940,9 +3940,26 @@ public:
     //-------------------------------------------------------------------------
 
     GenTree* gtFoldExpr(GenTree* tree);
-    GenTree* gtFoldExprUnary(GenTreeUnOp* tree);
-    GenTree* gtFoldExprBinary(GenTreeOp* tree);
     GenTree* gtFoldExprConst(GenTree* tree);
+
+    GenTree* gtFoldExprUnary(GenTreeUnOp* tree);
+    GenTree* gtFoldExprUnaryConst(GenTreeUnOp* tree);
+    GenTree* gtFoldExprUnaryConstInt(GenTreeUnOp* tree, GenTreeIntCon* intCon);
+    GenTree* gtFoldExprUnaryConstLng(GenTreeUnOp* tree, GenTreeIntConCommon* intConCommon);
+    GenTree* gtFoldExprUnaryConstDbl(GenTreeUnOp* tree, GenTreeDblCon* dblCon);
+
+    GenTree* gtFoldExprBinary(GenTreeOp* tree);
+    GenTree* gtFoldExprBinaryConst(GenTreeOp* tree);
+    GenTree* gtFoldExprBinaryConstInt(GenTreeOp* tree, GenTreeIntCon* intCon1, GenTreeIntCon* intCon2);
+    GenTree* gtFoldExprBinaryConstLng(GenTreeOp* tree, GenTreeIntConCommon* intConCommon1, GenTreeIntConCommon* intConCommon2);
+    GenTree* gtFoldExprBinaryConstDbl(GenTreeOp* tree, GenTreeDblCon* dblCon1, GenTreeDblCon* dblCon2);
+
+    GenTree* gtBashTreeToConstInt(GenTree* tree, int32_t iconVal, FieldSeq* fieldSeq = nullptr);
+    GenTree* gtBashTreeToConstLng(GenTree* tree, int64_t lconVal, FieldSeq* fieldSeq = nullptr);
+    GenTree* gtBashTreeToConstDbl(GenTree* tree, double dconVal);
+
+    GenTree* gtFoldExprForOverflow(GenTree* tree);
+
     GenTree* gtFoldIndirConst(GenTreeIndir* indir);
     GenTree* gtFoldExprSpecial(GenTree* tree);
     GenTree* gtFoldExprSpecialFloating(GenTree* tree);
