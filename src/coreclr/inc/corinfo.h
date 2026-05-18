@@ -1975,6 +1975,7 @@ struct CORINFO_AsyncResumeInfo
     // Pointer in main code for diagnostics. See comments on
     // ICorDebugInfo::AsyncSuspensionPoint::DiagnosticNativeOffset and
     // ResumeInfo.DiagnosticIP in SPC.
+    // This can be null for handrolled continuations without diagnostics.
     TARGET_SIZE_T DiagnosticIP;
 };
 

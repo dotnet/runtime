@@ -1844,6 +1844,8 @@ void Lowering::SplitArgumentBetweenRegistersAndStack(GenTreeCall* call, CallArg*
             m_compiler->gtNewLclFldNode(lcl->GetLclNum(), TYP_STRUCT, lcl->GetLclOffs() + stackSeg.Offset, stackLayout);
         BlockRange().InsertBefore(arg, stackNode);
 
+        m_compiler->lvaSetVarDoNotEnregister(lcl->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
+
         registersNode = m_compiler->gtNewFieldList();
         BlockRange().InsertBefore(arg, registersNode);
 
@@ -8931,6 +8933,12 @@ PhaseStatus Lowering::DoPhase()
         // `lvDoNotEnregister` flag before we start reading it.
         // The main reason why this flag is not set is that we are running in minOpts.
         m_compiler->lvSetMinOptsDoNotEnreg();
+    }
+    else
+    {
+        // For many locals we know at this point that we won't enregister them,
+        // so DNER these for the same reasons as above.
+        m_compiler->lvSetVarsDoNotEnreg();
     }
 
     if (m_compiler->opts.OptimizationEnabled() && !m_compiler->opts.IsOSR())
