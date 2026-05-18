@@ -1650,7 +1650,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             int hrLocal = _legacy.EnumerateRcwCachedInterfacePointers(vmObject, debugCallbackPtr, 0);
             Debug.ValidateHResult(hr, hrLocal);
 
-            if (hr == HResults.S_OK && hrLocal == HResults.S_OK)
+            if (hr == HResults.S_OK)
             {
                 List<ulong> legacyItfPtrs = DebugEnumerateRcwCachedInterfacePointers;
                 Debug.Assert(itfPtrs.SequenceEqual(legacyItfPtrs),
