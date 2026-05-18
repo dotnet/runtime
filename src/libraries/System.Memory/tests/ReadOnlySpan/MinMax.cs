@@ -23,9 +23,11 @@ namespace System.SpanTests
         public static void MinMax_NullComparer_ThrowsArgumentNullException()
         {
             ReadOnlySpan<int> span = new int[] { 4, -1, 7, 2 };
-
+            ReadOnlySpan<int> emptySpan = ReadOnlySpan<int>.Empty;
             TestHelpers.AssertThrows<ArgumentNullException, int>(span, (_span) => _span.Min(comparer: null!));
             TestHelpers.AssertThrows<ArgumentNullException, int>(span, (_span) => _span.Max(comparer: null!));
+            TestHelpers.AssertThrows<ArgumentNullException, int>(emptySpan, (_span) => _span.Min(comparer: null!));
+            TestHelpers.AssertThrows<ArgumentNullException, int>(emptySpan, (_span) => _span.Max(comparer: null!));
         }
 
         [Fact]
