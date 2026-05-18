@@ -2852,23 +2852,40 @@ bool Compiler::optCanonicalizeBackedges(FlowGraphNaturalLoop* loop)
 
     BasicBlock* const header = loop->GetHeader();
 
-    // The latch will live in the same EH region as the header. That placement
-    // is only safe when every backedge source is in the same EH region as the
-    // header: if a source is outside the header's region, its original branch
-    // is legal only because the header is an EH-region entry, and the new
-    // latch (a non-entry block in the header's region) cannot be the target
-    // of such a branch.
+    // Determine the EH region for the latch. Mirror the logic in
+    // optCreatePreheader: if every backedge source is within the header's
+    // try region, the latch can live in the same try region as the header;
+    // otherwise it must live in the header's true enclosing try region (which
+    // is only legal when the header itself is a try-region entry, since that
+    // is the only way the original out-of-region backedges could be legal).
     //
-    for (FlowEdge* const backEdge : loop->BackEdges())
+    unsigned latchEHRegion        = EHblkDsc::NO_ENCLOSING_INDEX;
+    bool     inSameRegionAsHeader = true;
+    if (header->hasTryIndex())
     {
-        BasicBlock* const source = backEdge->getSourceBlock();
-        if (!BasicBlock::sameEHRegion(source, header))
+        latchEHRegion = header->getTryIndex();
+        for (FlowEdge* const backEdge : loop->BackEdges())
         {
-            JITDUMP("Skip backedge canonicalization for " FMT_LP ": backedge source " FMT_BB
-                    " is not in the same EH region as header " FMT_BB "\n",
-                    loop->GetIndex(), source->bbNum, header->bbNum);
-            return false;
+            BasicBlock* const source = backEdge->getSourceBlock();
+            if (!bbInTryRegions(latchEHRegion, source))
+            {
+                latchEHRegion        = ehTrueEnclosingTryIndex(latchEHRegion);
+                inSameRegionAsHeader = false;
+                break;
+            }
         }
+    }
+
+    if (!inSameRegionAsHeader && !bbIsTryBeg(header))
+    {
+        // The original out-of-region backedges can only have been legal if the
+        // header was a try-region entry. If it is not, something is unusual;
+        // skip canonicalization rather than risk introducing illegal edges.
+        //
+        JITDUMP("Skip backedge canonicalization for " FMT_LP ": header " FMT_BB
+                " is not a try entry but has backedge sources outside its try region\n",
+                loop->GetIndex(), header->bbNum);
+        return false;
     }
 
     // Snapshot the backedge sources before any redirection mutates the
@@ -2880,19 +2897,31 @@ bool Compiler::optCanonicalizeBackedges(FlowGraphNaturalLoop* loop)
         sources.Push(backEdge->getSourceBlock());
     }
 
-    // Create the latch in the same EH region as the header. Any block that can
-    // branch to the header can also branch to a block in the header's EH
-    // region, so this placement is always legal for backedge sources.
+    // Create the latch in the appropriate EH region. For the same-region case,
+    // fgNewBBinRegion will place the latch within the header's region (after
+    // the region's entry block, if the header is the entry). For the
+    // enclosing-region case, place the latch physically before the header and
+    // let fgSetEHRegionForNewPreheaderOrExit recognize that the header is a
+    // try-region entry and assign the latch to the enclosing region.
     //
-    BasicBlock* const latch = fgNewBBinRegion(BBJ_ALWAYS, header);
+    BasicBlock* latch;
+    if (inSameRegionAsHeader)
+    {
+        latch = fgNewBBinRegion(BBJ_ALWAYS, header);
+    }
+    else
+    {
+        latch = fgNewBBbefore(BBJ_ALWAYS, header, /* extendRegion */ false);
+        fgSetEHRegionForNewPreheaderOrExit(latch);
+    }
     latch->SetFlags(BBF_INTERNAL);
     latch->bbCodeOffs = header->bbCodeOffs;
 
     FlowEdge* const newEdge = fgAddRefPred(header, latch);
     latch->SetTargetEdge(newEdge);
 
-    JITDUMP("Created new latch " FMT_BB " for " FMT_LP " to merge %u backedges\n", latch->bbNum, loop->GetIndex(),
-            (unsigned)sources.Height());
+    JITDUMP("Created new latch " FMT_BB " for " FMT_LP " in %s EH region to merge %u backedges\n", latch->bbNum,
+            loop->GetIndex(), inSameRegionAsHeader ? "header's" : "header's enclosing", (unsigned)sources.Height());
 
     // Redirect each backedge through the new latch.
     //
