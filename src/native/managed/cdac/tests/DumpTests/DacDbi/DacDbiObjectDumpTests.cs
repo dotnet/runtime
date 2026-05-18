@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.DotNet.XUnitExtensions;
@@ -206,13 +207,12 @@ public class DacDbiObjectDumpTests : DumpTestBase
         // Native DAC sets pceltFetched to the input capacity, not the count actually written.
         Assert.Equal(cFields, fetched);
 
-        TargetPointer fieldDescList = rts.GetFieldDescList(stringHandle);
-        uint fieldDescSize = Target.GetTypeInfo(DataType.FieldDesc).Size!.Value;
+        TargetPointer[] fieldDescList = rts.GetFieldDescList(stringHandle).Take((int)cFields).ToArray();
         uint firstFieldOffset = rts.IsObjRef(stringHandle) ? Target.GetTypeInfo(DataType.Object).Size!.Value : 0;
 
         for (uint i = 0; i < cFields; i++)
         {
-            TargetPointer fieldDescPtr = fieldDescList + i * fieldDescSize;
+            TargetPointer fieldDescPtr = fieldDescList[i];
             uint expectedToken = rts.GetFieldDescMemberDef(fieldDescPtr);
 
             Assert.Equal(expectedToken, fields[i].token);

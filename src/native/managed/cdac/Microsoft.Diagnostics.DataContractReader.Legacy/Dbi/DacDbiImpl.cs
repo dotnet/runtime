@@ -1740,7 +1740,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
             TypeHandle typeHandle = rts.GetTypeHandle(new TargetPointer(id));
 
-            if (typeHandle.IsTypeDesc())
+            if (rts.IsTypeDesc(typeHandle))
                 throw new ArgumentException("TypeDescs are not supported", nameof(id));
 
             if (rts.IsContinuation(typeHandle))
@@ -1780,15 +1780,14 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 bool isReferenceType = rts.IsObjRef(typeHandle);
                 uint firstFieldOffset = isReferenceType ? _target.GetTypeInfo(DataType.Object).Size!.Value : 0;
 
-                TargetPointer fieldDescList = rts.GetFieldDescList(typeHandle);
-                uint fieldDescSize = _target.GetTypeInfo(DataType.FieldDesc).Size!.Value;
+                TargetPointer[] fieldDescList = rts.GetFieldDescList(typeHandle).Take((int)cFields).ToArray();
 
                 IEcmaMetadata ecmaMetadataContract = _target.Contracts.EcmaMetadata;
                 ISignature signature = _target.Contracts.Signature;
 
                 for (uint i = 0; i < cFields; ++i)
                 {
-                    TargetPointer fieldDescPtr = fieldDescList + i * fieldDescSize;
+                    TargetPointer fieldDescPtr = fieldDescList[i];
                     COR_FIELD* corField = layout + i;
 
                     uint memberDef = rts.GetFieldDescMemberDef(fieldDescPtr);
