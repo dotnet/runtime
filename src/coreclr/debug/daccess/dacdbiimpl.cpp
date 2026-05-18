@@ -2528,7 +2528,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetObjectExpandedTypeInfo(AreValu
 }
 
 // DacDbi API: use a type handle to get the information needed to create the corresponding RS CordbType instance
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::TypeHandleToExpandedTypeInfo(AreValueTypesBoxed boxed, UINT64 vmTypeHandle, DebuggerIPCE_ExpandedTypeData * pTypeInfo)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::TypeHandleToExpandedTypeInfo(AreValueTypesBoxed boxed, CORDB_ADDRESS vmTypeHandle, DebuggerIPCE_ExpandedTypeData * pTypeInfo)
 {
     DD_ENTER_MAY_THROW;
 
@@ -2761,7 +2761,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetMethodDescParams(VMPTR_MethodD
             {
                 // Fill in the struct using the TypeHandle of the current type parameter if we can.
                 IfFailThrow(TypeHandleToExpandedTypeInfo(NoValueTypeBoxing,
-                                                         (UINT64)thCurrent.AsTAddr(),
+                                                         (CORDB_ADDRESS)thCurrent.AsTAddr(),
                                                          &((*pGenericTypeParams)[i])));
             }
             EX_CATCH_ALLOW_DATATARGET_MISSING_MEMORY_WITH_HANDLER
@@ -2769,7 +2769,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetMethodDescParams(VMPTR_MethodD
                 // On failure for a particular type, default it back to System.__Canon.
                 TypeHandle thCanon = TypeHandle(g_pCanonMethodTableClass);
                 IfFailThrow(TypeHandleToExpandedTypeInfo(NoValueTypeBoxing,
-                                                         (UINT64)thCanon.AsTAddr(),
+                                                         (CORDB_ADDRESS)thCanon.AsTAddr(),
                                                          &((*pGenericTypeParams)[i])));
             }
             EX_END_CATCH_ALLOW_DATATARGET_MISSING_MEMORY_WITH_HANDLER
@@ -3195,7 +3195,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetTypeHandleParams(VMPTR_TypeHan
         for (unsigned int i = 0; i < pParams->Count(); ++i)
         {
             IfFailThrow(TypeHandleToExpandedTypeInfo(NoValueTypeBoxing,
-                                                     (UINT64)typeHandle.GetInstantiation()[i].AsTAddr(),
+                                                     (CORDB_ADDRESS)typeHandle.GetInstantiation()[i].AsTAddr(),
                                                      &((*pParams)[i])));
         }
 
@@ -6073,7 +6073,7 @@ void DacDbiInterfaceImpl::InitObjectData(PTR_Object                objPtr,
     pObjectData->objSize = objPtr->GetSize();
     pObjectData->objOffsetToVars = dac_cast<TADDR>((objPtr)->GetData()) - dac_cast<TADDR>(objPtr);
 
-    IfFailThrow(TypeHandleToExpandedTypeInfo(AllBoxed, (UINT64)objPtr->GetGCSafeTypeHandle().AsTAddr(), &(pObjectData->objTypeData)));
+    IfFailThrow(TypeHandleToExpandedTypeInfo(AllBoxed, (CORDB_ADDRESS)objPtr->GetGCSafeTypeHandle().AsTAddr(), &(pObjectData->objTypeData)));
 
     // If this is a string object, set the type to ELEMENT_TYPE_STRING.
     if (objPtr->GetGCSafeMethodTable() == g_pStringClass)

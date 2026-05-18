@@ -310,7 +310,7 @@ interface IDacDbiInterface : IUnknown
         [in] VMPTR_TypeHandle vmThApprox,
         [out] DacDbiArrayList_FieldData * pFieldList,
         [out] SIZE_T * pObjectSize);
-    HRESULT TypeHandleToExpandedTypeInfo([in] AreValueTypesBoxed boxed, [in] UINT64 vmTypeHandle, [out] struct DebuggerIPCE_ExpandedTypeData * pTypeInfo);
+    HRESULT TypeHandleToExpandedTypeInfo([in] AreValueTypesBoxed boxed, [in] CORDB_ADDRESS vmTypeHandle, [out] struct DebuggerIPCE_ExpandedTypeData * pTypeInfo);
     HRESULT GetObjectExpandedTypeInfo([in] AreValueTypesBoxed boxed, [in] CORDB_ADDRESS addr, [out] struct DebuggerIPCE_ExpandedTypeData * pTypeInfo);
     HRESULT GetTypeHandle([in] VMPTR_Module vmModule, [in] mdTypeDef metadataToken, [out] VMPTR_TypeHandle * pRetVal);
     HRESULT GetApproxTypeHandle([in] TypeInfoList * pTypeData, [out] VMPTR_TypeHandle * pRetVal);
