@@ -182,6 +182,7 @@ namespace System.Net.Http
 
             (CancellationTokenSource cts, bool disposeCts, CancellationTokenSource pendingRequestsCts) = PrepareCancellationTokenSource(cancellationToken);
             HttpResponseMessage? response = null;
+            HttpContent.LimitArrayPoolWriteStream? buffer = null;
             try
             {
                 // Wait for the response message and make sure it completed successfully.
@@ -199,30 +200,23 @@ namespace System.Net.Http
 
                 // Since the underlying byte[] will never be exposed, we use an ArrayPool-backed
                 // stream to which we copy all of the data from the response.
-                var buffer = new HttpContent.LimitArrayPoolWriteStream(
+                buffer = new HttpContent.LimitArrayPoolWriteStream(
                     _maxResponseContentBufferSize,
                     c.Headers.ContentLength.GetValueOrDefault(),
                     getFinalSizeFromPool: true);
 
+                using Stream responseStream = c.TryReadAsStream() ?? await c.ReadAsStreamAsync(cts.Token).ConfigureAwait(false);
                 try
                 {
-                    using Stream responseStream = c.TryReadAsStream() ?? await c.ReadAsStreamAsync(cts.Token).ConfigureAwait(false);
-                    try
-                    {
-                        await responseStream.CopyToAsync(buffer, cts.Token).ConfigureAwait(false);
-                    }
-                    catch (Exception e) when (HttpContent.StreamCopyExceptionNeedsWrapping(e))
-                    {
-                        throw HttpContent.WrapStreamCopyException(e);
-                    }
-
-                    // Decode and return the data from the buffer.
-                    return HttpContent.ReadBufferAsString(buffer, c.Headers);
+                    await responseStream.CopyToAsync(buffer, cts.Token).ConfigureAwait(false);
                 }
-                finally
+                catch (Exception e) when (HttpContent.StreamCopyExceptionNeedsWrapping(e))
                 {
-                    buffer.ReturnAllPooledBuffers();
+                    throw HttpContent.WrapStreamCopyException(e);
                 }
+
+                // Decode and return the data from the buffer.
+                return HttpContent.ReadBufferAsString(buffer, c.Headers);
             }
             catch (Exception e)
             {
@@ -231,6 +225,7 @@ namespace System.Net.Http
             }
             finally
             {
+                buffer?.ReturnAllPooledBuffers();
                 FinishSend(response, cts, disposeCts, telemetryStarted, responseContentTelemetryStarted);
             }
         }
@@ -261,6 +256,7 @@ namespace System.Net.Http
 
             (CancellationTokenSource cts, bool disposeCts, CancellationTokenSource pendingRequestsCts) = PrepareCancellationTokenSource(cancellationToken);
             HttpResponseMessage? response = null;
+            HttpContent.LimitArrayPoolWriteStream? buffer = null;
             try
             {
                 // Wait for the response message and make sure it completed successfully.
@@ -282,29 +278,22 @@ namespace System.Net.Http
                 // the buffer potentially several times and that it's unlikely the underlying buffer
                 // at the end will be the exact size needed, in which case it's more beneficial to use
                 // ArrayPool buffers and copy out to a new array at the end.
-                var buffer = new HttpContent.LimitArrayPoolWriteStream(
+                buffer = new HttpContent.LimitArrayPoolWriteStream(
                     _maxResponseContentBufferSize,
                     c.Headers.ContentLength.GetValueOrDefault(),
                     getFinalSizeFromPool: false);
 
+                using Stream responseStream = c.TryReadAsStream() ?? await c.ReadAsStreamAsync(cts.Token).ConfigureAwait(false);
                 try
                 {
-                    using Stream responseStream = c.TryReadAsStream() ?? await c.ReadAsStreamAsync(cts.Token).ConfigureAwait(false);
-                    try
-                    {
-                        await responseStream.CopyToAsync(buffer, cts.Token).ConfigureAwait(false);
-                    }
-                    catch (Exception e) when (HttpContent.StreamCopyExceptionNeedsWrapping(e))
-                    {
-                        throw HttpContent.WrapStreamCopyException(e);
-                    }
-
-                    return buffer.ToArray();
+                    await responseStream.CopyToAsync(buffer, cts.Token).ConfigureAwait(false);
                 }
-                finally
+                catch (Exception e) when (HttpContent.StreamCopyExceptionNeedsWrapping(e))
                 {
-                    buffer.ReturnAllPooledBuffers();
+                    throw HttpContent.WrapStreamCopyException(e);
                 }
+
+                return buffer.ToArray();
             }
             catch (Exception e)
             {
@@ -313,6 +302,7 @@ namespace System.Net.Http
             }
             finally
             {
+                buffer?.ReturnAllPooledBuffers();
                 FinishSend(response, cts, disposeCts, telemetryStarted, responseContentTelemetryStarted);
             }
         }

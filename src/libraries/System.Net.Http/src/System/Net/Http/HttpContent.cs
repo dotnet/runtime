@@ -850,12 +850,7 @@ namespace System.Net.Http
                 // and also break other HttpContent operations (e.g. ReadAsByteArrayAsync, ReadBufferAsString,
                 // ReadAsStreamAsync) which assume the stream is still populated.
                 // All internal cleanup goes through ReturnAllPooledBuffers directly.
-                if (disposing)
-                {
-                    throw new NotSupportedException("This stream is owned by HttpContent and must not be disposed by user code; doing so would corrupt ArrayPool.Shared and break other HttpContent operations.");
-                }
-
-                base.Dispose(disposing);
+                throw new InvalidOperationException();
             }
 
             /// <summary>Should only be called once.</summary>
