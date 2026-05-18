@@ -4321,7 +4321,7 @@ namespace System
         /// <exception cref="InvalidOperationException"><paramref name="span"/> is empty and <typeparamref name="T"/> is a non-nullable value type.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T? Min<T>(this ReadOnlySpan<T> span) =>
-            Min(span, comparer: null!);
+            Min(span, Comparer<T>.Default);
 
         /// <summary>
         /// Returns the minimum value in the span.
@@ -4333,6 +4333,9 @@ namespace System
         /// <exception cref="InvalidOperationException"><paramref name="span"/> is empty and <typeparamref name="T"/> is a non-nullable value type.</exception>
         public static T? Min<T>(this ReadOnlySpan<T> span, IComparer<T> comparer)
         {
+            if (comparer is null)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.comparer);
+
             if (span.IsEmpty)
             {
                 if (default(T) is null)
@@ -4343,36 +4346,28 @@ namespace System
                 ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_NoElements);
             }
 
-            return comparer is null || comparer == Comparer<T>.Default
-                ? MinCore(span, Comparer<T>.Default)
-                : MinCore(span, comparer);
+            T? value = span[0];
+            int i = 1;
 
-            static T? MinCore<TComparer>(ReadOnlySpan<T> span, TComparer comparer)
-                where TComparer : IComparer<T>
+            while (value is null)
             {
-                T? value = span[0];
-                int i = 1;
-
-                while (value is null)
+                if ((uint)i >= (uint)span.Length)
                 {
-                    if ((uint)i >= (uint)span.Length)
-                    {
-                        return value;
-                    }
-                    value = span[i++];
+                    return value;
                 }
-
-                for (; (uint)i < (uint)span.Length; i++)
-                {
-                    T next = span[i];
-                    if (next is not null && comparer.Compare(next, value) < 0)
-                    {
-                        value = next;
-                    }
-                }
-
-                return value;
+                value = span[i++];
             }
+
+            for (; (uint)i < (uint)span.Length; i++)
+            {
+                T next = span[i];
+                if (next is not null && comparer.Compare(next, value) < 0)
+                {
+                    value = next;
+                }
+            }
+
+            return value;
         }
 
         /// <summary>
@@ -4384,7 +4379,7 @@ namespace System
         /// <exception cref="InvalidOperationException"><paramref name="span"/> is empty and <typeparamref name="T"/> is a non-nullable value type.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T? Max<T>(this ReadOnlySpan<T> span) =>
-            Max(span, comparer: null!);
+            Max(span, Comparer<T>.Default);
 
         /// <summary>
         /// Returns the maximum value in the span.
@@ -4396,6 +4391,9 @@ namespace System
         /// <exception cref="InvalidOperationException"><paramref name="span"/> is empty and <typeparamref name="T"/> is a non-nullable value type.</exception>
         public static T? Max<T>(this ReadOnlySpan<T> span, IComparer<T> comparer)
         {
+            if (comparer is null)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.comparer);
+
             if (span.IsEmpty)
             {
                 if (default(T) is null)
@@ -4406,36 +4404,28 @@ namespace System
                 ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_NoElements);
             }
 
-            return comparer is null || comparer == Comparer<T>.Default
-                ? MaxCore(span, Comparer<T>.Default)
-                : MaxCore(span, comparer);
+            T? value = span[0];
+            int i = 1;
 
-            static T? MaxCore<TComparer>(ReadOnlySpan<T> span, TComparer comparer)
-                where TComparer : IComparer<T>
+            while (value is null)
             {
-                T? value = span[0];
-                int i = 1;
-
-                while (value is null)
+                if ((uint)i >= (uint)span.Length)
                 {
-                    if ((uint)i >= (uint)span.Length)
-                    {
-                        return value;
-                    }
-                    value = span[i++];
+                    return value;
                 }
-
-                for (; (uint)i < (uint)span.Length; i++)
-                {
-                    T next = span[i];
-                    if (next is not null && comparer.Compare(next, value) > 0)
-                    {
-                        value = next;
-                    }
-                }
-
-                return value;
+                value = span[i++];
             }
+
+            for (; (uint)i < (uint)span.Length; i++)
+            {
+                T next = span[i];
+                if (next is not null && comparer.Compare(next, value) > 0)
+                {
+                    value = next;
+                }
+            }
+
+            return value;
         }
 
         /// <summary>
