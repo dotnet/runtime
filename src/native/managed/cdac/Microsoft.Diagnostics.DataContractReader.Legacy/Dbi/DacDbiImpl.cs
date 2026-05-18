@@ -1328,11 +1328,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                     // GetNativeCode can return an interpreter precode. Resolve to the
                     // actual interpreter/jitted code address before asking for region info,
                     // matching native GetMethodRegionInfo's GetCodeForInterpreterOrJitted path.
-                    TargetCodePointer regionCode = rts.GetCodeForInterpreterOrJitted(md);
-                    if (regionCode.Value == 0)
-                    {
-                        regionCode = nativeCode;
-                    }
+                    TargetCodePointer regionCode = _target.Contracts.PrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent(nativeCode);
 
                     FillRegionInfoAndGenericInstantiation(rts, md, regionCode, pCodeInfo);
 
@@ -1387,7 +1383,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
 
                 TargetCodePointer lookupAddress = new TargetCodePointer(codeAddress);
-                lookupAddress = PrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent(_target, lookupAddress);
+                lookupAddress = _target.Contracts.PrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent(lookupAddress);
 
                 Contracts.CodeBlockHandle? cbh = em.GetCodeBlockHandle(lookupAddress);
                 if (cbh is null)
