@@ -14942,25 +14942,32 @@ void Compiler::gtDispLIRNode(GenTree* node, const char* prefixMsg /* = nullptr *
 
 GenTree* Compiler::gtFoldExpr(GenTree* tree)
 {
-    unsigned kind = tree->OperKind();
-
-    /* We must have a simple operation to fold */
-
-    // If we're in CSE, it's not safe to perform tree
-    // folding given that it can will potentially
-    // change considered CSE candidates.
-    if (optValnumCSE_phase)
-    {
-        return tree;
-    }
+    // We should never be called from CSE. Various optimizations below
+    // assume that it is safe to swap operands if one is a constant.
+    assert(!optValnumCSE_phase);
 
     if (!opts.Tier0OptimizationEnabled())
     {
         return tree;
     }
 
-    if (!(kind & GTK_SMPOP))
+    if (tree->OperIsLeaf())
     {
+        // Nothing to fold
+        return tree;
+    }
+    else if (tree->OperIsBinary())
+    {
+        return gtFoldExprBinary(tree->AsOp());
+    }
+    else if (tree->OperIsUnary())
+    {
+        return gtFoldExprUnary(tree->AsUnOp());
+    }
+    else
+    {
+        assert(tree->OperIsSpecial());
+
         if (tree->OperIsConditional())
         {
             return gtFoldExprConditional(tree);
@@ -14975,65 +14982,126 @@ GenTree* Compiler::gtFoldExpr(GenTree* tree)
 
         return tree;
     }
+}
 
-    GenTree* op1 = tree->AsOp()->gtOp1;
+//------------------------------------------------------------------------
+// gtFoldExprUnary: see if an unary operation is foldable
+//
+// Arguments:
+//    tree - tree to examine
+//
+// Returns:
+//    The original tree if no folding happened.
+//    An alternative tree if folding happens.
+//
+GenTree* Compiler::gtFoldExprUnary(GenTreeUnOp* tree)
+{
+    assert(tree->OperIsUnary());
+    assert(!optValnumCSE_phase);
+    assert(opts.Tier0OptimizationEnabled());
 
-    /* Filter out non-foldable trees that can have constant children */
+    GenTree* op1 = tree->gtGetOp1();
 
-    assert(kind & (GTK_UNOP | GTK_BINOP));
-    switch (tree->gtOper)
+    if ((op1 == nullptr) || tree->OperIs(GT_RETFILT, GT_RETURN, GT_IND))
     {
-        case GT_RETFILT:
-        case GT_RETURN:
-        case GT_IND:
-            return tree;
-        default:
-            break;
+        // Filter out non-foldable trees
+        return tree;
     }
 
-    /* try to fold the current node */
-
-    if ((kind & GTK_UNOP) && op1)
+    if (op1->OperIsConst())
     {
-        if (op1->OperIsConst())
-        {
-            return gtFoldExprConst(tree);
-        }
+        return gtFoldExprConst(tree);
     }
-    else if ((kind & GTK_BINOP) && op1 && tree->AsOp()->gtOp2)
+
+    genTreeOps oper = tree->OperGet();
+
+    // We intentionally do not destroy the nodes as some places check if
+    // folding produces a constant and throws the result away otherwise
+
+    switch (oper)
     {
-        GenTree* op2 = tree->AsOp()->gtOp2;
-
-        // The atomic operations are exempted here because they are never computable statically;
-        // one of their arguments is an address.
-        if (op1->OperIsConst() && op2->OperIsConst() && !tree->OperIsAtomicOp())
+        case GT_NOT:
         {
-            /* both nodes are constants - fold the expression */
-            return gtFoldExprConst(tree);
-        }
-        else if (op1->OperIsConst() || op2->OperIsConst())
-        {
-            // At least one is a constant - see if we have a
-            // special operator that can use only one constant
-            // to fold - e.g. booleans
-
-            if (opts.OptimizationDisabled())
+            if (op1->OperIs(oper))
             {
-                // Too heavy for tier0
-                return tree;
+                JITDUMP("Folding ~(~a) => a\n")
+                return op1->gtGetOp1();
             }
+            break;
+        }
 
+        case GT_NEG:
+        {
+            if (op1->OperIs(oper))
+            {
+                JITDUMP("Folding -(-a) => a\n")
+                return op1->gtGetOp1();
+            }
+            break;
+        }
+
+        default:
+        {
+            break;
+        }
+    }
+
+    return tree;
+}
+
+//------------------------------------------------------------------------
+// gtFoldExprBinary: see if a binary operation is foldable
+//
+// Arguments:
+//    tree - tree to examine
+//
+// Returns:
+//    The original tree if no folding happened.
+//    An alternative tree if folding happens.
+//
+GenTree* Compiler::gtFoldExprBinary(GenTreeOp* tree)
+{
+    assert(tree->OperIsBinary());
+    assert(!optValnumCSE_phase);
+    assert(opts.Tier0OptimizationEnabled());
+
+    GenTree* op1 = tree->gtGetOp1();
+    GenTree* op2 = tree->gtGetOp2();
+
+    if ((op1 == nullptr) || (op2 == nullptr) || tree->OperIsAtomicOp())
+    {
+        // Filter out non-foldable trees
+        // The atomic operations are exempted here because they are never computable statically; one of their arguments
+        // is an address.
+        return tree;
+    }
+
+    if (op1->OperIsConst())
+    {
+        if (op2->OperIsConst())
+        {
+            // both nodes are constants - fold the expression
+            return gtFoldExprConst(tree);
+        }
+        else if (opts.OptimizationEnabled())
+        {
+            // Too heavy for tier0, so only do when opts are enabled
             return gtFoldExprSpecial(tree);
         }
-        else if (tree->OperIsCompare())
+    }
+    else if (op2->OperIsConst())
+    {
+        if (opts.OptimizationEnabled())
         {
-            /* comparisons of two local variables can sometimes be folded */
-
-            return gtFoldExprCompare(tree);
+            // Too heavy for tier0, so only do when opts are enabled
+            return gtFoldExprSpecial(tree);
         }
     }
-
-    /* Return the original node (folded/bashed or not) */
+    else if (tree->OperIsCompare())
+    {
+        // comparisons of two local variables can sometimes be folded
+        return gtFoldExprCompare(tree);
+    }
 
     return tree;
 }

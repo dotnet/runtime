@@ -1984,7 +1984,23 @@ public:
                      OUT COR_HEAPOBJECT * objects,
                      OUT ULONG * pFetched) = 0;
 
-    virtual HRESULT STDMETHODCALLTYPE GetHeapSegments(OUT DacDbiArrayList<COR_SEGMENT> * pSegments) = 0;
+    // Callback invoked for each GC heap segment.
+    //
+    // Arguments:
+    //    rangeStart - start address of the segment (inclusive).
+    //    rangeEnd   - end address of the segment (exclusive).
+    //    generation - CorDebugGenerationTypes value identifying the generation/kind of the segment.
+    //    heap       - index of the heap the segment belongs to (0 for workstation GC).
+    //    pUserData  - user data passed to EnumerateHeapSegments.
+    typedef void (*FP_HEAPSEGMENT_CALLBACK)(CORDB_ADDRESS rangeStart, CORDB_ADDRESS rangeEnd, int generation, ULONG heap, CALLBACK_DATA pUserData);
+
+    // Enumerate the GC heap segments.
+    //
+    // The callback is invoked once per segment and must not throw. To accumulate segments, callers
+    // typically stash a buffer (and any failure flag) in pUserData. The walker runs to completion
+    // regardless of any per-segment failure the callback decides to record; the caller surfaces the
+    // recorded failure after EnumerateHeapSegments returns.
+    virtual HRESULT STDMETHODCALLTYPE EnumerateHeapSegments(FP_HEAPSEGMENT_CALLBACK fpCallback, CALLBACK_DATA pUserData) = 0;
 
     virtual HRESULT STDMETHODCALLTYPE IsValidObject(CORDB_ADDRESS obj, OUT BOOL * pResult) = 0;
 
