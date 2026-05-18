@@ -3272,7 +3272,7 @@ public:
 
 #if defined(FEATURE_SIMD)
     GenTreeVecCon* gtNewVconNode(var_types type);
-    GenTreeVecCon* gtNewVconNode(var_types type, void* data);
+    GenTreeVecCon* gtNewVconNode(var_types type, const void* data);
 #if defined(TARGET_ARM64)
     GenTreeVecCon* gtNewSimdVconNode(var_types type, var_types baseType, SimdScalableKind kind, uint64_t index, uint64_t step = 0);
 
