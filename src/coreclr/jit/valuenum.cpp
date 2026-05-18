@@ -4191,7 +4191,7 @@ simdmaskvalue_t ValueNumStore::GetConstantSimdMaskValue(ValueNum argVN)
 simdmask_t ValueNumStore::GetConstantSimdMask(ValueNum argVN)
 {
     simdmaskvalue_t storage = GetConstantSimdMaskValue(argVN);
-    assert(!storage.IsScalable());
+    noway_assert(!storage.IsScalable());
 
     return storage.fixed;
 }
