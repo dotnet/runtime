@@ -2389,7 +2389,8 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                 case TYP_SIMD:
                 {
                     simdscalable_t simdVal  = vecCon->gtSimdScalableVal;
-                    insOpts        opt      = emitter::optGetSveInsOpt(emitTypeSize(simdVal.gtSimdScalableBaseType));
+                    var_types      baseType = simdVal.gtSimdScalableBaseType;
+                    insOpts        opt      = emitter::optGetSveInsOpt(emitTypeSize(baseType));
                     emitAttr       emitSize = (opt == INS_OPTS_SCALABLE_D) ? EA_8BYTE : EA_4BYTE;
 
                     auto loadConstantHelper = [&](ssize_t constValue) -> regNumber {
@@ -2410,7 +2411,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
 
                     ssize_t index = -1;
                     ssize_t step  = -1;
-                    switch (simdVal.gtSimdScalableBaseType)
+                    switch (baseType)
                     {
                         case TYP_BYTE:
                         {
@@ -2499,18 +2500,18 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                     {
                         case SimdScalableRepeated:
                         {
-                            if (varTypeIsIntegral(simdVal.gtSimdScalableBaseType) &&
+                            if (varTypeIsIntegral(baseType) &&
                                 (emitter::isValidSimm<8>(index) || emitter::isValidSimm_MultipleOf<8, 256>(index)))
                             {
                                 emit->emitInsSve_R_I(INS_sve_dup, EA_SCALABLE, targetReg, index, opt);
                             }
-                            else if ((simdVal.gtSimdScalableBaseType == TYP_FLOAT) &&
+                            else if ((baseType == TYP_FLOAT) &&
                                      emitter::canEncodeFloatImm8(simdVal.gtSimdScalableIndexF32[0]))
                             {
                                 emit->emitIns_R_F(INS_sve_fdup, EA_SCALABLE, targetReg,
                                                   simdVal.gtSimdScalableIndexF32[0], INS_OPTS_SCALABLE_S);
                             }
-                            else if ((simdVal.gtSimdScalableBaseType == TYP_DOUBLE) &&
+                            else if ((baseType == TYP_DOUBLE) &&
                                      emitter::canEncodeFloatImm8(simdVal.gtSimdScalableIndexF64[0]))
                             {
                                 emit->emitIns_R_F(INS_sve_fdup, EA_SCALABLE, targetReg,
@@ -2529,7 +2530,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                         case SimdScalableSequence:
                         {
                             // FP sequences should have been imported into a set of nodes
-                            assert(varTypeIsIntegral(simdVal.gtSimdScalableBaseType));
+                            assert(varTypeIsIntegral(baseType));
 
                             if (emitter::isValidSimm<5>(index) && emitter::isValidSimm<5>(step))
                             {
@@ -2562,18 +2563,17 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
 
                             // Use NEON instructions to load the constant (to avoid using predicates)
 
-                            if (varTypeIsIntegral(simdVal.gtSimdScalableBaseType) &&
-                                emitter::emitIns_valid_imm_for_mov(index, emitSize))
+                            if (varTypeIsIntegral(baseType) && emitter::emitIns_valid_imm_for_mov(index, emitSize))
                             {
                                 emit->emitIns_R_I(INS_mov, EA_16BYTE, targetReg, index);
                             }
-                            else if ((simdVal.gtSimdScalableBaseType == TYP_FLOAT) &&
+                            else if ((baseType == TYP_FLOAT) &&
                                      emitter::emitIns_valid_imm_for_fmov(simdVal.gtSimdScalableIndexF32[0]))
                             {
                                 emit->emitIns_R_F(INS_fmov, EA_16BYTE, targetReg,
                                                   static_cast<double>(simdVal.gtSimdScalableIndexF32[0]));
                             }
-                            else if ((simdVal.gtSimdScalableBaseType == TYP_DOUBLE) &&
+                            else if ((baseType == TYP_DOUBLE) &&
                                      emitter::emitIns_valid_imm_for_fmov(simdVal.gtSimdScalableIndexF64[0]))
                             {
                                 emit->emitIns_R_F(INS_fmov, EA_16BYTE, targetReg, simdVal.gtSimdScalableIndexF64[0]);

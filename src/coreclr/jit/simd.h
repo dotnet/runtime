@@ -2208,7 +2208,7 @@ struct simdmaskscalable_t
 {
     var_types gtSimdMaskScalableBaseType;
     // Only 0 and 1 are valid values
-    uint8_t   gtSimdMaskScalableIndex;
+    uint8_t gtSimdMaskScalableIndex;
 
     bool operator==(const simdmaskscalable_t& other) const
     {
