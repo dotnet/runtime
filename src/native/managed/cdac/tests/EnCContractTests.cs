@@ -134,7 +134,7 @@ public class EnCContractTests
             => new SequentialLayoutBuilder("EnCData", architecture)
                 .AddPointerField("AddrOfCode")
                 .AddUInt32Field("Token")
-                .AddNUIntField("EnCVersion")
+                .AddPointerField("EnCVersion")
                 .AddPointerField("Next")
                 .Build<MockEnCDataNode>();
 
