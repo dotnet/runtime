@@ -74,7 +74,7 @@ int32_t CryptoNative_BioCtrlPending(BIO* bio)
  *
  * The "managed-span" BIO_METHOD defined below avoids one of those copies in
  * each direction by letting the SSL operation read from / write to a
- * caller-supplied buffer "window" directly. It is paired with the atomic
+ * caller-supplied buffer "window" directly. It is paired with the single-shot
  * SSL_{Handshake,Encrypt,Decrypt} entry points in pal_ssl.c which install
  * the windows around an SSL operation and tear them down again afterwards.
  *
@@ -243,6 +243,14 @@ static int ManagedSpanBioWrite(BIO* bio, const char* buf, int len)
 
     if (remaining > 0)
     {
+        // Guard against int32 overflow before computing the new spill size.
+        // remaining and spillLen are both non-negative int32; bail out if the
+        // sum would not fit so ManagedSpanBioGrowSpill cannot be tricked into
+        // sizing the buffer based on a wrapped value.
+        if (remaining > INT32_MAX - ctx->spillLen)
+        {
+            return -1;
+        }
         int32_t needed = ctx->spillLen + remaining;
         if (!ManagedSpanBioGrowSpill(ctx, needed))
         {

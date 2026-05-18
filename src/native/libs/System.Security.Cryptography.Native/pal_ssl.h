@@ -326,7 +326,7 @@ and by the specifications of the TLS/SSL protocol;
 PALEXPORT int32_t CryptoNative_SslDoHandshake(SSL* ssl, int32_t* error);
 
 /*
-Atomically performs SSL_do_handshake with the input/output BIO windows set up
+Performs SSL_do_handshake with the input/output BIO windows set up
 and torn down in a single P/Invoke. The input BIO window points at inputPtr
 (ciphertext from peer, may be NULL/0). The output BIO window receives outgoing
 handshake bytes into outputPtr/outputCap; outputWritten reports the count
@@ -348,7 +348,7 @@ PALEXPORT int32_t CryptoNative_SslHandshake(
     int32_t* errorCode);
 
 /*
-Atomically performs SSL_write with the output BIO window set up and torn down
+Performs SSL_write with the output BIO window set up and torn down
 in a single P/Invoke. plaintextPtr/plaintextLen is the plaintext. outputPtr/
 outputCap is the ciphertext destination window; outputWritten reports bytes
 written, outputPending reports any overflow now in the BIO spill (drain via
@@ -367,14 +367,33 @@ PALEXPORT int32_t CryptoNative_SslEncrypt(
     int32_t* errorCode);
 
 /*
-Atomically performs SSL_read with the input BIO window set up and torn down
-in a single P/Invoke. inputPtr/inputLen is incoming ciphertext (may be 0 to
-drain plaintext already buffered inside SSL from a prior partial read).
-outputPtr/outputCap is the plaintext destination. plaintextPending receives
-SSL_pending after the read (bytes still buffered inside the SSL object).
+Performs SSL_read with the input BIO window set up and torn down
+in a single P/Invoke.
 
-Returns the SSL_read return value (>0 = bytes written to outputPtr); errorCode
-receives SSL_get_error.
+inputPtr/inputLen describes the incoming ciphertext window. The buffer is
+also reused as in-place scratch space for plaintext that does not fit into
+the caller-supplied destination (see leftoverOffset/leftoverLength below), so
+inputPtr must point at writable memory.
+
+outputPtr/outputCap is the primary plaintext destination. The function reads
+up to outputCap bytes of plaintext directly into outputPtr and returns that
+count via the function return value.
+
+If outputCap is 0, or if OpenSSL has more plaintext available for the current
+record after the first SSL_read (SSL_pending > 0, e.g. the destination was
+smaller than the record), a second SSL_read drains the remaining plaintext
+back into the input buffer in place starting at inputPtr. The leftover region
+is reported through leftoverOffset / leftoverLength (offset is always 0 on
+Unix; the Windows PAL uses non-zero offsets and the managed contract is
+shared across PALs). The caller is expected to forward those bytes to its
+internal decrypted-data buffer.
+
+consumed receives the number of ciphertext bytes the BIO consumed from the
+input window (inputLen minus any unread tail). errorCode receives SSL_get_error
+mapped on the SSL_read result (or on the second SSL_read if the first did
+not produce data).
+
+Returns the first SSL_read return value (>0 = bytes written to outputPtr).
 */
 PALEXPORT int32_t CryptoNative_SslDecrypt(
     SSL* ssl,

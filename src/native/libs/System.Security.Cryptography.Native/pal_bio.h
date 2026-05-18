@@ -63,15 +63,26 @@ PALEXPORT BIO* CryptoNative_BioNewManagedSpan(void);
 
 /*
 Internal helpers used by pal_ssl.c to drive the managed-span BIO during
-atomic SSL handshake/encrypt/decrypt operations. Not exported.
+single-shot SSL handshake/encrypt/decrypt operations. Not exported.
 */
 void CryptoNative_BioSetReadWindow(BIO* bio, const void* ptr, int32_t len);
 void CryptoNative_BioClearReadWindow(BIO* bio, int32_t* leftoverLength);
 void CryptoNative_BioSetWriteWindow(BIO* bio, void* ptr, int32_t capacity);
 
 /*
-Returns the number of bytes written into the window and into the spill
-buffer respectively since the last reset/window-set.
+Reports the current state of the managed-span output BIO after an SSL
+operation.
+
+writtenToWindow is the number of bytes BIO_write deposited directly into
+the current caller-supplied window since the last CryptoNative_BioSetWriteWindow
+call. CryptoNative_BioSetWriteWindow resets this counter to zero each time
+a new window is installed.
+
+spillLen is the total number of bytes currently held in the per-BIO heap
+spill buffer. The spill is *not* reset by CryptoNative_BioSetWriteWindow;
+it accumulates across SSL operations (so out-of-band output such as alerts
+or TLS 1.3 KeyUpdate frames emitted during SSL_read is preserved for the
+caller) and is only drained by CryptoNative_BioDrainSpill.
 */
 PALEXPORT void CryptoNative_BioGetWriteResult(BIO* bio, int32_t* writtenToWindow, int32_t* spillLen);
 
