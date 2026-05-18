@@ -66,6 +66,7 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods
         // Mirrors the pattern where a descriptor-preserved method's DeclaringType is used
         // as a type argument to MakeGenericMethod on a method constrained by IStaticAbstract.
         [Kept]
+        [ExpectedWarning("IL3050", nameof(MethodInfo.MakeGenericMethod), Tool.Analyzer | Tool.NativeAot, "")]
         static void UseViaReflection()
         {
             typeof(IStaticAbstract).GetMethod(nameof(IStaticAbstract.Call))

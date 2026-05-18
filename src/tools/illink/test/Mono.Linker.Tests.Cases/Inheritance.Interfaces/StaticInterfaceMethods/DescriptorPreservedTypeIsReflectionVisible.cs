@@ -72,6 +72,7 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods
         }
 
         [Kept]
+        [ExpectedWarning("IL3050", nameof(MethodInfo.MakeGenericMethod), Tool.Analyzer | Tool.NativeAot, "")]
         static void UseViaReflection()
         {
             typeof(IStaticAbstract).GetMethod(nameof(IStaticAbstract.Call))
