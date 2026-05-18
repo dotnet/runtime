@@ -191,7 +191,13 @@ namespace System.Net
 
         private void SslSetConnection(SafeSslHandle sslContext)
         {
+            // The GCHandle is owned by the SafeSslHandle and freed in its
+            // ReleaseHandle override, which only runs after all outstanding
+            // P/Invokes (and therefore any in-flight Read/Write callbacks)
+            // have completed. Freeing it here in Dispose would race with
+            // callbacks that are still in flight on another thread.
             GCHandle handle = GCHandle.Alloc(this, GCHandleType.Weak);
+            sslContext.SetConnectionGCHandle(handle);
 
             Interop.AppleCrypto.SslSetConnection(sslContext, GCHandle.ToIntPtr(handle));
         }
