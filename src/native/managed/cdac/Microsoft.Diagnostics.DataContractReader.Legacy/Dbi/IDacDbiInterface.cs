@@ -425,10 +425,10 @@ public unsafe partial interface IDacDbiInterface
     int GetInstantiationFieldInfo(ulong vmAssembly, ulong vmTypeHandle, ulong vmExactMethodTable, nint pFieldList, nuint* pObjectSize);
 
     [PreserveSig]
-    int TypeHandleToExpandedTypeInfo(int boxed, ulong vmTypeHandle, DebuggerIPCE_ExpandedTypeData* pData);
+    int TypeHandleToExpandedTypeInfo(AreValueTypesBoxed boxed, ulong vmTypeHandle, DebuggerIPCE_ExpandedTypeData* pData);
 
     [PreserveSig]
-    int GetObjectExpandedTypeInfo(int boxed, ulong addr, DebuggerIPCE_ExpandedTypeData* pTypeInfo);
+    int GetObjectExpandedTypeInfo(AreValueTypesBoxed boxed, ulong addr, DebuggerIPCE_ExpandedTypeData* pTypeInfo);
 
     [PreserveSig]
     int GetTypeHandle(ulong vmModule, uint metadataToken, ulong* pRetVal);

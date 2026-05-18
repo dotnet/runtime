@@ -6,6 +6,7 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
@@ -1278,14 +1279,14 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     public int GetInstantiationFieldInfo(ulong vmAssembly, ulong vmTypeHandle, ulong vmExactMethodTable, nint pFieldList, nuint* pObjectSize)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetInstantiationFieldInfo(vmAssembly, vmTypeHandle, vmExactMethodTable, pFieldList, pObjectSize) : HResults.E_NOTIMPL;
 
-    public int TypeHandleToExpandedTypeInfo(int boxed, ulong vmTypeHandle, DebuggerIPCE_ExpandedTypeData* pTypeInfo)
+    public int TypeHandleToExpandedTypeInfo(AreValueTypesBoxed boxed, ulong vmTypeHandle, DebuggerIPCE_ExpandedTypeData* pTypeInfo)
     {
         int hr = HResults.S_OK;
         try
         {
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
             TypeHandle th = rts.GetTypeHandle(new TargetPointer(vmTypeHandle));
-            TypeHandleToExpandedTypeInfoImpl(rts, (AreValueTypesBoxed)boxed, th, pTypeInfo);
+            TypeHandleToExpandedTypeInfoImpl(rts, boxed, th, pTypeInfo);
         }
         catch (System.Exception ex)
         {
@@ -1306,7 +1307,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
-    public int GetObjectExpandedTypeInfo(int boxed, ulong addr, DebuggerIPCE_ExpandedTypeData* pTypeInfo)
+    public int GetObjectExpandedTypeInfo(AreValueTypesBoxed boxed, ulong addr, DebuggerIPCE_ExpandedTypeData* pTypeInfo)
     {
         int hr = HResults.S_OK;
         try
@@ -1314,7 +1315,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
             TargetPointer mtAddr = _target.Contracts.Object.GetMethodTableAddress(new TargetPointer(addr));
             TypeHandle th = rts.GetTypeHandle(mtAddr);
-            TypeHandleToExpandedTypeInfoImpl(rts, (AreValueTypesBoxed)boxed, th, pTypeInfo);
+            TypeHandleToExpandedTypeInfoImpl(rts, boxed, th, pTypeInfo);
         }
         catch (System.Exception ex)
         {
@@ -1340,7 +1341,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     {
         Debug.Assert(cdac->elementType == dac->elementType,
             $"cDAC elementType: {cdac->elementType}, DAC: {dac->elementType}");
-        switch ((CorElementType)cdac->elementType)
+        switch ((CorElementType)ReadLittleEndian(cdac->elementType))
         {
             case CorElementType.Class:
             case CorElementType.ValueType:
@@ -2305,7 +2306,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     {
         *pTypeInfo = default;
         CorElementType elementType = GetElementType(rts, typeHandle);
-        WriteInt32LittleEndian(ref pTypeInfo->elementType, (int)elementType);
+        WriteLittleEndian(ref pTypeInfo->elementType, (int)elementType);
 
         switch (elementType)
         {
@@ -2322,7 +2323,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             case CorElementType.ValueType:
                 if (boxed == AreValueTypesBoxed.OnlyPrimitivesUnboxed || boxed == AreValueTypesBoxed.AllBoxed)
                 {
-                    WriteInt32LittleEndian(ref pTypeInfo->elementType, (int)CorElementType.Class);
+                    WriteLittleEndian(ref pTypeInfo->elementType, (int)CorElementType.Class);
                 }
                 FillClassTypeInfo(rts, typeHandle, pTypeInfo);
                 break;
@@ -2338,7 +2339,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             default:
                 if (boxed == AreValueTypesBoxed.AllBoxed)
                 {
-                    WriteInt32LittleEndian(ref pTypeInfo->elementType, (int)CorElementType.Class);
+                    WriteLittleEndian(ref pTypeInfo->elementType, (int)CorElementType.Class);
                     FillClassTypeInfo(rts, typeHandle, pTypeInfo);
                 }
                 break;
@@ -2381,7 +2382,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     {
         Debug.Assert(rts.IsArray(typeHandle, out _));
         rts.IsArray(typeHandle, out uint rank);
-        WriteUInt32LittleEndian(ref pTypeInfo->ArrayTypeData_arrayRank, rank);
+        WriteLittleEndian(ref pTypeInfo->ArrayTypeData_arrayRank, rank);
         TypeHandle elemTypeHandle = rts.GetTypeParam(typeHandle);
         FillBasicTypeInfo(rts, elemTypeHandle, out pTypeInfo->ArrayTypeData_arrayTypeArg);
     }
@@ -2413,14 +2414,14 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         if (instantiation.Length > 0)
         {
             // Generic instantiation — set the type handle so the debugger can fetch type arguments
-            WriteUInt64LittleEndian(ref pTypeInfo->ClassTypeData_typeHandle, typeHandle.Address.Value);
+            WriteLittleEndian(ref pTypeInfo->ClassTypeData_typeHandle, typeHandle.Address.Value);
         }
         // else: non-generic — typeHandle stays null
 
-        WriteUInt32LittleEndian(ref pTypeInfo->ClassTypeData_metadataToken, rts.GetTypeDefToken(typeHandle));
+        WriteLittleEndian(ref pTypeInfo->ClassTypeData_metadataToken, rts.GetTypeDefToken(typeHandle));
 
         Debug.Assert(modulePtr != TargetPointer.Null);
-        WriteUInt64LittleEndian(ref pTypeInfo->ClassTypeData_vmAssembly, loader.GetAssembly(moduleHandle).Value);
+        WriteLittleEndian(ref pTypeInfo->ClassTypeData_vmAssembly, loader.GetAssembly(moduleHandle).Value);
     }
 
     // Fills NaryTypeData for E_T_FNPTR (or ClassTypeData if AllBoxed).
@@ -2432,7 +2433,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         }
         else
         {
-            WriteUInt64LittleEndian(ref pTypeInfo->NaryTypeData_typeHandle, typeHandle.Address.Value);
+            WriteLittleEndian(ref pTypeInfo->NaryTypeData_typeHandle, typeHandle.Address.Value);
         }
     }
 
@@ -2442,7 +2443,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     {
         typeInfo = default;
         CorElementType elementType = GetElementType(rts, typeHandle);
-        WriteInt32LittleEndian(ref typeInfo.elementType, (int)elementType);
+        WriteLittleEndian(ref typeInfo.elementType, (int)elementType);
 
         switch (elementType)
         {
@@ -2451,7 +2452,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             case CorElementType.FnPtr:
             case CorElementType.Ptr:
             case CorElementType.Byref:
-                WriteUInt64LittleEndian(ref typeInfo.vmTypeHandle, typeHandle.Address.Value);
+                WriteLittleEndian(ref typeInfo.vmTypeHandle, typeHandle.Address.Value);
                 // metadataToken and vmAssembly stay zero
                 break;
 
@@ -2467,13 +2468,13 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 ReadOnlySpan<TypeHandle> instantiation = rts.GetInstantiation(typeHandle);
                 if (instantiation.Length > 0)
                 {
-                    WriteUInt64LittleEndian(ref typeInfo.vmTypeHandle, typeHandle.Address.Value);
+                    WriteLittleEndian(ref typeInfo.vmTypeHandle, typeHandle.Address.Value);
                 }
                 // else: vmTypeHandle stays null
 
-                WriteUInt32LittleEndian(ref typeInfo.metadataToken, rts.GetTypeDefToken(typeHandle));
+                WriteLittleEndian(ref typeInfo.metadataToken, rts.GetTypeDefToken(typeHandle));
                 Debug.Assert(modulePtr != TargetPointer.Null);
-                WriteUInt64LittleEndian(ref typeInfo.vmAssembly, loader.GetAssembly(moduleHandle).Value);
+                WriteLittleEndian(ref typeInfo.vmAssembly, loader.GetAssembly(moduleHandle).Value);
                 break;
             }
 
@@ -2483,22 +2484,28 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         }
     }
 
-    // Little-endian write helpers for IPCE structs.
+    // Little-endian read/write helpers for IPCE structs.
     // Native IPCE structs use Portable<T>, which stores data in little-endian format.
-    // These helpers ensure managed writes match that convention.
-    private static void WriteInt32LittleEndian(ref int dest, int value)
+    // These helpers ensure managed reads/writes match that convention.
+    private static void WriteLittleEndian<T>(ref T dest, T value) where T : unmanaged, IBinaryInteger<T>
     {
-        dest = BitConverter.IsLittleEndian ? value : BinaryPrimitives.ReverseEndianness(value);
+        if (BitConverter.IsLittleEndian)
+        {
+            dest = value;
+        }
+        else
+        {
+            Span<byte> destBytes = MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref dest, 1));
+            value.WriteLittleEndian(destBytes);
+        }
     }
 
-    private static void WriteUInt32LittleEndian(ref uint dest, uint value)
+    private static T ReadLittleEndian<T>(T value) where T : unmanaged, IBinaryInteger<T>
     {
-        dest = BitConverter.IsLittleEndian ? value : BinaryPrimitives.ReverseEndianness(value);
-    }
-
-    private static void WriteUInt64LittleEndian(ref ulong dest, ulong value)
-    {
-        dest = BitConverter.IsLittleEndian ? value : BinaryPrimitives.ReverseEndianness(value);
+        if (BitConverter.IsLittleEndian)
+            return value;
+        MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref value, 1)).Reverse();
+        return value;
     }
 
 }
