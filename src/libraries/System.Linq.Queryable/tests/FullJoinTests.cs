@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Linq.Tests
 {
-    public class LeftJoinTests : EnumerableBasedTests
+    public class FullJoinTests : EnumerableBasedTests
     {
         public struct CustomerRec
         {
@@ -52,10 +52,11 @@ namespace System.Linq.Tests
             JoinRec[] expected = {
                 new JoinRec{ name = "Prakash", orderID = 95421, total = 9 },
                 new JoinRec{ name = "Tim", orderID = 0, total = 0 },
-                new JoinRec{ name = "Robert", orderID = 45321, total = 50 }
+                new JoinRec{ name = "Robert", orderID = 45321, total = 50 },
+                new JoinRec{ name = null, orderID = 43421, total = 20 }
             };
 
-            Assert.Equal(expected, outer.AsQueryable().LeftJoin(inner.AsQueryable(), e => e.custID, e => e.custID, (cr, or) => new JoinRec { name = cr.name, orderID = or.orderID, total = or.total }));
+            Assert.Equal(expected, outer.AsQueryable().FullJoin(inner.AsQueryable(), e => e.custID, e => e.custID, (cr, or) => new JoinRec { name = cr.name, orderID = or.orderID, total = or.total }));
         }
 
         [Fact]
@@ -73,10 +74,11 @@ namespace System.Linq.Tests
             JoinRec[] expected = {
                 new JoinRec{ name = "Prakash", orderID = 323232, total = 9 },
                 new JoinRec{ name = "Tim", orderID = 0, total = 0 },
-                new JoinRec{ name = "Robert", orderID = 0, total = 0 }
+                new JoinRec{ name = "Robert", orderID = 0, total = 0 },
+                new JoinRec{ name = null, orderID = 43455, total = 10 }
             };
 
-            Assert.Equal(expected, outer.AsQueryable().LeftJoin(inner.AsQueryable(), e => e.name, e => e.name, (cr, or) => new JoinRec { name = cr.name, orderID = or.orderID, total = or.total }, null));
+            Assert.Equal(expected, outer.AsQueryable().FullJoin(inner.AsQueryable(), e => e.name, e => e.name, (cr, or) => new JoinRec { name = cr.name, orderID = or.orderID, total = or.total }, null));
         }
 
         [Fact]
@@ -97,7 +99,7 @@ namespace System.Linq.Tests
                 new JoinRec{ name = "Robert", orderID = 0, total = 0 }
             };
 
-            Assert.Equal(expected, outer.AsQueryable().LeftJoin(inner.AsQueryable(), e => e.name, e => e.name, (cr, or) => new JoinRec { name = cr.name, orderID = or.orderID, total = or.total }, new AnagramEqualityComparer()));
+            Assert.Equal(expected, outer.AsQueryable().FullJoin(inner.AsQueryable(), e => e.name, e => e.name, (cr, or) => new JoinRec { name = cr.name, orderID = or.orderID, total = or.total }, new AnagramEqualityComparer()));
         }
 
         [Fact]
@@ -109,7 +111,7 @@ namespace System.Linq.Tests
                 new AnagramRec{ name = "Prakash", orderID = 323232, total = 9 }
             };
 
-            AssertExtensions.Throws<ArgumentNullException>("outer", () => outer.LeftJoin(inner.AsQueryable(), e => e.name, e => e.name, (cr, or) => new JoinRec { name = cr.name, orderID = or.orderID, total = or.total }, new AnagramEqualityComparer()));
+            AssertExtensions.Throws<ArgumentNullException>("outer", () => outer.FullJoin(inner.AsQueryable(), e => e.name, e => e.name, (cr, or) => new JoinRec { name = cr.name, orderID = or.orderID, total = or.total }, new AnagramEqualityComparer()));
         }
 
         [Fact]
@@ -122,7 +124,7 @@ namespace System.Linq.Tests
             };
             IQueryable<AnagramRec> inner = null;
 
-            AssertExtensions.Throws<ArgumentNullException>("inner", () => outer.AsQueryable().LeftJoin(inner, e => e.name, e => e.name, (cr, or) => new JoinRec { name = cr.name, orderID = or.orderID, total = or.total }, new AnagramEqualityComparer()));
+            AssertExtensions.Throws<ArgumentNullException>("inner", () => outer.AsQueryable().FullJoin(inner, e => e.name, e => e.name, (cr, or) => new JoinRec { name = cr.name, orderID = or.orderID, total = or.total }, new AnagramEqualityComparer()));
         }
 
         [Fact]
@@ -138,7 +140,7 @@ namespace System.Linq.Tests
                 new AnagramRec{ name = "Prakash", orderID = 323232, total = 9 }
             };
 
-            AssertExtensions.Throws<ArgumentNullException>("outerKeySelector", () => outer.AsQueryable().LeftJoin(inner.AsQueryable(), null, e => e.name, (cr, or) => new JoinRec { name = cr.name, orderID = or.orderID, total = or.total }, new AnagramEqualityComparer()));
+            AssertExtensions.Throws<ArgumentNullException>("outerKeySelector", () => outer.AsQueryable().FullJoin(inner.AsQueryable(), null, e => e.name, (cr, or) => new JoinRec { name = cr.name, orderID = or.orderID, total = or.total }, new AnagramEqualityComparer()));
         }
 
         [Fact]
@@ -154,7 +156,7 @@ namespace System.Linq.Tests
                 new AnagramRec{ name = "Prakash", orderID = 323232, total = 9 }
             };
 
-            AssertExtensions.Throws<ArgumentNullException>("innerKeySelector", () => outer.AsQueryable().LeftJoin(inner.AsQueryable(), e => e.name, null, (cr, or) => new JoinRec { name = cr.name, orderID = or.orderID, total = or.total }, new AnagramEqualityComparer()));
+            AssertExtensions.Throws<ArgumentNullException>("innerKeySelector", () => outer.AsQueryable().FullJoin(inner.AsQueryable(), e => e.name, null, (cr, or) => new JoinRec { name = cr.name, orderID = or.orderID, total = or.total }, new AnagramEqualityComparer()));
         }
 
         [Fact]
@@ -170,7 +172,7 @@ namespace System.Linq.Tests
                 new AnagramRec{ name = "Prakash", orderID = 323232, total = 9 }
             };
 
-            AssertExtensions.Throws<ArgumentNullException>("resultSelector", () => outer.AsQueryable().LeftJoin(inner.AsQueryable(), e => e.name, e => e.name, (Expression<Func<CustomerRec, AnagramRec, JoinRec>>)null, new AnagramEqualityComparer()));
+            AssertExtensions.Throws<ArgumentNullException>("resultSelector", () => Queryable.FullJoin<CustomerRec, AnagramRec, string, JoinRec>(outer.AsQueryable(), inner.AsQueryable(), e => e.name, e => e.name, (Expression<Func<CustomerRec, AnagramRec, JoinRec>>)null, new AnagramEqualityComparer()));
         }
 
         [Fact]
@@ -182,7 +184,7 @@ namespace System.Linq.Tests
                 new AnagramRec{ name = "Prakash", orderID = 323232, total = 9 }
             };
 
-            AssertExtensions.Throws<ArgumentNullException>("outer", () => outer.LeftJoin(inner.AsQueryable(), e => e.name, e => e.name, (cr, or) => new JoinRec { name = cr.name, orderID = or.orderID, total = or.total }));
+            AssertExtensions.Throws<ArgumentNullException>("outer", () => outer.FullJoin(inner.AsQueryable(), e => e.name, e => e.name, (cr, or) => new JoinRec { name = cr.name, orderID = or.orderID, total = or.total }));
         }
 
         [Fact]
@@ -195,7 +197,7 @@ namespace System.Linq.Tests
             };
             IQueryable<AnagramRec> inner = null;
 
-            AssertExtensions.Throws<ArgumentNullException>("inner", () => outer.AsQueryable().LeftJoin(inner, e => e.name, e => e.name, (cr, or) => new JoinRec { name = cr.name, orderID = or.orderID, total = or.total }));
+            AssertExtensions.Throws<ArgumentNullException>("inner", () => outer.AsQueryable().FullJoin(inner, e => e.name, e => e.name, (cr, or) => new JoinRec { name = cr.name, orderID = or.orderID, total = or.total }));
         }
 
         [Fact]
@@ -211,7 +213,7 @@ namespace System.Linq.Tests
                 new AnagramRec{ name = "Prakash", orderID = 323232, total = 9 }
             };
 
-            AssertExtensions.Throws<ArgumentNullException>("outerKeySelector", () => outer.AsQueryable().LeftJoin(inner.AsQueryable(), null, e => e.name, (cr, or) => new JoinRec { name = cr.name, orderID = or.orderID, total = or.total }));
+            AssertExtensions.Throws<ArgumentNullException>("outerKeySelector", () => outer.AsQueryable().FullJoin(inner.AsQueryable(), null, e => e.name, (cr, or) => new JoinRec { name = cr.name, orderID = or.orderID, total = or.total }));
         }
 
         [Fact]
@@ -227,7 +229,7 @@ namespace System.Linq.Tests
                 new AnagramRec{ name = "Prakash", orderID = 323232, total = 9 }
             };
 
-            AssertExtensions.Throws<ArgumentNullException>("innerKeySelector", () => outer.AsQueryable().LeftJoin(inner.AsQueryable(), e => e.name, null, (cr, or) => new JoinRec { name = cr.name, orderID = or.orderID, total = or.total }));
+            AssertExtensions.Throws<ArgumentNullException>("innerKeySelector", () => outer.AsQueryable().FullJoin(inner.AsQueryable(), e => e.name, null, (cr, or) => new JoinRec { name = cr.name, orderID = or.orderID, total = or.total }));
         }
 
         [Fact]
@@ -243,7 +245,7 @@ namespace System.Linq.Tests
                 new AnagramRec{ name = "Prakash", orderID = 323232, total = 9 }
             };
 
-            AssertExtensions.Throws<ArgumentNullException>("resultSelector", () => outer.AsQueryable().LeftJoin(inner.AsQueryable(), e => e.name, e => e.name, (Expression<Func<CustomerRec, AnagramRec, JoinRec>>)null));
+            AssertExtensions.Throws<ArgumentNullException>("resultSelector", () => Queryable.FullJoin<CustomerRec, AnagramRec, string, JoinRec>(outer.AsQueryable(), inner.AsQueryable(), e => e.name, e => e.name, (Expression<Func<CustomerRec, AnagramRec, JoinRec>>)null));
         }
 
         [Fact]
@@ -251,129 +253,64 @@ namespace System.Linq.Tests
         {
             int?[] outer = { null, null };
             int?[] inner = { null, null, null };
-            int?[] expected = { null, null };
+            int?[] expected = { null, null, null, null, null };
 
-            Assert.Equal(expected, outer.AsQueryable().LeftJoin(inner.AsQueryable(), e => e, e => e, (x, y) => x));
-            Assert.Equal(expected, outer.AsQueryable().LeftJoin(inner.AsQueryable(), e => e, e => e, (x, y) => y));
+            Assert.Equal(expected, outer.AsQueryable().FullJoin(inner.AsQueryable(), e => e, e => e, (x, y) => x));
+            Assert.Equal(expected, outer.AsQueryable().FullJoin(inner.AsQueryable(), e => e, e => e, (x, y) => y));
         }
 
         [Fact]
-        public void NullKeysRemainUnmatched()
+        public void NullKeysAreUnmatchedButPreserved()
         {
             string[] outer = { "#o1", "a", "#o2" };
             string[] inner = { "#i1", "A", "#i2", "b" };
-            string[] expected =
+            (string? Outer, string? Inner)[] expected =
             {
-                "#o1:<null>",
-                "a:A",
-                "#o2:<null>"
+                ("#o1", null),
+                ("a", "A"),
+                ("#o2", null),
+                (null, "#i1"),
+                (null, "#i2"),
+                (null, "b")
             };
 
-            Assert.Equal(expected, outer.AsQueryable().LeftJoin(inner.AsQueryable(), s => s[0] == '#' ? null : s, s => s[0] == '#' ? null : s, (o, i) => $"{o}:{i ?? "<null>"}", StringComparer.OrdinalIgnoreCase));
+            Assert.Equal(expected, outer.AsQueryable().FullJoin(inner.AsQueryable(), s => s[0] == '#' ? null : s, s => s[0] == '#' ? null : s, StringComparer.OrdinalIgnoreCase));
         }
 
         [Fact]
         public void Join1()
         {
-            var count = new[] { 0, 1, 2 }.AsQueryable().LeftJoin(new[] { 1, 2, 3 }, n1 => n1, n2 => n2, (n1, n2) => n1 + n2).Count();
-            Assert.Equal(3, count);
+            var count = new[] { 0, 1, 2 }.AsQueryable().FullJoin(new[] { 1, 2, 3 }, n1 => n1, n2 => n2, (n1, n2) => n1 + n2).Count();
+            Assert.Equal(4, count);
         }
 
         [Fact]
         public void Join2()
         {
-            var count = new[] { 0, 1, 2 }.AsQueryable().LeftJoin(new[] { 1, 2, 3 }, n1 => n1, n2 => n2, (n1, n2) => n1 + n2, EqualityComparer<int>.Default).Count();
-            Assert.Equal(3, count);
+            var count = new[] { 0, 1, 2 }.AsQueryable().FullJoin(new[] { 1, 2, 3 }, n1 => n1, n2 => n2, (n1, n2) => n1 + n2, EqualityComparer<int>.Default).Count();
+            Assert.Equal(4, count);
         }
 
         [Fact]
-        public void TupleLeftJoin_Basic()
+        public void TupleOverload()
         {
-            CustomerRec[] outer = {
-                new CustomerRec{ name = "Prakash", custID = 98022 },
-                new CustomerRec{ name = "Tim", custID = 99021 },
-                new CustomerRec{ name = "Robert", custID = 99022 }
-            };
-            OrderRec[] inner = {
-                new OrderRec{ orderID = 45321, custID = 99022, total = 50 },
-                new OrderRec{ orderID = 43421, custID = 29022, total = 20 },
-                new OrderRec{ orderID = 95421, custID = 98022, total = 9 }
-            };
-
-            var result = outer.AsQueryable().LeftJoin(inner.AsQueryable(), e => e.custID, e => e.custID).ToList();
-
-            Assert.Equal(3, result.Count);
-            Assert.Contains(result, r => r.Outer.name == "Prakash" && r.Inner.orderID == 95421);
-            Assert.Contains(result, r => r.Outer.name == "Tim" && r.Inner.orderID == 0);
-            Assert.Contains(result, r => r.Outer.name == "Robert" && r.Inner.orderID == 45321);
+            var result = new[] { 0, 1, 2 }.AsQueryable().FullJoin(new[] { 1, 2, 3 }.AsQueryable(), n1 => n1, n2 => n2).ToArray();
+            Assert.Equal(4, result.Length);
+            Assert.Equal((0, 0), result[0]);
+            Assert.Equal((1, 1), result[1]);
+            Assert.Equal((2, 2), result[2]);
+            Assert.Equal((0, 3), result[3]);
         }
 
         [Fact]
-        public void TupleLeftJoin_WithComparer()
+        public void TupleOverloadWithComparer()
         {
-            CustomerRec[] outer = {
-                new CustomerRec{ name = "Prakash", custID = 98022 },
-                new CustomerRec{ name = "Tim", custID = 99021 }
-            };
-            AnagramRec[] inner = {
-                new AnagramRec{ name = "miT", orderID = 43455, total = 10 }
-            };
-
-            var result = outer.AsQueryable().LeftJoin(inner.AsQueryable(), e => e.name, e => e.name, new AnagramEqualityComparer()).ToList();
-
-            Assert.Equal(2, result.Count);
-            Assert.Contains(result, r => r.Outer.name == "Tim" && r.Inner.name == "miT");
-            Assert.Contains(result, r => r.Outer.name == "Prakash" && r.Inner.name == null);
-        }
-
-        [Fact]
-        public void TupleLeftJoin_OuterNull()
-        {
-            IQueryable<CustomerRec> outer = null;
-            OrderRec[] inner = { new OrderRec{ orderID = 45321, custID = 98022, total = 50 } };
-
-            AssertExtensions.Throws<ArgumentNullException>("outer", () => outer.LeftJoin(inner.AsQueryable(), e => e.custID, e => e.custID));
-        }
-
-        [Fact]
-        public void TupleLeftJoin_InnerNull()
-        {
-            CustomerRec[] outer = { new CustomerRec{ name = "Prakash", custID = 98022 } };
-            IEnumerable<OrderRec> inner = null;
-
-            AssertExtensions.Throws<ArgumentNullException>("inner", () => outer.AsQueryable().LeftJoin(inner, e => e.custID, e => e.custID));
-        }
-
-        [Fact]
-        public void TupleLeftJoin_OuterKeySelectorNull()
-        {
-            CustomerRec[] outer = { new CustomerRec{ name = "Prakash", custID = 98022 } };
-            OrderRec[] inner = { new OrderRec{ orderID = 45321, custID = 98022, total = 50 } };
-
-            AssertExtensions.Throws<ArgumentNullException>("outerKeySelector", () => outer.AsQueryable().LeftJoin(inner.AsQueryable(), (Expression<Func<CustomerRec, int>>)null, e => e.custID));
-        }
-
-        [Fact]
-        public void TupleLeftJoin_InnerKeySelectorNull()
-        {
-            CustomerRec[] outer = { new CustomerRec{ name = "Prakash", custID = 98022 } };
-            OrderRec[] inner = { new OrderRec{ orderID = 45321, custID = 98022, total = 50 } };
-
-            AssertExtensions.Throws<ArgumentNullException>("innerKeySelector", () => outer.AsQueryable().LeftJoin(inner.AsQueryable(), e => e.custID, (Expression<Func<OrderRec, int>>)null));
-        }
-
-        [Fact]
-        public void TupleLeftJoin1()
-        {
-            var count = new[] { 0, 1, 2 }.AsQueryable().LeftJoin(new[] { 1, 2, 3 }, n1 => n1, n2 => n2).Count();
-            Assert.Equal(3, count);
-        }
-
-        [Fact]
-        public void TupleLeftJoin2()
-        {
-            var count = new[] { 0, 1, 2 }.AsQueryable().LeftJoin(new[] { 1, 2, 3 }, n1 => n1, n2 => n2, EqualityComparer<int>.Default).Count();
-            Assert.Equal(3, count);
+            var result = new[] { 0, 1, 2 }.AsQueryable().FullJoin(new[] { 1, 2, 3 }.AsQueryable(), n1 => n1, n2 => n2, EqualityComparer<int>.Default).ToArray();
+            Assert.Equal(4, result.Length);
+            Assert.Equal((0, 0), result[0]);
+            Assert.Equal((1, 1), result[1]);
+            Assert.Equal((2, 2), result[2]);
+            Assert.Equal((0, 3), result[3]);
         }
     }
 }
