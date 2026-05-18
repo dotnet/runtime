@@ -3,7 +3,6 @@
 
 using System;
 using System.Diagnostics;
-using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting.IntegrationTesting;
@@ -50,7 +49,7 @@ namespace Microsoft.AspNetCore.Hosting.FunctionalTests
                 builder.AddXunit(_output);
             });
 
-            string applicationPath = GetApplicationPath();
+            string applicationPath = AppContext.BaseDirectory;
 
             Version version = Environment.Version;
             var deploymentParameters = new DeploymentParameters(
@@ -62,8 +61,10 @@ namespace Microsoft.AspNetCore.Hosting.FunctionalTests
                 TargetFramework = $"net{version.Major}.{version.Minor}",
                 ApplicationType = ApplicationType.Portable,
                 PublishApplicationBeforeDeployment = true,
+                PreservePublishedApplicationForDebugging = true,
                 StatusMessagesEnabled = false
             };
+            deploymentParameters.ApplicationPublisher = new ExistingOutputApplicationPublisher(applicationPath);
 
             deploymentParameters.EnvironmentVariables["DOTNET_STARTMECHANIC"] = shutdownMechanic;
 
@@ -152,24 +153,18 @@ namespace Microsoft.AspNetCore.Hosting.FunctionalTests
             Assert.Equal(0, process.ExitCode);
         }
 
-        private static string GetApplicationPath()
+        private sealed class ExistingOutputApplicationPublisher : ApplicationPublisher
         {
-            const string testAppProjectName = "Microsoft.Extensions.Hosting.TestApp.csproj";
-            const string relativeTestAppPath = "src/libraries/Microsoft.Extensions.Hosting/tests/TestApp";
+            private readonly string _applicationPath;
 
-            DirectoryInfo directory = new DirectoryInfo(AppContext.BaseDirectory);
-            while (directory is not null)
+            public ExistingOutputApplicationPublisher(string applicationPath)
+                : base(applicationPath)
             {
-                string candidate = Path.Combine(directory.FullName, relativeTestAppPath);
-                if (File.Exists(Path.Combine(candidate, testAppProjectName)))
-                {
-                    return candidate;
-                }
-
-                directory = directory.Parent;
+                _applicationPath = applicationPath;
             }
 
-            throw new DirectoryNotFoundException($"Could not find {testAppProjectName} from base directory '{AppContext.BaseDirectory}'.");
+            public override Task<PublishedApplication> Publish(DeploymentParameters deploymentParameters, ILogger logger)
+                => Task.FromResult(new PublishedApplication(_applicationPath, logger));
         }
     }
 }
