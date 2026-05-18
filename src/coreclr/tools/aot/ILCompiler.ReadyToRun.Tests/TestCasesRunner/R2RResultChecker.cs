@@ -128,7 +128,7 @@ internal static class R2RAssert
         int entries = 0;
         for (; offset + 2 * sizeof(int) <= endOffset; offset += 2 * sizeof(int))
         {
-            int methodRva = BitConverter.ToInt32(reader.Image, offset);
+            int methodRva = BinaryPrimitives.ReadInt32LittleEndian(reader.Image.AsSpan(offset));
             if (methodRva == -1)
             {
                 break;
@@ -211,7 +211,7 @@ internal static class R2RAssert
         int entries = 0;
         for (int index = 0; index < count; index++, offset += runtimeFunctionSize)
         {
-            int startRva = BitConverter.ToInt32(reader.Image, offset);
+            int startRva = BinaryPrimitives.ReadInt32LittleEndian(reader.Image.AsSpan(offset));
             if (startRva == -1)
             {
                 break;
