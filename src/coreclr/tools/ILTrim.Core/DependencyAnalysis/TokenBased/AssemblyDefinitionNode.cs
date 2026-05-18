@@ -35,7 +35,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
         {
-            System.Diagnostics.Debug.Assert(_conditionalDependencies != null);
             return _conditionalDependencies;
         }
 

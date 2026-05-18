@@ -250,12 +250,17 @@ namespace ILCompiler.DependencyAnalysis
                 ReadOnlySpan<char> realMatch = match.Value.AsSpan(1, match.Value.Length - 2);
 
                 if (ContainsNqSuffixRegex.IsMatch(realMatch))
-                    realMatch = realMatch[..realMatch.LastIndexOf(',')];
+                {
+                    int commaIndex = realMatch.LastIndexOf(',');
+                    if (commaIndex >= 0)
+                        realMatch = realMatch[..commaIndex];
+                }
 
                 if (realMatch.EndsWith("()", StringComparison.Ordinal))
                 {
                     ReadOnlySpan<char> methodName = realMatch[..^2];
 
+                    // Calls to methods on some member are not supported.
                     if (methodName.Contains('.'))
                         continue;
 
