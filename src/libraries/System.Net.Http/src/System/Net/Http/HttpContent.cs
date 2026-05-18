@@ -852,7 +852,7 @@ namespace System.Net.Http
                 // All internal cleanup goes through ReturnAllPooledBuffers directly.
                 if (disposing)
                 {
-                    throw new NotSupportedException();
+                    throw new NotSupportedException("This stream is owned by HttpContent and must not be disposed by user code; doing so would corrupt ArrayPool.Shared and break other HttpContent operations.");
                 }
 
                 base.Dispose(disposing);

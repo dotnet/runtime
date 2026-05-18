@@ -306,29 +306,36 @@ namespace System.Net.Http.Tests
                     Assert.Equal(HttpRequestError.ConfigurationLimitExceeded, capacityEx.HttpRequestError);
 
                     var destination = new HttpContent.LimitArrayPoolWriteStream(maxBufferSize: actualSize + 42, expectedSize, getFinalSizeFromPool);
-                    WriteChunks(destination, actualSize);
+                    try
+                    {
+                        WriteChunks(destination, actualSize);
 
-                    if (!getFinalSizeFromPool && expectedSize == actualSize)
-                    {
-                        Assert.Equal(currentInput, destination.GetFirstBuffer());
-                        Assert.Equal(actualSize, destination.GetSingleBuffer().Length);
-                        Assert.Same(destination.ToArray(), destination.GetSingleBuffer());
-                    }
-                    else
-                    {
-                        Assert.True(currentInput.StartsWith(destination.GetFirstBuffer()));
-                    }
+                        if (!getFinalSizeFromPool && expectedSize == actualSize)
+                        {
+                            Assert.Equal(currentInput, destination.GetFirstBuffer());
+                            Assert.Equal(actualSize, destination.GetSingleBuffer().Length);
+                            Assert.Same(destination.ToArray(), destination.GetSingleBuffer());
+                        }
+                        else
+                        {
+                            Assert.True(currentInput.StartsWith(destination.GetFirstBuffer()));
+                        }
 
-                    destination.ReallocateIfPooled();
-                    Assert.Equal(currentInput, destination.CreateCopy());
+                        destination.ReallocateIfPooled();
+                        Assert.Equal(currentInput, destination.CreateCopy());
 
-                    if (getFinalSizeFromPool || actualSize == expectedSize)
-                    {
-                        Assert.Equal(actualSize, destination.GetSingleBuffer().Length);
+                        if (getFinalSizeFromPool || actualSize == expectedSize)
+                        {
+                            Assert.Equal(actualSize, destination.GetSingleBuffer().Length);
+                        }
+                        else
+                        {
+                            Assert.True(actualSize <= destination.GetSingleBuffer().Length);
+                        }
                     }
-                    else
+                    finally
                     {
-                        Assert.True(actualSize <= destination.GetSingleBuffer().Length);
+                        destination.ReturnAllPooledBuffers();
                     }
                 }
             }
