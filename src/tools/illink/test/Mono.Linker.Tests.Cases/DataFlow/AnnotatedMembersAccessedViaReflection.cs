@@ -895,6 +895,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             // is the delegate type (INamedTypeSymbol), not a method.
             delegate void DelegateWithDefaultParameter(Type type = null);
 
+            // Primary constructors generate operation blocks whose OwningSymbol
+            // is the containing type (INamedTypeSymbol), not the constructor.
+            class PrimaryConstructor(Type type)
+            {
+                Type _type = type;
+            }
+
             static void TestField()
             {
                 var d = new UnannotatedDelegate(field);
