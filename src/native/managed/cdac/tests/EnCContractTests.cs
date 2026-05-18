@@ -11,7 +11,7 @@ public class EnCContractTests
 {
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void GetLatestEnCVersion_ReturnsLatestVersionForKnownToken_DefaultForUnknownToken(MockTarget.Architecture arch)
+    public void GetLatestEnCVersion_ReturnsLatestVersion_DefaultsForUnregisteredToken(MockTarget.Architecture arch)
     {
         const ulong defaultVersion = 1;
         const uint methodToken = 0x06000042;
@@ -33,7 +33,7 @@ public class EnCContractTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void GetEnCVersion_ReturnsVersionForMatchingAddress_DefaultForNonMatchingOrNullAddress(MockTarget.Architecture arch)
+    public void GetEnCVersion_ReturnsMatchingVersion_DefaultsForMismatchOrNull(MockTarget.Architecture arch)
     {
         const ulong defaultVersion = 1;
         const uint methodToken = 0x06000042;
@@ -67,7 +67,7 @@ public class EnCContractTests
 
         MockLoaderModuleWithEnCDataList module = moduleLayout.Create(allocator.Allocate((ulong)moduleLayout.Size, "Module"));
 
-        ulong next = 0;
+        ulong headAddress = 0;
         for (int i = entries.Count - 1; i >= 0; i--)
         {
             var entry = entries[i];
@@ -75,11 +75,11 @@ public class EnCContractTests
             node.AddrOfCode = entry.AddrOfCode;
             node.Token = entry.Token;
             node.EnCVersion = entry.EnCVersion;
-            node.Next = next;
-            next = node.Address;
+            node.Next = headAddress;
+            headAddress = node.Address;
         }
 
-        module.EnCDataList = next;
+        module.EnCDataList = headAddress;
 
         targetBuilder
             .AddGlobals((Constants.Globals.CorDBDefaultEnCFunctionVersion, defaultVersion))
