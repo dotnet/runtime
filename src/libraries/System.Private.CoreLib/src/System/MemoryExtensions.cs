@@ -4340,7 +4340,7 @@ namespace System
                     return default;
                 }
 
-                ThrowHelper.ThrowInvalidOperationException();
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_NoElements);
             }
 
             return comparer is null || comparer == Comparer<T>.Default
@@ -4403,7 +4403,7 @@ namespace System
                     return default;
                 }
 
-                ThrowHelper.ThrowInvalidOperationException();
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_NoElements);
             }
 
             return comparer is null || comparer == Comparer<T>.Default
