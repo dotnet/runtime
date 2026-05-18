@@ -904,7 +904,7 @@ namespace Microsoft.Extensions.Logging.Test
                     }
                     else
                     {
-                        if (eventWrittenArgs.Payload[i] == null || IsPrimitive(eventWrittenArgs.Payload[i].GetType()))
+                        if (eventWrittenArgs.Payload[i] is null || IsPrimitive(eventWrittenArgs.Payload[i].GetType()))
                         {
                             writer.WriteValue(eventWrittenArgs.Payload[i]);
                         }
@@ -913,22 +913,11 @@ namespace Microsoft.Extensions.Logging.Test
                             var dictProperty = (IDictionary<string, object>)eventWrittenArgs.Payload[i];
                             // EventPayload claims to support IDictionary<string, object>, but you cannot get a KeyValuePair enumerator out of it
                             // So we need to serialize manually
-                            writer.WriteStartObject();
-
-                            for (int j = 0; j < dictProperty.Keys.Count; j++)
-                            {
-                                writer.WritePropertyName(dictProperty.Keys.ElementAt(j));
-                                writer.WriteValue(dictProperty.Values.ElementAt(j));
-                            }
-
-                            writer.WriteEndObject();
+                            WriteDictionary(writer, dictProperty);
                         }
                         else
                         {
-#pragma warning disable IL2026 // https://github.com/dotnet/runtime/issues/126862
-                            string serializedComplexValue = JsonConvert.SerializeObject(eventWrittenArgs.Payload[i]);
-#pragma warning restore IL2026
-                            writer.WriteRawValue(serializedComplexValue);
+                            WriteComplexValue(writer, eventWrittenArgs.Payload[i]);
                         }
                     }
                 }
@@ -937,9 +926,84 @@ namespace Microsoft.Extensions.Logging.Test
                 Events.Add(sw.ToString());
             }
 
-            private bool IsPrimitive(Type type)
+            private static void WriteComplexValue(JsonTextWriter writer, object value)
             {
-                return type == typeof(string) || type == typeof(int) || type == typeof(bool) || type == typeof(double);
+                if (value is IDictionary<string, object> dictionary)
+                {
+                    WriteDictionary(writer, dictionary);
+                }
+                else if (value is IEnumerable<KeyValuePair<string, string>> keyValuePairs)
+                {
+                    writer.WriteStartArray();
+
+                    foreach (KeyValuePair<string, string> keyValuePair in keyValuePairs)
+                    {
+                        writer.WriteStartObject();
+                        writer.WritePropertyName(nameof(KeyValuePair<string, string>.Key));
+                        writer.WriteValue(keyValuePair.Key);
+                        writer.WritePropertyName(nameof(KeyValuePair<string, string>.Value));
+                        writer.WriteValue(keyValuePair.Value);
+                        writer.WriteEndObject();
+                    }
+
+                    writer.WriteEndArray();
+                }
+                else if (value is object[] values)
+                {
+                    writer.WriteStartArray();
+
+                    foreach (object element in values)
+                    {
+                        WriteValue(writer, element);
+                    }
+
+                    writer.WriteEndArray();
+                }
+                else
+                {
+                    throw new InvalidOperationException($"Unexpected complex payload type: {value.GetType()}");
+                }
+            }
+
+            private static void WriteDictionary(JsonTextWriter writer, IDictionary<string, object> dictProperty)
+            {
+                writer.WriteStartObject();
+
+                for (int j = 0; j < dictProperty.Keys.Count; j++)
+                {
+                    writer.WritePropertyName(dictProperty.Keys.ElementAt(j));
+                    WriteValue(writer, dictProperty.Values.ElementAt(j));
+                }
+
+                writer.WriteEndObject();
+            }
+
+            private static void WriteValue(JsonTextWriter writer, object value)
+            {
+                if (value is null)
+                {
+                    writer.WriteNull();
+                }
+                else if (IsPrimitive(value.GetType()))
+                {
+                    if (value.GetType().IsEnum)
+                    {
+                        writer.WriteValue(Convert.ToInt32(value, CultureInfo.InvariantCulture));
+                    }
+                    else
+                    {
+                        writer.WriteValue(value);
+                    }
+                }
+                else
+                {
+                    WriteComplexValue(writer, value);
+                }
+            }
+
+            private static bool IsPrimitive(Type type)
+            {
+                return type.IsPrimitive || type.IsEnum || type == typeof(string) || type == typeof(decimal) || type == typeof(DateTime) || type == typeof(Guid);
             }
 
             private bool IsJsonProperty(int eventId, int propertyOrdinal, string propertyName)
