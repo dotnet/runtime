@@ -3483,7 +3483,7 @@ size_t CEEInfo::printClassName(CORINFO_CLASS_HANDLE cls, char* buffer, size_t bu
     mdTypeDef td = th.GetCl();
     if (IsNilToken(td))
     {
-        if (th.IsContinuation())
+        if (th.IsContinuationWithoutMetadata())
         {
             AsyncContinuationsManager::PrintContinuationName(
                 th.AsMethodTable(),
@@ -11506,18 +11506,24 @@ LPVOID CInterpreterJitInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* sz
     InterpreterCalliCookie result = NULL;
     JIT_TO_EE_TRANSITION();
 
-    // When compiling a calli inside an IL stub for a P/Invoke, pass the target
-    // P/Invoke MethodDesc so ComputeCallStub can detect the Swift calling convention.
-    // Do not cache the cookie on pContextMD: MethodDesc::CalliCookie is for
-    // calling the target via managed calling convention. The stub we are about
-    // to generate calls the target via unmanaged calling convention.
+    // Pass the target P/Invoke MethodDesc as pContextMD so ComputeCallStub can
+    // detect the Swift calling convention. Do not cache the cookie on pContextMD:
+    // MethodDesc::CalliCookie is for the managed calling convention; the stub
+    // we generate calls the target via unmanaged calling convention.
     MethodDesc* pContextMD = nullptr;
-    if (m_pMethodBeingCompiled != nullptr && m_pMethodBeingCompiled->IsILStub())
+    if (m_pMethodBeingCompiled != nullptr)
     {
-        MethodDesc* pTargetMD = m_pMethodBeingCompiled->AsDynamicMethodDesc()->GetILStubResolver()->GetStubTargetMethodDesc();
-        if (pTargetMD != nullptr)
+        if (m_pMethodBeingCompiled->IsILStub())
         {
-            pContextMD = pTargetMD;
+            MethodDesc* pTargetMD = m_pMethodBeingCompiled->AsDynamicMethodDesc()->GetILStubResolver()->GetStubTargetMethodDesc();
+            if (pTargetMD != nullptr)
+            {
+                pContextMD = pTargetMD;
+            }
+        }
+        else if (m_pMethodBeingCompiled->IsPInvoke())
+        {
+            pContextMD = m_pMethodBeingCompiled;
         }
     }
 
