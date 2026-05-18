@@ -109,39 +109,31 @@ namespace System.Net.Security
             return token;
         }
 
-        // Direct-decrypt to user buffer is supported only on the OpenSSL-backed Unix PAL.
-        internal const bool IsDirectDecryptSupported = false;
-
-        public static SecurityStatusPal DecryptMessageDirect(
-            SafeDeleteSslContext securityContext,
-            ReadOnlySpan<byte> input,
-            Span<byte> output,
-            out int outputWritten,
-            out int plaintextPending)
-        {
-            throw new System.PlatformNotSupportedException();
-        }
-
         public static SecurityStatusPal DecryptMessage(
             SafeDeleteSslContext securityContext,
-            Span<byte> buffer,
-            out int offset,
-            out int count)
+            Span<byte> encrypted,
+            Span<byte> destination,
+            out int bytesWritten,
+            out int leftoverOffset,
+            out int leftoverLength)
         {
-            offset = 0;
-            count = 0;
+            // The Android SSLStream PAL always decrypts in-place; `destination` is unused.
+            _ = destination;
+            bytesWritten = 0;
+            leftoverOffset = 0;
+            leftoverLength = 0;
 
             try
             {
                 SafeSslHandle sslHandle = securityContext.SslContext;
 
-                securityContext.Write(buffer);
+                securityContext.Write(encrypted);
 
-                PAL_SSLStreamStatus ret = Interop.AndroidCrypto.SSLStreamRead(sslHandle, buffer, out int read);
+                PAL_SSLStreamStatus ret = Interop.AndroidCrypto.SSLStreamRead(sslHandle, encrypted, out int read);
                 if (ret == PAL_SSLStreamStatus.Error)
                     return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError);
 
-                count = read;
+                leftoverLength = read;
 
                 SecurityStatusPalErrorCode statusCode = ret switch
                 {

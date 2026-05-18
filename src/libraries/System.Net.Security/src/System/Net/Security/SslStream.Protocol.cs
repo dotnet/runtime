@@ -988,23 +988,32 @@ namespace System.Net.Security
             return token;
         }
 
-        internal SecurityStatusPal Decrypt(Span<byte> buffer, out int outputOffset, out int outputCount)
+        internal SecurityStatusPal Decrypt(
+            Span<byte> encrypted,
+            Span<byte> destination,
+            out int bytesWritten,
+            out int leftoverOffset,
+            out int leftoverLength)
         {
-            SecurityStatusPal status = SslStreamPal.DecryptMessage(_securityContext!, buffer, out outputOffset, out outputCount);
+            SecurityStatusPal status = SslStreamPal.DecryptMessage(
+                _securityContext!,
+                encrypted,
+                destination,
+                out bytesWritten,
+                out leftoverOffset,
+                out leftoverLength);
+
             if (NetEventSource.Log.IsEnabled() && status.ErrorCode == SecurityStatusPalErrorCode.OK)
             {
-                NetEventSource.DumpBuffer(this, buffer.Slice(outputOffset, outputCount));
-            }
+                if (bytesWritten > 0)
+                {
+                    NetEventSource.DumpBuffer(this, destination.Slice(0, bytesWritten));
+                }
 
-            return status;
-        }
-
-        internal SecurityStatusPal DecryptDirect(ReadOnlySpan<byte> input, Span<byte> output, out int outputWritten, out int plaintextPending)
-        {
-            SecurityStatusPal status = SslStreamPal.DecryptMessageDirect(_securityContext!, input, output, out outputWritten, out plaintextPending);
-            if (NetEventSource.Log.IsEnabled() && status.ErrorCode == SecurityStatusPalErrorCode.OK)
-            {
-                NetEventSource.DumpBuffer(this, output.Slice(0, outputWritten));
+                if (leftoverLength > 0)
+                {
+                    NetEventSource.DumpBuffer(this, encrypted.Slice(leftoverOffset, leftoverLength));
+                }
             }
 
             return status;

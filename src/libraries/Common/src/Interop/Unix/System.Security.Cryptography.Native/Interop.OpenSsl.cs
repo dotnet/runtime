@@ -865,7 +865,8 @@ internal static partial class Interop
             SafeSslHandle context,
             ReadOnlySpan<byte> input,
             Span<byte> output,
-            out int plaintextPending,
+            out int leftoverOffset,
+            out int leftoverLength,
             out Ssl.SslErrorCode errorCode)
         {
             int retVal;
@@ -878,10 +879,11 @@ internal static partial class Interop
                     input.Length,
                     outputPtr,
                     output.Length,
-                    out plaintextPending,
+                    out leftoverOffset,
+                    out leftoverLength,
                     out errorCode);
             }
-            if (retVal > 0)
+            if (retVal + leftoverLength > 0)
             {
                 return retVal;
             }

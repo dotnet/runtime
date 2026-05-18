@@ -602,20 +602,17 @@ namespace System.Net.Security
         }
 
         // Direct-decrypt to user buffer is supported only on the OpenSSL-backed Unix PAL.
-        internal const bool IsDirectDecryptSupported = false;
-
-        public static SecurityStatusPal DecryptMessageDirect(
-            SafeDeleteSslContext securityContext,
-            ReadOnlySpan<byte> input,
-            Span<byte> output,
-            out int outputWritten,
-            out int plaintextPending)
+        public static unsafe SecurityStatusPal DecryptMessage(
+            SafeDeleteSslContext? securityContext,
+            Span<byte> encrypted,
+            Span<byte> destination,
+            out int bytesWritten,
+            out int leftoverOffset,
+            out int leftoverLength)
         {
-            throw new System.PlatformNotSupportedException();
-        }
-
-        public static unsafe SecurityStatusPal DecryptMessage(SafeDeleteSslContext? securityContext, Span<byte> buffer, out int offset, out int count)
-        {
+            // SChannel always decrypts in-place; the caller-provided `destination` is unused.
+            _ = destination;
+            bytesWritten = 0;
             const int NumSecBuffers = 4; // data + empty + empty + empty
 
             Span<Interop.SspiCli.SecBuffer> unmanagedBuffers = stackalloc Interop.SspiCli.SecBuffer[NumSecBuffers];
@@ -627,12 +624,12 @@ namespace System.Net.Security
                 emptyBuffer.cbBuffer = 0;
             }
 
-            fixed (byte* bufferPtr = buffer)
+            fixed (byte* bufferPtr = encrypted)
             {
                 ref Interop.SspiCli.SecBuffer dataBuffer = ref unmanagedBuffers[0];
                 dataBuffer.BufferType = SecurityBufferType.SECBUFFER_DATA;
                 dataBuffer.pvBuffer = (IntPtr)bufferPtr;
-                dataBuffer.cbBuffer = buffer.Length;
+                dataBuffer.cbBuffer = encrypted.Length;
 
                 Interop.SspiCli.SecBufferDesc sdcInOut = new Interop.SspiCli.SecBufferDesc(NumSecBuffers)
                 {
@@ -642,8 +639,8 @@ namespace System.Net.Security
 
                 // Decrypt may repopulate the sec buffers, likely with header + data + trailer + empty.
                 // We need to find the data.
-                count = 0;
-                offset = 0;
+                leftoverLength = 0;
+                leftoverOffset = 0;
                 for (int i = 0; i < NumSecBuffers; i++)
                 {
                     // Successfully decoded data and placed it at the following position in the buffer,
@@ -651,12 +648,12 @@ namespace System.Net.Security
                         // or we failed to decode the data, here is the encoded data.
                         || (errorCode != Interop.SECURITY_STATUS.OK && unmanagedBuffers[i].BufferType == SecurityBufferType.SECBUFFER_EXTRA))
                     {
-                        offset = (int)((byte*)unmanagedBuffers[i].pvBuffer - bufferPtr);
-                        count = unmanagedBuffers[i].cbBuffer;
+                        leftoverOffset = (int)((byte*)unmanagedBuffers[i].pvBuffer - bufferPtr);
+                        leftoverLength = unmanagedBuffers[i].cbBuffer;
 
-                        // output is ignored on Windows. We always decrypt in place and we set outputOffset to indicate where the data start.
-                        Debug.Assert(offset >= 0 && count >= 0, $"Expected offset and count greater than 0, got {offset} and {count}");
-                        Debug.Assert(checked(offset + count) <= buffer.Length, $"Expected offset+count <= buffer.Length, got {offset}+{count}>={buffer.Length}");
+                        // destination is ignored on Windows. We always decrypt in place and we set leftoverOffset to indicate where the data start.
+                        Debug.Assert(leftoverOffset >= 0 && leftoverLength >= 0, $"Expected offset and count greater than 0, got {leftoverOffset} and {leftoverLength}");
+                        Debug.Assert(checked(leftoverOffset + leftoverLength) <= encrypted.Length, $"Expected offset+count <= buffer.Length, got {leftoverOffset}+{leftoverLength}>={encrypted.Length}");
 
                         break;
                     }

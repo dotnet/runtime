@@ -203,42 +203,35 @@ namespace System.Net.Security
             return token;
         }
 
-        // Direct-decrypt to user buffer is supported only on the OpenSSL-backed Unix PAL.
-        internal const bool IsDirectDecryptSupported = false;
-
-        public static SecurityStatusPal DecryptMessageDirect(
-            SafeDeleteSslContext securityContext,
-            ReadOnlySpan<byte> input,
-            Span<byte> output,
-            out int outputWritten,
-            out int plaintextPending)
-        {
-            throw new System.PlatformNotSupportedException();
-        }
-
         public static SecurityStatusPal DecryptMessage(
             SafeDeleteContext securityContext,
-            Span<byte> buffer,
-            out int offset,
-            out int count)
+            Span<byte> encrypted,
+            Span<byte> destination,
+            out int bytesWritten,
+            out int leftoverOffset,
+            out int leftoverLength)
         {
+            // SecureTransport always decrypts in-place; `destination` is unused.
+            _ = destination;
+            bytesWritten = 0;
+
             Debug.Assert(securityContext is SafeDeleteSslContext, "SafeDeleteSslContext expected");
             SafeDeleteSslContext sslContext = (SafeDeleteSslContext)securityContext;
 
-            offset = 0;
-            count = 0;
+            leftoverOffset = 0;
+            leftoverLength = 0;
 
             try
             {
                 SafeSslHandle sslHandle = sslContext.SslContext;
 
-                sslContext.Write(buffer);
+                sslContext.Write(encrypted);
 
                 unsafe
                 {
-                    fixed (byte* ptr = buffer)
+                    fixed (byte* ptr = encrypted)
                     {
-                        PAL_TlsIo status = Interop.AppleCrypto.SslRead(sslHandle, ptr, buffer.Length, out int written);
+                        PAL_TlsIo status = Interop.AppleCrypto.SslRead(sslHandle, ptr, encrypted.Length, out int written);
                         if (status < 0)
                         {
                             return new SecurityStatusPal(
@@ -246,8 +239,8 @@ namespace System.Net.Security
                                 Interop.AppleCrypto.CreateExceptionForOSStatus((int)status));
                         }
 
-                        count = written;
-                        offset = 0;
+                        leftoverLength = written;
+                        leftoverOffset = 0;
 
                         switch (status)
                         {

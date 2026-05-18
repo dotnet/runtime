@@ -149,7 +149,8 @@ internal static partial class Interop
             int inputLen,
             byte* outputPtr,
             int outputCap,
-            out int plaintextPending,
+            out int leftoverOffset,
+            out int leftoverLength,
             out SslErrorCode errorCode);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_IsSslStateOK")]

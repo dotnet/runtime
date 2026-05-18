@@ -377,11 +377,12 @@ receives SSL_get_error.
 */
 PALEXPORT int32_t CryptoNative_SslDecrypt(
     SSL* ssl,
-    const uint8_t* inputPtr,
+    uint8_t* inputPtr,
     int32_t inputLen,
     uint8_t* outputPtr,
     int32_t outputCap,
-    int32_t* plaintextPending,
+    int32_t* leftoverOffset,
+    int32_t* leftoverLength,
     int32_t* errorCode);
 
 /*
