@@ -143,6 +143,7 @@ typedef void (*FP_ASSEMBLY_ENUMERATION_CALLBACK)(VMPTR_Assembly vmAssembly, CALL
 typedef void (*FP_MODULE_ENUMERATION_CALLBACK)(VMPTR_Assembly vmAssembly, CALLBACK_DATA pUserData);
 typedef void (*FP_THREAD_ENUMERATION_CALLBACK)(VMPTR_Thread vmThread, CALLBACK_DATA pUserData);
 typedef BOOL (*FP_INTERNAL_FRAME_ENUMERATION_CALLBACK)(FramePointer fpFrame, CALLBACK_DATA pUserData);
+typedef void (*FP_HEAPSEGMENT_CALLBACK)(CORDB_ADDRESS rangeStart, CORDB_ADDRESS rangeEnd, int generation, ULONG heap, CALLBACK_DATA pUserData);
 
 
 //
@@ -378,7 +379,7 @@ interface IDacDbiInterface : IUnknown
     HRESULT CreateHeapWalk([out] HeapWalkHandle * pHandle);
     HRESULT DeleteHeapWalk([in] HeapWalkHandle handle);
     HRESULT WalkHeap([in] HeapWalkHandle handle, [in] ULONG count, [out] COR_HEAPOBJECT * objects, [out] ULONG * pFetched);
-    HRESULT GetHeapSegments([out] DacDbiArrayList_COR_SEGMENT * pSegments);
+    HRESULT EnumerateHeapSegments([in] FP_HEAPSEGMENT_CALLBACK fpCallback, [in] CALLBACK_DATA pUserData);
     HRESULT IsValidObject([in] CORDB_ADDRESS obj, [out] BOOL * pResult);
 
     // Reference Walking
