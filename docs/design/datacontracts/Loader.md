@@ -721,7 +721,7 @@ TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out Tar
 
 // Returns the MethodDesc pointer for the given mdMemberRef token, or TargetPointer.Null
 // if the entry is a FieldDesc (flagged with IS_FIELD_MEMBER_REF) or not present.
-TargetPointer LookupMemberRefAsMethod(ModuleHandle handle, uint memberRefToken);
+TargetPointer LookupMemberRefAsMethod(ModuleHandle handle, uint memberRefToken)
 {
     ModuleLookupTables tables = GetLookupTables(handle);
     TargetPointer ptr = GetModuleLookupMapElement(tables.MemberRefToDesc, memberRefToken, out TargetNUInt flags);

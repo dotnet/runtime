@@ -1325,7 +1325,16 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 TargetCodePointer nativeCode = rts.GetNativeCode(md);
                 if (nativeCode.Value != 0)
                 {
-                    FillRegionInfoAndGenericInstantiation(rts, md, nativeCode, pCodeInfo);
+                    // GetNativeCode can return an interpreter precode. Resolve to the
+                    // actual interpreter/jitted code address before asking for region info,
+                    // matching native GetMethodRegionInfo's GetCodeForInterpreterOrJitted path.
+                    TargetCodePointer regionCode = rts.GetCodeForInterpreterOrJitted(md);
+                    if (regionCode.Value == 0)
+                    {
+                        regionCode = nativeCode;
+                    }
+
+                    FillRegionInfoAndGenericInstantiation(rts, md, regionCode, pCodeInfo);
 
                     // Look up EnC version on the method desc's loader module.
                     TargetPointer loaderModule = GetLoaderModule(rts, md);
@@ -1377,7 +1386,10 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 Contracts.IExecutionManager em = _target.Contracts.ExecutionManager;
                 Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
 
-                Contracts.CodeBlockHandle? cbh = em.GetCodeBlockHandle(new TargetCodePointer(codeAddress));
+                TargetCodePointer lookupAddress = new TargetCodePointer(codeAddress);
+                lookupAddress = PrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent(_target, lookupAddress);
+
+                Contracts.CodeBlockHandle? cbh = em.GetCodeBlockHandle(lookupAddress);
                 if (cbh is null)
                     throw new ArgumentException("No code block found for the given address.", nameof(codeAddress));
                 TargetPointer mdAddr = em.GetMethodDesc(cbh.Value);
