@@ -1314,6 +1314,33 @@ namespace System.Text.Json.Serialization.Tests
             Empty,
         }
 
+        [Fact]
+        public static void EnumWithEmptyStringMemberName_Flags_Throws()
+        {
+            string expectedExceptionMessage = $"Enum type '{nameof(YesOrNoOrEmptyFlags)}' uses unsupported identifier ''.";
+
+            InvalidOperationException ex = Assert.Throws<InvalidOperationException>(
+                () => JsonSerializer.Serialize(YesOrNoOrEmptyFlags.Yes, s_optionsWithStringEnumConverter));
+            Assert.Contains(expectedExceptionMessage, ex.Message);
+
+            ex = Assert.Throws<InvalidOperationException>(
+                () => JsonSerializer.Deserialize<YesOrNoOrEmptyFlags>("\"y\"", s_optionsWithStringEnumConverter));
+            Assert.Contains(expectedExceptionMessage, ex.Message);
+        }
+
+        [Flags]
+        public enum YesOrNoOrEmptyFlags
+        {
+            [JsonStringEnumMemberName("y")]
+            Yes = 1,
+
+            [JsonStringEnumMemberName("n")]
+            No = 2,
+
+            [JsonStringEnumMemberName("")]
+            Empty = 4,
+        }
+
         [Theory]
         [InlineData("\"cAmElCaSe\"", EnumWithVaryingNamingPolicies.camelCase, JsonKnownNamingPolicy.SnakeCaseUpper)]
         [InlineData("\"cAmElCaSe\"", EnumWithVaryingNamingPolicies.camelCase, JsonKnownNamingPolicy.SnakeCaseLower)]
