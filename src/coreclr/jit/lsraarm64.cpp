@@ -851,6 +851,8 @@ int LinearScan::BuildNode(GenTree* tree)
 
                     case SimdScalableSequence:
                     {
+                        canEncodeScalar = true;
+
                         if (!emitter::isValidSimm<5>(index))
                         {
                             canEncodeScalar = false;
