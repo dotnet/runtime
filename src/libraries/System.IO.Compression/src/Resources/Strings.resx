@@ -413,4 +413,7 @@
   <data name="ForwardReadNoDataStream" xml:space="preserve">
     <value>This entry has no data to read. It may be a directory entry or an empty entry.</value>
   </data>
+  <data name="ForwardReadEntryAlreadyOpened" xml:space="preserve">
+    <value>The entry has already been opened and cannot be opened again in ForwardRead mode.</value>
+  </data>
 </root>

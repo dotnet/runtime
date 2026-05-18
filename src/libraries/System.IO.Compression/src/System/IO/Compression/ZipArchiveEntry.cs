@@ -282,8 +282,8 @@ namespace System.IO.Compression
             set
             {
                 ThrowIfInvalidArchive();
-                if (_archive.Mode == ZipArchiveMode.ForwardRead)
-                    throw new NotSupportedException(SR.ForwardReadOnly);
+                if (_archive.Mode is ZipArchiveMode.Read or ZipArchiveMode.ForwardRead)
+                    throw new NotSupportedException(SR.ReadOnlyArchive);
                 _externalFileAttr = (uint)value;
                 Changes |= ZipArchive.ChangeState.FixedLengthMetadata;
             }
@@ -302,8 +302,8 @@ namespace System.IO.Compression
             get => DecodeEntryString(_fileComment);
             set
             {
-                if (_archive.Mode == ZipArchiveMode.ForwardRead)
-                    throw new NotSupportedException(SR.ForwardReadOnly);
+                if (_archive.Mode is ZipArchiveMode.Read or ZipArchiveMode.ForwardRead)
+                    throw new NotSupportedException(SR.ReadOnlyArchive);
                 _fileComment = ZipHelper.GetEncodedTruncatedBytesFromString(value, _archive.EntryNameAndCommentEncoding, ushort.MaxValue, out bool isUTF8);
 
                 if (isUTF8)
@@ -942,7 +942,7 @@ namespace System.IO.Compression
             if (_forwardReadDataStream is null)
                 throw new InvalidOperationException(SR.ForwardReadNoDataStream);
             if (_forwardReadStreamOpened)
-                throw new IOException(SR.ForwardReadOnly);
+                throw new IOException(SR.ForwardReadEntryAlreadyOpened);
 
             // For known-size entries, the data stream is a raw bounded stream —
             // lazily wrap it with decompressor + CRC validation on first Open().

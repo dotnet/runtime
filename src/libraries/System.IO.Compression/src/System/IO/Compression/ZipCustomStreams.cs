@@ -788,8 +788,13 @@ namespace System.IO.Compression
         }
 
         public override bool CanRead => !_isDisposed && _baseStream.CanRead;
-        // Must report true: DeflateStream checks CanSeek to rewind unconsumed bytes
-        // after decompression finishes, which is critical for data descriptor entries.
+        // Reports true so that DeflateStream will attempt to rewind unconsumed bytes via
+        // Seek(SeekOrigin.Current, -N) after decompression finishes. This is the only seek
+        // form supported — it replays bytes from the history buffer without touching the
+        // underlying non-seekable stream. All other seek forms (Begin, End, Position setter)
+        // throw NotSupportedException. This intentional contract narrowing is safe because
+        // ReadAheadStream is an internal type only used in forward-read mode, and
+        // DeflateStream.TryRewindStream handles seek failures via a bare catch block.
         public override bool CanSeek => !_isDisposed;
         public override bool CanWrite => false;
 
