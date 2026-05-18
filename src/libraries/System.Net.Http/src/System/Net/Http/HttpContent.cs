@@ -412,7 +412,7 @@ namespace System.Net.Http
             }
             catch (Exception e)
             {
-                tempBuffer.Dispose();
+                tempBuffer.ReturnAllPooledBuffers();
 
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, e);
 
@@ -499,7 +499,7 @@ namespace System.Net.Http
             }
             catch (Exception e)
             {
-                tempBuffer.Dispose();
+                tempBuffer.ReturnAllPooledBuffers();
 
                 if (StreamCopyExceptionNeedsWrapping(e))
                 {
@@ -519,7 +519,7 @@ namespace System.Net.Http
             }
             catch (Exception e)
             {
-                tempBuffer.Dispose(); // Cleanup partially filled stream.
+                tempBuffer.ReturnAllPooledBuffers(); // Cleanup partially filled stream.
                 Exception we = GetStreamCopyException(e);
                 if (we != e) throw we;
                 throw;
@@ -653,7 +653,7 @@ namespace System.Net.Http
 
                 if (IsBuffered)
                 {
-                    _bufferedContent.Dispose();
+                    _bufferedContent.ReturnAllPooledBuffers();
                 }
             }
         }
@@ -843,7 +843,18 @@ namespace System.Net.Http
 
             protected override void Dispose(bool disposing)
             {
-                ReturnAllPooledBuffers();
+                // User code must never dispose this stream. It is an internal implementation detail
+                // exposed to user-provided HttpContent.SerializeToStream(Async) overrides, and the
+                // lifetime of the underlying pooled buffers is owned by HttpContent, not the user.
+                // Returning those buffers more than once would corrupt ArrayPool.Shared process-wide
+                // and also break other HttpContent operations (e.g. ReadAsByteArrayAsync, ReadBufferAsString,
+                // ReadAsStreamAsync) which assume the stream is still populated.
+                // All internal cleanup goes through ReturnAllPooledBuffers directly.
+                if (disposing)
+                {
+                    throw new NotSupportedException();
+                }
+
                 base.Dispose(disposing);
             }
 
@@ -1075,7 +1086,7 @@ namespace System.Net.Http
                 _lastBuffer.AsSpan(0, _lastBufferOffset).CopyTo(destination);
             }
 
-            private void ReturnAllPooledBuffers()
+            internal void ReturnAllPooledBuffers()
             {
                 if (_pooledBuffers is byte[]?[] buffers)
                 {
