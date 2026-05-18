@@ -3346,10 +3346,11 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 {
                     retNode = gtNewSimdNarrowNode(retType, op1, op2, simdBaseType, simdSize);
                 }
-                else if (((simdSize == 16) || (simdSize == 32)) && ((simdBaseType == TYP_BYTE) || (simdBaseType == TYP_SHORT)))
+                else if (((simdSize == 16) || (simdSize == 32)) &&
+                         ((simdBaseType == TYP_BYTE) || (simdBaseType == TYP_SHORT)))
                 {
                     intrinsic = (simdSize == 32) ? NI_AVX2_PackSignedSaturate : NI_X86Base_PackSignedSaturate;
-                    retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseType, simdSize);
+                    retNode   = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseType, simdSize);
 
                     if (simdSize == 32)
                     {
@@ -3487,7 +3488,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     if (varTypeIsSmall(simdBaseType))
                     {
                         intrinsic = (simdSize == 32) ? NI_AVX2_PackUnsignedSaturate : NI_X86Base_PackUnsignedSaturate;
-                        retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseType, simdSize);
+                        retNode   = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseType, simdSize);
 
                         if (simdSize == 32)
                         {
