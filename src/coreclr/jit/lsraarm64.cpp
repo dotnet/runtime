@@ -817,7 +817,7 @@ int LinearScan::BuildNode(GenTree* tree)
 
                     default:
                     {
-                        unreached();
+                        break;
                     }
                 }
 
