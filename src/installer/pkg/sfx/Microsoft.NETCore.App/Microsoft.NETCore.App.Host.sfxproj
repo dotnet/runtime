@@ -100,8 +100,10 @@
           BeforeTargets="GetFilesToPackage"
           Condition="'$(TargetOS)' == 'windows'">
     <PropertyGroup>
-      <_CatStagingDir>$(IntermediateOutputPath)apphost-catalog\</_CatStagingDir>
-      <_CatalogFilePath>$(DotNetHostBinDir)apphost-templates.cat</_CatalogFilePath>
+      <_CatStagingDir>$(IntermediateOutputPath)apphost-catalog/</_CatStagingDir>
+      <_CatalogFilePath>$(IntermediateOutputPath)apphost-templates.cat</_CatalogFilePath>
+      <_PowerShellCommand Condition="'$(_PowerShellCommand)' == '' and Exists('$(SystemRoot)\System32\WindowsPowerShell\v1.0\powershell.exe')">"$(SystemRoot)\System32\WindowsPowerShell\v1.0\powershell.exe"</_PowerShellCommand>
+      <_PowerShellCommand Condition="'$(_PowerShellCommand)' == ''">powershell.exe</_PowerShellCommand>
     </PropertyGroup>
 
     <!-- Stage the unsigned template files in an isolated directory for catalog generation -->
@@ -111,10 +113,16 @@
     <Copy SourceFiles="$(DotNetHostBinDir)singlefilehost.exe" DestinationFolder="$(_CatStagingDir)" Condition="Exists('$(DotNetHostBinDir)singlefilehost.exe')" />
     <Copy SourceFiles="$(DotNetHostBinDir)comhost.dll" DestinationFolder="$(_CatStagingDir)" Condition="Exists('$(DotNetHostBinDir)comhost.dll')" />
 
-    <Exec Command="powershell.exe -NoProfile -NonInteractive -Command &quot;New-FileCatalog -Path '$(_CatStagingDir)' -CatalogFilePath '$(_CatalogFilePath)' -CatalogVersion 2&quot;" />
+    <!-- Guard: only generate catalog if at least one template file was staged -->
+    <ItemGroup>
+      <_StagedTemplateFiles Include="$(_CatStagingDir)**/*" />
+    </ItemGroup>
+
+    <Exec Command="$(_PowerShellCommand) -NoProfile -NonInteractive -Command &quot;New-FileCatalog -Path '$(_CatStagingDir)' -CatalogFilePath '$(_CatalogFilePath)' -CatalogVersion 2&quot;"
+          Condition="'@(_StagedTemplateFiles)' != ''" />
 
     <ItemGroup>
-      <FilesToPackage Include="$(_CatalogFilePath)" />
+      <FilesToPackage Include="$(_CatalogFilePath)" Condition="Exists('$(_CatalogFilePath)')" />
     </ItemGroup>
   </Target>
 </Project>
