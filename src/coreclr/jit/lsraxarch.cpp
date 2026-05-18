@@ -862,7 +862,7 @@ int LinearScan::BuildRMWUses(
     {
         RefPositionIterator op1UsesPrev = refPositions.backPosition();
 
-        if (op1UsesPrev != refPositions.end())
+        if ((op1UsesPrev != refPositions.end()) && (op2 != nullptr))
         {
             if (op1->isContained())
             {
@@ -937,9 +937,8 @@ int LinearScan::BuildRMWUses(
                             setDelayFree(&*op1Use);
                             break;
                         }
-
-                        ++op2Use;
                     }
+                    ++op2Use;
                 }
             }
 
@@ -1104,9 +1103,8 @@ int LinearScan::BuildSelect(GenTreeOp* select)
                     setDelayFree(&*op1Use);
                     break;
                 }
-
-                ++op2Use;
             }
+            ++op2Use;
         }
     }
 
