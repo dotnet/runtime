@@ -22,9 +22,7 @@ endif()
 # expressions are caught early. Any helper or comparison that is only meaningful
 # under a target/DEBUG #ifdef must be guarded by the same condition.
 if (CLR_CMAKE_HOST_UNIX OR CLR_CMAKE_HOST_WASI)
-  get_directory_property(JIT_COMPILE_OPTIONS COMPILE_OPTIONS)
-  list(REMOVE_ITEM JIT_COMPILE_OPTIONS -Wno-unused-function -Wno-tautological-compare -Wno-unused-value)
-  set_directory_properties(PROPERTIES COMPILE_OPTIONS "${JIT_COMPILE_OPTIONS}")
+  add_compile_options(-Wunused-function -Wtautological-compare -Wunused-value)
 endif()
 
 function(create_standalone_jit)
