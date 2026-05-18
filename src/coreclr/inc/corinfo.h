@@ -429,7 +429,6 @@ enum CorInfoHelpFunc
 
     CORINFO_HELP_ASSIGN_REF,        // universal helpers with F_CALL_CONV calling convention
     CORINFO_HELP_CHECKED_ASSIGN_REF,
-    CORINFO_HELP_ASSIGN_REF_ENSURE_NONHEAP,  // Do the store, and ensure that the target was not in the heap.
 
     CORINFO_HELP_ASSIGN_BYREF,
     CORINFO_HELP_BULK_WRITEBARRIER,
@@ -1976,6 +1975,7 @@ struct CORINFO_AsyncResumeInfo
     // Pointer in main code for diagnostics. See comments on
     // ICorDebugInfo::AsyncSuspensionPoint::DiagnosticNativeOffset and
     // ResumeInfo.DiagnosticIP in SPC.
+    // This can be null for handrolled continuations without diagnostics.
     TARGET_SIZE_T DiagnosticIP;
 };
 

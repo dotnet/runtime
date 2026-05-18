@@ -10709,11 +10709,9 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
                 m_longParamField++;
                 break;
 #endif
-#ifdef JIT32_GCENCODER
             case DoNotEnregisterReason::PinningRef:
                 m_PinningRef++;
                 break;
-#endif
             case DoNotEnregisterReason::LclAddrNode:
                 m_lclAddrNode++;
                 break;
@@ -10869,9 +10867,7 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
 #if !defined(TARGET_64BIT)
     PRINT_STATS(m_longParamField, notEnreg);
 #endif // !TARGET_64BIT
-#ifdef JIT32_GCENCODER
     PRINT_STATS(m_PinningRef, notEnreg);
-#endif // JIT32_GCENCODER
     PRINT_STATS(m_lclAddrNode, notEnreg);
     PRINT_STATS(m_castTakesAddr, notEnreg);
     PRINT_STATS(m_storeBlkSrc, notEnreg);
