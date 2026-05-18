@@ -33,8 +33,6 @@ public struct DacDbiTargetBuffer
     public uint cbSize;
 }
 
-// Mirrors the native NativeCodeFunctionData class defined in
-// src/coreclr/debug/inc/dacdbistructures.h.
 [StructLayout(LayoutKind.Sequential)]
 public struct NativeCodeFunctionData
 {
