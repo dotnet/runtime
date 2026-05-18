@@ -1302,6 +1302,15 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(value, JsonSerializer.Deserialize<YesOrNoOrEmpty>(json, s_optionsWithStringEnumConverter));
         }
 
+        [Theory]
+        [InlineData("\"y, , n\"")]
+        [InlineData("\",\"")]
+        [InlineData("\"y,n\"")]
+        public static void EnumWithEmptyStringMemberName_NonFlags_DoesNotParseCommaSeparatedValues(string json)
+        {
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<YesOrNoOrEmpty>(json, s_optionsWithStringEnumConverter));
+        }
+
         public enum YesOrNoOrEmpty
         {
             [JsonStringEnumMemberName("y")]
