@@ -7450,10 +7450,10 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
             break;
 
         case INS_lay:
-	    assert(size == EA_8BYTE);
-	    isSimple = false;
-	    scale    = 0;
-	    break;
+            assert(size == EA_8BYTE);
+            isSimple = false;
+            scale    = 0;
+            break;
 #if 0
         case INS_lea:
             assert(size == EA_8BYTE);

@@ -646,7 +646,7 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 {
     //EX_THROW(HRException, (E_FAIL));
-    _ASSERTE(!"NYI");
+    //_ASSERTE(!"NYI");
     GenTree* dstAddr = blkNode->Addr();
     GenTree* src     = blkNode->Data();
     unsigned size    = blkNode->Size();
@@ -685,13 +685,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 
             ssize_t fill = src->AsIntCon()->IconValue() & 0xFF;
 
-            if (fill == 0)
-            {
-                // On ARM64 we can just use REG_ZR instead of having to load
-                // the constant into a real register like on ARM32.
-                src->SetContained();
-            }
-            else if (size >= REGSIZE_BYTES)
+            if (size >= REGSIZE_BYTES)
             {
                 fill *= 0x0101010101010101LL;
                 src->gtType = TYP_LONG;
@@ -707,11 +701,8 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         }
         else if (blkNode->IsZeroingGcPointersOnHeap())
         {
-            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindLoop;
-            // On ARM64 we can just use REG_ZR instead of having to load
-            // the constant into a real register like on ARM32.
-            src->SetContained();
-        }
+	    blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindLoop;
+	}
         else
         {
             LowerBlockStoreAsHelperCall(blkNode);
@@ -789,7 +780,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 //
 void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenTree* addr, GenTree* addrParent)
 {
-    _ASSERTE(!"NYI");
+    //_ASSERTE(!"NYI");
 //#if 0
     assert(blkNode->OperIs(GT_STORE_BLK) && (blkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindUnroll));
     assert(size < INT32_MAX);
