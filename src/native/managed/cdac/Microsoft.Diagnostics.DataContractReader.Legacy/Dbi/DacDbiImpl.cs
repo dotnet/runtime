@@ -1336,11 +1336,11 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
                     FillRegionInfoAndGenericInstantiation(rts, md, regionCode, pCodeInfo);
 
-                    // Look up EnC version on the method desc's loader module.
+                    // Look up the latest EnC version on the method desc's loader module.
                     TargetPointer loaderModule = GetLoaderModule(rts, md);
                     if (_target.Contracts.TryGetContract<Contracts.IEnC>(out Contracts.IEnC enc))
                     {
-                        pCodeInfo->encVersion = enc.GetEnCVersion(loaderModule, functionToken, nativeCode).Value;
+                        pCodeInfo->encVersion = enc.GetLatestEnCVersion(loaderModule, functionToken).Value;
                     }
                 }
             }
