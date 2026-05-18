@@ -95,6 +95,15 @@ public class ElidedBoundsChecks
         return false;
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int UnsignedShiftBySignBit(int i)
+    {
+        // X64-NOT: CORINFO_HELP_RNGCHKFAIL
+        // ARM64-NOT: CORINFO_HELP_RNGCHKFAIL
+        ReadOnlySpan<int> vals = [0, 1];
+        return vals[i >>> 31];
+    }
+
     [Fact]
     public static int TestEntryPoint()
     {
@@ -137,6 +146,9 @@ public class ElidedBoundsChecks
 
         chars = ReadOnlySpan<char>.Empty;
         if (TryStripFirstChar(ref chars, 'h') != false)
+            return 0;
+
+        if (UnsignedShiftBySignBit(-1) != 1 || UnsignedShiftBySignBit(0) != 0)
             return 0;
 
         return 100;
