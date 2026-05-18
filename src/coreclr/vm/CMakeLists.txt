@@ -656,7 +656,7 @@ if (FEATURE_PORTABLE_HELPERS)
 
     if(CLR_CMAKE_TARGET_ARCH_WASM)
         list(APPEND VM_SOURCES_WKS
-            ${ARCH_SOURCES_DIR}/WriteBarriers.cpp
+            ${ARCH_SOURCES_DIR}/writebarriers.cpp
         )
     else()
         list(APPEND VM_SOURCES_WKS
