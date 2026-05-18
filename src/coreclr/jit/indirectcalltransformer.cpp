@@ -968,17 +968,15 @@ private:
 
             JITDUMP("Direct call [%06u] in block " FMT_BB "\n", compiler->dspTreeID(call), block->bbNum);
 
-            CORINFO_METHOD_HANDLE methodHnd    = inlineInfo->guardedMethodHandle;
-            const bool            hasInstParam = inlineInfo->methInfo.args.hasTypeArg();
+            CORINFO_METHOD_HANDLE  methodHnd              = inlineInfo->guardedMethodHandle;
+            CORINFO_CONTEXT_HANDLE contextForTokenLookups = inlineInfo->exactContextHandle;
+            const bool             hasInstParam           = inlineInfo->methInfo.args.hasTypeArg();
             if (hasInstParam)
             {
                 assert(call->gtArgs.FindWellKnownArg(WellKnownArg::InstParam) == nullptr);
 
-                CORINFO_METHOD_HANDLE compileTimeHandle =
-                    (CORINFO_METHOD_HANDLE)inlineInfo->guardedMethodInstParamLookup.constLookup.handle;
-
                 GenTree* instParamNode = compiler->getLookupTree(&inlineInfo->guardedMethodInstParamLookup,
-                                                                 GTF_ICON_METHOD_HDL, compileTimeHandle);
+                                                                 GTF_ICON_METHOD_HDL, contextForTokenLookups);
 
                 call->gtArgs.InsertInstParam(compiler, instParamNode);
             }

@@ -7750,12 +7750,6 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                 CORINFO_CONTEXT_HANDLE exactContext     = dvInfo.tokenLookupContext;
                 CORINFO_METHOD_HANDLE  exactMethod      = dvInfo.devirtualizedMethod;
                 uint32_t               exactMethodAttrs = info.compCompHnd->getMethodAttribs(exactMethod);
-                assert(!dvInfo.instParamLookup.lookupKind.needsRuntimeLookup);
-
-                const bool needsInstParam = (dvInfo.instParamLookup.constLookup.accessType != IAT_VALUE) ||
-                                            (dvInfo.instParamLookup.constLookup.handle != nullptr);
-                const CORINFO_LOOKUP* instParamLookup = needsInstParam ? &dvInfo.instParamLookup : nullptr;
-
                 // NOTE: This is currently used only with NativeAOT. In theory, we could also check if we
                 // have static PGO data to decide which class to guess first. Presumably, this is a rare case.
                 //
@@ -7769,7 +7763,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                 }
 
                 addGuardedDevirtualizationCandidate(call, exactMethod, exactCls, exactContext, exactMethodAttrs,
-                                                    clsAttrs, likelyHood, instParamLookup, baseMethod,
+                                                    clsAttrs, likelyHood, &dvInfo.instParamLookup, baseMethod,
                                                     &dvInfo.resolvedTokenDevirtualizedMethod,
                                                     &dvInfo.resolvedTokenDevirtualizedUnboxedMethod);
             }
@@ -7794,10 +7788,9 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
     // Iterate over the guesses
     for (int candidateId = 0; candidateId < candidatesCount; candidateId++)
     {
-        CORINFO_CLASS_HANDLE    likelyClass  = likelyClasses[candidateId];
-        CORINFO_METHOD_HANDLE   likelyMethod = likelyMethods[candidateId];
-        unsigned                likelihood   = likelihoods[candidateId];
-        CORINFO_LOOKUP          instParamLookup;
+        CORINFO_CLASS_HANDLE    likelyClass           = likelyClasses[candidateId];
+        CORINFO_METHOD_HANDLE   likelyMethod          = likelyMethods[candidateId];
+        unsigned                likelihood            = likelihoods[candidateId];
         const CORINFO_LOOKUP*   pInstParamLookup      = nullptr;
         CORINFO_RESOLVED_TOKEN* pResolvedToken        = nullptr;
         CORINFO_RESOLVED_TOKEN* pUnboxedResolvedToken = nullptr;
@@ -7846,16 +7839,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
             likelyMethod          = dvInfo.devirtualizedMethod;
             pResolvedToken        = &dvInfo.resolvedTokenDevirtualizedMethod;
             pUnboxedResolvedToken = &dvInfo.resolvedTokenDevirtualizedUnboxedMethod;
-            assert(!dvInfo.instParamLookup.lookupKind.needsRuntimeLookup);
-
-            const bool needsInstParam = (dvInfo.instParamLookup.constLookup.accessType != IAT_VALUE) ||
-                                        (dvInfo.instParamLookup.constLookup.handle != nullptr);
-            if (needsInstParam)
-            {
-                assert(((size_t)likelyContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD);
-                instParamLookup  = dvInfo.instParamLookup;
-                pInstParamLookup = &instParamLookup;
-            }
+            pInstParamLookup      = &dvInfo.instParamLookup;
         }
         else
         {
@@ -7956,7 +7940,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
 //    methodAttr - attributes of the method
 //    classAttr - attributes of the class
 //    likelihood - odds that this class is the class seen at runtime
-//    instParamLookup - lookup for the instantiation argument, or nullptr if none is needed
+//    instParamLookup - lookup to use if the target signature requires an instantiation argument
 //    originalMethodHandle - method handle of base method (before devirt)
 //    pResolvedToken - resolved token for methodHandle, used to get R2R call info; nullptr when unavailable
 //    pUnboxedResolvedToken - resolved token for the unboxed entry, paired with pResolvedToken
