@@ -65,9 +65,9 @@ public class EnCContractTests
         Layout<MockLoaderModuleWithEnCDataList> moduleLayout = MockLoaderModuleWithEnCDataList.CreateLayout(arch);
         Layout<MockEnCDataNode> encDataLayout = MockEnCDataNode.CreateLayout(arch);
 
-        MockLoaderModuleWithEnCDataList module = moduleLayout.Create(allocator.Allocate((ulong)moduleLayout.Size, "Module"));
+        MockLoaderModuleWithEnCDataList moduleInstance = moduleLayout.Create(allocator.Allocate((ulong)moduleLayout.Size, "Module"));
 
-        ulong headAddress = 0;
+        ulong headAddress = TargetPointer.Null.Value;
         for (int i = entries.Count - 1; i >= 0; i--)
         {
             var entry = entries[i];
@@ -79,7 +79,7 @@ public class EnCContractTests
             headAddress = node.Address;
         }
 
-        module.EnCDataList = headAddress;
+        moduleInstance.EnCDataList = headAddress;
 
         targetBuilder
             .AddGlobals((Constants.Globals.CorDBDefaultEnCFunctionVersion, defaultVersion))
@@ -91,7 +91,7 @@ public class EnCContractTests
             .AddContract<IEnC>("c1");
 
         TestPlaceholderTarget target = targetBuilder.Build();
-        return (target.Contracts.EnC, new TargetPointer(module.Address));
+        return (target.Contracts.EnC, new TargetPointer(moduleInstance.Address));
     }
 
     private sealed class MockLoaderModuleWithEnCDataList : TypedView
