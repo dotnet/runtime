@@ -1002,7 +1002,7 @@ namespace System.Net.Security
             }
         }
 
-        // On some paltforms, the platform APIs decrypt in-place via single
+        // On some platforms, the platform APIs decrypt in-place via single
         // call (Schannel), while others have separate write-ciphertext +
         // read-plaintext primitives. To allow the most efficient thing (copying
         // plaintext straight to the `destination` buffer provided by the

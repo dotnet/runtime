@@ -512,6 +512,7 @@ int32_t CryptoNative_SslHandshake(
 {
     if (outputWritten != NULL) *outputWritten = 0;
     if (outputPending != NULL) *outputPending = 0;
+    if (consumed != NULL) *consumed = 0;
 
     ERR_clear_error();
 
@@ -598,6 +599,7 @@ int32_t CryptoNative_SslDecrypt(
 {
     if (leftoverOffset != NULL) *leftoverOffset = 0;
     if (leftoverLength != NULL) *leftoverLength = 0;
+    if (consumed != NULL) *consumed = 0;
 
     ERR_clear_error();
 

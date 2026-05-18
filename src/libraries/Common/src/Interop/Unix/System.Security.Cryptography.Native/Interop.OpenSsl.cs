@@ -864,7 +864,7 @@ internal static partial class Interop
 
         internal static unsafe int Decrypt(
             SafeSslHandle context,
-            ReadOnlySpan<byte> input,
+            Span<byte> input,
             Span<byte> output,
             out int leftoverOffset,
             out int leftoverLength,
