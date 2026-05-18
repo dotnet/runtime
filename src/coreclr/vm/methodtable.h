@@ -985,7 +985,7 @@ public:
     PTR_Module GetModule()
     {
         LIMITED_METHOD_CONTRACT;
-        _ASSERTE(!IsContinuation());
+        _ASSERTE(!IsContinuationWithoutMetadata());
         return m_pModule;
     }
 
@@ -2854,7 +2854,7 @@ public:
         SetFlag(enum_flag_Category_Nullable);
     }
 
-    inline BOOL IsContinuation();
+    BOOL IsContinuationWithoutMetadata();
 
     // The following methods are only valid for the method tables for array types.
     CorElementType GetArrayElementType()
@@ -3820,7 +3820,7 @@ private:
 
         enum_flag_ContainsGCPointers          = 0x01000000, // Contains object references. [cDAC] [RuntimeTypeSystem]: Contract depends on this value
         enum_flag_HasTypeEquivalence          = 0x02000000, // can be equivalent to another type
-        enum_flag_IsTrackedReferenceWithFinalizer = 0x04000000,
+        enum_flag_IsTrackedReferenceWithFinalizer = 0x04000000, // [cDAC] [RuntimeTypeSystem]: Contract depends on this value
         // unused                             = 0x08000000,
 
         enum_flag_IDynamicInterfaceCastable   = 0x10000000, // class implements IDynamicInterfaceCastable interface

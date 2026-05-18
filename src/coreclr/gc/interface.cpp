@@ -1054,16 +1054,22 @@ void GCHeap::Promote(Object** ppObject, ScanContext* sc, uint32_t flags)
 
     uint8_t* o = (uint8_t*)*ppObject;
 
-    if (!gc_heap::is_in_find_object_range (o))
-    {
-        return;
-    }
-
 #ifdef DEBUG_DestroyedHandleValue
     // we can race with destroy handle during concurrent scan
     if (o == (uint8_t*)DEBUG_DestroyedHandleValue)
         return;
 #endif //DEBUG_DestroyedHandleValue
+
+    if (!gc_heap::is_in_find_object_range (o))
+    {
+#ifdef _DEBUG
+        if ((o != NULL) && !(flags & GC_CALL_INTERIOR))
+        {
+            ((CObjectHeader*)o)->Validate();
+        }
+#endif //_DEBUG
+        return;
+    }
 
     HEAP_FROM_THREAD;
 

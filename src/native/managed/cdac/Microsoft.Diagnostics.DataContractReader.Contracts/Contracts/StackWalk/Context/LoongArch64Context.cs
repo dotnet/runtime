@@ -58,6 +58,8 @@ internal struct LoongArch64Context : IPlatformContext
         set => Fp = value.Value;
     }
 
+    public uint RawContextFlags { readonly get => ContextFlags; set => ContextFlags = value; }
+
     public void Unwind(Target target)
     {
         LoongArch64Unwinder unwinder = new(target);
