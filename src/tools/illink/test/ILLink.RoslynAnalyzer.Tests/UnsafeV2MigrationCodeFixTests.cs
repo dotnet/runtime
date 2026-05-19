@@ -138,6 +138,22 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeV2MigrationAnalyzer} = tr
         }
 
         [Fact]
+        public async Task UnsafeRecordStruct_RemovesModifier()
+        {
+            var source = """
+                public {|IL5005:unsafe|} record struct R
+                {
+                }
+                """;
+            var fixedSource = """
+                public record struct R
+                {
+                }
+                """;
+            await VerifyCodeFix(source, fixedSource);
+        }
+
+        [Fact]
         public async Task UnsafeFirstModifierOnType_PreservesOtherModifiers()
         {
             var source = """
@@ -602,6 +618,33 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeV2MigrationAnalyzer} = tr
             await VerifyCodeFix(source, fixedSource);
         }
 
+        // ----- IL5006: Conversion operator -----
+
+        [Fact]
+        public async Task UnsafeConversionOperatorWithPtr_WrapsBodyKeepsModifier()
+        {
+            var source = """
+                public class C
+                {
+                    public static {|IL5006:unsafe|} explicit operator C(int* p) => new C();
+                }
+                """;
+            var fixedSource = """
+                public class C
+                {
+                    public static unsafe explicit operator C(int* p)
+                    {
+                        // SAFETY-TODO: Audit this unsafe usage
+                        unsafe
+                        {
+                            return new C();
+                        }
+                    }
+                }
+                """;
+            await VerifyCodeFix(source, fixedSource);
+        }
+
         // ----- IL5006: Local function -----
 
         [Fact]
@@ -866,8 +909,8 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeV2MigrationAnalyzer} = tr
         [Fact]
         public async Task UnsafeMethodBodyWithPreprocessorDirectives_OnlyRemovesModifier()
         {
-            // Bodies containing #if/#else/#endif are deliberately not wrapped — see the
-            // 'BodyHasDirectives' comment in the fixer for why. The modifier is still
+            // Bodies containing #if/#elif/#else/#endif are deliberately not wrapped — see
+            // the 'BlockNeedsWrap' comment in the analyzer for why. The modifier is still
             // removed when the signature has no pointers, and the body is left alone for
             // the developer to wrap manually.
             var source = """
@@ -904,6 +947,9 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeV2MigrationAnalyzer} = tr
         [Fact]
         public async Task UnsafeStaticConstructor_WrapsBodyAndRemovesModifier()
         {
+            // Per spec: `unsafe` on a static constructor has no meaning under unsafe-v2
+            // so we drop the modifier. The body might still contain pointer operations
+            // that needed the old implicit unsafe context — wrap it so they keep working.
             var source = """
                 public class C
                 {
@@ -933,8 +979,8 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeV2MigrationAnalyzer} = tr
         public async Task UnsafeStaticConstructorEmptyBody_OnlyRemovesModifier()
         {
             // Static ctor with no body content — no wrapping needed, just drop the
-            // modifier. Static ctors never have parameters / return type, so the
-            // signature never carries a pointer and the modifier is always removable.
+            // modifier (per spec: `unsafe` on a static ctor has no meaning under
+            // unsafe-v2 and is removed unconditionally).
             var source = """
                 public class C
                 {
@@ -948,6 +994,81 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeV2MigrationAnalyzer} = tr
                 {
                     static C()
                     {
+                    }
+                }
+                """;
+            await VerifyCodeFix(source, fixedSource);
+        }
+
+        // ----- Destructors -----
+
+        [Fact]
+        public async Task UnsafeDestructor_WrapsBodyAndRemovesModifier()
+        {
+            // Per spec: `unsafe` on a destructor has no meaning under unsafe-v2 — drop
+            // the modifier. The body might still contain pointer operations that needed
+            // the old implicit unsafe context — wrap it so they keep working.
+            var source = """
+                public class C
+                {
+                    {|IL5006:unsafe|} ~C()
+                    {
+                        System.Console.WriteLine();
+                    }
+                }
+                """;
+            var fixedSource = """
+                public class C
+                {
+                    ~C()
+                    {
+                        // SAFETY-TODO: Audit this unsafe usage
+                        unsafe
+                        {
+                            System.Console.WriteLine();
+                        }
+                    }
+                }
+                """;
+            await VerifyCodeFix(source, fixedSource);
+        }
+
+        // ----- Constructors with initializers -----
+
+        [Fact]
+        public async Task UnsafeConstructorWithInitializer_KeepsModifier()
+        {
+            // Per spec: `unsafe` on a non-static constructor introduces an unsafe context
+            // inside its initializer (`: base(...)` / `: this(...)`), so removing the
+            // modifier could break a base/this call that needs that context. We keep the
+            // modifier and still wrap the body for the body's own audit needs.
+            var source = """
+                public class B
+                {
+                    public B(int x) { }
+                }
+                public class C : B
+                {
+                    public {|IL5006:unsafe|} C() : base(0)
+                    {
+                        System.Console.WriteLine();
+                    }
+                }
+                """;
+            var fixedSource = """
+                public class B
+                {
+                    public B(int x) { }
+                }
+                public class C : B
+                {
+                    public unsafe C() : base(0)
+                    {
+                        // SAFETY-TODO: Audit this unsafe usage
+                        unsafe
+                        {
+                            System.Console.WriteLine();
+                        }
                     }
                 }
                 """;
@@ -1029,14 +1150,19 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeV2MigrationAnalyzer} = tr
         }
 
         [Fact]
-        public async Task UnsafeDelegateWithPtr_NoDiagnostic()
+        public async Task UnsafeDelegateWithPtr_RemovesModifierUnconditionally()
         {
-            // Pointer in the delegate signature → callers still need an unsafe context to
-            // invoke it under unsafe-v2, so the modifier must stay.
+            // Per spec: `unsafe` on a delegate declaration has no meaning under unsafe-v2
+            // and is removed unconditionally — even when the delegate signature contains
+            // pointers. Callers of methods returning such a delegate (or invoking it)
+            // already need an unsafe context for the pointer dereference itself.
             var source = """
-                public unsafe delegate void D(int* p);
+                public {|IL5005:unsafe|} delegate void D(int* p);
                 """;
-            await VerifyCodeFix(source, source);
+            var fixedSource = """
+                public delegate void D(int* p);
+                """;
+            await VerifyCodeFix(source, fixedSource);
         }
 
         [Fact]

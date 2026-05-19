@@ -22,20 +22,43 @@ using Microsoft.CodeAnalysis.Formatting;
 namespace ILLink.CodeFix
 {
     /// <summary>
-    /// Mechanical migration to "unsafe-v2" semantics. Handles two diagnostics:
+    /// Mechanical migration to "unsafe-v2" semantics (see csharplang's unsafe-evolution proposal).
+    /// Handles two diagnostics:
     ///   IL5005 — removes the 'unsafe' modifier from a type or delegate declaration.
-    ///   IL5006 — for a member with an 'unsafe' modifier:
-    ///            * removes the modifier if the signature has no pointer / function-pointer types,
-    ///            * wraps the body in a single 'unsafe { ... }' block (prefixed with a SAFETY-TODO
-    ///              comment) unless the member has no body, is a trivial field-forwarding accessor,
-    ///              the body already contains an 'unsafe' block anywhere, the body is empty, or the
-    ///              body contains 'yield' statements (iterators cannot contain unsafe code).
+    ///            Per the spec, 'unsafe' on those has no meaning under the updated rules
+    ///            and is removed unconditionally.
+    ///   IL5006 — for a non-type member with an 'unsafe' modifier:
+    ///            * For static constructors and destructors, removes the modifier (spec:
+    ///              'unsafe' has no meaning on either) and still wraps the body in
+    ///              'unsafe { ... }' if it has body content — under the legacy rules the
+    ///              modifier opened an unsafe context for the body, so we preserve that
+    ///              context for any pointer operations the body may contain.
+    ///            * For instance constructors with an initializer ('base(...)' /
+    ///              'this(...)'), keeps the modifier (under the updated rules 'unsafe' on
+    ///              a ctor opens an unsafe context for its initializer — removing it
+    ///              could break a base call that needs that context).
+    ///            * Otherwise, removes the modifier when the signature carries no pointer
+    ///              / function-pointer types, and wraps the body in a single
+    ///              'unsafe { ... }' block prefixed with a SAFETY-TODO comment, unless the
+    ///              body is empty, the member has no body, it already contains an
+    ///              'unsafe' block, the body contains conditional-compilation directives
+    ///              (multi-TFM 'dotnet format' merge-conflict hazard — see BlockNeedsWrap
+    ///              comment in the analyzer), or it's a trivial field-forwarding accessor.
     /// Known limitations (best-effort migration, developer to fix fallout):
-    ///   * Members that lacked an explicit 'unsafe' modifier but relied on a containing type's
-    ///     'unsafe' modifier (implicit unsafe context) are not wrapped automatically.
-    ///   * Pointer expressions in constructor initializers (':base(...)' / ':this(...)') are
-    ///     outside the body and won't be wrapped.
-    ///   * '#if' directives inside the body / signature are kept as-is.
+    ///   * Members that lacked an explicit 'unsafe' modifier but relied on a containing
+    ///     type's 'unsafe' modifier (implicit unsafe context) are not wrapped automatically.
+    ///   * Iterator bodies ('yield' inside) are wrapped even though that produces CS1629;
+    ///     the developer manually moves the 'unsafe' inwards.
+    ///   * Lambdas and anonymous methods are not handled — current Roslyn parsers reject
+    ///     'unsafe' as a lambda modifier, so the analyzer never sees one.
+    ///   * Wrapping the whole body in 'unsafe { ... }' moves every body-declared local into
+    ///     a narrower scope than the enclosing method's parameters. A ref-like local
+    ///     (e.g. a 'Span&lt;T&gt;' from 'stackalloc') that gets assigned to an outer
+    ///     'scoped' parameter or returned by ref will now trigger CS9080 ("use of variable
+    ///     '...' in this context may expose referenced variables outside of their
+    ///     declaration scope"), even though the original code compiled. We don't try to
+    ///     detect this — the developer either moves the 'unsafe' block tighter around
+    ///     just the pointer operation, or hoists the local above the wrap.
     /// </summary>
     [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(UnsafeV2MigrationCodeFixProvider)), Shared]
     public sealed class UnsafeV2MigrationCodeFixProvider : Microsoft.CodeAnalysis.CodeFixes.CodeFixProvider
@@ -48,17 +71,22 @@ namespace ILLink.CodeFix
         private static readonly LocalizableString s_rewriteMemberTitle =
             new LocalizableResourceString(nameof(Resources.UnsafeV2MigrationRewriteMemberCodeFixTitle), Resources.ResourceManager, typeof(Resources));
 
+        // Diagnostics this fixer can address — IL5005 (type/delegate) and IL5006 (member).
         public static ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
         [
             DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.UnsafeModifierOnTypeDeclaration, diagnosticSeverity: DiagnosticSeverity.Info),
             DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.UnsafeModifierOnMemberDeclaration, diagnosticSeverity: DiagnosticSeverity.Info),
         ];
 
+        // Roslyn-required mapping from descriptors to diagnostic IDs.
         public sealed override ImmutableArray<string> FixableDiagnosticIds =>
             [.. SupportedDiagnostics.Select(static d => d.Id)];
 
+        // BatchFixer is sufficient — each diagnostic's fix is local to its declaration.
         public sealed override FixAllProvider GetFixAllProvider() => WellKnownFixAllProviders.BatchFixer;
 
+        // Per-diagnostic dispatch: type/delegate goes through RemoveUnsafeFromTypeAsync,
+        // member goes through RewriteUnsafeMemberAsync.
         public sealed override async Task RegisterCodeFixesAsync(CodeFixContext context)
         {
             if (await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false) is not { } root)
@@ -89,8 +117,7 @@ namespace ILLink.CodeFix
             }
         }
 
-        // ----- IL5005 fix: remove 'unsafe' from a type or delegate declaration ------------------
-
+        // IL5005 fix: locate the enclosing type/delegate decl and strip the `unsafe` token.
         private static async Task<Document> RemoveUnsafeFromTypeAsync(Document document, SyntaxToken unsafeToken, CancellationToken cancellationToken)
         {
             var typeDecl = unsafeToken.Parent?.AncestorsAndSelf().FirstOrDefault(static n =>
@@ -103,8 +130,8 @@ namespace ILLink.CodeFix
             return editor.GetChangedDocument();
         }
 
-        // ----- IL5006 fix: migrate an 'unsafe' member ------------------------------------------
-
+        // IL5006 fix: locate the enclosing member, rewrite it (modifier + body wrap), and
+        // explicitly run Formatter.FormatAsync to re-indent the new `unsafe { ... }` block.
         private static async Task<Document> RewriteUnsafeMemberAsync(Document document, SyntaxToken unsafeToken, CancellationToken cancellationToken)
         {
             var memberNode = FindMemberDeclaration(unsafeToken);
@@ -130,13 +157,20 @@ namespace ILLink.CodeFix
             return await Formatter.FormatAsync(changedDocument, Formatter.Annotation, options: null, cancellationToken).ConfigureAwait(false);
         }
 
+        // Walks ancestors from `unsafeToken` until it hits the nearest member declaration
+        // (method, ctor, property, local function, etc.).
         private static SyntaxNode? FindMemberDeclaration(SyntaxToken unsafeToken) =>
             unsafeToken.Parent?.AncestorsAndSelf().FirstOrDefault(static n =>
                 n is MemberDeclarationSyntax or LocalFunctionStatementSyntax);
 
+        // Applies the IL5006 transformations in order: (1) optionally remove the `unsafe`
+        // modifier, then (2) optionally wrap the body in `unsafe { ... }`.
         private static SyntaxNode RewriteMember(SyntaxNode member, SemanticModel? semanticModel)
         {
-            // 1. Remove the 'unsafe' modifier when the signature carries no pointer / function-pointer types.
+            // 1. Remove the 'unsafe' modifier if the analyzer says it's removable
+            //    (signature has no pointer/function-pointer types, OR it's a static
+            //    ctor / destructor where the spec says the modifier is meaningless).
+            //    Non-static ctors with `: base(...)` / `: this(...)` keep the modifier.
             var current = UnsafeV2MigrationAnalyzer.CanRemoveUnsafeModifier(member, semanticModel)
                 ? RemoveUnsafeKeyword(member)
                 : member;
@@ -147,6 +181,7 @@ namespace ILLink.CodeFix
 
         // ----- Body wrapping -------------------------------------------------------------------
 
+        // Dispatches a member to the right wrapping helper based on its syntactic shape.
         private static SyntaxNode WrapBody(SyntaxNode member) =>
             member switch
             {
@@ -170,10 +205,13 @@ namespace ILLink.CodeFix
                     isVoid: false),
                 PropertyDeclarationSyntax p => WrapProperty(p),
                 IndexerDeclarationSyntax i => WrapIndexer(i),
-                EventDeclarationSyntax { AccessorList: not null } e => e.WithAccessorList(WrapAccessorList(e.AccessorList)),
+                EventDeclarationSyntax { AccessorList: not null } e => e.WithAccessorList(WrapAccessorList(e.AccessorList, isTrivialAllowed: false)),
                 _ => member,
             };
 
+        // Generic wrapper for member shapes that have a (block-or-expression) body and
+        // know their own return-void-ness — methods, local functions, ctors, dtors,
+        // operators, conversion operators.
         private static T WrapMethodLike<T>(
             T member,
             BlockSyntax? body,
@@ -183,7 +221,7 @@ namespace ILLink.CodeFix
         {
             if (body is not null)
             {
-                if (!ShouldWrapBlock(body))
+                if (!UnsafeV2MigrationAnalyzer.BlockNeedsWrap(body))
                     return member;
 
                 return withBody(member, ReplaceWithUnsafeBlock(body));
@@ -191,7 +229,7 @@ namespace ILLink.CodeFix
 
             if (expressionBody is not null)
             {
-                if (!ShouldWrapExpression(expressionBody))
+                if (!UnsafeV2MigrationAnalyzer.ExpressionBodyNeedsWrap(expressionBody))
                     return member;
 
                 StatementSyntax inner = isVoid
@@ -204,11 +242,14 @@ namespace ILLink.CodeFix
             return member;
         }
 
+        // Wraps a property: expression body becomes a `get` accessor; accessor list is
+        // wrapped per-accessor with trivial-field-forwarders left alone.
         private static PropertyDeclarationSyntax WrapProperty(PropertyDeclarationSyntax prop)
         {
             if (prop.ExpressionBody is { } expr)
             {
-                if (IsTrivialFieldExpression(expr.Expression) || !ShouldWrapExpression(expr))
+                if (UnsafeV2MigrationAnalyzer.IsTrivialFieldExpression(expr.Expression)
+                    || !UnsafeV2MigrationAnalyzer.ExpressionBodyNeedsWrap(expr))
                     return prop;
 
                 var getter = SyntaxFactory.AccessorDeclaration(SyntaxKind.GetAccessorDeclaration)
@@ -220,16 +261,19 @@ namespace ILLink.CodeFix
             }
 
             if (prop.AccessorList is { } list)
-                return prop.WithAccessorList(WrapAccessorList(list));
+                return prop.WithAccessorList(WrapAccessorList(list, isTrivialAllowed: true));
 
             return prop;
         }
 
+        // Same as WrapProperty but for indexers (signature has a parameter list that we
+        // preserve when converting an expression body to an accessor list).
         private static IndexerDeclarationSyntax WrapIndexer(IndexerDeclarationSyntax indexer)
         {
             if (indexer.ExpressionBody is { } expr)
             {
-                if (IsTrivialFieldExpression(expr.Expression) || !ShouldWrapExpression(expr))
+                if (UnsafeV2MigrationAnalyzer.IsTrivialFieldExpression(expr.Expression)
+                    || !UnsafeV2MigrationAnalyzer.ExpressionBodyNeedsWrap(expr))
                     return indexer;
 
                 var getter = SyntaxFactory.AccessorDeclaration(SyntaxKind.GetAccessorDeclaration)
@@ -241,46 +285,44 @@ namespace ILLink.CodeFix
             }
 
             if (indexer.AccessorList is { } list)
-                return indexer.WithAccessorList(WrapAccessorList(list));
+                return indexer.WithAccessorList(WrapAccessorList(list, isTrivialAllowed: true));
 
             return indexer;
         }
 
-        private static AccessorListSyntax WrapAccessorList(AccessorListSyntax list)
-        {
-            var wrapped = SyntaxFactory.List(list.Accessors.Select(WrapAccessor));
-            return list.WithAccessors(wrapped);
-        }
+        // Maps WrapAccessor over each accessor, passing the trivial-allowed flag
+        // (true for property/indexer, false for event).
+        private static AccessorListSyntax WrapAccessorList(AccessorListSyntax list, bool isTrivialAllowed) =>
+            list.WithAccessors(SyntaxFactory.List(list.Accessors.Select(a => WrapAccessor(a, isTrivialAllowed))));
 
-        private static AccessorDeclarationSyntax WrapAccessor(AccessorDeclarationSyntax accessor)
+        // Wraps a single get/set/init/add/remove accessor: block body → wrap statements,
+        // expression body → convert to block with `return` (get) or expression-statement
+        // (set/init/add/remove). Leaves the accessor alone if the analyzer says no wrap.
+        private static AccessorDeclarationSyntax WrapAccessor(AccessorDeclarationSyntax accessor, bool isTrivialAllowed)
         {
-            bool isVoid = !accessor.IsKind(SyntaxKind.GetAccessorDeclaration);
+            // Decide whether to wrap via the analyzer's single source of truth, so the
+            // fix can never disagree with the diagnostic.
+            if (!UnsafeV2MigrationAnalyzer.AccessorNeedsWrap(accessor, isTrivialAllowed))
+                return accessor;
 
             if (accessor.Body is { } body)
-            {
-                if (!ShouldWrapBlock(body))
-                    return accessor;
                 return accessor.WithBody(ReplaceWithUnsafeBlock(body));
-            }
 
-            if (accessor.ExpressionBody is { } expr)
-            {
-                if (IsTrivialAccessorExpression(accessor, expr.Expression) || !ShouldWrapExpression(expr))
-                    return accessor;
-
-                StatementSyntax inner = isVoid
-                    ? SyntaxFactory.ExpressionStatement(expr.Expression.WithoutTrivia())
-                    : SyntaxFactory.ReturnStatement(expr.Expression.WithoutTrivia());
-                return accessor
-                    .WithExpressionBody(null)
-                    .WithSemicolonToken(default)
-                    .WithBody(SyntaxFactory.Block(BuildUnsafeStatement(inner)));
-            }
-
-            // Auto-property accessor (no body, no expression body) — nothing to wrap.
-            return accessor;
+            // Expression-bodied accessor — convert to block. Getters wrap as 'return expr;',
+            // every other accessor kind (set/init/add/remove) wraps as 'expr;'.
+            var expr = accessor.ExpressionBody!.Expression;
+            bool isVoid = !accessor.IsKind(SyntaxKind.GetAccessorDeclaration);
+            StatementSyntax inner = isVoid
+                ? SyntaxFactory.ExpressionStatement(expr.WithoutTrivia())
+                : SyntaxFactory.ReturnStatement(expr.WithoutTrivia());
+            return accessor
+                .WithExpressionBody(null)
+                .WithSemicolonToken(default)
+                .WithBody(SyntaxFactory.Block(BuildUnsafeStatement(inner)));
         }
 
+        // Rebuilds a block body so its statements live inside a single inner `unsafe { }`
+        // statement, prefixed with the SAFETY-TODO comment.
         private static BlockSyntax ReplaceWithUnsafeBlock(BlockSyntax body)
         {
             // Strip the original leading whitespace from each statement so the formatter
@@ -296,6 +338,7 @@ namespace ILLink.CodeFix
                 .WithAdditionalAnnotations(Formatter.Annotation);
         }
 
+        // Builds a fresh `unsafe { statement }` with the SAFETY-TODO comment as leading trivia.
         private static UnsafeStatementSyntax BuildUnsafeStatement(StatementSyntax statement)
         {
             var inner = SyntaxFactory.Block(StripLeadingWhitespace(statement));
@@ -304,6 +347,8 @@ namespace ILLink.CodeFix
                 .WithAdditionalAnnotations(Formatter.Annotation);
         }
 
+        // Removes leading indentation whitespace from a statement (preserving comments,
+        // directives, and end-of-line trivia so blank lines / pragmas survive the wrap).
         private static StatementSyntax StripLeadingWhitespace(StatementSyntax statement)
         {
             // Strip only the indentation whitespace from the statement's leading trivia and
@@ -319,24 +364,12 @@ namespace ILLink.CodeFix
                 : statement.WithLeadingTrivia(stripped);
         }
 
+        // Builds the leading trivia placed before each emitted `unsafe { ... }` block:
+        // the SAFETY-TODO single-line comment followed by an elastic newline.
         private static SyntaxTriviaList BuildSafetyTodoLeadingTrivia() =>
             SyntaxFactory.TriviaList(
                 SyntaxFactory.Comment(SafetyTodoComment),
                 SyntaxFactory.ElasticCarriageReturnLineFeed);
-
-        // ----- Skip conditions -----------------------------------------------------------------
-
-        private static bool ShouldWrapBlock(BlockSyntax body) =>
-            UnsafeV2MigrationAnalyzer.BlockNeedsWrap(body);
-
-        private static bool ShouldWrapExpression(ArrowExpressionClauseSyntax expr) =>
-            !expr.DescendantNodesAndSelf().OfType<UnsafeStatementSyntax>().Any();
-
-        private static bool IsTrivialFieldExpression(ExpressionSyntax expr) =>
-            UnsafeV2MigrationAnalyzer.IsTrivialFieldExpression(expr);
-
-        private static bool IsTrivialAccessorExpression(AccessorDeclarationSyntax accessor, ExpressionSyntax expr) =>
-            UnsafeV2MigrationAnalyzer.IsTrivialAccessorExpression(accessor, expr);
 
         // ----- Modifier helpers ----------------------------------------------------------------
 
@@ -375,6 +408,9 @@ namespace ILLink.CodeFix
             return updated;
         }
 
+        // Pushes leading trivia from `unsafeToken` onto the first non-attribute token of
+        // the declaration so indentation / doc-comments don't get lost when the modifier
+        // was the very first token.
         private static T PrependLeadingTriviaToFirstNonAttributeToken<T>(T node, SyntaxTriviaList trivia) where T : SyntaxNode
         {
             SyntaxToken target = default;
@@ -392,8 +428,11 @@ namespace ILLink.CodeFix
             return node.ReplaceToken(target, target.WithLeadingTrivia(trivia.AddRange(target.LeadingTrivia)));
         }
 
+        // Local-namespace alias for the analyzer's GetModifiers helper.
         private static SyntaxTokenList GetModifiers(SyntaxNode node) => UnsafeV2MigrationAnalyzer.GetModifiers(node);
 
+        // Inverse of GetModifiers — rebuilds a declaration node with new modifiers. Covers
+        // every type / member kind the analyzer reports on.
         private static SyntaxNode WithModifiers(SyntaxNode node, SyntaxTokenList modifiers) => node switch
         {
             ClassDeclarationSyntax c => c.WithModifiers(modifiers),
@@ -414,6 +453,8 @@ namespace ILLink.CodeFix
             _ => node,
         };
 
+        // True iff `type` is the `void` keyword (used to choose return vs. expression-statement
+        // when converting an expression body to a block).
         private static bool IsVoid(TypeSyntax? type) =>
             type is PredefinedTypeSyntax pts && pts.Keyword.IsKind(SyntaxKind.VoidKeyword);
     }
