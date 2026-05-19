@@ -52,12 +52,19 @@ partial interface IRuntimeTypeSystem : IContract
     // True if the MethodTable is the sentinel value associated with unallocated space in the managed heap
     public virtual bool IsFreeObjectMethodTable(TypeHandle typeHandle);
     public virtual bool IsString(TypeHandle typeHandle);
+    // True if the type is a GC-collectable object reference.
+    public virtual bool IsObjRef(TypeHandle typeHandle);
     // True if the MethodTable represents a type that contains managed references
     public virtual bool ContainsGCPointers(TypeHandle typeHandle);
     // True if the type requires 8-byte alignment on platforms that don't 8-byte align by default (FEATURE_64BIT_ALIGNMENT)
     public virtual bool RequiresAlign8(TypeHandle typeHandle);
     // True if the MethodTable represents a continuation type used by the async continuation feature
     public virtual bool IsContinuation(TypeHandle typeHandle);
+    // Returns the GC pointer runs for the method table as (offset, size) pairs. Each
+    // run starts Offset bytes from the object pointer (`this`), where offset 0
+    // is the method table pointer, and includes Size bytes of contiguous pointers
+    // For handles representing value types the object is assumed to be stored in the boxed layout.
+    public virtual IEnumerable<(uint Offset, uint Size)> GetGCDescSeries(TypeHandle typeHandle, uint numComponents = 0);
     public virtual bool IsDynamicStatics(TypeHandle typeHandle);
     public virtual ushort GetNumInterfaces(TypeHandle typeHandle);
 
@@ -74,6 +81,8 @@ partial interface IRuntimeTypeSystem : IContract
     public TargetPointer GetGCThreadStaticsBasePointer(TypeHandle typeHandle, TargetPointer threadPtr);
     public TargetPointer GetNonGCThreadStaticsBasePointer(TypeHandle typeHandle, TargetPointer threadPtr);
     public TargetPointer GetFieldDescList(TypeHandle typeHandle);
+    // True if the MethodTable represents a type tracked as an Objective-C reference type with a finalizer
+    public bool IsTrackedReferenceWithFinalizer(TypeHandle typeHandle);
     public TargetPointer GetGCStaticsBasePointer(TypeHandle typeHandle);
     public TargetPointer GetNonGCStaticsBasePointer(TypeHandle typeHandle);
     public virtual ReadOnlySpan<TypeHandle> GetInstantiation(TypeHandle typeHandle);
@@ -89,6 +98,11 @@ partial interface IRuntimeTypeSystem : IContract
     // NOTE: If this returns CorElementType.ValueType it may be a normal valuetype or a "NATIVE" valuetype used to represent an interop view of a structure
     // HasTypeParam will return true for cases where this is the interop view, and false for normal valuetypes.
     public virtual CorElementType GetSignatureCorElementType(TypeHandle typeHandle);
+
+    // Internal element type of the type. Unlike GetSignatureCorElementType, this returns the underlying
+    // primitive type for enums (e.g. I4 for an enum with int underlying type).
+    // For arrays, reference types, and TypeDescs, behaves identically to GetSignatureCorElementType.
+    public virtual CorElementType GetInternalCorElementType(TypeHandle typeHandle);
 
     bool IsValueType(TypeHandle typeHandle);
     // return true if the TypeHandle represents an enum type.
@@ -144,6 +158,15 @@ public enum OptimizationTier
 ```
 
 ```csharp
+public enum GenericContextLoc
+{
+    None,
+    InstArg,
+    ThisPtr,
+}
+```
+
+```csharp
 partial interface IRuntimeTypeSystem : IContract
 {
     public virtual MethodDescHandle GetMethodDescHandle(TargetPointer methodDescPointer);
@@ -184,6 +207,14 @@ partial interface IRuntimeTypeSystem : IContract
 
     // Return true if a MethodDesc represents an IL stub with a special MethodDesc context arg
     public virtual bool HasMDContextArg(MethodDescHandle);
+
+    // Determine where a shared generic method obtains its generic context.
+    // Returns None if not shared, InstArg if via a hidden parameter, or ThisPtr if via the 'this' pointer's MethodTable.
+    public virtual GenericContextLoc GetGenericContextLoc(MethodDescHandle methodDesc);
+
+    // Return true if the method uses the async calling convention.
+    // Corresponds to native MethodDesc::IsAsyncMethod().
+    public virtual bool IsAsyncMethod(MethodDescHandle methodDesc);
 
     // Return true if a MethodDesc is in a collectible module
     public virtual bool IsCollectibleMethod(MethodDescHandle methodDesc);
@@ -236,8 +267,8 @@ bool IsFieldDescThreadStatic(TargetPointer fieldDescPointer);
 bool IsFieldDescStatic(TargetPointer fieldDescPointer);
 uint GetFieldDescType(TargetPointer fieldDescPointer);
 uint GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition fieldDef);
-TargetPointer GetFieldDescStaticAddress(TargetPointer fieldDescPointer);
-TargetPointer GetFieldDescThreadStaticAddress(TargetPointer fieldDescPointer, TargetPointer thread);
+TargetPointer GetFieldDescStaticAddress(TargetPointer fieldDescPointer, bool unboxValueTypes = true);
+TargetPointer GetFieldDescThreadStaticAddress(TargetPointer fieldDescPointer, TargetPointer thread, bool unboxValueTypes = true);
 ```
 
 ### Other APIs
@@ -285,6 +316,7 @@ internal partial struct RuntimeTypeSystem_1
         Collectible = 0x00200000,
         RequiresAlign8 = 0x00800000,
         ContainsGCPointers = 0x01000000,
+        IsTrackedReferenceWithFinalizer = 0x04000000,
         ContainsGenericVariables = 0x20000000,
         HasComponentSize = 0x80000000, // This is set if lower 16 bits is used for the component size,
                                        // otherwise the lower bits are used for WFLAGS_LOW
@@ -333,6 +365,7 @@ internal partial struct RuntimeTypeSystem_1
         public bool RequiresAlign8 => GetFlag(WFLAGS_HIGH.RequiresAlign8) != 0;
         public bool IsCollectible => GetFlag(WFLAGS_HIGH.Collectible) != 0;
         public bool IsDynamicStatics => GetFlag(WFLAGS2_ENUM.DynamicStatics) != 0;
+        public bool IsTrackedReferenceWithFinalizer => GetFlag(WFLAGS_HIGH.IsTrackedReferenceWithFinalizer) != 0;
         public bool IsGenericTypeDefinition => TestFlagWithMask(WFLAGS_LOW.GenericsMask, WFLAGS_LOW.GenericsMask_TypicalInstantiation);
     }
 
@@ -550,9 +583,66 @@ Contracts used:
 
     public bool IsString(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[TypeHandle.Address].Flags.IsString;
 
+    public bool IsObjRef(TypeHandle typeHandle) => // Returns true if GetSignatureCorElementType returns Class, Array, or SzArray.
+
     public bool ContainsGCPointers(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[TypeHandle.Address].Flags.ContainsGCPointers;
 
     public bool RequiresAlign8(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.RequiresAlign8;
+
+    public bool IsContinuation(TypeHandle typeHandle) => typeHandle.IsMethodTable()
+        && ContinuationMethodTablePointer != TargetPointer.Null
+        && _methodTables[typeHandle.Address].ParentMethodTable == ContinuationMethodTablePointer;
+
+    IEnumerable<(uint Offset, uint Size)> GetGCDescSeries(TypeHandle typeHandle, uint numComponents = 0)
+    {
+        // Returns empty if not a method table or has no GC pointers.
+        // Compute objectSize: baseSize + numComponents * componentSize.
+        // For non-array types, numComponents == 0 so objectSize == baseSize.
+
+        // Read NumSeries from (mtAddress - pointerSize), sign-extended to native width.
+        // NumSeries == 0 → empty.
+
+        // NumSeries > 0: Regular series.
+        // Memory layout (each slot is pointer-sized, growing away from MT):
+        //
+        //   MT - (2*N+1)*ptrSize : series[N-1].seriessize
+        //   MT - (2*N)  *ptrSize : series[N-1].startoffset
+        //   ...
+        //   MT - 3*ptrSize       : series[0].seriessize
+        //   MT - 2*ptrSize       : series[0].startoffset
+        //   MT - 1*ptrSize       : NumSeries (positive)
+        //   MT                   : MethodTable
+        //
+        // The raw seriessize is stored with baseSize subtracted.
+        // Add objectSize back to get the true run length:
+        //   trueRunLength = rawSeriesSize + objectSize
+        // For non-arrays objectSize == baseSize, recovering the actual run.
+        // For arrays objectSize > baseSize, extending the single series across all elements.
+
+        // NumSeries < 0: Value-class (repeating) series.
+        // |NumSeries| val_serie_items describe pointer runs within one array element.
+        // Memory layout:
+        //
+        //   MT - (N+2)*ptrSize : val_serie[N-1]
+        //   ...
+        //   MT - 3*ptrSize     : val_serie[0]
+        //   MT - 2*ptrSize     : startoffset
+        //   MT - 1*ptrSize     : NumSeries (-N)
+        //   MT                 : MethodTable
+        //
+        // Each val_serie_item is { HALF_SIZE_T nptrs; HALF_SIZE_T skip; } packed into one pointer-width.
+        // HALF_SIZE_T is uint16 on 32-bit, uint32 on 64-bit.
+        // Read nptrs and skip as separate typed reads for endianness safety.
+        // runBytes = nptrs * pointerSize; advance currentOffset by runBytes + skip after each item.
+        //
+        // The val_serie_items describe the GC pointer layout of a single array element.
+        // An outer loop repeats the pattern across all elements in the array:
+        //   currentOffset = startoffset
+        //   while currentOffset <= objectSize - pointerSize:
+        //       for each val_serie_item:
+        //           yield (currentOffset, nptrs * pointerSize)
+        //           currentOffset += nptrs * pointerSize + skip
+    }
 
     public bool IsDynamicStatics(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[TypeHandle.Address].Flags.IsDynamicStatics;
 
@@ -587,6 +677,8 @@ Contracts used:
     public ushort GetNumThreadStaticFields(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (ushort)0 : GetClassData(typeHandle).NumThreadStaticFields;
 
     public TargetPointer GetFieldDescList(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? TargetPointer.Null : GetClassData(typeHandle).FieldDescList;
+
+    public bool IsTrackedReferenceWithFinalizer(TypeHandle typeHandle) => typeHandle.IsMethodTable() && _methodTables[typeHandle.Address].Flags.IsTrackedReferenceWithFinalizer;
 
     public TargetPointer GetGCStaticsBasePointer(TypeHandle typeHandle)
     {
@@ -753,6 +845,19 @@ Contracts used:
             return (CorElementType)(TypeAndFlags & 0xFF);
         }
         return default(CorElementType);
+    }
+
+    // Internal element type: returns the underlying primitive type for enums. For all other types, identical to GetSignatureCorElementType.
+    public CorElementType GetInternalCorElementType(TypeHandle typeHandle)
+    {
+        CorElementType sigType = GetSignatureCorElementType(typeHandle);
+        if (sigType == CorElementType.ValueType && typeHandle.IsMethodTable())
+        {
+            CorElementType internalType = (CorElementType)GetClassData(typeHandle).InternalCorElementType;
+            if (internalType != CorElementType.ValueType)
+                return internalType;
+        }
+        return sigType;
     }
 
     public bool IsValueType(TypeHandle typeHandle)
@@ -1090,6 +1195,7 @@ And the following enumeration definitions
         HasMethodImpl = 0x0010,
         HasNativeCodeSlot = 0x0020,
         HasAsyncMethodData = 0x0040,
+        Static = 0x0080,
         // Mask for the above flags
         MethodDescAdditionalPointersMask = 0x0038,
         #endredion Additional pointers
@@ -1540,6 +1646,67 @@ Determining if a method is an async thunk method:
     }
 ```
 
+Determining where a shared generic method obtains its generic context:
+
+```csharp
+    public GenericContextLoc GetGenericContextLoc(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc md = _methodDescs[methodDescHandle.Address];
+        if (!IsSharedByGenericInstantiations(md))
+            return GenericContextLoc.None;
+        else if (RequiresInstArg(md))
+            return GenericContextLoc.InstArg;
+        else
+            return GenericContextLoc.ThisPtr;
+    }
+
+    private bool RequiresInstArg(MethodDesc md)
+    {
+        if (HasMethodInstantiation(md))
+            return true;
+
+        if (md.IsStatic)
+            return true;
+
+        MethodTable mt = _methodTables[md.MethodTable];
+        if (mt.Flags.IsValueType)
+            return true;
+
+        if (mt.Flags.IsInterface && !IsAbstract(md) /* checked from md classification and metadata attributes */)
+            return true;
+
+        return false;
+    }
+
+    private bool IsSharedByGenericInstantiations(MethodDesc md)
+    {
+        if (md.Classification == MethodClassification.Instantiated)
+        {
+            InstantiatedMethodDesc imd = AsInstantiatedMethodDesc(md);
+            if (imd.IsWrapperStubWithInstantiations)
+                return false;
+            if (/* Flags2 of InstantiatedMethodDesc has SharedMethodInstantiation set */)
+                return true;
+        }
+        MethodTable mt = _methodTables[md.MethodTable];
+        return mt.IsCanonMT && mt.Flags.HasInstantiation;
+    }
+```
+
+Determining if a method uses the async calling convention:
+
+```csharp
+    public bool IsAsyncMethod(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc md = _methodDescs[methodDescHandle.Address];
+        if (!md.HasAsyncMethodData)
+            return false;
+
+        Data.AsyncMethodData asyncData = // Read AsyncMethodData from the async method data optional slot
+        return ((AsyncMethodFlags)asyncData.Flags).HasFlag(AsyncMethodFlags.AsyncCall);
+    }
+```
+
 Determining if a method is a wrapper stub (unboxing or instantiating):
 
 ```csharp
@@ -1879,17 +2046,20 @@ uint GetFieldDescOffset(TargetPointer fieldDescPointer)
     return DWord2 & (uint)FieldDescFlags2.OffsetMask;
 }
 
-TargetPointer GetFieldDescStaticAddress(TargetPointer fieldDescPointer)
+TargetPointer GetFieldDescStaticAddress(TargetPointer fieldDescPointer, bool unboxValueTypes = true)
 {
     // Resolves the base pointer (GC or non-GC statics) for the enclosing type,
     // then applies the field's metadata-based offset within that region.
     // Uses GetGCStaticsBasePointer / GetNonGCStaticsBasePointer depending on the field's CorElementType.
+    // When unboxValueTypes is true (default), value-type statics are dereferenced to the unboxed
+    // payload inside the boxed object. Pass false to obtain the address of the boxed reference itself.
 }
 
-TargetPointer GetFieldDescThreadStaticAddress(TargetPointer fieldDescPointer, TargetPointer thread)
+TargetPointer GetFieldDescThreadStaticAddress(TargetPointer fieldDescPointer, TargetPointer thread, bool unboxValueTypes = true)
 {
     // Like GetFieldDescStaticAddress, but resolves thread-local base pointers instead.
     // Uses GetGCThreadStaticsBasePointer / GetNonGCThreadStaticsBasePointer.
+    // The unboxValueTypes parameter behaves the same as in GetFieldDescStaticAddress.
 }
 ```
 

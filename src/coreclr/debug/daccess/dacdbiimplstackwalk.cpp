@@ -567,9 +567,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thr
         Frame *     pFrame     = pThread->GetFrame();
         AppDomain * pAppDomain = AppDomain::GetCurrentDomain();
 
-        // This used to be only true for Enter-Managed chains.
-        // Since we don't have chains anymore, this can always be false.
-        frameData.quicklyUnwound = false;
         frameData.eType = DebuggerIPCE_STRData::cStubFrame;
 
         while (pFrame != FRAME_TOP)
@@ -723,7 +720,6 @@ FramePointer DacDbiInterfaceImpl::GetFramePointerWorker(StackFrameIterator * pIt
 }
 
 // Return TRUE if the specified CONTEXT is the CONTEXT of the leaf frame.
-// @dbgtodo  filter CONTEXT - Currently we check for the filter CONTEXT first.
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsLeafFrame(VMPTR_Thread vmThread, const DT_CONTEXT * pContext, OUT BOOL * pResult)
 {
     DD_ENTER_MAY_THROW;
@@ -733,7 +729,12 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsLeafFrame(VMPTR_Thread vmThread
     {
 
         DT_CONTEXT ctxLeaf;
-        IfFailThrow(GetContext(vmThread, &ctxLeaf));
+        Thread *  pThread  = vmThread.GetDacPtr();
+        ctxLeaf.ContextFlags = DT_CONTEXT_ALL;
+        IfFailThrow(m_pTarget->GetThreadContext(pThread->GetOSThreadId(),
+                                                ctxLeaf.ContextFlags,
+                                                sizeof(DT_CONTEXT),
+                                                reinterpret_cast<BYTE *>(&ctxLeaf)));
 
         // Call a platform-specific helper to compare the two contexts.
         *pResult = CompareControlRegisters(pContext, &ctxLeaf);
@@ -786,10 +787,6 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
     //
 
     pFrameData->fp = GetFramePointerWorker(pIter);
-
-    // This used to be only true for Enter-Managed chains.
-    // Since we don't have chains anymore, this can always be false.
-    pFrameData->quicklyUnwound = false;
 
     pFrameData->vmCurrentAppDomainToken.SetHostPtr(AppDomain::GetCurrentDomain());
 

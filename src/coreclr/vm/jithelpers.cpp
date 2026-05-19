@@ -1610,9 +1610,8 @@ static PCODE PatchpointRequiredPolicy(TransitionBlock* pTransitionBlock, int* co
 // Currently, counter(the first argument) is a pointer into the Tier0 method stack
 // frame if it exists so we have exclusive access.
 
-extern "C" void JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransitionBlock)
+extern "C" PCODE JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransitionBlock)
 {
-    // Manually preserve the last error as we may not return normally from this method.
     DWORD dwLastError = ::GetLastError();
 
     // This method may not return normally
@@ -1624,7 +1623,6 @@ extern "C" void JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransiti
     PCODE ip = *pReturnAddress;
     int* counter = *(int**)GetFirstArgumentRegisterValuePtr(pTransitionBlock);
     int ilOffset = *(int*)GetSecondArgumentRegisterValuePtr(pTransitionBlock);
-    int hitCount = 1; // This will stay at 1 for forced transition scenarios, but will be updated to the actual hit count for normal patch points
 
     // Patchpoint identity is the helper return address
 
@@ -1657,133 +1655,45 @@ extern "C" void JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransiti
     if (osrMethodCode == (PCODE)NULL)
     {
         _ASSERTE(!patchpointMustFindOptimizedCode);
+
+        // No transition. Return the address past the jump instruction
+        // at the call site so the JIT's unconditional jump skips over itself
+        // and resumes Tier0 execution.
+#if defined(TARGET_AMD64)
+        // jmp rax = 2 bytes to skip
+        osrMethodCode = ip + 2;
+#elif defined(TARGET_ARM64)
+        // br xN = 4 bytes
+        osrMethodCode = ip + 4;
+#elif defined(TARGET_LOONGARCH64)
+        // jirl r0, rN, 0 = 4 bytes
+        osrMethodCode = ip + 4;
+#elif defined(TARGET_RISCV64)
+        // jalr x0, xN, 0 = 4 bytes
+        osrMethodCode = ip + 4;
+#else
+#error "Unsupported platform for patchpoint skip address"
+#endif
         goto DONE;
     }
 
-    // If we get here, we have code to transition to...
-
+    // If we get here, we will transition to OSR code. This can happen
+    // either when this hit triggers OSR creation or when an existing OSR
+    // method is already available for this patchpoint. The JIT-generated
+    // code at the patchpoint handles the actual SP/FP setup and jump.
     {
-        Thread *pThread = GetThread();
-
-#ifdef FEATURE_HIJACK
-        // We can't crawl the stack of a thread that currently has a hijack pending
-        // (since the hijack routine won't be recognized by any code manager). So we
-        // Undo any hijack, the EE will re-attempt it later.
-        pThread->UnhijackThread();
-#endif
-
-        // Find context for the original method
-        CONTEXT *pFrameContext = NULL;
-#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
-        DWORD contextSize = 0;
-        ULONG64 xStateCompactionMask = 0;
-        DWORD contextFlags = CONTEXT_FULL;
-        if (Thread::AreShadowStacksEnabled())
-        {
-            xStateCompactionMask = XSTATE_MASK_CET_U;
-            contextFlags |= CONTEXT_XSTATE;
-        }
-
-        // The initialize call should fail but return contextSize
-        BOOL success = g_pfnInitializeContext2 ?
-            g_pfnInitializeContext2(NULL, contextFlags, NULL, &contextSize, xStateCompactionMask) :
-            InitializeContext(NULL, contextFlags, NULL, &contextSize);
-
-        _ASSERTE(!success && (GetLastError() == ERROR_INSUFFICIENT_BUFFER));
-
-        PVOID pBuffer = _alloca(contextSize);
-        success = g_pfnInitializeContext2 ?
-            g_pfnInitializeContext2(pBuffer, contextFlags, &pFrameContext, &contextSize, xStateCompactionMask) :
-            InitializeContext(pBuffer, contextFlags, &pFrameContext, &contextSize);
-        _ASSERTE(success);
-#else // TARGET_WINDOWS && TARGET_AMD64
-        CONTEXT frameContext;
-        frameContext.ContextFlags = CONTEXT_FULL;
-        pFrameContext = &frameContext;
-#endif // TARGET_WINDOWS && TARGET_AMD64
-
-        // Find context for the original method
-        RtlCaptureContext(pFrameContext);
-
-#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
-        if (Thread::AreShadowStacksEnabled())
-        {
-            pFrameContext->ContextFlags |= CONTEXT_XSTATE;
-            SetXStateFeaturesMask(pFrameContext, xStateCompactionMask);
-            SetSSP(pFrameContext, _rdsspq());
-        }
-#endif // TARGET_WINDOWS && TARGET_AMD64
-
-        // Walk back to the original method frame
-        pThread->VirtualUnwindToFirstManagedCallFrame(pFrameContext);
-
-        // Remember original method FP and SP because new method will inherit them.
-        UINT_PTR currentSP = GetSP(pFrameContext);
-        UINT_PTR currentFP = GetFP(pFrameContext);
-
-        // We expect to be back at the right IP
-        if ((UINT_PTR)ip != GetIP(pFrameContext))
-        {
-            // Should be fatal
-            STRESS_LOG2(LF_TIEREDCOMPILATION, LL_FATALERROR, "Jit_Patchpoint: patchpoint (0x%p) TRANSITION"
-                " unexpected context IP 0x%p\n", ip, GetIP(pFrameContext));
-            EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
-        }
-
-        // Now unwind back to the original method caller frame.
-        EECodeInfo callerCodeInfo(GetIP(pFrameContext));
-        ULONG_PTR establisherFrame = 0;
-        PVOID handlerData = NULL;
-        RtlVirtualUnwind(UNW_FLAG_NHANDLER, callerCodeInfo.GetModuleBase(), GetIP(pFrameContext), callerCodeInfo.GetFunctionEntry(),
-            pFrameContext, &handlerData, &establisherFrame, NULL);
-
-        // Now, set FP and SP back to the values they had just before this helper was called,
-        // since the new method must have access to the original method frame.
-        //
-        // TODO: if we access the patchpointInfo here, we can read out the FP-SP delta from there and
-        // use that to adjust the stack, likely saving some stack space.
-
-#if defined(TARGET_AMD64)
-#if defined(TARGET_WINDOWS)
-        DWORD64 ssp = GetSSP(pFrameContext);
-        if (ssp != 0)
-        {
-            SetSSP(pFrameContext, ssp - 8);
-        }
-#endif // TARGET_WINDOWS
-#endif  // TARGET_AMD64
-
-        SetSP(pFrameContext, currentSP);
-        SetFP(pFrameContext, currentFP);
-
-        // Note we can get here w/o triggering, if there is an existing OSR method and
-        // we hit the patchpoint.
         const int transitionLogLevel = isNewMethod ? LL_INFO10 : LL_INFO1000;
         LOG((LF_TIEREDCOMPILATION, transitionLogLevel, "Jit_Patchpoint: patchpoint [%d] (0x%p) TRANSITION to ip 0x%p\n", ppId, ip, osrMethodCode));
-
-        // Install new entry point as IP
-        SetIP(pFrameContext, osrMethodCode);
-
-#ifdef _DEBUG
-        // Keep this context around to aid in debugging OSR transition problems
-        static CONTEXT s_lastOSRTransitionContext;
-        s_lastOSRTransitionContext = *pFrameContext;
-#endif
-
-        // Restore last error (since call below does not return)
-        ::SetLastError(dwLastError);
-
-        // Transition!
-        ClrRestoreNonvolatileContext(pFrameContext);
     }
 
  DONE:
     ::SetLastError(dwLastError);
+    return osrMethodCode;
 }
 
 #else
 
-HCIMPL2(void, JIT_Patchpoint, int* counter, int ilOffset)
+HCIMPL2(PCODE, JIT_Patchpoint, int* counter, int ilOffset)
 {
     // Stub version if OSR feature is disabled
     //
@@ -1793,7 +1703,7 @@ HCIMPL2(void, JIT_Patchpoint, int* counter, int ilOffset)
 }
 HCIMPLEND
 
-HCIMPL1(VOID, JIT_PatchpointForced, int ilOffset)
+HCIMPL1(PCODE, JIT_PatchpointForced, int ilOffset)
 {
     // Stub version if OSR feature is disabled
     //

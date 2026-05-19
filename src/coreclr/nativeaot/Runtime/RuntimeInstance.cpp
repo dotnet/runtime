@@ -39,7 +39,7 @@ uint8_t g_CrashInfoBuffer[MAX_CRASHINFOBUFFER_SIZE] = { 0 };
 
 ThreadStore *   RuntimeInstance::GetThreadStore()
 {
-    return m_pThreadStore;
+    return ThreadStore::s_pThreadStore;
 }
 
 FCIMPL1(uint8_t *, RhGetCrashInfoBuffer, int32_t* pcbMaxSize)
@@ -179,7 +179,6 @@ RuntimeInstance::OsModuleList* RuntimeInstance::GetOsModuleList()
 #ifndef DACCESS_COMPILE
 
 RuntimeInstance::RuntimeInstance() :
-    m_pThreadStore(NULL),
     m_CodeManager(NULL),
     m_conservativeStackReportingEnabled(false),
     m_pUnboxingStubsRegion(NULL)
@@ -188,10 +187,10 @@ RuntimeInstance::RuntimeInstance() :
 
 RuntimeInstance::~RuntimeInstance()
 {
-    if (NULL != m_pThreadStore)
+    if (NULL != ThreadStore::s_pThreadStore)
     {
-        delete m_pThreadStore;
-        m_pThreadStore = NULL;
+        delete ThreadStore::s_pThreadStore;
+        ThreadStore::s_pThreadStore = NULL;
     }
 }
 
@@ -314,11 +313,11 @@ bool RuntimeInstance::Initialize(HANDLE hPalInstance)
     pThreadStore.SuppressRelease();
     pRuntimeInstance.SuppressRelease();
 
-    pRuntimeInstance->m_pThreadStore = pThreadStore;
     pRuntimeInstance->m_hPalInstance = hPalInstance;
 
     ASSERT_MSG(g_pTheRuntimeInstance == NULL, "multi-instances are not supported");
     g_pTheRuntimeInstance = pRuntimeInstance;
+    ThreadStore::s_pThreadStore = pThreadStore;
 
     return true;
 }

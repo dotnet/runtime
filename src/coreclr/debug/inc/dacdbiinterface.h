@@ -266,23 +266,6 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetAppDomainId(VMPTR_AppDomain vmAppDomain, OUT ULONG * pRetVal) = 0;
 
     //
-    // Get the managed AppDomain object for an AppDomain.
-    //
-    // Arguments:
-    //  vmAppDomain  - VM pointer to the AppDomain object of interest
-    //  pRetVal - [out] Objecthandle for the managed app domain object or the Null VMPTR if there is no object created yet.
-    //
-    // Return Value:
-    //    S_OK on success; otherwise, an appropriate failure HRESULT.
-    //
-    // Notes:
-    //   The AppDomain managed object is lazily constructed on the AppDomain the first time
-    //   it is requested. It may be NULL.
-    //
-    virtual HRESULT STDMETHODCALLTYPE GetAppDomainObject(VMPTR_AppDomain vmAppDomain, OUT VMPTR_OBJECTHANDLE * pRetVal) = 0;
-
-
-    //
     // Get the full AD friendly name for the given EE AppDomain.
     //
     // Arguments:
@@ -490,23 +473,7 @@ public:
     //    vmModule - vm handle to a module
     //    pData - required out parameter which will be filled out with module properties
     //
-    // Notes:
-    //    See definition of AssemblyInfo for more details about what properties
-    //    this gives back.
     virtual HRESULT STDMETHODCALLTYPE GetModuleData(VMPTR_Module vmModule, OUT ModuleInfo * pData) = 0;
-
-
-    //
-    // Get properties for a Assembly
-    //
-    // Arguments:
-    //    vmAssembly - vm handle to a Assembly
-    //    pData - required out parameter which will be filled out with module properties
-    //
-    // Notes:
-    //    See definition of AssemblyInfo for more details about what properties
-    //    this gives back.
-    virtual HRESULT STDMETHODCALLTYPE GetAssemblyInfo(VMPTR_Assembly vmAssembly, OUT AssemblyInfo * pData) = 0;
 
     virtual HRESULT STDMETHODCALLTYPE GetModuleForAssembly(VMPTR_Assembly vmAssembly, OUT VMPTR_Module * pModule) = 0;
 
@@ -911,7 +878,7 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetThreadAllocInfo(VMPTR_Thread vmThread, DacThreadAllocInfo* threadAllocInfo) = 0;
 
     //
-    // Set and reset the TSNC_DebuggerUserSuspend bit on the state of the specified thread
+    // Set and reset the DCTS_UserSuspend bit on the DebuggerControlledThreadState of the specified thread
     // according to the CorDebugThreadState.
     //
     // Arguments:
@@ -1904,17 +1871,6 @@ public:
     //
     virtual HRESULT STDMETHODCALLTYPE IsVmObjectHandleValid(VMPTR_OBJECTHANDLE vmHandle, OUT BOOL * pResult) = 0;
 
-    // indicates if the specified module is a WinRT module
-    //
-    // Arguments:
-    //     vmModule: the module to check
-    //     pIsWinRT: [out] indicating state of module
-    //
-    // Return value:
-    //    S_OK on success; otherwise, an appropriate failure HRESULT.
-    //
-    virtual HRESULT STDMETHODCALLTYPE IsWinRTModule(VMPTR_Module vmModule, BOOL * pIsWinRT) = 0;
-
     // Determines the app domain id for the object referred to by a given VMPTR_OBJECTHANDLE
     //
     // Get the target address from a VMPTR_OBJECTHANDLE, i.e., the handle address
@@ -1987,11 +1943,6 @@ public:
 
     typedef void* * HeapWalkHandle;
 
-    // Returns true if it is safe to walk the heap.  If this function returns false,
-    // you could still create a heap walk and attempt to walk it, but there's no
-    // telling how much of the heap will be available.
-    virtual HRESULT STDMETHODCALLTYPE AreGCStructuresValid(OUT BOOL * pResult) = 0;
-
     // Creates a HeapWalkHandle which can be used to walk the managed heap with the
     // WalkHeap function.  Note if this function completes successfully you will need
     // to delete the handle by passing it into DeleteHeapWalk.
@@ -2009,9 +1960,7 @@ public:
     virtual HRESULT STDMETHODCALLTYPE DeleteHeapWalk(HeapWalkHandle handle) = 0;
 
     // Walks the heap using the given heap walk handle, enumerating objects
-    // on the managed heap.  Note that walking the heap requires that the GC
-    // data structures be in a valid state, which you can find by calling
-    // AreGCStructuresValid.
+    // on the managed heap.
     //
     // Arguments:
     //   handle   - a HeapWalkHandle obtained from CreateHeapWalk
@@ -2035,7 +1984,23 @@ public:
                      OUT COR_HEAPOBJECT * objects,
                      OUT ULONG * pFetched) = 0;
 
-    virtual HRESULT STDMETHODCALLTYPE GetHeapSegments(OUT DacDbiArrayList<COR_SEGMENT> * pSegments) = 0;
+    // Callback invoked for each GC heap segment.
+    //
+    // Arguments:
+    //    rangeStart - start address of the segment (inclusive).
+    //    rangeEnd   - end address of the segment (exclusive).
+    //    generation - CorDebugGenerationTypes value identifying the generation/kind of the segment.
+    //    heap       - index of the heap the segment belongs to (0 for workstation GC).
+    //    pUserData  - user data passed to EnumerateHeapSegments.
+    typedef void (*FP_HEAPSEGMENT_CALLBACK)(CORDB_ADDRESS rangeStart, CORDB_ADDRESS rangeEnd, int generation, ULONG heap, CALLBACK_DATA pUserData);
+
+    // Enumerate the GC heap segments.
+    //
+    // The callback is invoked once per segment and must not throw. To accumulate segments, callers
+    // typically stash a buffer (and any failure flag) in pUserData. The walker runs to completion
+    // regardless of any per-segment failure the callback decides to record; the caller surfaces the
+    // recorded failure after EnumerateHeapSegments returns.
+    virtual HRESULT STDMETHODCALLTYPE EnumerateHeapSegments(FP_HEAPSEGMENT_CALLBACK fpCallback, CALLBACK_DATA pUserData) = 0;
 
     virtual HRESULT STDMETHODCALLTYPE IsValidObject(CORDB_ADDRESS obj, OUT BOOL * pResult) = 0;
 
@@ -2075,9 +2040,9 @@ public:
 
     virtual HRESULT STDMETHODCALLTYPE GetObjectFields(COR_TYPEID id, ULONG32 celt, OUT COR_FIELD * layout, OUT ULONG32 * pceltFetched) = 0;
 
-    virtual HRESULT STDMETHODCALLTYPE GetTypeLayout(COR_TYPEID id, COR_TYPE_LAYOUT * pLayout) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetTypeLayout(CORDB_ADDRESS id, COR_TYPE_LAYOUT * pLayout) = 0;
 
-    virtual HRESULT STDMETHODCALLTYPE GetArrayLayout(COR_TYPEID id, COR_ARRAY_LAYOUT * pLayout) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetArrayLayout(CORDB_ADDRESS id, COR_ARRAY_LAYOUT * pLayout) = 0;
 
     virtual HRESULT STDMETHODCALLTYPE GetGCHeapInformation(OUT COR_HEAPINFO * pHeapInfo) = 0;
 
@@ -2305,8 +2270,6 @@ public:
         VMPTR_Object delegateObject,
         OUT VMPTR_Object *ppTargetObj,
         OUT VMPTR_AppDomain *ppTargetAppDomain) = 0;
-
-    virtual HRESULT STDMETHODCALLTYPE GetLoaderHeapMemoryRanges(OUT DacDbiArrayList<COR_MEMORY_RANGE> *pRanges) = 0;
 
     virtual HRESULT STDMETHODCALLTYPE IsModuleMapped(VMPTR_Module pModule, OUT BOOL *isModuleMapped) = 0;
 

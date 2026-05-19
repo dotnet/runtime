@@ -30,7 +30,7 @@ namespace System.Text.Json.Serialization.Converters
             return ReadCore(ref reader);
         }
 
-        private static TimeSpan ReadCore(ref Utf8JsonReader reader)
+        private static unsafe TimeSpan ReadCore(ref Utf8JsonReader reader)
         {
             Debug.Assert(reader.TokenType is JsonTokenType.String or JsonTokenType.PropertyName);
 
@@ -74,7 +74,7 @@ namespace System.Text.Json.Serialization.Converters
             return tmpValue;
         }
 
-        public override void Write(Utf8JsonWriter writer, TimeSpan value, JsonSerializerOptions options)
+        public override unsafe void Write(Utf8JsonWriter writer, TimeSpan value, JsonSerializerOptions options)
         {
             Span<byte> output = stackalloc byte[MaximumTimeSpanFormatLength];
 
@@ -84,7 +84,7 @@ namespace System.Text.Json.Serialization.Converters
             writer.WriteStringValue(output.Slice(0, bytesWritten));
         }
 
-        internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, TimeSpan value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
+        internal override unsafe void WriteAsPropertyNameCore(Utf8JsonWriter writer, TimeSpan value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
         {
             Span<byte> output = stackalloc byte[MaximumTimeSpanFormatLength];
 

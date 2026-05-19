@@ -1725,10 +1725,6 @@ unsigned Compiler::compGetTypeSize(CorInfoType cit, CORINFO_CLASS_HANDLE clsHnd)
     {
         sigSize = info.compCompHnd->getClassSize(clsHnd);
     }
-    else if (cit == CORINFO_TYPE_REFANY)
-    {
-        sigSize = 2 * TARGET_POINTER_SIZE;
-    }
     return sigSize;
 }
 
@@ -2687,7 +2683,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         }
 #endif // LATE_DISASM
 
-        if (JitConfig.JitDasmWithAddress() != 0)
+        if (JitConfig.JitDisasmWithAddress() != 0)
         {
             opts.disAddr = true;
         }
@@ -3113,10 +3109,12 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         printf("OPTIONS: compProcedureSplittingEH = %s\n", dspBool(opts.compProcedureSplittingEH));
 
         // This is rare; don't clutter up the dump with it normally.
+#ifdef PROFILING_SUPPORTED
         if (compProfilerHookNeeded)
         {
             printf("OPTIONS: compProfilerHookNeeded   = %s\n", dspBool(compProfilerHookNeeded));
         }
+#endif
 
         if (jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
         {
@@ -5653,6 +5651,12 @@ void Compiler::generatePatchpointInfo()
         // If there are shadowed params, the patchpoint info should refer to the shadow copy.
         //
         unsigned varNum = lclNum;
+
+        // Variable-sized locals reside in a different part of the stack frame.
+        if (lvaIsUnknownSizeLocal(varNum))
+        {
+            continue;
+        }
 
         if (gsShadowVarInfo != nullptr)
         {
@@ -10701,11 +10705,9 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
                 m_longParamField++;
                 break;
 #endif
-#ifdef JIT32_GCENCODER
             case DoNotEnregisterReason::PinningRef:
                 m_PinningRef++;
                 break;
-#endif
             case DoNotEnregisterReason::LclAddrNode:
                 m_lclAddrNode++;
                 break;
@@ -10736,6 +10738,10 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
 
             case DoNotEnregisterReason::SimdUserForcesDep:
                 m_simdUserForcesDep++;
+                break;
+
+            case DoNotEnregisterReason::WasmGCVisibility:
+                m_wasmGcVisibility++;
                 break;
 
             default:
@@ -10857,15 +10863,14 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
 #if !defined(TARGET_64BIT)
     PRINT_STATS(m_longParamField, notEnreg);
 #endif // !TARGET_64BIT
-#ifdef JIT32_GCENCODER
     PRINT_STATS(m_PinningRef, notEnreg);
-#endif // JIT32_GCENCODER
     PRINT_STATS(m_lclAddrNode, notEnreg);
     PRINT_STATS(m_castTakesAddr, notEnreg);
     PRINT_STATS(m_storeBlkSrc, notEnreg);
     PRINT_STATS(m_swizzleArg, notEnreg);
     PRINT_STATS(m_blockOpRet, notEnreg);
     PRINT_STATS(m_returnSpCheck, notEnreg);
+    PRINT_STATS(m_wasmGcVisibility, notEnreg);
     PRINT_STATS(m_callSpCheck, notEnreg);
     PRINT_STATS(m_simdUserForcesDep, notEnreg);
 

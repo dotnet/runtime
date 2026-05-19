@@ -9,8 +9,12 @@
 #include "codegen.h"
 #include "regallocwasm.h"
 #include "fgwasm.h"
+#include "gcinfo.h"
+#include "gcinfoencoder.h"
 
 static const int LINEAR_MEMORY_INDEX = 0;
+// stackPointer is the 0th global in our generated Wasm modules
+static const int STACK_POINTER_GLOBAL = 0;
 
 #ifdef TARGET_64BIT
 static const instruction INS_I_load  = INS_i64_load;
@@ -101,6 +105,8 @@ void CodeGen::genMarkLabelsForCodegen()
 //
 void CodeGen::genBeginFnProlog()
 {
+    GetEmitter()->emitIns(INS_code_size);
+
     FuncInfoDsc* const func = m_compiler->funGetFunc(ROOT_FUNC_IDX);
     assert(func->funWasmLocalDecls != nullptr);
 
@@ -142,16 +148,20 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
 
     m_compiler->unwindAllocStack(frameSize);
 
-    // TODO-WASM: reverse pinvoke frame allocation
-    //
+    unsigned initialSPLclIndex;
+    unsigned spLclIndex = WasmRegToIndex(spReg);
     if (!m_compiler->lvaGetDesc(m_compiler->lvaWasmSpArg)->lvIsParam)
     {
-        NYI_WASM("alloc local frame for reverse pinvoke");
+        initialSPLclIndex = spLclIndex;
+        GetEmitter()->emitIns_I(INS_global_get, EA_PTRSIZE, STACK_POINTER_GLOBAL);
+        GetEmitter()->emitIns_I(INS_local_set, EA_PTRSIZE, initialSPLclIndex);
+    }
+    else
+    {
+        initialSPLclIndex =
+            WasmRegToIndex(m_compiler->lvaGetParameterABIInfo(m_compiler->lvaWasmSpArg).Segment(0).GetRegister());
     }
 
-    unsigned initialSPLclIndex =
-        WasmRegToIndex(m_compiler->lvaGetParameterABIInfo(m_compiler->lvaWasmSpArg).Segment(0).GetRegister());
-    unsigned spLclIndex = WasmRegToIndex(spReg);
     assert(initialSPLclIndex == spLclIndex);
     if (frameSize != 0)
     {
@@ -175,11 +185,8 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         assert(m_compiler->lvaWasmFunctionIndex != BAD_VAR_NUM);
 
         // fp[0] == functionIndex
-        //
-        // TODO-WASM: Save the actual function index. For now we save a fixed constant
-        //
         GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
-        GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 0xBBBB);
+        GetEmitter()->emitFuncletAddressConstant(0 /* funcletId for main method */);
         GetEmitter()->emitIns_S(ins_Store(TYP_I_IMPL), EA_PTRSIZE, m_compiler->lvaWasmFunctionIndex, 0);
     }
 }
@@ -241,7 +248,7 @@ void CodeGen::genHomeRegisterParamsOutsideProlog()
             return;
         }
 
-        if (varDsc->lvOnFrame && (!varDsc->lvIsInReg() || varDsc->lvLiveInOutOfHndlr))
+        if (varDsc->lvOnFrame && (!varDsc->lvIsInReg() || varDsc->IsLiveInOutOfHandler()))
         {
             LclVarDsc* paramVarDsc = m_compiler->lvaGetDesc(paramLclNum);
             var_types  storeType   = genParamStackType(paramVarDsc, segment);
@@ -349,6 +356,8 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     assert(m_compiler->bbIsFuncletBeg(block));
     JITDUMP("*************** In genFuncletProlog()\n");
 
+    GetEmitter()->emitIns(INS_code_size);
+
     // Local sig for the funclet
     //
     unsigned           localsCount  = 0;
@@ -385,10 +394,8 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
         GetEmitter()->emitIns(INS_I_sub);
         GetEmitter()->emitIns_I(INS_local_set, EA_PTRSIZE, GetStackPointerRegIndex());
 
-        // TODO-WASM: Save the funclet index. For now we save a fixed constant
-        //
         GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetStackPointerRegIndex());
-        GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 0xAAAA);
+        GetEmitter()->emitFuncletAddressConstant((cnsval_ssize_t)funcletIndex);
         GetEmitter()->emitIns_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE, 0);
     }
 }
@@ -1447,7 +1454,7 @@ void CodeGen::genCodeForBinaryOverflow(GenTreeOp* treeNode)
             // TODO-WASM-CQ: consider branchless alternative here (and for sub)
             GetEmitter()->emitIns_I(is64BitOp ? INS_i64_const : INS_i32_const, emitActualTypeSize(treeNode), 0);
             GetEmitter()->emitIns(is64BitOp ? INS_i64_ge_s : INS_i32_ge_s);
-            GetEmitter()->emitIns(INS_if);
+            genEmitIf();
             {
                 // Operands have the same sign. If the sum has a different sign, then the add overflowed.
                 GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(resultReg));
@@ -1457,7 +1464,7 @@ void CodeGen::genCodeForBinaryOverflow(GenTreeOp* treeNode)
                 GetEmitter()->emitIns(is64BitOp ? INS_i64_lt_s : INS_i32_lt_s);
                 genJumpToThrowHlpBlk(SCK_OVERFLOW);
             }
-            GetEmitter()->emitIns(INS_end);
+            genEmitEndIf();
             GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(resultReg));
             break;
         }
@@ -1478,7 +1485,7 @@ void CodeGen::genCodeForBinaryOverflow(GenTreeOp* treeNode)
             GetEmitter()->emitIns(is64BitOp ? INS_i64_xor : INS_i32_xor);
             GetEmitter()->emitIns_I(is64BitOp ? INS_i64_const : INS_i32_const, emitActualTypeSize(treeNode), 0);
             GetEmitter()->emitIns(is64BitOp ? INS_i64_lt_s : INS_i32_lt_s);
-            GetEmitter()->emitIns(INS_if);
+            genEmitIf();
             {
                 // Operands have different signs. If the difference has a different sign than op1, then the subtraction
                 // overflowed.
@@ -1489,7 +1496,7 @@ void CodeGen::genCodeForBinaryOverflow(GenTreeOp* treeNode)
                 GetEmitter()->emitIns(is64BitOp ? INS_i64_lt_s : INS_i32_lt_s);
                 genJumpToThrowHlpBlk(SCK_OVERFLOW);
             }
-            GetEmitter()->emitIns(INS_end);
+            genEmitEndIf();
             GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(resultReg));
             break;
         }
@@ -1903,11 +1910,11 @@ void CodeGen::genJumpToThrowHlpBlk(SpecialCodeKind codeKind)
     }
     else
     {
-        GetEmitter()->emitIns_BlockTy(INS_if);
+        genEmitIf();
         // Throw helpers are managed so we need to push the stack pointer before genEmitHelperCall.
         GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetStackPointerRegIndex());
         genEmitHelperCall(m_compiler->acdHelper(codeKind), 0, EA_UNKNOWN);
-        GetEmitter()->emitIns(INS_end);
+        genEmitEndIf();
     }
 }
 
@@ -2302,8 +2309,9 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
     else
     {
         assert(genIsValidReg(varDsc->GetRegNum()));
-        unsigned wasmLclIndex = WasmRegToIndex(varDsc->GetRegNum());
-        GetEmitter()->emitIns_I(INS_local_get, emitTypeSize(tree), wasmLclIndex);
+        var_types type         = varDsc->GetRegisterType(tree);
+        unsigned  wasmLclIndex = WasmRegToIndex(varDsc->GetRegNum());
+        GetEmitter()->emitIns_I(INS_local_get, emitTypeSize(type), wasmLclIndex);
         // In this case, the resulting tree type may be different from the local var type where the value originates,
         // and so we need an explicit conversion since we can't "load"
         // the value with a different type like we can if the value is on the shadow stack.
@@ -2485,7 +2493,30 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         params.sigInfo = call->callSig;
     }
 #endif // DEBUG
+
     GenTree* target = getCallTarget(call, &params.methHnd);
+
+    // Report managed call signatures to the R2R compiler for thunk generation.
+    if (!call->IsHelperCall() && !call->IsUnmanaged())
+    {
+        CORINFO_SIG_INFO  sigInfoLocal;
+        CORINFO_SIG_INFO* sigInfoCall = call->callSig;
+
+        if (sigInfoCall == nullptr)
+        {
+            if ((params.methHnd != NO_METHOD_HANDLE) &&
+                (Compiler::eeGetHelperNum(params.methHnd) == CORINFO_HELP_UNDEF))
+            {
+                m_compiler->eeGetMethodSig(params.methHnd, &sigInfoLocal);
+                sigInfoCall = &sigInfoLocal;
+            }
+        }
+
+        if (sigInfoCall != nullptr)
+        {
+            m_compiler->info.compCompHnd->recordWasmManagedCallSig(sigInfoCall);
+        }
+    }
 
     ArrayStack<CorInfoWasmType> typeStack(m_compiler->getAllocator(CMK_Codegen));
 
@@ -2515,6 +2546,9 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
     params.wasmSignature = m_compiler->info.compCompHnd->getWasmTypeSymbol(typeStack.Data(), typeStack.Height());
 
+    // A non-null target expression always indicates an indirect call on Wasm,
+    // as currently the only possible result of the target expression would be a
+    // table index which must be used via call_indirect
     if (target != nullptr)
     {
         // Codegen should have already evaluated our target node (last) and pushed it onto the stack,
@@ -2526,52 +2560,28 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     }
     else
     {
-        // If we have no target and this is a call with indirection cell then
-        // we do an optimization where we load the call address directly from
-        // the indirection cell instead of duplicating the tree. In BuildCall
-        // we ensure that get an extra register for the purpose. Note that for
-        // CFG the call might have changed to
-        // CORINFO_HELP_DISPATCH_INDIRECT_CALL in which case we still have the
-        // indirection cell but we should not try to optimize.
-        WellKnownArg indirectionCellArgKind = WellKnownArg::None;
-        if (!call->IsHelperCall(CORINFO_HELP_DISPATCH_INDIRECT_CALL))
-        {
-            indirectionCellArgKind = call->GetIndirectionCellArgKind();
-        }
+        // Generate a direct call to a non-virtual user defined or helper method
+        assert(call->IsHelperCall() || (call->gtCallType == CT_USER_FUNC));
 
-        if (indirectionCellArgKind != WellKnownArg::None)
-        {
-            assert(call->IsR2ROrVirtualStubRelativeIndir());
+        assert(call->gtEntryPoint.addr == NULL);
 
-            params.callType = EC_INDIR_R;
-            // params.ireg     = targetAddrReg;
-            genEmitCallWithCurrentGC(params);
+        if (call->IsHelperCall())
+        {
+            assert(!call->IsFastTailCall());
+            CorInfoHelpFunc helperNum = m_compiler->eeGetHelperNum(params.methHnd);
+            noway_assert(helperNum != CORINFO_HELP_UNDEF);
+            CORINFO_CONST_LOOKUP helperLookup = m_compiler->compGetHelperFtn(helperNum);
+            assert(helperLookup.accessType == IAT_VALUE);
+            params.addr = helperLookup.addr;
         }
         else
         {
-            // Generate a direct call to a non-virtual user defined or helper method
-            assert(call->IsHelperCall() || (call->gtCallType == CT_USER_FUNC));
-
-            assert(call->gtEntryPoint.addr == NULL);
-
-            if (call->IsHelperCall())
-            {
-                assert(!call->IsFastTailCall());
-                CorInfoHelpFunc helperNum = m_compiler->eeGetHelperNum(params.methHnd);
-                noway_assert(helperNum != CORINFO_HELP_UNDEF);
-                CORINFO_CONST_LOOKUP helperLookup = m_compiler->compGetHelperFtn(helperNum);
-                assert(helperLookup.accessType == IAT_VALUE);
-                params.addr = helperLookup.addr;
-            }
-            else
-            {
-                // Direct call to a non-virtual user function.
-                params.addr = call->gtDirectCallAddress;
-            }
-
-            params.callType = EC_FUNC_TOKEN;
-            genEmitCallWithCurrentGC(params);
+            // Direct call to a non-virtual user function.
+            params.addr = call->gtDirectCallAddress;
         }
+
+        params.callType = EC_FUNC_TOKEN;
+        genEmitCallWithCurrentGC(params);
     }
 }
 
@@ -2653,9 +2663,6 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         // RhpCheckedAssignRef
         HELPER_SIG(CORINFO_HELP_CHECKED_ASSIGN_REF, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I,
                    CORINFO_WASM_TYPE_I);
-        // JIT_WriteBarrierEnsureNonHeapTarget
-        HELPER_SIG(CORINFO_HELP_ASSIGN_REF_ENSURE_NONHEAP, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */,
-                   CORINFO_WASM_TYPE_I, CORINFO_WASM_TYPE_I);
         // RhpByRefAssignRef
         HELPER_SIG(CORINFO_HELP_ASSIGN_BYREF, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I,
                    CORINFO_WASM_TYPE_I);
@@ -2676,16 +2683,21 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
     if (helperIsManaged)
     {
         // Push PEP onto the stack because we are calling a managed helper that expects it as the last parameter.
+        // The helper function address is the address of an indirection cell, so we load from the cell to get the PEP
+        // address to push.
         assert(helperFunction.accessType == IAT_PVALUE);
         GetEmitter()->emitAddressConstant(helperFunction.addr);
+        GetEmitter()->emitIns_I(INS_I_load, EA_PTRSIZE, 0);
     }
 
     if (params.callType == EC_INDIR_R)
     {
-        // Push the call target onto the wasm evaluation stack by dereferencing the PEP.
+        // Push the call target onto the wasm evaluation stack by dereferencing the indirection cell
+        // and then the PEP pointed to by the indirection cell.
         assert(helperFunction.accessType == IAT_PVALUE);
         GetEmitter()->emitAddressConstant(helperFunction.addr);
-        GetEmitter()->emitIns_I(INS_i32_load, EA_PTRSIZE, 0);
+        GetEmitter()->emitIns_I(INS_I_load, EA_PTRSIZE, 0);
+        GetEmitter()->emitIns_I(INS_I_load, EA_PTRSIZE, 0);
     }
 
     genEmitCallWithCurrentGC(params);
@@ -2955,7 +2967,6 @@ void CodeGen::genLclHeap(GenTree* tree)
     }
     else
     {
-        bool const is64Bit = (TARGET_POINTER_SIZE == 8);
         genConsumeReg(size);
 
         // Extend size to pointer size, if necessary
@@ -2976,7 +2987,7 @@ void CodeGen::genLclHeap(GenTree* tree)
 
         // Check for zero-sized requests
         GetEmitter()->emitIns(INS_I_eqz);
-        GetEmitter()->emitIns_BlockTy(INS_if, is64Bit ? WasmValueType::I64 : WasmValueType::I32);
+        genEmitIf(WasmValueType::I);
         {
             // If size is zero, leave a zero on the stack
             GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 0);
@@ -3033,7 +3044,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         }
 
         // end if
-        GetEmitter()->emitIns(INS_end);
+        genEmitEndIf();
     }
 
     WasmProduceReg(tree);
@@ -3324,10 +3335,12 @@ void CodeGen::genEmitGSCookieCheck(bool tailCall)
     NYI_WASM("genEmitGSCookieCheck");
 }
 
+#ifdef PROFILING_SUPPORTED
 void CodeGen::genProfilingLeaveCallback(unsigned helper)
 {
     NYI_WASM("genProfilingLeaveCallback");
 }
+#endif
 
 void CodeGen::genSpillVar(GenTree* tree)
 {
@@ -3351,6 +3364,44 @@ void CodeGen::genLoadLocalIntoReg(regNumber targetReg, unsigned lclNum)
 }
 
 //------------------------------------------------------------------------
+// genEmitIf: Emit an 'if' instruction
+//
+// Arguments:
+//    blockType - simple type for the block, or invalid if none
+//
+// Notes:
+//   This emits an `if` instruction and adds a new label to the control flow stack that is not
+//   modelled by the wasmControlFlowStack. Since we won't explicitly branch to the end
+//   of the `if` we just need to understand that the stack is now deeper.
+//
+void CodeGen::genEmitIf(WasmValueType blockType)
+{
+    wasmExtraControlFlowDepth++;
+
+    if (blockType != WasmValueType::Invalid)
+    {
+        GetEmitter()->emitIns_BlockTy(INS_if, blockType);
+    }
+    else
+    {
+        GetEmitter()->emitIns(INS_if);
+    }
+}
+
+//------------------------------------------------------------------------
+// genEmitEndIf: Emit an 'end' instruction closing an 'if' block
+//
+// Notes:
+//   Removes the added stack depth from genEmitIf.
+//
+void CodeGen::genEmitEndIf()
+{
+    assert(wasmExtraControlFlowDepth > 0);
+    wasmExtraControlFlowDepth--;
+    GetEmitter()->emitIns(INS_end);
+}
+
+//------------------------------------------------------------------------
 // inst_JMP: Emit a jump instruction.
 //
 // Arguments:
@@ -3360,13 +3411,46 @@ void CodeGen::genLoadLocalIntoReg(regNumber targetReg, unsigned lclNum)
 void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock)
 {
     instruction    instr = emitter::emitJumpKindToIns(jmp);
-    unsigned const depth = findTargetDepth(tgtBlock);
+    unsigned const depth = findTargetDepth(tgtBlock) + wasmExtraControlFlowDepth;
     GetEmitter()->emitIns_J(instr, EA_4BYTE, depth, tgtBlock);
 }
 
 void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize, unsigned prologSize, unsigned epilogSize DEBUGARG(void* code))
 {
-    // GCInfo not captured/created by codegen.
+    IAllocator*    allowZeroAlloc = new (m_compiler, CMK_GC) CompIAllocator(m_compiler->getAllocatorGC());
+    GcInfoEncoder* gcInfoEncoder  = new (m_compiler, CMK_GC)
+        GcInfoEncoder(m_compiler->info.compCompHnd, m_compiler->info.compMethodInfo, allowZeroAlloc, NOMEM);
+    assert(gcInfoEncoder != nullptr);
+
+    // Follow the code pattern of the x86 gc info encoder (genCreateAndStoreGCInfoJIT32).
+    gcInfo.gcInfoBlockHdrSave(gcInfoEncoder, codeSize, prologSize);
+
+    // We keep the call count for the second call to gcMakeRegPtrTable() below.
+    unsigned callCnt = 0;
+
+    // First we figure out the encoder ID's for the stack slots and registers.
+    gcInfo.gcMakeRegPtrTable(gcInfoEncoder, codeSize, prologSize, GCInfo::MAKE_REG_PTR_MODE_ASSIGN_SLOTS, &callCnt);
+
+    // Now we've requested all the slots we'll need; "finalize" these (make more compact data structures for them).
+    gcInfoEncoder->FinalizeSlotIds();
+
+    // Now we can actually use those slot ID's to declare live ranges.
+    gcInfo.gcMakeRegPtrTable(gcInfoEncoder, codeSize, prologSize, GCInfo::MAKE_REG_PTR_MODE_DO_WORK, &callCnt);
+
+    if (m_compiler->opts.IsReversePInvoke())
+    {
+        unsigned reversePInvokeFrameVarNumber = m_compiler->lvaReversePInvokeFrameVar;
+        assert(reversePInvokeFrameVarNumber != BAD_VAR_NUM);
+        const LclVarDsc* reversePInvokeFrameVar = m_compiler->lvaGetDesc(reversePInvokeFrameVarNumber);
+        gcInfoEncoder->SetReversePInvokeFrameSlot(reversePInvokeFrameVar->GetStackOffset());
+    }
+
+    gcInfoEncoder->Build();
+
+    // GC Encoder automatically puts the GC info in the right spot using ICorJitInfo::allocGCInfo(size_t)
+    // let's save the values anyway for debugging purposes
+    m_compiler->compInfoBlkAddr = gcInfoEncoder->Emit();
+    m_compiler->compInfoBlkSize = gcInfoEncoder->GetEncodedGCInfoSize();
 }
 
 //---------------------------------------------------------------------

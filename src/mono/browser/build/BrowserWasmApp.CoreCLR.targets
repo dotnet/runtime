@@ -241,9 +241,9 @@
       <EmccLinkOptimizationFlag Condition="'$(EmccLinkOptimizationFlag)' == ''">$(EmccCompileOptimizationFlag)</EmccLinkOptimizationFlag>
 
       <!-- Memory settings matching browserhost/CMakeLists.txt -->
-      <WasmInitialHeapSize Condition="'$(WasmInitialHeapSize)' == ''">134217728</WasmInitialHeapSize>
+      <WasmInitialHeapSize Condition="'$(WasmInitialHeapSize)' == ''">33554432</WasmInitialHeapSize>
       <EmccMaximumHeapSize Condition="'$(EmccMaximumHeapSize)' == ''">2147483648</EmccMaximumHeapSize>
-      <EmccStackSize Condition="'$(EmccStackSize)' == ''">5MB</EmccStackSize>
+      <EmccStackSize Condition="'$(EmccStackSize)' == ''">2MB</EmccStackSize>
 
       <DisableParallelEmccCompile Condition="'$(DisableParallelEmccCompile)' == ''">false</DisableParallelEmccCompile>
       <_WasmCompileOutputMessageImportance Condition="'$(EmccVerbose)' == 'true'">Normal</_WasmCompileOutputMessageImportance>
@@ -345,14 +345,10 @@
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </ManagedToNativeGenerator>
 
-    <!-- Add generated C++ files to compile list.
-         Note: reverse-pinvoke-table.cpp is NOT compiled separately because
-         libcoreclr_static.a already contains callhelpers-reverse.cpp.o with the
-         default reverse-thunk table. Compiling the app-generated version would
-         cause duplicate symbol errors when the archive object is pulled in for
-         other required symbols (e.g., SystemInteropJS_*). -->
     <ItemGroup>
       <_WasmSourceFileToCompile Include="$(_WasmPInvokeTablePath)"          ObjectFile="$(_WasmIntermediateOutputPath)pinvoke-table.o"
+                                                                            Dependencies="$(_WasmCompileRsp);$(_WasmIntermediateOutputPath)coreclr_compat.h" />
+      <_WasmSourceFileToCompile Include="$(_WasmReversePInvokeTablePath)"   ObjectFile="$(_WasmIntermediateOutputPath)reverse-pinvoke-table.o"
                                                                             Dependencies="$(_WasmCompileRsp);$(_WasmIntermediateOutputPath)coreclr_compat.h" />
       <_WasmSourceFileToCompile Include="$(_WasmInterpToNativeTablePath)"   ObjectFile="$(_WasmIntermediateOutputPath)wasm_m2n_invoke.o"
                                                                             Dependencies="$(_WasmCompileRsp);$(_WasmIntermediateOutputPath)coreclr_compat.h" />
@@ -532,7 +528,7 @@
       <_EmccLinkStepArgs Include="$(EmccExtraLDFlags)" />
 
       <!-- Linker error limit -->
-      <_EmccLinkStepArgs Include="-Wl,-error-limit=0" />
+      <_EmccLinkStepArgs Include="-Wl,--error-limit=0" />
     </ItemGroup>
 
     <!-- Collect all link dependencies for incremental build -->

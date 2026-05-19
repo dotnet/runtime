@@ -37,6 +37,7 @@
     <Compile Include="..\..\Common\Compiler\AsyncMethodVariant.cs" Link="Compiler\AsyncMethodVariant.cs" />
     <Compile Include="..\..\Common\Compiler\AsyncMethodVariant.Mangling.cs" Link="Compiler\AsyncMethodVariant.Mangling.cs" />
     <Compile Include="..\..\Common\Compiler\CompilerTypeSystemContext.Async.cs" Link="Compiler\CompilerTypeSystemContext.Async.cs" />
+    <Compile Include="..\..\Common\Compiler\CompilerTypeSystemContext.Wasm.cs" Link="Compiler\CompilerTypeSystemContext.Wasm.cs" />
     <Compile Include="..\..\Common\Compiler\Win32Resources\ResourceData.cs" Link="Compiler\Win32Resources\ResourceData.cs" />
     <Compile Include="..\..\Common\Compiler\Win32Resources\ResourceData.Reader.cs" Link="Compiler\Win32Resources\ResourceData.Reader.cs" />
     <Compile Include="..\..\Common\Compiler\Win32Resources\ResourceData.ResourcesDataModel.cs" Link="Compiler\Win32Resources\ResourceData.ResourcesDataModel.cs" />
@@ -495,7 +496,9 @@
     <Compile Include="Compiler\DependencyAnalysis\TrimmingDescriptorNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\VariantInterfaceMethodUseNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\CustomAttributeBasedDependencyAlgorithm.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\EventMetadataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FieldMetadataNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\PropertyMetadataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ILScanNodeFactory.cs" />
     <Compile Include="Compiler\DictionaryLayoutProvider.cs" />
     <Compile Include="Compiler\Disassembler.cs" />
@@ -597,6 +600,7 @@
     <Compile Include="Compiler\DependencyAnalysis\TypeManagerIndirectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\TlsRootNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\BlobNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ManagedDataDescriptorNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\EETypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\CanonicalDefinitionEETypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternSymbolNode.cs" />
@@ -690,6 +694,7 @@
     <Compile Include="Compiler\RootingHelpers.cs" />
     <Compile Include="Compiler\RootingServiceProvider.cs" />
     <Compile Include="Compiler\RuntimeConfigurationRootProvider.cs" />
+    <Compile Include="Compiler\ManagedDataDescriptorProvider.cs" />
     <Compile Include="Compiler\SingleFileCompilationModuleGroup.cs" />
     <Compile Include="Compiler\SingleMethodCompilationModuleGroup.cs" />
     <Compile Include="Compiler\ILAssemblyGeneratingMethodDebugInfoProvider.cs" />
