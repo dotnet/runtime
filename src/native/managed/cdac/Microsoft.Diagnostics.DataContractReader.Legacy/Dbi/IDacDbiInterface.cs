@@ -160,6 +160,12 @@ public enum DynamicMethodType
     kLCGMethod = 2,
 }
 
+public enum CorDebugThreadState
+{
+    ThreadRun = 0,
+    ThreadSuspend = 1,
+}
+
 [Flags]
 public enum CorDebugUserState
 {
@@ -168,6 +174,21 @@ public enum CorDebugUserState
     USER_STOPPED = 0x10,
     USER_WAIT_SLEEP_JOIN = 0x20,
     USER_THREADPOOL = 0x100,
+}
+
+public enum CorDebugGenerationTypes
+{
+    CorDebug_Gen0 = 0,
+    CorDebug_Gen1 = 1,
+    CorDebug_Gen2 = 2,
+    CorDebug_LOH = 3,
+    CorDebug_POH = 4,
+    CorDebug_NonGC = 0x7FFFFFFF,
+}
+
+public enum IlNum : int
+{
+    TYPECTXT_ILNUM = -3,
 }
 
 // Name-surface projection of IDacDbiInterface in native method order for COM binding validation.
@@ -459,9 +480,6 @@ public unsafe partial interface IDacDbiInterface
     int IsVmObjectHandleValid(ulong vmHandle, Interop.BOOL* pResult);
 
     [PreserveSig]
-    int IsWinRTModule(ulong vmModule, Interop.BOOL* isWinRT);
-
-    [PreserveSig]
     int GetHandleAddressFromVmHandle(ulong vmHandle, ulong* pRetVal);
 
     [PreserveSig]
@@ -483,9 +501,6 @@ public unsafe partial interface IDacDbiInterface
     int IsThreadSuspendedOrHijacked(ulong vmThread, Interop.BOOL* pResult);
 
     [PreserveSig]
-    int AreGCStructuresValid(Interop.BOOL* pResult);
-
-    [PreserveSig]
     int CreateHeapWalk(nuint* pHandle);
 
     [PreserveSig]
@@ -495,7 +510,7 @@ public unsafe partial interface IDacDbiInterface
     int WalkHeap(nuint handle, uint count, COR_HEAPOBJECT* objects, uint* fetched);
 
     [PreserveSig]
-    int GetHeapSegments(nint pSegments);
+    int EnumerateHeapSegments(/*FP_HEAPSEGMENT_CALLBACK*/ delegate* unmanaged<ulong, ulong, int, uint, nint, void> fpCallback, nint pUserData);
 
     [PreserveSig]
     int IsValidObject(ulong obj, Interop.BOOL* pResult);
@@ -565,9 +580,6 @@ public unsafe partial interface IDacDbiInterface
 
     [PreserveSig]
     int GetDelegateTargetObject(int delegateType, ulong delegateObject, ulong* ppTargetObj, ulong* ppTargetAppDomain);
-
-    [PreserveSig]
-    int GetLoaderHeapMemoryRanges(nint pRanges);
 
     [PreserveSig]
     int IsModuleMapped(ulong pModule, Interop.BOOL* isModuleMapped);

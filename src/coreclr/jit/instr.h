@@ -295,8 +295,8 @@ enum insOpts: unsigned
     // One-bit:  0b1000_0000
     INS_OPTS_EVEX_nf_MASK = 0x80,   // mask for APX-EVEX.nf related features
 
-    INS_OPTS_EVEX_nf = 1 << 7,      // NDD form for legacy instructions
-    INS_OPTS_EVEX_dfv_byte_offset = 8, // save the bit offset for first dfv flag pos
+    INS_OPTS_EVEX_nf = 1 << 7,      // No-Flag for legacy instructions
+    INS_OPTS_EVEX_dfv_shift = 8, // bit shift for the first dfv flag position
 
     INS_OPTS_EVEX_dfv_cf = 1 << 8,
     INS_OPTS_EVEX_dfv_zf = 1 << 9,

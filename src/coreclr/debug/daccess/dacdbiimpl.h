@@ -110,7 +110,6 @@ public:
     HRESULT STDMETHODCALLTYPE IsThreadSuspendedOrHijacked(VMPTR_Thread vmThread, OUT BOOL * pResult);
 
 
-    HRESULT STDMETHODCALLTYPE AreGCStructuresValid(OUT BOOL * pResult);
     HRESULT STDMETHODCALLTYPE CreateHeapWalk(HeapWalkHandle *pHandle);
     HRESULT STDMETHODCALLTYPE DeleteHeapWalk(HeapWalkHandle handle);
 
@@ -119,7 +118,7 @@ public:
                      OUT COR_HEAPOBJECT * objects,
                      OUT ULONG *fetched);
 
-    HRESULT STDMETHODCALLTYPE GetHeapSegments(OUT DacDbiArrayList<COR_SEGMENT> *pSegments);
+    HRESULT STDMETHODCALLTYPE EnumerateHeapSegments(FP_HEAPSEGMENT_CALLBACK fpCallback, CALLBACK_DATA pUserData);
 
 
     HRESULT STDMETHODCALLTYPE IsValidObject(CORDB_ADDRESS obj, OUT BOOL * pResult);
@@ -311,8 +310,6 @@ public:
         OUT VMPTR_Object *ppTargetObj,
         OUT VMPTR_AppDomain *ppTargetAppDomain);
 
-    HRESULT STDMETHODCALLTYPE GetLoaderHeapMemoryRanges(OUT DacDbiArrayList<COR_MEMORY_RANGE> * pRanges);
-
     HRESULT STDMETHODCALLTYPE IsModuleMapped(VMPTR_Module pModule, OUT BOOL *isModuleMapped);
 
     HRESULT STDMETHODCALLTYPE MetadataUpdatesApplied(OUT BOOL * pResult);
@@ -323,14 +320,6 @@ public:
     HRESULT STDMETHODCALLTYPE GetRcwCachedInterfacePointers(VMPTR_Object vmObject, BOOL bIInspectableOnly, OUT DacDbiArrayList<CORDB_ADDRESS> * pDacItfPtrs);
 
 private:
-    // Helper to enumerate all possible memory ranges help by a loader allocator.
-    void EnumerateMemRangesForLoaderAllocator(
-        PTR_LoaderAllocator pLoaderAllocator,
-        CQuickArrayList<COR_MEMORY_RANGE> *rangeAcummulator);
-
-    void EnumerateMemRangesForJitCodeHeaps(
-        CQuickArrayList<COR_MEMORY_RANGE> *rangeAcummulator);
-
     // Given a pointer to a managed function, obtain the method desc for it.
     // Equivalent to GetMethodDescPtrFromIp, except if the method isn't jitted
     // it will look for it in code stubs.
@@ -654,7 +643,7 @@ public:
     // Get the alocated bytes for this thread.
     HRESULT STDMETHODCALLTYPE GetThreadAllocInfo(VMPTR_Thread vmThread, DacThreadAllocInfo* threadAllocInfo);
 
-    // Set and reset the TSNC_DebuggerUserSuspend bit on the state of the specified thread
+    // Set and reset the DCTS_UserSuspend bit on the DebuggerControlledThreadState of the specified thread
     // according to the CorDebugThreadState.
     HRESULT STDMETHODCALLTYPE SetDebugState(VMPTR_Thread vmThread, CorDebugThreadState debugState);
 
@@ -846,9 +835,6 @@ protected:
 
     // Validate that the VMPTR_OBJECTHANDLE refers to a legitimate managed object
     HRESULT STDMETHODCALLTYPE IsVmObjectHandleValid(VMPTR_OBJECTHANDLE vmHandle, OUT BOOL * pResult);
-
-    // if the specified module is a WinRT module then isWinRT will equal TRUE
-    HRESULT STDMETHODCALLTYPE IsWinRTModule(VMPTR_Module vmModule, BOOL * pIsWinRT);
 
 private:
     // Check whether the specified thread is at a GC-safe place, i.e. in an interruptible region.

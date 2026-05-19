@@ -34,6 +34,7 @@
     <Compile Include="SatelliteAssemblies.cs" />
     <Compile Include="LoaderLinkTest.cs" />
     <Compile Include="AssemblyResolutionDowngradeTest.cs" />
+    <Compile Include="TpaLoadFailureTest.cs" />
     <Compile Include="$(CommonPath)System\HResults.cs" Link="Common\System\HResults.cs" />
     <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs" Link="Common\TestUtilities\System\DisableParallelization.cs" />
     <EmbeddedResource Include="MainStrings*.resx" />
@@ -50,14 +51,17 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- iOS & tvOS are aot workloads and loading an embedded assembly results in some dynamic codegen, which is not allowed -->
-    <ProjectReference Condition="'$(TargetOS)' != 'ios' and '$(TargetOS)' != 'tvos'" Include="System.Runtime.Loader.Test.Assembly\System.Runtime.Loader.Test.Assembly.csproj" ReferenceOutputAssembly="false" OutputItemType="EmbeddedResource" />
-    <ProjectReference Condition="'$(TargetOS)' != 'ios' and '$(TargetOS)' != 'tvos'" Include="System.Runtime.Loader.Test.Assembly2\System.Runtime.Loader.Test.Assembly2.csproj" ReferenceOutputAssembly="false" OutputItemType="EmbeddedResource" />
-    <ProjectReference Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos'" Include="System.Runtime.Loader.Test.Assembly\System.Runtime.Loader.Test.Assembly.csproj" />
-    <ProjectReference Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos'" Include="System.Runtime.Loader.Test.Assembly2\System.Runtime.Loader.Test.Assembly2.csproj" />
+    <!-- Apple mobile workloads don't support loading these test assemblies as embedded resources -->
+    <ProjectReference Condition="'$(TargetsAppleMobile)' != 'true'" Include="System.Runtime.Loader.Test.Assembly\System.Runtime.Loader.Test.Assembly.csproj" ReferenceOutputAssembly="false" OutputItemType="EmbeddedResource" />
+    <ProjectReference Condition="'$(TargetsAppleMobile)' != 'true'" Include="System.Runtime.Loader.Test.Assembly2\System.Runtime.Loader.Test.Assembly2.csproj" ReferenceOutputAssembly="false" OutputItemType="EmbeddedResource" />
+    <ProjectReference Condition="'$(TargetsAppleMobile)' == 'true'" Include="System.Runtime.Loader.Test.Assembly\System.Runtime.Loader.Test.Assembly.csproj" />
+    <ProjectReference Condition="'$(TargetsAppleMobile)' == 'true'" Include="System.Runtime.Loader.Test.Assembly2\System.Runtime.Loader.Test.Assembly2.csproj" />
     <ProjectReference Include="ContextualReflectionDependency\System.Runtime.Loader.Test.ContextualReflectionDependency.csproj" />
     <ProjectReference Include="ReferencedClassLib\ReferencedClassLib.csproj" />
     <ProjectReference Include="ReferencedClassLibNeutralIsSatellite\ReferencedClassLibNeutralIsSatellite.csproj" />
+    <ProjectReference Include="System.Runtime.Loader.Test.BindFailure.Missing\System.Runtime.Loader.Test.BindFailure.Missing.csproj" />
+    <ProjectReference Include="System.Runtime.Loader.Test.BindFailure.Locked\System.Runtime.Loader.Test.BindFailure.Locked.csproj" />
+    <ProjectReference Include="System.Runtime.Loader.Test.BindFailure.Corrupt\System.Runtime.Loader.Test.BindFailure.Corrupt.csproj" />
     <ProjectReference Include="LoaderLinkTest.Shared\LoaderLinkTest.Shared.csproj" />
     <ProjectReference Include="LoaderLinkTest.Dynamic\LoaderLinkTest.Dynamic.csproj" />
     <ProjectReference Include="MissingDependency.Root\MissingDependency.Root.csproj" />
@@ -113,5 +117,15 @@
         <TrimMode>copy</TrimMode>
       </ManagedAssemblyToLink>
     </ItemGroup>
+  </Target>
+
+  <!-- Remove the bind-failure test assemblies from the output directory.
+       They must remain in deps.json (so the host adds them to the TPA list) but must not be
+       physically present on disk when the test process starts. The tests recreate the files
+       they need (e.g., corrupt or locked versions) before attempting the load. -->
+  <Target Name="RemoveBindFailureTestAssemblies" AfterTargets="Build" BeforeTargets="PrepareForRun">
+    <Delete Files="$(OutDir)System.Runtime.Loader.Test.BindFailure.Missing.dll" />
+    <Delete Files="$(OutDir)System.Runtime.Loader.Test.BindFailure.Locked.dll" />
+    <Delete Files="$(OutDir)System.Runtime.Loader.Test.BindFailure.Corrupt.dll" />
   </Target>
 </Project>

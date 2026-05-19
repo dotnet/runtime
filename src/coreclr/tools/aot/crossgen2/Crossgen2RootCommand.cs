@@ -315,6 +315,11 @@ namespace ILCompiler
             Console.WriteLine();
             Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--targetarch", String.Join("', '", ValidArchitectures), Helpers.GetTargetArchitecture(null).ToString().ToLowerInvariant()));
             Console.WriteLine();
+
+            string[] ValidObjFormats = ["pe", "macho", "wasm"];
+            Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--obj-format", String.Join("', '", ValidObjFormats), "pe"));
+            Console.WriteLine();
+
             Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--type-validation", String.Join("', '", Enum.GetNames<TypeValidationRule>()), nameof(TypeValidationRule.Automatic)));
             Console.WriteLine();
 

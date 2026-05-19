@@ -405,13 +405,20 @@ namespace ILCompiler.Reflection.ReadyToRun
                     MethodDefinition methodDef = ComponentReader.MetadataReader.GetMethodDefinition((MethodDefinitionHandle)MethodHandle);
                     if (methodDef.RelativeVirtualAddress != 0)
                     {
-                        System.Diagnostics.Debug.Assert(ComponentReader.ImageReader != null, "Component should be a PE and have an associated PEReader");
-                        MethodBodyBlock mbb = ComponentReader.ImageReader.GetMethodBody(methodDef.RelativeVirtualAddress);
-                        if (!mbb.LocalSignature.IsNil)
+                        ImmutableArray<string> localSig = default;
+                        ComponentReader.GetSectionData(methodDef.RelativeVirtualAddress, (BlobReader sectionData) =>
                         {
-                            StandaloneSignature ss = ComponentReader.MetadataReader.GetStandaloneSignature(mbb.LocalSignature);
-                            LocalSignature = ss.DecodeLocalSignature(typeProvider, genericContext);
-                        }
+                            if (sectionData.Length > 0)
+                            {
+                                MethodBodyBlock mbb = MethodBodyBlock.Create(sectionData);
+                                if (!mbb.LocalSignature.IsNil)
+                                {
+                                    StandaloneSignature ss = ComponentReader.MetadataReader.GetStandaloneSignature(mbb.LocalSignature);
+                                    localSig = ss.DecodeLocalSignature(typeProvider, genericContext);
+                                }
+                            }
+                        });
+                        LocalSignature = localSig;
                     }
                     Name = ComponentReader.MetadataReader.GetString(methodDef.Name);
                     Signature = methodDef.DecodeSignature<string, DisassemblingGenericContext>(typeProvider, genericContext);

@@ -158,6 +158,15 @@ public enum OptimizationTier
 ```
 
 ```csharp
+public enum GenericContextLoc
+{
+    None,
+    InstArg,
+    ThisPtr,
+}
+```
+
+```csharp
 partial interface IRuntimeTypeSystem : IContract
 {
     public virtual MethodDescHandle GetMethodDescHandle(TargetPointer methodDescPointer);
@@ -199,9 +208,9 @@ partial interface IRuntimeTypeSystem : IContract
     // Return true if a MethodDesc represents an IL stub with a special MethodDesc context arg
     public virtual bool HasMDContextArg(MethodDescHandle);
 
-    // Return true if the method requires a hidden instantiation argument (generic context parameter).
-    // Corresponds to native MethodDesc::RequiresInstArg().
-    public virtual bool RequiresInstArg(MethodDescHandle methodDesc);
+    // Determine where a shared generic method obtains its generic context.
+    // Returns None if not shared, InstArg if via a hidden parameter, or ThisPtr if via the 'this' pointer's MethodTable.
+    public virtual GenericContextLoc GetGenericContextLoc(MethodDescHandle methodDesc);
 
     // Return true if the method uses the async calling convention.
     // Corresponds to native MethodDesc::IsAsyncMethod().
@@ -258,8 +267,8 @@ bool IsFieldDescThreadStatic(TargetPointer fieldDescPointer);
 bool IsFieldDescStatic(TargetPointer fieldDescPointer);
 uint GetFieldDescType(TargetPointer fieldDescPointer);
 uint GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition fieldDef);
-TargetPointer GetFieldDescStaticAddress(TargetPointer fieldDescPointer);
-TargetPointer GetFieldDescThreadStaticAddress(TargetPointer fieldDescPointer, TargetPointer thread);
+TargetPointer GetFieldDescStaticAddress(TargetPointer fieldDescPointer, bool unboxValueTypes = true);
+TargetPointer GetFieldDescThreadStaticAddress(TargetPointer fieldDescPointer, TargetPointer thread, bool unboxValueTypes = true);
 ```
 
 ### Other APIs
@@ -1637,26 +1646,36 @@ Determining if a method is an async thunk method:
     }
 ```
 
-Determining if a method requires a hidden instantiation argument (generic context parameter):
+Determining where a shared generic method obtains its generic context:
 
 ```csharp
-    public bool RequiresInstArg(MethodDescHandle methodDescHandle)
+    public GenericContextLoc GetGenericContextLoc(MethodDescHandle methodDescHandle)
     {
         MethodDesc md = _methodDescs[methodDescHandle.Address];
-
-        // RequiresInstArg = IsSharedByGenericInstantiations && (HasMethodInstantiation || IsStatic || IsValueType || IsInterface)
         if (!IsSharedByGenericInstantiations(md))
-            return false;
+            return GenericContextLoc.None;
+        else if (RequiresInstArg(md))
+            return GenericContextLoc.InstArg;
+        else
+            return GenericContextLoc.ThisPtr;
+    }
 
+    private bool RequiresInstArg(MethodDesc md)
+    {
         if (HasMethodInstantiation(md))
             return true;
 
-        // md.IsStatic reads from MethodDescFlags.Static (0x0080)
         if (md.IsStatic)
             return true;
 
         MethodTable mt = _methodTables[md.MethodTable];
-        return mt.Flags.IsInterface || mt.Flags.IsValueType;
+        if (mt.Flags.IsValueType)
+            return true;
+
+        if (mt.Flags.IsInterface && !IsAbstract(md) /* checked from md classification and metadata attributes */)
+            return true;
+
+        return false;
     }
 
     private bool IsSharedByGenericInstantiations(MethodDesc md)
@@ -2027,17 +2046,20 @@ uint GetFieldDescOffset(TargetPointer fieldDescPointer)
     return DWord2 & (uint)FieldDescFlags2.OffsetMask;
 }
 
-TargetPointer GetFieldDescStaticAddress(TargetPointer fieldDescPointer)
+TargetPointer GetFieldDescStaticAddress(TargetPointer fieldDescPointer, bool unboxValueTypes = true)
 {
     // Resolves the base pointer (GC or non-GC statics) for the enclosing type,
     // then applies the field's metadata-based offset within that region.
     // Uses GetGCStaticsBasePointer / GetNonGCStaticsBasePointer depending on the field's CorElementType.
+    // When unboxValueTypes is true (default), value-type statics are dereferenced to the unboxed
+    // payload inside the boxed object. Pass false to obtain the address of the boxed reference itself.
 }
 
-TargetPointer GetFieldDescThreadStaticAddress(TargetPointer fieldDescPointer, TargetPointer thread)
+TargetPointer GetFieldDescThreadStaticAddress(TargetPointer fieldDescPointer, TargetPointer thread, bool unboxValueTypes = true)
 {
     // Like GetFieldDescStaticAddress, but resolves thread-local base pointers instead.
     // Uses GetGCThreadStaticsBasePointer / GetNonGCThreadStaticsBasePointer.
+    // The unboxValueTypes parameter behaves the same as in GetFieldDescStaticAddress.
 }
 ```
 

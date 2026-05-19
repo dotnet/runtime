@@ -58,6 +58,7 @@ set(SHARED_CLR_DESTINATION
 # CoreCLR runtime .a libraries
 LIST(APPEND NATIVE_LIBS
     ${SHARED_CLR_DESTINATION}/libcoreclr_static.a
+    ${SHARED_CLR_DESTINATION}/libcoreclr_gen_static.a
     ${SHARED_CLR_DESTINATION}/libnativeresourcestring.a
     ${SHARED_CLR_DESTINATION}/libgcinfo_unix_wasm.a
     ${SHARED_CLR_DESTINATION}/libcoreclrminipal.a
