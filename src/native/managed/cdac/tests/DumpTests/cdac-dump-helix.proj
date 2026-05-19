@@ -194,12 +194,6 @@
       <!-- Windows: copy each debuggee DLL -->
       <_HelixCommandLines Condition="'$(TargetOS)' == 'windows'"
           Include="@(_UniqueDebuggee->'mkdir %25HELIX_WORKITEM_PAYLOAD%25\dumps\local\symbols\debuggees\%(Identity)')" />
-      <!-- Copy every DLL from the debuggee publish folder so that project
-           references (e.g. InterpreterStack/Trampoline.dll) are also available
-           for module resolution. cdac and ClrMD read ECMA-335 metadata from
-           the PE itself, so PDBs are not needed here. ``/Y`` keeps ``copy``
-           non-interactive if the destination file already exists (e.g. on a
-           retry that reuses the same payload directory). -->
       <_HelixCommandLines Condition="'$(TargetOS)' == 'windows'"
           Include="@(_UniqueDebuggee->'copy /Y &quot;%25HELIX_WORKITEM_PAYLOAD%25\debuggees\%(Identity)\*.dll&quot; &quot;%25HELIX_WORKITEM_PAYLOAD%25\dumps\local\symbols\debuggees\%(Identity)\&quot;')" />
 
@@ -213,10 +207,6 @@
       <!-- Unix: copy each debuggee DLL -->
       <_HelixCommandLines Condition="'$(TargetOS)' != 'windows'"
           Include="@(_UniqueDebuggee->'mkdir -p $HELIX_WORKITEM_PAYLOAD/dumps/local/symbols/debuggees/%(Identity)')" />
-      <!-- Copy every DLL from the debuggee publish folder so that project
-           references (e.g. InterpreterStack/Trampoline.dll) are also available
-           for module resolution. cdac and ClrMD read ECMA-335 metadata from
-           the PE itself, so PDBs are not needed here. -->
       <_HelixCommandLines Condition="'$(TargetOS)' != 'windows'"
           Include="@(_UniqueDebuggee->'cp $HELIX_WORKITEM_PAYLOAD/debuggees/%(Identity)/*.dll $HELIX_WORKITEM_PAYLOAD/dumps/local/symbols/debuggees/%(Identity)/')" />
     </ItemGroup>
