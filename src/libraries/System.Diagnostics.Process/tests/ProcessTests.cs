@@ -1047,19 +1047,22 @@ namespace System.Diagnostics.Tests
         [PlatformSpecific(TestPlatforms.Linux | TestPlatforms.Android)]
         public void StartTime_IsDeterministicAcrossProcesses()
         {
-            // Makes sure two independent processes reading the same target process's
-            // StartTime agree on the result — or at least agree as much as the math allows.
+            // Makes sure multiple independent processes reading the same target process's
+            // StartTime all agree on the result — or at least agree as much as the math allows.
             //
-            // Here's the fun part: they might not agree on the very last digit, and that's
-            // actually fine. The start time comes from /proc/[pid]/stat (jiffies), gets
-            // divided by HZ to produce a double, then multiplied by 10,000,000 to get Ticks.
-            // A double only has ~15-16 significant digits of precision, but a Ticks value
-            // is 17-18 digits long — so the last digit or two are just floating-point noise,
-            // not a real time difference. Two processes doing this conversion independently
-            // can land on adjacent values (e.g. ...622 vs ...623) purely by chance.
+            // We spawn 5 separate child processes, each one reads StartTime 10 times and
+            // reports all readings back. Then we look at all 50 values together and make sure
+            // they're all consistent. If the boot-time offset is stable, they should all
+            // cluster around the same value. If something is broken they'll scatter.
             //
-            // Or maybe I'm overthinking it and it's fine. Either way, we divide by 10
-            // before comparing to make the test immune to that last-digit chaos.
+            // The /10 thing: last digit of Ticks is floating-point noise (double only has
+            // ~15-16 significant digits but Ticks needs 17-18), so two processes doing the
+            // same conversion independently can land on adjacent values purely by chance.
+            // Chopping the last digit before comparing filters that out without hiding
+            // any real drift. Or maybe I'm overthinking it and it's fine either way.
+        
+            const int NumProcesses = 5;
+            const int ReadingsPerProcess = 10;
         
             Process target = CreateProcessLong();
             target.Start();
@@ -1067,47 +1070,71 @@ namespace System.Diagnostics.Tests
             try
             {
                 int targetPid = target.Id;
-                string result1 = null;
-                string result2 = null;
+                var allReadings = new List<long>(NumProcesses * ReadingsPerProcess);
         
-                using (RemoteInvokeHandle h1 = RemoteExecutor.Invoke(
-                    (string pidStr) =>
-                    {
-                        int pid = int.Parse(pidStr);
-                        Process p = Process.GetProcessById(pid);
-                        Console.WriteLine(p.StartTime.Ticks);
-                        return RemoteExecutor.SuccessExitCode;
-                    },
-                    targetPid.ToString(),
-                    new RemoteInvokeOptions { StartInfo = new ProcessStartInfo { RedirectStandardOutput = true } }))
+                for (int i = 0; i < NumProcesses; i++)
                 {
-                    result1 = h1.Process.StandardOutput.ReadToEnd().Trim();
+                    using (RemoteInvokeHandle handle = RemoteExecutor.Invoke(
+                        (string pidStr, string countStr) =>
+                        {
+                            int pid = int.Parse(pidStr);
+                            int count = int.Parse(countStr);
+                            Process p = Process.GetProcessById(pid);
+        
+                            // Take multiple readings inside this process and print each one.
+                            // We re-read StartTime each time to make sure caching isn't
+                            // masking a problem — every call should go back to /proc.
+                            for (int j = 0; j < count; j++)
+                            {
+                                // Force a fresh Process object each iteration so we're not
+                                // just reading a cached value from the same instance
+                                using Process fresh = Process.GetProcessById(pid);
+                                Console.WriteLine(fresh.StartTime.Ticks);
+                            }
+        
+                            return RemoteExecutor.SuccessExitCode;
+                        },
+                        targetPid.ToString(),
+                        ReadingsPerProcess.ToString(),
+                        new RemoteInvokeOptions { StartInfo = new ProcessStartInfo { RedirectStandardOutput = true } }))
+                    {
+                        string output = handle.Process.StandardOutput.ReadToEnd();
+        
+                        foreach (string line in output.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+                        {
+                            Assert.True(
+                                long.TryParse(line.Trim(), out long ticks),
+                                $"Child process {i + 1} returned non-numeric output: '{line}'");
+        
+                            allReadings.Add(ticks);
+                        }
+                    }
+        
+                    Assert.True(
+                        allReadings.Count >= (i + 1) * ReadingsPerProcess,
+                        $"Child process {i + 1} returned fewer than {ReadingsPerProcess} readings");
                 }
         
-                using (RemoteInvokeHandle h2 = RemoteExecutor.Invoke(
-                    (string pidStr) =>
-                    {
-                        int pid = int.Parse(pidStr);
-                        Process p = Process.GetProcessById(pid);
-                        Console.WriteLine(p.StartTime.Ticks);
-                        return RemoteExecutor.SuccessExitCode;
-                    },
-                    targetPid.ToString(),
-                    new RemoteInvokeOptions { StartInfo = new ProcessStartInfo { RedirectStandardOutput = true } }))
-                {
-                    result2 = h2.Process.StandardOutput.ReadToEnd().Trim();
-                }
+                Assert.Equal(NumProcesses * ReadingsPerProcess, allReadings.Count);
         
-                Assert.False(string.IsNullOrEmpty(result1), "Process 1 did not return a StartTime");
-                Assert.False(string.IsNullOrEmpty(result2), "Process 2 did not return a StartTime");
+                // Chop last digit off everything before comparing — that digit is just
+                // floating-point noise from the jiffies → double → Ticks conversion and
+                // tells us nothing real about whether the values agree.
+                List<long> normalized = allReadings.Select(t => t / 10).ToList();
         
-                long ticks1 = long.Parse(result1);
-                long ticks2 = long.Parse(result2);
+                long referenceValue = normalized[0];
         
-                // Chop the last digit off both values before comparing.
-                // If they still disagree after that, something is genuinely wrong —
-                // not just floating-point being floating-point.
-                Assert.Equal(ticks1 / 10, ticks2 / 10);
+                // All 50 readings across all 5 processes should agree on the same value.
+                // If they don't, the boot-time offset is drifting between processes which
+                // is exactly the bug this PR is fixing.
+                Assert.All(normalized, reading =>
+                    Assert.True(
+                        reading == referenceValue,
+                        $"StartTime reading diverged: got {reading * 10} ticks, " +
+                        $"expected ~{referenceValue * 10} ticks " +
+                        $"(diff: {Math.Abs(reading - referenceValue) * 10} ticks = " +
+                        $"{TimeSpan.FromTicks(Math.Abs(reading - referenceValue) * 10).TotalMilliseconds:F4} ms). " +
+                        $"All readings: [{string.Join(", ", allReadings)}]"));
             }
             finally
             {
