@@ -1577,8 +1577,8 @@ void CodeGen::genHWIntrinsic_R_R_R_RM_I(
         // operand overlap with the target register. So we need to
         // detect those cases and adjust the control byte accordingly.
 
-        uint8_t                 control  = static_cast<uint8_t>(ival);
-        const TernaryLogicInfo& info     = TernaryLogicInfo::lookup(control);
+        uint8_t                 control = static_cast<uint8_t>(ival);
+        const TernaryLogicInfo& info    = TernaryLogicInfo::lookup(control);
 
         // These are the control bytes used for TernaryLogic
 
