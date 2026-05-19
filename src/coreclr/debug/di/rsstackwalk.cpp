@@ -692,9 +692,9 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
         CordbNativeFrame* pNativeFrame = new CordbNativeFrame(m_pCordbThread,
                                                               frameData.fp,
                                                               pNativeCode,
-                                                              pJITFuncData->nativeOffset,
+                                                              (SIZE_T)pJITFuncData->nativeOffset,
                                                               &frameRd,
-                                                              frameData.v.taAmbientESP,
+                                                              (TADDR)frameData.v.taAmbientESP,
                                                               pCurrentAppDomain,
                                                               &miscFrame,
                                                               &frameCtx);
