@@ -1930,20 +1930,23 @@ MDInternalRW::GetNameAndSigOfMethodDef(
     LPCSTR          *pszMethodName)
 {
     HRESULT hr;
-    // we don't need lock here because name and signature will not change
 
     // Output parameter should not be NULL
     _ASSERTE(ppvSigBlob && pcbSigBlob);
     _ASSERTE(TypeFromToken(methoddef) == mdtMethodDef);
 
-    MethodRec *pMethodRec;
     *pszMethodName = NULL;
     *ppvSigBlob = NULL;
-    *ppvSigBlob = NULL;
+    *pcbSigBlob = 0;
+
+    LOCKREADIFFAILRET();
+
+    MethodRec *pMethodRec;
     IfFailRet(m_pStgdb->m_MiniMd.GetMethodRecord(RidFromToken(methoddef), &pMethodRec));
     IfFailRet(m_pStgdb->m_MiniMd.getSignatureOfMethod(pMethodRec, ppvSigBlob, pcbSigBlob));
+    IfFailRet(m_pStgdb->m_MiniMd.getNameOfMethod(pMethodRec, pszMethodName));
 
-    return GetNameOfMethodDef(methoddef, pszMethodName);
+    return S_OK;
 } // MDInternalRW::GetNameAndSigOfMethodDef
 
 
@@ -2207,6 +2210,8 @@ MDInternalRW::GetCountNestedClasses(  // return count of Nested classes.
 
     *pcNestedClassesCount = 0;
 
+    LOCKREADIFFAILRET();
+
     ulCount = m_pStgdb->m_MiniMd.getCountNestedClasss();
 
     for (ULONG i = 1; i <= ulCount; i++)
@@ -2239,6 +2244,8 @@ MDInternalRW::GetNestedClasses(   // Return actual count.
              !IsNilToken(tkEnclosingClass));
 
     *pcNestedClasses = 0;
+
+    LOCKREADIFFAILRET();
 
     ulCount = m_pStgdb->m_MiniMd.getCountNestedClasss();
 
@@ -3266,6 +3273,19 @@ HRESULT MDInternalRW::GetGenericParamProps(        // S_OK or error.
     HRESULT         hr = NOERROR;
     GenericParamRec  *pGenericParamRec = NULL;
 
+    if (pulSequence)
+        *pulSequence = 0;
+    if (pdwAttr)
+        *pdwAttr = 0;
+    if (ptOwner)
+        *ptOwner = mdTokenNil;
+    if (reserved)
+        *reserved = 0;
+    if (szName != NULL)
+        *szName = NULL;
+
+    LOCKREADIFFAILRET();
+
     // See if this version of the metadata can do Generics
     if (!m_pStgdb->m_MiniMd.SupportsGenerics())
         IfFailGo(CLDB_E_INCOMPATIBLE);
@@ -3304,6 +3324,13 @@ HRESULT MDInternalRW::GetGenericParamConstraintProps(      // S_OK or error.
     HRESULT         hr = NOERROR;
     GenericParamConstraintRec  *pGPCRec;
     RID             ridRD = RidFromToken(rd);
+
+    if (ptGenericParam)
+        *ptGenericParam = mdGenericParamNil;
+    if (ptkConstraintType)
+        *ptkConstraintType = mdTokenNil;
+
+    LOCKREADIFFAILRET();
 
     // See if this version of the metadata can do Generics
     if (!m_pStgdb->m_MiniMd.SupportsGenerics())
@@ -3997,6 +4024,9 @@ HRESULT MDInternalRW::EnumDeltaTokensInit(  // return hresult
     phEnum->m_EnumType = MDSimpleEnum;
 
     HENUMInternal::InitDynamicArrayEnum(phEnum);
+
+    LOCKREADIFFAILRET();
+
     for (index = 1; index <= m_pStgdb->m_MiniMd.m_Schema.m_cRecs[TBL_ENCLog]; ++index)
     {
         // Get the token type; see if it is a real token.
