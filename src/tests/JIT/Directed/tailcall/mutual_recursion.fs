@@ -557,6 +557,7 @@ type Driver() =
 ////////////////////////////////////////////////////////////////////////////////
 
 [<SkipOnCoreClr("Unstable under JIT stress", RuntimeTestModes.AnyJitStress ||| RuntimeTestModes.AnyGCStress)>]
+[<SkipOnCoreClr("Stack overflow in Debug - F# requires optimization for tail call emission", RuntimeConfiguration.Debug)>]
 [<SkipOnMono("Not supported on Mono runtime")>]
 [<ConditionalFact(typeof<Utilities>, [| "IsNotNativeAot" |])>]
 let main () =
