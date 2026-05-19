@@ -236,6 +236,20 @@ public:
         INTERCEPTION_COUNT
     };
 
+#ifdef DACCESS_COMPILE
+    enum StubFrameType
+    {
+        STUB_FRAME_NONE,
+        STUB_FRAME_M2U,
+        STUB_FRAME_U2M,
+        STUB_FRAME_FUNC_EVAL,
+        STUB_FRAME_INTERNAL_CALL,
+        STUB_FRAME_CLASS_INIT,
+        STUB_FRAME_EXCEPTION,
+        STUB_FRAME_JIT_COMPILATION,
+    };
+#endif // DACCESS_COMPILE
+
     void GcScanRoots(promote_func *fn, ScanContext* sc);
     unsigned GetFrameAttribs();
 #ifndef DACCESS_COMPILE
@@ -252,6 +266,9 @@ public:
     int GetFrameType();
     ETransitionType GetTransitionType();
     Interception GetInterception();
+#ifdef DACCESS_COMPILE
+    StubFrameType GetStubFrameType();
+#endif // DACCESS_COMPILE
     void GetUnmanagedCallSite(TADDR* ip, TADDR* returnIP, TADDR* returnSP);
     BOOL TraceFrame(Thread *thread, BOOL fromPatch, TraceDestination *trace, REGDISPLAY *regs);
 #ifdef DACCESS_COMPILE
@@ -427,6 +444,14 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return INTERCEPTION_NONE;
     }
+
+#ifdef DACCESS_COMPILE
+    StubFrameType GetStubFrameType_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return STUB_FRAME_NONE;
+    }
+#endif // DACCESS_COMPILE
 
     // Return information about an unmanaged call the frame
     // will make.
@@ -955,6 +980,14 @@ public:
         return INTERCEPTION_EXCEPTION;
     }
 
+#ifdef DACCESS_COMPILE
+    StubFrameType GetStubFrameType_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return STUB_FRAME_EXCEPTION;
+    }
+#endif // DACCESS_COMPILE
+
     unsigned GetFrameAttribs_Impl()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -1030,6 +1063,14 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return INTERCEPTION_EXCEPTION;
     }
+
+#ifdef DACCESS_COMPILE
+    StubFrameType GetStubFrameType_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return STUB_FRAME_EXCEPTION;
+    }
+#endif // DACCESS_COMPILE
 
     ETransitionType GetTransitionType_Impl()
     {
@@ -1111,6 +1152,14 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return TYPE_FUNC_EVAL;
     }
+
+#ifdef DACCESS_COMPILE
+    StubFrameType GetStubFrameType_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return STUB_FRAME_FUNC_EVAL;
+    }
+#endif // DACCESS_COMPILE
 
     unsigned GetFrameAttribs_Impl();
 
@@ -1204,6 +1253,14 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return TYPE_CALL;
     }
+
+#ifdef DACCESS_COMPILE
+    StubFrameType GetStubFrameType_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return STUB_FRAME_M2U;
+    }
+#endif // DACCESS_COMPILE
 
     friend struct cdac_data<FramedMethodFrame>;
 };
@@ -1383,6 +1440,14 @@ public:
     }
 
     Interception GetInterception_Impl();
+
+#ifdef DACCESS_COMPILE
+    StubFrameType GetStubFrameType_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return STUB_FRAME_JIT_COMPILATION;
+    }
+#endif // DACCESS_COMPILE
 };
 
 //------------------------------------------------------------------------
@@ -1463,6 +1528,14 @@ public:
     }
 
     Interception GetInterception_Impl();
+
+#ifdef DACCESS_COMPILE
+    StubFrameType GetStubFrameType_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return STUB_FRAME_NONE;
+    }
+#endif // DACCESS_COMPILE
 
     BOOL SuppressParamTypeArg_Impl()
     {
@@ -1592,6 +1665,14 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return TT_InternalCall;
     }
+
+#ifdef DACCESS_COMPILE
+    StubFrameType GetStubFrameType_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return STUB_FRAME_INTERNAL_CALL;
+    }
+#endif // DACCESS_COMPILE
 
     friend struct ::cdac_data<DynamicHelperFrame>;
 };
@@ -1778,6 +1859,14 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return INTERCEPTION_CLASS_INIT;
     }
+
+#ifdef DACCESS_COMPILE
+    StubFrameType GetStubFrameType_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return STUB_FRAME_CLASS_INIT;
+    }
+#endif // DACCESS_COMPILE
 };
 
 //------------------------------------------------------------------------
@@ -1804,6 +1893,14 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return TYPE_EXIT;
     }
+
+#ifdef DACCESS_COMPILE
+    StubFrameType GetStubFrameType_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return STUB_FRAME_M2U;
+    }
+#endif // DACCESS_COMPILE
 
     // Return information about an unmanaged call the frame
     // will make.
@@ -1866,6 +1963,14 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return TT_U2M;
     }
+
+#ifdef DACCESS_COMPILE
+    StubFrameType GetStubFrameType_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return STUB_FRAME_U2M;
+    }
+#endif // DACCESS_COMPILE
 
     bool CatchesAllExceptions()
     {
@@ -2048,6 +2153,14 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return TYPE_EXIT;
     }
+
+#ifdef DACCESS_COMPILE
+    StubFrameType GetStubFrameType_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return FrameHasActiveCall(this) ? STUB_FRAME_M2U : STUB_FRAME_NONE;
+    }
+#endif // DACCESS_COMPILE
 
     BOOL IsTransitionToNativeFrame_Impl()
     {
