@@ -618,7 +618,7 @@ namespace Internal.TypeSystem.Ecma
                     {
                         if (_reader.RemainingBytes != 0)
                         {
-                            // Consume optional IidParameterIndex data. NativeAOT only uses the native type.
+                            // Consume optional IidParameterIndex. NativeAOT does not use this value, only the native type.
                             _reader.ReadCompressedInteger();
                         }
                     }
