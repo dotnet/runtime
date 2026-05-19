@@ -746,12 +746,10 @@ if (CLR_CMAKE_HOST_UNIX OR CLR_CMAKE_HOST_WASI)
   # uses /OPT:REF, configured above.
   add_compile_options(-ffunction-sections)
   add_compile_options(-fdata-sections)
-  if(CLR_CMAKE_HOST_UNIX)
-    if(CLR_CMAKE_HOST_APPLE)
-      add_linker_flag(-Wl,-dead_strip CHECKED RELEASE RELWITHDEBINFO)
-    else()
-      add_linker_flag(-Wl,--gc-sections CHECKED RELEASE RELWITHDEBINFO)
-    endif()
+  if(CLR_CMAKE_HOST_APPLE)
+    add_linker_flag(-Wl,-dead_strip CHECKED RELEASE RELWITHDEBINFO)
+  else()
+    add_linker_flag(-Wl,--gc-sections CHECKED RELEASE RELWITHDEBINFO)
   endif()
 
   # Specify the minimum supported version of macOS
