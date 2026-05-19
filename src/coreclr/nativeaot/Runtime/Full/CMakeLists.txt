@@ -34,7 +34,7 @@ target_link_libraries(Runtime.ServerGC PRIVATE aotminipal nativeaot_cdac_contrac
 # hidden symbols to avoid duplicate symbol errors when linking against another
 # copy of libunwind (e.g. Android NDK r29's libunwind.a).
 # See: https://github.com/dotnet/runtime/issues/121172
-if(LLVM_LIBUNWIND_ALL_SOURCES)
+if(NOT WIN32)
   add_library(libunwind_objects OBJECT ${LLVM_LIBUNWIND_ALL_SOURCES})
   target_link_libraries(Runtime.WorkstationGC PRIVATE libunwind_objects)
   target_link_libraries(Runtime.ServerGC PRIVATE libunwind_objects)
