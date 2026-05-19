@@ -8,7 +8,6 @@
     <Optimize />
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="..\..\X86\Shared\SimpleUnOpTest_DataTable.cs" />
     <Compile Include="AvxVnni_V512SampleTest.cs" />
   </ItemGroup>
 </Project>

@@ -44,6 +44,9 @@ namespace IntelHardwareIntrinsicTest._AvxVnni_V512
 
             // Each int32 lane sums 2 short*short products: 2 * (3 * 3) = 18
             Assert.Equal(18, wordResult.GetElement(0));
+
+            Vector512<int> wordResultSat = AvxVnni.V512.MultiplyWideningAndAddSaturate(addend, words, words);
+            Assert.Equal(18, wordResultSat.GetElement(0));
         }
     }
 }

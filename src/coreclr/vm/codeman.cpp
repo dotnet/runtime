@@ -1375,7 +1375,7 @@ void EEJitManager::SetCpuInfo()
     }
 
     if (((cpuFeatures & XArchIntrinsicConstants_Avx512Vnni) != 0) &&
-        CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512))
+        CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVXVNNI_V512))
     {
         CPUCompileFlags.Set(InstructionSet_AVXVNNI_V512);
     }
