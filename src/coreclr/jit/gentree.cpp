@@ -15040,7 +15040,7 @@ GenTree* Compiler::gtFoldExprUnary(GenTreeUnOp* tree)
         {
             if (op1->OperIs(oper))
             {
-                JITDUMP("Folding ~(~a) => a\n")
+                JITDUMP("Folding ~(~a) => a\n");
                 return op1->gtGetOp1();
             }
             break;
@@ -15050,7 +15050,7 @@ GenTree* Compiler::gtFoldExprUnary(GenTreeUnOp* tree)
         {
             if (op1->OperIs(oper))
             {
-                JITDUMP("Folding -(-a) => a\n")
+                JITDUMP("Folding -(-a) => a\n");
                 return op1->gtGetOp1();
             }
             break;
@@ -15133,7 +15133,7 @@ GenTree* Compiler::gtFoldExprBinary(GenTreeOp* tree)
 
             if (op1->OperIs(GT_NEG))
             {
-                JITDUMP("Folding (-a) + b => b - a\n")
+                JITDUMP("Folding (-a) + b => b - a\n");
 
                 tree->gtOp1 = op2;
                 tree->gtOp2 = op1->gtGetOp1();
@@ -15146,7 +15146,7 @@ GenTree* Compiler::gtFoldExprBinary(GenTreeOp* tree)
 
             if (op2->OperIs(GT_NEG))
             {
-                JITDUMP("Folding a + (-b) => a - b\n")
+                JITDUMP("Folding a + (-b) => a - b\n");
 
                 tree->gtOp2 = op2->gtGetOp1();
                 tree->SetOper(GT_SUB, GenTree::PRESERVE_VN);
@@ -15167,7 +15167,7 @@ GenTree* Compiler::gtFoldExprBinary(GenTreeOp* tree)
             {
                 if (op1->OperIs(GT_NEG))
                 {
-                    JITDUMP("Folding (-a) - (-b) => b - a\n")
+                    JITDUMP("Folding (-a) - (-b) => b - a\n");
 
                     tree->gtOp1 = op2->gtGetOp1();
                     tree->gtOp2 = op1->gtGetOp1();
@@ -15177,7 +15177,7 @@ GenTree* Compiler::gtFoldExprBinary(GenTreeOp* tree)
                 }
                 else
                 {
-                    JITDUMP("Folding a - (-b) => a + b\n")
+                    JITDUMP("Folding a - (-b) => a + b\n");
 
                     tree->gtOp2 = op2->gtGetOp1();
                     tree->SetOper(GT_ADD, GenTree::PRESERVE_VN);
