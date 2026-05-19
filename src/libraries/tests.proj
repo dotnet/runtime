@@ -709,7 +709,7 @@
 
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj"
                       Exclude="@(ProjectExclusions)"
-                      Condition="'$(TestAssemblies)' == 'true' and !('$(TargetsAppleMobile)' == 'true' and '$(UseNativeAOTRuntime)' == 'true')"
+                      Condition="'$(TestAssemblies)' == 'true'"
                       BuildInParallel="$(BuildTestInParallel)" />
 
     <ProjectReference Include="$(MSBuildThisFileDirectory)testPackages\testPackages.proj"
