@@ -353,6 +353,28 @@ namespace System.Runtime.CompilerServices
             {
                 Debug.Assert(!IsCompleted);
 
+                bool asyncProfilerActive = AsyncTaskDispatcherInfo.IsActive;
+                string? methodName = null;
+
+                if (asyncProfilerActive)
+                {
+                    methodName = typeof(TStateMachine).Name;
+
+                    if (AsyncTaskDispatcherInfo.ConsumePendingUnwind())
+                    {
+                        Debug.WriteLine($"[AsyncProfiler:V1] UnwindAsyncException box={Id} method={methodName} thread={Environment.CurrentManagedThreadId}");
+                    }
+
+                    // If the frame was suspended (a sub-chain was spawned) but we're now resuming
+                    // a method on the same frame, the chain has resumed from suspension.
+                    if (AsyncTaskDispatcherInfo.ConsumeSuspended())
+                    {
+                        Debug.WriteLine($"[AsyncProfiler:V1] ResumeAsyncContext (inline) box={Id} method={methodName} thread={Environment.CurrentManagedThreadId}");
+                    }
+
+                    Debug.WriteLine($"[AsyncProfiler:V1] ResumeAsyncMethod box={Id} method={methodName} thread={Environment.CurrentManagedThreadId}");
+                }
+
                 bool loggingOn = TplEventSource.Log.IsEnabled();
                 if (loggingOn)
                 {
@@ -380,6 +402,10 @@ namespace System.Runtime.CompilerServices
                 if (IsCompleted)
                 {
                     ClearStateUponCompletion();
+                }
+                else if (asyncProfilerActive)
+                {
+                    Debug.WriteLine($"[AsyncProfiler:V1] YieldAsyncMethod box={Id} method={methodName}");
                 }
 
                 if (loggingOn)
@@ -486,6 +512,23 @@ namespace System.Runtime.CompilerServices
         {
             Debug.Assert(task != null, "Expected non-null task");
 
+            if (AsyncTaskDispatcherInfo.IsActive)
+            {
+                if (AsyncTaskDispatcherInfo.ConsumePendingUnwind())
+                {
+                    Debug.WriteLine($"[AsyncProfiler:V1] UnwindAsyncException (caught) box={task.Id} thread={Environment.CurrentManagedThreadId}");
+                }
+
+                // If the frame was suspended (a sub-chain was spawned via GetOrCreate) but we're
+                // now completing a method, the chain has resumed — emit Resume and clear the flag.
+                if (AsyncTaskDispatcherInfo.ConsumeSuspended())
+                {
+                    Debug.WriteLine($"[AsyncProfiler:V1] ResumeAsyncContext (inline) thread={Environment.CurrentManagedThreadId}");
+                }
+
+                Debug.WriteLine($"[AsyncProfiler:V1] CompleteAsyncMethod box={task.Id} thread={Environment.CurrentManagedThreadId}");
+            }
+
             if (TplEventSource.Log.IsEnabled())
             {
                 TplEventSource.Log.TraceOperationEnd(task.Id, AsyncCausalityStatus.Completed);
@@ -515,6 +558,8 @@ namespace System.Runtime.CompilerServices
 
             // Get the task, forcing initialization if it hasn't already been initialized.
             Task<TResult> task = (taskField ??= new Task<TResult>());
+
+            AsyncTaskDispatcherInfo.MarkPendingUnwind();
 
             // If the exception represents cancellation, cancel the task.  Otherwise, fault the task.
             bool successfullySet = exception is OperationCanceledException oce ?

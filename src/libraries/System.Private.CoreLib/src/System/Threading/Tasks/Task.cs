@@ -2721,16 +2721,40 @@ namespace System.Threading.Tasks
             {
                 if (SynchronizationContext.Current is SynchronizationContext syncCtx && syncCtx.GetType() != typeof(SynchronizationContext))
                 {
+#if !MONO
+                    // Continuation will be queued to sync context — wrap in dispatcher to
+                    // maintain the async chain context across the scheduling boundary.
+                    Debug.WriteLine($"[AsyncProfiler:V1] USING none default Sync context!");
+                    stateMachineBox = AsyncTaskDispatcher.Create(stateMachineBox);
+#endif
                     tc = new SynchronizationContextAwaitTaskContinuation(syncCtx, stateMachineBox.MoveNextAction, flowExecutionContext: false);
                     goto HaveTaskContinuation;
                 }
 
                 if (TaskScheduler.InternalCurrent is TaskScheduler scheduler && scheduler != TaskScheduler.Default)
                 {
+#if !MONO
+                    // Continuation will be queued to custom scheduler — wrap in dispatcher to
+                    // maintain the async chain context across the scheduling boundary.
+                    stateMachineBox = AsyncTaskDispatcher.Create(stateMachineBox);
+                    Debug.WriteLine($"[AsyncProfiler:V1] USING none default task scheduler!");
+#endif
                     tc = new TaskSchedulerAwaitTaskContinuation(scheduler, stateMachineBox.MoveNextAction, flowExecutionContext: false);
                     goto HaveTaskContinuation;
                 }
             }
+
+#if !MONO
+            // If we're awaiting a non-async task (I/O, Timer, TCS, etc.),
+            // this box is the root of a V1 async chain. Wrap or reuse a dispatch box.
+            // For mid-chain boxes (awaiting another async method), the continuation will
+            // be inlined via RunContinuations, so no dispatcher wrapping is needed here.
+            if (this is not IAsyncStateMachineBox)
+            {
+                Debug.WriteLine($"[AsyncProfiler:V1] WAITING on non-async task!");
+                stateMachineBox = AsyncTaskDispatcher.Create(stateMachineBox);
+            }
+#endif
 
             // Otherwise, add the state machine box directly as the continuation.
             // If we're unable to because the task has already completed, queue it.
