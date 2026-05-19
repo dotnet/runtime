@@ -131,12 +131,12 @@ internal static class Emitter
         sb.AppendLine($"        LayoutPair layouts = LayoutPairResolver.Resolve(target, {QuotedOrNull(model.DescriptorName)}, {QuotedOrNull(model.ManagedFullName)}, isValueType: {(model.IsValueType ? "true" : "false")});");
         if (member.ReadKind == FieldReadKind.Bool)
         {
-            sb.AppendLine($"        layouts.WriteField<byte>(target, Address, {NameArgs(member)}, (byte)(value ? 1 : 0));");
+            sb.AppendLine($"        layouts.WriteField<byte>(target, Address, (byte)(value ? 1 : 0), {NameArgs(member)});");
         }
         else
         {
             string? typeArg = Shorten(member.DataTypeArgumentFqn);
-            sb.AppendLine($"        layouts.WriteField<{typeArg}>(target, Address, {NameArgs(member)}, value);");
+            sb.AppendLine($"        layouts.WriteField<{typeArg}>(target, Address, value, {NameArgs(member)});");
         }
         sb.AppendLine($"        {member.Name} = value;");
         sb.AppendLine("    }");
@@ -238,15 +238,7 @@ internal static class Emitter
     }
 
     private static string NameArgs(MemberModel member)
-    {
-        if (member.Names.Count == 1)
-        {
-            return $"\"{member.Names[0]}\"";
-        }
-
-        string nat = string.Join(", ", Enumerate(member.Names).Select(n => $"\"{n}\""));
-        return $"new[] {{ {nat} }}";
-    }
+        => string.Join(", ", Enumerate(member.Names).Select(n => $"\"{n}\""));
 
     private static IEnumerable<string> Enumerate(EquatableArray<string> array)
     {

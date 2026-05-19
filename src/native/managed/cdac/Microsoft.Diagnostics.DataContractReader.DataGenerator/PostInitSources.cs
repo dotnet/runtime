@@ -100,88 +100,60 @@ internal readonly struct LayoutPair
         => $"Field not found in any layout (names=[{string.Join(",", names.ToArray())}]).";
 
     // --- Read helpers ---------------------------------------------------
-    // Each kind exposes two overloads: a single-name fast path (the common
-    // case) and an array-of-names form (when the user supplied aliases).
+    // Each kind takes `params ReadOnlySpan<string> names`, so single-name
+    // calls bind to an inline span buffer (no heap alloc) and array calls
+    // work via implicit array-to-span conversion.
 
-    public T ReadField<T>(Target target, TargetPointer address, string name) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
-        => ReadFieldCore<T>(target, address, [name]);
-    public T ReadField<T>(Target target, TargetPointer address, string[] names) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
-        => ReadFieldCore<T>(target, address, names);
-    private T ReadFieldCore<T>(Target target, TargetPointer address, ReadOnlySpan<string> names) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
+    public T ReadField<T>(Target target, TargetPointer address, params ReadOnlySpan<string> names) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
     {
         if (!TrySelect(address, names, out Target.TypeInfo t, out TargetPointer b, out string n))
             throw new InvalidOperationException(FormatMissing(names));
         return target.ReadField<T>(b, t, n);
     }
 
-    public TargetPointer ReadPointerField(Target target, TargetPointer address, string name)
-        => ReadPointerFieldCore(target, address, [name]);
-    public TargetPointer ReadPointerField(Target target, TargetPointer address, string[] names)
-        => ReadPointerFieldCore(target, address, names);
-    private TargetPointer ReadPointerFieldCore(Target target, TargetPointer address, ReadOnlySpan<string> names)
+    public TargetPointer ReadPointerField(Target target, TargetPointer address, params ReadOnlySpan<string> names)
     {
         if (!TrySelect(address, names, out Target.TypeInfo t, out TargetPointer b, out string n))
             throw new InvalidOperationException(FormatMissing(names));
         return target.ReadPointerField(b, t, n);
     }
 
-    public TargetNUInt ReadNUIntField(Target target, TargetPointer address, string name)
-        => ReadNUIntFieldCore(target, address, [name]);
-    public TargetNUInt ReadNUIntField(Target target, TargetPointer address, string[] names)
-        => ReadNUIntFieldCore(target, address, names);
-    private TargetNUInt ReadNUIntFieldCore(Target target, TargetPointer address, ReadOnlySpan<string> names)
+    public TargetNUInt ReadNUIntField(Target target, TargetPointer address, params ReadOnlySpan<string> names)
     {
         if (!TrySelect(address, names, out Target.TypeInfo t, out TargetPointer b, out string n))
             throw new InvalidOperationException(FormatMissing(names));
         return target.ReadNUIntField(b, t, n);
     }
 
-    public TargetCodePointer ReadCodePointerField(Target target, TargetPointer address, string name)
-        => ReadCodePointerFieldCore(target, address, [name]);
-    public TargetCodePointer ReadCodePointerField(Target target, TargetPointer address, string[] names)
-        => ReadCodePointerFieldCore(target, address, names);
-    private TargetCodePointer ReadCodePointerFieldCore(Target target, TargetPointer address, ReadOnlySpan<string> names)
+    public TargetCodePointer ReadCodePointerField(Target target, TargetPointer address, params ReadOnlySpan<string> names)
     {
         if (!TrySelect(address, names, out Target.TypeInfo t, out TargetPointer b, out string n))
             throw new InvalidOperationException(FormatMissing(names));
         return target.ReadCodePointerField(b, t, n);
     }
 
-    public T ReadDataField<T>(Target target, TargetPointer address, string name) where T : IData<T>
-        => ReadDataFieldCore<T>(target, address, [name]);
-    public T ReadDataField<T>(Target target, TargetPointer address, string[] names) where T : IData<T>
-        => ReadDataFieldCore<T>(target, address, names);
-    private T ReadDataFieldCore<T>(Target target, TargetPointer address, ReadOnlySpan<string> names) where T : IData<T>
+    public T ReadDataField<T>(Target target, TargetPointer address, params ReadOnlySpan<string> names) where T : IData<T>
     {
         if (!TrySelect(address, names, out Target.TypeInfo t, out TargetPointer b, out string n))
             throw new InvalidOperationException(FormatMissing(names));
         return target.ReadDataField<T>(b, t, n);
     }
 
-    public void WriteField<T>(Target target, TargetPointer address, string name, T value) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
-        => WriteFieldCore(target, address, [name], value);
-    public void WriteField<T>(Target target, TargetPointer address, string[] names, T value) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
-        => WriteFieldCore(target, address, names, value);
-    private void WriteFieldCore<T>(Target target, TargetPointer address, ReadOnlySpan<string> names, T value) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
+    public void WriteField<T>(Target target, TargetPointer address, T value, params ReadOnlySpan<string> names) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
     {
         if (!TrySelect(address, names, out Target.TypeInfo t, out TargetPointer b, out string n))
             throw new InvalidOperationException(FormatMissing(names));
         target.WriteField<T>(b, t, n, value);
     }
 
-    public TargetPointer GetFieldAddress(TargetPointer address, string name)
-        => GetFieldAddressCore(address, [name]);
-    public TargetPointer GetFieldAddress(TargetPointer address, string[] names)
-        => GetFieldAddressCore(address, names);
-    private TargetPointer GetFieldAddressCore(TargetPointer address, ReadOnlySpan<string> names)
+    public TargetPointer GetFieldAddress(TargetPointer address, params ReadOnlySpan<string> names)
     {
         if (!TrySelect(address, names, out Target.TypeInfo t, out TargetPointer b, out string n))
             throw new InvalidOperationException(FormatMissing(names));
         return b + (ulong)t.Fields[n].Offset;
     }
 
-    public bool HasField(string name) => TrySelect(default, [name], out _, out _, out _);
-    public bool HasField(string[] names) => TrySelect(default, names, out _, out _, out _);
+    public bool HasField(params ReadOnlySpan<string> names) => TrySelect(default, names, out _, out _, out _);
 }
 
 internal static class LayoutPairResolver
