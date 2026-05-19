@@ -15099,13 +15099,19 @@ GenTree* Compiler::gtFoldExprBinary(GenTreeOp* tree)
             // both nodes are constants - fold the expression
             return gtFoldExprBinaryConst(tree);
         }
-        else
+
+        if (opts.OptimizationDisabled())
         {
-            return gtFoldExprSpecial(tree);
+            return tree;
         }
+        return gtFoldExprSpecial(tree);
     }
     else if (op2->OperIsConst())
     {
+        if (opts.OptimizationDisabled())
+        {
+            return tree;
+        }
         return gtFoldExprSpecial(tree);
     }
 
@@ -15117,7 +15123,7 @@ GenTree* Compiler::gtFoldExprBinary(GenTreeOp* tree)
         return gtFoldExprCompare(tree);
     }
 
-    if (!opts.OptimizationEnabled())
+    if (opts.OptimizationDisabled())
     {
         return tree;
     }
@@ -15911,7 +15917,7 @@ CORINFO_METHOD_HANDLE Compiler::gtGetHelperArgMethodHandle(GenTree* tree)
 GenTree* Compiler::gtFoldExprSpecial(GenTreeOp* tree)
 {
     assert(tree->OperIsBinary());
-    assert(opts.Tier0OptimizationEnabled());
+    assert(opts.OptimizationEnabled());
 
     if (tree->OperIsCommutative() || tree->OperIsCompare())
     {
