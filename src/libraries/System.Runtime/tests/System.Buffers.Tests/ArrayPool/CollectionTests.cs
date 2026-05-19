@@ -92,7 +92,9 @@ namespace System.Buffers.ArrayPool.Tests
 
                 const int AllocSize = 1024 * 1024 * 64;
                 int PageSize = Environment.SystemPageSize;
+#pragma warning disable IL2075
                 var pressureMethod = ArrayPool<byte>.Shared.GetType().GetMethod("GetMemoryPressure", BindingFlags.Static | BindingFlags.NonPublic);
+#pragma warning restore IL2075
                 do
                 {
                     Span<byte> native = new Span<byte>(Marshal.AllocHGlobal(AllocSize).ToPointer(), AllocSize);

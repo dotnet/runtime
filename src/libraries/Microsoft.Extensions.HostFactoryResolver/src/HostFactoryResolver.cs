@@ -100,7 +100,9 @@ namespace Microsoft.Extensions.Hosting
                 return null;
             }
 
+#pragma warning disable IL2075
             var factory = programType.GetMethod(name, DeclaredOnlyLookup);
+#pragma warning restore IL2075
             if (!IsFactory<T>(factory))
             {
                 return null;
@@ -178,7 +180,9 @@ namespace Microsoft.Extensions.Hosting
 
         private static object? Build(object builder)
         {
+#pragma warning disable IL2075
             var buildMethod = builder.GetType().GetMethod("Build");
+#pragma warning restore IL2075
             return buildMethod?.Invoke(builder, Array.Empty<object>());
         }
 
@@ -189,7 +193,9 @@ namespace Microsoft.Extensions.Hosting
                 return null;
             }
             var hostType = host.GetType();
+#pragma warning disable IL2075
             var servicesProperty = hostType.GetProperty("Services", DeclaredOnlyLookup);
+#pragma warning restore IL2075
             return (IServiceProvider?)servicesProperty?.GetValue(host);
         }
 

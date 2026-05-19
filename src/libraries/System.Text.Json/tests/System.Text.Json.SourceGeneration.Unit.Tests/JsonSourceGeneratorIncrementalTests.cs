@@ -176,7 +176,9 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                         return;
                     }
 
+#pragma warning disable IL2075
                     foreach (FieldInfo field in type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
+#pragma warning restore IL2075
                     {
                         object? fieldValue = field.GetValue(node);
                         Visit(fieldValue);

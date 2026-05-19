@@ -59,10 +59,14 @@ namespace SourceGenerators.Tests
                     }
                 }
 
+#pragma warning disable IL2075
                 if (type.GetProperty("EqualityContract", BindingFlags.Instance | BindingFlags.NonPublic, null, returnType: typeof(Type), types: Array.Empty<Type>(), null) != null)
+#pragma warning restore IL2075
                 {
                     // Type is a C# record, run pointwise equality comparison.
+#pragma warning disable IL2075
                     foreach (PropertyInfo property in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+#pragma warning restore IL2075
                     {
                         path.Push("." + property.Name);
                         CheckAreEqualCore(property.GetValue(expected), property.GetValue(actual), path);

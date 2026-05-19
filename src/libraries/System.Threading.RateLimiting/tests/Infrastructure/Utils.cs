@@ -37,10 +37,14 @@ namespace System.Threading.RateLimiting.Tests
             if (string.Empty.Length > 0)
                 limiterType = limiterTypeDef;
 
+#pragma warning disable IL2075
             var innerTimer = limiterType.GetField("_timer", BindingFlags.NonPublic | BindingFlags.Instance);
+#pragma warning restore IL2075
             Assert.NotNull(innerTimer);
 
+#pragma warning disable IL2075
             var timerLoopMethod = limiterType.GetMethod("Heartbeat", BindingFlags.NonPublic | BindingFlags.Instance);
+#pragma warning restore IL2075
             Assert.NotNull(timerLoopMethod);
 
             return (Task)timerLoopMethod.Invoke(limiter, Array.Empty<object>());

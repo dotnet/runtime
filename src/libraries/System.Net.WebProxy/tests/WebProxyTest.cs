@@ -44,7 +44,9 @@ namespace System.Net.Tests
             Assert.Equal(useDefaultCredentials, p.UseDefaultCredentials);
             Assert.Equal(bypassLocal, p.BypassProxyOnLocal);
             Assert.Equal(bypassedAddresses, p.BypassList);
+#pragma warning disable IL3050
             Assert.Equal(bypassedAddresses, (string[])p.BypassArrayList.ToArray(typeof(string)));
+#pragma warning restore IL3050
             Assert.Equal(creds, p.Credentials);
         }
 
@@ -60,12 +62,16 @@ namespace System.Net.Tests
             strings = new string[] { "hello", "world" };
             p.BypassList = strings;
             Assert.Equal(strings, p.BypassList);
+#pragma warning disable IL3050
             Assert.Equal(strings, (string[])p.BypassArrayList.ToArray(typeof(string)));
+#pragma warning restore IL3050
 
             strings = new string[] { "hello" };
             p.BypassList = strings;
             Assert.Equal(strings, p.BypassList);
+#pragma warning disable IL3050
             Assert.Equal(strings, (string[])p.BypassArrayList.ToArray(typeof(string)));
+#pragma warning restore IL3050
 
             strings = null;
             p.BypassList = strings;

@@ -19,7 +19,9 @@ namespace System.Net.Quic.Tests
     {
         private static MemberInfo[] GetMembers<T>()
         {
+#pragma warning disable IL2090
             var members = typeof(T).FindMembers(MemberTypes.Field | MemberTypes.Property, BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public, (mi, _) =>
+#pragma warning restore IL2090
             {
                 if (mi is PropertyInfo property && property.GetSetMethod() == null)
                 {
@@ -39,10 +41,14 @@ namespace System.Net.Quic.Tests
             switch (member)
             {
                 case FieldInfo field:
+#pragma warning disable IL2072
                     field.SetValue(instance, Activator.CreateInstance(field.FieldType));
+#pragma warning restore IL2072
                     break;
                 case PropertyInfo property:
+#pragma warning disable IL2072
                     property.SetValue(instance, Activator.CreateInstance(property.PropertyType));
+#pragma warning restore IL2072
                     break;
                 default:
                     throw new InvalidOperationException($"Unexpected member type: {member.MemberType}");

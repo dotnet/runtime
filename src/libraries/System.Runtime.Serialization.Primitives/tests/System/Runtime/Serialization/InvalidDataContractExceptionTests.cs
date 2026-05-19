@@ -42,10 +42,14 @@ namespace System.Runtime.Serialization.Tests
             using (var memoryStream = new MemoryStream())
             {
                 var formatter = new BinaryFormatter();
+#pragma warning disable IL2026
                 formatter.Serialize(memoryStream, new InvalidDataContractException());
+#pragma warning restore IL2026
 
                 memoryStream.Seek(0, SeekOrigin.Begin);
+#pragma warning disable IL2026, IL3050
                 Assert.IsType<InvalidDataContractException>(formatter.Deserialize(memoryStream));
+#pragma warning restore IL2026, IL3050
             }
         }
     }
