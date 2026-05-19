@@ -231,9 +231,9 @@ namespace System
         [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static int BinarySearch<T, TComparable>(this System.Span<T> span, TComparable comparable) where TComparable : System.IComparable<T>, allows ref struct { throw null; }
         public static T? Max<T>(this System.ReadOnlySpan<T> span) { throw null; }
-        public static T? Max<T>(this System.ReadOnlySpan<T> span, System.Collections.Generic.IComparer<T> comparer) { throw null; }
+        public static T? Max<T>(this System.ReadOnlySpan<T> span, System.Collections.Generic.IComparer<T>? comparer) { throw null; }
         public static T? Min<T>(this System.ReadOnlySpan<T> span) { throw null; }
-        public static T? Min<T>(this System.ReadOnlySpan<T> span, System.Collections.Generic.IComparer<T> comparer) { throw null; }
+        public static T? Min<T>(this System.ReadOnlySpan<T> span, System.Collections.Generic.IComparer<T>? comparer) { throw null; }
         [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static int CommonPrefixLength<T>(this System.Span<T> span, System.ReadOnlySpan<T> other) { throw null; }
         [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]

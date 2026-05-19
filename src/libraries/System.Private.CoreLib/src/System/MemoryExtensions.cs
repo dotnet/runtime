@@ -4326,7 +4326,7 @@ namespace System
         /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T? Min<T>(this ReadOnlySpan<T> span) =>
-            Min(span, Comparer<T>.Default);
+            Min(span, comparer: null);
 
         /// <summary>
         /// Returns the minimum value in the span.
@@ -4335,45 +4335,68 @@ namespace System
         /// <param name="span">The span of values to determine the minimum value of.</param>
         /// <param name="comparer">The <see cref="IComparer{T}"/> to compare values.</param>
         /// <returns>The minimum value in the span.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="comparer"/> is <see langword="null"/>.</exception>
         /// <exception cref="InvalidOperationException"><paramref name="span"/> is empty and <typeparamref name="T"/> is a non-nullable value type.</exception>
         /// <remarks>
         /// <para>If <typeparamref name="T" /> is a reference type and the span sequence is empty, this method returns <see langword="null" />.</para>
         /// <para>Null values are ignored when determining the minimum value. If the span contains at least one non-null value, the minimum of those values is returned. If the span does not contain any non-null values, <see langword="null" /> is returned.</para>
         /// </remarks>
-        public static T? Min<T>(this ReadOnlySpan<T> span, IComparer<T> comparer)
+        public static T? Min<T>(this ReadOnlySpan<T> span, IComparer<T>? comparer)
         {
-            if (comparer is null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.comparer);
+            comparer ??= Comparer<T>.Default;
 
-            if (span.IsEmpty)
+            T? value = default;
+            int i = 0;
+
+            if (value is null)
             {
-                if (default(T) is null)
+                do
                 {
-                    return default;
+                    if (i >= span.Length)
+                    {
+                        return value;
+                    }
+                    value = span[i++];
+                }
+                while (value is null);
+
+                while (i < span.Length)
+                {
+                    T next = span[i++];
+                    if (next is not null && comparer.Compare(next, value) < 0)
+                    {
+                        value = next;
+                    }
+                }
+            }
+            else
+            {
+                if (i >= span.Length)
+                {
+                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_NoElements);
                 }
 
-                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_NoElements);
-            }
-
-            T? value = span[0];
-            int i = 1;
-
-            while (value is null)
-            {
-                if ((uint)i >= (uint)span.Length)
+                value = span[i];
+                if (comparer == Comparer<T>.Default)
                 {
-                    return value;
+                    while (i < span.Length)
+                    {
+                        T next = span[i++];
+                        if (Comparer<T>.Default.Compare(next, value) < 0)
+                        {
+                            value = next;
+                        }
+                    }
                 }
-                value = span[i++];
-            }
-
-            for (; (uint)i < (uint)span.Length; i++)
-            {
-                T next = span[i];
-                if (next is not null && comparer.Compare(next, value) < 0)
+                else
                 {
-                    value = next;
+                    while (i < span.Length)
+                    {
+                        T next = span[i++];
+                        if (comparer.Compare(next, value) < 0)
+                        {
+                            value = next;
+                        }
+                    }
                 }
             }
 
@@ -4394,7 +4417,7 @@ namespace System
         /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T? Max<T>(this ReadOnlySpan<T> span) =>
-            Max(span, Comparer<T>.Default);
+            Max(span, comparer: null);
 
         /// <summary>
         /// Returns the maximum value in the span.
@@ -4403,45 +4426,68 @@ namespace System
         /// <param name="span">The span of values to determine the maximum value of.</param>
         /// <param name="comparer">The <see cref="IComparer{T}"/> to compare values.</param>
         /// <returns>The maximum value in the span.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="comparer"/> is <see langword="null"/>.</exception>
         /// <exception cref="InvalidOperationException"><paramref name="span"/> is empty and <typeparamref name="T"/> is a non-nullable value type.</exception>
         /// <remarks>
         /// <para>If <typeparamref name="T" /> is a reference type and the span sequence is empty, this method returns <see langword="null" />.</para>
         /// <para>Null values are ignored when determining the maximum value. If the span contains at least one non-null value, the maximum of those values is returned. If the span does not contain any non-null values, <see langword="null" /> is returned.</para>
         /// </remarks>
-        public static T? Max<T>(this ReadOnlySpan<T> span, IComparer<T> comparer)
+        public static T? Max<T>(this ReadOnlySpan<T> span, IComparer<T>? comparer)
         {
-            if (comparer is null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.comparer);
+            comparer ??= Comparer<T>.Default;
 
-            if (span.IsEmpty)
+            T? value = default;
+            int i = 0;
+
+            if (value is null)
             {
-                if (default(T) is null)
+                do
                 {
-                    return default;
+                    if (i >= span.Length)
+                    {
+                        return value;
+                    }
+                    value = span[i++];
+                }
+                while (value is null);
+
+                while (i < span.Length)
+                {
+                    T next = span[i++];
+                    if (next is not null && comparer.Compare(next, value) > 0)
+                    {
+                        value = next;
+                    }
+                }
+            }
+            else
+            {
+                if (i >= span.Length)
+                {
+                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_NoElements);
                 }
 
-                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_NoElements);
-            }
-
-            T? value = span[0];
-            int i = 1;
-
-            while (value is null)
-            {
-                if ((uint)i >= (uint)span.Length)
+                value = span[i];
+                if (comparer == Comparer<T>.Default)
                 {
-                    return value;
+                    while (i < span.Length)
+                    {
+                        T next = span[i++];
+                        if (Comparer<T>.Default.Compare(next, value) > 0)
+                        {
+                            value = next;
+                        }
+                    }
                 }
-                value = span[i++];
-            }
-
-            for (; (uint)i < (uint)span.Length; i++)
-            {
-                T next = span[i];
-                if (next is not null && comparer.Compare(next, value) > 0)
+                else
                 {
-                    value = next;
+                    while (i < span.Length)
+                    {
+                        T next = span[i++];
+                        if (comparer.Compare(next, value) > 0)
+                        {
+                            value = next;
+                        }
+                    }
                 }
             }
 
