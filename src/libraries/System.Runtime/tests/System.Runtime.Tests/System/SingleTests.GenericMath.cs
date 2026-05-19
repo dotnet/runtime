@@ -346,17 +346,18 @@ namespace System.Tests
 
         [Fact]
         [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/116823", typeof(PlatformDetection), nameof(PlatformDetection.IsCoreClrInterpreter))]
+        // Passes on the interpreter, but interpreter configurations might still use jit fallback
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/116823", typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
         public static void ConvertToIntegerTest()
         {
             // Signed Values
 
-            Assert.Equal(0, FloatingPointHelper<float>.ConvertToInteger<short>(float.MinValue));
+            Assert.Equal(short.MinValue, FloatingPointHelper<float>.ConvertToInteger<short>(float.MinValue));
             Assert.Equal(int.MinValue, FloatingPointHelper<float>.ConvertToInteger<int>(float.MinValue));
             Assert.Equal(long.MinValue, FloatingPointHelper<float>.ConvertToInteger<long>(float.MinValue));
             Assert.Equal(Int128.MinValue, FloatingPointHelper<float>.ConvertToInteger<Int128>(float.MinValue));
             Assert.Equal(nint.MinValue, FloatingPointHelper<float>.ConvertToInteger<nint>(float.MinValue));
-            Assert.Equal(0, FloatingPointHelper<float>.ConvertToInteger<sbyte>(float.MinValue));
+            Assert.Equal(sbyte.MinValue, FloatingPointHelper<float>.ConvertToInteger<sbyte>(float.MinValue));
 
             Assert.Equal(2, FloatingPointHelper<float>.ConvertToInteger<short>(2.6f));
             Assert.Equal(2, FloatingPointHelper<float>.ConvertToInteger<int>(2.6f));
@@ -365,12 +366,12 @@ namespace System.Tests
             Assert.Equal(2, FloatingPointHelper<float>.ConvertToInteger<nint>(2.6f));
             Assert.Equal(2, FloatingPointHelper<float>.ConvertToInteger<sbyte>(2.6f));
 
-            Assert.Equal(-1, FloatingPointHelper<float>.ConvertToInteger<short>(float.MaxValue));
+            Assert.Equal(short.MaxValue, FloatingPointHelper<float>.ConvertToInteger<short>(float.MaxValue));
             Assert.Equal(int.MaxValue, FloatingPointHelper<float>.ConvertToInteger<int>(float.MaxValue));
             Assert.Equal(long.MaxValue, FloatingPointHelper<float>.ConvertToInteger<long>(float.MaxValue));
             Assert.Equal(Int128.MaxValue, FloatingPointHelper<float>.ConvertToInteger<Int128>(float.MaxValue));
             Assert.Equal(nint.MaxValue, FloatingPointHelper<float>.ConvertToInteger<nint>(float.MaxValue));
-            Assert.Equal(-1, FloatingPointHelper<float>.ConvertToInteger<sbyte>(float.MaxValue));
+            Assert.Equal(sbyte.MaxValue, FloatingPointHelper<float>.ConvertToInteger<sbyte>(float.MaxValue));
 
             // Unsigned Values
 

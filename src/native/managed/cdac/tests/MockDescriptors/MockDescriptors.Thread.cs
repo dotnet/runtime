@@ -177,6 +177,7 @@ internal sealed class MockThread : TypedView
     private const string IdFieldName = "Id";
     private const string OSIdFieldName = "OSId";
     private const string StateFieldName = "State";
+    private const string DebuggerControlledThreadStateFieldName = "DebuggerControlledThreadState";
     private const string PreemptiveGCDisabledFieldName = "PreemptiveGCDisabled";
     private const string RuntimeThreadLocalsFieldName = "RuntimeThreadLocals";
     private const string FrameFieldName = "Frame";
@@ -198,6 +199,7 @@ internal sealed class MockThread : TypedView
             .AddUInt32Field(IdFieldName)
             .AddPointerField(OSIdFieldName)
             .AddUInt32Field(StateFieldName)
+            .AddUInt32Field(DebuggerControlledThreadStateFieldName)
             .AddUInt32Field(PreemptiveGCDisabledFieldName)
             .AddPointerField(RuntimeThreadLocalsFieldName)
             .AddPointerField(FrameFieldName)
@@ -283,6 +285,22 @@ internal sealed class MockThread : TypedView
     }
 
     public ulong FrameAddress => GetFieldAddress(FrameFieldName);
+
+    /// <summary>
+    /// The value of the Thread's m_pFrame field - the address of the topmost explicit
+    /// Frame on this thread's frame chain (or the FRAME_TOP terminator for an empty chain).
+    /// </summary>
+    public ulong Frame
+    {
+        get => ReadPointerField(FrameFieldName);
+        set => WritePointerField(FrameFieldName, value);
+    }
+
+    public uint DebuggerControlledThreadState
+    {
+        get => ReadUInt32Field(DebuggerControlledThreadStateFieldName);
+        set => WriteUInt32Field(DebuggerControlledThreadStateFieldName, value);
+    }
 
     public ulong LastThrownObject
     {

@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -484,7 +484,7 @@ namespace System
         ///   The method uses <see cref="Next(int)" /> to select items randomly from <paramref name="choices" />
         ///   by index and populate <paramref name="destination" />.
         /// </remarks>
-        public void GetItems<T>(ReadOnlySpan<T> choices, Span<T> destination)
+        public unsafe void GetItems<T>(ReadOnlySpan<T> choices, Span<T> destination)
         {
             if (choices.IsEmpty)
             {

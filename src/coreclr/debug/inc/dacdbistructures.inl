@@ -552,27 +552,26 @@ CodeBlobRegion & operator++(CodeBlobRegion & rs)
      return rs = CodeBlobRegion(rs + 1);
 }
 
-// Convert the data in an instance of DebuggerIPCE_JITFUncData to an instance of NativeCodeFunctionData.
+// Convert the data in an instance of Debugger_JITFuncData to an instance of NativeCodeFunctionData.
 // We need to have this latter type to look up or create a new CordbNativeCode object, but the stack walker is
 // using the former type to gather information.
 // Arguments:
 //     Input:
-//            source - an initialized instance of DebuggerIPCE_JITFuncData containing the information to
+//            source - an initialized instance of Debugger_JITFuncData containing the information to
 //                     be copied into this instance of NativeCodeFunctionData
 // @dbgtodo dlaw: Once CordbThread::RefreshStack is fully DAC-ized, we can change the data structure that it uses
 // to have a member of type NativeCodeFunctionData which we can pass without copying. At that point,
 // this method can disappear.
 inline
-NativeCodeFunctionData::NativeCodeFunctionData(DebuggerIPCE_JITFuncData * source)
+NativeCodeFunctionData::NativeCodeFunctionData(Debugger_JITFuncData * source)
 {
     // copy the code region information
-    m_rgCodeRegions[kHot].Init(CORDB_ADDRESS(source->nativeStartAddressPtr), (ULONG)source->nativeHotSize);
-    m_rgCodeRegions[kCold].Init(CORDB_ADDRESS(source->nativeStartAddressColdPtr), (ULONG)source->nativeColdSize);
+    m_rgCodeRegions[kHot].Init(source->nativeStartAddressPtr, (ULONG)source->nativeHotSize);
+    m_rgCodeRegions[kCold].Init(source->nativeStartAddressColdPtr, (ULONG)source->nativeColdSize);
 
     // copy the other function information
     isInstantiatedGeneric = source->isInstantiatedGeneric;
     vmNativeCodeMethodDescToken = source->vmNativeCodeMethodDescToken;
-    encVersion = source->enCVersion;
 }
 
 
