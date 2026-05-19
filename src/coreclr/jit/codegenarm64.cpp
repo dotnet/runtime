@@ -498,6 +498,7 @@ void CodeGen::genPrologSaveRegPair(regNumber reg1,
             assert(reg1 != REG_LR);
             GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, reg1, reg2, REG_SPBASE, spDelta, INS_OPTS_PRE_INDEX);
             m_compiler->unwindSaveRegPairPreindexed(reg1, reg2, spDelta);
+
             needToSaveRegs = false;
         }
         else // (spOffset != 0) || (spDelta < -512)

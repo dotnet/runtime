@@ -193,6 +193,7 @@ typedef struct _ARM64_UNWIND_PARAMS
     PULONG_PTR      LowLimit;
     PULONG_PTR      HighLimit;
     PKNONVOLATILE_CONTEXT_POINTERS ContextPointers;
+    PULONG_PTR      SpForPacSign;
 } ARM64_UNWIND_PARAMS, *PARM64_UNWIND_PARAMS;
 
 #define UNWIND_PARAMS_SET_TRAP_FRAME(Params, Address, Size)
@@ -2406,6 +2407,10 @@ ExecuteCodes:
                 return STATUS_UNWIND_INVALID_SEQUENCE;
             }
 
+            if (UnwindParams->SpForPacSign != NULL) {
+                *UnwindParams->SpForPacSign = ContextRecord->Sp;
+            }
+
             HANDLE_PAC(&ContextRecord->Lr, ContextRecord->Sp);
 
             //
@@ -2564,6 +2569,7 @@ RtlpxVirtualUnwind (
     _In_opt_ PULONG_PTR LowLimit,
     _In_opt_ PULONG_PTR HighLimit,
     _Outptr_opt_result_maybenull_ PEXCEPTION_ROUTINE *HandlerRoutine,
+    _Out_opt_ PULONG_PTR SpForPacSign,
     _In_ ULONG UnwindFlags
     )
 
@@ -2620,6 +2626,9 @@ Arguments:
         language specific exception handler is returned. Otherwise, NULL is
         returned.
 
+    SpForPacSign - Supplies an optional pointer to retrieve the SP used to
+        sign the return address when pointer authentication (PAC) is enabled.
+
     UnwindFlags - Supplies additional flags for the unwind operation.
 
 Return Value:
@@ -2638,6 +2647,10 @@ Return Value:
     UNREFERENCED_PARAMETER(HandlerType);
 
     UNWINDER_ASSERT((UnwindFlags & ~RTL_VIRTUAL_UNWIND_VALID_FLAGS_ARM64) == 0);
+
+    if (SpForPacSign != NULL) {
+        *SpForPacSign = 0;
+    }
 
     if (FunctionEntry == NULL) {
 
@@ -2699,6 +2712,8 @@ Return Value:
         UnwindParams.LowLimit = LowLimit;
         UnwindParams.HighLimit = HighLimit;
         UnwindParams.ContextPointers = ContextPointers;
+        UnwindParams.SpForPacSign = SpForPacSign;
+
         UnwindType = (FunctionEntry->UnwindData & 3);
 
         //
@@ -2802,6 +2817,7 @@ BOOL OOPStackUnwinderArm64::Unwind(T_CONTEXT * pContext)
                                 NULL,
                                 NULL,
                                 &DummyHandlerRoutine,
+                                NULL,
                                 0);
 
     //
@@ -2869,6 +2885,7 @@ RtlVirtualUnwind(
                                 NULL,
                                 NULL,
                                 &HandlerRoutine,
+                                NULL,
                                 0);
 
     //
@@ -2879,6 +2896,47 @@ RtlVirtualUnwind(
 
     if (!NT_SUCCESS(Status)) {
         ContextRecord->Pc = 0;
+    }
+
+    return HandlerRoutine;
+}
+
+PEXCEPTION_ROUTINE
+RtlVirtualUnwindWithSpForPacSign(
+    IN ULONG HandlerType,
+    IN ULONG64 ImageBase,
+    IN ULONG64 ControlPc,
+    IN PRUNTIME_FUNCTION FunctionEntry,
+    IN OUT PCONTEXT ContextRecord,
+    OUT PVOID *HandlerData,
+    OUT PULONG64 EstablisherFrame,
+    IN OUT PKNONVOLATILE_CONTEXT_POINTERS ContextPointers OPTIONAL,
+    OUT PULONG64 SpForPacSign OPTIONAL
+    )
+{
+    PEXCEPTION_ROUTINE HandlerRoutine;
+    NTSTATUS Status;
+
+    HandlerRoutine = NULL;
+    Status = RtlpxVirtualUnwind(HandlerType,
+                                ImageBase,
+                                ControlPc,
+                                (PIMAGE_ARM64_RUNTIME_FUNCTION_ENTRY)FunctionEntry,
+                                ContextRecord,
+                                HandlerData,
+                                EstablisherFrame,
+                                ContextPointers,
+                                NULL,
+                                NULL,
+                                &HandlerRoutine,
+                                (PULONG_PTR)SpForPacSign,
+                                0);
+
+    if (!NT_SUCCESS(Status)) {
+        ContextRecord->Pc = 0;
+        if (SpForPacSign != NULL) {
+            *SpForPacSign = 0;
+        }
     }
 
     return HandlerRoutine;

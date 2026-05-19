@@ -6312,9 +6312,11 @@ bool IsIPInEpilog(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, BOOL *pSaf
     return fIsInEpilog;
 }
 
-#if defined(TARGET_ARM64)
+#if defined(TARGET_ARM64) && !defined(TARGET_UNIX)
 // Read the PAC state for a managed ARM64 frame and, when PAC is enabled, recover the
-// SP value that was live when PACIASP signed the return address in LR.
+// SP value that was live when PACIASP signed the return address in LR. Unix ARM64 gets
+// this directly from the PAL unwinder while it is unwinding the frame. This fallback
+// is used by the Windows hijack path in threadsuspend.cpp.
 bool GetPacSignInfo(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, TADDR retAddrLocation, TADDR *pSpForPacSign)
 {
     _ASSERTE(pContextToCheck != nullptr);
@@ -6322,20 +6324,6 @@ bool GetPacSignInfo(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, TADDR re
     _ASSERTE(pSpForPacSign != nullptr);
 
     *pSpForPacSign = 0;
-
-    // In prolog or epilog while the current frame is still being established or torn down
-    // retrieving correct SP is complex. We conservatively bail-out in this case.
-    // TODO-PAC: Explore opportunities to retrieve SP while in prolog/epilog.
-    if (IsIPInProlog(pCodeInfo))
-    {
-        return false;
-    }
-
-    BOOL unused = TRUE;
-    if (IsIPInEpilog(pContextToCheck, pCodeInfo, &unused))
-    {
-        return false;
-    }
 
     // Lookup the function entry for the IP
     PTR_RUNTIME_FUNCTION FunctionEntry = pCodeInfo->GetFunctionEntry();
@@ -6548,7 +6536,7 @@ bool GetPacSignInfo(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, TADDR re
     *pSpForPacSign = (TADDR)((SSIZE_T)retAddrLocation - (lrSlotOffset - pacSpOffset));
     return true;
 }
-#endif // TARGET_ARM64
+#endif // TARGET_ARM64 && !TARGET_UNIX
 
 #endif // FEATURE_HIJACK && (!TARGET_X86 || TARGET_UNIX)
 

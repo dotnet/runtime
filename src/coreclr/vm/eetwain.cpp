@@ -788,6 +788,9 @@ void EECodeManager::EnsureCallerContextIsValid( PREGDISPLAY  pRD, EECodeInfo * p
             *(pRD->pCallerContext) = *(pRD->pCurrentContext);
             // Skip updating context registers for light unwind
             Thread::VirtualUnwindCallFrame(pRD->pCallerContext, NULL, pCodeInfo);
+#if defined(TARGET_ARM64)
+            pRD->CallerContextSpForPacSign = 0;
+#endif // TARGET_ARM64
 #endif
         }
         else
@@ -795,7 +798,13 @@ void EECodeManager::EnsureCallerContextIsValid( PREGDISPLAY  pRD, EECodeInfo * p
             // We need to make a copy here (instead of switching the pointers), in order to preserve the current context
             *(pRD->pCallerContext) = *(pRD->pCurrentContext);
             *(pRD->pCallerContextPointers) = *(pRD->pCurrentContextPointers);
-            Thread::VirtualUnwindCallFrame(pRD->pCallerContext, pRD->pCallerContextPointers, pCodeInfo);
+#if defined(TARGET_ARM64)
+            pRD->CallerContextSpForPacSign = 0;
+#endif // TARGET_ARM64
+            Thread::VirtualUnwindCallFrame(pRD->pCallerContext,
+                                           pRD->pCallerContextPointers,
+                                           pCodeInfo
+                                           ARM64_ARG(&pRD->CallerContextSpForPacSign));
         }
 
         pRD->IsCallerContextValid = TRUE;

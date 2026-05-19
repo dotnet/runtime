@@ -365,6 +365,12 @@ UINT_PTR Thread::VirtualUnwindCallFrame(PREGDISPLAY pRD, EECodeInfo* pCodeInfo /
         pRD->pCurrentContextPointers            = pRD->pCallerContextPointers;
         pRD->pCallerContextPointers             = tempPtrs;
 
+#if defined(TARGET_ARM64)
+        TADDR tempSpForPacSign          = pRD->CurrentContextSpForPacSign;
+        pRD->CurrentContextSpForPacSign = pRD->CallerContextSpForPacSign;
+        pRD->CallerContextSpForPacSign  = tempSpForPacSign;
+#endif // TARGET_ARM64
+
 #ifdef TARGET_X86
         pRD->PCTAddr = pRD->pCurrentContext->Esp - pCodeInfo->GetCodeManager()->GetStackParameterSize(pCodeInfo) - sizeof(DWORD);
 #endif
@@ -388,7 +394,11 @@ UINT_PTR Thread::VirtualUnwindCallFrame(PREGDISPLAY pRD, EECodeInfo* pCodeInfo /
         pRD->pCurrentContext->Esp = pRD->SP;
         pRD->pCurrentContext->Eip = pRD->ControlPC;
 #else
-        VirtualUnwindCallFrame(pRD->pCurrentContext, pRD->pCurrentContextPointers, pCodeInfo);
+        ARM64_ONLY(pRD->CurrentContextSpForPacSign = 0;)
+        VirtualUnwindCallFrame(pRD->pCurrentContext,
+                               pRD->pCurrentContextPointers,
+                               pCodeInfo
+                               ARM64_ARG(&pRD->CurrentContextSpForPacSign));
 #endif
     }
 
@@ -409,7 +419,8 @@ UINT_PTR Thread::VirtualUnwindCallFrame(PREGDISPLAY pRD, EECodeInfo* pCodeInfo /
 // static
 PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
                                         T_KNONVOLATILE_CONTEXT_POINTERS* pContextPointers /*= NULL*/,
-                                        EECodeInfo * pCodeInfo /*= NULL*/)
+                                        EECodeInfo * pCodeInfo /*= NULL*/
+                                        ARM64_ARG(TADDR * pSpForPacSign /*= NULL*/))
 {
 #ifdef TARGET_WASM
     _ASSERTE("VirtualUnwindCallFrame is not supported on WebAssembly");
@@ -424,6 +435,10 @@ PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
+
+#if defined(TARGET_ARM64) && !defined(TARGET_UNIX)
+    UNREFERENCED_PARAMETER(pSpForPacSign);
+#endif // TARGET_ARM64 && !TARGET_UNIX
 
     PCODE           uControlPc = GetIP(pContext);
 
@@ -520,6 +535,17 @@ PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
     #endif // HOST_64BIT
         PVOID               HandlerData;
 
+#if defined(TARGET_UNIX) && defined(TARGET_ARM64)
+        RtlVirtualUnwindWithSpForPacSign(0,
+                                         uImageBase,
+                                         uControlPc,
+                                         pFunctionEntry,
+                                         pContext,
+                                         &HandlerData,
+                                         &EstablisherFrame,
+                                         pContextPointers,
+                                         (PULONG64)pSpForPacSign);
+#else
         RtlVirtualUnwind(0,
                          uImageBase,
                          uControlPc,
@@ -528,6 +554,7 @@ PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
                          &HandlerData,
                          &EstablisherFrame,
                          pContextPointers);
+#endif
 
         uControlPc = GetIP(pContext);
     }
