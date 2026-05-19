@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.Hosting
         {
             if (!OperatingSystem.IsAndroid() && !OperatingSystem.IsBrowser() && !OperatingSystem.IsWasi() && !OperatingSystem.IsIOS() && !OperatingSystem.IsTvOS())
             {
-                services.AddSingleton<IHostLifetime, ConsoleLifetime>();
+                HostingHostBuilderExtensions.AddConsoleLifetime(services);
             }
             else
             {
