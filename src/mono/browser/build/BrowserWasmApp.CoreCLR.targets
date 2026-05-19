@@ -345,14 +345,10 @@
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </ManagedToNativeGenerator>
 
-    <!-- Add generated C++ files to compile list.
-         Note: reverse-pinvoke-table.cpp is NOT compiled separately because
-         libcoreclr_static.a already contains callhelpers-reverse.cpp.o with the
-         default reverse-thunk table. Compiling the app-generated version would
-         cause duplicate symbol errors when the archive object is pulled in for
-         other required symbols (e.g., SystemInteropJS_*). -->
     <ItemGroup>
       <_WasmSourceFileToCompile Include="$(_WasmPInvokeTablePath)"          ObjectFile="$(_WasmIntermediateOutputPath)pinvoke-table.o"
+                                                                            Dependencies="$(_WasmCompileRsp);$(_WasmIntermediateOutputPath)coreclr_compat.h" />
+      <_WasmSourceFileToCompile Include="$(_WasmReversePInvokeTablePath)"   ObjectFile="$(_WasmIntermediateOutputPath)reverse-pinvoke-table.o"
                                                                             Dependencies="$(_WasmCompileRsp);$(_WasmIntermediateOutputPath)coreclr_compat.h" />
       <_WasmSourceFileToCompile Include="$(_WasmInterpToNativeTablePath)"   ObjectFile="$(_WasmIntermediateOutputPath)wasm_m2n_invoke.o"
                                                                             Dependencies="$(_WasmCompileRsp);$(_WasmIntermediateOutputPath)coreclr_compat.h" />

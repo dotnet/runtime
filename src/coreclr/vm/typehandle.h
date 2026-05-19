@@ -357,6 +357,8 @@ public:
 
     bool IsFloatHfa() const;
 
+    bool IsVectorT() const;
+
 #ifdef FEATURE_64BIT_ALIGNMENT
     bool RequiresAlign8() const;
 #endif // FEATURE_64BIT_ALIGNMENT
@@ -443,7 +445,7 @@ public:
     BOOL IsString() const;
 
     // Continuation sub types
-    BOOL IsContinuation() const;
+    BOOL IsContinuationWithoutMetadata() const;
 
     // True if this type *is* a formal generic type parameter or any component of it is a formal generic type parameter
     BOOL ContainsGenericVariables(BOOL methodOnly=FALSE) const;

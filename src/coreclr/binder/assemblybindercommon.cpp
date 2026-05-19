@@ -22,7 +22,6 @@
 #include "failurecache.hpp"
 #include "utils.hpp"
 #include "stringarraylist.h"
-#include "configuration.h"
 
 #if !defined(DACCESS_COMPILE)
 #include "defaultassemblybinder.h"
@@ -295,37 +294,16 @@ namespace BINDER_SPACE
 
         BinderTracing::PathProbed(sCoreLib, pathSource, hr);
 
-        if (hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))
+        if (hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)
+            && Bundle::AppIsBundle()
+            && Bundle::AppBundle->HasExtractedFiles())
         {
-            // Try to find corelib in the TPA
-            StackSString sCoreLibSimpleName(CoreLibName_W);
-            StackSString sTrustedPlatformAssemblies = Configuration::GetKnobStringValue(W("TRUSTED_PLATFORM_ASSEMBLIES"));
-            sTrustedPlatformAssemblies.Normalize();
-
-            bool found = false;
-            for (SString::Iterator i = sTrustedPlatformAssemblies.Begin(); i != sTrustedPlatformAssemblies.End(); )
-            {
-                SString fileName;
-                SString simpleName;
-                HRESULT pathResult = S_OK;
-                IF_FAIL_GO(pathResult = GetNextTPAPath(sTrustedPlatformAssemblies, i, /*dllOnly*/ true, fileName, simpleName));
-                if (pathResult == S_FALSE)
-                {
-                    break;
-                }
-
-                if (simpleName.EqualsCaseInsensitive(sCoreLibSimpleName))
-                {
-                    sCoreLib = fileName;
-                    found = true;
-                    break;
-                }
-            }
-
-            if (!found)
-            {
-                GO_WITH_HRESULT(HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND));
-            }
+            // For a single-file app with extracted contents (IncludeAllContentForSelfExtract),
+            // CoreCLR is statically linked into the host executable, so systemDirectory is the
+            // directory of the host executable. The extracted CoreLib lives in the bundle
+            // extraction directory rather than beside the host. Try to find it there.
+            sCoreLib.Set(Bundle::AppBundle->ExtractionPath());
+            CombinePath(sCoreLib, sCoreLibName, sCoreLib);
 
             hr = AssemblyBinderCommon::GetAssembly(sCoreLib,
                 TRUE /* fIsInTPA */,

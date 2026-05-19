@@ -942,60 +942,139 @@ bool emitter::DoJitUseApxNDD(instruction ins) const
 #endif
 }
 
+inline bool emitter::IsApxConditionalInstruction(instruction ins)
+{
+#ifdef TARGET_AMD64
+    return (IsCCMP(ins) || IsCFCMOV(ins) || IsCTEST(ins));
+#else
+    return false;
+#endif
+}
+
 inline bool emitter::IsCCMP(instruction ins)
 {
+#ifdef TARGET_AMD64
     return (ins >= FIRST_CCMP_INSTRUCTION && ins <= LAST_CCMP_INSTRUCTION);
+#else
+    return false;
+#endif
+}
+
+inline bool emitter::IsCTEST(instruction ins)
+{
+#ifdef TARGET_AMD64
+    return (ins >= FIRST_CTEST_INSTRUCTION && ins <= LAST_CTEST_INSTRUCTION);
+#else
+    return false;
+#endif
+}
+
+inline bool emitter::IsCFCMOV(instruction ins)
+{
+#ifdef TARGET_AMD64
+    return (ins >= FIRST_CFCMOV_INSTRUCTION && ins <= LAST_CFCMOV_INSTRUCTION);
+#else
+    return false;
+#endif
 }
 
 //------------------------------------------------------------------------
-// GetCCFromCCMP: Get a condition code from a ccmp instruction
+// ImmCanUseSByteEncoding: Returns true if `val` fits in a sign-extended byte
+//     AND `ins` supports the imm8s (sign-extended-byte) immediate encoding.
+//
+// Arguments:
+//    ins - The instruction being encoded.
+//    val - The immediate value.
+//
+// Returns:
+//    True when the x86 imm8s short-immediate form is legal: the value can be
+//    sign-extended from one byte and the instruction does not unconditionally
+//    require a full-width immediate.  MOV, TEST, and CTEST never use imm8s
+//    regardless of the value.
+//
+// Notes:
+//    Callers must additionally suppress the result when the immediate carries
+//    a relocation (relocs cannot be placed in a single byte).
+//
+/* static */ bool emitter::ImmCanUseSByteEncoding(instruction ins, ssize_t val)
+{
+    target_ssize_t targetVal = (target_ssize_t)val;
+
+    if (targetVal != val)
+    {
+        return false;
+    }
+    // MOV, TEST, and CTEST do not have SByte encoding form.
+    return ((signed char)targetVal == targetVal) && (ins != INS_mov) && (ins != INS_test) && !IsCTEST(ins);
+}
+
+//------------------------------------------------------------------------
+// GetCCFromCCMPOrCTEST: Get a condition code from a conditional instruction
 //
 // Arguments:
 //    ins - The instruction to check.
 //
 // Returns:
-//    `insCC` representing the condition code for a ccmp instruction.
-//    ccmpx instructions share the same instruction encoding unlike
+//    `insCC` representing the condition code for a ccmp / ctest instruction.
+//    ccmpcc / ctestcc instructions share the same instruction encoding unlike
 //    other x86 status bit instructions and instead have a CC coded into
 //    the EVEX prefix.
 //
-inline insCC emitter::GetCCFromCCMP(instruction ins)
+inline insCC emitter::GetCCFromCCMPOrCTEST(instruction ins)
 {
-    assert(IsCCMP(ins));
+    assert(IsCTEST(ins) || IsCCMP(ins));
     switch (ins)
     {
+#ifdef TARGET_AMD64
         case INS_ccmpo:
+        case INS_ctesto:
             return INS_CC_O;
         case INS_ccmpno:
+        case INS_ctestno:
             return INS_CC_NO;
         case INS_ccmpb:
+        case INS_ctestb:
             return INS_CC_B;
         case INS_ccmpae:
+        case INS_ctestae:
             return INS_CC_AE;
         case INS_ccmpe:
+        case INS_cteste:
             return INS_CC_E;
         case INS_ccmpne:
+        case INS_ctestne:
             return INS_CC_NE;
         case INS_ccmpbe:
+        case INS_ctestbe:
             return INS_CC_BE;
         case INS_ccmpa:
+        case INS_ctesta:
             return INS_CC_A;
         case INS_ccmps:
+        case INS_ctests:
             return INS_CC_S;
         case INS_ccmpns:
+        case INS_ctestns:
             return INS_CC_NS;
         case INS_ccmpt:
+        case INS_ctestt:
             return INS_CC_TRUE;
         case INS_ccmpf:
+        case INS_ctestf:
             return INS_CC_FALSE;
         case INS_ccmpl:
+        case INS_ctestl:
             return INS_CC_L;
         case INS_ccmpge:
+        case INS_ctestge:
             return INS_CC_GE;
         case INS_ccmple:
+        case INS_ctestle:
             return INS_CC_LE;
         case INS_ccmpg:
+        case INS_ctestg:
             return INS_CC_G;
+#endif
         default:
             unreached();
     }
@@ -2043,7 +2122,8 @@ bool emitter::TakesApxExtendedEvexPrefix(const instrDesc* id) const
 #if defined(DEBUG)
     if (m_compiler->DoJitStressPromotedEvexEncoding())
     {
-        return true;
+        // EVEX prefixed CMOV has different semantics from non-EVEX CMOV, so we should not promote CMOV in stress mode.
+        return !insIsCMOV(ins);
     }
 #endif // DEBUG
     if (IsApxOnlyInstruction(ins))
@@ -2137,7 +2217,7 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
     {
         if (!IsEvexEncodableInstruction(ins))
         {
-            // Legacy-promoted insutrcions are not labeled with Encoding_EVEX.
+            // Legacy-promoted instructions are not labeled with Encoding_EVEX.
             code |= MAP4_IN_BYTE_EVEX_PREFIX;
         }
 
@@ -2165,18 +2245,29 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
         }
 
 #ifdef TARGET_AMD64
-        if (IsCCMP(ins))
+        if (IsCCMP(ins) || IsCTEST(ins))
         {
+            // CCMP and CTEST have 2 special fields in the EVEX prefix:
+            // 1. Source condition code (SCC): EVEX.P3[3:0] — the instruction executes only when this condition is
+            // satisfied.
+            // 2. Default flags value (DFV): EVEX.P2[6:3] — the value written to EFLAGS when the SCC condition is not
+            // met.
+            //
+            // In the code_t packing (see DEFAULT_BYTE_EVEX_PREFIX), the EVEX prefix occupies bits [63:32],
+            // with P3 at bits [39:32] and P2 at bits [47:40]:
+            //   SCC (EVEX.P3[3:0]) -> code_t bits [35:32] -> shift left by 32
+            //   DFV (EVEX.P2[6:3]) -> code_t bits [46:43] -> shift left by 43
+            // The current mask clears code_t bits [42:32] before repopulating SCC and DFV below.
             code &= 0xFFFF87F0FFFFFFFF;
-            code |= ((size_t)id->idGetEvexDFV()) << 43;
-            code |= ((size_t)GetCCFromCCMP(ins)) << 32;
+            code |= ((size_t)GetCCFromCCMPOrCTEST(ins)) << 32; // SCC: EVEX.P3[3:0] = code_t[35:32]
+            code |= ((size_t)id->idGetEvexDFV()) << 43;        // DFV: EVEX.P2[6:3] = code_t[46:43]
         }
 #endif
 
         return code;
     }
 
-    // No APX-NDD instructions should reach code below.
+    // All APX-promoted-EVEX instructions should be handled above, no APX extended EVEX instruction should reach here.
     assert(!IsApxExtendedEvexInstruction(ins));
 
     if (attr == EA_32BYTE)
@@ -2281,7 +2372,7 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
         default:
         {
 #ifdef TARGET_AMD64
-            if (IsCCMP(id->idIns())) // Special case for conditional ins such as CCMP, CCMOV
+            if (IsCCMP(id->idIns()) || IsCTEST(id->idIns()))
             {
                 break;
             }
@@ -5051,7 +5142,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instrDesc* id, code_t code, int val
 {
     instruction    ins       = id->idIns();
     UNATIVE_OFFSET valSize   = EA_SIZE_IN_BYTES(id->idOpSize());
-    bool           valInByte = ((signed char)val == val) && (ins != INS_mov) && (ins != INS_test);
+    bool           valInByte = ImmCanUseSByteEncoding(ins, val);
 
 #ifdef TARGET_AMD64
     // mov reg, imm64 is the only opcode which takes a full 8 byte immediate
@@ -5265,7 +5356,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(instrDesc* id, code_t code, int var
     assert(id->idIns() != INS_invalid);
     instruction    ins       = id->idIns();
     UNATIVE_OFFSET valSize   = EA_SIZE_IN_BYTES(id->idOpSize());
-    bool           valInByte = ((signed char)val == val) && (ins != INS_mov) && (ins != INS_test);
+    bool           valInByte = ImmCanUseSByteEncoding(ins, val);
 
 #ifdef TARGET_AMD64
     // mov reg, imm64 is the only opcode which takes a full 8 byte immediate
@@ -5403,7 +5494,9 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
                // kmov instructions reach this path with EA_8BYTE size, even on x86
                || IsKMOVInstruction(ins)
                // The prefetch instructions are always 3 bytes and have part of their modr/m byte hardcoded
-               || isPrefetch(ins));
+               || isPrefetch(ins)
+               // cmov instructions reach this path with EA_2BYTE
+               || insIsCMOV(ins));
 
         size = (attrSize == EA_2BYTE) && (ins == INS_cmpxchg) ? 4 : 3;
     }
@@ -5582,7 +5675,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code, int val
     assert(id->idIns() != INS_invalid);
     instruction    ins       = id->idIns();
     UNATIVE_OFFSET valSize   = EA_SIZE_IN_BYTES(id->idOpSize());
-    bool           valInByte = ((signed char)val == val) && (ins != INS_mov) && (ins != INS_test);
+    bool           valInByte = ImmCanUseSByteEncoding(ins, val);
 
     // We should never generate BT mem,reg because it has poor performance. BT mem,imm might be useful
     // but it requires special handling of the immediate value (it is always encoded in a byte).
@@ -5646,7 +5739,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeCV(instrDesc* id, code_t code, int val
 {
     instruction    ins       = id->idIns();
     UNATIVE_OFFSET valSize   = EA_SIZE_IN_BYTES(id->idOpSize());
-    bool           valInByte = ((signed char)val == val) && (ins != INS_mov) && (ins != INS_test);
+    bool           valInByte = ImmCanUseSByteEncoding(ins, val);
 
 #ifdef TARGET_AMD64
     // mov reg, imm64 is the only opcode which takes a full 8 byte immediate
@@ -7046,7 +7139,7 @@ void emitter::emitIns_R_I(instruction         ins,
     UNATIVE_OFFSET sz;
     instrDesc*     id;
     insFormat      fmt       = emitInsModeFormat(ins, IF_RRD_CNS);
-    bool           valInByte = ((signed char)val == (target_ssize_t)val) && (ins != INS_mov) && (ins != INS_test);
+    bool           valInByte = ImmCanUseSByteEncoding(ins, val);
 
     // BT reg,imm might be useful but it requires special handling of the immediate value
     // (it is always encoded in a byte). Let's not complicate things until this is needed.
@@ -8268,8 +8361,8 @@ void emitter::emitIns_R_S_I(
 void emitter::emitIns_R_R_A(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, GenTreeIndir* indir, insOpts instOptions)
 {
-    assert(IsSimdInstruction(ins));
-    assert(IsThreeOperandAVXInstruction(ins));
+    assert(IsSimdInstruction(ins) || IsApxExtendedEvexInstruction(ins));
+    assert(IsThreeOperandAVXInstruction(ins) || IsApxExtendedEvexInstruction(ins));
 
     ssize_t    offs = indir->Offset();
     instrDesc* id   = emitNewInstrAmd(attr, offs);
@@ -8280,8 +8373,13 @@ void emitter::emitIns_R_R_A(
 
     emitHandleMemOp(indir, id, (ins == INS_mulx) ? IF_RWR_RWR_ARD : emitInsModeFormat(ins, IF_RRD_RRD_ARD), ins);
 
-    SetEvexBroadcastIfNeeded(id, instOptions);
-    SetEvexEmbMaskIfNeeded(id, instOptions);
+    if (IsSimdInstruction(ins))
+    {
+        SetEvexBroadcastIfNeeded(id, instOptions);
+        SetEvexEmbMaskIfNeeded(id, instOptions);
+    }
+    SetEvexNdIfNeeded(id, instOptions);
+    SetEvexNfIfNeeded(id, instOptions);
 
     UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins));
     id->idCodeSize(sz);
@@ -8290,10 +8388,11 @@ void emitter::emitIns_R_R_A(
     emitCurIGsize += sz;
 }
 
-void emitter::emitIns_R_R_AR(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber base, int offs)
+void emitter::emitIns_R_R_AR(
+    instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber base, int offs, insOpts instOptions)
 {
-    assert(IsSimdInstruction(ins));
-    assert(IsThreeOperandAVXInstruction(ins));
+    assert(IsSimdInstruction(ins) || IsApxExtendedEvexInstruction(ins));
+    assert(IsThreeOperandAVXInstruction(ins) || IsApxExtendedEvexInstruction(ins));
 
     instrDesc* id = emitNewInstrAmd(attr, offs);
 
@@ -8304,6 +8403,9 @@ void emitter::emitIns_R_R_AR(instruction ins, emitAttr attr, regNumber reg1, reg
     id->idInsFmt(emitInsModeFormat(ins, IF_RRD_RRD_ARD));
     id->idAddr()->iiaAddrMode.amBaseReg = base;
     id->idAddr()->iiaAddrMode.amIndxReg = REG_NA;
+
+    SetEvexNdIfNeeded(id, instOptions);
+    SetEvexNfIfNeeded(id, instOptions);
 
     UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins));
     id->idCodeSize(sz);
@@ -8981,7 +9083,8 @@ void emitter::emitIns_C_R(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE f
  *  Add an instruction with a static member + constant.
  */
 
-void emitter::emitIns_C_I(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fldHnd, int offs, int val)
+void emitter::emitIns_C_I(
+    instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fldHnd, int offs, int val, insOpts instOptions)
 {
     // Static always need relocs
     if (!jitStaticFldIsGlobAddr(fldHnd))
@@ -9249,6 +9352,9 @@ void emitter::emitIns_I_AR(instruction ins, emitAttr attr, int val, regNumber re
     }
 
     assert(emitGetInsAmdAny(id) == disp); // make sure "disp" is stored properly
+
+    SetEvexNfIfNeeded(id, instOptions);
+    SetEvexDFVIfNeeded(id, instOptions);
 
     sz = emitInsSizeAM(id, insCodeMI(ins), val);
     id->idCodeSize(sz);
@@ -9670,6 +9776,9 @@ void emitter::emitIns_ARX_R(instruction    ins,
 
     id->idIns(ins);
     id->idInsFmt(fmt);
+
+    SetEvexNfIfNeeded(id, instOptions);
+    SetEvexDFVIfNeeded(id, instOptions);
 
     id->idAddr()->iiaAddrMode.amBaseReg = base;
     id->idAddr()->iiaAddrMode.amIndxReg = index;
@@ -12784,7 +12893,7 @@ void emitter::emitDispIns(
     printf(" %-9s", sstr);
 
 #ifdef TARGET_AMD64
-    if (IsCCMP(id->idIns()))
+    if (IsCCMP(id->idIns()) || IsCTEST(id->idIns()))
     {
         // print finite set notation for DFV
         unsigned dfv        = id->idGetEvexDFV();
@@ -14441,7 +14550,8 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
         // Does the constant fit in a byte?
         // SSE/AVX do not need to modify opcode
-        if ((signed char)cval == cval && addc->cnsReloc == false && ins != INS_mov && ins != INS_test)
+
+        if (ImmCanUseSByteEncoding(ins, cval) && !addc->cnsReloc)
         {
             if (id->idInsFmt() != IF_ARW_SHF && !IsSimdInstruction(ins))
             {
@@ -14699,6 +14809,12 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                 else
                 {
                     dst += emitOutputByte(dst, 0x66);
+                }
+
+                if (IsCFCMOV(ins))
+                {
+                    // The opcode for CFCMOV does not follow the rule of "|= 0x01" to handle 16b/32b/64b operands.
+                    break;
                 }
                 FALLTHROUGH;
             }
@@ -15424,7 +15540,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
         // Does the constant fit in a byte?
         // SSE/AVX/AVX512 do not need to modify opcode
-        if ((signed char)cval == cval && addc->cnsReloc == false && ins != INS_mov && ins != INS_test)
+        if (ImmCanUseSByteEncoding(ins, cval) && !addc->cnsReloc)
         {
             if ((id->idInsFmt() != IF_SRW_SHF) && (id->idInsFmt() != IF_RRW_SRD_CNS) &&
                 (id->idInsFmt() != IF_RWR_RRD_SRD_CNS) && !IsSimdInstruction(ins))
@@ -15974,7 +16090,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     {
         ssize_t cval = addc->cnsVal;
         // Does the constant fit in a byte?
-        if ((signed char)cval == cval && addc->cnsReloc == false && ins != INS_mov && ins != INS_test)
+        if (ImmCanUseSByteEncoding(ins, cval) && !addc->cnsReloc)
         {
             // SSE/AVX do not need to modify opcode
             if (id->idInsFmt() != IF_MRW_SHF && !IsSimdInstruction(ins))
@@ -16878,7 +16994,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
         code = AddX86PrefixIfNeeded(id, code, size);
         code = insEncodeMRreg(id, code);
 
-        if (ins != INS_test && !IsShiftInstruction(ins))
+        if (ins != INS_test && !IsShiftInstruction(ins) && !IsCFCMOV(ins) && !IsCTEST(ins))
         {
             code |= 2;
         }
@@ -16903,7 +17019,8 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
                     dst += emitOutputByte(dst, 0x66);
                 }
 
-                code |= 0x1;
+                if (!IsCFCMOV(ins))
+                    code |= 0x1;
                 break;
 
             case EA_4BYTE:
@@ -16917,7 +17034,8 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
                     assert((code & EXTENDED_EVEX_PP_BITS) == 0);
                 }
 #endif
-                code |= 0x1;
+                if (!IsCFCMOV(ins))
+                    code |= 0x1;
                 break;
 
 #ifdef TARGET_AMD64
@@ -16934,7 +17052,8 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
                 }
 
                 // Set the 'w' bit to get the large version
-                code |= 0x1;
+                if (!IsCFCMOV(ins))
+                    code |= 0x1;
                 break;
 
 #endif // TARGET_AMD64
@@ -16975,11 +17094,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
         regCode = insEncodeReg012(id, reg2, size, &code);
     }
 
-#ifdef TARGET_AMD64
-    if (TakesSimdPrefix(id) && !IsCCMP(ins))
-#else
-    if (TakesSimdPrefix(id))
-#endif
+    if (TakesSimdPrefix(id) && !IsApxConditionalInstruction(ins))
     {
         // In case of AVX instructions that take 3 operands, we generally want to encode reg1
         // as first source.  In this case, reg1 is both a source and a destination.
@@ -17130,7 +17245,7 @@ BYTE* emitter::emitOutputRRR(BYTE* dst, instrDesc* id)
             case EA_2BYTE:
             case EA_4BYTE:
                 // Set the 'w' bit to get the large version
-                code = insIsCMOV(ins) ? code : (code | (0x01));
+                code = (insIsCMOV(ins) || IsCFCMOV(ins)) ? code : (code | (0x01));
                 break;
 
 #ifdef TARGET_AMD64
@@ -17140,7 +17255,7 @@ BYTE* emitter::emitOutputRRR(BYTE* dst, instrDesc* id)
                 code = AddRexWPrefix(id, code); // TODO-APX : Revisit. does xor or other cases need to be handled
                                                 // differently? see emitOutputRR
                 // Set the 'w' bit to get the large version
-                code = insIsCMOV(ins) ? code : (code | (0x01));
+                code = (insIsCMOV(ins) || IsCFCMOV(ins)) ? code : (code | (0x01));
                 break;
 
 #endif // TARGET_AMD64
@@ -17242,7 +17357,7 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
     instruction ins       = id->idIns();
     regNumber   reg       = id->idReg1();
     ssize_t     val       = emitGetInsSC(id);
-    bool        valInByte = ((signed char)val == (target_ssize_t)val) && (ins != INS_mov) && (ins != INS_test);
+    bool        valInByte = ImmCanUseSByteEncoding(ins, val);
 
     assert(!id->idHasReg2());
 
@@ -18958,7 +19073,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 code              = insEncodeMIreg(id, mReg, size, code);
                 rReg              = REG_NA;
                 ssize_t val       = emitGetInsSC(id);
-                bool    valInByte = ((signed char)val == (target_ssize_t)val) && (ins != INS_mov) && (ins != INS_test);
+                bool    valInByte = ImmCanUseSByteEncoding(ins, val);
 
                 switch (size)
                 {
