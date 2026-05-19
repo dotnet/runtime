@@ -36,13 +36,12 @@ crank --config <path-or-link-to-benchmark-scenario.yml> --scenario <scenario> --
 
 The profile selection influences which machines are used for the benchmark runs (including OS and CPU architecture), see https://github.com/aspnet/Benchmarks/blob/main/scenarios/README.md#profiles for the list of available profiles. For example, you might use `--profile aspnet-perf-lin` to run the benchmark on Linux machines.
 
-Additional options can be used to specify the baseline and test binaries via the `--[JOB].options.outputFiles <filename>` option. For example, for the `httpclient.benchmarks.yml` scenario, you can specify the binaries for the baseline and test runs like this:
+Additional options can be used to overlay locally built files into the published output for a job via `--[JOB].options.outputFiles path[;destination]`. This is useful when you want a benchmark run to use modified binaries by copying them into the published app output, optionally with an explicit destination filename. For example, for the `httpclient.benchmarks.yml` scenario, you might copy locally built assemblies into the client output like this:
 
 ```bash
 crank --config httpclient.benchmarks.yml --profile aspnet-perf-lin \
-  --client.options.outputFiles path/to/modified/System.Net.Http.dll \
-  --client.options.outputFiles path/to/modified/System.Net.Security.dll \
-  ...
+  --client.options.outputFiles path/to/modified/System.Net.Http.dll;System.Net.Http.dll \
+  --client.options.outputFiles path/to/modified/System.Net.Security.dll;System.Net.Security.dll
 ```
 
 See [crank command line reference](https://github.com/dotnet/crank/blob/main/src/Microsoft.Crank.Controller/README.md) for more details on available options.
