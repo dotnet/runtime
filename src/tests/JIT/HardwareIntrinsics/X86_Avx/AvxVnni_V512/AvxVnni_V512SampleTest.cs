@@ -3,9 +3,9 @@
 //
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
-using System.Runtime.InteropServices;
 using Xunit;
 
 namespace IntelHardwareIntrinsicTest._AvxVnni_V512
@@ -116,7 +116,12 @@ namespace IntelHardwareIntrinsicTest._AvxVnni_V512
         private static Vector512<T> LoadVector512<T>(T[] values)
             where T : struct
         {
-            return MemoryMarshal.Cast<T, Vector512<T>>(values)[0];
+            Vector512<T> result = default;
+            Unsafe.CopyBlockUnaligned(
+                ref Unsafe.As<Vector512<T>, byte>(ref result),
+                ref Unsafe.As<T, byte>(ref values[0]),
+                (uint)Unsafe.SizeOf<Vector512<T>>());
+            return result;
         }
     }
 }
