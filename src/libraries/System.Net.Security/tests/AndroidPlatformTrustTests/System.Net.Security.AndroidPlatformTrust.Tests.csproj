@@ -37,7 +37,9 @@
     <MakeDir Directories="$(_NetworkSecurityConfigDir)/res/raw" />
 
     <!-- Extract root CA from PKCS#7 bundle and write as DER -->
-    <ExtractRootCA P7bPath="$(_CaCertP7bPath)" OutputPath="$(_CaCertDerPath)" />
+    <ExtractRootCA P7bPath="$(_CaCertP7bPath)"
+                   OutputPath="$(_CaCertDerPath)"
+                   PkcsAssemblyPath="$(MSBuildToolsPath)\System.Security.Cryptography.Pkcs.dll" />
 
     <!-- Copy network_security_config.xml to the intermediate directory -->
     <Copy SourceFiles="$(MSBuildThisFileDirectory)network_security_config.xml"
@@ -55,16 +57,21 @@
     <ParameterGroup>
       <P7bPath ParameterType="System.String" Required="true" />
       <OutputPath ParameterType="System.String" Required="true" />
+      <PkcsAssemblyPath ParameterType="System.String" Required="true" />
     </ParameterGroup>
     <Task>
       <Using Namespace="System.Security.Cryptography.X509Certificates" />
       <Code Type="Fragment" Language="cs">
         <![CDATA[
-        var collection = new X509Certificate2Collection();
+        Type signedCmsType = System.Reflection.Assembly
+            .LoadFrom(PkcsAssemblyPath)
+            .GetType("System.Security.Cryptography.Pkcs.SignedCms", throwOnError: true);
+        object cms = Activator.CreateInstance(signedCmsType);
+        signedCmsType.GetMethod("Decode", new[] { typeof(byte[]) }).Invoke(cms, new object[] { System.IO.File.ReadAllBytes(P7bPath) });
+        var collection = (X509Certificate2Collection)signedCmsType.GetProperty("Certificates").GetValue(cms);
         byte[] rootRawData = null;
         try
         {
-            collection.Import(P7bPath);
             foreach (X509Certificate2 cert in collection)
             {
                 if (cert.Subject == cert.Issuer)
