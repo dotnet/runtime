@@ -81,15 +81,18 @@ namespace TypeSystemTests
             Assert.True(MarshalUtils.IsBlittableType(classWithEmptyBase));
         }
 
-        [Fact]
-        public void GetParameterMetadata_MarshalAsInterfaceWithIidParameterIndex_ParsesDescriptor()
+        [Theory]
+        [InlineData("IUnknownWithIidParameterIndex", NativeTypeKind.IUnknown)]
+        [InlineData("IDispatchWithIidParameterIndex", NativeTypeKind.IDispatch)]
+        [InlineData("InterfaceWithIidParameterIndex", NativeTypeKind.Intf)]
+        public void GetParameterMetadata_MarshalAsComInterfaceWithIidParameterIndex_ParsesDescriptor(string methodName, NativeTypeKind nativeType)
         {
             MetadataType type = _testModule.GetType("Marshalling"u8, "MethodsWithMarshalAs"u8);
-            MethodDesc method = type.GetMethod("InterfaceWithIidParameterIndex"u8, null);
+            MethodDesc method = type.GetMethod(Encoding.UTF8.GetBytes(methodName), null);
 
             ParameterMetadata parameter = method.GetParameterMetadata()[1];
 
-            Assert.Equal(NativeTypeKind.Intf, parameter.MarshalAsDescriptor.Type);
+            Assert.Equal(nativeType, parameter.MarshalAsDescriptor.Type);
         }
     }
 }

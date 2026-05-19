@@ -181,6 +181,16 @@ namespace Marshalling
 
     public class MethodsWithMarshalAs
     {
+        public void IUnknownWithIidParameterIndex(object iid, [MarshalAs(UnmanagedType.IUnknown, IidParameterIndex = 0)] out object value)
+        {
+            value = null;
+        }
+
+        public void IDispatchWithIidParameterIndex(object iid, [MarshalAs(UnmanagedType.IDispatch, IidParameterIndex = 0)] out object value)
+        {
+            value = null;
+        }
+
         public void InterfaceWithIidParameterIndex(object iid, [MarshalAs(UnmanagedType.Interface, IidParameterIndex = 0)] out object value)
         {
             value = null;
