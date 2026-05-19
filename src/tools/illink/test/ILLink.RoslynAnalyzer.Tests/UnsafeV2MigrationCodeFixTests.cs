@@ -857,6 +857,46 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeV2MigrationAnalyzer} = tr
         }
 
         [Fact]
+        public async Task UnsafeMethodBodyWithPreprocessorDirectives_TextualWrap()
+        {
+            // Bodies containing #if/#else/#endif must be wrapped textually so that the
+            // emitted text is identical for every TFM the source compiles against
+            // (otherwise `dotnet format` writes merge-conflict markers when stitching the
+            // per-TFM fixer outputs back together). Both branches must be indented +4.
+            var source = """
+                public class C
+                {
+                    public {|IL5006:unsafe|} void M()
+                    {
+                #if NET
+                        System.Console.WriteLine("net");
+                #else
+                        System.Console.WriteLine("standard");
+                #endif
+                    }
+                }
+                """;
+            var fixedSource = """
+                public class C
+                {
+                    public void M()
+                    {
+                        // SAFETY-TODO: Audit this unsafe usage
+                        unsafe
+                        {
+                #if NET
+                            System.Console.WriteLine("net");
+                #else
+                            System.Console.WriteLine("standard");
+                #endif
+                        }
+                    }
+                }
+                """;
+            await VerifyCodeFix(source, fixedSource);
+        }
+
+        [Fact]
         public async Task UnsafeMethodBodyMixedCommentsBlankLinesNested_AllPreserved()
         {
             // The kind of body we'd find in real BCL code: a comment block, a blank line,

@@ -284,6 +284,17 @@ namespace ILLink.CodeFix
 
         private static BlockSyntax ReplaceWithUnsafeBlock(BlockSyntax body)
         {
+            // Multi-TFM safety: if the body contains preprocessor directives we wrap it
+            // textually (operating on body.ToFullString()) so the output is byte-identical
+            // for every TFM the source file is compiled against. Otherwise `dotnet format`
+            // runs the fixer per TFM, sees different active branches, and emits
+            // "<<<<<<< TODO: Unmerged change" markers when stitching results back together.
+            if (BodyHasDirectives(body))
+            {
+                if (WrapBodyTextually(body) is { } textual)
+                    return textual;
+            }
+
             // Strip the original leading whitespace from each statement so the formatter
             // re-indents them inside the new 'unsafe { }' block. We deliberately keep any
             // leading comments / directives the original statements had.
@@ -295,6 +306,73 @@ namespace ILLink.CodeFix
                 .WithLeadingTrivia(body.GetLeadingTrivia())
                 .WithTrailingTrivia(body.GetTrailingTrivia())
                 .WithAdditionalAnnotations(Formatter.Annotation);
+        }
+
+        private static bool BodyHasDirectives(BlockSyntax body) =>
+            body.DescendantTrivia(descendIntoTrivia: true).Any(static t => t.IsDirective);
+
+        private static BlockSyntax? WrapBodyTextually(BlockSyntax body)
+        {
+            // Operate on the body's raw text so the output is identical across all TFMs.
+            // We deliberately skip Formatter.Annotation here — re-indentation would diverge
+            // per TFM (only the active preprocessor branch gets formatted) and re-introduce
+            // the merge-conflict problem we're trying to avoid.
+            var fullText = body.ToFullString();
+            var openOffset = body.OpenBraceToken.SpanStart - body.FullSpan.Start;
+            var closeOffset = body.CloseBraceToken.SpanStart - body.FullSpan.Start;
+            if (openOffset < 0 || closeOffset <= openOffset || closeOffset >= fullText.Length)
+                return null;
+
+            // Match the file's line ending so we don't mix LF/CRLF.
+            var newLine = fullText.Contains("\r\n") ? "\r\n" : "\n";
+
+            // Indent at which the body's closing brace lives. That is the member's body
+            // indent (e.g. 8 spaces for a method inside a class); the new 'unsafe { ... }'
+            // sits one level deeper.
+            var baseIndent = ExtractLineIndent(fullText, closeOffset);
+            var innerIndent = baseIndent + "    ";
+
+            // Push every non-directive, non-blank line of the original body content one
+            // level deeper. Directive lines (e.g. `#if`, `#else`, `#endif`) stay at their
+            // original column because preprocessor directives must begin at column 0 (or
+            // following only whitespace) and we don't want to disturb them.
+            var content = fullText.Substring(openOffset + 1, closeOffset - openOffset - 1);
+            var lines = content.Split(["\r\n", "\n"], System.StringSplitOptions.None);
+            var indentedContent = string.Join(newLine, lines.Select(line =>
+            {
+                if (string.IsNullOrWhiteSpace(line))
+                    return line;
+                if (line.TrimStart().StartsWith("#", System.StringComparison.Ordinal))
+                    return line;
+                return "    " + line;
+            }));
+
+            var newText = "{" + newLine +
+                innerIndent + SafetyTodoComment + newLine +
+                innerIndent + "unsafe" + newLine +
+                innerIndent + "{" + indentedContent + innerIndent + "}" + newLine +
+                baseIndent + "}";
+
+            var parsed = SyntaxFactory.ParseStatement(newText);
+            if (parsed is not BlockSyntax newBody || parsed.ContainsDiagnostics)
+                return null;
+
+            return newBody
+                .WithLeadingTrivia(body.GetLeadingTrivia())
+                .WithTrailingTrivia(body.GetTrailingTrivia());
+        }
+
+        private static string ExtractLineIndent(string text, int position)
+        {
+            // Walk backwards from `position` to the start of the line and collect the
+            // leading whitespace.
+            int lineStart = position;
+            while (lineStart > 0 && text[lineStart - 1] != '\n')
+                lineStart--;
+            int end = lineStart;
+            while (end < position && (text[end] == ' ' || text[end] == '\t'))
+                end++;
+            return text.Substring(lineStart, end - lineStart);
         }
 
         private static UnsafeStatementSyntax BuildUnsafeStatement(StatementSyntax statement)
