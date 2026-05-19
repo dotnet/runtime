@@ -895,7 +895,7 @@ inline emitAttr emitDecodeScale(unsigned ensz) const
 /*                   Output target-independent instructions             */
 /************************************************************************/
 
-void emitIns_J(instruction ins, BasicBlock* dst, int instrCount = 0, bool isRemovableJmpCandidate = false);
+void emitIns_J(instruction ins, BasicBlock* dst, bool keepShort = false, bool isRemovableJmpCandidate = false);
 
 /************************************************************************/
 /*           The public entry points to output instructions             */

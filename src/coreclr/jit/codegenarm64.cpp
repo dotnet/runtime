@@ -1976,10 +1976,12 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
             GetEmitter()->emitIns_R_R_I_I(INS_bfm, EA_PTRSIZE, addrReg, REG_ZR, 0, 5);
             // addrReg points at the beginning of a cache line.
 
+            BasicBlock* loopHead = genCreateTempLabel();
+            genDefineInlineTempLabel(loopHead);
             GetEmitter()->emitIns_R(INS_dczva, EA_PTRSIZE, addrReg);
             GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, addrReg, addrReg, 64);
             GetEmitter()->emitIns_R_R(INS_cmp, EA_PTRSIZE, addrReg, endAddrReg);
-            GetEmitter()->emitIns_J(INS_blo, NULL, -4);
+            GetEmitter()->emitIns_ShortJ(INS_blo, loopHead);
 
             addrReg      = endAddrReg;
             bytesToWrite = 64;
@@ -1998,12 +2000,14 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
 
             instGen_Set_Reg_To_Imm(EA_PTRSIZE, countReg, bytesToWrite - 64);
 
+            BasicBlock* loopHead = genCreateTempLabel();
+            genDefineInlineTempLabel(loopHead);
             GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_16BYTE, zeroSimdReg, zeroSimdReg, addrReg, 32);
             GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_16BYTE, zeroSimdReg, zeroSimdReg, addrReg, 64,
                                           INS_OPTS_PRE_INDEX);
 
             GetEmitter()->emitIns_R_R_I(INS_subs, EA_PTRSIZE, countReg, countReg, 64);
-            GetEmitter()->emitIns_J(INS_bge, NULL, -4);
+            GetEmitter()->emitIns_ShortJ(INS_bge, loopHead);
 
             bytesToWrite %= 64;
         }
@@ -3835,7 +3839,7 @@ void CodeGen::genAsyncResumeInfo(GenTreeVal* treeNode)
 //
 void CodeGen::genFtnEntry(GenTree* treeNode)
 {
-    GetEmitter()->emitIns_R_L(INS_adr, EA_PTRSIZE, GetEmitter()->emitPrologIG, treeNode->GetRegNum());
+    GetEmitter()->emitIns_R_L(INS_adr, EA_PTRSIZE, GetEmitter()->emitGetFirstPrologIG(), treeNode->GetRegNum());
     genProduceReg(treeNode);
 }
 
@@ -5947,13 +5951,12 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         instGen_Set_Reg_To_Imm(EA_PTRSIZE, rOffset, -(ssize_t)pageSize);
         instGen_Set_Reg_To_Imm(EA_PTRSIZE, rLimit, -(ssize_t)frameSize);
 
-        // There's a "virtual" label here. But we can't create a label in the prolog, so we use the magic
-        // `emitIns_J` with a negative `instrCount` to branch back a specific number of instructions.
-
+        BasicBlock* loopHead = genCreateTempLabel();
+        genDefineInlineTempLabel(loopHead);
         GetEmitter()->emitIns_R_R_R(INS_ldr, EA_4BYTE, REG_ZR, REG_SPBASE, rOffset);
         GetEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, rOffset, rOffset, pageSize);
         GetEmitter()->emitIns_R_R(INS_cmp, EA_PTRSIZE, rLimit, rOffset); // If equal, we need to probe again
-        GetEmitter()->emitIns_J(INS_bls, NULL, -4);
+        GetEmitter()->emitIns_ShortJ(INS_bls, loopHead);
 
         *pInitRegZeroed = false; // The initReg does not contain zero
 
