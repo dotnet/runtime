@@ -1043,10 +1043,11 @@ namespace System.Net.Security
 
                 if (status.ErrorCode == SecurityStatusPalErrorCode.Renegotiate)
                 {
-                    // The status indicates that peer wants to renegotiate. (Windows only)
-                    // In practice, there can be some other reasons too - like TLS1.3 session creation
-                    // of alert handling. We need to pass the data to lsass and it is not safe to do parallel
-                    // write any more as that can change TLS state and the EncryptData() can fail in strange ways.
+                    // The status indicates that the peer or TLS implementation requires additional
+                    // handshake/session processing. In practice, there can be other reasons too,
+                    // like TLS1.3 session creation or alert handling. We need to pass the data to
+                    // the underlying security provider and it is not safe to do parallel write any
+                    // more as that can change TLS state and the EncryptData() can fail in strange ways.
 
                     // To handle this we call DecryptData() under lock and we create TCS waiter.
                     // EncryptData() checks that under same lock and if it exist it will not call low-level crypto.
