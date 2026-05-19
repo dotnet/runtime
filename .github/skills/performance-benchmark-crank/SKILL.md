@@ -7,7 +7,7 @@ description: Generate and run performance benchmarks in client-server scenarios 
 
 [crank](https://github.com/dotnet/crank) is a performance benchmarking tool that can be used to run client-server benchmarks, such as HTTP or TLS scenarios.
 
-## Step 1: Select a Benchmark Scenario from existing ones
+## Step 1: Select a Benchmark Scenario from existing scenarios
 
 The [aspnet/Benchmarks](https://github.com/aspnet/Benchmarks/tree/main/scenarios) repository contains a variety of client-server benchmark scenarios that can be used to validate the performance impact of code changes in dotnet/runtime. Select a scenario that closely matches the area of code you are changing. For example, if you are changing code in the HTTP stack, you might select the [httpclient.benchmarks.yml](https://github.com/aspnet/Benchmarks/blob/main/scenarios/httpclient.benchmarks.yml) scenario.
 
