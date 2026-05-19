@@ -1,18 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
-
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal readonly struct SyncBlock_1 : ISyncBlock
 {
-    private const string LockStateName = "_state";
-    private const string LockOwningThreadIdName = "_owningThreadId";
-    private const string LockRecursionCountName = "_recursionCount";
-    private const string LockName = "Lock";
-    private const string LockNamespace = "System.Threading";
     private readonly Target _target;
     private readonly TargetPointer _syncTableEntries;
 
@@ -55,23 +47,12 @@ internal readonly struct SyncBlock_1 : ISyncBlock
 
         if (sb.Lock != null)
         {
-            ILoader loader = _target.Contracts.Loader;
-            TargetPointer systemAssembly = loader.GetSystemAssembly();
-            ModuleHandle moduleHandle = loader.GetModuleHandleFromAssemblyPtr(systemAssembly);
-
-            IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-            IEcmaMetadata ecmaMetadataContract = _target.Contracts.EcmaMetadata;
-            TypeHandle lockType = rts.GetTypeByNameAndModule(LockName, LockNamespace, moduleHandle);
-            MetadataReader mdReader = ecmaMetadataContract.GetMetadata(moduleHandle)!;
-            TargetPointer lockObjPtr = sb.Lock.Object;
-            Data.Object lockObj = _target.ProcessedData.GetOrAdd<Data.Object>(lockObjPtr);
-            TargetPointer dataAddr = lockObj.Data;
-            uint state = ReadUintField(lockType, LockStateName, rts, mdReader, dataAddr);
-            bool monitorHeld = (state & 1) != 0;
+            Data.Managed.Lock lockData = _target.ProcessedData.GetOrAdd<Data.Managed.Lock>(sb.Lock.Object);
+            bool monitorHeld = (lockData.State & 1) != 0;
             if (monitorHeld)
             {
-                owningThreadId = ReadUintField(lockType, LockOwningThreadIdName, rts, mdReader, dataAddr);
-                recursion = ReadUintField(lockType, LockRecursionCountName, rts, mdReader, dataAddr);
+                owningThreadId = (uint)lockData.OwningThreadId;
+                recursion = lockData.RecursionCount;
             }
             return monitorHeld;
         }
@@ -132,15 +113,5 @@ internal readonly struct SyncBlock_1 : ISyncBlock
         ccw = interopInfo.CCW == 1 ? TargetPointer.Null : interopInfo.CCW;
         ccf = interopInfo.CCF == 1 ? TargetPointer.Null : interopInfo.CCF;
         return rcw != TargetPointer.Null || ccw != TargetPointer.Null || ccf != TargetPointer.Null;
-    }
-
-    private uint ReadUintField(TypeHandle enclosingType, string fieldName, IRuntimeTypeSystem rts, MetadataReader mdReader, TargetPointer dataAddr)
-    {
-        TargetPointer field = rts.GetFieldDescByName(enclosingType, fieldName);
-        uint token = rts.GetFieldDescMemberDef(field);
-        FieldDefinitionHandle fieldHandle = (FieldDefinitionHandle)MetadataTokens.Handle((int)token);
-        FieldDefinition fieldDef = mdReader.GetFieldDefinition(fieldHandle);
-        uint offset = rts.GetFieldDescOffset(field, fieldDef);
-        return _target.Read<uint>(dataAddr + offset);
     }
 }
