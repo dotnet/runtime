@@ -3,6 +3,8 @@
     <!-- Keep this as a standalone Android-only project: System.Net.Security.Tests.csproj
          is excluded from Android CI, and these tests need their own network_security_config.xml. -->
     <TargetFrameworks>$(NetCoreAppCurrent)-android</TargetFrameworks>
+    <ExtractRootCATaskProject>$(MSBuildThisFileDirectory)tasks/ExtractRootCATask.csproj</ExtractRootCATaskProject>
+    <ExtractRootCATaskAssembly>$(ArtifactsBinDir)ExtractRootCATask/$(Configuration)/$(BundledNETCoreAppTargetFramework)/ExtractRootCATask.dll</ExtractRootCATaskAssembly>
   </PropertyGroup>
 
   <ItemGroup>
@@ -26,7 +28,7 @@
 
   <Target Name="_PrepareNetworkSecurityConfig"
           BeforeTargets="_AndroidGenerateAppBundle"
-          DependsOnTargets="CopyFilesToOutputDirectory">
+          DependsOnTargets="CopyFilesToOutputDirectory;_BuildExtractRootCATask">
     <PropertyGroup>
       <!-- Extract root CA from PKCS#7 bundle (contains root) -->
       <_CaCertP7bPath>$(OutputPath)TestData/contoso.com.p7b</_CaCertP7bPath>
@@ -37,9 +39,8 @@
     <MakeDir Directories="$(_NetworkSecurityConfigDir)/res/raw" />
 
     <!-- Extract root CA from PKCS#7 bundle and write as DER -->
-    <ExtractRootCA P7bPath="$(_CaCertP7bPath)"
-                   OutputPath="$(_CaCertDerPath)"
-                   PkcsAssemblyPath="$(MSBuildToolsPath)\System.Security.Cryptography.Pkcs.dll" />
+    <System.Net.Security.Tests.AndroidPlatformTrust.ExtractRootCA P7bPath="$(_CaCertP7bPath)"
+                                                                 OutputPath="$(_CaCertDerPath)" />
 
     <!-- Copy network_security_config.xml to the intermediate directory -->
     <Copy SourceFiles="$(MSBuildThisFileDirectory)network_security_config.xml"
@@ -53,47 +54,15 @@
     <NetworkSecurityConfigResourcesDir>$(IntermediateOutputPath)network-security-config/res</NetworkSecurityConfigResourcesDir>
   </PropertyGroup>
 
-  <UsingTask TaskName="ExtractRootCA" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
-    <ParameterGroup>
-      <P7bPath ParameterType="System.String" Required="true" />
-      <OutputPath ParameterType="System.String" Required="true" />
-      <PkcsAssemblyPath ParameterType="System.String" Required="true" />
-    </ParameterGroup>
-    <Task>
-      <Using Namespace="System.Security.Cryptography.X509Certificates" />
-      <Code Type="Fragment" Language="cs">
-        <![CDATA[
-        Type signedCmsType = System.Reflection.Assembly
-            .LoadFrom(PkcsAssemblyPath)
-            .GetType("System.Security.Cryptography.Pkcs.SignedCms", throwOnError: true);
-        object cms = Activator.CreateInstance(signedCmsType);
-        signedCmsType.GetMethod("Decode", new[] { typeof(byte[]) }).Invoke(cms, new object[] { System.IO.File.ReadAllBytes(P7bPath) });
-        var collection = (X509Certificate2Collection)signedCmsType.GetProperty("Certificates").GetValue(cms);
-        byte[] rootRawData = null;
-        try
-        {
-            foreach (X509Certificate2 cert in collection)
-            {
-                if (cert.Subject == cert.Issuer)
-                {
-                    rootRawData = cert.Export(X509ContentType.Cert);
-                    break;
-                }
-            }
-            if (rootRawData == null)
-                throw new Exception("Root CA not found in " + P7bPath);
-            System.IO.File.WriteAllBytes(OutputPath, rootRawData);
-        }
-        finally
-        {
-            foreach (X509Certificate2 cert in collection)
-            {
-                cert.Dispose();
-            }
-        }
-        ]]>
-      </Code>
-    </Task>
-  </UsingTask>
+  <Target Name="_BuildExtractRootCATask">
+    <MSBuild Projects="$(ExtractRootCATaskProject)"
+             Targets="Build"
+             Properties="Configuration=$(Configuration);TargetFramework=$(BundledNETCoreAppTargetFramework)" />
+  </Target>
+
+  <UsingTask TaskName="System.Net.Security.Tests.AndroidPlatformTrust.ExtractRootCA"
+             AssemblyFile="$(ExtractRootCATaskAssembly)"
+             Runtime="NET"
+             TaskFactory="TaskHostFactory" />
 
 </Project>
