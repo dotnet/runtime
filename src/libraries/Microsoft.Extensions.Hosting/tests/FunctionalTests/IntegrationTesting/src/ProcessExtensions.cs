@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -41,11 +42,19 @@ namespace Microsoft.Extensions.Internal
 
         private static void GetAllChildIdsUnix(int parentId, ISet<int> children, TimeSpan timeout)
         {
-            RunProcessAndWaitForExit(
-                "pgrep",
-                $"-P {parentId}",
-                timeout,
-                out var stdout);
+            string stdout;
+            try
+            {
+                RunProcessAndWaitForExit(
+                    "pgrep",
+                    $"-P {parentId}",
+                    timeout,
+                    out stdout);
+            }
+            catch (Win32Exception)
+            {
+                return;
+            }
 
             if (!string.IsNullOrEmpty(stdout))
             {
