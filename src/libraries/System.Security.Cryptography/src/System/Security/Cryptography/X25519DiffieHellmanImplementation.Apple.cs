@@ -19,8 +19,9 @@ namespace System.Security.Cryptography
             _hasPrivate = hasPrivate;
         }
 
-        protected override unsafe void DeriveRawSecretAgreementCore(X25519DiffieHellman otherParty, Span<byte> destination)
+        protected override void DeriveRawSecretAgreementCore(X25519DiffieHellman otherParty, Span<byte> destination)
         {
+            Debug.Assert(destination.Length == SecretAgreementSizeInBytes);
             ThrowIfPrivateNeeded();
 
             if (otherParty is X25519DiffieHellmanImplementation x25519impl)
@@ -29,14 +30,21 @@ namespace System.Security.Cryptography
             }
             else
             {
-                Span<byte> publicKeyBuffer = stackalloc byte[PublicKeySizeInBytes];
-                otherParty.ExportPublicKey(publicKeyBuffer);
-
-                using (SafeX25519KeyHandle publicKey = Interop.AppleCrypto.X25519ImportPublicKey(publicKeyBuffer))
+                unsafe
                 {
-                    Interop.AppleCrypto.X25519DeriveRawSecretAgreement(_key, publicKey, destination);
+                    Span<byte> publicKeyBuffer = stackalloc byte[PublicKeySizeInBytes];
+                    otherParty.ExportPublicKey(publicKeyBuffer);
+                    Interop.AppleCrypto.X25519DeriveRawSecretAgreementWithBytes(_key, publicKeyBuffer, destination);
                 }
             }
+        }
+
+        protected override void DeriveRawSecretAgreementCore(ReadOnlySpan<byte> otherPartyPublicKey, Span<byte> destination)
+        {
+            Debug.Assert(otherPartyPublicKey.Length == PublicKeySizeInBytes);
+            Debug.Assert(destination.Length == SecretAgreementSizeInBytes);
+            ThrowIfPrivateNeeded();
+            Interop.AppleCrypto.X25519DeriveRawSecretAgreementWithBytes(_key, otherPartyPublicKey, destination);
         }
 
         protected override void ExportPrivateKeyCore(Span<byte> destination)

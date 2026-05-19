@@ -4,7 +4,7 @@
 #ifndef HAVE_MINIPAL_OSPAGESIZE_H
 #define HAVE_MINIPAL_OSPAGESIZE_H
 
-#include <stddef.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -19,7 +19,7 @@ extern "C" {
 // On other platforms the value is queried from the OS once and cached; the
 // definition lives in ospagesize.c so there is exactly one cache per process.
 #if defined(HOST_WASM)
-static inline size_t minipal_getpagesize(void)
+static inline uint32_t minipal_getpagesize(void)
 {
     // WASM has no hardware pages; getpagesize() returns the 64KB memory.grow granularity,
     // which is too coarse for GC alignment and thresholds. Reduce the OS page size used
@@ -27,13 +27,13 @@ static inline size_t minipal_getpagesize(void)
     return 16 * 1024;
 }
 #elif defined(HOST_WINDOWS)
-static inline size_t minipal_getpagesize(void)
+static inline uint32_t minipal_getpagesize(void)
 {
     // The page size on Windows is 4KB and is not going to change.
     return 4 * 1024;
 }
 #else
-size_t minipal_getpagesize(void);
+uint32_t minipal_getpagesize(void);
 #endif
 
 #ifdef __cplusplus

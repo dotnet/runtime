@@ -92,6 +92,10 @@ public enum DataType
     StubPrecodeData,
     FixupPrecodeData,
     ThisPtrRetBufPrecodeData,
+    InterpreterPrecodeData,
+    InterpByteCodeStart,
+    InterpMethod,
+    InterpMethodContextFrame,
     Array,
     SyncBlock,
     SyncTableEntry,
@@ -110,6 +114,7 @@ public enum DataType
     RangeSectionFragment,
     RangeSection,
     RealCodeHeader,
+    InterpreterRealCodeHeader,
     CodeHeapListNode,
     CodeHeap,
     LoaderCodeHeap,
@@ -164,6 +169,7 @@ public enum DataType
     StubDispatchFrame,
     ExternalMethodFrame,
     DynamicHelperFrame,
+    InterpreterFrame,
 
     ComCallWrapper,
     SimpleComCallWrapper,
@@ -175,6 +181,8 @@ public enum DataType
     ComInterfaceEntry,
     InternalComInterfaceDispatch,
     AuxiliarySymbolInfo,
+    VASigCookie,
+    CodeRangeMapRangeList,
 
     /* GC Data Types */
 
@@ -189,4 +197,10 @@ public enum DataType
     TableSegment,
     CardTableInfo,
     RegionFreeList,
+}
+
+public static class DataTypeTargetExtensions
+{
+    public static Target.TypeInfo GetTypeInfo(this Target target, DataType type)
+        => target.GetTypeInfo(type.ToString());
 }

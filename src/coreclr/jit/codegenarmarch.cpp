@@ -3353,6 +3353,14 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             // mrs
             emitter->emitIns_R(INS_mrs_tpid0, attr, REG_R1);
 
+            // We remove x0 here since the linker relaxation
+            // sequence will rewrite the instructions we are emitting here with
+            // instructions that may clobber these registers.
+            // (This is more important for the emitter, but we match it here
+            // for symmetry and to avoid confusion about the state of the
+            // registers.)
+            gcInfo.gcMarkRegSetNpt(RBM_R0);
+
             // adrp
             // ldr
             // add
@@ -4475,6 +4483,13 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
         printf("\n");
     }
 #endif // DEBUG
+
+#if defined(TARGET_ARM64)
+    if (JitConfig.JitPacEnabled() != 0)
+    {
+        GetEmitter()->emitPacInProlog();
+    }
+#endif // TARGET_ARM64
 
     // The frameType number is arbitrary, is defined below, and corresponds to one of the frame styles we
     // generate based on various sizes.

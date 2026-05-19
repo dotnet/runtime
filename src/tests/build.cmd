@@ -70,8 +70,8 @@ if /i "%1" == "arm64"                    (set __BuildArch=arm64&set processedArg
 if /i "%1" == "wasm"                     (set __BuildArch=wasm&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
 if /i "%1" == "os"                       (set __TargetOS=%2&set processedArgs=!processedArgs! %1&shift&shift&goto Arg_Loop)
-if /i "%1" == "browser"                  (set __TargetOS=browser&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "wasi"                     (set __TargetOS=wasi&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "browser"                  (set __TargetOS=browser&set __BuildArch=wasm&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "wasi"                     (set __TargetOS=wasi&set __BuildArch=wasm&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
 if /i "%1" == "debug"                    (set __BuildType=Debug&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "release"                  (set __BuildType=Release&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -361,8 +361,8 @@ echo.
 echo Build target OS options:
 echo     os ^<value^>: Set the target OS. Common values: windows ^(default^), linux, osx, android,
 echo         ios, iossimulator, tvos, tvossimulator, maccatalyst, browser, wasi.
-echo     browser: Shorthand for "os browser" ^(typically combine with "wasm", for example "wasm browser"^).
-echo     wasi: Shorthand for "os wasi" ^(typically combine with "wasm", for example "wasm wasi"^).
+echo     browser: Shorthand for "os browser" ^(also sets architecture to wasm^).
+echo     wasi: Shorthand for "os wasi" ^(also sets architecture to wasm^).
 echo.
 echo -Rebuild: Clean up all test artifacts prior to building tests.
 echo -SkipRestorePackages: Skip package restore.
