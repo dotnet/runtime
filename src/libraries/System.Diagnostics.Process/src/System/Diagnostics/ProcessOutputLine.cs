@@ -37,9 +37,9 @@ namespace System.Diagnostics
         public bool StandardError { get; }
 
         /// <summary>
-        /// Returns the text content of the output line.
+        /// Returns the text content of the output line, or <see cref="string.Empty"/> if the struct was default-initialized.
         /// </summary>
-        /// <returns>The value of <see cref="Content"/>.</returns>
-        public override string ToString() => Content;
+        /// <returns>The value of <see cref="Content"/>, or <see cref="string.Empty"/> if <see cref="Content"/> is <see langword="null"/>.</returns>
+        public override string ToString() => Content ?? string.Empty;
     }
 }

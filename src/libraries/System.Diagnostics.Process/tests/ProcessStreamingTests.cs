@@ -709,10 +709,10 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        public void ProcessOutputLine_Default_ToString_ReturnsNull()
+        public void ProcessOutputLine_Default_ToString_ReturnsEmpty()
         {
             ProcessOutputLine line = default;
-            Assert.Null(line.ToString());
+            Assert.Equal(string.Empty, line.ToString());
         }
     }
 }
