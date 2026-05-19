@@ -80,7 +80,7 @@ namespace ILCompiler
             public const int Vaes = (1 << 15);
             public const int WaitPkg = (1 << 16);
             public const int X86Serialize = (1 << 17);
-            // Bit 18 is AVX512BMM in cpufeatures.h. NativeAOT does not currently consume it here.
+            public const int Avx512Bmm = (1 << 18); // NativeAOT does not currently consume this here.
             public const int Avx512Vnni = (1 << 19);
 
             public static void AddToBuilder(InstructionSetSupportBuilder builder, int flags)
