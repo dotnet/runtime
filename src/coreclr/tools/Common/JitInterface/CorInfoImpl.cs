@@ -774,34 +774,6 @@ namespace Internal.JitInterface
             return _handleToObject[index];
         }
 
-        private bool TryHandleToObject(void* handle, out object obj)
-        {
-            obj = null;
-            if (handle == null)
-            {
-                return false;
-            }
-
-#if DEBUG
-            handle = (void*)(~s_handleHighBitSet & (nint)handle);
-#endif
-            nint handleValue = (nint)handle;
-            nint indexValue = handleValue - handleBase;
-            if ((indexValue < 0) || ((indexValue % handleMultiplier) != 0))
-            {
-                return false;
-            }
-
-            nint index = indexValue / handleMultiplier;
-            if ((nuint)index >= (nuint)_handleToObject.Count)
-            {
-                return false;
-            }
-
-            obj = _handleToObject[(int)index];
-            return true;
-        }
-
         private MethodDesc HandleToObject(CORINFO_METHOD_STRUCT_* method) => (MethodDesc)HandleToObject((void*)method);
         private CORINFO_METHOD_STRUCT_* ObjectToHandle(MethodDesc method) => (CORINFO_METHOD_STRUCT_*)ObjectToHandle((object)method);
         private TypeDesc HandleToObject(CORINFO_CLASS_STRUCT_* type) => (TypeDesc)HandleToObject((void*)type);
@@ -4377,13 +4349,6 @@ namespace Internal.JitInterface
 
 #if READYTORUN
                 case TargetArchitecture.ARM:
-                    if (_compilation.CompilationModuleGroup.IsCompositeBuildMode &&
-                        TryHandleToObject(target, out object targetObject) &&
-                        targetObject is MethodWithGCInfo)
-                    {
-                        return CorInfoReloc.ARM32_THUMB_MOV32;
-                    }
-
                     return CorInfoReloc.ARM32_THUMB_BRANCH24;
 #endif
 
