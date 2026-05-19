@@ -744,9 +744,9 @@ if (CLR_CMAKE_HOST_UNIX OR CLR_CMAKE_HOST_WASI)
   # unreferenced ones.
   add_compile_options(-ffunction-sections)
   add_compile_options(-fdata-sections)
-  if(CLR_CMAKE_HOST_APPLE)
+  if(LD_OSX)
     add_linker_flag(-Wl,-dead_strip CHECKED RELEASE RELWITHDEBINFO)
-  else()
+  elseif(NOT LD_SOLARIS)
     add_linker_flag(-Wl,--gc-sections CHECKED RELEASE RELWITHDEBINFO)
   endif()
 
