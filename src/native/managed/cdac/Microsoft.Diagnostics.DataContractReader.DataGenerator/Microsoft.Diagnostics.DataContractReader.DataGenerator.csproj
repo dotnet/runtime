@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>Microsoft.Diagnostics.DataContractReader.DataGenerator</RootNamespace>
+    <Nullable>enable</Nullable>
+    <IsRoslynComponent>true</IsRoslynComponent>
+    <!-- Generator ships inline with the consuming assembly; not a standalone package. -->
+    <IsShipping>false</IsShipping>
+    <IsPackable>false</IsPackable>
+    <AnalyzerLanguage>cs</AnalyzerLanguage>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- ExperimentalAttribute is injected by cdac\Directory.Build.props but does
+         not exist on netstandard2.0; remove it for this generator project. -->
+    <AssemblyAttribute Remove="System.Diagnostics.CodeAnalysis.ExperimentalAttribute" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="$(MicrosoftCodeAnalysisVersion_4_8)" PrivateAssets="all" />
+  </ItemGroup>
+
+</Project>
