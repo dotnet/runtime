@@ -116,6 +116,14 @@ namespace System.Runtime.CompilerServices
             {
                 Debug.Assert(box != null);
 
+#if !MONO
+                // Yield is always a root — wrap or reuse a dispatch box when the async profiler is active.
+                if (true /* TODO: restore: AsyncInstrumentation.IsEnabled.AsyncProfiler(AsyncInstrumentation.ActiveFlags) */)
+                {
+                    box = AsyncTaskDispatcher.Create(box);
+                }
+#endif
+
                 // If tracing is enabled, delegate the Action-based implementation.
                 if (TplEventSource.Log.IsEnabled())
                 {

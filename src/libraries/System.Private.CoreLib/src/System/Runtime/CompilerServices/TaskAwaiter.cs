@@ -198,6 +198,8 @@ namespace System.Runtime.CompilerServices
             // and set up an ending event to be traced when the asynchronous await completes.
             if (TplEventSource.Log.IsEnabled() || Task.s_asyncDebuggingEnabled)
             {
+                // TODO: AsyncProfiler — the ETW path bypasses UnsafeSetContinuationForAwait and
+                // uses the Action-based SetContinuationForAwait. Dispatcher wrapping is not applied here.
                 task.SetContinuationForAwait(OutputWaitEtwEvents(task, stateMachineBox.MoveNextAction), continueOnCapturedContext, flowExecutionContext: false);
             }
             else

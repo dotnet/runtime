@@ -102,6 +102,9 @@ namespace System.Runtime.CompilerServices
                 }
                 else if (obj != null)
                 {
+#if !MONO
+                    box = AsyncTaskDispatcher.Create(box);
+#endif
                     Unsafe.As<IValueTaskSource>(obj).OnCompleted(ThreadPool.s_invokeAsyncStateMachineBox, box, _value._token,
                         _value._continueOnCapturedContext ? ValueTaskSourceOnCompletedFlags.UseSchedulingContext : ValueTaskSourceOnCompletedFlags.None);
                 }
@@ -207,6 +210,9 @@ namespace System.Runtime.CompilerServices
                 }
                 else if (obj != null)
                 {
+#if !MONO
+                    box = AsyncTaskDispatcher.Create(box);
+#endif
                     Unsafe.As<IValueTaskSource<TResult>>(obj).OnCompleted(ThreadPool.s_invokeAsyncStateMachineBox, box, _value._token,
                         _value._continueOnCapturedContext ? ValueTaskSourceOnCompletedFlags.UseSchedulingContext : ValueTaskSourceOnCompletedFlags.None);
                 }

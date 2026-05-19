@@ -782,6 +782,12 @@ namespace System.Threading.Tasks
             // If we're not allowed to run here, schedule the action
             if (!allowInlining || !IsValidLocationForInlining)
             {
+#if !MONO
+                // If an async profiler dispatcher is active, reuse it so the queued
+                // continuation runs inside the same dispatcher context (preserving the chain).
+                box = AsyncTaskDispatcher.ReuseOrPassthrough(box);
+#endif
+
                 // If logging is disabled, we can simply queue the box itself as a custom work
                 // item, and its work item execution will just invoke its MoveNext.  However, if
                 // logging is enabled, there is pre/post-work we need to do around logging to
