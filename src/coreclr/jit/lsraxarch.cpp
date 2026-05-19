@@ -2690,7 +2690,6 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 // the control byte is unknown.
 
                 assert(numArgs == 4);
-                assert(isRMW);
 
                 if (!op4->isContainedIntOrIImmed())
                 {
