@@ -4390,7 +4390,7 @@ namespace System
                     ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_NoElements);
                 }
 
-                value = span[i];
+                value = span[i++];
                 if (comparer == Comparer<T>.Default)
                 {
                     while (i < span.Length)
@@ -4495,7 +4495,7 @@ namespace System
                     ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_NoElements);
                 }
 
-                value = span[i];
+                value = span[i++];
                 if (comparer == Comparer<T>.Default)
                 {
                     while (i < span.Length)

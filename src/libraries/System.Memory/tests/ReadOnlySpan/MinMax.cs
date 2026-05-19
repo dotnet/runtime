@@ -13,10 +13,10 @@ namespace System.SpanTests
         {
             ReadOnlySpan<int> span = ReadOnlySpan<int>.Empty;
 
-            TestHelpers.AssertThrows<InvalidOperationException, int>(span, (_span) => _span.Min());
-            TestHelpers.AssertThrows<InvalidOperationException, int>(span, (_span) => _span.Max());
-            TestHelpers.AssertThrows<InvalidOperationException, int>(span, (_span) => _span.Min(Comparer<int>.Default));
-            TestHelpers.AssertThrows<InvalidOperationException, int>(span, (_span) => _span.Max(Comparer<int>.Default));
+            TestHelpers.AssertThrows<InvalidOperationException, int>(span, _ => _.Min());
+            TestHelpers.AssertThrows<InvalidOperationException, int>(span, _ => _.Max());
+            TestHelpers.AssertThrows<InvalidOperationException, int>(span, _ => _.Min(Comparer<int>.Default));
+            TestHelpers.AssertThrows<InvalidOperationException, int>(span, _ => _.Max(Comparer<int>.Default));
         }
 
         [Fact]
