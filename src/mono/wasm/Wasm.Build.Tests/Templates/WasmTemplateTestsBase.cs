@@ -95,7 +95,7 @@ public class WasmTemplateTestsBase : BuildTestBase
         // won't be found.
         string inheritedCliHome = Environment.GetEnvironmentVariable("DOTNET_CLI_HOME") ?? "<unset>";
         string envVarsCliHome = s_buildEnv.EnvVars.TryGetValue("DOTNET_CLI_HOME", out string? evCliHome) ? evCliHome : "<unset-in-EnvVars>";
-        Console.WriteLine($"[diag] DOTNET_CLI_HOME inherited by `dotnet new {template.ToString().ToLower()}`: '{inheritedCliHome}' (buildEnv.EnvVars: '{envVarsCliHome}')");
+        _testOutput.WriteLine($"[diag] DOTNET_CLI_HOME inherited by `dotnet new {template.ToString().ToLower()}`: '{inheritedCliHome}' (buildEnv.EnvVars: '{envVarsCliHome}')");
 
         using DotNetCommand cmd = new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false);
         CommandResult result = cmd.WithWorkingDirectory(_projectDir)
@@ -192,7 +192,7 @@ public class WasmTemplateTestsBase : BuildTestBase
     /// using <c>dotnet new install</c> if needed. This is a no-op when
     /// the workload is already installed (templates come with the workload).
     /// </summary>
-    private static void EnsureWasmTemplatesInstalled()
+    private void EnsureWasmTemplatesInstalled()
     {
         if (s_buildEnv.IsWorkload)
             return;
@@ -213,7 +213,7 @@ public class WasmTemplateTestsBase : BuildTestBase
                 throw new InvalidOperationException(
                     $"Could not find WebAssembly template nupkg in '{s_buildEnv.BuiltNuGetsPath}'");
 
-            Console.WriteLine($"[templates] Installing WASM templates from {templateNupkg} using {s_buildEnv.DotNet}");
+            _testOutput.WriteLine($"[templates] Installing WASM templates from {templateNupkg} using {s_buildEnv.DotNet}");
 
             var psi = new ProcessStartInfo
             {
@@ -234,7 +234,7 @@ public class WasmTemplateTestsBase : BuildTestBase
                 ? inheritedCliHome
                 : Path.Combine(BuildEnvironment.TmpPath, ".dotnet-cli-home");
             Directory.CreateDirectory(dotnetCliHome);
-            Console.WriteLine($"[diag] DOTNET_CLI_HOME used by EnsureWasmTemplatesInstalled: '{dotnetCliHome}' (process inherited: '{inheritedCliHome ?? "<unset>"}')");
+            _testOutput.WriteLine($"[diag] DOTNET_CLI_HOME used by EnsureWasmTemplatesInstalled: '{dotnetCliHome}' (process inherited: '{inheritedCliHome ?? "<unset>"}')");
 
             // Use the same isolated environment as the rest of the test suite
             // (DOTNET_ROOT/DOTNET_INSTALL_DIR/PATH/NUGET_PACKAGES overrides), so
@@ -278,7 +278,7 @@ public class WasmTemplateTestsBase : BuildTestBase
                 throw new InvalidOperationException(
                     $"'dotnet new install' failed with exit code {process.ExitCode}.\nStdout: {stdout}\nStderr: {stderr}");
 
-            Console.WriteLine($"[templates] WASM template install completed successfully");
+            _testOutput.WriteLine($"[templates] WASM template install completed successfully");
             s_wasmTemplatesInstalled = true;
         }
     }
