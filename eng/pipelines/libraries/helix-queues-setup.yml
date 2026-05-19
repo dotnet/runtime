@@ -93,9 +93,8 @@ jobs:
       - Ubuntu.2204.Amd64.Android.29.Open
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), in(parameters.platform, 'android_arm', 'android_arm64', 'linux_bionic_arm', 'linux_bionic_arm64')) }}:
       - Ubuntu.2204.Amd64.Android.29.Open
-    # TODO switch to the new arm32 queue once it's available and related issues are resolved: https://github.com/dotnet/runtime/pull/127578#issuecomment-4406069420
-    #- ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.platform, 'android_arm', 'linux_bionic_arm')) }}:
-    #  - Windows.11.Amd64.Android.Open
+    - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.platform, 'android_arm', 'linux_bionic_arm')) }}:
+      - Windows.11.Amd64.Android-armel.Open
     - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.platform, 'android_arm64', 'linux_bionic_arm64')) }}:
       - Windows.11.Amd64.Android.Open
 

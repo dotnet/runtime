@@ -49,9 +49,7 @@ jobs:
     # Android arm
     - ${{ if in(parameters.platform, 'android_arm') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        # TODO switch to new android-armel queues once available
-        #- Windows.11.Amd64.Android-armel.Open
-        - Windows.11.Amd64.Android.Open
+        - Windows.11.Amd64.Android-armel.Open
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - Ubuntu.2204.Amd64.Android.29
 
