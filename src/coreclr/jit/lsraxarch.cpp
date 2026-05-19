@@ -2564,7 +2564,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 if (op3->isContained())
                 {
                     SingleTypeRegSet apxAwareRegCandidates =
-                            ForceLowGprForApxIfNeeded(op3, RBM_NONE, canHWIntrinsicUseApxRegs);
+                        ForceLowGprForApxIfNeeded(op3, RBM_NONE, canHWIntrinsicUseApxRegs);
                     srcCount += BuildOperandUses(op3, apxAwareRegCandidates);
                 }
                 else if (copiesUpperBits)
@@ -2685,6 +2685,60 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                         srcCount += op->isContained() ? BuildOperandUses(op, ForceLowGprForApx(op))
                                                       : BuildDelayFreeUses(op, emitOp1);
                     }
+                }
+
+                buildUses = false;
+                break;
+            }
+
+            case NI_AVX512_TernaryLogic:
+            {
+                // While this operation is RMW, it is also almost freely reorderable
+                // and so we do not need to set the operands as delay free unless
+                // the control byte is unknown.
+
+                assert(numArgs == 4);
+                assert(isRMW);
+
+                if (!op4->isContainedIntOrIImmed())
+                {
+                    break;
+                }
+
+                // We have a bit of a special consideration where not all operands may be "used"
+                // and where the leading operands can be contained vector constants that will be
+                // ignored in codegen. Only op3 can be the "true" contained operand from memory.
+
+                if (op1->isContained())
+                {
+                    srcCount += BuildOperandUses(op1);
+                }
+                else
+                {
+                    tgtPrefUse = BuildUse(op1);
+                    srcCount++;
+                }
+
+                if (op2->isContained())
+                {
+                    srcCount += BuildOperandUses(op2);
+                }
+                else
+                {
+                    tgtPrefUse2 = BuildUse(op2);
+                    srcCount++;
+                }
+
+                if (op3->isContained())
+                {
+                    SingleTypeRegSet apxAwareRegCandidates =
+                        ForceLowGprForApxIfNeeded(op3, RBM_NONE, canHWIntrinsicUseApxRegs);
+                    srcCount += BuildOperandUses(op3, apxAwareRegCandidates);
+                }
+                else
+                {
+                    tgtPrefUse3 = BuildUse(op3);
+                    srcCount++;
                 }
 
                 buildUses = false;
