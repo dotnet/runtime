@@ -9413,7 +9413,7 @@ GenTreeMskCon* Compiler::gtNewMskConNode(var_types type)
 #if defined(TARGET_ARM64)
 GenTreeMskCon* Compiler::gtNewMskConNode(var_types type, var_types baseType, bool index)
 {
-    GenTreeMskCon* mskCon                                    = new (this, GT_CNS_MSK) GenTreeMskCon(type);
+    GenTreeMskCon* mskCon                                    = gtNewMskConNode(type);
     mskCon->gtSimdScalableMaskVal.gtSimdMaskScalableBaseType = baseType;
     mskCon->gtSimdScalableMaskVal.gtSimdMaskScalableIndex    = index;
     return mskCon;
