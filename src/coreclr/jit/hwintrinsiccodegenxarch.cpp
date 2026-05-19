@@ -1597,7 +1597,7 @@ void CodeGen::genHWIntrinsic_R_R_R_RM_I(
                 control = TernaryLogicInfo::GetTernaryControlByte(info, B, A, C);
                 ival    = static_cast<int8_t>(control);
             }
-            else if (targetReg == op3->GetRegNum())
+            else if ((targetReg == op3->GetRegNum()) && !op3->isUsedFromSpillTemp())
             {
                 assert(!op3->isContained());
 
