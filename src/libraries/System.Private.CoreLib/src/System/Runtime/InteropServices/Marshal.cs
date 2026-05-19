@@ -293,7 +293,7 @@ namespace System.Runtime.InteropServices
             }
             catch (NullReferenceException)
             {
-                // This method is documented to throw AccessViolationException
+                // Convert NRE for null/near-null pointers to match the documented AccessViolationException.
                 throw new AccessViolationException();
             }
         }
@@ -317,7 +317,7 @@ namespace System.Runtime.InteropServices
             }
             catch (NullReferenceException)
             {
-                // This method is documented to throw AccessViolationException
+                // Convert NRE for null/near-null pointers to match the documented AccessViolationException.
                 throw new AccessViolationException();
             }
         }
@@ -341,7 +341,7 @@ namespace System.Runtime.InteropServices
             }
             catch (NullReferenceException)
             {
-                // This method is documented to throw AccessViolationException
+                // Convert NRE for null/near-null pointers to match the documented AccessViolationException.
                 throw new AccessViolationException();
             }
         }
@@ -388,7 +388,7 @@ namespace System.Runtime.InteropServices
             }
             catch (NullReferenceException)
             {
-                // This method is documented to throw AccessViolationException
+                // Convert NRE for null/near-null pointers to match the documented AccessViolationException.
                 throw new AccessViolationException();
             }
         }
@@ -404,7 +404,7 @@ namespace System.Runtime.InteropServices
             }
             catch (NullReferenceException)
             {
-                // This method is documented to throw AccessViolationException
+                // Convert NRE for null/near-null pointers to match the documented AccessViolationException.
                 throw new AccessViolationException();
             }
         }
@@ -428,7 +428,7 @@ namespace System.Runtime.InteropServices
             }
             catch (NullReferenceException)
             {
-                // This method is documented to throw AccessViolationException
+                // Convert NRE for null/near-null pointers to match the documented AccessViolationException.
                 throw new AccessViolationException();
             }
         }
@@ -461,7 +461,7 @@ namespace System.Runtime.InteropServices
             }
             catch (NullReferenceException)
             {
-                // This method is documented to throw AccessViolationException
+                // Convert NRE for null/near-null pointers to match the documented AccessViolationException.
                 throw new AccessViolationException();
             }
         }
@@ -508,7 +508,7 @@ namespace System.Runtime.InteropServices
             }
             catch (NullReferenceException)
             {
-                // This method is documented to throw AccessViolationException
+                // Convert NRE for null/near-null pointers to match the documented AccessViolationException.
                 throw new AccessViolationException();
             }
         }
