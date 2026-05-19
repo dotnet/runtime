@@ -736,6 +736,49 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeV2MigrationAnalyzer} = tr
                 """;
             await VerifyCodeFix(source, fixedSource);
         }
+        // ----- Multi-statement body indentation -----
+
+        [Fact]
+        public async Task UnsafeMethodMultiStatementBody_PreservesIndentation()
+        {
+            // Multiple statements inside a body must keep their relative indentation
+            // when wrapped in the new 'unsafe' block (Formatter.Annotation re-indents).
+            var source = """
+                using System;
+                public class C
+                {
+                    public {|IL5006:unsafe|} void M()
+                    {
+                        Console.WriteLine("a");
+                        Console.WriteLine("b");
+                        if (true)
+                        {
+                            Console.WriteLine("c");
+                        }
+                    }
+                }
+                """;
+            var fixedSource = """
+                using System;
+                public class C
+                {
+                    public void M()
+                    {
+                        // SAFETY-TODO: Audit this unsafe usage
+                        unsafe
+                        {
+                            Console.WriteLine("a");
+                            Console.WriteLine("b");
+                            if (true)
+                            {
+                                Console.WriteLine("c");
+                            }
+                        }
+                    }
+                }
+                """;
+            await VerifyCodeFix(source, fixedSource);
+        }
     }
 }
 #endif

@@ -17,6 +17,7 @@ using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Editing;
+using Microsoft.CodeAnalysis.Formatting;
 
 namespace ILLink.CodeFix
 {
@@ -275,19 +276,35 @@ namespace ILLink.CodeFix
 
         private static BlockSyntax ReplaceWithUnsafeBlock(BlockSyntax body)
         {
-            var inner = SyntaxFactory.Block(body.Statements);
+            // Strip the original leading whitespace from each statement so the formatter
+            // re-indents them inside the new 'unsafe { }' block. We deliberately keep any
+            // leading comments / directives the original statements had.
+            var statements = body.Statements.Select(StripLeadingWhitespace).ToArray();
+            var inner = SyntaxFactory.Block(statements);
             var unsafeStmt = SyntaxFactory.UnsafeStatement(inner)
                 .WithLeadingTrivia(BuildSafetyTodoLeadingTrivia());
             return SyntaxFactory.Block(unsafeStmt)
                 .WithLeadingTrivia(body.GetLeadingTrivia())
-                .WithTrailingTrivia(body.GetTrailingTrivia());
+                .WithTrailingTrivia(body.GetTrailingTrivia())
+                .WithAdditionalAnnotations(Formatter.Annotation);
         }
 
         private static UnsafeStatementSyntax BuildUnsafeStatement(StatementSyntax statement)
         {
-            var inner = SyntaxFactory.Block(statement);
+            var inner = SyntaxFactory.Block(StripLeadingWhitespace(statement));
             return SyntaxFactory.UnsafeStatement(inner)
-                .WithLeadingTrivia(BuildSafetyTodoLeadingTrivia());
+                .WithLeadingTrivia(BuildSafetyTodoLeadingTrivia())
+                .WithAdditionalAnnotations(Formatter.Annotation);
+        }
+
+        private static StatementSyntax StripLeadingWhitespace(StatementSyntax statement)
+        {
+            var leading = statement.GetLeadingTrivia();
+            var stripped = SyntaxFactory.TriviaList(
+                leading.Where(static t => !t.IsKind(SyntaxKind.WhitespaceTrivia) && !t.IsKind(SyntaxKind.EndOfLineTrivia)));
+            return stripped.Count == leading.Count
+                ? statement
+                : statement.WithLeadingTrivia(stripped);
         }
 
         private static SyntaxTriviaList BuildSafetyTodoLeadingTrivia() =>
