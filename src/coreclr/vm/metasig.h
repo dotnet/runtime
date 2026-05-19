@@ -554,6 +554,11 @@ DEFINE_METASIG_T(SM(RefRuntimeAsyncAwaitState_RetValueTask, r(g(RUNTIME_ASYNC_AW
 DEFINE_METASIG_T(GM(RefRuntimeAsyncAwaitState_RetTaskOfT, IMAGE_CEE_CS_CALLCONV_DEFAULT, 1, r(g(RUNTIME_ASYNC_AWAIT_STATE)), GI(C(TASK_1), 1, M(0))))
 DEFINE_METASIG_T(GM(RefRuntimeAsyncAwaitState_RetValueTaskOfT, IMAGE_CEE_CS_CALLCONV_DEFAULT, 1, r(g(RUNTIME_ASYNC_AWAIT_STATE)), GI(g(VALUETASK_1), 1, M(0))))
 
+DEFINE_METASIG_T(SM(Task_RetVoid, C(TASK), v))
+DEFINE_METASIG_T(SM(ValueTask_RetVoid, g(VALUETASK), v))
+DEFINE_METASIG_T(GM(TaskOfT_RetT, IMAGE_CEE_CS_CALLCONV_DEFAULT, 1, GI(C(TASK_1), 1, M(0)), M(0)))
+DEFINE_METASIG_T(GM(ValueTaskOfT_RetT, IMAGE_CEE_CS_CALLCONV_DEFAULT, 1, GI(g(VALUETASK_1), 1, M(0)), M(0)))
+
 // Undefine macros in case we include the file again in the compilation unit
 
 #undef  DEFINE_METASIG

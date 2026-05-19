@@ -4925,6 +4925,7 @@ private:
         // This call is a task await
         PREFIX_IS_TASK_AWAIT = 0x00000080,
         PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT = 0x00000100,
+        PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT = 0x00000200,
     };
 
     static void impValidateMemoryAccessOpcode(const BYTE* codeAddr, const BYTE* codeEndp, bool volatilePrefix);
@@ -5583,6 +5584,7 @@ private:
     void impLoadArg(unsigned ilArgNum, IL_OFFSET offset);
     void impLoadLoc(unsigned ilLclNum, IL_OFFSET offset);
     bool impReturnInstruction(int prefixFlags, OPCODE& opcode);
+    void impWrapTopOfStackInAwait();
     void impPoisonImplicitByrefsBeforeReturn();
 
     // A free list of linked list nodes used to represent to-do stacks of basic blocks.
@@ -11762,9 +11764,16 @@ public:
 #endif // TARGET_AMD64
     }
 
+    // Does this function have async calling convention and can have suspension points?
     bool compIsAsync() const
     {
         return opts.jitFlags->IsSet(JitFlags::JIT_FLAG_ASYNC);
+    }
+
+    // Is this the async version of a non-async method? IL belongs to non-async method.
+    bool compIsAsyncVersion() const
+    {
+        return (info.compMethodInfo->options & CORINFO_ASYNC_VERSION) != 0;
     }
 
     //------------------------------------------------------------------------

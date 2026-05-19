@@ -6990,6 +6990,15 @@ void Compiler::impSetupAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned pref
     ILLocation newILLocation(callDI.GetLocation().GetOffset(), (ICorDebugInfo::SourceTypes)newSourceTypes);
     asyncInfo.CallAsyncDebugInfo = DebugInfo(callDI.GetInlineContext(), newILLocation);
 
+    if (opts.OptimizationEnabled())
+    {
+        if ((prefixFlags & PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT) != 0)
+        {
+            // We can only do an actual tail await if the caller and callee agree on return type.
+            asyncInfo.IsTailAwait = call->gtReturnType == info.compRetType;
+        }
+    }
+
     if ((prefixFlags & PREFIX_IS_TASK_AWAIT) != 0)
     {
         JITDUMP("Call is an async task await\n");
@@ -9823,6 +9832,14 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
         if (inlineResult->IsFailure())
         {
             assert(inlineResult->IsNever());
+            return;
+        }
+
+        if ((methInfo.options & CORINFO_ASYNC_VERSION) != 0)
+        {
+            // Do not inline an async version of a synchronous method. It will practically always
+            // result in an await that we would abort at anyway.
+            inlineResult->NoteFatal(InlineObservation::CALLEE_AWAIT);
             return;
         }
 
