@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using System.Xml.Schema;
 using System.Xml.XPath;
 
+#pragma warning disable PLATDOC002 // Not platform-specific; Async partial uses established naming convention
+
 namespace System.Xml
 {
     // Represents a writer that provides fast non-cached forward-only way of generating XML streams containing XML documents

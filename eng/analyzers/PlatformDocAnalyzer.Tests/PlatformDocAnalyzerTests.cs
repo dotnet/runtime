@@ -311,15 +311,69 @@ public partial interface IService
             var test = CreateTest(
                 s_platformTfmOptions,
                 ("WrongName.cs", @"
-public struct {|#0:MyStruct|}
+public partial struct {|#0:MyStruct|}
 {
     public int Value;
+}"),
+                ("WrongName2.cs", @"
+public partial struct {|#1:MyStruct|}
+{
+    public int Value2;
 }"));
 
             test.ExpectedDiagnostics.Add(new DiagnosticResult(Microsoft.DotNet.Analyzers.PlatformDoc.PlatformDocAnalyzer.MissingPrimaryFileRule)
                 .WithLocation(0).WithArguments("MyStruct"));
+            test.ExpectedDiagnostics.Add(new DiagnosticResult(Microsoft.DotNet.Analyzers.PlatformDoc.PlatformDocAnalyzer.MissingPrimaryFileRule)
+                .WithLocation(1).WithArguments("MyStruct"));
             test.ExpectedDiagnostics.Add(new DiagnosticResult(Microsoft.DotNet.Analyzers.PlatformDoc.PlatformDocAnalyzer.BadPartialFileNameRule)
                 .WithLocation(0).WithArguments("WrongName.cs", "MyStruct"));
+            test.ExpectedDiagnostics.Add(new DiagnosticResult(Microsoft.DotNet.Analyzers.PlatformDoc.PlatformDocAnalyzer.BadPartialFileNameRule)
+                .WithLocation(1).WithArguments("WrongName2.cs", "MyStruct"));
+
+            await test.RunAsync(CancellationToken.None);
+        }
+
+        [Fact]
+        public async Task NoDiagnosticForSingleFileType()
+        {
+            // A type defined in only one file should not trigger any diagnostics,
+            // even if the file name doesn't match the type name.
+            var test = CreateTest(
+                s_platformTfmOptions,
+                ("Helpers.cs", @"
+/// <summary>Some type</summary>
+public class Foo
+{
+    /// <summary>Some method</summary>
+    public void Bar() { }
+}"));
+
+            await test.RunAsync(CancellationToken.None);
+        }
+
+        [Fact]
+        public async Task NoDiagnosticForNestedTypeDocsOnNonPrimaryFile()
+        {
+            // Nested type declarations define their own doc scope and should not be flagged.
+            var test = CreateTest(
+                s_platformTfmOptions,
+                ("Outer.cs", @"
+/// <summary>Outer type</summary>
+public partial class Outer
+{
+    /// <summary>Method</summary>
+    public void Method() { }
+}"),
+                ("Outer.Inner.cs", @"
+public partial class Outer
+{
+    /// <summary>Nested type docs are fine here</summary>
+    public class Inner
+    {
+        /// <summary>Inner method</summary>
+        public void InnerMethod() { }
+    }
+}"));
 
             await test.RunAsync(CancellationToken.None);
         }

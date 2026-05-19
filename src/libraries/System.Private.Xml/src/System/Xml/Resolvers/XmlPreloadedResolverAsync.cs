@@ -5,6 +5,8 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Xml;
 
+#pragma warning disable PLATDOC002 // Not platform-specific; Async partial uses established naming convention
+
 namespace System.Xml.Resolvers
 {
     //

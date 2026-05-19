@@ -4,6 +4,8 @@
 using System.Net;
 using System.Threading.Tasks;
 
+#pragma warning disable PLATDOC003 // Not platform-specific; property lives in this file by convention
+
 namespace System.Xml
 {
     public abstract partial class XmlResolver

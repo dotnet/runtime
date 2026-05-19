@@ -8,6 +8,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Schema;
 
+#pragma warning disable PLATDOC002 // Not platform-specific; Async partial uses established naming convention
+
 namespace System.Xml
 {
     // Represents a reader that provides fast, non-cached forward only stream access to XML data.

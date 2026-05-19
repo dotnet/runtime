@@ -103,6 +103,17 @@ namespace Microsoft.DotNet.Analyzers.PlatformDoc
             if (syntaxRefs.IsEmpty)
                 return;
 
+            // Only check types declared across multiple files.
+            // A type in a single file doesn't have a doc placement problem.
+            var distinctFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (SyntaxReference syntaxRef in syntaxRefs)
+            {
+                distinctFiles.Add(syntaxRef.SyntaxTree.FilePath);
+            }
+
+            if (distinctFiles.Count <= 1)
+                return;
+
             string typeName = namedType.Name;
             string primaryFileName = typeName + ".cs";
 
@@ -172,6 +183,10 @@ namespace Microsoft.DotNet.Analyzers.PlatformDoc
         {
             foreach (MemberDeclarationSyntax member in typeDecl.Members)
             {
+                // Nested type declarations define their own doc scope; skip them.
+                if (member is BaseTypeDeclarationSyntax or DelegateDeclarationSyntax)
+                    continue;
+
                 if (!IsEffectivelyPublic(member, typeDecl))
                     continue;
 
