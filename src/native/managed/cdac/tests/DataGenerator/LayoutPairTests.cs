@@ -10,8 +10,8 @@ namespace Microsoft.Diagnostics.DataContractReader.DataGeneratorTests;
 /// <summary>
 /// Direct unit tests for <see cref="LayoutPair"/>'s name-cascade behavior.
 /// These don't need a full <see cref="Target"/>; they exercise the field
-/// selection logic through <c>HasField</c> / <c>GetFieldAddress</c>, which
-/// is the same code path used by every Read/Write overload.
+/// selection logic through <c>TrySelect</c>, which is the same code path
+/// used by every generated Read/Write site.
 /// </summary>
 public class LayoutPairTests
 {
@@ -25,14 +25,23 @@ public class LayoutPairTests
         return new Target.TypeInfo { Size = size, Fields = dict };
     }
 
+    private static TargetPointer FieldAddress(LayoutPair layouts, TargetPointer address, params string[] names)
+    {
+        layouts.Select(address, out var t, out var b, out var n, names);
+        return b + (ulong)t.Fields[n].Offset;
+    }
+
+    private static bool HasField(LayoutPair layouts, params string[] names)
+        => layouts.TrySelect(default, out _, out _, out _, names);
+
     [Fact]
     public void NativeOnly_FindsField()
     {
         var native = MakeType(size: 16, ("State", 4));
         var layouts = new LayoutPair(native, managedType: null, managedDataOffset: 0);
 
-        Assert.True(layouts.HasField("State"));
-        Assert.Equal((TargetPointer)0x1004UL, layouts.GetFieldAddress(0x1000, "State"));
+        Assert.True(HasField(layouts, "State"));
+        Assert.Equal((TargetPointer)0x1004UL, FieldAddress(layouts, 0x1000, "State"));
     }
 
     [Fact]
@@ -41,8 +50,8 @@ public class LayoutPairTests
         var managed = MakeType(size: 16, ("_state", 4));
         var layouts = new LayoutPair(nativeType: null, managed, managedDataOffset: 8);
 
-        Assert.True(layouts.HasField("_state"));
-        Assert.Equal((TargetPointer)(0x1000UL + 8UL + 4UL), layouts.GetFieldAddress(0x1000, "_state"));
+        Assert.True(HasField(layouts, "_state"));
+        Assert.Equal((TargetPointer)(0x1000UL + 8UL + 4UL), FieldAddress(layouts, 0x1000, "_state"));
     }
 
     [Fact]
@@ -52,46 +61,38 @@ public class LayoutPairTests
         var managed = MakeType(size: 24, ("State", 12));
         var layouts = new LayoutPair(native, managed, managedDataOffset: 8);
 
-        // Native at +4 wins over managed at +8+12.
-        Assert.Equal((TargetPointer)0x1004UL, layouts.GetFieldAddress(0x1000, "State"));
+        Assert.Equal((TargetPointer)0x1004UL, FieldAddress(layouts, 0x1000, "State"));
     }
 
     [Fact]
     public void Cascade_TriesAllNamesAgainstNativeBeforeManaged()
     {
-        // Native has "B" only; managed has "A". The cascade should:
-        //   - native: try "A" (no), try "B" (no for A field's lookup -- but this test is just about iteration)
-        //   - managed: try "A" (yes)
-        // So a field declared with names ["A"] resolves via managed at addr+Header+0.
         var native = MakeType(size: 16, ("B", 8));
         var managed = MakeType(size: 8, ("A", 0));
         var layouts = new LayoutPair(native, managed, managedDataOffset: 8);
 
-        Assert.Equal((TargetPointer)(0x1000UL + 8UL + 0UL), layouts.GetFieldAddress(0x1000, "A"));
+        Assert.Equal((TargetPointer)(0x1000UL + 8UL + 0UL), FieldAddress(layouts, 0x1000, "A"));
     }
 
     [Fact]
     public void NameAlias_FallsBackToSecondaryNameOnSameSource()
     {
-        // The runtime renamed "State" to "m_state" in some build.
         var native = MakeType(size: 16, ("m_state", 8));
         var layouts = new LayoutPair(native, managedType: null, managedDataOffset: 0);
 
-        Assert.True(layouts.HasField(new[] { "State", "m_state" }));
-        Assert.Equal((TargetPointer)(0x1000UL + 8UL), layouts.GetFieldAddress(0x1000, new[] { "State", "m_state" }));
+        Assert.True(HasField(layouts, "State", "m_state"));
+        Assert.Equal((TargetPointer)(0x1000UL + 8UL), FieldAddress(layouts, 0x1000, "State", "m_state"));
     }
 
     [Fact]
     public void NameList_CascadesAllNativeFirstThenAllManaged()
     {
-        // Native has "A_old"; managed has "_a". With names ["A", "A_old", "_a"]:
-        // native cascade tries "A" (no), "A_old" (yes) -> resolves natively, NOT managed.
         var native = MakeType(size: 16, ("A_old", 4));
         var managed = MakeType(size: 8, ("_a", 0));
         var layouts = new LayoutPair(native, managed, managedDataOffset: 8);
 
         Assert.Equal((TargetPointer)(0x1000UL + 4UL),
-            layouts.GetFieldAddress(0x1000, new[] { "A", "A_old", "_a" }));
+            FieldAddress(layouts, 0x1000, "A", "A_old", "_a"));
     }
 
     [Fact]
@@ -101,9 +102,9 @@ public class LayoutPairTests
         var managed = MakeType(size: 24, ("_other", 0));
         var layouts = new LayoutPair(native, managed, managedDataOffset: 8);
 
-        Assert.False(layouts.HasField("State"));
+        Assert.False(HasField(layouts, "State"));
         Assert.Throws<System.InvalidOperationException>(
-            () => layouts.GetFieldAddress(0x1000, "State"));
+            () => FieldAddress(layouts, 0x1000, "State"));
     }
 
     [Fact]
@@ -131,7 +132,7 @@ public class LayoutPairTests
         var managed = MakeType(size: 8, ("HashCode", 0), ("Next", 4));
         var layouts = new LayoutPair(nativeType: null, managed, managedDataOffset: 0);
 
-        Assert.Equal((TargetPointer)0x1000UL, layouts.GetFieldAddress(0x1000, "HashCode"));
-        Assert.Equal((TargetPointer)0x1004UL, layouts.GetFieldAddress(0x1000, "Next"));
+        Assert.Equal((TargetPointer)0x1000UL, FieldAddress(layouts, 0x1000, "HashCode"));
+        Assert.Equal((TargetPointer)0x1004UL, FieldAddress(layouts, 0x1000, "Next"));
     }
 }

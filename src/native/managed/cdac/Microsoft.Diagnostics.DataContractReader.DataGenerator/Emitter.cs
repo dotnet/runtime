@@ -34,7 +34,7 @@ internal static class Emitter
         sb.AppendLine("using Microsoft.Diagnostics.DataContractReader.Contracts;");
         if (needsDescriptor)
         {
-            // LayoutPair + LayoutPairResolver are emitted by the generator
+            // LayoutPair is emitted by the generator
             // via RegisterPostInitializationOutput into this namespace.
             sb.AppendLine("using Microsoft.Diagnostics.DataContractReader.Generated;");
         }
@@ -128,15 +128,16 @@ internal static class Emitter
 
         sb.AppendLine($"    public void Write{member.Name}({Target} target, {propType} value)");
         sb.AppendLine("    {");
-        sb.AppendLine($"        LayoutPair layouts = LayoutPairResolver.Resolve(target, {QuotedOrNull(model.DescriptorName)}, {QuotedOrNull(model.ManagedFullName)}, isValueType: {(model.IsValueType ? "true" : "false")});");
+        sb.AppendLine($"        LayoutPair layouts = LayoutPair.Resolve(target, {QuotedOrNull(model.DescriptorName)}, {QuotedOrNull(model.ManagedFullName)}, isValueType: {(model.IsValueType ? "true" : "false")});");
+        sb.AppendLine($"        layouts.Select(Address, out var t, out var b, out var n, {NameArgs(member)});");
         if (member.ReadKind == FieldReadKind.Bool)
         {
-            sb.AppendLine($"        layouts.WriteField<byte>(target, Address, (byte)(value ? 1 : 0), {NameArgs(member)});");
+            sb.AppendLine($"        target.WriteField<byte>(b, t, n, (byte)(value ? 1 : 0));");
         }
         else
         {
             string? typeArg = Shorten(member.DataTypeArgumentFqn);
-            sb.AppendLine($"        layouts.WriteField<{typeArg}>(target, Address, value, {NameArgs(member)});");
+            sb.AppendLine($"        target.WriteField<{typeArg}>(b, t, n, value);");
         }
         sb.AppendLine($"        {member.Name} = value;");
         sb.AppendLine("    }");
@@ -164,7 +165,7 @@ internal static class Emitter
             // LayoutPair which picks the first source that has the field --
             // native preferred, falling back to managed.
             sb.AppendLine();
-            sb.AppendLine($"        LayoutPair layouts = LayoutPairResolver.Resolve(");
+            sb.AppendLine($"        LayoutPair layouts = LayoutPair.Resolve(");
             sb.AppendLine($"            target,");
             sb.AppendLine($"            nativeName: {QuotedOrNull(model.DescriptorName)},");
             sb.AppendLine($"            managedFullName: {QuotedOrNull(model.ManagedFullName)},");
@@ -195,21 +196,33 @@ internal static class Emitter
                     sb.AppendLine($"        {member.Name} = {RawOffsetReadExpression(member, offset)};");
                     break;
                 }
-                string readExpr = ReadExpression(member);
+
+                string? typeArg = Shorten(member.DataTypeArgumentFqn);
+                string propType = Shorten(member.PropertyOrReturnTypeFqn)!;
+                string readExpr = ReadExpression(member, "b", "t", "n", typeArg);
                 if (member.IsOptional)
                 {
-                    sb.AppendLine($"        {member.Name} = layouts.HasField({NameArgs(member)})");
-                    sb.AppendLine($"            ? {readExpr}");
-                    sb.AppendLine($"            : default({Shorten(member.PropertyOrReturnTypeFqn)});");
+                    sb.AppendLine($"        {{");
+                    sb.AppendLine($"            if (layouts.TrySelect(address, out var t, out var b, out var n, {NameArgs(member)}))");
+                    sb.AppendLine($"                {member.Name} = {readExpr};");
+                    sb.AppendLine($"            else");
+                    sb.AppendLine($"                {member.Name} = default({propType});");
+                    sb.AppendLine($"        }}");
                 }
                 else
                 {
-                    sb.AppendLine($"        {member.Name} = {readExpr};");
+                    sb.AppendLine($"        {{");
+                    sb.AppendLine($"            layouts.Select(address, out var t, out var b, out var n, {NameArgs(member)});");
+                    sb.AppendLine($"            {member.Name} = {readExpr};");
+                    sb.AppendLine($"        }}");
                 }
                 break;
             }
             case MemberKind.FieldAddress:
-                sb.AppendLine($"        {member.Name} = layouts.GetFieldAddress(address, {NameArgs(member)});");
+                sb.AppendLine($"        {{");
+                sb.AppendLine($"            layouts.Select(address, out var t, out var b, out var n, {NameArgs(member)});");
+                sb.AppendLine($"            {member.Name} = b + (ulong)t.Fields[n].Offset;");
+                sb.AppendLine($"        }}");
                 break;
             case MemberKind.InstanceDataStart:
                 // For native-only resolutions ManagedDataOffset is 0; for managed-only
@@ -220,22 +233,18 @@ internal static class Emitter
         }
     }
 
-    private static string ReadExpression(MemberModel member)
-    {
-        string nameArgs = NameArgs(member);
-        string? typeArg = Shorten(member.DataTypeArgumentFqn);
-        return member.ReadKind switch
+    private static string ReadExpression(MemberModel member, string baseVar, string typeVar, string nameVar, string? typeArg)
+        => member.ReadKind switch
         {
-            FieldReadKind.Primitive   => $"layouts.ReadField<{typeArg}>(target, address, {nameArgs})",
-            FieldReadKind.Bool        => $"layouts.ReadField<byte>(target, address, {nameArgs}) != 0",
-            FieldReadKind.Pointer     => $"layouts.ReadPointerField(target, address, {nameArgs})",
-            FieldReadKind.NUInt       => $"layouts.ReadNUIntField(target, address, {nameArgs})",
-            FieldReadKind.CodePointer => $"layouts.ReadCodePointerField(target, address, {nameArgs})",
-            FieldReadKind.DataInPlace => $"layouts.ReadDataField<{typeArg}>(target, address, {nameArgs})",
-            FieldReadKind.DataPointer => $"target.ProcessedData.GetOrAdd<{typeArg}>(layouts.ReadPointerField(target, address, {nameArgs}))",
+            FieldReadKind.Primitive   => $"target.ReadField<{typeArg}>({baseVar}, {typeVar}, {nameVar})",
+            FieldReadKind.Bool        => $"target.ReadField<byte>({baseVar}, {typeVar}, {nameVar}) != 0",
+            FieldReadKind.Pointer     => $"target.ReadPointerField({baseVar}, {typeVar}, {nameVar})",
+            FieldReadKind.NUInt       => $"target.ReadNUIntField({baseVar}, {typeVar}, {nameVar})",
+            FieldReadKind.CodePointer => $"target.ReadCodePointerField({baseVar}, {typeVar}, {nameVar})",
+            FieldReadKind.DataInPlace => $"target.ReadDataField<{typeArg}>({baseVar}, {typeVar}, {nameVar})",
+            FieldReadKind.DataPointer => $"target.ProcessedData.GetOrAdd<{typeArg}>(target.ReadPointerField({baseVar}, {typeVar}, {nameVar}))",
             _ => $"default({Shorten(member.PropertyOrReturnTypeFqn)})",
         };
-    }
 
     private static string NameArgs(MemberModel member)
         => string.Join(", ", Enumerate(member.Names).Select(n => $"\"{n}\""));

@@ -6,7 +6,7 @@ namespace Microsoft.Diagnostics.DataContractReader.DataGenerator;
 /// <summary>
 /// Source emitted into each consuming assembly via
 /// <c>RegisterPostInitializationOutput</c>. Contains the <c>LayoutPair</c>
-/// struct + <c>LayoutPairResolver</c> static class used by IData{T} ctors
+/// struct (with a static <c>Resolve</c> factory) used by IData{T} ctors
 /// to resolve fields across both a native cdac descriptor and a managed
 /// type-metadata layout.
 /// </summary>
@@ -30,8 +30,6 @@ internal static class PostInitSources
 #nullable enable
 
 using System;
-using System.Numerics;
-using Microsoft.Diagnostics.DataContractReader.Data;
 
 namespace Microsoft.Diagnostics.DataContractReader.Generated;
 
@@ -69,8 +67,11 @@ internal readonly struct LayoutPair
            ?? ManagedType?.Size
            ?? throw new InvalidOperationException("Neither layout has a known instance size.");
 
-    private bool TrySelect(TargetPointer address, ReadOnlySpan<string> names,
-                           out Target.TypeInfo type, out TargetPointer baseAddr, out string name)
+    /// <summary>
+    /// Tries to resolve the first listed name against the native descriptor,
+    /// then the managed descriptor. Native wins on a tie.
+    /// </summary>
+    public bool TrySelect(TargetPointer address, out Target.TypeInfo type, out TargetPointer baseAddr, out string name, params ReadOnlySpan<string> names)
     {
         if (NativeType is Target.TypeInfo nt)
         {
@@ -96,68 +97,21 @@ internal readonly struct LayoutPair
         return false;
     }
 
+    /// <summary>
+    /// Same as <see cref="TrySelect"/> but throws when no candidate matches.
+    /// Used for required fields where a miss is a contract bug.
+    /// </summary>
+    public void Select(TargetPointer address, out Target.TypeInfo type, out TargetPointer baseAddr, out string name, params ReadOnlySpan<string> names)
+    {
+        if (!TrySelect(address, out type, out baseAddr, out name, names))
+        {
+            throw new InvalidOperationException(FormatMissing(names));
+        }
+    }
+
     private static string FormatMissing(ReadOnlySpan<string> names)
         => $"Field not found in any layout (names=[{string.Join(",", names.ToArray())}]).";
 
-    // --- Read helpers ---------------------------------------------------
-    // Each kind takes `params ReadOnlySpan<string> names`, so single-name
-    // calls bind to an inline span buffer (no heap alloc) and array calls
-    // work via implicit array-to-span conversion.
-
-    public T ReadField<T>(Target target, TargetPointer address, params ReadOnlySpan<string> names) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
-    {
-        if (!TrySelect(address, names, out Target.TypeInfo t, out TargetPointer b, out string n))
-            throw new InvalidOperationException(FormatMissing(names));
-        return target.ReadField<T>(b, t, n);
-    }
-
-    public TargetPointer ReadPointerField(Target target, TargetPointer address, params ReadOnlySpan<string> names)
-    {
-        if (!TrySelect(address, names, out Target.TypeInfo t, out TargetPointer b, out string n))
-            throw new InvalidOperationException(FormatMissing(names));
-        return target.ReadPointerField(b, t, n);
-    }
-
-    public TargetNUInt ReadNUIntField(Target target, TargetPointer address, params ReadOnlySpan<string> names)
-    {
-        if (!TrySelect(address, names, out Target.TypeInfo t, out TargetPointer b, out string n))
-            throw new InvalidOperationException(FormatMissing(names));
-        return target.ReadNUIntField(b, t, n);
-    }
-
-    public TargetCodePointer ReadCodePointerField(Target target, TargetPointer address, params ReadOnlySpan<string> names)
-    {
-        if (!TrySelect(address, names, out Target.TypeInfo t, out TargetPointer b, out string n))
-            throw new InvalidOperationException(FormatMissing(names));
-        return target.ReadCodePointerField(b, t, n);
-    }
-
-    public T ReadDataField<T>(Target target, TargetPointer address, params ReadOnlySpan<string> names) where T : IData<T>
-    {
-        if (!TrySelect(address, names, out Target.TypeInfo t, out TargetPointer b, out string n))
-            throw new InvalidOperationException(FormatMissing(names));
-        return target.ReadDataField<T>(b, t, n);
-    }
-
-    public void WriteField<T>(Target target, TargetPointer address, T value, params ReadOnlySpan<string> names) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
-    {
-        if (!TrySelect(address, names, out Target.TypeInfo t, out TargetPointer b, out string n))
-            throw new InvalidOperationException(FormatMissing(names));
-        target.WriteField<T>(b, t, n, value);
-    }
-
-    public TargetPointer GetFieldAddress(TargetPointer address, params ReadOnlySpan<string> names)
-    {
-        if (!TrySelect(address, names, out Target.TypeInfo t, out TargetPointer b, out string n))
-            throw new InvalidOperationException(FormatMissing(names));
-        return b + (ulong)t.Fields[n].Offset;
-    }
-
-    public bool HasField(params ReadOnlySpan<string> names) => TrySelect(default, names, out _, out _, out _);
-}
-
-internal static class LayoutPairResolver
-{
     /// <summary>
     /// Resolve native and/or managed layouts for an IData type. At least one of
     /// <paramref name="nativeName"/> or <paramref name="managedFullName"/> must
