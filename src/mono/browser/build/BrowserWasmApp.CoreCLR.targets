@@ -113,7 +113,7 @@
     <!-- Use a unique property, so the already run wasm targets can also run -->
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="WasmNestedPublishApp"
-             Properties="_WasmInNestedPublish_UniqueProperty_XYZ=true;;WasmBuildingForNestedPublish=true;DeployOnBuild=;_IsPublishing=;_WasmIsPublishing=$(_IsPublishing);ResolveAssemblyReferencesFindRelatedSatellites=true">
+             Properties="_WasmInNestedPublish_UniqueProperty_XYZ=true;WasmBuildingForNestedPublish=true;DeployOnBuild=;_IsPublishing=;_WasmIsPublishing=$(_IsPublishing);ResolveAssemblyReferencesFindRelatedSatellites=true">
       <Output TaskParameter="TargetOutputs" ItemName="_WasmNestedPublishAppResultItems" />
     </MSBuild>
 
@@ -331,8 +331,8 @@
       <_EmccCFlags Include="$(EmccExtraCFlags)" />
     </ItemGroup>
 
-    <!-- Compile flags for ManagedToNativeGenerator output (pinvoke-table.cpp,
-         wasm_m2n_invoke.g.cpp). The generated files #include the real CoreCLR
+    <!-- Compile flags for ManagedToNativeGenerator output (callhelpers-pinvoke.cpp,
+         callhelpers-interp-to-managed.cpp). The generated files #include the real CoreCLR
          headers (<callhelpers.hpp>, <minipal/entrypoints.h>, <minipal/utils.h>).
          Force-include coreclr_compat.h to provide the prerequisite types/macros
          (MethodDesc/PCODE/ULONG/INTERP_STACK_SLOT_SIZE/logging) that the
@@ -348,11 +348,10 @@
          source tree; otherwise they fall back to the in-repo paths for full
          repo builds. -->
     <PropertyGroup>
+      <!-- WASM-TODO https://github.com/dotnet/runtime/issues/128362 -->
       <_MinipalIncludeDir Condition="'$(MINIPAL_INCLUDE_DIR)' != ''">$([MSBuild]::EnsureTrailingSlash($([System.IO.Path]::GetFullPath('$(MINIPAL_INCLUDE_DIR)'))))</_MinipalIncludeDir>
       <_MinipalIncludeDir Condition="'$(_MinipalIncludeDir)' == ''">$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)..', '..', '..', 'native', 'minipal'))</_MinipalIncludeDir>
-      <!-- Parent of _MinipalIncludeDir, so `#include <minipal/xxx.h>` resolves. -->
       <_MinipalIncludeRoot>$([MSBuild]::NormalizeDirectory('$(_MinipalIncludeDir)', '..'))</_MinipalIncludeRoot>
-
       <_VmWasmIncludeDir Condition="'$(CORECLR_VM_WASM_INCLUDE_DIR)' != ''">$([MSBuild]::EnsureTrailingSlash($([System.IO.Path]::GetFullPath('$(CORECLR_VM_WASM_INCLUDE_DIR)'))))</_VmWasmIncludeDir>
       <_VmWasmIncludeDir Condition="'$(_VmWasmIncludeDir)' == ''">$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)..', '..', '..', 'coreclr', 'vm', 'wasm'))</_VmWasmIncludeDir>
     </PropertyGroup>
@@ -382,9 +381,9 @@
 
   <Target Name="_CoreCLRGenerateManagedToNative">
     <PropertyGroup>
-      <_WasmPInvokeTablePath>$(_WasmIntermediateOutputPath)pinvoke-table.cpp</_WasmPInvokeTablePath>
-      <_WasmReversePInvokeTablePath>$(_WasmIntermediateOutputPath)reverse-pinvoke-table.cpp</_WasmReversePInvokeTablePath>
-      <_WasmInterpToNativeTablePath>$(_WasmIntermediateOutputPath)wasm_m2n_invoke.g.cpp</_WasmInterpToNativeTablePath>
+      <_WasmPInvokeTablePath>$(_WasmIntermediateOutputPath)callhelpers-pinvoke.cpp</_WasmPInvokeTablePath>
+      <_WasmReversePInvokeTablePath>$(_WasmIntermediateOutputPath)callhelpers-reverse.cpp</_WasmReversePInvokeTablePath>
+      <_WasmInterpToNativeTablePath>$(_WasmIntermediateOutputPath)callhelpers-interp-to-managed.cpp</_WasmInterpToNativeTablePath>
       <_WasmM2NCachePath>$(_WasmIntermediateOutputPath)m2n_cache.txt</_WasmM2NCachePath>
       <_IsLibraryMode Condition="'$(OutputType)' == 'Library'">true</_IsLibraryMode>
       <_IsLibraryMode Condition="'$(_IsLibraryMode)' == ''">false</_IsLibraryMode>
@@ -440,9 +439,11 @@
          other required symbols (e.g., SystemInteropJS_*). -->
     <ItemGroup>
       <_WasmSourceFileToCompileGenerated Remove="@(_WasmSourceFileToCompileGenerated)" />
-      <_WasmSourceFileToCompileGenerated Include="$(_WasmPInvokeTablePath)"          ObjectFile="$(_WasmIntermediateOutputPath)pinvoke-table.o"
+      <_WasmSourceFileToCompileGenerated Include="$(_WasmPInvokeTablePath)"          ObjectFile="$(_WasmIntermediateOutputPath)callhelpers-pinvoke.o"
                                                                                      Dependencies="$(_WasmCompileRspGenerated);$(MSBuildThisFileDirectory)coreclr_compat.h;$(_VmWasmIncludeDir)callhelpers.hpp;$(_MinipalIncludeDir)entrypoints.h;$(_MinipalIncludeDir)utils.h" />
-      <_WasmSourceFileToCompileGenerated Include="$(_WasmInterpToNativeTablePath)"   ObjectFile="$(_WasmIntermediateOutputPath)wasm_m2n_invoke.o"
+      <_WasmSourceFileToCompileGenerated Include="$(_WasmReversePInvokeTablePath)"   ObjectFile="$(_WasmIntermediateOutputPath)callhelpers-reverse.o"
+                                                                                     Dependencies="$(_WasmCompileRspGenerated);$(MSBuildThisFileDirectory)coreclr_compat.h;$(_VmWasmIncludeDir)callhelpers.hpp;$(_MinipalIncludeDir)utils.h" />
+      <_WasmSourceFileToCompileGenerated Include="$(_WasmInterpToNativeTablePath)"   ObjectFile="$(_WasmIntermediateOutputPath)callhelpers-interp-to-managed.o"
                                                                                      Dependencies="$(_WasmCompileRspGenerated);$(MSBuildThisFileDirectory)coreclr_compat.h;$(_VmWasmIncludeDir)callhelpers.hpp;$(_MinipalIncludeDir)utils.h" />
     </ItemGroup>
   </Target>
