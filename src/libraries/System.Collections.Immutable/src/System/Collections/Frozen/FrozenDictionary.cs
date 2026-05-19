@@ -131,12 +131,7 @@ namespace System.Collections.Frozen
             newDictionary = source as Dictionary<TKey, TValue>;
             if (newDictionary is null || (newDictionary.Count != 0 && !newDictionary.Comparer.Equals(comparer)))
             {
-                int capacity = source switch
-                {
-                    ICollection<KeyValuePair<TKey, TValue>> collection => collection.Count,
-                    IReadOnlyCollection<KeyValuePair<TKey, TValue>> readOnlyCollection => readOnlyCollection.Count,
-                    _ => 0,
-                };
+                int capacity = (source as ICollection<KeyValuePair<TKey, TValue>>)?.Count ?? 0;
                 newDictionary = new Dictionary<TKey, TValue>(capacity, comparer);
                 foreach (KeyValuePair<TKey, TValue> pair in source)
                 {
