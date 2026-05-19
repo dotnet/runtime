@@ -1383,20 +1383,23 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                     throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_FUNCTION_NOT_IL)!;
             }
 
+            else if (methodDef.RelativeVirtualAddress == 0)
+                throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_FUNCTION_NOT_IL)!;
+
             TargetPointer headerPtr = loader.GetILHeader(moduleHandle, functionToken);
-            if (headerPtr == TargetPointer.Null)
-                return HResults.S_OK;
-
-            int headerSize = HeaderReaderHelpers.GetHeaderSize(_target, headerPtr);
-            int codeSize = HeaderReaderHelpers.GetCodeSize(_target, headerPtr);
-
-            if (HeaderReaderHelpers.TryGetLocalVarSigToken(_target, headerPtr, out int localToken) && localToken != 0)
+            if (headerPtr != TargetPointer.Null)
             {
-                *pLocalSigToken = (uint)localToken;
-            }
+                int headerSize = HeaderReaderHelpers.GetHeaderSize(_target, headerPtr);
+                int codeSize = HeaderReaderHelpers.GetCodeSize(_target, headerPtr);
 
-            pTargetBuffer->pAddress = headerPtr.Value + (ulong)headerSize;
-            pTargetBuffer->cbSize = (uint)codeSize;
+                if (HeaderReaderHelpers.TryGetLocalVarSigToken(_target, headerPtr, out int localToken) && localToken != 0)
+                {
+                    *pLocalSigToken = (uint)localToken;
+                }
+
+                pTargetBuffer->pAddress = headerPtr.Value + (ulong)headerSize;
+                pTargetBuffer->cbSize = (uint)codeSize;
+            }
         }
         catch (System.Exception ex)
         {
