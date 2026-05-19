@@ -254,8 +254,54 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     public int GetMetadata(ulong vmModule, DacDbiTargetBuffer* pTargetBuffer)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetMetadata(vmModule, pTargetBuffer) : HResults.E_NOTIMPL;
 
-    public int GetSymbolsBuffer(ulong vmModule, DacDbiTargetBuffer* pTargetBuffer, int* pSymbolFormat)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetSymbolsBuffer(vmModule, pTargetBuffer, pSymbolFormat) : HResults.E_NOTIMPL;
+    public int GetSymbolsBuffer(ulong vmModule, DacDbiTargetBuffer* pTargetBuffer, SymbolFormat* pSymbolFormat)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (pTargetBuffer == null)
+                throw new ArgumentNullException(nameof(pTargetBuffer));
+
+            if (pSymbolFormat == null)
+                throw new ArgumentNullException(nameof(pSymbolFormat));
+
+            *pTargetBuffer = default;
+            *pSymbolFormat = SymbolFormat.None;
+
+            if (vmModule == 0)
+                throw new ArgumentException("Module pointer must be non-zero.", nameof(vmModule));
+
+            Contracts.ILoader loader = _target.Contracts.Loader;
+            Contracts.ModuleHandle handle = loader.GetModuleHandleFromModulePtr(new TargetPointer(vmModule));
+
+            if (loader.TryGetSymbolStream(handle, out TargetPointer buffer, out uint size) && size != 0)
+            {
+                pTargetBuffer->pAddress = buffer.Value;
+                pTargetBuffer->cbSize = size;
+                *pSymbolFormat = SymbolFormat.Pdb;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            DacDbiTargetBuffer bufferLocal;
+            SymbolFormat formatLocal;
+            int hrLocal = _legacy.GetSymbolsBuffer(vmModule, &bufferLocal, &formatLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(pTargetBuffer->pAddress == bufferLocal.pAddress, $"pAddress: cDAC: {pTargetBuffer->pAddress:x}, DAC: {bufferLocal.pAddress:x}");
+                Debug.Assert(pTargetBuffer->cbSize == bufferLocal.cbSize, $"cbSize: cDAC: {pTargetBuffer->cbSize}, DAC: {bufferLocal.cbSize}");
+                Debug.Assert(*pSymbolFormat == formatLocal, $"pSymbolFormat: cDAC: {*pSymbolFormat}, DAC: {formatLocal}");
+            }
+        }
+#endif
+        return hr;
+    }
 
     public int GetModuleData(ulong vmModule, DacDbiModuleInfo* pData)
     {

@@ -217,6 +217,12 @@ public enum CorDebugUserState
     USER_THREADPOOL = 0x100,
 }
 
+public enum SymbolFormat
+{
+    None = 0,
+    Pdb = 1,
+}
+
 public enum CorDebugGenerationTypes
 {
     CorDebug_Gen0 = 0,
@@ -272,7 +278,7 @@ public unsafe partial interface IDacDbiInterface
     int GetMetadata(ulong vmModule, DacDbiTargetBuffer* pTargetBuffer);
 
     [PreserveSig]
-    int GetSymbolsBuffer(ulong vmModule, DacDbiTargetBuffer* pTargetBuffer, int* pSymbolFormat);
+    int GetSymbolsBuffer(ulong vmModule, DacDbiTargetBuffer* pTargetBuffer, SymbolFormat* pSymbolFormat);
 
     [PreserveSig]
     int GetModuleData(ulong vmModule, DacDbiModuleInfo* pData);
