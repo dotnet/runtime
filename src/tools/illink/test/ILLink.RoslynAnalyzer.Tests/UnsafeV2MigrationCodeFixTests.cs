@@ -779,6 +779,142 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeV2MigrationAnalyzer} = tr
                 """;
             await VerifyCodeFix(source, fixedSource);
         }
+
+        [Fact]
+        public async Task UnsafeMethodBodyWithBlankLines_PreservesBlankLines()
+        {
+            // Blank lines between statements (EndOfLineTrivia in leading trivia) must
+            // survive the wrap.
+            var source = """
+                using System;
+                public class C
+                {
+                    public {|IL5006:unsafe|} void M()
+                    {
+                        Console.WriteLine("a");
+
+                        Console.WriteLine("b");
+
+                        Console.WriteLine("c");
+                    }
+                }
+                """;
+            var fixedSource = """
+                using System;
+                public class C
+                {
+                    public void M()
+                    {
+                        // SAFETY-TODO: Audit this unsafe usage
+                        unsafe
+                        {
+                            Console.WriteLine("a");
+
+                            Console.WriteLine("b");
+
+                            Console.WriteLine("c");
+                        }
+                    }
+                }
+                """;
+            await VerifyCodeFix(source, fixedSource);
+        }
+
+        [Fact]
+        public async Task UnsafeMethodBodyWithComments_PreservesComments()
+        {
+            var source = """
+                using System;
+                public class C
+                {
+                    public {|IL5006:unsafe|} void M()
+                    {
+                        // leading comment
+                        Console.WriteLine("a");
+                        // between
+                        Console.WriteLine("b");
+                    }
+                }
+                """;
+            var fixedSource = """
+                using System;
+                public class C
+                {
+                    public void M()
+                    {
+                        // SAFETY-TODO: Audit this unsafe usage
+                        unsafe
+                        {
+                            // leading comment
+                            Console.WriteLine("a");
+                            // between
+                            Console.WriteLine("b");
+                        }
+                    }
+                }
+                """;
+            await VerifyCodeFix(source, fixedSource);
+        }
+
+        [Fact]
+        public async Task UnsafeMethodBodyMixedCommentsBlankLinesNested_AllPreserved()
+        {
+            // The kind of body we'd find in real BCL code: a comment block, a blank line,
+            // nested 'if' blocks, a trailing single-line comment on a statement.
+            var source = """
+                using System;
+                public class C
+                {
+                    public {|IL5006:unsafe|} void M(int n)
+                    {
+                        // Initial check.
+                        if (n < 0)
+                        {
+                            throw new ArgumentOutOfRangeException(nameof(n));
+                        }
+
+                        // Compute something.
+                        int x = n * 2;
+                        Console.WriteLine(x); // trailing on this line
+
+                        if (x > 10)
+                        {
+                            // nested comment
+                            Console.WriteLine("big");
+                        }
+                    }
+                }
+                """;
+            var fixedSource = """
+                using System;
+                public class C
+                {
+                    public void M(int n)
+                    {
+                        // SAFETY-TODO: Audit this unsafe usage
+                        unsafe
+                        {
+                            // Initial check.
+                            if (n < 0)
+                            {
+                                throw new ArgumentOutOfRangeException(nameof(n));
+                            }
+
+                            // Compute something.
+                            int x = n * 2;
+                            Console.WriteLine(x); // trailing on this line
+
+                            if (x > 10)
+                            {
+                                // nested comment
+                                Console.WriteLine("big");
+                            }
+                        }
+                    }
+                }
+                """;
+            await VerifyCodeFix(source, fixedSource);
+        }
     }
 }
 #endif

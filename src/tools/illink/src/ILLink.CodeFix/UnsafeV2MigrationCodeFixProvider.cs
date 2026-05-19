@@ -116,9 +116,17 @@ namespace ILLink.CodeFix
             if (ReferenceEquals(newMember, memberNode))
                 return document;
 
+            // Tag the new member so we can scope the formatter to just the changed subtree.
+            newMember = newMember.WithAdditionalAnnotations(Formatter.Annotation);
+
             var editor = await DocumentEditor.CreateAsync(document, cancellationToken).ConfigureAwait(false);
             editor.ReplaceNode(memberNode, newMember);
-            return editor.GetChangedDocument();
+            var changedDocument = editor.GetChangedDocument();
+
+            // 'dotnet format analyzers' applies code-fix output verbatim and does not run a
+            // subsequent whitespace pass, so we explicitly format the changed subtree here.
+            // 'dotnet format' run later would also be idempotent on the result.
+            return await Formatter.FormatAsync(changedDocument, Formatter.Annotation, options: null, cancellationToken).ConfigureAwait(false);
         }
 
         private static SyntaxNode? FindMemberDeclaration(SyntaxToken unsafeToken) =>
@@ -299,9 +307,14 @@ namespace ILLink.CodeFix
 
         private static StatementSyntax StripLeadingWhitespace(StatementSyntax statement)
         {
+            // Strip only the indentation whitespace from the statement's leading trivia and
+            // let the formatter (via Formatter.Annotation on the enclosing block) compute the
+            // new indentation. We must preserve EndOfLineTrivia so that blank lines between
+            // statements survive the wrap, and we must preserve any leading comments / pragmas
+            // / directives the statement had.
             var leading = statement.GetLeadingTrivia();
             var stripped = SyntaxFactory.TriviaList(
-                leading.Where(static t => !t.IsKind(SyntaxKind.WhitespaceTrivia) && !t.IsKind(SyntaxKind.EndOfLineTrivia)));
+                leading.Where(static t => !t.IsKind(SyntaxKind.WhitespaceTrivia)));
             return stripped.Count == leading.Count
                 ? statement
                 : statement.WithLeadingTrivia(stripped);
