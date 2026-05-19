@@ -82,5 +82,40 @@ namespace System.SpanTests
             Assert.Equal(7, ints.Min(reverse));
             Assert.Equal(-1, ints.Max(reverse));
         }
+
+        [Fact]
+        public static void MinMax_IntegerTypes_DefaultAndNullComparer_ProduceExpectedValues()
+        {
+            AssertMinMaxValues(new byte[] { 12, 3, 255, 7 }, (byte)3, (byte)255);
+            AssertMinMaxValues(new sbyte[] { 12, -9, 100, 7 }, (sbyte)-9, (sbyte)100);
+            AssertMinMaxValues(new ushort[] { 12, 3, 65535, 7 }, (ushort)3, ushort.MaxValue);
+            AssertMinMaxValues(new short[] { 12, -9, 100, 7 }, (short)-9, (short)100);
+            AssertMinMaxValues(new char[] { 'x', 'b', 'm', 'z' }, 'b', 'z');
+            AssertMinMaxValues(new uint[] { 12u, 3u, 400u, 7u }, 3u, 400u);
+            AssertMinMaxValues(new int[] { 12, -9, 400, 7 }, -9, 400);
+            AssertMinMaxValues(new ulong[] { 12ul, 3ul, 400ul, 7ul }, 3ul, 400ul);
+            AssertMinMaxValues(new long[] { 12L, -9L, 400L, 7L }, -9L, 400L);
+            AssertMinMaxValues(new nuint[] { (nuint)12, (nuint)3, (nuint)400, (nuint)7 }, (nuint)3, (nuint)400);
+            AssertMinMaxValues(new nint[] { (nint)12, (nint)(-9), (nint)400, (nint)7 }, (nint)(-9), (nint)400);
+            AssertMinMaxValues(new Int128[] { (Int128)12, (Int128)(-9), (Int128)400, (Int128)7 }, (Int128)(-9), (Int128)400);
+            AssertMinMaxValues(new UInt128[] { (UInt128)12, (UInt128)3, (UInt128)400, (UInt128)7 }, (UInt128)3, (UInt128)400);
+        }
+
+        private static void AssertMinMaxValues<T>(T[] values, T expectedMin, T expectedMax)
+            where T : IComparable<T>
+        {
+            ReadOnlySpan<T> span = values;
+            IComparer<T> comparer = Comparer<T>.Create(static (left, right) => left.CompareTo(right));
+            IComparer<T> reverseComparer = Comparer<T>.Create(static (left, right) => right.CompareTo(left));
+
+            Assert.Equal(expectedMin, span.Min());
+            Assert.Equal(expectedMax, span.Max());
+            Assert.Equal(expectedMin, span.Min(comparer: null));
+            Assert.Equal(expectedMax, span.Max(comparer: null));
+            Assert.Equal(expectedMin, span.Min(comparer));
+            Assert.Equal(expectedMax, span.Max(comparer));
+            Assert.Equal(expectedMax, span.Min(reverseComparer));
+            Assert.Equal(expectedMin, span.Max(reverseComparer));
+        }
     }
 }
