@@ -101,6 +101,36 @@ namespace System.SpanTests
             AssertMinMaxValues(new UInt128[] { (UInt128)12, (UInt128)3, (UInt128)400, (UInt128)7 }, (UInt128)3, (UInt128)400);
         }
 
+        [Theory]
+        [InlineData(float.NaN, 1f, 2f)]
+        [InlineData(1f, float.NaN, 2f)]
+        [InlineData(1f, 2f, float.NaN)]
+        public static void MinMax_Float_NaN_UsesExpectedOrdering(float first, float second, float third)
+        {
+            float[] values = [first, second, third];
+            ReadOnlySpan<float> span = values;
+
+            Assert.True(float.IsNaN(span.Min()));
+            Assert.True(float.IsNaN(span.Min(comparer: null)));
+            Assert.Equal(2f, span.Max());
+            Assert.Equal(2f, span.Max(comparer: null));
+        }
+
+        [Theory]
+        [InlineData(double.NaN, 1d, 2d)]
+        [InlineData(1d, double.NaN, 2d)]
+        [InlineData(1d, 2d, double.NaN)]
+        public static void MinMax_Double_NaN_UsesExpectedOrdering(double first, double second, double third)
+        {
+            double[] values = [first, second, third];
+            ReadOnlySpan<double> span = values;
+
+            Assert.True(double.IsNaN(span.Min()));
+            Assert.True(double.IsNaN(span.Min(comparer: null)));
+            Assert.Equal(2d, span.Max());
+            Assert.Equal(2d, span.Max(comparer: null));
+        }
+
         private static void AssertMinMaxValues<T>(T[] values, T expectedMin, T expectedMax)
             where T : IComparable<T>
         {
