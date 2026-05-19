@@ -1216,7 +1216,10 @@ namespace ILCompiler.Reflection.ReadyToRun
                             constrainedType: null,
                             instanceArgs: method.InstanceArgs,
                             signaturePrefixes: ["[RESUME]"],
-                            fixupOffset: null);
+                            fixupOffset: null)
+                        {
+                            RuntimeFunctionCount = 1,
+                        };
                         _instanceMethods.Add(new InstanceMethod(0, stubMethod));
                     }
                 }
