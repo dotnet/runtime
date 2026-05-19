@@ -321,17 +321,6 @@ if(CLR_CMAKE_HOST_UNIX)
   endforeach()
 endif(CLR_CMAKE_HOST_UNIX)
 
-# Strip unreferenced sections at link time, paired with -ffunction-sections/-fdata-sections
-# (set in the Unix/WASI compile-options block below). Gated to non-Debug builds so Debug
-# keeps full symbols and incremental linking. Windows uses /OPT:REF, configured above.
-if(CLR_CMAKE_HOST_UNIX)
-  if(CLR_CMAKE_HOST_APPLE)
-    add_linker_flag(-Wl,-dead_strip CHECKED RELEASE RELWITHDEBINFO)
-  else()
-    add_linker_flag(-Wl,--gc-sections CHECKED RELEASE RELWITHDEBINFO)
-  endif()
-endif()
-
 if(CLR_CMAKE_HOST_LINUX)
   add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
   add_linker_flag(-Wl,--build-id=sha1)
@@ -752,10 +741,18 @@ if (CLR_CMAKE_HOST_UNIX OR CLR_CMAKE_HOST_WASI)
   add_compile_options(-fvisibility=hidden)
 
   # Separate functions and data into their own sections so the linker can remove
-  # unreferenced ones via --gc-sections (ELF) / -dead_strip (Mach-O), which are
-  # enabled earlier in this file for non-Debug configurations.
+  # unreferenced ones via --gc-sections (ELF) / -dead_strip (Mach-O). Gated to
+  # non-Debug builds so Debug keeps full symbols and incremental linking. Windows
+  # uses /OPT:REF, configured above.
   add_compile_options(-ffunction-sections)
   add_compile_options(-fdata-sections)
+  if(CLR_CMAKE_HOST_UNIX)
+    if(CLR_CMAKE_HOST_APPLE)
+      add_linker_flag(-Wl,-dead_strip CHECKED RELEASE RELWITHDEBINFO)
+    else()
+      add_linker_flag(-Wl,--gc-sections CHECKED RELEASE RELWITHDEBINFO)
+    endif()
+  endif()
 
   # Specify the minimum supported version of macOS
   # Mac Catalyst needs a special CFLAG, exclusive with mmacosx-version-min
