@@ -3,7 +3,7 @@
 
 using System;
 
-namespace Microsoft.Diagnostics.DataContractReader.Generated;
+namespace Microsoft.Diagnostics.DataContractReader;
 
 /// <summary>
 /// Marks a class as a cdac data type. The cdac source generator emits an
@@ -109,9 +109,9 @@ public sealed class FieldAttribute : Attribute
 /// <c>target.ProcessedData.GetOrAdd&lt;T&gt;</c>.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
-public sealed class FieldOffsetAttribute : Attribute
+public sealed class RawOffsetAttribute : Attribute
 {
-    public FieldOffsetAttribute(int offset)
+    public RawOffsetAttribute(int offset)
     {
         Offset = offset;
     }

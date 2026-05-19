@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using Microsoft.Diagnostics.DataContractReader.Generated;
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 

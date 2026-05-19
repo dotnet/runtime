@@ -16,10 +16,10 @@ namespace Microsoft.Diagnostics.DataContractReader.DataGenerator;
 /// </summary>
 /// <remarks>
 /// The trigger attributes (<c>[CdacType]</c>, <c>[Field]</c>, etc.) live in
-/// <c>Microsoft.Diagnostics.DataContractReader.Abstractions</c> under
-/// namespace <c>Microsoft.Diagnostics.DataContractReader.Generated</c>. They
-/// are ordinary committed source so cross-assembly references resolve to a
-/// single type identity, matching the convention used by
+/// the <c>Microsoft.Diagnostics.DataContractReader</c> root namespace inside
+/// the <c>Microsoft.Diagnostics.DataContractReader.Abstractions</c> assembly.
+/// They are ordinary committed source so cross-assembly references resolve
+/// to a single type identity, matching the convention used by
 /// <c>LibraryImportGenerator</c> and <c>JsonSerializerGenerator</c>.
 /// </remarks>
 [Generator(LanguageNames.CSharp)]

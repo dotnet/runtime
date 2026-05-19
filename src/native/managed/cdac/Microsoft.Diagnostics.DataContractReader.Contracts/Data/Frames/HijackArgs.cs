@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using Microsoft.Diagnostics.DataContractReader.Generated;
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 

@@ -9,10 +9,10 @@ namespace Microsoft.Diagnostics.DataContractReader.DataGenerator;
 
 internal static class Parser
 {
-    private const string AttrNs = "Microsoft.Diagnostics.DataContractReader.Generated";
+    private const string AttrNs = "Microsoft.Diagnostics.DataContractReader";
     public const string CdacTypeAttributeFqn = AttrNs + ".CdacTypeAttribute";
     public const string FieldAttributeFqn = AttrNs + ".FieldAttribute";
-    public const string FieldOffsetAttributeFqn = AttrNs + ".FieldOffsetAttribute";
+    public const string RawOffsetAttributeFqn = AttrNs + ".RawOffsetAttribute";
     public const string FieldAddressAttributeFqn = AttrNs + ".FieldAddressAttribute";
     public const string InstanceDataStartAttributeFqn = AttrNs + ".InstanceDataStartAttribute";
     public const string StaticAddressAttributeFqn = AttrNs + ".StaticAddressAttribute";
@@ -149,7 +149,7 @@ internal static class Parser
             {
                 fieldAttr = a;
             }
-            else if (fqn == FieldOffsetAttributeFqn)
+            else if (fqn == RawOffsetAttributeFqn)
             {
                 fieldOffsetAttr = a;
             }

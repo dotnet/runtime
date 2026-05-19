@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Diagnostics.DataContractReader.Generated;
-
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
 [CdacType]
@@ -14,15 +12,15 @@ internal sealed partial class ImageSectionHeader : IData<ImageSectionHeader>
     private const int PointerToRawDataOffset = 20;
     public const uint Size = 40;
 
-    [FieldOffset(VirtualSizeOffset, LittleEndian = true)]
+    [RawOffset(VirtualSizeOffset, LittleEndian = true)]
     public uint VirtualSize { get; }
 
-    [FieldOffset(VirtualAddressOffset, LittleEndian = true)]
+    [RawOffset(VirtualAddressOffset, LittleEndian = true)]
     public uint VirtualAddress { get; }
 
-    [FieldOffset(SizeOfRawDataOffset, LittleEndian = true)]
+    [RawOffset(SizeOfRawDataOffset, LittleEndian = true)]
     public uint SizeOfRawData { get; }
 
-    [FieldOffset(PointerToRawDataOffset, LittleEndian = true)]
+    [RawOffset(PointerToRawDataOffset, LittleEndian = true)]
     public uint PointerToRawData { get; }
 }

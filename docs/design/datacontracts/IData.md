@@ -40,7 +40,7 @@ themselves.
 
 ## The source generator at a glance
 
-`Microsoft.Diagnostics.DataContractReader.SourceGenerator` is a Roslyn
+`Microsoft.Diagnostics.DataContractReader.DataGenerator` is a Roslyn
 `IIncrementalGenerator` wired into
 `Microsoft.Diagnostics.DataContractReader.Contracts` as a build-time
 analyzer. It scans for classes carrying `[CdacType]` and emits a
@@ -54,8 +54,8 @@ analyzer. It scans for classes carrying `[CdacType]` and emits a
   one-liner.
 * For managed types: a `private const string FullyQualifiedName = "..."`
   and `public static TypeHandle TypeHandle(Target target)` accessor.
-* For each `[Field(Writable = true)]` property on a class using a native
-  descriptor: a `public void Write{Name}(Target target, T value)` method.
+* For each `[Field(Writable = true)]` property: a
+  `public void Write{Name}(Target target, T value)` method.
 * For each `[StaticAddress]` / `[StaticReference]` /
   `[ThreadStaticAddress]` partial method declaration in the user
   source: a corresponding implementation that routes through
@@ -73,17 +73,19 @@ The user provides the property declarations and (optionally) the
 * Declare data properties as `public T Prop { get; }` (get-only auto
   properties). For properties that the generator or hand-written code
   needs to assign outside the constructor, use
-  `{ get; private set; }`. Don't use `init`, `required`, or `= null!;`.
-* If the user needs to populate properties from custom logic, add
-  `[MemberNotNull(nameof(X), ...)] partial void OnInit(...)` -- the
-  generator-emitted constructor calls `OnInit` at the end, and the
-  `MemberNotNull` annotation flows through so the compiler stops
-  complaining about uninitialized non-nullable members.
+  `{ get; private set; }`. For non-nullable reference-typed properties
+  that are populated only inside `OnInit`, prefer annotating `OnInit`
+  with `[MemberNotNull(nameof(X), ...)]` over `required` or
+  `= null!;` -- it lets the compiler verify the property is assigned
+  along every path through `OnInit` without forcing callers to use
+  object-initializer syntax or accepting a deliberately-lying null.
 
 ## Attribute surface
 
-All attributes live in
-`Microsoft.Diagnostics.DataContractReader.Generated`.
+All attributes live in the root
+`Microsoft.Diagnostics.DataContractReader` namespace (declared in
+`CdacAttributes.cs` inside the
+`Microsoft.Diagnostics.DataContractReader.Abstractions` assembly).
 
 ### Class-level: `[CdacType]`
 
@@ -91,11 +93,10 @@ Marks a class for source generation. Choose **one** descriptor source:
 
 | Constructor / property | Meaning |
 |---|---|
-| `[CdacType(DataType.X)]` | Native cdac descriptor by enum value. |
-| `[CdacType("DescriptorName")]` | Native cdac descriptor by name (rare; for types not in the `DataType` enum). |
-| `[CdacType]` (parameterless) | No descriptor lookup at all. Use with `[FieldOffset]` properties or `OnInit` only. |
+| `[CdacType("DescriptorName")]` | Native cdac descriptor. The recommended form is `[CdacType(nameof(DataType.X))]`, which gives compile-time validation against the `DataType` enum while still passing a plain string to the attribute. |
+| `[CdacType]` (parameterless) | No descriptor lookup at all. Use with `[RawOffset]` properties or `OnInit` only. |
 | `[CdacType(ManagedFullName = "System.X.Y")]` | Pure managed type; layout from `ManagedTypeSource`. Generator emits a `TypeHandle` accessor and applies the standard `address + Object.Size` offset to access instance fields. |
-| `[CdacType(DataType.X, ManagedFullName = "System.X.Y")]` | Hybrid: field offsets come from the *native* descriptor (so they're anchored at the object pointer, not after the header), but the class also exposes a `TypeHandle` accessor. Used by types like `Exception` that have both representations. |
+| `[CdacType(nameof(DataType.X), ManagedFullName = "System.X.Y")]` | Hybrid: field offsets come from the *native* descriptor (so they're anchored at the object pointer, not after the header), but the class also exposes a `TypeHandle` accessor. Used by types like `Exception` that have both representations. |
 | `IsValueType = true` | (Managed only.) The class wraps an inline value type with no object header. The generator reads fields starting at `address` rather than `address + Object.Size`. |
 
 ### Property-level: `[Field]`
@@ -127,10 +128,12 @@ Parameters:
   `public void Write{Name}(Target target, T value)` method that writes
   the value back to the target's memory and updates the in-memory
   snapshot. The property must have a setter (`set` or `private set`),
-  the read kind must be `Primitive` or `Bool`, and the class must use a
-  native descriptor.
+  the read kind must be `Primitive` or `Bool`, and the class must use
+  a descriptor (either `[CdacType("Name")]` or
+  `[CdacType(ManagedFullName = "...")]` -- writes go through the
+  descriptor field offset regardless of which side supplied it).
 
-### Property-level: `[FieldOffset]`
+### Property-level: `[RawOffset]`
 
 Bypasses the descriptor. Reads from a hardcoded byte offset relative
 to `address`. The read kind is inferred from the property type the same
@@ -138,9 +141,9 @@ way `[Field]` infers it.
 
 | Form | Generated |
 |---|---|
-| `[FieldOffset(12)] public uint X { get; }` | `X = target.Read<uint>(address + 12);` |
-| `[FieldOffset(60, LittleEndian = true)] public int Lfanew { get; }` | `Lfanew = target.ReadLittleEndian<int>(address + 60);` |
-| `[FieldOffset(4)] public ImageFileHeader Hdr { get; }` | `Hdr = target.ProcessedData.GetOrAdd<ImageFileHeader>(address + 4);` |
+| `[RawOffset(12)] public uint X { get; }` | `X = target.Read<uint>(address + 12);` |
+| `[RawOffset(60, LittleEndian = true)] public int Lfanew { get; }` | `Lfanew = target.ReadLittleEndian<int>(address + 60);` |
+| `[RawOffset(4)] public ImageFileHeader Hdr { get; }` | `Hdr = target.ProcessedData.GetOrAdd<ImageFileHeader>(address + 4);` |
 
 Used for well-known external file-format layouts (PE/COFF, Webcil)
 where the offsets are fixed by the format spec rather than the runtime
@@ -230,7 +233,7 @@ For properties populated only inside `OnInit`, declare them as
 the `= null!;` workaround:
 
 ```csharp
-[CdacType(DataType.Bucket)]
+[CdacType(nameof(DataType.Bucket))]
 internal sealed partial class Bucket : IData<Bucket>
 {
     public TargetPointer[] Keys { get; private set; }
@@ -254,7 +257,7 @@ Add `Writable = true` to a `[Field]` to emit a `Write{Name}` method
 that mutates the target's memory and updates the in-memory snapshot:
 
 ```csharp
-[CdacType(DataType.Module)]
+[CdacType(nameof(DataType.Module))]
 internal sealed partial class Module : IData<Module>
 {
     [Field(Writable = true)] public uint Flags { get; private set; }
@@ -264,7 +267,7 @@ internal sealed partial class Module : IData<Module>
 // Generated:
 public void WriteFlags(Target target, uint value)
 {
-    Target.TypeInfo type = target.GetTypeInfo(DataType.Module);
+    Target.TypeInfo type = target.GetTypeInfo("Module");
     target.WriteField<uint>(Address, type, "Flags", value);
     Flags = value;
 }
@@ -275,16 +278,17 @@ Rules:
 * Property type must be a primitive integer or `bool`.
 * Property must have an explicit setter (`set` or `private set`, not
   `init`).
-* Class must use a native descriptor (`DataType.X` or `("Name")`);
-  the `ManagedTypeSource` is read-only.
-* Plain `[FieldOffset]` is not writable (no descriptor entry to update).
+* Class must use a descriptor source (`[CdacType("Name")]` or
+  `[CdacType(ManagedFullName = "...")]`); writes go through the
+  descriptor field offset regardless of which side supplied it.
+* Plain `[RawOffset]` is not writable (no descriptor entry to update).
 
 ## Worked examples
 
 ### Pure native descriptor read
 
 ```csharp
-[CdacType(DataType.MethodTable)]
+[CdacType(nameof(DataType.MethodTable))]
 internal sealed partial class MethodTable : IData<MethodTable>
 {
     [Field] public uint MTFlags { get; }
@@ -298,7 +302,7 @@ internal sealed partial class MethodTable : IData<MethodTable>
 ### Native descriptor + StoreAddress + Pointer + InstanceDataStart
 
 ```csharp
-[CdacType(DataType.Object)]
+[CdacType(nameof(DataType.Object))]
 internal sealed partial class Object : IData<Object>
 {
     [Field("m_pMethTab", Pointer = true)]
@@ -324,7 +328,7 @@ internal sealed partial class Lock : IData<Lock>
 ### Hybrid native + managed
 
 ```csharp
-[CdacType(DataType.Exception, ManagedFullName = "System.Exception")]
+[CdacType(nameof(DataType.Exception), ManagedFullName = "System.Exception")]
 internal sealed partial class Exception : IData<Exception>
 {
     [Field("_message")]          public TargetPointer Message { get; }
@@ -357,7 +361,7 @@ internal sealed partial class ConditionalWeakTableEntry : IData<ConditionalWeakT
 [CdacType]
 internal sealed partial class ImageDosHeader : IData<ImageDosHeader>
 {
-    [FieldOffset(60, LittleEndian = true)]
+    [RawOffset(60, LittleEndian = true)]
     public int Lfanew { get; }
 }
 ```
@@ -383,7 +387,7 @@ required.
 ### Writable native field
 
 ```csharp
-[CdacType(DataType.Module)]
+[CdacType(nameof(DataType.Module))]
 internal sealed partial class Module : IData<Module>
 {
     [Field(Writable = true)] public uint Flags { get; private set; }
@@ -399,7 +403,7 @@ module.WriteFlags(target, newFlags);
 ### Hand-written extension via `OnInit`
 
 ```csharp
-[CdacType(DataType.RangeSectionFragment)]
+[CdacType(nameof(DataType.RangeSectionFragment))]
 internal sealed partial class RangeSectionFragment : IData<RangeSectionFragment>
 {
     [Field] public TargetPointer RangeBegin { get; }
@@ -435,7 +439,7 @@ the consuming contract implementation (`Contracts\*.cs`), not in the
 IData class. Bad:
 
 ```csharp
-[CdacType(DataType.Thread)]
+[CdacType(nameof(DataType.Thread))]
 internal sealed partial class Thread : IData<Thread>
 {
     [Field] public uint State { get; }
@@ -449,7 +453,7 @@ internal sealed partial class Thread : IData<Thread>
 Better:
 
 ```csharp
-[CdacType(DataType.Thread)]
+[CdacType(nameof(DataType.Thread))]
 internal sealed partial class Thread : IData<Thread>
 {
     [Field] public uint State { get; }
@@ -574,7 +578,7 @@ which already has the context to decide.
 Avoid:
 
 ```csharp
-[CdacType(DataType.Thread)]
+[CdacType(nameof(DataType.Thread))]
 internal sealed partial class Thread : IData<Thread>
 {
     // BAD: forces a runtime-null-vs-non-null story onto every consumer
@@ -587,7 +591,7 @@ internal sealed partial class Thread : IData<Thread>
 Prefer:
 
 ```csharp
-[CdacType(DataType.Thread)]
+[CdacType(nameof(DataType.Thread))]
 internal sealed partial class Thread : IData<Thread>
 {
     // Pointer only. Caller materializes if/when needed:
@@ -606,7 +610,7 @@ are physically part of the enclosing type -- and the cost is bounded
 by the embedded struct's own field list. Use this freely:
 
 ```csharp
-[CdacType(DataType.LoaderAllocator)]
+[CdacType(nameof(DataType.LoaderAllocator))]
 internal sealed partial class LoaderAllocator : IData<LoaderAllocator>
 {
     // OK: ObjectHandle is laid out inline inside LoaderAllocator;
