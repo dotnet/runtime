@@ -713,6 +713,7 @@ struct RangeSection
         RANGE_SECTION_CODEHEAP      = 0x2,
         RANGE_SECTION_RANGELIST     = 0x4,
         RANGE_SECTION_INTERPRETER   = 0x8,
+        RANGE_SECTION_VIRTUALIP     = 0x10, // This range section contains virtual IPs (e.g. for ReadyToRun code) instead of actual code addresses in linear memory
     };
 
 #ifdef FEATURE_READYTORUN
@@ -1768,7 +1769,8 @@ public:
         return GetGCInfoToken(MethodToken).Info;
     }
 
-    TADDR JitTokenToModuleBase(const METHODTOKEN& MethodToken);
+    TADDR JitTokenToModuleFunctionsBase(const METHODTOKEN& MethodToken);
+    TADDR JitTokenToModuleRVABase(const METHODTOKEN& MethodToken);
 
     virtual PTR_RUNTIME_FUNCTION LazyGetFunctionEntry(EECodeInfo * pCodeInfo) = 0;
 
@@ -2308,6 +2310,25 @@ struct cdac_data<LoaderCodeHeap>
 
 //*****************************************************************************
 //
+// VirtualIPRangeSection: a linked list node tracking a range of virtual IPs
+// registered from a WASM R2R module.
+//
+//*****************************************************************************
+
+#ifdef TARGET_WASM
+struct VirtualIPRangeSection
+{
+    VirtualIPRangeSection(Range range, IJitManager* pJit, RangeSection::RangeSectionFlags flags, PTR_Module pR2RModule) : rangeSection(range, pJit, flags, pR2RModule), pNext(nullptr)
+    {
+    }
+
+    RangeSection        rangeSection;       // Synthetic RangeSection for compatibility with existing APIs
+    VirtualIPRangeSection* pNext;           // Next entry in the linked list
+};
+#endif // TARGET_WASM
+
+//*****************************************************************************
+//
 // This class manages IJitManagers and ICorJitCompilers.  It has only static
 // members.  It should never be constructed.
 //
@@ -2444,6 +2465,37 @@ public:
                                        RangeSection::RangeSectionFlags flags,
                                        PTR_Module pModule);
 
+#ifdef TARGET_WASM
+    // Register a virtual IP range for a WASM R2R module.
+    // Returns the start virtual IP assigned to this module.
+    static TADDR         AddVirtualIPRange(UINT32 numVirtualIPs,
+                                            IJitManager* pJit,
+                                            PTR_Module pModule);
+
+    // Find the VirtualIPRangeSection for a given virtual IP.
+    static VirtualIPRangeSection* FindVirtualIPRangeSection(UINT32 virtualIP);
+
+    // Returns true if the given PCODE is a virtual IP encoding (both low and high bits set).
+    static bool           IsVirtualIP(PCODE pc)
+    {
+        return (pc & 0x80000001) == 0x80000001;
+    }
+
+    // Encode a virtual IP value into a PCODE.
+    static PCODE          EncodeVirtualIP(UINT32 virtualIP)
+    {
+        _ASSERTE(virtualIP < (1u << 30));
+        return (PCODE)((virtualIP << 1) | 0x80000001);
+    }
+
+    // Decode a virtual IP value from a PCODE.
+    static UINT32         DecodeVirtualIP(PCODE pc)
+    {
+        _ASSERTE(IsVirtualIP(pc));
+        return (UINT32)((pc >> 1) & 0x3FFFFFFF);
+    }
+#endif // TARGET_WASM
+
     static void           DeleteRange(TADDR StartRange);
 
     static void           CleanupCodeHeaps();
@@ -2490,6 +2542,10 @@ private:
     SPTR_DECL(InterpreterJitManager, m_pInterpreterJitManager);
     SPTR_DECL(InterpreterCodeManager, m_pInterpreterCodeMan);
 #endif
+
+#ifdef TARGET_WASM
+    static VirtualIPRangeSection* s_pVirtualIPRangeList;
+#endif // TARGET_WASM
 
     static CrstStatic       m_JumpStubCrst;
     static CrstStatic       m_RangeCrst;        // Acquire before writing into m_CodeRangeList and m_DataRangeList
@@ -2687,6 +2743,7 @@ public:
                                          int EndIndex);
 };
 
+#ifdef FEATURE_COLD_R2R_CODE
 class HotColdMappingLookupTable
 {
 public:
@@ -2699,6 +2756,7 @@ public:
     //
     static int LookupMappingForMethod(ReadyToRunInfo* pInfo, ULONG MethodIndex);
 };
+#endif // FEATURE_COLD_R2R_CODE
 
 #endif // FEATURE_READYTORUN
 
@@ -3059,7 +3117,7 @@ public:
     TADDR       GetModuleBase()
     {
         WRAPPER_NO_CONTRACT;
-        return GetJitManager()->JitTokenToModuleBase(GetMethodToken());
+        return GetJitManager()->JitTokenToModuleRVABase(GetMethodToken());
     }
 
     PTR_RUNTIME_FUNCTION GetFunctionEntry();

@@ -881,6 +881,7 @@ protected:
 #endif
 
     PTR_PEAssembly GetPEAssembly() const { LIMITED_METHOD_DAC_CONTRACT; return m_pPEAssembly; }
+    PTR_VOID GetModuleBaseAddress() { return m_baseAddress; }
 
     void ApplyMetaData();
 
@@ -905,6 +906,8 @@ protected:
     }
 
     PTR_Assembly GetAssembly() const;
+
+
 
     MethodTable *GetGlobalMethodTable();
     bool         NeedsGlobalMethodTable();

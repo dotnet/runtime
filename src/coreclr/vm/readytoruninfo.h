@@ -16,6 +16,10 @@
 #include "wellknownattributes.h"
 #include "nativeimage.h"
 
+#ifndef TARGET_WASM
+#define FEATURE_COLD_R2R_CODE
+#endif // !TARGET_WASM
+
 typedef DPTR(struct READYTORUN_SECTION) PTR_READYTORUN_SECTION;
 
 class NativeImage;
@@ -146,8 +150,15 @@ class ReadyToRunInfo
     PTR_RUNTIME_FUNCTION            m_pRuntimeFunctions;
     DWORD                           m_nRuntimeFunctions;
 
+#ifdef TARGET_WASM
+    DWORD                           m_minFunctionTableIndex;
+    TADDR                           m_minVirtualIP;
+#endif // TARGET_WASM
+
+#ifdef FEATURE_COLD_R2R_CODE
     PTR_ULONG                       m_pHotColdMap;
     DWORD                           m_nHotColdMap;
+#endif // FEATURE_COLD_R2R_CODE
 
     PTR_IMAGE_DATA_DIRECTORY        m_pSectionDelayLoadMethodCallThunks;
     PTR_IMAGE_DATA_DIRECTORY        m_pSectionDebugInfo;
@@ -205,6 +216,15 @@ public:
 
     PTR_ReadyToRunLoadedImage GetImage() const { return m_pComposite->GetImage(); }
     IMAGE_DATA_DIRECTORY * FindSection(ReadyToRunSectionType type) const { return m_pComposite->FindSection(type); }
+
+    PTR_RUNTIME_FUNCTION GetRuntimeFunctions() const { return m_pRuntimeFunctions; }
+    DWORD GetRuntimeFunctionCount() const { return m_nRuntimeFunctions; }
+
+#ifdef TARGET_WASM
+    DWORD GetMinFunctionTableIndex() const { return m_minFunctionTableIndex; }
+    TADDR GetMinVirtualIP() const { return m_minVirtualIP; }
+    void RegisterVirtualIPRange(Module* pModule);
+#endif // TARGET_WASM
 
     void RegisterResumptionStub(PCODE stubEntryPoint);
 
@@ -401,8 +421,10 @@ struct cdac_data<ReadyToRunInfo>
     static constexpr size_t CompositeInfo = offsetof(ReadyToRunInfo, m_pCompositeInfo);
     static constexpr size_t NumRuntimeFunctions = offsetof(ReadyToRunInfo, m_nRuntimeFunctions);
     static constexpr size_t RuntimeFunctions = offsetof(ReadyToRunInfo, m_pRuntimeFunctions);
+#ifdef FEATURE_COLD_R2R_CODE
     static constexpr size_t NumHotColdMap = offsetof(ReadyToRunInfo, m_nHotColdMap);
     static constexpr size_t HotColdMap = offsetof(ReadyToRunInfo, m_pHotColdMap);
+    #endif // FEATURE_COLD_R2R_CODE
     static constexpr size_t DelayLoadMethodCallThunks = offsetof(ReadyToRunInfo, m_pSectionDelayLoadMethodCallThunks);
     static constexpr size_t DebugInfoSection = offsetof(ReadyToRunInfo, m_pSectionDebugInfo);
     static constexpr size_t ExceptionInfoSection = offsetof(ReadyToRunInfo, m_pSectionExceptionInfo);

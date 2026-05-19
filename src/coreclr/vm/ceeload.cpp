@@ -3591,6 +3591,10 @@ void Module::RunEagerFixupsUnlocked()
         }
     }
 
+#ifdef TARGET_WASM
+    // For WASM, register virtual IP ranges instead of real code address ranges.
+    GetReadyToRunInfo()->RegisterVirtualIPRange(this);
+#else
     TADDR base = dac_cast<TADDR>(pNativeImage->GetBase());
 
     ExecutionManager::AddCodeRange(
@@ -3598,6 +3602,7 @@ void Module::RunEagerFixupsUnlocked()
         ExecutionManager::GetReadyToRunJitManager(),
         RangeSection::RANGE_SECTION_NONE,
         this /* pHeapListOrZapModule */);
+#endif // TARGET_WASM
 }
 #endif // !DACCESS_COMPILE
 

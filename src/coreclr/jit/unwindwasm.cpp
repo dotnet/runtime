@@ -60,7 +60,8 @@ void Compiler::unwindReserveFunc(FuncInfoDsc* func)
 {
     bool  isFunclet   = func->IsFunclet();
     bool  isColdCode  = false;
-    ULONG encodedSize = emitter::SizeOfULEB128(func->funWasmFrameSize);
+    ULONG encodedSize = emitter::SizeOfULEB128(func->funWasmFrameSize)
+                      + emitter::SizeOfULEB128(func->funWasmVirtualIPCount);
 
     eeReserveUnwindInfo(isFunclet, isColdCode, encodedSize);
 }
@@ -104,11 +105,13 @@ void Compiler::unwindEmitFunc(FuncInfoDsc* func, void* pHotCode, void* pColdCode
     //
     pColdCode = nullptr;
 
-    // Unwind info is just the frame size.
-    // Record frame size with ULEB128 compression.
+    // Unwind info is the frame size followed by the virtual IP count,
+    // both encoded as ULEB128.
     //
-    uint8_t buffer[5];
+    uint8_t buffer[10];
     ULONG   encodedSize = (ULONG)GetEmitter()->emitOutputULEB128(buffer, func->funWasmFrameSize);
+    encodedSize += (ULONG)GetEmitter()->emitOutputULEB128(buffer + encodedSize, func->funWasmVirtualIPCount);
+    // WASM-TODO, sum total of virtual IP size should be recorded into the GC info for the method as well.
     assert(encodedSize <= sizeof(buffer));
 
     eeAllocUnwindInfo((BYTE*)pHotCode, (BYTE*)pColdCode, startOffset, endOffset, encodedSize, (BYTE*)&buffer,

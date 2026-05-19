@@ -1775,6 +1775,7 @@ struct FuncInfoDsc
 
     jitstd::vector<WasmLocalsDecl>* funWasmLocalDecls;
     unsigned funWasmFrameSize;
+    unsigned funWasmVirtualIPCount;
     bool needsUnwindableFrame;
     emitLocation* startLoc;
     emitLocation* endLoc;

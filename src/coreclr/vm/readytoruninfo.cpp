@@ -882,6 +882,22 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
         m_nRuntimeFunctions = 0;
     }
 
+#ifdef TARGET_WASM
+    // For WASM, the min function table index is stored as a u32 immediately after the
+    // sentinel entry (0xFFFFFFFF) at the end of the RUNTIME_FUNCTION table.
+    if (m_nRuntimeFunctions > 0)
+    {
+        DWORD* pSentinel = (DWORD*)&m_pRuntimeFunctions[m_nRuntimeFunctions];
+        _ASSERTE(*pSentinel == 0xFFFFFFFF);
+        m_minFunctionTableIndex = *(pSentinel + 1);
+    }
+    else
+    {
+        m_minFunctionTableIndex = 0;
+    }
+#endif // TARGET_WASM
+
+#ifdef FEATURE_COLD_R2R_CODE
     IMAGE_DATA_DIRECTORY * pHotColdMapDir = m_pComposite->FindSection(ReadyToRunSectionType::HotColdMap);
     if (pHotColdMapDir != NULL)
     {
@@ -892,6 +908,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
     {
         m_nHotColdMap = 0;
     }
+#endif // FEATURE_COLD_R2R_CODE
 
     IMAGE_DATA_DIRECTORY * pImportSectionsDir = m_pComposite->FindSection(ReadyToRunSectionType::ImportSections);
     if (pImportSectionsDir != NULL)
@@ -1377,17 +1394,20 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     _ASSERTE(id < m_nRuntimeFunctions);
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
     pEntryPoint = dac_cast<TADDR>(GetImage()->GetBase()) + m_pRuntimeFunctions[id].BeginAddress;
+    m_pCompositeInfo->SetMethodDescForEntryPointInNativeImage(pEntryPoint, pMD);
 #else
     // When we have portable entrypoints enabled, the R2R image contains actual entrypoints.
 #ifdef FEATURE_TIERED_COMPILATION
 #error "Portable entry points are not currently supported with tiered compilation, as the interaction between the two is not yet fully worked out."
 #endif
     PCODE actualEntryPoint;
-    actualEntryPoint = m_pRuntimeFunctions[id].BeginAddress;
+    actualEntryPoint = GetMinFunctionTableIndex() + id;
+    PCODE virtualEntrypointIP;
+    virtualEntrypointIP = GetMinVirtualIP() + m_pRuntimeFunctions[id].BeginAddress;
     pEntryPoint = pMD->GetTemporaryEntryPoint();
     PortableEntryPoint::SetActualCode(pEntryPoint, actualEntryPoint);
+    m_pCompositeInfo->SetMethodDescForEntryPointInNativeImage(virtualEntrypointIP, pMD);
 #endif
-    m_pCompositeInfo->SetMethodDescForEntryPointInNativeImage(pEntryPoint, pMD);
 
 #ifdef PROFILING_SUPPORTED
         {
@@ -1585,7 +1605,11 @@ MethodDesc * ReadyToRunInfo::MethodIterator::GetMethodDesc_NoRestore()
     }
 
     _ASSERTE(id < m_pInfo->m_nRuntimeFunctions);
+#ifdef TARGET_WASM
+    PCODE pEntryPoint = ExecutionManager::EncodeVirtualIP(m_pInfo->GetMinVirtualIP() + m_pInfo->m_pRuntimeFunctions[id].BeginAddress);
+#else
     PCODE pEntryPoint = dac_cast<TADDR>(m_pInfo->GetImage()->GetBase()) + m_pInfo->m_pRuntimeFunctions[id].BeginAddress;
+#endif
 
     return m_pInfo->GetMethodDescForEntryPoint(pEntryPoint);
 }
@@ -2811,4 +2835,56 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
     }
 }
 #endif // FEATURE_STUBPRECODE_DYNAMIC_HELPERS
+
+#ifdef TARGET_WASM
+// Decode a ULEB128-encoded value that must fit in a UINT32.
+// Advances *ppData past the encoded bytes. Asserts if the value overflows 32 bits.
+UINT32 DecodeULEB128AsU32(PTR_BYTE* ppData)
+{
+    UINT32 result = 0;
+    int shift = 0;
+    BYTE b;
+    do
+    {
+        b = *(*ppData)++;
+        _ASSERTE(shift < 35); // A valid u32 ULEB128 is at most 5 bytes
+        result |= (UINT32)(b & 0x7F) << shift;
+        shift += 7;
+    } while (b & 0x80);
+    return result;
+}
+
+void ReadyToRunInfo::RegisterVirtualIPRange(Module* pModule)
+{
+    CONTRACTL {
+        THROWS;
+        GC_NOTRIGGER;
+        PRECONDITION(CheckPointer(pModule));
+    } CONTRACTL_END;
+
+    if (m_nRuntimeFunctions == 0)
+        return;
+
+    TADDR imageBase = dac_cast<TADDR>(m_pComposite->GetLayout()->GetBase());
+
+    // The last RUNTIME_FUNCTION entry's BeginAddress is the virtual IP index of that entry.
+    // Total virtual IPs = lastEntry.BeginAddress + virtualIPCount(lastEntry)
+    T_RUNTIME_FUNCTION* pLastEntry = &m_pRuntimeFunctions[m_nRuntimeFunctions - 1];
+    UINT32 lastEntryVirtualIPIndex = pLastEntry->BeginAddress;
+
+    // Decode the virtual IP count from the last entry's unwind data.
+    // Unwind format: ULEB128(frameSize) ULEB128(virtualIPCount)
+    PTR_BYTE pUnwindData = dac_cast<PTR_BYTE>(imageBase + pLastEntry->UnwindData);
+    DecodeULEB128AsU32(&pUnwindData); // skip frame size
+    UINT32 lastEntryVIPCount = DecodeULEB128AsU32(&pUnwindData);
+
+    UINT32 totalVirtualIPs = lastEntryVirtualIPIndex + lastEntryVIPCount;
+
+    m_minVirtualIP = ExecutionManager::AddVirtualIPRange(
+        totalVirtualIPs,
+        ExecutionManager::GetReadyToRunJitManager(),
+        pModule);
+}
+#endif // TARGET_WASM
+
 #endif // DACCESS_COMPILE

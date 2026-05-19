@@ -522,16 +522,13 @@ RtlVirtualUnwind (
     return nullptr;
 }
 
-FORCEINLINE
+UINT32 DecodeULEB128AsU32(PTR_BYTE* ppData);
+
 ULONG
 RtlpGetFunctionEndAddress (
     _In_ PT_RUNTIME_FUNCTION FunctionEntry,
     _In_ TADDR ImageBase
-    )
-{
-    PORTABILITY_ASSERT("The function RtlpGetFunctionEndAddress is not implemented on wasm");
-    return 0;
-}
+    );
 
 #define RUNTIME_FUNCTION__BeginAddress(FunctionEntry)               ((FunctionEntry)->BeginAddress)
 #define RUNTIME_FUNCTION__SetBeginAddress(FunctionEntry,address)    ((FunctionEntry)->BeginAddress = (address))

@@ -15,6 +15,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     {
         private List<MethodWithGCInfo> _methodNodes;
         private Dictionary<MethodWithGCInfo, int> _insertedMethodNodes;
+        private Dictionary<ValueTuple<MethodWithGCInfo, int>, uint> _methodToVirtualIP;
         private readonly NodeFactory _nodeFactory;
         private int _tableSize = -1;
 
@@ -61,6 +62,80 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
+        public uint GetWasmVirtualIP(MethodWithGCInfo lookupMethod, int lookupFrameIndex)
+        {
+            bool isWasm = _nodeFactory.Target.Architecture == TargetArchitecture.Wasm32;
+
+            if (!isWasm)
+            {
+                // For non-WASM targets, virtual IPs are not used, so throw
+                throw new InvalidOperationException("Virtual IPs are not used on non-WASM targets.");
+            }
+
+            if (_methodToVirtualIP != null)
+            {
+                return _methodToVirtualIP[(lookupMethod, lookupFrameIndex)];
+            }
+
+            if (_methodNodes == null)
+            {
+                LayoutRuntimeFunctions();
+            }
+
+            Dictionary<ValueTuple<MethodWithGCInfo, int>, uint> methodToVirtualIP = new ();
+
+            // For WASM, track virtual IP index for each RUNTIME_FUNCTION entry
+            uint currentVirtualIP = 0;
+
+            foreach (MethodWithGCInfo method in _methodNodes)
+            {
+                int[] funcletOffsets = method.GCInfoNode.CalculateFuncletOffsets(_nodeFactory);
+
+                for (int frameIndex = 0; frameIndex < method.FrameInfos.Length; frameIndex++)
+                {
+                    FrameInfo frameInfo = method.FrameInfos[frameIndex];
+                    methodToVirtualIP.Add((method, frameIndex), currentVirtualIP);
+
+                    // Advance the virtual IP by the number of virtual IPs for this frame
+                    uint virtualIPCount = GetVirtualIPCountFromUnwindBlob(frameInfo.BlobData);
+                    currentVirtualIP += virtualIPCount;
+                }
+            }
+
+            _methodToVirtualIP = methodToVirtualIP;
+            return _methodToVirtualIP[(lookupMethod, lookupFrameIndex)];
+        }
+
+        /// <summary>
+        /// Decode a ULEB128 value from a byte array starting at the given offset.
+        /// Returns the decoded value and advances the offset past the encoded bytes.
+        /// </summary>
+        private static uint DecodeULEB128(byte[] data, ref int offset)
+        {
+            uint result = 0;
+            int shift = 0;
+            while (offset < data.Length)
+            {
+                byte b = data[offset++];
+                result |= (uint)(b & 0x7F) << shift;
+                if ((b & 0x80) == 0)
+                    break;
+                shift += 7;
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Read the virtual IP count from a WASM unwind blob.
+        /// The blob format is: ULEB128(frameSize) followed by ULEB128(virtualIPCount).
+        /// </summary>
+        private static uint GetVirtualIPCountFromUnwindBlob(byte[] blobData)
+        {
+            int offset = 0;
+            DecodeULEB128(blobData, ref offset); // skip frame size
+            return DecodeULEB128(blobData, ref offset) * 2; // Multiply by 2 to force all virtual IPs to be an even number.
+        }
+
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             if (relocsOnly)
@@ -77,6 +152,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             uint runtimeFunctionIndex = 0;
             List<uint> mapping = new List<uint>();
+
+            bool isWasm = _nodeFactory.Target.Architecture == TargetArchitecture.Wasm32;
 
             for (int cold = 0; cold < 2; cold++)
             {
@@ -124,9 +201,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             symbol = method;
                         }
 
-                        if (_nodeFactory.Target.Architecture == TargetArchitecture.Wasm32)
+                        if (isWasm)
                         {
-                            runtimeFunctionsBuilder.EmitReloc(symbol, RelocType.WASM_TABLE_INDEX_I32, frameIndex);
+                            // Emit the virtual IP index as a plain u32 (not a reloc)
+                            runtimeFunctionsBuilder.EmitUInt(GetWasmVirtualIP(method, frameIndex));
                         }
                         else
                         {
@@ -157,6 +235,20 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // Emit sentinel entry
             runtimeFunctionsBuilder.EmitUInt(~0u);
 
+            if (isWasm)
+            {
+                // After sentinel, emit a WASM_TABLE_INDEX_I32 reloc pointing to the first
+                // compiled method. This records the min function table index in the file.
+                if (_methodNodes.Count > 0)
+                {
+                    runtimeFunctionsBuilder.EmitReloc(_methodNodes[0], RelocType.WASM_TABLE_INDEX_I32, delta: 0);
+                }
+                else
+                {
+                    runtimeFunctionsBuilder.EmitUInt(0);
+                }
+            }
+
             _tableSize = runtimeFunctionsBuilder.CountBytes;
             return runtimeFunctionsBuilder.ToObjectData();
         }
@@ -164,7 +256,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         /// <summary>
         /// Returns the runtime functions table size and excludes the 4 byte sentinel entry at the end (used by
         /// the runtime in NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod) so that it's not treated as
-        /// part of the table itself.
+        /// part of the table itself. For WASM, also excludes the trailing 4-byte min table index.
         /// </summary>
         public int TableSizeExcludingSentinel
         {
@@ -179,6 +271,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override int ClassCode => (int)ObjectNodeOrder.RuntimeFunctionsTableNode;
 
-        internal const int SentinelSizeAdjustment = -4;
+        internal int SentinelSizeAdjustment =>
+            _nodeFactory.Target.Architecture == TargetArchitecture.Wasm32 ? -8 : -4;
     }
 }
