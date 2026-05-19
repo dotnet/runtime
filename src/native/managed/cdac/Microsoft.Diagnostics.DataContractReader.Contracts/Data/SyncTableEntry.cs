@@ -1,14 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.Diagnostics.DataContractReader.Generated;
+
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class SyncTableEntry : IData<SyncTableEntry>
+[CdacType(nameof(DataType.SyncTableEntry))]
+internal sealed partial class SyncTableEntry : IData<SyncTableEntry>
 {
-    static SyncTableEntry IData<SyncTableEntry>.Create(Target target, TargetPointer address)
-        => new SyncTableEntry(target, address);
+    public SyncBlock? SyncBlock { get; private set; }
+    public Object? Object { get; private set; }
 
-    public SyncTableEntry(Target target, TargetPointer address)
+    partial void OnInit(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.SyncTableEntry);
 
@@ -20,7 +23,4 @@ internal sealed class SyncTableEntry : IData<SyncTableEntry>
         if (objectPointer != TargetPointer.Null && (objectPointer & 1) == 0) // Defensive check: if the lowest bit is set, this is a free sync block entry and the pointer is not valid.
             Object = target.ProcessedData.GetOrAdd<Object>(objectPointer);
     }
-
-    public SyncBlock? SyncBlock { get; init; }
-    public Object? Object { get; init; }
 }

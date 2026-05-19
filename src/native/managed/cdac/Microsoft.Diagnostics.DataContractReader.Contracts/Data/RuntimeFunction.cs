@@ -1,27 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.Diagnostics.DataContractReader.Generated;
+
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class RuntimeFunction : IData<RuntimeFunction>
+[CdacType(nameof(DataType.RuntimeFunction))]
+internal sealed partial class RuntimeFunction : IData<RuntimeFunction>
 {
-    static RuntimeFunction IData<RuntimeFunction>.Create(Target target, TargetPointer address)
-        => new RuntimeFunction(target, address);
+    [Field] public uint BeginAddress { get; }
 
-    public RuntimeFunction(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.RuntimeFunction);
-
-        BeginAddress = target.ReadField<uint>(address, type, nameof(BeginAddress));
-
-        // Not all platforms define EndAddress
-        if (type.Fields.ContainsKey(nameof(EndAddress)))
-            EndAddress = target.ReadField<uint>(address, type, nameof(EndAddress));
-
-        UnwindData = target.ReadField<uint>(address, type, nameof(UnwindData));
-    }
-
-    public uint BeginAddress { get; }
-    public uint? EndAddress { get; }
-    public uint UnwindData { get; }
+    // Not all platforms define EndAddress
+    [Field] public uint? EndAddress { get; }
+    [Field] public uint UnwindData { get; }
 }

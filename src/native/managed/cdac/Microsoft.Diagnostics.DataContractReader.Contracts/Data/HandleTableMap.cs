@@ -2,16 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-
+using Microsoft.Diagnostics.DataContractReader.Generated;
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class HandleTableMap : IData<HandleTableMap>
+[CdacType(nameof(DataType.HandleTableMap))]
+internal sealed partial class HandleTableMap : IData<HandleTableMap>
 {
-    static HandleTableMap IData<HandleTableMap>.Create(Target target, TargetPointer address)
-        => new HandleTableMap(target, address);
+    [Field] public TargetPointer Next { get; }
+    public List<TargetPointer> BucketsPtr { get; } = [];
 
-    public HandleTableMap(Target target, TargetPointer address)
+    partial void OnInit(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.HandleTableMap);
         TargetPointer bucketsPtr = target.ReadPointerField(address, type, nameof(BucketsPtr));
@@ -21,9 +22,5 @@ internal sealed class HandleTableMap : IData<HandleTableMap>
             TargetPointer bucketPtr = target.ReadPointer(bucketsPtr + (ulong)(i * target.PointerSize));
             BucketsPtr.Add(bucketPtr);
         }
-        Next = target.ReadPointerField(address, type, nameof(Next));
     }
-
-    public List<TargetPointer> BucketsPtr { get; init; } = new List<TargetPointer>();
-    public TargetPointer Next { get; init; }
 }

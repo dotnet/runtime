@@ -1,22 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.Diagnostics.DataContractReader.Generated;
+
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class Frame : IData<Frame>
+[CdacType(nameof(DataType.Frame))]
+internal sealed partial class Frame : IData<Frame>
 {
-    static Frame IData<Frame>.Create(Target target, TargetPointer address)
-        => new Frame(target, address);
+    [Field] public TargetPointer Next { get; }
+    public TargetPointer Identifier { get; private set; }
 
-    public Frame(Target target, TargetPointer address)
+    partial void OnInit(Target target, TargetPointer address)
     {
-        Address = address;
-        Target.TypeInfo type = target.GetTypeInfo(DataType.Frame);
-        Next = target.ReadPointerField(address, type, nameof(Next));
         Identifier = target.ReadPointer(address);
     }
-
-    public TargetPointer Address { get; init; }
-    public TargetPointer Identifier { get; init; }
-    public TargetPointer Next { get; init; }
 }

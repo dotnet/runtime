@@ -1,22 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.Diagnostics.DataContractReader.Generated;
+
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal class FramedMethodFrame : IData<FramedMethodFrame>
+[CdacType(nameof(DataType.FramedMethodFrame))]
+internal partial class FramedMethodFrame : IData<FramedMethodFrame>
 {
-    static FramedMethodFrame IData<FramedMethodFrame>.Create(Target target, TargetPointer address)
-        => new FramedMethodFrame(target, address);
-
-    public FramedMethodFrame(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.FramedMethodFrame);
-        TransitionBlockPtr = target.ReadPointerField(address, type, nameof(TransitionBlockPtr));
-        MethodDescPtr = target.ReadPointerField(address, type, nameof(MethodDescPtr));
-        Address = address;
-    }
-
-    public TargetPointer Address { get; }
-    public TargetPointer TransitionBlockPtr { get; }
-    public TargetPointer MethodDescPtr { get; }
+    [Field] public TargetPointer TransitionBlockPtr { get; }
+    [Field] public TargetPointer MethodDescPtr { get; }
 }

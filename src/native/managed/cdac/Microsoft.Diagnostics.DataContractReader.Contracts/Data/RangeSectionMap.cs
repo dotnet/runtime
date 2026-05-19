@@ -1,19 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.Diagnostics.DataContractReader.Generated;
+
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class RangeSectionMap : IData<RangeSectionMap>
+[CdacType(nameof(DataType.RangeSectionMap))]
+internal sealed partial class RangeSectionMap : IData<RangeSectionMap>
 {
-    static RangeSectionMap IData<RangeSectionMap>.Create(Target target, TargetPointer address)
-        => new RangeSectionMap(target, address);
-
-    public RangeSectionMap(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.RangeSectionMap);
-        TopLevelData = new TargetPointer(address + (ulong)type.Fields[nameof(TopLevelData)].Offset);
-    }
-
-    // pointer to first element
-    public TargetPointer TopLevelData { get; init; }
+    /// <summary>Pointer to first element.</summary>
+    [FieldAddress]
+    public TargetPointer TopLevelData { get; }
 }

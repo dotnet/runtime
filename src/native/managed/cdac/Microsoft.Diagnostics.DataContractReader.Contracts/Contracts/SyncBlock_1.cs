@@ -109,9 +109,9 @@ internal readonly struct SyncBlock_1 : ISyncBlock
         if (interopInfo == null)
             return false;
 
-        rcw = interopInfo.RCW & ~1ul;
-        ccw = interopInfo.CCW == 1 ? TargetPointer.Null : interopInfo.CCW;
-        ccf = interopInfo.CCF == 1 ? TargetPointer.Null : interopInfo.CCF;
+        rcw = (interopInfo.RCW ?? TargetPointer.Null) & ~1ul;
+        ccw = interopInfo.CCW == 1 ? TargetPointer.Null : (interopInfo.CCW ?? TargetPointer.Null);
+        ccf = interopInfo.CCF == 1 ? TargetPointer.Null : (interopInfo.CCF ?? TargetPointer.Null);
         return rcw != TargetPointer.Null || ccw != TargetPointer.Null || ccf != TargetPointer.Null;
     }
 }

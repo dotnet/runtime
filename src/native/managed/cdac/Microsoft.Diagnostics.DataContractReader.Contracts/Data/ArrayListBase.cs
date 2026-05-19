@@ -1,24 +1,27 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
+using Microsoft.Diagnostics.DataContractReader.Generated;
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
 /// <summary>
 /// Encapsulates structure and logic for ArrayListBase implemented in arraylist.h
 /// </summary>
-internal sealed class ArrayListBase : IData<ArrayListBase>
+[CdacType(nameof(DataType.ArrayListBase))]
+internal sealed partial class ArrayListBase : IData<ArrayListBase>
 {
-    static ArrayListBase IData<ArrayListBase>.Create(Target target, TargetPointer address) => new ArrayListBase(target, address);
-    public ArrayListBase(Target target, TargetPointer address)
+    [Field] public uint Count { get; }
+
+    [FieldAddress]
+    public TargetPointer FirstBlock { get; }
+
+    public List<ArrayListBlock> Blocks { get; } = [];
+    public List<TargetPointer> Elements { get; } = [];
+
+    partial void OnInit(Target target, TargetPointer address)
     {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.ArrayListBase);
-
-        Count = target.ReadField<uint>(address, type, nameof(Count));
-        FirstBlock = address + (ulong)type.Fields[nameof(FirstBlock)].Offset;
-
         TargetPointer next = FirstBlock;
         while (next != TargetPointer.Null)
         {
@@ -42,34 +45,24 @@ internal sealed class ArrayListBase : IData<ArrayListBase>
             }
         }
     }
+}
 
-    public uint Count { get; init; }
-    public TargetPointer FirstBlock { get; init; }
+[CdacType(nameof(DataType.ArrayListBlock))]
+internal sealed partial class ArrayListBlock : IData<ArrayListBlock>
+{
+    [Field] public TargetPointer Next { get; }
+    [Field] public uint Size { get; }
 
-    public List<ArrayListBlock> Blocks { get; init; } = [];
-    public List<TargetPointer> Elements { get; init; } = [];
+    [FieldAddress]
+    public TargetPointer ArrayStart { get; }
 
-    internal sealed class ArrayListBlock : IData<ArrayListBlock>
+    public List<TargetPointer> Elements { get; } = [];
+
+    partial void OnInit(Target target, TargetPointer address)
     {
-        static ArrayListBlock IData<ArrayListBlock>.Create(Target target, TargetPointer address) => new ArrayListBlock(target, address);
-        public ArrayListBlock(Target target, TargetPointer address)
+        for (ulong i = 0; i < Size; i++)
         {
-            Target.TypeInfo type = target.GetTypeInfo(DataType.ArrayListBlock);
-
-            Next = target.ReadPointerField(address, type, nameof(Next));
-            Size = target.ReadField<uint>(address, type, nameof(Size));
-            ArrayStart = address + (ulong)type.Fields[nameof(ArrayStart)].Offset;
-
-            for (ulong i = 0; i < Size; i++)
-            {
-                Elements.Add(target.ReadPointer(ArrayStart + (i * (ulong)target.PointerSize)));
-            }
+            Elements.Add(target.ReadPointer(ArrayStart + (i * (ulong)target.PointerSize)));
         }
-
-        public TargetPointer Next { get; init; }
-        public uint Size { get; init; }
-        public TargetPointer ArrayStart { get; init; }
-
-        public List<TargetPointer> Elements { get; init; } = [];
     }
 }

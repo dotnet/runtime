@@ -2,15 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Microsoft.Diagnostics.DataContractReader.Generated;
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class ComInterfaceEntry : IData<ComInterfaceEntry>
+[CdacType(nameof(DataType.ComInterfaceEntry))]
+internal sealed partial class ComInterfaceEntry : IData<ComInterfaceEntry>
 {
-    static ComInterfaceEntry IData<ComInterfaceEntry>.Create(Target target, TargetPointer address)
-        => new ComInterfaceEntry(target, address);
+    public Guid IID { get; private set; }
 
-    public ComInterfaceEntry(Target target, TargetPointer address)
+    partial void OnInit(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.ComInterfaceEntry);
         // IID is a 16-byte GUID
@@ -18,6 +19,4 @@ internal sealed class ComInterfaceEntry : IData<ComInterfaceEntry>
         target.ReadBuffer(address + (ulong)type.Fields[nameof(IID)].Offset, iidBytes);
         IID = new Guid(iidBytes);
     }
-
-    public Guid IID { get; init; }
 }

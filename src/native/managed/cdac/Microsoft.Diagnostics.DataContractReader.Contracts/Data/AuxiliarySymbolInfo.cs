@@ -1,21 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.Diagnostics.DataContractReader.Generated;
+
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class AuxiliarySymbolInfo : IData<AuxiliarySymbolInfo>
+[CdacType(nameof(DataType.AuxiliarySymbolInfo))]
+internal sealed partial class AuxiliarySymbolInfo : IData<AuxiliarySymbolInfo>
 {
-    static AuxiliarySymbolInfo IData<AuxiliarySymbolInfo>.Create(Target target, TargetPointer address)
-        => new AuxiliarySymbolInfo(target, address);
-
-    public AuxiliarySymbolInfo(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.AuxiliarySymbolInfo);
-
-        Address = target.ReadCodePointerField(address, type, nameof(Address));
-        Name = target.ReadPointerField(address, type, nameof(Name));
-    }
-
-    public TargetCodePointer Address { get; init; }
-    public TargetPointer Name { get; init; }
+    /// <summary>
+    /// Code address of the auxiliary symbol. Named <c>CodeAddress</c> on the C#
+    /// side to avoid colliding with the generator-emitted <c>Address</c>
+    /// instance property; aliased to the descriptor field <c>Address</c>.
+    /// </summary>
+    [Field("Address")] public TargetCodePointer CodeAddress { get; }
+    [Field] public TargetPointer Name { get; }
 }
