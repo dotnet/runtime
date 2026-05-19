@@ -4359,63 +4359,7 @@ namespace System
             if (typeof(T) == typeof(Int128) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<Int128, MinCalc<Int128>>(Cast<T, Int128>(span));
             if (typeof(T) == typeof(UInt128) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<UInt128, MinCalc<UInt128>>(Cast<T, UInt128>(span));
 
-            T? value = default;
-            int i = 0;
-
-            if (value is null)
-            {
-                do
-                {
-                    if (i >= span.Length)
-                    {
-                        return value;
-                    }
-                    value = span[i++];
-                }
-                while (value is null);
-
-                while (i < span.Length)
-                {
-                    T next = span[i++];
-                    if (next is not null && comparer.Compare(next, value) < 0)
-                    {
-                        value = next;
-                    }
-                }
-            }
-            else
-            {
-                if (i >= span.Length)
-                {
-                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_NoElements);
-                }
-
-                value = span[i++];
-                if (comparer == Comparer<T>.Default)
-                {
-                    while (i < span.Length)
-                    {
-                        T next = span[i++];
-                        if (Comparer<T>.Default.Compare(next, value) < 0)
-                        {
-                            value = next;
-                        }
-                    }
-                }
-                else
-                {
-                    while (i < span.Length)
-                    {
-                        T next = span[i++];
-                        if (comparer.Compare(next, value) < 0)
-                        {
-                            value = next;
-                        }
-                    }
-                }
-            }
-
-            return value;
+            return MinMax<T, MinDirection>(span, comparer);
         }
 
         /// <summary>
@@ -4464,6 +4408,34 @@ namespace System
             if (typeof(T) == typeof(Int128) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<Int128, MaxCalc<Int128>>(Cast<T, Int128>(span));
             if (typeof(T) == typeof(UInt128) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<UInt128, MaxCalc<UInt128>>(Cast<T, UInt128>(span));
 
+            return MinMax<T, MaxDirection>(span, comparer);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static ReadOnlySpan<TTo> Cast<TFrom, TTo>(ReadOnlySpan<TFrom> span)
+            where TTo : struct
+            => MemoryMarshal.CreateReadOnlySpan(
+                ref Unsafe.As<TFrom, TTo>(ref MemoryMarshal.GetReference(span)),
+                span.Length);
+
+        private interface IMinMaxDirection
+        {
+            static abstract bool CompareResult(int comparison);
+        }
+
+        private readonly struct MinDirection : IMinMaxDirection
+        {
+            public static bool CompareResult(int comparison) => comparison < 0;
+        }
+
+        private readonly struct MaxDirection : IMinMaxDirection
+        {
+            public static bool CompareResult(int comparison) => comparison > 0;
+        }
+
+        private static T? MinMax<T, TDirection>(this ReadOnlySpan<T> span, IComparer<T> comparer)
+            where TDirection : struct, IMinMaxDirection
+        {
             T? value = default;
             int i = 0;
 
@@ -4475,6 +4447,7 @@ namespace System
                     {
                         return value;
                     }
+
                     value = span[i++];
                 }
                 while (value is null);
@@ -4482,7 +4455,7 @@ namespace System
                 while (i < span.Length)
                 {
                     T next = span[i++];
-                    if (next is not null && comparer.Compare(next, value) > 0)
+                    if (next is not null && TDirection.CompareResult(comparer.Compare(next, value)))
                     {
                         value = next;
                     }
@@ -4501,7 +4474,7 @@ namespace System
                     while (i < span.Length)
                     {
                         T next = span[i++];
-                        if (Comparer<T>.Default.Compare(next, value) > 0)
+                        if (TDirection.CompareResult(Comparer<T>.Default.Compare(next, value)))
                         {
                             value = next;
                         }
@@ -4512,7 +4485,7 @@ namespace System
                     while (i < span.Length)
                     {
                         T next = span[i++];
-                        if (comparer.Compare(next, value) > 0)
+                        if (TDirection.CompareResult(comparer.Compare(next, value)))
                         {
                             value = next;
                         }
@@ -4522,13 +4495,6 @@ namespace System
 
             return value;
         }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ReadOnlySpan<TTo> Cast<TFrom, TTo>(ReadOnlySpan<TFrom> span)
-            where TTo : struct
-            => MemoryMarshal.CreateReadOnlySpan(
-                ref Unsafe.As<TFrom, TTo>(ref MemoryMarshal.GetReference(span)),
-                span.Length);
 
         private interface IMinMaxCalc<T> where T : struct, IBinaryInteger<T>
         {
