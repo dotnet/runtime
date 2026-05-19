@@ -179,8 +179,9 @@ else()
 
   include(${CLR_SRC_NATIVE_DIR}/external/llvm-libunwind.cmake)
 
-  list(APPEND FULL_RUNTIME_SOURCES ${LLVM_LIBUNWIND_SOURCES})
-  set(RUNTIME_SOURCES_ARCH_ASM ${LLVM_LIBUNWIND_ASM_SOURCES})
+  # Store libunwind sources separately so Full/CMakeLists.txt can build them
+  # as an OBJECT library and localize their hidden symbols.
+  set(LLVM_LIBUNWIND_ALL_SOURCES ${LLVM_LIBUNWIND_SOURCES} ${LLVM_LIBUNWIND_ASM_SOURCES})
 
   set(ASM_SUFFIX S)
 endif()

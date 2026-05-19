@@ -30,6 +30,33 @@ add_library(Runtime.ServerGC STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOU
 add_dependencies(Runtime.ServerGC aot_eventing_headers)
 target_link_libraries(Runtime.ServerGC PRIVATE aotminipal nativeaot_cdac_contract_descriptor nativeaot_gc_wks_descriptor nativeaot_gc_svr_descriptor)
 
+# Localize hidden symbols in the libunwind object files to avoid duplicate
+# symbol errors when linking against another copy of libunwind (e.g. Android
+# NDK r29). This converts GLOBAL HIDDEN symbols to LOCAL without affecting
+# the runtime's own symbols.
+# See: https://github.com/dotnet/runtime/issues/121172
+if(LLVM_LIBUNWIND_ALL_SOURCES AND CMAKE_OBJCOPY)
+  add_library(libunwind_objects OBJECT ${LLVM_LIBUNWIND_ALL_SOURCES})
+
+  # Run objcopy --localize-hidden on each libunwind object file.
+  set(LOCALIZE_COMMANDS)
+  foreach(src ${LLVM_LIBUNWIND_ALL_SOURCES})
+    file(RELATIVE_PATH rel_src "/" "${src}")
+    set(obj_file "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/libunwind_objects.dir/./${rel_src}.o")
+    list(APPEND LOCALIZE_COMMANDS COMMAND ${CMAKE_OBJCOPY} --localize-hidden ${obj_file})
+  endforeach()
+
+  add_custom_target(localize_libunwind_symbols
+    ${LOCALIZE_COMMANDS}
+    DEPENDS libunwind_objects
+    COMMENT "Localizing hidden symbols in libunwind objects"
+  )
+  add_dependencies(Runtime.WorkstationGC localize_libunwind_symbols)
+  add_dependencies(Runtime.ServerGC localize_libunwind_symbols)
+  target_link_libraries(Runtime.WorkstationGC PRIVATE libunwind_objects)
+  target_link_libraries(Runtime.ServerGC PRIVATE libunwind_objects)
+endif()
+
 add_library(standalonegc-disabled STATIC ${STANDALONEGC_DISABLED_SOURCES})
 add_dependencies(standalonegc-disabled aot_eventing_headers)
 add_library(standalonegc-enabled STATIC ${STANDALONEGC_ENABLED_SOURCES})
