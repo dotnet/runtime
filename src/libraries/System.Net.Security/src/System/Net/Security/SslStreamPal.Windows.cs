@@ -651,8 +651,8 @@ namespace System.Net.Security
                         leftoverLength = unmanagedBuffers[i].cbBuffer;
 
                         // destination is ignored on Windows. We always decrypt in place and we set leftoverOffset to indicate where the data start.
-                        Debug.Assert(leftoverOffset >= 0 && leftoverLength >= 0, $"Expected offset and count greater than 0, got {leftoverOffset} and {leftoverLength}");
-                        Debug.Assert(checked(leftoverOffset + leftoverLength) <= encrypted.Length, $"Expected offset+count <= buffer.Length, got {leftoverOffset}+{leftoverLength}>={encrypted.Length}");
+                        Debug.Assert(leftoverOffset >= 0 && leftoverLength >= 0, $"Expected offset and length greater than or equal to 0, got {leftoverOffset} and {leftoverLength}");
+                        Debug.Assert(checked(leftoverOffset + leftoverLength) <= encrypted.Length, $"Expected offset+length <= encrypted.Length, got {leftoverOffset}+{leftoverLength}>{encrypted.Length}");
 
                         break;
                     }
