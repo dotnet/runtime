@@ -2084,7 +2084,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return new TargetPointer(@base + offset);
     }
 
-    private TargetPointer GetFieldDescStaticOrThreadStaticAddress(TargetPointer fieldDescPointer, TargetPointer? thread = null)
+    private TargetPointer GetFieldDescStaticOrThreadStaticAddress(TargetPointer fieldDescPointer, TargetPointer? thread = null, bool unboxValueTypes = true)
     {
         TargetPointer enclosingMT = ((IRuntimeTypeSystem)this).GetMTOfEnclosingClass(fieldDescPointer);
         TypeHandle ctx = GetTypeHandle(enclosingMT);
@@ -2127,7 +2127,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         uint offset = ((IRuntimeTypeSystem)this).GetFieldDescOffset(fieldDescPointer, fieldDef);
         bool isRVA = IsFieldDescRVA(fieldDescPointer);
         TargetPointer handleAddr = GetStaticAddressHandle(@base, offset, isRVA, fieldDescPointer, moduleHandle);
-        if (type == CorElementType.ValueType && !isRVA)
+        if (unboxValueTypes && type == CorElementType.ValueType && !isRVA)
         {
             TargetPointer objRef = _target.ReadPointer(handleAddr);
             Data.Object obj = _target.ProcessedData.GetOrAdd<Data.Object>(objRef);
@@ -2136,9 +2136,9 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return handleAddr;
     }
 
-    TargetPointer IRuntimeTypeSystem.GetFieldDescStaticAddress(TargetPointer fieldDescPointer) => GetFieldDescStaticOrThreadStaticAddress(fieldDescPointer);
+    TargetPointer IRuntimeTypeSystem.GetFieldDescStaticAddress(TargetPointer fieldDescPointer, bool unboxValueTypes) => GetFieldDescStaticOrThreadStaticAddress(fieldDescPointer, null, unboxValueTypes);
 
-    TargetPointer IRuntimeTypeSystem.GetFieldDescThreadStaticAddress(TargetPointer fieldDescPointer, TargetPointer thread) => GetFieldDescStaticOrThreadStaticAddress(fieldDescPointer, thread);
+    TargetPointer IRuntimeTypeSystem.GetFieldDescThreadStaticAddress(TargetPointer fieldDescPointer, TargetPointer thread, bool unboxValueTypes) => GetFieldDescStaticOrThreadStaticAddress(fieldDescPointer, thread, unboxValueTypes);
 
     void IRuntimeTypeSystem.GetCoreLibFieldDescAndDef(string @namespace, string typeName, string fieldName, out TargetPointer fieldDescAddr, out FieldDefinition fieldDef)
     {
