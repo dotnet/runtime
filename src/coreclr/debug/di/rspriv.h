@@ -6034,7 +6034,7 @@ public:
     //-----------------------------------------------------------
 
     // callback used to enumerate the internal frames on a thread
-    static void GetActiveInternalFramesCallback(const DebuggerIPCE_STRData * pFrameData,
+    static void GetActiveInternalFramesCallback(const Debugger_STRData * pFrameData,
                                                 void *                 pUserData);
 
     CorDebugUserState GetUserState();
@@ -6520,7 +6520,7 @@ public:
     CordbInternalFrame(CordbThread *          pThread,
                        FramePointer           fp,
                        CordbAppDomain *       pCurrentAppDomain,
-                       const DebuggerIPCE_STRData * pData);
+                       const Debugger_STRData * pData);
 
     CordbInternalFrame(CordbThread *             pThread,
                        FramePointer              fp,
@@ -6801,7 +6801,7 @@ public:
     CordbMiscFrame();
 
     // new-style constructor
-    CordbMiscFrame(DebuggerIPCE_JITFuncData * pJITFuncData);
+    CordbMiscFrame(Debugger_JITFuncData * pJITFuncData);
 
     SIZE_T             parentIP;
     FramePointer       fpParentOrSelf;
