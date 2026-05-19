@@ -18,7 +18,6 @@ set(CORDBEE_SOURCES_DAC_AND_WKS
 set(CORDBEE_HEADERS_DAC_AND_WKS
   controller.h
   controller.inl
-  datatest.h
   debugger.h
   debugger.inl
   executioncontrol.h

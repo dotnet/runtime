@@ -987,6 +987,8 @@ public:
 
     bool isContainableMemoryOp(GenTree* node);
 
+    void checkForDNER(unsigned lclNum, LclVarDsc* varDsc);
+
 private:
     // Determine which locals are candidates for allocation
     template <bool localVarsEnregistered>
@@ -1523,13 +1525,10 @@ private:
     {
         // Conflicting def/use
         LSRA_EVENT_DEFUSE_CONFLICT,
-        LSRA_EVENT_DEFUSE_FIXED_DELAY_USE,
-        LSRA_EVENT_DEFUSE_CASE1,
-        LSRA_EVENT_DEFUSE_CASE2,
-        LSRA_EVENT_DEFUSE_CASE3,
-        LSRA_EVENT_DEFUSE_CASE4,
-        LSRA_EVENT_DEFUSE_CASE5,
-        LSRA_EVENT_DEFUSE_CASE6,
+        LSRA_EVENT_DEFUSE_DEF_IN_FIXED_USE,
+        LSRA_EVENT_DEFUSE_DEF_IN_USE,
+        LSRA_EVENT_DEFUSE_ANY_DEF,
+        LSRA_EVENT_DEFUSE_COPY,
 
         // Spilling
         LSRA_EVENT_SPILL,

@@ -406,7 +406,7 @@ int __cdecl main(int argc, char* argv[])
         loadedCount++;
         const int mcIndex = reader->GetMethodContextIndex();
         MethodContext* mc = nullptr;
-        if (!MethodContext::Initialize(mcIndex, mcb.buff, mcb.size, &mc))
+        if (!MethodContext::Initialize(mcIndex, mcb.buff, mcb.size, /* readCompileResults */ false, &mc))
         {
             return (int)SpmiResult::GeneralFailure;
         }

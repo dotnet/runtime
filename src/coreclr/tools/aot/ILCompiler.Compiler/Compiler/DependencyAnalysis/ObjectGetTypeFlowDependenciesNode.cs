@@ -32,10 +32,16 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
+#if ILTRIM
+            FlowAnnotations flowAnnotations = factory.FlowAnnotations;
+            Logger logger = factory.Logger;
+#else
             var mdManager = (UsageBasedMetadataManager)factory.MetadataManager;
             FlowAnnotations flowAnnotations = mdManager.FlowAnnotations;
+            Logger logger = mdManager.Logger;
+#endif
 
-            DependencyList result = Dataflow.ReflectionMethodBodyScanner.ProcessTypeGetTypeDataflow(factory, mdManager.FlowAnnotations, mdManager.Logger, _type);
+            DependencyList result = Dataflow.ReflectionMethodBodyScanner.ProcessTypeGetTypeDataflow(factory, flowAnnotations, logger, _type);
 
             MetadataType baseType = _type.BaseType;
             if (baseType != null && flowAnnotations.GetTypeAnnotation(baseType) != default)

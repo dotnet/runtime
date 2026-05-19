@@ -53,7 +53,7 @@ struct ContinuationLayoutBuilder
 {
 private:
     Compiler* m_compiler;
-    bool      m_needsOSRILOffset         = false;
+    bool      m_needsOSRAddress          = false;
     bool      m_needsException           = false;
     bool      m_needsContinuationContext = false;
     bool      m_needsKeepAlive           = false;
@@ -70,13 +70,13 @@ public:
     {
     }
 
-    void SetNeedsOSRILOffset()
+    void SetNeedsOSRAddress()
     {
-        m_needsOSRILOffset = true;
+        m_needsOSRAddress = true;
     }
-    bool NeedsOSRILOffset() const
+    bool NeedsOSRAddress() const
     {
-        return m_needsOSRILOffset;
+        return m_needsOSRAddress;
     }
     void SetNeedsException()
     {
@@ -128,7 +128,7 @@ public:
 struct ContinuationLayout
 {
     unsigned                      Size                      = 0;
-    unsigned                      OSRILOffset               = UINT_MAX;
+    unsigned                      OSRAddressOffset          = UINT_MAX;
     unsigned                      ExceptionOffset           = UINT_MAX;
     unsigned                      ContinuationContextOffset = UINT_MAX;
     unsigned                      KeepAliveOffset           = UINT_MAX;
@@ -194,6 +194,136 @@ struct AsyncState
     VARSET_TP MutatedSincePreviousResumption;
 };
 
+// See DefaultValueAnalysis::Run for an explanation of the analysis.
+class DefaultValueAnalysis
+{
+    Compiler*  m_compiler;
+    VARSET_TP* m_mutatedVars;   // Per-block set of locals mutated to non-default.
+    VARSET_TP* m_mutatedVarsIn; // Per-block set of locals mutated to non-default on entry.
+
+public:
+    DefaultValueAnalysis(Compiler* compiler)
+        : m_compiler(compiler)
+        , m_mutatedVars(nullptr)
+        , m_mutatedVarsIn(nullptr)
+    {
+    }
+
+    void             Run();
+    const VARSET_TP& GetMutatedVarsIn(BasicBlock* block) const;
+
+private:
+    void ComputePerBlockMutatedVars();
+    void ComputeInterBlockDefaultValues();
+
+#ifdef DEBUG
+    void DumpMutatedVars();
+    void DumpMutatedVarsIn();
+#endif
+};
+
+// See PreservedValueAnalysis::Run for an explanation of the analysis.
+class PreservedValueAnalysis
+{
+    Compiler* m_compiler;
+
+    BitVecTraits m_blockTraits;
+
+    // Blocks that have awaits in them.
+    BitVec m_awaitBlocks;
+
+    // Blocks that may be entered after we resumed.
+    BitVec m_resumeReachableBlocks;
+
+    // Per-block set of locals that may be mutated by each block after a resumption.
+    VARSET_TP* m_mutatedVars;
+
+    // Per-block incoming set of locals possibly mutated since previous resumption.
+    VARSET_TP* m_mutatedVarsIn;
+
+public:
+    PreservedValueAnalysis(Compiler* compiler)
+        : m_compiler(compiler)
+        , m_blockTraits(compiler->fgBBNumMax + 1, compiler)
+        , m_awaitBlocks(BitVecOps::UninitVal())
+        , m_resumeReachableBlocks(BitVecOps::UninitVal())
+        , m_mutatedVars(nullptr)
+        , m_mutatedVarsIn(nullptr)
+    {
+    }
+
+    void             Run(ArrayStack<BasicBlock*>& awaitBlocks);
+    const VARSET_TP& GetMutatedVarsIn(BasicBlock* block) const;
+    bool             IsResumeReachable(BasicBlock* block);
+
+private:
+    void ComputeResumeReachableBlocks(ArrayStack<BasicBlock*>& awaitBlocks);
+    void ComputePerBlockMutatedVars();
+    void ComputeInterBlockMutatedVars();
+
+#ifdef DEBUG
+    void DumpAwaitBlocks();
+    void DumpResumeReachableBlocks();
+    void DumpMutatedVars();
+    void DumpMutatedVarsIn();
+#endif
+};
+
+class AsyncAnalysis
+{
+    Compiler*               m_compiler;
+    TreeLifeUpdater<false>  m_updater;
+    unsigned                m_numVars;
+    DefaultValueAnalysis&   m_defaultValueAnalysis;
+    PreservedValueAnalysis& m_preservedValueAnalysis;
+    VARSET_TP               m_mutatedValues;
+    bool                    m_resumeReachable = false;
+    VARSET_TP               m_mutatedSinceResumption;
+
+public:
+    AsyncAnalysis(Compiler*               comp,
+                  DefaultValueAnalysis&   defaultValueAnalysis,
+                  PreservedValueAnalysis& preservedValueAnalysis)
+        : m_compiler(comp)
+        , m_updater(comp)
+        , m_numVars(comp->lvaCount)
+        , m_defaultValueAnalysis(defaultValueAnalysis)
+        , m_preservedValueAnalysis(preservedValueAnalysis)
+        , m_mutatedValues(VarSetOps::MakeEmpty(comp))
+        , m_mutatedSinceResumption(VarSetOps::MakeEmpty(comp))
+    {
+    }
+
+    void StartBlock(BasicBlock* block);
+    void Update(GenTree* node);
+    bool IsLive(unsigned lclNum);
+    bool IsResumeReachable() const
+    {
+        return m_resumeReachable;
+    }
+
+    VARSET_TP GetMutatedSinceResumption() const
+    {
+        return m_mutatedSinceResumption;
+    }
+
+    template <typename Functor>
+    void GetLiveLocals(ContinuationLayoutBuilder* layoutBuilder, Functor includeLocal)
+    {
+        for (unsigned lclNum = 0; lclNum < m_numVars; lclNum++)
+        {
+            if (includeLocal(lclNum) && IsLive(lclNum))
+            {
+                layoutBuilder->AddLocal(lclNum);
+            }
+        }
+    }
+
+    static void PrintVarSet(Compiler* comp, VARSET_VALARG_TP set);
+private:
+    bool IsLocalCaptureUnnecessary(unsigned lclNum);
+};
+
 enum class SaveSet
 {
     All,
@@ -201,9 +331,22 @@ enum class SaveSet
     MutatedLocals,
 };
 
+enum class SuspensionContextHelper
+{
+    None,
+    WithContinuationContext,
+    WithoutContinuationContext,
+};
+
+struct AggregatedAwaitInfo
+{
+    unsigned NumNormalAwaits = 0;
+    unsigned NumTailAwaits   = 0;
+};
+
 class AsyncTransformation
 {
-    friend class AsyncLiveness;
+    friend class AsyncAnalysis;
 
     Compiler*                  m_compiler;
     CORINFO_ASYNC_INFO*        m_asyncInfo;
@@ -219,20 +362,31 @@ class AsyncTransformation
     BasicBlock*                m_lastResumptionBB        = nullptr;
     BasicBlock*                m_sharedReturnBB          = nullptr;
 
+    // Shared basic blocks used by suspensions that handle required context
+    // saves/restores and then suspend.
+    BasicBlock* m_sharedFinishContextHandlingWithContinuationContextBB    = nullptr;
+    BasicBlock* m_sharedFinishContextHandlingWithoutContinuationContextBB = nullptr;
+    // Variables that shared suspension finishing BBs take the exec/sync contexts in
+    unsigned m_sharedFinishContextHandlingExecContextVar = BAD_VAR_NUM;
+    unsigned m_sharedFinishContextHandlingSyncContextVar = BAD_VAR_NUM;
+
+    AggregatedAwaitInfo FindAwaits(ArrayStack<BasicBlock*>& blocksWithNormalAwaits,
+                                   ArrayStack<BasicBlock*>& blocksWithTailAwaits);
+
+    void        TransformTailAwaits(ArrayStack<BasicBlock*>& blocksWithTailAwaits);
     void        TransformTailAwait(BasicBlock* block, GenTreeCall* call, BasicBlock** remainder);
     BasicBlock* CreateTailAwaitSuspension(BasicBlock* block, GenTreeCall* call);
 
-    bool IsLive(unsigned lclNum);
     void Transform(BasicBlock*               block,
                    GenTreeCall*              call,
                    jitstd::vector<GenTree*>& defs,
-                   class AsyncLiveness&      life,
+                   AsyncAnalysis&            analyses,
                    BasicBlock**              remainder);
 
     void CreateLiveSetForSuspension(BasicBlock*                     block,
                                     GenTreeCall*                    call,
                                     const jitstd::vector<GenTree*>& defs,
-                                    AsyncLiveness&                  life,
+                                    AsyncAnalysis&                  analyses,
                                     ContinuationLayoutBuilder*      layoutBuilder);
 
     bool HasNonContextRestoreExceptionalFlow(BasicBlock* block);
@@ -241,14 +395,14 @@ class AsyncTransformation
                       const jitstd::vector<GenTree*>& defs,
                       ContinuationLayoutBuilder*      layoutBuilder);
 
-    bool ContinuationNeedsKeepAlive(class AsyncLiveness& life);
+    bool ContinuationNeedsKeepAlive(AsyncAnalysis& analyses);
 
     void BuildContinuation(BasicBlock*                block,
                            GenTreeCall*               call,
                            bool                       needsKeepAlive,
                            ContinuationLayoutBuilder* layoutBuilder);
 
-    CallDefinitionInfo CanonicalizeCallDefinition(BasicBlock* block, GenTreeCall* call, AsyncLiveness* life);
+    CallDefinitionInfo CanonicalizeCallDefinition(BasicBlock* block, GenTreeCall* call, AsyncAnalysis* analyses);
 
     BasicBlock* CreateSuspensionBlock(BasicBlock* block, unsigned stateNum);
     void        CreateSuspension(BasicBlock*                      callBlock,
@@ -264,26 +418,38 @@ class AsyncTransformation
                                              GenTree*                  prevContinuation,
                                              const ContinuationLayout& layout);
 
-    void        FillInDataOnSuspension(GenTreeCall*                     call,
-                                       const ContinuationLayout&        layout,
-                                       const ContinuationLayoutBuilder& subLayout,
-                                       BasicBlock*                      suspendBB,
-                                       VARSET_VALARG_TP                 mutatedSinceResumption,
-                                       SaveSet                          saveSet);
-    SaveSet     GetLocalSaveSet(const LclVarDsc* dsc, VARSET_VALARG_TP mutatedSinceResumption);
-    void        RestoreContexts(BasicBlock* block, GenTreeCall* call, BasicBlock* insertionBB);
-    void        CreateCheckAndSuspendAfterCall(BasicBlock*               block,
-                                               GenTreeCall*              call,
-                                               const CallDefinitionInfo& callDefInfo,
-                                               BasicBlock*               suspendBB,
-                                               BasicBlock**              remainder);
-    BasicBlock* CreateResumptionBlock(BasicBlock* remainder, unsigned stateNum);
-    void        CreateResumption(BasicBlock*                      callBlock,
-                                 GenTreeCall*                     call,
-                                 BasicBlock*                      resumeBB,
-                                 const CallDefinitionInfo&        callDefInfo,
-                                 const ContinuationLayout&        layout,
-                                 const ContinuationLayoutBuilder& subLayout);
+    void                    FillInDataOnSuspension(GenTreeCall*                     call,
+                                                   const ContinuationLayout&        layout,
+                                                   const ContinuationLayoutBuilder& subLayout,
+                                                   BasicBlock*                      suspendBB,
+                                                   VARSET_VALARG_TP                 mutatedSinceResumption,
+                                                   SaveSet                          saveSet);
+    SaveSet                 GetLocalSaveSet(const LclVarDsc* dsc, VARSET_VALARG_TP mutatedSinceResumption);
+    SuspensionContextHelper GetSuspensionContextHelper(GenTreeCall* call);
+    void                    FinishContextHandlingAndSuspension(BasicBlock*                      callBlock,
+                                                               GenTreeCall*                     call,
+                                                               BasicBlock*                      suspendBB,
+                                                               const ContinuationLayout&        layout,
+                                                               const ContinuationLayoutBuilder& subLayout);
+    void                    FinishContextHandlingAndSuspensionWithHelper(BasicBlock*                      callBlock,
+                                                                         GenTreeCall*                     call,
+                                                                         BasicBlock*                      suspendBB,
+                                                                         const ContinuationLayout&        layout,
+                                                                         const ContinuationLayoutBuilder& subLayout,
+                                                                         SuspensionContextHelper          helper);
+    void                    RestoreContexts(BasicBlock* block, GenTreeCall* call, BasicBlock* insertionBB);
+    void                    CreateCheckAndSuspendAfterCall(BasicBlock*               block,
+                                                           GenTreeCall*              call,
+                                                           const CallDefinitionInfo& callDefInfo,
+                                                           BasicBlock*               suspendBB,
+                                                           BasicBlock**              remainder);
+    BasicBlock*             CreateResumptionBlock(BasicBlock* remainder, unsigned stateNum);
+    void                    CreateResumption(BasicBlock*                      callBlock,
+                                             GenTreeCall*                     call,
+                                             BasicBlock*                      resumeBB,
+                                             const CallDefinitionInfo&        callDefInfo,
+                                             const ContinuationLayout&        layout,
+                                             const ContinuationLayoutBuilder& subLayout);
 
     void        RestoreFromDataOnResumption(const ContinuationLayout&        layout,
                                             const ContinuationLayoutBuilder& subLayout,
@@ -310,11 +476,19 @@ class AsyncTransformation
     unsigned    GetNewContinuationVar();
     unsigned    GetResultBaseVar();
     unsigned    GetExceptionVar();
-    BasicBlock* GetSharedReturnBB();
-
-    bool ReuseContinuations();
-    void CreateResumptionsAndSuspensions();
-    void CreateResumptionSwitch();
+    void        CreateSharedReturnBB();
+    BasicBlock* CreateSharedFinishContextHandlingBB(SuspensionContextHelper   helper,
+                                                    const ContinuationLayout& layout,
+                                                    bool                      execContextMayVary,
+                                                    bool                      syncContextMayVary);
+    void        InsertFinishContextHandlingCall(BasicBlock*               block,
+                                                const ContinuationLayout& layout,
+                                                SuspensionContextHelper   helper,
+                                                GenTree*                  execContext,
+                                                GenTree*                  syncContext);
+    bool        ReuseContinuations();
+    void        CreateResumptionsAndSuspensions();
+    void        CreateResumptionSwitch();
 
 public:
     AsyncTransformation(Compiler* comp)

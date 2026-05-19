@@ -7,7 +7,7 @@
 class CDAC final
 {
 public: // static
-    static CDAC Create(uint64_t descriptorAddr, ICorDebugMutableDataTarget *pDataTarget, IUnknown* legacyImpl);
+    static CDAC Create(uint64_t descriptorAddr, ICorDebugDataTarget *pDataTarget, IUnknown* legacyImpl);
 
 public:
     CDAC() = default;
@@ -50,6 +50,7 @@ public:
     }
 
     void CreateSosInterface(IUnknown** sos);
+    void CreateDacDbiInterface(IUnknown** dbi);
 
 private:
     CDAC(HMODULE module, intptr_t handle, ICorDebugDataTarget* target, IUnknown* legacyImpl);
@@ -57,7 +58,7 @@ private:
 private:
     HMODULE m_module;
     intptr_t m_cdac_handle;
-    NonVMComHolder<ICorDebugDataTarget> m_target;
+    ReleaseHolder<ICorDebugDataTarget> m_target;
 
     // Assumes the legacy impl lives for the lifetime of this class - currently ClrDataAccess, which contains this class
     IUnknown* m_legacyImpl;

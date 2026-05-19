@@ -211,7 +211,10 @@ struct TransitionBlock
             TADDR m_ReturnAddress;
         };
     };
-    ArgumentRegisters       m_argumentRegisters;
+    union {
+        ArgumentRegisters       m_argumentRegisters;
+        TADDR m_StackPointer;
+    };
 #else
     PORTABILITY_ASSERT("TransitionBlock");
 #endif
@@ -575,6 +578,12 @@ public:
 #ifdef TARGET_AMD64
         return IsArgPassedByRef(size);
 #elif defined(TARGET_ARM64)
+        // TODO-SVE: This should be removed when Vector<T> has an HFA type.
+        if (ExecutionManager::GetEEJitManager()->UseScalableVectorT() && th.IsVectorT())
+        {
+            return TRUE;
+        }
+
         // Composites greater than 16 bytes are passed by reference
         return ((size > ENREGISTERED_PARAMTYPE_MAXSIZE) && !th.IsHFA());
 #elif defined(TARGET_LOONGARCH64)
@@ -633,7 +642,14 @@ public:
         if (m_argType == ELEMENT_TYPE_VALUETYPE)
         {
             _ASSERTE(!m_argTypeHandle.IsNull());
-            return ((m_argSize > ENREGISTERED_PARAMTYPE_MAXSIZE) && (!m_argTypeHandle.IsHFA() || this->IsVarArg()));
+
+            // TODO-SVE: This should be removed when Vector<T> has an HFA type.
+            if (ExecutionManager::GetEEJitManager()->UseScalableVectorT() && m_argTypeHandle.IsVectorT())
+            {
+                return TRUE;
+            }
+
+            return (((m_argSize > ENREGISTERED_PARAMTYPE_MAXSIZE) && (!m_argTypeHandle.IsHFA() || this->IsVarArg())));
         }
         return FALSE;
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)

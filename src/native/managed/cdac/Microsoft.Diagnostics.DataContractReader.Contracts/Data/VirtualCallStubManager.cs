@@ -12,10 +12,10 @@ internal sealed class VirtualCallStubManager : IData<VirtualCallStubManager>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.VirtualCallStubManager);
 
-        IndcellHeap = target.ReadPointer(address + (ulong)type.Fields[nameof(IndcellHeap)].Offset);
+        IndcellHeap = target.ReadPointerField(address, type, nameof(IndcellHeap));
 
         if (type.Fields.ContainsKey(nameof(CacheEntryHeap)))
-            CacheEntryHeap = target.ReadPointer(address + (ulong)type.Fields[nameof(CacheEntryHeap)].Offset);
+            CacheEntryHeap = target.ReadPointerField(address, type, nameof(CacheEntryHeap));
     }
 
     public TargetPointer IndcellHeap { get; init; }

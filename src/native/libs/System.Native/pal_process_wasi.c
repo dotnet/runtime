@@ -29,7 +29,11 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
                                       int32_t* childPid,
                                       int32_t stdinFd,
                                       int32_t stdoutFd,
-                                      int32_t stderrFd)
+                                      int32_t stderrFd,
+                                      int32_t* inheritedFds,
+                                      int32_t inheritedFdCount,
+                                      int32_t startDetached,
+                                      int32_t killOnParentExit)
 {
     return -1;
 }
@@ -73,7 +77,7 @@ int32_t SystemNative_WaitIdAnyExitedNoHangNoWait(void)
     return -1;
 }
 
-int32_t SystemNative_WaitPidExitedNoHang(int32_t pid, int32_t* exitCode)
+int32_t SystemNative_WaitPidExitedNoHang(int32_t pid, int32_t* exitCode, int32_t* terminatingSignal)
 {
     return -1;
 }

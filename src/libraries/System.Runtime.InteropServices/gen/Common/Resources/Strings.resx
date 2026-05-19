@@ -922,4 +922,8 @@
   <data name="GenericDelegatesNotSupported" xml:space="preserve">
     <value>Marshalling a generic delegate is not supported. Consider using a function pointer instead.</value>
   </data>
+  <data name="IidParameterIndexUnsupportedConfigurationName" xml:space="preserve">
+    <value>{0} (supported only on [MarshalAs(UnmanagedType.Interface)] out object parameters)</value>
+    <comment>Configuration name reported via the 'configuration not supported' diagnostic when 'MarshalAs.IidParameterIndex' is used on an unsupported parameter shape. {0} is the dotted attribute member name, e.g. 'MarshalAsAttribute.IidParameterIndex'.</comment>
+  </data>
 </root>

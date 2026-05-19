@@ -437,42 +437,6 @@ void EncodeLoadAndJumpThunk (LPBYTE pBuffer, LPVOID pv, LPVOID pTarget)
     _ASSERTE(DbgIsExecutable(pBuffer, 22));
 }
 
-void emitCOMStubCall (ComCallMethodDesc *pCOMMethodRX, ComCallMethodDesc *pCOMMethodRW, PCODE target)
-{
-    CONTRACT_VOID
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACT_END;
-
-    BYTE *pBufferRX = (BYTE*)pCOMMethodRX - COMMETHOD_CALL_PRESTUB_SIZE;
-    BYTE *pBufferRW = (BYTE*)pCOMMethodRW - COMMETHOD_CALL_PRESTUB_SIZE;
-
-    // We need the target to be in a 64-bit aligned memory location and the call instruction
-    // to immediately precede the ComCallMethodDesc. We'll generate an indirect call to avoid
-    // consuming 3 qwords for this (mov rax, | target | nops & call rax).
-
-    // dq 123456789abcdef0h
-    // nop                              90
-    // nop                              90
-    // call [$ - 10]                    ff 15 f0 ff ff ff
-
-    SET_UNALIGNED_64(&pBufferRW[COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET], target);
-
-    pBufferRW[-2]  = 0x90;
-    pBufferRW[-1]  = 0x90;
-
-    pBufferRW[0] = 0xFF;
-    pBufferRW[1] = 0x15;
-    *((UINT32 UNALIGNED *)&pBufferRW[2]) = (UINT32)(COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET - COMMETHOD_CALL_PRESTUB_SIZE);
-
-    _ASSERTE(DbgIsExecutable(pBufferRX, COMMETHOD_CALL_PRESTUB_SIZE));
-
-    RETURN;
-}
-
 void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
 {
     CONTRACTL

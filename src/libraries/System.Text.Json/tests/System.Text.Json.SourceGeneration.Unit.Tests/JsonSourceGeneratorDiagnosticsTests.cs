@@ -264,7 +264,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 #endif
 
         [Fact]
-        public void WarnOnClassesWithInaccessibleJsonIncludeProperties()
+        public void WarnsOnClassesWithInaccessibleJsonIncludeProperties()
         {
             Compilation compilation = CompilationHelper.CreateCompilationWithInaccessibleJsonIncludeProperties();
             JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
@@ -543,20 +543,11 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         [Fact]
         public void TypesWithJsonConstructorAnnotations_WarnAsExpected()
         {
+            // Inaccessible [JsonConstructor] constructors are now supported via UnsafeAccessor or reflection fallback.
+            // No diagnostics should be emitted.
             Compilation compilation = CompilationHelper.CreateCompilationWithJsonConstructorAttributeAnnotations();
-
             JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
-
-            Location protectedCtorLocation = compilation.GetSymbolsWithName("ClassWithProtectedCtor").First().Locations[0];
-            Location privateCtorLocation = compilation.GetSymbolsWithName("ClassWithPrivateCtor").First().Locations[0];
-
-            var expectedDiagnostics = new DiagnosticData[]
-            {
-                new(DiagnosticSeverity.Warning, protectedCtorLocation, "The constructor on type 'HelloWorld.ClassWithProtectedCtor' has been annotated with JsonConstructorAttribute but is not accessible by the source generator."),
-                new(DiagnosticSeverity.Warning, privateCtorLocation, "The constructor on type 'HelloWorld.ClassWithPrivateCtor' has been annotated with JsonConstructorAttribute but is not accessible by the source generator."),
-            };
-
-            CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
+            CompilationHelper.AssertEqualDiagnosticMessages([], result.Diagnostics);
         }
 
         [Fact]
@@ -776,28 +767,33 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         [Fact]
         public void Diagnostic_HasPragmaSuppressibleLocation()
         {
-            // SYSLIB1038: JsonInclude attribute on inaccessible member (Warning, configurable).
+            // SYSLIB1039: Polymorphism not supported for fast-path serialization (Warning, configurable).
             string source = """
-                #pragma warning disable SYSLIB1038
+                #pragma warning disable SYSLIB1039
                 using System.Text.Json.Serialization;
 
-                namespace Test
+                namespace HelloWorld
                 {
-                    public class MyClass
+                    [JsonSerializable(typeof(MyBaseClass), GenerationMode = JsonSourceGenerationMode.Serialization)]
+                    internal partial class JsonContext : JsonSerializerContext
                     {
-                        [JsonInclude]
-                        private int PrivateField;
                     }
 
-                    [JsonSerializable(typeof(MyClass))]
-                    public partial class JsonContext : JsonSerializerContext { }
+                    [JsonDerivedType(typeof(MyDerivedClass), "derived")]
+                    public class MyBaseClass
+                    {
+                    }
+
+                    public class MyDerivedClass : MyBaseClass
+                    {
+                    }
                 }
                 """;
 
             Compilation compilation = CompilationHelper.CreateCompilation(source);
             JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
             var effective = CompilationWithAnalyzers.GetEffectiveDiagnostics(result.Diagnostics, compilation);
-            Diagnostic diagnostic = Assert.Single(effective, d => d.Id == "SYSLIB1038");
+            Diagnostic diagnostic = Assert.Single(effective, d => d.Id == "SYSLIB1039");
             Assert.True(diagnostic.IsSuppressed);
         }
 

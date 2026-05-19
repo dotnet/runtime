@@ -10,7 +10,7 @@ internal sealed class TableSegment : IData<TableSegment>
     public TableSegment(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.TableSegment);
-        NextSegment = target.ReadPointer(address + (ulong)type.Fields[nameof(NextSegment)].Offset);
+        NextSegment = target.ReadPointerField(address, type, nameof(NextSegment));
         uint handleBlocksPerSegment = target.ReadGlobal<uint>(Constants.Globals.HandleBlocksPerSegment);
         uint handleMaxInternalTypes = target.ReadGlobal<uint>(Constants.Globals.HandleMaxInternalTypes);
 

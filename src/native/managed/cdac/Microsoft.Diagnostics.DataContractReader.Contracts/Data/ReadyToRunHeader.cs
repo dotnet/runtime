@@ -12,8 +12,8 @@ internal sealed class ReadyToRunHeader : IData<ReadyToRunHeader>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.ReadyToRunHeader);
 
-        MajorVersion = target.Read<ushort>(address + (ulong)type.Fields[nameof(MajorVersion)].Offset);
-        MinorVersion = target.Read<ushort>(address + (ulong)type.Fields[nameof(MinorVersion)].Offset);
+        MajorVersion = target.ReadField<ushort>(address, type, nameof(MajorVersion));
+        MinorVersion = target.ReadField<ushort>(address, type, nameof(MinorVersion));
     }
 
     public ushort MajorVersion { get; }

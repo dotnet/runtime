@@ -3,6 +3,198 @@
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Arm.Sve.CreateWhileLessThanMask16Bit(System.Int32,System.Int32)</Target>
+    <Left>net10.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net11.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Arm.Sve.CreateWhileLessThanMask16Bit(System.Int64,System.Int64)</Target>
+    <Left>net10.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net11.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Arm.Sve.CreateWhileLessThanMask16Bit(System.UInt32,System.UInt32)</Target>
+    <Left>net10.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net11.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Arm.Sve.CreateWhileLessThanMask16Bit(System.UInt64,System.UInt64)</Target>
+    <Left>net10.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net11.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Arm.Sve.CreateWhileLessThanMask32Bit(System.Int32,System.Int32)</Target>
+    <Left>net10.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net11.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Arm.Sve.CreateWhileLessThanMask32Bit(System.Int64,System.Int64)</Target>
+    <Left>net10.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net11.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Arm.Sve.CreateWhileLessThanMask32Bit(System.UInt32,System.UInt32)</Target>
+    <Left>net10.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net11.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Arm.Sve.CreateWhileLessThanMask32Bit(System.UInt64,System.UInt64)</Target>
+    <Left>net10.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net11.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Arm.Sve.CreateWhileLessThanMask64Bit(System.Int32,System.Int32)</Target>
+    <Left>net10.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net11.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Arm.Sve.CreateWhileLessThanMask64Bit(System.Int64,System.Int64)</Target>
+    <Left>net10.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net11.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Arm.Sve.CreateWhileLessThanMask64Bit(System.UInt32,System.UInt32)</Target>
+    <Left>net10.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net11.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Arm.Sve.CreateWhileLessThanMask64Bit(System.UInt64,System.UInt64)</Target>
+    <Left>net10.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net11.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Arm.Sve.CreateWhileLessThanMask8Bit(System.Int32,System.Int32)</Target>
+    <Left>net10.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net11.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Arm.Sve.CreateWhileLessThanMask8Bit(System.Int64,System.Int64)</Target>
+    <Left>net10.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net11.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Arm.Sve.CreateWhileLessThanMask8Bit(System.UInt32,System.UInt32)</Target>
+    <Left>net10.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net11.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Arm.Sve.CreateWhileLessThanMask8Bit(System.UInt64,System.UInt64)</Target>
+    <Left>net10.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net11.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Arm.Sve.CreateWhileLessThanOrEqualMask16Bit(System.Int32,System.Int32)</Target>
+    <Left>net10.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net11.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Arm.Sve.CreateWhileLessThanOrEqualMask16Bit(System.Int64,System.Int64)</Target>
+    <Left>net10.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net11.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Arm.Sve.CreateWhileLessThanOrEqualMask16Bit(System.UInt32,System.UInt32)</Target>
+    <Left>net10.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net11.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Arm.Sve.CreateWhileLessThanOrEqualMask16Bit(System.UInt64,System.UInt64)</Target>
+    <Left>net10.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net11.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Arm.Sve.CreateWhileLessThanOrEqualMask32Bit(System.Int32,System.Int32)</Target>
+    <Left>net10.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net11.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Arm.Sve.CreateWhileLessThanOrEqualMask32Bit(System.Int64,System.Int64)</Target>
+    <Left>net10.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net11.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Arm.Sve.CreateWhileLessThanOrEqualMask32Bit(System.UInt32,System.UInt32)</Target>
+    <Left>net10.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net11.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Arm.Sve.CreateWhileLessThanOrEqualMask32Bit(System.UInt64,System.UInt64)</Target>
+    <Left>net10.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net11.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Arm.Sve.CreateWhileLessThanOrEqualMask64Bit(System.Int32,System.Int32)</Target>
+    <Left>net10.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net11.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Arm.Sve.CreateWhileLessThanOrEqualMask64Bit(System.Int64,System.Int64)</Target>
+    <Left>net10.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net11.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Arm.Sve.CreateWhileLessThanOrEqualMask64Bit(System.UInt32,System.UInt32)</Target>
+    <Left>net10.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net11.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Arm.Sve.CreateWhileLessThanOrEqualMask64Bit(System.UInt64,System.UInt64)</Target>
+    <Left>net10.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net11.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Arm.Sve.CreateWhileLessThanOrEqualMask8Bit(System.Int32,System.Int32)</Target>
+    <Left>net10.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net11.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Arm.Sve.CreateWhileLessThanOrEqualMask8Bit(System.Int64,System.Int64)</Target>
+    <Left>net10.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net11.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Arm.Sve.CreateWhileLessThanOrEqualMask8Bit(System.UInt32,System.UInt32)</Target>
+    <Left>net10.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net11.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Arm.Sve.CreateWhileLessThanOrEqualMask8Bit(System.UInt64,System.UInt64)</Target>
+    <Left>net10.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net11.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Runtime.Intrinsics.Arm.Sve.GatherVectorUInt32WithByteOffsetsZeroExtend(System.Numerics.Vector{System.Int32},System.UInt32*,System.Numerics.Vector{System.Int32})</Target>
     <Left>net10.0/System.Runtime.Intrinsics.dll</Left>
     <Right>net11.0/System.Runtime.Intrinsics.dll</Right>
@@ -147,7 +339,19 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.X509Certificates.PublicKey.#ctor(System.Security.Cryptography.MLDsa):[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
+    <Left>net10.0/netstandard.dll</Left>
+    <Right>net11.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
     <Target>M:System.Security.Cryptography.X509Certificates.PublicKey.#ctor(System.Security.Cryptography.MLKem):[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
+    <Left>net10.0/netstandard.dll</Left>
+    <Right>net11.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.X509Certificates.PublicKey.GetMLDsaPublicKey:[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
     <Left>net10.0/netstandard.dll</Left>
     <Right>net11.0/netstandard.dll</Right>
   </Suppression>
@@ -159,7 +363,25 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.X509Certificates.X509Certificate2.CopyWithPrivateKey(System.Security.Cryptography.MLDsa):[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
+    <Left>net10.0/netstandard.dll</Left>
+    <Right>net11.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
     <Target>M:System.Security.Cryptography.X509Certificates.X509Certificate2.CopyWithPrivateKey(System.Security.Cryptography.MLKem):[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
+    <Left>net10.0/netstandard.dll</Left>
+    <Right>net11.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.X509Certificates.X509Certificate2.GetMLDsaPrivateKey:[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
+    <Left>net10.0/netstandard.dll</Left>
+    <Right>net11.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.X509Certificates.X509Certificate2.GetMLDsaPublicKey:[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
     <Left>net10.0/netstandard.dll</Left>
     <Right>net11.0/netstandard.dll</Right>
   </Suppression>
@@ -177,7 +399,19 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.X509Certificates.PublicKey.#ctor(System.Security.Cryptography.MLDsa):[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
+    <Left>net10.0/System.dll</Left>
+    <Right>net11.0/System.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
     <Target>M:System.Security.Cryptography.X509Certificates.PublicKey.#ctor(System.Security.Cryptography.MLKem):[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
+    <Left>net10.0/System.dll</Left>
+    <Right>net11.0/System.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.X509Certificates.PublicKey.GetMLDsaPublicKey:[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
     <Left>net10.0/System.dll</Left>
     <Right>net11.0/System.dll</Right>
   </Suppression>
@@ -189,7 +423,25 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.X509Certificates.X509Certificate2.CopyWithPrivateKey(System.Security.Cryptography.MLDsa):[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
+    <Left>net10.0/System.dll</Left>
+    <Right>net11.0/System.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
     <Target>M:System.Security.Cryptography.X509Certificates.X509Certificate2.CopyWithPrivateKey(System.Security.Cryptography.MLKem):[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
+    <Left>net10.0/System.dll</Left>
+    <Right>net11.0/System.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.X509Certificates.X509Certificate2.GetMLDsaPrivateKey:[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
+    <Left>net10.0/System.dll</Left>
+    <Right>net11.0/System.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.X509Certificates.X509Certificate2.GetMLDsaPublicKey:[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
     <Left>net10.0/System.dll</Left>
     <Right>net11.0/System.dll</Right>
   </Suppression>
@@ -270,6 +522,180 @@
     <Target>T:System.Runtime.CompilerServices.AsyncHelpers:[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
     <Left>net10.0/System.Runtime.dll</Left>
     <Right>net11.0/System.Runtime.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.MLDsa.ExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan{System.Byte},System.Security.Cryptography.PbeParameters):[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
+    <Left>net10.0/System.Security.Cryptography.dll</Left>
+    <Right>net11.0/System.Security.Cryptography.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.MLDsa.ExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan{System.Char},System.Security.Cryptography.PbeParameters):[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
+    <Left>net10.0/System.Security.Cryptography.dll</Left>
+    <Right>net11.0/System.Security.Cryptography.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.MLDsa.ExportEncryptedPkcs8PrivateKey(System.String,System.Security.Cryptography.PbeParameters):[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
+    <Left>net10.0/System.Security.Cryptography.dll</Left>
+    <Right>net11.0/System.Security.Cryptography.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.MLDsa.ExportEncryptedPkcs8PrivateKeyPem(System.ReadOnlySpan{System.Byte},System.Security.Cryptography.PbeParameters):[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
+    <Left>net10.0/System.Security.Cryptography.dll</Left>
+    <Right>net11.0/System.Security.Cryptography.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.MLDsa.ExportEncryptedPkcs8PrivateKeyPem(System.ReadOnlySpan{System.Char},System.Security.Cryptography.PbeParameters):[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
+    <Left>net10.0/System.Security.Cryptography.dll</Left>
+    <Right>net11.0/System.Security.Cryptography.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.MLDsa.ExportEncryptedPkcs8PrivateKeyPem(System.String,System.Security.Cryptography.PbeParameters):[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
+    <Left>net10.0/System.Security.Cryptography.dll</Left>
+    <Right>net11.0/System.Security.Cryptography.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.MLDsa.ExportPkcs8PrivateKey:[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
+    <Left>net10.0/System.Security.Cryptography.dll</Left>
+    <Right>net11.0/System.Security.Cryptography.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.MLDsa.ExportPkcs8PrivateKeyPem:[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
+    <Left>net10.0/System.Security.Cryptography.dll</Left>
+    <Right>net11.0/System.Security.Cryptography.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.MLDsa.ExportSubjectPublicKeyInfo:[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
+    <Left>net10.0/System.Security.Cryptography.dll</Left>
+    <Right>net11.0/System.Security.Cryptography.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.MLDsa.ExportSubjectPublicKeyInfoPem:[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
+    <Left>net10.0/System.Security.Cryptography.dll</Left>
+    <Right>net11.0/System.Security.Cryptography.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.MLDsa.ImportEncryptedPkcs8PrivateKey(System.ReadOnlySpan{System.Byte},System.ReadOnlySpan{System.Byte}):[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
+    <Left>net10.0/System.Security.Cryptography.dll</Left>
+    <Right>net11.0/System.Security.Cryptography.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.MLDsa.ImportEncryptedPkcs8PrivateKey(System.ReadOnlySpan{System.Char},System.ReadOnlySpan{System.Byte}):[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
+    <Left>net10.0/System.Security.Cryptography.dll</Left>
+    <Right>net11.0/System.Security.Cryptography.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.MLDsa.ImportEncryptedPkcs8PrivateKey(System.String,System.Byte[]):[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
+    <Left>net10.0/System.Security.Cryptography.dll</Left>
+    <Right>net11.0/System.Security.Cryptography.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.MLDsa.ImportFromEncryptedPem(System.ReadOnlySpan{System.Char},System.ReadOnlySpan{System.Byte}):[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
+    <Left>net10.0/System.Security.Cryptography.dll</Left>
+    <Right>net11.0/System.Security.Cryptography.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.MLDsa.ImportFromEncryptedPem(System.ReadOnlySpan{System.Char},System.ReadOnlySpan{System.Char}):[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
+    <Left>net10.0/System.Security.Cryptography.dll</Left>
+    <Right>net11.0/System.Security.Cryptography.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.MLDsa.ImportFromEncryptedPem(System.String,System.Byte[]):[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
+    <Left>net10.0/System.Security.Cryptography.dll</Left>
+    <Right>net11.0/System.Security.Cryptography.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.MLDsa.ImportFromEncryptedPem(System.String,System.String):[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
+    <Left>net10.0/System.Security.Cryptography.dll</Left>
+    <Right>net11.0/System.Security.Cryptography.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.MLDsa.ImportFromPem(System.ReadOnlySpan{System.Char}):[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
+    <Left>net10.0/System.Security.Cryptography.dll</Left>
+    <Right>net11.0/System.Security.Cryptography.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.MLDsa.ImportFromPem(System.String):[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
+    <Left>net10.0/System.Security.Cryptography.dll</Left>
+    <Right>net11.0/System.Security.Cryptography.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.MLDsa.ImportPkcs8PrivateKey(System.Byte[]):[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
+    <Left>net10.0/System.Security.Cryptography.dll</Left>
+    <Right>net11.0/System.Security.Cryptography.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.MLDsa.ImportPkcs8PrivateKey(System.ReadOnlySpan{System.Byte}):[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
+    <Left>net10.0/System.Security.Cryptography.dll</Left>
+    <Right>net11.0/System.Security.Cryptography.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.MLDsa.ImportSubjectPublicKeyInfo(System.Byte[]):[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
+    <Left>net10.0/System.Security.Cryptography.dll</Left>
+    <Right>net11.0/System.Security.Cryptography.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.MLDsa.ImportSubjectPublicKeyInfo(System.ReadOnlySpan{System.Byte}):[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
+    <Left>net10.0/System.Security.Cryptography.dll</Left>
+    <Right>net11.0/System.Security.Cryptography.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.MLDsa.TryExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan{System.Byte},System.Security.Cryptography.PbeParameters,System.Span{System.Byte},System.Int32@):[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
+    <Left>net10.0/System.Security.Cryptography.dll</Left>
+    <Right>net11.0/System.Security.Cryptography.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.MLDsa.TryExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan{System.Char},System.Security.Cryptography.PbeParameters,System.Span{System.Byte},System.Int32@):[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
+    <Left>net10.0/System.Security.Cryptography.dll</Left>
+    <Right>net11.0/System.Security.Cryptography.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.MLDsa.TryExportEncryptedPkcs8PrivateKey(System.String,System.Security.Cryptography.PbeParameters,System.Span{System.Byte},System.Int32@):[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
+    <Left>net10.0/System.Security.Cryptography.dll</Left>
+    <Right>net11.0/System.Security.Cryptography.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.MLDsa.TryExportPkcs8PrivateKey(System.Span{System.Byte},System.Int32@):[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
+    <Left>net10.0/System.Security.Cryptography.dll</Left>
+    <Right>net11.0/System.Security.Cryptography.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.MLDsa.TryExportPkcs8PrivateKeyCore(System.Span{System.Byte},System.Int32@):[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
+    <Left>net10.0/System.Security.Cryptography.dll</Left>
+    <Right>net11.0/System.Security.Cryptography.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.MLDsa.TryExportSubjectPublicKeyInfo(System.Span{System.Byte},System.Int32@):[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
+    <Left>net10.0/System.Security.Cryptography.dll</Left>
+    <Right>net11.0/System.Security.Cryptography.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>
@@ -447,7 +873,19 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.X509Certificates.PublicKey.#ctor(System.Security.Cryptography.MLDsa):[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
+    <Left>net10.0/System.Security.Cryptography.dll</Left>
+    <Right>net11.0/System.Security.Cryptography.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
     <Target>M:System.Security.Cryptography.X509Certificates.PublicKey.#ctor(System.Security.Cryptography.MLKem):[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
+    <Left>net10.0/System.Security.Cryptography.dll</Left>
+    <Right>net11.0/System.Security.Cryptography.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.X509Certificates.PublicKey.GetMLDsaPublicKey:[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
     <Left>net10.0/System.Security.Cryptography.dll</Left>
     <Right>net11.0/System.Security.Cryptography.dll</Right>
   </Suppression>
@@ -459,7 +897,25 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.X509Certificates.X509Certificate2.CopyWithPrivateKey(System.Security.Cryptography.MLDsa):[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
+    <Left>net10.0/System.Security.Cryptography.dll</Left>
+    <Right>net11.0/System.Security.Cryptography.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
     <Target>M:System.Security.Cryptography.X509Certificates.X509Certificate2.CopyWithPrivateKey(System.Security.Cryptography.MLKem):[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
+    <Left>net10.0/System.Security.Cryptography.dll</Left>
+    <Right>net11.0/System.Security.Cryptography.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.X509Certificates.X509Certificate2.GetMLDsaPrivateKey:[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
+    <Left>net10.0/System.Security.Cryptography.dll</Left>
+    <Right>net11.0/System.Security.Cryptography.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.X509Certificates.X509Certificate2.GetMLDsaPublicKey:[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
     <Left>net10.0/System.Security.Cryptography.dll</Left>
     <Right>net11.0/System.Security.Cryptography.dll</Right>
   </Suppression>
@@ -477,7 +933,19 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.X509Certificates.PublicKey.#ctor(System.Security.Cryptography.MLDsa):[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
+    <Left>net10.0/System.Security.Cryptography.X509Certificates.dll</Left>
+    <Right>net11.0/System.Security.Cryptography.X509Certificates.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
     <Target>M:System.Security.Cryptography.X509Certificates.PublicKey.#ctor(System.Security.Cryptography.MLKem):[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
+    <Left>net10.0/System.Security.Cryptography.X509Certificates.dll</Left>
+    <Right>net11.0/System.Security.Cryptography.X509Certificates.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.X509Certificates.PublicKey.GetMLDsaPublicKey:[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
     <Left>net10.0/System.Security.Cryptography.X509Certificates.dll</Left>
     <Right>net11.0/System.Security.Cryptography.X509Certificates.dll</Right>
   </Suppression>
@@ -489,7 +957,25 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.X509Certificates.X509Certificate2.CopyWithPrivateKey(System.Security.Cryptography.MLDsa):[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
+    <Left>net10.0/System.Security.Cryptography.X509Certificates.dll</Left>
+    <Right>net11.0/System.Security.Cryptography.X509Certificates.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
     <Target>M:System.Security.Cryptography.X509Certificates.X509Certificate2.CopyWithPrivateKey(System.Security.Cryptography.MLKem):[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
+    <Left>net10.0/System.Security.Cryptography.X509Certificates.dll</Left>
+    <Right>net11.0/System.Security.Cryptography.X509Certificates.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.X509Certificates.X509Certificate2.GetMLDsaPrivateKey:[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
+    <Left>net10.0/System.Security.Cryptography.X509Certificates.dll</Left>
+    <Right>net11.0/System.Security.Cryptography.X509Certificates.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Security.Cryptography.X509Certificates.X509Certificate2.GetMLDsaPublicKey:[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
     <Left>net10.0/System.Security.Cryptography.X509Certificates.dll</Left>
     <Right>net11.0/System.Security.Cryptography.X509Certificates.dll</Right>
   </Suppression>

@@ -78,6 +78,7 @@ class   MethodTable;
 class   Module;
 class   Object;
 class   Stub;
+enum class AsyncMethodFlags;
 class   Substitution;
 class   SystemDomain;
 class   TypeHandle;
@@ -792,6 +793,9 @@ private:
         mdMethodDef methodDef,
         DWORD dwImplFlags,
         DWORD dwMemberAttrs,
+        AsyncMethodFlags asyncFlags,
+        PCCOR_SIGNATURE pAsyncSig,
+        DWORD cbAsyncSig,
         MethodDesc** ppNewMD);
 public:
     // Add a new field to an already loaded type for EnC

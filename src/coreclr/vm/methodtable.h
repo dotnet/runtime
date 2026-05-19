@@ -351,6 +351,11 @@ struct MethodTableAuxiliaryData
         };
     };
 
+    // Lazily initialized cache for the version-resilient hash code of this MethodTable.
+    // A stored value of 0 indicates the field hasn't been set yet.
+    // Placed here to fill the 4-byte alignment padding between m_dwFlags and m_pLoaderModule,
+    // so this field adds no extra size to the struct on 64-bit platforms.
+    int m_cachedVersionResilientHashCode;
 
     PTR_Module m_pLoaderModule;
 
@@ -980,7 +985,7 @@ public:
     PTR_Module GetModule()
     {
         LIMITED_METHOD_CONTRACT;
-        _ASSERTE(!IsContinuation());
+        _ASSERTE(!IsContinuationWithoutMetadata());
         return m_pModule;
     }
 
@@ -1520,14 +1525,14 @@ public:
 
     // Is this something like List<T> or List<Stack<T>>?
     // List<Blah<T>> only exists for reflection and verification.
-    inline DWORD ContainsGenericVariables(BOOL methodVarsOnly = FALSE)
+    inline BOOL ContainsGenericVariables(BOOL methodVarsOnly = FALSE)
     {
         WRAPPER_NO_CONTRACT;
         SUPPORTS_DAC;
         if (methodVarsOnly)
             return ContainsGenericMethodVariables();
         else
-            return GetFlag(enum_flag_ContainsGenericVariables);
+            return !!GetFlag(enum_flag_ContainsGenericVariables);
     }
 
     BOOL IsByRefLike()
@@ -1805,8 +1810,10 @@ public:
     // Returns MethodTable that GetRestoredSlot get its values from
     MethodTable * GetRestoredSlotMT(DWORD slot);
 
-    // Used to map methods on the same slot between instantiations.
-    MethodDesc * GetParallelMethodDesc(MethodDesc * pDefMD, AsyncVariantLookup asyncVariantLookup = (AsyncVariantLookup)0);
+    // Used to map to "the same" method between instantiations. 
+    MethodDesc* GetParallelMethodDesc(MethodDesc* pDefMD);
+    // Maps methods between instantiations + filters/adjusts the result according to the lookup.
+    MethodDesc* GetParallelMethodDesc(MethodDesc* pDefMD, AsyncVariantLookup asyncVariantLookup);
 
     //-------------------------------------------------------------------
     // BoxedEntryPoint MethodDescs.
@@ -2039,8 +2046,10 @@ public:
     bool IsHFA();
 #endif // FEATURE_HFA
 
-    // Returns the size in bytes of this type if it is a HW vector type; 0 otherwise.
-    int GetVectorSize();
+    // Returns the HFA type for this type, if it is a valid HW vector type.
+    // Floating point HFA types will return CORINFO_HFA_ELEM_NONE.
+    // Vector classes with invalid generic parameters return CORINFO_HFA_ELEM_NONE.
+    CorInfoHFAElemType GetVectorHFA();
 
     // Get the HFA type. This is supported both with FEATURE_HFA, in which case it
     // depends on the cached bit on the class, or without, in which case it is recomputed
@@ -2845,7 +2854,7 @@ public:
         SetFlag(enum_flag_Category_Nullable);
     }
 
-    inline BOOL IsContinuation();
+    BOOL IsContinuationWithoutMetadata();
 
     // The following methods are only valid for the method tables for array types.
     CorElementType GetArrayElementType()
@@ -3806,12 +3815,12 @@ private:
         // enum_flag_unused                   = 0x00400000,
 
 #ifdef FEATURE_64BIT_ALIGNMENT
-        enum_flag_RequiresAlign8              = 0x00800000, // Type requires 8-byte alignment (only set on platforms that require this and don't get it implicitly)
+        enum_flag_RequiresAlign8              = 0x00800000, // Type requires 8-byte alignment (only set on platforms that require this and don't get it implicitly) [cDAC] [RuntimeTypeSystem]: Contract depends on this value
 #endif
 
         enum_flag_ContainsGCPointers          = 0x01000000, // Contains object references. [cDAC] [RuntimeTypeSystem]: Contract depends on this value
         enum_flag_HasTypeEquivalence          = 0x02000000, // can be equivalent to another type
-        enum_flag_IsTrackedReferenceWithFinalizer = 0x04000000,
+        enum_flag_IsTrackedReferenceWithFinalizer = 0x04000000, // [cDAC] [RuntimeTypeSystem]: Contract depends on this value
         // unused                             = 0x08000000,
 
         enum_flag_IDynamicInterfaceCastable   = 0x10000000, // class implements IDynamicInterfaceCastable interface

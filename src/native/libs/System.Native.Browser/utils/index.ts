@@ -12,8 +12,9 @@ import {
     localHeapViewI8, localHeapViewI16, localHeapViewI32, localHeapViewI64Big, localHeapViewU8, localHeapViewU16, localHeapViewU32, localHeapViewF32, localHeapViewF64,
     zeroRegion,
     isSharedArrayBuffer,
+    viewOrCopy,
 } from "./memory";
-import { stringToUTF16, stringToUTF16Ptr, stringToUTF8, stringToUTF8Ptr, utf16ToString } from "./strings";
+import { stringsInit, stringToUTF16, stringToUTF16Ptr, stringToUTF8, stringToUTF8Ptr, utf16ToString, utf8ToStringRelaxed } from "./strings";
 import { abortPosix, getExitStatus } from "./host";
 import { dotnetUpdateInternals, dotnetUpdateInternalsSubscriber } from "../utils/cross-module";
 import { initPolyfills } from "../utils/polyfills";
@@ -31,6 +32,7 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
     }
 
     initPolyfills();
+    stringsInit();
     registerRuntime(runtimeApi);
     registerCDAC(runtimeApi);
 
@@ -48,8 +50,10 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
         stringToUTF16Ptr,
         stringToUTF8Ptr,
         stringToUTF8,
+        utf8ToStringRelaxed,
         zeroRegion,
         isSharedArrayBuffer,
+        viewOrCopy,
         abortBackgroundTimers,
         abortPosix,
         getExitStatus,
@@ -64,8 +68,10 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
             map.stringToUTF16Ptr,
             map.stringToUTF8Ptr,
             map.stringToUTF8,
+            map.utf8ToStringRelaxed,
             map.zeroRegion,
             map.isSharedArrayBuffer,
+            map.viewOrCopy,
             map.abortBackgroundTimers,
             map.abortPosix,
             map.getExitStatus,

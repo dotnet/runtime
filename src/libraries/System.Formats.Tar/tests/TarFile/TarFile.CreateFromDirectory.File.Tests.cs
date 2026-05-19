@@ -290,7 +290,7 @@ namespace System.Formats.Tar.Tests
                 TarFile.CreateFromDirectory(source.Path, destinationArchiveFileName, includeBaseDirectory: false, format));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateHardLinks))]
         [InlineData(true)]
         [InlineData(false)]
         public void CreateFromDirectory_UsesWriterOptions(bool toggle)

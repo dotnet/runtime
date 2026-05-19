@@ -12,11 +12,11 @@ internal sealed class MethodDescChunk : IData<MethodDescChunk>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.MethodDescChunk);
 
-        MethodTable = target.ReadPointer(address + (ulong)type.Fields[nameof(MethodTable)].Offset);
-        Next = target.ReadPointer(address + (ulong)type.Fields[nameof(Next)].Offset);
-        Size = target.Read<byte>(address + (ulong)type.Fields[nameof(Size)].Offset);
-        Count = target.Read<byte>(address + (ulong)type.Fields[nameof(Count)].Offset);
-        FlagsAndTokenRange = target.Read<ushort>(address + (ulong)type.Fields[nameof(FlagsAndTokenRange)].Offset);
+        MethodTable = target.ReadPointerField(address, type, nameof(MethodTable));
+        Next = target.ReadPointerField(address, type, nameof(Next));
+        Size = target.ReadField<byte>(address, type, nameof(Size));
+        Count = target.ReadField<byte>(address, type, nameof(Count));
+        FlagsAndTokenRange = target.ReadField<ushort>(address, type, nameof(FlagsAndTokenRange));
 
         // The first MethodDesc is at the end of the MethodDescChunk
         FirstMethodDesc = address + type.Size!.Value;

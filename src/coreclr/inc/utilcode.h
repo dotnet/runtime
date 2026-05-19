@@ -38,6 +38,7 @@ using std::nothrow;
 #include <stddef.h>
 #include <minipal/guid.h>
 #include <minipal/log.h>
+#include <minipal/ospagesize.h>
 #include <dn-u16.h>
 
 #include "clrnt.h"
@@ -576,8 +577,6 @@ int GetTotalProcessorCount();
 // Returns the number of processors that a process has been configured to run on
 //******************************************************************************
 int GetCurrentProcessCpuCount();
-
-uint32_t GetOsPageSize();
 
 
 //*****************************************************************************
@@ -3452,12 +3451,6 @@ namespace util
 }
 
 INDEBUG(BOOL DbgIsExecutable(LPVOID lpMem, SIZE_T length);)
-
-#ifdef FEATURE_COMINTEROP
-FORCEINLINE void HolderSysFreeString(BSTR str) { CONTRACT_VIOLATION(ThrowsViolation); SysFreeString(str); }
-
-typedef Wrapper<BSTR, DoNothing, HolderSysFreeString> BSTRHolder;
-#endif
 
 BOOL IsIPInModule(PTR_VOID pModuleBaseAddress, PCODE ip);
 

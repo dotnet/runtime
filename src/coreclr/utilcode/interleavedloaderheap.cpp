@@ -49,7 +49,7 @@ UnlockedInterleavedLoaderHeap::UnlockedInterleavedLoaderHeap(
     }
     CONTRACTL_END;
 
-    _ASSERTE((GetStubCodePageSize() % GetOsPageSize()) == 0); // Stub code page size MUST be in increments of the page size. (Really it must be a power of 2 as well, but this is good enough)
+    _ASSERTE((GetStubCodePageSize() % minipal_getpagesize()) == 0); // Stub code page size MUST be in increments of the page size. (Really it must be a power of 2 as well, but this is good enough)
 }
 
 UnlockedInterleavedLoaderHeap::~UnlockedInterleavedLoaderHeap()
@@ -151,7 +151,7 @@ BOOL UnlockedInterleavedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
     size_t dwSizeToReserve;
 
     // Round to page size again
-    dwSizeToCommit = ALIGN_UP(dwSizeToCommit, GetOsPageSize());
+    dwSizeToCommit = ALIGN_UP(dwSizeToCommit, minipal_getpagesize());
 
     ReservedMemoryHolder pData = NULL;
 

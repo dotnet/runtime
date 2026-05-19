@@ -1348,7 +1348,7 @@ InternalDispatchImpl_GetIDsOfNames (
 
         ComMethodTable* pCMT = ComMethodTable::ComMethodTableFromIP(pDisp);
         if (pCMT->IsIClassXOrBasicItf() && pCMT->GetClassInterfaceType() != clsIfNone)
-            pCMT->CheckParentComVisibility(FALSE);
+            pCMT->CheckParentComVisibility();
 
         pSimpleWrap = pCCW->GetSimpleWrapper();
         pDispInfo = ComMethodTable::ComMethodTableFromIP(pDisp)->GetDispatchInfo();
@@ -1420,7 +1420,7 @@ InternalDispatchImpl_Invoke
 
         ComMethodTable* pCMT = ComMethodTable::ComMethodTableFromIP(pDisp);
         if (pCMT->IsIClassXOrBasicItf() && pCMT->GetClassInterfaceType() != clsIfNone)
-            pCMT->CheckParentComVisibility(FALSE);
+            pCMT->CheckParentComVisibility();
 
         pSimpleWrap = pCCW->GetSimpleWrapper();
 
@@ -1893,7 +1893,7 @@ HRESULT __stdcall   DispatchEx_GetMemberProperties (
                             DispatchExPropertyCanWrite = 2,
                         };
 
-                        UnmanagedCallersOnlyCaller getDispatchExPropertyFlags(METHOD__STUBHELPERS__GET_DISPATCH_EX_PROPERTY_FLAGS);
+                        UnmanagedCallersOnlyCaller getDispatchExPropertyFlags(METHOD__IDISPATCHHELPERS__GET_DISPATCH_EX_PROPERTY_FLAGS);
                         INT32 propertyFlags = getDispatchExPropertyFlags.InvokeThrowing_Ret<INT32>(&MemberInfoObj);
 
                         bool bCanRead = (propertyFlags & DispatchExPropertyCanRead) != 0;

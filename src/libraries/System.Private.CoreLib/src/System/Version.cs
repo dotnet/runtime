@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers.Text;
@@ -169,7 +169,7 @@ namespace System
         public override string ToString() =>
             ToString(DefaultFormatFieldCount);
 
-        public string ToString(int fieldCount)
+        public unsafe string ToString(int fieldCount)
         {
             Span<char> dest = stackalloc char[(4 * Number.Int32NumberBufferLength) + 3]; // at most 4 Int32s and 3 periods
             bool success = TryFormat(dest, fieldCount, out int charsWritten);

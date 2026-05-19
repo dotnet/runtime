@@ -47,8 +47,12 @@ namespace ILLink.Shared.TrimAnalysis
         {
             Debug.Assert(Location != null);
 
-            if (actualValue is NullableValueWithDynamicallyAccessedMembers nv)
-                actualValue = nv.UnderlyingTypeValue;
+            actualValue = actualValue switch
+            {
+                NullableValueWithDynamicallyAccessedMembers nv => nv.UnderlyingTypeValue,
+                NullableUnwrappedGenericParameterValue ng => ng.GenericParameter,
+                _ => actualValue,
+            };
 
             ISymbol symbol = actualValue switch
             {

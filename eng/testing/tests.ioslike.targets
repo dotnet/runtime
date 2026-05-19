@@ -227,7 +227,8 @@
     <ZipDirectory Condition="'$(GenerateXcodeProject)' == 'true'"
                   SourceDirectory="$(_AppBundleDir)"
                   DestinationFile="$([MSBuild]::NormalizePath('$(TestArchiveTestsDir)', '$(TestProjectName).zip'))"
-                  Overwrite="true" />
+                  Overwrite="true"
+                  CompressionLevel="Fastest" />
 
     <RemoveDir Condition="'$(NeedsToBuildAppsOnHelixLocal)' != 'true'" Directories="$(OutDir)" />
   </Target>

@@ -1496,7 +1496,13 @@ ep_init (void)
 #else // PERFTRACING_DISABLE_THREADS
 	const uint32_t default_profiler_sample_rate_in_nanoseconds = 5000000; // 5 msec.
 #endif // PERFTRACING_DISABLE_THREADS
-	ep_sample_profiler_set_sampling_rate (default_profiler_sample_rate_in_nanoseconds);
+
+	// Allow overriding the sampling rate via DOTNET_EventPipeThreadSamplingRate (in milliseconds).
+	uint32_t configured_rate_ms = ep_rt_config_value_get_sampling_rate ();
+	if (configured_rate_ms > 0)
+		ep_sample_profiler_set_sampling_rate ((uint64_t)configured_rate_ms * 1000000);
+	else
+		ep_sample_profiler_set_sampling_rate (default_profiler_sample_rate_in_nanoseconds);
 
 	_ep_deferred_enable_session_ids = dn_vector_alloc_t (EventPipeSessionID);
 	_ep_deferred_disable_session_ids = dn_vector_alloc_t (EventPipeSessionID);

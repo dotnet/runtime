@@ -544,16 +544,22 @@ void gc_heap::background_promote (Object** ppObject, ScanContext* sc, uint32_t f
 
     uint8_t* o = (uint8_t*)*ppObject;
 
-    if (!is_in_find_object_range (o))
-    {
-        return;
-    }
-
 #ifdef DEBUG_DestroyedHandleValue
     // we can race with destroy handle during concurrent scan
     if (o == (uint8_t*)DEBUG_DestroyedHandleValue)
         return;
 #endif //DEBUG_DestroyedHandleValue
+
+    if (!is_in_find_object_range (o))
+    {
+#ifdef _DEBUG
+        if ((o != NULL) && !(flags & GC_CALL_INTERIOR))
+        {
+            ((CObjectHeader*)o)->Validate();
+        }
+#endif //_DEBUG
+        return;
+    }
 
     HEAP_FROM_THREAD;
 
@@ -2102,19 +2108,17 @@ void gc_heap::background_mark_phase ()
 
 #ifdef FEATURE_JAVAMARSHAL
 
-    // FIXME Any reason this code should be different for BGC ? Otherwise extract it to some common method ?
-
 #ifdef MULTIPLE_HEAPS
     dprintf(3, ("Joining for short weak handle scan"));
-    gc_t_join.join(this, gc_join_bridge_processing);
-    if (gc_t_join.joined())
+    bgc_t_join.join(this, gc_join_bridge_processing);
+    if (bgc_t_join.joined())
     {
 #endif //MULTIPLE_HEAPS
         global_bridge_list = GCScan::GcProcessBridgeObjects (max_generation, max_generation, &sc, &num_global_bridge_objs);
 
 #ifdef MULTIPLE_HEAPS
         dprintf (3, ("Starting all gc thread after bridge processing"));
-        gc_t_join.restart();
+        bgc_t_join.restart();
     }
 #endif //MULTIPLE_HEAPS
 
@@ -2743,6 +2747,12 @@ void gc_heap::background_promote_callback (Object** ppObject, ScanContext* sc,
 
     if (!is_in_find_object_range (o))
     {
+#ifdef _DEBUG
+        if ((o != NULL) && !(flags & GC_CALL_INTERIOR))
+        {
+            ((CObjectHeader*)o)->Validate();
+        }
+#endif //_DEBUG
         return;
     }
 

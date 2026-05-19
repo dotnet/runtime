@@ -45,7 +45,7 @@ enum LFH {
 // Windows uses 64kB as the null-reference area
 #define NULL_AREA_SIZE   (64 * 1024)
 #else // !TARGET_UNIX
-#define NULL_AREA_SIZE   GetOsPageSize()
+#define NULL_AREA_SIZE   minipal_getpagesize()
 #endif // !TARGET_UNIX
 
 class IJitManager;
@@ -169,12 +169,6 @@ bool GenerateDump(LPCWSTR dumpName, INT dumpType, ULONG32 flags, LPSTR errorMess
 void CrashDumpAndTerminateProcess(UINT exitCode);
 
 LONG ThreadBaseExceptionAppDomainFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pvParam);
-
-// Filter for calls out from the 'vm' to native code, if there's a possibility of SEH exceptions
-// in the native code.
-struct CallOutFilterParam { BOOL OneShot; };
-LONG CallOutFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pv);
-
 
 void STDMETHODCALLTYPE DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionInfo,
                                            OBJECTREF *Throwable = NULL,
@@ -592,8 +586,6 @@ BOOL IsInFirstFrameOfHandler(Thread *pThread,
 //==========================================================================
 // Handy helper functions
 //==========================================================================
-LONG FilterAccessViolation(PEXCEPTION_POINTERS pExceptionPointers, LPVOID lpvParam);
-
 bool IsInterceptableException(Thread *pThread);
 
 #ifdef DEBUGGING_SUPPORTED
