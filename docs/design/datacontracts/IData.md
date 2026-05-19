@@ -467,6 +467,85 @@ Expression-bodied properties for *trivial* projections of an already-
 read field (e.g. `bool IsAlive => ReferenceCount != 0;`) are fine --
 they don't add target reads or hide work.
 
+### Materialize cached instances through `GetOrAdd`, never `new`
+
+IData instances are cached by `(T, address)` in
+`target.ProcessedData`. Materialize them through
+`target.ProcessedData.GetOrAdd<T>(addr)`, which returns the cached
+instance if one exists and otherwise constructs and caches a fresh
+one. Direct construction (`new T(target, addr)`) bypasses the cache:
+
+* It pays the full set of descriptor field reads on every call rather
+  than once per `(T, address)` pair per target session.
+* For classes with `[Field(Writable = true)]`, a subsequent
+  `Write{Name}` call on the standalone instance updates only that
+  instance's in-memory snapshot. Other callers that hold the cached
+  instance continue to see the pre-write value, silently diverging
+  from the target.
+
+Avoid:
+
+```csharp
+void IThread.SetDebuggerControlledThreadState(TargetPointer thread, ...)
+{
+    // BAD: fresh ctor, cached instance not updated.
+    Data.Thread t = new Data.Thread(_target, thread);
+    t.WriteDebuggerControlledThreadState(_target, ...);
+}
+```
+
+Prefer:
+
+```csharp
+void IThread.SetDebuggerControlledThreadState(TargetPointer thread, ...)
+{
+    Data.Thread t = _target.ProcessedData.GetOrAdd<Data.Thread>(thread);
+    t.WriteDebuggerControlledThreadState(_target, ...);
+}
+```
+
+### Don't capture `Target` in instance state
+
+An IData instance is a *cached snapshot* of target memory at the
+moment of materialization. The `Target` itself is the live channel to
+the process / dump and is supplied by the contract or other consumer
+on each call. Methods that need to touch the target (the generated
+`Write{Name}` is the canonical example; an `OnInit` body is another)
+take `Target` as a parameter -- don't stash it as an instance field.
+Capturing `Target` couples every cached IData object to one specific
+target, bloats the cache, and invites stale-target bugs when the
+target is rebuilt after a `Flush`.
+
+### Match the descriptor's field type verbatim
+
+The C# property's declared type should follow the descriptor's
+declared type without widening, narrowing, or sign-flipping:
+
+| Descriptor type     | C# property type    |
+|---------------------|---------------------|
+| `T_UINT8`           | `byte` (or `bool` -- see below) |
+| `T_INT8`            | `sbyte`             |
+| `T_UINT16`          | `ushort`            |
+| `T_INT16`           | `short`             |
+| `T_UINT32`          | `uint`              |
+| `T_INT32`           | `int`               |
+| `T_UINT64`          | `ulong`             |
+| `T_INT64`           | `long`              |
+| `T_NUINT` / `T_NINT`| `TargetNUInt`       |
+| `T_PTR`             | `TargetPointer`     |
+
+Sign-flipping silently corrupts write-back: declaring a `T_INT32`
+field as `uint` and then calling `Write{Name}(target, value)` will
+write a re-interpreted bit pattern that the runtime may treat as a
+different value. Widening (`byte` -> `int`) hides the underlying
+storage size and makes the C# code unable to round-trip data through
+the `Write{Name}` path safely.
+
+`bool` is the one allowed deviation: a `T_UINT8` field declared as
+`bool` is treated by the generator as a "non-zero" view of the byte
+(`ReadField<byte>(...) != 0`) with the corresponding write back as
+`(byte)(value ? 1 : 0)`.
+
 ### Don't eagerly dereference pointers to other IData classes
 
 When a field is a `TargetPointer` that points to another IData
