@@ -2685,9 +2685,9 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
             case NI_AVX512_TernaryLogic:
             {
-                // While this operation is RMW, it is also almost freely reorderable
-                // and so we do not need to set the operands as delay free unless
-                // the control byte is unknown.
+                // While this operation can be RMW when all operands are used, it
+                // is also almost freely reorderable and so we do not need to set
+                // the operands as delay free unless the control byte is unknown.
 
                 assert(numArgs == 4);
 
@@ -2731,6 +2731,9 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     tgtPrefUse3 = BuildUse(op3);
                     srcCount++;
                 }
+
+                assert(op4->isContained());
+                srcCount += BuildOperandUses(op4);
 
                 buildUses = false;
                 break;
