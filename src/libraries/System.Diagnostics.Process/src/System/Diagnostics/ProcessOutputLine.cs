@@ -35,5 +35,11 @@ namespace System.Diagnostics
         /// otherwise, <see langword="false" />.
         /// </value>
         public bool StandardError { get; }
+
+        /// <summary>
+        /// Returns the text content of the output line.
+        /// </summary>
+        /// <returns>The value of <see cref="Content"/>.</returns>
+        public override string ToString() => Content;
     }
 }
