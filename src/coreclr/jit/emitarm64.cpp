@@ -1436,6 +1436,32 @@ static const char * const  bRegNames[] =
 // clang-format on
 
 //------------------------------------------------------------------------
+// emitPacInProlog: Sign LR as part of Pointer Authentication (PAC) support
+//
+void emitter::emitPacInProlog()
+{
+    if (JitConfig.JitPacEnabled() == 0)
+    {
+        return;
+    }
+    emitIns(TargetOS::IsWindows ? INS_pacibsp : INS_paciasp);
+    m_compiler->unwindPacSignLR();
+}
+
+//------------------------------------------------------------------------
+// emitPacInEpilog: unsign LR as part of Pointer Authentication (PAC) support
+//
+void emitter::emitPacInEpilog()
+{
+    if (JitConfig.JitPacEnabled() == 0)
+    {
+        return;
+    }
+    emitIns(TargetOS::IsWindows ? INS_autibsp : INS_autiasp);
+    m_compiler->unwindPacSignLR();
+}
+
+//------------------------------------------------------------------------
 // emitRegName: Returns a general-purpose register name or SIMD and floating-point scalar register name.
 //
 // Arguments:
@@ -16250,9 +16276,10 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             break;
 
-        case IF_PC_0A:
-        case IF_PC_1A:
-        case IF_PC_2A:
+        case IF_PC_0A: // autia1716, autiasp, autib1716, autibsp, autibz, autiaz, pacia1716, paciasp, pacib1716,
+                       // pacibsp, pacibz, paciaz, xpaclri
+        case IF_PC_1A: // autiza, autizb, paciza, pacizb, xpacd, xpaci
+        case IF_PC_2A: // autia, autib, pacia, pacib
             switch (ins)
             {
                 case INS_xpacd:
