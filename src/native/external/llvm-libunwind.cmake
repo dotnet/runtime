@@ -6,7 +6,6 @@ endif()
 
 set (LLVM_LIBUNWIND_SOURCES_BASE
     src/Unwind-EHABI.cpp
-    src/libunwind.cpp
 )
 
 set(LLVM_LIBUNWIND_ASM_SOURCES_BASE
