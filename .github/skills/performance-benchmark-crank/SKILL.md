@@ -61,4 +61,4 @@ crank --config httpclient.benchmarks.yml --profile aspnet-perf-lin \
 
 Consult the benchmark yml definition for the specific scenario you are using to see which variables are available.
 
-Prefer collecting the results into a file using either the `--json` or `--csv` argument so that the results can be easily shared and analyzed. The metrics exported may be different for each benchmark scenario, so you may need to run the benchmark once to see which metrics are available before deciding which ones to focus on for your analysis.
+Prefer collecting the results into a file using either the `--json <path>` or `--csv <path>` argument so that the results can be easily shared and analyzed (for example, `--json results.json` or `--csv results.csv`). The metrics exported may be different for each benchmark scenario, so you may need to run the benchmark once to see which metrics are available before deciding which ones to focus on for your analysis.
