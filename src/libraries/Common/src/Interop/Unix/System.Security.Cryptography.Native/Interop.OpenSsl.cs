@@ -861,6 +861,16 @@ internal static partial class Interop
             // tag, optional MAC, padding, and the inner content-type byte for TLS 1.3).
             // Always add slack for at least one record's overhead even when inputLength == 0,
             // since SSL_write of an empty buffer can still emit handshake/alert bytes.
+            //
+            // No overflow check is needed: SslStream chunks user writes to MaxDataSize before
+            // calling EncryptMessage (see WriteAsyncChunked in SslStream.IO.cs), and on Unix
+            // MaxDataSize is at most StreamSizes.Default.MaximumMessage = 32 * 1024. The
+            // resulting upper bound (~33 KiB) is several orders of magnitude below int.MaxValue.
+            // The assert below guards against accidentally breaking that invariant in the future.
+            const int MaxExpectedInput = 32 * 1024;
+            Debug.Assert(
+                (uint)inputLength <= MaxExpectedInput,
+                $"ComputeMaxTlsOutput: inputLength {inputLength} exceeds expected upper bound {MaxExpectedInput}; SslStream chunking invariant broken.");
             const int MaxRecordOverhead = 256;
             int records = (inputLength >> 14) + 2;
             return inputLength + (records * MaxRecordOverhead);
