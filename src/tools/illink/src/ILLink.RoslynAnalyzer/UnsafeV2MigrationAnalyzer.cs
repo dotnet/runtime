@@ -182,13 +182,19 @@ namespace ILLink.RoslynAnalyzer
             };
         }
 
-        // True iff a block body has statements worth wrapping (non-empty, no existing
-        // unsafe block, no conditional-compilation directives).
+        // True iff a block body has statements worth wrapping (non-empty, no conditional-
+        // compilation directives, and not already in the fixer's own idempotent output
+        // shape — i.e. `{ unsafe { ... } }`).
         public static bool BlockNeedsWrap(BlockSyntax? body)
         {
             if (body is null || body.Statements.Count == 0)
                 return false;
-            if (body.DescendantNodes().OfType<UnsafeStatementSyntax>().Any())
+            // Skip ONLY when the body's *direct* shape is the one this fixer emits — a
+            // single top-level `unsafe { ... }` statement. Checking DescendantNodes here
+            // would be wrong: a nested unsafe block inside a local function or lambda
+            // does not relieve the outer body from needing its own unsafe context for
+            // any sibling unsafe operations.
+            if (body.Statements.Count == 1 && body.Statements[0] is UnsafeStatementSyntax)
                 return false;
             // Skip wrapping when the body contains conditional-compilation directives.
             // Every structural / textual wrap we tried produced different output per TFM,
@@ -209,9 +215,12 @@ namespace ILLink.RoslynAnalyzer
             || trivia.IsKind(SyntaxKind.ElseDirectiveTrivia)
             || trivia.IsKind(SyntaxKind.EndIfDirectiveTrivia);
 
-        // True iff an `=> expr` body is worth wrapping (has no unsafe statement already).
+        // True iff an `=> expr` body should be wrapped. An expression body can never
+        // itself BE an `unsafe { ... }` block (unsafe is a statement, not an expression),
+        // so we always wrap when one is present. Nested unsafe blocks inside lambdas /
+        // local functions don't suppress wrapping for the same reason as BlockNeedsWrap.
         public static bool ExpressionBodyNeedsWrap(ArrowExpressionClauseSyntax? expr) =>
-            expr is not null && !expr.DescendantNodesAndSelf().OfType<UnsafeStatementSyntax>().Any();
+            expr is not null;
 
         // True iff a property/indexer body (expression or accessor list) needs wrapping,
         // skipping trivial field-forwarders.

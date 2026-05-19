@@ -353,6 +353,77 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeV2MigrationAnalyzer} = tr
         }
 
         [Fact]
+        public async Task UnsafeMethodWithExistingUnsafeBlockPlusOtherStatements_StillWraps()
+        {
+            // Regression: previously BlockNeedsWrap used DescendantNodes() to look for an
+            // existing unsafe block anywhere in the body, which would suppress wrapping
+            // even when the body had top-level statements (`*p = 0` here) that were
+            // relying on the method-level unsafe context. The fix only skips wrapping
+            // when the body is *exactly* `{ unsafe { ... } }`.
+            var source = """
+                public class C
+                {
+                    public {|IL5006:unsafe|} void M(int* p)
+                    {
+                        unsafe { System.Console.WriteLine(); }
+                        *p = 0;
+                    }
+                }
+                """;
+            var fixedSource = """
+                public class C
+                {
+                    public unsafe void M(int* p)
+                    {
+                        unsafe
+                        {
+                            // SAFETY-TODO: Audit this unsafe usage
+                            unsafe { System.Console.WriteLine(); }
+                            *p = 0;
+                        }
+                    }
+                }
+                """;
+            await VerifyCodeFix(source, fixedSource);
+        }
+
+        [Fact]
+        public async Task UnsafeMethodWithUnsafeBlockNestedInLocalFunction_StillWraps()
+        {
+            // Regression: a nested `unsafe { }` inside a local function does not relieve
+            // the outer method body from needing its own unsafe context (the spec says
+            // 'unsafe' on a member is NOT applied to nested local functions). Previously
+            // we'd skip wrapping because the descendant scan found the nested block.
+            var source = """
+                public class C
+                {
+                    public {|IL5006:unsafe|} void M(int* p)
+                    {
+                        void Inner() { unsafe { System.Console.WriteLine(); } }
+                        Inner();
+                        *p = 0;
+                    }
+                }
+                """;
+            var fixedSource = """
+                public class C
+                {
+                    public unsafe void M(int* p)
+                    {
+                        unsafe
+                        {
+                            // SAFETY-TODO: Audit this unsafe usage
+                            void Inner() { unsafe { System.Console.WriteLine(); } }
+                            Inner();
+                            *p = 0;
+                        }
+                    }
+                }
+                """;
+            await VerifyCodeFix(source, fixedSource);
+        }
+
+        [Fact]
         public async Task UnsafeIteratorMethod_WrapsBody_DeveloperFixesFallout()
         {
             // Best effort: we wrap the body even though `unsafe { yield return ... }` is
