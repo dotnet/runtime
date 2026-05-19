@@ -701,10 +701,10 @@ namespace System.Diagnostics.Tests
         [InlineData("line with spaces")]
         public void ProcessOutputLine_ToString_ReturnsContent(string content)
         {
-            var line = new ProcessOutputLine(content, standardError: false);
+            ProcessOutputLine line = new(content, standardError: false);
             Assert.Equal(content, line.ToString());
 
-            var errorLine = new ProcessOutputLine(content, standardError: true);
+            ProcessOutputLine errorLine = new(content, standardError: true);
             Assert.Equal(content, errorLine.ToString());
         }
 
