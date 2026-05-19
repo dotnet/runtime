@@ -141,7 +141,7 @@ namespace System
 
         internal static unsafe void NumberToString<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, char format, int nMaxDigits, NumberFormatInfo info) where TChar : unmanaged, IUtfChar<TChar>
         {
-            Debug.Assert(sizeof(TChar) == sizeof(char) || sizeof(TChar) == sizeof(byte));
+            Debug.Assert(sizeof(TChar) is sizeof(char) or sizeof(byte));
 
             number.CheckConsistency();
             bool isCorrectlyRounded = (number.Kind == NumberBufferKind.FloatingPoint);
@@ -290,7 +290,7 @@ namespace System
 
         internal static unsafe void NumberToStringFormat<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, ReadOnlySpan<char> format, NumberFormatInfo info) where TChar : unmanaged, IUtfChar<TChar>
         {
-            Debug.Assert(sizeof(TChar) == sizeof(char) || sizeof(TChar) == sizeof(byte));
+            Debug.Assert(sizeof(TChar) is sizeof(char) or sizeof(byte));
 
             number.CheckConsistency();
 
@@ -684,7 +684,7 @@ namespace System
                                     vlb.Append(TChar.CastFrom(ch));
                                     if (src < format.Length)
                                     {
-                                        if (pFormat[src] == '+' || pFormat[src] == '-')
+                                        if (pFormat[src] is '+' or '-')
                                         {
                                             AppendUnknownChar(ref vlb, pFormat[src++]);
                                         }
@@ -713,7 +713,7 @@ namespace System
 
         private static unsafe void FormatCurrency<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, int nMaxDigits, NumberFormatInfo info) where TChar : unmanaged, IUtfChar<TChar>
         {
-            Debug.Assert(sizeof(TChar) == sizeof(char) || sizeof(TChar) == sizeof(byte));
+            Debug.Assert(sizeof(TChar) is sizeof(char) or sizeof(byte));
 
             string fmt = number.IsNegative ?
                 s_negCurrencyFormats[info.CurrencyNegativePattern] :
@@ -747,7 +747,7 @@ namespace System
             int nMaxDigits, int[]? groupDigits,
             ReadOnlySpan<TChar> sDecimal, ReadOnlySpan<TChar> sGroup) where TChar : unmanaged, IUtfChar<TChar>
         {
-            Debug.Assert(sizeof(TChar) == sizeof(char) || sizeof(TChar) == sizeof(byte));
+            Debug.Assert(sizeof(TChar) is sizeof(char) or sizeof(byte));
 
             int digPos = number.Scale;
             byte* dig = number.DigitsPtr;
@@ -862,7 +862,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe void AppendUnknownChar<TChar>(ref ValueListBuilder<TChar> vlb, char ch) where TChar : unmanaged, IUtfChar<TChar>
         {
-            Debug.Assert(sizeof(TChar) == sizeof(char) || sizeof(TChar) == sizeof(byte));
+            Debug.Assert(sizeof(TChar) is sizeof(char) or sizeof(byte));
 
             if (sizeof(TChar) == sizeof(char) || char.IsAscii(ch))
             {
@@ -883,7 +883,7 @@ namespace System
 
         private static unsafe void FormatNumber<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, int nMaxDigits, NumberFormatInfo info) where TChar : unmanaged, IUtfChar<TChar>
         {
-            Debug.Assert(sizeof(TChar) == sizeof(char) || sizeof(TChar) == sizeof(byte));
+            Debug.Assert(sizeof(TChar) is sizeof(char) or sizeof(byte));
 
             string fmt = number.IsNegative ?
                 s_negNumberFormats[info.NumberNegativePattern] :
@@ -910,7 +910,7 @@ namespace System
 
         private static unsafe void FormatScientific<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, int nMaxDigits, NumberFormatInfo info, char expChar) where TChar : unmanaged, IUtfChar<TChar>
         {
-            Debug.Assert(sizeof(TChar) == sizeof(char) || sizeof(TChar) == sizeof(byte));
+            Debug.Assert(sizeof(TChar) is sizeof(char) or sizeof(byte));
 
             byte* dig = number.DigitsPtr;
 
@@ -932,7 +932,7 @@ namespace System
 
         private static unsafe void FormatExponent<TChar>(ref ValueListBuilder<TChar> vlb, NumberFormatInfo info, int value, char expChar, int minDigits, bool positiveSign) where TChar : unmanaged, IUtfChar<TChar>
         {
-            Debug.Assert(sizeof(TChar) == sizeof(char) || sizeof(TChar) == sizeof(byte));
+            Debug.Assert(sizeof(TChar) is sizeof(char) or sizeof(byte));
 
             vlb.Append(TChar.CastFrom(expChar));
 
@@ -956,7 +956,7 @@ namespace System
 
         private static unsafe void FormatGeneral<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, int nMaxDigits, NumberFormatInfo info, char expChar, bool suppressScientific) where TChar : unmanaged, IUtfChar<TChar>
         {
-            Debug.Assert(sizeof(TChar) == sizeof(char) || sizeof(TChar) == sizeof(byte));
+            Debug.Assert(sizeof(TChar) is sizeof(char) or sizeof(byte));
 
             int digPos = number.Scale;
             bool scientific = false;
@@ -1010,7 +1010,7 @@ namespace System
 
         private static unsafe void FormatPercent<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, int nMaxDigits, NumberFormatInfo info) where TChar : unmanaged, IUtfChar<TChar>
         {
-            Debug.Assert(sizeof(TChar) == sizeof(char) || sizeof(TChar) == sizeof(byte));
+            Debug.Assert(sizeof(TChar) is sizeof(char) or sizeof(byte));
 
             string fmt = number.IsNegative ?
                 s_negPercentFormats[info.PercentNegativePattern] :

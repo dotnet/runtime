@@ -2,87 +2,268 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
+internal class MockMethodDesc : TypedView
+{
+    private const string ChunkIndexFieldName = "ChunkIndex";
+    private const string SlotFieldName = "Slot";
+    private const string FlagsFieldName = "Flags";
+    private const string Flags3AndTokenRemainderFieldName = "Flags3AndTokenRemainder";
+    private const string EntryPointFlagsFieldName = "EntryPointFlags";
+    private const string CodeDataFieldName = "CodeData";
+    private const string GCCoverageInfoFieldName = "GCCoverageInfo";
+
+    public static Layout<MockMethodDesc> CreateLayout(MockTarget.Architecture architecture)
+        => new SequentialLayoutBuilder("MethodDesc", architecture)
+            .AddByteField(ChunkIndexFieldName)
+            .AddUInt16Field(SlotFieldName)
+            .AddUInt16Field(FlagsFieldName)
+            .AddUInt16Field(Flags3AndTokenRemainderFieldName)
+            .AddByteField(EntryPointFlagsFieldName)
+            .AddPointerField(CodeDataFieldName)
+            .AddPointerField(GCCoverageInfoFieldName)
+            .Build<MockMethodDesc>();
+
+    public byte ChunkIndex
+    {
+        get => ReadByteField(ChunkIndexFieldName);
+        set => WriteByteField(ChunkIndexFieldName, value);
+    }
+
+    public ushort Slot
+    {
+        get => ReadUInt16Field(SlotFieldName);
+        set => WriteUInt16Field(SlotFieldName, value);
+    }
+
+    public ushort Flags
+    {
+        get => ReadUInt16Field(FlagsFieldName);
+        set => WriteUInt16Field(FlagsFieldName, value);
+    }
+
+    public ushort Flags3AndTokenRemainder
+    {
+        get => ReadUInt16Field(Flags3AndTokenRemainderFieldName);
+        set => WriteUInt16Field(Flags3AndTokenRemainderFieldName, value);
+    }
+
+    public byte EntryPointFlags
+    {
+        get => ReadByteField(EntryPointFlagsFieldName);
+        set => WriteByteField(EntryPointFlagsFieldName, value);
+    }
+
+    public ulong CodeData
+    {
+        get => ReadPointerField(CodeDataFieldName);
+        set => WritePointerField(CodeDataFieldName, value);
+    }
+
+    public ulong GCCoverageInfo
+    {
+        get => ReadPointerField(GCCoverageInfoFieldName);
+        set => WritePointerField(GCCoverageInfoFieldName, value);
+    }
+
+}
+
+internal sealed class MockMethodDescChunk : TypedView
+{
+    private const string MethodTableFieldName = "MethodTable";
+    private const string NextFieldName = "Next";
+    private const string SizeFieldName = "Size";
+    private const string CountFieldName = "Count";
+    private const string FlagsAndTokenRangeFieldName = "FlagsAndTokenRange";
+
+    public static Layout<MockMethodDescChunk> CreateLayout(MockTarget.Architecture architecture)
+    {
+        LayoutBuilder builder = new("MethodDescChunk", architecture);
+        int pointerSize = architecture.Is64Bit ? sizeof(ulong) : sizeof(uint);
+
+        builder.AddField(MethodTableFieldName, 0, pointerSize);
+        builder.AddField(NextFieldName, pointerSize, pointerSize);
+        builder.AddField(SizeFieldName, pointerSize * 2, sizeof(byte));
+        builder.AddField(CountFieldName, pointerSize * 2 + sizeof(byte), sizeof(byte));
+        builder.AddField(FlagsAndTokenRangeFieldName, pointerSize * 2 + sizeof(ushort), sizeof(ushort));
+        builder.Size = pointerSize == sizeof(ulong) ? 24 : 12;
+        return builder.Build<MockMethodDescChunk>();
+    }
+
+    public ulong MethodTable
+    {
+        get => ReadPointerField(MethodTableFieldName);
+        set => WritePointerField(MethodTableFieldName, value);
+    }
+
+    public ulong Next
+    {
+        get => ReadPointerField(NextFieldName);
+        set => WritePointerField(NextFieldName, value);
+    }
+
+    public byte Size
+    {
+        get => ReadByteField(SizeFieldName);
+        set => WriteByteField(SizeFieldName, value);
+    }
+
+    public byte Count
+    {
+        get => ReadByteField(CountFieldName);
+        set => WriteByteField(CountFieldName, value);
+    }
+
+    public ushort FlagsAndTokenRange
+    {
+        get => ReadUInt16Field(FlagsAndTokenRangeFieldName);
+        set => WriteUInt16Field(FlagsAndTokenRangeFieldName, value);
+    }
+
+    public T GetMethodDescAtChunkIndex<T>(int chunkIndex, Layout<T> layout)
+        where T : MockMethodDesc, new()
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(chunkIndex);
+        ArgumentNullException.ThrowIfNull(layout);
+
+        int methodDescAlignment = Architecture.Is64Bit ? sizeof(ulong) : sizeof(uint);
+        int methodDescOffset = checked(Layout.Size + chunkIndex * methodDescAlignment);
+        ulong methodDescAddress = Address + (ulong)methodDescOffset;
+
+        return layout.Create(Memory.Slice(methodDescOffset, layout.Size), methodDescAddress);
+    }
+}
+
+internal sealed class MockInstantiatedMethodDesc : MockMethodDesc
+{
+    private const string PerInstInfoFieldName = "PerInstInfo";
+    private const string NumGenericArgsFieldName = "NumGenericArgs";
+    private const string Flags2FieldName = "Flags2";
+
+    public static Layout<MockInstantiatedMethodDesc> CreateLayout(Layout<MockMethodDesc> baseLayout)
+        => new SequentialLayoutBuilder("InstantiatedMethodDesc", baseLayout.Architecture, baseLayout)
+            .AddPointerField(PerInstInfoFieldName)
+            .AddUInt16Field(NumGenericArgsFieldName)
+            .AddUInt16Field(Flags2FieldName)
+            .Build<MockInstantiatedMethodDesc>();
+
+    public ulong PerInstInfo
+    {
+        get => ReadPointerField(PerInstInfoFieldName);
+        set => WritePointerField(PerInstInfoFieldName, value);
+    }
+
+    public ushort NumGenericArgs
+    {
+        get => ReadUInt16Field(NumGenericArgsFieldName);
+        set => WriteUInt16Field(NumGenericArgsFieldName, value);
+    }
+
+    public ushort Flags2
+    {
+        get => ReadUInt16Field(Flags2FieldName);
+        set => WriteUInt16Field(Flags2FieldName, value);
+    }
+
+}
+
+internal sealed class MockPerInstInfo : TypedView
+{
+    public static Layout<MockPerInstInfo> CreateLayout(MockTarget.Architecture architecture)
+        => new("PerInstInfo", architecture, size: 0, []);
+
+    public ulong this[int index]
+    {
+        get => ReadPointer(GetPointerSlotSpan(index));
+        set => WritePointer(GetPointerSlotSpan(index), value);
+    }
+
+    private Span<byte> GetPointerSlotSpan(int index)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
+
+        int pointerSize = Architecture.Is64Bit ? sizeof(ulong) : sizeof(uint);
+        return Memory.Span.Slice(index * pointerSize, pointerSize);
+    }
+}
+
+internal class MockStoredSigMethodDesc : MockMethodDesc
+{
+    private const string SigFieldName = "Sig";
+    private const string CSigFieldName = "cSig";
+    private const string ExtendedFlagsFieldName = "ExtendedFlags";
+
+    public static Layout<MockStoredSigMethodDesc> CreateLayout(Layout<MockMethodDesc> baseLayout)
+        => new SequentialLayoutBuilder("StoredSigMethodDesc", baseLayout.Architecture, baseLayout)
+            .AddPointerField(SigFieldName)
+            .AddUInt32Field(CSigFieldName)
+            .AddUInt32Field(ExtendedFlagsFieldName)
+            .Build<MockStoredSigMethodDesc>();
+
+    public ulong Sig
+    {
+        get => ReadPointerField(SigFieldName);
+        set => WritePointerField(SigFieldName, value);
+    }
+
+    public uint CSig
+    {
+        get => ReadUInt32Field(CSigFieldName);
+        set => WriteUInt32Field(CSigFieldName, value);
+    }
+
+    public uint ExtendedFlags
+    {
+        get => ReadUInt32Field(ExtendedFlagsFieldName);
+        set => WriteUInt32Field(ExtendedFlagsFieldName, value);
+    }
+}
+
+internal sealed class MockDynamicMethodDesc : MockStoredSigMethodDesc
+{
+    private const string MethodNameFieldName = "MethodName";
+
+    public static Layout<MockDynamicMethodDesc> CreateLayout(Layout<MockStoredSigMethodDesc> baseLayout)
+        => new SequentialLayoutBuilder("DynamicMethodDesc", baseLayout.Architecture, baseLayout)
+            .AddPointerField(MethodNameFieldName)
+            .Build<MockDynamicMethodDesc>();
+
+    public ulong MethodName
+    {
+        get => ReadPointerField(MethodNameFieldName);
+        set => WritePointerField(MethodNameFieldName, value);
+    }
+}
+
 internal partial class MockDescriptors
 {
-    public class MethodDescriptors
+    internal sealed class MockMethodDescriptorsBuilder
     {
         internal const byte TokenRemainderBitCount = 12; /* see METHOD_TOKEN_REMAINDER_BIT_COUNT*/
-
-        private static readonly TypeFields MethodDescFields = new TypeFields()
-        {
-            DataType = DataType.MethodDesc,
-            Fields =
-            [
-                new(nameof(Data.MethodDesc.ChunkIndex), DataType.uint8),
-                new(nameof(Data.MethodDesc.Slot), DataType.uint16),
-                new(nameof(Data.MethodDesc.Flags), DataType.uint16),
-                new(nameof(Data.MethodDesc.Flags3AndTokenRemainder), DataType.uint16),
-                new(nameof(Data.MethodDesc.EntryPointFlags), DataType.uint8),
-                new(nameof(Data.MethodDesc.CodeData), DataType.pointer),
-                new(nameof(Data.MethodDesc.GCCoverageInfo), DataType.pointer),
-            ]
-        };
-
-        private static readonly TypeFields MethodDescChunkFields = new TypeFields()
-        {
-            DataType = DataType.MethodDescChunk,
-            Fields =
-            [
-                new(nameof(Data.MethodDescChunk.MethodTable), DataType.pointer),
-                new(nameof(Data.MethodDescChunk.Next), DataType.pointer),
-                new(nameof(Data.MethodDescChunk.Size), DataType.uint8),
-                new(nameof(Data.MethodDescChunk.Count), DataType.uint8),
-                new(nameof(Data.MethodDescChunk.FlagsAndTokenRange), DataType.uint16)
-            ]
-        };
-
-        private static readonly TypeFields InstantiatedMethodDescFields = new TypeFields()
-        {
-            DataType = DataType.InstantiatedMethodDesc,
-            Fields =
-            [
-                new(nameof(Data.InstantiatedMethodDesc.PerInstInfo), DataType.pointer),
-                new(nameof(Data.InstantiatedMethodDesc.NumGenericArgs), DataType.uint16),
-                new(nameof(Data.InstantiatedMethodDesc.Flags2), DataType.uint16),
-            ],
-            BaseTypeFields = MethodDescFields
-        };
-
-        private static readonly TypeFields StoredSigMethodDescFields = new TypeFields()
-        {
-            DataType = DataType.StoredSigMethodDesc,
-            Fields =
-            [
-                new(nameof(Data.StoredSigMethodDesc.Sig), DataType.pointer),
-                new(nameof(Data.StoredSigMethodDesc.cSig), DataType.uint32),
-                new(nameof(Data.StoredSigMethodDesc.ExtendedFlags), DataType.uint32),
-            ],
-            BaseTypeFields = MethodDescFields
-        };
-
-        private static readonly TypeFields DynamicMethodDescFields = new TypeFields()
-        {
-            DataType = DataType.DynamicMethodDesc,
-            Fields =
-            [
-                new(nameof(Data.DynamicMethodDesc.MethodName), DataType.pointer),
-            ],
-            BaseTypeFields = StoredSigMethodDescFields
-        };
-
         private const ulong DefaultAllocationRangeStart = 0x2000_2000;
         private const ulong DefaultAllocationRangeEnd = 0x2000_3000;
 
-        internal readonly RuntimeTypeSystem RTSBuilder;
-        internal readonly Loader LoaderBuilder;
+        internal RuntimeTypeSystem RTSBuilder { get; }
+        internal MockLoaderBuilder LoaderBuilder { get; }
+        internal Layout<MockMethodDesc> MethodDescLayout { get; }
+        internal Layout<MockMethodDescChunk> MethodDescChunkLayout { get; }
+        internal Layout<MockInstantiatedMethodDesc> InstantiatedMethodDescLayout { get; }
+        internal Layout<MockPerInstInfo> PerInstInfoLayout { get; }
+        internal Layout<MockStoredSigMethodDesc> StoredSigMethodDescLayout { get; }
+        internal Layout<MockDynamicMethodDesc> DynamicMethodDescLayout { get; }
 
-        internal Dictionary<DataType, Target.TypeInfo> Types { get; }
-        internal (string Name, ulong Value)[] Globals { get; }
+        public ulong MethodDescTokenRemainderBitCount => TokenRemainderBitCount;
+        public uint NonVtableSlotSize => (uint)TargetTestHelpers.PointerSize;
+        public uint MethodImplSize => (uint)(TargetTestHelpers.PointerSize * 2);
+        public uint NativeCodeSlotSize => (uint)TargetTestHelpers.PointerSize;
+        public uint AsyncMethodDataSize => (uint)(TargetTestHelpers.PointerSize * 2);
+        public uint ArrayMethodDescSize => (uint)StoredSigMethodDescLayout.Size;
+        public uint FCallMethodDescSize => (uint)(MethodDescLayout.Size + TargetTestHelpers.PointerSize);
+        public uint PInvokeMethodDescSize => (uint)(MethodDescLayout.Size + TargetTestHelpers.PointerSize);
+        public uint EEImplMethodDescSize => (uint)StoredSigMethodDescLayout.Size;
+        public uint CLRToCOMCallMethodDescSize => (uint)(MethodDescLayout.Size + TargetTestHelpers.PointerSize);
 
         private readonly MockMemorySpace.BumpAllocator _allocator;
 
@@ -90,107 +271,50 @@ internal partial class MockDescriptors
         internal MockMemorySpace.Builder Builder => RTSBuilder.Builder;
         internal uint MethodDescAlignment => RuntimeTypeSystem.GetMethodDescAlignment(TargetTestHelpers);
 
-        internal MethodDescriptors(RuntimeTypeSystem rtsBuilder, Loader loaderBuilder)
+        internal MockMethodDescriptorsBuilder(RuntimeTypeSystem rtsBuilder, MockLoaderBuilder loaderBuilder)
             : this(rtsBuilder, loaderBuilder, (DefaultAllocationRangeStart, DefaultAllocationRangeEnd))
-        { }
+        {
+        }
 
-        internal MethodDescriptors(RuntimeTypeSystem rtsBuilder, Loader loaderBuilder, (ulong Start, ulong End) allocationRange)
+        internal MockMethodDescriptorsBuilder(RuntimeTypeSystem rtsBuilder, MockLoaderBuilder loaderBuilder, (ulong Start, ulong End) allocationRange)
         {
             RTSBuilder = rtsBuilder;
             LoaderBuilder = loaderBuilder;
             _allocator = Builder.CreateAllocator(allocationRange.Start, allocationRange.End);
-            Types = GetTypes();
 
-            Globals = rtsBuilder.Globals.Concat(
-            [
-                new(nameof(Constants.Globals.MethodDescTokenRemainderBitCount), TokenRemainderBitCount),
-            ]).ToArray();
+            MethodDescLayout = MockMethodDesc.CreateLayout(TargetTestHelpers.Arch);
+            MethodDescChunkLayout = MockMethodDescChunk.CreateLayout(TargetTestHelpers.Arch);
+            InstantiatedMethodDescLayout = MockInstantiatedMethodDesc.CreateLayout(MethodDescLayout);
+            PerInstInfoLayout = MockPerInstInfo.CreateLayout(TargetTestHelpers.Arch);
+            StoredSigMethodDescLayout = MockStoredSigMethodDesc.CreateLayout(MethodDescLayout);
+            DynamicMethodDescLayout = MockDynamicMethodDesc.CreateLayout(StoredSigMethodDescLayout);
         }
 
-        private Dictionary<DataType, Target.TypeInfo> GetTypes()
+        internal MockMethodDescChunk AddMethodDescChunk(string name, byte size)
         {
-            Dictionary<DataType, Target.TypeInfo> types = GetTypesForTypeFields(
-                TargetTestHelpers,
-                [
-                    MethodDescFields,
-                    MethodDescChunkFields,
-                    InstantiatedMethodDescFields,
-                    StoredSigMethodDescFields,
-                    DynamicMethodDescFields,
-                ]);
-            types[DataType.NonVtableSlot] = new Target.TypeInfo() { Size = (uint)TargetTestHelpers.PointerSize };
-            types[DataType.MethodImpl] = new Target.TypeInfo() { Size = (uint)TargetTestHelpers.PointerSize * 2 };
-            types[DataType.NativeCodeSlot] = new Target.TypeInfo() { Size = (uint)TargetTestHelpers.PointerSize };
-            types[DataType.AsyncMethodData] = new Target.TypeInfo() { Size = (uint)TargetTestHelpers.PointerSize * 2 };
-            types[DataType.ArrayMethodDesc] = new Target.TypeInfo() { Size = types[DataType.StoredSigMethodDesc].Size.Value };
-            types[DataType.FCallMethodDesc] = new Target.TypeInfo() { Size = types[DataType.MethodDesc].Size.Value + (uint)TargetTestHelpers.PointerSize };
-            types[DataType.PInvokeMethodDesc] = new Target.TypeInfo() { Size = types[DataType.MethodDesc].Size.Value + (uint)TargetTestHelpers.PointerSize };
-            types[DataType.EEImplMethodDesc] = new Target.TypeInfo() { Size = types[DataType.StoredSigMethodDesc].Size.Value };
-            types[DataType.CLRToCOMCallMethodDesc] = new Target.TypeInfo() { Size = types[DataType.MethodDesc].Size.Value + (uint)TargetTestHelpers.PointerSize };
-            types = types
-                .Concat(RTSBuilder.Types)
-                .Concat(LoaderBuilder.Types)
-                .ToDictionary();
-            return types;
-        }
-
-        internal TargetPointer AddMethodDescChunk(TargetPointer methodTable, string name, byte count, byte size, uint tokenRange)
-        {
-            uint totalAllocSize = Types[DataType.MethodDescChunk].Size.Value;
+            uint totalAllocSize = (uint)MethodDescChunkLayout.Size;
             totalAllocSize += (uint)(size * MethodDescAlignment);
 
-            MockMemorySpace.HeapFragment methodDescChunk = _allocator.Allocate(totalAllocSize, $"MethodDescChunk {name}");
-            Span<byte> dest = methodDescChunk.Data;
-            TargetTestHelpers.WritePointer(dest.Slice(Types[DataType.MethodDescChunk].Fields[nameof(Data.MethodDescChunk.MethodTable)].Offset), methodTable);
-            TargetTestHelpers.Write(dest.Slice(Types[DataType.MethodDescChunk].Fields[nameof(Data.MethodDescChunk.Size)].Offset), size);
-            TargetTestHelpers.Write(dest.Slice(Types[DataType.MethodDescChunk].Fields[nameof(Data.MethodDescChunk.Count)].Offset), count);
-            TargetTestHelpers.Write(dest.Slice(Types[DataType.MethodDescChunk].Fields[nameof(Data.MethodDescChunk.FlagsAndTokenRange)].Offset), (ushort)(tokenRange >> (int)TokenRemainderBitCount));
-            Builder.AddHeapFragment(methodDescChunk);
-            return methodDescChunk.Address;
+            MockMemorySpace.HeapFragment fragment = _allocator.Allocate(totalAllocSize, $"MethodDescChunk {name}");
+
+            MockMethodDescChunk chunk = MethodDescChunkLayout.Create(fragment.Data.AsMemory(), fragment.Address);
+            return chunk;
         }
 
-        private TargetPointer GetMethodDescAddress(TargetPointer chunkAddress, byte index)
+        internal MockPerInstInfo AddPerInstInfo(ulong[] typeArgs)
         {
-            Target.TypeInfo methodDescChunkTypeInfo = Types[DataType.MethodDescChunk];
-            return chunkAddress + methodDescChunkTypeInfo.Size.Value + index * MethodDescAlignment;
-        }
+            ArgumentNullException.ThrowIfNull(typeArgs);
 
-        internal TargetPointer SetMethodDesc(TargetPointer methodDescChunk, byte index, ushort slotNum, ushort flags, ushort tokenRemainder, ushort flags3 = 0)
-        {
-            TargetPointer methodDesc = GetMethodDescAddress(methodDescChunk, index);
-            Target.TypeInfo methodDescTypeInfo = Types[DataType.MethodDesc];
-            Span<byte> data = Builder.BorrowAddressRange(methodDesc, (int)methodDescTypeInfo.Size.Value);
-            TargetTestHelpers.Write(data.Slice(methodDescTypeInfo.Fields[nameof(Data.MethodDesc.ChunkIndex)].Offset), index);
-            TargetTestHelpers.Write(data.Slice(methodDescTypeInfo.Fields[nameof(Data.MethodDesc.Flags)].Offset), flags);
-            TargetTestHelpers.Write(data.Slice(methodDescTypeInfo.Fields[nameof(Data.MethodDesc.Flags3AndTokenRemainder)].Offset), (ushort)(tokenRemainder | flags3));
-            TargetTestHelpers.Write(data.Slice(methodDescTypeInfo.Fields[nameof(Data.MethodDesc.Slot)].Offset), slotNum);
-            return methodDesc;
-        }
+            MockMemorySpace.HeapFragment fragment = _allocator.Allocate((ulong)(typeArgs.Length * TargetTestHelpers.PointerSize), "PerInstInfo");
 
-        internal void SetDynamicMethodDesc(TargetPointer methodDesc, uint extendedFlags)
-        {
-            Target.TypeInfo storedSigInfo = Types[DataType.StoredSigMethodDesc];
-            Span<byte> data = Builder.BorrowAddressRange(methodDesc, (int)storedSigInfo.Size.Value);
-            TargetTestHelpers.Write(data.Slice(storedSigInfo.Fields[nameof(Data.StoredSigMethodDesc.ExtendedFlags)].Offset), extendedFlags);
-        }
-
-        internal void SetInstantiatedMethodDesc(TargetPointer methodDesc, ushort flags, TargetPointer[] typesArgs)
-        {
-            Target.TypeInfo typeInfo = Types[DataType.InstantiatedMethodDesc];
-            Span<byte> data = Builder.BorrowAddressRange(methodDesc, (int)typeInfo.Size.Value);
-            TargetTestHelpers.Write(data.Slice(typeInfo.Fields[nameof(Data.InstantiatedMethodDesc.Flags2)].Offset), flags);
-            TargetTestHelpers.Write(data.Slice(typeInfo.Fields[nameof(Data.InstantiatedMethodDesc.NumGenericArgs)].Offset), (ushort)typesArgs.Length);
-            if (typesArgs.Length > 0)
+            MockPerInstInfo perInstInfo = PerInstInfoLayout.Create(fragment.Data.AsMemory(), fragment.Address);
+            for (int i = 0; i < typeArgs.Length; i++)
             {
-                MockMemorySpace.HeapFragment fragment = _allocator.Allocate((ulong)(typesArgs.Length * TargetTestHelpers.PointerSize), "InstantiatedMethodDesc type args");
-                Builder.AddHeapFragment(fragment);
-                TargetTestHelpers.WritePointer(data.Slice(typeInfo.Fields[nameof(Data.InstantiatedMethodDesc.PerInstInfo)].Offset), fragment.Address);
-                for (int i = 0; i < typesArgs.Length; i++)
-                {
-                    Span<byte> span = fragment.Data.AsSpan().Slice(i * TargetTestHelpers.PointerSize);
-                    TargetTestHelpers.WritePointer(span, typesArgs[i]);
-                }
+                perInstInfo[i] = typeArgs[i];
             }
+
+            return perInstInfo;
         }
+
     }
 }

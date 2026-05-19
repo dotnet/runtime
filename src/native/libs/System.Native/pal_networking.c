@@ -78,6 +78,10 @@ extern int getdomainname(char *name, int namelen);
 #include <linux/icmp.h>
 #endif
 
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wjump-misses-init"
+#endif
 
 #if HAVE_KQUEUE
 #if KEVENT_HAS_VOID_UDATA
@@ -3033,11 +3037,27 @@ int32_t SystemNative_Select(int* readFds, int readFdsCount, int* writeFds, int w
     }
     else
     {
-       readSetPtr = readFdsCount == 0 ? NULL : calloc( __DARWIN_howmany(maxFd, __DARWIN_NFDBITS),  sizeof(int32_t));
-       writeSetPtr = writeFdsCount == 0 ? NULL : calloc( __DARWIN_howmany(maxFd, __DARWIN_NFDBITS),  sizeof(int32_t));
-       errorSetPtr = errorFdsCount == 0 ? NULL : calloc( __DARWIN_howmany(maxFd, __DARWIN_NFDBITS),  sizeof(int32_t));
-    }
+        // Since this code later calls select(maxFd + 1, ...) and sets bits for file descriptor values up to maxFd,
+        // the allocation needs to cover maxFd + 1 bits.
+        if (maxFd > INT_MAX - 1)
+            return Error_EINVAL;
 
+        size_t fdSetCount = __DARWIN_howmany(maxFd + 1, __DARWIN_NFDBITS);
+        size_t fdSetSize = sizeof(((fd_set*)0)->fds_bits[0]);
+        readSetPtr = readFdsCount == 0 ? NULL : (fd_set*)calloc(fdSetCount, fdSetSize);
+        writeSetPtr = writeFdsCount == 0 ? NULL : (fd_set*)calloc(fdSetCount, fdSetSize);
+        errorSetPtr = errorFdsCount == 0 ? NULL : (fd_set*)calloc(fdSetCount, fdSetSize);
+
+        if ((readFdsCount != 0 && readSetPtr == NULL)
+            || (writeFdsCount != 0 && writeSetPtr == NULL)
+            || (errorFdsCount != 0 && errorSetPtr == NULL))
+        {
+            free(readSetPtr);
+            free(writeSetPtr);
+            free(errorSetPtr);
+            return Error_ENOMEM;
+        }
+    }
 
     struct timeval timeout;
     timeout.tv_sec = microseconds / 1000000;
@@ -3064,6 +3084,12 @@ int32_t SystemNative_Select(int* readFds, int readFdsCount, int* writeFds, int w
 
     if (*triggered < 0)
     {
+        if (maxFd >= FD_SETSIZE)
+        {
+            free(readSetPtr);
+            free(writeSetPtr);
+            free(errorSetPtr);
+        }
         return SystemNative_ConvertErrorPlatformToPal(errno);
     }
 
@@ -3659,6 +3685,7 @@ int32_t SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t offset, i
     // Emulate sendfile using a simple read/send loop.
     *sent = 0;
     char* buffer = NULL;
+    size_t bufferLength = Min((size_t)count, 80 * 1024 * sizeof(char));
 
     // Save the original input file position and seek to the offset position
     off_t inputFileOrigOffset = lseek(infd, 0, SEEK_CUR);
@@ -3668,7 +3695,6 @@ int32_t SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t offset, i
     }
 
     // Allocate a buffer
-    size_t bufferLength = Min((size_t)count, 80 * 1024 * sizeof(char));
     buffer = (char*)malloc(bufferLength);
     if (buffer == NULL)
     {

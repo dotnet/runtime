@@ -28,6 +28,7 @@ CompMemKindMacro(LSRA)
 CompMemKindMacro(LSRA_Interval)
 CompMemKindMacro(LSRA_RefPosition)
 CompMemKindMacro(Reachability)
+CompMemKindMacro(RedundantBranch)
 CompMemKindMacro(SSA)
 CompMemKindMacro(ValueNumber)
 CompMemKindMacro(LvaTable)
@@ -71,6 +72,7 @@ CompMemKindMacro(Async)
 CompMemKindMacro(RangeCheckCloning)
 CompMemKindMacro(WasmSccTransform)
 CompMemKindMacro(WasmCfgLowering)
+CompMemKindMacro(WasmEH)
 //clang-format on
 
 #undef CompMemKindMacro

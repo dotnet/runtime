@@ -113,22 +113,12 @@ void Compiler::unwindGetFuncLocations(FuncInfoDsc*             func,
     }
     else
     {
-        EHblkDsc* HBtab = ehGetDsc(func->funEHIndex);
+        BasicBlock* const startBlock = func->GetStartBlock(this);
+        BasicBlock* const lastBlock  = func->GetLastBlock(this);
 
-        if (func->funKind == FUNC_FILTER)
-        {
-            assert(HBtab->HasFilter());
-            *ppStartLoc = new (this, CMK_UnwindInfo) emitLocation(ehEmitCookie(HBtab->ebdFilter));
-            *ppEndLoc   = new (this, CMK_UnwindInfo) emitLocation(ehEmitCookie(HBtab->ebdHndBeg));
-        }
-        else
-        {
-            assert(func->funKind == FUNC_HANDLER);
-            *ppStartLoc = new (this, CMK_UnwindInfo) emitLocation(ehEmitCookie(HBtab->ebdHndBeg));
-            *ppEndLoc   = HBtab->ebdHndLast->IsLast() ? nullptr
-                                                      : new (this, CMK_UnwindInfo)
-                                                          emitLocation(ehEmitCookie(HBtab->ebdHndLast->Next()));
-        }
+        *ppStartLoc = new (this, CMK_UnwindInfo) emitLocation(ehEmitCookie(startBlock));
+        *ppEndLoc =
+            lastBlock->IsLast() ? nullptr : new (this, CMK_UnwindInfo) emitLocation(ehEmitCookie(lastBlock->Next()));
     }
 }
 
@@ -407,6 +397,11 @@ void Compiler::DumpCfiInfo(bool                  isHotCode,
             case CFI_ADJUST_CFA_OFFSET:
                 assert(dwarfReg == DWARF_REG_ILLEGAL);
                 printf("    CodeOffset: 0x%02X Op: AdjustCfaOffset Offset:0x%X\n", codeOffset, offset);
+                break;
+            case CFI_NEGATE_RA_STATE:
+                assert(dwarfReg == DWARF_REG_ILLEGAL);
+                assert(offset == 0);
+                printf("    CodeOffset: 0x%02X Op: NegateRAState\n", codeOffset);
                 break;
             default:
                 printf("    Unrecognized CFI_CODE: 0x%llX\n", *(UINT64*)pCode);

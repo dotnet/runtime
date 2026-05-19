@@ -76,7 +76,7 @@ namespace System.Threading.RateLimiting
                     exception = ex;
                 }
 
-                RateLimitLease? notAcquiredLease = ChainedRateLimiter.CommonAcquireLogic(exception, lease, ref leases, i, _limiters.Length);
+                RateLimitLease? notAcquiredLease = ChainedRateLimiterShared.CommonAcquireLogic(exception, lease, ref leases, i, _limiters.Length);
 
                 if (notAcquiredLease is not null)
                 {
@@ -107,7 +107,7 @@ namespace System.Threading.RateLimiting
                     exception = ex;
                 }
 
-                RateLimitLease? notAcquiredLease = ChainedRateLimiter.CommonAcquireLogic(exception, lease, ref leases, i, _limiters.Length);
+                RateLimitLease? notAcquiredLease = ChainedRateLimiterShared.CommonAcquireLogic(exception, lease, ref leases, i, _limiters.Length);
 
                 if (notAcquiredLease is not null)
                 {

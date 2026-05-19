@@ -11,9 +11,9 @@ internal sealed class MethodTableAuxiliaryData : IData<MethodTableAuxiliaryData>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.MethodTableAuxiliaryData);
 
-        LoaderModule = target.ReadPointer(address + (ulong)type.Fields[nameof(LoaderModule)].Offset);
-        OffsetToNonVirtualSlots = target.Read<short>(address + (ulong)type.Fields[nameof(OffsetToNonVirtualSlots)].Offset);
-        Flags = target.Read<uint>(address + (ulong)type.Fields[nameof(Flags)].Offset);
+        LoaderModule = target.ReadPointerField(address, type, nameof(LoaderModule));
+        OffsetToNonVirtualSlots = target.ReadField<short>(address, type, nameof(OffsetToNonVirtualSlots));
+        Flags = target.ReadField<uint>(address, type, nameof(Flags));
 
     }
 

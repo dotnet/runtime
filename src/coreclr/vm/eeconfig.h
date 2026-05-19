@@ -43,6 +43,7 @@ enum { OPT_BLENDED,
     OPT_RANDOM,
     OPT_DEFAULT = OPT_BLENDED };
 
+// [cDAC] [Loader]: Contract depends on these values.
 enum ClrModifiableAssemblies {
     /* modifiable assemblies are implicitly disabled */
     MODIFIABLE_ASSM_UNSET = 0,
@@ -59,6 +60,7 @@ enum ParseCtl {
 
 class EEConfig
 {
+    friend struct ::cdac_data<EEConfig>;
 public:
     static HRESULT Setup();
 
@@ -96,7 +98,7 @@ public:
     bool          TieredCompilation_UseCallCountingStubs() const { LIMITED_METHOD_CONTRACT; return fTieredCompilation_UseCallCountingStubs; }
     DWORD         TieredCompilation_DeleteCallCountingStubsAfter() const { LIMITED_METHOD_CONTRACT; return tieredCompilation_DeleteCallCountingStubsAfter; }
 #endif // FEATURE_TIERED_COMPILATION
-    DWORD TieredCompilation_DefaultTier() const 
+    DWORD TieredCompilation_DefaultTier() const
     {
         LIMITED_METHOD_CONTRACT;
         return tieredCompilation_DefaultTier;
@@ -310,12 +312,6 @@ public:
     bool ExpandModulesOnLoad(void) const { LIMITED_METHOD_CONTRACT; return fExpandAllOnLoad; }
 #endif //_DEBUG
 
-#ifdef TEST_DATA_CONSISTENCY
-    // get the value of fTestDataConsistency, which controls whether we test that we can correctly detect
-    // held locks in DAC builds. This is determined by an environment variable.
-    inline bool TestDataConsistency() const { LIMITED_METHOD_DAC_CONTRACT; return fTestDataConsistency; }
-#endif
-
 #ifdef _DEBUG
 
     unsigned SuspendThreadDeadlockTimeoutMs() const
@@ -370,6 +366,10 @@ public:
         GCSTRESS_INSTR_JIT          = 4,    // GC on every allowable JITed instr
         GCSTRESS_INSTR_NGEN         = 8,    // GC on every allowable NGEN instr
         GCSTRESS_UNIQUE             = 16,   // GC only on a unique stack trace
+        GCSTRESS_CDAC               = 32,   // Verify cDAC GC references at stress points
+
+        // Excludes cDAC stress as it is fundamentally different from the other stress modes
+        GCSTRESS_ALLSTRESS          = GCSTRESS_ALLOC | GCSTRESS_TRANSITION | GCSTRESS_INSTR_JIT | GCSTRESS_INSTR_NGEN,
     };
 
     GCStressFlags GetGCStressLevel()        const { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return GCStressFlags(iGCStress); }
@@ -449,8 +449,6 @@ public:
 
 #endif
 
-    bool    RuntimeAsync()                 const { LIMITED_METHOD_CONTRACT; return runtimeAsync; }
-
 #ifdef FEATURE_INTERPRETER
     bool    EnableInterpreter()            const { LIMITED_METHOD_CONTRACT; return enableInterpreter; }
 #endif
@@ -475,14 +473,6 @@ private: //----------------------------------------------------------------
     unsigned fPInvokeRestoreEsp;  // -1=Default, 0=Never, Else=Always
 
     LPUTF8 pszBreakOnClassLoad;         // Halt just before loading this class
-
-#ifdef TEST_DATA_CONSISTENCY
-    bool fTestDataConsistency;         // true if we are testing locks for data consistency in the debugger--
-                                       // If a lock is held during inspection, we assume the data under the lock
-                                       // is inconsistent. We have a special code path for testing this
-                                       // which we will follow if this is set. The value is determined by
-                                       // the environment variable TestDataConsistency
-#endif
 
     bool   m_fInteropValidatePinnedObjects; // After returning from a M->U interop call, validate GC heap around objects pinned by IL stubs.
     bool   m_fInteropLogArguments; // Log all pinned arguments passed to an interop call
@@ -654,8 +644,6 @@ private: //----------------------------------------------------------------
     bool fUseCachedInterfaceDispatch;
 #endif // defined(FEATURE_CACHED_INTERFACE_DISPATCH) && defined(FEATURE_VIRTUAL_STUB_DISPATCH)
 
-    bool runtimeAsync; // True if the runtime supports async methods
-
 public:
 
     enum BitForMask {
@@ -715,6 +703,11 @@ public:
     { return dwSleepOnExit; }
 };
 
+template<>
+struct cdac_data<EEConfig>
+{
+    static constexpr size_t ModifiableAssemblies = offsetof(EEConfig, modifiableAssemblies);
+};
 
 
 #ifdef _DEBUG_IMPL

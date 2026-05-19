@@ -2124,21 +2124,35 @@ unsigned PendingArgsStack::pasEnumGCoffs(unsigned iter, unsigned* offs)
 // when reporting interruptible ranges.
 class NoGCRegionEncoder
 {
-    BYTE* dest;
+    BYTE*    dest;
+    unsigned lastSize    = 0;
+    unsigned lastEndOffs = -1;
 public:
-    size_t totalSize;
+    size_t totalSize = 0;
 
     NoGCRegionEncoder(BYTE* dest)
         : dest(dest)
-        , totalSize(0)
     {
     }
 
     // This callback is called for each insGroup marked with IGF_NOGCINTERRUPT.
     bool operator()(unsigned igFuncIdx, unsigned igOffs, unsigned igSize, unsigned firstInstrSize, bool isInProlog)
     {
-        totalSize += encodeUnsigned(dest == NULL ? NULL : dest + totalSize, igOffs);
-        totalSize += encodeUnsigned(dest == NULL ? NULL : dest + totalSize, igSize);
+        unsigned size;
+        if (igOffs == lastEndOffs) // Coalesce adjacent intervals by re-encoding the enlarged size.
+        {
+            totalSize -= encodeUnsigned(nullptr, lastSize);
+            size = lastSize + igSize;
+        }
+        else
+        {
+            totalSize += encodeUnsigned(dest == nullptr ? nullptr : dest + totalSize, igOffs);
+            size = igSize;
+        }
+        totalSize += encodeUnsigned(dest == nullptr ? nullptr : dest + totalSize, size);
+
+        lastSize    = size;
+        lastEndOffs = igOffs + igSize;
         return true;
     }
 };
@@ -4077,7 +4091,12 @@ void GCInfo::gcMakeRegPtrTable(
 {
     GCENCODER_WITH_LOGGING(gcInfoEncoderWithLog, gcInfoEncoder);
 
+    // TODO-WASM: Enable tracked GC slots for precise GC
+#ifdef TARGET_WASM
+    const bool noTrackedGCSlots = true;
+#else
     const bool noTrackedGCSlots = m_compiler->opts.MinOpts();
+#endif
 
     if (mode == MAKE_REG_PTR_MODE_ASSIGN_SLOTS)
     {
@@ -4632,6 +4651,7 @@ void GCInfo::gcInfoRecordGCRegStateChange(GcInfoEncoder* gcInfoEncoder,
                                           regMaskSmall   byRefMask,
                                           regMaskSmall*  pPtrRegs)
 {
+#if HAS_FIXED_REGISTER_SET
     // Precondition: byRefMask is a subset of regMask.
     assert((byRefMask & ~regMask) == 0);
 
@@ -4689,6 +4709,7 @@ void GCInfo::gcInfoRecordGCRegStateChange(GcInfoEncoder* gcInfoEncoder,
         // Turn the bit we've just generated off and continue.
         regMask ^= tmpMask; // EAX,ECX,EDX,EBX,---,EBP,ESI,EDI
     }
+#endif // HAS_FIXED_REGISTER_SET
 }
 
 /**************************************************************************

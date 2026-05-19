@@ -164,8 +164,12 @@ function checkFileExists(file) {
 }
 
 export function onwarn(warning) {
-    if (warning.code === "CIRCULAR_DEPENDENCY" && warning.ids.findIndex(id => id.includes("marshal-to-cs") || id.includes("marshal-to-js")) !== -1) {
-        // ignore circular dependency warnings from marshal-to-cs <-> marshal-to-js
+    if (warning.code === "CIRCULAR_DEPENDENCY" && warning.ids.findIndex(id => {
+        return id.includes("marshal-to-cs")
+            || id.includes("marshal-to-js")
+            || id.includes("diagnostics-js");
+    }) !== -1) {
+        // ignore circular dependency warnings from marshal-to-cs <-> marshal-to-js and diagnostics
         return;
     }
     // eslint-disable-next-line no-console

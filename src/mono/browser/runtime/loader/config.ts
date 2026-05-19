@@ -5,13 +5,11 @@ import BuildConfiguration from "consts:configuration";
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import { type DotnetModuleInternal, type MonoConfigInternal, JSThreadBlockingMode } from "../types/internal";
-import type { AssemblyAsset, Assets, BootModule, DotnetModuleConfig, IcuAsset, JsAsset, MonoConfig, PdbAsset, SymbolsAsset, VfsAsset, WasmAsset } from "../types";
+import type { AssemblyAsset, Assets, DotnetModuleConfig, IcuAsset, JsAsset, PdbAsset, SymbolsAsset, VfsAsset, WasmAsset } from "../types";
 import { exportedRuntimeAPI, loaderHelpers, runtimeHelpers } from "./globals";
 import { mono_log_error, mono_log_debug } from "./logging";
 import { importLibraryInitializers, invokeLibraryInitializers } from "./libraryInitializers";
 import { mono_exit } from "./exit";
-import { makeURLAbsoluteWithApplicationBase } from "./polyfills";
-import { appendUniqueQuery } from "./assets";
 import { browserVirtualAppBase } from "./globals";
 
 export function deep_merge_config (target: MonoConfigInternal, source: MonoConfigInternal): MonoConfigInternal {
@@ -240,20 +238,8 @@ export async function mono_wasm_load_config (module: DotnetModuleInternal): Prom
         await loaderHelpers.afterConfigLoaded.promise;
         return;
     }
-    let configFilePath;
     try {
-        if (!module.configSrc && (!loaderHelpers.config || Object.keys(loaderHelpers.config).length === 0 || (!loaderHelpers.config.assets && !loaderHelpers.config.resources))) {
-            // if config file location nor assets are provided
-            module.configSrc = "dotnet.boot.js";
-        }
-
-        configFilePath = module.configSrc;
-
         configLoaded = true;
-        if (configFilePath) {
-            mono_log_debug("mono_wasm_load_config");
-            await loadBootConfig(module);
-        }
 
         normalizeConfig();
 
@@ -274,7 +260,7 @@ export async function mono_wasm_load_config (module: DotnetModuleInternal): Prom
         normalizeConfig();
         loaderHelpers.afterConfigLoaded.promise_control.resolve(loaderHelpers.config);
     } catch (err) {
-        const errMessage = `Failed to load config file ${configFilePath} ${err} ${(err as Error)?.stack}`;
+        const errMessage = `Failed to initialize config ${err} ${(err as Error)?.stack}`;
         loaderHelpers.config = module.config = Object.assign(loaderHelpers.config, { message: errMessage, error: err, isError: true });
         mono_exit(1, new Error(errMessage));
         throw err;
@@ -290,80 +276,3 @@ export function isDebuggingSupported (): boolean {
     return loaderHelpers.isChromium || loaderHelpers.isFirefox;
 }
 
-async function loadBootConfig (module: DotnetModuleInternal): Promise<void> {
-    const defaultConfigSrc = module.configSrc!;
-    const defaultConfigUrl = loaderHelpers.locateFile(defaultConfigSrc);
-
-    let loaderResponse = null;
-    if (loaderHelpers.loadBootResource !== undefined) {
-        loaderResponse = loaderHelpers.loadBootResource("manifest", defaultConfigSrc, defaultConfigUrl, "", "manifest");
-    }
-
-    let loadedConfigResponse: Response | null = null;
-    let loadedConfig: MonoConfig;
-    if (!loaderResponse) {
-        if (defaultConfigUrl.includes(".json")) {
-            loadedConfigResponse = await fetchBootConfig(appendUniqueQuery(defaultConfigUrl, "manifest"));
-            loadedConfig = await readBootConfigResponse(loadedConfigResponse);
-        } else {
-            loadedConfig = (await import(appendUniqueQuery(defaultConfigUrl, "manifest"))).config;
-        }
-    } else if (typeof loaderResponse === "string") {
-        if (loaderResponse.includes(".json")) {
-            loadedConfigResponse = await fetchBootConfig(makeURLAbsoluteWithApplicationBase(loaderResponse));
-            loadedConfig = await readBootConfigResponse(loadedConfigResponse);
-        } else {
-            loadedConfig = (await import(makeURLAbsoluteWithApplicationBase(loaderResponse))).config;
-        }
-    } else {
-        const loadedResponse = await loaderResponse;
-        if (typeof (loadedResponse as Response).json == "function") {
-            loadedConfigResponse = loadedResponse as Response;
-            loadedConfig = await readBootConfigResponse(loadedConfigResponse);
-        } else {
-            // If the response doesn't contain .json(), consider it an imported module.
-            loadedConfig = (loadedResponse as BootModule).config;
-        }
-    }
-
-    // Prefer user-defined application environment
-    if (loaderHelpers.config.applicationEnvironment) {
-        loadedConfig.applicationEnvironment = loaderHelpers.config.applicationEnvironment;
-    }
-
-    deep_merge_config(loaderHelpers.config, loadedConfig);
-
-    function fetchBootConfig (url: string): Promise<Response> {
-        return loaderHelpers.fetch_like(url, {
-            method: "GET",
-            credentials: "include",
-            cache: "no-cache",
-        });
-    }
-}
-
-async function readBootConfigResponse (loadConfigResponse: Response): Promise<MonoConfig> {
-    const config = loaderHelpers.config;
-    const loadedConfig: MonoConfig = await loadConfigResponse.json();
-
-    if (!config.applicationEnvironment && !loadedConfig.applicationEnvironment) {
-        loadedConfig.applicationEnvironment = loadConfigResponse.headers.get("Blazor-Environment") || loadConfigResponse.headers.get("DotNet-Environment") || undefined;
-    }
-
-    if (!loadedConfig.environmentVariables)
-        loadedConfig.environmentVariables = {};
-
-    const modifiableAssemblies = loadConfigResponse.headers.get("DOTNET-MODIFIABLE-ASSEMBLIES");
-    if (modifiableAssemblies) {
-        // Configure the app to enable hot reload in Development.
-        loadedConfig.environmentVariables["DOTNET_MODIFIABLE_ASSEMBLIES"] = modifiableAssemblies;
-    }
-
-    const aspnetCoreBrowserTools = loadConfigResponse.headers.get("ASPNETCORE-BROWSER-TOOLS");
-    if (aspnetCoreBrowserTools) {
-        // See https://github.com/dotnet/aspnetcore/issues/37357#issuecomment-941237000
-        loadedConfig.environmentVariables["__ASPNETCORE_BROWSER_TOOLS"] = aspnetCoreBrowserTools;
-    }
-
-    return loadedConfig;
-}

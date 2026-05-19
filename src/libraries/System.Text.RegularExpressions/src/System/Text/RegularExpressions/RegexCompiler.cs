@@ -387,7 +387,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Generates the implementation for TryFindNextPossibleStartingPosition.</summary>
-        protected void EmitTryFindNextPossibleStartingPosition()
+        protected unsafe void EmitTryFindNextPossibleStartingPosition()
         {
             Debug.Assert(_regexTree != null);
             _int32LocalsPool?.Clear();
@@ -1426,7 +1426,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Generates the implementation for TryMatchAtCurrentPosition.</summary>
-        protected void EmitTryMatchAtCurrentPosition()
+        protected unsafe void EmitTryMatchAtCurrentPosition()
         {
             // In .NET Framework and up through .NET Core 3.1, the code generated for RegexOptions.Compiled was effectively an unrolled
             // version of what RegexInterpreter would process.  The RegexNode tree would be turned into a series of opcodes via
@@ -2529,7 +2529,7 @@ namespace System.Text.RegularExpressions
                 EmitNode(yesBranch);
                 TransferSliceStaticPosToPos(); // make sure sliceStaticPos is 0 after each branch
                 Label postYesDoneLabel = doneLabel;
-                if (!isAtomic && postYesDoneLabel != originalDoneLabel)
+                if ((!isAtomic && postYesDoneLabel != originalDoneLabel) || isInLoop)
                 {
                     // resumeAt = 0;
                     Ldc(0);
@@ -2560,7 +2560,7 @@ namespace System.Text.RegularExpressions
                     EmitNode(noBranch);
                     TransferSliceStaticPosToPos(); // make sure sliceStaticPos is 0 after each branch
                     postNoDoneLabel = doneLabel;
-                    if (!isAtomic && postNoDoneLabel != originalDoneLabel)
+                    if ((!isAtomic && postNoDoneLabel != originalDoneLabel) || isInLoop)
                     {
                         // resumeAt = 1;
                         Ldc(1);
@@ -2572,7 +2572,7 @@ namespace System.Text.RegularExpressions
                     // There's only a yes branch.  If it's going to cause us to output a backtracking
                     // label but code may not end up taking the yes branch path, we need to emit a resumeAt
                     // that will cause the backtracking to immediately pass through this node.
-                    if (!isAtomic && postYesDoneLabel != originalDoneLabel)
+                    if ((!isAtomic && postYesDoneLabel != originalDoneLabel) || isInLoop)
                     {
                         // resumeAt = 2;
                         Ldc(2);
@@ -3189,7 +3189,7 @@ namespace System.Text.RegularExpressions
                 }
 
                 // Gets the node to treat as the subsequent one to node.Child(index)
-                static RegexNode? GetSubsequent(int index, RegexNode node, RegexNode? subsequent)
+                static unsafe RegexNode? GetSubsequent(int index, RegexNode node, RegexNode? subsequent)
                 {
                     int childCount = node.ChildCount();
                     for (int i = index + 1; i < childCount; i++)
@@ -4585,9 +4585,10 @@ namespace System.Text.RegularExpressions
                     return;
                 }
 
-                // Arbitrary limit for unrolling vs creating a loop.  We want to balance size in the generated
-                // code with other costs, like the (small) overhead of slicing to create the temp span to iterate.
-                const int MaxUnrollSize = 16;
+                // Limit for unrolling vs creating a loop. Benchmarking shows vectorized operations
+                // (e.g. ContainsAnyExcept) beat unrolled scalar checks at counts above ~4-8, so
+                // we unroll up to/including this threshold and use a loop with vectorization beyond it.
+                const int MaxUnrollSize = 7;
 
                 if (iterations <= MaxUnrollSize)
                 {
@@ -5781,7 +5782,7 @@ namespace System.Text.RegularExpressions
 
         /// <summary>Emits a check for whether the character is in the specified character class.</summary>
         /// <remarks>The character to be checked has already been loaded onto the stack.</remarks>
-        private void EmitMatchCharacterClass(string charClass)
+        private unsafe void EmitMatchCharacterClass(string charClass)
         {
             // We need to perform the equivalent of calling RegexRunner.CharInClass(ch, charClass),
             // but that call is relatively expensive.  Before we fall back to it, we try to optimize

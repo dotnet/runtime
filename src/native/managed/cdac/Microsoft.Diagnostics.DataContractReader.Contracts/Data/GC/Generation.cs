@@ -11,11 +11,11 @@ internal sealed class Generation : IData<Generation>
         Target.TypeInfo type = target.GetTypeInfo(DataType.Generation);
 
         AllocationContext = target.ProcessedData.GetOrAdd<GCAllocContext>(address + (ulong)type.Fields[nameof(AllocationContext)].Offset);
-        StartSegment = target.ReadPointer(address + (ulong)type.Fields[nameof(StartSegment)].Offset);
+        StartSegment = target.ReadPointerField(address, type, nameof(StartSegment));
 
         // Fields only exist segment GC builds
         if (type.Fields.ContainsKey(nameof(AllocationStart)))
-            AllocationStart = target.ReadPointer(address + (ulong)type.Fields[nameof(AllocationStart)].Offset);
+            AllocationStart = target.ReadPointerField(address, type, nameof(AllocationStart));
     }
 
     public GCAllocContext AllocationContext { get; }

@@ -112,20 +112,6 @@ LOCAL_LABEL(EphemeralCheckEnabled):
 
 WRITE_BARRIER_END JIT_UpdateWriteBarrierState
 
-// ----------------------------------------------------------------------------------------
-// __declspec(naked) void F_CALL_CONV JIT_WriteBarrier_Callable(Object **dst, Object* val)
-LEAF_ENTRY  JIT_WriteBarrier_Callable, _TEXT
-
-    // Setup args for JIT_WriteBarrier. $t0 = dst ; $t1 = val
-    ori     $t6, $a0, 0                 // $t6 = dst
-    ori     $t7, $a1, 0                 // $t7 = val
-
-    // Branch to the write barrier
-    la.local  $r21, JIT_WriteBarrier_Loc
-    ld.d  $r21, $r21, 0
-    jirl  $r0, $r21, 0
-LEAF_END JIT_WriteBarrier_Callable, _TEXT
-
 
 .balign 64  // Align to power of two at least as big as patchable literal pool so that it fits optimally in cache line
 // ------------------------------------------------------------------
@@ -761,39 +747,6 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
     EPILOG_RESTORE_REG_PAIR_INDEXED   22, 1, 16
     EPILOG_RETURN
 NESTED_END CallEHFilterFunclet, _TEXT
-
-#ifdef FEATURE_COMINTEROP
-// Function used by COM interop to get floating point return value (since it's not in the same
-// register(s) as non-floating point values).
-//
-// On entry//
-//   $a0          : size of the FP result (4 or 8 bytes)
-//   $a1          : pointer to 64-bit buffer to receive result
-//
-// On exit:
-//   buffer pointed to by $a1 on entry contains the float or double argument as appropriate
-//
-LEAF_ENTRY getFPReturn, _TEXT
-    fst.d  $f0, $a1, 0
-LEAF_END getFPReturn, _TEXT
-
-// ------------------------------------------------------------------
-// Function used by COM interop to set floating point return value (since it's not in the same
-// register(s) as non-floating point values).
-//
-// On entry:
-//   $a0          : size of the FP result (4 or 8 bytes)
-//   $a1          : 32-bit or 64-bit FP result
-//
-// On exit:
-//   f0          : float result if x0 == 4
-//   f0          : double result if x0 == 8
-//
-LEAF_ENTRY setFPReturn, _TEXT
-    movgr2fr.d  $f0, $a1
-LEAF_END setFPReturn, _TEXT
-
-#endif // FEATURE_COMINTEROP
 
 // ------------------------------------------------------------------
 // void* JIT_GetDynamicNonGCStaticBase(DynamicStaticsInfo* pStaticsInfo)

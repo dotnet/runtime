@@ -222,7 +222,7 @@ DynamicMethodDesc* DynamicMethodTable::GetDynamicMethod(BYTE *psig, DWORD sigSiz
         INSTANCE_CHECK;
         THROWS;
         GC_TRIGGERS;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
         INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(psig));
         PRECONDITION(sigSize > 0);
@@ -258,10 +258,6 @@ DynamicMethodDesc* DynamicMethodTable::GetDynamicMethod(BYTE *psig, DWORD sigSiz
 
     // Reset the method desc into pristine state
 
-    // Note: Reset has THROWS contract since it may allocate jump stub. It will never throw here
-    // since it will always reuse the existing jump stub.
-    pNewMD->Reset();
-
     LOG((LF_BCL, LL_INFO1000, "Level3 - DynamicMethod obtained {0x%p} (used %d)\n", pNewMD, m_Used));
 
     // the store sig part of the method desc
@@ -271,6 +267,14 @@ DynamicMethodDesc* DynamicMethodTable::GetDynamicMethod(BYTE *psig, DWORD sigSiz
     pNewMD->InitializeFlags(DynamicMethodDesc::FlagPublic
                     | DynamicMethodDesc::FlagStatic
                     | DynamicMethodDesc::FlagIsLCGMethod);
+
+
+    // Note: Reset has THROWS contract since it may allocate jump stub and on WASM parses the signature
+    // It will never throw here for jump stubs since it will always reuse the existing jump stub,
+    // and for signature parsing, the signature produced for LCG is guaranteed to only have loaded types
+    // so that can't fail either.
+    pNewMD->Reset(); // Run the Reset after setting the signature and flags, since Reset may need to examine
+                     // the signature to establish the correct entrypoint details.
 
 #ifdef _DEBUG
     pNewMD->m_pszDebugMethodName = name;
@@ -366,6 +370,7 @@ HostCodeHeap::HostCodeHeap(EECodeGenManager *pJitManager, bool isExecutable)
     m_pFreeList = NULL;
     m_pAllocator = NULL;
     m_pNextHeapToRelease = NULL;
+    m_heapType = CodeHeapType::HostCodeHeap;
 }
 
 HostCodeHeap::~HostCodeHeap()
@@ -1260,14 +1265,14 @@ LCGMethodResolver::GetLocalSig()
 
 //---------------------------------------------------------------------------------------
 //
-OBJECTHANDLE
+STRINGREF*
 LCGMethodResolver::ConstructStringLiteral(mdToken metaTok)
 {
     STANDARD_VM_CONTRACT;
 
     GCX_COOP();
 
-    OBJECTHANDLE string = NULL;
+    STRINGREF* string = NULL;
     STRINGREF strRef = GetStringLiteral(metaTok);
 
     GCPROTECT_BEGIN(strRef);
@@ -1277,7 +1282,7 @@ LCGMethodResolver::ConstructStringLiteral(mdToken metaTok)
         // Instead of storing the string literal in the appdomain specific string literal map,
         // we store it in the dynamic method specific string liternal list
         // This way we can release it when the dynamic method is collected.
-        string = (OBJECTHANDLE)GetOrInternString(&strRef);
+        string = GetOrInternString(&strRef);
     }
 
     GCPROTECT_END();

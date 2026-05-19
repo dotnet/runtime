@@ -11,6 +11,188 @@ namespace System.Threading.RateLimiting.Tests
     public class ChainedLimiterTests
     {
         [Fact]
+        public void CreateChainedReturnsRateLimiterWhenNoReplenishingLimiters()
+        {
+            using var limiter1 = new ConcurrencyLimiter(new ConcurrencyLimiterOptions
+            {
+                PermitLimit = 1,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0
+            });
+            using var limiter2 = new ConcurrencyLimiter(new ConcurrencyLimiterOptions
+            {
+                PermitLimit = 1,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0
+            });
+
+            using var chainedLimiter = RateLimiter.CreateChained(limiter1, limiter2);
+
+            Assert.False(chainedLimiter is ReplenishingRateLimiter);
+        }
+
+        [Fact]
+        public void CreateChainedReturnsReplenishingRateLimiterWhenAnyReplenishingLimiter()
+        {
+            using var limiter1 = new ConcurrencyLimiter(new ConcurrencyLimiterOptions
+            {
+                PermitLimit = 1,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0
+            });
+            using var limiter2 = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions
+            {
+                TokenLimit = 1,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0,
+                ReplenishmentPeriod = TimeSpan.FromSeconds(1),
+                TokensPerPeriod = 1,
+                AutoReplenishment = false
+            });
+
+            using var chainedLimiter = RateLimiter.CreateChained(limiter1, limiter2);
+
+            Assert.IsAssignableFrom<ReplenishingRateLimiter>(chainedLimiter);
+        }
+
+        [Fact]
+        public void ReplenishingChainedLimiter_IsAutoReplenishingTrue_WhenAllReplenishingAreAutoReplenishing()
+        {
+            using var limiter1 = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions
+            {
+                TokenLimit = 1,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0,
+                ReplenishmentPeriod = TimeSpan.FromSeconds(1),
+                TokensPerPeriod = 1,
+                AutoReplenishment = true
+            });
+            using var limiter2 = new FixedWindowRateLimiter(new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 1,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0,
+                Window = TimeSpan.FromSeconds(2),
+                AutoReplenishment = true
+            });
+
+            using var chainedLimiter = RateLimiter.CreateChained(limiter1, limiter2);
+
+            var replenishing = Assert.IsAssignableFrom<ReplenishingRateLimiter>(chainedLimiter);
+            Assert.True(replenishing.IsAutoReplenishing);
+        }
+
+        [Fact]
+        public void ReplenishingChainedLimiter_IsAutoReplenishingFalse_WhenAnyReplenishingIsNotAutoReplenishing()
+        {
+            using var limiter1 = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions
+            {
+                TokenLimit = 1,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0,
+                ReplenishmentPeriod = TimeSpan.FromSeconds(1),
+                TokensPerPeriod = 1,
+                AutoReplenishment = true
+            });
+            using var limiter2 = new FixedWindowRateLimiter(new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 1,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0,
+                Window = TimeSpan.FromSeconds(2),
+                AutoReplenishment = false
+            });
+
+            using var chainedLimiter = RateLimiter.CreateChained(limiter1, limiter2);
+
+            var replenishing = Assert.IsAssignableFrom<ReplenishingRateLimiter>(chainedLimiter);
+            Assert.False(replenishing.IsAutoReplenishing);
+        }
+
+        [Fact]
+        public void ReplenishingChainedLimiter_ReplenishmentPeriod_IsLowestPositiveValue()
+        {
+            using var limiter1 = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions
+            {
+                TokenLimit = 1,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0,
+                ReplenishmentPeriod = TimeSpan.FromSeconds(5),
+                TokensPerPeriod = 1,
+                AutoReplenishment = false
+            });
+            using var limiter2 = new FixedWindowRateLimiter(new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 1,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0,
+                Window = TimeSpan.FromSeconds(2),
+                AutoReplenishment = false
+            });
+            using var nonReplenishing = new ConcurrencyLimiter(new ConcurrencyLimiterOptions
+            {
+                PermitLimit = 1,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0
+            });
+
+            using var chainedLimiter = RateLimiter.CreateChained(limiter1, limiter2, nonReplenishing);
+
+            var replenishing = Assert.IsAssignableFrom<ReplenishingRateLimiter>(chainedLimiter);
+            Assert.Equal(TimeSpan.FromSeconds(2), replenishing.ReplenishmentPeriod);
+        }
+
+        [Fact]
+        public void ReplenishingChainedLimiter_TryReplenish_CallsAllReplenishingLimiters()
+        {
+            var replenishingLimiter1 = new CustomizableReplenishingLimiter();
+            bool replenish1Called = false;
+            replenishingLimiter1.TryReplenishImpl = () =>
+            {
+                replenish1Called = true;
+                return true;
+            };
+
+            var replenishingLimiter2 = new CustomizableReplenishingLimiter();
+            bool replenish2Called = false;
+            replenishingLimiter2.TryReplenishImpl = () =>
+            {
+                replenish2Called = true;
+                return false;
+            };
+
+            using var nonReplenishing = new CustomizableLimiter();
+
+            using var chainedLimiter = RateLimiter.CreateChained(replenishingLimiter1, nonReplenishing, replenishingLimiter2);
+
+            var replenishing = Assert.IsAssignableFrom<ReplenishingRateLimiter>(chainedLimiter);
+            bool result = replenishing.TryReplenish();
+
+            Assert.True(replenish1Called);
+            Assert.True(replenish2Called);
+            Assert.True(result);
+        }
+
+        [Fact]
+        public void ReplenishingChainedLimiter_TryReplenish_ReturnsFalseWhenNoneReplenished()
+        {
+            var replenishingLimiter1 = new CustomizableReplenishingLimiter
+            {
+                TryReplenishImpl = () => false
+            };
+
+            var replenishingLimiter2 = new CustomizableReplenishingLimiter
+            {
+                TryReplenishImpl = () => false
+            };
+
+            using var chainedLimiter = RateLimiter.CreateChained(replenishingLimiter1, replenishingLimiter2);
+
+            var replenishing = Assert.IsAssignableFrom<ReplenishingRateLimiter>(chainedLimiter);
+            Assert.False(replenishing.TryReplenish());
+        }
+
+        [Fact]
         public void ThrowsWhenNoLimitersProvided()
         {
             Assert.Throws<ArgumentException>(() => RateLimiter.CreateChained());
@@ -209,16 +391,27 @@ namespace System.Threading.RateLimiting.Tests
         }
 
         [Fact]
-        public void IdleDurationReturnsLowestValue()
+        public void IdleDurationReturnsNullWhenAnyChildReturnsNull()
         {
-            using var limiter1 = new CustomizableLimiter();
+            using var limiter1 = new CustomizableLimiter { IdleDurationImpl = () => null };
             using var limiter2 = new CustomizableLimiter { IdleDurationImpl = () => TimeSpan.FromMilliseconds(2) };
+            using var limiter3 = new CustomizableLimiter { IdleDurationImpl = () => TimeSpan.FromMilliseconds(3) };
+
+            using var chainedLimiter = RateLimiter.CreateChained(limiter1, limiter2, limiter3);
+            Assert.Null(chainedLimiter.IdleDuration);
+        }
+
+        [Fact]
+        public void IdleDurationReturnsLowestValueWhenAllChildrenAreIdle()
+        {
+            using var limiter1 = new CustomizableLimiter { IdleDurationImpl = () => TimeSpan.FromMilliseconds(2) };
+            using var limiter2 = new CustomizableLimiter { IdleDurationImpl = () => TimeSpan.FromMilliseconds(1) };
             using var limiter3 = new CustomizableLimiter { IdleDurationImpl = () => TimeSpan.FromMilliseconds(3) };
 
             using var chainedLimiter = RateLimiter.CreateChained(limiter1, limiter2, limiter3);
 
             var idleDuration = chainedLimiter.IdleDuration;
-            Assert.Equal(2, idleDuration.Value.TotalMilliseconds);
+            Assert.Equal(1, idleDuration.Value.TotalMilliseconds);
         }
 
         [Fact]
@@ -809,7 +1002,7 @@ namespace System.Threading.RateLimiting.Tests
                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                 QueueLimit = 0
             });
-            
+
             using var chainedLimiter = RateLimiter.CreateChained(limiter1, limiter2);
 
             var lease = chainedLimiter.AttemptAcquire();
@@ -1039,6 +1232,66 @@ namespace System.Threading.RateLimiting.Tests
             Assert.IsType<TimeSpan>(obj);
             Assert.True(lease.TryGetMetadata("3", out obj));
             Assert.IsType<List<int>>(obj);
+        }
+
+        [Fact]
+        public void DisposeDoesNotDisposeInnerLimiters()
+        {
+            var limiter1 = new TrackingRateLimiter();
+            var limiter2 = new TrackingRateLimiter();
+            var chainedLimiter = RateLimiter.CreateChained(limiter1, limiter2);
+
+            chainedLimiter.Dispose();
+
+            Assert.Equal(0, limiter1.DisposeCallCount);
+            Assert.Equal(0, limiter2.DisposeCallCount);
+        }
+
+        [Fact]
+        public async Task DisposeAsyncDoesNotDisposeInnerLimiters()
+        {
+            var limiter1 = new TrackingRateLimiter();
+            var limiter2 = new TrackingRateLimiter();
+            var chainedLimiter = RateLimiter.CreateChained(limiter1, limiter2);
+
+            await chainedLimiter.DisposeAsync();
+
+            Assert.Equal(0, limiter1.DisposeCallCount);
+            Assert.Equal(0, limiter1.DisposeAsyncCallCount);
+            Assert.Equal(0, limiter2.DisposeCallCount);
+            Assert.Equal(0, limiter2.DisposeAsyncCallCount);
+        }
+
+        [Fact]
+        public void DisposeDoesNotDisposeInnerReplenishingLimiters()
+        {
+            var limiter1 = new CustomizableReplenishingLimiter { ReplenishmentPeriodImpl = () => TimeSpan.FromSeconds(1) };
+            var limiter2 = new CustomizableReplenishingLimiter { ReplenishmentPeriodImpl = () => TimeSpan.FromSeconds(2) };
+            var chainedLimiter = RateLimiter.CreateChained(limiter1, limiter2);
+
+            Assert.IsAssignableFrom<ReplenishingRateLimiter>(chainedLimiter);
+
+            chainedLimiter.Dispose();
+
+            // Inner limiters should still be usable after chained limiter is disposed
+            Assert.NotNull(limiter1.AttemptAcquire());
+            Assert.NotNull(limiter2.AttemptAcquire());
+        }
+
+        [Fact]
+        public async Task DisposeAsyncDoesNotDisposeInnerReplenishingLimiters()
+        {
+            var limiter1 = new CustomizableReplenishingLimiter { ReplenishmentPeriodImpl = () => TimeSpan.FromSeconds(1) };
+            var limiter2 = new CustomizableReplenishingLimiter { ReplenishmentPeriodImpl = () => TimeSpan.FromSeconds(2) };
+            var chainedLimiter = RateLimiter.CreateChained(limiter1, limiter2);
+
+            Assert.IsAssignableFrom<ReplenishingRateLimiter>(chainedLimiter);
+
+            await chainedLimiter.DisposeAsync();
+
+            // Inner limiters should still be usable after chained limiter is disposed
+            Assert.NotNull(limiter1.AttemptAcquire());
+            Assert.NotNull(limiter2.AttemptAcquire());
         }
     }
 }

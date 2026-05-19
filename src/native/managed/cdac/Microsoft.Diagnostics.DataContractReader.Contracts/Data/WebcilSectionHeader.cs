@@ -8,12 +8,10 @@ internal sealed class WebcilSectionHeader : IData<WebcilSectionHeader>
     static WebcilSectionHeader IData<WebcilSectionHeader>.Create(Target target, TargetPointer address) => new WebcilSectionHeader(target, address);
     public WebcilSectionHeader(Target target, TargetPointer address)
     {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.WebcilSectionHeader);
-
-        VirtualSize = target.Read<uint>(address + (ulong)type.Fields[nameof(VirtualSize)].Offset);
-        VirtualAddress = target.Read<uint>(address + (ulong)type.Fields[nameof(VirtualAddress)].Offset);
-        SizeOfRawData = target.Read<uint>(address + (ulong)type.Fields[nameof(SizeOfRawData)].Offset);
-        PointerToRawData = target.Read<uint>(address + (ulong)type.Fields[nameof(PointerToRawData)].Offset);
+        VirtualSize = target.Read<uint>(address + 0);
+        VirtualAddress = target.Read<uint>(address + 4);
+        SizeOfRawData = target.Read<uint>(address + 8);
+        PointerToRawData = target.Read<uint>(address + 12);
     }
 
     public uint VirtualSize { get; init; }

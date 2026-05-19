@@ -338,7 +338,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         return dict;
     }
 
-    public IDictionary<string, (string fullPath, bool unchanged)> GetFilesTable(string projectName, bool isAOT, BuildPaths paths, bool unchanged)
+    public IDictionary<string, (string fullPath, bool unchanged)> GetFilesTable(string projectName, bool isAOT, BuildPaths paths, bool unchanged, string? bootConfigDir = null)
     {
         List<string> files = new()
         {
@@ -379,7 +379,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
         if (IsFingerprintingEnabled)
         {
-            string bootJsonPath = GetBootConfigPath(paths.BinFrameworkDir, "dotnet.js");
+            string bootJsonPath = GetBootConfigPath(bootConfigDir ?? paths.BinFrameworkDir, "dotnet.js");
             BootJsonData bootJson = GetBootJson(bootJsonPath);
             AssetsData assets = (AssetsData)bootJson.resources;
             var keysToUpdate = new List<string>();
@@ -550,11 +550,22 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         }
     }
 
+    private static string GetDefaultBootConfigFileName(string binFrameworkDir)
+    {
+        // Probe for the boot config file to support different TFMs:
+        // - blazor.boot.json for pre-net10
+        // - dotnet.js with embedded config for net10+ (inline boot config)
+        if (File.Exists(Path.Combine(binFrameworkDir, "blazor.boot.json")))
+            return "blazor.boot.json";
+
+        return "dotnet.js";
+    }
+
     public BootJsonData AssertBootJson(AssertBundleOptions options)
     {
 
         EnsureProjectDirIsSet();
-        string bootJsonPath = GetBootConfigPath(options.BinFrameworkDir, options.BuildOptions.BootConfigFileName);
+        string bootJsonPath = GetBootConfigPath(options.BinFrameworkDir, GetDefaultBootConfigFileName(options.BinFrameworkDir));
         BootJsonData bootJson = GetBootJson(bootJsonPath);
         AssetsData assets = (AssetsData)bootJson.resources;
 

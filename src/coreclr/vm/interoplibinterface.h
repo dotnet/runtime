@@ -43,7 +43,7 @@ public: // Identification
 public: // Exceptions
     static void* GetPropagatingExceptionCallback(
         _In_ EECodeInfo* codeInfo,
-        _In_ OBJECTHANDLE throwable,
+        _In_ OBJECTREF throwable,
         _Outptr_ void** context);
 
 public: // GC interaction
@@ -105,7 +105,7 @@ public:
 
     static ManagedToNativeExceptionCallback GetPropagatingExceptionCallback(
         _In_ EECodeInfo* codeInfo,
-        _In_ OBJECTHANDLE throwable,
+        _In_ OBJECTREF throwable,
         _Outptr_ void** context);
 
     // Notify started/finished when GC is running.

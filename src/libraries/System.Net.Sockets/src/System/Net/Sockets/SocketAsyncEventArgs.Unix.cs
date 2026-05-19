@@ -277,7 +277,7 @@ namespace System.Net.Sockets
                     string? dirname = Path.GetDirectoryName(fnfe.FileName);
                     if (!string.IsNullOrEmpty(dirname) && !Directory.Exists(dirname))
                     {
-                        throw new DirectoryNotFoundException(fnfe.Message);
+                        throw new DirectoryNotFoundException(fnfe.Message, dirname);
                     }
                 }
 

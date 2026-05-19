@@ -5,7 +5,7 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    public class FileInfo_GetSetAttributes : InfoGetSetAttributes<FileInfo>
+    public partial class FileInfo_GetSetAttributes : InfoGetSetAttributes<FileInfo>
     {
         protected override bool CanBeReadOnly => true;
         protected override FileAttributes GetAttributes(string path) => new FileInfo(path).Attributes;

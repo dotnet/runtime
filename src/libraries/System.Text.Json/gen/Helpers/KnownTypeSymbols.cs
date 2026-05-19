@@ -249,6 +249,15 @@ namespace System.Text.Json.SourceGeneration
         public INamedTypeSymbol? SetsRequiredMembersAttributeType => GetOrResolveType("System.Diagnostics.CodeAnalysis.SetsRequiredMembersAttribute", ref _SetsRequiredMembersAttributeType);
         private Option<INamedTypeSymbol?> _SetsRequiredMembersAttributeType;
 
+        public INamedTypeSymbol? UnsafeAccessorAttributeType => GetOrResolveType("System.Runtime.CompilerServices.UnsafeAccessorAttribute", ref _UnsafeAccessorAttributeType);
+        private Option<INamedTypeSymbol?> _UnsafeAccessorAttributeType;
+
+        // OverloadResolutionPriorityAttribute was added in .NET 9; its presence indicates
+        // the runtime also supports generic type parameters in UnsafeAccessor.
+        public bool SupportsGenericUnsafeAccessors => UnsafeAccessorAttributeType is not null
+            && GetOrResolveType("System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute", ref _OverloadResolutionPriorityAttributeType) is not null;
+        private Option<INamedTypeSymbol?> _OverloadResolutionPriorityAttributeType;
+
         public INamedTypeSymbol? JsonStringEnumConverterType => GetOrResolveType("System.Text.Json.Serialization.JsonStringEnumConverter", ref _JsonStringEnumConverterType);
         private Option<INamedTypeSymbol?> _JsonStringEnumConverterType;
 

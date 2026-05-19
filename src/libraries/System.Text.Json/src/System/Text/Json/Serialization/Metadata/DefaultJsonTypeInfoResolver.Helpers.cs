@@ -57,7 +57,8 @@ namespace System.Text.Json.Serialization.Metadata
                 typeInfo.PreferredPropertyObjectCreationHandling = creationHandling;
             }
 
-            if (GetUnmappedMemberHandling(typeInfo.Type) is { } unmappedMemberHandling)
+            if (GetUnmappedMemberHandling(typeInfo.Type) is { } unmappedMemberHandling
+                && typeInfo.Kind is JsonTypeInfoKind.Object)
             {
                 typeInfo.UnmappedMemberHandling = unmappedMemberHandling;
             }

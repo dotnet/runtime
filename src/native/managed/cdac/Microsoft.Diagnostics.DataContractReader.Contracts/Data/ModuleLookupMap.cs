@@ -11,10 +11,10 @@ internal sealed class ModuleLookupMap : IData<ModuleLookupMap>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.ModuleLookupMap);
 
-        TableData = target.ReadPointer(address + (ulong)type.Fields[nameof(TableData)].Offset);
-        Next = target.ReadPointer(address + (ulong)type.Fields[nameof(Next)].Offset);
-        Count = target.Read<uint>(address + (ulong)type.Fields[nameof(Count)].Offset);
-        SupportedFlagsMask = target.ReadNUInt(address + (ulong)type.Fields[nameof(SupportedFlagsMask)].Offset);
+        TableData = target.ReadPointerField(address, type, nameof(TableData));
+        Next = target.ReadPointerField(address, type, nameof(Next));
+        Count = target.ReadField<uint>(address, type, nameof(Count));
+        SupportedFlagsMask = target.ReadNUIntField(address, type, nameof(SupportedFlagsMask));
     }
 
     public TargetPointer TableData { get; init; }

@@ -11,9 +11,9 @@ internal sealed class ComCallWrapper : IData<ComCallWrapper>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.ComCallWrapper);
 
-        Handle = target.ReadPointer(address + (ulong)type.Fields[nameof(Handle)].Offset);
-        SimpleWrapper = target.ReadPointer(address + (ulong)type.Fields[nameof(SimpleWrapper)].Offset);
-        Next = target.ReadPointer(address + (ulong)type.Fields[nameof(Next)].Offset);
+        Handle = target.ReadPointerField(address, type, nameof(Handle));
+        SimpleWrapper = target.ReadPointerField(address, type, nameof(SimpleWrapper));
+        Next = target.ReadPointerField(address, type, nameof(Next));
 
         IPtr = address + (ulong)type.Fields[nameof(IPtr)].Offset;
         int numInterfaces = (int)target.ReadGlobal<uint>(Constants.Globals.CCWNumInterfaces);

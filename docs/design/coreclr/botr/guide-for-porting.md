@@ -368,8 +368,7 @@ Here is an annotated list of the stubs implemented for Unix on Arm64.
         FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP can be implemented as
         performance needs require.
 
-    7.  `ComCallPreStub`/ `COMToCLRDispatchHelper` /`GenericComCallStub` - not
-        necessary for non-Windows platforms at this time
+    7.  `ComCallPreStub` - not necessary for non-Windows platforms at this time
 
     8.  `TheUMEntryPrestub`/ `UMThunkStub` - used to enter the runtime from
         non-managed code through entrypoints generated from the

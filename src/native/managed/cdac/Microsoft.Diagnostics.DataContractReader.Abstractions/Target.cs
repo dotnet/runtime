@@ -99,6 +99,20 @@ public abstract class Target
     public abstract void WriteBuffer(ulong address, Span<byte> buffer);
 
     /// <summary>
+    /// Allocate memory in the target process
+    /// </summary>
+    /// <param name="size">The number of bytes to allocate</param>
+    /// <returns>The address of the allocated memory in the target process</returns>
+    /// <exception cref="NotImplementedException">Thrown when the target does not support memory allocation</exception>
+    /// <remarks>
+    /// This is used for lazy allocation patterns where the debugger needs to allocate memory
+    /// in the target process (e.g., JIT notification tables on Windows).
+    /// The default implementation throws <see cref="NotImplementedException"/>.
+    /// </remarks>
+    public virtual TargetPointer AllocateMemory(uint size)
+        => throw new NotImplementedException("Target does not support memory allocation");
+
+    /// <summary>
     /// Read a null-terminated UTF-8 string from the target
     /// </summary>
     /// <param name="address">Address to start reading from</param>
@@ -189,6 +203,20 @@ public abstract class Target
     public abstract void Write<T>(ulong address, T value) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>;
 
     /// <summary>
+    /// Write a target pointer to the target in target endianness, using the target's pointer size.
+    /// </summary>
+    /// <param name="address">Address to write to</param>
+    /// <param name="value">Pointer value to write</param>
+    public abstract void WritePointer(ulong address, TargetPointer value);
+
+    /// <summary>
+    /// Write a target NUInt to the target in target endianness, using the target's pointer size.
+    /// </summary>
+    /// <param name="address">Address to write to</param>
+    /// <param name="value">Pointer value to write</param>
+    public abstract void WriteNUInt(ulong address, TargetNUInt value);
+
+    /// <summary>
     /// Read a target pointer from a span of bytes
     /// </summary>
     /// <param name="bytes">The span of bytes to read from</param>
@@ -206,9 +234,9 @@ public abstract class Target
     /// <summary>
     /// Returns the information about the given well-known data type in the target process
     /// </summary>
-    /// <param name="type">The name of the well known type</param>
+    /// <param name="typeName">The name of the well known type</param>
     /// <returns>The information about the given type in the target process</returns>
-    public abstract TypeInfo GetTypeInfo(DataType type);
+    public abstract TypeInfo GetTypeInfo(string typeName);
 
     /// <summary>
     /// Get the data cache for the target
@@ -276,10 +304,6 @@ public abstract class Target
         /// </summary>
         public int Offset { get; init; }
         /// <summary>
-        /// The well known data type of the field in the target process
-        /// </summary>
-        public readonly DataType Type { get; init; }
-        /// <summary>
         /// The name of the well known data type of the field in the target process, or null
         /// if the target data descriptor did not record a name
         /// </summary>
@@ -295,7 +319,7 @@ public abstract class Target
     /// Clear all cached data held by this target, including processed data and contract caches.
     /// Called when the target process state may have changed (e.g. on resume).
     /// </summary>
-    public void Flush()
+    public virtual void Flush()
     {
         ProcessedData.Clear();
         Contracts.Flush();

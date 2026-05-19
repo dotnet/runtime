@@ -122,7 +122,7 @@ static void* volatile s_gssLib = NULL;
 static int32_t ensure_gss_shim_initialized(void)
 {
     void* lib = dlopen(gss_lib_name, RTLD_LAZY);
-    if (lib == NULL) { fprintf(stderr, "Cannot load library %s \nError: %s\n", gss_lib_name, dlerror()); return -1; }
+    if (lib == NULL) { return -1; }
 
     // check is someone else has opened and published s_gssLib already
     if (!pal_atomic_cas_ptr(&s_gssLib, lib, NULL))
@@ -130,12 +130,10 @@ static int32_t ensure_gss_shim_initialized(void)
         dlclose(lib);
     }
 
-    // initialize indirection pointers for all functions, like:
-    //   gss_accept_sec_context_ptr = (TYPEOF(gss_accept_sec_context)*)dlsym(s_gssLib, "gss_accept_sec_context");
-    //   if (gss_accept_sec_context_ptr == NULL) { fprintf(stderr, "Cannot get symbol %s from %s \nError: %s\n", "gss_accept_sec_context", gss_lib_name, dlerror()); return -1; }
+    // initialize indirection pointers for all functions
 #define PER_FUNCTION_BLOCK(fn) \
     fn##_ptr = (TYPEOF(fn)*)dlsym(s_gssLib, #fn); \
-    if (fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol " #fn " from %s \nError: %s\n", gss_lib_name, dlerror()); return -1; }
+    if (fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol " #fn " from %s \nError: %s\n", gss_lib_name, dlerror()); abort(); }
 
     FOR_ALL_GSS_FUNCTIONS
 #undef PER_FUNCTION_BLOCK
@@ -244,7 +242,20 @@ uint32_t NetSecurityNative_ImportPrincipalName(uint32_t* minorStatus,
     // Principal name will usually be in the form SERVICE/HOST. But SPNEGO protocol prefers
     // GSS_C_NT_HOSTBASED_SERVICE format. That format uses '@' separator instead of '/' between
     // service name and host name. So convert input string into that format.
+    //
+    // If the input contains both '/' and '@' (e.g. SERVICE/HOST@REALM), it is a fully
+    // qualified Kerberos principal name with an explicit realm. Import it directly as
+    // GSS_KRB5_NT_PRINCIPAL_NAME so the realm hint is respected.
     char* ptrSlash = (char*)memchr(inputName, '/', inputNameLen);
+    char* ptrAt = (char*)memchr(inputName, '@', inputNameLen);
+    if (ptrSlash != NULL && ptrAt != NULL)
+    {
+        static gss_OID_desc gss_krb5_nt_principal_name_desc =
+            {10, "\x2a\x86\x48\x86\xf7\x12\x01\x02\x02\x01"};
+        GssBuffer inputNameBuffer = {.length = inputNameLen, .value = inputName};
+        return gss_import_name(minorStatus, &inputNameBuffer, &gss_krb5_nt_principal_name_desc, outputName);
+    }
+
     char* inputNameCopy = NULL;
     if (ptrSlash != NULL)
     {

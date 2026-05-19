@@ -10,18 +10,21 @@ public sealed class ExecutionManager_2 : IExecutionManager
 {
     private IExecutionManager _executionManagerCore;
 
-    internal ExecutionManager_2(Target target, Data.RangeSectionMap topRangeSectionMap)
+    internal ExecutionManager_2(Target target)
     {
-        _executionManagerCore = new ExecutionManagerCore<NibbleMapConstantLookup>(target, topRangeSectionMap);
+        TargetPointer addr = target.ReadGlobalPointer(Constants.Globals.ExecutionManagerCodeRangeMapAddress);
+        Data.RangeSectionMap map = target.ProcessedData.GetOrAdd<Data.RangeSectionMap>(addr);
+        _executionManagerCore = new ExecutionManagerCore<NibbleMapConstantLookup>(target, map);
     }
 
     public CodeBlockHandle? GetCodeBlockHandle(TargetCodePointer ip) => _executionManagerCore.GetCodeBlockHandle(ip);
     public TargetPointer GetMethodDesc(CodeBlockHandle codeInfoHandle) => _executionManagerCore.GetMethodDesc(codeInfoHandle);
-    public TargetCodePointer GetStartAddress(CodeBlockHandle codeInfoHandle) => _executionManagerCore.GetStartAddress(codeInfoHandle);
-    public TargetCodePointer GetFuncletStartAddress(CodeBlockHandle codeInfoHandle) => _executionManagerCore.GetFuncletStartAddress(codeInfoHandle);
+    public TargetPointer GetStartAddress(CodeBlockHandle codeInfoHandle) => _executionManagerCore.GetStartAddress(codeInfoHandle);
+    public TargetPointer GetFuncletStartAddress(CodeBlockHandle codeInfoHandle) => _executionManagerCore.GetFuncletStartAddress(codeInfoHandle);
     public void GetMethodRegionInfo(CodeBlockHandle codeInfoHandle, out uint hotSize, out TargetPointer coldStart, out uint coldSize) => _executionManagerCore.GetMethodRegionInfo(codeInfoHandle, out hotSize, out coldStart, out coldSize);
-    public uint GetJITType(CodeBlockHandle codeInfoHandle) => _executionManagerCore.GetJITType(codeInfoHandle);
     public TargetPointer NonVirtualEntry2MethodDesc(TargetCodePointer entrypoint) => _executionManagerCore.NonVirtualEntry2MethodDesc(entrypoint);
+    public bool IsFunclet(CodeBlockHandle codeInfoHandle) => _executionManagerCore.IsFunclet(codeInfoHandle);
+    public bool IsFilterFunclet(CodeBlockHandle codeInfoHandle) => _executionManagerCore.IsFilterFunclet(codeInfoHandle);
     public TargetPointer GetUnwindInfo(CodeBlockHandle codeInfoHandle) => _executionManagerCore.GetUnwindInfo(codeInfoHandle);
     public TargetPointer GetUnwindInfoBaseAddress(CodeBlockHandle codeInfoHandle) => _executionManagerCore.GetUnwindInfoBaseAddress(codeInfoHandle);
     public TargetPointer GetDebugInfo(CodeBlockHandle codeInfoHandle, out bool hasFlagByte) => _executionManagerCore.GetDebugInfo(codeInfoHandle, out hasFlagByte);
@@ -29,5 +32,8 @@ public sealed class ExecutionManager_2 : IExecutionManager
     public TargetNUInt GetRelativeOffset(CodeBlockHandle codeInfoHandle) => _executionManagerCore.GetRelativeOffset(codeInfoHandle);
     public List<ExceptionClauseInfo> GetExceptionClauses(CodeBlockHandle codeInfoHandle) => _executionManagerCore.GetExceptionClauses(codeInfoHandle);
     public JitManagerInfo GetEEJitManagerInfo() => _executionManagerCore.GetEEJitManagerInfo();
+    public IEnumerable<ICodeHeapInfo> GetCodeHeapInfos() => _executionManagerCore.GetCodeHeapInfos();
+    public CodeKind GetCodeKind(TargetCodePointer codeAddress) => _executionManagerCore.GetCodeKind(codeAddress);
+    public TargetPointer FindReadyToRunModule(TargetPointer address) => _executionManagerCore.FindReadyToRunModule(address);
     public void Flush() => _executionManagerCore.Flush();
 }
