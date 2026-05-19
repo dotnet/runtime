@@ -25,6 +25,7 @@ namespace System
 
         private static readonly Lazy<bool> s_IsInHelix = new Lazy<bool>(() => Environment.GetEnvironmentVariables().Keys.Cast<string>().Any(key => key.StartsWith("HELIX")));
         public static bool IsInHelix => s_IsInHelix.Value;
+        public static bool IsNotInHelix => !IsInHelix;
 
         public static bool IsNetCore => Environment.Version.Major >= 5 || RuntimeInformation.FrameworkDescription.StartsWith(".NET Core", StringComparison.OrdinalIgnoreCase);
         public static bool IsMonoRuntime => Type.GetType("Mono.RuntimeStructs") != null;

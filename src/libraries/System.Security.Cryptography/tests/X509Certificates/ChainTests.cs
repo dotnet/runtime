@@ -375,8 +375,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [PlatformSpecific(TestPlatforms.Android)]
-        [OuterLoop("Builds 8,600 PKI chains to exceed Android's JNI global reference table; ~10 minutes on an Android emulator.")]
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInHelix))]
         public static void BuildChainRepeatedly_DoesNotExhaustGlobalReferences()
         {
             // Android aborts the process when its JNI global reference table overflows. This
@@ -384,6 +383,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             // PAL cleanup, so 8,600 builds would leak 51,600 certificate refs. 8,400 iterations
             // completed without the fix during threshold testing, while 8,500 iterations crashed
             // with "global reference table overflow (max=51200)".
+            // This tests runs for ~10 minutes on an Android emulator.
             const int Iterations = 8_600;
 
             CertificateAuthority.BuildPrivatePki(
