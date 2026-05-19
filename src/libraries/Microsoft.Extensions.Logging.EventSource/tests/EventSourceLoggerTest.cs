@@ -163,7 +163,6 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/73438", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void Logs_AsExpected_WithDefaults()
         {
             using (var testListener = new TestEventListener())
@@ -201,7 +200,6 @@ namespace Microsoft.Extensions.Logging.Test
         [InlineData(true, true, false)]
         [InlineData(true, false, true)]
         [InlineData(false, true, true)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/73438", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void Logs_TracingDetailsAsExpected_WithDefaults(bool hasTrace, bool useW3CFormatId, bool sampled)
         {
             using (var testListener = new TestEventListener())
@@ -258,7 +256,6 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/73438", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void Logs_AsExpected_WithDefaults_EnabledEarly()
         {
             using (var testListener = new TestEventListener())
@@ -365,7 +362,6 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/73438", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void Logs_OnlyMessage_IfKeywordSet()
         {
             using (var testListener = new TestEventListener())
