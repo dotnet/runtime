@@ -2782,15 +2782,6 @@ public:
     virtual void HandleDebugEventForInteropDebugging(const DEBUG_EVENT * pEvent) = 0;
 #endif // FEATURE_INTEROP_DEBUGGING
 
-    // Get the modules in the order that they were loaded. This is needed to send the fake-attach events
-    // for module load in the right order.
-    //
-    // This can be removed once ICorDebug's enumerations are ordered.
-    virtual void GetModulesInLoadOrder(
-        ICorDebugAssembly * pAssembly,
-        RSExtSmartPtr<ICorDebugModule>* pModules,
-        ULONG countModules) = 0;
-
     // Get the assemblies in the order that they were loaded. This is needed to send the fake-attach events
     // for assembly load in the right order.
     //
@@ -3281,12 +3272,6 @@ public:
         ICorDebugAppDomain * pAppDomain,
         RSExtSmartPtr<ICorDebugAssembly>* pAssemblies,
         ULONG countAssemblies);
-
-    // Callback for Shim to get the modules in load order
-    void GetModulesInLoadOrder(
-        ICorDebugAssembly * pAssembly,
-        RSExtSmartPtr<ICorDebugModule>* pModules,
-        ULONG countModules);
 
     // Functions to queue fake Connection events on attach.
     static void CountConnectionsCallback(DWORD id, LPCWSTR pName, void * pUserData);
