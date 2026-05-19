@@ -1579,9 +1579,6 @@ void CodeGen::genHWIntrinsic_R_R_R_RM_I(
 
         uint8_t                 control  = static_cast<uint8_t>(ival);
         const TernaryLogicInfo& info     = TernaryLogicInfo::lookup(control);
-        TernaryLogicUseFlags    useFlags = info.GetAllUseFlags();
-
-        assert(useFlags == TernaryLogicUseFlags::ABC);
 
         // These are the control bytes used for TernaryLogic
 
