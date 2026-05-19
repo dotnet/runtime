@@ -1602,7 +1602,7 @@ void CodeGen::genHWIntrinsic_R_R_R_RM_I(
             assert(!op3->isContained());
 
             std::swap(op1, op3);
-            op1Reg = op3->GetRegNum();
+            op1Reg = op1->GetRegNum();
 
             control = TernaryLogicInfo::GetTernaryControlByte(info, C, B, A);
             ival    = static_cast<int8_t>(control);

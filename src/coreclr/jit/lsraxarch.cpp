@@ -2530,14 +2530,6 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
                 const bool copiesUpperBits = HWIntrinsicInfo::CopiesUpperBits(intrinsicId);
 
-                LIR::Use use;
-                GenTree* user = nullptr;
-
-                if (LIR::AsRange(blockSequence[curBBSeqNum]).TryGetUse(intrinsicTree, &use))
-                {
-                    user = use.User();
-                }
-
                 if (op1->isContained() || op1->IsRegOptional())
                 {
                     assert(!copiesUpperBits);
