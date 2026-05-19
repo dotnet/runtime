@@ -610,27 +610,39 @@ int32_t CryptoNative_SslDecrypt(
     }
 
     int32_t result = 0;
+    int32_t leftover = 0;
 
     if (outputCap > 0)
     {
         result = SSL_read(ssl, outputPtr, outputCap);
     }
 
-    // if provided destination buffer was too small, leave the remaining plaintext in-place in the input buffer.
-    if (outputCap == 0 || SSL_pending(ssl) > 0)
+    // If the caller-provided destination is empty or full, look for additional plaintext that
+    // SSL would otherwise buffer internally and stash it in-place in the input buffer so the
+    // caller can pick it up on the next call. Skip the probe when the first SSL_read already
+    // failed - that error/state should be reported as-is.
+    if (result > 0 ? SSL_pending(ssl) > 0 : outputCap == 0)
     {
-        *leftoverLength = SSL_read(ssl, inputPtr, inputLen);
+        leftover = SSL_read(ssl, inputPtr, inputLen);
     }
 
-    *errorCode = (result + *leftoverLength > 0) ? SSL_ERROR_NONE : CryptoNative_SslGetError(ssl, result);
+    // The first SSL_read determines the outcome when it produced bytes; otherwise the second
+    // SSL_read (the one that was actually attempted) does. Only report leftoverLength when it
+    // is positive - a negative value from a failed second read is not user-visible plaintext.
+    int32_t outcome = result > 0 ? result : leftover;
+    *errorCode = (outcome > 0) ? SSL_ERROR_NONE : CryptoNative_SslGetError(ssl, outcome);
+    if (leftover > 0)
+    {
+        *leftoverLength = leftover;
+    }
 
     if (inputBio != NULL)
     {
-        int32_t leftover = 0;
-        CryptoNative_BioClearReadWindow(inputBio, &leftover);
+        int32_t unread = 0;
+        CryptoNative_BioClearReadWindow(inputBio, &unread);
         if (consumed != NULL)
         {
-            *consumed = inputLen - leftover;
+            *consumed = inputLen - unread;
         }
     }
 

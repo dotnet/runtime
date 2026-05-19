@@ -150,12 +150,12 @@ static pthread_once_t g_managedSpanBioOnce = PTHREAD_ONCE_INIT;
 
 static int ManagedSpanBioRead(BIO* bio, char* buf, int len)
 {
-    BIO_clear_retry_flags(bio);
-
     if (bio == NULL || buf == NULL || len <= 0)
     {
         return 0;
     }
+
+    BIO_clear_retry_flags(bio);
 
     ManagedSpanBioCtx* ctx = GetManagedSpanBioCtx(bio);
     if (ctx == NULL)
@@ -207,12 +207,12 @@ static int ManagedSpanBioGrowSpill(ManagedSpanBioCtx* ctx, int32_t needed)
 
 static int ManagedSpanBioWrite(BIO* bio, const char* buf, int len)
 {
-    BIO_clear_retry_flags(bio);
-
     if (bio == NULL || buf == NULL || len < 0)
     {
         return 0;
     }
+
+    BIO_clear_retry_flags(bio);
 
     if (len == 0)
     {
@@ -265,50 +265,25 @@ static int ManagedSpanBioWrite(BIO* bio, const char* buf, int len)
 
 static long ManagedSpanBioCtrl(BIO* bio, int cmd, long num, void* ptr)
 {
+    (void)bio;
     (void)num;
     (void)ptr;
 
-    ManagedSpanBioCtx* ctx = GetManagedSpanBioCtx(bio);
-
-    switch (cmd)
+    // OpenSSL only invokes a small set of ctrl commands against this BIO when it is plugged
+    // into the SSL state machine via SSL_set_bio. Empirically (verified across the full
+    // System.Net.Security test suite) only BIO_CTRL_FLUSH needs a real response. Returning 0
+    // from the default case correctly answers BIO_CTRL_PUSH/POP (no-op), the kTLS probes
+    // BIO_CTRL_GET_KTLS_SEND/RECV (not supported), and any other future query. We
+    // deliberately do not implement BIO_CTRL_RESET: the SSL flows we exercise never issue
+    // it, and a real reset would have to either preserve or drop the spill buffer of bytes
+    // that have not yet been drained - neither of which is a safe default. Returning 0 for
+    // an unhandled command surfaces that explicitly to OpenSSL rather than pretending
+    // success.
+    if (cmd == BIO_CTRL_FLUSH)
     {
-        case BIO_CTRL_FLUSH:
-            return 1;
-
-        case BIO_CTRL_PENDING:
-            if (ctx == NULL)
-            {
-                return 0;
-            }
-            return (long)(ctx->readLen - ctx->readPos);
-
-        case BIO_CTRL_WPENDING:
-            if (ctx == NULL)
-            {
-                return 0;
-            }
-            return (long)(ctx->writePos + ctx->spillLen);
-
-        case BIO_CTRL_RESET:
-            if (ctx != NULL)
-            {
-                ctx->readPtr = NULL;
-                ctx->readLen = 0;
-                ctx->readPos = 0;
-                ctx->writePtr = NULL;
-                ctx->writeCapacity = 0;
-                ctx->writePos = 0;
-                ctx->spillLen = 0;
-                BIO_clear_retry_flags(bio);
-            }
-            return 1;
-
-        case BIO_CTRL_EOF:
-            return 0;
-
-        default:
-            return 0;
+        return 1;
     }
+    return 0;
 }
 
 static int ManagedSpanBioCreate(BIO* bio)

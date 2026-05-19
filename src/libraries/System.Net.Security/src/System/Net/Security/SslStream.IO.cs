@@ -867,8 +867,6 @@ namespace System.Net.Security
                     buffer = buffer.Slice(processedLength);
                 }
 
-
-
                 if (_receivedEOF && nextTlsFrameLength == UnknownTlsFrameLength)
                 {
                     // there should be no frames waiting for processing

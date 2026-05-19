@@ -909,6 +909,11 @@ internal static partial class Interop
             }
             if (retVal + leftoverLength > 0)
             {
+                // The managed callers always pass exactly one full TLS frame (sized via
+                // EnsureFullTlsFrameAsync). OpenSSL's SSL_read consumes whole records on
+                // success, so on any successful decrypt the entire frame is consumed - the
+                // input span has no residual ciphertext to forward and `consumed` is
+                // not plumbed through the managed surface.
                 Debug.Assert(consumed == input.Length, "Expected all input to be consumed.");
                 return retVal;
             }
