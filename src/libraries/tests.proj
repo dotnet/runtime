@@ -22,6 +22,11 @@
     <TestTrimming Condition="'$(TestTrimming)' == ''">false</TestTrimming>
     <RunNativeAotTestApps Condition="'$(RunNativeAotTestApps)' == ''">false</RunNativeAotTestApps>
 
+    <!-- Apple-mobile NativeAOT sets TestNativeAot per-project in tests.ioslike.targets, which is
+         too late for the static <ItemGroup> exclusions in this file. Surface it here so the
+         existing TestNativeAot-gated exclusions apply. Not propagated to child projects. -->
+    <TestNativeAot Condition="'$(TestNativeAot)' == '' and '$(UseNativeAOTRuntime)' == 'true' and '$(TargetsAppleMobile)' == 'true'">true</TestNativeAot>
+
     <RunHighAOTResourceRequiringTestsOnly Condition="'$(RunHighAOTResourceRequiringTestsOnly)' == ''">false</RunHighAOTResourceRequiringTestsOnly>
 
     <!-- Don't build samples, and functional tests on EAT, AOT, WBT, and Debugger lanes -->
