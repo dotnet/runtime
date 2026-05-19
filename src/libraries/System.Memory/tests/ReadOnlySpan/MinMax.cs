@@ -12,11 +12,14 @@ namespace System.SpanTests
         public static void MinMax_Empty_NonNullableValueType_Throws()
         {
             ReadOnlySpan<int> span = ReadOnlySpan<int>.Empty;
+            IComparer<int> nonDefaultComparer = Comparer<int>.Create((x, y) => x.CompareTo(y));
 
             TestHelpers.AssertThrows<InvalidOperationException, int>(span, _ => _.Min());
             TestHelpers.AssertThrows<InvalidOperationException, int>(span, _ => _.Max());
             TestHelpers.AssertThrows<InvalidOperationException, int>(span, _ => _.Min(Comparer<int>.Default));
             TestHelpers.AssertThrows<InvalidOperationException, int>(span, _ => _.Max(Comparer<int>.Default));
+            TestHelpers.AssertThrows<InvalidOperationException, int>(span, _ => _.Min(nonDefaultComparer));
+            TestHelpers.AssertThrows<InvalidOperationException, int>(span, _ => _.Max(nonDefaultComparer));
         }
 
         [Fact]
