@@ -1,0 +1,6 @@
+<Project>
+  <ItemGroup>
+    <CompilerVisibleProperty Include="TargetFramework" />
+    <CompilerVisibleProperty Include="UseCompilerGeneratedDocXmlFile" />
+  </ItemGroup>
+</Project>
