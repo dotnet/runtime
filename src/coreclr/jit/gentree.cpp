@@ -15131,6 +15131,7 @@ GenTree* Compiler::gtFoldExprBinary(GenTreeOp* tree)
                 break;
             }
 
+#if !defined(TARGET_WASM)
             if (op1->OperIs(GT_NEG))
             {
                 JITDUMP("Folding (-a) + b => b - a\n");
@@ -15143,6 +15144,7 @@ GenTree* Compiler::gtFoldExprBinary(GenTreeOp* tree)
 
                 return tree;
             }
+#endif
 
             if (op2->OperIs(GT_NEG))
             {
@@ -15165,6 +15167,7 @@ GenTree* Compiler::gtFoldExprBinary(GenTreeOp* tree)
 
             if (op2->OperIs(GT_NEG))
             {
+#if !defined(TARGET_WASM)
                 if (op1->OperIs(GT_NEG))
                 {
                     JITDUMP("Folding (-a) - (-b) => b - a\n");
@@ -15175,15 +15178,14 @@ GenTree* Compiler::gtFoldExprBinary(GenTreeOp* tree)
                     tree->ToggleReverseOp();
                     return tree;
                 }
-                else
-                {
-                    JITDUMP("Folding a - (-b) => a + b\n");
+#endif
 
-                    tree->gtOp2 = op2->gtGetOp1();
-                    tree->SetOper(GT_ADD, GenTree::PRESERVE_VN);
+                JITDUMP("Folding a - (-b) => a + b\n");
 
-                    return tree;
-                }
+                tree->gtOp2 = op2->gtGetOp1();
+                tree->SetOper(GT_ADD, GenTree::PRESERVE_VN);
+
+                return tree;
             }
             break;
         }
