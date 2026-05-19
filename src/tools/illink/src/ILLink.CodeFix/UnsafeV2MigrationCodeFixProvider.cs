@@ -23,7 +23,7 @@ namespace ILLink.CodeFix
 {
     /// <summary>
     /// Mechanical migration to "unsafe-v2" semantics. Handles two diagnostics:
-    ///   IL5005 — removes the 'unsafe' modifier from a type declaration.
+    ///   IL5005 — removes the 'unsafe' modifier from a type or delegate declaration.
     ///   IL5006 — for a member with an 'unsafe' modifier:
     ///            * removes the modifier if the signature has no pointer / function-pointer types,
     ///            * wraps the body in a single 'unsafe { ... }' block (prefixed with a SAFETY-TODO
@@ -89,11 +89,12 @@ namespace ILLink.CodeFix
             }
         }
 
-        // ----- IL5005 fix: remove 'unsafe' from a type declaration -----------------------------
+        // ----- IL5005 fix: remove 'unsafe' from a type or delegate declaration ------------------
 
         private static async Task<Document> RemoveUnsafeFromTypeAsync(Document document, SyntaxToken unsafeToken, CancellationToken cancellationToken)
         {
-            var typeDecl = unsafeToken.Parent?.AncestorsAndSelf().OfType<BaseTypeDeclarationSyntax>().FirstOrDefault();
+            var typeDecl = unsafeToken.Parent?.AncestorsAndSelf().FirstOrDefault(static n =>
+                n is BaseTypeDeclarationSyntax or DelegateDeclarationSyntax);
             if (typeDecl is null)
                 return document;
 
@@ -146,9 +147,8 @@ namespace ILLink.CodeFix
 
         // ----- Body wrapping -------------------------------------------------------------------
 
-        private static SyntaxNode WrapBody(SyntaxNode member)
-        {
-            return member switch
+        private static SyntaxNode WrapBody(SyntaxNode member) =>
+            member switch
             {
                 MethodDeclarationSyntax m => WrapMethodLike(m, m.Body, m.ExpressionBody,
                     static (n, body) => n.WithBody(body).WithExpressionBody(null).WithSemicolonToken(default),
@@ -170,10 +170,9 @@ namespace ILLink.CodeFix
                     isVoid: false),
                 PropertyDeclarationSyntax p => WrapProperty(p),
                 IndexerDeclarationSyntax i => WrapIndexer(i),
-                EventDeclarationSyntax e when e.AccessorList is not null => e.WithAccessorList(WrapAccessorList(e.AccessorList)),
+                EventDeclarationSyntax { AccessorList: not null } e => e.WithAccessorList(WrapAccessorList(e.AccessorList)),
                 _ => member,
             };
-        }
 
         private static T WrapMethodLike<T>(
             T member,
@@ -284,17 +283,6 @@ namespace ILLink.CodeFix
 
         private static BlockSyntax ReplaceWithUnsafeBlock(BlockSyntax body)
         {
-            // Multi-TFM safety: if the body contains preprocessor directives we wrap it
-            // textually (operating on body.ToFullString()) so the output is byte-identical
-            // for every TFM the source file is compiled against. Otherwise `dotnet format`
-            // runs the fixer per TFM, sees different active branches, and emits
-            // "<<<<<<< TODO: Unmerged change" markers when stitching results back together.
-            if (BodyHasDirectives(body))
-            {
-                if (WrapBodyTextually(body) is { } textual)
-                    return textual;
-            }
-
             // Strip the original leading whitespace from each statement so the formatter
             // re-indents them inside the new 'unsafe { }' block. We deliberately keep any
             // leading comments / directives the original statements had.
@@ -306,73 +294,6 @@ namespace ILLink.CodeFix
                 .WithLeadingTrivia(body.GetLeadingTrivia())
                 .WithTrailingTrivia(body.GetTrailingTrivia())
                 .WithAdditionalAnnotations(Formatter.Annotation);
-        }
-
-        private static bool BodyHasDirectives(BlockSyntax body) =>
-            body.DescendantTrivia(descendIntoTrivia: true).Any(static t => t.IsDirective);
-
-        private static BlockSyntax? WrapBodyTextually(BlockSyntax body)
-        {
-            // Operate on the body's raw text so the output is identical across all TFMs.
-            // We deliberately skip Formatter.Annotation here — re-indentation would diverge
-            // per TFM (only the active preprocessor branch gets formatted) and re-introduce
-            // the merge-conflict problem we're trying to avoid.
-            var fullText = body.ToFullString();
-            var openOffset = body.OpenBraceToken.SpanStart - body.FullSpan.Start;
-            var closeOffset = body.CloseBraceToken.SpanStart - body.FullSpan.Start;
-            if (openOffset < 0 || closeOffset <= openOffset || closeOffset >= fullText.Length)
-                return null;
-
-            // Match the file's line ending so we don't mix LF/CRLF.
-            var newLine = fullText.Contains("\r\n") ? "\r\n" : "\n";
-
-            // Indent at which the body's closing brace lives. That is the member's body
-            // indent (e.g. 8 spaces for a method inside a class); the new 'unsafe { ... }'
-            // sits one level deeper.
-            var baseIndent = ExtractLineIndent(fullText, closeOffset);
-            var innerIndent = baseIndent + "    ";
-
-            // Push every non-directive, non-blank line of the original body content one
-            // level deeper. Directive lines (e.g. `#if`, `#else`, `#endif`) stay at their
-            // original column because preprocessor directives must begin at column 0 (or
-            // following only whitespace) and we don't want to disturb them.
-            var content = fullText.Substring(openOffset + 1, closeOffset - openOffset - 1);
-            var lines = content.Split(["\r\n", "\n"], System.StringSplitOptions.None);
-            var indentedContent = string.Join(newLine, lines.Select(line =>
-            {
-                if (string.IsNullOrWhiteSpace(line))
-                    return line;
-                if (line.TrimStart().StartsWith("#", System.StringComparison.Ordinal))
-                    return line;
-                return "    " + line;
-            }));
-
-            var newText = "{" + newLine +
-                innerIndent + SafetyTodoComment + newLine +
-                innerIndent + "unsafe" + newLine +
-                innerIndent + "{" + indentedContent + innerIndent + "}" + newLine +
-                baseIndent + "}";
-
-            var parsed = SyntaxFactory.ParseStatement(newText);
-            if (parsed is not BlockSyntax newBody || parsed.ContainsDiagnostics)
-                return null;
-
-            return newBody
-                .WithLeadingTrivia(body.GetLeadingTrivia())
-                .WithTrailingTrivia(body.GetTrailingTrivia());
-        }
-
-        private static string ExtractLineIndent(string text, int position)
-        {
-            // Walk backwards from `position` to the start of the line and collect the
-            // leading whitespace.
-            int lineStart = position;
-            while (lineStart > 0 && text[lineStart - 1] != '\n')
-                lineStart--;
-            int end = lineStart;
-            while (end < position && (text[end] == ' ' || text[end] == '\t'))
-                end++;
-            return text.Substring(lineStart, end - lineStart);
         }
 
         private static UnsafeStatementSyntax BuildUnsafeStatement(StatementSyntax statement)
@@ -406,46 +327,16 @@ namespace ILLink.CodeFix
         // ----- Skip conditions -----------------------------------------------------------------
 
         private static bool ShouldWrapBlock(BlockSyntax body) =>
-            body.Statements.Count > 0
-            && !BodyAlreadyHasUnsafeContext(body)
-            && !BodyHasYield(body);
+            UnsafeV2MigrationAnalyzer.BlockNeedsWrap(body);
 
         private static bool ShouldWrapExpression(ArrowExpressionClauseSyntax expr) =>
             !expr.DescendantNodesAndSelf().OfType<UnsafeStatementSyntax>().Any();
 
-        private static bool BodyAlreadyHasUnsafeContext(BlockSyntax body) =>
-            // Per spec: any 'unsafe' block anywhere in the body is sufficient — even nested in
-            // lambdas/local functions — to skip wrapping ('best effort').
-            body.DescendantNodes().OfType<UnsafeStatementSyntax>().Any();
+        private static bool IsTrivialFieldExpression(ExpressionSyntax expr) =>
+            UnsafeV2MigrationAnalyzer.IsTrivialFieldExpression(expr);
 
-        private static bool BodyHasYield(BlockSyntax body) =>
-            // Iterators can never contain unsafe blocks (CS1629). Skip wrapping when we see one,
-            // ignoring nested local functions/lambdas which have their own scope.
-            body.DescendantNodes(static n => n is not LocalFunctionStatementSyntax and not AnonymousFunctionExpressionSyntax)
-                .OfType<YieldStatementSyntax>()
-                .Any();
-
-        private static bool IsTrivialFieldExpression(ExpressionSyntax expr) => expr switch
-        {
-            IdentifierNameSyntax => true,
-            MemberAccessExpressionSyntax mae => mae.Expression is ThisExpressionSyntax or BaseExpressionSyntax or IdentifierNameSyntax,
-            ParenthesizedExpressionSyntax pe => IsTrivialFieldExpression(pe.Expression),
-            _ => false,
-        };
-
-        private static bool IsTrivialAccessorExpression(AccessorDeclarationSyntax accessor, ExpressionSyntax expr)
-        {
-            if (accessor.IsKind(SyntaxKind.GetAccessorDeclaration))
-                return IsTrivialFieldExpression(expr);
-
-            if (accessor.IsKind(SyntaxKind.SetAccessorDeclaration) || accessor.IsKind(SyntaxKind.InitAccessorDeclaration))
-            {
-                return expr is AssignmentExpressionSyntax { Right: IdentifierNameSyntax { Identifier.ValueText: "value" } } assign
-                    && IsTrivialFieldExpression(assign.Left);
-            }
-
-            return false;
-        }
+        private static bool IsTrivialAccessorExpression(AccessorDeclarationSyntax accessor, ExpressionSyntax expr) =>
+            UnsafeV2MigrationAnalyzer.IsTrivialAccessorExpression(accessor, expr);
 
         // ----- Modifier helpers ----------------------------------------------------------------
 
@@ -472,9 +363,11 @@ namespace ILLink.CodeFix
 
             var updated = (T)WithModifiers(node, newModifiers);
 
-            // No modifiers left and the removed 'unsafe' carried indentation/newline trivia
-            // that would otherwise be lost. Push it onto the first non-attribute token.
-            if (index == 0 && newModifiers.Count == 0 && !unsafeToken.LeadingTrivia.All(static t => t.IsKind(SyntaxKind.WhitespaceTrivia) && t.Span.Length == 0))
+            // No modifiers left and the removed 'unsafe' carried leading trivia
+            // (typically indentation / newlines) that would otherwise be lost. Transfer
+            // it onto the first non-attribute token of the declaration so indentation,
+            // doc comments, etc. survive the modifier removal.
+            if (index == 0 && newModifiers.Count == 0 && unsafeToken.LeadingTrivia.Count > 0)
             {
                 updated = PrependLeadingTriviaToFirstNonAttributeToken(updated, unsafeToken.LeadingTrivia);
             }
@@ -507,9 +400,10 @@ namespace ILLink.CodeFix
             StructDeclarationSyntax s => s.WithModifiers(modifiers),
             InterfaceDeclarationSyntax i => i.WithModifiers(modifiers),
             RecordDeclarationSyntax r => r.WithModifiers(modifiers),
+            DelegateDeclarationSyntax d => d.WithModifiers(modifiers),
             MethodDeclarationSyntax m => m.WithModifiers(modifiers),
             ConstructorDeclarationSyntax ctor => ctor.WithModifiers(modifiers),
-            DestructorDeclarationSyntax d => d.WithModifiers(modifiers),
+            DestructorDeclarationSyntax dt => dt.WithModifiers(modifiers),
             OperatorDeclarationSyntax op => op.WithModifiers(modifiers),
             ConversionOperatorDeclarationSyntax co => co.WithModifiers(modifiers),
             PropertyDeclarationSyntax p => p.WithModifiers(modifiers),

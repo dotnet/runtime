@@ -337,8 +337,11 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeV2MigrationAnalyzer} = tr
         }
 
         [Fact]
-        public async Task UnsafeIteratorMethod_DoesNotWrap()
+        public async Task UnsafeIteratorMethod_WrapsBody_DeveloperFixesFallout()
         {
+            // Best effort: we wrap the body even though `unsafe { yield return ... }` is
+            // a C# compile error (CS1629). The developer is expected to fix the fallout
+            // manually after running the bulk migration.
             var source = """
                 using System.Collections.Generic;
                 public class C
@@ -356,8 +359,12 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeV2MigrationAnalyzer} = tr
                 {
                     public IEnumerable<int> M()
                     {
-                        yield return 1;
-                        yield return 2;
+                        // SAFETY-TODO: Audit this unsafe usage
+                        unsafe
+                        {
+                            yield return 1;
+                            yield return 2;
+                        }
                     }
                 }
                 """;
@@ -857,12 +864,12 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeV2MigrationAnalyzer} = tr
         }
 
         [Fact]
-        public async Task UnsafeMethodBodyWithPreprocessorDirectives_TextualWrap()
+        public async Task UnsafeMethodBodyWithPreprocessorDirectives_OnlyRemovesModifier()
         {
-            // Bodies containing #if/#else/#endif must be wrapped textually so that the
-            // emitted text is identical for every TFM the source compiles against
-            // (otherwise `dotnet format` writes merge-conflict markers when stitching the
-            // per-TFM fixer outputs back together). Both branches must be indented +4.
+            // Bodies containing #if/#else/#endif are deliberately not wrapped — see the
+            // 'BodyHasDirectives' comment in the fixer for why. The modifier is still
+            // removed when the signature has no pointers, and the body is left alone for
+            // the developer to wrap manually.
             var source = """
                 public class C
                 {
@@ -881,15 +888,66 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeV2MigrationAnalyzer} = tr
                 {
                     public void M()
                     {
+                #if NET
+                        System.Console.WriteLine("net");
+                #else
+                        System.Console.WriteLine("standard");
+                #endif
+                    }
+                }
+                """;
+            await VerifyCodeFix(source, fixedSource);
+        }
+
+        // ----- Static constructors -----
+
+        [Fact]
+        public async Task UnsafeStaticConstructor_WrapsBodyAndRemovesModifier()
+        {
+            var source = """
+                public class C
+                {
+                    static {|IL5006:unsafe|} C()
+                    {
+                        System.Console.WriteLine();
+                    }
+                }
+                """;
+            var fixedSource = """
+                public class C
+                {
+                    static C()
+                    {
                         // SAFETY-TODO: Audit this unsafe usage
                         unsafe
                         {
-                #if NET
-                            System.Console.WriteLine("net");
-                #else
-                            System.Console.WriteLine("standard");
-                #endif
+                            System.Console.WriteLine();
                         }
+                    }
+                }
+                """;
+            await VerifyCodeFix(source, fixedSource);
+        }
+
+        [Fact]
+        public async Task UnsafeStaticConstructorEmptyBody_OnlyRemovesModifier()
+        {
+            // Static ctor with no body content — no wrapping needed, just drop the
+            // modifier. Static ctors never have parameters / return type, so the
+            // signature never carries a pointer and the modifier is always removable.
+            var source = """
+                public class C
+                {
+                    static {|IL5006:unsafe|} C()
+                    {
+                    }
+                }
+                """;
+            var fixedSource = """
+                public class C
+                {
+                    static C()
+                    {
                     }
                 }
                 """;
@@ -949,6 +1007,67 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeV2MigrationAnalyzer} = tr
                                 // nested comment
                                 Console.WriteLine("big");
                             }
+                        }
+                    }
+                }
+                """;
+            await VerifyCodeFix(source, fixedSource);
+        }
+        [Fact]
+        public async Task UnsafeDelegateNoPtr_RemovesModifier()
+        {
+            // Delegates are type declarations. If the delegate signature has no pointer
+            // types, the 'unsafe' modifier is redundant under unsafe-v2 and should be
+            // dropped.
+            var source = """
+                public {|IL5005:unsafe|} delegate void D();
+                """;
+            var fixedSource = """
+                public delegate void D();
+                """;
+            await VerifyCodeFix(source, fixedSource);
+        }
+
+        [Fact]
+        public async Task UnsafeDelegateWithPtr_NoDiagnostic()
+        {
+            // Pointer in the delegate signature → callers still need an unsafe context to
+            // invoke it under unsafe-v2, so the modifier must stay.
+            var source = """
+                public unsafe delegate void D(int* p);
+                """;
+            await VerifyCodeFix(source, source);
+        }
+
+        [Fact]
+        public async Task UnsafeMethodBodyWithPragma_WrapsBody()
+        {
+            // #pragma / #nullable / #region don't change the body's shape between TFMs,
+            // so they don't suppress the wrap the way #if/#elif/#else/#endif do.
+            var source = """
+                public class C
+                {
+                    public {|IL5006:unsafe|} void M()
+                    {
+                #pragma warning disable CS0168
+                        int unused;
+                #pragma warning restore CS0168
+                        System.Console.WriteLine();
+                    }
+                }
+                """;
+            var fixedSource = """
+                public class C
+                {
+                    public void M()
+                    {
+                        // SAFETY-TODO: Audit this unsafe usage
+                        unsafe
+                        {
+                #pragma warning disable CS0168
+                            int unused;
+                #pragma warning restore CS0168
+                            System.Console.WriteLine();
                         }
                     }
                 }

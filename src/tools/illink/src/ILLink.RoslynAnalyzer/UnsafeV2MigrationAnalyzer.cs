@@ -15,7 +15,7 @@ namespace ILLink.RoslynAnalyzer
 {
     /// <summary>
     /// Reports diagnostics that drive the mechanical "unsafe-v2" migration code fixer:
-    ///   IL5005 — 'unsafe' modifier on a class/struct/interface/record declaration.
+    ///   IL5005 — 'unsafe' modifier on a class/struct/interface/record/delegate declaration.
     ///   IL5006 — 'unsafe' modifier on a member declaration (method, ctor, dtor, operator,
     ///            conversion operator, property, indexer, event, event field, local function).
     /// Both diagnostics are gated behind <see cref="MSBuildPropertyOptionNames.EnableUnsafeV2MigrationAnalyzer"/>
@@ -37,6 +37,7 @@ namespace ILLink.RoslynAnalyzer
             SyntaxKind.InterfaceDeclaration,
             SyntaxKind.RecordDeclaration,
             SyntaxKind.RecordStructDeclaration,
+            SyntaxKind.DelegateDeclaration,
         ];
 
         private static readonly ImmutableArray<SyntaxKind> s_memberKinds = [
@@ -71,20 +72,26 @@ namespace ILLink.RoslynAnalyzer
 
         private static void AnalyzeTypeDeclaration(SyntaxNodeAnalysisContext context)
         {
-            var modifiers = GetModifiers(context.Node);
-            var unsafeToken = modifiers.FirstOrDefault(static m => m.IsKind(SyntaxKind.UnsafeKeyword));
-            if (unsafeToken.IsKind(SyntaxKind.None))
+            var unsafeToken = TryGetUnsafeToken(context.Node);
+            if (unsafeToken is null)
                 return;
 
-            var typeName = context.Node is BaseTypeDeclarationSyntax btd ? btd.Identifier.Text : context.Node.ToString();
-            context.ReportDiagnostic(Diagnostic.Create(s_unsafeOnTypeRule, unsafeToken.GetLocation(), typeName));
+            // For delegates (which are not BaseTypeDeclarationSyntax) only report if the
+            // delegate's signature has no pointer types — otherwise the 'unsafe' modifier
+            // is still required by callers under unsafe-v2 semantics. For ordinary type
+            // declarations the modifier is never allowed, so we always report.
+            if (context.Node is DelegateDeclarationSyntax && !CanRemoveUnsafeModifier(context.Node, context.SemanticModel))
+                return;
+
+            var displayName = context.SemanticModel.GetDeclaredSymbol(context.Node, context.CancellationToken)?.GetDisplayName()
+                ?? context.Node.ToString();
+            context.ReportDiagnostic(Diagnostic.Create(s_unsafeOnTypeRule, unsafeToken.Value.GetLocation(), displayName));
         }
 
         private static void AnalyzeMemberDeclaration(SyntaxNodeAnalysisContext context)
         {
-            var modifiers = GetModifiers(context.Node);
-            var unsafeToken = modifiers.FirstOrDefault(static m => m.IsKind(SyntaxKind.UnsafeKeyword));
-            if (unsafeToken.IsKind(SyntaxKind.None))
+            var unsafeToken = TryGetUnsafeToken(context.Node);
+            if (unsafeToken is null)
                 return;
 
             // Suppress the diagnostic when the code fix would be a no-op so the analyzer is
@@ -97,16 +104,31 @@ namespace ILLink.RoslynAnalyzer
                 return;
             }
 
-            var memberName = GetDisplayName(context.Node);
-            context.ReportDiagnostic(Diagnostic.Create(s_unsafeOnMemberRule, unsafeToken.GetLocation(), memberName));
+            // EventFieldDeclarationSyntax has no symbol of its own; the symbols are on the
+            // variable declarators. Use the first one for the display name.
+            var symbolNode = context.Node is EventFieldDeclarationSyntax ef && ef.Declaration.Variables.Count > 0
+                ? (SyntaxNode)ef.Declaration.Variables[0]
+                : context.Node;
+            var displayName = context.SemanticModel.GetDeclaredSymbol(symbolNode, context.CancellationToken)?.GetDisplayName()
+                ?? context.Node.ToString();
+            context.ReportDiagnostic(Diagnostic.Create(s_unsafeOnMemberRule, unsafeToken.Value.GetLocation(), displayName));
+        }
+
+        private static SyntaxToken? TryGetUnsafeToken(SyntaxNode node)
+        {
+            var modifiers = GetModifiers(node);
+            foreach (var m in modifiers)
+            {
+                if (m.IsKind(SyntaxKind.UnsafeKeyword))
+                    return m;
+            }
+            return null;
         }
 
         public static bool CanRemoveUnsafeModifier(SyntaxNode member, SemanticModel? semanticModel)
         {
             if (semanticModel?.GetDeclaredSymbol(member) is { } symbol)
-            {
                 return !SymbolSignatureContainsPointer(symbol);
-            }
 
             return !SyntaxSignatureContainsPointer(member);
         }
@@ -114,9 +136,7 @@ namespace ILLink.RoslynAnalyzer
         public static bool MemberNeedsBodyWrap(SyntaxNode member)
         {
             // True if the member has a non-empty body (or expression body) that does not yet
-            // contain an 'unsafe { ... }' block. We intentionally bail on iterators (CS1629
-            // makes whole-body 'unsafe' wrapping invalid), auto-properties and trivial
-            // field-forwarding accessors (no unsafe context required).
+            // contain an 'unsafe { ... }' block and isn't a trivial field-forwarding accessor.
             return member switch
             {
                 MethodDeclarationSyntax m => BlockNeedsWrap(m.Body) || ExpressionBodyNeedsWrap(m.ExpressionBody),
@@ -132,19 +152,28 @@ namespace ILLink.RoslynAnalyzer
             };
         }
 
-        private static bool BlockNeedsWrap(BlockSyntax? body)
+        public static bool BlockNeedsWrap(BlockSyntax? body)
         {
             if (body is null || body.Statements.Count == 0)
                 return false;
             if (body.DescendantNodes().OfType<UnsafeStatementSyntax>().Any())
                 return false;
-            if (body.DescendantNodes(static n => n is not LocalFunctionStatementSyntax and not AnonymousFunctionExpressionSyntax)
-                .OfType<YieldStatementSyntax>().Any())
-            {
+            // Skip wrapping when the body contains conditional-compilation directives.
+            // Every structural / textual wrap we tried produced different output per TFM,
+            // which makes `dotnet format` emit "<<<<<<< TODO: Unmerged change" markers when
+            // stitching the per-TFM fixer outputs back together. Developer wraps manually.
+            // Other directives (#pragma / #region / #nullable) are fine — they don't change
+            // the body shape between TFMs.
+            if (body.DescendantTrivia(descendIntoTrivia: true).Any(static t => IsConditionalCompilationDirective(t)))
                 return false;
-            }
             return true;
         }
+
+        private static bool IsConditionalCompilationDirective(SyntaxTrivia trivia) =>
+            trivia.IsKind(SyntaxKind.IfDirectiveTrivia)
+            || trivia.IsKind(SyntaxKind.ElifDirectiveTrivia)
+            || trivia.IsKind(SyntaxKind.ElseDirectiveTrivia)
+            || trivia.IsKind(SyntaxKind.EndIfDirectiveTrivia);
 
         private static bool ExpressionBodyNeedsWrap(ArrowExpressionClauseSyntax? expr) =>
             expr is not null && !expr.DescendantNodesAndSelf().OfType<UnsafeStatementSyntax>().Any();
@@ -154,10 +183,7 @@ namespace ILLink.RoslynAnalyzer
             if (expr is not null)
                 return ExpressionBodyNeedsWrap(expr) && !IsTrivialFieldExpression(expr.Expression);
 
-            if (accessors is not null)
-                return AccessorListNeedsWrap(accessors, isTrivialAllowed: true);
-
-            return false;
+            return accessors is not null && AccessorListNeedsWrap(accessors, isTrivialAllowed: true);
         }
 
         private static bool AccessorListNeedsWrap(AccessorListSyntax accessors, bool isTrivialAllowed)
@@ -177,7 +203,7 @@ namespace ILLink.RoslynAnalyzer
             return false;
         }
 
-        private static bool IsTrivialFieldExpression(ExpressionSyntax expr) => expr switch
+        public static bool IsTrivialFieldExpression(ExpressionSyntax expr) => expr switch
         {
             IdentifierNameSyntax => true,
             MemberAccessExpressionSyntax mae => mae.Expression is ThisExpressionSyntax or BaseExpressionSyntax or IdentifierNameSyntax,
@@ -185,7 +211,7 @@ namespace ILLink.RoslynAnalyzer
             _ => false,
         };
 
-        private static bool IsTrivialAccessorExpression(AccessorDeclarationSyntax accessor, ExpressionSyntax expr)
+        public static bool IsTrivialAccessorExpression(AccessorDeclarationSyntax accessor, ExpressionSyntax expr)
         {
             if (accessor.IsKind(SyntaxKind.GetAccessorDeclaration))
                 return IsTrivialFieldExpression(expr);
@@ -205,6 +231,8 @@ namespace ILLink.RoslynAnalyzer
             IMethodSymbol m => ContainsPointer(m.ReturnType) || m.Parameters.Any(static p => ContainsPointer(p.Type)),
             IPropertySymbol p => ContainsPointer(p.Type) || p.Parameters.Any(static pp => ContainsPointer(pp.Type)),
             IEventSymbol e => ContainsPointer(e.Type),
+            INamedTypeSymbol { TypeKind: TypeKind.Delegate, DelegateInvokeMethod: { } invoke } =>
+                ContainsPointer(invoke.ReturnType) || invoke.Parameters.Any(static p => ContainsPointer(p.Type)),
             _ => false,
         };
 
@@ -231,6 +259,7 @@ namespace ILLink.RoslynAnalyzer
                 EventDeclarationSyntax e => [e.Type],
                 EventFieldDeclarationSyntax ef => [ef.Declaration.Type],
                 LocalFunctionStatementSyntax lf => new[] { lf.ReturnType }.Concat(lf.ParameterList.Parameters.Select(static p => p.Type)),
+                DelegateDeclarationSyntax d => new[] { d.ReturnType }.Concat(d.ParameterList.Parameters.Select(static p => p.Type)),
                 _ => [],
             };
 
@@ -244,21 +273,6 @@ namespace ILLink.RoslynAnalyzer
             LocalFunctionStatementSyntax lf => lf.Modifiers,
             AccessorDeclarationSyntax acc => acc.Modifiers,
             _ => default,
-        };
-
-        private static string GetDisplayName(SyntaxNode node) => node switch
-        {
-            MethodDeclarationSyntax m => m.Identifier.Text,
-            ConstructorDeclarationSyntax c => c.Identifier.Text,
-            DestructorDeclarationSyntax d => "~" + d.Identifier.Text,
-            OperatorDeclarationSyntax o => "operator " + o.OperatorToken.Text,
-            ConversionOperatorDeclarationSyntax co => "operator " + co.Type,
-            PropertyDeclarationSyntax p => p.Identifier.Text,
-            IndexerDeclarationSyntax => "this[]",
-            EventDeclarationSyntax e => e.Identifier.Text,
-            EventFieldDeclarationSyntax ef => ef.Declaration.Variables.FirstOrDefault()?.Identifier.Text ?? "<event>",
-            LocalFunctionStatementSyntax lf => lf.Identifier.Text,
-            _ => node.ToString(),
         };
     }
 }
