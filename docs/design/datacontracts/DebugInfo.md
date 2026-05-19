@@ -254,6 +254,7 @@ Contracts used:
 | Contract Name |
 | --- |
 | `ExecutionManager` |
+| `CodeVersions` |
 
 Constants:
 | Constant Name | Meaning | Value |

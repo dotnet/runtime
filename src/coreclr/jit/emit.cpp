@@ -71,26 +71,6 @@ int emitLocation::GetInsOffset() const
     return emitGetInsOfsFromCodePos(codePos);
 }
 
-// Get the instruction offset in the current instruction region, which must be a funclet prolog.
-// This is used to find an instruction offset used in unwind data.
-UNATIVE_OFFSET emitLocation::GetFuncletPrologOffset(emitter* emit) const
-{
-    assert(ig->igFuncIdx != 0);
-    assert((ig->igFlags & IGF_FUNCLET_PROLOG) != 0);
-    assert((ig->igFlags & IGF_OUT_OF_ORDER_HEAD) != 0);
-    assert(GetInsOffset() == 0);
-
-    unsigned  offset = 0;
-    insGroup* lastIG = ig;
-    while (lastIG != emit->emitCurIG)
-    {
-        offset += lastIG->igSize;
-        lastIG = lastIG->igNext;
-    }
-    assert((lastIG->igFlags & IGF_FUNCLET_PROLOG) != 0);
-
-    return offset + emit->emitCurIGsize;
-}
 //------------------------------------------------------------------------
 // IsPreviousInsNum: Returns true if the emitter is on the next instruction
 //  of the same group as this emitLocation.
@@ -1258,16 +1238,14 @@ insGroup* emitter::emitSavIG(bool emitAdd)
 
             assert(last == nullptr || last->idjOffs > nj->idjOffs);
 
-            if (ig->igFlags & IGF_FUNCLET_PROLOG)
+            if ((ig->igFlags & IGF_OUT_OF_ORDER_MASK) != 0)
             {
-                // Our funclet prologs have short jumps, if the prolog would ever have
-                // long jumps, then we'd have to insert the list in sorted order than
-                // just append to the emitJumpList.
-                noway_assert(nj->idjShort);
-                if (nj->idjShort)
-                {
-                    continue;
-                }
+                // Our out of order groups have short jumps. If we ever need the shortening capability
+                // for these jumps, we'll need to insert them at the appropriate place in emitJumpList.
+                nj->idjNext           = emitFixedSizeJumpList;
+                emitFixedSizeJumpList = nj;
+                assert(nj->idjShort);
+                continue;
             }
 
             // Append the new jump to the list
@@ -1284,8 +1262,7 @@ insGroup* emitter::emitSavIG(bool emitAdd)
         if (last != nullptr)
         {
             // Append the jump(s) from this IG to the global list
-            bool prologJump = (ig == emitPrologIG);
-            if ((emitJumpList == nullptr) || prologJump)
+            if (emitJumpList == nullptr)
             {
                 last->idjNext = emitJumpList;
                 emitJumpList  = list;
@@ -1296,10 +1273,7 @@ insGroup* emitter::emitSavIG(bool emitAdd)
                 emitJumpLast->idjNext = list;
             }
 
-            if (!prologJump || (emitJumpLast == nullptr))
-            {
-                emitJumpLast = last;
-            }
+            emitJumpLast = last;
         }
     }
 
@@ -1371,6 +1345,8 @@ void emitter::emitBegFN(bool hasFramePtr
     emitChkAlign = chkAlign;
 #endif
 
+    emitPrologEndPos.Init();
+
     /* We have no epilogs yet */
 
     emitEpilogSize = 0;
@@ -1390,6 +1366,7 @@ void emitter::emitBegFN(bool hasFramePtr
     /* We don't have any jumps */
 
     emitJumpList = emitJumpLast = nullptr;
+    emitFixedSizeJumpList       = nullptr;
     emitCurIGjmpList            = nullptr;
 
     emitFwdJumps                       = false;
@@ -1467,7 +1444,8 @@ void emitter::emitBegFN(bool hasFramePtr
 
     emitNxtIGnum = 1;
 
-    emitPrologIG = emitIGlist = emitIGlast = emitCurIG = ig = emitAllocIG();
+    emitIGlist = emitIGlast = emitCurIG = ig = emitAllocIG();
+    emitCurIG->igFlags |= (IGF_PROLOG | IGF_OUT_OF_ORDER_HEAD);
 
     emitLastIns   = nullptr;
     emitLastInsIG = nullptr;
@@ -1484,8 +1462,10 @@ void emitter::emitBegFN(bool hasFramePtr
 #endif
 
     /* Append another group, to start generating the method body */
-
     emitNewIG();
+
+    /* The group after the placeholder prolog group doesn't get the "propagate" flags */
+    emitCurIG->igFlags &= ~IGF_PROPAGATE_MASK;
 }
 
 /*****************************************************************************
@@ -1725,8 +1705,8 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
 {
 #ifdef DEBUG
     // Under STRESS_EMITTER, put every instruction in its own instruction group.
-    if (m_compiler->compStressCompile(Compiler::STRESS_EMITTER, 1) && emitCurIGinsCnt && !emitIGisInProlog(emitCurIG) &&
-        !emitIGisInFuncletProlog(emitCurIG) && !emitCurIG->endsWithAlignInstr())
+    if (m_compiler->compStressCompile(Compiler::STRESS_EMITTER, 1) && (emitCurIGinsCnt != 0) &&
+        !emitCurIG->endsWithAlignInstr())
     {
         emitNxtIG(true);
     }
@@ -1886,8 +1866,6 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
 //
 void emitter::emitCheckIGList()
 {
-    assert(emitPrologIG != nullptr);
-
 #if EMIT_BACKWARDS_NAVIGATION
     struct IGIDPair
     {
@@ -1919,17 +1897,18 @@ void emitter::emitCheckIGList()
             assert((currIG->igFlags & IGF_EXTEND) == 0);
 
             // First IG must be the function prolog.
-            assert(currIG == emitPrologIG);
+            assert((currIG->igFlags & IGF_PROLOG) != 0);
         }
 
-        if (currIG == emitPrologIG)
+        if ((currIG->igFlags & IGF_PROLOG) != 0)
         {
             // If we're in the function prolog, we can't be in any other prolog or epilog.
             assert((currIG->igFlags & (IGF_FUNCLET_PROLOG | IGF_FUNCLET_EPILOG | IGF_EPILOG)) == 0);
         }
 
         // An IG can have at most one of the prolog and epilog flags set.
-        assert(genCountBits((unsigned)currIG->igFlags & (IGF_FUNCLET_PROLOG | IGF_FUNCLET_EPILOG | IGF_EPILOG)) <= 1);
+        assert(genCountBits((unsigned)currIG->igFlags &
+                            (IGF_PROLOG | IGF_FUNCLET_PROLOG | IGF_FUNCLET_EPILOG | IGF_EPILOG)) <= 1);
 
         // An IG can't have both IGF_HAS_ALIGN and IGF_REMOVED_ALIGN.
         assert(genCountBits((unsigned)currIG->igFlags & (IGF_HAS_ALIGN | IGF_REMOVED_ALIGN)) <= 1);
@@ -1945,16 +1924,13 @@ void emitter::emitCheckIGList()
             // not be EXTEND groups, and would there be a benefit to that? Since epilogs are NOGC
             // it would help eliminate NOGC EXTEND groups.
             //
-            // Note that function prologs must currently exist entirely within one IG and there is
-            // no flag to indicate a function prolog (the `emitPrologIG` variable points to the single
-            // unique prolog IG).
-            //
             // Thus, we can't have this assert:
             // assert((currIG->igFlags & (IGF_FUNCLET_PROLOG | IGF_FUNCLET_EPILOG | IGF_EPILOG)) ==
             //        (prevIG->igFlags & (IGF_FUNCLET_PROLOG | IGF_FUNCLET_EPILOG | IGF_EPILOG)));
 
-            // If this is a funclet prolog IG, then it can only extend another funclet prolog IG.
-            assert((currIG->igFlags & IGF_FUNCLET_PROLOG) == (prevIG->igFlags & IGF_FUNCLET_PROLOG));
+            // If this is a prolog IG, then it can only extend another prolog IG.
+            assert((currIG->igFlags & (IGF_PROLOG | IGF_FUNCLET_PROLOG)) ==
+                   (prevIG->igFlags & (IGF_PROLOG | IGF_FUNCLET_PROLOG)));
 
             // If this is a function epilog IG, it can't extend a funclet prolog or funclet epilog IG.
             if (currIG->igFlags & IGF_EPILOG)
@@ -2053,8 +2029,7 @@ void emitter::emitBegProlog()
     emitForceNewIG       = false;
 
     /* Switch to the pre-allocated prolog IG */
-
-    emitGenIG(emitPrologIG);
+    emitGenIG(emitGetFirstPrologIG());
 
     /* Nothing is live on entry to the prolog */
 
@@ -2069,21 +2044,6 @@ void emitter::emitBegProlog()
 
 /*****************************************************************************
  *
- *  Return the code offset of the current location in the prolog.
- */
-
-unsigned emitter::emitGetPrologOffsetEstimate()
-{
-    /* For now only allow a single prolog ins group */
-
-    assert(emitPrologIG);
-    assert(emitPrologIG == emitCurIG);
-
-    return emitCurIGsize;
-}
-
-/*****************************************************************************
- *
  *  Mark the code offset of the current location as the end of the prolog,
  *  so it can be used later to compute the actual size of the prolog.
  */
@@ -2091,13 +2051,7 @@ unsigned emitter::emitGetPrologOffsetEstimate()
 void emitter::emitMarkPrologEnd()
 {
     assert(m_compiler->compGeneratingProlog);
-
-    /* For now only allow a single prolog ins group */
-
-    assert(emitPrologIG);
-    assert(emitPrologIG == emitCurIG);
-
-    emitPrologEndPos = emitCurOffset();
+    emitPrologEndPos.CaptureLocation(this);
 }
 
 /*****************************************************************************
@@ -2114,7 +2068,7 @@ void emitter::emitEndProlog()
 
     /* Save the prolog IG if non-empty or if only one block */
 
-    if (emitCurIGnonEmpty() || emitCurIG == emitPrologIG)
+    if (emitCurIGnonEmpty() || (emitCurIG == emitGetFirstPrologIG()))
     {
         emitSavIG();
     }
@@ -2291,7 +2245,6 @@ void emitter::emitCreatePlaceholderIG(insGroupPlaceholderType igType,
         emitForceStoreGCState = true;
 
         /* The group after the placeholder group doesn't get the "propagate" flags */
-
         emitCurIG->igFlags &= ~IGF_PROPAGATE_MASK;
     }
 
@@ -2418,6 +2371,11 @@ void emitter::emitFinishPrologEpilogGeneration()
  *  Common code for prolog / epilog beginning. Convert the placeholder group to actual code IG,
  *  and set it as the current group.
  */
+insGroup* emitter::emitGetFirstPrologIG() const
+{
+    assert(emitIGisInProlog(emitIGlist));
+    return emitIGlist;
+}
 
 void emitter::emitBegPrologEpilog(insGroup* igPh)
 {
@@ -2453,14 +2411,15 @@ void emitter::emitBegPrologEpilog(insGroup* igPh)
     emitThisGCrefRegs = emitInitGCrefRegs = igPh->igPhData->igPhInitGCrefRegs;
     emitThisByrefRegs = emitInitByrefRegs = igPh->igPhData->igPhInitByrefRegs;
 
+    // Set the current BB for label creation.
+    m_compiler->compCurBB = igPh->igPhData->igPhBB;
+
     igPh->igPhData = nullptr;
 
     /* Create a non-placeholder group pointer that we'll now use */
-
     insGroup* ig = igPh;
 
     /* Set the current function using the function index we stored */
-
     m_compiler->funSetCurrentFunc(ig->igFuncIdx);
 
     /* Set the new IG as the place to generate code */
@@ -3639,6 +3598,26 @@ void emitter::emitSetSecondRetRegGCType(instrDescCGCA* id, emitAttr secondRetSiz
 #endif // MULTIREG_HAS_SECOND_GC_RET
 
 #ifndef TARGET_WASM
+//------------------------------------------------------------------------
+// emitIns_ShortJ: Emit a 'forced' short jump.
+//
+// Jumps in prologs are hardcoded to be short since we don't shorten
+// them in binding.
+//
+// Arguments:
+//    ins - The jump instruction
+//    dst - The destination label (must already be bound to an IG)
+//
+void emitter::emitIns_ShortJ(instruction ins, BasicBlock* dst)
+{
+    assert((emitCurIG->igFlags & IGF_OUT_OF_ORDER_MASK) != 0);
+
+    // We currently have a limitation where all jumps in the prolog must be short.
+    // This is mostly because we the prolog can't change size in emission, as we
+    // currently hardcode offsets from it into the unwind info during IG building.
+    // We also don't insert the jumps into the jump list in layout order.
+    emitIns_J(ins, dst, /* keepShort */ true);
+}
 
 /*****************************************************************************
  *
@@ -4070,6 +4049,14 @@ void emitter::emitDispIGflags(unsigned flags)
     {
         printf(", byref");
     }
+    if (flags & IGF_PROLOG)
+    {
+        printf(", prolog");
+    }
+    if (flags & IGF_EPILOG)
+    {
+        printf(", epilog");
+    }
     if (flags & IGF_FUNCLET_PROLOG)
     {
         printf(", funclet prolog");
@@ -4077,10 +4064,6 @@ void emitter::emitDispIGflags(unsigned flags)
     if (flags & IGF_FUNCLET_EPILOG)
     {
         printf(", funclet epilog");
-    }
-    if (flags & IGF_EPILOG)
-    {
-        printf(", epilog");
     }
     if (flags & IGF_NOGCINTERRUPT)
     {
@@ -4267,10 +4250,6 @@ void emitter::emitDispIG(insGroup* ig, bool displayFunc, bool displayInstruction
             if (ig == emitCurIG)
             {
                 printf(" <-- Current IG");
-            }
-            if (ig == emitPrologIG)
-            {
-                printf(" <-- Prolog IG");
             }
         }
 
@@ -4940,6 +4919,15 @@ void emitter::emitJumpDistBind()
     }
 #endif
 
+    // For the fixed-size jumps, we only need to bind them.
+    for (instrDescJmp* jmp = emitFixedSizeJumpList; jmp != nullptr; jmp = jmp->idjNext)
+    {
+        if (!jmp->idIsBound())
+        {
+            emitBindJump(jmp);
+        }
+    }
+
     instrDescJmp* jmp;
 
     UNATIVE_OFFSET minShortExtra; // The smallest offset greater than that required for a jump to be converted
@@ -4953,9 +4941,6 @@ void emitter::emitJumpDistBind()
     UNATIVE_OFFSET adjIG;
     UNATIVE_OFFSET adjLJ;
     insGroup*      lstIG;
-#ifdef DEBUG
-    insGroup* prologIG = emitPrologIG;
-#endif // DEBUG
 
     int jmp_iteration = 1;
 
@@ -5146,7 +5131,7 @@ AGAIN:
         assert(lastLJ == nullptr || lastIG != jmp->idjIG || lastLJ->idjOffs < jmp->idjOffs);
         lastLJ = (lastIG == jmp->idjIG) ? jmp : nullptr;
 
-        assert(lastIG == nullptr || lastIG->IsBeforeOrEqual(jmp->idjIG) || jmp->idjIG == prologIG);
+        assert(lastIG == nullptr || lastIG->IsBeforeOrEqual(jmp->idjIG) || emitIGisInProlog(jmp->idjIG));
         lastIG = jmp->idjIG;
 #endif // DEBUG
 
@@ -5260,40 +5245,7 @@ AGAIN:
         else
         {
             /* First time we've seen this label, convert its target */
-
-#ifdef DEBUG
-            if (EMITVERBOSE)
-            {
-                printf("Binding: ");
-                emitDispIns(jmp, false, false, false);
-                printf("Binding L_M%03u_" FMT_BB, m_compiler->compMethodID, jmp->idAddr()->iiaBBlabel->bbNum);
-            }
-#endif // DEBUG
-
-            tgtIG = (insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel);
-
-#ifdef DEBUG
-            if (EMITVERBOSE)
-            {
-                if (tgtIG)
-                {
-                    printf(" to %s\n", emitLabelString(tgtIG));
-                }
-                else
-                {
-                    printf("-- ERROR, no emitter cookie for " FMT_BB "; it is probably missing BBF_HAS_LABEL.\n",
-                           jmp->idAddr()->iiaBBlabel->bbNum);
-                }
-            }
-#endif // DEBUG
-
-            assert(jmp->idAddr()->iiaBBlabel->HasFlag(BBF_HAS_LABEL));
-            assert(tgtIG);
-
-            /* Record the bound target */
-
-            jmp->idAddr()->iiaIGlabel = tgtIG;
-            jmp->idSetIsBound();
+            tgtIG = emitBindJump(jmp);
         }
 
         // We should not be jumping/branching across funclets/functions
@@ -5713,6 +5665,54 @@ AGAIN:
 
     emitCheckIGList();
 #endif // DEBUG
+}
+
+//------------------------------------------------------------------------
+// emitBindJump: 'Bind' a jump by assigning its target label field.
+//
+// Arguments:
+//    jmp - The jump instruction
+//
+// Return Value:
+//    The target IG "jmp" was bound to.
+//
+insGroup* emitter::emitBindJump(instrDescJmp* jmp)
+{
+    assert(!jmp->idIsBound());
+
+#ifdef DEBUG
+    if (EMITVERBOSE)
+    {
+        printf("Binding: ");
+        emitDispIns(jmp, false, false, false);
+        printf("Binding L_M%03u_" FMT_BB, m_compiler->compMethodID, jmp->idAddr()->iiaBBlabel->bbNum);
+    }
+#endif // DEBUG
+
+    insGroup* tgtIG = (insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel);
+
+#ifdef DEBUG
+    if (EMITVERBOSE)
+    {
+        if (tgtIG)
+        {
+            printf(" to %s\n", emitLabelString(tgtIG));
+        }
+        else
+        {
+            printf("-- ERROR, no emitter cookie for " FMT_BB "; it is probably missing BBF_HAS_LABEL.\n",
+                   jmp->idAddr()->iiaBBlabel->bbNum);
+        }
+    }
+#endif // DEBUG
+
+    assert(jmp->idAddr()->iiaBBlabel->HasFlag(BBF_HAS_LABEL));
+    assert(tgtIG != nullptr);
+
+    /* Record the bound target */
+    jmp->idAddr()->iiaIGlabel = tgtIG;
+    jmp->idSetIsBound();
+    return tgtIG;
 }
 #endif
 
@@ -6643,13 +6643,6 @@ void emitter::emitCheckFuncletBranch(instrDesc* jmp, insGroup* jmpIG)
         return;
     }
 #endif
-
-    if (jmp->idAddr()->iiaHasInstrCount())
-    {
-        // Too hard to figure out funclets from just an instruction count
-        // You're on your own!
-        return;
-    }
 
 #ifdef TARGET_ARM64
     // No interest if it's not jmp.
@@ -7679,7 +7672,6 @@ unsigned emitter::emitEndCodeGen(Compiler*             comp,
                     // Presumably we could also just call "emitOutputLJ(NULL, adr, jmp)", like for long jumps?
                     *(short int*)(adr + writeableOffset) -= (short)adj;
 #elif defined(TARGET_ARM64)
-                    assert(!jmp->idAddr()->iiaHasInstrCount());
                     emitOutputLJ(NULL, adr, jmp);
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
                     // For LoongArch64 and RiscV64 `emitFwdJumps` is always false.
@@ -7696,7 +7688,6 @@ unsigned emitter::emitEndCodeGen(Compiler*             comp,
 #if defined(TARGET_XARCH)
                     *(int*)(adr + writeableOffset) -= adj;
 #elif defined(TARGET_ARMARCH)
-                    assert(!jmp->idAddr()->iiaHasInstrCount());
                     emitOutputLJ(NULL, adr, jmp);
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
                     // For LoongArch64 and RiscV64 `emitFwdJumps` is always false.
@@ -7773,7 +7764,7 @@ unsigned emitter::emitEndCodeGen(Compiler*             comp,
 #endif // DEBUG
 
     // Assign the real prolog size
-    *prologSize = emitCodeOffset(emitPrologIG, emitPrologEndPos);
+    *prologSize = emitPrologEndPos.CodeOffset(this);
 
     /* Return the amount of code we've generated */
 
@@ -9554,6 +9545,39 @@ UNATIVE_OFFSET emitter::emitCodeOffset(void* blockPtr, unsigned codePos)
     return ig->igOffs + of;
 }
 
+//------------------------------------------------------------------------
+// emitGetCurrentCodeOffsetFrom: Get current code offset relative to "ig".
+//
+// This is used to retrieve the current offset within a prolog being generated
+// for unwind info. Thus, the offset we return from here can't later shrink,
+// and overestimating the code size of prolog instructions is fatal.
+//
+// Arguments:
+//    ig - IG denoting the start of code, "nullptr" for main function prolog
+//
+// Return Value:
+//    Effectively "<current code offset> - ig->igOffs".
+//
+UNATIVE_OFFSET emitter::emitGetCurrentCodeOffsetFrom(insGroup* ig)
+{
+    if (ig == nullptr)
+    {
+        ig = emitGetFirstPrologIG();
+    }
+    assert((ig->igFlags & IGF_OUT_OF_ORDER_HEAD) != 0);
+
+    unsigned igKind = ig->igFlags & (IGF_PROLOG | IGF_FUNCLET_PROLOG);
+    unsigned offset = 0;
+    while (ig != emitCurIG)
+    {
+        offset += ig->igSize;
+        ig = ig->igNext;
+    }
+    assert((ig->igFlags & igKind) == igKind);
+
+    return offset + emitCurIGsize;
+}
+
 /*****************************************************************************
  *
  *  Record the fact that the given register now contains a live GC ref.
@@ -9984,12 +10008,7 @@ void emitter::emitInsertIGAfter(insGroup* insertAfterIG, insGroup* ig)
 
 void emitter::emitNxtIG(bool extend)
 {
-    /* Right now we don't allow multi-IG prologs */
-
-    assert(emitCurIG != emitPrologIG);
-
     /* First save the current group */
-
     emitSavIG(extend);
 
     /* Update the GC live sets for the group's start
