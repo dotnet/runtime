@@ -95,7 +95,7 @@ jobs:
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), in(parameters.platform, 'android_arm', 'android_arm64', 'linux_bionic_arm', 'linux_bionic_arm64')) }}:
       - Ubuntu.2204.Amd64.Android.29.Open
     - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(parameters.platform, 'android_arm')) }}:
-      - Windows.11.Amd64.Android.Arm32.Open
+      - windows.11.amd64.android-armel.open
     - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.platform, 'android_arm64', 'linux_bionic_arm', 'linux_bionic_arm64')) }}:
       - Windows.11.Amd64.Android.Open
 
