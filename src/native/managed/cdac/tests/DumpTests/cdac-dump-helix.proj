@@ -217,16 +217,17 @@
           Include="@(_UniqueDebuggee->'mkdir -p $HELIX_WORKITEM_PAYLOAD/dumps/local/symbols/debuggees/%(Identity)')" />
       <!-- Copy every DLL/PDB from the debuggee publish folder so that project
            references (e.g. InterpreterStack/Trampoline.dll) are also available
-           for symbol resolution. PDB copy uses `find ... -exec cp {} <dest>/ +`
-           so it's a no-op when a debuggee has no PDBs, contains no semicolons
-           (which would be split by the Helix SDK SplitCommands), quotes the
-           pattern so the shell doesn't pre-expand it before find runs, and uses
-           the portable `cp <files> <dest>/` form rather than GNU-only `cp -t`
-           so it also works on macOS / BSD targets. -->
+           for symbol resolution. The PDB copy uses ``cp <src>/*.pdb <dst>/``
+           with ``2>/dev/null || true`` so the script keeps going when a
+           debuggee has no PDBs (the matching ``cp`` line for the JIT/AOT
+           debuggees on line ~123 uses the same ``|| true`` pattern, so this
+           works with the dash shell used inside Helix containers). The shell
+           expands the glob; if no PDB matches, ``cp`` errors out silently and
+           we ignore it. -->
       <_HelixCommandLines Condition="'$(TargetOS)' != 'windows'"
           Include="@(_UniqueDebuggee->'cp $HELIX_WORKITEM_PAYLOAD/debuggees/%(Identity)/*.dll $HELIX_WORKITEM_PAYLOAD/dumps/local/symbols/debuggees/%(Identity)/')" />
       <_HelixCommandLines Condition="'$(TargetOS)' != 'windows'"
-          Include="@(_UniqueDebuggee->'find $HELIX_WORKITEM_PAYLOAD/debuggees/%(Identity) -maxdepth 1 -name &apos;*.pdb&apos; -exec cp {} $HELIX_WORKITEM_PAYLOAD/dumps/local/symbols/debuggees/%(Identity)/ +')" />
+          Include="@(_UniqueDebuggee->'cp $HELIX_WORKITEM_PAYLOAD/debuggees/%(Identity)/*.pdb $HELIX_WORKITEM_PAYLOAD/dumps/local/symbols/debuggees/%(Identity)/ 2&gt;/dev/null || true')" />
     </ItemGroup>
 
     <!-- Test mode only: run xunit, capture exit code, propagate after archive. -->
