@@ -203,14 +203,12 @@ namespace Wasm.Build.Tests
 
         private string GetRuntimePackName(RuntimeVariant runtimeType)
         {
-            // CoreCLR ships browser-wasm via Microsoft.NETCore.App.Runtime.{rid} (no flavor segment).
+            // CoreCLR ships browser-wasm via Microsoft.NETCore.App.Runtime.{rid}, with a separate .multithread. variant.
             // Mono uses Microsoft.NETCore.App.Runtime.Mono.{rid}, with a separate .multithread. variant.
-            if (IsCoreClrRuntime)
-                return $"Microsoft.NETCore.App.Runtime.{DefaultRuntimeIdentifier}";
-
+            string flavor = IsCoreClrRuntime ? string.Empty : "Mono.";
             return runtimeType is RuntimeVariant.SingleThreaded
-                ? $"Microsoft.NETCore.App.Runtime.Mono.{DefaultRuntimeIdentifier}"
-                : $"Microsoft.NETCore.App.Runtime.Mono.multithread.{DefaultRuntimeIdentifier}";
+                ? $"Microsoft.NETCore.App.Runtime.{flavor}{DefaultRuntimeIdentifier}"
+                : $"Microsoft.NETCore.App.Runtime.{flavor}multithread.{DefaultRuntimeIdentifier}";
         }
         public string GetRuntimeNativeDir(string tfm, RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded)
             => Path.Combine(GetRuntimePackDir(tfm, runtimeType), "runtimes", DefaultRuntimeIdentifier, "native");
