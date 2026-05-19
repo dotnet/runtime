@@ -44,7 +44,6 @@ namespace System.IO
         public MemoryStream(int capacity)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(capacity);
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(capacity, MemStreamMaxLength);
 
             _buffer = capacity != 0 ? new byte[capacity] : [];
             _capacity = capacity;
@@ -547,7 +546,7 @@ namespace System.IO
         //
         public override void SetLength(long value)
         {
-            if (value < 0 || value > MemStreamMaxLength)
+            if (value < 0)
                 throw new ArgumentOutOfRangeException(nameof(value), SR.Format(SR.ArgumentOutOfRange_StreamLength, Array.MaxLength));
 
             EnsureWriteable();
@@ -555,7 +554,7 @@ namespace System.IO
             // Origin wasn't publicly exposed above.
             Debug.Assert(MemStreamMaxLength == Array.MaxLength);  // Check parameter validation logic in this method if this fails.
             if (value > (MemStreamMaxLength - _origin))
-                throw new ArgumentOutOfRangeException(nameof(value), SR.Format(SR.ArgumentOutOfRange_StreamLength, Array.MaxLength));
+                throw new OutOfMemoryException();
 
             int newLength = _origin + (int)value;
             bool allocatedNewArray = EnsureCapacity(newLength);
