@@ -134,6 +134,36 @@ internal static class Parser
         return default;
     }
 
+    private static string[]? GetNamedArrayArg(AttributeData attr, string name)
+    {
+        foreach (KeyValuePair<string, TypedConstant> kv in attr.NamedArguments)
+        {
+            if (kv.Key == name && kv.Value.Kind == TypedConstantKind.Array && !kv.Value.IsNull)
+            {
+                var result = new List<string>();
+                foreach (TypedConstant item in kv.Value.Values)
+                {
+                    if (item.Value is string s)
+                    {
+                        result.Add(s);
+                    }
+                }
+                return result.ToArray();
+            }
+        }
+
+        return null;
+    }
+
+    private static EquatableArray<string> ComputeFieldNames(string propertyName, string[]? names)
+    {
+        if (names is null || names.Length == 0)
+        {
+            return EquatableArray<string>.FromEnumerable(new[] { propertyName });
+        }
+        return EquatableArray<string>.FromEnumerable(names);
+    }
+
     private static bool TryParseProperty(IPropertySymbol prop, out MemberModel? model)
     {
         model = null;
@@ -186,23 +216,28 @@ internal static class Parser
                 IsNullable: isNullable,
                 RawOffset: offset,
                 LittleEndian: littleEndian,
-                HasSetter: false);
+                HasSetter: false,
+                Names: EquatableArray<string>.FromEnumerable(new[] { prop.Name }));
             return true;
         }
 
         if (fieldAttr is not null)
         {
-            string descriptorName = (fieldAttr.ConstructorArguments.Length > 0 && fieldAttr.ConstructorArguments[0].Value is string s)
-                ? s
-                : prop.Name;
-            bool isPointer = GetNamedArg<bool>(fieldAttr, "Pointer");
+            // [Field(params string[] names)] -- the positional args (if any)
+            // become the candidate name list. We also accept a Names = [..]
+            // named-arg form, which the constructor populates the same way.
+            string[]? ctorNames = ReadStringParamsCtorArg(fieldAttr);
+            string[]? namedNames = GetNamedArrayArg(fieldAttr, "Names");
+            string[]? rawNames = ctorNames ?? namedNames;
 
+            bool isPointer = GetNamedArg<bool>(fieldAttr, "Pointer");
             (FieldReadKind readKind, string? dataTypeArg, bool isNullable) = ClassifyFieldRead(prop, isPointer);
             string fqnType = prop.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
 
-            // A nullable-typed property (T? on a value type) implicitly opts into
-            // the ContainsKey guard: missing descriptor fields leave the property
-            // at its default.
+            // DescriptorOrFieldName is retained for static-accessor emit paths.
+            // For [Field] codegen, only the Names array is used.
+            string descriptorName = rawNames is { Length: > 0 } ? rawNames[0] : prop.Name;
+
             model = new MemberModel(
                 Name: prop.Name,
                 Kind: MemberKind.Field,
@@ -214,15 +249,17 @@ internal static class Parser
                 IsNullable: isNullable,
                 RawOffset: null,
                 LittleEndian: false,
-                HasSetter: GetNamedArg<bool>(fieldAttr, "Writable"));
+                HasSetter: GetNamedArg<bool>(fieldAttr, "Writable"),
+                Names: ComputeFieldNames(prop.Name, rawNames));
             return true;
         }
 
         if (addrAttr is not null)
         {
-            string descriptorName = (addrAttr.ConstructorArguments.Length > 0 && addrAttr.ConstructorArguments[0].Value is string s)
-                ? s
-                : prop.Name;
+            string[]? ctorNames = ReadStringParamsCtorArg(addrAttr);
+            string[]? namedNames = GetNamedArrayArg(addrAttr, "Names");
+            string[]? rawNames = ctorNames ?? namedNames;
+            string descriptorName = rawNames is { Length: > 0 } ? rawNames[0] : prop.Name;
             model = new MemberModel(
                 Name: prop.Name,
                 Kind: MemberKind.FieldAddress,
@@ -234,7 +271,8 @@ internal static class Parser
                 IsNullable: false,
                 RawOffset: null,
                 LittleEndian: false,
-                HasSetter: false);
+                HasSetter: false,
+                Names: ComputeFieldNames(prop.Name, rawNames));
             return true;
         }
 
@@ -251,11 +289,35 @@ internal static class Parser
                 IsNullable: false,
                 RawOffset: null,
                 LittleEndian: false,
-                HasSetter: false);
+                HasSetter: false,
+                Names: EquatableArray<string>.FromEnumerable(new[] { prop.Name }));
             return true;
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// Read a <c>params string[]</c> constructor argument. The compiler folds
+    /// <c>[Field("a", "b")]</c> into a single <c>TypedConstant</c> of kind
+    /// <c>Array</c>; we unwrap into a plain string[] (or null when no args).
+    /// </summary>
+    private static string[]? ReadStringParamsCtorArg(AttributeData attr)
+    {
+        if (attr.ConstructorArguments.Length == 0)
+            return null;
+
+        TypedConstant first = attr.ConstructorArguments[0];
+        if (first.Kind != TypedConstantKind.Array || first.IsNull)
+            return null;
+
+        var result = new List<string>();
+        foreach (TypedConstant item in first.Values)
+        {
+            if (item.Value is string s)
+                result.Add(s);
+        }
+        return result.ToArray();
     }
 
     private static bool TryParseStaticMethod(IMethodSymbol method, out MemberModel? model)
@@ -292,7 +354,8 @@ internal static class Parser
             IsNullable: false,
             RawOffset: null,
                 LittleEndian: false,
-                HasSetter: false);
+                HasSetter: false,
+                Names: EquatableArray<string>.FromEnumerable(new[] { fieldName }));
         return true;
     }
 

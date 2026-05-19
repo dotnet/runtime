@@ -53,26 +53,28 @@ public sealed class CdacTypeAttribute : Attribute
 [AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
 public sealed class FieldAttribute : Attribute
 {
-    /// <summary>Field name in the descriptor matches the property name.</summary>
+    /// <summary>Field name(s) default to the C# property name.</summary>
     public FieldAttribute()
     {
     }
 
-    /// <summary>Explicit descriptor field name (when it differs from the property name).</summary>
-    public FieldAttribute(string descriptorName)
+    /// <summary>
+    /// One or more candidate descriptor field names tried in priority order.
+    /// The cdac LayoutPair cascade tries each name against the native cdac
+    /// descriptor first; if none match (or the native descriptor isn't
+    /// available), it then tries each name against the managed type metadata.
+    /// </summary>
+    public FieldAttribute(params string[] names)
     {
-        DescriptorName = descriptorName;
+        Names = names;
     }
 
-    /// <summary>The descriptor field name, when explicitly provided.</summary>
-    public string? DescriptorName { get; }
-
     /// <summary>
-    /// ECMA-metadata field name for managed types. Reserved for the
-    /// JSON-cache + ECMA-fallback merge inside <c>IManagedTypeSource</c>;
-    /// currently informational.
+    /// Candidate field names tried in priority order against the native
+    /// descriptor first, then the managed descriptor. Empty or null falls
+    /// back to a one-element list containing the C# property name.
     /// </summary>
-    public string? ManagedName { get; set; }
+    public string[]? Names { get; set; }
 
     /// <summary>
     /// For <c>IData&lt;T&gt;</c>-typed properties: read a pointer field then
@@ -127,8 +129,9 @@ public sealed class RawOffsetAttribute : Attribute
 
 /// <summary>
 /// Marks a <c>TargetPointer</c> property as the address of the descriptor
-/// field with the given name. Generator emits
-/// <c>address + (ulong)type.Fields[name].Offset</c>; no read is performed.
+/// field with the given name(s). Generator emits
+/// <c>address + (ulong)type.Fields[name].Offset</c> for the first name that
+/// resolves in either source; no read is performed.
 /// </summary>
 [AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
 public sealed class FieldAddressAttribute : Attribute
@@ -137,12 +140,17 @@ public sealed class FieldAddressAttribute : Attribute
     {
     }
 
-    public FieldAddressAttribute(string descriptorName)
+    public FieldAddressAttribute(params string[] names)
     {
-        DescriptorName = descriptorName;
+        Names = names;
     }
 
-    public string? DescriptorName { get; }
+    /// <summary>
+    /// Candidate field names tried in priority order against the native
+    /// descriptor first, then the managed descriptor. Empty or null falls
+    /// back to the C# property name.
+    /// </summary>
+    public string[]? Names { get; set; }
 }
 
 /// <summary>

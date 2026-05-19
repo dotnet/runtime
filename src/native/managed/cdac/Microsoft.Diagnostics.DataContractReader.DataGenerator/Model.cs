@@ -58,7 +58,8 @@ internal sealed record MemberModel(
     bool IsNullable,
     int? RawOffset,
     bool LittleEndian,
-    bool HasSetter) : IEquatable<MemberModel>;
+    bool HasSetter,
+    EquatableArray<string> Names) : IEquatable<MemberModel>;
 
 /// <summary>
 /// A <c>[CdacType]</c>-annotated class to be emitted.

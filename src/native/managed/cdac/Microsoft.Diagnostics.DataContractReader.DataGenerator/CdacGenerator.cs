@@ -27,6 +27,25 @@ public sealed class CdacGenerator : IIncrementalGenerator
 {
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
+        // Emit the LayoutPair helper as internal source ONLY when the consuming
+        // assembly doesn't already see one (via project reference + InternalsVisibleTo).
+        // This avoids CS0436 type-conflict errors in assemblies that inherit the
+        // helper from a referenced assembly (e.g. the Tests project sees Contracts'
+        // copy via [InternalsVisibleTo] and shouldn't emit its own).
+        IncrementalValueProvider<bool> shouldEmitLayoutPair = context.CompilationProvider
+            .Select(static (compilation, _) =>
+                compilation.GetTypeByMetadataName(PostInitSources.LayoutPairFullyQualifiedName) is null);
+
+        context.RegisterSourceOutput(shouldEmitLayoutPair, static (ctx, shouldEmit) =>
+        {
+            if (shouldEmit)
+            {
+                ctx.AddSource(
+                    PostInitSources.LayoutPairSourceHintName,
+                    SourceText.From(PostInitSources.LayoutPairSource, Encoding.UTF8));
+            }
+        });
+
         IncrementalValuesProvider<CdacTypeModel> models = context.SyntaxProvider
             .ForAttributeWithMetadataName(
                 Parser.CdacTypeAttributeFqn,

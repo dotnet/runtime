@@ -96,7 +96,7 @@ Marks a class for source generation. Choose **one** descriptor source:
 | `[CdacType("DescriptorName")]` | Native cdac descriptor. The recommended form is `[CdacType(nameof(DataType.X))]`, which gives compile-time validation against the `DataType` enum while still passing a plain string to the attribute. |
 | `[CdacType]` (parameterless) | No descriptor lookup at all. Use with `[RawOffset]` properties or `OnInit` only. |
 | `[CdacType(ManagedFullName = "System.X.Y")]` | Pure managed type; layout from `ManagedTypeSource`. Generator emits a `TypeHandle` accessor and applies the standard `address + Object.Size` offset to access instance fields. |
-| `[CdacType(nameof(DataType.X), ManagedFullName = "System.X.Y")]` | Hybrid: field offsets come from the *native* descriptor (so they're anchored at the object pointer, not after the header), but the class also exposes a `TypeHandle` accessor. Used by types like `Exception` that have both representations. |
+| `[CdacType(nameof(DataType.X), ManagedFullName = "System.X.Y")]` | Both sources -- triggers **per-field fallback**. Each `[Field]` resolves against the native descriptor first; if a given field is missing there, the read falls back to the managed-metadata layout. The class also exposes a `TypeHandle(Target)` accessor. Used for types where the runtime is migrating between sources (or wants to be resilient to the cdac descriptor not covering every field yet). See [Fallback](#fallback) below. |
 | `IsValueType = true` | (Managed only.) The class wraps an inline value type with no object header. The generator reads fields starting at `address` rather than `address + Object.Size`. |
 
 ### Property-level: `[Field]`
@@ -116,9 +116,21 @@ type:
 
 Parameters:
 
-* `[Field("descriptor_name")]` -- map to a descriptor field whose name
-  differs from the C# property name (common for managed types whose
-  field names start with `_`, e.g. `[Field("_state")] public uint State`).
+* `[Field("name", ...)]` -- one or more candidate descriptor field names,
+  passed as positional `params string[]`. The cdac generator's runtime
+  cascade tries each name first against the native descriptor, then against
+  the managed descriptor. The first match wins. Defaults to a one-element
+  list containing the C# property name when no names are given.
+  Examples:
+  - `[Field] public uint Id` -- candidates `["Id"]`.
+  - `[Field("_state")] public uint State` -- candidates `["_state"]`. On a
+    managed-only class, native is absent so the cascade falls to managed
+    and finds `_state`.
+  - `[Field("State", "_state")] public uint State` -- two candidates,
+    useful for cross-source classes where native uses one name and managed
+    uses another.
+  - `[Field("Id", "m_id")] public uint Id` -- runtime-version rename;
+    cascade tries the new name then the old.
 * `[Field(Pointer = true)]` -- for `IData<T>`-typed properties: read a
   pointer from the descriptor field, then materialize the pointee via
   `target.ProcessedData.GetOrAdd<T>(pointer)`. Use only when the
@@ -282,6 +294,138 @@ Rules:
   `[CdacType(ManagedFullName = "...")]`); writes go through the
   descriptor field offset regardless of which side supplied it.
 * Plain `[RawOffset]` is not writable (no descriptor entry to update).
+
+## Fallback
+
+`[Field]` accepts one or more candidate field names. At runtime the cdac
+generator's emitted ctor tries every candidate name against the native
+descriptor first, then every candidate name against the managed metadata.
+The first match wins. No explicit fallback flag -- if a class supplies
+both a native descriptor name and a managed full name, the runtime cascade
+naturally consults both sources.
+
+### Why it exists
+
+The team has decided some types (e.g. `Exception`, `String`) live in the
+native cdac descriptor for fast, header-free access during basic dump
+analysis. Other types (`Lock`, several COM wrappers) get their layout
+from managed metadata via `IManagedTypeSource`. The classification is
+reviewed per-type and may change in follow-ups; the per-field cascade
+lets a single IData class survive a type moving from one source to the
+other (or being added to the native descriptor incrementally, one field
+at a time) without C# changes.
+
+### How the cascade works
+
+1. The generator emits a single call to
+   `LayoutPairResolver.Resolve(target, nativeName, managedFullName, isValueType)`
+   at the top of the ctor. This returns a `LayoutPair` carrying whichever
+   of the two `Target.TypeInfo`s exists plus the managed data offset
+   (`Object.Size` for reference types, `0` for value types).
+
+2. Every `[Field]` read goes through
+   `LayoutPair.ReadField<T>(target, address, names)`. The helper walks
+   `names` against the native `TypeInfo`'s `Fields` map first; if a name
+   matches, the read is anchored at `address` (native offsets already
+   include the object header by convention). If no name matches against
+   native (or the native descriptor wasn't available), the helper walks
+   `names` against the managed `TypeInfo`'s `Fields` map; if a name
+   matches, the read is anchored at `address + ManagedDataOffset`.
+
+3. If no name matches in either source, `LayoutPair` throws
+   `InvalidOperationException` with the candidate name list in the
+   message. If the resolution at step 1 found *neither* source, the
+   ctor itself throws.
+
+### Cross-source: list both candidate names
+
+When native and managed metadata disagree on field names, list both
+candidates. The cascade picks the first one that matches in either
+source:
+
+```csharp
+[CdacType("Lock", ManagedFullName = "System.Threading.Lock")]
+internal sealed partial class Lock : IData<Lock>
+{
+    [Field("OwningThreadId", "_owningThreadId")] public int  OwningThreadId  { get; }
+    [Field("State",          "_state")]          public uint State           { get; }
+    [Field("RecursionCount", "_recursionCount")] public uint RecursionCount  { get; }
+}
+```
+
+When the native cdac descriptor for `Lock` is present, the cascade
+finds `"OwningThreadId"` first and reads at `address + nativeOffset`.
+When only managed metadata is present (native absent), it falls past
+the unmatched `"OwningThreadId"` on the native side, then tries
+`"_owningThreadId"` against managed and reads at
+`address + Object.Size + managedOffset`.
+
+For a class where the same name works on both sides (e.g. `Exception`
+where the native cdac descriptor uses underscore-prefixed names that
+match the managed names), a single name is enough:
+
+```csharp
+[CdacType(nameof(DataType.Exception), ManagedFullName = "System.Exception")]
+internal sealed partial class Exception : IData<Exception>
+{
+    [Field("_message")] public TargetPointer Message { get; }
+    [Field("_HResult")] public int           HResult { get; }
+}
+```
+
+### Cross-version aliases
+
+When a field has been renamed across runtime or BCL versions, simply
+list the candidates in priority order. The cascade tries them in order
+against each source:
+
+```csharp
+[CdacType("Thread")]
+internal sealed partial class Thread : IData<Thread>
+{
+    // Native field was renamed from "m_id" to "Id" in a recent runtime.
+    [Field("Id", "m_id")] public uint Id { get; }
+}
+```
+
+There is no distinction between a "primary" name and an "alias" --
+all candidates are equal entries in one list, tried in declaration order.
+
+### Address-base rule for reference types
+
+For a managed reference type the metadata's field offsets are anchored
+at the *first instance-data byte*, i.e. *after* the object header
+(MethodTable pointer + sync block index). So managed reads need
+`address + Object.Size + offset`. For a value type there is no header,
+so managed reads use `address + offset`. The native cdac descriptor's
+field offsets, by convention, already include the header for managed
+reference types -- so native reads always use `address + offset`
+directly.
+
+`LayoutPair.ManagedDataOffset` captures this:
+
+| Class form | `ManagedDataOffset` |
+|---|---|
+| `[CdacType("X")]` only (native-only) | 0 (managed side absent) |
+| `[CdacType(ManagedFullName = "X")]` (managed ref type) | `Object.Size` |
+| `[CdacType(ManagedFullName = "X", IsValueType = true)]` | 0 |
+| `[CdacType("X", ManagedFullName = "Y")]` cross-source, ref | `Object.Size` |
+
+`LayoutPair.TrySelect` applies the offset only when a field resolves
+via the managed side -- native-resolved fields always read from
+`address` directly.
+
+### `[FieldAddress]` and `[InstanceDataStart]` under fallback
+
+`[FieldAddress]` accepts the same `params string[]` name list as
+`[Field]`, and works through `LayoutPair.GetFieldAddress` to return
+the correct absolute address regardless of which source resolves the
+field.
+
+`[InstanceDataStart]` returns `address + ManagedDataOffset +
+InstanceSize`, where `InstanceSize` is whichever side's `Size` is
+populated (native preferred when both have one). For pure native-only
+classes this reduces to `address + type.Size` exactly as before.
 
 ## Worked examples
 

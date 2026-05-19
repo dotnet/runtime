@@ -8,6 +8,10 @@
     <!-- Generator ships inline with the consuming assembly; not a standalone package. -->
     <IsShipping>false</IsShipping>
     <IsPackable>false</IsPackable>
+    <!-- Opt out of the repo-wide source-project flag so the DownlevelLibraryImportGenerator
+         isn't applied to this netstandard2.0 generator project (it would emit duplicate
+         polyfills for InteropServices types it doesn't actually need). -->
+    <IsSourceProject>false</IsSourceProject>
     <AnalyzerLanguage>cs</AnalyzerLanguage>
     <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
   </PropertyGroup>
