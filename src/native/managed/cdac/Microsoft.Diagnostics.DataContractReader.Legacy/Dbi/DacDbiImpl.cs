@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
@@ -252,8 +254,54 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     public int GetMetadata(ulong vmModule, DacDbiTargetBuffer* pTargetBuffer)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetMetadata(vmModule, pTargetBuffer) : HResults.E_NOTIMPL;
 
-    public int GetSymbolsBuffer(ulong vmModule, DacDbiTargetBuffer* pTargetBuffer, int* pSymbolFormat)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetSymbolsBuffer(vmModule, pTargetBuffer, pSymbolFormat) : HResults.E_NOTIMPL;
+    public int GetSymbolsBuffer(ulong vmModule, DacDbiTargetBuffer* pTargetBuffer, SymbolFormat* pSymbolFormat)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (pTargetBuffer == null)
+                throw new ArgumentNullException(nameof(pTargetBuffer));
+
+            if (pSymbolFormat == null)
+                throw new ArgumentNullException(nameof(pSymbolFormat));
+
+            *pTargetBuffer = default;
+            *pSymbolFormat = SymbolFormat.None;
+
+            if (vmModule == 0)
+                throw new ArgumentException("Module pointer must be non-zero.", nameof(vmModule));
+
+            Contracts.ILoader loader = _target.Contracts.Loader;
+            Contracts.ModuleHandle handle = loader.GetModuleHandleFromModulePtr(new TargetPointer(vmModule));
+
+            if (loader.TryGetSymbolStream(handle, out TargetPointer buffer, out uint size) && size != 0)
+            {
+                pTargetBuffer->pAddress = buffer.Value;
+                pTargetBuffer->cbSize = size;
+                *pSymbolFormat = SymbolFormat.Pdb;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            DacDbiTargetBuffer bufferLocal;
+            SymbolFormat formatLocal;
+            int hrLocal = _legacy.GetSymbolsBuffer(vmModule, &bufferLocal, &formatLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(pTargetBuffer->pAddress == bufferLocal.pAddress, $"pAddress: cDAC: {pTargetBuffer->pAddress:x}, DAC: {bufferLocal.pAddress:x}");
+                Debug.Assert(pTargetBuffer->cbSize == bufferLocal.cbSize, $"cbSize: cDAC: {pTargetBuffer->cbSize}, DAC: {bufferLocal.cbSize}");
+                Debug.Assert(*pSymbolFormat == formatLocal, $"pSymbolFormat: cDAC: {*pSymbolFormat}, DAC: {formatLocal}");
+            }
+        }
+#endif
+        return hr;
+    }
 
     public int GetModuleData(ulong vmModule, DacDbiModuleInfo* pData)
     {
@@ -1044,7 +1092,37 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int ResolveAssembly(ulong vmScope, uint tkAssemblyRef, ulong* pRetVal)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.ResolveAssembly(vmScope, tkAssemblyRef, pRetVal) : HResults.E_NOTIMPL;
+    {
+        *pRetVal = 0;
+        int hr = HResults.S_OK;
+        try
+        {
+            Contracts.ILoader loader = _target.Contracts.Loader;
+            Contracts.ModuleHandle scopeModule = loader.GetModuleHandleFromAssemblyPtr(new TargetPointer(vmScope));
+            Contracts.ModuleLookupTables lookupTables = loader.GetLookupTables(scopeModule);
+            TargetPointer referencedModule = loader.GetModuleLookupMapElement(lookupTables.ManifestModuleReferences, tkAssemblyRef, out _);
+            if (referencedModule != TargetPointer.Null)
+            {
+                Contracts.ModuleHandle referencedModuleHandle = loader.GetModuleHandleFromModulePtr(referencedModule);
+                *pRetVal = loader.GetAssembly(referencedModuleHandle).Value;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            ulong retValLocal;
+            int hrLocal = _legacy.ResolveAssembly(vmScope, tkAssemblyRef, &retValLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pRetVal == retValLocal, $"cDAC: {*pRetVal}, DAC: {retValLocal}");
+        }
+#endif
+        return hr;
+    }
 
     public int GetNativeCodeSequencePointsAndVarInfo(ulong vmMethodDesc, ulong startAddress, Interop.BOOL fCodeAvailable, nint pNativeVarData, nint pSequencePoints)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetNativeCodeSequencePointsAndVarInfo(vmMethodDesc, startAddress, fCodeAvailable, pNativeVarData, pSequencePoints) : HResults.E_NOTIMPL;
@@ -1073,11 +1151,178 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     public int GetStackWalkCurrentFrameInfo(nuint pSFIHandle, nint pFrameData, int* pRetVal)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetStackWalkCurrentFrameInfo(pSFIHandle, pFrameData, pRetVal) : HResults.E_NOTIMPL;
 
-    public int GetCountOfInternalFrames(ulong vmThread, uint* pRetVal)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetCountOfInternalFrames(vmThread, pRetVal) : HResults.E_NOTIMPL;
+    // Filter used by GetCountOfInternalFrames and EnumerateInternalFrames to decide
+    // which entries from IStackWalk.GetFrames should be surfaced to the DBI as internal frames.
+    private static bool IsReportedInternalFrame(IStackWalk stackwalk, Contracts.StackFrameData frame)
+    {
+        return frame.InternalFrameType != Contracts.InternalFrameType.None
+            && stackwalk.GetFrameName(frame.FrameIdentifier) != "InterpreterFrame"
+            && !stackwalk.IsExceptionHandlingHelperInlinedCallFrame(frame.FrameAddress);
+    }
 
-    public int EnumerateInternalFrames(ulong vmThread, nint fpCallback, nint pUserData)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.EnumerateInternalFrames(vmThread, fpCallback, pUserData) : HResults.E_NOTIMPL;
+    public int GetCountOfInternalFrames(ulong vmThread, uint* pRetVal)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (pRetVal == null)
+                throw new ArgumentNullException(nameof(pRetVal));
+
+            uint count = 0;
+            IStackWalk stackwalk = _target.Contracts.StackWalk;
+            foreach (Contracts.StackFrameData frame in stackwalk.GetFrames(new TargetPointer(vmThread)))
+            {
+                if (IsReportedInternalFrame(stackwalk, frame))
+                    count++;
+            }
+            *pRetVal = count;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            uint dacCount;
+            int hrLocal = _legacy.GetCountOfInternalFrames(vmThread, &dacCount);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pRetVal == dacCount, $"Internal frame count mismatch - cDAC: {*pRetVal}, DAC: {dacCount}");
+        }
+#endif
+        return hr;
+    }
+
+    public int EnumerateInternalFrames(ulong vmThread, delegate* unmanaged<Debugger_STRData*, void*, void> fpCallback, nint pUserData)
+    {
+        int hr = HResults.S_OK;
+#if DEBUG
+        List<Debugger_STRData>? cdacFrames = _legacy is not null ? new() : null;
+#endif
+        try
+        {
+            TargetPointer threadPtr = new TargetPointer(vmThread);
+            TargetPointer currentAppDomain = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.AppDomain));
+            IStackWalk stackwalk = _target.Contracts.StackWalk;
+
+            foreach (Contracts.StackFrameData frame in stackwalk.GetFrames(threadPtr))
+            {
+                if (!IsReportedInternalFrame(stackwalk, frame))
+                    continue;
+
+                TargetPointer vmAssembly;
+                uint funcMetadataToken;
+                TargetPointer vmMethodDesc;
+                if (frame.InternalFrameType == Contracts.InternalFrameType.FuncEval)
+                {
+                    Contracts.DebuggerEvalData evalData = stackwalk.GetDebuggerEvalData(frame.FrameAddress);
+                    funcMetadataToken = evalData.MethodToken;
+                    vmAssembly = evalData.AssemblyPtr;
+                    vmMethodDesc = TargetPointer.Null;
+                }
+                else
+                {
+                    TargetPointer methodDescPtr = stackwalk.GetMethodDescPtr(frame.FrameAddress);
+                    ResolveStubFrameAssemblyAndToken(methodDescPtr, out vmAssembly, out funcMetadataToken);
+                    vmMethodDesc = methodDescPtr;
+                }
+
+                // ctx and rd are intentionally left as 0 (consumer does not read for cStubFrame).
+                Debugger_STRData data = default;
+                data.fp = frame.FrameAddress.Value;
+                data.vmCurrentAppDomainToken = currentAppDomain.Value;
+                data.eType = Debugger_STRData.EType.cStubFrame;
+                data.stubFrame.funcMetadataToken = funcMetadataToken;
+                data.stubFrame.vmAssembly = vmAssembly.Value;
+                data.stubFrame.vmMethodDesc = vmMethodDesc.Value;
+                data.stubFrame.frameType = (int)ToCorDebugInternalFrameType(frame.InternalFrameType);
+#if DEBUG
+                cdacFrames?.Add(data);
+#endif
+                fpCallback(&data, (void*)pUserData);
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            List<Debugger_STRData> dacFrames = new();
+            GCHandle dacHandle = GCHandle.Alloc(dacFrames);
+            int hrLocal = _legacy.EnumerateInternalFrames(vmThread, (delegate* unmanaged<Debugger_STRData*, void*, void>)&CollectStubFrameCallback, GCHandle.ToIntPtr(dacHandle));
+            dacHandle.Free();
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(cdacFrames!.Count == dacFrames.Count, $"Internal frame count mismatch - cDAC: {cdacFrames!.Count}, DAC: {dacFrames.Count}");
+                int n = Math.Min(cdacFrames!.Count, dacFrames.Count);
+                for (int i = 0; i < n; i++)
+                {
+                    Debugger_STRData c = cdacFrames![i];
+                    Debugger_STRData d = dacFrames[i];
+                    Debug.Assert(c.fp == d.fp, $"Frame[{i}] fp mismatch - cDAC: 0x{c.fp:x}, DAC: 0x{d.fp:x}");
+                    Debug.Assert(c.vmCurrentAppDomainToken == d.vmCurrentAppDomainToken, $"Frame[{i}] vmCurrentAppDomainToken mismatch - cDAC: 0x{c.vmCurrentAppDomainToken:x}, DAC: 0x{d.vmCurrentAppDomainToken:x}");
+                    Debug.Assert(c.eType == d.eType, $"Frame[{i}] eType mismatch - cDAC: {c.eType}, DAC: {d.eType}");
+                    Debug.Assert(c.stubFrame.funcMetadataToken == d.stubFrame.funcMetadataToken, $"Frame[{i}] funcMetadataToken mismatch - cDAC: 0x{c.stubFrame.funcMetadataToken:x}, DAC: 0x{d.stubFrame.funcMetadataToken:x}");
+                    Debug.Assert(c.stubFrame.vmAssembly == d.stubFrame.vmAssembly, $"Frame[{i}] vmAssembly mismatch - cDAC: 0x{c.stubFrame.vmAssembly:x}, DAC: 0x{d.stubFrame.vmAssembly:x}");
+                    Debug.Assert(c.stubFrame.vmMethodDesc == d.stubFrame.vmMethodDesc, $"Frame[{i}] vmMethodDesc mismatch - cDAC: 0x{c.stubFrame.vmMethodDesc:x}, DAC: 0x{d.stubFrame.vmMethodDesc:x}");
+                    Debug.Assert(c.stubFrame.frameType == d.stubFrame.frameType, $"Frame[{i}] frameType mismatch - cDAC: {c.stubFrame.frameType}, DAC: {d.stubFrame.frameType}");
+                }
+            }
+        }
+#endif
+        return hr;
+    }
+
+#if DEBUG
+    [UnmanagedCallersOnly]
+    private static void CollectStubFrameCallback(Debugger_STRData* data, void* pUserData)
+    {
+        GCHandle handle = GCHandle.FromIntPtr((nint)pUserData);
+        ((List<Debugger_STRData>)handle.Target!).Add(*data);
+    }
+#endif
+
+    private void ResolveStubFrameAssemblyAndToken(TargetPointer methodDescPtr, out TargetPointer vmAssembly, out uint funcMetadataToken)
+    {
+        vmAssembly = TargetPointer.Null;
+        funcMetadataToken = 0; // mdTokenNil
+        if (methodDescPtr == TargetPointer.Null)
+            return;
+
+        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+        MethodDescHandle mdHandle = rts.GetMethodDescHandle(methodDescPtr);
+        funcMetadataToken = rts.GetMethodToken(mdHandle);
+
+        TargetPointer mtPtr = rts.GetMethodTable(mdHandle);
+        if (mtPtr == TargetPointer.Null)
+            return;
+        TypeHandle typeHandle = rts.GetTypeHandle(mtPtr);
+        TargetPointer modulePtr = rts.GetModule(typeHandle);
+        if (modulePtr == TargetPointer.Null)
+            return;
+
+        ILoader loader = _target.Contracts.Loader;
+        Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
+        vmAssembly = loader.GetAssembly(moduleHandle);
+    }
+
+    private static CorDebugInternalFrameType ToCorDebugInternalFrameType(Contracts.InternalFrameType frameType)
+        => frameType switch
+        {
+            Contracts.InternalFrameType.None => CorDebugInternalFrameType.STUBFRAME_NONE,
+            Contracts.InternalFrameType.M2U => CorDebugInternalFrameType.STUBFRAME_M2U,
+            Contracts.InternalFrameType.U2M => CorDebugInternalFrameType.STUBFRAME_U2M,
+            Contracts.InternalFrameType.FuncEval => CorDebugInternalFrameType.STUBFRAME_FUNC_EVAL,
+            Contracts.InternalFrameType.InternalCall => CorDebugInternalFrameType.STUBFRAME_INTERNALCALL,
+            Contracts.InternalFrameType.ClassInit => CorDebugInternalFrameType.STUBFRAME_CLASS_INIT,
+            Contracts.InternalFrameType.Exception => CorDebugInternalFrameType.STUBFRAME_EXCEPTION,
+            Contracts.InternalFrameType.JitCompilation => CorDebugInternalFrameType.STUBFRAME_JIT_COMPILATION,
+            _ => CorDebugInternalFrameType.STUBFRAME_NONE,
+        };
 
     public int GetStackParameterSize(ulong controlPC, uint* pRetVal)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetStackParameterSize(controlPC, pRetVal) : HResults.E_NOTIMPL;
@@ -1198,7 +1443,40 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int GetVarArgSig(ulong VASigCookieAddr, ulong* pArgBase, DacDbiTargetBuffer* pRetVal)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetVarArgSig(VASigCookieAddr, pArgBase, pRetVal) : HResults.E_NOTIMPL;
+    {
+        *pArgBase = 0;
+        *pRetVal = default;
+        int hr = HResults.S_OK;
+        try
+        {
+            Contracts.ISignature signature = _target.Contracts.Signature;
+            TargetPointer argBase = signature.GetVarArgArgsBase(new TargetPointer(VASigCookieAddr));
+            signature.GetVarArgSignature(new TargetPointer(VASigCookieAddr), out TargetPointer sigAddr, out uint sigLen);
+
+            *pArgBase = argBase.Value;
+            *pRetVal = new DacDbiTargetBuffer { pAddress = sigAddr.Value, cbSize = sigLen };
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            ulong argBaseLocal;
+            DacDbiTargetBuffer retValLocal = default;
+            int hrLocal = _legacy.GetVarArgSig(VASigCookieAddr, &argBaseLocal, &retValLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(*pArgBase == argBaseLocal, $"cDAC argBase: 0x{*pArgBase:X}, DAC argBase: 0x{argBaseLocal:X}");
+                Debug.Assert(pRetVal->pAddress == retValLocal.pAddress, $"cDAC sigAddr: 0x{pRetVal->pAddress:X}, DAC sigAddr: 0x{retValLocal.pAddress:X}");
+                Debug.Assert(pRetVal->cbSize == retValLocal.cbSize, $"cDAC sigLen: {pRetVal->cbSize}, DAC sigLen: {retValLocal.cbSize}");
+            }
+        }
+#endif
+        return hr;
+    }
 
     public int RequiresAlign8(ulong thExact, Interop.BOOL* pResult)
     {
@@ -1237,7 +1515,56 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int ResolveExactGenericArgsToken(uint dwExactGenericArgsTokenIndex, ulong rawToken, ulong* pRetVal)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.ResolveExactGenericArgsToken(dwExactGenericArgsTokenIndex, rawToken, pRetVal) : HResults.E_NOTIMPL;
+    {
+        *pRetVal = 0;
+        int hr = HResults.S_OK;
+        try
+        {
+            if (dwExactGenericArgsTokenIndex == 0)
+            {
+                // In a rare case of VS4Mac debugging VS4Mac ARM64 optimized code we get a null
+                // generics argument token. We aren't sure why the token is null, it may be a bug
+                // or it may be by design in the runtime. In the interest of time we are working
+                // around the issue rather than investigating the root cause.
+                if (rawToken == 0)
+                {
+                    *pRetVal = rawToken;
+                }
+                else
+                {
+                    // The real generics type token is the MethodTable of the "this" object.
+                    // The incoming rawToken is a target address of the 'this' Object.
+                    *pRetVal = _target.Contracts.Object.GetMethodTableAddress(new TargetPointer(rawToken)).Value;
+                }
+            }
+            else if (dwExactGenericArgsTokenIndex == unchecked((uint)IlNum.TYPECTXT_ILNUM))
+            {
+                // rawToken is already the real generics type token. Nothing to do.
+                *pRetVal = rawToken;
+            }
+            else
+            {
+                // The index of the generics type token should not be anything else.
+                Debug.Fail($"Unexpected generics type token index: {dwExactGenericArgsTokenIndex}");
+                throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_TARGET_INCONSISTENT)!;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            ulong retValLocal;
+            int hrLocal = _legacy.ResolveExactGenericArgsToken(dwExactGenericArgsTokenIndex, rawToken, &retValLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pRetVal == retValLocal, $"cDAC: {*pRetVal}, DAC: {retValLocal}");
+        }
+#endif
+        return hr;
+    }
 
     public int GetILCodeAndSig(ulong vmAssembly, uint functionToken, DacDbiTargetBuffer* pTargetBuffer, uint* pLocalSigToken)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetILCodeAndSig(vmAssembly, functionToken, pTargetBuffer, pLocalSigToken) : HResults.E_NOTIMPL;
@@ -1308,14 +1635,110 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     public int GetInstantiationFieldInfo(ulong vmAssembly, ulong vmTypeHandle, ulong vmExactMethodTable, nint pFieldList, nuint* pObjectSize)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetInstantiationFieldInfo(vmAssembly, vmTypeHandle, vmExactMethodTable, pFieldList, pObjectSize) : HResults.E_NOTIMPL;
 
-    public int TypeHandleToExpandedTypeInfo(int boxed, ulong vmTypeHandle, nint pData)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.TypeHandleToExpandedTypeInfo(boxed, vmTypeHandle, pData) : HResults.E_NOTIMPL;
+    public int TypeHandleToExpandedTypeInfo(AreValueTypesBoxed boxed, ulong vmTypeHandle, DebuggerIPCE_ExpandedTypeData* pTypeInfo)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+            TypeHandle th = rts.GetTypeHandle(new TargetPointer(vmTypeHandle));
+            TypeHandleToExpandedTypeInfoImpl(rts, boxed, th, pTypeInfo);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            DebuggerIPCE_ExpandedTypeData dataLocal;
+            int hrLocal = _legacy.TypeHandleToExpandedTypeInfo(boxed, vmTypeHandle, &dataLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                ValidateExpandedTypeData(pTypeInfo, &dataLocal);
+            }
+        }
+#endif
+        return hr;
+    }
 
-    public int GetObjectExpandedTypeInfo(int boxed, ulong addr, nint pTypeInfo)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetObjectExpandedTypeInfo(boxed, addr, pTypeInfo) : HResults.E_NOTIMPL;
+    public int GetObjectExpandedTypeInfo(AreValueTypesBoxed boxed, ulong addr, DebuggerIPCE_ExpandedTypeData* pTypeInfo)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+            TargetPointer mtAddr = _target.Contracts.Object.GetMethodTableAddress(new TargetPointer(addr));
+            TypeHandle th = rts.GetTypeHandle(mtAddr);
+            TypeHandleToExpandedTypeInfoImpl(rts, boxed, th, pTypeInfo);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            DebuggerIPCE_ExpandedTypeData dataLocal;
+            int hrLocal = _legacy.GetObjectExpandedTypeInfo(boxed, addr, &dataLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                ValidateExpandedTypeData(pTypeInfo, &dataLocal);
+            }
+        }
+#endif
+        return hr;
+    }
 
-    public int GetObjectExpandedTypeInfoFromID(int boxed, COR_TYPEID id, nint pTypeInfo)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetObjectExpandedTypeInfoFromID(boxed, id, pTypeInfo) : HResults.E_NOTIMPL;
+#if DEBUG
+    private static void ValidateExpandedTypeData(DebuggerIPCE_ExpandedTypeData* cdac, DebuggerIPCE_ExpandedTypeData* dac)
+    {
+        Debug.Assert(cdac->elementType == dac->elementType,
+            $"cDAC elementType: {cdac->elementType}, DAC: {dac->elementType}");
+        switch ((CorElementType)ReadLittleEndian(cdac->elementType))
+        {
+            case CorElementType.Class:
+            case CorElementType.ValueType:
+                Debug.Assert(cdac->ClassTypeData_metadataToken == dac->ClassTypeData_metadataToken,
+                    $"cDAC ClassTypeData.metadataToken: {cdac->ClassTypeData_metadataToken:x}, DAC: {dac->ClassTypeData_metadataToken:x}");
+                Debug.Assert(cdac->ClassTypeData_vmAssembly == dac->ClassTypeData_vmAssembly,
+                    $"cDAC ClassTypeData.vmAssembly: {cdac->ClassTypeData_vmAssembly:x}, DAC: {dac->ClassTypeData_vmAssembly:x}");
+                Debug.Assert(cdac->ClassTypeData_typeHandle == dac->ClassTypeData_typeHandle,
+                    $"cDAC ClassTypeData.typeHandle: {cdac->ClassTypeData_typeHandle:x}, DAC: {dac->ClassTypeData_typeHandle:x}");
+                break;
+            case CorElementType.Array:
+            case CorElementType.SzArray:
+                Debug.Assert(cdac->ArrayTypeData_arrayRank == dac->ArrayTypeData_arrayRank,
+                    $"cDAC ArrayTypeData.arrayRank: {cdac->ArrayTypeData_arrayRank}, DAC: {dac->ArrayTypeData_arrayRank}");
+                Debug.Assert(cdac->ArrayTypeData_arrayTypeArg.elementType == dac->ArrayTypeData_arrayTypeArg.elementType,
+                    $"cDAC ArrayTypeData.arrayTypeArg.elementType: {cdac->ArrayTypeData_arrayTypeArg.elementType}, DAC: {dac->ArrayTypeData_arrayTypeArg.elementType}");
+                Debug.Assert(cdac->ArrayTypeData_arrayTypeArg.metadataToken == dac->ArrayTypeData_arrayTypeArg.metadataToken,
+                    $"cDAC ArrayTypeData.arrayTypeArg.metadataToken: {cdac->ArrayTypeData_arrayTypeArg.metadataToken:x}, DAC: {dac->ArrayTypeData_arrayTypeArg.metadataToken:x}");
+                Debug.Assert(cdac->ArrayTypeData_arrayTypeArg.vmAssembly == dac->ArrayTypeData_arrayTypeArg.vmAssembly,
+                    $"cDAC ArrayTypeData.arrayTypeArg.vmAssembly: {cdac->ArrayTypeData_arrayTypeArg.vmAssembly:x}, DAC: {dac->ArrayTypeData_arrayTypeArg.vmAssembly:x}");
+                Debug.Assert(cdac->ArrayTypeData_arrayTypeArg.vmTypeHandle == dac->ArrayTypeData_arrayTypeArg.vmTypeHandle,
+                    $"cDAC ArrayTypeData.arrayTypeArg.vmTypeHandle: {cdac->ArrayTypeData_arrayTypeArg.vmTypeHandle:x}, DAC: {dac->ArrayTypeData_arrayTypeArg.vmTypeHandle:x}");
+                break;
+            case CorElementType.Ptr:
+            case CorElementType.Byref:
+                Debug.Assert(cdac->UnaryTypeData_unaryTypeArg.elementType == dac->UnaryTypeData_unaryTypeArg.elementType,
+                    $"cDAC UnaryTypeData.unaryTypeArg.elementType: {cdac->UnaryTypeData_unaryTypeArg.elementType}, DAC: {dac->UnaryTypeData_unaryTypeArg.elementType}");
+                Debug.Assert(cdac->UnaryTypeData_unaryTypeArg.metadataToken == dac->UnaryTypeData_unaryTypeArg.metadataToken,
+                    $"cDAC UnaryTypeData.unaryTypeArg.metadataToken: {cdac->UnaryTypeData_unaryTypeArg.metadataToken:x}, DAC: {dac->UnaryTypeData_unaryTypeArg.metadataToken:x}");
+                Debug.Assert(cdac->UnaryTypeData_unaryTypeArg.vmAssembly == dac->UnaryTypeData_unaryTypeArg.vmAssembly,
+                    $"cDAC UnaryTypeData.unaryTypeArg.vmAssembly: {cdac->UnaryTypeData_unaryTypeArg.vmAssembly:x}, DAC: {dac->UnaryTypeData_unaryTypeArg.vmAssembly:x}");
+                Debug.Assert(cdac->UnaryTypeData_unaryTypeArg.vmTypeHandle == dac->UnaryTypeData_unaryTypeArg.vmTypeHandle,
+                    $"cDAC UnaryTypeData.unaryTypeArg.vmTypeHandle: {cdac->UnaryTypeData_unaryTypeArg.vmTypeHandle:x}, DAC: {dac->UnaryTypeData_unaryTypeArg.vmTypeHandle:x}");
+                break;
+            case CorElementType.FnPtr:
+                Debug.Assert(cdac->NaryTypeData_typeHandle == dac->NaryTypeData_typeHandle,
+                    $"cDAC NaryTypeData.typeHandle: {cdac->NaryTypeData_typeHandle:x}, DAC: {dac->NaryTypeData_typeHandle:x}");
+                break;
+        }
+    }
+#endif
 
     public int GetTypeHandle(ulong vmModule, uint metadataToken, ulong* pRetVal)
     {
@@ -1401,7 +1824,31 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int GetCollectibleTypeStaticAddress(ulong vmField, ulong* pRetVal)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetCollectibleTypeStaticAddress(vmField, pRetVal) : HResults.E_NOTIMPL;
+    {
+        *pRetVal = 0;
+        int hr = HResults.S_OK;
+        try
+        {
+            Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+            TargetPointer fd = new TargetPointer(vmField);
+            *pRetVal = rts.GetFieldDescStaticAddress(fd, unboxValueTypes: false).Value;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            ulong retValLocal;
+            int hrLocal = _legacy.GetCollectibleTypeStaticAddress(vmField, &retValLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pRetVal == retValLocal, $"cDAC: {*pRetVal}, DAC: {retValLocal}");
+        }
+#endif
+        return hr;
+    }
 
     public int GetEnCHangingFieldInfo(nint pEnCFieldInfo, nint pFieldData, Interop.BOOL* pfStatic)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetEnCHangingFieldInfo(pEnCFieldInfo, pFieldData, pfStatic) : HResults.E_NOTIMPL;
@@ -1410,7 +1857,49 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetTypeHandleParams(vmTypeHandle, pParams) : HResults.E_NOTIMPL;
 
     public int GetSimpleType(int simpleType, uint* pMetadataToken, ulong* pVmModule)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetSimpleType(simpleType, pMetadataToken, pVmModule) : HResults.E_NOTIMPL;
+    {
+        Debug.Assert(pVmModule != null);
+        *pVmModule = 0;
+        int hr = HResults.S_OK;
+        try
+        {
+            Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+            Contracts.TypeHandle typeHandle = rts.GetPrimitiveType((CorElementType)simpleType);
+
+            if (typeHandle.IsNull)
+            {
+                throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_CLASS_NOT_LOADED)!;
+            }
+
+            Debug.Assert(pMetadataToken != null);
+            *pMetadataToken = rts.GetTypeDefToken(typeHandle);
+
+            TargetPointer module = rts.GetModule(typeHandle);
+            if (module == TargetPointer.Null)
+                throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_TARGET_INCONSISTENT)!;
+
+            *pVmModule = module.Value;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            uint metadataTokenLocal;
+            ulong vmModuleLocal;
+            int hrLocal = _legacy.GetSimpleType(simpleType, &metadataTokenLocal, &vmModuleLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(*pMetadataToken == metadataTokenLocal, $"cDAC: {*pMetadataToken}, DAC: {metadataTokenLocal}");
+                Debug.Assert(*pVmModule == vmModuleLocal, $"cDAC: {*pVmModule}, DAC: {vmModuleLocal}");
+            }
+        }
+#endif
+        return hr;
+    }
 
     public int IsExceptionObject(ulong vmObject, Interop.BOOL* pResult)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.IsExceptionObject(vmObject, pResult) : HResults.E_NOTIMPL;
@@ -1445,8 +1934,68 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
-    public int GetRcwCachedInterfacePointers(ulong vmObject, Interop.BOOL bIInspectableOnly, nint pDacItfPtrs)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetRcwCachedInterfacePointers(vmObject, bIInspectableOnly, pDacItfPtrs) : HResults.E_NOTIMPL;
+#if DEBUG
+    [ThreadStatic]
+    private static List<ulong>? _debugEnumerateRcwCachedInterfacePointers;
+
+    private static List<ulong> DebugEnumerateRcwCachedInterfacePointers
+        => _debugEnumerateRcwCachedInterfacePointers ??= new();
+
+    [UnmanagedCallersOnly]
+    private static void EnumerateRcwCachedInterfacePointersDebugCallback(ulong itfPtr, nint _)
+    {
+        DebugEnumerateRcwCachedInterfacePointers.Add(itfPtr);
+    }
+#endif
+
+    public int EnumerateRcwCachedInterfacePointers(ulong vmObject, delegate* unmanaged<ulong, nint, void> fpCallback, nint pUserData)
+    {
+        int hr = HResults.S_OK;
+        List<ulong> itfPtrs = new();
+        try
+        {
+            if (fpCallback is null)
+                throw new ArgumentNullException(nameof(fpCallback));
+
+            IObject obj = _target.Contracts.Object;
+            _ = obj.GetBuiltInComData(new TargetPointer(vmObject), out TargetPointer rcw, out _, out _);
+            if (rcw != TargetPointer.Null)
+            {
+                IBuiltInCOM builtInCom = _target.Contracts.BuiltInCOM;
+                foreach ((TargetPointer methodTable, TargetPointer unknown) in builtInCom.GetRCWInterfaces(rcw))
+                {
+                    if (methodTable != TargetPointer.Null && unknown != TargetPointer.Null)
+                        itfPtrs.Add(unknown.Value);
+                }
+            }
+
+            foreach (ulong itfPtr in itfPtrs)
+                fpCallback(itfPtr, pUserData);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacy is not null)
+        {
+            DebugEnumerateRcwCachedInterfacePointers.Clear();
+            delegate* unmanaged<ulong, nint, void> debugCallbackPtr = &EnumerateRcwCachedInterfacePointersDebugCallback;
+            int hrLocal = _legacy.EnumerateRcwCachedInterfacePointers(vmObject, debugCallbackPtr, 0);
+            Debug.ValidateHResult(hr, hrLocal);
+
+            if (hr == HResults.S_OK)
+            {
+                List<ulong> legacyItfPtrs = DebugEnumerateRcwCachedInterfacePointers;
+                Debug.Assert(itfPtrs.SequenceEqual(legacyItfPtrs),
+                    $"cDAC: [{string.Join(",", itfPtrs.Select(p => $"0x{p:x}"))}], DAC: [{string.Join(",", legacyItfPtrs.Select(p => $"0x{p:x}"))}]");
+            }
+            DebugEnumerateRcwCachedInterfacePointers.Clear();
+        }
+#endif
+        return hr;
+    }
 
     public int GetTypedByRefInfo(ulong pTypedByRef, nint pObjectData)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetTypedByRefInfo(pTypedByRef, pObjectData) : HResults.E_NOTIMPL;
@@ -1639,8 +2188,128 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     public int WalkHeap(nuint handle, uint count, COR_HEAPOBJECT* objects, uint* fetched)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.WalkHeap(handle, count, objects, fetched) : HResults.E_NOTIMPL;
 
-    public int GetHeapSegments(nint pSegments)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetHeapSegments(pSegments) : HResults.E_NOTIMPL;
+#if DEBUG
+    [ThreadStatic]
+    private static List<(ulong Start, ulong End, int Generation, uint Heap)>? _debugEnumerateHeapSegments;
+
+    private static List<(ulong Start, ulong End, int Generation, uint Heap)> DebugEnumerateHeapSegments
+        => _debugEnumerateHeapSegments ??= new();
+
+    [UnmanagedCallersOnly]
+    private static void EnumerateHeapSegmentsDebugCallback(ulong start, ulong end, int generation, uint heap, nint _)
+    {
+        DebugEnumerateHeapSegments.Add((start, end, generation, heap));
+    }
+#endif
+
+    public int EnumerateHeapSegments(delegate* unmanaged<ulong, ulong, int, uint, nint, void> fpCallback, nint pUserData)
+    {
+        int hr = HResults.S_OK;
+        List<(ulong Start, ulong End, int Generation, uint Heap)> segments = new();
+        try
+        {
+            if (fpCallback is null)
+                throw new ArgumentNullException(nameof(fpCallback));
+
+            IGC gc = _target.Contracts.GC;
+            string[] gcIdentifiers = gc.GetGCIdentifiers();
+            bool regions = gcIdentifiers.Contains(GCIdentifiers.Regions);
+            bool isWorkstation = gcIdentifiers.Contains(GCIdentifiers.Workstation);
+
+            uint heapIndex = 0;
+            foreach (GCHeapData heapData in EnumerateHeaps(gc, isWorkstation))
+            {
+                TargetPointer gen0AllocStart = heapData.GenerationTable[0].AllocationStart;
+                TargetPointer gen1AllocStart = heapData.GenerationTable[1].AllocationStart;
+
+                // In segments mode, Gen0 lives outside the segment list - synthesize it as a
+                // heap-level entry bracketed by [gen0.AllocationStart, alloc_allocated).
+                if (!regions)
+                    segments.Add((gen0AllocStart.Value, heapData.AllocAllocated.Value, (int)CorDebugGenerationTypes.CorDebug_Gen0, heapIndex));
+
+                foreach (GCHeapSegmentInfo raw in gc.EnumerateHeapSegments(heapData))
+                {
+                    if (raw.Generation != GCSegmentClassification.Ephemeral)
+                    {
+                        segments.Add((raw.Start.Value, raw.End.Value, (int)ToCorDebugGenerationType(raw.Generation), heapIndex));
+                    }
+                    else
+                    {
+                        // Segments mode only: split the ephemeral marker into the Gen1 piece
+                        // ([gen1.AllocationStart, gen0.AllocationStart)) plus an optional Gen2
+                        // prefix ([raw.Start, gen1.AllocationStart)).
+                        segments.Add((gen1AllocStart.Value, gen0AllocStart.Value, (int)CorDebugGenerationTypes.CorDebug_Gen1, heapIndex));
+                        if (raw.Start != gen1AllocStart)
+                            segments.Add((raw.Start.Value, gen1AllocStart.Value, (int)CorDebugGenerationTypes.CorDebug_Gen2, heapIndex));
+                    }
+                }
+
+                heapIndex++;
+            }
+
+            foreach ((ulong start, ulong end, int generation, uint heap) in segments)
+                fpCallback(start, end, generation, heap, pUserData);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacy is not null)
+        {
+            DebugEnumerateHeapSegments.Clear();
+            delegate* unmanaged<ulong, ulong, int, uint, nint, void> debugCallbackPtr = &EnumerateHeapSegmentsDebugCallback;
+            int hrLocal = _legacy.EnumerateHeapSegments(debugCallbackPtr, 0);
+            Debug.ValidateHResult(hr, hrLocal);
+
+            if (hr == HResults.S_OK && hrLocal == HResults.S_OK)
+            {
+                List<(ulong Start, ulong End, int Generation, uint Heap)> legacySegments = DebugEnumerateHeapSegments;
+                if (!segments.SequenceEqual(legacySegments))
+                {
+                    Debug.Assert(segments.Count == legacySegments.Count,
+                        $"cDAC: {segments.Count} segments, DAC: {legacySegments.Count} segments");
+
+                    int compareCount = Math.Min(segments.Count, legacySegments.Count);
+                    for (int i = 0; i < compareCount; i++)
+                    {
+                        Debug.Assert(segments[i] == legacySegments[i],
+                            $"Segment {i} mismatch - cDAC: (0x{segments[i].Start:x}, 0x{segments[i].End:x}, gen={segments[i].Generation}, heap={segments[i].Heap}), DAC: (0x{legacySegments[i].Start:x}, 0x{legacySegments[i].End:x}, gen={legacySegments[i].Generation}, heap={legacySegments[i].Heap})");
+                    }
+                }
+            }
+            DebugEnumerateHeapSegments.Clear();
+        }
+#endif
+        return hr;
+    }
+
+    private static IEnumerable<GCHeapData> EnumerateHeaps(IGC gc, bool isWorkstation)
+    {
+        if (isWorkstation)
+        {
+            yield return gc.GetHeapData();
+        }
+        else
+        {
+            foreach (TargetPointer heapAddress in gc.GetGCHeaps())
+                yield return gc.GetHeapData(heapAddress);
+        }
+    }
+
+    private static CorDebugGenerationTypes ToCorDebugGenerationType(GCSegmentClassification generation) => generation switch
+    {
+        GCSegmentClassification.Gen0 => CorDebugGenerationTypes.CorDebug_Gen0,
+        GCSegmentClassification.Gen1 => CorDebugGenerationTypes.CorDebug_Gen1,
+        GCSegmentClassification.Gen2 => CorDebugGenerationTypes.CorDebug_Gen2,
+        GCSegmentClassification.LOH => CorDebugGenerationTypes.CorDebug_LOH,
+        GCSegmentClassification.POH => CorDebugGenerationTypes.CorDebug_POH,
+        GCSegmentClassification.NonGC => CorDebugGenerationTypes.CorDebug_NonGC,
+        // Ephemeral is an internal marker that must be split by the caller; it never appears in
+        // emitted output.
+        _ => throw new ArgumentOutOfRangeException(nameof(generation), generation, null),
+    };
 
     public int IsValidObject(ulong obj, Interop.BOOL* pResult)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.IsValidObject(obj, pResult) : HResults.E_NOTIMPL;
@@ -2193,6 +2862,254 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetAsyncLocals(vmMethod, codeAddr, state, pAsyncLocals) : HResults.E_NOTIMPL;
 
     public int GetGenericArgTokenIndex(ulong vmMethod, uint* pIndex)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetGenericArgTokenIndex(vmMethod, pIndex) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (vmMethod == 0)
+                throw new ArgumentException("vmMethod must not be zero.", nameof(vmMethod));
+            if (pIndex is null)
+                throw new ArgumentException("pIndex must not be null.", nameof(pIndex));
+            Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+            Contracts.MethodDescHandle md = rts.GetMethodDescHandle(new TargetPointer(vmMethod));
+
+            switch (rts.GetGenericContextLoc(md))
+            {
+                case GenericContextLoc.None:
+                    hr = HResults.S_FALSE;
+                    break;
+                case GenericContextLoc.InstArg:
+                    *pIndex = unchecked((uint)IlNum.TYPECTXT_ILNUM);
+                    break;
+                case GenericContextLoc.ThisPtr:
+                    *pIndex = 0u;
+                    break;
+                default:
+                    throw new InvalidOperationException($"Unexpected generic context location: {rts.GetGenericContextLoc(md)}");
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            uint indexLocal;
+            int hrLocal = _legacy.GetGenericArgTokenIndex(vmMethod, &indexLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pIndex == indexLocal, $"cDAC: {*pIndex}, DAC: {indexLocal}");
+        }
+#endif
+        return hr;
+    }
+
+    // Shared core implementation for TypeHandleToExpandedTypeInfo and GetObjectExpandedTypeInfo.
+    private void TypeHandleToExpandedTypeInfoImpl(IRuntimeTypeSystem rts, AreValueTypesBoxed boxed, TypeHandle typeHandle, DebuggerIPCE_ExpandedTypeData* pTypeInfo)
+    {
+        *pTypeInfo = default;
+        CorElementType elementType = GetElementType(rts, typeHandle);
+        WriteLittleEndian(ref pTypeInfo->elementType, (int)elementType);
+
+        switch (elementType)
+        {
+            case CorElementType.Array:
+            case CorElementType.SzArray:
+                FillArrayTypeInfo(rts, typeHandle, pTypeInfo);
+                break;
+
+            case CorElementType.Ptr:
+            case CorElementType.Byref:
+                FillPtrTypeInfo(rts, boxed, typeHandle, pTypeInfo);
+                break;
+
+            case CorElementType.ValueType:
+                if (boxed == AreValueTypesBoxed.OnlyPrimitivesUnboxed || boxed == AreValueTypesBoxed.AllBoxed)
+                {
+                    WriteLittleEndian(ref pTypeInfo->elementType, (int)CorElementType.Class);
+                }
+                FillClassTypeInfo(rts, typeHandle, pTypeInfo);
+                break;
+
+            case CorElementType.Class:
+                FillClassTypeInfo(rts, typeHandle, pTypeInfo);
+                break;
+
+            case CorElementType.FnPtr:
+                FillFnPtrTypeInfo(rts, boxed, typeHandle, pTypeInfo);
+                break;
+
+            default:
+                if (boxed == AreValueTypesBoxed.AllBoxed)
+                {
+                    WriteLittleEndian(ref pTypeInfo->elementType, (int)CorElementType.Class);
+                    FillClassTypeInfo(rts, typeHandle, pTypeInfo);
+                }
+                break;
+        }
+    }
+
+    // Determines the CorElementType for a type handle, mapping System.Object and System.String
+    // to their specific element types (the runtime's GetSignatureCorElementType returns E_T_CLASS
+    // for both Object and String).
+    private static CorElementType GetElementType(IRuntimeTypeSystem rts, TypeHandle typeHandle)
+    {
+        if (typeHandle.IsNull)
+            return CorElementType.Void;
+
+        if (rts.IsString(typeHandle))
+            return CorElementType.String;
+
+        if (rts.IsObject(typeHandle))
+            return CorElementType.Object;
+
+        return rts.GetSignatureCorElementType(typeHandle);
+    }
+
+    // Mirrors native TypeHandle::UpCastTypeIfNeeded — for continuation types, returns the
+    // parent (continuation base) type handle instead.
+    private static TypeHandle UpCastTypeIfNeeded(IRuntimeTypeSystem rts, TypeHandle typeHandle)
+    {
+        if (rts.IsContinuation(typeHandle))
+        {
+            TargetPointer parentMT = rts.GetParentMethodTable(typeHandle);
+            if (parentMT != TargetPointer.Null)
+                return rts.GetTypeHandle(parentMT);
+        }
+        return typeHandle;
+    }
+
+    // Fills ArrayTypeData for E_T_ARRAY and E_T_SZARRAY.
+    // Mirrors native DacDbiInterfaceImpl::GetArrayTypeInfo.
+    private void FillArrayTypeInfo(IRuntimeTypeSystem rts, TypeHandle typeHandle, DebuggerIPCE_ExpandedTypeData* pTypeInfo)
+    {
+        Debug.Assert(rts.IsArray(typeHandle, out _));
+        rts.IsArray(typeHandle, out uint rank);
+        WriteLittleEndian(ref pTypeInfo->ArrayTypeData_arrayRank, rank);
+        TypeHandle elemTypeHandle = rts.GetTypeParam(typeHandle);
+        FillBasicTypeInfo(rts, elemTypeHandle, out pTypeInfo->ArrayTypeData_arrayTypeArg);
+    }
+
+    // Fills UnaryTypeData for E_T_PTR and E_T_BYREF (or ClassTypeData if AllBoxed).
+    private void FillPtrTypeInfo(IRuntimeTypeSystem rts, AreValueTypesBoxed boxed, TypeHandle typeHandle, DebuggerIPCE_ExpandedTypeData* pTypeInfo)
+    {
+        if (boxed == AreValueTypesBoxed.AllBoxed)
+        {
+            FillClassTypeInfo(rts, typeHandle, pTypeInfo);
+        }
+        else
+        {
+            TypeHandle paramTypeHandle = rts.GetTypeParam(typeHandle);
+            FillBasicTypeInfo(rts, paramTypeHandle, out pTypeInfo->UnaryTypeData_unaryTypeArg);
+        }
+    }
+
+    // Fills ClassTypeData for E_T_CLASS and E_T_VALUETYPE.
+    private void FillClassTypeInfo(IRuntimeTypeSystem rts, TypeHandle typeHandle, DebuggerIPCE_ExpandedTypeData* pTypeInfo)
+    {
+        typeHandle = UpCastTypeIfNeeded(rts, typeHandle);
+
+        TargetPointer modulePtr = rts.GetModule(typeHandle);
+        Contracts.ILoader loader = _target.Contracts.Loader;
+        Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
+
+        ReadOnlySpan<TypeHandle> instantiation = rts.GetInstantiation(typeHandle);
+        if (instantiation.Length > 0)
+        {
+            // Generic instantiation — set the type handle so the debugger can fetch type arguments
+            WriteLittleEndian(ref pTypeInfo->ClassTypeData_typeHandle, typeHandle.Address.Value);
+        }
+        // else: non-generic — typeHandle stays null
+
+        WriteLittleEndian(ref pTypeInfo->ClassTypeData_metadataToken, rts.GetTypeDefToken(typeHandle));
+
+        Debug.Assert(modulePtr != TargetPointer.Null);
+        WriteLittleEndian(ref pTypeInfo->ClassTypeData_vmAssembly, loader.GetAssembly(moduleHandle).Value);
+    }
+
+    // Fills NaryTypeData for E_T_FNPTR (or ClassTypeData if AllBoxed).
+    private void FillFnPtrTypeInfo(IRuntimeTypeSystem rts, AreValueTypesBoxed boxed, TypeHandle typeHandle, DebuggerIPCE_ExpandedTypeData* pTypeInfo)
+    {
+        if (boxed == AreValueTypesBoxed.AllBoxed)
+        {
+            FillClassTypeInfo(rts, typeHandle, pTypeInfo);
+        }
+        else
+        {
+            WriteLittleEndian(ref pTypeInfo->NaryTypeData_typeHandle, typeHandle.Address.Value);
+        }
+    }
+
+    // Fills a DebuggerIPCE_BasicTypeData for a type handle — used for array element types
+    // and ptr/byref referent types.
+    private void FillBasicTypeInfo(IRuntimeTypeSystem rts, TypeHandle typeHandle, out DebuggerIPCE_BasicTypeData typeInfo)
+    {
+        typeInfo = default;
+        CorElementType elementType = GetElementType(rts, typeHandle);
+        WriteLittleEndian(ref typeInfo.elementType, (int)elementType);
+
+        switch (elementType)
+        {
+            case CorElementType.Array:
+            case CorElementType.SzArray:
+            case CorElementType.FnPtr:
+            case CorElementType.Ptr:
+            case CorElementType.Byref:
+                WriteLittleEndian(ref typeInfo.vmTypeHandle, typeHandle.Address.Value);
+                // metadataToken and vmAssembly stay zero
+                break;
+
+            case CorElementType.Class:
+            case CorElementType.ValueType:
+            {
+                typeHandle = UpCastTypeIfNeeded(rts, typeHandle);
+
+                TargetPointer modulePtr = rts.GetModule(typeHandle);
+                Contracts.ILoader loader = _target.Contracts.Loader;
+                Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
+
+                ReadOnlySpan<TypeHandle> instantiation = rts.GetInstantiation(typeHandle);
+                if (instantiation.Length > 0)
+                {
+                    WriteLittleEndian(ref typeInfo.vmTypeHandle, typeHandle.Address.Value);
+                }
+                // else: vmTypeHandle stays null
+
+                WriteLittleEndian(ref typeInfo.metadataToken, rts.GetTypeDefToken(typeHandle));
+                Debug.Assert(modulePtr != TargetPointer.Null);
+                WriteLittleEndian(ref typeInfo.vmAssembly, loader.GetAssembly(moduleHandle).Value);
+                break;
+            }
+
+            default:
+                // All fields zero
+                break;
+        }
+    }
+
+    // Little-endian read/write helpers for IPCE structs.
+    // Native IPCE structs use Portable<T>, which stores data in little-endian format.
+    // These helpers ensure managed reads/writes match that convention.
+    private static void WriteLittleEndian<T>(ref T dest, T value) where T : unmanaged, IBinaryInteger<T>
+    {
+        if (BitConverter.IsLittleEndian)
+        {
+            dest = value;
+        }
+        else
+        {
+            Span<byte> destBytes = MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref dest, 1));
+            value.WriteLittleEndian(destBytes);
+        }
+    }
+
+    private static T ReadLittleEndian<T>(T value) where T : unmanaged, IBinaryInteger<T>
+    {
+        if (BitConverter.IsLittleEndian)
+            return value;
+        MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref value, 1)).Reverse();
+        return value;
+    }
 
 }

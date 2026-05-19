@@ -280,6 +280,7 @@ public class R2RTestSuites
             Assert.True(R2RAssert.HasContinuationLayout(reader, "CaptureObjectAcrossAwait", out diag), diag);
             Assert.True(R2RAssert.HasContinuationLayout(reader, "CaptureMultipleRefsAcrossAwait", out diag), diag);
             Assert.True(R2RAssert.HasResumptionStubFixup(reader, "CaptureObjectAcrossAwait", out diag), diag);
+            Assert.True(R2RAssert.AsyncMethodsWithResumptionStubsAreAdjacent(reader, out diag), diag);
         }
     }
 
@@ -394,6 +395,7 @@ public class R2RTestSuites
             Assert.True(R2RAssert.HasResumptionStubFixup(reader, ".MultipleAwaitsWithRefs(", out diag), diag);
             Assert.True(R2RAssert.HasFixupKindCountOnMethod(reader, ReadyToRunFixupKind.ResumptionStubEntryPoint, ".MultipleAwaits(", 1, out diag), diag);
             Assert.True(R2RAssert.HasFixupKindCountOnMethod(reader, ReadyToRunFixupKind.ResumptionStubEntryPoint, ".MultipleAwaitsWithRefs(", 1, out diag), diag);
+            Assert.True(R2RAssert.AsyncMethodsWithResumptionStubsAreAdjacent(reader, out diag), diag);
         }
     }
 
