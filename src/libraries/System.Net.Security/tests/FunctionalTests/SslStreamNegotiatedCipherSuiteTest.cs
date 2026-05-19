@@ -577,9 +577,7 @@ namespace System.Net.Security.Tests
         private static IEnumerable<TlsCipherSuite> GetNonTls13CipherSuites()
         {
             var tls13cs = new HashSet<TlsCipherSuite>(GetTls13CipherSuites());
-#pragma warning disable IL3050
-            foreach (TlsCipherSuite cs in typeof(TlsCipherSuite).GetEnumValues())
-#pragma warning restore IL3050
+            foreach (TlsCipherSuite cs in Enum.GetValues<TlsCipherSuite>())
             {
                 if (!tls13cs.Contains(cs))
                 {

@@ -284,7 +284,7 @@ namespace System.IO.Packaging.Tests
             using var zipArchive = new ZipArchive(ms, ZipArchiveMode.Read);
             string[] archiveNames = partPieceLists.Split(',');
 
-#pragma warning disable IL3050
+#pragma warning disable IL3050 // s_ZipPackagePartPieceType is a reference type, this is safe to suppress
             Type genericSortedSetType = typeof(SortedSet<>).MakeGenericType(s_ZipPackagePartPieceType);
 #pragma warning restore IL3050
             MethodInfo sortedSetAddMethod = genericSortedSetType.GetMethod("Add");
