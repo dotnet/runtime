@@ -1299,4 +1299,16 @@
   <data name="UnsafeMethodMissingRequiresUnsafeMessage" xml:space="preserve">
     <value>Method '{0}' has pointer types in its signature but is not annotated with 'RequiresUnsafeAttribute'.</value>
   </data>
+  <data name="UnsafeModifierOnTypeDeclarationTitle" xml:space="preserve">
+    <value>'unsafe' modifier is not allowed on type declarations.</value>
+  </data>
+  <data name="UnsafeModifierOnTypeDeclarationMessage" xml:space="preserve">
+    <value>Type '{0}' is declared with the 'unsafe' modifier. The 'unsafe' modifier should be removed from type declarations.</value>
+  </data>
+  <data name="UnsafeModifierOnMemberDeclarationTitle" xml:space="preserve">
+    <value>Member is declared with the 'unsafe' modifier and should be migrated to unsafe-v2 semantics.</value>
+  </data>
+  <data name="UnsafeModifierOnMemberDeclarationMessage" xml:space="preserve">
+    <value>Member '{0}' is declared with the 'unsafe' modifier. Under unsafe-v2 the modifier no longer opens an unsafe context inside the body; the body should be wrapped in an 'unsafe' block if it needs one, and the modifier should be removed if no pointer types appear in the signature.</value>
+  </data>
 </root>
