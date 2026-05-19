@@ -34,6 +34,15 @@ internal static partial class Interop
         private const SslProtocols FakeAlpnSslProtocol = (SslProtocols)1;   // used to distinguish server sessions with ALPN
         private static readonly Lazy<string[]> s_defaultSigAlgs = new(GetDefaultSignatureAlgorithms);
 
+#if DEBUG
+        // Test-only knob: when DOTNET_OPENSSL_FORCE_BIO_SPILL=1 is set, the managed-span
+        // BIO is given a zero-length write window, which forces every byte SSL emits
+        // to take the spill (heap) path inside the BIO. Reading the environment variable
+        // once is safe because the value never changes during the lifetime of the process.
+        private static readonly bool s_forceBioSpill =
+            Environment.GetEnvironmentVariable("DOTNET_OPENSSL_FORCE_BIO_SPILL") == "1";
+#endif
+
         private sealed class SafeSslContextCache : SafeHandleCache<SslContextCacheKey, SafeSslContextHandle> { }
 
         private static readonly SafeSslContextCache s_sslContexts = new();
@@ -687,6 +696,12 @@ internal static partial class Interop
             Ssl.SslErrorCode errorCode;
 
             Span<byte> outputSpan = token.AvailableSpan;
+#if DEBUG
+            if (s_forceBioSpill)
+            {
+                outputSpan = default;
+            }
+#endif
             fixed (byte* inputPtr = input)
             fixed (byte* outputPtr = outputSpan)
             {
@@ -785,6 +800,12 @@ internal static partial class Interop
             Ssl.SslErrorCode errorCode;
 
             Span<byte> windowSpan = outToken.AvailableSpan;
+#if DEBUG
+            if (s_forceBioSpill)
+            {
+                windowSpan = default;
+            }
+#endif
             fixed (byte* plaintextPtr = input)
             fixed (byte* windowPtr = windowSpan)
             {
