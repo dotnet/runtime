@@ -5,8 +5,8 @@
 // SignalSafeJsonWriter as the second crash-report output sink:
 // SignalSafeJsonWriter streams JSON to a file callback (compact, no
 // line concept); SignalSafeConsoleWriter emits one logical line at a
-// time to the platform console (Android logcat under the "DOTNET_CRASH"
-// tag, stderr elsewhere). All public members are async-signal-safe: no
+// time to the platform console (Android logcat under CRASHREPORT_LOG_TAG
+// tag, stderr on Apple mobile platforms). All public members are async-signal-safe: no
 // heap allocation, no stdio, no locale or variadic formatting.
 //
 // Design choices below are driven by the prescribed compact crash report
@@ -16,12 +16,12 @@
 //   instead of stream-buffer-fill flushing. Each call becomes exactly one
 //   __android_log_write entry on Android, so the format's line-oriented
 //   "header / per-thread block / modules / footer" structure maps 1:1
-//   to logcat entries that filter cleanly under a single tag (`adb
-//   logcat *:S DOTNET_CRASH:F`) without cutting fields in half. On
-//   Apple/Linux each Flush adds an explicit '\n' for the same reason.
+//   to logcat entries that filter cleanly under the crash-report tag without
+//   cutting fields in half. On
+//   iOS, tvOS, and MacCatalyst each EndLine adds an explicit '\n' for the same reason.
 //
-// * Unique "DOTNET_CRASH" logcat tag (distinct from the runtime's
-//   general "DOTNET" tag) so consumers can isolate the crash report from
+// * Unique crash-report logcat tag (distinct from the runtime's general
+//   "DOTNET" tag) so consumers can isolate the crash report from
 //   an otherwise noisy logcat with a single per-tag filter.
 //
 // * Best-effort silent truncation on per-line buffer overflow (Append*
@@ -36,6 +36,8 @@
 
 #include <stddef.h>
 #include <stdint.h>
+
+#include "signalsafeformat.h"
 
 static constexpr size_t SIGNAL_SAFE_CONSOLE_BUFFER_SIZE = 512;
 
@@ -70,6 +72,7 @@ public:
 private:
     void Flush();
 
+    SignalSafeFormatter m_formatter;
     char m_buffer[SIGNAL_SAFE_CONSOLE_BUFFER_SIZE];
     size_t m_pos;
 };

@@ -3,11 +3,29 @@
 
 #include "signalsafeformat.h"
 
-namespace SignalSafeFormat
+const char*
+SignalSafeFormatter::FormatHex(uint64_t value)
 {
+    FormatHex(m_hexBuffer, sizeof(m_hexBuffer), value);
+    return m_hexBuffer;
+}
+
+const char*
+SignalSafeFormatter::FormatUnsignedDecimal(uint64_t value)
+{
+    (void)FormatUnsignedDecimal(m_unsignedDecimalBuffer, sizeof(m_unsignedDecimalBuffer), value);
+    return m_unsignedDecimalBuffer;
+}
+
+const char*
+SignalSafeFormatter::FormatSignedDecimal(int64_t value)
+{
+    (void)FormatSignedDecimal(m_signedDecimalBuffer, sizeof(m_signedDecimalBuffer), value);
+    return m_signedDecimalBuffer;
+}
 
 void
-FormatHex(
+SignalSafeFormatter::FormatHex(
     char* buffer,
     size_t bufferSize,
     uint64_t value)
@@ -17,14 +35,13 @@ FormatHex(
         return;
     }
 
-    char reverse[MAX_HEX_DIGITS_UINT64];
     size_t reverseLength = 0;
     do
     {
         unsigned digit = static_cast<unsigned>(value & 0xf);
-        reverse[reverseLength++] = static_cast<char>(digit < 10 ? ('0' + digit) : ('a' + digit - 10));
+        m_reverse[reverseLength++] = static_cast<char>(digit < 10 ? ('0' + digit) : ('a' + digit - 10));
         value >>= 4;
-    } while (value != 0 && reverseLength < sizeof(reverse));
+    } while (value != 0 && reverseLength < MAX_HEX_DIGITS_UINT64);
 
     if (bufferSize < HEX_PREFIX_LEN + reverseLength + NULL_TERMINATOR_LEN)
     {
@@ -38,13 +55,13 @@ FormatHex(
     size_t index = HEX_PREFIX_LEN;
     while (reverseLength > 0)
     {
-        buffer[index++] = reverse[--reverseLength];
+        buffer[index++] = m_reverse[--reverseLength];
     }
     buffer[index] = '\0';
 }
 
 size_t
-FormatUnsignedDecimal(
+SignalSafeFormatter::FormatUnsignedDecimal(
     char* buffer,
     size_t bufferSize,
     uint64_t value)
@@ -54,13 +71,12 @@ FormatUnsignedDecimal(
         return 0;
     }
 
-    char reverse[MAX_DECIMAL_DIGITS_UINT64];
     size_t reverseLength = 0;
     do
     {
-        reverse[reverseLength++] = static_cast<char>('0' + (value % 10));
+        m_reverse[reverseLength++] = static_cast<char>('0' + (value % 10));
         value /= 10;
-    } while (value != 0 && reverseLength < sizeof(reverse));
+    } while (value != 0 && reverseLength < sizeof(m_reverse));
 
     if (bufferSize < reverseLength + NULL_TERMINATOR_LEN)
     {
@@ -71,14 +87,14 @@ FormatUnsignedDecimal(
     size_t pos = 0;
     while (reverseLength > 0)
     {
-        buffer[pos++] = reverse[--reverseLength];
+        buffer[pos++] = m_reverse[--reverseLength];
     }
     buffer[pos] = '\0';
     return pos;
 }
 
 size_t
-FormatSignedDecimal(
+SignalSafeFormatter::FormatSignedDecimal(
     char* buffer,
     size_t bufferSize,
     int64_t value)
@@ -110,5 +126,3 @@ FormatSignedDecimal(
     }
     return written + 1;
 }
-
-} // namespace SignalSafeFormat

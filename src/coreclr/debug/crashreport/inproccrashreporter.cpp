@@ -14,14 +14,18 @@
 
 #include <fcntl.h>
 #include <errno.h>
+#include <new>
 #include <unistd.h>
 #include <string.h>
 #include <time.h>
 #include <ucontext.h>
 #include <minipal/getexepath.h>
 #include <minipal/guid.h>
+#include <minipal/log.h>
 #include <minipal/thread.h>
-#ifdef __APPLE__
+#if defined(__ANDROID__)
+#include <android/log.h>
+#elif defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
 #include <mach/mach.h>
 #include <sys/sysctl.h>
 #endif
@@ -31,7 +35,6 @@ static constexpr uint32_t CRASHREPORT_COR_E_STACKOVERFLOW = 0x800703E9;
 static const char CRASHREPORT_STACK_OVERFLOW_EXCEPTION_TYPE[] = "System.StackOverflowException";
 static const char CRASHREPORT_STACK_OVERFLOW_TRACE_UNAVAILABLE_REASON[] = "stack_overflow_trace_unavailable";
 static constexpr uint32_t CRASHREPORT_STACK_OVERFLOW_MAX_TRACE_FRAMES = 128;
-
 #if defined(__x86_64__)
 static const char CRASHREPORT_ARCHITECTURE_NAME[] = "amd64";
 #elif defined(__aarch64__)
@@ -41,8 +44,8 @@ static const char CRASHREPORT_ARCHITECTURE_NAME[] = "arm";
 #endif
 
 // Prescribed compact crash report log format. One logical line == one
-// __android_log_write entry under tag "DOTNET_CRASH" on Android, one
-// '\n'-terminated stderr write elsewhere.
+// __android_log_write entry under CRASHREPORT_LOG_TAG on Android, one
+// '\n'-terminated stderr write on Apple mobile platforms.
 //
 //   *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***   (BeginConsoleReport)
 //   .NET Crash Report v<protocol>
@@ -64,9 +67,6 @@ static const char CRASHREPORT_ARCHITECTURE_NAME[] = "arm";
 //     [N] <name> {<MVID>}                                              (one per ModuleTable entry)
 //   *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***   (closing separator)
 
-static SignalSafeConsoleWriter s_consoleWriter;
-static volatile LONG s_crashKind = static_cast<LONG>(InProcCrashReportCrashKind::Unknown);
-
 struct StackOverflowTraceFrame
 {
     char methodName[CRASHREPORT_STRING_BUFFER_SIZE];
@@ -84,33 +84,12 @@ struct StackOverflowTraceSnapshot
     volatile LONG available;
 };
 
-static StackOverflowTraceSnapshot s_stackOverflowTrace;
-
 // Include the .NET version string instead of linking because it is "static".
 #if __has_include("_version.c")
 #include "_version.c"
 #else
 static char sccsid[] = "@(#)Version N/A";
 #endif
-
-static char s_versionScratch[sizeof(sccsid)];
-static char s_moduleGuidScratch[MINIPAL_GUID_BUFFER_LEN];
-
-static const char*
-GetSignalNameAscii(int signal)
-{
-    switch (signal)
-    {
-        case SIGSEGV: return "SIGSEGV";
-        case SIGBUS:  return "SIGBUS";
-        case SIGFPE:  return "SIGFPE";
-        case SIGILL:  return "SIGILL";
-        case SIGABRT: return "SIGABRT";
-        case SIGTRAP: return "SIGTRAP";
-        case SIGTERM: return "SIGTERM";
-        default:      return "Unknown signal";
-    }
-}
 
 static void CopyStringToBuffer(char* buffer, size_t bufferSize, const char* value)
 {
@@ -134,10 +113,10 @@ static void CopyStringToBuffer(char* buffer, size_t bufferSize, const char* valu
     buffer[toCopy] = '\0';
 }
 
-#ifdef __APPLE__
+#if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
 // Query a sysctl by name into a caller-supplied buffer. Called from Initialize, NOT from the
 // signal handler -- sysctl/sysctlbyname is not on POSIX's async-signal-safe list, so the
-// queried values are cached for use during crash reporting (mirrors the m_hostName /
+// queried values are cached for use during crash reporting (mirrors the hostName /
 // gethostname pattern).
 static void CacheSysctlString(const char* sysctlName, char* buffer, size_t bufferSize)
 {
@@ -153,7 +132,7 @@ static void CacheSysctlString(const char* sysctlName, char* buffer, size_t buffe
         buffer[0] = '\0';
     }
 }
-#endif // __APPLE__
+#endif // defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
 
 // Bounded module table that deduplicates each unique module observed during a
 // single crash report. Frames in the compact log refer to modules by short
@@ -201,13 +180,10 @@ public:
 
     size_t Count() const { return m_count; }
     const void* ModuleHandle(size_t i) const { return m_moduleHandles[i]; }
-
 private:
     const void* m_moduleHandles[MAX_MODULES_IN_TABLE];
     size_t m_count = 0;
 };
-
-static ModuleTable s_moduleTable;
 
 class ThreadEnumerationContext
 {
@@ -273,12 +249,12 @@ public:
         const char* className,
         const char* moduleName,
         const void* moduleHandle,
-        uint32_t nativeOffset,
-        uint32_t token,
-        uint32_t ilOffset,
         uint32_t moduleTimestamp,
         uint32_t moduleSize,
         const GUID* moduleGuid,
+        uint32_t nativeOffset,
+        uint32_t token,
+        uint32_t ilOffset,
         void* ctx);
 
 private:
@@ -295,12 +271,12 @@ private:
         const char* className,
         const char* moduleName,
         const void* moduleHandle,
-        uint32_t nativeOffset,
-        uint32_t token,
-        uint32_t ilOffset,
         uint32_t moduleTimestamp,
         uint32_t moduleSize,
-        const GUID* moduleGuid);
+        const GUID* moduleGuid,
+        uint32_t nativeOffset,
+        uint32_t token,
+        uint32_t ilOffset);
 
     void EndCurrentConsoleThreadBlock();
     void EndCurrentJsonThreadBlock();
@@ -317,8 +293,6 @@ private:
     bool m_sawCrashThread;
     char m_methodNameScratch[CRASHREPORT_STRING_BUFFER_SIZE];
 };
-
-static ThreadEnumerationContext s_threadContext;
 
 class CrashReportOutputContext
 {
@@ -355,7 +329,62 @@ private:
     bool m_writeFailed;
 };
 
-static CrashReportOutputContext s_outputContext;
+// Holds the reporter's preallocated mutable state. Keeping this separate from
+// InProcCrashReporter lets disabled processes avoid the large buffers entirely,
+// while Initialize can allocate and publish the state before registering the PAL
+// signal callback.
+struct InProcCrashReporterStorage
+{
+    SignalSafeJsonWriter jsonWriter;
+    SignalSafeConsoleWriter consoleWriter;
+    StackOverflowTraceSnapshot stackOverflowTrace;
+    ModuleTable moduleTable;
+    ThreadEnumerationContext threadContext;
+    CrashReportOutputContext outputContext;
+    SignalSafeFormatter formatter;
+    InProcCrashReportIsManagedThreadCallback isManagedThreadCallback = nullptr;
+    InProcCrashReportWalkStackCallback walkStackCallback = nullptr;
+    InProcCrashReportEnumerateThreadsCallback enumerateThreadsCallback = nullptr;
+    InProcCrashReportModuleInfoCallback moduleInfoCallback = nullptr;
+    volatile LONG crashKind = static_cast<LONG>(InProcCrashReportCrashKind::Unknown);
+    uint32_t frameLimitPerThread = 0;
+    char reportPath[CRASHREPORT_PATH_BUFFER_SIZE];
+    char reportFilePathScratch[CRASHREPORT_PATH_BUFFER_SIZE];
+    char expandedReportPathScratch[CRASHREPORT_PATH_BUFFER_SIZE];
+    char methodNameScratch[CRASHREPORT_STRING_BUFFER_SIZE];
+    char processName[CRASHREPORT_STRING_BUFFER_SIZE];
+    char processNameScratch[CRASHREPORT_STRING_BUFFER_SIZE];
+    char hostName[CRASHREPORT_STRING_BUFFER_SIZE];
+    char versionScratch[sizeof(sccsid)];
+    char moduleGuidScratch[MINIPAL_GUID_BUFFER_LEN];
+#if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
+    char osVersion[CRASHREPORT_STRING_BUFFER_SIZE];
+    char systemModel[CRASHREPORT_STRING_BUFFER_SIZE];
+#endif
+};
+
+static InProcCrashReporterStorage* volatile s_storage = nullptr;
+
+static bool EnsureCrashReportStorage()
+{
+    if (s_storage != nullptr)
+    {
+        return true;
+    }
+
+    InProcCrashReporterStorage* storage = new (std::nothrow) InProcCrashReporterStorage();
+    if (storage == nullptr)
+    {
+        return false;
+    }
+
+    if (InterlockedCompareExchangePointer(&s_storage, storage, nullptr) != nullptr)
+    {
+        delete storage;
+    }
+
+    return true;
+}
 
 class CrashReportHelpers
 {
@@ -422,12 +451,12 @@ public:
         const char* methodName,
         const char* className,
         const char* moduleName,
-        uint32_t nativeOffset,
-        uint32_t token,
-        uint32_t ilOffset,
         uint32_t moduleTimestamp,
         uint32_t moduleSize,
-        const GUID* moduleGuid);
+        const GUID* moduleGuid,
+        uint32_t nativeOffset,
+        uint32_t token,
+        uint32_t ilOffset);
 
     static void WriteFrameToConsole(
         SignalSafeConsoleWriter* consoleWriter,
@@ -489,12 +518,12 @@ public:
         const char* className,
         const char* moduleName,
         const void* moduleHandle,
-        uint32_t nativeOffset,
-        uint32_t token,
-        uint32_t ilOffset,
         uint32_t moduleTimestamp,
         uint32_t moduleSize,
         const GUID* moduleGuid,
+        uint32_t nativeOffset,
+        uint32_t token,
+        uint32_t ilOffset,
         void* ctx);
 
     static void WriteFrameToReport(
@@ -512,12 +541,12 @@ public:
         const char* className,
         const char* moduleName,
         const void* moduleHandle,
-        uint32_t nativeOffset,
-        uint32_t token,
-        uint32_t ilOffset,
         uint32_t moduleTimestamp,
         uint32_t moduleSize,
-        const GUID* moduleGuid);
+        const GUID* moduleGuid,
+        uint32_t nativeOffset,
+        uint32_t token,
+        uint32_t ilOffset);
 
     static bool WriteToFile(
         int fd,
@@ -530,25 +559,6 @@ public:
     // emitting bytes anywhere.
     static bool DiscardOutputCallback(const char* buffer, size_t len, void* ctx);
 
-    static bool BuildReportPath(
-        char* buffer,
-        size_t bufferSize,
-        char* expandedBuffer,
-        size_t expandedBufferSize,
-        char* numberBuffer,
-        size_t numberBufferSize,
-        const char* dumpPath,
-        const char* processName,
-        const char* hostName);
-
-    static size_t ExpandDumpTemplate(
-        char* buffer,
-        size_t bufferSize,
-        char* numberBuffer,
-        size_t numberBufferSize,
-        const char* pattern,
-        const char* processName,
-        const char* hostName);
 };
 
 void
@@ -556,35 +566,30 @@ InProcCrashReporter::CreateReport(
     int signal,
     void* context)
 {
+    InProcCrashReporterStorage* storage = s_storage;
+    if (storage == nullptr)
+    {
+        return;
+    }
+
     static LONG s_generating = 0;
     if (InterlockedCompareExchange(&s_generating, 1, 0) != 0)
     {
         return;
     }
 
-    m_reportFilePathScratch[0] = '\0';
-
+    storage->reportFilePathScratch[0] = '\0';
     // The JSON file sink is only enabled when DbgMiniDumpName supplied a
     // template AND the template expanded to a valid path. Otherwise the
     // crash report runs in compact-log-only mode: the JSON emitter still
     // executes (so it can keep its bookkeeping consistent) but writes go
     // to a no-op DiscardOutputCallback instead of an open fd.
-    bool jsonEnabled = m_reportPath[0] != '\0' &&
-        CrashReportHelpers::BuildReportPath(
-            m_reportFilePathScratch,
-            sizeof(m_reportFilePathScratch),
-            m_expandedReportPathScratch,
-            sizeof(m_expandedReportPathScratch),
-            m_numberScratch,
-            sizeof(m_numberScratch),
-            m_reportPath,
-            m_processName,
-            m_hostName);
+    bool jsonEnabled = storage->reportPath[0] != '\0' && BuildReportPath();
 
     int fd = -1;
     if (jsonEnabled)
     {
-        fd = open(m_reportFilePathScratch, O_WRONLY | O_CREAT | O_TRUNC, 0600);
+        fd = open(storage->reportFilePathScratch, O_WRONLY | O_CREAT | O_TRUNC, 0600);
         if (fd == -1)
         {
             jsonEnabled = false;
@@ -592,16 +597,16 @@ InProcCrashReporter::CreateReport(
     }
 
     InProcCrashReportCrashKind crashKind = static_cast<InProcCrashReportCrashKind>(
-        InterlockedExchange(&s_crashKind, static_cast<LONG>(InProcCrashReportCrashKind::Unknown)));
+        InterlockedExchange(&storage->crashKind, static_cast<LONG>(InProcCrashReportCrashKind::Unknown)));
 
-    s_outputContext.Init(fd);
+    storage->outputContext.Init(fd);
     if (jsonEnabled)
     {
-        m_jsonWriter.Init(&CrashReportOutputContext::ChunkCallback, &s_outputContext);
+        storage->jsonWriter.Init(&CrashReportOutputContext::ChunkCallback, &storage->outputContext);
     }
     else
     {
-        m_jsonWriter.Init(&CrashReportHelpers::DiscardOutputCallback, nullptr);
+        storage->jsonWriter.Init(&CrashReportHelpers::DiscardOutputCallback, nullptr);
     }
 
     BeginConsoleReport(signal);
@@ -616,19 +621,25 @@ InProcCrashReporter::EmitThreads(
     InProcCrashReportCrashKind crashKind,
     void* context)
 {
-    m_jsonWriter.OpenArray("threads");
+    InProcCrashReporterStorage* storage = s_storage;
+    if (storage == nullptr)
+    {
+        return;
+    }
+
+    storage->jsonWriter.OpenArray("threads");
     if (crashKind == InProcCrashReportCrashKind::StackOverflow)
     {
         EmitStackOverflowCrashThread();
     }
-    else if (m_enumerateThreadsCallback != nullptr)
+    else if (storage->enumerateThreadsCallback != nullptr)
     {
         uint64_t crashingTid = static_cast<uint64_t>(minipal_get_current_thread_id());
-        s_threadContext.Init(&m_jsonWriter, &s_consoleWriter, m_moduleInfoCallback, crashingTid, m_frameLimitPerThread, context);
+        storage->threadContext.Init(&storage->jsonWriter, &storage->consoleWriter, storage->moduleInfoCallback, crashingTid, storage->frameLimitPerThread, context);
 
-        s_threadContext.EnumerateThreads(m_enumerateThreadsCallback);
+        storage->threadContext.EnumerateThreads(storage->enumerateThreadsCallback);
 
-        if (s_threadContext.ThreadCount() == 0 || !s_threadContext.SawCrashThread())
+        if (storage->threadContext.ThreadCount() == 0 || !storage->threadContext.SawCrashThread())
         {
             EmitSynthesizedCrashThread(context, /*walkStack*/ false);
         }
@@ -637,7 +648,7 @@ InProcCrashReporter::EmitThreads(
     {
         EmitSynthesizedCrashThread(context, /*walkStack*/ true);
     }
-    m_jsonWriter.CloseArray(); // threads
+    storage->jsonWriter.CloseArray(); // threads
 }
 
 InProcCrashReporter&
@@ -647,18 +658,43 @@ InProcCrashReporter::GetInstance()
     return s_instance;
 }
 
-void
+const char*
+InProcCrashReporter::GetSignalNameAscii(int signal)
+{
+    switch (signal)
+    {
+        case SIGSEGV: return "SIGSEGV";
+        case SIGBUS:  return "SIGBUS";
+        case SIGFPE:  return "SIGFPE";
+        case SIGILL:  return "SIGILL";
+        case SIGABRT: return "SIGABRT";
+        case SIGTRAP: return "SIGTRAP";
+        case SIGTERM: return "SIGTERM";
+        default:      return "Unknown signal";
+    }
+}
+
+bool
 InProcCrashReporter::Initialize(
     const InProcCrashReporterSettings& settings)
 {
-    m_isManagedThreadCallback = settings.isManagedThreadCallback;
-    m_walkStackCallback = settings.walkStackCallback;
-    m_enumerateThreadsCallback = settings.enumerateThreadsCallback;
-    m_moduleInfoCallback = settings.moduleInfoCallback;
-    m_frameLimitPerThread = settings.frameLimitPerThread;
-    CrashReportHelpers::CopyString(m_reportPath, sizeof(m_reportPath), settings.reportPath);
+    if (!EnsureCrashReportStorage())
+    {
+        InProcCrashReportLogInitializationFailure(".NET crash report disabled: failed to allocate reporter storage");
+        return false;
+    }
 
-    m_processName[0] = '\0';
+    InProcCrashReporterStorage* storage = s_storage;
+    storage->isManagedThreadCallback = settings.isManagedThreadCallback;
+    storage->walkStackCallback = settings.walkStackCallback;
+    storage->enumerateThreadsCallback = settings.enumerateThreadsCallback;
+    storage->moduleInfoCallback = settings.moduleInfoCallback;
+    storage->frameLimitPerThread = settings.frameLimitPerThread;
+    storage->crashKind = static_cast<LONG>(InProcCrashReportCrashKind::Unknown);
+    storage->stackOverflowTrace.available = 0;
+    CrashReportHelpers::CopyString(storage->reportPath, sizeof(storage->reportPath), settings.reportPath);
+
+    storage->processName[0] = '\0';
 #if defined(__ANDROID__)
     // On Android every app forks from the Zygote, so /proc/self/exe always
     // resolves to /system/bin/app_process64. /proc/self/cmdline holds the
@@ -667,20 +703,20 @@ InProcCrashReporter::Initialize(
     int cmdlineFd = open("/proc/self/cmdline", O_RDONLY | O_CLOEXEC);
     if (cmdlineFd >= 0)
     {
-        ssize_t n = read(cmdlineFd, m_processNameScratch, sizeof(m_processNameScratch) - 1);
+        ssize_t n = read(cmdlineFd, storage->processNameScratch, sizeof(storage->processNameScratch) - 1);
         close(cmdlineFd);
         if (n > 0)
         {
-            m_processNameScratch[n] = '\0';
-            CrashReportHelpers::CopyString(m_processName, sizeof(m_processName), CrashReportHelpers::GetFilename(m_processNameScratch));
+            storage->processNameScratch[n] = '\0';
+            CrashReportHelpers::CopyString(storage->processName, sizeof(storage->processName), CrashReportHelpers::GetFilename(storage->processNameScratch));
         }
     }
 #endif
-    if (m_processName[0] == '\0')
+    if (storage->processName[0] == '\0')
     {
         if (char* exePath = minipal_getexepath())
         {
-            CrashReportHelpers::CopyString(m_processName, sizeof(m_processName), CrashReportHelpers::GetFilename(exePath));
+            CrashReportHelpers::CopyString(storage->processName, sizeof(storage->processName), CrashReportHelpers::GetFilename(exePath));
             free(exePath);
         }
     }
@@ -688,22 +724,23 @@ InProcCrashReporter::Initialize(
     // Cache hostname here because gethostname is not on the POSIX
     // async-signal-safe list; the dump-template expander needs it for %h
     // expansion at crash time.
-    m_hostName[0] = '\0';
-    if (gethostname(m_hostName, sizeof(m_hostName) - 1) == 0)
+    storage->hostName[0] = '\0';
+    if (gethostname(storage->hostName, sizeof(storage->hostName) - 1) == 0)
     {
-        m_hostName[sizeof(m_hostName) - 1] = '\0';
+        storage->hostName[sizeof(storage->hostName) - 1] = '\0';
     }
     else
     {
-        m_hostName[0] = '\0';
+        storage->hostName[0] = '\0';
     }
 
-#ifdef __APPLE__
+#if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
     // Cache sysctl values at Initialize because sysctl/sysctlbyname is not on POSIX's
     // async-signal-safe list; CreateReport reads these from the signal-handler path.
-    CacheSysctlString("kern.osproductversion", m_osVersion, sizeof(m_osVersion));
-    CacheSysctlString("hw.model", m_systemModel, sizeof(m_systemModel));
+    CacheSysctlString("kern.osproductversion", storage->osVersion, sizeof(storage->osVersion));
+    CacheSysctlString("hw.model", storage->systemModel, sizeof(storage->systemModel));
 #endif
+    return true;
 }
 
 void
@@ -718,7 +755,10 @@ InProcCrashReportSignalDispatcher(int signal, void* siginfo, void* context)
 void
 InProcCrashReportInitialize(const InProcCrashReporterSettings& settings)
 {
-    InProcCrashReporter::GetInstance().Initialize(settings);
+    if (!InProcCrashReporter::GetInstance().Initialize(settings))
+    {
+        return;
+    }
 
     // Register last so PAL only observes the dispatcher after the reporter
     // singleton is fully populated (mirrors the publication ordering used by
@@ -727,9 +767,33 @@ InProcCrashReportInitialize(const InProcCrashReporterSettings& settings)
 }
 
 void
+InProcCrashReportLogInitializationFailure(const char* message)
+{
+    if (message == nullptr)
+    {
+        return;
+    }
+
+#if defined(__ANDROID__)
+    __android_log_write(ANDROID_LOG_ERROR, CRASHREPORT_LOG_TAG, message);
+#elif defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
+    minipal_log_write_error(message);
+    minipal_log_write_error("\n");
+#else
+    (void)message;
+#endif
+}
+
+void
 InProcCrashReportSetCrashKind(InProcCrashReportCrashKind crashKind)
 {
-    InterlockedExchange(&s_crashKind, static_cast<LONG>(crashKind));
+    InProcCrashReporterStorage* storage = s_storage;
+    if (storage == nullptr)
+    {
+        return;
+    }
+
+    InterlockedExchange(&storage->crashKind, static_cast<LONG>(crashKind));
 }
 
 void
@@ -737,11 +801,18 @@ InProcCrashReportBeginStackOverflowTrace(
     uint64_t crashingTid,
     uint32_t totalFrameCount)
 {
-    InterlockedExchange(&s_stackOverflowTrace.available, 0);
-    s_stackOverflowTrace.crashingTid = crashingTid;
-    s_stackOverflowTrace.totalFrameCount = totalFrameCount;
-    s_stackOverflowTrace.frameCount = 0;
-    s_stackOverflowTrace.truncatedFrameCount = 0;
+    InProcCrashReporterStorage* storage = s_storage;
+    if (storage == nullptr)
+    {
+        return;
+    }
+
+    StackOverflowTraceSnapshot& trace = storage->stackOverflowTrace;
+    InterlockedExchange(&trace.available, 0);
+    trace.crashingTid = crashingTid;
+    trace.totalFrameCount = totalFrameCount;
+    trace.frameCount = 0;
+    trace.truncatedFrameCount = 0;
 }
 
 void
@@ -750,23 +821,35 @@ InProcCrashReportAddStackOverflowTraceFrame(
     uint32_t repeatCount,
     uint32_t repeatSequenceLength)
 {
-    if (s_stackOverflowTrace.frameCount >= CRASHREPORT_STACK_OVERFLOW_MAX_TRACE_FRAMES)
+    InProcCrashReporterStorage* storage = s_storage;
+    if (storage == nullptr)
     {
-        ++s_stackOverflowTrace.truncatedFrameCount;
         return;
     }
 
-    StackOverflowTraceFrame& frame = s_stackOverflowTrace.frames[s_stackOverflowTrace.frameCount++];
+    StackOverflowTraceSnapshot& trace = storage->stackOverflowTrace;
+    if (trace.frameCount >= CRASHREPORT_STACK_OVERFLOW_MAX_TRACE_FRAMES)
+    {
+        trace.truncatedFrameCount++;
+        return;
+    }
+
+    StackOverflowTraceFrame& frame = trace.frames[trace.frameCount++];
     CopyStringToBuffer(frame.methodName, sizeof(frame.methodName), methodName);
     frame.repeatCount = repeatCount;
     frame.repeatSequenceLength = repeatSequenceLength;
 }
 
 void
-InProcCrashReportCompleteStackOverflowTrace(uint32_t truncatedFrameCount)
+InProcCrashReportEndStackOverflowTrace()
 {
-    s_stackOverflowTrace.truncatedFrameCount += truncatedFrameCount;
-    InterlockedExchange(&s_stackOverflowTrace.available, 1);
+    InProcCrashReporterStorage* storage = s_storage;
+    if (storage == nullptr)
+    {
+        return;
+    }
+
+    InterlockedExchange(&storage->stackOverflowTrace.available, 1);
 }
 
 bool
@@ -851,17 +934,14 @@ CrashReportOutputContext::ChunkCallback(
 // specifiers are rejected (return 0) to match createdump and to avoid
 // silently producing diverging file names from the same template.
 size_t
-CrashReportHelpers::ExpandDumpTemplate(
+InProcCrashReporter::ExpandDumpTemplate(
     char* buffer,
     size_t bufferSize,
-    char* numberBuffer,
-    size_t numberBufferSize,
-    const char* pattern,
-    const char* processName,
-    const char* hostName)
+    const char* pattern)
 {
-    if (buffer == nullptr || bufferSize == 0 ||
-        numberBuffer == nullptr || numberBufferSize == 0 ||
+    InProcCrashReporterStorage* storage = s_storage;
+    if (storage == nullptr ||
+        buffer == nullptr || bufferSize == 0 ||
         pattern == nullptr)
     {
         return 0;
@@ -882,7 +962,6 @@ CrashReportHelpers::ExpandDumpTemplate(
         char specifier = *pattern;
 
         const char* substitution = nullptr;
-        numberBuffer[0] = '\0';
 
         switch (specifier)
         {
@@ -896,28 +975,19 @@ CrashReportHelpers::ExpandDumpTemplate(
 
             case 'p':
             case 'd':
-                if (SignalSafeFormat::FormatUnsignedDecimal(numberBuffer, numberBufferSize, pid) == 0)
-                {
-                    return 0;
-                }
-                substitution = numberBuffer;
+                substitution = storage->formatter.FormatUnsignedDecimal(pid);
                 break;
 
             case 'e':
-                substitution = (processName != nullptr && processName[0] != '\0') ? processName : nullptr;
+                substitution = (storage->processName[0] != '\0') ? storage->processName : nullptr;
                 break;
 
             case 'h':
-                substitution = (hostName != nullptr && hostName[0] != '\0') ? hostName : nullptr;
+                substitution = (storage->hostName[0] != '\0') ? storage->hostName : nullptr;
                 break;
 
             case 't':
-                if (SignalSafeFormat::FormatUnsignedDecimal(
-                        numberBuffer, numberBufferSize, static_cast<uint64_t>(time(nullptr))) == 0)
-                {
-                    return 0;
-                }
-                substitution = numberBuffer;
+                substitution = storage->formatter.FormatUnsignedDecimal(static_cast<uint64_t>(time(nullptr)));
                 break;
 
             default:
@@ -961,44 +1031,29 @@ CrashReportHelpers::ExpandDumpTemplate(
 }
 
 bool
-CrashReportHelpers::BuildReportPath(
-    char* buffer,
-    size_t bufferSize,
-    char* expandedBuffer,
-    size_t expandedBufferSize,
-    char* numberBuffer,
-    size_t numberBufferSize,
-    const char* dumpPath,
-    const char* processName,
-    const char* hostName)
+InProcCrashReporter::BuildReportPath()
 {
-    if (buffer == nullptr || bufferSize == 0 ||
-        expandedBuffer == nullptr || expandedBufferSize == 0 ||
-        numberBuffer == nullptr || numberBufferSize == 0 ||
-        dumpPath == nullptr || dumpPath[0] == '\0')
+    InProcCrashReporterStorage* storage = s_storage;
+    if (storage == nullptr || storage->reportPath[0] == '\0')
     {
         return false;
     }
 
     size_t expandedLen = ExpandDumpTemplate(
-        expandedBuffer,
-        expandedBufferSize,
-        numberBuffer,
-        numberBufferSize,
-        dumpPath,
-        processName,
-        hostName);
+        storage->expandedReportPathScratch,
+        sizeof(storage->expandedReportPathScratch),
+        storage->reportPath);
     if (expandedLen == 0)
     {
         return false;
     }
 
     size_t pos = 0;
-    if (!AppendString(buffer, bufferSize, &pos, expandedBuffer))
+    if (!CrashReportHelpers::AppendString(storage->reportFilePathScratch, sizeof(storage->reportFilePathScratch), &pos, storage->expandedReportPathScratch))
     {
         return false;
     }
-    if (!AppendString(buffer, bufferSize, &pos, ".crashreport.json"))
+    if (!CrashReportHelpers::AppendString(storage->reportFilePathScratch, sizeof(storage->reportFilePathScratch), &pos, ".crashreport.json"))
     {
         return false;
     }
@@ -1093,9 +1148,9 @@ CrashReportHelpers::GetInstructionPointer(
     }
 
     ucontext_t* ucontext = reinterpret_cast<ucontext_t*>(context);
-#if defined(__APPLE__) && defined(__x86_64__)
+#if (defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)) && defined(__x86_64__)
     return static_cast<uint64_t>(ucontext->uc_mcontext->__ss.__rip);
-#elif defined(__APPLE__) && defined(__aarch64__)
+#elif (defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)) && defined(__aarch64__)
     return reinterpret_cast<uint64_t>(arm_thread_state64_get_pc_fptr(ucontext->uc_mcontext->__ss));
 #elif defined(__x86_64__)
     return static_cast<uint64_t>(ucontext->uc_mcontext.gregs[REG_RIP]);
@@ -1118,9 +1173,9 @@ CrashReportHelpers::GetStackPointer(
     }
 
     ucontext_t* ucontext = reinterpret_cast<ucontext_t*>(context);
-#if defined(__APPLE__) && defined(__x86_64__)
+#if (defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)) && defined(__x86_64__)
     return static_cast<uint64_t>(ucontext->uc_mcontext->__ss.__rsp);
-#elif defined(__APPLE__) && defined(__aarch64__)
+#elif (defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)) && defined(__aarch64__)
     return static_cast<uint64_t>(arm_thread_state64_get_sp(ucontext->uc_mcontext->__ss));
 #elif defined(__x86_64__)
     return static_cast<uint64_t>(ucontext->uc_mcontext.gregs[REG_RSP]);
@@ -1143,9 +1198,9 @@ CrashReportHelpers::GetFramePointer(
     }
 
     ucontext_t* ucontext = reinterpret_cast<ucontext_t*>(context);
-#if defined(__APPLE__) && defined(__x86_64__)
+#if (defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)) && defined(__x86_64__)
     return static_cast<uint64_t>(ucontext->uc_mcontext->__ss.__rbp);
-#elif defined(__APPLE__) && defined(__aarch64__)
+#elif (defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)) && defined(__aarch64__)
     return static_cast<uint64_t>(arm_thread_state64_get_fp(ucontext->uc_mcontext->__ss));
 #elif defined(__x86_64__)
     return static_cast<uint64_t>(ucontext->uc_mcontext.gregs[REG_RBP]);
@@ -1281,12 +1336,12 @@ CrashReportHelpers::WriteFrameToJson(
     const char* methodName,
     const char* className,
     const char* moduleName,
-    uint32_t nativeOffset,
-    uint32_t token,
-    uint32_t ilOffset,
     uint32_t moduleTimestamp,
     uint32_t moduleSize,
-    const GUID* moduleGuid)
+    const GUID* moduleGuid,
+    uint32_t nativeOffset,
+    uint32_t token,
+    uint32_t ilOffset)
 {
     if (writer == nullptr)
     {
@@ -1330,8 +1385,12 @@ CrashReportHelpers::WriteFrameToJson(
         }
         if (moduleGuid != nullptr)
         {
-            minipal_guid_as_string(*moduleGuid, s_moduleGuidScratch, sizeof(s_moduleGuidScratch));
-            writer->WriteString("guid", s_moduleGuidScratch);
+            InProcCrashReporterStorage* storage = s_storage;
+            if (storage != nullptr)
+            {
+                minipal_guid_as_string(*moduleGuid, storage->moduleGuidScratch, sizeof(storage->moduleGuidScratch));
+                writer->WriteString("guid", storage->moduleGuidScratch);
+            }
         }
     }
     else
@@ -1591,12 +1650,12 @@ CrashReportHelpers::WriteFrame(
     const char* className,
     const char* moduleName,
     const void* moduleHandle,
-    uint32_t nativeOffset,
-    uint32_t token,
-    uint32_t ilOffset,
     uint32_t moduleTimestamp,
     uint32_t moduleSize,
     const GUID* moduleGuid,
+    uint32_t nativeOffset,
+    uint32_t token,
+    uint32_t ilOffset,
     void* ctx)
 {
     FrameContext* frameContext = reinterpret_cast<FrameContext*>(ctx);
@@ -1620,12 +1679,12 @@ CrashReportHelpers::WriteFrame(
         className,
         moduleName,
         moduleHandle,
-        nativeOffset,
-        token,
-        ilOffset,
         moduleTimestamp,
         moduleSize,
-        moduleGuid);
+        moduleGuid,
+        nativeOffset,
+        token,
+        ilOffset);
 }
 
 void
@@ -1644,12 +1703,12 @@ CrashReportHelpers::WriteFrameToReport(
     const char* className,
     const char* moduleName,
     const void* moduleHandle,
-    uint32_t nativeOffset,
-    uint32_t token,
-    uint32_t ilOffset,
     uint32_t moduleTimestamp,
     uint32_t moduleSize,
-    const GUID* moduleGuid)
+    const GUID* moduleGuid,
+    uint32_t nativeOffset,
+    uint32_t token,
+    uint32_t ilOffset)
 {
     uint32_t frameIndex = currentThreadFrameCount != nullptr
         ? *currentThreadFrameCount
@@ -1661,14 +1720,15 @@ CrashReportHelpers::WriteFrameToReport(
         methodNameBuffer,
         methodNameBufferSize,
         ip, stackPointer, methodName, className, moduleName,
-        nativeOffset, token, ilOffset, moduleTimestamp, moduleSize, moduleGuid);
+        moduleTimestamp, moduleSize, moduleGuid, nativeOffset, token, ilOffset);
 
     bool consoleCapped = frameLimitPerThread != 0 &&
         frameIndex >= frameLimitPerThread;
     if (!consoleCapped)
     {
-        int moduleIndex = moduleInfoCallback != nullptr && moduleHandle != nullptr
-            ? s_moduleTable.GetOrAddIndex(moduleHandle)
+        InProcCrashReporterStorage* storage = s_storage;
+        int moduleIndex = storage != nullptr && moduleInfoCallback != nullptr && moduleHandle != nullptr
+            ? storage->moduleTable.GetOrAddIndex(moduleHandle)
             : -1;
         WriteFrameToConsole(consoleWriter,
             methodNameBuffer,
@@ -1695,12 +1755,12 @@ ThreadEnumerationContext::OnFrame(
     const char* className,
     const char* moduleName,
     const void* moduleHandle,
-    uint32_t nativeOffset,
-    uint32_t token,
-    uint32_t ilOffset,
     uint32_t moduleTimestamp,
     uint32_t moduleSize,
-    const GUID* moduleGuid)
+    const GUID* moduleGuid,
+    uint32_t nativeOffset,
+    uint32_t token,
+    uint32_t ilOffset)
 {
     CrashReportHelpers::WriteFrameToReport(
         m_jsonWriter,
@@ -1717,12 +1777,12 @@ ThreadEnumerationContext::OnFrame(
         className,
         moduleName,
         moduleHandle,
-        nativeOffset,
-        token,
-        ilOffset,
         moduleTimestamp,
         moduleSize,
-        moduleGuid);
+        moduleGuid,
+        nativeOffset,
+        token,
+        ilOffset);
 }
 
 void
@@ -1733,19 +1793,31 @@ ThreadEnumerationContext::FrameCallback(
     const char* className,
     const char* moduleName,
     const void* moduleHandle,
-    uint32_t nativeOffset,
-    uint32_t token,
-    uint32_t ilOffset,
     uint32_t moduleTimestamp,
     uint32_t moduleSize,
     const GUID* moduleGuid,
+    uint32_t nativeOffset,
+    uint32_t token,
+    uint32_t ilOffset,
     void* ctx)
 {
     if (ctx == nullptr)
     {
         return;
     }
-    reinterpret_cast<ThreadEnumerationContext*>(ctx)->OnFrame(ip, stackPointer, methodName, className, moduleName, moduleHandle, nativeOffset, token, ilOffset, moduleTimestamp, moduleSize, moduleGuid);
+    reinterpret_cast<ThreadEnumerationContext*>(ctx)->OnFrame(
+        ip,
+        stackPointer,
+        methodName,
+        className,
+        moduleName,
+        moduleHandle,
+        moduleTimestamp,
+        moduleSize,
+        moduleGuid,
+        nativeOffset,
+        token,
+        ilOffset);
 }
 
 void
@@ -1861,50 +1933,63 @@ InProcCrashReporter::EmitSynthesizedCrashThread(
     void* context,
     bool walkStack)
 {
+    InProcCrashReporterStorage* storage = s_storage;
+    if (storage == nullptr)
+    {
+        return;
+    }
+
     uint64_t crashingTid = static_cast<uint64_t>(minipal_get_current_thread_id());
 
-    bool isManagedThread = m_isManagedThreadCallback != nullptr && m_isManagedThreadCallback();
-    CrashReportHelpers::BeginJsonThreadBlock(&m_jsonWriter,
+    bool isManagedThread = storage->isManagedThreadCallback != nullptr && storage->isManagedThreadCallback();
+    CrashReportHelpers::BeginJsonThreadBlock(&storage->jsonWriter,
         crashingTid, isManagedThread, /*isCrashThread*/ true, nullptr, 0);
 
-    CrashReportHelpers::WriteRegistersToJson(&m_jsonWriter, context);
-    CrashReportHelpers::BeginJsonStackFrames(&m_jsonWriter, /*writeCrashSiteFrame*/ true, context);
+    CrashReportHelpers::WriteRegistersToJson(&storage->jsonWriter, context);
+    CrashReportHelpers::BeginJsonStackFrames(&storage->jsonWriter, /*writeCrashSiteFrame*/ true, context);
 
-    CrashReportHelpers::BeginConsoleThreadBlock(&s_consoleWriter, crashingTid, /*isCrashThread*/ true);
+    CrashReportHelpers::BeginConsoleThreadBlock(&storage->consoleWriter, crashingTid, /*isCrashThread*/ true);
 
     uint32_t synthesizedFrameCount = 0;
     uint32_t synthesizedDroppedCount = 0;
-    if (walkStack && m_walkStackCallback != nullptr)
+    if (walkStack && storage->walkStackCallback != nullptr)
     {
         CrashReportHelpers::FrameContext frameContext =
         {
-            &m_jsonWriter,
-            &s_consoleWriter,
-            m_moduleInfoCallback,
+            &storage->jsonWriter,
+            &storage->consoleWriter,
+            storage->moduleInfoCallback,
             &synthesizedFrameCount,
             &synthesizedDroppedCount,
-            m_frameLimitPerThread,
-            m_methodNameScratch,
-            sizeof(m_methodNameScratch),
+            storage->frameLimitPerThread,
+            storage->methodNameScratch,
+            sizeof(storage->methodNameScratch),
         };
-        m_walkStackCallback(&CrashReportHelpers::WriteFrame, &frameContext);
+        storage->walkStackCallback(&CrashReportHelpers::WriteFrame, &frameContext);
     }
-    CrashReportHelpers::EndConsoleThreadBlock(&s_consoleWriter,
+    CrashReportHelpers::EndConsoleThreadBlock(&storage->consoleWriter,
         synthesizedFrameCount, synthesizedDroppedCount);
 
-    CrashReportHelpers::EndJsonStackFrames(&m_jsonWriter);
-    CrashReportHelpers::EndJsonThreadBlock(&m_jsonWriter);
+    CrashReportHelpers::EndJsonStackFrames(&storage->jsonWriter);
+    CrashReportHelpers::EndJsonThreadBlock(&storage->jsonWriter);
 }
 
 void
 InProcCrashReporter::EmitStackOverflowCrashThread()
 {
-    bool stackOverflowTraceAvailable = s_stackOverflowTrace.available != 0;
-    uint64_t crashingTid = stackOverflowTraceAvailable && s_stackOverflowTrace.crashingTid != 0
-        ? s_stackOverflowTrace.crashingTid
+    InProcCrashReporterStorage* storage = s_storage;
+    if (storage == nullptr)
+    {
+        return;
+    }
+
+    StackOverflowTraceSnapshot& trace = storage->stackOverflowTrace;
+    bool stackOverflowTraceAvailable = trace.available != 0;
+    uint64_t crashingTid = stackOverflowTraceAvailable && trace.crashingTid != 0
+        ? trace.crashingTid
         : static_cast<uint64_t>(minipal_get_current_thread_id());
 
-    CrashReportHelpers::BeginJsonThreadBlock(&m_jsonWriter,
+    CrashReportHelpers::BeginJsonThreadBlock(&storage->jsonWriter,
         crashingTid,
         /*isManagedThread*/ true,
         /*isCrashThread*/ true,
@@ -1912,27 +1997,27 @@ InProcCrashReporter::EmitStackOverflowCrashThread()
         CRASHREPORT_COR_E_STACKOVERFLOW);
     if (stackOverflowTraceAvailable)
     {
-        m_jsonWriter.WriteDecimalAsString("stack_overflow_total_frames", s_stackOverflowTrace.totalFrameCount);
-        if (s_stackOverflowTrace.truncatedFrameCount != 0)
+        storage->jsonWriter.WriteDecimalAsString("stack_overflow_total_frames", trace.totalFrameCount);
+        if (trace.truncatedFrameCount != 0)
         {
-            m_jsonWriter.WriteDecimalAsString("stack_overflow_trace_truncated_frames", s_stackOverflowTrace.truncatedFrameCount);
+            storage->jsonWriter.WriteDecimalAsString("stack_overflow_trace_truncated_frames", trace.truncatedFrameCount);
         }
     }
     else
     {
-        m_jsonWriter.WriteString("stack_frames_unavailable_reason", CRASHREPORT_STACK_OVERFLOW_TRACE_UNAVAILABLE_REASON);
+        storage->jsonWriter.WriteString("stack_frames_unavailable_reason", CRASHREPORT_STACK_OVERFLOW_TRACE_UNAVAILABLE_REASON);
     }
 
-    CrashReportHelpers::BeginJsonStackFrames(&m_jsonWriter, /*writeCrashSiteFrame*/ false, nullptr);
+    CrashReportHelpers::BeginJsonStackFrames(&storage->jsonWriter, /*writeCrashSiteFrame*/ false, nullptr);
     if (stackOverflowTraceAvailable)
     {
-        for (uint32_t i = 0; i < s_stackOverflowTrace.frameCount;)
+        for (uint32_t i = 0; i < trace.frameCount;)
         {
-            StackOverflowTraceFrame& frame = s_stackOverflowTrace.frames[i];
+            StackOverflowTraceFrame& frame = trace.frames[i];
             uint32_t repeatSequenceLength = frame.repeatSequenceLength;
             bool isRepeatSequence = frame.repeatCount > 1 && repeatSequenceLength != 0;
             CrashReportHelpers::WriteStackOverflowFrameToJson(
-                &m_jsonWriter, frame, isRepeatSequence);
+                &storage->jsonWriter, frame, isRepeatSequence);
             ++i;
 
             if (!isRepeatSequence)
@@ -1941,95 +2026,95 @@ InProcCrashReporter::EmitStackOverflowCrashThread()
             }
 
             uint32_t sequenceEnd = i + repeatSequenceLength - 1;
-            if (sequenceEnd > s_stackOverflowTrace.frameCount)
+            if (sequenceEnd > trace.frameCount)
             {
-                sequenceEnd = s_stackOverflowTrace.frameCount;
+                sequenceEnd = trace.frameCount;
             }
 
             for (; i < sequenceEnd; ++i)
             {
                 CrashReportHelpers::WriteStackOverflowFrameToJson(
-                    &m_jsonWriter, s_stackOverflowTrace.frames[i], false);
+                    &storage->jsonWriter, trace.frames[i], false);
             }
         }
     }
-    CrashReportHelpers::EndJsonStackFrames(&m_jsonWriter);
-    CrashReportHelpers::EndJsonThreadBlock(&m_jsonWriter);
+    CrashReportHelpers::EndJsonStackFrames(&storage->jsonWriter);
+    CrashReportHelpers::EndJsonThreadBlock(&storage->jsonWriter);
 
-    CrashReportHelpers::BeginConsoleThreadBlock(&s_consoleWriter, crashingTid, /*isCrashThread*/ true);
-    s_consoleWriter.AppendStr("  managed exception: ");
-    s_consoleWriter.AppendStr(CRASHREPORT_STACK_OVERFLOW_EXCEPTION_TYPE);
-    s_consoleWriter.AppendStr(" (0x");
-    s_consoleWriter.AppendHex(static_cast<uint64_t>(CRASHREPORT_COR_E_STACKOVERFLOW));
-    s_consoleWriter.AppendChar(')');
-    s_consoleWriter.EndLine();
+    CrashReportHelpers::BeginConsoleThreadBlock(&storage->consoleWriter, crashingTid, /*isCrashThread*/ true);
+    storage->consoleWriter.AppendStr("  managed exception: ");
+    storage->consoleWriter.AppendStr(CRASHREPORT_STACK_OVERFLOW_EXCEPTION_TYPE);
+    storage->consoleWriter.AppendStr(" (0x");
+    storage->consoleWriter.AppendHex(static_cast<uint64_t>(CRASHREPORT_COR_E_STACKOVERFLOW));
+    storage->consoleWriter.AppendChar(')');
+    storage->consoleWriter.EndLine();
 
     if (!stackOverflowTraceAvailable)
     {
-        s_consoleWriter.WriteLine("  stack overflow trace unavailable");
-        CrashReportHelpers::EndConsoleThreadBlock(&s_consoleWriter, 0, 0);
+        storage->consoleWriter.WriteLine("  stack overflow trace unavailable");
+        CrashReportHelpers::EndConsoleThreadBlock(&storage->consoleWriter, 0, 0);
         return;
     }
 
-    s_consoleWriter.AppendStr("  stack overflow frames: ");
-    s_consoleWriter.AppendDecimal(static_cast<uint64_t>(s_stackOverflowTrace.totalFrameCount));
-    s_consoleWriter.EndLine();
+    storage->consoleWriter.AppendStr("  stack overflow frames: ");
+    storage->consoleWriter.AppendDecimal(static_cast<uint64_t>(trace.totalFrameCount));
+    storage->consoleWriter.EndLine();
 
     uint32_t consoleFrameCount = 0;
-    uint32_t consoleDroppedCount = s_stackOverflowTrace.truncatedFrameCount;
-    for (uint32_t i = 0; i < s_stackOverflowTrace.frameCount;)
+    uint32_t consoleDroppedCount = trace.truncatedFrameCount;
+    for (uint32_t i = 0; i < trace.frameCount;)
     {
-        StackOverflowTraceFrame& frame = s_stackOverflowTrace.frames[i];
+        StackOverflowTraceFrame& frame = trace.frames[i];
         uint32_t repeatSequenceLength = frame.repeatSequenceLength;
         if (frame.repeatCount > 1 && repeatSequenceLength != 0)
         {
             uint32_t sequenceEnd = i + repeatSequenceLength;
-            if (sequenceEnd > s_stackOverflowTrace.frameCount)
+            if (sequenceEnd > trace.frameCount)
             {
-                sequenceEnd = s_stackOverflowTrace.frameCount;
+                sequenceEnd = trace.frameCount;
             }
 
-            if (m_frameLimitPerThread != 0 && consoleFrameCount >= m_frameLimitPerThread)
+            if (storage->frameLimitPerThread != 0 && consoleFrameCount >= storage->frameLimitPerThread)
             {
                 consoleDroppedCount += sequenceEnd - i;
                 i = sequenceEnd;
                 continue;
             }
 
-            s_consoleWriter.AppendStr("  repeated ");
-            s_consoleWriter.AppendDecimal(static_cast<uint64_t>(frame.repeatCount));
-            s_consoleWriter.AppendStr(" times:");
-            s_consoleWriter.EndLine();
+            storage->consoleWriter.AppendStr("  repeated ");
+            storage->consoleWriter.AppendDecimal(static_cast<uint64_t>(frame.repeatCount));
+            storage->consoleWriter.AppendStr(" times:");
+            storage->consoleWriter.EndLine();
 
             for (; i < sequenceEnd; ++i)
             {
-                if (m_frameLimitPerThread != 0 && consoleFrameCount >= m_frameLimitPerThread)
+                if (storage->frameLimitPerThread != 0 && consoleFrameCount >= storage->frameLimitPerThread)
                 {
                     consoleDroppedCount++;
                     continue;
                 }
 
                 CrashReportHelpers::WriteStackOverflowFrameToConsole(
-                    &s_consoleWriter, consoleFrameCount, s_stackOverflowTrace.frames[i]);
+                    &storage->consoleWriter, consoleFrameCount, trace.frames[i]);
                 consoleFrameCount++;
             }
 
             continue;
         }
 
-        if (m_frameLimitPerThread != 0 && consoleFrameCount >= m_frameLimitPerThread)
+        if (storage->frameLimitPerThread != 0 && consoleFrameCount >= storage->frameLimitPerThread)
         {
             consoleDroppedCount++;
         }
         else
         {
-            CrashReportHelpers::WriteStackOverflowFrameToConsole(&s_consoleWriter, consoleFrameCount, frame);
+            CrashReportHelpers::WriteStackOverflowFrameToConsole(&storage->consoleWriter, consoleFrameCount, frame);
             consoleFrameCount++;
         }
         ++i;
     }
 
-    CrashReportHelpers::EndConsoleThreadBlock(&s_consoleWriter,
+    CrashReportHelpers::EndConsoleThreadBlock(&storage->consoleWriter,
         consoleFrameCount, consoleDroppedCount);
 }
 
@@ -2038,66 +2123,78 @@ InProcCrashReporter::EmitStackOverflowCrashThread()
 void
 InProcCrashReporter::BeginConsoleReport(int signal)
 {
-    s_consoleWriter.WriteSeparator();
-    s_consoleWriter.AppendStr(".NET Crash Report v");
-    s_consoleWriter.AppendStr(CRASHREPORT_PROTOCOL_VERSION);
-    s_consoleWriter.EndLine();
-
-    CrashReportHelpers::GetVersionString(s_versionScratch, sizeof(s_versionScratch));
-    if (s_versionScratch[0] != '\0')
+    InProcCrashReporterStorage* storage = s_storage;
+    if (storage == nullptr)
     {
-        s_consoleWriter.WriteKeyValueStr("Build", s_versionScratch);
+        return;
     }
 
-    s_consoleWriter.WriteKeyValueStr("ABI", CRASHREPORT_ARCHITECTURE_NAME);
+    storage->consoleWriter.WriteSeparator();
+    storage->consoleWriter.AppendStr(".NET Crash Report v");
+    storage->consoleWriter.AppendStr(CRASHREPORT_PROTOCOL_VERSION);
+    storage->consoleWriter.EndLine();
 
-    if (m_processName[0] != '\0')
+    CrashReportHelpers::GetVersionString(storage->versionScratch, sizeof(storage->versionScratch));
+    if (storage->versionScratch[0] != '\0')
     {
-        s_consoleWriter.WriteKeyValueStr("Cmdline", m_processName);
+        storage->consoleWriter.WriteKeyValueStr("Build", storage->versionScratch);
     }
 
-    s_consoleWriter.WriteKeyValueDecimal("pid", static_cast<uint64_t>(GetCurrentProcessId()));
+    storage->consoleWriter.WriteKeyValueStr("ABI", CRASHREPORT_ARCHITECTURE_NAME);
 
-    s_consoleWriter.AppendStr("signal ");
-    s_consoleWriter.AppendSignedDecimal(signal);
-    s_consoleWriter.AppendStr(" (");
-    s_consoleWriter.AppendStr(GetSignalNameAscii(signal));
-    s_consoleWriter.AppendChar(')');
-    s_consoleWriter.EndLine();
+    if (storage->processName[0] != '\0')
+    {
+        storage->consoleWriter.WriteKeyValueStr("Cmdline", storage->processName);
+    }
+
+    storage->consoleWriter.WriteKeyValueDecimal("pid", static_cast<uint64_t>(GetCurrentProcessId()));
+
+    storage->consoleWriter.AppendStr("signal ");
+    storage->consoleWriter.AppendSignedDecimal(signal);
+    storage->consoleWriter.AppendStr(" (");
+    storage->consoleWriter.AppendStr(GetSignalNameAscii(signal));
+    storage->consoleWriter.AppendChar(')');
+    storage->consoleWriter.EndLine();
 }
 
 void
 InProcCrashReporter::EndConsoleReport()
 {
-    if (s_moduleTable.Count() != 0)
+    InProcCrashReporterStorage* storage = s_storage;
+    if (storage == nullptr)
     {
-        s_consoleWriter.WriteBlank();
-        s_consoleWriter.WriteLine("modules:");
-        for (size_t i = 0; i < s_moduleTable.Count(); ++i)
+        return;
+    }
+
+    if (storage->moduleTable.Count() != 0)
+    {
+        storage->consoleWriter.WriteBlank();
+        storage->consoleWriter.WriteLine("modules:");
+        for (size_t i = 0; i < storage->moduleTable.Count(); ++i)
         {
-            s_consoleWriter.AppendStr("  [");
-            s_consoleWriter.AppendDecimal(static_cast<uint64_t>(i));
-            s_consoleWriter.AppendStr("] ");
+            storage->consoleWriter.AppendStr("  [");
+            storage->consoleWriter.AppendDecimal(static_cast<uint64_t>(i));
+            storage->consoleWriter.AppendStr("] ");
             const char* moduleName = nullptr;
             GUID moduleGuid;
-            if (m_moduleInfoCallback != nullptr &&
-                m_moduleInfoCallback(s_moduleTable.ModuleHandle(i), &moduleName, &moduleGuid) &&
+            if (storage->moduleInfoCallback != nullptr &&
+                storage->moduleInfoCallback(storage->moduleTable.ModuleHandle(i), &moduleName, &moduleGuid) &&
                 HasModuleName(moduleName))
             {
-                s_consoleWriter.AppendStr(CrashReportHelpers::GetFilename(moduleName));
-                s_consoleWriter.AppendChar(' ');
-                minipal_guid_as_string(moduleGuid, s_moduleGuidScratch, sizeof(s_moduleGuidScratch));
-                s_consoleWriter.AppendStr(s_moduleGuidScratch);
+                storage->consoleWriter.AppendStr(CrashReportHelpers::GetFilename(moduleName));
+                storage->consoleWriter.AppendChar(' ');
+                minipal_guid_as_string(moduleGuid, storage->moduleGuidScratch, sizeof(storage->moduleGuidScratch));
+                storage->consoleWriter.AppendStr(storage->moduleGuidScratch);
             }
             else
             {
-                s_consoleWriter.AppendStr("<unknown>");
+                storage->consoleWriter.AppendStr("<unknown>");
             }
-            s_consoleWriter.EndLine();
+            storage->consoleWriter.EndLine();
         }
     }
 
-    s_consoleWriter.WriteSeparator();
+    storage->consoleWriter.WriteSeparator();
 }
 
 // --- InProcCrashReporter: JSON report lifecycle ----------------------------
@@ -2105,22 +2202,28 @@ InProcCrashReporter::EndConsoleReport()
 void
 InProcCrashReporter::BeginJsonReport()
 {
-    m_jsonWriter.OpenObject();
-    m_jsonWriter.OpenObject("payload");
-    m_jsonWriter.WriteString("protocol_version", CRASHREPORT_PROTOCOL_VERSION);
-
-    m_jsonWriter.OpenObject("configuration");
-    m_jsonWriter.WriteString("architecture", CRASHREPORT_ARCHITECTURE_NAME);
-    CrashReportHelpers::GetVersionString(s_versionScratch, sizeof(s_versionScratch));
-    m_jsonWriter.WriteString("version", s_versionScratch);
-    m_jsonWriter.CloseObject(); // configuration
-
-    if (m_processName[0] != '\0')
+    InProcCrashReporterStorage* storage = s_storage;
+    if (storage == nullptr)
     {
-        m_jsonWriter.WriteString("process_name", m_processName);
+        return;
     }
 
-    m_jsonWriter.WriteDecimalAsString("pid", static_cast<uint64_t>(GetCurrentProcessId()));
+    storage->jsonWriter.OpenObject();
+    storage->jsonWriter.OpenObject("payload");
+    storage->jsonWriter.WriteString("protocol_version", CRASHREPORT_PROTOCOL_VERSION);
+
+    storage->jsonWriter.OpenObject("configuration");
+    storage->jsonWriter.WriteString("architecture", CRASHREPORT_ARCHITECTURE_NAME);
+    CrashReportHelpers::GetVersionString(storage->versionScratch, sizeof(storage->versionScratch));
+    storage->jsonWriter.WriteString("version", storage->versionScratch);
+    storage->jsonWriter.CloseObject(); // configuration
+
+    if (storage->processName[0] != '\0')
+    {
+        storage->jsonWriter.WriteString("process_name", storage->processName);
+    }
+
+    storage->jsonWriter.WriteDecimalAsString("pid", static_cast<uint64_t>(GetCurrentProcessId()));
 }
 
 void
@@ -2129,29 +2232,35 @@ InProcCrashReporter::EndJsonReport(
     bool jsonEnabled,
     int fd)
 {
-    m_jsonWriter.CloseObject(); // payload
+    InProcCrashReporterStorage* storage = s_storage;
+    if (storage == nullptr)
+    {
+        return;
+    }
 
-    m_jsonWriter.OpenObject("parameters");
-    m_jsonWriter.WriteSignedDecimalAsString("signal", static_cast<int64_t>(signal));
-#ifdef __APPLE__
-    if (m_osVersion[0] != '\0')
+    storage->jsonWriter.CloseObject(); // payload
+
+    storage->jsonWriter.OpenObject("parameters");
+    storage->jsonWriter.WriteSignedDecimalAsString("signal", static_cast<int64_t>(signal));
+#if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
+    if (storage->osVersion[0] != '\0')
     {
-        m_jsonWriter.WriteString("OSVersion", m_osVersion);
+        storage->jsonWriter.WriteString("OSVersion", storage->osVersion);
     }
-    if (m_systemModel[0] != '\0')
+    if (storage->systemModel[0] != '\0')
     {
-        m_jsonWriter.WriteString("SystemModel", m_systemModel);
+        storage->jsonWriter.WriteString("SystemModel", storage->systemModel);
     }
-    m_jsonWriter.WriteString("SystemManufacturer", "apple");
+    storage->jsonWriter.WriteString("SystemManufacturer", "apple");
 #endif
-    m_jsonWriter.CloseObject(); // parameters
+    storage->jsonWriter.CloseObject(); // parameters
 
-    m_jsonWriter.CloseObject(); // root
+    storage->jsonWriter.CloseObject(); // root
 
     if (jsonEnabled)
     {
-        bool finishSucceeded = m_jsonWriter.Finish();
-        bool writeFailed = s_outputContext.WriteFailed();
+        bool finishSucceeded = storage->jsonWriter.Finish();
+        bool writeFailed = storage->outputContext.WriteFailed();
         if (!CrashReportHelpers::WriteToFile(fd, "\n", 1))
         {
             writeFailed = true;
@@ -2159,11 +2268,11 @@ InProcCrashReporter::EndJsonReport(
 
         if (close(fd) != 0 || !finishSucceeded || writeFailed)
         {
-            unlink(m_reportFilePathScratch);
+            unlink(storage->reportFilePathScratch);
         }
     }
     else
     {
-        (void)m_jsonWriter.Finish();
+        (void)storage->jsonWriter.Finish();
     }
 }

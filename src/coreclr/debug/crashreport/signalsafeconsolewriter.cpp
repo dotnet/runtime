@@ -2,14 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "signalsafeconsolewriter.h"
-#include "signalsafeformat.h"
+#include "inproccrashreporter.h"
 
 #include <minipal/log.h>
 #include <string.h>
 
 #if defined(__ANDROID__)
 #include <android/log.h>
-static const char CRASHREPORT_LOG_TAG[] = "DOTNET_CRASH";
 #endif
 
 static const char CRASHREPORT_LINE_SEPARATOR[] = "*** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***";
@@ -43,11 +42,9 @@ SignalSafeConsoleWriter::AppendChar(char c)
 void
 SignalSafeConsoleWriter::AppendHex(uint64_t v)
 {
-    char buf[SignalSafeFormat::MAX_HEX_BUFFER_SIZE];
-    SignalSafeFormat::FormatHex(buf, sizeof(buf), v);
     // Skip the leading "0x" so callers control whether the prefix appears
     // (the compact format inserts it verbatim around the value).
-    const char* p = buf;
+    const char* p = m_formatter.FormatHex(v);
     if (p[0] == '0' && p[1] == 'x')
     {
         p += 2;
@@ -58,22 +55,32 @@ SignalSafeConsoleWriter::AppendHex(uint64_t v)
 void
 SignalSafeConsoleWriter::AppendDecimal(uint64_t v)
 {
-    char buf[SignalSafeFormat::MAX_UNSIGNED_DECIMAL_BUFFER_SIZE];
-    SignalSafeFormat::FormatUnsignedDecimal(buf, sizeof(buf), v);
-    AppendStr(buf);
+    AppendStr(m_formatter.FormatUnsignedDecimal(v));
 }
 
 void
 SignalSafeConsoleWriter::AppendSignedDecimal(int64_t v)
 {
-    char buf[SignalSafeFormat::MAX_SIGNED_DECIMAL_BUFFER_SIZE];
-    SignalSafeFormat::FormatSignedDecimal(buf, sizeof(buf), v);
-    AppendStr(buf);
+    AppendStr(m_formatter.FormatSignedDecimal(v));
 }
 
 void
 SignalSafeConsoleWriter::EndLine()
 {
+#if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
+    // Apple mobile platforms write the report to stderr; explicitly
+    // newline-terminate each logical line so log readers split entries the
+    // same way logcat would.
+    if (m_pos + 1 < sizeof(m_buffer))
+    {
+        m_buffer[m_pos++] = '\n';
+    }
+    else
+    {
+        m_buffer[sizeof(m_buffer) - 2] = '\n';
+        m_pos = sizeof(m_buffer) - 1;
+    }
+#endif // TARGET_IOS || TARGET_TVOS || TARGET_MACCATALYST
     Flush();
 }
 
@@ -127,11 +134,6 @@ SignalSafeConsoleWriter::Flush()
     // becomes one logcat entry, which is what makes per-line filtering useful.
     __android_log_write(ANDROID_LOG_FATAL, CRASHREPORT_LOG_TAG, m_buffer);
 #else
-    // On Apple/Linux the report goes to stderr; explicitly newline-terminate
-    // each line so log readers split entries the same way logcat would.
-    size_t newlinePos = m_pos < sizeof(m_buffer) - 1 ? m_pos : sizeof(m_buffer) - 2;
-    m_buffer[newlinePos++] = '\n';
-    m_buffer[newlinePos] = '\0';
     minipal_log_write_error(m_buffer);
 #endif
 

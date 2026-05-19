@@ -201,32 +201,28 @@ class CallStackLogger
         return SWA_CONTINUE;
     }
 
-    void PrintFrame(int index, const WCHAR* pWordAt)
+    void PrintFrame(
+        int index,
+        const WCHAR* pWordAt,
+        uint32_t repeatCount = 0,
+        uint32_t repeatSequenceLength = 0)
     {
         WRAPPER_NO_CONTRACT;
 
-        SString str(pWordAt);
-
+        SString frame;
         MethodDesc* pMD = m_frames[index];
-        TypeString::AppendMethodInternal(str, pMD, TypeString::FormatNamespace|TypeString::FormatFullInst|TypeString::FormatSignature);
+        TypeString::AppendMethodInternal(frame, pMD, TypeString::FormatNamespace|TypeString::FormatFullInst|TypeString::FormatSignature);
+
+#ifdef FEATURE_INPROC_CRASHREPORT
+        InProcCrashReportAddStackOverflowTraceFrame(frame.GetUTF8(), repeatCount, repeatSequenceLength);
+#endif // FEATURE_INPROC_CRASHREPORT
+
+        SString str(pWordAt);
+        str.Append(frame);
         str.Append(W("\n"));
 
         PrintToStdErrW(str.GetUnicode());
     }
-
-#ifdef FEATURE_INPROC_CRASHREPORT
-    void CaptureFrameForCrashReport(int index, uint32_t repeatCount, uint32_t repeatSequenceLength)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        SString str;
-
-        MethodDesc* pMD = m_frames[index];
-        TypeString::AppendMethodInternal(str, pMD, TypeString::FormatNamespace|TypeString::FormatFullInst|TypeString::FormatSignature);
-
-        InProcCrashReportAddStackOverflowTraceFrame(str.GetUTF8(), repeatCount, repeatSequenceLength);
-    }
-#endif // FEATURE_INPROC_CRASHREPORT
 
 public:
 
@@ -326,9 +322,6 @@ public:
 
         for (int i = 0; i < largestCommonStartOffset; i++)
         {
-#ifdef FEATURE_INPROC_CRASHREPORT
-            CaptureFrameForCrashReport(i, 0, 0);
-#endif // FEATURE_INPROC_CRASHREPORT
             PrintFrame(i, pWordAt);
         }
 
@@ -342,26 +335,21 @@ public:
             PrintToStdErrA("--------------------------------\n");
             for (int i = largestCommonStartOffset; i < largestCommonStartOffset + largestCommonLength; i++)
             {
-#ifdef FEATURE_INPROC_CRASHREPORT
-                CaptureFrameForCrashReport(i,
+                PrintFrame(i,
+                    pWordAt,
                     static_cast<uint32_t>(largestCommonRepeat),
                     static_cast<uint32_t>(largestCommonLength));
-#endif // FEATURE_INPROC_CRASHREPORT
-                PrintFrame(i, pWordAt);
             }
             PrintToStdErrA("--------------------------------\n");
         }
 
         for (int i = largestCommonLength * largestCommonRepeat + largestCommonStartOffset; i < m_frames.Count(); i++)
         {
-#ifdef FEATURE_INPROC_CRASHREPORT
-            CaptureFrameForCrashReport(i, 0, 0);
-#endif // FEATURE_INPROC_CRASHREPORT
             PrintFrame(i, pWordAt);
         }
 
 #ifdef FEATURE_INPROC_CRASHREPORT
-        InProcCrashReportCompleteStackOverflowTrace(0);
+        InProcCrashReportEndStackOverflowTrace();
 #endif // FEATURE_INPROC_CRASHREPORT
     }
 };
@@ -856,9 +844,6 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
 #ifdef _DEBUG
     if (g_LogStackOverflowExit)
         PrintToStdErrA("@Terminating the process.\n");
-#endif
-#ifdef FEATURE_INPROC_CRASHREPORT
-    InProcCrashReportSetCrashKind(InProcCrashReportCrashKind::StackOverflow);
 #endif
     CrashDumpAndTerminateProcess(COR_E_STACKOVERFLOW);
     UNREACHABLE();

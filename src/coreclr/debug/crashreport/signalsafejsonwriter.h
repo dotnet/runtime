@@ -12,6 +12,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "signalsafeformat.h"
+
 using SignalSafeJsonOutputCallback = bool (*)(const char* buffer, size_t len, void* ctx);
 
 static constexpr size_t SIGNAL_SAFE_JSON_BUFFER_SIZE = 4 * 1024;
@@ -52,6 +54,7 @@ private:
     void WriteSeparator();
     void WriteEscapedString(const char* str);
 
+    SignalSafeFormatter m_formatter;
     char m_buffer[SIGNAL_SAFE_JSON_BUFFER_SIZE];
     size_t m_pos;
     bool m_commaNeeded;

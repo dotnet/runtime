@@ -10,6 +10,7 @@
 #include "peassembly.h"
 #include <clrconfignocache.h>
 #include <minipal/guid.h>
+#include <new>
 
 #ifdef FEATURE_INPROC_CRASHREPORT
 
@@ -31,8 +32,34 @@ struct CrashReportStackWalkerScratch
     bool hasModuleGuid;
 };
 
-static CrashReportStackWalkerScratch s_crashReportScratch;
-static WalkContext s_walkContext;
+struct CrashReportStackWalkerState
+{
+    CrashReportStackWalkerScratch scratch;
+    WalkContext walkContext;
+};
+
+static CrashReportStackWalkerState* volatile s_crashReportStackWalkerState = nullptr;
+
+static bool EnsureCrashReportStackWalkerState()
+{
+    if (s_crashReportStackWalkerState != nullptr)
+    {
+        return true;
+    }
+
+    CrashReportStackWalkerState* state = new (std::nothrow) CrashReportStackWalkerState();
+    if (state == nullptr)
+    {
+        return false;
+    }
+
+    if (InterlockedCompareExchangeT(&s_crashReportStackWalkerState, state, nullptr) != nullptr)
+    {
+        delete state;
+    }
+
+    return true;
+}
 
 static void BuildTypeName(LPUTF8 buffer, size_t bufferSize, LPCUTF8 namespaceName, LPCUTF8 className);
 
@@ -165,7 +192,8 @@ FrameCallbackAdapter(
     CONTRACTL_END;
 
     WalkContext* ctx = static_cast<WalkContext*>(pData);
-    if (ctx == nullptr)
+    CrashReportStackWalkerState* state = s_crashReportStackWalkerState;
+    if (ctx == nullptr || state == nullptr)
     {
         return SWA_CONTINUE;
     }
@@ -192,8 +220,9 @@ FrameCallbackAdapter(
         }
     }
 
-    s_crashReportScratch.className[0] = '\0';
-    BuildTypeName(s_crashReportScratch.className, sizeof(s_crashReportScratch.className), namespaceName, className);
+    CrashReportStackWalkerScratch& scratch = state->scratch;
+    scratch.className[0] = '\0';
+    BuildTypeName(scratch.className, sizeof(scratch.className), namespaceName, className);
 
     Module* pModule = pMD->GetModule();
 
@@ -240,17 +269,30 @@ FrameCallbackAdapter(
     LPCUTF8 moduleName = nullptr;
     uint32_t moduleTimestamp = 0;
     uint32_t moduleSize = 0;
-    s_crashReportScratch.hasModuleGuid = false;
+    scratch.hasModuleGuid = false;
     CrashReportGetModuleDetails(
         pModule,
         &moduleName,
-        &s_crashReportScratch.moduleGuid,
-        &s_crashReportScratch.hasModuleGuid,
+        &scratch.moduleGuid,
+        &scratch.hasModuleGuid,
         &moduleTimestamp,
         &moduleSize);
 
-    className = s_crashReportScratch.className[0] == '\0' ? nullptr : s_crashReportScratch.className;
-    ctx->callback(static_cast<uint64_t>(ip), static_cast<uint64_t>(stackPointer), methodName, className, moduleName, pModule, nativeOffset, static_cast<uint32_t>(token), ilOffset, moduleTimestamp, moduleSize, s_crashReportScratch.hasModuleGuid ? &s_crashReportScratch.moduleGuid : nullptr, ctx->userCtx);
+    className = scratch.className[0] == '\0' ? nullptr : scratch.className;
+    ctx->callback(
+        static_cast<uint64_t>(ip),
+        static_cast<uint64_t>(stackPointer),
+        methodName,
+        className,
+        moduleName,
+        pModule,
+        moduleTimestamp,
+        moduleSize,
+        scratch.hasModuleGuid ? &scratch.moduleGuid : nullptr,
+        nativeOffset,
+        static_cast<uint32_t>(token),
+        ilOffset,
+        ctx->userCtx);
     return SWA_CONTINUE;
 }
 
@@ -261,14 +303,15 @@ CrashReportWalkThread(
     InProcCrashReportFrameCallback frameCallback,
     void* ctx)
 {
-    if (pThread == nullptr || frameCallback == nullptr)
+    CrashReportStackWalkerState* state = s_crashReportStackWalkerState;
+    if (pThread == nullptr || frameCallback == nullptr || state == nullptr)
     {
         return;
     }
 
-    s_walkContext.callback = frameCallback;
-    s_walkContext.userCtx = ctx;
-    pThread->StackWalkFrames(FrameCallbackAdapter, &s_walkContext,
+    state->walkContext.callback = frameCallback;
+    state->walkContext.userCtx = ctx;
+    pThread->StackWalkFrames(FrameCallbackAdapter, &state->walkContext,
         QUICKUNWIND | FUNCTIONSONLY | ALLOW_ASYNC_STACK_WALK);
 }
 
@@ -456,13 +499,20 @@ CrashReportEnumerateThreads(
     InProcCrashReportFrameCallback frameCallback,
     void* ctx)
 {
+    CrashReportStackWalkerState* state = s_crashReportStackWalkerState;
+    if (state == nullptr)
+    {
+        return;
+    }
+
     Thread* pCrashThread = GetThreadAsyncSafe();
+    CrashReportStackWalkerScratch& scratch = state->scratch;
 
     // Capture the crashing thread's exception state BEFORE suspending the EE
     // so the throwable inspection runs in the thread's natural EE-live context,
     // outside the suspended window which exists for safe-point operations on
     // other threads.
-    s_crashReportScratch.crashExceptionType[0] = '\0';
+    scratch.crashExceptionType[0] = '\0';
     uint32_t crashHresult = 0;
     bool crashHasException = false;
     bool isCrashingThread = pCrashThread != nullptr
@@ -471,8 +521,8 @@ CrashReportEnumerateThreads(
     {
         crashHasException = CrashReportGetExceptionForThread(
             pCrashThread,
-            s_crashReportScratch.crashExceptionType,
-            sizeof(s_crashReportScratch.crashExceptionType),
+            scratch.crashExceptionType,
+            sizeof(scratch.crashExceptionType),
             &crashHresult);
     }
 
@@ -483,7 +533,7 @@ CrashReportEnumerateThreads(
     if (isCrashingThread)
     {
         uint64_t crashOsId = static_cast<uint64_t>(pCrashThread->GetOSThreadId());
-        threadCallback(crashOsId, true, crashHasException ? s_crashReportScratch.crashExceptionType : "", crashHresult, ctx);
+        threadCallback(crashOsId, true, crashHasException ? scratch.crashExceptionType : "", crashHresult, ctx);
 
         CrashReportWalkThread(pCrashThread, frameCallback, ctx);
     }
@@ -527,6 +577,12 @@ CrashReportConfigure()
 
     if (!enableCrashReport && !enableCrashReportOnly)
     {
+        return;
+    }
+
+    if (!EnsureCrashReportStackWalkerState())
+    {
+        InProcCrashReportLogInitializationFailure(".NET crash report disabled: failed to allocate stack walker storage");
         return;
     }
 

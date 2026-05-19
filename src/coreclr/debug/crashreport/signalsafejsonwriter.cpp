@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "signalsafejsonwriter.h"
-#include "signalsafeformat.h"
 
 #include <stdint.h>
 #include <string.h>
@@ -263,9 +262,7 @@ SignalSafeJsonWriter::WriteHexAsString(
     const char* key,
     uint64_t value)
 {
-    char scratch[SignalSafeFormat::MAX_HEX_BUFFER_SIZE];
-    SignalSafeFormat::FormatHex(scratch, sizeof(scratch), value);
-    return WriteString(key, scratch);
+    return WriteString(key, m_formatter.FormatHex(value));
 }
 
 bool
@@ -273,9 +270,7 @@ SignalSafeJsonWriter::WriteDecimalAsString(
     const char* key,
     uint64_t value)
 {
-    char scratch[SignalSafeFormat::MAX_UNSIGNED_DECIMAL_BUFFER_SIZE];
-    (void)SignalSafeFormat::FormatUnsignedDecimal(scratch, sizeof(scratch), value);
-    return WriteString(key, scratch);
+    return WriteString(key, m_formatter.FormatUnsignedDecimal(value));
 }
 
 bool
@@ -283,7 +278,5 @@ SignalSafeJsonWriter::WriteSignedDecimalAsString(
     const char* key,
     int64_t value)
 {
-    char scratch[SignalSafeFormat::MAX_SIGNED_DECIMAL_BUFFER_SIZE];
-    (void)SignalSafeFormat::FormatSignedDecimal(scratch, sizeof(scratch), value);
-    return WriteString(key, scratch);
+    return WriteString(key, m_formatter.FormatSignedDecimal(value));
 }
