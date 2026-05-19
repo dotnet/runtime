@@ -126,6 +126,14 @@ if(CLR_CMAKE_HOST_WIN32)
     # Assume we are using default MSVC compiler
     add_compile_options(/permissive-)
 
+    # Enable C11 atomics so libunwind's <stdatomic.h> usage
+    # (e.g. atomic_compare_exchange_strong in Gaddress_validator.c) compiles
+    # against MSVC's real header instead of a generated fake.
+    # /std:c11 is already implied by CMAKE_C_STANDARD=11 set in libunwind/CMakeLists.txt.
+    if(MSVC)
+        add_compile_options(/experimental:c11atomics)
+    endif()
+
     # include paths
     include_directories(${CLR_SRC_NATIVE_DIR}/external/libunwind/include/tdep)
     include_directories(${CLR_SRC_NATIVE_DIR}/external/libunwind/include)
