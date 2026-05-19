@@ -7862,11 +7862,11 @@ DONE_MORPHING_CHILDREN:
         case GT_GE:
         case GT_GT:
         {
-            fgPushConstantsRight(tree->AsOp());
             assert(tree->OperIsCmpCompare());
+            fgPushConstantsRight(tree->AsOp());
 
             tree = fgOptimizeRelationalComparison(tree->AsOp());
-            if (!tree->OperIsSimple())
+            if (!tree->OperIsBinary())
             {
                 return tree;
             }
@@ -10944,7 +10944,8 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithCasts(GenTreeOp* cmp)
 {
     assert(cmp->OperIsCmpCompare());
     assert(cmp->gtGetOp1()->OperIs(GT_CAST) || cmp->gtGetOp2()->OperIs(GT_CAST));
-
+    assert(genActualType(cmp->gtGetOp1()) == genActualType(cmp->gtGetOp2()));
+    
     GenTree* op1 = cmp->gtGetOp1();
     GenTree* op2 = cmp->gtGetOp2();
 
@@ -10982,8 +10983,6 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithCasts(GenTreeOp* cmp)
     {
         return cmp;
     }
-
-    assert(genActualType(op1) == genActualType(op2));
 
     auto isUpperZero = [this](GenTree* op) {
         if (op->IsIntegralConst())
