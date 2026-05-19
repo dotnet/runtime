@@ -12,5 +12,4 @@ export const loader_classloader_generics_regressions_109968_test_109968 = CoreCl
     srcs: ["test_109968.il"],
     pri: 1,
     size: "medium",
-    run: false,
 });

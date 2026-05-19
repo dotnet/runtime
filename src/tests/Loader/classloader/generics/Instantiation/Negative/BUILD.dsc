@@ -12,14 +12,12 @@ export const loader_classloader_generics_Instantiation_Negative_type_ofT_Inherit
     srcs: ["Type_ofT_Inherit_FromT.il"],
     pri: 1,
     size: "medium",
-    run: false,
 });
 
 @@public
 export const loader_classloader_generics_Instantiation_Negative_abstract01 = CoreClr.il_coreclr_test({
     name: "abstract01",
     srcs: ["abstract01.il"],
-    run: false,
 });
 
 @@public
@@ -28,7 +26,6 @@ export const loader_classloader_generics_Instantiation_Negative_abstract02 = Cor
     srcs: ["abstract02.il"],
     pri: 1,
     size: "medium",
-    run: false,
 });
 
 @@public
@@ -37,7 +34,6 @@ export const loader_classloader_generics_Instantiation_Negative_abstract03 = Cor
     srcs: ["abstract03.il"],
     pri: 1,
     size: "medium",
-    run: false,
 });
 
 @@public
@@ -46,7 +42,6 @@ export const loader_classloader_generics_Instantiation_Negative_abstract04 = Cor
     srcs: ["abstract04.il"],
     pri: 1,
     size: "medium",
-    run: false,
 });
 
 @@public
@@ -55,7 +50,6 @@ export const loader_classloader_generics_Instantiation_Negative_abstract05 = Cor
     srcs: ["abstract05.il"],
     pri: 1,
     size: "medium",
-    run: false,
 });
 
 @@public
@@ -64,7 +58,6 @@ export const loader_classloader_generics_Instantiation_Negative_abstract06 = Cor
     srcs: ["abstract06.il"],
     pri: 1,
     size: "medium",
-    run: false,
 });
 
 @@public
@@ -73,7 +66,6 @@ export const loader_classloader_generics_Instantiation_Negative_abstract07 = Cor
     srcs: ["abstract07.il"],
     pri: 1,
     size: "medium",
-    run: false,
 });
 
 @@public
@@ -82,7 +74,6 @@ export const loader_classloader_generics_Instantiation_Negative_abstract08 = Cor
     srcs: ["abstract08.il"],
     pri: 1,
     size: "medium",
-    run: false,
 });
 
 @@public
@@ -91,7 +82,6 @@ export const loader_classloader_generics_Instantiation_Negative_abstract09 = Cor
     srcs: ["abstract09.il"],
     pri: 1,
     size: "medium",
-    run: false,
 });
 
 @@public
@@ -100,7 +90,6 @@ export const loader_classloader_generics_Instantiation_Negative_abstract10 = Cor
     srcs: ["abstract10.il"],
     pri: 1,
     size: "medium",
-    run: false,
 });
 
 @@public
@@ -109,7 +98,6 @@ export const loader_classloader_generics_Instantiation_Negative_param01 = CoreCl
     srcs: ["param01.il"],
     pri: 1,
     size: "medium",
-    run: false,
 });
 
 @@public
@@ -118,7 +106,6 @@ export const loader_classloader_generics_Instantiation_Negative_param02 = CoreCl
     srcs: ["param02.il"],
     pri: 1,
     size: "medium",
-    run: false,
 });
 
 @@public
@@ -127,7 +114,6 @@ export const loader_classloader_generics_Instantiation_Negative_param03 = CoreCl
     srcs: ["param03.il"],
     pri: 1,
     size: "medium",
-    run: false,
 });
 
 @@public
@@ -136,7 +122,6 @@ export const loader_classloader_generics_Instantiation_Negative_param04 = CoreCl
     srcs: ["param04.il"],
     pri: 1,
     size: "medium",
-    run: false,
 });
 
 @@public
@@ -145,7 +130,6 @@ export const loader_classloader_generics_Instantiation_Negative_param05 = CoreCl
     srcs: ["param05.il"],
     pri: 1,
     size: "medium",
-    run: false,
 });
 
 @@public
@@ -154,7 +138,6 @@ export const loader_classloader_generics_Instantiation_Negative_param06 = CoreCl
     srcs: ["param06.il"],
     pri: 1,
     size: "medium",
-    run: false,
 });
 
 @@public
@@ -163,7 +146,6 @@ export const loader_classloader_generics_Instantiation_Negative_param07 = CoreCl
     srcs: ["param07.il"],
     pri: 1,
     size: "medium",
-    run: false,
 });
 
 @@public
@@ -172,5 +154,4 @@ export const loader_classloader_generics_Instantiation_Negative_param08 = CoreCl
     srcs: ["param08.il"],
     pri: 1,
     size: "medium",
-    run: false,
 });

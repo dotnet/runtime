@@ -11,7 +11,6 @@ export const jIT_HardwareIntrinsics_X86_X86Serialize_X64_serialize_X64_r = CoreC
     name: "Serialize.X64_r",
     srcs: ["Serialize.X64.cs"],
     allowUnsafe: true,
-    run: false,
 });
 
 @@public
@@ -20,5 +19,4 @@ export const jIT_HardwareIntrinsics_X86_X86Serialize_X64_serialize_X64_ro = Core
     srcs: ["Serialize.X64.cs"],
     allowUnsafe: true,
     optimize: true,
-    run: false,
 });

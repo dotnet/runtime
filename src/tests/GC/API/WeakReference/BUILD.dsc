@@ -18,7 +18,6 @@ export const gC_API_WeakReference_finalize = CoreClr.coreclr_test({
 export const gC_API_WeakReference_finalize2 = CoreClr.coreclr_test({
     name: "Finalize2",
     srcs: ["Finalize2.cs"],
-    run: false,
 });
 
 @@public
@@ -41,7 +40,6 @@ export const gC_API_WeakReference_isAlive_neg = CoreClr.coreclr_test({
 export const gC_API_WeakReference_nullHandle = CoreClr.coreclr_test({
     name: "NullHandle",
     srcs: ["NullHandle.cs"],
-    run: false,
 });
 
 @@public

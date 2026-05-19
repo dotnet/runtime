@@ -29,7 +29,6 @@ export const jIT_Methodical_casts_coverage_castclass_ldloc_il_r = CoreClr.il_cor
     name: "castclass_ldloc_il_r",
     srcs: ["castclass_ldloc_r.il", "castclass_ldloc.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -55,7 +54,6 @@ export const jIT_Methodical_casts_coverage_castclass_calli_d = CoreClr.il_corecl
     name: "castclass_calli_d",
     srcs: ["castclass_calli_d.il", "castclass_calli.il"],
     debugType: "full",
-    run: false,
 });
 
 @@public
@@ -63,7 +61,6 @@ export const jIT_Methodical_casts_coverage_castclass_ldloc_il_d = CoreClr.il_cor
     name: "castclass_ldloc_il_d",
     srcs: ["castclass_ldloc_d.il", "castclass_ldloc.il"],
     debugType: "full",
-    run: false,
 });
 
 @@public
@@ -71,7 +68,6 @@ export const jIT_Methodical_casts_coverage_castclass_ldarg_il_d = CoreClr.il_cor
     name: "castclass_ldarg_il_d",
     srcs: ["castclass_ldarg_d.il", "castclass_ldarg.il"],
     debugType: "full",
-    run: false,
 });
 
 @@public
@@ -88,7 +84,6 @@ export const jIT_Methodical_casts_coverage_castclass_calli_r = CoreClr.il_corecl
     name: "castclass_calli_r",
     srcs: ["castclass_calli_r.il", "castclass_calli.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -96,7 +91,6 @@ export const jIT_Methodical_casts_coverage_castclass_call_il_r = CoreClr.il_core
     name: "castclass_call_il_r",
     srcs: ["castclass_call_r.il", "castclass_call.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -104,7 +98,6 @@ export const jIT_Methodical_casts_coverage_castclass_ldarg_il_r = CoreClr.il_cor
     name: "castclass_ldarg_il_r",
     srcs: ["castclass_ldarg_r.il", "castclass_ldarg.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -139,7 +132,6 @@ export const jIT_Methodical_casts_coverage_castclass_call_il_d = CoreClr.il_core
     name: "castclass_call_il_d",
     srcs: ["castclass_call_d.il", "castclass_call.il"],
     debugType: "full",
-    run: false,
 });
 
 @@public

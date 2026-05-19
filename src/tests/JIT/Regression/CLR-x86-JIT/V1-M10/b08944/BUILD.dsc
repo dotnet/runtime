@@ -11,7 +11,6 @@ export const jIT_Regression_CLR_x86_JIT_V1_M10_b08944_b08944a = CoreClr.coreclr_
     name: "b08944a",
     srcs: ["b08944a.cs"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -19,5 +18,4 @@ export const jIT_Regression_CLR_x86_JIT_V1_M10_b08944_b08944b = CoreClr.coreclr_
     name: "b08944b",
     srcs: ["b08944b.cs"],
     debugType: "pdbonly",
-    run: false,
 });

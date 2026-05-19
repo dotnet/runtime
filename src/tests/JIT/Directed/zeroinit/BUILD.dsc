@@ -22,7 +22,6 @@ export const jIT_Directed_zeroinit_dev10_863995 = CoreClr.il_coreclr_test({
     srcs: ["Dev10_863995.il"],
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });
 
 @@public

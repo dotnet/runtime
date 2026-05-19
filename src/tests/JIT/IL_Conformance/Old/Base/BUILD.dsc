@@ -102,7 +102,6 @@ export const jIT_IL_Conformance_Old_Base_mul_ovf = CoreClr.il_coreclr_test({
     srcs: ["mul_ovf.il"],
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });
 
 @@public
@@ -141,7 +140,6 @@ export const jIT_IL_Conformance_Old_Base_sub_ovf = CoreClr.il_coreclr_test({
     srcs: ["sub_ovf.il"],
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });
 
 @@public
@@ -200,7 +198,6 @@ export const jIT_IL_Conformance_Old_Base_conv_ovf = CoreClr.il_coreclr_test({
     srcs: ["conv_ovf.il"],
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });
 
 @@public
@@ -517,7 +514,6 @@ export const jIT_IL_Conformance_Old_Base_ckfinite = CoreClr.il_coreclr_test({
     srcs: ["ckfinite.il"],
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });
 
 @@public
@@ -526,7 +522,6 @@ export const jIT_IL_Conformance_Old_Base_add_ovf = CoreClr.il_coreclr_test({
     srcs: ["add_ovf.il"],
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });
 
 @@public

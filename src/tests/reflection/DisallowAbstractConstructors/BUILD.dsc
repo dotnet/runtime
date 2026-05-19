@@ -10,5 +10,4 @@ import * as CoreClr from "CoreClrTest";
 export const reflection_DisallowAbstractConstructors_disallowAbstractConstructors = CoreClr.coreclr_test({
     name: "DisallowAbstractConstructors",
     srcs: ["DisallowAbstractConstructors.cs"],
-    run: false,
 });

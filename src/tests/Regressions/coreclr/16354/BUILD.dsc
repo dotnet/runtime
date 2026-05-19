@@ -10,5 +10,4 @@ import * as CoreClr from "CoreClrTest";
 export const regressions_coreclr_16354_notimplemented = CoreClr.il_coreclr_test({
     name: "notimplemented",
     srcs: ["notimplemented.il"],
-    run: false,
 });

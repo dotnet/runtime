@@ -11,5 +11,4 @@ export const jIT_Regression_CLR_x86_JIT_V1_2_M01_b16386_b16386 = CoreClr.coreclr
     name: "b16386",
     srcs: ["gtnop.cs"],
     debugType: "full",
-    run: false,
 });

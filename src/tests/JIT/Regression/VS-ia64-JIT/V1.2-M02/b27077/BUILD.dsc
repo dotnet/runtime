@@ -14,5 +14,4 @@ export const jIT_Regression_VS_ia64_JIT_V1_2_M02_b27077_b27077 = CoreClr.il_core
     optimize: true,
     pri: 1,
     size: "medium",
-    run: false,
 });

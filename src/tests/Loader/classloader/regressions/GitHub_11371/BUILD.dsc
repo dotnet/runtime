@@ -10,5 +10,4 @@ import * as CoreClr from "CoreClrTest";
 export const loader_classloader_regressions_GitHub_11371_negative_ByRefLikeType = CoreClr.il_coreclr_test({
     name: "Negative_ByRefLikeType",
     srcs: ["Negative_ByRefLikeType.il"],
-    run: false,
 });

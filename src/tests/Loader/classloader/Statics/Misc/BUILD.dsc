@@ -10,5 +10,4 @@ import * as CoreClr from "CoreClrTest";
 export const loader_classloader_Statics_Misc_literalStatic = CoreClr.il_coreclr_test({
     name: "LiteralStatic",
     srcs: ["LiteralStatic.il"],
-    run: false,
 });

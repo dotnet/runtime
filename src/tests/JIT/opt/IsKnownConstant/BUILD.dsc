@@ -11,5 +11,4 @@ export const jIT_opt_IsKnownConstant_stringEquals_IsKnownConstant = CoreClr.core
     name: "StringEquals_IsKnownConstant",
     srcs: ["StringEquals_IsKnownConstant.cs"],
     optimize: true,
-    run: false,
 });

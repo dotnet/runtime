@@ -90,7 +90,6 @@ export const loader_classloader_rmv_il_rMV_2_13_7_two = CoreClr.il_coreclr_test(
 export const loader_classloader_rmv_il_rMV_2_15_12b = CoreClr.il_coreclr_test({
     name: "RMV-2-15-12b",
     srcs: ["RMV-2-15-12b.il"],
-    run: false,
 });
 
 @@public

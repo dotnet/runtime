@@ -12,7 +12,6 @@ export const baseservices_exceptions_regressions_v1_0__15266 = CoreClr.il_corecl
     srcs: ["15266.il"],
     pri: 1,
     size: "medium",
-    run: false,
 });
 
 @@public
@@ -20,6 +19,5 @@ export const baseservices_exceptions_regressions_v1_0__19896 = CoreClr.coreclr_t
     name: "19896",
     srcs: ["19896.cs"],
     pri: 1,
-    run: false,
     size: "medium",
 });

@@ -25,6 +25,6 @@ export const gC_Coverage_delete_next_card_table = CoreClr.coreclr_test({
     name: "delete_next_card_table",
     srcs: ["delete_next_card_table.cs"],
     pri: 1,
-    run: false,
     size: "medium",
+    run: false,
 });

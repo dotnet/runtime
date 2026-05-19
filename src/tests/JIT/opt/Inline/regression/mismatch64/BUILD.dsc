@@ -13,5 +13,4 @@ export const jIT_opt_Inline_regression_mismatch64_mismatch64 = CoreClr.il_corecl
     debugType: "pdbonly",
     pri: 1,
     size: "medium",
-    run: false,
 });

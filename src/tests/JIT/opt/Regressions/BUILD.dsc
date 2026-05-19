@@ -53,5 +53,4 @@ export const jIT_opt_Regressions_regression2_Regressions = CoreClr.coreclr_test(
     name: "Regression2_Regressions",
     srcs: ["Regression2_Regressions.cs"],
     optimize: true,
-    run: false,
 });

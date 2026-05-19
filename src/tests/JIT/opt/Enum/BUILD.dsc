@@ -13,7 +13,6 @@ export const jIT_opt_Enum_shared_Enum = CoreClr.coreclr_test({
     debugType: "pdbonly",
     optimize: true,
     pri: 1,
-    run: false,
     size: "medium",
 });
 
@@ -23,5 +22,4 @@ export const jIT_opt_Enum_hasflag = CoreClr.coreclr_test({
     srcs: ["hasflag.cs"],
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });

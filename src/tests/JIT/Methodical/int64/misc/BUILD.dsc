@@ -20,7 +20,6 @@ export const jIT_Methodical_int64_misc_longmul = CoreClr.il_coreclr_test({
     name: "longmul",
     srcs: ["longmul.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public

@@ -12,5 +12,4 @@ export const jIT_Directed_ExcepFilters_fault_fault = CoreClr.il_coreclr_test({
     srcs: ["fault.il"],
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });

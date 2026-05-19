@@ -10,12 +10,10 @@ import * as CoreClr from "CoreClrTest";
 export const loader_classloader_DefaultInterfaceMethods_diamondshape_diamondshape_d = CoreClr.il_coreclr_test({
     name: "diamondshape_d",
     srcs: ["diamondshape.il"],
-    run: false,
 });
 
 @@public
 export const loader_classloader_DefaultInterfaceMethods_diamondshape_diamondshape_r = CoreClr.il_coreclr_test({
     name: "diamondshape_r",
     srcs: ["diamondshape.il"],
-    run: false,
 });

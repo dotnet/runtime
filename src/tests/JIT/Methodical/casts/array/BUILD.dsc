@@ -38,7 +38,6 @@ export const jIT_Methodical_casts_array_arrays_d = CoreClr.il_coreclr_test({
     name: "arrays_d",
     srcs: ["arrays_d.il", "arrays.il"],
     debugType: "full",
-    run: false,
 });
 
 @@public
@@ -46,7 +45,6 @@ export const jIT_Methodical_casts_array_arrays_r = CoreClr.il_coreclr_test({
     name: "arrays_r",
     srcs: ["arrays_r.il", "arrays.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public

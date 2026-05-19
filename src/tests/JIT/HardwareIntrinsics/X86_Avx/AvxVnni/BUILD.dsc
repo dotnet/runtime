@@ -11,7 +11,6 @@ export const jIT_HardwareIntrinsics_X86_Avx_AvxVnni_multiplyWideningAndAdd_r = C
     name: "MultiplyWideningAndAdd_r",
     srcs: ["MultiplyWideningAndAdd.Byte.cs", "MultiplyWideningAndAdd.Int16.cs", "MultiplyWideningAndAddSaturate.Byte.cs", "MultiplyWideningAndAddSaturate.Int16.cs"],
     allowUnsafe: true,
-    run: false,
 });
 
 @@public
@@ -20,5 +19,4 @@ export const jIT_HardwareIntrinsics_X86_Avx_AvxVnni_multiplyWideningAndAdd_ro = 
     srcs: ["MultiplyWideningAndAdd.Byte.cs", "MultiplyWideningAndAdd.Int16.cs", "MultiplyWideningAndAddSaturate.Byte.cs", "MultiplyWideningAndAddSaturate.Int16.cs"],
     allowUnsafe: true,
     optimize: true,
-    run: false,
 });

@@ -11,5 +11,4 @@ export const jIT_Regression_JitBlue_DevDiv_359734_devDiv_359734 = CoreClr.il_cor
     name: "DevDiv_359734",
     srcs: ["DevDiv_359734.il"],
     optimize: true,
-    run: false,
 });

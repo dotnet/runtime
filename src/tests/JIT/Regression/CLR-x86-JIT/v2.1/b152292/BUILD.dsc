@@ -10,5 +10,4 @@ import * as CoreClr from "CoreClrTest";
 export const jIT_Regression_CLR_x86_JIT_v2_1_b152292_b152292 = CoreClr.coreclr_test({
     name: "b152292",
     srcs: ["b152292.cs"],
-    run: false,
 });

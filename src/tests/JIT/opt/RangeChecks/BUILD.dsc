@@ -18,5 +18,4 @@ export const jIT_opt_RangeChecks_modLength = CoreClr.coreclr_test({
     name: "ModLength",
     srcs: ["ModLength.cs"],
     optimize: true,
-    run: false,
 });

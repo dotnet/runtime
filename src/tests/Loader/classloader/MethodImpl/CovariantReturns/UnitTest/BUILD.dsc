@@ -22,7 +22,6 @@ export const loader_classloader_MethodImpl_CovariantReturns_UnitTest_compatibleW
 export const loader_classloader_MethodImpl_CovariantReturns_UnitTest_compatibleWithTest_TypeLoadException = CoreClr.il_coreclr_test({
     name: "CompatibleWithTest_TypeLoadException",
     srcs: ["CompatibleWithTest_TypeLoadException.il"],
-    run: false,
 });
 
 @@public
@@ -59,5 +58,4 @@ export const loader_classloader_MethodImpl_CovariantReturns_UnitTest_unitTest_GV
 export const loader_classloader_MethodImpl_CovariantReturns_UnitTest_unitTest_GVM_TypeLoadException = CoreClr.il_coreclr_test({
     name: "UnitTest_GVM_TypeLoadException",
     srcs: ["UnitTest_GVM_TypeLoadException.il"],
-    run: false,
 });

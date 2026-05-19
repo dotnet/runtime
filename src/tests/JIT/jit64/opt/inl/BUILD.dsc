@@ -22,7 +22,6 @@ export const jIT_jit64_opt_inl_caninline_do = CoreClr.coreclr_test({
     srcs: ["caninline.cs"],
     debugType: "full",
     optimize: true,
-    run: false,
 });
 
 @@public
@@ -31,14 +30,12 @@ export const jIT_jit64_opt_inl_caninline_d = CoreClr.coreclr_test({
     srcs: ["caninline.cs"],
     debugType: "full",
     optimize: false,
-    run: false,
 });
 
 @@public
 export const jIT_jit64_opt_inl_caninline_r = CoreClr.coreclr_test({
     name: "caninline_r",
     srcs: ["caninline.cs"],
-    run: false,
 });
 
 @@public
@@ -46,5 +43,4 @@ export const jIT_jit64_opt_inl_caninline_ro = CoreClr.coreclr_test({
     name: "caninline_ro",
     srcs: ["caninline.cs"],
     optimize: true,
-    run: false,
 });

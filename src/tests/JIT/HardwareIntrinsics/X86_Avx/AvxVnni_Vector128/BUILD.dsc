@@ -12,7 +12,6 @@ export const jIT_HardwareIntrinsics_X86_Avx_AvxVnni_Vector128_multiplyWideningAn
     srcs: ["MultiplyWideningAndAdd.Byte.cs", "MultiplyWideningAndAdd.Int16.cs", "MultiplyWideningAndAddSaturate.Byte.cs", "MultiplyWideningAndAddSaturate.Int16.cs"],
     allowUnsafe: true,
     optimize: true,
-    run: false,
 });
 
 @@public
@@ -20,5 +19,4 @@ export const jIT_HardwareIntrinsics_X86_Avx_AvxVnni_Vector128_multiplyWideningAn
     name: "MultiplyWideningAndAdd_Vector128_r",
     srcs: ["MultiplyWideningAndAdd.Byte.cs", "MultiplyWideningAndAdd.Int16.cs", "MultiplyWideningAndAddSaturate.Byte.cs", "MultiplyWideningAndAddSaturate.Int16.cs"],
     allowUnsafe: true,
-    run: false,
 });

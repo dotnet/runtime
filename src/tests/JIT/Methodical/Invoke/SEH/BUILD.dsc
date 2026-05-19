@@ -11,7 +11,6 @@ export const jIT_Methodical_Invoke_SEH_catchfinally_jmpind_r = CoreClr.il_corecl
     name: "catchfinally_jmpind_r",
     srcs: ["catchfinally_jmpind_r.il", "catchfinally_jmpind.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -19,7 +18,6 @@ export const jIT_Methodical_Invoke_SEH_catchfinally_tail_il_r = CoreClr.il_corec
     name: "catchfinally_tail_il_r",
     srcs: ["catchfinally_tail_r.il", "catchfinally_tail.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -27,7 +25,6 @@ export const jIT_Methodical_Invoke_SEH_catchfinally_jmpind_d = CoreClr.il_corecl
     name: "catchfinally_jmpind_d",
     srcs: ["catchfinally_jmpind_d.il", "catchfinally_jmpind.il"],
     debugType: "full",
-    run: false,
 });
 
 @@public
@@ -35,7 +32,6 @@ export const jIT_Methodical_Invoke_SEH_catchfault_tail_r = CoreClr.il_coreclr_te
     name: "catchfault_tail_r",
     srcs: ["catchfault_tail_r.il", "catchfault_tail.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -43,7 +39,6 @@ export const jIT_Methodical_Invoke_SEH_catchfault_d = CoreClr.il_coreclr_test({
     name: "catchfault_d",
     srcs: ["catchfault_d.il", "catchfault.il"],
     debugType: "full",
-    run: false,
 });
 
 @@public
@@ -51,7 +46,6 @@ export const jIT_Methodical_Invoke_SEH_catchfault_jmp_d = CoreClr.il_coreclr_tes
     name: "catchfault_jmp_d",
     srcs: ["catchfault_jmp_d.il", "catchfault_jmp.il"],
     debugType: "full",
-    run: false,
 });
 
 @@public
@@ -59,7 +53,6 @@ export const jIT_Methodical_Invoke_SEH_catchfinally_jmp_d = CoreClr.il_coreclr_t
     name: "catchfinally_jmp_d",
     srcs: ["catchfinally_jmp_d.il", "catchfinally_jmp.il"],
     debugType: "full",
-    run: false,
 });
 
 @@public
@@ -67,7 +60,6 @@ export const jIT_Methodical_Invoke_SEH_catchfinally_ind_r = CoreClr.il_coreclr_t
     name: "catchfinally_ind_r",
     srcs: ["catchfinally_ind_r.il", "catchfinally_ind.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -75,7 +67,6 @@ export const jIT_Methodical_Invoke_SEH_catchfault_tail_d = CoreClr.il_coreclr_te
     name: "catchfault_tail_d",
     srcs: ["catchfault_tail_d.il", "catchfault_tail.il"],
     debugType: "full",
-    run: false,
 });
 
 @@public
@@ -83,7 +74,6 @@ export const jIT_Methodical_Invoke_SEH_catchfinally_jmp_r = CoreClr.il_coreclr_t
     name: "catchfinally_jmp_r",
     srcs: ["catchfinally_jmp_r.il", "catchfinally_jmp.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -91,7 +81,6 @@ export const jIT_Methodical_Invoke_SEH_catchfault_r = CoreClr.il_coreclr_test({
     name: "catchfault_r",
     srcs: ["catchfault_r.il", "catchfault.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -99,7 +88,6 @@ export const jIT_Methodical_Invoke_SEH_catchfinally_ind_d = CoreClr.il_coreclr_t
     name: "catchfinally_ind_d",
     srcs: ["catchfinally_ind_d.il", "catchfinally_ind.il"],
     debugType: "full",
-    run: false,
 });
 
 @@public
@@ -107,7 +95,6 @@ export const jIT_Methodical_Invoke_SEH_catchfinally_tail_il_d = CoreClr.il_corec
     name: "catchfinally_tail_il_d",
     srcs: ["catchfinally_tail_d.il", "catchfinally_tail.il"],
     debugType: "full",
-    run: false,
 });
 
 @@public
@@ -115,5 +102,4 @@ export const jIT_Methodical_Invoke_SEH_catchfault_jmp_r = CoreClr.il_coreclr_tes
     name: "catchfault_jmp_r",
     srcs: ["catchfault_jmp_r.il", "catchfault_jmp.il"],
     debugType: "pdbonly",
-    run: false,
 });

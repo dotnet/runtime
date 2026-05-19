@@ -22,7 +22,6 @@ export const jIT_IL_Conformance_Old_objectmodel_throw_ = CoreClr.il_coreclr_test
     srcs: ["throw.il"],
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });
 
 @@public
@@ -143,7 +142,6 @@ export const jIT_IL_Conformance_Old_objectmodel_seh_tests = CoreClr.il_coreclr_t
     optimize: true,
     pri: 1,
     size: "medium",
-    run: false,
 });
 
 @@public
@@ -162,7 +160,6 @@ export const jIT_IL_Conformance_Old_objectmodel_castclass = CoreClr.il_coreclr_t
     srcs: ["castclass.il"],
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });
 
 @@public

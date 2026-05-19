@@ -11,5 +11,4 @@ export const jIT_Regression_Dev11_dev11_10427_conv_ovf_i4 = CoreClr.il_coreclr_t
     name: "conv_ovf_i4",
     srcs: ["conv_ovf_i4.il"],
     debugType: "pdbonly",
-    run: false,
 });

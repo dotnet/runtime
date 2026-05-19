@@ -11,5 +11,4 @@ export const jIT_Regression_JitBlue_GitHub_22556_gitHub_22556 = CoreClr.coreclr_
     name: "GitHub_22556",
     srcs: ["GitHub_22556.cs"],
     optimize: true,
-    run: false,
 });

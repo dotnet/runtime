@@ -33,5 +33,4 @@ export const jIT_HardwareIntrinsics_General_HwiOp_hwiSideEffects = CoreClr.corec
     srcs: ["HwiSideEffects.cs"],
     allowUnsafe: true,
     optimize: true,
-    run: false,
 });

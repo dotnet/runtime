@@ -22,19 +22,16 @@ export const loader_classloader_explicitlayout_NestedStructs_case02 = CoreClr.co
 export const loader_classloader_explicitlayout_NestedStructs_case03 = CoreClr.coreclr_test({
     name: "case03",
     srcs: ["case03.cs"],
-    run: false,
 });
 
 @@public
 export const loader_classloader_explicitlayout_NestedStructs_case04 = CoreClr.coreclr_test({
     name: "case04",
     srcs: ["case04.cs"],
-    run: false,
 });
 
 @@public
 export const loader_classloader_explicitlayout_NestedStructs_case05 = CoreClr.coreclr_test({
     name: "case05",
     srcs: ["case05.cs"],
-    run: false,
 });

@@ -11,7 +11,6 @@ export const jIT_opt_Inline_tests_inline_DetectChanges = CoreClr.coreclr_test({
     name: "Inline_DetectChanges",
     srcs: ["Inline_DetectChanges.cs"],
     optimize: true,
-    run: false,
 });
 
 @@public
@@ -273,7 +272,6 @@ export const jIT_opt_Inline_tests_inline_handler = CoreClr.coreclr_test({
     name: "Inline_handler",
     srcs: ["Inline_handler.cs"],
     pri: 1,
-    run: false,
     size: "medium",
 });
 
@@ -298,7 +296,6 @@ export const jIT_opt_Inline_tests_inline_GenericMethods = CoreClr.coreclr_test({
 export const jIT_opt_Inline_tests_inlineThrow = CoreClr.coreclr_test({
     name: "InlineThrow",
     srcs: ["Inlinethrow.cs"],
-    run: false,
 });
 
 @@public

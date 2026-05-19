@@ -12,5 +12,4 @@ export const jIT_jit64_regress_vsw_539509_test1_539509 = CoreClr.coreclr_test({
     srcs: ["test1.cs"],
     debugType: "full",
     optimize: false,
-    run: false,
 });

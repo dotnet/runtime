@@ -10,12 +10,10 @@ import * as CoreClr from "CoreClrTest";
 export const reflection_SetValue_trySetReadonlyStaticField = CoreClr.coreclr_test({
     name: "TrySetReadonlyStaticField",
     srcs: ["TrySetReadonlyStaticField.cs"],
-    run: false,
 });
 
 @@public
 export const reflection_SetValue_trySetReadonlyStaticField2 = CoreClr.coreclr_test({
     name: "TrySetReadonlyStaticField2",
     srcs: ["TrySetReadonlyStaticField2.cs"],
-    run: false,
 });

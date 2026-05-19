@@ -10,5 +10,4 @@ import * as CoreClr from "CoreClrTest";
 export const regressions_coreclr_22407_abstractcalls = CoreClr.il_coreclr_test({
     name: "abstractcalls",
     srcs: ["abstractcalls.il"],
-    run: false,
 });

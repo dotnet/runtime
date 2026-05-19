@@ -11,7 +11,6 @@ export const loader_classloader_TypeInitialization_CctorsWithSideEffects_cctorFo
     name: "CctorForWrite",
     srcs: ["CctorForWrite.cs"],
     optimize: true,
-    run: false,
 });
 
 @@public
@@ -19,7 +18,6 @@ export const loader_classloader_TypeInitialization_CctorsWithSideEffects_cctorFo
     name: "CctorForWrite2",
     srcs: ["CctorForWrite2.cs"],
     optimize: true,
-    run: false,
 });
 
 @@public
@@ -34,35 +32,30 @@ export const loader_classloader_TypeInitialization_CctorsWithSideEffects_cctorOp
 export const loader_classloader_TypeInitialization_CctorsWithSideEffects_cctorThrowInlinedStatic = CoreClr.coreclr_test({
     name: "CctorThrowInlinedStatic",
     srcs: ["CctorThrowInlinedStatic.cs"],
-    run: false,
 });
 
 @@public
 export const loader_classloader_TypeInitialization_CctorsWithSideEffects_cctorThrowLDFTNStaticMethod = CoreClr.il_coreclr_test({
     name: "CctorThrowLDFTNStaticMethod",
     srcs: ["CctorThrowLDFTNStaticMethod.il"],
-    run: false,
 });
 
 @@public
 export const loader_classloader_TypeInitialization_CctorsWithSideEffects_cctorThrowMethodAccess = CoreClr.coreclr_test({
     name: "CctorThrowMethodAccess",
     srcs: ["CctorThrowMethodAccess.cs"],
-    run: false,
 });
 
 @@public
 export const loader_classloader_TypeInitialization_CctorsWithSideEffects_cctorThrowStaticField = CoreClr.coreclr_test({
     name: "CctorThrowStaticField",
     srcs: ["CctorThrowStaticField.cs"],
-    run: false,
 });
 
 @@public
 export const loader_classloader_TypeInitialization_CctorsWithSideEffects_cctorThrowStaticFieldBFI = CoreClr.il_coreclr_test({
     name: "CctorThrowStaticFieldBFI",
     srcs: ["CctorThrowStaticFieldBFI.il"],
-    run: false,
 });
 
 @@public
@@ -77,19 +70,16 @@ export const loader_classloader_TypeInitialization_CctorsWithSideEffects_resetGl
 export const loader_classloader_TypeInitialization_CctorsWithSideEffects_typeLoadInitExcep = CoreClr.coreclr_test({
     name: "TypeLoadInitExcep",
     srcs: ["TypeLoadInitExcep.cs"],
-    run: false,
 });
 
 @@public
 export const loader_classloader_TypeInitialization_CctorsWithSideEffects_typeLoadInitExcepBFI = CoreClr.il_coreclr_test({
     name: "TypeLoadInitExcepBFI",
     srcs: ["TypeLoadInitExcepBFI.il"],
-    run: false,
 });
 
 @@public
 export const loader_classloader_TypeInitialization_CctorsWithSideEffects_untrustedCodeBFI = CoreClr.il_coreclr_test({
     name: "UntrustedCodeBFI",
     srcs: ["UntrustedCodeBFI.il"],
-    run: false,
 });

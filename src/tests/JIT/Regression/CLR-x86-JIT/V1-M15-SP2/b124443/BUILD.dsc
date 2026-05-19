@@ -14,7 +14,6 @@ export const jIT_Regression_CLR_x86_JIT_V1_M15_SP2_b124443_b124443_il = CoreClr.
     optimize: true,
     pri: 1,
     size: "medium",
-    run: false,
 });
 
 @@public
@@ -22,5 +21,4 @@ export const jIT_Regression_CLR_x86_JIT_V1_M15_SP2_b124443_b124443 = CoreClr.cor
     name: "b124443",
     srcs: ["b124443.cs"],
     debugType: "pdbonly",
-    run: false,
 });

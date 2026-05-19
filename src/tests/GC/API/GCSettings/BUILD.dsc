@@ -34,5 +34,4 @@ export const gC_API_GCSettings_inducedGen2GC = CoreClr.coreclr_test({
 export const gC_API_GCSettings_inputValidation = CoreClr.coreclr_test({
     name: "InputValidation",
     srcs: ["InputValidation.cs"],
-    run: false,
 });

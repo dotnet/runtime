@@ -29,7 +29,6 @@ export const jIT_Directed_coverage_oldtests_ovflrem2_d = CoreClr.il_coreclr_test
     name: "ovflrem2_d",
     srcs: ["ovflrem2_d.il", "ovflrem2.il"],
     debugType: "full",
-    run: false,
 });
 
 @@public
@@ -45,7 +44,6 @@ export const jIT_Directed_coverage_oldtests_ovfldiv1_d = CoreClr.il_coreclr_test
     name: "ovfldiv1_d",
     srcs: ["ovfldiv1_d.il", "ovfldiv1.il"],
     debugType: "full",
-    run: false,
 });
 
 @@public
@@ -72,7 +70,6 @@ export const jIT_Directed_coverage_oldtests_ovflrem2_r = CoreClr.il_coreclr_test
     name: "ovflrem2_r",
     srcs: ["ovflrem2_r.il", "ovflrem2.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -107,7 +104,6 @@ export const jIT_Directed_coverage_oldtests_ovflrem1_r = CoreClr.il_coreclr_test
     name: "ovflrem1_r",
     srcs: ["ovflrem1_r.il", "ovflrem1.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -244,7 +240,6 @@ export const jIT_Directed_coverage_oldtests_trashreg_d = CoreClr.il_coreclr_test
     name: "trashreg_d",
     srcs: ["trashreg_d.il", "trashreg.il"],
     debugType: "full",
-    run: false,
 });
 
 @@public
@@ -346,7 +341,6 @@ export const jIT_Directed_coverage_oldtests_ovfldiv2_d = CoreClr.il_coreclr_test
     name: "ovfldiv2_d",
     srcs: ["ovfldiv2_d.il", "ovfldiv2.il"],
     debugType: "full",
-    run: false,
 });
 
 @@public
@@ -413,7 +407,6 @@ export const jIT_Directed_coverage_oldtests_ovfldiv2_r = CoreClr.il_coreclr_test
     name: "ovfldiv2_r",
     srcs: ["ovfldiv2_r.il", "ovfldiv2.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -513,7 +506,6 @@ export const jIT_Directed_coverage_oldtests_ovfldiv1_r = CoreClr.il_coreclr_test
     name: "ovfldiv1_r",
     srcs: ["ovfldiv1_r.il", "ovfldiv1.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -521,7 +513,6 @@ export const jIT_Directed_coverage_oldtests_trashreg_r = CoreClr.il_coreclr_test
     name: "trashreg_r",
     srcs: ["trashreg_r.il", "trashreg.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -538,7 +529,6 @@ export const jIT_Directed_coverage_oldtests_ovflrem1_d = CoreClr.il_coreclr_test
     name: "ovflrem1_d",
     srcs: ["ovflrem1_d.il", "ovflrem1.il"],
     debugType: "full",
-    run: false,
 });
 
 @@public

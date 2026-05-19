@@ -64,8 +64,7 @@ export const basicTestWithMcj = CoreClr.coreclr_test({
     name: "BasicTestWithMcj",
     srcs: ["BasicTestWithMcj.cs"],
     optimize: true,
-    referenceXunitWrapperGenerator: false,
-    run: false
+    referenceXunitWrapperGenerator: false
 });
 
 @@public

@@ -24,7 +24,6 @@ export const gC_API_GCHandleCollector_ctorsAndProperties = CoreClr.coreclr_test(
 export const gC_API_GCHandleCollector_negTests = CoreClr.coreclr_test({
     name: "NegTests",
     srcs: ["NegTests.cs"],
-    run: false,
 });
 
 @@public

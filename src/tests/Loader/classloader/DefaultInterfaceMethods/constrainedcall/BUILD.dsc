@@ -10,21 +10,18 @@ import * as CoreClr from "CoreClrTest";
 export const loader_classloader_DefaultInterfaceMethods_constrainedcall_constrained2 = CoreClr.il_coreclr_test({
     name: "constrained2",
     srcs: ["constrained2.il"],
-    run: false,
 });
 
 @@public
 export const loader_classloader_DefaultInterfaceMethods_constrainedcall_constrained2_brl = CoreClr.il_coreclr_test({
     name: "constrained2_brl",
     srcs: ["constrained2_brl.il"],
-    run: false,
 });
 
 @@public
 export const loader_classloader_DefaultInterfaceMethods_constrainedcall_constrained2_gm = CoreClr.il_coreclr_test({
     name: "constrained2_gm",
     srcs: ["constrained2_gm.il"],
-    run: false,
 });
 
 @@public
@@ -43,5 +40,4 @@ export const loader_classloader_DefaultInterfaceMethods_constrainedcall_constrai
 export const loader_classloader_DefaultInterfaceMethods_constrainedcall_constrainedcall = CoreClr.il_coreclr_test({
     name: "constrainedcall",
     srcs: ["constrainedcall.il"],
-    run: false,
 });

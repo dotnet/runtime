@@ -11,7 +11,6 @@ export const jIT_Generics_Conversions_Reference_gentonongen01 = CoreClr.coreclr_
     name: "gentonongen01",
     srcs: ["GenToNonGen01.cs"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -28,7 +27,6 @@ export const jIT_Generics_Conversions_Reference_nongentogen02 = CoreClr.coreclr_
     name: "nongentogen02",
     srcs: ["NonGenToGen02.cs"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -36,7 +34,6 @@ export const jIT_Generics_Conversions_Reference_nongentogen01 = CoreClr.coreclr_
     name: "nongentogen01",
     srcs: ["NonGenToGen01.cs"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -44,7 +41,6 @@ export const jIT_Generics_Conversions_Reference_nongentogen03 = CoreClr.coreclr_
     name: "nongentogen03",
     srcs: ["NonGenToGen03.cs"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -61,7 +57,6 @@ export const jIT_Generics_Conversions_Reference_gentogen03 = CoreClr.coreclr_tes
     name: "gentogen03",
     srcs: ["GenToGen03.cs"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -69,7 +64,6 @@ export const jIT_Generics_Conversions_Reference_gentogen01 = CoreClr.coreclr_tes
     name: "gentogen01",
     srcs: ["GenToGen01.cs"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -77,5 +71,4 @@ export const jIT_Generics_Conversions_Reference_gentogen02 = CoreClr.coreclr_tes
     name: "gentogen02",
     srcs: ["GenToGen02.cs"],
     debugType: "pdbonly",
-    run: false,
 });

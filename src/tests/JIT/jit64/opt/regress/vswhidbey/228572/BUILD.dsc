@@ -12,7 +12,6 @@ export const jIT_jit64_opt_regress_vswhidbey_228572_conv_228572_r = CoreClr.il_c
     srcs: ["conv_r.il", "conv.il"],
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });
 
 @@public
@@ -20,5 +19,4 @@ export const jIT_jit64_opt_regress_vswhidbey_228572_conv_228572_d = CoreClr.il_c
     name: "conv_228572_d",
     srcs: ["conv_d.il", "conv.il"],
     debugType: "full",
-    run: false,
 });

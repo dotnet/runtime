@@ -11,7 +11,6 @@ export const jIT_Methodical_flowgraph_dev10_bug679955_volatileLocal2 = CoreClr.i
     name: "volatileLocal2",
     srcs: ["volatileLocal2.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -19,7 +18,6 @@ export const jIT_Methodical_flowgraph_dev10_bug679955_indexMinusOne = CoreClr.il
     name: "indexMinusOne",
     srcs: ["indexMinusOne.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public

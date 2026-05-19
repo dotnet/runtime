@@ -58,7 +58,6 @@ export const loader_classloader_explicitlayout_Regressions_ASURT_ASURT150271_tes
     srcs: ["test16.il"],
     pri: 1,
     size: "medium",
-    run: false,
 });
 
 @@public
@@ -75,7 +74,6 @@ export const loader_classloader_explicitlayout_Regressions_ASURT_ASURT150271_tes
     srcs: ["test21.il"],
     pri: 1,
     size: "medium",
-    run: false,
 });
 
 @@public
@@ -98,7 +96,6 @@ export const loader_classloader_explicitlayout_Regressions_ASURT_ASURT150271_tes
 export const loader_classloader_explicitlayout_Regressions_ASURT_ASURT150271_test3 = CoreClr.il_coreclr_test({
     name: "test3",
     srcs: ["test3.il"],
-    run: false,
 });
 
 @@public
@@ -107,5 +104,4 @@ export const loader_classloader_explicitlayout_Regressions_ASURT_ASURT150271_tes
     srcs: ["test9.il"],
     pri: 1,
     size: "medium",
-    run: false,
 });

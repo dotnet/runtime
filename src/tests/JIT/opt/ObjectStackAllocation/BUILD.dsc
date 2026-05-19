@@ -39,7 +39,6 @@ export const jIT_opt_ObjectStackAllocation_runtime_115979 = CoreClr.coreclr_test
     name: "Runtime_115979",
     srcs: ["Runtime_115979.cs"],
     optimize: true,
-    run: false,
 });
 
 @@public

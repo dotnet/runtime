@@ -10,5 +10,4 @@ import * as CoreClr from "CoreClrTest";
 export const jIT_Directed_Misc_gettype_gettypetypeofmatrix_gettype = CoreClr.coreclr_test({
     name: "gettypetypeofmatrix_gettype",
     srcs: ["gettypetypeofmatrix.cs"],
-    run: false,
 });

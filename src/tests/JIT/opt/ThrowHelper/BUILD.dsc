@@ -12,7 +12,6 @@ export const jIT_opt_ThrowHelper_nonVoidThrowHelper = CoreClr.coreclr_test({
     srcs: ["NonVoidThrowHelper.cs"],
     allowUnsafe: true,
     optimize: true,
-    run: false,
 });
 
 @@public
@@ -27,5 +26,4 @@ export const jIT_opt_ThrowHelper_throwHelperAtTryEntry = CoreClr.coreclr_test({
     name: "ThrowHelperAtTryEntry",
     srcs: ["ThrowHelperAtTryEntry.cs"],
     optimize: true,
-    run: false,
 });

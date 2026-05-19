@@ -11,7 +11,6 @@ export const jIT_Methodical_casts_SEH_isinst_catch_r = CoreClr.il_coreclr_test({
     name: "isinst_catch_r",
     srcs: ["isinst_catch_r.il", "isinst_catch.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -19,7 +18,6 @@ export const jIT_Methodical_casts_SEH_filter_SEH_casts_r = CoreClr.il_coreclr_te
     name: "filter_SEH_casts_r",
     srcs: ["filter_r.il", "filter.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -27,7 +25,6 @@ export const jIT_Methodical_casts_SEH_castclass_catch_neg_d = CoreClr.il_coreclr
     name: "castclass_catch_neg_d",
     srcs: ["castclass_catch_neg_d.il", "castclass_catch_neg.il"],
     debugType: "full",
-    run: false,
 });
 
 @@public
@@ -35,7 +32,6 @@ export const jIT_Methodical_casts_SEH_isinst_catch_neg_d = CoreClr.il_coreclr_te
     name: "isinst_catch_neg_d",
     srcs: ["isinst_catch_neg_d.il", "isinst_catch_neg.il"],
     debugType: "full",
-    run: false,
 });
 
 @@public
@@ -43,7 +39,6 @@ export const jIT_Methodical_casts_SEH_filter_SEH_casts_d = CoreClr.il_coreclr_te
     name: "filter_SEH_casts_d",
     srcs: ["filter_d.il", "filter.il"],
     debugType: "full",
-    run: false,
 });
 
 @@public
@@ -51,7 +46,6 @@ export const jIT_Methodical_casts_SEH_castclass_catch_r = CoreClr.il_coreclr_tes
     name: "castclass_catch_r",
     srcs: ["castclass_catch_r.il", "castclass_catch.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -59,7 +53,6 @@ export const jIT_Methodical_casts_SEH_castclass_catch_neg_r = CoreClr.il_coreclr
     name: "castclass_catch_neg_r",
     srcs: ["castclass_catch_neg_r.il", "castclass_catch_neg.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -67,7 +60,6 @@ export const jIT_Methodical_casts_SEH_isinst_catch_neg_r = CoreClr.il_coreclr_te
     name: "isinst_catch_neg_r",
     srcs: ["isinst_catch_neg_r.il", "isinst_catch_neg.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -75,7 +67,6 @@ export const jIT_Methodical_casts_SEH_isinst_catch_d = CoreClr.il_coreclr_test({
     name: "isinst_catch_d",
     srcs: ["isinst_catch_d.il", "isinst_catch.il"],
     debugType: "full",
-    run: false,
 });
 
 @@public
@@ -83,5 +74,4 @@ export const jIT_Methodical_casts_SEH_castclass_catch_d = CoreClr.il_coreclr_tes
     name: "castclass_catch_d",
     srcs: ["castclass_catch_d.il", "castclass_catch.il"],
     debugType: "full",
-    run: false,
 });

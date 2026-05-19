@@ -13,5 +13,4 @@ export const jIT_Regression_JitBlue_GitHub_14116_gitHub_14116 = CoreClr.il_corec
     optimize: true,
     pri: 1,
     size: "medium",
-    run: false,
 });

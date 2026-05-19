@@ -11,5 +11,4 @@ export const jIT_Regression_VS_ia64_JIT_V1_2_M02_b26496_b26496 = CoreClr.coreclr
     name: "b26496",
     srcs: ["_1d6bgof.cs"],
     debugType: "pdbonly",
-    run: false,
 });

@@ -11,7 +11,6 @@ export const jIT_Directed_Convert_ldind_conv = CoreClr.il_coreclr_test({
     name: "ldind_conv",
     srcs: ["ldind_conv.il"],
     optimize: true,
-    run: false,
 });
 
 @@public
@@ -56,6 +55,5 @@ export const jIT_Directed_Convert_value_numbering_checked_casts_of_constants = C
     srcs: ["value_numbering_checked_casts_of_constants.cs", "value_numbering_checked_casts_of_constants_float.cs", "value_numbering_checked_casts_of_constants_double.cs", "value_numbering_checked_casts_of_constants_byte.cs", "value_numbering_checked_casts_of_constants_short.cs", "value_numbering_checked_casts_of_constants_int.cs", "value_numbering_checked_casts_of_constants_long.cs"],
     optimize: true,
     pri: 1,
-    run: false,
     size: "medium",
 });

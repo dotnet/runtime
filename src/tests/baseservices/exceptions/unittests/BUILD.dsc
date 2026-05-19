@@ -11,7 +11,6 @@ export const baseservices_exceptions_unittests_baadbaad = CoreClr.coreclr_test({
     name: "Baadbaad",
     srcs: ["Baadbaad.cs", "trace.cs"],
     pri: 1,
-    run: false,
     size: "medium",
 });
 
@@ -20,7 +19,6 @@ export const baseservices_exceptions_unittests_baseClass = CoreClr.coreclr_test(
     name: "BaseClass",
     srcs: ["baseclass.cs", "trace.cs"],
     pri: 1,
-    run: false,
     size: "medium",
 });
 
@@ -29,7 +27,6 @@ export const baseservices_exceptions_unittests_collidedUnwind = CoreClr.coreclr_
     name: "CollidedUnwind",
     srcs: ["CollidedUnwind.cs", "trace.cs"],
     pri: 1,
-    run: false,
     size: "medium",
 });
 
@@ -38,7 +35,6 @@ export const baseservices_exceptions_unittests_eHPatternTests = CoreClr.coreclr_
     name: "EHPatternTests",
     srcs: ["EHPatternTests.cs"],
     pri: 1,
-    run: false,
     size: "medium",
 });
 
@@ -47,7 +43,6 @@ export const baseservices_exceptions_unittests_goryManagedPresent = CoreClr.core
     name: "GoryManagedPresent",
     srcs: ["GoryManagedPresent.cs", "trace.cs"],
     pri: 1,
-    run: false,
     size: "medium",
 });
 
@@ -56,7 +51,6 @@ export const baseservices_exceptions_unittests_goryNativePast = CoreClr.coreclr_
     name: "GoryNativePast",
     srcs: ["GoryNativePast.cs", "trace.cs"],
     pri: 1,
-    run: false,
     size: "medium",
 });
 
@@ -65,7 +59,6 @@ export const baseservices_exceptions_unittests_innerFinally = CoreClr.coreclr_te
     name: "InnerFinally",
     srcs: ["innerfinally.cs", "trace.cs"],
     pri: 1,
-    run: false,
     size: "medium",
 });
 
@@ -74,7 +67,6 @@ export const baseservices_exceptions_unittests_innerFinallyAndCatch = CoreClr.co
     name: "InnerFinallyAndCatch",
     srcs: ["InnerFinallyAndCatch.cs", "trace.cs"],
     pri: 1,
-    run: false,
     size: "medium",
 });
 
@@ -83,7 +75,6 @@ export const baseservices_exceptions_unittests_pending = CoreClr.coreclr_test({
     name: "Pending",
     srcs: ["Pending.cs", "trace.cs"],
     pri: 1,
-    run: false,
     size: "medium",
 });
 
@@ -92,7 +83,6 @@ export const baseservices_exceptions_unittests_recurse = CoreClr.coreclr_test({
     name: "Recurse",
     srcs: ["Recurse.cs", "trace.cs"],
     pri: 1,
-    run: false,
     size: "medium",
 });
 
@@ -101,7 +91,6 @@ export const baseservices_exceptions_unittests_recursiveRethrow = CoreClr.corecl
     name: "RecursiveRethrow",
     srcs: ["RecursiveRethrow.cs", "trace.cs"],
     pri: 1,
-    run: false,
     size: "medium",
 });
 
@@ -110,7 +99,6 @@ export const baseservices_exceptions_unittests_recursiveThrowNew = CoreClr.corec
     name: "RecursiveThrowNew",
     srcs: ["RecursiveThrowNew.cs", "trace.cs"],
     pri: 1,
-    run: false,
     size: "medium",
 });
 
@@ -119,7 +107,6 @@ export const baseservices_exceptions_unittests_rethrowAndFinally = CoreClr.corec
     name: "RethrowAndFinally",
     srcs: ["rethrowandfinally.cs", "trace.cs"],
     pri: 1,
-    run: false,
     size: "medium",
 });
 
@@ -136,7 +123,6 @@ export const baseservices_exceptions_unittests_strSwitchFinally = CoreClr.corecl
     name: "StrSwitchFinally",
     srcs: ["StrSwitchFinally.cs", "trace.cs"],
     pri: 1,
-    run: false,
     size: "medium",
 });
 
@@ -145,7 +131,6 @@ export const baseservices_exceptions_unittests_throwInCatch = CoreClr.coreclr_te
     name: "ThrowInCatch",
     srcs: ["throwincatch.cs", "trace.cs"],
     pri: 1,
-    run: false,
     size: "medium",
 });
 
@@ -154,7 +139,6 @@ export const baseservices_exceptions_unittests_throwInFinally = CoreClr.coreclr_
     name: "ThrowInFinally",
     srcs: ["throwinfinally.cs", "trace.cs"],
     pri: 1,
-    run: false,
     size: "medium",
 });
 
@@ -163,7 +147,6 @@ export const baseservices_exceptions_unittests_throwInFinallyNestedInTry = CoreC
     name: "ThrowInFinallyNestedInTry",
     srcs: ["ThrowInFinallyNestedInTry.cs", "trace.cs"],
     pri: 1,
-    run: false,
     size: "medium",
 });
 
@@ -172,6 +155,5 @@ export const baseservices_exceptions_unittests_tryCatchInFinally = CoreClr.corec
     name: "TryCatchInFinally",
     srcs: ["trace.cs", "trycatchinfinally.cs"],
     pri: 1,
-    run: false,
     size: "medium",
 });

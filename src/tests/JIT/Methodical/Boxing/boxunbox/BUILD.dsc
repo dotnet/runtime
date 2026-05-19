@@ -119,7 +119,6 @@ export const jIT_Methodical_Boxing_boxunbox_keepAliveBoxOpt = CoreClr.coreclr_te
     name: "KeepAliveBoxOpt",
     srcs: ["KeepAliveBoxOpt.cs"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -127,7 +126,6 @@ export const jIT_Methodical_Boxing_boxunbox_huge_filter_d = CoreClr.il_coreclr_t
     name: "huge_filter_d",
     srcs: ["huge_filter_d.il", "huge_filter.il"],
     debugType: "full",
-    run: false,
 });
 
 @@public
@@ -185,5 +183,4 @@ export const jIT_Methodical_Boxing_boxunbox_huge_filter_r = CoreClr.il_coreclr_t
     name: "huge_filter_r",
     srcs: ["huge_filter_r.il", "huge_filter.il"],
     debugType: "pdbonly",
-    run: false,
 });

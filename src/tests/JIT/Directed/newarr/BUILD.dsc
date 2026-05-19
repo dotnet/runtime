@@ -11,5 +11,4 @@ export const jIT_Directed_newarr_newarr = CoreClr.coreclr_test({
     name: "newarr",
     srcs: ["newarr.cs"],
     debugType: "pdbonly",
-    run: false,
 });

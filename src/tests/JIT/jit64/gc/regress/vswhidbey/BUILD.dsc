@@ -12,7 +12,6 @@ export const jIT_jit64_gc_regress_vswhidbey__143837 = CoreClr.coreclr_test({
     srcs: ["143837.cs"],
     debugType: "full",
     optimize: false,
-    run: false,
 });
 
 @@public

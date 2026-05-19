@@ -20,7 +20,6 @@ export const jIT_Methodical_int64_signed_s_ldc_mulovf_il_r = CoreClr.il_coreclr_
     name: "s_ldc_mulovf_il_r",
     srcs: ["s_ldc_mulovf_r.il", "s_ldc_mulovf.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -37,7 +36,6 @@ export const jIT_Methodical_int64_signed_s_ldsfld_mulovf_il_d = CoreClr.il_corec
     name: "s_ldsfld_mulovf_il_d",
     srcs: ["s_ldsfld_mulovf_d.il", "s_ldsfld_mulovf.il"],
     debugType: "full",
-    run: false,
 });
 
 @@public
@@ -45,7 +43,6 @@ export const jIT_Methodical_int64_signed_s_ldfld_mulovf_il_r = CoreClr.il_corecl
     name: "s_ldfld_mulovf_il_r",
     srcs: ["s_ldfld_mulovf_r.il", "s_ldfld_mulovf.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -53,7 +50,6 @@ export const jIT_Methodical_int64_signed_s_ldc_div_il_r = CoreClr.il_coreclr_tes
     name: "s_ldc_div_il_r",
     srcs: ["s_ldc_div_r.il", "s_ldc_div.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -61,7 +57,6 @@ export const jIT_Methodical_int64_signed_s_muldiv_il_r = CoreClr.il_coreclr_test
     name: "s_muldiv_il_r",
     srcs: ["s_muldiv_r.il", "s_muldiv.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -96,7 +91,6 @@ export const jIT_Methodical_int64_signed_s_ldfld_mulovf_il_d = CoreClr.il_corecl
     name: "s_ldfld_mulovf_il_d",
     srcs: ["s_ldfld_mulovf_d.il", "s_ldfld_mulovf.il"],
     debugType: "full",
-    run: false,
 });
 
 @@public
@@ -104,7 +98,6 @@ export const jIT_Methodical_int64_signed_s_ldsfld_mulovf_il_r = CoreClr.il_corec
     name: "s_ldsfld_mulovf_il_r",
     srcs: ["s_ldsfld_mulovf_r.il", "s_ldsfld_mulovf.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -130,7 +123,6 @@ export const jIT_Methodical_int64_signed_s_muldiv_il_d = CoreClr.il_coreclr_test
     name: "s_muldiv_il_d",
     srcs: ["s_muldiv_d.il", "s_muldiv.il"],
     debugType: "full",
-    run: false,
 });
 
 @@public
@@ -138,7 +130,6 @@ export const jIT_Methodical_int64_signed_s_ldc_mulovf_il_d = CoreClr.il_coreclr_
     name: "s_ldc_mulovf_il_d",
     srcs: ["s_ldc_mulovf_d.il", "s_ldc_mulovf.il"],
     debugType: "full",
-    run: false,
 });
 
 @@public
@@ -146,7 +137,6 @@ export const jIT_Methodical_int64_signed_s_ldc_div_il_d = CoreClr.il_coreclr_tes
     name: "s_ldc_div_il_d",
     srcs: ["s_ldc_div_d.il", "s_ldc_div.il"],
     debugType: "full",
-    run: false,
 });
 
 @@public

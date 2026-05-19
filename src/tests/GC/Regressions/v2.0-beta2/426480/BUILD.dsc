@@ -10,5 +10,4 @@ import * as CoreClr from "CoreClrTest";
 export const gC_Regressions_v2_0_beta2_426480__426480 = CoreClr.coreclr_test({
     name: "426480",
     srcs: ["426480.cs"],
-    run: false,
 });

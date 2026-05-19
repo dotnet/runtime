@@ -12,7 +12,6 @@ export const jIT_jit64_opt_rngchk_rngchkStress2_o = CoreClr.coreclr_test({
     srcs: ["RngchkStress2.cs"],
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });
 
 @@public
@@ -21,7 +20,6 @@ export const jIT_jit64_opt_rngchk_arrayWithThread_o = CoreClr.coreclr_test({
     srcs: ["ArrayWithThread.cs"],
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });
 
 @@public
@@ -30,7 +28,6 @@ export const jIT_jit64_opt_rngchk_arrayBound_o = CoreClr.coreclr_test({
     srcs: ["ArrayBound.cs"],
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });
 
 @@public
@@ -39,7 +36,6 @@ export const jIT_jit64_opt_rngchk_arrayWithFunc_o = CoreClr.coreclr_test({
     srcs: ["ArrayWithFunc.cs"],
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });
 
 @@public
@@ -48,7 +44,6 @@ export const jIT_jit64_opt_rngchk_badMatrixMul_o = CoreClr.coreclr_test({
     srcs: ["BadMatrixMul.cs"],
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });
 
 @@public
@@ -57,7 +52,6 @@ export const jIT_jit64_opt_rngchk_simpleArray_01_o = CoreClr.coreclr_test({
     srcs: ["SimpleArray_01.cs"],
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });
 
 @@public
@@ -66,8 +60,8 @@ export const jIT_jit64_opt_rngchk_rngchkStress3 = CoreClr.coreclr_test({
     srcs: ["RngchkStress3.cs"],
     debugType: "full",
     optimize: false,
-    run: false,
     size: "medium",
+    run: false,
 });
 
 @@public
@@ -86,7 +80,6 @@ export const jIT_jit64_opt_rngchk_rngchkStress1_o = CoreClr.coreclr_test({
     srcs: ["RngchkStress1.cs"],
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });
 
 @@public
@@ -95,7 +88,6 @@ export const jIT_jit64_opt_rngchk_jaggedArray_o = CoreClr.coreclr_test({
     srcs: ["JaggedArray.cs"],
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });
 
 @@public
@@ -104,5 +96,4 @@ export const jIT_jit64_opt_rngchk_arrayWith2Loops_o = CoreClr.coreclr_test({
     srcs: ["ArrayWith2Loops.cs"],
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });

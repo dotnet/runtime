@@ -12,5 +12,4 @@ export const jIT_Regression_VS_ia64_JIT_V2_0_Beta2_b309576_b309576 = CoreClr.il_
     srcs: ["b309576.il"],
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });

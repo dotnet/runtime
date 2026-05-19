@@ -36,7 +36,6 @@ export const coreMangLib_system_delegate_miscellaneous_invokeNull = CoreClr.il_c
     srcs: ["InvokeNull.il"],
     pri: 1,
     size: "medium",
-    run: false,
 });
 
 @@public

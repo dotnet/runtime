@@ -13,5 +13,4 @@ export const jIT_Regression_JitBlue_DevDiv_524309_devDiv_524309 = CoreClr.il_cor
     optimize: true,
     pri: 1,
     size: "medium",
-    run: false,
 });

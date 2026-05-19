@@ -14,5 +14,4 @@ export const jIT_jit64_regress_vsw_153682_test_153682 = CoreClr.il_coreclr_test(
     optimize: true,
     pri: 1,
     size: "medium",
-    run: false,
 });

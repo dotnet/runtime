@@ -12,7 +12,6 @@ export const jIT_Methodical_Coverage_b518440 = CoreClr.il_coreclr_test({
     srcs: ["b518440.il"],
     pri: 1,
     size: "medium",
-    run: false,
 });
 
 @@public
@@ -32,5 +31,4 @@ export const jIT_Methodical_Coverage_hole = CoreClr.il_coreclr_test({
 export const jIT_Methodical_Coverage_b39946 = CoreClr.il_coreclr_test({
     name: "b39946",
     srcs: ["b39946.il"],
-    run: false,
 });

@@ -13,5 +13,4 @@ export const jIT_opt_Hoisting_hoisting = CoreClr.coreclr_test({
     allowUnsafe: true,
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });

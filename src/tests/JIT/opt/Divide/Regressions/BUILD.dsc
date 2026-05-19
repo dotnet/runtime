@@ -25,5 +25,4 @@ export const jIT_opt_Divide_Regressions_regression1_Divide = CoreClr.coreclr_tes
     name: "Regression1_Divide",
     srcs: ["Regression1_Divide.cs"],
     optimize: true,
-    run: false,
 });

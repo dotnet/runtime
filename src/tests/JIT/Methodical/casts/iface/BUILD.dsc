@@ -11,7 +11,6 @@ export const jIT_Methodical_casts_iface_iface2_r = CoreClr.il_coreclr_test({
     name: "iface2_r",
     srcs: ["iface2_r.il", "iface2.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -19,5 +18,4 @@ export const jIT_Methodical_casts_iface_iface2_d = CoreClr.il_coreclr_test({
     name: "iface2_d",
     srcs: ["iface2_d.il", "iface2.il"],
     debugType: "full",
-    run: false,
 });

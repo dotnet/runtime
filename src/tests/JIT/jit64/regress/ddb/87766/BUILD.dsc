@@ -12,5 +12,4 @@ export const jIT_jit64_regress_ddb_87766_ddb87766 = CoreClr.coreclr_test({
     srcs: ["ddb87766.cs"],
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });

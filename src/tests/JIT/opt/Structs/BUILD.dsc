@@ -27,7 +27,6 @@ export const jIT_opt_Structs_structcopies = CoreClr.coreclr_test({
     name: "structcopies",
     srcs: ["structcopies.cs"],
     optimize: true,
-    run: false,
 });
 
 @@public
@@ -44,5 +43,4 @@ export const jIT_opt_Structs_memsetMemcpyNullref = CoreClr.coreclr_test({
     srcs: ["MemsetMemcpyNullref.cs"],
     allowUnsafe: true,
     optimize: true,
-    run: false,
 });

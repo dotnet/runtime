@@ -12,5 +12,4 @@ export const jIT_Directed_coverage_compiler_filterToHandler = CoreClr.il_coreclr
     srcs: ["FilterToHandler.il"],
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });

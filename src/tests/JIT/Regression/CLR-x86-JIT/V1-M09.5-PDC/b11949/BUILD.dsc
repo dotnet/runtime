@@ -14,5 +14,4 @@ export const jIT_Regression_CLR_x86_JIT_V1_M09_5_PDC_b11949_b11949 = CoreClr.il_
     optimize: true,
     pri: 1,
     size: "medium",
-    run: false,
 });

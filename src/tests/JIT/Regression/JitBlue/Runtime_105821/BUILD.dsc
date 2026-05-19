@@ -11,5 +11,4 @@ export const jIT_Regression_JitBlue_Runtime_105821_runtime_105821 = CoreClr.core
     name: "Runtime_105821",
     srcs: ["Runtime_105821.cs"],
     optimize: false,
-    run: false,
 });

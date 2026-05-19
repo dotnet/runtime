@@ -11,5 +11,4 @@ export const jIT_Directed_gettypetypeof_gettypetypeofmatrix_gettypetypeof = Core
     name: "gettypetypeofmatrix_gettypetypeof",
     srcs: ["gettypetypeofmatrix.cs"],
     optimize: true,
-    run: false,
 });

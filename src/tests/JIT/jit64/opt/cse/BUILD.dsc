@@ -74,7 +74,6 @@ export const jIT_jit64_opt_cse_staticFieldExprUnchecked1_r_loop = CoreClr.corecl
     name: "staticFieldExprUnchecked1_r_loop",
     srcs: ["staticFieldExprUnchecked1.cs"],
     defines: ["LOOP"],
-    run: false,
 });
 
 @@public
@@ -138,7 +137,6 @@ export const jIT_jit64_opt_cse_fieldExprUnchecked1 = CoreClr.coreclr_test({
     name: "fieldExprUnchecked1",
     srcs: ["fieldExprUnchecked1.cs"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -226,7 +224,6 @@ export const jIT_jit64_opt_cse_arrayexpr1 = CoreClr.coreclr_test({
 export const jIT_jit64_opt_cse_staticFieldExprUnchecked1_r = CoreClr.coreclr_test({
     name: "staticFieldExprUnchecked1_r",
     srcs: ["staticFieldExprUnchecked1.cs"],
-    run: false,
 });
 
 @@public
@@ -261,7 +258,6 @@ export const jIT_jit64_opt_cse_staticFieldExprUnchecked1_r_try = CoreClr.coreclr
     name: "staticFieldExprUnchecked1_r_try",
     srcs: ["staticFieldExprUnchecked1.cs"],
     defines: ["TRY"],
-    run: false,
 });
 
 @@public
@@ -270,7 +266,6 @@ export const jIT_jit64_opt_cse_staticFieldExprUnchecked1_ro_loop = CoreClr.corec
     srcs: ["staticFieldExprUnchecked1.cs"],
     defines: ["LOOP"],
     optimize: true,
-    run: false,
 });
 
 @@public
@@ -305,7 +300,6 @@ export const jIT_jit64_opt_cse_staticFieldExprUnchecked1_r_loop_try = CoreClr.co
     name: "staticFieldExprUnchecked1_r_loop_try",
     srcs: ["staticFieldExprUnchecked1.cs"],
     defines: ["LOOP", "TRY"],
-    run: false,
 });
 
 @@public
@@ -449,7 +443,6 @@ export const jIT_jit64_opt_cse_staticFieldExprUnchecked1_d_loop_try = CoreClr.co
     debugType: "full",
     defines: ["LOOP", "TRY"],
     optimize: false,
-    run: false,
 });
 
 @@public

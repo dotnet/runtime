@@ -11,6 +11,5 @@ export const loader_classloader_generics_regressions_DD117522_test = CoreClr.cor
     name: "Test",
     srcs: ["Test.cs"],
     pri: 1,
-    run: false,
     size: "medium",
 });

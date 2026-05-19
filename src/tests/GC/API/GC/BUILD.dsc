@@ -36,28 +36,24 @@ export const gC_API_GC_collect_Aggressive = CoreClr.coreclr_test({
 export const gC_API_GC_collect_Aggressive_MultipleParameters = CoreClr.coreclr_test({
     name: "Collect_Aggressive_MultipleParameters",
     srcs: ["Collect_Aggressive_MultipleParameters.cs"],
-    run: false,
 });
 
 @@public
 export const gC_API_GC_collect_fail = CoreClr.coreclr_test({
     name: "Collect_fail",
     srcs: ["Collect_fail.cs"],
-    run: false,
 });
 
 @@public
 export const gC_API_GC_collect_neg = CoreClr.coreclr_test({
     name: "Collect_neg",
     srcs: ["Collect_neg.cs"],
-    run: false,
 });
 
 @@public
 export const gC_API_GC_collectionCountTest = CoreClr.coreclr_test({
     name: "CollectionCountTest",
     srcs: ["CollectionCountTest.cs"],
-    run: false,
 });
 
 @@public
@@ -84,21 +80,18 @@ export const gC_API_GC_getConfigurationVariables = CoreClr.coreclr_test({
 export const gC_API_GC_getGCMemoryInfo = CoreClr.coreclr_test({
     name: "GetGCMemoryInfo",
     srcs: ["GetGCMemoryInfo.cs"],
-    run: false,
 });
 
 @@public
 export const gC_API_GC_getGeneration = CoreClr.coreclr_test({
     name: "GetGeneration",
     srcs: ["GetGeneration.cs"],
-    run: false,
 });
 
 @@public
 export const gC_API_GC_getGenerationWR = CoreClr.coreclr_test({
     name: "GetGenerationWR",
     srcs: ["GetGenerationWR.cs"],
-    run: false,
 });
 
 @@public
@@ -121,7 +114,6 @@ export const gC_API_GC_getGeneration_box = CoreClr.coreclr_test({
 export const gC_API_GC_getGeneration_fail = CoreClr.coreclr_test({
     name: "GetGeneration_fail",
     srcs: ["GetGeneration_fail.cs"],
-    run: false,
 });
 
 @@public
@@ -180,14 +172,12 @@ export const gC_API_GC_reRegisterForFinalize = CoreClr.coreclr_test({
 export const gC_API_GC_reRegisterForFinalize_null = CoreClr.coreclr_test({
     name: "ReRegisterForFinalize_null",
     srcs: ["ReRegisterForFinalize_null.cs"],
-    run: false,
 });
 
 @@public
 export const gC_API_GC_suppressFinalize_Null = CoreClr.coreclr_test({
     name: "SuppressFinalize_Null",
     srcs: ["SuppressFinalize_Null.cs"],
-    run: false,
 });
 
 @@public

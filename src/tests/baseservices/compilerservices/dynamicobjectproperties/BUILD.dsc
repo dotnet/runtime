@@ -19,7 +19,6 @@ export const baseservices_compilerservices_dynamicobjectproperties_testAPIs = Co
     name: "TestAPIs",
     srcs: ["helper.cs", "testapis.cs"],
     pri: 1,
-    run: false,
     size: "medium",
 });
 

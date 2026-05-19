@@ -32,7 +32,6 @@ export const jIT_Methodical_switch_switch6 = CoreClr.il_coreclr_test({
     srcs: ["switch6.il"],
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });
 
 @@public

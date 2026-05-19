@@ -11,6 +11,5 @@ export const baseservices_exceptions_regressions_whidbeyM3_2__151232 = CoreClr.c
     name: "151232",
     srcs: ["151232.cs"],
     pri: 1,
-    run: false,
     size: "medium",
 });

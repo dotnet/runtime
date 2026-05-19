@@ -11,7 +11,6 @@ export const jIT_Methodical_int64_superlong_superlong_il_r = CoreClr.il_coreclr_
     name: "superlong_il_r",
     srcs: ["superlong_r.il", "superlong.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -19,5 +18,4 @@ export const jIT_Methodical_int64_superlong_superlong_il_d = CoreClr.il_coreclr_
     name: "superlong_il_d",
     srcs: ["superlong_d.il", "superlong.il"],
     debugType: "full",
-    run: false,
 });

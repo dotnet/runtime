@@ -12,6 +12,5 @@ export const jIT_jit64_regress_vsw_471729_test_471729 = CoreClr.coreclr_test({
     srcs: ["test.cs"],
     debugType: "pdbonly",
     pri: 1,
-    run: false,
     size: "medium",
 });

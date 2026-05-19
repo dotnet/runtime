@@ -12,5 +12,4 @@ export const jIT_jit64_regress_ddb_127931__127931 = CoreClr.il_coreclr_test({
     srcs: ["127931.il"],
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });

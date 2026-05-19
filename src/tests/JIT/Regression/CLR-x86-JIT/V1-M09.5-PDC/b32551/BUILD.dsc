@@ -12,7 +12,6 @@ export const jIT_Regression_CLR_x86_JIT_V1_M09_5_PDC_b32551_b32551a = CoreClr.il
     srcs: ["b32551a.il"],
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });
 
 @@public
@@ -21,5 +20,4 @@ export const jIT_Regression_CLR_x86_JIT_V1_M09_5_PDC_b32551_b32551b = CoreClr.il
     srcs: ["b32551b.il"],
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });

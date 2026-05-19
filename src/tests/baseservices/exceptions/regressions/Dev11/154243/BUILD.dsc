@@ -11,6 +11,5 @@ export const baseservices_exceptions_regressions_Dev11_154243_dynamicmethodliven
     name: "dynamicmethodliveness",
     srcs: ["dynamicmethodliveness.cs"],
     pri: 1,
-    run: false,
     size: "medium",
 });

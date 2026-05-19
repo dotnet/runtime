@@ -12,7 +12,6 @@ export const jIT_jit64_localloc_ehverify_eh05_small_il = CoreClr.il_coreclr_test
     srcs: ["eh05_small.il"],
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });
 
 @@public
@@ -21,7 +20,6 @@ export const jIT_jit64_localloc_ehverify_eh05_large_il = CoreClr.il_coreclr_test
     srcs: ["eh05_large.il"],
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });
 
 @@public
@@ -30,7 +28,6 @@ export const jIT_jit64_localloc_ehverify_eh08_large = CoreClr.il_coreclr_test({
     srcs: ["eh08_large.il"],
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });
 
 @@public
@@ -39,7 +36,6 @@ export const jIT_jit64_localloc_ehverify_eh06_large = CoreClr.il_coreclr_test({
     srcs: ["eh06_large.il"],
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });
 
 @@public
@@ -48,7 +44,6 @@ export const jIT_jit64_localloc_ehverify_eh08_small = CoreClr.il_coreclr_test({
     srcs: ["eh08_small.il"],
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });
 
 @@public
@@ -57,5 +52,4 @@ export const jIT_jit64_localloc_ehverify_eh06_small = CoreClr.il_coreclr_test({
     srcs: ["eh06_small.il"],
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });

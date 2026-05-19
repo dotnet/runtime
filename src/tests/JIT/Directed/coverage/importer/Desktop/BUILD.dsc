@@ -11,7 +11,6 @@ export const jIT_Directed_coverage_importer_Desktop_badldsfld_d = CoreClr.il_cor
     name: "badldsfld_d",
     srcs: ["badldsfld_d.il", "badldsfld.il"],
     debugType: "full",
-    run: false,
 });
 
 @@public
@@ -91,7 +90,6 @@ export const jIT_Directed_coverage_importer_Desktop_volatilldind_r = CoreClr.il_
     name: "volatilldind_r",
     srcs: ["volatilldind_r.il", "volatilldind.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -99,7 +97,6 @@ export const jIT_Directed_coverage_importer_Desktop_ldelemnullarr2_r = CoreClr.i
     name: "ldelemnullarr2_r",
     srcs: ["ldelemnullarr2_r.il", "ldelemnullarr2.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -116,7 +113,6 @@ export const jIT_Directed_coverage_importer_Desktop_ldelemnullarr2_d = CoreClr.i
     name: "ldelemnullarr2_d",
     srcs: ["ldelemnullarr2_d.il", "ldelemnullarr2.il"],
     debugType: "full",
-    run: false,
 });
 
 @@public
@@ -142,7 +138,6 @@ export const jIT_Directed_coverage_importer_Desktop_badldsfld_r = CoreClr.il_cor
     name: "badldsfld_r",
     srcs: ["badldsfld_r.il", "badldsfld.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -159,7 +154,6 @@ export const jIT_Directed_coverage_importer_Desktop_volatilstind_r = CoreClr.il_
     name: "volatilstind_r",
     srcs: ["volatilstind_r.il", "volatilstind.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -185,7 +179,6 @@ export const jIT_Directed_coverage_importer_Desktop_badendfinally_r = CoreClr.il
     name: "badendfinally_r",
     srcs: ["badendfinally_r.il", "badendfinally.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -202,7 +195,6 @@ export const jIT_Directed_coverage_importer_Desktop_badendfinally_d = CoreClr.il
     name: "badendfinally_d",
     srcs: ["badendfinally_d.il", "badendfinally.il"],
     debugType: "full",
-    run: false,
 });
 
 @@public
@@ -210,7 +202,6 @@ export const jIT_Directed_coverage_importer_Desktop_nullsdarr_d = CoreClr.il_cor
     name: "nullsdarr_d",
     srcs: ["nullsdarr_d.il", "nullsdarr.il"],
     debugType: "full",
-    run: false,
 });
 
 @@public
@@ -218,7 +209,6 @@ export const jIT_Directed_coverage_importer_Desktop_nullsdarr_r = CoreClr.il_cor
     name: "nullsdarr_r",
     srcs: ["nullsdarr_r.il", "nullsdarr.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -226,7 +216,6 @@ export const jIT_Directed_coverage_importer_Desktop_ceeillegal_d = CoreClr.il_co
     name: "ceeillegal_d",
     srcs: ["ceeillegal_d.il", "ceeillegal.il"],
     debugType: "full",
-    run: false,
 });
 
 @@public
@@ -252,7 +241,6 @@ export const jIT_Directed_coverage_importer_Desktop_volatilstind_d = CoreClr.il_
     name: "volatilstind_d",
     srcs: ["volatilstind_d.il", "volatilstind.il"],
     debugType: "full",
-    run: false,
 });
 
 @@public
@@ -278,7 +266,6 @@ export const jIT_Directed_coverage_importer_Desktop_ceeillegal_r = CoreClr.il_co
     name: "ceeillegal_r",
     srcs: ["ceeillegal_r.il", "ceeillegal.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -295,5 +282,4 @@ export const jIT_Directed_coverage_importer_Desktop_volatilldind_d = CoreClr.il_
     name: "volatilldind_d",
     srcs: ["volatilldind_d.il", "volatilldind.il"],
     debugType: "full",
-    run: false,
 });

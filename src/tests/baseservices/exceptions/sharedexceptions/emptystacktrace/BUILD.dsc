@@ -11,6 +11,5 @@ export const baseservices_exceptions_sharedexceptions_emptystacktrace_oOMExcepti
     name: "OOMException01",
     srcs: ["oomexception01.cs"],
     pri: 1,
-    run: false,
     size: "medium",
 });

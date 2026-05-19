@@ -12,7 +12,6 @@ export const baseservices_exceptions_regressions_V1_SEH_asm_except = CoreClr.il_
     srcs: ["Except.il"],
     pri: 1,
     size: "medium",
-    run: false,
 });
 
 @@public
@@ -21,7 +20,6 @@ export const baseservices_exceptions_regressions_V1_SEH_asm_filtCatch = CoreClr.
     srcs: ["FiltCatch.il"],
     pri: 1,
     size: "medium",
-    run: false,
 });
 
 @@public
@@ -30,7 +28,6 @@ export const baseservices_exceptions_regressions_V1_SEH_asm_filtFallThru = CoreC
     srcs: ["FiltFallThru.il"],
     pri: 1,
     size: "medium",
-    run: false,
 });
 
 @@public
@@ -39,7 +36,6 @@ export const baseservices_exceptions_regressions_V1_SEH_asm_filter = CoreClr.il_
     srcs: ["Filter.il"],
     pri: 1,
     size: "medium",
-    run: false,
 });
 
 @@public
@@ -48,7 +44,6 @@ export const baseservices_exceptions_regressions_V1_SEH_asm_finally_ = CoreClr.i
     srcs: ["Finally.il"],
     pri: 1,
     size: "medium",
-    run: false,
 });
 
 @@public
@@ -57,7 +52,6 @@ export const baseservices_exceptions_regressions_V1_SEH_asm_nestedExcept = CoreC
     srcs: ["NestedExcept.il"],
     pri: 1,
     size: "medium",
-    run: false,
 });
 
 @@public
@@ -66,5 +60,4 @@ export const baseservices_exceptions_regressions_V1_SEH_asm_nestedFilt = CoreClr
     srcs: ["NestedFilt.il"],
     pri: 1,
     size: "medium",
-    run: false,
 });

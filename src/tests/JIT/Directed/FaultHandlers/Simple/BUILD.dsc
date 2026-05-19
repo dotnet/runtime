@@ -14,5 +14,4 @@ export const jIT_Directed_FaultHandlers_Simple_simple = CoreClr.il_coreclr_test(
     optimize: true,
     pri: 1,
     size: "medium",
-    run: false,
 });

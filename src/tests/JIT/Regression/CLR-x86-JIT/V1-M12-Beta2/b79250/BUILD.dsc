@@ -11,5 +11,4 @@ export const jIT_Regression_CLR_x86_JIT_V1_M12_Beta2_b79250_b79250 = CoreClr.il_
     name: "b79250",
     srcs: ["b79250.il"],
     optimize: true,
-    run: false,
 });

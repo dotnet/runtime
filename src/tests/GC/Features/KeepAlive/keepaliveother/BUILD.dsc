@@ -48,7 +48,6 @@ export const gC_Features_KeepAlive_keepaliveother_keepalivescope = CoreClr.corec
 export const gC_Features_KeepAlive_keepaliveother_keepalivetry = CoreClr.coreclr_test({
     name: "keepalivetry",
     srcs: ["keepalivetry.cs"],
-    run: false,
 });
 
 @@public

@@ -10,12 +10,10 @@ import * as CoreClr from "CoreClrTest";
 export const loader_classloader_MethodImpl_CovariantReturns_ReturnTypeValidation_implicitOverrideSameSigAsDecl = CoreClr.il_coreclr_test({
     name: "ImplicitOverrideSameSigAsDecl",
     srcs: ["ImplicitOverrideSameSigAsDecl.il"],
-    run: false,
 });
 
 @@public
 export const loader_classloader_MethodImpl_CovariantReturns_ReturnTypeValidation_overrideSameSigAsDecl = CoreClr.il_coreclr_test({
     name: "OverrideSameSigAsDecl",
     srcs: ["OverrideSameSigAsDecl.il"],
-    run: false,
 });

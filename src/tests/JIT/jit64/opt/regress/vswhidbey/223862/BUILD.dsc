@@ -11,7 +11,6 @@ export const jIT_jit64_opt_regress_vswhidbey_223862_conv_223862_d = CoreClr.il_c
     name: "conv_223862_d",
     srcs: ["conv_d.il", "conv.il"],
     debugType: "full",
-    run: false,
 });
 
 @@public
@@ -30,7 +29,6 @@ export const jIT_jit64_opt_regress_vswhidbey_223862_conv_223862_r = CoreClr.il_c
     srcs: ["conv_r.il", "conv.il"],
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });
 
 @@public
@@ -39,7 +37,6 @@ export const jIT_jit64_opt_regress_vswhidbey_223862_mul_exception_r = CoreClr.il
     srcs: ["mul_exception_r.il", "mul_exception.il"],
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });
 
 @@public
@@ -95,7 +92,6 @@ export const jIT_jit64_opt_regress_vswhidbey_223862_mul_exception_d = CoreClr.il
     name: "mul_exception_d",
     srcs: ["mul_exception_d.il", "mul_exception.il"],
     debugType: "full",
-    run: false,
 });
 
 @@public

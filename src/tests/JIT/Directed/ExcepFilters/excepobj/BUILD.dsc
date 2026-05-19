@@ -12,5 +12,4 @@ export const jIT_Directed_ExcepFilters_excepobj_excepobj = CoreClr.il_coreclr_te
     srcs: ["excepobj.il"],
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });

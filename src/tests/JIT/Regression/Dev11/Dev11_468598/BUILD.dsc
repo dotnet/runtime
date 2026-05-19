@@ -12,7 +12,6 @@ export const jIT_Regression_Dev11_Dev11_468598_test_HndIndex_10_Reordered = Core
     srcs: ["Test_HndIndex_10_Reordered.il"],
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });
 
 @@public
@@ -21,5 +20,4 @@ export const jIT_Regression_Dev11_Dev11_468598_test_HndIndex_10_Plain = CoreClr.
     srcs: ["Test_HndIndex_10_Plain.il"],
     debugType: "full",
     optimize: false,
-    run: false,
 });

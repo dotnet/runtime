@@ -12,5 +12,4 @@ export const jIT_jit64_verif_sniff_fg_ver_fg_13 = CoreClr.il_coreclr_test({
     srcs: ["ver_fg_13.il"],
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });

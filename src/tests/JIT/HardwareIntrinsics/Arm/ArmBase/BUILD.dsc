@@ -12,7 +12,6 @@ export const jIT_HardwareIntrinsics_Arm_ArmBase_yield_ro = CoreClr.coreclr_test(
     srcs: ["Yield.cs"],
     allowUnsafe: true,
     optimize: true,
-    run: false,
 });
 
 @@public
@@ -20,5 +19,4 @@ export const jIT_HardwareIntrinsics_Arm_ArmBase_yield_r = CoreClr.coreclr_test({
     name: "Yield_r",
     srcs: ["Yield.cs"],
     allowUnsafe: true,
-    run: false,
 });

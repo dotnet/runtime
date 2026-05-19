@@ -12,5 +12,4 @@ export const jIT_Regression_Dev11_dev11_4421_dev11_4421 = CoreClr.coreclr_test({
     srcs: ["Dev11_4421.cs"],
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });

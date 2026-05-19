@@ -11,6 +11,6 @@ export const gC_Regressions_v2_0_beta2_462651__462651 = CoreClr.coreclr_test({
     name: "462651",
     srcs: ["462651.cs"],
     pri: 1,
-    run: false,
     size: "medium",
+    run: false,
 });

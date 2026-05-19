@@ -11,6 +11,5 @@ export const loader_AssemblyDependencyResolver_MissingHostPolicyTests_missingHos
     name: "MissingHostPolicyTests",
     srcs: ["InvalidHostingTest.cs"],
     pri: 1,
-    run: false,
     size: "medium",
 });

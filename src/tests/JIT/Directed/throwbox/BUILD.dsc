@@ -12,7 +12,6 @@ export const jIT_Directed_throwbox_rethrow = CoreClr.il_coreclr_test({
     srcs: ["rethrow.il"],
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });
 
 @@public
@@ -21,7 +20,6 @@ export const jIT_Directed_throwbox_finally_ = CoreClr.il_coreclr_test({
     srcs: ["finally.il"],
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });
 
 @@public
@@ -30,7 +28,6 @@ export const jIT_Directed_throwbox_filter = CoreClr.il_coreclr_test({
     srcs: ["filter.il"],
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });
 
 @@public
@@ -39,5 +36,4 @@ export const jIT_Directed_throwbox_fault_throwbox = CoreClr.il_coreclr_test({
     srcs: ["fault.il"],
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });

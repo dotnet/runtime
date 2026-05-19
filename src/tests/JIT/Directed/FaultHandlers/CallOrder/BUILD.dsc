@@ -14,5 +14,4 @@ export const jIT_Directed_FaultHandlers_CallOrder_callOrder = CoreClr.il_coreclr
     optimize: true,
     pri: 1,
     size: "medium",
-    run: false,
 });

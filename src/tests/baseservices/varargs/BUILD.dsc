@@ -10,12 +10,10 @@ import * as CoreClr from "CoreClrTest";
 export const baseservices_varargs_varargsupport = CoreClr.il_coreclr_test({
     name: "varargsupport",
     srcs: ["varargsupport.il"],
-    run: false,
 });
 
 @@public
 export const baseservices_varargs_varargsupport_r = CoreClr.il_coreclr_test({
     name: "varargsupport_r",
     srcs: ["varargsupport.il"],
-    run: false,
 });

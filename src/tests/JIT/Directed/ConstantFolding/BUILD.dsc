@@ -12,7 +12,6 @@ export const jIT_Directed_ConstantFolding_value_numbering_checked_arithmetic_wit
     srcs: ["value_numbering_checked_integer_arithmetic_with_constants.cs"],
     optimize: true,
     pri: 1,
-    run: false,
     size: "medium",
 });
 

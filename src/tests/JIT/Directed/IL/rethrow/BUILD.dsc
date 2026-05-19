@@ -12,7 +12,6 @@ export const jIT_Directed_IL_rethrow_rethrow2 = CoreClr.il_coreclr_test({
     srcs: ["rethrow2.il"],
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });
 
 @@public
@@ -21,5 +20,4 @@ export const jIT_Directed_IL_rethrow_rethrow1 = CoreClr.il_coreclr_test({
     srcs: ["rethrow1.il"],
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });

@@ -10,5 +10,4 @@ import * as CoreClr from "CoreClrTest";
 export const loader_classloader_MethodImpl_CovariantReturns_Structs_incompatibleOverride = CoreClr.il_coreclr_test({
     name: "IncompatibleOverride",
     srcs: ["IncompatibleOverride.il"],
-    run: false,
 });

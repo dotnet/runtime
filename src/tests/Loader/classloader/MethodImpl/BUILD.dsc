@@ -10,14 +10,12 @@ import * as CoreClr from "CoreClrTest";
 export const loader_classloader_MethodImpl_internalMethodImplTest = CoreClr.coreclr_test({
     name: "InternalMethodImplTest",
     srcs: ["InternalMethodImplTest.cs"],
-    run: false,
 });
 
 @@public
 export const loader_classloader_MethodImpl_generics_override1 = CoreClr.il_coreclr_test({
     name: "generics_override1",
     srcs: ["generics_override1.il"],
-    run: false,
 });
 
 @@public
@@ -26,7 +24,6 @@ export const loader_classloader_MethodImpl_override_override1 = CoreClr.il_corec
     srcs: ["override_override1.il"],
     pri: 1,
     size: "medium",
-    run: false,
 });
 
 @@public
@@ -51,7 +48,6 @@ export const loader_classloader_MethodImpl_self_override3 = CoreClr.il_coreclr_t
     srcs: ["self_override3.il"],
     pri: 1,
     size: "medium",
-    run: false,
 });
 
 @@public

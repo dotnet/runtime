@@ -11,5 +11,4 @@ export const jIT_Regression_VS_ia64_JIT_V1_2_Beta1_b91944_b91944 = CoreClr.corec
     name: "b91944",
     srcs: ["_knu165r.cs"],
     debugType: "pdbonly",
-    run: false,
 });

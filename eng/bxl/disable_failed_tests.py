@@ -26,7 +26,7 @@ _BUILD_FAILED_ILASM_RE = re.compile(
     r"\|\| ilasm (\S+), (/[^,]+/BUILD\.dsc), [^]]+] - failed with exit code"
 )
 _TEST_FAILED_RE = re.compile(
-    r"\brun coreclr test: ([^,]+), (/[^,]+/BUILD\.dsc), [^]]+] - failed with exit code"
+    r"\brun (?:coreclr )?test: ([^,]+), (/[^,]+/BUILD\.dsc), [^]]+] - failed with exit code"
 )
 
 
@@ -40,6 +40,10 @@ def _collect_failures(log_path: Path, mode: str) -> dict[Path, set[str]]:
     for rx in regexes:
         for m in rx.finditer(text):
             target_name = m.group(1).strip()
+            # The test runner appends "_test" to the BUILD.dsc name: field.
+            # Strip it so we can match back to the source definition.
+            if mode == "test" and target_name.endswith("_test"):
+                target_name = target_name[:-5]
             build_path = Path(m.group(2).strip())
             failures.setdefault(build_path, set()).add(target_name)
     return failures

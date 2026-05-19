@@ -16,7 +16,6 @@ export const gC_Features_LOHCompaction_lohcompactapi = CoreClr.coreclr_test({
 export const gC_Features_LOHCompaction_lohcompactapi_exceptions = CoreClr.coreclr_test({
     name: "lohcompactapi_exceptions",
     srcs: ["lohcompactapi_exceptions.cs"],
-    run: false,
 });
 
 @@public

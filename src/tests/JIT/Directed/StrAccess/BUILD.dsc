@@ -86,7 +86,6 @@ export const jIT_Directed_StrAccess_straccess3_cs_d = CoreClr.coreclr_test({
     srcs: ["straccess3.cs"],
     debugType: "full",
     optimize: false,
-    run: false,
 });
 
 @@public
@@ -95,7 +94,6 @@ export const jIT_Directed_StrAccess_straccess3_cs_do = CoreClr.coreclr_test({
     srcs: ["straccess3.cs"],
     debugType: "full",
     optimize: true,
-    run: false,
 });
 
 @@public
@@ -103,7 +101,6 @@ export const jIT_Directed_StrAccess_straccess3_cs_r = CoreClr.coreclr_test({
     name: "straccess3_cs_r",
     srcs: ["straccess3.cs"],
     optimize: false,
-    run: false,
 });
 
 @@public
@@ -111,5 +108,4 @@ export const jIT_Directed_StrAccess_straccess3_cs_ro = CoreClr.coreclr_test({
     name: "straccess3_cs_ro",
     srcs: ["straccess3.cs"],
     optimize: true,
-    run: false,
 });

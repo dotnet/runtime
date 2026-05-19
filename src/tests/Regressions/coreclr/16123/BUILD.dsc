@@ -10,5 +10,4 @@ import * as CoreClr from "CoreClrTest";
 export const regressions_coreclr_16123_ambiguousconstraint = CoreClr.il_coreclr_test({
     name: "ambiguousconstraint",
     srcs: ["ambiguousconstraint.il"],
-    run: false,
 });

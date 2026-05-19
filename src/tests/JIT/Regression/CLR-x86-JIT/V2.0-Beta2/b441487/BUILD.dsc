@@ -11,5 +11,4 @@ export const jIT_Regression_CLR_x86_JIT_V2_0_Beta2_b441487_b441487 = CoreClr.il_
     name: "b441487",
     srcs: ["b441487.il"],
     optimize: true,
-    run: false,
 });

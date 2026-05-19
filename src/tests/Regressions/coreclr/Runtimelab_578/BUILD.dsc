@@ -12,5 +12,4 @@ export const regressions_coreclr_Runtimelab_578_arr = CoreClr.il_coreclr_test({
     srcs: ["arr.il"],
     pri: 1,
     size: "medium",
-    run: false,
 });

@@ -14,7 +14,6 @@ export const jIT_Methodical_xxblk_dynblk_order_r = CoreClr.il_coreclr_test({
     optimize: true,
     pri: 1,
     size: "medium",
-    run: false,
 });
 
 @@public
@@ -56,7 +55,6 @@ export const jIT_Methodical_xxblk_dynblk_order_d = CoreClr.il_coreclr_test({
     debugType: "full",
     pri: 1,
     size: "medium",
-    run: false,
 });
 
 @@public

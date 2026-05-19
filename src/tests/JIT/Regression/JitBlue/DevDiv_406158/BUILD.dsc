@@ -12,5 +12,4 @@ export const jIT_Regression_JitBlue_DevDiv_406158_devDiv_406158 = CoreClr.il_cor
     srcs: ["DevDiv_406158.il"],
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });

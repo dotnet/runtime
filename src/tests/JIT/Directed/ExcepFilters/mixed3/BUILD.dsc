@@ -12,5 +12,4 @@ export const jIT_Directed_ExcepFilters_mixed3_mixed3 = CoreClr.il_coreclr_test({
     srcs: ["mixed3.il"],
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });

@@ -14,5 +14,4 @@ export const jIT_Regression_CLR_x86_JIT_V2_0_RTM_b518440_b518440 = CoreClr.il_co
     optimize: true,
     pri: 1,
     size: "medium",
-    run: false,
 });

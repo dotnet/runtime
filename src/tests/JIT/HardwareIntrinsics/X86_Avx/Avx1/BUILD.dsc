@@ -10,7 +10,6 @@ import * as CoreClr from "CoreClrTest";
 export const jIT_HardwareIntrinsics_X86_Avx_Avx1_avx1_handwritten_r = CoreClr.coreclr_test({
     name: "Avx1_handwritten_r",
     srcs: ["HandwrittenProgram.cs", "//src/tests/JIT/HardwareIntrinsics/X86/Shared:SimpleUnOpTest_DataTable.cs", "Blend.cs", "CompareScalar.cs", "Compare.cs", "ConvertToVector128Int32.Double.cs", "ConvertToVector128Single.Double.cs", "ConvertToVector128Int32WithTruncation.Double.cs", "ConvertToVector256Double.Single.cs", "ConvertToVector256Double.Int32.cs", "DotProduct.cs", "HorizontalAdd.cs", "HorizontalSubtract.cs", "LoadAlignedVector256.cs", "LoadDquVector256.cs", "MoveMask.cs", "Sqrt.cs", "Store.cs", "StoreAligned.cs", "StoreAlignedNonTemporal.cs", "UnpackHigh.cs", "UnpackLow.cs"],
-    run: false,
 });
 
 @@public
@@ -18,7 +17,6 @@ export const jIT_HardwareIntrinsics_X86_Avx_Avx1_avx1_handwritten_ro = CoreClr.c
     name: "Avx1_handwritten_ro",
     srcs: ["HandwrittenProgram.cs", "//src/tests/JIT/HardwareIntrinsics/X86/Shared:SimpleUnOpTest_DataTable.cs", "Blend.cs", "CompareScalar.cs", "Compare.cs", "ConvertToVector128Int32.Double.cs", "ConvertToVector128Single.Double.cs", "ConvertToVector128Int32WithTruncation.Double.cs", "ConvertToVector256Double.Single.cs", "ConvertToVector256Double.Int32.cs", "DotProduct.cs", "HorizontalAdd.cs", "HorizontalSubtract.cs", "LoadAlignedVector256.cs", "LoadDquVector256.cs", "MoveMask.cs", "Sqrt.cs", "Store.cs", "StoreAligned.cs", "StoreAlignedNonTemporal.cs", "UnpackHigh.cs", "UnpackLow.cs"],
     optimize: true,
-    run: false,
 });
 
 @@public

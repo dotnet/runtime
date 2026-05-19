@@ -12,7 +12,6 @@ export const jIT_Regression_JitBlue_DevDiv_359736_devDiv_359736_d = CoreClr.core
     srcs: ["DevDiv_359736.cs"],
     debugType: "full",
     optimize: false,
-    run: false,
 });
 
 @@public
@@ -20,7 +19,6 @@ export const jIT_Regression_JitBlue_DevDiv_359736_devDiv_359736_ro = CoreClr.cor
     name: "DevDiv_359736_ro",
     srcs: ["DevDiv_359736.cs"],
     optimize: true,
-    run: false,
 });
 
 @@public
@@ -29,12 +27,10 @@ export const jIT_Regression_JitBlue_DevDiv_359736_devDiv_359736_do = CoreClr.cor
     srcs: ["DevDiv_359736.cs"],
     debugType: "full",
     optimize: true,
-    run: false,
 });
 
 @@public
 export const jIT_Regression_JitBlue_DevDiv_359736_devDiv_359736_r = CoreClr.coreclr_test({
     name: "DevDiv_359736_r",
     srcs: ["DevDiv_359736.cs"],
-    run: false,
 });

@@ -12,7 +12,6 @@ export const jIT_Generics_Exceptions_specific_struct_instance02 = CoreClr.corecl
     srcs: ["specific_struct_instance02.cs"],
     debugType: "pdbonly",
     pri: 1,
-    run: false,
     size: "medium",
 });
 
@@ -21,7 +20,6 @@ export const jIT_Generics_Exceptions_genericCatchInterfaceProgram = CoreClr.il_c
     name: "GenericCatchInterfaceProgram",
     srcs: ["GenericCatchInterfaceProgram.il"],
     optimize: true,
-    run: false,
 });
 
 @@public
@@ -30,7 +28,6 @@ export const jIT_Generics_Exceptions_specific_struct_static02 = CoreClr.coreclr_
     srcs: ["specific_struct_static02.cs"],
     debugType: "pdbonly",
     pri: 1,
-    run: false,
     size: "medium",
 });
 
@@ -40,7 +37,6 @@ export const jIT_Generics_Exceptions_specific_class_instance01 = CoreClr.coreclr
     srcs: ["specific_class_instance01.cs"],
     debugType: "pdbonly",
     pri: 1,
-    run: false,
     size: "medium",
 });
 
@@ -49,7 +45,6 @@ export const jIT_Generics_Exceptions_general_class_static01 = CoreClr.coreclr_te
     name: "general_class_static01",
     srcs: ["general_class_static01.cs"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -57,7 +52,6 @@ export const jIT_Generics_Exceptions_general_struct_static01 = CoreClr.coreclr_t
     name: "general_struct_static01",
     srcs: ["general_struct_static01.cs"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -66,7 +60,6 @@ export const jIT_Generics_Exceptions_specific_struct_static01 = CoreClr.coreclr_
     srcs: ["specific_struct_static01.cs"],
     debugType: "pdbonly",
     pri: 1,
-    run: false,
     size: "medium",
 });
 
@@ -75,7 +68,6 @@ export const jIT_Generics_Exceptions_general_struct_instance01 = CoreClr.coreclr
     name: "general_struct_instance01",
     srcs: ["general_struct_instance01.cs"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -84,7 +76,6 @@ export const jIT_Generics_Exceptions_specific_class_instance02 = CoreClr.coreclr
     srcs: ["specific_class_instance02.cs"],
     debugType: "pdbonly",
     pri: 1,
-    run: false,
     size: "medium",
 });
 
@@ -94,7 +85,6 @@ export const jIT_Generics_Exceptions_specific_struct_instance01 = CoreClr.corecl
     srcs: ["specific_struct_instance01.cs"],
     debugType: "pdbonly",
     pri: 1,
-    run: false,
     size: "medium",
 });
 
@@ -104,7 +94,6 @@ export const jIT_Generics_Exceptions_specific_class_static01 = CoreClr.coreclr_t
     srcs: ["specific_class_static01.cs"],
     debugType: "pdbonly",
     pri: 1,
-    run: false,
     size: "medium",
 });
 
@@ -114,7 +103,6 @@ export const jIT_Generics_Exceptions_specific_class_static02 = CoreClr.coreclr_t
     srcs: ["specific_class_static02.cs"],
     debugType: "pdbonly",
     pri: 1,
-    run: false,
     size: "medium",
 });
 
@@ -123,5 +111,4 @@ export const jIT_Generics_Exceptions_general_class_instance01 = CoreClr.coreclr_
     name: "general_class_instance01",
     srcs: ["general_class_instance01.cs"],
     debugType: "pdbonly",
-    run: false,
 });

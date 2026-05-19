@@ -10,5 +10,4 @@ import * as CoreClr from "CoreClrTest";
 export const loader_classloader_regressions_dev10_443322_dev10_443322 = CoreClr.il_coreclr_test({
     name: "dev10_443322",
     srcs: ["dev10_443322.il"],
-    run: false,
 });

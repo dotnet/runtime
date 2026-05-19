@@ -32,7 +32,6 @@ export const gC_Features_Finalizer_finalizeother_finalizedest = CoreClr.coreclr_
 export const gC_Features_Finalizer_finalizeother_finalizeexcep = CoreClr.coreclr_test({
     name: "finalizeexcep",
     srcs: ["finalizeexcep.cs"],
-    run: false,
 });
 
 @@public

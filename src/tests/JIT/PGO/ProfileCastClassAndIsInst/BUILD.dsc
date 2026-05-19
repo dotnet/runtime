@@ -11,7 +11,6 @@ export const jIT_PGO_ProfileCastClassAndIsInst_profileCastClassAndIsInst = CoreC
     name: "ProfileCastClassAndIsInst",
     srcs: ["ProfileCastClassAndIsInst.cs"],
     optimize: true,
-    run: false,
 });
 
 @@public
@@ -19,7 +18,6 @@ export const jIT_PGO_ProfileCastClassAndIsInst_profileCastClassAndIsInst_random3
     name: "ProfileCastClassAndIsInst_random3",
     srcs: ["ProfileCastClassAndIsInst.cs"],
     optimize: true,
-    run: false,
 });
 
 @@public
@@ -27,7 +25,6 @@ export const jIT_PGO_ProfileCastClassAndIsInst_profileCastClassAndIsInst_random2
     name: "ProfileCastClassAndIsInst_random2",
     srcs: ["ProfileCastClassAndIsInst.cs"],
     optimize: true,
-    run: false,
 });
 
 @@public
@@ -35,5 +32,4 @@ export const jIT_PGO_ProfileCastClassAndIsInst_profileCastClassAndIsInst_random1
     name: "ProfileCastClassAndIsInst_random1",
     srcs: ["ProfileCastClassAndIsInst.cs"],
     optimize: true,
-    run: false,
 });

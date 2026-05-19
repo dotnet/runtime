@@ -25,6 +25,12 @@
       "commands": [
         "slngen"
       ]
+    },
+    "agtest.bxl.tool": {
+      "version": "0.2.0-ci.8.5f00873",
+      "commands": [
+        "bxl"
+      ]
     }
   }
 }

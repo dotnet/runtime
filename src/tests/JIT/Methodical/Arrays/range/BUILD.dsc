@@ -11,7 +11,6 @@ export const jIT_Methodical_Arrays_range_int32_neg_range_d = CoreClr.il_coreclr_
     name: "int32_neg_range_d",
     srcs: ["int32_neg_range_d.il", "int32_neg_range.il"],
     debugType: "full",
-    run: false,
 });
 
 @@public
@@ -19,7 +18,6 @@ export const jIT_Methodical_Arrays_range_float64_range2_d = CoreClr.il_coreclr_t
     name: "float64_range2_d",
     srcs: ["float64_range2_d.il", "float64_range2.il"],
     debugType: "full",
-    run: false,
 });
 
 @@public
@@ -27,7 +25,6 @@ export const jIT_Methodical_Arrays_range_int32_0_5a_d = CoreClr.il_coreclr_test(
     name: "int32_0_5a_d",
     srcs: ["int32_0_5a_d.il", "int32_0_5a.il"],
     debugType: "full",
-    run: false,
 });
 
 @@public
@@ -35,7 +32,6 @@ export const jIT_Methodical_Arrays_range_negIndexRngChkElim_r = CoreClr.il_corec
     name: "negIndexRngChkElim_r",
     srcs: ["negIndexRngChkElim.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -43,7 +39,6 @@ export const jIT_Methodical_Arrays_range_int32_m1_d = CoreClr.il_coreclr_test({
     name: "int32_m1_d",
     srcs: ["int32_m1_d.il", "int32_m1.il"],
     debugType: "full",
-    run: false,
 });
 
 @@public
@@ -51,7 +46,6 @@ export const jIT_Methodical_Arrays_range_int32_range2_d = CoreClr.il_coreclr_tes
     name: "int32_range2_d",
     srcs: ["int32_range2_d.il", "int32_range2.il"],
     debugType: "full",
-    run: false,
 });
 
 @@public
@@ -59,7 +53,6 @@ export const jIT_Methodical_Arrays_range_int32_range1_d = CoreClr.il_coreclr_tes
     name: "int32_range1_d",
     srcs: ["int32_range1_d.il", "int32_range1.il"],
     debugType: "full",
-    run: false,
 });
 
 @@public
@@ -67,7 +60,6 @@ export const jIT_Methodical_Arrays_range_int32_m1_r = CoreClr.il_coreclr_test({
     name: "int32_m1_r",
     srcs: ["int32_m1_r.il", "int32_m1.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -75,7 +67,6 @@ export const jIT_Methodical_Arrays_range_float64_range2_r = CoreClr.il_coreclr_t
     name: "float64_range2_r",
     srcs: ["float64_range2_r.il", "float64_range2.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -83,7 +74,6 @@ export const jIT_Methodical_Arrays_range_int32_1_r = CoreClr.il_coreclr_test({
     name: "int32_1_r",
     srcs: ["int32_1_r.il", "int32_1.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -91,7 +81,6 @@ export const jIT_Methodical_Arrays_range_int32_neg_range_r = CoreClr.il_coreclr_
     name: "int32_neg_range_r",
     srcs: ["int32_neg_range_r.il", "int32_neg_range.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -99,7 +88,6 @@ export const jIT_Methodical_Arrays_range_int32_0_5b_d = CoreClr.il_coreclr_test(
     name: "int32_0_5b_d",
     srcs: ["int32_0_5b_d.il", "int32_0_5b.il"],
     debugType: "full",
-    run: false,
 });
 
 @@public
@@ -107,7 +95,6 @@ export const jIT_Methodical_Arrays_range_int32_1_d = CoreClr.il_coreclr_test({
     name: "int32_1_d",
     srcs: ["int32_1_d.il", "int32_1.il"],
     debugType: "full",
-    run: false,
 });
 
 @@public
@@ -115,7 +102,6 @@ export const jIT_Methodical_Arrays_range_int32_0_d = CoreClr.il_coreclr_test({
     name: "int32_0_d",
     srcs: ["int32_0_d.il", "int32_0.il"],
     debugType: "full",
-    run: false,
 });
 
 @@public
@@ -123,7 +109,6 @@ export const jIT_Methodical_Arrays_range_int32_0_r = CoreClr.il_coreclr_test({
     name: "int32_0_r",
     srcs: ["int32_0_r.il", "int32_0.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -131,7 +116,6 @@ export const jIT_Methodical_Arrays_range_int32_range1_r = CoreClr.il_coreclr_tes
     name: "int32_range1_r",
     srcs: ["int32_range1_r.il", "int32_range1.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -139,7 +123,6 @@ export const jIT_Methodical_Arrays_range_float64_range1_d = CoreClr.il_coreclr_t
     name: "float64_range1_d",
     srcs: ["float64_range1_d.il", "float64_range1.il"],
     debugType: "full",
-    run: false,
 });
 
 @@public
@@ -147,7 +130,6 @@ export const jIT_Methodical_Arrays_range_int32_0_5b_r = CoreClr.il_coreclr_test(
     name: "int32_0_5b_r",
     srcs: ["int32_0_5b_r.il", "int32_0_5b.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -155,7 +137,6 @@ export const jIT_Methodical_Arrays_range_float64_range1_r = CoreClr.il_coreclr_t
     name: "float64_range1_r",
     srcs: ["float64_range1_r.il", "float64_range1.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -163,7 +144,6 @@ export const jIT_Methodical_Arrays_range_int32_0_5a_r = CoreClr.il_coreclr_test(
     name: "int32_0_5a_r",
     srcs: ["int32_0_5a_r.il", "int32_0_5a.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -171,5 +151,4 @@ export const jIT_Methodical_Arrays_range_int32_range2_r = CoreClr.il_coreclr_tes
     name: "int32_range2_r",
     srcs: ["int32_range2_r.il", "int32_range2.il"],
     debugType: "pdbonly",
-    run: false,
 });

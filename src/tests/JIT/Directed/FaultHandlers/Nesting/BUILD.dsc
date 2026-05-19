@@ -14,5 +14,4 @@ export const jIT_Directed_FaultHandlers_Nesting_nesting = CoreClr.il_coreclr_tes
     optimize: true,
     pri: 1,
     size: "medium",
-    run: false,
 });

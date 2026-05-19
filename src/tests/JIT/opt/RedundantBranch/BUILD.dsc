@@ -18,7 +18,6 @@ export const jIT_opt_RedundantBranch_redundantBranchUnsigned2 = CoreClr.coreclr_
     name: "RedundantBranchUnsigned2",
     srcs: ["RedundantBranchUnsigned2.cs"],
     optimize: true,
-    run: false,
 });
 
 @@public

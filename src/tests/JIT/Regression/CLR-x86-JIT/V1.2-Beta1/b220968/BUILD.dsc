@@ -12,5 +12,4 @@ export const jIT_Regression_CLR_x86_JIT_V1_2_Beta1_b220968_b220968 = CoreClr.il_
     srcs: ["b220968.il"],
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });

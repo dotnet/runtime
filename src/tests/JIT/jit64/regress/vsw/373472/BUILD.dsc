@@ -12,7 +12,6 @@ export const jIT_jit64_regress_vsw_373472_test_il = CoreClr.il_coreclr_test({
     srcs: ["test.il"],
     debugType: "full",
     optimize: false,
-    run: false,
 });
 
 @@public
@@ -21,5 +20,4 @@ export const jIT_jit64_regress_vsw_373472_test_373472 = CoreClr.coreclr_test({
     srcs: ["test.cs"],
     debugType: "full",
     optimize: false,
-    run: false,
 });

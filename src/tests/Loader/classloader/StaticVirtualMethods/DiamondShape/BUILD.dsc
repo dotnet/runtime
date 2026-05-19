@@ -10,12 +10,10 @@ import * as CoreClr from "CoreClrTest";
 export const loader_classloader_StaticVirtualMethods_DiamondShape_svm_diamondshape_d = CoreClr.il_coreclr_test({
     name: "svm_diamondshape_d",
     srcs: ["svm_diamondshape.il"],
-    run: false,
 });
 
 @@public
 export const loader_classloader_StaticVirtualMethods_DiamondShape_svm_diamondshape_r = CoreClr.il_coreclr_test({
     name: "svm_diamondshape_r",
     srcs: ["svm_diamondshape.il"],
-    run: false,
 });

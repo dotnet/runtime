@@ -11,5 +11,4 @@ export const jIT_Regression_JitBlue_GitHub_13404_gitHub_13404 = CoreClr.il_corec
     name: "GitHub_13404",
     srcs: ["GitHub_13404.il"],
     optimize: true,
-    run: false,
 });

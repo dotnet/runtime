@@ -10,5 +10,4 @@ import * as CoreClr from "CoreClrTest";
 export const loader_classloader_regressions_GitHub_93597_gitHub_93597 = CoreClr.coreclr_test({
     name: "GitHub_93597",
     srcs: ["GitHub_93597.cs"],
-    run: false,
 });

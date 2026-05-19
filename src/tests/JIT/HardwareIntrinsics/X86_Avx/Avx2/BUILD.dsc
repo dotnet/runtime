@@ -10,7 +10,6 @@ import * as CoreClr from "CoreClrTest";
 export const jIT_HardwareIntrinsics_X86_Avx_Avx2_avx2_handwritten_r = CoreClr.coreclr_test({
     name: "Avx2_handwritten_r",
     srcs: ["HandwrittenProgram.cs", "//src/tests/JIT/HardwareIntrinsics/X86/Shared:SimpleUnOpTest_DataTable.cs", "BroadcastVector128ToVector256.cs", "ConvertToVector256Int16.Byte.cs", "ConvertToVector256Int16.SByte.cs", "ConvertToVector256Int32.Byte.cs", "ConvertToVector256Int32.Int16.cs", "ConvertToVector256Int32.SByte.cs", "ConvertToVector256Int32.UInt16.cs", "ConvertToVector256Int64.Byte.cs", "ConvertToVector256Int64.Int16.cs", "ConvertToVector256Int64.Int32.cs", "ConvertToVector256Int64.SByte.cs", "ConvertToVector256Int64.UInt16.cs", "ConvertToVector256Int64.UInt32.cs", "GatherMaskVector128.cs", "GatherMaskVector256.cs", "GatherVector128.cs", "GatherVector256.cs", "HorizontalAdd.cs", "HorizontalSubtract.cs", "LoadAlignedVector256NonTemporal.cs", "MoveMask.cs", "Multiply.cs", "ShiftLeftLogicalVariable.cs", "ShiftRightLogicalVariable.cs", "UnpackHigh.cs", "UnpackLow.cs"],
-    run: false,
 });
 
 @@public
@@ -18,7 +17,6 @@ export const jIT_HardwareIntrinsics_X86_Avx_Avx2_avx2_handwritten_ro = CoreClr.c
     name: "Avx2_handwritten_ro",
     srcs: ["HandwrittenProgram.cs", "//src/tests/JIT/HardwareIntrinsics/X86/Shared:SimpleUnOpTest_DataTable.cs", "BroadcastVector128ToVector256.cs", "ConvertToVector256Int16.Byte.cs", "ConvertToVector256Int16.SByte.cs", "ConvertToVector256Int32.Byte.cs", "ConvertToVector256Int32.Int16.cs", "ConvertToVector256Int32.SByte.cs", "ConvertToVector256Int32.UInt16.cs", "ConvertToVector256Int64.Byte.cs", "ConvertToVector256Int64.Int16.cs", "ConvertToVector256Int64.Int32.cs", "ConvertToVector256Int64.SByte.cs", "ConvertToVector256Int64.UInt16.cs", "ConvertToVector256Int64.UInt32.cs", "GatherMaskVector128.cs", "GatherMaskVector256.cs", "GatherVector128.cs", "GatherVector256.cs", "HorizontalAdd.cs", "HorizontalSubtract.cs", "LoadAlignedVector256NonTemporal.cs", "MoveMask.cs", "Multiply.cs", "ShiftLeftLogicalVariable.cs", "ShiftRightLogicalVariable.cs", "UnpackHigh.cs", "UnpackLow.cs"],
     optimize: true,
-    run: false,
 });
 
 @@public

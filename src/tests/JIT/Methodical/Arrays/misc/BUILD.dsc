@@ -21,7 +21,6 @@ export const jIT_Methodical_Arrays_misc_address_r = CoreClr.il_coreclr_test({
     name: "address_r",
     srcs: ["address_r.il", "address.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -29,7 +28,6 @@ export const jIT_Methodical_Arrays_misc_lengthm2_r = CoreClr.il_coreclr_test({
     name: "lengthm2_r",
     srcs: ["lengthm2_r.il", "lengthm2.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -63,7 +61,6 @@ export const jIT_Methodical_Arrays_misc_length0_r = CoreClr.il_coreclr_test({
     name: "length0_r",
     srcs: ["length0_r.il", "length0.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -71,7 +68,6 @@ export const jIT_Methodical_Arrays_misc_ldelem_get_r = CoreClr.il_coreclr_test({
     name: "ldelem_get_r",
     srcs: ["ldelem_get_r.il", "ldelem_get.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -80,7 +76,6 @@ export const jIT_Methodical_Arrays_misc_initializearray_d = CoreClr.il_coreclr_t
     srcs: ["initializearray_d.il", "initializearray.il"],
     debugType: "full",
     optimize: false,
-    run: false,
 });
 
 @@public
@@ -105,7 +100,6 @@ export const jIT_Methodical_Arrays_misc_initializearray_r = CoreClr.il_coreclr_t
     srcs: ["initializearray_r.il", "initializearray.il"],
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });
 
 @@public
@@ -113,7 +107,6 @@ export const jIT_Methodical_Arrays_misc_address_d = CoreClr.il_coreclr_test({
     name: "address_d",
     srcs: ["address_d.il", "address.il"],
     debugType: "full",
-    run: false,
 });
 
 @@public
@@ -130,7 +123,6 @@ export const jIT_Methodical_Arrays_misc_ldelem_get_d = CoreClr.il_coreclr_test({
     name: "ldelem_get_d",
     srcs: ["ldelem_get_d.il", "ldelem_get.il"],
     debugType: "full",
-    run: false,
 });
 
 @@public
@@ -167,7 +159,6 @@ export const jIT_Methodical_Arrays_misc_length0_d = CoreClr.il_coreclr_test({
     name: "length0_d",
     srcs: ["length0_d.il", "length0.il"],
     debugType: "full",
-    run: false,
 });
 
 @@public
@@ -184,5 +175,4 @@ export const jIT_Methodical_Arrays_misc_lengthm2_d = CoreClr.il_coreclr_test({
     name: "lengthm2_d",
     srcs: ["lengthm2_d.il", "lengthm2.il"],
     debugType: "full",
-    run: false,
 });

@@ -11,7 +11,6 @@ export const jIT_Methodical_flowgraph_dev10_bug679008_fgloop2 = CoreClr.il_corec
     name: "fgloop2",
     srcs: ["fgloop2.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -19,7 +18,6 @@ export const jIT_Methodical_flowgraph_dev10_bug679008_fgloop = CoreClr.il_corecl
     name: "fgloop",
     srcs: ["fgloop.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -27,7 +25,6 @@ export const jIT_Methodical_flowgraph_dev10_bug679008_ehDescriptorPtrUpdate = Co
     name: "ehDescriptorPtrUpdate",
     srcs: ["ehDescriptorPtrUpdate.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public

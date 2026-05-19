@@ -11,7 +11,6 @@ export const jIT_Methodical_Invoke_thiscall_thisnull_d = CoreClr.il_coreclr_test
     name: "thisnull_d",
     srcs: ["thisnull_d.il", "thisnull.il"],
     debugType: "full",
-    run: false,
 });
 
 @@public
@@ -19,5 +18,4 @@ export const jIT_Methodical_Invoke_thiscall_thisnull_r = CoreClr.il_coreclr_test
     name: "thisnull_r",
     srcs: ["thisnull_r.il", "thisnull.il"],
     debugType: "pdbonly",
-    run: false,
 });

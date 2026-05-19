@@ -11,7 +11,6 @@ export const jIT_Methodical_flowgraph_dev10_bug679053_regionLive = CoreClr.il_co
     name: "regionLive",
     srcs: ["regionLive.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public

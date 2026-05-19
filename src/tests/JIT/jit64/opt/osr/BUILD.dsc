@@ -12,7 +12,6 @@ export const jIT_jit64_opt_osr_osr015 = CoreClr.il_coreclr_test({
     srcs: ["osr015.il"],
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });
 
 @@public

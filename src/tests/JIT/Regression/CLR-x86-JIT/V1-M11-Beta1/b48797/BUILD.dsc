@@ -11,5 +11,4 @@ export const jIT_Regression_CLR_x86_JIT_V1_M11_Beta1_b48797_b48797 = CoreClr.cor
     name: "b48797",
     srcs: ["b48797.cs"],
     debugType: "pdbonly",
-    run: false,
 });

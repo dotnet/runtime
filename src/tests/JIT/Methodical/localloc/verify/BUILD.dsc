@@ -12,7 +12,6 @@ export const jIT_Methodical_localloc_verify_verify01_large = CoreClr.il_coreclr_
     srcs: ["verify01_large.il"],
     debugType: "full",
     optimize: false,
-    run: false,
 });
 
 @@public
@@ -21,7 +20,6 @@ export const jIT_Methodical_localloc_verify_verify01_dynamic = CoreClr.il_corecl
     srcs: ["verify01_dynamic.il"],
     debugType: "full",
     optimize: false,
-    run: false,
 });
 
 @@public
@@ -30,5 +28,4 @@ export const jIT_Methodical_localloc_verify_verify01_small = CoreClr.il_coreclr_
     srcs: ["verify01_small.il"],
     debugType: "full",
     optimize: false,
-    run: false,
 });

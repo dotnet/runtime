@@ -22,19 +22,16 @@ export const loader_classloader_MethodImpl_CovariantReturns_Interfaces_unitTest_
 export const loader_classloader_MethodImpl_CovariantReturns_Interfaces_unsupportedScenario1 = CoreClr.il_coreclr_test({
     name: "UnsupportedScenario1",
     srcs: ["UnsupportedScenario1.il"],
-    run: false,
 });
 
 @@public
 export const loader_classloader_MethodImpl_CovariantReturns_Interfaces_unsupportedScenario2 = CoreClr.il_coreclr_test({
     name: "UnsupportedScenario2",
     srcs: ["UnsupportedScenario2.il"],
-    run: false,
 });
 
 @@public
 export const loader_classloader_MethodImpl_CovariantReturns_Interfaces_unsupportedScenario3 = CoreClr.il_coreclr_test({
     name: "UnsupportedScenario3",
     srcs: ["UnsupportedScenario3.il"],
-    run: false,
 });

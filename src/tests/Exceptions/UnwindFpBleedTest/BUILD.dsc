@@ -10,5 +10,4 @@ import * as CoreClr from "CoreClrTest";
 export const exceptions_UnwindFpBleedTest_unwindFpBleedTest = CoreClr.coreclr_test({
     name: "UnwindFpBleedTest",
     srcs: ["UnwindFpBleedTest.cs"],
-    run: false,
 });

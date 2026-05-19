@@ -14,7 +14,6 @@ export const jIT_Methodical_Boxing_seh_filter_seh_Boxing_r = CoreClr.il_coreclr_
     optimize: true,
     pri: 1,
     size: "medium",
-    run: false,
 });
 
 @@public
@@ -24,7 +23,6 @@ export const jIT_Methodical_Boxing_seh_filter_seh_Boxing_d = CoreClr.il_coreclr_
     debugType: "full",
     pri: 1,
     size: "medium",
-    run: false,
 });
 
 @@public
@@ -35,7 +33,6 @@ export const jIT_Methodical_Boxing_seh_fault_r = CoreClr.il_coreclr_test({
     optimize: true,
     pri: 1,
     size: "medium",
-    run: false,
 });
 
 @@public
@@ -45,7 +42,6 @@ export const jIT_Methodical_Boxing_seh_fault_d = CoreClr.il_coreclr_test({
     debugType: "full",
     pri: 1,
     size: "medium",
-    run: false,
 });
 
 @@public
@@ -55,7 +51,6 @@ export const jIT_Methodical_Boxing_seh_try_seh_d = CoreClr.il_coreclr_test({
     debugType: "full",
     pri: 1,
     size: "medium",
-    run: false,
 });
 
 @@public
@@ -66,5 +61,4 @@ export const jIT_Methodical_Boxing_seh_try_seh_r = CoreClr.il_coreclr_test({
     optimize: true,
     pri: 1,
     size: "medium",
-    run: false,
 });

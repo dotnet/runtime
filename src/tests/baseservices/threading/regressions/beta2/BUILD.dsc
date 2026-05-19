@@ -11,7 +11,6 @@ export const baseservices_threading_regressions_beta2__437017 = CoreClr.coreclr_
     name: "437017",
     srcs: ["437017.cs"],
     pri: 1,
-    run: false,
     size: "medium",
 });
 
@@ -20,6 +19,5 @@ export const baseservices_threading_regressions_beta2__437044 = CoreClr.coreclr_
     name: "437044",
     srcs: ["437044.cs"],
     pri: 1,
-    run: false,
     size: "medium",
 });

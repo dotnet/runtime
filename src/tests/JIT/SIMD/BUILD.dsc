@@ -136,7 +136,6 @@ export const jIT_SIMD_addingSequence_ro = CoreClr.coreclr_test({
 export const jIT_SIMD_vectorGet_r = CoreClr.coreclr_test({
     name: "VectorGet_r",
     srcs: ["VectorGet.cs", "VectorUtil.cs"],
-    run: false,
 });
 
 @@public
@@ -255,7 +254,6 @@ export const jIT_SIMD_vectorArrayInit_ro = CoreClr.coreclr_test({
     name: "VectorArrayInit_ro",
     srcs: ["VectorArrayInit.cs", "VectorUtil.cs"],
     optimize: true,
-    run: false,
 });
 
 @@public
@@ -337,7 +335,6 @@ export const jIT_SIMD_vector3_ro = CoreClr.coreclr_test({
 export const jIT_SIMD_vectorCopyToArray_r = CoreClr.coreclr_test({
     name: "VectorCopyToArray_r",
     srcs: ["VectorCopyToArray.cs", "VectorUtil.cs"],
-    run: false,
 });
 
 @@public
@@ -589,7 +586,6 @@ export const jIT_SIMD_bitwiseOperations_r = CoreClr.coreclr_test({
 export const jIT_SIMD_vectorArrayInit_r = CoreClr.coreclr_test({
     name: "VectorArrayInit_r",
     srcs: ["VectorArrayInit.cs", "VectorUtil.cs"],
-    run: false,
 });
 
 @@public
@@ -617,7 +613,6 @@ export const jIT_SIMD_vectorCopyToArray_ro = CoreClr.coreclr_test({
     name: "VectorCopyToArray_ro",
     srcs: ["VectorCopyToArray.cs", "VectorUtil.cs"],
     optimize: true,
-    run: false,
 });
 
 @@public
@@ -692,7 +687,6 @@ export const jIT_SIMD_vectorGet_ro = CoreClr.coreclr_test({
     name: "VectorGet_ro",
     srcs: ["VectorGet.cs", "VectorUtil.cs"],
     optimize: true,
-    run: false,
 });
 
 @@public

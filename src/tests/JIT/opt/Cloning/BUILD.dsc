@@ -18,7 +18,6 @@ export const jIT_opt_Cloning_runtime_61040_4 = CoreClr.coreclr_test({
     name: "Runtime_61040_4",
     srcs: ["Runtime_61040_4.cs"],
     optimize: true,
-    run: false,
 });
 
 @@public
@@ -26,7 +25,6 @@ export const jIT_opt_Cloning_runtime_61040_3 = CoreClr.coreclr_test({
     name: "Runtime_61040_3",
     srcs: ["Runtime_61040_3.cs"],
     optimize: true,
-    run: false,
 });
 
 @@public
@@ -42,7 +40,6 @@ export const jIT_opt_Cloning_runtime_61040_5 = CoreClr.coreclr_test({
     srcs: ["Runtime_61040_5.cs"],
     allowUnsafe: true,
     optimize: true,
-    run: false,
 });
 
 @@public
@@ -50,7 +47,6 @@ export const jIT_opt_Cloning_runtime_61040_2 = CoreClr.coreclr_test({
     name: "Runtime_61040_2",
     srcs: ["Runtime_61040_2.cs"],
     optimize: true,
-    run: false,
 });
 
 @@public
@@ -58,7 +54,6 @@ export const jIT_opt_Cloning_runtime_61040_1 = CoreClr.coreclr_test({
     name: "Runtime_61040_1",
     srcs: ["Runtime_61040_1.cs"],
     optimize: true,
-    run: false,
 });
 
 @@public

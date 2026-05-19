@@ -10,96 +10,82 @@ import * as CoreClr from "CoreClrTest";
 export const loader_classloader_explicitlayout_objrefandnonobjrefoverlap_case1 = CoreClr.coreclr_test({
     name: "case1",
     srcs: ["case1.cs"],
-    run: false,
 });
 
 @@public
 export const loader_classloader_explicitlayout_objrefandnonobjrefoverlap_case11 = CoreClr.coreclr_test({
     name: "case11",
     srcs: ["case11.cs"],
-    run: false,
 });
 
 @@public
 export const loader_classloader_explicitlayout_objrefandnonobjrefoverlap_case12 = CoreClr.coreclr_test({
     name: "case12",
     srcs: ["case12.cs"],
-    run: false,
 });
 
 @@public
 export const loader_classloader_explicitlayout_objrefandnonobjrefoverlap_case13 = CoreClr.coreclr_test({
     name: "case13",
     srcs: ["case13.cs"],
-    run: false,
 });
 
 @@public
 export const loader_classloader_explicitlayout_objrefandnonobjrefoverlap_case14 = CoreClr.coreclr_test({
     name: "case14",
     srcs: ["case14.cs"],
-    run: false,
 });
 
 @@public
 export const loader_classloader_explicitlayout_objrefandnonobjrefoverlap_case15 = CoreClr.coreclr_test({
     name: "case15",
     srcs: ["case15.cs"],
-    run: false,
 });
 
 @@public
 export const loader_classloader_explicitlayout_objrefandnonobjrefoverlap_case2 = CoreClr.coreclr_test({
     name: "case2",
     srcs: ["case2.cs"],
-    run: false,
 });
 
 @@public
 export const loader_classloader_explicitlayout_objrefandnonobjrefoverlap_case3 = CoreClr.coreclr_test({
     name: "case3",
     srcs: ["case3.cs"],
-    run: false,
 });
 
 @@public
 export const loader_classloader_explicitlayout_objrefandnonobjrefoverlap_case4 = CoreClr.coreclr_test({
     name: "case4",
     srcs: ["case4.cs"],
-    run: false,
 });
 
 @@public
 export const loader_classloader_explicitlayout_objrefandnonobjrefoverlap_case5 = CoreClr.coreclr_test({
     name: "case5",
     srcs: ["case5.cs"],
-    run: false,
 });
 
 @@public
 export const loader_classloader_explicitlayout_objrefandnonobjrefoverlap_case6 = CoreClr.coreclr_test({
     name: "case6",
     srcs: ["case6.cs"],
-    run: false,
 });
 
 @@public
 export const loader_classloader_explicitlayout_objrefandnonobjrefoverlap_case7 = CoreClr.coreclr_test({
     name: "case7",
     srcs: ["case7.cs"],
-    run: false,
 });
 
 @@public
 export const loader_classloader_explicitlayout_objrefandnonobjrefoverlap_case8 = CoreClr.coreclr_test({
     name: "case8",
     srcs: ["case8.cs"],
-    run: false,
 });
 
 @@public
 export const loader_classloader_explicitlayout_objrefandnonobjrefoverlap_case9 = CoreClr.coreclr_test({
     name: "case9",
     srcs: ["case9.cs"],
-    run: false,
 });

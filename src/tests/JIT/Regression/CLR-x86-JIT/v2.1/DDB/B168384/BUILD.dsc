@@ -12,5 +12,4 @@ export const jIT_Regression_CLR_x86_JIT_v2_1_DDB_B168384_ldfldaHack = CoreClr.il
     srcs: ["LdfldaHack.il"],
     debugType: "full",
     optimize: false,
-    run: false,
 });

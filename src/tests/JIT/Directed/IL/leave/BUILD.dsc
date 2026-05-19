@@ -12,5 +12,4 @@ export const jIT_Directed_IL_leave_leave1 = CoreClr.il_coreclr_test({
     srcs: ["leave2.il"],
     debugType: "pdbonly",
     optimize: true,
-    run: false,
 });

@@ -67,7 +67,6 @@ export const jIT_opt_InstructionCombining_arrayLengthArithmetic = CoreClr.corecl
     name: "ArrayLengthArithmetic",
     srcs: ["ArrayLengthArithmetic.cs"],
     optimize: true,
-    run: false,
 });
 
 @@public
@@ -117,7 +116,6 @@ export const jIT_opt_InstructionCombining_negMulOrDivToConst = CoreClr.coreclr_t
     name: "NegMulOrDivToConst",
     srcs: ["NegMulOrDivToConst.cs"],
     optimize: true,
-    run: false,
 });
 
 @@public

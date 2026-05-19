@@ -10,19 +10,16 @@ import * as CoreClr from "CoreClrTest";
 export const baseservices_exceptions_UnhandledExceptionHandler_handlerRefuses = CoreClr.coreclr_test({
     name: "HandlerRefuses",
     srcs: ["HandlerRefuses.cs"],
-    run: false,
 });
 
 @@public
 export const baseservices_exceptions_UnhandledExceptionHandler_handlerThrows = CoreClr.coreclr_test({
     name: "HandlerThrows",
     srcs: ["HandlerThrows.cs"],
-    run: false,
 });
 
 @@public
 export const baseservices_exceptions_UnhandledExceptionHandler_unhandledTrivial = CoreClr.coreclr_test({
     name: "UnhandledTrivial",
     srcs: ["UnhandledTrivial.cs"],
-    run: false,
 });

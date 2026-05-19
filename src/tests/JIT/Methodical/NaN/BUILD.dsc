@@ -11,7 +11,6 @@ export const jIT_Methodical_NaN_r8NaNconv_r = CoreClr.il_coreclr_test({
     name: "r8NaNconv_r",
     srcs: ["r8NaNconv_r.il", "r8NaNconv.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -19,7 +18,6 @@ export const jIT_Methodical_NaN_r4NaNconv_d = CoreClr.il_coreclr_test({
     name: "r4NaNconv_d",
     srcs: ["r4NaNconv_d.il", "r4NaNconv.il"],
     debugType: "full",
-    run: false,
 });
 
 @@public
@@ -36,7 +34,6 @@ export const jIT_Methodical_NaN_r4NaNconv_r = CoreClr.il_coreclr_test({
     name: "r4NaNconv_r",
     srcs: ["r4NaNconv_r.il", "r4NaNconv.il"],
     debugType: "pdbonly",
-    run: false,
 });
 
 @@public
@@ -98,7 +95,6 @@ export const jIT_Methodical_NaN_r8NaNconv_d = CoreClr.il_coreclr_test({
     name: "r8NaNconv_d",
     srcs: ["r8NaNconv_d.il", "r8NaNconv.il"],
     debugType: "full",
-    run: false,
 });
 
 @@public

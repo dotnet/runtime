@@ -39,7 +39,6 @@ export const jIT_Directed_coverage_importer_volatilstind = CoreClr.il_coreclr_te
     srcs: ["volatilstind.il"],
     debugType: "full",
     optimize: false,
-    run: false,
 });
 
 @@public
@@ -77,7 +76,6 @@ export const jIT_Directed_coverage_importer_badendfinally = CoreClr.il_coreclr_t
     srcs: ["badendfinally.il"],
     debugType: "full",
     optimize: false,
-    run: false,
 });
 
 @@public
@@ -106,7 +104,6 @@ export const jIT_Directed_coverage_importer_ceeillegal = CoreClr.il_coreclr_test
     srcs: ["ceeillegal.il"],
     debugType: "full",
     optimize: false,
-    run: false,
 });
 
 @@public
@@ -125,7 +122,6 @@ export const jIT_Directed_coverage_importer_nullsdarr = CoreClr.il_coreclr_test(
     srcs: ["nullsdarr.il"],
     debugType: "full",
     optimize: false,
-    run: false,
 });
 
 @@public
@@ -142,7 +138,6 @@ export const jIT_Directed_coverage_importer_volatilldind = CoreClr.il_coreclr_te
     srcs: ["volatilldind.il"],
     debugType: "full",
     optimize: false,
-    run: false,
 });
 
 @@public
@@ -151,7 +146,6 @@ export const jIT_Directed_coverage_importer_ldelemnullarr2 = CoreClr.il_coreclr_
     srcs: ["ldelemnullarr2.il"],
     debugType: "full",
     optimize: false,
-    run: false,
 });
 
 @@public
