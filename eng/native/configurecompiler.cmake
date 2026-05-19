@@ -742,8 +742,7 @@ if (CLR_CMAKE_HOST_UNIX OR CLR_CMAKE_HOST_WASI)
 
   # Separate functions and data into their own sections so the linker can remove
   # unreferenced ones via --gc-sections (ELF) / -dead_strip (Mach-O). Gated to
-  # non-Debug builds so Debug keeps full symbols and incremental linking. Windows
-  # uses /OPT:REF, configured above.
+  # non-Debug builds so Debug keeps full symbols.
   add_compile_options(-ffunction-sections)
   add_compile_options(-fdata-sections)
   if(CLR_CMAKE_HOST_APPLE)
