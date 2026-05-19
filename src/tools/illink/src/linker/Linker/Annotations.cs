@@ -257,22 +257,16 @@ namespace Mono.Linker
         internal void MarkPendingReflectionVisibleField(FieldDefinition field, in MessageOrigin origin)
             => pending_reflection_visible_fields.Add((field, origin));
 
-        internal List<(MethodDefinition Method, MessageOrigin Origin)> DrainPendingReflectionVisibleMethods()
+        internal (MethodDefinition Method, MessageOrigin Origin)[] DrainPendingReflectionVisibleMethods()
         {
-            if (pending_reflection_visible_methods.Count == 0)
-                return [];
-
-            var result = new List<(MethodDefinition, MessageOrigin)>(pending_reflection_visible_methods);
+            var result = pending_reflection_visible_methods.ToArray();
             pending_reflection_visible_methods.Clear();
             return result;
         }
 
-        internal List<(FieldDefinition Field, MessageOrigin Origin)> DrainPendingReflectionVisibleFields()
+        internal (FieldDefinition Field, MessageOrigin Origin)[] DrainPendingReflectionVisibleFields()
         {
-            if (pending_reflection_visible_fields.Count == 0)
-                return [];
-
-            var result = new List<(FieldDefinition, MessageOrigin)>(pending_reflection_visible_fields);
+            var result = pending_reflection_visible_fields.ToArray();
             pending_reflection_visible_fields.Clear();
             return result;
         }
