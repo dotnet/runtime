@@ -2585,6 +2585,8 @@ PhaseStatus Compiler::fgWasmVirtualIP()
 
     for (FuncInfoDsc* const func : Funcs())
     {
+        func->startVirtualIP = virtualIP;
+
         for (BasicBlock* const block : func->Blocks(this))
         {
             EHblkDsc* const hndDsc = ehGetBlockHndDsc(block);
@@ -2687,6 +2689,8 @@ PhaseStatus Compiler::fgWasmVirtualIP()
                 virtualIP++;
             }
         }
+
+        func->endVirtualIP = virtualIP;
     }
 
 #ifdef DEBUG
