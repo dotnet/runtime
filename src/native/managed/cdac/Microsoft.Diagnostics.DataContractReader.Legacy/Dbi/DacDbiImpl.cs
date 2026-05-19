@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
@@ -2120,13 +2121,441 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.IsThreadSuspendedOrHijacked(vmThread, pResult) : HResults.E_NOTIMPL;
 
     public int CreateHeapWalk(nuint* pHandle)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.CreateHeapWalk(pHandle) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        if (pHandle is null)
+            return HResults.E_POINTER;
+        *pHandle = 0;
+        HeapWalk? walk = null;
+        try
+        {
+            walk = new HeapWalk(_target);
+            *pHandle = (nuint)((IEnum<COR_HEAPOBJECT>)walk).GetHandle();
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            nuint legacyHandle = 0;
+            int hrLocal = _legacy.CreateHeapWalk(&legacyHandle);
+            // The cDAC walker uses a lazy C# iterator and so doesn't touch target memory at construction time;
+            // the legacy walker eagerly validates the heap-start object and can refuse if it's corrupt.
+            Debug.ValidateHResult(hr, hrLocal, HResultValidationMode.AllowCdacSuccess);
+            if (hrLocal == HResults.S_OK && walk is not null)
+                walk.LegacyHandle = new TargetPointer(legacyHandle);
+            else if (hrLocal == HResults.S_OK)
+                _legacy.DeleteHeapWalk(legacyHandle);
+        }
+#endif
+        return hr;
+    }
 
     public int DeleteHeapWalk(nuint handle)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.DeleteHeapWalk(handle) : HResults.E_NOTIMPL;
+    {
+        if (handle == 0)
+            return HResults.E_INVALIDARG;
+
+        int hr = HResults.S_OK;
+        TargetPointer legacyHandle = TargetPointer.Null;
+        try
+        {
+            GCHandle gcHandle = GCHandle.FromIntPtr((nint)handle);
+            if (gcHandle.Target is not HeapWalk walk)
+                return HResults.E_INVALIDARG;
+            legacyHandle = walk.LegacyHandle;
+            gcHandle.Free();
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null && legacyHandle != TargetPointer.Null)
+        {
+            int hrLocal = _legacy.DeleteHeapWalk((nuint)legacyHandle.Value);
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+        return hr;
+    }
 
     public int WalkHeap(nuint handle, uint count, COR_HEAPOBJECT* objects, uint* fetched)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.WalkHeap(handle, count, objects, fetched) : HResults.E_NOTIMPL;
+    {
+        if (fetched is null)
+            return HResults.E_INVALIDARG;
+        *fetched = 0;
+        if (objects is null && count > 0)
+            return HResults.E_INVALIDARG;
+        if (handle == 0)
+            return HResults.E_INVALIDARG;
+
+        HeapWalk walk;
+        try
+        {
+            GCHandle gcHandle = GCHandle.FromIntPtr((nint)handle);
+            if (gcHandle.Target is not HeapWalk hw)
+                return HResults.E_INVALIDARG;
+            walk = hw;
+        }
+        catch (System.Exception ex)
+        {
+            return ex.HResult;
+        }
+
+        int hr = HResults.S_OK;
+        uint i = 0;
+        try
+        {
+            while (i < count && walk.Enumerator.MoveNext())
+            {
+                COR_HEAPOBJECT current = walk.Enumerator.Current;
+                // Sentinel value indicates invalid object.
+                if (current.address == 0)
+                {
+                    hr = HResults.E_FAIL;
+                    break;
+                }
+                objects[i++] = current;
+            }
+
+            // A clean batch reports S_FALSE iff we couldn't fill the caller's request.
+            if (hr == HResults.S_OK && i < count)
+                hr = HResults.S_FALSE;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        *fetched = i;
+#if DEBUG
+        if (_legacy is not null && walk.LegacyHandle != TargetPointer.Null)
+        {
+            COR_HEAPOBJECT[] objectsLocal = new COR_HEAPOBJECT[count];
+            uint fetchedLocal = 0;
+            int hrLocal;
+            fixed (COR_HEAPOBJECT* objectsLocalPtr = objectsLocal)
+            {
+                hrLocal = _legacy.WalkHeap((nuint)walk.LegacyHandle.Value, count, objectsLocalPtr, &fetchedLocal);
+            }
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr >= HResults.S_OK && hrLocal >= HResults.S_OK)
+            {
+                Debug.Assert(*fetched == fetchedLocal,
+                    $"cDAC WalkHeap fetched {*fetched}, legacy fetched {fetchedLocal}");
+                uint matched = Math.Min(*fetched, fetchedLocal);
+                for (uint k = 0; k < matched; k++)
+                {
+                    Debug.Assert(objects[k].address == objectsLocal[k].address,
+                        $"cDAC[{k}].address=0x{objects[k].address:x}, legacy=0x{objectsLocal[k].address:x}");
+                    Debug.Assert(objects[k].size == objectsLocal[k].size,
+                        $"cDAC[{k}].size=0x{objects[k].size:x}, legacy=0x{objectsLocal[k].size:x} (addr 0x{objects[k].address:x})");
+                    Debug.Assert(objects[k].type.token1 == objectsLocal[k].type.token1,
+                        $"cDAC[{k}].type.token1=0x{objects[k].type.token1:x}, legacy=0x{objectsLocal[k].type.token1:x} (addr 0x{objects[k].address:x})");
+                }
+            }
+        }
+#endif
+        return hr;
+    }
+
+    internal sealed class HeapWalk : IEnum<COR_HEAPOBJECT>
+    {
+        private readonly IGC _gc;
+        private readonly IRuntimeTypeSystem _rts;
+        private readonly TargetPointer _freeObjectMT;
+        private readonly IReadOnlyList<(TargetPointer Pointer, TargetPointer Limit)> _allocContexts;
+        private readonly LinearReadCache _cache;
+        private readonly uint _numComponentsOffsetArray;
+        private readonly uint _numComponentsOffsetString;
+        private readonly uint _methodTableOffset;
+        private readonly ulong _methodTableMask;
+
+        public IEnumerator<COR_HEAPOBJECT> Enumerator { get; }
+        public TargetPointer LegacyHandle { get; set; } = TargetPointer.Null;
+
+        public HeapWalk(Target target)
+        {
+            _gc = target.Contracts.GC;
+            _rts = target.Contracts.RuntimeTypeSystem;
+            _freeObjectMT = target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.FreeObjectMethodTable));
+            _allocContexts = CollectAllocContexts(target);
+            _cache = new LinearReadCache(target);
+            // use these fields directly instead of through RuntimeTypeSystem so that we can use our cache that we really only need for heap walking
+            _numComponentsOffsetArray = (uint)target.GetTypeInfo(DataType.Array).Fields[Constants.FieldNames.Array.NumComponents].Offset;
+            _numComponentsOffsetString = (uint)target.GetTypeInfo(DataType.String).Fields["m_StringLength"].Offset;
+            _methodTableOffset = (uint)target.GetTypeInfo(DataType.Object).Fields["m_pMethTab"].Offset;
+            _methodTableMask = (ulong)~target.ReadGlobal<byte>(Constants.Globals.ObjectToMethodTableUnmask);
+
+            Enumerator = Walk().GetEnumerator();
+        }
+
+        private IEnumerable<COR_HEAPOBJECT> Walk()
+        {
+            bool pendingFailure = false;
+            foreach ((GCHeapSegmentInfo seg, GCHeapData _) in EnumerateAllSegments())
+            {
+                if (seg.Start.Value >= seg.End.Value)
+                    continue;
+
+                TargetPointer currentObj = _gc.GetPotentialNextObjectAddress(seg.Start, 0, seg, _allocContexts);
+                while (currentObj.Value < seg.End.Value)
+                {
+                    if (!_cache.TryReadPointer(currentObj.Value + _methodTableOffset, out TargetPointer mt))
+                    {
+                        pendingFailure = true;
+                        break;
+                    }
+                    mt = new TargetPointer(mt.Value & _methodTableMask);
+
+                    if (!TryGetObjectSize(currentObj, mt, out ulong size))
+                    {
+                        pendingFailure = true;
+                        break;
+                    }
+
+                    size = _gc.AlignObjectSize(size, seg.Generation);
+
+                    // Advance past this object (and any allocation-context tail) in a single call.
+                    TargetPointer nextObj = _gc.GetPotentialNextObjectAddress(currentObj, size, seg, _allocContexts);
+                    if (size == 0 || nextObj.Value > seg.End.Value || nextObj.Value <= currentObj.Value)
+                    {
+                        pendingFailure = true;
+                        break;
+                    }
+
+                    TargetPointer reportedAddr = currentObj;
+                    bool isFree = mt == _freeObjectMT;
+
+                    currentObj = nextObj;
+
+                    if (isFree)
+                        continue;
+
+                    if (pendingFailure)
+                    {
+                        // sentinel, show that we have a read failure and then yield the next valid object
+                        yield return default;
+                        pendingFailure = false;
+                    }
+
+                    yield return new COR_HEAPOBJECT
+                    {
+                        address = reportedAddr.Value,
+                        size = size,
+                        type = new COR_TYPEID { token1 = mt.Value, token2 = 0 },
+                    };
+                }
+            }
+
+            // Trailing corruption: if validation failed after the last successful yield (or
+            // before any yield at all), show a sentinel now.
+            if (pendingFailure)
+                yield return default;
+        }
+
+        private IEnumerable<(GCHeapSegmentInfo Segment, GCHeapData Heap)> EnumerateAllSegments()
+        {
+            string[] gcIdentifiers = _gc.GetGCIdentifiers();
+            bool isWorkstation = gcIdentifiers.Contains(GCIdentifiers.Workstation);
+            foreach (GCHeapData heap in EnumerateHeaps(_gc, isWorkstation))
+            {
+                foreach (GCHeapSegmentInfo seg in _gc.EnumerateHeapSegments(heap))
+                {
+                    yield return (seg, heap);
+                }
+            }
+        }
+
+        private bool TryGetObjectSize(TargetPointer objAddr, TargetPointer mt, out ulong size)
+        {
+            size = 0;
+            try
+            {
+                TypeHandle handle = _rts.GetTypeHandle(mt);
+                ulong baseSize = _rts.GetBaseSize(handle);
+                uint componentSize = _rts.GetComponentSize(handle);
+                uint numComponentsOffset = 0;
+                if (componentSize != 0)
+                {
+                    if (_rts.IsArray(handle, out _) || _rts.IsFreeObjectMethodTable(handle))
+                        numComponentsOffset = _numComponentsOffsetArray;
+                    else if (_rts.IsString(handle))
+                        numComponentsOffset = _numComponentsOffsetString;
+                    else
+                        return false; // unrecognized component type
+                    if (!_cache.TryReadUInt32(objAddr.Value + numComponentsOffset, out uint numComponents))
+                        return false;
+                    baseSize += (ulong)componentSize * numComponents;
+                }
+                size = baseSize;
+                return true;
+            }
+            catch
+            {
+                // The MT may be corrupt — surface as a read failure.
+                return false;
+            }
+        }
+
+        private static IEnumerable<GCHeapData> EnumerateHeaps(IGC gc, bool isWorkstation)
+        {
+            if (isWorkstation)
+            {
+                yield return gc.GetHeapData();
+            }
+            else
+            {
+                foreach (TargetPointer heapAddress in gc.GetGCHeaps())
+                    yield return gc.GetHeapData(heapAddress);
+            }
+        }
+
+        private static List<(TargetPointer Pointer, TargetPointer Limit)> CollectAllocContexts(Target target)
+        {
+            List<(TargetPointer Pointer, TargetPointer Limit)> contexts = new();
+
+            // Per-thread allocation contexts.
+            IThread thread = target.Contracts.Thread;
+            ThreadStoreData store = thread.GetThreadStoreData();
+            TargetPointer current = store.FirstThread;
+            int safety = 0;
+            while (current != TargetPointer.Null && safety++ < 1_000_000)
+            {
+                ThreadData td = thread.GetThreadData(current);
+                if (td.AllocContextPointer != TargetPointer.Null)
+                    contexts.Add((td.AllocContextPointer, td.AllocContextLimit));
+                current = td.NextThread;
+            }
+
+            // Global allocation context.
+            target.Contracts.GC.GetGlobalAllocationContext(out TargetPointer gAllocPtr, out TargetPointer gAllocLimit);
+            if (gAllocPtr != TargetPointer.Null)
+                contexts.Add((gAllocPtr, gAllocLimit));
+
+            // Per-heap gen0 allocation contexts. The native walker also tracks YoungestGenPtr (the
+            // gen0 generation's allocation context cursor) and skips past it when encountered.
+            IGC gc = target.Contracts.GC;
+            string[] gcIdentifiers = gc.GetGCIdentifiers();
+            IEnumerable<GCHeapData> heaps = gcIdentifiers.Contains(GCIdentifiers.Workstation)
+                ? new[] { gc.GetHeapData() }
+                : EnumerateServerHeaps(gc);
+            foreach (GCHeapData heap in heaps)
+            {
+                if (heap.GenerationTable.Count > 0)
+                {
+                    TargetPointer ptr = heap.GenerationTable[0].AllocationContextPointer;
+                    TargetPointer limit = heap.GenerationTable[0].AllocationContextLimit;
+                    if (ptr != TargetPointer.Null)
+                        contexts.Add((ptr, limit));
+                }
+            }
+            return contexts;
+        }
+
+        private static IEnumerable<GCHeapData> EnumerateServerHeaps(IGC gc)
+        {
+            foreach (TargetPointer heapAddress in gc.GetGCHeaps())
+                yield return gc.GetHeapData(heapAddress);
+        }
+
+        // Linear page cache used by the per-object heap walk.
+        private sealed class LinearReadCache
+        {
+            // Typical page size
+            private const uint PageSize = 0x1000;
+
+            private readonly Target _target;
+            private readonly byte[] _page = new byte[PageSize];
+            private ulong _currPageStart;
+            private uint _currPageSize;
+
+            public LinearReadCache(Target target)
+            {
+                _target = target;
+            }
+
+            public bool TryReadPointer(ulong addr, out TargetPointer value)
+            {
+                Span<byte> buffer = stackalloc byte[sizeof(ulong)];
+                buffer = buffer.Slice(0, _target.PointerSize);
+                if (!TryRead(addr, buffer))
+                {
+                    value = TargetPointer.Null;
+                    return false;
+                }
+                value = _target.ReadPointerFromSpan(buffer);
+                return true;
+            }
+
+            public bool TryReadUInt32(ulong addr, out uint value)
+            {
+                Span<byte> buffer = stackalloc byte[sizeof(uint)];
+                if (!TryRead(addr, buffer))
+                {
+                    value = 0;
+                    return false;
+                }
+                value = _target.IsLittleEndian
+                    ? BinaryPrimitives.ReadUInt32LittleEndian(buffer)
+                    : BinaryPrimitives.ReadUInt32BigEndian(buffer);
+                return true;
+            }
+
+            private bool TryRead(ulong addr, Span<byte> dest)
+            {
+                // If the request misses the currently-cached page, try to load the page
+                // containing it. If that fails (e.g. the page is unmapped), or the request
+                // straddles the end of the cached page, fall back to a direct read.
+                if (addr < _currPageStart || addr - _currPageStart >= _currPageSize)
+                {
+                    if (!MoveToPage(addr))
+                        return DirectRead(addr, dest);
+                }
+
+                ulong offset = addr - _currPageStart;
+                if (offset + (ulong)dest.Length > _currPageSize)
+                    return DirectRead(addr, dest);
+
+                _page.AsSpan((int)offset, dest.Length).CopyTo(dest);
+                return true;
+            }
+
+            private bool MoveToPage(ulong addr)
+            {
+                ulong pageStart = addr - (addr % PageSize);
+                try
+                {
+                    _target.ReadBuffer(pageStart, _page.AsSpan(0, (int)PageSize));
+                    _currPageStart = pageStart;
+                    _currPageSize = PageSize;
+                    return true;
+                }
+                catch
+                {
+                    _currPageStart = 0;
+                    _currPageSize = 0;
+                    return false;
+                }
+            }
+
+            private bool DirectRead(ulong addr, Span<byte> dest)
+            {
+                try
+                {
+                    _target.ReadBuffer(addr, dest);
+                    return true;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+        }
+    }
 
 #if DEBUG
     [ThreadStatic]

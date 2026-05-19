@@ -130,6 +130,17 @@ public readonly struct GCOomData
     // describes a single segment with the inclusive start and exclusive end of its memory range
     // and its generation tag (or Ephemeral).
     IEnumerable<GCHeapSegmentInfo> EnumerateHeapSegments(GCHeapData heapData);
+
+    // Given the current probe address within a heap segment and the (aligned) size of the
+    // object that lives at that address, returns the next candidate object address.
+    TargetPointer GetPotentialNextObjectAddress(
+        TargetPointer currentAddress,
+        ulong currentObjectSize,
+        GCHeapSegmentInfo segment,
+        IReadOnlyList<(TargetPointer Pointer, TargetPointer Limit)> allocContexts);
+
+    // Aligns an object's raw size (base size + component bytes) to the alignment required by its containing segment
+    ulong AlignObjectSize(ulong size, GCSegmentClassification generation);
 ```
 
 ```csharp
@@ -1127,5 +1138,47 @@ IEnumerable<(HeapSegment Segment, TargetPointer Address)> WalkSegmentList(Target
         current = seg.Next;
         if (iterationMax-- <= 0) throw /* cycle detected */;
     }
+}
+```
+
+GetPotentialNextObjectAddress
+
+```csharp
+TargetPointer IGC.GetPotentialNextObjectAddress(
+    TargetPointer currentAddress,
+    ulong currentObjectSize,
+    GCHeapSegmentInfo segment,
+    IReadOnlyList<(TargetPointer Pointer, TargetPointer Limit)> allocContexts)
+{
+    TargetPointer next = currentAddress + currentObjectSize;
+
+    // Only Gen0/Ephemeral segments contain active allocation contexts that interleave with
+    // committed objects.
+    if (segment.Generation is not (GCSegmentClassification.Gen0 or GCSegmentClassification.Ephemeral))
+        return next;
+
+    // If `next` matches an allocation-context cursor, jump past the reserved-but-unallocated
+    // tail of that context (rounded up by the GC's minimum object size).
+    ulong minObjSize = AlignForSmallObject(target.PointerSize * 3);
+    foreach (var (ptr, limit) in allocContexts)
+    {
+        if (next == ptr)
+            return limit + minObjSize;
+    }
+    return next;
+}
+```
+
+AlignObjectSize
+
+Aligns a raw object size to the alignment required by its containing segment. SOH segments
+use pointer-sized alignment (`Align()`); LOH/POH use 8-byte alignment (`AlignLarge()`).
+
+```csharp
+ulong IGC.AlignObjectSize(ulong size, GCSegmentClassification generation)
+{
+    return generation is GCSegmentClassification.LOH or GCSegmentClassification.POH
+        ? AlignForLargeObject(size)     // (size + 7) & ~7
+        : AlignForSmallObject(size);    // pointer-sized alignment
 }
 ```

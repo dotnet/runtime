@@ -172,6 +172,16 @@ public interface IGC : IContract
     // Enumerates the raw GC heap segments for a single heap as recorded by the GC's per-generation
     // segment lists.
     IEnumerable<GCHeapSegmentInfo> EnumerateHeapSegments(GCHeapData heapData) => throw new NotImplementedException();
+
+    // Returns the next candidate object address within a heap segment.
+    TargetPointer GetPotentialNextObjectAddress(
+        TargetPointer currentAddress,
+        ulong currentObjectSize,
+        GCHeapSegmentInfo segment,
+        IReadOnlyList<(TargetPointer Pointer, TargetPointer Limit)> allocContexts) => throw new NotImplementedException();
+
+    // Aligns an object's raw size to the alignment required by its containing segment.
+    ulong AlignObjectSize(ulong size, GCSegmentClassification generation) => throw new NotImplementedException();
 }
 
 public readonly struct GC : IGC

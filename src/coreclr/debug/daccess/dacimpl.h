@@ -1765,8 +1765,6 @@ public:
     HRESULT ListNearObjects(CORDB_ADDRESS obj, CORDB_ADDRESS *pPrev, CORDB_ADDRESS *pContaining, CORDB_ADDRESS *pNext);
 
 private:
-    HRESULT MoveToNextObject();
-
     bool GetSize(TADDR tMT, size_t &size);
 
     inline static size_t Align(size_t size)
@@ -1795,7 +1793,7 @@ private:
         return count;
     }
 
-    HRESULT NextSegment();
+    HRESULT AdvanceToNextValidObject();
     void CheckAllocAndSegmentRange();
 
 private:

@@ -442,6 +442,48 @@ internal readonly struct GC_1 : IGC
         }
     }
 
+    TargetPointer IGC.GetPotentialNextObjectAddress(
+        TargetPointer currentAddress,
+        ulong currentObjectSize,
+        GCHeapSegmentInfo segment,
+        IReadOnlyList<(TargetPointer Pointer, TargetPointer Limit)> allocContexts)
+    {
+        TargetPointer next = new TargetPointer(currentAddress.Value + currentObjectSize);
+
+        // Only Gen0/Ephemeral segments contain active allocation contexts that interleave with
+        // committed objects.
+        if (segment.Generation is not (GCSegmentClassification.Gen0 or GCSegmentClassification.Ephemeral))
+            return next;
+
+        // Mirrors DacHeapWalker::CheckAllocAndSegmentRange: if the address coincides with any
+        // allocation context's bump pointer, jump past the reserved-but-unallocated tail of that
+        // context (rounded up by the GC's minimum object size).
+        ulong minObjSize = AlignForSmallObject((ulong)_target.PointerSize * 3);
+        foreach ((TargetPointer ptr, TargetPointer limit) in allocContexts)
+        {
+            if (next == ptr)
+                return new TargetPointer(limit.Value + minObjSize);
+        }
+        return next;
+    }
+
+    ulong IGC.AlignObjectSize(ulong size, GCSegmentClassification generation)
+    {
+        return generation is GCSegmentClassification.LOH or GCSegmentClassification.POH
+            ? AlignForLargeObject(size)
+            : AlignForSmallObject(size);
+    }
+
+    // SOH alignment: pointer-sized (4 on 32-bit, 8 on 64-bit). Mirrors gcpriv.h Align().
+    private ulong AlignForSmallObject(ulong size)
+    {
+        ulong alignConst = (ulong)_target.PointerSize - 1;
+        return (size + alignConst) & ~alignConst;
+    }
+
+    // LOH/POH alignment: always 8-byte. Mirrors dacimpl.h DacHeapWalker::AlignLarge().
+    private static ulong AlignForLargeObject(ulong size) => (size + 7) & ~7UL;
+
     HandleType[] IGC.GetSupportedHandleTypes()
     {
         List<HandleType> supportedTypes =
