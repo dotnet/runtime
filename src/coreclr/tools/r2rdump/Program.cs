@@ -466,7 +466,7 @@ namespace R2RDump
                     // parse the ReadyToRun image
                     ReadyToRunReader r2r = new(model, filename);
                     r2r.ValidateDebugInfo = Get(_command.ValidateDebugInfo);
-                    if (disasm)
+                    if (disasm && !(r2r.CompositeReader is WebcilImageReader))
                     {
                         disassembler = new Disassembler(r2r, model);
                     }
