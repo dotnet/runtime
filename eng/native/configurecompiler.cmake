@@ -741,7 +741,7 @@ if (CLR_CMAKE_HOST_UNIX OR CLR_CMAKE_HOST_WASI)
   add_compile_options(-fvisibility=hidden)
 
   # Separate functions and data into their own sections so the linker can remove
-  # unreferenced ones via --gc-sections (ELF) / -dead_strip (Mach-O).
+  # unreferenced ones.
   add_compile_options(-ffunction-sections)
   add_compile_options(-fdata-sections)
   if(CLR_CMAKE_HOST_APPLE)
