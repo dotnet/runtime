@@ -6118,6 +6118,7 @@ int Compiler::compCompileAfterInit(CORINFO_MODULE_HANDLE classPtr,
         if (JitConfig.EnableAVX512() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_AVX512);
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVXVNNI_V512);
         }
 
         if (JitConfig.EnableAVX512v2() != 0)

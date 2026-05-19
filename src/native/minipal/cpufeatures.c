@@ -371,6 +371,11 @@ int minipal_getcpufeatures(void)
                         {
                             result |= XArchIntrinsicConstants_Avx512Vp2intersect;
                         }
+
+                        if ((cpuidInfo[CPUID_ECX] & (1 << 11)) != 0)                                             // AVX512-VNNI
+                        {
+                            result |= XArchIntrinsicConstants_Avx512Vnni;
+                        }
                     }
                 }
             }
