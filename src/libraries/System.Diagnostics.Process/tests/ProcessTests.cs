@@ -1042,6 +1042,69 @@ namespace System.Diagnostics.Tests
                 }
             }
         }
+        
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.Linux | TestPlatforms.Android)]
+        public void StartTime_IsDeterministicAcrossProcesses()
+        {
+            // Verifies that the boot-time offset used to compute Process.StartTime
+            // is stable across process boundaries (i.e. two separate processes
+            // querying the same target process get identical StartTime values).
+        
+            // Start a long-lived target process to query
+            Process target = CreateProcessLong();
+            target.Start();
+        
+            try
+            {
+                int targetPid = target.Id;
+        
+                // Query StartTime from two independent child processes
+                // Each child returns StartTime.Ticks as a string via exit code workaround
+                string result1 = null;
+                string result2 = null;
+        
+                using (RemoteInvokeHandle h1 = RemoteExecutor.Invoke(
+                    (string pidStr) =>
+                    {
+                        int pid = int.Parse(pidStr);
+                        Process p = Process.GetProcessById(pid);
+                        // Write ticks to stdout so the parent can read it
+                        Console.WriteLine(p.StartTime.Ticks);
+                        return RemoteExecutor.SuccessExitCode;
+                    },
+                    targetPid.ToString(),
+                    new RemoteInvokeOptions { StartInfo = new ProcessStartInfo { RedirectStandardOutput = true } }))
+                {
+                    result1 = h1.Process.StandardOutput.ReadToEnd().Trim();
+                }
+        
+                using (RemoteInvokeHandle h2 = RemoteExecutor.Invoke(
+                    (string pidStr) =>
+                    {
+                        int pid = int.Parse(pidStr);
+                        Process p = Process.GetProcessById(pid);
+                        Console.WriteLine(p.StartTime.Ticks);
+                        return RemoteExecutor.SuccessExitCode;
+                    },
+                    targetPid.ToString(),
+                    new RemoteInvokeOptions { StartInfo = new ProcessStartInfo { RedirectStandardOutput = true } }))
+                {
+                    result2 = h2.Process.StandardOutput.ReadToEnd().Trim();
+                }
+        
+                Assert.False(string.IsNullOrEmpty(result1), "Process 1 did not return a StartTime");
+                Assert.False(string.IsNullOrEmpty(result2), "Process 2 did not return a StartTime");
+                Assert.Equal(result1, result2);
+            }
+            finally
+            {
+                if (!target.HasExited)
+                    target.Kill();
+                target.WaitForExit();
+                target.Dispose();
+            }
+        }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void ProcessStartTime_Deterministic_Across_Instances()
