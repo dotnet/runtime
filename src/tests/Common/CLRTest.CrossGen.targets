@@ -32,6 +32,10 @@ WARNING:   When setting properties based on their current state (for example:
     Tests can opt out of ahead-of-time (AOT) compilation from crossgen / crossgen2 by setting this property in their project:
 
       <CrossGenTest>false</CrossGenTest>
+
+    Tests can pass extra crossgen2 arguments only in composite mode by setting this property in their project:
+
+      <CompositeCrossGen2TestExtraArguments>...</CompositeCrossGen2TestExtraArguments>
   -->
   <Target Name="GetCrossgenBashScript">
 
@@ -67,6 +71,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         cp "$CORE_ROOT"/lib*.so "$CORE_ROOT"/lib*.dylib $(scriptPath)
 
         ExtraCrossGen2Args+=" --composite"
+        ExtraCrossGen2Args+=" $(CompositeCrossGen2TestExtraArguments)"
       fi
 
       ExtraCrossGen2Args+=" $(CrossGen2TestExtraArguments)"
@@ -261,6 +266,7 @@ if defined RunCrossGen2 (
 
     if defined CompositeBuildMode (
         set ExtraCrossGen2Args=!ExtraCrossGen2Args! --composite
+        set ExtraCrossGen2Args=!ExtraCrossGen2Args! $(CompositeCrossGen2TestExtraArguments)
         if "$(CrossGen2OutputFormat)"=="wasm" (
             set __OutputFile=!scriptPath!\composite-r2r.wasm
         ) else (
