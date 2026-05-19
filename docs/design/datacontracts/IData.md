@@ -119,18 +119,27 @@ Parameters:
 * `[Field("name", ...)]` -- one or more candidate descriptor field names,
   passed as positional `params string[]`. The cdac generator's runtime
   cascade tries each name first against the native descriptor, then against
-  the managed descriptor. The first match wins. Defaults to a one-element
-  list containing the C# property name when no names are given.
+  the managed descriptor. The first match wins.
+
+  By default, the C# property name is **always appended as the lowest-priority
+  candidate** (de-duped if already in the list). This means `[Field]` with no
+  names is equivalent to `[Field("<PropertyName>")]`, and an explicit name list
+  still falls back to the property name if none of the listed names matched.
+  Set `UsePropertyName = false` to opt out of the property-name fallback
+  (rare; useful when the C# property name happens to collide with an
+  unrelated descriptor field).
+
   Examples:
   - `[Field] public uint Id` -- candidates `["Id"]`.
-  - `[Field("_state")] public uint State` -- candidates `["_state"]`. On a
-    managed-only class, native is absent so the cascade falls to managed
+  - `[Field("_state")] public uint State` -- candidates `["_state", "State"]`.
+    On a managed-only class, native is absent so the cascade falls to managed
     and finds `_state`.
-  - `[Field("State", "_state")] public uint State` -- two candidates,
-    useful for cross-source classes where native uses one name and managed
-    uses another.
+  - `[Field("State", "_state")] public uint State` -- candidates
+    `["State", "_state"]` (property name already present, not appended again).
   - `[Field("Id", "m_id")] public uint Id` -- runtime-version rename;
-    cascade tries the new name then the old.
+    candidates `["Id", "m_id"]`.
+  - `[Field("X", UsePropertyName = false)] public uint State` -- candidates
+    `["X"]` only; the property name `State` is not tried.
 * `[Field(Pointer = true)]` -- for `IData<T>`-typed properties: read a
   pointer from the descriptor field, then materialize the pointee via
   `target.ProcessedData.GetOrAdd<T>(pointer)`. Use only when the

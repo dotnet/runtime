@@ -71,10 +71,19 @@ public sealed class FieldAttribute : Attribute
 
     /// <summary>
     /// Candidate field names tried in priority order against the native
-    /// descriptor first, then the managed descriptor. Empty or null falls
-    /// back to a one-element list containing the C# property name.
+    /// descriptor first, then the managed descriptor. The C# property name
+    /// is appended as a lowest-priority candidate when
+    /// <see cref="UsePropertyName"/> is <c>true</c> (the default).
     /// </summary>
     public string[]? Names { get; set; }
+
+    /// <summary>
+    /// When <c>true</c> (the default), the C# property name is appended to
+    /// the candidate name list as the lowest-priority entry. Set to
+    /// <c>false</c> to suppress the fallback -- the cascade will then only
+    /// try the names explicitly listed in <see cref="Names"/>.
+    /// </summary>
+    public bool UsePropertyName { get; set; } = true;
 
     /// <summary>
     /// For <c>IData&lt;T&gt;</c>-typed properties: read a pointer field then
@@ -147,10 +156,17 @@ public sealed class FieldAddressAttribute : Attribute
 
     /// <summary>
     /// Candidate field names tried in priority order against the native
-    /// descriptor first, then the managed descriptor. Empty or null falls
-    /// back to the C# property name.
+    /// descriptor first, then the managed descriptor. The C# property name
+    /// is appended as a lowest-priority candidate when
+    /// <see cref="UsePropertyName"/> is <c>true</c> (the default).
     /// </summary>
     public string[]? Names { get; set; }
+
+    /// <summary>
+    /// When <c>true</c> (the default), the C# property name is appended to
+    /// the candidate name list as the lowest-priority entry.
+    /// </summary>
+    public bool UsePropertyName { get; set; } = true;
 }
 
 /// <summary>

@@ -134,6 +134,23 @@ internal static class Parser
         return default;
     }
 
+    /// <summary>
+    /// Reads a bool named-arg with an explicit default for the "not set" case,
+    /// so consumers can distinguish "explicitly false" from "not specified".
+    /// </summary>
+    private static bool GetNamedBoolArg(AttributeData attr, string name, bool defaultValue)
+    {
+        foreach (KeyValuePair<string, TypedConstant> kv in attr.NamedArguments)
+        {
+            if (kv.Key == name && kv.Value.Value is bool b)
+            {
+                return b;
+            }
+        }
+
+        return defaultValue;
+    }
+
     private static string[]? GetNamedArrayArg(AttributeData attr, string name)
     {
         foreach (KeyValuePair<string, TypedConstant> kv in attr.NamedArguments)
@@ -155,13 +172,34 @@ internal static class Parser
         return null;
     }
 
-    private static EquatableArray<string> ComputeFieldNames(string propertyName, string[]? names)
+    /// <summary>
+    /// Build the priority-ordered candidate names for a member: explicit
+    /// positional names first, with the C# property name appended as the
+    /// lowest-priority fallback when <paramref name="usePropertyName"/> is
+    /// true (the default). The property name is skipped if it's already
+    /// present in <paramref name="names"/> to avoid duplicate lookups.
+    /// </summary>
+    private static EquatableArray<string> ComputeFieldNames(string propertyName, string[]? names, bool usePropertyName)
     {
-        if (names is null || names.Length == 0)
+        var result = new List<string>();
+        if (names is not null)
         {
-            return EquatableArray<string>.FromEnumerable(new[] { propertyName });
+            foreach (string n in names)
+            {
+                result.Add(n);
+            }
         }
-        return EquatableArray<string>.FromEnumerable(names);
+        if (usePropertyName && !result.Contains(propertyName))
+        {
+            result.Add(propertyName);
+        }
+        if (result.Count == 0)
+        {
+            // UsePropertyName=false with no explicit names; default to the
+            // property name anyway so the cascade has something to try.
+            result.Add(propertyName);
+        }
+        return EquatableArray<string>.FromEnumerable(result);
     }
 
     private static bool TryParseProperty(IPropertySymbol prop, out MemberModel? model)
@@ -229,6 +267,7 @@ internal static class Parser
             string[]? ctorNames = ReadStringParamsCtorArg(fieldAttr);
             string[]? namedNames = GetNamedArrayArg(fieldAttr, "Names");
             string[]? rawNames = ctorNames ?? namedNames;
+            bool usePropertyName = GetNamedBoolArg(fieldAttr, "UsePropertyName", defaultValue: true);
 
             bool isPointer = GetNamedArg<bool>(fieldAttr, "Pointer");
             (FieldReadKind readKind, string? dataTypeArg, bool isNullable) = ClassifyFieldRead(prop, isPointer);
@@ -250,7 +289,7 @@ internal static class Parser
                 RawOffset: null,
                 LittleEndian: false,
                 HasSetter: GetNamedArg<bool>(fieldAttr, "Writable"),
-                Names: ComputeFieldNames(prop.Name, rawNames));
+                Names: ComputeFieldNames(prop.Name, rawNames, usePropertyName));
             return true;
         }
 
@@ -259,6 +298,7 @@ internal static class Parser
             string[]? ctorNames = ReadStringParamsCtorArg(addrAttr);
             string[]? namedNames = GetNamedArrayArg(addrAttr, "Names");
             string[]? rawNames = ctorNames ?? namedNames;
+            bool usePropertyName = GetNamedBoolArg(addrAttr, "UsePropertyName", defaultValue: true);
             string descriptorName = rawNames is { Length: > 0 } ? rawNames[0] : prop.Name;
             model = new MemberModel(
                 Name: prop.Name,
@@ -272,7 +312,7 @@ internal static class Parser
                 RawOffset: null,
                 LittleEndian: false,
                 HasSetter: false,
-                Names: ComputeFieldNames(prop.Name, rawNames));
+                Names: ComputeFieldNames(prop.Name, rawNames, usePropertyName));
             return true;
         }
 
