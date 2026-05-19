@@ -2520,6 +2520,10 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             case NI_AVX512_FusedMultiplySubtractNegated:
             case NI_AVX512_FusedMultiplySubtractNegatedScalar:
             {
+                // While this operation is RMW, it is also almost freely reorderable
+                // and so we do not need to set the operands as delay free unless
+                // we are copying the upper bits and therefore op1 must be the target
+
                 assert((numArgs == 3) || (intrinsicTree->OperIsEmbRoundingEnabled()));
                 assert(isRMW);
                 assert(HWIntrinsicInfo::IsFmaIntrinsic(intrinsicId));
@@ -2533,105 +2537,44 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 {
                     user = use.User();
                 }
-                unsigned resultOpNum = intrinsicTree->GetResultOpNumForRmwIntrinsic(user, op1, op2, op3);
 
-                unsigned containedOpNum = 0;
-
-                // containedOpNum remains 0 when no operand is contained or regOptional
                 if (op1->isContained() || op1->IsRegOptional())
                 {
-                    containedOpNum = 1;
+                    assert(!copiesUpperBits);
+                    std::swap(op1, op3);
                 }
                 else if (op2->isContained() || op2->IsRegOptional())
                 {
-                    containedOpNum = 2;
-                }
-                else if (op3->isContained() || op3->IsRegOptional())
-                {
-                    containedOpNum = 3;
+                    std::swap(op2, op3);
                 }
 
-                GenTree* emitOp1 = op1;
-                GenTree* emitOp2 = op2;
-                GenTree* emitOp3 = op3;
+                tgtPrefUse = BuildUse(op1);
+                srcCount++;
 
-                // Intrinsics with CopyUpperBits semantics must have op1 as target
-                assert(containedOpNum != 1 || !copiesUpperBits);
-
-                // We need to keep this in sync with hwintrinsiccodegenxarch.cpp
-                // Ideally we'd actually swap the operands here and simplify codegen
-                // but its a bit more complicated to do so for many operands as well
-                // as being complicated to tell codegen how to pick the right instruction
-
-                if (containedOpNum == 1)
+                if (copiesUpperBits)
                 {
-                    // https://github.com/dotnet/runtime/issues/62215
-                    // resultOpNum might change between lowering and lsra, comment out assertion for now.
-                    // assert(containedOpNum != resultOpNum);
-                    // resultOpNum is 3 or 0: op3/? = ([op1] * op2) + op3
-                    std::swap(emitOp1, emitOp3);
-
-                    if (resultOpNum == 2)
-                    {
-                        // op2 = ([op1] * op2) + op3
-                        std::swap(emitOp1, emitOp2);
-                    }
-                }
-                else if (containedOpNum == 3)
-                {
-                    // assert(containedOpNum != resultOpNum);
-                    if (resultOpNum == 2 && !copiesUpperBits)
-                    {
-                        // op2 = (op1 * op2) + [op3]
-                        std::swap(emitOp1, emitOp2);
-                    }
-                    // else: op1/? = (op1 * op2) + [op3]
-                }
-                else if (containedOpNum == 2)
-                {
-                    // assert(containedOpNum != resultOpNum);
-
-                    // op1/? = (op1 * [op2]) + op3
-                    std::swap(emitOp2, emitOp3);
-                    if (resultOpNum == 3 && !copiesUpperBits)
-                    {
-                        // op3 = (op1 * [op2]) + op3
-                        std::swap(emitOp1, emitOp2);
-                    }
+                    srcCount += BuildDelayFreeUses(op2, op1);
                 }
                 else
                 {
-                    // containedOpNum == 0
-                    // no extra work when resultOpNum is 0 or 1
-                    if (resultOpNum == 2)
-                    {
-                        std::swap(emitOp1, emitOp2);
-                    }
-                    else if (resultOpNum == 3)
-                    {
-                        std::swap(emitOp1, emitOp3);
-                    }
+                    tgtPrefUse2 = BuildUse(op2);
+                    srcCount++;
                 }
 
-                GenTree* ops[] = {op1, op2, op3};
-                for (GenTree* op : ops)
+                if (op3->isContained())
                 {
-                    if (op == emitOp1)
-                    {
-                        tgtPrefUse = BuildUse(op);
-                        srcCount++;
-                    }
-                    else if (op == emitOp2)
-                    {
-                        srcCount += BuildDelayFreeUses(op, emitOp1);
-                    }
-                    else if (op == emitOp3)
-                    {
-                        SingleTypeRegSet apxAwareRegCandidates =
-                            ForceLowGprForApxIfNeeded(op, RBM_NONE, canHWIntrinsicUseApxRegs);
-                        srcCount += op->isContained() ? BuildOperandUses(op, apxAwareRegCandidates)
-                                                      : BuildDelayFreeUses(op, emitOp1);
-                    }
+                    SingleTypeRegSet apxAwareRegCandidates =
+                            ForceLowGprForApxIfNeeded(op3, RBM_NONE, canHWIntrinsicUseApxRegs);
+                    srcCount += BuildOperandUses(op3, apxAwareRegCandidates);
+                }
+                else if (copiesUpperBits)
+                {
+                    srcCount += BuildDelayFreeUses(op3, op1);
+                }
+                else
+                {
+                    tgtPrefUse3 = BuildUse(op3);
+                    srcCount++;
                 }
 
                 if (intrinsicTree->OperIsEmbRoundingEnabled() && !intrinsicTree->Op(4)->IsCnsIntOrI())
