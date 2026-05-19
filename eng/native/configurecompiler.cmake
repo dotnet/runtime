@@ -742,8 +742,6 @@ if (CLR_CMAKE_HOST_UNIX OR CLR_CMAKE_HOST_WASI)
 
   # Separate functions and data into their own sections so the linker can remove
   # unreferenced ones via --gc-sections (ELF) / -dead_strip (Mach-O).
-  # The compile options apply to all configurations; only the linker GC flags
-  # below are gated to non-Debug builds so Debug keeps full symbols.
   add_compile_options(-ffunction-sections)
   add_compile_options(-fdata-sections)
   if(CLR_CMAKE_HOST_APPLE)
