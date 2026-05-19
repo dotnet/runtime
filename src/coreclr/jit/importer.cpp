@@ -7002,7 +7002,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // The ARGLIST cookie is a hidden 'last' parameter, we have already
                 // adjusted the arg count cos this is like fetching the last param.
                 assertImp(numArgs > 0);
-                op1 = gtNewLclVarAddrNode(lvaVarargsHandleArg, TYP_BYREF);
+                clsHnd  = impGetRuntimeArgumentHandle();
+                op1     = gtNewLclVarAddrNode(lvaVarargsHandleArg, TYP_BYREF);
+                op1     = gtNewLoadValueNode(TYP_STRUCT, typGetObjLayout(clsHnd), op1);
+                tiRetVal = makeTypeInfo(clsHnd);
                 impPushOnStack(op1, tiRetVal);
                 break;
 
