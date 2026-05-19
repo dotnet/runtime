@@ -1315,6 +1315,53 @@ namespace System.Text.Json.Serialization.Tests
             };
         }
 
+        [Fact]
+        public async Task Classifier_WithReferenceHandlerPreserve_PreservesReferences()
+        {
+            var factory = new TestDiscriminatorClassifierFactory();
+            var context = JsonTypeClassifierContextTestExtensions.Create(
+                                    typeof(ClassifiedAnimalBase),
+                                    Array.Empty<JsonUnionCaseInfo>(),
+                                    new JsonDerivedType[] {
+                    new JsonDerivedType(typeof(ClassifiedDog), "dog"),
+                    new JsonDerivedType(typeof(ClassifiedCat), "cat"),},
+                                    "kind");
+            JsonTypeClassifier classify = factory.CreateJsonClassifier(context, new JsonSerializerOptions { TypeInfoResolver = new DefaultJsonTypeInfoResolver() });
+
+            var options = new JsonSerializerOptions
+            {
+                ReferenceHandler = ReferenceHandler.Preserve,
+                TypeInfoResolver = new DefaultJsonTypeInfoResolver
+                {
+                    Modifiers =
+                    {
+                        typeInfo =>
+                        {
+                            if (typeInfo.Type == typeof(ClassifiedAnimalBase) && typeInfo.PolymorphismOptions is not null)
+                            {
+                                typeInfo.PolymorphismOptions.TypeDiscriminatorPropertyName = "kind";
+                                typeInfo.TypeClassifier = classify;
+                            }
+                        }
+                    }
+                }
+            };
+
+            var dog = new ClassifiedDog { Name = "Rex", Breed = "Lab" };
+            ClassifiedAnimalBase[] payload = new ClassifiedAnimalBase[] { dog, dog };
+
+            string json = await Serializer.SerializeWrapper(payload, options);
+
+            ClassifiedAnimalBase[]? result = await Serializer.DeserializeWrapper<ClassifiedAnimalBase[]>(json, options);
+
+            Assert.NotNull(result);
+            Assert.Equal(2, result!.Length);
+            Assert.IsType<ClassifiedDog>(result[0]);
+            Assert.Same(result[0], result[1]);
+            Assert.Equal("Rex", result[0].Name);
+            Assert.Equal("Lab", ((ClassifiedDog)result[0]).Breed);
+        }
+
         private static JsonSerializerOptions CreateOptionsWithClassifier<TBase>(JsonTypeClassifier classifier)
             where TBase : class
         {

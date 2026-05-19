@@ -15,7 +15,7 @@ namespace System.Text.Json.Serialization
         {
             Debug.Assert(!IsValueType);
             Debug.Assert(CanHaveMetadata);
-            Debug.Assert((state.Current.MetadataPropertyNames & MetadataPropertyName.Type) != 0);
+            Debug.Assert((state.Current.MetadataPropertyNames & MetadataPropertyName.Type) != 0 || state.PolymorphicResolvedType is not null);
             Debug.Assert(state.Current.PolymorphicSerializationState != PolymorphicSerializationState.PolymorphicReEntryStarted);
 
             JsonConverter? polymorphicConverter = null;

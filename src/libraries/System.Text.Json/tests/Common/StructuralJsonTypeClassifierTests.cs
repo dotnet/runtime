@@ -453,7 +453,7 @@ namespace System.Text.Json.Serialization.Tests
 
                     score += elementScore;
                     sampledElements++;
-                    reader.Skip();
+                    reader.TrySkip();
                 }
 
                 return sampledElements == 0 ? 4 : score;
@@ -497,7 +497,7 @@ namespace System.Text.Json.Serialization.Tests
                         }
                     }
 
-                    reader.Skip();
+                    reader.TrySkip();
                 }
 
                 return score;
@@ -533,7 +533,7 @@ namespace System.Text.Json.Serialization.Tests
 
                     score += 2 + valueScore;
                     sampledProperties++;
-                    reader.Skip();
+                    reader.TrySkip();
                 }
 
                 return sampledProperties == 0 ? 4 : score;

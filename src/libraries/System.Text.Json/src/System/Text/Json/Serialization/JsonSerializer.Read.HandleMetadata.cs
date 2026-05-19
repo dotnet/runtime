@@ -42,18 +42,35 @@ namespace System.Text.Json
                     }
                 }
 
-                // Classify using a struct copy; the original reader stays at the object start.
-                Utf8JsonReader classifierCopy = reader;
-                Type? resolvedType = typeClassifier(ref classifierCopy);
-
-                if (resolvedType is null)
+                // If reference handling is configured and the payload is a $ref-only object,
+                // defer to the normal metadata loop so the reference resolver can return the
+                // previously-deserialized instance instead of asking the classifier to identify
+                // a type from a metadata-only payload that does not describe one.
+                bool isRefOnlyPayload = false;
+                if (state.ReferenceResolver is not null)
                 {
-                    ThrowHelper.ThrowJsonException(SR.PolymorphicTypeClassifierReturnedNull);
+                    Utf8JsonReader peek = reader;
+                    if (peek.Read() &&
+                        peek.TokenType == JsonTokenType.PropertyName &&
+                        peek.GetUnescapedSpan().SequenceEqual(s_refPropertyName))
+                    {
+                        isRefOnlyPayload = true;
+                    }
                 }
 
-                state.PolymorphicResolvedType = resolvedType;
-                // Set the Type metadata flag so ResolvePolymorphicConverter runs.
-                state.Current.MetadataPropertyNames |= MetadataPropertyName.Type;
+                if (!isRefOnlyPayload)
+                {
+                    // Classify using a struct copy; the original reader stays at the object start.
+                    Utf8JsonReader classifierCopy = reader;
+                    Type? resolvedType = typeClassifier(ref classifierCopy);
+
+                    if (resolvedType is null)
+                    {
+                        ThrowHelper.ThrowJsonException(SR.PolymorphicTypeClassifierReturnedNull);
+                    }
+
+                    state.PolymorphicResolvedType = resolvedType;
+                }
             }
 
             Utf8JsonReader checkpoint;
