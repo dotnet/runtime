@@ -323,7 +323,7 @@ public unsafe partial interface IDacDbiInterface
     int IsThreadMarkedDead(ulong vmThread, Interop.BOOL* pResult);
 
     [PreserveSig]
-    int GetThreadHandle(ulong vmThread, nint pRetVal);
+    int GetThreadHandle(ulong vmThread, void** pRetVal);
 
     [PreserveSig]
     int GetThreadObject(ulong vmThread, ulong* pRetVal);

@@ -147,7 +147,8 @@ internal readonly struct Thread_1 : IThread
             thread.CurrentCustomDebuggerNotification.Handle,
             thread.LastThrownObjectIsUnhandled != 0,
             hasUnhandledException,
-            thread.LinkNext);
+            thread.LinkNext,
+            thread.ThreadHandle);
     }
 
     void IThread.GetThreadAllocContext(TargetPointer threadPointer, out long allocBytes, out long allocBytesLoh)

@@ -725,8 +725,30 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
-    public int GetThreadHandle(ulong vmThread, nint pRetVal)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetThreadHandle(vmThread, pRetVal) : HResults.E_NOTIMPL;
+    public int GetThreadHandle(ulong vmThread, void** pRetVal)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            Contracts.ThreadData threadData = _target.Contracts.Thread.GetThreadData(new TargetPointer(vmThread));
+            *pRetVal = (void*)threadData.ThreadHandle.Value;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            void* retValLocal = null;
+            int hrLocal = _legacy.GetThreadHandle(vmThread, &retValLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pRetVal == retValLocal, $"cDAC: {(nuint)(*pRetVal):x}, DAC: {(nuint)retValLocal:x}");
+        }
+#endif
+        return hr;
+    }
 
     public int GetThreadObject(ulong vmThread, ulong* pRetVal)
     {
@@ -758,7 +780,38 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int GetThreadAllocInfo(ulong vmThread, DacDbiThreadAllocInfo* pThreadAllocInfo)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetThreadAllocInfo(vmThread, pThreadAllocInfo) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            TargetPointer threadPtr = new TargetPointer(vmThread);
+            Contracts.ThreadData threadData = _target.Contracts.Thread.GetThreadData(threadPtr);
+            _target.Contracts.Thread.GetThreadAllocContext(threadPtr, out long allocBytes, out long allocBytesLoh);
+
+            ulong limit = threadData.AllocContextLimit.Value;
+            ulong pointer = threadData.AllocContextPointer.Value;
+            pThreadAllocInfo->allocBytesSOH = (ulong)allocBytes - (limit - pointer);
+            pThreadAllocInfo->allocBytesUOH = (ulong)allocBytesLoh;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            DacDbiThreadAllocInfo allocInfoLocal = default;
+            int hrLocal = _legacy.GetThreadAllocInfo(vmThread, &allocInfoLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(pThreadAllocInfo->allocBytesSOH == allocInfoLocal.allocBytesSOH, $"cDAC: {pThreadAllocInfo->allocBytesSOH}, DAC: {allocInfoLocal.allocBytesSOH}");
+                Debug.Assert(pThreadAllocInfo->allocBytesUOH == allocInfoLocal.allocBytesUOH, $"cDAC: {pThreadAllocInfo->allocBytesUOH}, DAC: {allocInfoLocal.allocBytesUOH}");
+            }
+        }
+#endif
+        return hr;
+    }
 
     public int SetDebugState(ulong vmThread, int debugState)
     {
