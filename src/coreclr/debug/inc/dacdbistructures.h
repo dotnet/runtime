@@ -772,7 +772,12 @@ private:
 // NoValueTypeBoxing:
 //     TypeHandleToExpandedTypeInfo is also used to report type parameters,
 //      and in this case none of the types are considered boxed (
-enum AreValueTypesBoxed { NoValueTypeBoxing, OnlyPrimitivesUnboxed, AllBoxed };
+enum AreValueTypesBoxed
+{
+    NoValueTypeBoxing = 0,
+    OnlyPrimitivesUnboxed = 1,
+    AllBoxed = 2
+};
 
 // TypeRefData is used for resolving a type reference (see code:CordbModule::ResolveTypeRef and
 // code:DacDbiInterfaceImpl::ResolveTypeReference) to store relevant information about the type

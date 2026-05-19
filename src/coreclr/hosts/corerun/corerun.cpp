@@ -445,6 +445,14 @@ static int run(const configuration& config)
     {
         // Use the external assembly probe to load assemblies from the app assembly paths.
         use_external_assembly_probe = true;
+    }
+    else
+    {
+        tpa_list = std::move(app_assemblies_env);
+    }
+
+    if (use_external_assembly_probe)
+    {
         if (!core_libs.empty())
         {
             pal::string_utf8_t core_libs_utf8 = pal::convert_to_utf8(core_libs.c_str());
@@ -458,10 +466,6 @@ static int run(const configuration& config)
             s_core_root_path = (char*)::malloc(core_root_utf8.length() + 1);
             ::strcpy(s_core_root_path, core_root_utf8.c_str());
         }
-    }
-    else
-    {
-        tpa_list = std::move(app_assemblies_env);
     }
 
     {

@@ -172,6 +172,8 @@ Classification here drives WHERE the agent reads the signature text from. It doe
 
 For each (1)/(2)/(3) signature, compute the tuple `(definition_id, work_item_or_phase, queue, stress_mode, [FAIL]-or-compile-error signature)`. Look back ~10 prior completed builds in the same definition for first-seen-in-window timestamp and occurrence count.
 
+If the same signature appears in *every* sampled build (100% failure rate in the ~10-build window), the true first occurrence likely predates the window. Widen the build-list query (`&%24skip=10`, `&%24skip=20`, ...) up to ~40 additional builds and stop as soon as you find a build where the signature is absent (`succeeded`/`partiallySucceeded` without this signature). Report the build immediately after that gap as `First build it occurred` in the KBE body. If you hit the 40-build cap without finding a gap, set `First build it occurred` to the oldest build you scanned and add `Persistent across the entire scanned window; true origin may predate <oldest-build-date>.` as a body note.
+
 #### Data sources
 
 - **AzDO REST.** `https://dev.azure.com/dnceng-public/public/_apis/build/...`. Anonymous, no auth.
@@ -196,7 +198,15 @@ For each `(definition_id, phase, queue, stress_mode, signature)` produced by Ste
 
 #### Step 4.2 — Search for an existing KBE
 
-`is:issue is:open label:"Known Build Error" in:body "<error-signature>"`. Try variations: full `[FAIL]` line; assertion text; exception class + test name. On hit, record `existing-kbe #<n>` and continue (the walk does not end — a KBE hit changes the final action, not the inspection).
+`is:issue is:open label:"Known Build Error" in:body "<error-signature>"`. Try these variations in order, scanning the first ~10 results of each (GitHub best-match ranking can rank a noisier match above the right one):
+
+1. Full `[FAIL]` line.
+2. Assertion text.
+3. Exception class + test name.
+4. Test class name + `label:"Known Build Error"`, e.g. `SocketBlockingModeTransitionTests label:"Known Build Error"`.
+5. Test class name + area label, no KBE filter, e.g. `SocketBlockingModeTransitionTests label:area-System.Net.Sockets`.
+
+Variations 4 and 5 catch sibling failures filed for the same test class on a different platform or runtime variant (e.g. android-x64 vs iossimulator), plus pre-existing area-team trackers that lack the `Known Build Error` label. If `search_issues` returns a `[Filtered]` marker on variations 1-4 (KBE-labeled searches), treat it as a likely existing-KBE hit and record `skipped: integrity-filtered candidate, needs human review` instead of filing a fresh KBE. A `[Filtered]` marker on variation 5 is NOT sufficient to gate filing: per Step 4.3, plain trackers are not KBE substitutes, so continue to file a fresh KBE and record `linked-tracker: integrity-filtered, needs human review` for cross-linking. On any visible hit whose title or body references the same test class on any platform, record `existing-kbe #<n>` (or `linked-tracker #<n>` for variation 5 when the hit lacks the KBE label) and continue (the walk does not end; a hit changes the final action, not the inspection).
 
 #### Step 4.3 — Search for an area-team tracker (no KBE label)
 
@@ -257,6 +267,8 @@ Build-break KBEs cannot be disabled — there is no test annotation that can ski
 
 Small-fix bounds: <= 20 lines, single file, non-API, non-JIT-codegen, non-GC, non-threading, non-security; the failing test (or compile error) verifies the fix.
 
+Before drafting the fix, read every file you intend to cite or modify at HEAD, and any file the failure log points at, to confirm the change is not already present in `main`. If the recommendation reduces to "do what the cited file already does" (header comment, existing target, existing condition), skip Branch C and record `skipped: recommendation already present in source`.
+
 In addition to the Branch B test-disable PR (test failures) or directly against the existing KBE (build breaks), emit a separate `create_pull_request` for the fix on its own branch. Build-break fixes are limited to obvious mechanical changes (typo, missing `#if`, wrong cast, missing `using`). Body cites (a) failing test or compile error as evidence, (b) root cause, (c) why fix is safe, (d) `Linked KBE: #<n>`, (e) "If this lands before #<test-disable-PR>, that PR can be closed." (omit (e) for build-break fixes).
 
 After emitting, record the outcome per signature (Step 6).
@@ -316,6 +328,7 @@ Pull request: <link to the PR if the build was a PR build, otherwise omit this l
 ```json
 {
   "ErrorMessage": "<exact substring from the failure log; the assertion or exception message text — never a bare test name>",
+  "ErrorPattern": "",
   "BuildRetry": false,
   "ExcludeConsoleLog": false
 }
@@ -348,6 +361,7 @@ Pull request: <link, omit if not a PR build>
 
 ```json
 {
+  "ErrorMessage": "",
   "ErrorPattern": "<single-line anchored regex; use `[^\\n]*` instead of `.*`>",
   "BuildRetry": false,
   "ExcludeConsoleLog": false
@@ -363,7 +377,7 @@ Walk all nine before submission. Canonical reference: [`dotnet/arcade-skills/...
 2. Exactly ONE fenced JSON block.
 3. Opening fence is exactly three backticks + `json`, lowercase, nothing else on the line.
 4. Closing fence is exactly three backticks, same length as open.
-5. Exactly one of `ErrorMessage` / `ErrorPattern` is present and non-empty. The unused field is DELETED, not set to `""`.
+5. **All four keys** (`ErrorMessage`, `ErrorPattern`, `BuildRetry`, `ExcludeConsoleLog`) are present. Exactly one of `ErrorMessage` / `ErrorPattern` is non-empty; the unused one is `""` (empty string), NOT deleted. Build Analysis only treats an issue as a tracking KBE when the full schema is intact — omitting a key silently breaks `Tracking` linkage even though the JSON itself is valid.
 6. The signature is NOT a bare identifier. A fully-qualified test name, a stack-frame line, or a bare exception type all appear in `[PASS]` and `[SKIP]` lines for the same test. Applies to BOTH `ErrorMessage` and `ErrorPattern`.
 7. Negative-match smoke test against the failure log:
 
@@ -393,7 +407,10 @@ Both `ErrorMessage` and `ErrorPattern` accept arrays — each element matches a 
   "ErrorMessage": [
     "<test name on one line>",
     "<exception message on a later line>"
-  ]
+  ],
+  "ErrorPattern": "",
+  "BuildRetry": false,
+  "ExcludeConsoleLog": false
 }
 ```
 
