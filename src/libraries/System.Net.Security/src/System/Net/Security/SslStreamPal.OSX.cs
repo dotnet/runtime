@@ -211,15 +211,12 @@ namespace System.Net.Security
             out int leftoverOffset,
             out int leftoverLength)
         {
-            // SecureTransport always decrypts in-place; `destination` is unused.
-            _ = destination;
             bytesWritten = 0;
+            leftoverOffset = 0;
+            leftoverLength = 0;
 
             Debug.Assert(securityContext is SafeDeleteSslContext, "SafeDeleteSslContext expected");
             SafeDeleteSslContext sslContext = (SafeDeleteSslContext)securityContext;
-
-            leftoverOffset = 0;
-            leftoverLength = 0;
 
             try
             {
@@ -227,11 +224,22 @@ namespace System.Net.Security
 
                 sslContext.Write(encrypted);
 
+                PAL_TlsIo status;
+
                 unsafe
                 {
-                    fixed (byte* ptr = encrypted)
+                    // Opportunistically decrypt directly into the caller-provided destination span
+                    // when one was supplied (saves a memcpy through the SslStream-owned buffer).
+                    // If the first read does not fill the destination, all currently available
+                    // plaintext has been consumed and we report the resulting status as-is.
+                    if (!destination.IsEmpty)
                     {
-                        PAL_TlsIo status = Interop.AppleCrypto.SslRead(sslHandle, ptr, encrypted.Length, out int written);
+                        int written;
+                        fixed (byte* destPtr = destination)
+                        {
+                            status = Interop.AppleCrypto.SslRead(sslHandle, destPtr, destination.Length, out written);
+                        }
+
                         if (status < 0)
                         {
                             return new SecurityStatusPal(
@@ -239,29 +247,43 @@ namespace System.Net.Security
                                 Interop.AppleCrypto.CreateExceptionForOSStatus((int)status));
                         }
 
-                        leftoverLength = written;
-                        leftoverOffset = 0;
-
-                        switch (status)
+                        bytesWritten = written;
+                        if (status != PAL_TlsIo.Success || written < destination.Length)
                         {
-                            case PAL_TlsIo.Success:
-                            case PAL_TlsIo.WouldBlock:
-                                return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
-                            case PAL_TlsIo.ClosedGracefully:
-                                return new SecurityStatusPal(SecurityStatusPalErrorCode.ContextExpired);
-                            case PAL_TlsIo.Renegotiate:
-                                return new SecurityStatusPal(SecurityStatusPalErrorCode.Renegotiate);
-                            default:
-                                Debug.Fail($"Unknown status value: {status}");
-                                return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError);
+                            return MapTlsIoStatus(status);
                         }
                     }
+
+                    // Either destination was empty, or the first read filled it; capture any
+                    // remaining plaintext in-place inside the ciphertext span so SslStream can
+                    // pick it up via leftoverOffset/leftoverLength.
+                    fixed (byte* ptr = encrypted)
+                    {
+                        status = Interop.AppleCrypto.SslRead(sslHandle, ptr, encrypted.Length, out int leftover);
+                        if (status < 0)
+                        {
+                            return new SecurityStatusPal(
+                                SecurityStatusPalErrorCode.InternalError,
+                                Interop.AppleCrypto.CreateExceptionForOSStatus((int)status));
+                        }
+                        leftoverLength = leftover;
+                    }
                 }
+
+                return MapTlsIoStatus(status);
             }
             catch (Exception e)
             {
                 return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, e);
             }
+
+            static SecurityStatusPal MapTlsIoStatus(PAL_TlsIo status) => status switch
+            {
+                PAL_TlsIo.Success or PAL_TlsIo.WouldBlock => new SecurityStatusPal(SecurityStatusPalErrorCode.OK),
+                PAL_TlsIo.ClosedGracefully => new SecurityStatusPal(SecurityStatusPalErrorCode.ContextExpired),
+                PAL_TlsIo.Renegotiate => new SecurityStatusPal(SecurityStatusPalErrorCode.Renegotiate),
+                _ => new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError),
+            };
         }
 
         public static ChannelBinding? QueryContextChannelBinding(
