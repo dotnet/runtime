@@ -6,6 +6,8 @@
 #   ./bxl.sh test  [extra-bxl-args...]   — compile and run tests
 set -euo pipefail
 
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")"; pwd -P)"
+
 if [[ $# -eq 0 ]]; then
     echo "Usage: ./bxl.sh <command> [args...]" >&2
     echo "Commands:" >&2
@@ -19,16 +21,20 @@ shift
 
 case "$command" in
     build)
-        filter="/f:~(tag='bxl-kind:binary')and~(tag='bxl-kind:test')"
+        filter_expression="~(tag='bxl-kind:binary')and~(tag='bxl-kind:test')"
         ;;
     test)
-        filter="/f:tag='bxl-kind:test'"
+        filter_expression="tag='bxl-kind:test'"
         ;;
     *)
         echo "ERROR: unknown command '$command'. Use 'build' or 'test'." >&2
         exit 1
         ;;
 esac
+
+if [[ -n "${BXL_FILTER_APPEND:-}" ]]; then
+    filter_expression="(${filter_expression})and(${BXL_FILTER_APPEND})"
+fi
 
 default_bxl="$(command -v bxl || true)"
 if [[ -z "$default_bxl" ]]; then
@@ -73,12 +79,14 @@ fi
 
 export BUILDXL_BIN
 
+cd "$script_dir"
+
 exec "$BXL" \
-    /c:config.dsc \
+    "/c:${script_dir}/config.dsc" \
     /server- \
     /unsafe_DisableDetours+ \
     /enableLinuxEBPFSandbox- \
     /cacheDirectory:"$CACHE_DIR" \
     /logOutput:FullOutputOnError \
-    "$filter" \
+    "/f:${filter_expression}" \
     "$@"

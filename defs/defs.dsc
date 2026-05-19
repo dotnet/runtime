@@ -101,12 +101,13 @@ export const XUNIT_RUNTIME_DEPS: File[] = [
     EXTERNAL_PACKAGES.get("xunit.abstractions").assertExistence(r`lib/netstandard1.0/xunit.abstractions.dll`),
 ];
 
-//  CORE_ROOT paths used by BuildXL-backed CoreCLR test execution
+//  CORE_ROOT paths used by BuildXL-backed CoreCLR test execution.
+//  Match the normal CoreCLR test flow: Checked runtime + Release libraries.
 // ============================================================================
 
 @@public
 export const CORE_ROOT_DIR: Directory =
-    d`${Context.getMount("SourceRoot").path}/artifacts/tests/coreclr/linux.x64.Release/Tests/Core_Root`;
+    d`${Context.getMount("SourceRoot").path}/artifacts/tests/coreclr/linux.x64.Checked/Tests/Core_Root`;
 
 @@public
 export const CORE_ROOT_CORERUN: File =
