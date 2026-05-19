@@ -612,6 +612,16 @@ namespace Internal.TypeSystem.Ecma
                         }
                     }
                     break;
+                case NativeTypeKind.IUnknown:
+                case NativeTypeKind.IDispatch:
+                case NativeTypeKind.Intf:
+                    {
+                        if (_reader.RemainingBytes != 0)
+                        {
+                            _reader.ReadCompressedInteger();
+                        }
+                    }
+                    break;
                 case NativeTypeKind.CustomMarshaler:
                     {
                         // Read typelib guid

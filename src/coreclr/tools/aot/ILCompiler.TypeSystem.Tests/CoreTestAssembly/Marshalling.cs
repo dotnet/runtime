@@ -179,5 +179,13 @@ namespace Marshalling
         public int i;
     }
 
+    public class MethodsWithMarshalAs
+    {
+        public void InterfaceWithIidParameterIndex(object iid, [MarshalAs(UnmanagedType.Interface, IidParameterIndex = 0)] out object value)
+        {
+            value = null;
+        }
+    }
+
     #endregion
 }

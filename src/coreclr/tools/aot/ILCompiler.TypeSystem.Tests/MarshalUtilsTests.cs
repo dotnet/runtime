@@ -80,5 +80,16 @@ namespace TypeSystemTests
             TypeDesc classWithEmptyBase = _testModule.GetType("Marshalling"u8, Encoding.UTF8.GetBytes(className));
             Assert.True(MarshalUtils.IsBlittableType(classWithEmptyBase));
         }
+
+        [Fact]
+        public void GetParameterMetadata_MarshalAsInterfaceWithIidParameterIndex_ParsesDescriptor()
+        {
+            MetadataType type = _testModule.GetType("Marshalling"u8, "MethodsWithMarshalAs"u8);
+            MethodDesc method = type.GetMethod("InterfaceWithIidParameterIndex"u8, null);
+
+            ParameterMetadata parameter = method.GetParameterMetadata()[1];
+
+            Assert.Equal(NativeTypeKind.Intf, parameter.MarshalAsDescriptor.Type);
+        }
     }
 }
