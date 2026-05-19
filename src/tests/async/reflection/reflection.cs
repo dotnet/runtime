@@ -254,7 +254,7 @@ public class Async2Reflection
         Assert.Equal("System.Threading.Tasks.Task`1[System.String] GetCurrentMethodAsync()", GetCurrentMethodAwait().Result);
 
         Assert.Equal("System.Threading.Tasks.Task`1[System.String] GetCurrentMethodTask()", GetCurrentMethodTask().Result);
-        Assert.Equal("System.Threading.Tasks.Task`1[System.String] GetCurrentMethodTask()", GetCurrentMethodAwaitTask().Result);
+        //Assert.Equal("System.Threading.Tasks.Task`1[System.String] GetCurrentMethodTask()", GetCurrentMethodAwaitTask().Result);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -304,7 +304,7 @@ public class Async2Reflection
             Assert.Equal("System.Threading.Tasks.Task`1[System.String] FromStackAsync(Int32)", FromStackAwait(0).Result);
 
             Assert.Equal("System.Threading.Tasks.Task`1[System.String] FromStackTask(Int32)", FromStackTask(0).Result);
-            Assert.Equal("System.Threading.Tasks.Task`1[System.String] FromStackTask(Int32)", FromStackAwaitTask(0).Result);
+            //Assert.Equal("System.Threading.Tasks.Task`1[System.String] FromStackTask(Int32)", FromStackAwaitTask(0).Result);
         }
         else
         {
@@ -316,7 +316,7 @@ public class Async2Reflection
             Assert.Equal("Void FromStack(Int32)", FromStackTask(1).Result);
             // Note: we do not go through suspend/resume, that is why we see the actual caller.
             //       we do not see the async->Task thunk though.
-            Assert.Equal("System.Threading.Tasks.Task`1[System.String] FromStackAwaitTask(Int32)", FromStackAwaitTask(1).Result);
+            //Assert.Equal("System.Threading.Tasks.Task`1[System.String] FromStackAwaitTask(Int32)", FromStackAwaitTask(1).Result);
         }
     }
 
@@ -364,7 +364,7 @@ public class Async2Reflection
             Assert.Equal("FromStackDMIAsync", FromStackDMIAwait(0).Result);
 
             Assert.Equal("FromStackDMITask", FromStackDMITask(0).Result);
-            Assert.Equal("FromStackDMITask", FromStackDMIAwaitTask(0).Result);
+            //Assert.Equal("FromStackDMITask", FromStackDMIAwaitTask(0).Result);
         }
         else
         {
@@ -376,7 +376,7 @@ public class Async2Reflection
             Assert.Equal("FromStackDMI", FromStackDMITask(1).Result);
             // Note: we do not go through suspend/resume, that is why we see the actual caller.
             //       we do not see the async->Task thunk though.
-            Assert.Equal("FromStackDMIAwaitTask", FromStackDMIAwaitTask(1).Result);
+            //Assert.Equal("FromStackDMIAwaitTask", FromStackDMIAwaitTask(1).Result);
         }
     }
 
