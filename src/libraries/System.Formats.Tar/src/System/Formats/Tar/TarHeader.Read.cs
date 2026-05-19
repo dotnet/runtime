@@ -155,7 +155,7 @@ namespace System.Formats.Tar
                 {
                     throw new InvalidDataException(SR.Format(SR.TarSizeFieldNegative));
                 }
-                
+
                 _size = size;
             }
 
