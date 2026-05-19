@@ -3969,8 +3969,8 @@ public:
     GenTree* gtFoldExprForOverflow(GenTree* tree);
 
     GenTree* gtFoldIndirConst(GenTreeIndir* indir);
-    GenTree* gtFoldExprSpecial(GenTree* tree);
-    GenTree* gtFoldExprSpecialFloating(GenTree* tree);
+    GenTree* gtFoldExprSpecial(GenTreeOp* tree);
+    GenTree* gtFoldExprSpecialFloating(GenTreeOp* tree);
     GenTree* gtFoldBoxNullable(GenTree* tree);
     GenTree* gtFoldExprCompare(GenTree* tree);
     GenTree* gtFoldExprConditional(GenTree* tree);

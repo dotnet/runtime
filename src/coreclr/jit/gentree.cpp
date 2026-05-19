@@ -15906,10 +15906,9 @@ CORINFO_METHOD_HANDLE Compiler::gtGetHelperArgMethodHandle(GenTree* tree)
 //   Tree (possibly modified at root or below), or a new tree
 //   Any new tree is fully morphed, if necessary.
 //
-GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
+GenTree* Compiler::gtFoldExprSpecial(GenTreeOp* tree)
 {
     assert(tree->OperIsBinary());
-    assert(!optValnumCSE_phase);
     assert(opts.Tier0OptimizationEnabled());
 
     if (tree->OperIsCommutative() || tree->OperIsCompare())
@@ -15922,17 +15921,11 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
         return tree;
     }
 
-    var_types  type = tree->TypeGet();
-    GenTree*   op1  = tree->AsOp()->gtOp1;
-    GenTree*   op2  = tree->AsOp()->gtOp2;
-    genTreeOps oper = tree->OperGet();
-
-    GenTree* op;
-    GenTree* cons;
-    ssize_t  val;
-
     /* We only consider TYP_INT for folding
      * Do not fold pointer arithmetic (e.g. addressing modes!) */
+
+    var_types  type = tree->TypeGet();
+    genTreeOps oper = tree->OperGet();
 
     if (oper != GT_QMARK && !varTypeIsIntOrI(type))
     {
@@ -15942,6 +15935,13 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
         }
         return tree;
     }
+
+    GenTree* op1 = tree->AsOp()->gtOp1;
+    GenTree* op2 = tree->AsOp()->gtOp2;
+
+    GenTree* op;
+    GenTree* cons;
+    ssize_t  val;
 
     /* Find out which is the constant node */
 
@@ -16269,13 +16269,14 @@ DONE_FOLD:
 //   Tree (possibly modified at root or below), or a new tree
 //   Any new tree is fully morphed, if necessary.
 //
-GenTree* Compiler::gtFoldExprSpecialFloating(GenTree* tree)
+GenTree* Compiler::gtFoldExprSpecialFloating(GenTreeOp* tree)
 {
+    assert(tree->OperIsBinary());
+    assert(opts.OptimizationEnabled());
     assert(varTypeIsFloating(tree->TypeGet()));
-    assert(tree->OperKind() & GTK_BINOP);
 
-    GenTree*   op1  = tree->AsOp()->gtOp1;
-    GenTree*   op2  = tree->AsOp()->gtOp2;
+    GenTree*   op1  = tree->gtGetOp1();
+    GenTree*   op2  = tree->gtGetOp2();
     genTreeOps oper = tree->OperGet();
 
     GenTree* op;
