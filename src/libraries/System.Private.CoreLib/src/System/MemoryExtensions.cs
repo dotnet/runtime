@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -4344,6 +4345,20 @@ namespace System
         {
             comparer ??= Comparer<T>.Default;
 
+            if (typeof(T) == typeof(byte) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<byte, MinCalc<byte>>(Cast<T, byte>(span));
+            if (typeof(T) == typeof(sbyte) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<sbyte, MinCalc<sbyte>>(Cast<T, sbyte>(span));
+            if (typeof(T) == typeof(ushort) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<ushort, MinCalc<ushort>>(Cast<T, ushort>(span));
+            if (typeof(T) == typeof(short) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<short, MinCalc<short>>(Cast<T, short>(span));
+            if (typeof(T) == typeof(char) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<char, MinCalc<char>>(Cast<T, char>(span));
+            if (typeof(T) == typeof(uint) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<uint, MinCalc<uint>>(Cast<T, uint>(span));
+            if (typeof(T) == typeof(int) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<int, MinCalc<int>>(Cast<T, int>(span));
+            if (typeof(T) == typeof(ulong) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<ulong, MinCalc<ulong>>(Cast<T, ulong>(span));
+            if (typeof(T) == typeof(long) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<long, MinCalc<long>>(Cast<T, long>(span));
+            if (typeof(T) == typeof(nuint) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<nuint, MinCalc<nuint>>(Cast<T, nuint>(span));
+            if (typeof(T) == typeof(nint) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<nint, MinCalc<nint>>(Cast<T, nint>(span));
+            if (typeof(T) == typeof(Int128) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<Int128, MinCalc<Int128>>(Cast<T, Int128>(span));
+            if (typeof(T) == typeof(UInt128) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<UInt128, MinCalc<UInt128>>(Cast<T, UInt128>(span));
+
             T? value = default;
             int i = 0;
 
@@ -4435,6 +4450,20 @@ namespace System
         {
             comparer ??= Comparer<T>.Default;
 
+            if (typeof(T) == typeof(byte) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<byte, MaxCalc<byte>>(Cast<T, byte>(span));
+            if (typeof(T) == typeof(sbyte) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<sbyte, MaxCalc<sbyte>>(Cast<T, sbyte>(span));
+            if (typeof(T) == typeof(ushort) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<ushort, MaxCalc<ushort>>(Cast<T, ushort>(span));
+            if (typeof(T) == typeof(short) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<short, MaxCalc<short>>(Cast<T, short>(span));
+            if (typeof(T) == typeof(char) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<char, MaxCalc<char>>(Cast<T, char>(span));
+            if (typeof(T) == typeof(uint) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<uint, MaxCalc<uint>>(Cast<T, uint>(span));
+            if (typeof(T) == typeof(int) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<int, MaxCalc<int>>(Cast<T, int>(span));
+            if (typeof(T) == typeof(ulong) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<ulong, MaxCalc<ulong>>(Cast<T, ulong>(span));
+            if (typeof(T) == typeof(long) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<long, MaxCalc<long>>(Cast<T, long>(span));
+            if (typeof(T) == typeof(nuint) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<nuint, MaxCalc<nuint>>(Cast<T, nuint>(span));
+            if (typeof(T) == typeof(nint) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<nint, MaxCalc<nint>>(Cast<T, nint>(span));
+            if (typeof(T) == typeof(Int128) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<Int128, MaxCalc<Int128>>(Cast<T, Int128>(span));
+            if (typeof(T) == typeof(UInt128) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<UInt128, MaxCalc<UInt128>>(Cast<T, UInt128>(span));
+
             T? value = default;
             int i = 0;
 
@@ -4492,6 +4521,159 @@ namespace System
             }
 
             return value;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static ReadOnlySpan<TTo> Cast<TFrom, TTo>(ReadOnlySpan<TFrom> span)
+            where TTo : struct
+            => MemoryMarshal.CreateReadOnlySpan(
+                ref Unsafe.As<TFrom, TTo>(ref MemoryMarshal.GetReference(span)),
+                span.Length);
+
+        private interface IMinMaxCalc<T> where T : struct, IBinaryInteger<T>
+        {
+            public static abstract bool Compare(T left, T right);
+            public static abstract Vector128<T> Compare(Vector128<T> left, Vector128<T> right);
+            public static abstract Vector256<T> Compare(Vector256<T> left, Vector256<T> right);
+            public static abstract Vector512<T> Compare(Vector512<T> left, Vector512<T> right);
+        }
+
+        private readonly struct MinCalc<T> : IMinMaxCalc<T> where T : struct, IBinaryInteger<T>
+        {
+            public static bool Compare(T left, T right) => left < right;
+            public static Vector128<T> Compare(Vector128<T> left, Vector128<T> right) => Vector128.Min(left, right);
+            public static Vector256<T> Compare(Vector256<T> left, Vector256<T> right) => Vector256.Min(left, right);
+            public static Vector512<T> Compare(Vector512<T> left, Vector512<T> right) => Vector512.Min(left, right);
+        }
+
+        private readonly struct MaxCalc<T> : IMinMaxCalc<T> where T : struct, IBinaryInteger<T>
+        {
+            public static bool Compare(T left, T right) => left > right;
+            public static Vector128<T> Compare(Vector128<T> left, Vector128<T> right) => Vector128.Max(left, right);
+            public static Vector256<T> Compare(Vector256<T> left, Vector256<T> right) => Vector256.Max(left, right);
+            public static Vector512<T> Compare(Vector512<T> left, Vector512<T> right) => Vector512.Max(left, right);
+        }
+
+        private static T MinMaxInteger<T, TMinMax>(this ReadOnlySpan<T> span)
+            where T : struct, IBinaryInteger<T>
+            where TMinMax : IMinMaxCalc<T>
+        {
+            T value;
+
+            if (span.IsEmpty)
+            {
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_NoElements);
+            }
+
+            if (!Vector128.IsHardwareAccelerated || !Vector128<T>.IsSupported || span.Length < Vector128<T>.Count)
+            {
+                value = span[0];
+                for (int i = 1; i < span.Length; i++)
+                {
+                    if (TMinMax.Compare(span[i], value))
+                    {
+                        value = span[i];
+                    }
+                }
+                return value;
+            }
+
+            // All vectorized paths reduce to 128-bit, so we can use that as our accumulator
+            // regardless of the maximum supported vector size.
+            Vector128<T> best128;
+
+            if (!Vector256.IsHardwareAccelerated || span.Length < Vector256<T>.Count)
+            {
+                ReadOnlySpan<T> data = span;
+                Vector128<T> best = Vector128.Create(data);
+                data = data.Slice(Vector128<T>.Count);
+
+                while (data.Length > Vector128<T>.Count)
+                {
+                    best = TMinMax.Compare(best, Vector128.Create(data));
+                    data = data.Slice(Vector128<T>.Count);
+                }
+                best128 = TMinMax.Compare(best, Vector128.Create(span.Slice(span.Length - Vector128<T>.Count)));
+            }
+            else if (!Vector512.IsHardwareAccelerated || span.Length < Vector512<T>.Count)
+            {
+                ReadOnlySpan<T> data = span;
+                Vector256<T> best = Vector256.Create(data);
+                data = data.Slice(Vector256<T>.Count);
+
+                while (data.Length > Vector256<T>.Count)
+                {
+                    best = TMinMax.Compare(best, Vector256.Create(data));
+                    data = data.Slice(Vector256<T>.Count);
+                }
+                best = TMinMax.Compare(best, Vector256.Create(span.Slice(span.Length - Vector256<T>.Count)));
+
+                // Reduce to 128-bit
+                best128 = TMinMax.Compare(best.GetLower(), best.GetUpper());
+            }
+            else
+            {
+                ReadOnlySpan<T> data = span;
+                Vector512<T> best = Vector512.Create(data);
+                data = data.Slice(Vector512<T>.Count);
+
+                while (data.Length > Vector512<T>.Count)
+                {
+                    best = TMinMax.Compare(best, Vector512.Create(data));
+                    data = data.Slice(Vector512<T>.Count);
+                }
+                best = TMinMax.Compare(best, Vector512.Create(span.Slice(span.Length - Vector512<T>.Count)));
+
+                // Reduce to 128-bit
+                Vector256<T> best256 = TMinMax.Compare(best.GetLower(), best.GetUpper());
+                best128 = TMinMax.Compare(best256.GetLower(), best256.GetUpper());
+            }
+
+            // Reduce to single value
+            value = HorizontalMinMax<T, TMinMax>(best128);
+
+            return value;
+        }
+
+        /// <summary>Reduces a <see cref="Vector128{T}"/> to a single element using <typeparamref name="TMinMax"/>.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static T HorizontalMinMax<T, TMinMax>(Vector128<T> x)
+            where T : struct, IBinaryInteger<T>
+            where TMinMax : IMinMaxCalc<T>
+        {
+            // Perform log2(Vector128<T>.Count) reductions, each combining the vector with a shuffled
+            // copy of itself so that lane 0 ends up holding the min/max of all original lanes.
+            if (Vector128<T>.Count == 16)
+            {
+                x = TMinMax.Compare(x, Vector128.Shuffle(x.AsByte(),
+                    Vector128.Create((byte)8, 9, 10, 11, 12, 13, 14, 15, 0, 1, 2, 3, 4, 5, 6, 7)).As<byte, T>());
+                x = TMinMax.Compare(x, Vector128.Shuffle(x.AsByte(),
+                    Vector128.Create((byte)4, 5, 6, 7, 0, 1, 2, 3, 8, 9, 10, 11, 12, 13, 14, 15)).As<byte, T>());
+                x = TMinMax.Compare(x, Vector128.Shuffle(x.AsByte(),
+                    Vector128.Create((byte)2, 3, 0, 1, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)).As<byte, T>());
+                x = TMinMax.Compare(x, Vector128.Shuffle(x.AsByte(),
+                    Vector128.Create((byte)1, 0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)).As<byte, T>());
+            }
+            else if (Vector128<T>.Count == 8)
+            {
+                x = TMinMax.Compare(x, Vector128.Shuffle(x.AsInt16(),
+                    Vector128.Create(4, 5, 6, 7, 0, 1, 2, 3)).As<short, T>());
+                x = TMinMax.Compare(x, Vector128.Shuffle(x.AsInt16(),
+                    Vector128.Create(2, 3, 0, 1, 4, 5, 6, 7)).As<short, T>());
+                x = TMinMax.Compare(x, Vector128.Shuffle(x.AsInt16(),
+                    Vector128.Create(1, 0, 2, 3, 4, 5, 6, 7)).As<short, T>());
+            }
+            else if (Vector128<T>.Count == 4)
+            {
+                x = TMinMax.Compare(x, Vector128.Shuffle(x.AsInt32(), Vector128.Create(2, 3, 0, 1)).As<int, T>());
+                x = TMinMax.Compare(x, Vector128.Shuffle(x.AsInt32(), Vector128.Create(1, 0, 3, 2)).As<int, T>());
+            }
+            else
+            {
+                Debug.Assert(Vector128<T>.Count == 2);
+                x = TMinMax.Compare(x, Vector128.Shuffle(x.AsInt64(), Vector128.Create(1, 0)).As<long, T>());
+            }
+            return x.ToScalar();
         }
 
         /// <summary>
