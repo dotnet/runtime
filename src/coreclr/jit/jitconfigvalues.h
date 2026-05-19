@@ -408,7 +408,7 @@ RELEASE_CONFIG_INTEGER(EnableAVX512BMM,             "EnableAVX512BMM",          
 
 RELEASE_CONFIG_INTEGER(EnableAVX512v2,              "EnableAVX512v2",            1) // Allows AVX512 IFMA+VBMI and depdendent hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableAVX512v3,              "EnableAVX512v3",            1) // Allows AVX512 BITALG+VBMI2+VNNI+VPOPCNTDQ and depdendent hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableAVXVNNI_V512,          "EnableAVXVNNI_V512",        1) // Allows AVX512 VNNI and dependent hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableAVXVNNI_V512,          "EnableAVXVNNI_V512",        1) // Allows AVX-VNNI 512-bit (AvxVnni.V512) and dependent hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableAVX10v1,               "EnableAVX10v1",             1) // Allows AVX10v1 and depdendent hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableAVX10v2,               "EnableAVX10v2",             0) // Allows AVX10v2 and depdendent hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableAPX,                   "EnableAPX",                 0) // Allows APX and dependent features to be disabled

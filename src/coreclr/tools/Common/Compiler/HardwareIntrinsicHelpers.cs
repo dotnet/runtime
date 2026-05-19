@@ -80,7 +80,7 @@ namespace ILCompiler
             public const int Vaes = (1 << 15);
             public const int WaitPkg = (1 << 16);
             public const int X86Serialize = (1 << 17);
-            public const int Avx512Bmm = (1 << 18);
+            // Bit 18 is AVX512BMM in cpufeatures.h. NativeAOT does not currently consume it here.
             public const int Avx512Vnni = (1 << 19);
 
             public static void AddToBuilder(InstructionSetSupportBuilder builder, int flags)
@@ -119,8 +119,6 @@ namespace ILCompiler
                 }
                 if ((flags & Avx512Vp2intersect) != 0)
                     builder.AddSupportedInstructionSet("avx512vp2intersect");
-                if ((flags & Avx512Bmm) != 0)
-                    builder.AddSupportedInstructionSet("avx512bmm");
                 if ((flags & AvxIfma) != 0)
                     builder.AddSupportedInstructionSet("avxifma");
                 if ((flags & AvxVnni) != 0)
@@ -181,8 +179,6 @@ namespace ILCompiler
 
                     InstructionSet.X64_AVX512VP2INTERSECT => Avx512Vp2intersect,
                     InstructionSet.X64_AVX512VP2INTERSECT_X64 => Avx512Vp2intersect,
-
-                    InstructionSet.X64_AVX512BMM => Avx512Bmm,
 
                     InstructionSet.X64_AVXIFMA => AvxIfma,
                     InstructionSet.X64_AVXIFMA_X64 => AvxIfma,

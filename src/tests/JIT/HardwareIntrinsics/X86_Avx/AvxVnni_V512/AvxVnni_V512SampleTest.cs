@@ -5,6 +5,7 @@
 using System;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace IntelHardwareIntrinsicTest._AvxVnni_V512
@@ -47,6 +48,53 @@ namespace IntelHardwareIntrinsicTest._AvxVnni_V512
 
             Vector512<int> wordResultSat = AvxVnni.V512.MultiplyWideningAndAddSaturate(addend, words, words);
             AssertAllLanesEqual(wordResultSat, 18);
+
+            byte[] leftBytes = new byte[Vector512<byte>.Count];
+            sbyte[] rightBytes = new sbyte[Vector512<sbyte>.Count];
+            int[] byteExpected = new int[Vector512<int>.Count];
+
+            for (int index = 0; index < leftBytes.Length; index++)
+            {
+                leftBytes[index] = (byte)(index + 1);
+                rightBytes[index] = (sbyte)((index % 7) - 3);
+                byteExpected[index / 4] += leftBytes[index] * rightBytes[index];
+            }
+
+            Vector512<byte> byteLeft = LoadVector512(leftBytes);
+            Vector512<sbyte> byteRight = LoadVector512(rightBytes);
+
+            AssertLanesEqual(AvxVnni.V512.MultiplyWideningAndAdd(addend, byteLeft, byteRight), byteExpected);
+            AssertLanesEqual(AvxVnni.V512.MultiplyWideningAndAddSaturate(addend, byteLeft, byteRight), byteExpected);
+
+            short[] leftWords = new short[Vector512<short>.Count];
+            short[] rightWords = new short[Vector512<short>.Count];
+            int[] wordExpected = new int[Vector512<int>.Count];
+
+            for (int index = 0; index < leftWords.Length; index++)
+            {
+                leftWords[index] = (short)(index - 16);
+                rightWords[index] = (short)((index % 5) - 2);
+                wordExpected[index / 2] += leftWords[index] * rightWords[index];
+            }
+
+            Vector512<short> wordLeft = LoadVector512(leftWords);
+            Vector512<short> wordRight = LoadVector512(rightWords);
+
+            AssertLanesEqual(AvxVnni.V512.MultiplyWideningAndAdd(addend, wordLeft, wordRight), wordExpected);
+            AssertLanesEqual(AvxVnni.V512.MultiplyWideningAndAddSaturate(addend, wordLeft, wordRight), wordExpected);
+
+            Vector512<int> saturatingAddend = Vector512.Create(int.MaxValue - 10);
+            Vector512<int> byteSaturated = AvxVnni.V512.MultiplyWideningAndAddSaturate(
+                saturatingAddend,
+                Vector512.Create(byte.MaxValue),
+                Vector512.Create(sbyte.MaxValue));
+            AssertAllLanesEqual(byteSaturated, int.MaxValue);
+
+            Vector512<int> wordSaturated = AvxVnni.V512.MultiplyWideningAndAddSaturate(
+                saturatingAddend,
+                Vector512.Create(short.MaxValue),
+                Vector512.Create(short.MaxValue));
+            AssertAllLanesEqual(wordSaturated, int.MaxValue);
         }
 
         private static void AssertAllLanesEqual(Vector512<int> value, int expected)
@@ -55,6 +103,20 @@ namespace IntelHardwareIntrinsicTest._AvxVnni_V512
             {
                 Assert.Equal(expected, value.GetElement(index));
             }
+        }
+
+        private static void AssertLanesEqual(Vector512<int> value, int[] expected)
+        {
+            for (int index = 0; index < Vector512<int>.Count; index++)
+            {
+                Assert.Equal(expected[index], value.GetElement(index));
+            }
+        }
+
+        private static Vector512<T> LoadVector512<T>(T[] values)
+            where T : struct
+        {
+            return MemoryMarshal.Cast<T, Vector512<T>>(values)[0];
         }
     }
 }
