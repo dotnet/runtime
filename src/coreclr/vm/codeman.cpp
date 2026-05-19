@@ -6649,6 +6649,9 @@ PTR_EXCEPTION_CLAUSE_TOKEN ReadyToRunJitManager::GetNextEHClause(EH_CLAUSE_ENUME
 
 StubCodeBlockKind ReadyToRunJitManager::GetStubCodeBlockKind(RangeSection * pRangeSection, PCODE currentPC)
 {
+#ifdef TARGET_WASM
+    return STUB_CODE_BLOCK_UNKNOWN;
+#else
     CONTRACTL
     {
         NOTHROW;
@@ -6671,6 +6674,7 @@ StubCodeBlockKind ReadyToRunJitManager::GetStubCodeBlockKind(RangeSection * pRan
     }
 
     return STUB_CODE_BLOCK_UNKNOWN;
+#endif // !TARGET_WASM
 }
 
 #ifndef DACCESS_COMPILE

@@ -744,7 +744,9 @@ CDAC_TYPE_FIELD(ReadyToRunInfo, T_POINTER, RuntimeFunctions, cdac_data<ReadyToRu
 CDAC_TYPE_FIELD(ReadyToRunInfo, T_UINT32, NumHotColdMap, cdac_data<ReadyToRunInfo>::NumHotColdMap)
 CDAC_TYPE_FIELD(ReadyToRunInfo, T_POINTER, HotColdMap, cdac_data<ReadyToRunInfo>::HotColdMap)
 #endif // FEATURE_COLD_R2R_CODE
+#ifndef TARGET_WASM
 CDAC_TYPE_FIELD(ReadyToRunInfo, T_POINTER, DelayLoadMethodCallThunks, cdac_data<ReadyToRunInfo>::DelayLoadMethodCallThunks)
+#endif // !TARGET_WASM
 CDAC_TYPE_FIELD(ReadyToRunInfo, T_POINTER, DebugInfoSection, cdac_data<ReadyToRunInfo>::DebugInfoSection)
 CDAC_TYPE_FIELD(ReadyToRunInfo, T_POINTER, ExceptionInfoSection, cdac_data<ReadyToRunInfo>::ExceptionInfoSection)
 CDAC_TYPE_FIELD(ReadyToRunInfo, T_POINTER, ImportSections, cdac_data<ReadyToRunInfo>::ImportSections)

@@ -160,7 +160,9 @@ class ReadyToRunInfo
     DWORD                           m_nHotColdMap;
 #endif // FEATURE_COLD_R2R_CODE
 
+#ifndef TARGET_WASM
     PTR_IMAGE_DATA_DIRECTORY        m_pSectionDelayLoadMethodCallThunks;
+#endif // !TARGET_WASM
     PTR_IMAGE_DATA_DIRECTORY        m_pSectionDebugInfo;
     PTR_IMAGE_DATA_DIRECTORY        m_pSectionExceptionInfo;
 
@@ -209,7 +211,10 @@ public:
 
     PTR_READYTORUN_HEADER GetReadyToRunHeader() const { return m_pHeader; }
 
+#ifndef TARGET_WASM
     PTR_IMAGE_DATA_DIRECTORY GetDelayMethodCallThunksSection() const { return m_pSectionDelayLoadMethodCallThunks; }
+#endif // !TARGET_WASM
+
     PTR_IMAGE_DATA_DIRECTORY GetExceptionInfoSection() const { return m_pSectionExceptionInfo; }
 
     PTR_NativeImage GetNativeImage() const { return m_pNativeImage; }
@@ -424,8 +429,10 @@ struct cdac_data<ReadyToRunInfo>
 #ifdef FEATURE_COLD_R2R_CODE
     static constexpr size_t NumHotColdMap = offsetof(ReadyToRunInfo, m_nHotColdMap);
     static constexpr size_t HotColdMap = offsetof(ReadyToRunInfo, m_pHotColdMap);
-    #endif // FEATURE_COLD_R2R_CODE
+#endif // FEATURE_COLD_R2R_CODE
+#ifndef TARGET_WASM
     static constexpr size_t DelayLoadMethodCallThunks = offsetof(ReadyToRunInfo, m_pSectionDelayLoadMethodCallThunks);
+#endif // !TARGET_WASM
     static constexpr size_t DebugInfoSection = offsetof(ReadyToRunInfo, m_pSectionDebugInfo);
     static constexpr size_t ExceptionInfoSection = offsetof(ReadyToRunInfo, m_pSectionExceptionInfo);
     static constexpr size_t ImportSections = offsetof(ReadyToRunInfo, m_pImportSections);
