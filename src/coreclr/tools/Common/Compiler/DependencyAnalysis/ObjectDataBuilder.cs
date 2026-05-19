@@ -268,6 +268,7 @@ namespace ILCompiler.DependencyAnalysis
             switch (relocType)
             {
                 case RelocType.WASM_TABLE_INDEX_I32:
+                case RelocType.WASM_TABLE_INDEX_REL_I32:
                 case RelocType.IMAGE_REL_BASED_REL32:
                 case RelocType.IMAGE_REL_BASED_RELPTR32:
                 case RelocType.IMAGE_REL_BASED_ABSOLUTE:
