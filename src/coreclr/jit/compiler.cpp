@@ -982,9 +982,17 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
                 // Structs that are pointer sized or smaller should have been handled by getPrimitiveTypeForStruct
                 assert(structSize > TARGET_POINTER_SIZE);
 
+                // TODO-SVE: For now, we always pass Vector<T> by reference. Support passing Vector<T> in Z registers.
+                unsigned simdSize = 0;
+                if (structSizeMightRepresentSIMDType(structSize) &&
+                    (getBaseTypeAndSizeOfSIMDType(clsHnd, &simdSize) != TYP_UNDEF) && (simdSize == SIZE_UNKNOWN))
+                {
+                    howToReturnStruct = SPK_ByReference;
+                    useType           = TYP_UNKNOWN;
+                }
                 // On ARM64 structs that are 9-16 bytes are returned by value in multiple registers
                 //
-                if (structSize <= (TARGET_POINTER_SIZE * 2))
+                else if (structSize <= (TARGET_POINTER_SIZE * 2))
                 {
                     // setup wbPassType and useType indicate that this is return by value in multiple registers
                     howToReturnStruct = SPK_ByValue;
@@ -1724,10 +1732,6 @@ unsigned Compiler::compGetTypeSize(CorInfoType cit, CORINFO_CLASS_HANDLE clsHnd)
     if (cit == CORINFO_TYPE_VALUECLASS)
     {
         sigSize = info.compCompHnd->getClassSize(clsHnd);
-    }
-    else if (cit == CORINFO_TYPE_REFANY)
-    {
-        sigSize = 2 * TARGET_POINTER_SIZE;
     }
     return sigSize;
 }

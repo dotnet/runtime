@@ -477,6 +477,11 @@
         <target state="translated">Bu tür, yerel HRESULT olarak değil, yerel imzada bir yapı olarak değerlendirilir</target>
         <note />
       </trans-unit>
+      <trans-unit id="IidParameterIndexUnsupportedConfigurationName">
+        <source>{0} (supported only on [MarshalAs(UnmanagedType.Interface)] out object parameters)</source>
+        <target state="new">{0} (supported only on [MarshalAs(UnmanagedType.Interface)] out object parameters)</target>
+        <note>Configuration name reported via the 'configuration not supported' diagnostic when 'MarshalAs.IidParameterIndex' is used on an unsupported parameter shape. {0} is the dotted attribute member name, e.g. 'MarshalAsAttribute.IidParameterIndex'.</note>
+      </trans-unit>
       <trans-unit id="InAttributeNotSupportedOnByValueParameters">
         <source>The '[In]' attribute is only supported on array parameters. By-value parameters are considered read-only by default.</source>
         <target state="translated">'[In]' özniteliği yalnızca dizi parametrelerinde desteklenir. Değere göre parametreleri, varsayılan olarak salt okunur kabul edilir.</target>
