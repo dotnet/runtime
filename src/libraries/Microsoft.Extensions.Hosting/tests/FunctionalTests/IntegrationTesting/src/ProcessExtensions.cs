@@ -81,11 +81,26 @@ namespace Microsoft.Extensions.Internal
 
         private static void KillProcessUnix(int processId, TimeSpan timeout)
         {
-            RunProcessAndWaitForExit(
-                "kill",
-                $"-TERM {processId}",
-                timeout,
-                out var stdout);
+            try
+            {
+                using (Process process = Process.GetProcessById(processId))
+                {
+                    process.Kill();
+                    process.WaitForExit((int)timeout.TotalMilliseconds);
+                }
+            }
+            catch (ArgumentException)
+            {
+                // Ignore if process has already exited.
+            }
+            catch (InvalidOperationException)
+            {
+                // Ignore if process has already exited.
+            }
+            catch (Win32Exception)
+            {
+                // Ignore permission or process-not-found errors.
+            }
         }
 
         private static void RunProcessAndWaitForExit(string fileName, string arguments, TimeSpan timeout, out string stdout)
