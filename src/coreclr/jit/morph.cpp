@@ -7858,9 +7858,6 @@ DONE_MORPHING_CHILDREN:
         case GT_EQ:
         case GT_NE:
         {
-            fgPushConstantsRight(tree->AsOp());
-            assert(tree->OperIsCompare());
-
             oper = tree->OperGet();
             op1  = tree->gtGetOp1();
             op2  = tree->gtGetOp2();
@@ -7882,9 +7879,6 @@ DONE_MORPHING_CHILDREN:
         case GT_GE:
         case GT_GT:
         {
-            fgPushConstantsRight(tree->AsOp());
-            assert(tree->OperIsCompare());
-
             oper = tree->OperGet();
             op1  = tree->gtGetOp1();
             op2  = tree->gtGetOp2();
@@ -10394,8 +10388,6 @@ GenTree* Compiler::fgOptimizeCommutativeArithmetic(GenTreeOp* tree)
 {
     assert(tree->OperIs(GT_ADD, GT_MUL, GT_OR, GT_XOR, GT_AND));
     assert(!tree->gtOverflowEx());
-
-    fgPushConstantsRight(tree);
 
     if (fgOperIsBitwiseRotationRoot(tree->OperGet()))
     {

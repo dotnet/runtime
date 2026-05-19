@@ -15099,19 +15099,14 @@ GenTree* Compiler::gtFoldExprBinary(GenTreeOp* tree)
             // both nodes are constants - fold the expression
             return gtFoldExprBinaryConst(tree);
         }
-        else if (opts.OptimizationEnabled())
+        else
         {
-            // Too heavy for tier0, so only do when opts are enabled
             return gtFoldExprSpecial(tree);
         }
     }
     else if (op2->OperIsConst())
     {
-        if (opts.OptimizationEnabled())
-        {
-            // Too heavy for tier0, so only do when opts are enabled
-            return gtFoldExprSpecial(tree);
-        }
+        return gtFoldExprSpecial(tree);
     }
 
     genTreeOps oper = tree->OperGet();
@@ -15913,6 +15908,20 @@ CORINFO_METHOD_HANDLE Compiler::gtGetHelperArgMethodHandle(GenTree* tree)
 //
 GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
 {
+    assert(tree->OperIsBinary());
+    assert(!optValnumCSE_phase);
+    assert(opts.Tier0OptimizationEnabled());
+
+    if (tree->OperIsCommutative() || tree->OperIsCompare())
+    {
+        fgPushConstantsRight(tree);
+    }
+
+    if (opts.OptimizationDisabled())
+    {
+        return tree;
+    }
+
     var_types  type = tree->TypeGet();
     GenTree*   op1  = tree->AsOp()->gtOp1;
     GenTree*   op2  = tree->AsOp()->gtOp2;
@@ -15921,14 +15930,6 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
     GenTree* op;
     GenTree* cons;
     ssize_t  val;
-
-    assert(tree->OperKind() & GTK_BINOP);
-
-    /* Filter out operators that cannot be folded here */
-    if (oper == GT_CAST)
-    {
-        return tree;
-    }
 
     /* We only consider TYP_INT for folding
      * Do not fold pointer arithmetic (e.g. addressing modes!) */
