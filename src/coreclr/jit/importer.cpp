@@ -2631,7 +2631,7 @@ bool Compiler::checkTailCallConstraint(OPCODE                  opcode,
         // Disallow the tailcall for this kind.
         CORINFO_CLASS_HANDLE classHandle;
         CorInfoType          ciType = strip(info.compCompHnd->getArgType(&sig, args, &classHandle));
-        if ((ciType == CORINFO_TYPE_PTR) || (ciType == CORINFO_TYPE_BYREF) || (ciType == CORINFO_TYPE_REFANY))
+        if ((ciType == CORINFO_TYPE_PTR) || (ciType == CORINFO_TYPE_BYREF))
         {
             return false;
         }
