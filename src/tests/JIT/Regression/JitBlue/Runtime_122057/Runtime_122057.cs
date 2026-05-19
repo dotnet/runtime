@@ -14,22 +14,18 @@
 // true vacuously.
 
 using System;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Reflection;
-using System.Threading;
 using Xunit;
 
 namespace Fuzzlyn.ExecutionServer
 {
     public interface IRuntime
     {
-        // 修正点：这里加上 where T : unmanaged，与 MyRuntime 保持一致
         void Checksum<T>(string id, T val) where T : unmanaged;
     }
 }
 
-// 2. 你的 FuzzProgram
 public class FuzzProgram
 {
     public static Fuzzlyn.ExecutionServer.IRuntime s_rt;
@@ -784,7 +780,7 @@ public class FuzzProgram
     }
 }
 
-// 3. 你的运行时实现 (FNV-1a Checksum)
+// FNV-1a checksum runtime implementation.
 public class MyRuntime : Fuzzlyn.ExecutionServer.IRuntime
 {
     private ulong _state = 14695981039346656037;
