@@ -1025,7 +1025,7 @@ private:
             dcInfo.ilOffset             = BAD_IL_OFFSET;
 
             compiler->impTransformDevirtualizedCall(call, &methodHnd, &derivedMethodAttribs, &dcInfo, block, &context,
-                                                    &exactContext);
+                                                    &exactContext COMMA_INDEBUG(inlineInfo->originalMethodHandle));
             context = exactContext;
 
             // We know this call can devirtualize or we would not have set up GDV here.

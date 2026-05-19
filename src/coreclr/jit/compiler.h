@@ -4981,7 +4981,11 @@ public:
                                        DevirtualizedCallInfo*  dcInfo,
                                        BasicBlock*             block,
                                        CORINFO_CONTEXT_HANDLE* contextHandle,
-                                       CORINFO_CONTEXT_HANDLE* exactContextHandle);
+                                       CORINFO_CONTEXT_HANDLE* exactContextHandle
+#if defined(DEBUG)
+                                     , CORINFO_METHOD_HANDLE   baseMethod
+#endif // defined(DEBUG)
+    );
 
     bool impConsiderCallProbe(GenTreeCall* call, IL_OFFSET ilOffset);
 

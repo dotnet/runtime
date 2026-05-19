@@ -8811,11 +8811,6 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         return;
     }
 
-    // Optionally, print info on devirtualization
-    Compiler* const rootCompiler = impInlineRoot();
-    const bool      doPrint      = JitConfig.JitPrintDevirtualizedMethods().contains(rootCompiler->info.compMethodHnd,
-                                                                                     rootCompiler->info.compClassHnd,
-                                                                                     &rootCompiler->info.compMethodInfo->args);
 #endif // DEBUG
 
     // Fetch information about the virtual method we're calling.
@@ -8904,24 +8899,20 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     const bool  objClassIsFinal = (objClassAttribs & CORINFO_FLG_FINAL) != 0;
 
 #if defined(DEBUG)
-    const char* callKind           = isInterface ? "interface" : "virtual";
     const char* objClassNote       = "[?]";
     const char* objClassName       = "?objClass";
     const char* baseMethodFullName = "?baseMethod";
 
-    if (verbose || doPrint)
+    if (verbose)
     {
         objClassNote       = isExact ? " [exact]" : objClassIsFinal ? " [final]" : "";
         objClassName       = eeGetClassName(objClass);
         baseMethodFullName = eeGetMethodFullName(baseMethod);
 
-        if (verbose)
-        {
-            printf("\nimpDevirtualizeCall: Trying to devirtualize %s call:\n"
-                   "    class for 'this' is %s%s (attrib %08x)\n"
-                   "    base method is %s\n",
-                   callKind, objClassName, objClassNote, objClassAttribs, baseMethodFullName);
-        }
+        printf("\nimpDevirtualizeCall: Trying to devirtualize %s call:\n"
+               "    class for 'this' is %s%s (attrib %08x)\n"
+               "    base method is %s\n",
+               isInterface ? "interface" : "virtual", objClassName, objClassNote, objClassAttribs, baseMethodFullName);
     }
 #endif // defined(DEBUG)
 
@@ -9002,9 +8993,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     bool     canDevirtualize      = false;
 
 #if defined(DEBUG)
-    const char* derivedMethodFullName = "?derivedMethod";
-    const char* note                  = "inexact or not final";
-    const char* instArg               = "";
+    const char* note = "inexact or not final";
 #endif
 
     CORINFO_METHOD_HANDLE instParam = NO_METHOD_HANDLE;
@@ -9056,20 +9045,17 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         {
             note = "final method";
         }
-        if (needsInstParam)
+        if (verbose)
         {
-            instArg = needsRuntimeLookup ? "runtime lookup" : eeGetMethodFullName(instParam);
-        }
-
-        if (verbose || doPrint)
-        {
-            derivedMethodFullName = eeGetMethodFullName(derivedMethod);
-            if (verbose)
+            const char* instArg = "";
+            if (needsInstParam)
             {
-                printf("    devirt to %s -- %s%s%s\n", derivedMethodFullName, note,
-                       needsInstParam ? ", instantiation: " : "", instArg);
-                gtDispTree(call);
+                instArg = needsRuntimeLookup ? "runtime lookup" : eeGetMethodFullName(instParam);
             }
+
+            printf("    devirt to %s -- %s%s%s\n", eeGetMethodFullName(derivedMethod), note,
+                   needsInstParam ? ", instantiation: " : "", instArg);
+            gtDispTree(call);
         }
 #endif // defined(DEBUG)
 
@@ -9135,14 +9121,6 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
     JITDUMP("    %s; can devirtualize\n", note);
 
-#if defined(DEBUG)
-    if (doPrint)
-    {
-        printf("Devirtualized %s call to %s; now direct call to %s [%s]%s%s\n", callKind, baseMethodFullName,
-               derivedMethodFullName, note, needsInstParam ? ", instantiation: " : "", instArg);
-    }
-#endif // defined(DEBUG)
-
     DevirtualizedCallInfo dcInfo;
     dcInfo.tokenLookupContext    = exactContext;
     dcInfo.derivedClass          = derivedClass;
@@ -9156,7 +9134,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     dcInfo.objClassIsFinal       = objClassIsFinal;
     dcInfo.ilOffset              = ilOffset;
     impTransformDevirtualizedCall(call, &derivedMethod, &derivedMethodAttribs, &dcInfo, compCurBB, pContextHandle,
-                                  pExactContextHandle);
+                                  pExactContextHandle COMMA_INDEBUG(baseMethod));
 
     *method      = derivedMethod;
     *methodFlags = derivedMethodAttribs;
@@ -9181,7 +9159,12 @@ void Compiler::impTransformDevirtualizedCall(GenTreeCall*            call,
                                              DevirtualizedCallInfo*  dcInfo,
                                              BasicBlock*             block,
                                              CORINFO_CONTEXT_HANDLE* pContextHandle,
-                                             CORINFO_CONTEXT_HANDLE* pExactContextHandle)
+                                             CORINFO_CONTEXT_HANDLE* pExactContextHandle
+#if defined(DEBUG)
+                                             ,
+                                             CORINFO_METHOD_HANDLE baseMethod
+#endif // defined(DEBUG)
+)
 {
     assert(call != nullptr);
     assert(method != nullptr);
@@ -9198,6 +9181,29 @@ void Compiler::impTransformDevirtualizedCall(GenTreeCall*            call,
 
     CallArg* thisArg = call->gtArgs.GetThisArg();
     GenTree* thisObj = thisArg->GetEarlyNode()->gtEffectiveVal();
+
+#if defined(DEBUG)
+    // Optionally, print info on devirtualization
+    Compiler* const rootCompiler = impInlineRoot();
+    const bool      doPrint      = JitConfig.JitPrintDevirtualizedMethods().contains(rootCompiler->info.compMethodHnd,
+                                                                                     rootCompiler->info.compClassHnd,
+                                                                                     &rootCompiler->info.compMethodInfo->args);
+
+    if (doPrint)
+    {
+        CORINFO_CLASS_HANDLE baseClass            = info.compCompHnd->getMethodClass(baseMethod);
+        const DWORD          baseClassAttribs     = info.compCompHnd->getClassAttribs(baseClass);
+        bool                 derivedMethodIsFinal = ((derivedMethodAttribs & CORINFO_FLG_FINAL) != 0);
+        const char*          callKind = (baseClassAttribs & CORINFO_FLG_INTERFACE) != 0 ? "interface" : "virtual";
+        const char*          note     = dcInfo->objClassIsExact   ? "exact"
+                                        : dcInfo->objClassIsFinal ? "final class"
+                                        : derivedMethodIsFinal    ? "final method"
+                                                                  : "inexact or not final";
+
+        printf("Devirtualized %s call to %s; now direct call to %s [%s]\n", callKind, eeGetMethodFullName(baseMethod),
+               eeGetMethodFullName(derivedMethod), note);
+    }
+#endif // defined(DEBUG)
 
     Metrics.DevirtualizedCall++;
 
