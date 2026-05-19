@@ -87,10 +87,10 @@ namespace TypeSystemTests
         [InlineData("InterfaceWithIidParameterIndex", NativeTypeKind.Intf)]
         public void GetParameterMetadata_MarshalAsComInterfaceWithIidParameterIndex_ParsesDescriptor(string methodName, NativeTypeKind nativeType)
         {
-            MetadataType type = _testModule.GetType("Marshalling"u8, "MethodsWithMarshalAs"u8);
-            MethodDesc method = type.GetMethod(Encoding.UTF8.GetBytes(methodName), null);
+            MetadataType marshallingType = _testModule.GetType("Marshalling"u8, "MethodsWithMarshalAs"u8);
+            MethodDesc marshalAsMethod = marshallingType.GetMethod(Encoding.UTF8.GetBytes(methodName), null);
 
-            ParameterMetadata parameter = method.GetParameterMetadata()[1];
+            ParameterMetadata parameter = marshalAsMethod.GetParameterMetadata()[1];
 
             Assert.Equal(nativeType, parameter.MarshalAsDescriptor.Type);
         }
