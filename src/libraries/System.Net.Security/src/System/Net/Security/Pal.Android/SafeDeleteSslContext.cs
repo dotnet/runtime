@@ -218,17 +218,13 @@ namespace System.Net
                     ? authOptions.TargetHost
                     : null;
 
-            // Custom trust roots are passed to the platform's TrustManagerFactory KeyStore.
-            // The platform's trust verdict is combined with managed validation to be more strict
-            // (see VerifyRemoteCertificate in SslStream.Android.cs).
-            IntPtr[]? trustCerts = GetTrustCertHandles(authOptions);
             IntPtr keyManagers = authOptions.CertificateContext is not null
                 ? CreateKeyManagers(authOptions.CertificateContext)
                 : IntPtr.Zero;
 
             try
             {
-                SafeSslHandle sslHandle = Interop.AndroidCrypto.SSLStreamCreate(sslStreamProxy, targetHost, trustCerts, keyManagers);
+                SafeSslHandle sslHandle = Interop.AndroidCrypto.SSLStreamCreate(sslStreamProxy, targetHost, keyManagers);
                 if (sslHandle.IsInvalid)
                 {
                     sslHandle.Dispose();
@@ -281,46 +277,6 @@ namespace System.Net
                 }
 
                 return keyManagers;
-            }
-
-            static IntPtr[]? GetTrustCertHandles(SslAuthenticationOptions authOptions)
-            {
-                // Collect custom trust root certificates to pass to the platform's
-                // TrustManagerFactory. There are two mutually exclusive sources — when
-                // CertificateChainPolicy is set it takes precedence (see SslStream.Protocol.cs):
-                //
-                // 1. CertificateChainPolicy.CustomTrustStore (when TrustMode is CustomRootTrust)
-                // 2. SslCertificateTrust (via CertificateContext.Trust) — older API
-                //
-                // Note: CertificateChainPolicy.ExtraStore intermediates are NOT passed to the
-                // platform because Java's KeyStore.setCertificateEntry would elevate them to
-                // trust anchors. When ExtraStore is populated, the managed chain builder is
-                // authoritative (see VerifyRemoteCertificate in SslStream.Android.cs).
-                X509Certificate2Collection? certs;
-                if (authOptions.CertificateChainPolicy is not null)
-                {
-                    certs = authOptions.CertificateChainPolicy.TrustMode == X509ChainTrustMode.CustomRootTrust
-                        ? authOptions.CertificateChainPolicy.CustomTrustStore
-                        : null;
-                }
-                else
-                {
-                    var trust = authOptions.CertificateContext?.Trust;
-                    certs = trust?._store?.Certificates ?? trust?._trustList;
-                }
-
-                if (certs is null || certs.Count == 0)
-                {
-                    return null;
-                }
-
-                IntPtr[] handles = new IntPtr[certs.Count];
-                for (int i = 0; i < certs.Count; i++)
-                {
-                    handles[i] = certs[i].Handle;
-                }
-
-                return handles;
             }
         }
 

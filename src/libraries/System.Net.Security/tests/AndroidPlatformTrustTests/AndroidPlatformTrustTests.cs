@@ -29,12 +29,12 @@ namespace System.Net.Security.Tests
     public class AndroidPlatformTrustTests
     {
         [Fact]
-        public async Task SslStream_CertificateSignedByTrustedCA_NoChainErrors()
+        public async Task SslStream_CustomRootTrust_NoChainErrors()
         {
             // The server uses testservereku.contoso.com.pfx signed by the NDX Test Root CA.
-            // The network_security_config.xml trusts that root CA for "testservereku.contoso.com".
-            // CustomRootTrust is configured with the NDX root so that managed validation also accepts.
-            // If network_security_config.xml is effective, the platform accepts too → no chain errors.
+            // CustomRootTrust is configured with the NDX root so managed validation accepts.
+            // Explicit managed custom trust is authoritative, so platform rejection would not
+            // pre-seed RemoteCertificateChainErrors.
 
             using X509Certificate2 rootCertificate = GetRootCertificate();
             SslPolicyErrors? reportedErrors = null;
@@ -298,13 +298,12 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        public async Task SslStream_CustomRootTrustWithoutExtraStore_PlatformRejects()
+        public async Task SslStream_CustomRootTrustWithoutExtraStore_ReportsChainErrors()
         {
             // Generate a dynamic PKI (root → intermediate → leaf) that is NOT in network_security_config.xml.
             // CustomRootTrust has the dynamic root, but ExtraStore is empty — the intermediate is missing.
-            // The platform rejects because the dynamic root is not a trusted anchor in the config.
-            // managedTrustOnly is false (no ExtraStore) so the platform's rejection is honored.
-            // The managed chain builder also cannot build the chain (missing intermediate).
+            // Explicit managed custom trust is authoritative, but managed validation still fails
+            // because it cannot build the chain without the intermediate.
             // Result: RemoteCertificateChainErrors reported.
 
             (X509Certificate2 rootCert, X509Certificate2 intermediateCert, X509Certificate2 serverCert) = GenerateCertificateChain();
@@ -355,7 +354,7 @@ namespace System.Net.Security.Tests
         {
             // Same dynamic PKI as above, but now ExtraStore contains the intermediate CA.
             // The platform would reject (dynamic root not in network_security_config.xml),
-            // but managedTrustOnly is true (ExtraStore is non-empty) so the platform's verdict is bypassed.
+            // but explicit managed custom trust is authoritative, so the platform's verdict is ignored.
             // The managed chain builder has root (CustomTrustStore) + intermediate (ExtraStore) and succeeds.
             // Result: no RemoteCertificateChainErrors — managed validation is authoritative.
 
@@ -402,11 +401,10 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        public async Task SslStream_CustomRootTrustDirectlySignedLeaf_PlatformAndManagedTrust()
+        public async Task SslStream_CustomRootTrustDirectlySignedLeaf_ManagedTrust()
         {
-            // The custom root is passed to Android's TrustManagerFactory and to managed
-            // CustomRootTrust. The leaf is signed directly by the root, so no ExtraStore
-            // override is needed and both validators should accept the chain.
+            // The custom root is used by managed CustomRootTrust. The leaf is signed
+            // directly by the root, so no ExtraStore is needed.
 
             (X509Certificate2 rootCert, X509Certificate2 serverCert) = GenerateDirectCertificateChain();
 
@@ -449,11 +447,10 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        public async Task SslStream_SslCertificateTrustList_PlatformAndManagedTrust()
+        public async Task SslStream_SslCertificateTrustList_ManagedTrust()
         {
             // Exercise the legacy SslCertificateTrust path. Because CertificateChainPolicy
-            // is not set, SafeDeleteSslContext gets trust anchors from ClientCertificateContext.Trust
-            // and passes them to Android's TrustManagerFactory.
+            // is not set, ClientCertificateContext.Trust makes managed validation authoritative.
 
             using X509Certificate2 trustedServerCertificate = Configuration.Certificates.GetSelfSignedServerCertificate();
             using X509Certificate2 clientCertificate = Configuration.Certificates.GetClientCertificate();
@@ -500,12 +497,12 @@ namespace System.Net.Security.Tests
             // The trust manager then falls back to the non-hostname-aware
             // X509TrustManager.checkServerTrusted(chain, authType) path, which means
             // network_security_config.xml's per-domain rules don't apply — the chain is
-            // evaluated only against the system trust store + the configured CustomRootTrust.
+            // evaluated only against the system trust store.
             //
             // Setup: dynamic PKI not in the XML config + CustomRootTrust providing the root +
             // ExtraStore providing the intermediate. Targeting the loopback by IP literal must
-            // (a) not throw because of SNI/IP handling, and (b) succeed via the managed
-            // override path (ExtraStore populated → platform's verdict is bypassed).
+            // (a) not throw because of SNI/IP handling, and (b) succeed because explicit
+            // managed custom trust ignores any platform rejection.
 
             (X509Certificate2 rootCert, X509Certificate2 intermediateCert, X509Certificate2 serverCert) = GenerateCertificateChain();
 
@@ -547,8 +544,8 @@ namespace System.Net.Security.Tests
             }
 
             Assert.NotNull(reportedErrors);
-            // No chain errors: the IP-literal path didn't crash on SNIHostName, and the managed
-            // override (ExtraStore present) bypassed any platform rejection.
+            // No chain errors: the IP-literal path didn't crash on SNIHostName, and explicit
+            // managed custom trust ignored any platform rejection.
             Assert.Equal(SslPolicyErrors.None, reportedErrors.Value & SslPolicyErrors.RemoteCertificateChainErrors);
         }
 
@@ -561,9 +558,9 @@ namespace System.Net.Security.Tests
             // when they don't know the hostname (e.g. pre-resolved TCP sockets).
             //
             // We use a dynamic PKI (not in any system trust store and not in network_security_config.xml)
-            // with CustomRootTrust + ExtraStore so the managed override bypasses the platform's verdict.
+            // with CustomRootTrust + ExtraStore so explicit managed custom trust ignores the platform verdict.
             // Whatever the platform says, the callback must still see SslPolicyErrors.None because
-            // managedTrustOnly is true.
+            // managed validation is authoritative.
 
             (X509Certificate2 rootCert, X509Certificate2 intermediateCert, X509Certificate2 serverCert) = GenerateCertificateChain();
 

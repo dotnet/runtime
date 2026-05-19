@@ -402,8 +402,6 @@ cleanup:
 SSLStream* AndroidCryptoNative_SSLStreamCreate(
     intptr_t sslStreamProxyHandle,
     const char* targetHost,
-    jobject* trustCerts,
-    int32_t trustCertsLen,
     jobjectArray keyManagers)
 {
     abort_unless(sslStreamProxyHandle != 0, "invalid pointer to the .NET SslStream proxy");
@@ -417,7 +415,7 @@ SSLStream* AndroidCryptoNative_SSLStreamCreate(
     if (!loc[sslContext])
         goto cleanup;
 
-    loc[trustManagers] = GetTrustManagers(env, sslStreamProxyHandle, targetHost, trustCerts, trustCertsLen);
+    loc[trustManagers] = GetTrustManagers(env, sslStreamProxyHandle, targetHost);
     if (!loc[trustManagers])
         goto cleanup;
 

@@ -30,15 +30,12 @@ internal static partial class Interop
         private static partial SafeSslHandle SSLStreamCreate(
             IntPtr sslStreamProxyHandle,
             [MarshalAs(UnmanagedType.LPUTF8Str)] string? targetHost,
-            IntPtr[]? trustCerts,
-            int trustCertsLen,
             IntPtr keyManagers);
         internal static SafeSslHandle SSLStreamCreate(
             SslStream.JavaProxy sslStreamProxy,
             string? targetHost,
-            IntPtr[]? trustCerts,
             IntPtr keyManagers = 0)
-            => SSLStreamCreate(sslStreamProxy.Handle, targetHost, trustCerts, trustCerts?.Length ?? 0, keyManagers);
+            => SSLStreamCreate(sslStreamProxy.Handle, targetHost, keyManagers);
 
         [LibraryImport(Interop.Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamCreateKeyManagers")]
         private static partial IntPtr SSLStreamCreateKeyManagersImpl(

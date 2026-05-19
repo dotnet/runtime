@@ -49,8 +49,6 @@ Returns NULL on failure
 PALEXPORT SSLStream* AndroidCryptoNative_SSLStreamCreate(
     intptr_t sslStreamProxyHandle,
     const char* targetHost,
-    jobject* /*X509Certificate[]*/ trustCerts,
-    int32_t trustCertsLen,
     jobjectArray keyManagers);
 
 /*

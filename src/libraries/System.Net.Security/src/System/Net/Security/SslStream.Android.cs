@@ -11,28 +11,8 @@ namespace System.Net.Security
     {
         private JavaProxy.RemoteCertificateValidationResult VerifyRemoteCertificate(bool chainTrustedByPlatform)
         {
-            // The platform's trust verdict is combined with managed validation to be MORE strict,
-            // never less. If the platform rejects the chain, sslPolicyErrors is pre-seeded with
-            // RemoteCertificateChainErrors and managed validation cannot clear it. If the platform
-            // accepts the chain, managed validation (X509Chain.Build) can still independently
-            // introduce RemoteCertificateChainErrors.
-            //
-            // The platform's verdict is ignored when the user provided intermediate certificates
-            // via CertificateChainPolicy.ExtraStore. The platform does not have access to these
-            // intermediates (Java's KeyStore.setCertificateEntry would elevate them to trust
-            // anchors) and may produce false rejections for chains that require them. The managed
-            // chain builder has full access to ExtraStore and is authoritative in this case.
-            //
-            // Note: ExtraStore is also populated later (in SslStream.Protocol.cs) with peer
-            // certificates received during the TLS handshake. Those are the same certificates
-            // the platform already has, so they don't affect this decision. At this point,
-            // ExtraStore.Count reflects only user-provided certificates because
-            // SslAuthenticationOptions.UpdateOptions clones the user's CertificateChainPolicy
-            // for each handshake — peer certs from previous handshakes are never carried over.
-            bool managedTrustOnly = _sslAuthenticationOptions.CertificateChainPolicy?.ExtraStore?.Count > 0;
-
             SslPolicyErrors sslPolicyErrors = SslPolicyErrors.None;
-            if (!managedTrustOnly && !chainTrustedByPlatform)
+            if (ShouldRespectPlatformValidation() && !chainTrustedByPlatform)
             {
                 sslPolicyErrors = SslPolicyErrors.RemoteCertificateChainErrors;
             }
@@ -52,6 +32,15 @@ namespace System.Net.Security
                 ChainStatus = chainStatus,
                 AlertToken = alertToken,
             };
+        }
+
+        private bool ShouldRespectPlatformValidation()
+        {
+            // Android platform trust is part of default/callback-only validation, but explicit
+            // managed custom trust stays managed-authoritative and is not projected into Android.
+            return _sslAuthenticationOptions.CertificateChainPolicy is not null
+                ? _sslAuthenticationOptions.CertificateChainPolicy.TrustMode != X509ChainTrustMode.CustomRootTrust
+                : _sslAuthenticationOptions.CertificateContext?.Trust is null;
         }
 
         private bool TryGetRemoteCertificateValidationResult(out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus, ref ProtocolToken alertToken, out bool isValid)
