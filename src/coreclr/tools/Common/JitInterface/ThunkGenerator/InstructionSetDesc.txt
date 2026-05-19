@@ -26,7 +26,7 @@
 ; DO NOT CHANGE R2R NUMERIC VALUES OF THE EXISTING SETS. Changing R2R numeric values definitions would be R2R format breaking change.
 
 ; The ISA definitions should also be mapped to `hwintrinsicIsaRangeArray` in hwintrinsic.cpp.
-; NEXT_AVAILABLE_R2R_BIT = 92
+; NEXT_AVAILABLE_R2R_BIT = 91
 
 ; Definition of X86 instruction sets
 definearch         ,X86   ,32Bit                ,X64, X64, X86

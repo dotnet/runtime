@@ -35,18 +35,26 @@ namespace IntelHardwareIntrinsicTest._AvxVnni_V512
             Vector512<int> result = AvxVnni.V512.MultiplyWideningAndAdd(addend, unsignedBytes, signedBytes);
 
             // Each int32 lane should sum 4 byte*sbyte products: 4 * (1 * 2) = 8
-            Assert.Equal(8, result.GetElement(0));
+            AssertAllLanesEqual(result, 8);
 
             Vector512<int> resultSat = AvxVnni.V512.MultiplyWideningAndAddSaturate(addend, unsignedBytes, signedBytes);
-            Assert.Equal(8, resultSat.GetElement(0));
+            AssertAllLanesEqual(resultSat, 8);
 
             Vector512<int> wordResult = AvxVnni.V512.MultiplyWideningAndAdd(addend, words, words);
 
             // Each int32 lane sums 2 short*short products: 2 * (3 * 3) = 18
-            Assert.Equal(18, wordResult.GetElement(0));
+            AssertAllLanesEqual(wordResult, 18);
 
             Vector512<int> wordResultSat = AvxVnni.V512.MultiplyWideningAndAddSaturate(addend, words, words);
-            Assert.Equal(18, wordResultSat.GetElement(0));
+            AssertAllLanesEqual(wordResultSat, 18);
+        }
+
+        private static void AssertAllLanesEqual(Vector512<int> value, int expected)
+        {
+            for (int index = 0; index < Vector512<int>.Count; index++)
+            {
+                Assert.Equal(expected, value.GetElement(index));
+            }
         }
     }
 }
