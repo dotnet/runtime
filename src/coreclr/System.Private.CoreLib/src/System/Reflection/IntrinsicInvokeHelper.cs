@@ -6,60 +6,27 @@ using System.Runtime.CompilerServices;
 
 namespace System.Reflection
 {
-    // Signature-shape descriptor for the no-emit reflection-invoke fast path. The actual calli is
-    // performed inline by the invoker (MethodBaseInvoker / MethodInvoker / ConstructorInvoker) so the
-    // frame walked by `StackCrawlMark.LookForMyCaller` (e.g. `Type.GetType(string)`,
-    // `Assembly.GetCallingAssembly`) is the invoker itself, which is on the runtime's reflection-skip
-    // list (SystemDomain::IsReflectionInvocationMethod). Lambdas / closures would land on
-    // compiler-generated nested types not in that list and would misreport the caller's assembly.
-    internal enum IntrinsicInvokeShape : byte
+    // Per-shape thunks for the no-emit reflection-invoke fast path. The classifier returns a function
+    // pointer to the matching thunk; the JIT only compiles thunks the process actually uses (vs. a
+    // monolithic switch which would force the JIT to compile every arm on the first invoke).
+    //
+    // Thunks must be invoked from a method on a type in `SystemDomain::IsReflectionInvocationMethod`
+    // (e.g. `MethodBaseInvoker`) so `StackCrawlMark.LookForMyCaller` resolves the user-code caller.
+    internal static unsafe class IntrinsicInvokeHelper
     {
-        None = 0,
+        // Common thunk signature: (targetFn, obj, args, declaringType) -> retval.
+        // `obj`/`declaringType` are only consumed by ctor thunks.
 
-        // Static methods, well-known return type, 0-N reference-typed args.
-        StaticVoid_0,
-        StaticBool_0,
-        StaticByte_0,
-        StaticSByte_0,
-        StaticChar_0,
-        StaticShort_0,
-        StaticUShort_0,
-        StaticInt_0,
-        StaticUInt_0,
-        StaticLong_0,
-        StaticULong_0,
-        StaticFloat_0,
-        StaticDouble_0,
-        StaticNInt_0,
-        StaticNUInt_0,
-        StaticObject_0,
-
-        StaticVoid_1Obj,
-        StaticObject_1Obj,
-
-        StaticVoid_2Obj,
-
-        // Instance constructors. `obj` may be non-null for the "call ctor on existing instance" case.
-        CtorObj_0,
-        CtorObj_1,
-        CtorObj_2,
-        CtorObj_3,
-    }
-
-    internal static class IntrinsicInvokeHelper
-    {
-        // Determines whether `method` has a signature shape the invoker can dispatch without emitting
-        // a per-method DynamicMethod. On hit, returns the shape descriptor and the target function
-        // pointer; the invoker performs the calli itself (see `Dispatch` below).
-        internal static unsafe bool TryGetShape(
+        internal static bool TryGetShape(
             MethodBase method,
-            out IntrinsicInvokeShape shape,
+            out delegate*<IntPtr, object?, IntPtr*, Type?, object?> thunk,
             out IntPtr functionPointer)
         {
-            shape = IntrinsicInvokeShape.None;
+            thunk = null;
             functionPointer = IntPtr.Zero;
 
-            // DynamicMethod.MethodHandle throws — let the emit path handle it.
+            // DynamicMethod.MethodHandle throws — let the emit path handle it. Generic and vararg
+            // methods aren't worth the complexity here.
             if (method is System.Reflection.Emit.DynamicMethod ||
                 method.ContainsGenericParameters ||
                 (method.CallingConvention & CallingConventions.VarArgs) != 0)
@@ -80,7 +47,6 @@ namespace System.Reflection
                 }
             }
 
-            // Instance constructors: allocate uninitialized + HASTHIS calli through InstanceCalliHelper.Call.
             if (method is ConstructorInfo &&
                 !method.IsStatic &&
                 method.DeclaringType is Type declaringType &&
@@ -88,18 +54,18 @@ namespace System.Reflection
                 !declaringType.IsAbstract &&
                 !declaringType.IsByRefLike &&
                 !declaringType.ContainsGenericParameters &&
-                declaringType != typeof(string))
+                declaringType != typeof(string)) // see Ctor_0
             {
-                shape = argCount switch
+                thunk = argCount switch
                 {
-                    0 => IntrinsicInvokeShape.CtorObj_0,
-                    1 => IntrinsicInvokeShape.CtorObj_1,
-                    2 => IntrinsicInvokeShape.CtorObj_2,
-                    3 => IntrinsicInvokeShape.CtorObj_3,
-                    _ => IntrinsicInvokeShape.None,
+                    0 => &Ctor_0,
+                    1 => &Ctor_1,
+                    2 => &Ctor_2,
+                    3 => &Ctor_3,
+                    _ => null,
                 };
 
-                if (shape == IntrinsicInvokeShape.None)
+                if (thunk is null)
                 {
                     return false;
                 }
@@ -108,38 +74,19 @@ namespace System.Reflection
                 return true;
             }
 
-            // Static methods: static-conv calli through InstanceCalliHelper.CallStatic.
             if (method.IsStatic)
             {
                 Type returnType = method is MethodInfo mi ? mi.ReturnType : typeof(void);
 
-                switch (argCount)
+                thunk = argCount switch
                 {
-                    case 0:
-                        shape = ClassifyStatic0Return(returnType);
-                        break;
+                    0 => ClassifyStatic0Return(returnType),
+                    1 => ClassifyStatic1Obj(returnType),
+                    2 => ClassifyStatic2Obj(returnType),
+                    _ => null,
+                };
 
-                    case 1:
-                        if (returnType == typeof(void))
-                        {
-                            shape = IntrinsicInvokeShape.StaticVoid_1Obj;
-                        }
-                        else if (!returnType.IsValueType && !returnType.IsByRef &&
-                                 !returnType.IsPointer && !returnType.IsFunctionPointer)
-                        {
-                            shape = IntrinsicInvokeShape.StaticObject_1Obj;
-                        }
-                        break;
-
-                    case 2:
-                        if (returnType == typeof(void))
-                        {
-                            shape = IntrinsicInvokeShape.StaticVoid_2Obj;
-                        }
-                        break;
-                }
-
-                if (shape == IntrinsicInvokeShape.None)
+                if (thunk is null)
                 {
                     return false;
                 }
@@ -151,134 +98,154 @@ namespace System.Reflection
             return false;
         }
 
-        private static IntrinsicInvokeShape ClassifyStatic0Return(Type returnType)
+        // Classifiers return a fn pointer (not invoking it) so the JIT doesn't pull thunks into
+        // the classifier's compiled body.
+
+        private static delegate*<IntPtr, object?, IntPtr*, Type?, object?> ClassifyStatic0Return(Type returnType)
         {
-            if (returnType == typeof(void)) return IntrinsicInvokeShape.StaticVoid_0;
-            if (returnType == typeof(bool)) return IntrinsicInvokeShape.StaticBool_0;
-            if (returnType == typeof(byte)) return IntrinsicInvokeShape.StaticByte_0;
-            if (returnType == typeof(sbyte)) return IntrinsicInvokeShape.StaticSByte_0;
-            if (returnType == typeof(char)) return IntrinsicInvokeShape.StaticChar_0;
-            if (returnType == typeof(short)) return IntrinsicInvokeShape.StaticShort_0;
-            if (returnType == typeof(ushort)) return IntrinsicInvokeShape.StaticUShort_0;
-            if (returnType == typeof(int)) return IntrinsicInvokeShape.StaticInt_0;
-            if (returnType == typeof(uint)) return IntrinsicInvokeShape.StaticUInt_0;
-            if (returnType == typeof(long)) return IntrinsicInvokeShape.StaticLong_0;
-            if (returnType == typeof(ulong)) return IntrinsicInvokeShape.StaticULong_0;
-            if (returnType == typeof(float)) return IntrinsicInvokeShape.StaticFloat_0;
-            if (returnType == typeof(double)) return IntrinsicInvokeShape.StaticDouble_0;
-            if (returnType == typeof(nint) || returnType.IsFunctionPointer)
-                return IntrinsicInvokeShape.StaticNInt_0;
-            if (returnType == typeof(nuint)) return IntrinsicInvokeShape.StaticNUInt_0;
+            if (returnType == typeof(void)) return &Static_Void_0;
+            if (returnType == typeof(bool)) return &Static_Bool_0;
+            if (returnType == typeof(byte)) return &Static_Byte_0;
+            if (returnType == typeof(sbyte)) return &Static_SByte_0;
+            if (returnType == typeof(char)) return &Static_Char_0;
+            if (returnType == typeof(short)) return &Static_Short_0;
+            if (returnType == typeof(ushort)) return &Static_UShort_0;
+            if (returnType == typeof(int)) return &Static_Int_0;
+            if (returnType == typeof(uint)) return &Static_UInt_0;
+            if (returnType == typeof(long)) return &Static_Long_0;
+            if (returnType == typeof(ulong)) return &Static_ULong_0;
+            if (returnType == typeof(float)) return &Static_Float_0;
+            if (returnType == typeof(double)) return &Static_Double_0;
+            if (returnType == typeof(nint) || returnType.IsFunctionPointer) return &Static_NInt_0;
+            if (returnType == typeof(nuint)) return &Static_NUInt_0;
 
             if (!returnType.IsValueType && !returnType.IsByRef && !returnType.IsPointer && !returnType.IsFunctionPointer)
-                return IntrinsicInvokeShape.StaticObject_0;
+                return &Static_Object_0;
 
-            return IntrinsicInvokeShape.None;
+            return null;
         }
 
-        // Dispatches the calli identified by `shape` / `fn`. AggressiveInlining so the immediate caller
-        // of the target method (as seen by `StackCrawlMark.LookForMyCaller`) is the reflection invoker,
-        // not this helper. Callers must be methods on a type listed in
-        // `SystemDomain::IsReflectionInvocationMethod`.
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
-            Justification = "GetUninitializedObject does not invoke constructors; the caller has already " +
-                            "anchored the constructor MethodBase, which keeps the type and its ctor reachable.")]
-        internal static unsafe object? Dispatch(
-            IntrinsicInvokeShape shape,
-            IntPtr fn,
-            object? obj,
-            IntPtr* args,
-            Type? declaringType)
+        private static delegate*<IntPtr, object?, IntPtr*, Type?, object?> ClassifyStatic1Obj(Type returnType)
         {
-            switch (shape)
-            {
-                case IntrinsicInvokeShape.StaticVoid_0:
-                    ((delegate*<void>)fn)();
-                    return null;
-                case IntrinsicInvokeShape.StaticBool_0:
-                    return ((delegate*<bool>)fn)();
-                case IntrinsicInvokeShape.StaticByte_0:
-                    return ((delegate*<byte>)fn)();
-                case IntrinsicInvokeShape.StaticSByte_0:
-                    return ((delegate*<sbyte>)fn)();
-                case IntrinsicInvokeShape.StaticChar_0:
-                    return ((delegate*<char>)fn)();
-                case IntrinsicInvokeShape.StaticShort_0:
-                    return ((delegate*<short>)fn)();
-                case IntrinsicInvokeShape.StaticUShort_0:
-                    return ((delegate*<ushort>)fn)();
-                case IntrinsicInvokeShape.StaticInt_0:
-                    return ((delegate*<int>)fn)();
-                case IntrinsicInvokeShape.StaticUInt_0:
-                    return ((delegate*<uint>)fn)();
-                case IntrinsicInvokeShape.StaticLong_0:
-                    return ((delegate*<long>)fn)();
-                case IntrinsicInvokeShape.StaticULong_0:
-                    return ((delegate*<ulong>)fn)();
-                case IntrinsicInvokeShape.StaticFloat_0:
-                    return ((delegate*<float>)fn)();
-                case IntrinsicInvokeShape.StaticDouble_0:
-                    return ((delegate*<double>)fn)();
-                case IntrinsicInvokeShape.StaticNInt_0:
-                    return ((delegate*<nint>)fn)();
-                case IntrinsicInvokeShape.StaticNUInt_0:
-                    return ((delegate*<nuint>)fn)();
-                case IntrinsicInvokeShape.StaticObject_0:
-                    return ((delegate*<object?>)fn)();
+            if (returnType == typeof(void)) return &Static_Void_1Obj;
+            if (!returnType.IsValueType && !returnType.IsByRef && !returnType.IsPointer && !returnType.IsFunctionPointer)
+                return &Static_Object_1Obj;
+            return null;
+        }
 
-                case IntrinsicInvokeShape.StaticVoid_1Obj:
-                    ((delegate*<object?, void>)fn)(Unsafe.Read<object?>((void*)args[0]));
-                    return null;
-                case IntrinsicInvokeShape.StaticObject_1Obj:
-                    return ((delegate*<object?, object?>)fn)(Unsafe.Read<object?>((void*)args[0]));
+        private static delegate*<IntPtr, object?, IntPtr*, Type?, object?> ClassifyStatic2Obj(Type returnType)
+        {
+            if (returnType == typeof(void)) return &Static_Void_2Obj;
+            return null;
+        }
 
-                case IntrinsicInvokeShape.StaticVoid_2Obj:
-                    ((delegate*<object?, object?, void>)fn)(
-                        Unsafe.Read<object?>((void*)args[0]),
-                        Unsafe.Read<object?>((void*)args[1]));
-                    return null;
+        // Per-shape thunks. JIT compiles only the ones used.
 
-                case IntrinsicInvokeShape.CtorObj_0:
-                    {
-                        object instance = obj ?? RuntimeHelpers.GetUninitializedObject(declaringType!);
-                        InstanceCalliHelper.Call((delegate*<object, void>)fn, instance);
-                        return obj is null ? instance : null;
-                    }
-                case IntrinsicInvokeShape.CtorObj_1:
-                    {
-                        object instance = obj ?? RuntimeHelpers.GetUninitializedObject(declaringType!);
-                        InstanceCalliHelper.Call(
-                            (delegate*<object, object?, void>)fn,
-                            instance,
-                            Unsafe.Read<object?>((void*)args[0]));
-                        return obj is null ? instance : null;
-                    }
-                case IntrinsicInvokeShape.CtorObj_2:
-                    {
-                        object instance = obj ?? RuntimeHelpers.GetUninitializedObject(declaringType!);
-                        InstanceCalliHelper.Call(
-                            (delegate*<object, object?, object?, void>)fn,
-                            instance,
-                            Unsafe.Read<object?>((void*)args[0]),
-                            Unsafe.Read<object?>((void*)args[1]));
-                        return obj is null ? instance : null;
-                    }
-                case IntrinsicInvokeShape.CtorObj_3:
-                    {
-                        object instance = obj ?? RuntimeHelpers.GetUninitializedObject(declaringType!);
-                        InstanceCalliHelper.Call(
-                            (delegate*<object, object?, object?, object?, void>)fn,
-                            instance,
-                            Unsafe.Read<object?>((void*)args[0]),
-                            Unsafe.Read<object?>((void*)args[1]),
-                            Unsafe.Read<object?>((void*)args[2]));
-                        return obj is null ? instance : null;
-                    }
+        private static object? Static_Void_0(IntPtr fn, object? _, IntPtr* __, Type? ___)
+        {
+            ((delegate*<void>)fn)();
+            return null;
+        }
 
-                default:
-                    throw new InvalidOperationException();
-            }
+        private static object? Static_Bool_0(IntPtr fn, object? _, IntPtr* __, Type? ___)
+            => ((delegate*<bool>)fn)();
+        private static object? Static_Byte_0(IntPtr fn, object? _, IntPtr* __, Type? ___)
+            => ((delegate*<byte>)fn)();
+        private static object? Static_SByte_0(IntPtr fn, object? _, IntPtr* __, Type? ___)
+            => ((delegate*<sbyte>)fn)();
+        private static object? Static_Char_0(IntPtr fn, object? _, IntPtr* __, Type? ___)
+            => ((delegate*<char>)fn)();
+        private static object? Static_Short_0(IntPtr fn, object? _, IntPtr* __, Type? ___)
+            => ((delegate*<short>)fn)();
+        private static object? Static_UShort_0(IntPtr fn, object? _, IntPtr* __, Type? ___)
+            => ((delegate*<ushort>)fn)();
+        private static object? Static_Int_0(IntPtr fn, object? _, IntPtr* __, Type? ___)
+            => ((delegate*<int>)fn)();
+        private static object? Static_UInt_0(IntPtr fn, object? _, IntPtr* __, Type? ___)
+            => ((delegate*<uint>)fn)();
+        private static object? Static_Long_0(IntPtr fn, object? _, IntPtr* __, Type? ___)
+            => ((delegate*<long>)fn)();
+        private static object? Static_ULong_0(IntPtr fn, object? _, IntPtr* __, Type? ___)
+            => ((delegate*<ulong>)fn)();
+        private static object? Static_Float_0(IntPtr fn, object? _, IntPtr* __, Type? ___)
+            => ((delegate*<float>)fn)();
+        private static object? Static_Double_0(IntPtr fn, object? _, IntPtr* __, Type? ___)
+            => ((delegate*<double>)fn)();
+        private static object? Static_NInt_0(IntPtr fn, object? _, IntPtr* __, Type? ___)
+            => ((delegate*<nint>)fn)();
+        private static object? Static_NUInt_0(IntPtr fn, object? _, IntPtr* __, Type? ___)
+            => ((delegate*<nuint>)fn)();
+        private static object? Static_Object_0(IntPtr fn, object? _, IntPtr* __, Type? ___)
+            => ((delegate*<object?>)fn)();
+
+        private static object? Static_Void_1Obj(IntPtr fn, object? _, IntPtr* args, Type? __)
+        {
+            ((delegate*<object?, void>)fn)(Unsafe.Read<object?>((void*)args[0]));
+            return null;
+        }
+
+        private static object? Static_Object_1Obj(IntPtr fn, object? _, IntPtr* args, Type? __)
+            => ((delegate*<object?, object?>)fn)(Unsafe.Read<object?>((void*)args[0]));
+
+        private static object? Static_Void_2Obj(IntPtr fn, object? _, IntPtr* args, Type? __)
+        {
+            ((delegate*<object?, object?, void>)fn)(
+                Unsafe.Read<object?>((void*)args[0]),
+                Unsafe.Read<object?>((void*)args[1]));
+            return null;
+        }
+
+        // Ctor thunks: `obj` non-null = call ctor on existing instance, null = allocate first.
+        // `string` excluded: `newobj String(...)` is JIT-lowered to a hidden static allocator
+        // (`METHOD__STRING__CTORF_*` in src/coreclr/vm/corelib.h, wired by
+        // `ECall::PopulateManagedStringConstructors`); the public ctor has no callable instance
+        // entry, and `GetUninitializedObject(typeof(string))` is runtime-rejected.
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
+            Justification = "Caller anchors the ctor MethodBase, keeping its type reachable.")]
+        private static object? Ctor_0(IntPtr fn, object? obj, IntPtr* _, Type? declaringType)
+        {
+            object instance = obj ?? RuntimeHelpers.GetUninitializedObject(declaringType!);
+            InstanceCalliHelper.Call((delegate*<object, void>)fn, instance);
+            return obj is null ? instance : null;
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
+            Justification = "See Ctor_0.")]
+        private static object? Ctor_1(IntPtr fn, object? obj, IntPtr* args, Type? declaringType)
+        {
+            object instance = obj ?? RuntimeHelpers.GetUninitializedObject(declaringType!);
+            InstanceCalliHelper.Call(
+                (delegate*<object, object?, void>)fn,
+                instance,
+                Unsafe.Read<object?>((void*)args[0]));
+            return obj is null ? instance : null;
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
+            Justification = "See Ctor_0.")]
+        private static object? Ctor_2(IntPtr fn, object? obj, IntPtr* args, Type? declaringType)
+        {
+            object instance = obj ?? RuntimeHelpers.GetUninitializedObject(declaringType!);
+            InstanceCalliHelper.Call(
+                (delegate*<object, object?, object?, void>)fn,
+                instance,
+                Unsafe.Read<object?>((void*)args[0]),
+                Unsafe.Read<object?>((void*)args[1]));
+            return obj is null ? instance : null;
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
+            Justification = "See Ctor_0.")]
+        private static object? Ctor_3(IntPtr fn, object? obj, IntPtr* args, Type? declaringType)
+        {
+            object instance = obj ?? RuntimeHelpers.GetUninitializedObject(declaringType!);
+            InstanceCalliHelper.Call(
+                (delegate*<object, object?, object?, object?, void>)fn,
+                instance,
+                Unsafe.Read<object?>((void*)args[0]),
+                Unsafe.Read<object?>((void*)args[1]),
+                Unsafe.Read<object?>((void*)args[2]));
+            return obj is null ? instance : null;
         }
     }
 }

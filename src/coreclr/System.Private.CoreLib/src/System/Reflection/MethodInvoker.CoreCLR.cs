@@ -10,7 +10,7 @@ namespace System.Reflection
     public partial class MethodInvoker
     {
         // See MethodBaseInvoker.CoreCLR.cs for the rationale on storing the intrinsic state inline.
-        private IntrinsicInvokeShape _intrinsicShape;
+        private unsafe delegate*<IntPtr, object?, IntPtr*, Type?, object?> _intrinsicThunk;
         private IntPtr _intrinsicFn;
 
         private unsafe MethodInvoker(RuntimeMethodInfo method) : this(method, method.Signature.Arguments)
@@ -33,17 +33,17 @@ namespace System.Reflection
 
         private unsafe object? InterpretedInvoke_Method(object? obj, IntPtr* args)
         {
-            if (_intrinsicShape != IntrinsicInvokeShape.None)
+            if (_intrinsicThunk is not null)
             {
-                return IntrinsicInvokeHelper.Dispatch(_intrinsicShape, _intrinsicFn, obj, args, _method.DeclaringType);
+                return _intrinsicThunk(_intrinsicFn, obj, args, _method.DeclaringType);
             }
 
-            if (IntrinsicInvokeHelper.TryGetShape(_method, out IntrinsicInvokeShape shape, out IntPtr fn))
+            if (IntrinsicInvokeHelper.TryGetShape(_method, out var thunk, out IntPtr fn))
             {
                 _intrinsicFn = fn;
-                _intrinsicShape = shape;
+                _intrinsicThunk = thunk;
                 _strategy |= InvokerStrategy.StrategyDetermined_RefArgs | InvokerStrategy.HasBeenInvoked_RefArgs;
-                return IntrinsicInvokeHelper.Dispatch(shape, fn, obj, args, _method.DeclaringType);
+                return thunk(fn, obj, args, _method.DeclaringType);
             }
 
             InvokeFunc_RefArgs emitDelegate;
