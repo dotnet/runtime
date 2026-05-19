@@ -97,6 +97,30 @@ public unsafe class ThreadTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
+    public void GetThreadData_MapsStateFlags(MockTarget.Architecture arch)
+    {
+        const uint id = 1;
+        const ulong osId = 1234;
+        const uint state = (uint)(ThreadState.WaitSleepJoin | ThreadState.Background);
+        MockThread? thread = null;
+
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            threadBuilder =>
+            {
+                thread = threadBuilder.AddThread(id, osId);
+                thread.State = state;
+            });
+
+        IThread contract = target.Contracts.Thread;
+        ThreadData data = contract.GetThreadData(new TargetPointer(thread!.Address));
+        Assert.True(data.State.HasFlag(ThreadState.Background));
+        Assert.True(data.State.HasFlag(ThreadState.WaitSleepJoin));
+        Assert.False(data.State.HasFlag(ThreadState.Stopped));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
     public void IterateThreads(MockTarget.Architecture arch)
     {
         const uint expectedCount = 10;
@@ -325,5 +349,63 @@ public unsafe class ThreadTests
         IThread contract = target.Contracts.Thread;
         ThreadData data = contract.GetThreadData(new TargetPointer(thread!.Address));
         Assert.Equal(lastThrownHandle, data.LastThrownObjectHandle);
+    }
+
+    public static IEnumerable<object[]> SetDebuggerControlledThreadStateData()
+    {
+        foreach (var arch in new MockTarget.StdArch())
+        {
+            yield return [arch[0], DebuggerControlledThreadState.None, DebuggerControlledThreadState.UserSuspend];
+            yield return [arch[0], DebuggerControlledThreadState.UserSuspend, DebuggerControlledThreadState.UserSuspend];
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(SetDebuggerControlledThreadStateData))]
+    public void SetDebuggerControlledThreadState(MockTarget.Architecture arch, DebuggerControlledThreadState initialState, DebuggerControlledThreadState expectedState)
+    {
+        MockThread? thread = null;
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            threadBuilder =>
+            {
+                thread = threadBuilder.AddThread(1, 1234);
+                thread.DebuggerControlledThreadState = (uint)initialState;
+            });
+        IThread contract = target.Contracts.Thread;
+        TargetPointer threadPtr = new(thread!.Address);
+
+        contract.SetDebuggerControlledThreadState(threadPtr, DebuggerControlledThreadState.UserSuspend);
+
+        Assert.Equal((uint)expectedState, thread.DebuggerControlledThreadState);
+    }
+
+    public static IEnumerable<object[]> ResetDebuggerControlledThreadStateData()
+    {
+        foreach (var arch in new MockTarget.StdArch())
+        {
+            yield return [arch[0], DebuggerControlledThreadState.UserSuspend, DebuggerControlledThreadState.None];
+            yield return [arch[0], DebuggerControlledThreadState.None, DebuggerControlledThreadState.None];
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(ResetDebuggerControlledThreadStateData))]
+    public void ResetDebuggerControlledThreadState(MockTarget.Architecture arch, DebuggerControlledThreadState initialState, DebuggerControlledThreadState expectedState)
+    {
+        MockThread? thread = null;
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            threadBuilder =>
+            {
+                thread = threadBuilder.AddThread(1, 1234);
+                thread.DebuggerControlledThreadState = (uint)initialState;
+            });
+        IThread contract = target.Contracts.Thread;
+        TargetPointer threadPtr = new(thread!.Address);
+
+        contract.ResetDebuggerControlledThreadState(threadPtr, DebuggerControlledThreadState.UserSuspend);
+
+        Assert.Equal((uint)expectedState, thread.DebuggerControlledThreadState);
     }
 }

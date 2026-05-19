@@ -13,6 +13,8 @@ public interface IObject : IContract
     TargetPointer GetArrayData(TargetPointer address, out uint count, out TargetPointer boundsStart, out TargetPointer lowerBounds) => throw new NotImplementedException();
     bool GetBuiltInComData(TargetPointer address, out TargetPointer rcw, out TargetPointer ccw, out TargetPointer ccf) => throw new NotImplementedException();
     int TryGetHashCode(TargetPointer address) => throw new NotImplementedException();
+    // Returns the SyncBlock address for the object, or TargetPointer.Null if no sync block is associated with it.
+    TargetPointer GetSyncBlockAddress(TargetPointer address) => throw new NotImplementedException();
 }
 
 public readonly struct Object : IObject

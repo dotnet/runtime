@@ -84,6 +84,13 @@ This contract depends on the following descriptors:
 | `HijackArgs` (amd64) | `CalleeSavedRegisters` | CalleeSavedRegisters data structure |
 | `HijackArgs` (amd64 Windows) | `Rsp` | Saved stack pointer |
 | `HijackArgs` (arm/arm64/x86) | For each register `r` saved in HijackArgs, `r` | Register names associated with stored register values |
+| `InterpreterFrame` | `TopInterpMethodContextFrame` | Pointer to the InterpreterFrame's top `InterpMethodContextFrame` |
+| `InterpreterFrame` | `IsFaulting` | Boolean indicating whether the topmost interpreted frame has thrown an exception. When set, the context for the top interpreted frame must include `CONTEXT_EXCEPTION_ACTIVE` so exception unwinders treat the IP as a faulting instruction rather than a return-from-call |
+| `InterpMethodContextFrame` | `StartIp` | Pointer to the `InterpByteCodeStart` for resolving the MethodDesc |
+| `InterpMethodContextFrame` | `ParentPtr` | Pointer to the parent `InterpMethodContextFrame` in the call chain (null for outermost frame) |
+| `InterpMethodContextFrame` | `Ip` | The actual instruction pointer within the method (null if frame is inactive/reusable) |
+| `InterpMethodContextFrame` | `NextPtr` | Pointer to the next `InterpMethodContextFrame` toward the top of the stack |
+| `InterpMethodContextFrame` | `Stack` | Pointer to the stack base for this interpreted method, used as the frame pointer when interpreter GC info uses a stack-base register |
 | `ArgumentRegisters` (arm) | For each register `r` saved in ArgumentRegisters, `r` | Register names associated with stored register values |
 | `CalleeSavedRegisters` | For each callee saved register `r`, `r` | Register names associated with stored register values |
 | `TailCallFrame` (x86 Windows) | `CalleeSavedRegisters` | CalleeSavedRegisters data structure |
@@ -132,6 +139,33 @@ In reality, the actual algorithm is a little more complex fow two reasons. It re
     2. If `frameStack` is not empty, check for skipped Frames. Peek `frameStack` to find a Frame `frame`. Compare the address of `frame` (allocated on the stack) with the caller of the current context's stack pointer (found by unwinding current context one iteration).
     If the address of the `frame` is less than the caller's stack pointer, **return the current context**, pop the top Frame from `frameStack`, and **go to step 3**.
     3. Unwind `currContext` using the Windows style unwinder. **Return the current context**.
+
+#### Interpreter Frame Expansion
+
+When the stack walker encounters an `InterpreterFrame`, it expands it into multiple logical frames by walking the `InterpMethodContextFrame` chain. The runtime maintains a linked list of `InterpMethodContextFrame` nodes representing each interpreted method currently on the call stack within a single `InterpreterFrame`.
+
+The `TopInterpMethodContextFrame` field is an approximate hint that may point to a stale frame during dump or native debugging. The actual top frame must be resolved using the `Ip` and `NextPtr`/`ParentPtr` fields, replicating `InterpreterFrame::GetTopInterpMethodContextFrame()`:
+
+- If the hinted frame's `Ip` is non-null (active): seek upward via `NextPtr` while the next frame's `Ip` is also non-null.
+- If the hinted frame's `Ip` is null (inactive/reusable): seek downward via `ParentPtr` until finding a frame with non-null `Ip`.
+
+Only frames with non-null `Ip` (active frames) are yielded during the walk. Each node's `ParentPtr` points to its caller.
+
+For each active `InterpMethodContextFrame` in the chain, the stack walker yields a separate frame. The `MethodDesc` for each frame is resolved by following:
+`InterpMethodContextFrame.StartIp` -> `InterpByteCodeStart.Method` -> `InterpMethod.MethodDesc`
+
+```
+InterpreterFrame
+  └-> TopInterpMethodContextFrame (hint, may be stale)
+        └-> ResolveTop() -> InterpMethodContextFrame (method C, Ip != null)
+                              └-> ParentPtr -> InterpMethodContextFrame (method B, Ip != null)
+                                                 └-> ParentPtr -> InterpMethodContextFrame (method A, Ip != null)
+                                                                    └-> ParentPtr -> null
+```
+
+This produces three frames in order: C, B, A (innermost to outermost).
+
+When the stack walk starts with an explicit context in interpreted code (e.g., from a debugger breakpoint), the interpreted frames are already yielded from the initial context as frameless frames. When the walker subsequently encounters the corresponding `InterpreterFrame`, it skips expanding it to prevent the same frames from being walked twice.
 
 
 #### Simple Example
@@ -471,7 +505,64 @@ At each frame yielded by `Filter`, the walk determines whether to scan for GC re
 - **PrestubMethodFrame / CallCountingHelperFrame**: Use signature-based scanning.
 - Other frame types: No GC roots to report.
 
-See [GCRefMap Format and Resolution](#gcrefmap-format-and-resolution) for the GCRefMap scanning path details.
+See [GCRefMap Format and Resolution](#gcrefmap-format-and-resolution) for the GCRefMap scanning path and [Signature-Based Scanning](#signature-based-scanning) for the signature decoding path.
+
+### Signature-Based Scanning
+
+When a transition frame's calling convention is not described by a precomputed GCRefMap (`PrestubMethodFrame`, `CallCountingHelperFrame`, and the fallback path for `StubDispatchFrame`/`ExternalMethodFrame`), the GC reference walk classifies caller-stack arguments by decoding the callee's method signature. This corresponds to native `TransitionFrame::PromoteCallerStack` (`src/coreclr/vm/frames.cpp`).
+
+#### GcSignatureTypeProvider
+
+`GcSignatureTypeProvider` is an `IRuntimeSignatureTypeProvider<GcTypeKind, GcSignatureContext>` that classifies each parameter type into one of:
+
+```csharp
+internal enum GcTypeKind
+{
+    None,       // Non-GC primitive that fits in a single slot
+    Ref,        // Object reference (TYPE_GC_REF)
+    Interior,   // Managed pointer / byref (TYPE_GC_BYREF)
+    Other,      // Value type that may contain GC refs, or any type larger than a slot
+}
+```
+
+The provider is scoped to the method's containing module (captured at construction) so that `TypeDef` and `TypeRef` tokens can be resolved to a loaded `MethodTable` via the module's `TypeDefToMethodTable` / `TypeRefToMethodTable` lookup tables. The decoder's generic context is a `GcSignatureContext(TypeHandle classContext, MethodDescHandle methodContext)` carrying the method's class and method instantiations.
+
+The provider classifies primitives directly (`String`/`Object` -> `Ref`, `TypedReference` -> `Other`, others -> `None`). For `TypeDef`/`TypeRef` it resolves the loaded `TypeHandle` and classifies via `RuntimeTypeSystem.GetSignatureCorElementType`, treating enums (`IsEnum`) as their underlying primitive (`None`). When the type cannot be resolved (e.g., not yet loaded), classification falls back to the signature's `rawTypeKind` (`ValueType` -> `Other`, otherwise `Ref`). Arrays are `Ref`, byrefs are `Interior`, raw pointers are `None`. Generic parameters (`!T`, `!!T`) are resolved against the `GcSignatureContext` (via `GetInstantiation` / `GetGenericMethodInstantiation`) and classified by their actual instantiation -- matching native `SigTypeContext`-driven `PeekElemTypeNormalized` behavior. `ELEMENT_TYPE_INTERNAL` resolves the `TypeHandle` via `RuntimeTypeSystem.GetSignatureCorElementType` and maps the `CorElementType` to a `GcTypeKind`.
+
+#### PromoteCallerStack Algorithm
+
+1. Read the `MethodDesc` pointer from the `FramedMethodFrame` and obtain a `MethodDescHandle` from `RuntimeTypeSystem`.
+2. Resolve the method's `MetadataReader` via `Loader.GetModuleHandleFromModulePtr` and `EcmaMetadata.GetMetadata`. If metadata is unavailable, no caller-stack refs are reported (matches native fallback behavior).
+3. Obtain the method's signature blob, matching native `MethodDesc::GetSig`:
+   - If `RuntimeTypeSystem.IsStoredSigMethodDesc` is true (dynamic, EEImpl, and array method descs), pin the stored signature span and pass a `BlobReader` over it to `RuntimeSignatureDecoder.DecodeMethodSignature`.
+   - Otherwise, look up the signature via the metadata token (`mdMethodDef`), skipping methods with a nil token (`0x06000000`).
+4. Decode the signature with `RuntimeSignatureDecoder<GcTypeKind, GcSignatureContext>` and a `GcSignatureTypeProvider` constructed for the method's module. The `GcSignatureContext` passes the method's class and method instantiations so that `VAR`/`MVAR` placeholders resolve to their actual types. See [Signature contract](./Signature.md) for the decoder.
+5. Skip varargs methods (the caller-stack layout is not described by the callee signature alone).
+6. Compute the number of reserved register slots in the `TransitionBlock`:
+
+   | Reserved Slot | Condition |
+   |---|---|
+   | `this` pointer | `MethodSignature.Header.IsInstance` |
+   | Return buffer | Return type is `GcTypeKind.Other` |
+   | Generic instantiation arg | `RuntimeTypeSystem.RequiresInstArg(methodDesc)` |
+   | Async continuation | `RuntimeTypeSystem.IsAsyncMethod(methodDesc)` |
+   | ARM64 indirect-result register (`x8`) | Target architecture is ARM64 |
+
+7. If `IsInstance`, report the `this` slot at position `0` (or `1` on ARM64 to skip `x8`). The slot is reported as `GC_CALL_INTERIOR` for value-type `this`, otherwise as a normal reference.
+8. Walk `MethodSignature.ParameterTypes` starting at slot index = reserved slot count, advancing one slot per parameter:
+   - `GcTypeKind.Ref` -> report as a reference.
+   - `GcTypeKind.Interior` -> report with `GC_CALL_INTERIOR`.
+   - `GcTypeKind.Other` / `GcTypeKind.None` -> not reported (large value types are reported via the GCRefMap path when one is available; otherwise their interior refs are not visible to this scan).
+
+The slot address is computed using the same formula as the GCRefMap path:
+
+```csharp
+slotAddress = transitionBlockPtr + FirstGCRefMapSlot + (position * pointerSize);
+```
+
+#### Limitations vs. Native
+
+This signature-based scan has known gaps relative to native see [dotnet/runtime#127765](https://github.com/dotnet/runtime/issues/127765) for tracking.
 
 ### GCRefMap Format and Resolution
 

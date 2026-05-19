@@ -33,10 +33,9 @@ async function invokeWithErrorHandling(
     } catch (err) {
         const name = asset.name || asset.resolvedUrl || "unknown";
         const message = err instanceof Error ? err.message : String(err);
-        dotnetLogger.warn(
-            `Failed to invoke '${functionName}' on library initializer '${name}': ${message}`
-        );
-        exit(1, err);
-        throw err;
+        const wrappedError = new Error(`Failed to invoke '${functionName}' on library initializer '${name}': ${message}`, { cause: err });
+        dotnetLogger.warn(wrappedError.message);
+        exit(1, wrappedError);
+        throw wrappedError;
     }
 }

@@ -93,5 +93,6 @@ endif (CLR_CMAKE_TARGET_ARCH_I386 AND CLR_CMAKE_TARGET_UNIX)
 
 if (CLR_CMAKE_TARGET_ARCH_WASM)
   create_gcinfo_lib(TARGET gcinfo_unix_wasm OS browser ARCH wasm)
+  create_gcinfo_lib(TARGET gcinfo_universal_wasm OS universal ARCH wasm)
   install_clr(TARGETS gcinfo_unix_wasm DESTINATIONS sharedFramework COMPONENT runtime)
 endif (CLR_CMAKE_TARGET_ARCH_WASM)

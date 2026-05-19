@@ -35,6 +35,7 @@ public class MethodTableTests
         [
             (nameof(Constants.Globals.FreeObjectMethodTable), rtsBuilder.FreeObjectMethodTableGlobalAddress),
             (nameof(Constants.Globals.ContinuationMethodTable), rtsBuilder.ContinuationMethodTableGlobalAddress),
+            (nameof(Constants.Globals.ObjectMethodTable), rtsBuilder.ObjectMethodTableGlobalAddress),
             (nameof(Constants.Globals.MethodDescAlignment), rtsBuilder.MethodDescAlignment),
             (nameof(Constants.Globals.ArrayBaseSize), rtsBuilder.ArrayBaseSize),
         ];
@@ -76,6 +77,7 @@ public class MethodTableTests
         Contracts.TypeHandle handle = contract.GetTypeHandle(freeObjectMethodTableAddress);
         Assert.NotEqual(TargetPointer.Null, handle.Address);
         Assert.True(contract.IsFreeObjectMethodTable(handle));
+        Assert.False(contract.IsObject(handle));
     }
 
     [Theory]
@@ -91,6 +93,7 @@ public class MethodTableTests
         Contracts.TypeHandle systemObjectTypeHandle = contract.GetTypeHandle(systemObjectMethodTablePtr);
         Assert.Equal(systemObjectMethodTablePtr.Value, systemObjectTypeHandle.Address.Value);
         Assert.False(contract.IsFreeObjectMethodTable(systemObjectTypeHandle));
+        Assert.True(contract.IsObject(systemObjectTypeHandle));
     }
 
     [Theory]
@@ -508,6 +511,61 @@ public class MethodTableTests
         Contracts.TypeHandle continuationTypeHandle = contract.GetTypeHandle(continuationInstanceMethodTablePtr);
         Assert.Equal(continuationInstanceMethodTablePtr.Value, continuationTypeHandle.Address.Value);
         Assert.True(contract.IsContinuation(continuationTypeHandle));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void IsObjRef_ReturnsExpectedValues(MockTarget.Architecture arch)
+    {
+        TargetPointer objectTypePtr = default;
+        TargetPointer stringTypePtr = default;
+        TargetPointer szArrayTypePtr = default;
+        TargetPointer truePrimitiveTypePtr = default;
+
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            rtsBuilder =>
+            {
+                TargetTestHelpers helpers = rtsBuilder.Builder.TargetTestHelpers;
+                objectTypePtr = rtsBuilder.SystemObjectMethodTable.Address;
+
+                MockEEClass stringEEClass = rtsBuilder.AddEEClass("System.String");
+                MockMethodTable stringMethodTable = rtsBuilder.AddMethodTable("System.String");
+                stringMethodTable.MTFlags = (uint)MethodTableFlags_1.WFLAGS_HIGH.HasComponentSize | 2;
+                stringMethodTable.BaseSize = helpers.StringBaseSize;
+                stringMethodTable.ParentMethodTable = objectTypePtr;
+                stringTypePtr = stringMethodTable.Address;
+                stringEEClass.MethodTable = stringTypePtr;
+                stringMethodTable.EEClassOrCanonMT = stringEEClass.Address;
+
+                MockEEClass szArrayEEClass = rtsBuilder.AddEEClass("System.Int32[]");
+                MockMethodTable szArrayMethodTable = rtsBuilder.AddMethodTable("System.Int32[]");
+                szArrayMethodTable.MTFlags =
+                    (uint)MethodTableFlags_1.WFLAGS_HIGH.HasComponentSize
+                    | (uint)MethodTableFlags_1.WFLAGS_HIGH.Category_Array
+                    | (uint)MethodTableFlags_1.WFLAGS_HIGH.Category_IfArrayThenSzArray
+                    | 4;
+                szArrayMethodTable.BaseSize = helpers.ArrayBaseBaseSize;
+                szArrayMethodTable.ParentMethodTable = objectTypePtr;
+                szArrayTypePtr = szArrayMethodTable.Address;
+                szArrayEEClass.MethodTable = szArrayTypePtr;
+                szArrayMethodTable.EEClassOrCanonMT = szArrayEEClass.Address;
+
+                MockEEClass truePrimitiveEEClass = rtsBuilder.AddEEClass("System.IntPtr");
+                truePrimitiveEEClass.InternalCorElementType = (byte)CorElementType.I;
+                MockMethodTable truePrimitiveMethodTable = rtsBuilder.AddMethodTable("System.IntPtr");
+                truePrimitiveMethodTable.MTFlags = (uint)MethodTableFlags_1.WFLAGS_HIGH.Category_TruePrimitive;
+                truePrimitiveMethodTable.BaseSize = helpers.ObjectBaseSize;
+                truePrimitiveTypePtr = truePrimitiveMethodTable.Address;
+                truePrimitiveEEClass.MethodTable = truePrimitiveTypePtr;
+                truePrimitiveMethodTable.EEClassOrCanonMT = truePrimitiveEEClass.Address;
+            });
+
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+        Assert.True(contract.IsObjRef(contract.GetTypeHandle(objectTypePtr)));
+        Assert.True(contract.IsObjRef(contract.GetTypeHandle(stringTypePtr)));
+        Assert.True(contract.IsObjRef(contract.GetTypeHandle(szArrayTypePtr)));
+        Assert.False(contract.IsObjRef(contract.GetTypeHandle(truePrimitiveTypePtr)));
     }
 
     [Theory]
