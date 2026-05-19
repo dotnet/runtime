@@ -2,7 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text.Json.Nodes;
+using System.Text.Json.Schema;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading.Tasks;
 using Xunit;
@@ -1000,6 +1003,29 @@ namespace System.Text.Json.Serialization.Tests
 
             Assert.Equal(typeof(int), caseType);
             Assert.Equal(42, caseValue);
+        }
+
+        public enum Color { Red, Green, Blue }
+
+        public union NullableEnumUnion(Color?, string);
+
+        [Fact]
+        public void NullableEnumUnionCase_SchemaIncludesNullInTypeArray()
+        {
+            JsonTypeInfo<NullableEnumUnion> typeInfo = Serializer.GetTypeInfo<NullableEnumUnion>();
+            JsonNode schema = typeInfo.GetJsonSchemaAsNode();
+
+            JsonArray anyOf = Assert.IsType<JsonArray>(schema["anyOf"]);
+            Assert.Equal(2, anyOf.Count);
+
+            JsonNode? nullableEnumCase = anyOf.FirstOrDefault(node =>
+                node?["type"] is JsonArray types &&
+                types.Any(t => (string?)t == "integer"));
+            Assert.NotNull(nullableEnumCase);
+
+            JsonArray typeArray = Assert.IsType<JsonArray>(nullableEnumCase["type"]);
+            Assert.Contains("integer", typeArray.Select(node => (string?)node));
+            Assert.Contains("null", typeArray.Select(node => (string?)node));
         }
     }
 }

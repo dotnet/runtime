@@ -42,6 +42,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(UserDefinedJsonUnionOnPlainObject))]
         [JsonSerializable(typeof(UserDefinedUnionViaIUnion))]
         [JsonSerializable(typeof(UserDefinedValueTypeUnion))]
+        [JsonSerializable(typeof(NullableEnumUnion))]
         internal sealed partial class UnionTestsContext_Metadata : JsonSerializerContext
         {
         }
@@ -91,6 +92,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(UserDefinedJsonUnionOnPlainObject))]
         [JsonSerializable(typeof(UserDefinedUnionViaIUnion))]
         [JsonSerializable(typeof(UserDefinedValueTypeUnion))]
+        [JsonSerializable(typeof(NullableEnumUnion))]
         internal sealed partial class UnionTestsContext_Default : JsonSerializerContext
         {
         }

@@ -1337,6 +1337,15 @@ namespace System.Text.Json.SourceGeneration
                     return JsonValueType.Array;
                 }
 
+                // Dictionaries serialize as JSON objects. Check before the IEnumerable<T> branch
+                // because Dictionary<TKey,TValue> implements IEnumerable<KeyValuePair<TKey,TValue>>.
+                if (type.GetCompatibleGenericBaseType(_knownSymbols.IDictionaryOfTKeyTValueType) is not null ||
+                    type.GetCompatibleGenericBaseType(_knownSymbols.IReadonlyDictionaryOfTKeyTValueType) is not null ||
+                    _knownSymbols.IDictionaryType.IsAssignableFrom(type))
+                {
+                    return JsonValueType.Object;
+                }
+
                 // Arrays and IEnumerable<T>-implementing types serialize as JSON arrays.
                 if (type is IArrayTypeSymbol ||
                     type.AllInterfaces.Any(i =>

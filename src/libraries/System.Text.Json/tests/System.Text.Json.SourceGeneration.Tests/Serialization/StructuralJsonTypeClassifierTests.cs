@@ -15,6 +15,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
 
         [JsonSourceGenerationOptions(GenerationMode = JsonSourceGenerationMode.Metadata)]
+        [JsonSerializable(typeof(ArrayOrDictionaryUnion))]
         [JsonSerializable(typeof(Batch<StatusReading>))]
         [JsonSerializable(typeof(Batch<TemperatureReading>))]
         [JsonSerializable(typeof(BatchUnion))]
@@ -56,6 +57,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
         }
 
+        [JsonSerializable(typeof(ArrayOrDictionaryUnion))]
         [JsonSerializable(typeof(Batch<StatusReading>))]
         [JsonSerializable(typeof(Batch<TemperatureReading>))]
         [JsonSerializable(typeof(BatchUnion))]

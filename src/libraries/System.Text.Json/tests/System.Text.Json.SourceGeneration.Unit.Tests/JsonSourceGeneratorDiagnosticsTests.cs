@@ -735,6 +735,35 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
+        public void UnionWithListAndDictionaryCases_CompilesWithoutWarning()
+        {
+            string source = """
+                using System.Collections.Generic;
+                using System.Runtime.CompilerServices;
+                using System.Text.Json.Serialization;
+
+                namespace TestApp
+                {
+                    [JsonSerializable(typeof(ListOrDictionaryUnion))]
+                    internal partial class MyContext : JsonSerializerContext { }
+
+                    [Union]
+                    public readonly struct ListOrDictionaryUnion : IUnion
+                    {
+                        public ListOrDictionaryUnion(List<int> value) { Value = value; }
+                        public ListOrDictionaryUnion(Dictionary<string, int> value) { Value = value; }
+                        public object? Value { get; }
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Assert.DoesNotContain(result.Diagnostics, diagnostic => diagnostic.Id == "SYSLIB1227");
+        }
+
+        [Fact]
         public void UnionWithAmbiguousCaseTypesAndAttributeClassifier_CompilesWithoutWarning()
         {
             string source = """

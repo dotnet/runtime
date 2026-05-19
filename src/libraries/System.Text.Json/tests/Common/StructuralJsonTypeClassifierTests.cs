@@ -99,6 +99,18 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public async Task StructuralClassifier_DistinguishesArrayFromDictionary()
+        {
+            ArrayOrDictionaryUnion? array = await Serializer.DeserializeWrapper<ArrayOrDictionaryUnion>("[1,2,3]", s_options);
+            Assert.NotNull(array);
+            Assert.Equal([1, 2, 3], Assert.IsType<List<int>>(GetUnionValue(array)));
+
+            ArrayOrDictionaryUnion? dictionary = await Serializer.DeserializeWrapper<ArrayOrDictionaryUnion>("""{"one":1,"two":2}""", s_options);
+            Assert.NotNull(dictionary);
+            Assert.Equal(2, Assert.IsType<Dictionary<string, int>>(GetUnionValue(dictionary))["two"]);
+        }
+
+        [Fact]
         public async Task StructuralClassifier_PrefersObjectShapeOverDictionaryWhenPropertiesMatch()
         {
             ObjectOrDictionaryUnion? result = await Serializer.DeserializeWrapper<ObjectOrDictionaryUnion>("""{"X":1,"Y":2}""", s_options);
@@ -781,6 +793,9 @@ namespace System.Text.Json.Serialization.Tests
 
         [JsonUnion(TypeClassifier = typeof(StructuralJsonTypeClassifierFactory))]
         public union DictionaryUnion(Dictionary<string, int>, Dictionary<string, string>);
+
+        [JsonUnion(TypeClassifier = typeof(StructuralJsonTypeClassifierFactory))]
+        public union ArrayOrDictionaryUnion(List<int>, Dictionary<string, int>);
 
         [JsonUnion(TypeClassifier = typeof(StructuralJsonTypeClassifierFactory))]
         public union BatchUnion(Batch<TemperatureReading>, Batch<StatusReading>);

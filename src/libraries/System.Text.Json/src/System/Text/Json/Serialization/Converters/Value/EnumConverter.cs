@@ -517,6 +517,8 @@ namespace System.Text.Json.Serialization.Converters
             bool allowsString = (converterOptions & EnumConverterOptions.AllowStrings) != 0;
             bool allowsNumber = (converterOptions & EnumConverterOptions.AllowNumbers) != 0;
 
+            Debug.Assert(allowsString || allowsNumber, "EnumConverter must allow strings, numbers, or both.");
+
             return (allowsString, allowsNumber) switch
             {
                 (true, true) => JsonValueType.String | JsonValueType.Number,
