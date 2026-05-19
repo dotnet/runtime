@@ -970,13 +970,17 @@ private:
 
             CORINFO_METHOD_HANDLE  methodHnd              = inlineInfo->guardedMethodHandle;
             CORINFO_CONTEXT_HANDLE contextForTokenLookups = inlineInfo->exactContextHandle;
-            const bool             hasInstParam           = inlineInfo->methInfo.args.hasTypeArg();
-            if (hasInstParam)
+            const bool             hasMethodContext =
+                ((size_t)contextForTokenLookups & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD;
+            if (inlineInfo->methInfo.args.hasTypeArg() && hasMethodContext)
             {
                 assert(call->gtArgs.FindWellKnownArg(WellKnownArg::InstParam) == nullptr);
 
+                CORINFO_METHOD_HANDLE exactMethodHandle =
+                    (CORINFO_METHOD_HANDLE)((size_t)contextForTokenLookups & ~CORINFO_CONTEXTFLAGS_MASK);
+
                 GenTree* instParamNode = compiler->getLookupTree(&inlineInfo->guardedMethodInstParamLookup,
-                                                                 GTF_ICON_METHOD_HDL, contextForTokenLookups);
+                                                                 GTF_ICON_METHOD_HDL, exactMethodHandle);
 
                 call->gtArgs.InsertInstParam(compiler, instParamNode);
             }
