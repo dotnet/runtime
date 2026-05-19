@@ -8788,42 +8788,40 @@ GenTree* Compiler::fgOptimizeRelationalComparison(GenTreeOp* cmp)
 {
     assert(cmp->OperIsCmpCompare());
 
-    if (cmp->OperIs(GT_EQ, GT_NE))
+    // TODO-CQ: Should be called for all comparisons
+    if (cmp->OperIs(GT_LT, GT_LE, GT_GE, GT_GT) &&
+        (cmp->gtGetOp1()->OperIs(GT_CAST) || cmp->gtGetOp2()->OperIs(GT_CAST)))
     {
-        if (cmp->gtGetOp2()->IsIntegralConst())
+        cmp = fgOptimizeRelationalComparisonWithCasts(cmp)->AsOp();
+    }
+
+    if (cmp->gtGetOp2()->IsIntegralConst())
+    {
+        if (cmp->OperIs(GT_LT, GT_LE, GT_GE, GT_GT))
+        {
+            cmp = fgOptimizeRelationalComparisonWithConst(cmp)->AsOp();
+        }
+        else if (cmp->OperIs(GT_EQ, GT_NE))
         {
             cmp = fgOptimizeEqualityComparisonWithConst(cmp)->AsOp();
         }
     }
-    else
+
+    if (opts.OptimizationEnabled() && fgGlobalMorph && cmp->OperIs(GT_LT, GT_LE, GT_GE, GT_GT))
     {
-        if (cmp->gtGetOp1()->OperIs(GT_CAST) || cmp->gtGetOp2()->OperIs(GT_CAST))
+        // Normalize unsigned comparisons to signed if both operands a known to be never negative.
+        if (cmp->IsUnsigned() && varTypeIsIntegral(cmp->gtGetOp1()) && cmp->gtGetOp1()->IsNeverNegative(this) &&
+            cmp->gtGetOp2()->IsNeverNegative(this))
         {
-            // TODO-CQ: Should be called for all comparisons
-            cmp = fgOptimizeRelationalComparisonWithCasts(cmp)->AsOp();
+            cmp->ClearUnsigned();
         }
 
-        if (cmp->gtGetOp2()->IsIntegralConst())
+        if (cmp->gtGetOp1()->IsIntegralConst() || cmp->gtGetOp2()->IsIntegralConst())
         {
-            cmp = fgOptimizeRelationalComparisonWithConst(cmp)->AsOp();
-        }
-
-        if (opts.OptimizationEnabled() && fgGlobalMorph)
-        {
-            // Normalize unsigned comparisons to signed if both operands a known to be never negative.
-            if (cmp->IsUnsigned() && varTypeIsIntegral(cmp->gtGetOp1()) && cmp->gtGetOp1()->IsNeverNegative(this) &&
-                cmp->gtGetOp2()->IsNeverNegative(this))
+            GenTree* optTree = fgOptimizeRelationalComparisonWithFullRangeConst(cmp);
+            if (optTree->OperIs(GT_CNS_INT))
             {
-                cmp->ClearUnsigned();
-            }
-
-            if (cmp->gtGetOp1()->IsIntegralConst() || cmp->gtGetOp2()->IsIntegralConst())
-            {
-                GenTree* optTree = fgOptimizeRelationalComparisonWithFullRangeConst(cmp);
-                if (optTree->OperIs(GT_CNS_INT))
-                {
-                    return optTree;
-                }
+                return optTree;
             }
         }
     }
@@ -10954,9 +10952,6 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithCasts(GenTreeOp* cmp)
 
     GenTree* op1 = cmp->gtGetOp1();
     GenTree* op2 = cmp->gtGetOp2();
-
-    // Caller is expected to call this function only if we have at least one CAST node
-    assert(op1->OperIs(GT_CAST) || op2->OperIs(GT_CAST));
 
     if (!op1->TypeIs(TYP_LONG))
     {
