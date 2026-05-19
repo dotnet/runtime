@@ -315,17 +315,6 @@ Shims the SSL_set_bio method.
 PALEXPORT void CryptoNative_SslSetBio(SSL* ssl, BIO* rbio, BIO* wbio);
 
 /*
-Shims the SSL_do_handshake method.
-
-Returns:
-1 if the handshake was successful;
-0 if the handshake was not successful but was shut down controlled
-and by the specifications of the TLS/SSL protocol;
-<0 if the handshake was not successful because of a fatal error.
-*/
-PALEXPORT int32_t CryptoNative_SslDoHandshake(SSL* ssl, int32_t* error);
-
-/*
 Performs SSL_do_handshake with the input/output BIO windows set up
 and torn down in a single P/Invoke. The input BIO window points at inputPtr
 (ciphertext from peer, may be NULL/0). The output BIO window receives outgoing

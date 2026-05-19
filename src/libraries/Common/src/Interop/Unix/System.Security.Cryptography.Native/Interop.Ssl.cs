@@ -117,9 +117,6 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetBio")]
         internal static partial void SslSetBio(SafeSslHandle ssl, SafeBioHandle rbio, SafeBioHandle wbio);
 
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslDoHandshake", SetLastError = true)]
-        internal static partial int SslDoHandshake(SafeSslHandle ssl, out SslErrorCode error);
-
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslHandshake", SetLastError = true)]
         internal static unsafe partial int SslHandshake(
             SafeSslHandle ssl,
