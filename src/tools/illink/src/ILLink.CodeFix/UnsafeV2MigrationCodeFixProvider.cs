@@ -39,11 +39,12 @@ namespace ILLink.CodeFix
     ///              could break a base call that needs that context).
     ///            * Otherwise, removes the modifier when the signature carries no pointer
     ///              / function-pointer types, and wraps the body in a single
-    ///              'unsafe { ... }' block prefixed with a SAFETY-TODO comment, unless the
-    ///              body is empty, the member has no body, it already contains an
-    ///              'unsafe' block, the body contains conditional-compilation directives
-    ///              (multi-TFM 'dotnet format' merge-conflict hazard — see BlockNeedsWrap
-    ///              comment in the analyzer), or it's a trivial field-forwarding accessor.
+    ///              'unsafe { ... }' block whose first inner line is a SAFETY-TODO
+    ///              comment, unless the body is empty, the member has no body, it already
+    ///              contains an 'unsafe' block, the body contains conditional-compilation
+    ///              directives (multi-TFM 'dotnet format' merge-conflict hazard — see
+    ///              BlockNeedsWrap comment in the analyzer), or it's a trivial
+    ///              field-forwarding accessor.
     /// Known limitations (best-effort migration, developer to fix fallout):
     ///   * Members that lacked an explicit 'unsafe' modifier but relied on a containing
     ///     type's 'unsafe' modifier (implicit unsafe context) are not wrapped automatically.
@@ -322,30 +323,36 @@ namespace ILLink.CodeFix
         }
 
         // Rebuilds a block body so its statements live inside a single inner `unsafe { }`
-        // statement, prefixed with the SAFETY-TODO comment.
+        // statement, with the SAFETY-TODO comment placed inside the block on its own line
+        // above the original body's first statement.
         private static BlockSyntax ReplaceWithUnsafeBlock(BlockSyntax body)
         {
             // Strip the original leading whitespace from each statement so the formatter
             // re-indents them inside the new 'unsafe { }' block. We deliberately keep any
             // leading comments / directives the original statements had.
             var statements = body.Statements.Select(StripLeadingWhitespace).ToArray();
+            if (statements.Length > 0)
+                statements[0] = PrefixWithSafetyTodo(statements[0]);
             var inner = SyntaxFactory.Block(statements);
-            var unsafeStmt = SyntaxFactory.UnsafeStatement(inner)
-                .WithLeadingTrivia(BuildSafetyTodoLeadingTrivia());
-            return SyntaxFactory.Block(unsafeStmt)
+            return SyntaxFactory.Block(SyntaxFactory.UnsafeStatement(inner))
                 .WithLeadingTrivia(body.GetLeadingTrivia())
                 .WithTrailingTrivia(body.GetTrailingTrivia())
                 .WithAdditionalAnnotations(Formatter.Annotation);
         }
 
-        // Builds a fresh `unsafe { statement }` with the SAFETY-TODO comment as leading trivia.
+        // Builds a fresh `unsafe { statement }` with the SAFETY-TODO comment placed inside
+        // the block on its own line above `statement`.
         private static UnsafeStatementSyntax BuildUnsafeStatement(StatementSyntax statement)
         {
-            var inner = SyntaxFactory.Block(StripLeadingWhitespace(statement));
+            var inner = SyntaxFactory.Block(PrefixWithSafetyTodo(StripLeadingWhitespace(statement)));
             return SyntaxFactory.UnsafeStatement(inner)
-                .WithLeadingTrivia(BuildSafetyTodoLeadingTrivia())
                 .WithAdditionalAnnotations(Formatter.Annotation);
         }
+
+        // Returns `statement` with the SAFETY-TODO comment prepended to its leading trivia,
+        // so the comment sits on its own line directly above the statement.
+        private static StatementSyntax PrefixWithSafetyTodo(StatementSyntax statement) =>
+            statement.WithLeadingTrivia(BuildSafetyTodoLeadingTrivia().AddRange(statement.GetLeadingTrivia()));
 
         // Removes leading indentation whitespace from a statement (preserving comments,
         // directives, and end-of-line trivia so blank lines / pragmas survive the wrap).
@@ -364,8 +371,9 @@ namespace ILLink.CodeFix
                 : statement.WithLeadingTrivia(stripped);
         }
 
-        // Builds the leading trivia placed before each emitted `unsafe { ... }` block:
-        // the SAFETY-TODO single-line comment followed by an elastic newline.
+        // Builds the leading trivia placed before the first statement inside each emitted
+        // `unsafe { ... }` block: the SAFETY-TODO single-line comment followed by an
+        // elastic newline so the formatter puts the comment on its own indented line.
         private static SyntaxTriviaList BuildSafetyTodoLeadingTrivia() =>
             SyntaxFactory.TriviaList(
                 SyntaxFactory.Comment(SafetyTodoComment),

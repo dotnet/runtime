@@ -242,9 +242,9 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeV2MigrationAnalyzer} = tr
                 {
                     public void M()
                     {
-                        // SAFETY-TODO: Audit this unsafe usage
                         unsafe
                         {
+                            // SAFETY-TODO: Audit this unsafe usage
                             System.Console.WriteLine();
                         }
                     }
@@ -270,9 +270,9 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeV2MigrationAnalyzer} = tr
                 {
                     public unsafe int M(int* p)
                     {
-                        // SAFETY-TODO: Audit this unsafe usage
                         unsafe
                         {
+                            // SAFETY-TODO: Audit this unsafe usage
                             return *p;
                         }
                     }
@@ -295,9 +295,9 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeV2MigrationAnalyzer} = tr
                 {
                     public int M()
                     {
-                        // SAFETY-TODO: Audit this unsafe usage
                         unsafe
                         {
+                            // SAFETY-TODO: Audit this unsafe usage
                             return 42;
                         }
                     }
@@ -375,9 +375,9 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeV2MigrationAnalyzer} = tr
                 {
                     public IEnumerable<int> M()
                     {
-                        // SAFETY-TODO: Audit this unsafe usage
                         unsafe
                         {
+                            // SAFETY-TODO: Audit this unsafe usage
                             yield return 1;
                             yield return 2;
                         }
@@ -406,9 +406,9 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeV2MigrationAnalyzer} = tr
                 {
                     public C()
                     {
-                        // SAFETY-TODO: Audit this unsafe usage
                         unsafe
                         {
+                            // SAFETY-TODO: Audit this unsafe usage
                             System.Console.WriteLine();
                         }
                     }
@@ -473,9 +473,9 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeV2MigrationAnalyzer} = tr
                     {
                         get
                         {
-                            // SAFETY-TODO: Audit this unsafe usage
                             unsafe
                             {
+                                // SAFETY-TODO: Audit this unsafe usage
                                 return 1 + 2;
                             }
                         }
@@ -535,17 +535,17 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeV2MigrationAnalyzer} = tr
                     {
                         get
                         {
-                            // SAFETY-TODO: Audit this unsafe usage
                             unsafe
                             {
+                                // SAFETY-TODO: Audit this unsafe usage
                                 return &_x;
                             }
                         }
                         set
                         {
-                            // SAFETY-TODO: Audit this unsafe usage
                             unsafe
                             {
+                                // SAFETY-TODO: Audit this unsafe usage
                                 _x = *value;
                             }
                         }
@@ -576,9 +576,9 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeV2MigrationAnalyzer} = tr
                     {
                         get
                         {
-                            // SAFETY-TODO: Audit this unsafe usage
                             unsafe
                             {
+                                // SAFETY-TODO: Audit this unsafe usage
                                 return i + 1;
                             }
                         }
@@ -607,9 +607,9 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeV2MigrationAnalyzer} = tr
                 {
                     public static C operator +(C a, C b)
                     {
-                        // SAFETY-TODO: Audit this unsafe usage
                         unsafe
                         {
+                            // SAFETY-TODO: Audit this unsafe usage
                             return a;
                         }
                     }
@@ -634,9 +634,9 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeV2MigrationAnalyzer} = tr
                 {
                     public static unsafe explicit operator C(int* p)
                     {
-                        // SAFETY-TODO: Audit this unsafe usage
                         unsafe
                         {
+                            // SAFETY-TODO: Audit this unsafe usage
                             return new C();
                         }
                     }
@@ -670,9 +670,9 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeV2MigrationAnalyzer} = tr
                     {
                         void Inner()
                         {
-                            // SAFETY-TODO: Audit this unsafe usage
                             unsafe
                             {
+                                // SAFETY-TODO: Audit this unsafe usage
                                 System.Console.WriteLine();
                             }
                         }
@@ -707,17 +707,17 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeV2MigrationAnalyzer} = tr
                     {
                         add
                         {
-                            // SAFETY-TODO: Audit this unsafe usage
                             unsafe
                             {
+                                // SAFETY-TODO: Audit this unsafe usage
                                 System.Console.WriteLine();
                             }
                         }
                         remove
                         {
-                            // SAFETY-TODO: Audit this unsafe usage
                             unsafe
                             {
+                                // SAFETY-TODO: Audit this unsafe usage
                                 System.Console.WriteLine();
                             }
                         }
@@ -746,9 +746,9 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeV2MigrationAnalyzer} = tr
                 {
                     public void M()
                     {
-                        // SAFETY-TODO: Audit this unsafe usage
                         unsafe
                         {
+                            // SAFETY-TODO: Audit this unsafe usage
                             System.Console.WriteLine();
                         }
                     }
@@ -776,9 +776,9 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeV2MigrationAnalyzer} = tr
                 {
                     public unsafe int*[] M()
                     {
-                        // SAFETY-TODO: Audit this unsafe usage
                         unsafe
                         {
+                            // SAFETY-TODO: Audit this unsafe usage
                             return null;
                         }
                     }
@@ -814,9 +814,9 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeV2MigrationAnalyzer} = tr
                 {
                     public void M()
                     {
-                        // SAFETY-TODO: Audit this unsafe usage
                         unsafe
                         {
+                            // SAFETY-TODO: Audit this unsafe usage
                             Console.WriteLine("a");
                             Console.WriteLine("b");
                             if (true)
@@ -855,9 +855,9 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeV2MigrationAnalyzer} = tr
                 {
                     public void M()
                     {
-                        // SAFETY-TODO: Audit this unsafe usage
                         unsafe
                         {
+                            // SAFETY-TODO: Audit this unsafe usage
                             Console.WriteLine("a");
 
                             Console.WriteLine("b");
@@ -892,9 +892,9 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeV2MigrationAnalyzer} = tr
                 {
                     public void M()
                     {
-                        // SAFETY-TODO: Audit this unsafe usage
                         unsafe
                         {
+                            // SAFETY-TODO: Audit this unsafe usage
                             // leading comment
                             Console.WriteLine("a");
                             // between
@@ -964,9 +964,9 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeV2MigrationAnalyzer} = tr
                 {
                     static C()
                     {
-                        // SAFETY-TODO: Audit this unsafe usage
                         unsafe
                         {
+                            // SAFETY-TODO: Audit this unsafe usage
                             System.Console.WriteLine();
                         }
                     }
@@ -1022,9 +1022,9 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeV2MigrationAnalyzer} = tr
                 {
                     ~C()
                     {
-                        // SAFETY-TODO: Audit this unsafe usage
                         unsafe
                         {
+                            // SAFETY-TODO: Audit this unsafe usage
                             System.Console.WriteLine();
                         }
                     }
@@ -1064,9 +1064,9 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeV2MigrationAnalyzer} = tr
                 {
                     public unsafe C() : base(0)
                     {
-                        // SAFETY-TODO: Audit this unsafe usage
                         unsafe
                         {
+                            // SAFETY-TODO: Audit this unsafe usage
                             System.Console.WriteLine();
                         }
                     }
@@ -1110,9 +1110,9 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeV2MigrationAnalyzer} = tr
                 {
                     public void M(int n)
                     {
-                        // SAFETY-TODO: Audit this unsafe usage
                         unsafe
                         {
+                            // SAFETY-TODO: Audit this unsafe usage
                             // Initial check.
                             if (n < 0)
                             {
@@ -1187,9 +1187,9 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeV2MigrationAnalyzer} = tr
                 {
                     public void M()
                     {
-                        // SAFETY-TODO: Audit this unsafe usage
                         unsafe
                         {
+                            // SAFETY-TODO: Audit this unsafe usage
                 #pragma warning disable CS0168
                             int unused;
                 #pragma warning restore CS0168
