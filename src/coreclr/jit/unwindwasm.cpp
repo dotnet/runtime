@@ -60,7 +60,8 @@ void Compiler::unwindReserveFunc(FuncInfoDsc* func)
 {
     bool  isFunclet   = func->IsFunclet();
     bool  isColdCode  = false;
-    ULONG encodedSize = emitter::SizeOfULEB128(func->funWasmFrameSize);
+    ULONG encodedSize = emitter::SizeOfULEB128(func->funWasmFrameSize) + emitter::SizeOfULEB128(func->startVirtualIP) +
+                        emitter::SizeOfULEB128(func->endVirtualIP - func->startVirtualIP);
 
     eeReserveUnwindInfo(isFunclet, isColdCode, encodedSize);
 }
