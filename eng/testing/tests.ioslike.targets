@@ -21,9 +21,6 @@
 
     <!-- DirectPInvoke for __Internal so ILC emits static references to symbols in the AppleAppBuilder-generated objc main. -->
     <DirectPInvoke Include="__Internal" />
-    <TrimmerRootAssembly Include="Microsoft.DotNet.XUnitExtensions" />
-    <TrimmerRootAssembly Include="xunit.core" />
-    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.xunit.xml" />
   </ItemGroup>
 
   <PropertyGroup>

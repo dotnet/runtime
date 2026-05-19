@@ -51,6 +51,9 @@
   <ItemGroup Condition="'$(TestNativeAot)' == 'true'">
     <RdXmlFile Include="$(MSBuildThisFileDirectory)default.rd.xml" />
     <TrimmerRootAssembly Include="TestUtilities" Condition="'$(SkipTestUtilitiesReference)' != 'true'" />
+    <TrimmerRootAssembly Include="Microsoft.DotNet.XUnitExtensions" />
+    <TrimmerRootAssembly Include="xunit.core" />
+    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.xunit.xml" />
   </ItemGroup>
 
   <ItemGroup>

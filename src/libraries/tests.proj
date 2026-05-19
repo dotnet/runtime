@@ -336,14 +336,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Hashing\tests\System.IO.Hashing.Tests.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true' and '$(UseNativeAOTRuntime)' == 'true'">
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests\System\Reflection\InvokeEmit\System.Runtime.ReflectionInvokeEmit.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests\System\Reflection\InvokeInterpreted\System.Runtime.ReflectionInvokeInterpreted.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Reflection.Tests\InvokeEmit\System.Reflection.InvokeEmit.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Reflection.Tests\InvokeInterpreted\System.Reflection.InvokeInterpreted.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Formats.Cbor\tests\System.Formats.Cbor.Tests.csproj" />
-  </ItemGroup>
-
   <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(RunDisabledWasmTests)' != 'true' and '$(RunAOTCompilation)' != 'true'">
   </ItemGroup>
 
@@ -738,17 +730,6 @@
                                     (('$(ContinuousIntegrationBuild)' == 'true' and '$(TestWasmBuildTests)' == 'true') or
                                      ('$(ContinuousIntegrationBuild)' != 'true' and '$(TestAssemblies)' == 'true'))"
                       BuildInParallel="false" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(RunSmokeTestsOnly)' != 'true' and '$(TestAssemblies)' == 'true' and '$(TargetsAppleMobile)' == 'true' and '$(UseNativeAOTRuntime)' == 'true'">
-    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests\System.Runtime.Tests.csproj" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Collections\tests\System.Collections.Tests.csproj" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Linq\tests\System.Linq.Tests.csproj" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Threading\tests\System.Threading.Tests.csproj" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Threading.Tasks.Tests\System.Threading.Tasks.Tests.csproj" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.IO.FileSystem.Tests\System.IO.FileSystem.Tests.csproj" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Memory\tests\System.Memory.Tests.csproj" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Net.Http\tests\FunctionalTests\System.Net.Http.Functional.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'ios' and '$(RunAOTCompilation)' == 'true'">
