@@ -574,6 +574,13 @@ int32_t AndroidCryptoNative_SSLStreamInitialize(
     int32_t ret = FAIL;
     JNIEnv* env = GetJNIEnv();
 
+    // Store the managed cleanup callback before any JNI calls that can fail,
+    // so FreeSSLStream can release it on partial initialization.
+    sslStream->managedContextHandle = managedContextHandle;
+    sslStream->streamReader = streamReader;
+    sslStream->streamWriter = streamWriter;
+    sslStream->managedContextCleanup = managedContextCleanup;
+
     jobject sslEngine = NULL;
     if (peerHost)
     {
@@ -616,11 +623,6 @@ int32_t AndroidCryptoNative_SSLStreamInitialize(
         ToGRef(env, (*env)->CallStaticObjectMethod(env, g_ByteBuffer, g_ByteBufferAllocate, packetBufferSize));
     sslStream->netInBuffer =
         ToGRef(env, (*env)->CallStaticObjectMethod(env, g_ByteBuffer, g_ByteBufferAllocate, packetBufferSize));
-
-    sslStream->managedContextHandle = managedContextHandle;
-    sslStream->streamReader = streamReader;
-    sslStream->streamWriter = streamWriter;
-    sslStream->managedContextCleanup = managedContextCleanup;
 
     ret = SUCCESS;
 
