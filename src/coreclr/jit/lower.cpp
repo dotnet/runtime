@@ -12720,6 +12720,11 @@ bool Lowering::TryMatchOrToBfiPattern(GenTreeOp* tree, BfiPattern* result)
     GenTreeCast* cast   = bfizOp1->AsCast();
     GenTree*     castOp = cast->CastOp();
 
+    if (!cast->IsUnsigned() && !varTypeIsUnsigned(cast->CastToType()))
+    {
+        return false;
+    }
+
     uint64_t width = (uint64_t)varTypeIsSmall(cast->CastToType()) ? genTypeSize(cast->CastToType()) * BITS_PER_BYTE
                                                                   : genTypeSize(castOp) * BITS_PER_BYTE;
     if ((width == 0) || (width > regBits))

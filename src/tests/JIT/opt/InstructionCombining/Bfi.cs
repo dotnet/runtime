@@ -121,6 +121,11 @@ namespace TestBfi
                 fail = true;
             }
 
+            if (ComposeBits_BaseBfi_SignedBfiz_Int(0xB, 0x2, -1) != -21)
+            {
+                fail = true;
+            }
+
             if (ComposeBits_Pack32Values_Int(1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1,
                                          1, 0, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1) != -0x543210ff)
             {
@@ -354,6 +359,11 @@ namespace TestBfi
             }
 
             if (ComposeBits_BaseBfi_BfiOverlapBfi_Long(0xBL, 0x2L, 0x4CL, 0x5L) != 0x59ABL)
+            {
+                fail = true;
+            }
+
+            if (ComposeBits_BaseBfi_SignedBfiz_Long(0xBL, 0x2L, -1) != -21L)
             {
                 fail = true;
             }
@@ -677,6 +687,16 @@ namespace TestBfi
             //ARM64-FULL-LINE: orr {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, LSL #5
             //ARM64-FULL-LINE: bfi {{w[0-9]+}}, {{w[0-9]+}}, #12, #3
             return (a & 0xf) | ((b & 0x3) << 4) | ((c & 0x7F) << 5) | ((d & 0x7) << 12);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int ComposeBits_BaseBfi_SignedBfiz_Int(int a, int b, short c)
+        {
+            //ARM64-FULL-LINE: and {{w[0-9]+}}, {{w[0-9]+}}, #15
+            //ARM64-FULL-LINE: bfi {{w[0-9]+}}, {{w[0-9]+}}, #4, #2
+            //ARM64-FULL-LINE: sbfiz {{w[0-9]+}}, {{w[0-9]+}}, #6, #16
+            //ARM64-FULL-LINE: orr {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
+            return (a & 0xf) | ((b & 0x3) << 4) | (c << 6);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -1207,6 +1227,16 @@ namespace TestBfi
             //ARM64-FULL-LINE: orr {{x[0-9]+}}, {{x[0-9]+}}, {{x[0-9]+}}, LSL #5
             //ARM64-FULL-LINE: bfi {{x[0-9]+}}, {{x[0-9]+}}, #12, #3
             return (a & 0xfL) | ((b & 0x3L) << 4) | ((c & 0x7FL) << 5) | ((d & 0x7L) << 12);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static long ComposeBits_BaseBfi_SignedBfiz_Long(long a, long b, int c)
+        {
+            //ARM64-FULL-LINE: and {{x[0-9]+}}, {{x[0-9]+}}, #15
+            //ARM64-FULL-LINE: bfi {{x[0-9]+}}, {{x[0-9]+}}, #4, #2
+            //ARM64-FULL-LINE: sbfiz {{x[0-9]+}}, {{x[0-9]+}}, #6, #32
+            //ARM64-FULL-LINE: orr {{x[0-9]+}}, {{x[0-9]+}}, {{x[0-9]+}}
+            return (a & 0xfL) | ((b & 0x3L) << 4) | ((long)c << 6);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
