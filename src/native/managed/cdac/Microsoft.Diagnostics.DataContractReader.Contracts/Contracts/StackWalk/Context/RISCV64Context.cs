@@ -58,6 +58,8 @@ internal struct RISCV64Context : IPlatformContext
         set => Fp = value.Value;
     }
 
+    public uint RawContextFlags { readonly get => ContextFlags; set => ContextFlags = value; }
+
     public void Unwind(Target target)
     {
         RISCV64Unwinder unwinder = new(target);

@@ -1,8 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
+using CorElementType = Microsoft.Diagnostics.DataContractReader.Contracts.CorElementType;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
@@ -128,6 +130,19 @@ public struct COR_TYPE_LAYOUT
 }
 
 [StructLayout(LayoutKind.Sequential)]
+public struct COR_ARRAY_LAYOUT
+{
+    public COR_TYPEID componentID;
+    public CorElementType componentType;
+    public uint firstElementOffset;
+    public uint elementSize;
+    public uint countOffset;
+    public uint rankSize;
+    public uint numRanks;
+    public uint rankOffset;
+}
+
+[StructLayout(LayoutKind.Sequential)]
 public struct COR_FIELD
 {
     public uint token;
@@ -138,11 +153,89 @@ public struct COR_FIELD
 
 #pragma warning restore CS0649
 
+public enum AreValueTypesBoxed : int
+{
+    NoValueTypeBoxing = 0,
+    OnlyPrimitivesUnboxed = 1,
+    AllBoxed = 2
+}
+// Matches native DebuggerIPCE_BasicTypeData layout (24 bytes).
+// All fields are stored in little-endian format (Portable<T> in native).
+[StructLayout(LayoutKind.Explicit, Size = 24)]
+public struct DebuggerIPCE_BasicTypeData
+{
+    [FieldOffset(0)] public int elementType;       // Portable<CorElementType>
+    [FieldOffset(4)] public uint metadataToken;    // Portable<mdTypeDef>
+    [FieldOffset(8)] public ulong vmAssembly;      // VMPTR_Assembly (Portable<CORDB_ADDRESS>)
+    [FieldOffset(16)] public ulong vmTypeHandle;   // VMPTR_TypeHandle (Portable<CORDB_ADDRESS>)
+}
+
+// Matches native DebuggerIPCE_ExpandedTypeData layout (40 bytes).
+// Contains a union at offset 8 (4 bytes of padding after elementType to align the
+// 8-byte VMPTR fields inside the union). All fields are stored in little-endian format.
+[StructLayout(LayoutKind.Explicit, Size = 40)]
+public struct DebuggerIPCE_ExpandedTypeData
+{
+    [FieldOffset(0)] public int elementType;       // Portable<CorElementType>
+
+    // ClassTypeData (used for E_T_CLASS, E_T_VALUETYPE)
+    [FieldOffset(8)] public uint ClassTypeData_metadataToken;    // Portable<mdTypeDef>
+    [FieldOffset(16)] public ulong ClassTypeData_vmAssembly;     // VMPTR_Assembly
+    [FieldOffset(24)] public ulong ClassTypeData_typeHandle;     // VMPTR_TypeHandle
+
+    // UnaryTypeData (used for E_T_PTR, E_T_BYREF) — overlaps union at offset 8
+    [FieldOffset(8)] public DebuggerIPCE_BasicTypeData UnaryTypeData_unaryTypeArg;
+
+    // ArrayTypeData (used for E_T_ARRAY, E_T_SZARRAY) — overlaps union at offset 8
+    [FieldOffset(8)] public DebuggerIPCE_BasicTypeData ArrayTypeData_arrayTypeArg;
+    [FieldOffset(32)] public uint ArrayTypeData_arrayRank;       // Portable<DWORD>
+
+    // NaryTypeData (used for E_T_FNPTR) — overlaps union at offset 8
+    [FieldOffset(8)] public ulong NaryTypeData_typeHandle;       // VMPTR_TypeHandle
+}
+
 public enum DynamicMethodType
 {
     kNone = 0,
     kDiagnosticHidden = 1,
     kLCGMethod = 2,
+}
+
+public enum CorDebugThreadState
+{
+    ThreadRun = 0,
+    ThreadSuspend = 1,
+}
+
+[Flags]
+public enum CorDebugUserState
+{
+    USER_BACKGROUND = 0x04,
+    USER_UNSTARTED = 0x08,
+    USER_STOPPED = 0x10,
+    USER_WAIT_SLEEP_JOIN = 0x20,
+    USER_THREADPOOL = 0x100,
+}
+
+public enum SymbolFormat
+{
+    None = 0,
+    Pdb = 1,
+}
+
+public enum CorDebugGenerationTypes
+{
+    CorDebug_Gen0 = 0,
+    CorDebug_Gen1 = 1,
+    CorDebug_Gen2 = 2,
+    CorDebug_LOH = 3,
+    CorDebug_POH = 4,
+    CorDebug_NonGC = 0x7FFFFFFF,
+}
+
+public enum IlNum : int
+{
+    TYPECTXT_ILNUM = -3,
 }
 
 // Name-surface projection of IDacDbiInterface in native method order for COM binding validation.
@@ -185,7 +278,7 @@ public unsafe partial interface IDacDbiInterface
     int GetMetadata(ulong vmModule, DacDbiTargetBuffer* pTargetBuffer);
 
     [PreserveSig]
-    int GetSymbolsBuffer(ulong vmModule, DacDbiTargetBuffer* pTargetBuffer, int* pSymbolFormat);
+    int GetSymbolsBuffer(ulong vmModule, DacDbiTargetBuffer* pTargetBuffer, SymbolFormat* pSymbolFormat);
 
     [PreserveSig]
     int GetModuleData(ulong vmModule, DacDbiModuleInfo* pData);
@@ -248,7 +341,7 @@ public unsafe partial interface IDacDbiInterface
     int GetUserState(ulong vmThread, int* pRetVal);
 
     [PreserveSig]
-    int GetPartialUserState(ulong vmThread, int* pRetVal);
+    int GetPartialUserState(ulong vmThread, CorDebugUserState* pRetVal);
 
     [PreserveSig]
     int GetConnectionID(ulong vmThread, uint* pRetVal);
@@ -359,13 +452,10 @@ public unsafe partial interface IDacDbiInterface
     int GetInstantiationFieldInfo(ulong vmAssembly, ulong vmTypeHandle, ulong vmExactMethodTable, nint pFieldList, nuint* pObjectSize);
 
     [PreserveSig]
-    int TypeHandleToExpandedTypeInfo(int boxed, ulong vmTypeHandle, nint pData);
+    int TypeHandleToExpandedTypeInfo(AreValueTypesBoxed boxed, ulong vmTypeHandle, DebuggerIPCE_ExpandedTypeData* pData);
 
     [PreserveSig]
-    int GetObjectExpandedTypeInfo(int boxed, ulong addr, nint pTypeInfo);
-
-    [PreserveSig]
-    int GetObjectExpandedTypeInfoFromID(int boxed, COR_TYPEID id, nint pTypeInfo);
+    int GetObjectExpandedTypeInfo(AreValueTypesBoxed boxed, ulong addr, DebuggerIPCE_ExpandedTypeData* pTypeInfo);
 
     [PreserveSig]
     int GetTypeHandle(ulong vmModule, uint metadataToken, ulong* pRetVal);
@@ -434,9 +524,6 @@ public unsafe partial interface IDacDbiInterface
     int IsVmObjectHandleValid(ulong vmHandle, Interop.BOOL* pResult);
 
     [PreserveSig]
-    int IsWinRTModule(ulong vmModule, Interop.BOOL* isWinRT);
-
-    [PreserveSig]
     int GetHandleAddressFromVmHandle(ulong vmHandle, ulong* pRetVal);
 
     [PreserveSig]
@@ -458,9 +545,6 @@ public unsafe partial interface IDacDbiInterface
     int IsThreadSuspendedOrHijacked(ulong vmThread, Interop.BOOL* pResult);
 
     [PreserveSig]
-    int AreGCStructuresValid(Interop.BOOL* pResult);
-
-    [PreserveSig]
     int CreateHeapWalk(nuint* pHandle);
 
     [PreserveSig]
@@ -470,7 +554,7 @@ public unsafe partial interface IDacDbiInterface
     int WalkHeap(nuint handle, uint count, COR_HEAPOBJECT* objects, uint* fetched);
 
     [PreserveSig]
-    int GetHeapSegments(nint pSegments);
+    int EnumerateHeapSegments(/*FP_HEAPSEGMENT_CALLBACK*/ delegate* unmanaged<ulong, ulong, int, uint, nint, void> fpCallback, nint pUserData);
 
     [PreserveSig]
     int IsValidObject(ulong obj, Interop.BOOL* pResult);
@@ -494,10 +578,10 @@ public unsafe partial interface IDacDbiInterface
     int GetObjectFields(nint id, uint celt, COR_FIELD* layout, uint* pceltFetched);
 
     [PreserveSig]
-    int GetTypeLayout(nint id, COR_TYPE_LAYOUT* pLayout);
+    int GetTypeLayout(ulong id, COR_TYPE_LAYOUT* pLayout);
 
     [PreserveSig]
-    int GetArrayLayout(nint id, nint pLayout);
+    int GetArrayLayout(ulong id, COR_ARRAY_LAYOUT* pLayout);
 
     [PreserveSig]
     int GetGCHeapInformation(COR_HEAPINFO* pHeapInfo);
@@ -540,9 +624,6 @@ public unsafe partial interface IDacDbiInterface
 
     [PreserveSig]
     int GetDelegateTargetObject(int delegateType, ulong delegateObject, ulong* ppTargetObj, ulong* ppTargetAppDomain);
-
-    [PreserveSig]
-    int GetLoaderHeapMemoryRanges(nint pRanges);
 
     [PreserveSig]
     int IsModuleMapped(ulong pModule, Interop.BOOL* isModuleMapped);

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 using Test.Cryptography;
 using Xunit;
@@ -17,6 +18,7 @@ namespace System.Security.Cryptography.Tests
         public abstract X25519DiffieHellman GenerateKey();
         public abstract X25519DiffieHellman ImportPrivateKey(ReadOnlySpan<byte> source);
         public abstract X25519DiffieHellman ImportPublicKey(ReadOnlySpan<byte> source);
+        public virtual bool CanRoundTripKeys => true;
 
         // SymCrypt, thus SCOSSL, is stricter about keys it is willing to import. These keys fall in to
         // two buckets.
@@ -99,6 +101,34 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
+        public void DeriveRawSecretAgreement_Bytes_Symmetric()
+        {
+            using X25519DiffieHellman key1 = GenerateKey();
+            using X25519DiffieHellman key2 = GenerateKey();
+
+            byte[] secret1 = key1.DeriveRawSecretAgreement(key2.ExportPublicKey());
+            byte[] secret2 = key2.DeriveRawSecretAgreement(key1.ExportPublicKey());
+
+            AssertExtensions.SequenceEqual(secret1, secret2);
+        }
+
+        [Fact]
+        public void DeriveRawSecretAgreement_BytesWithInstance_Symmetric()
+        {
+            using X25519DiffieHellman key1 = GenerateKey();
+            using X25519DiffieHellman key2 = GenerateKey();
+
+            byte[] secret1 = key1.DeriveRawSecretAgreement(key2.ExportPublicKey());
+            byte[] secret2 = key1.DeriveRawSecretAgreement(key2);
+            byte[] secret3 = key2.DeriveRawSecretAgreement(key1.ExportPublicKey());
+            byte[] secret4 = key2.DeriveRawSecretAgreement(key1);
+
+            AssertExtensions.SequenceEqual(secret1, secret2);
+            AssertExtensions.SequenceEqual(secret2, secret3);
+            AssertExtensions.SequenceEqual(secret3, secret4);
+        }
+
+        [Fact]
         public void DeriveRawSecretAgreement_ExactBuffers()
         {
             using X25519DiffieHellman key1 = GenerateKey();
@@ -113,6 +143,20 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
+        public void DeriveRawSecretAgreement_Bytes_ExactBuffers()
+        {
+            using X25519DiffieHellman key1 = GenerateKey();
+            using X25519DiffieHellman key2 = GenerateKey();
+
+            byte[] secret1 = new byte[X25519DiffieHellman.SecretAgreementSizeInBytes];
+            byte[] secret2 = new byte[X25519DiffieHellman.SecretAgreementSizeInBytes];
+            key1.DeriveRawSecretAgreement(key2.ExportPublicKey(), secret1);
+            key2.DeriveRawSecretAgreement(key1.ExportPublicKey(), secret2);
+
+            AssertExtensions.SequenceEqual(secret1, secret2);
+        }
+
+        [Fact]
         public void DeriveRawSecretAgreement_PublicKeyOnly_Throws()
         {
             using X25519DiffieHellman xdh = GenerateKey();
@@ -120,7 +164,40 @@ namespace System.Security.Cryptography.Tests
             using X25519DiffieHellman other = GenerateKey();
 
             Assert.Throws<CryptographicException>(() => publicOnly.DeriveRawSecretAgreement(other));
-            Assert.Throws<CryptographicException>(() => publicOnly.DeriveRawSecretAgreement(other, new byte[X25519DiffieHellman.SecretAgreementSizeInBytes]));
+        }
+
+        [Fact]
+        public void DeriveRawSecretAgreement_ExactBuffers_PublicKeyOnly_Throws()
+        {
+            using X25519DiffieHellman xdh = GenerateKey();
+            using X25519DiffieHellman publicOnly = ImportPublicKey(xdh.ExportPublicKey());
+            using X25519DiffieHellman other = GenerateKey();
+
+            Assert.Throws<CryptographicException>(() =>
+                publicOnly.DeriveRawSecretAgreement(other, new byte[X25519DiffieHellman.SecretAgreementSizeInBytes]));
+        }
+
+        [Fact]
+        public void DeriveRawSecretAgreement_Bytes_PublicKeyOnly_Throws()
+        {
+            using X25519DiffieHellman xdh = GenerateKey();
+            using X25519DiffieHellman publicOnly = ImportPublicKey(xdh.ExportPublicKey());
+            using X25519DiffieHellman other = GenerateKey();
+
+            Assert.Throws<CryptographicException>(() => publicOnly.DeriveRawSecretAgreement(other.ExportPublicKey()));
+        }
+
+        [Fact]
+        public void DeriveRawSecretAgreement_Bytes_ExactBuffers_PublicKeyOnly_Throws()
+        {
+            using X25519DiffieHellman xdh = GenerateKey();
+            using X25519DiffieHellman publicOnly = ImportPublicKey(xdh.ExportPublicKey());
+            using X25519DiffieHellman other = GenerateKey();
+
+            Assert.Throws<CryptographicException>(() =>
+                publicOnly.DeriveRawSecretAgreement(
+                    other.ExportPublicKey(),
+                    new byte[X25519DiffieHellman.SecretAgreementSizeInBytes]));
         }
 
         [Theory]
@@ -132,10 +209,39 @@ namespace System.Security.Cryptography.Tests
 
             byte[] secret = key.DeriveRawSecretAgreement(peer);
             AssertExtensions.SequenceEqual(vector.SharedSecret, secret);
+        }
+
+        [Theory]
+        [MemberData(nameof(DeriveSecretAgreementVectorsForCurrentPlatform))]
+        public void DeriveRawSecretAgreement_ExactBuffers_Vectors(DeriveSecretAgreementVector vector)
+        {
+            using X25519DiffieHellman key = ImportPrivateKey(vector.PrivateKey);
+            using X25519DiffieHellman peer = ImportPublicKey(vector.PeerPublicKey);
 
             byte[] secretBuffer = new byte[X25519DiffieHellman.SecretAgreementSizeInBytes];
             key.DeriveRawSecretAgreement(peer, secretBuffer);
             AssertExtensions.SequenceEqual(vector.SharedSecret, secretBuffer);
+        }
+
+        [Theory]
+        [MemberData(nameof(DeriveSecretAgreementVectorsForCurrentPlatform))]
+        public void DeriveRawSecretAgreement_Bytes_Vectors(DeriveSecretAgreementVector vector)
+        {
+            using X25519DiffieHellman key = ImportPrivateKey(vector.PrivateKey);
+
+            byte[] secretWithBytes = key.DeriveRawSecretAgreement(vector.PeerPublicKey);
+            AssertExtensions.SequenceEqual(vector.SharedSecret, secretWithBytes);
+        }
+
+        [Theory]
+        [MemberData(nameof(DeriveSecretAgreementVectorsForCurrentPlatform))]
+        public void DeriveRawSecretAgreement_Bytes_ExactBuffers_Vectors(DeriveSecretAgreementVector vector)
+        {
+            using X25519DiffieHellman key = ImportPrivateKey(vector.PrivateKey);
+
+            byte[] secretWithBytesBuffer = new byte[X25519DiffieHellman.SecretAgreementSizeInBytes];
+            key.DeriveRawSecretAgreement(vector.PeerPublicKey, secretWithBytesBuffer);
+            AssertExtensions.SequenceEqual(vector.SharedSecret, secretWithBytesBuffer);
         }
 
         [Theory]
@@ -165,8 +271,54 @@ namespace System.Security.Cryptography.Tests
             using X25519DiffieHellman peer = ImportPublicKey(peerPublicKey);
 
             Assert.ThrowsAny<CryptographicException>(() => key.DeriveRawSecretAgreement(peer));
+        }
+
+        [ConditionalFact(nameof(IsNotStrictKeyValidatingPlatform))]
+        public void DeriveRawSecretAgreement_ExactBuffers_ZeroSharedSecret_Throws()
+        {
+            // Wycheproof tcId 64: peer public key is a low-order point on Curve25519.
+            // This low-order point produces a shared secret that is all zeros.
+            byte[] privateKey = Convert.FromHexString("387355d995616090503aafad49da01fb3dc3eda962704eaee6b86f9e20c92579");
+            byte[] peerPublicKey = Convert.FromHexString("5f9c95bca3508c24b1d0b1559c83ef5b04445cc4581c8e86d8224eddd09f1157");
+
+            using X25519DiffieHellman key = ImportPrivateKey(privateKey);
+            using X25519DiffieHellman peer = ImportPublicKey(peerPublicKey);
+
             Assert.ThrowsAny<CryptographicException>(
                 () => key.DeriveRawSecretAgreement(peer, new byte[X25519DiffieHellman.SecretAgreementSizeInBytes]));
+        }
+
+        [ConditionalFact(nameof(IsNotStrictKeyValidatingPlatform))]
+        public void DeriveRawSecretAgreement_Bytes_ZeroSharedSecret_Throws()
+        {
+            // Wycheproof tcId 64: peer public key is a low-order point on Curve25519.
+            // This low-order point produces a shared secret that is all zeros.
+            byte[] privateKey = Convert.FromHexString("387355d995616090503aafad49da01fb3dc3eda962704eaee6b86f9e20c92579");
+            byte[] peerPublicKey = Convert.FromHexString("5f9c95bca3508c24b1d0b1559c83ef5b04445cc4581c8e86d8224eddd09f1157");
+
+            using X25519DiffieHellman key = ImportPrivateKey(privateKey);
+
+            Assert.ThrowsAny<CryptographicException>(() => key.DeriveRawSecretAgreement(peerPublicKey));
+
+            // Show that the object is still functional after derive throws.
+            AssertExtensions.SequenceEqual(privateKey, key.ExportPrivateKey());
+        }
+
+        [ConditionalFact(nameof(IsNotStrictKeyValidatingPlatform))]
+        public void DeriveRawSecretAgreement_Bytes_ExactBuffers_ZeroSharedSecret_Throws()
+        {
+            // Wycheproof tcId 64: peer public key is a low-order point on Curve25519.
+            // This low-order point produces a shared secret that is all zeros.
+            byte[] privateKey = Convert.FromHexString("387355d995616090503aafad49da01fb3dc3eda962704eaee6b86f9e20c92579");
+            byte[] peerPublicKey = Convert.FromHexString("5f9c95bca3508c24b1d0b1559c83ef5b04445cc4581c8e86d8224eddd09f1157");
+
+            using X25519DiffieHellman key = ImportPrivateKey(privateKey);
+
+            Assert.ThrowsAny<CryptographicException>(
+                () => key.DeriveRawSecretAgreement(peerPublicKey, new byte[X25519DiffieHellman.SecretAgreementSizeInBytes]));
+
+            // Show that the object is still functional after derive throws.
+            AssertExtensions.SequenceEqual(privateKey, key.ExportPrivateKey());
         }
 
         [Theory]
@@ -219,7 +371,7 @@ namespace System.Security.Cryptography.Tests
             AssertExportPkcs8PrivateKey(xdh, pkcs8 =>
             {
                 using X25519DiffieHellman imported = X25519DiffieHellman.ImportPkcs8PrivateKey(pkcs8);
-                AssertExtensions.SequenceEqual(
+                AssertPrivateKey(
                     X25519DiffieHellmanTestData.AlicePrivateKey,
                     imported.ExportPrivateKey());
             });
@@ -247,7 +399,7 @@ namespace System.Security.Cryptography.Tests
                         X25519DiffieHellmanTestData.EncryptedPrivateKeyPassword,
                         pkcs8);
 
-                    AssertExtensions.SequenceEqual(
+                    AssertPrivateKey(
                         X25519DiffieHellmanTestData.AlicePrivateKey,
                         imported.ExportPrivateKey());
                 });
@@ -321,23 +473,22 @@ namespace System.Security.Cryptography.Tests
         public void PrivateKey_Roundtrip_UnclampedScalar()
         {
             byte[] privateKey = X25519DiffieHellmanTestData.BobPrivateKey;
-            using X25519DiffieHellman xdh = ImportPrivateKey(privateKey);
 
-            AssertExtensions.SequenceEqual(privateKey, xdh.ExportPrivateKey());
+            using X25519DiffieHellman xdh = ImportPrivateKey(privateKey);
+            AssertPrivateKey(privateKey, xdh.ExportPrivateKey());
+
             AssertExtensions.SequenceEqual(X25519DiffieHellmanTestData.BobPublicKey, xdh.ExportPublicKey());
 
             byte[] pkcs8 = xdh.ExportPkcs8PrivateKey();
             using X25519DiffieHellman reimported = X25519DiffieHellman.ImportPkcs8PrivateKey(pkcs8);
-            AssertExtensions.SequenceEqual(privateKey, reimported.ExportPrivateKey());
+            AssertPrivateKey(privateKey, reimported.ExportPrivateKey());
         }
 
         [Fact]
         public void PrivateKey_Roundtrip_ClampedScalar()
         {
             byte[] privateKey = (byte[])X25519DiffieHellmanTestData.AlicePrivateKey.Clone();
-            privateKey[0] &= 0b11111000;
-            privateKey[^1] &= 0b01111111;
-            privateKey[^1] |= 0b01000000;
+            ClampPrivateKey(privateKey);
 
             using X25519DiffieHellman xdh = ImportPrivateKey(privateKey);
             AssertExtensions.SequenceEqual(privateKey, xdh.ExportPrivateKey());
@@ -482,6 +633,28 @@ namespace System.Security.Cryptography.Tests
             return buffer.AsSpan(0, written).ToArray();
         }
 
+        private static void ClampPrivateKey(Span<byte> privateKey)
+        {
+            Debug.Assert(privateKey.Length == X25519DiffieHellman.PrivateKeySizeInBytes);
+            privateKey[0] &= 0b11111000;
+            privateKey[^1] &= 0b01111111;
+            privateKey[^1] |= 0b01000000;
+        }
+
+        private void AssertPrivateKey(ReadOnlySpan<byte> expectedPrivateKey, ReadOnlySpan<byte> actualPrivateKey)
+        {
+            if (CanRoundTripKeys)
+            {
+                AssertExtensions.SequenceEqual(expectedPrivateKey, actualPrivateKey);
+            }
+            else
+            {
+                byte[] clampedKey = expectedPrivateKey.ToArray();
+                ClampPrivateKey(clampedKey);
+                AssertExtensions.SequenceEqual(clampedKey, actualPrivateKey);
+            }
+        }
+
         /// <summary>
         /// A wrapper around an X25519DiffieHellman instance that is not the platform's
         /// internal implementation type. This forces the DeriveRawSecretAgreementCore fallback
@@ -501,6 +674,11 @@ namespace System.Security.Cryptography.Tests
             protected override void DeriveRawSecretAgreementCore(X25519DiffieHellman otherParty, Span<byte> destination)
             {
                 _inner.DeriveRawSecretAgreement(otherParty, destination);
+            }
+
+            protected override void DeriveRawSecretAgreementCore(ReadOnlySpan<byte> otherPartyPublicKey, Span<byte> destination)
+            {
+                _inner.DeriveRawSecretAgreement(otherPartyPublicKey, destination);
             }
 
             protected override void ExportPrivateKeyCore(Span<byte> destination)

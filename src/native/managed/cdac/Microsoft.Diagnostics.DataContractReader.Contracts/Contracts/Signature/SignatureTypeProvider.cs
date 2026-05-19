@@ -10,7 +10,7 @@ using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace Microsoft.Diagnostics.DataContractReader.SignatureHelpers;
 
-public class SignatureTypeProvider<T> : ISignatureTypeProvider<TypeHandle, T>
+public class SignatureTypeProvider<T> : IRuntimeSignatureTypeProvider<TypeHandle, T>
 {
     private readonly Target _target;
     private readonly Contracts.ModuleHandle _moduleHandle;
@@ -89,4 +89,12 @@ public class SignatureTypeProvider<T> : ISignatureTypeProvider<TypeHandle, T>
 
     public TypeHandle GetTypeFromSpecification(MetadataReader reader, T context, TypeSpecificationHandle handle, byte rawTypeKind)
         => throw new NotImplementedException();
+
+    public TypeHandle GetInternalType(TargetPointer typeHandlePointer)
+        => typeHandlePointer == TargetPointer.Null
+            ? new TypeHandle(TargetPointer.Null)
+            : _runtimeTypeSystem.GetTypeHandle(typeHandlePointer);
+
+    public TypeHandle GetInternalModifiedType(TargetPointer typeHandlePointer, TypeHandle unmodifiedType, bool isRequired)
+        => unmodifiedType;
 }

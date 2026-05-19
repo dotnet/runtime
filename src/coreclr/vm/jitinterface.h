@@ -15,7 +15,7 @@
 // TODO: Set this value to 0 for Wasm
 #define MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT (1024 - 1)
 #elif defined (TARGET_UNIX)
-#define MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT ((GetOsPageSize() / 2) - 1)
+#define MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT ((minipal_getpagesize() / 2) - 1)
 #else
 #define MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT ((32*1024)-1)   // when generating JIT code
 #endif
@@ -207,7 +207,6 @@ extern "C" FCDECL2(VOID, RhpByRefAssignRef, Object **dst, Object *ref);
 extern "C" FCDECL2(VOID, RhpAssignRef, Object **dst, Object *ref);
 
 extern "C" FCDECL2(VOID, JIT_WriteBarrier, Object **dst, Object *ref);
-extern "C" FCDECL2(VOID, JIT_WriteBarrierEnsureNonHeapTarget, Object **dst, Object *ref);
 
 EXTERN_C FCDECL2_VV(INT64, JIT_LMul, INT64 val1, INT64 val2);
 
