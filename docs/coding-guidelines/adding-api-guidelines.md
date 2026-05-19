@@ -88,6 +88,13 @@ produces the following diagnostics:
 | PLATDOC001 | Public type has no source file named `TypeName.cs`. |
 | PLATDOC002 | Partial source file doesn't follow the `TypeName.Something.cs` naming convention. |
 | PLATDOC003 | Public member in a non-primary partial file has XML documentation that should be moved to `TypeName.cs`. |
+| PLATDOC004 | Documentation for a public API differs from the canonical (platform-agnostic) build. |
+
+PLATDOC001–003 are heuristic rules that guide source organization. PLATDOC004 is an authoritative
+check: when a project also targets a platform-agnostic TFM (e.g. `net11.0` alongside
+`net11.0-windows`), the build passes the canonical TFM's compiler-generated doc XML to the
+analyzer, which compares each public API's documentation against it. Any mismatch indicates that
+docs were placed on platform-specific source and will be inconsistent across platforms.
 
 If a file legitimately doesn't follow these conventions (e.g. an `Async` partial using the
 established `TypeNameAsync.cs` pattern), suppress the specific diagnostic with

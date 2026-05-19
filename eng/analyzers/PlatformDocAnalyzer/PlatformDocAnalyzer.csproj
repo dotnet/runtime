@@ -6,7 +6,7 @@
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <!-- This isn't a shipping analyzer, so we don't need release tracking -->
-    <NoWarn>$(NoWarn);RS2008;RS1038</NoWarn>
+    <NoWarn>$(NoWarn);RS2008;RS1012;RS1038</NoWarn>
     <AnalyzerLanguage>cs</AnalyzerLanguage>
     <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
   </PropertyGroup>

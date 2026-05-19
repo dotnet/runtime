@@ -153,4 +153,30 @@
     </PropertyGroup>
   </Target>
 
+  <!-- ======================== Platform-specific doc consistency ======================== -->
+  <!-- For platform-specific TFMs (e.g. net11.0-windows), find the canonical
+       (platform-agnostic) sibling TFM's compiler-generated doc XML and pass it to
+       the PlatformDocAnalyzer so it can verify that shared API docs are consistent.
+       We look for the canonical doc XML at its expected artifact path rather than using
+       a ProjectReference, to avoid circular dependencies with PNSE builds and to avoid
+       the overhead of GetTargetFrameworks calls. -->
+
+  <Target Name="AddCanonicalDocAdditionalFile"
+          BeforeTargets="CoreCompile"
+          Condition="'$(TargetPlatformIdentifier)' != '' and
+                     '$(UseCompilerGeneratedDocXmlFile)' == 'true' and
+                     '$(IsPlatformNotSupportedAssembly)' != 'true'">
+
+    <!-- Derive the canonical TFM by stripping the platform suffix (e.g. net11.0-windows → net11.0). -->
+    <PropertyGroup>
+      <_CanonicalDocTfm>$(TargetFramework.Substring(0, $(TargetFramework.IndexOf('-'))))</_CanonicalDocTfm>
+      <_CanonicalDocXmlPath>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', '$(MSBuildProjectName)', '$(Configuration)', '$(_CanonicalDocTfm)', '$(AssemblyName).xml'))</_CanonicalDocXmlPath>
+    </PropertyGroup>
+
+    <ItemGroup Condition="Exists('$(_CanonicalDocXmlPath)')">
+      <AdditionalFiles Include="$(_CanonicalDocXmlPath)"
+                       PlatformDocCanonical="true" />
+    </ItemGroup>
+  </Target>
+
 </Project>

@@ -377,5 +377,135 @@ public partial class Outer
 
             await test.RunAsync(CancellationToken.None);
         }
+
+        private static AnalyzerTest CreateTestWithCanonicalDoc(
+            (string Key, string Value)[] globalOptions,
+            string canonicalDocXml,
+            params (string FileName, string Source)[] sources)
+        {
+            var test = CreateTest(globalOptions, sources);
+
+            // Replace the existing globalconfig with one that also configures the additional file.
+            test.TestState.AnalyzerConfigFiles.Clear();
+            string optionsText = "is_global = true\r\n";
+            foreach ((string key, string value) in globalOptions)
+            {
+                optionsText += $"{key} = {value}\r\n";
+            }
+            optionsText += "[/canonical.xml]\r\n";
+            optionsText += "build_metadata.AdditionalFiles.PlatformDocCanonical = true\r\n";
+            test.TestState.AnalyzerConfigFiles.Add(("/.globalconfig", optionsText));
+
+            test.TestState.AdditionalFiles.Add(("/canonical.xml", canonicalDocXml));
+            return test;
+        }
+
+        [Fact]
+        public async Task PLATDOC004_DocsMatchCanonical_NoDiagnostic()
+        {
+            string canonicalDocXml = @"<?xml version=""1.0""?>
+<doc>
+  <assembly><name>TestAssembly</name></assembly>
+  <members>
+    <member name=""T:Foo"">
+      <summary>Foo type</summary>
+    </member>
+    <member name=""M:Foo.Bar"">
+      <summary>Bar method</summary>
+    </member>
+  </members>
+</doc>";
+
+            var test = CreateTestWithCanonicalDoc(
+                s_platformTfmOptions,
+                canonicalDocXml,
+                ("Foo.cs", @"
+/// <summary>Foo type</summary>
+public class Foo
+{
+    /// <summary>Bar method</summary>
+    public void Bar() { }
+}"));
+
+            await test.RunAsync(CancellationToken.None);
+        }
+
+        [Fact]
+        public async Task PLATDOC004_DocsDifferFromCanonical()
+        {
+            string canonicalDocXml = @"<?xml version=""1.0""?>
+<doc>
+  <assembly><name>TestAssembly</name></assembly>
+  <members>
+    <member name=""T:Foo"">
+      <summary>Foo type</summary>
+    </member>
+    <member name=""M:Foo.Bar"">
+      <summary>Bar method</summary>
+    </member>
+  </members>
+</doc>";
+
+            var test = CreateTestWithCanonicalDoc(
+                s_platformTfmOptions,
+                canonicalDocXml,
+                ("Foo.cs", @"
+/// <summary>Foo type</summary>
+public class Foo
+{
+    /// <summary>DIFFERENT Bar method docs</summary>
+    public void {|#0:Bar|}() { }
+}"));
+
+            test.ExpectedDiagnostics.Add(new DiagnosticResult(Microsoft.DotNet.Analyzers.PlatformDoc.PlatformDocAnalyzer.DocMismatchRule)
+                .WithLocation(0).WithArguments("Foo.Bar()"));
+
+            await test.RunAsync(CancellationToken.None);
+        }
+
+        [Fact]
+        public async Task PLATDOC004_PlatformOnlyApi_NoDiagnostic()
+        {
+            // APIs that don't exist in the canonical doc XML are platform-specific and can have any docs.
+            string canonicalDocXml = @"<?xml version=""1.0""?>
+<doc>
+  <assembly><name>TestAssembly</name></assembly>
+  <members>
+    <member name=""T:Foo"">
+      <summary>Foo type</summary>
+    </member>
+  </members>
+</doc>";
+
+            var test = CreateTestWithCanonicalDoc(
+                s_platformTfmOptions,
+                canonicalDocXml,
+                ("Foo.cs", @"
+/// <summary>Foo type</summary>
+public class Foo
+{
+    /// <summary>Platform-specific method not in canonical</summary>
+    public void WindowsOnly() { }
+}"));
+
+            await test.RunAsync(CancellationToken.None);
+        }
+
+        [Fact]
+        public async Task PLATDOC004_NoCanonicalDoc_NoDiagnostic()
+        {
+            // When no canonical doc XML is provided, PLATDOC004 should not fire.
+            var test = CreateTest(
+                s_platformTfmOptions,
+                ("Foo.cs", @"
+/// <summary>DIFFERENT docs</summary>
+public class Foo
+{
+    /// <summary>Some method</summary>
+    public void Bar() { }
+}"));
+
+            await test.RunAsync(CancellationToken.None);
+        }
     }
 }

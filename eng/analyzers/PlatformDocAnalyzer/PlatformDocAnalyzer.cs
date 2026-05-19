@@ -6,10 +6,13 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
+using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
+using Microsoft.CodeAnalysis.Text;
 
 #pragma warning disable RS2008 // Not a shipping analyzer
 
@@ -26,6 +29,7 @@ namespace Microsoft.DotNet.Analyzers.PlatformDoc
         public const string DiagnosticIdMissingPrimaryFile = "PLATDOC001";
         public const string DiagnosticIdBadPartialFileName = "PLATDOC002";
         public const string DiagnosticIdDocsOnNonPrimaryFile = "PLATDOC003";
+        public const string DiagnosticIdDocMismatch = "PLATDOC004";
 
         public static readonly DiagnosticDescriptor MissingPrimaryFileRule = new(
             DiagnosticIdMissingPrimaryFile,
@@ -51,8 +55,16 @@ namespace Microsoft.DotNet.Analyzers.PlatformDoc
             DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
 
+        public static readonly DiagnosticDescriptor DocMismatchRule = new(
+            DiagnosticIdDocMismatch,
+            "Documentation differs from canonical platform-agnostic build",
+            "Documentation for '{0}' differs from the canonical (platform-agnostic) build. Ensure docs are on shared source so they are consistent across platforms.",
+            "Documentation",
+            DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
+
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
-            ImmutableArray.Create(MissingPrimaryFileRule, BadPartialFileNameRule, DocsOnNonPrimaryFileRule);
+            ImmutableArray.Create(MissingPrimaryFileRule, BadPartialFileNameRule, DocsOnNonPrimaryFileRule, DocMismatchRule);
 
         public override void Initialize(AnalysisContext context)
         {
@@ -79,6 +91,135 @@ namespace Microsoft.DotNet.Analyzers.PlatformDoc
             }
 
             context.RegisterSymbolAction(AnalyzeNamedType, SymbolKind.NamedType);
+
+            // Look for the canonical doc XML in AdditionalFiles.
+            Dictionary<string, string>? canonicalDocs = TryLoadCanonicalDocs(context);
+            if (canonicalDocs is not null)
+            {
+                context.RegisterSymbolAction(
+                    ctx => AnalyzeDocConsistency(ctx, canonicalDocs),
+                    SymbolKind.NamedType);
+            }
+        }
+
+        private static Dictionary<string, string>? TryLoadCanonicalDocs(CompilationStartAnalysisContext context)
+        {
+            foreach (AdditionalText file in context.Options.AdditionalFiles)
+            {
+                AnalyzerConfigOptions fileOptions = context.Options.AnalyzerConfigOptionsProvider.GetOptions(file);
+                if (!fileOptions.TryGetValue("build_metadata.AdditionalFiles.PlatformDocCanonical", out string? value) ||
+                    !string.Equals(value, "true", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                SourceText? text = file.GetText(context.CancellationToken);
+                if (text is null)
+                    continue;
+
+                return ParseDocXml(text.ToString());
+            }
+
+            return null;
+        }
+
+        private static Dictionary<string, string> ParseDocXml(string xml)
+        {
+            var docs = new Dictionary<string, string>(StringComparer.Ordinal);
+
+            // Use regex to extract member elements to avoid XML parser normalization
+            // that could cause false mismatches with GetDocumentationCommentXml() output.
+            foreach (Match match in Regex.Matches(xml, @"<member\s+name=""([^""]+)"">(.*?)</member>", RegexOptions.Singleline))
+            {
+                string name = match.Groups[1].Value;
+                string innerXml = match.Groups[2].Value;
+                docs[name] = NormalizeDocXml(innerXml);
+            }
+
+            return docs;
+        }
+
+        private static void AnalyzeDocConsistency(
+            SymbolAnalysisContext context,
+            Dictionary<string, string> canonicalDocs)
+        {
+            ISymbol symbol = context.Symbol;
+
+            if (symbol is not INamedTypeSymbol namedType)
+                return;
+
+            if (namedType.DeclaredAccessibility != Accessibility.Public)
+                return;
+
+            // Check the type itself and all its public members.
+            CheckSymbolDoc(context, namedType, canonicalDocs);
+
+            foreach (ISymbol member in namedType.GetMembers())
+            {
+                if (member.DeclaredAccessibility != Accessibility.Public)
+                    continue;
+
+                // Skip accessors; they're covered by the property/event.
+                if (member is IMethodSymbol { AssociatedSymbol: not null })
+                    continue;
+
+                CheckSymbolDoc(context, member, canonicalDocs);
+            }
+        }
+
+        private static void CheckSymbolDoc(
+            SymbolAnalysisContext context,
+            ISymbol symbol,
+            Dictionary<string, string> canonicalDocs)
+        {
+            string? docId = symbol.GetDocumentationCommentId();
+            if (docId is null)
+                return;
+
+            if (!canonicalDocs.TryGetValue(docId, out string? canonicalDoc))
+                return;
+
+            string currentDoc = NormalizeDocXml(
+                symbol.GetDocumentationCommentXml(expandIncludes: true, cancellationToken: context.CancellationToken) ?? "");
+
+            // Strip the outer <member> wrapper from GetDocumentationCommentXml() output.
+            currentDoc = StripMemberWrapper(currentDoc);
+
+            if (string.Equals(canonicalDoc, currentDoc, StringComparison.Ordinal))
+                return;
+
+            // Both empty → no mismatch.
+            if (string.IsNullOrWhiteSpace(canonicalDoc) && string.IsNullOrWhiteSpace(currentDoc))
+                return;
+
+            Location location = symbol.Locations.FirstOrDefault() ?? Location.None;
+            context.ReportDiagnostic(Diagnostic.Create(
+                DocMismatchRule,
+                location,
+                symbol.ToDisplayString(SymbolDisplayFormat.CSharpShortErrorMessageFormat)));
+        }
+
+        private static string StripMemberWrapper(string xml)
+        {
+            // GetDocumentationCommentXml() returns:
+            //   <member name="...">..inner..</member>
+            // We need just the inner content to compare against the parsed doc XML.
+            const string memberStart = "<member";
+            const string memberEnd = "</member>";
+
+            int startIdx = xml.IndexOf('>', xml.IndexOf(memberStart, StringComparison.Ordinal) + 1);
+            int endIdx = xml.LastIndexOf(memberEnd, StringComparison.Ordinal);
+
+            if (startIdx < 0 || endIdx < 0 || endIdx <= startIdx)
+                return NormalizeDocXml(xml);
+
+            return NormalizeDocXml(xml.Substring(startIdx + 1, endIdx - startIdx - 1));
+        }
+
+        private static string NormalizeDocXml(string xml)
+        {
+            // Normalize whitespace: collapse runs of whitespace into single spaces, trim.
+            return Regex.Replace(xml, @"\s+", " ").Trim();
         }
 
         private static bool IsPlatformSpecificTfm(string tfm)
