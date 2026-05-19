@@ -476,9 +476,7 @@ enum class DoNotEnregisterReason
 #if !defined(TARGET_64BIT)
     LongParamField, // It is a decomposed field of a long parameter.
 #endif
-#ifdef JIT32_GCENCODER
     PinningRef,
-#endif
     LclAddrNode, // the local is accessed with LCL_ADDR_VAR/FLD.
     CastTakesAddr,
     StoreBlkSrc,           // the local is used as STORE_BLK source.
@@ -513,6 +511,9 @@ enum class AddressExposedReason
 
 class LclVarDsc
 {
+    template <typename TLiveness>
+    friend class Liveness;
+
 public:
     // note this only packs because var_types is a typedef of unsigned char
     var_types lvType : 5; // TYP_INT/LONG/FLOAT/DOUBLE/REF
@@ -542,12 +543,11 @@ private:
     bool m_addrExposed : 1; // The address of this variable is "exposed" -- passed as an argument, stored in a
                             // global location, etc.
                             // We cannot reason reliably about the value of the variable.
+    unsigned char lvLiveInOutOfHandler : 1; // The variable is live in or out of an exception handler.
 public:
     unsigned char lvDoNotEnregister : 1; // Do not enregister this variable.
     unsigned char lvFieldAccessed   : 1; // The var is a struct local, and a field of the variable is accessed.  Affects
                                          // struct promotion.
-    unsigned char lvLiveInOutOfHndlr : 1; // The variable is live in or out of an exception handler, and therefore must
-                                          // be on the stack (at least at those boundaries.)
 
     unsigned char lvInSsa       : 1; // The variable is in SSA form (set by SsaBuilder)
     unsigned char lvIsCSE       : 1; // Indicates if this LclVar is a CSE variable.
@@ -1157,6 +1157,12 @@ public:
         return IsEnregisterableType();
     }
 
+    bool IsLiveInOutOfHandler() const
+    {
+        assert(lvTracked);
+        return lvLiveInOutOfHandler != 0;
+    }
+
     //-----------------------------------------------------------------------------
     //  IsAlwaysAliveInMemory: Determines if this variable's value is always
     //     up-to-date on stack. This is possible if this is an EH-var or
@@ -1164,7 +1170,7 @@ public:
     //
     bool IsAlwaysAliveInMemory() const
     {
-        return lvLiveInOutOfHndlr || lvSpillAtSingleDef;
+        return IsLiveInOutOfHandler() || lvSpillAtSingleDef;
     }
 
     bool CanBeReplacedWithItsField(Compiler* comp) const;
@@ -3874,6 +3880,8 @@ public:
     bool gtGetIndNodeCost(GenTreeIndir* node, int* pCostEx, int* pCostSz);
     bool gtGetAddrNodeCost(GenTree* addr, var_types type, bool isVolatile, int* pCostEx, int* pCostSz);
 
+    bool IsEHVarARegCandidate(LclVarDsc* varDsc);
+
     // Returns true iff the secondNode can be swapped with firstNode.
     bool gtCanSwapOrder(GenTree* firstNode, GenTree* secondNode);
 
@@ -3940,9 +3948,26 @@ public:
     //-------------------------------------------------------------------------
 
     GenTree* gtFoldExpr(GenTree* tree);
-    GenTree* gtFoldExprUnary(GenTreeUnOp* tree);
-    GenTree* gtFoldExprBinary(GenTreeOp* tree);
     GenTree* gtFoldExprConst(GenTree* tree);
+
+    GenTree* gtFoldExprUnary(GenTreeUnOp* tree);
+    GenTree* gtFoldExprUnaryConst(GenTreeUnOp* tree);
+    GenTree* gtFoldExprUnaryConstInt(GenTreeUnOp* tree, GenTreeIntCon* intCon);
+    GenTree* gtFoldExprUnaryConstLng(GenTreeUnOp* tree, GenTreeIntConCommon* intConCommon);
+    GenTree* gtFoldExprUnaryConstDbl(GenTreeUnOp* tree, GenTreeDblCon* dblCon);
+
+    GenTree* gtFoldExprBinary(GenTreeOp* tree);
+    GenTree* gtFoldExprBinaryConst(GenTreeOp* tree);
+    GenTree* gtFoldExprBinaryConstInt(GenTreeOp* tree, GenTreeIntCon* intCon1, GenTreeIntCon* intCon2);
+    GenTree* gtFoldExprBinaryConstLng(GenTreeOp* tree, GenTreeIntConCommon* intConCommon1, GenTreeIntConCommon* intConCommon2);
+    GenTree* gtFoldExprBinaryConstDbl(GenTreeOp* tree, GenTreeDblCon* dblCon1, GenTreeDblCon* dblCon2);
+
+    GenTree* gtBashTreeToConstInt(GenTree* tree, int32_t iconVal, FieldSeq* fieldSeq = nullptr);
+    GenTree* gtBashTreeToConstLng(GenTree* tree, int64_t lconVal, FieldSeq* fieldSeq = nullptr);
+    GenTree* gtBashTreeToConstDbl(GenTree* tree, double dconVal);
+
+    GenTree* gtFoldExprForOverflow(GenTree* tree);
+
     GenTree* gtFoldIndirConst(GenTreeIndir* indir);
     GenTree* gtFoldExprSpecial(GenTree* tree);
     GenTree* gtFoldExprSpecialFloating(GenTree* tree);
@@ -3966,7 +3991,6 @@ public:
         BR_REMOVE_BUT_NOT_NARROW,              // remove effects, return original source tree
         BR_DONT_REMOVE,                        // check if removal is possible, return copy source tree
         BR_DONT_REMOVE_WANT_TYPE_HANDLE,       // check if removal is possible, return type handle tree
-        BR_MAKE_LOCAL_COPY                     // revise box to copy to temp local and return local's address
     };
 
     GenTree* gtTryRemoveBoxUpstreamEffects(GenTree* tree, BoxRemovalOptions options = BR_REMOVE_AND_NARROW);
@@ -4187,10 +4211,10 @@ public:
     bool lvaVarAddrExposed(unsigned varNum) const;
     void lvaSetVarAddrExposed(unsigned varNum DEBUGARG(AddressExposedReason reason));
     void lvaSetHiddenBufferStructArg(unsigned varNum);
-    void lvaSetVarLiveInOutOfHandler(unsigned varNum);
     bool lvaVarDoNotEnregister(unsigned varNum);
 
     void lvSetMinOptsDoNotEnreg();
+    void lvSetVarsDoNotEnreg();
 
     bool lvaEnregEHVars;
     bool lvaEnregMultiRegVars;
@@ -9033,7 +9057,7 @@ public:
     AssertionIndex optFindComplementary(AssertionIndex assertionIndex);
     void           optMapComplementary(AssertionIndex assertionIndex, AssertionIndex index);
 
-    ValueNum optConservativeNormalVN(GenTree* tree);
+    ValueNum optConservativeNormalVN(const GenTree* tree);
 
     ssize_t optCastConstantSmall(ssize_t iconVal, var_types smallType);
 
@@ -9091,6 +9115,7 @@ public:
     GenTree* optNonNullAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCall* call);
     bool     optNonNullAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* indir);
     bool     optWriteBarrierAssertionProp_StoreInd(ASSERT_VALARG_TP assertions, GenTreeStoreInd* indir);
+    bool     optWriteBarrierAssertionProp_StoreBlk(ASSERT_VALARG_TP assertions, GenTreeBlk* store);
 
     enum class AssertVisit
     {
@@ -11987,9 +12012,7 @@ public:
         unsigned m_depField;
         unsigned m_noRegVars;
         unsigned m_wasmGcVisibility;
-#ifdef JIT32_GCENCODER
         unsigned m_PinningRef;
-#endif // JIT32_GCENCODER
 #if !defined(TARGET_64BIT)
         unsigned m_longParamField;
 #endif // !TARGET_64BIT

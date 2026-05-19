@@ -3215,7 +3215,7 @@ void CodeGen::genSpillOrAddRegisterParam(
     }
 
     LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
-    if (varDsc->lvOnFrame && (!varDsc->lvIsInReg() || varDsc->lvLiveInOutOfHndlr))
+    if (varDsc->lvOnFrame && (!varDsc->lvIsInReg() || varDsc->IsLiveInOutOfHandler()))
     {
         LclVarDsc* paramVarDsc = m_compiler->lvaGetDesc(paramLclNum);
 
@@ -3277,7 +3277,7 @@ void CodeGen::genSpillOrAddRegisterParam(
 void CodeGen::genSpillOrAddNonStandardRegisterParam(unsigned lclNum, regNumber sourceReg, RegGraph* graph)
 {
     LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
-    if (varDsc->lvOnFrame && (!varDsc->lvIsInReg() || varDsc->lvLiveInOutOfHndlr))
+    if (varDsc->lvOnFrame && (!varDsc->lvIsInReg() || varDsc->IsLiveInOutOfHandler()))
     {
         GetEmitter()->emitIns_S_R(ins_Store(varDsc->TypeGet()), emitActualTypeSize(varDsc), sourceReg, lclNum, 0);
     }
@@ -3765,7 +3765,7 @@ void CodeGen::genCheckUseBlockInit()
                     {
                         if (!varDsc->lvRegister)
                         {
-                            if (!varDsc->lvIsInReg() || varDsc->lvLiveInOutOfHndlr)
+                            if (!varDsc->lvIsInReg() || varDsc->IsLiveInOutOfHandler())
                             {
                                 // Var is on the stack at entry.
                                 initStkLclCnt +=
@@ -4061,7 +4061,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
             // Locals that are (only) in registers to begin with do not need
             // their stack home zeroed. Their register will be zeroed later in
             // the prolog.
-            if (varDsc->lvIsInReg() && !varDsc->lvLiveInOutOfHndlr)
+            if (varDsc->lvIsInReg() && !varDsc->IsLiveInOutOfHandler())
             {
                 continue;
             }
@@ -5162,7 +5162,7 @@ void CodeGen::genFnProlog()
         }
 
         bool isInReg    = varDsc->lvIsInReg();
-        bool isInMemory = !isInReg || varDsc->lvLiveInOutOfHndlr;
+        bool isInMemory = !isInReg || varDsc->IsLiveInOutOfHandler();
 
         // Note that 'lvIsInReg()' will only be accurate for variables that are actually live-in to
         // the first block. This will include all possibly-uninitialized locals, whose liveness
@@ -5172,7 +5172,7 @@ void CodeGen::genFnProlog()
         // occupying it on entry.
         if (isInReg)
         {
-            if (m_compiler->lvaEnregEHVars && varDsc->lvLiveInOutOfHndlr)
+            if (m_compiler->lvaEnregEHVars && varDsc->IsLiveInOutOfHandler())
             {
                 isInReg = VarSetOps::IsMember(m_compiler, m_compiler->fgFirstBB->bbLiveIn, varDsc->lvVarIndex);
             }
