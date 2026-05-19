@@ -576,20 +576,14 @@ const char* toString(CorInfoType cit)
             return "float";
         case CORINFO_TYPE_DOUBLE:
             return "double";
-        case CORINFO_TYPE_STRING:
-            return "string";
+        case CORINFO_TYPE_CLASS:
+            return "class";
         case CORINFO_TYPE_PTR:
             return "ptr";
         case CORINFO_TYPE_BYREF:
             return "byref";
         case CORINFO_TYPE_VALUECLASS:
             return "valueclass";
-        case CORINFO_TYPE_CLASS:
-            return "class";
-        case CORINFO_TYPE_REFANY:
-            return "refany";
-        case CORINFO_TYPE_VAR:
-            return "var";
         default:
             return "UNKNOWN";
     }
@@ -641,9 +635,7 @@ unsigned int toCorInfoSize(CorInfoType cit)
         case CORINFO_TYPE_CLASS:
             return (int)SpmiTargetPointerSize();
 
-        case CORINFO_TYPE_STRING:
         case CORINFO_TYPE_VALUECLASS:
-        case CORINFO_TYPE_REFANY:
         case CORINFO_TYPE_UNDEF:
         case CORINFO_TYPE_VOID:
         default:
@@ -1251,6 +1243,8 @@ const char* CorJitFlagToString(CORJIT_FLAGS::CorJitFlag flag)
 
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_ASYNC:
         return "CORJIT_FLAG_ASYNC";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_USE_DISPATCH_HELPERS:
+        return "CORJIT_FLAG_USE_DISPATCH_HELPERS";
 
     default:
         return "<unknown>";

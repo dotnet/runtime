@@ -2246,6 +2246,14 @@ public:
         return m_CPUCompileFlags;
     }
 
+#if defined(TARGET_ARM64)
+    inline bool UseScalableVectorT()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_CPUCompileFlags.GetInstructionSetFlags().HasInstructionSet(InstructionSet_VectorT);
+    }
+#endif
+
 private :
     Crst                m_JitLoadLock;
 
