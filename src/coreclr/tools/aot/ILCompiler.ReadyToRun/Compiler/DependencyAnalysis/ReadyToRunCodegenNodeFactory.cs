@@ -141,6 +141,23 @@ namespace ILCompiler.DependencyAnalysis
             return _allMethodsOnType.GetOrAdd(type.ConvertToCanonForm(CanonicalFormKind.Specific));
         }
 
+        private NodeCache<TypeDesc, InheritedVirtualMethodsNode> _inheritedVirtualMethods;
+
+        public InheritedVirtualMethodsNode InheritedVirtualMethods(TypeDesc type)
+        {
+            return _inheritedVirtualMethods.GetOrAdd(type.ConvertToCanonForm(CanonicalFormKind.Specific));
+        }
+
+        private NodeCache<MethodDesc, GVMDependenciesNode> _gvmDependenciesNode;
+
+        public GVMDependenciesNode GVMDependencies(MethodDesc method)
+        {
+            Debug.Assert(method.IsVirtual);
+            MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            canonMethod = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(canonMethod);
+            return _gvmDependenciesNode.GetOrAdd(canonMethod);
+        }
+
         private NodeCache<ReadyToRunGenericHelperKey, ISymbolNode> _genericReadyToRunHelpersFromDict;
 
         public ISymbolNode ReadyToRunHelperFromDictionaryLookup(ReadyToRunHelperId id, Object target, TypeSystemEntity dictionaryOwner)
@@ -261,6 +278,16 @@ namespace ILCompiler.DependencyAnalysis
             _allMethodsOnType = new NodeCache<TypeDesc, AllMethodsOnTypeNode>(type =>
             {
                 return new AllMethodsOnTypeNode(type);
+            });
+
+            _inheritedVirtualMethods = new NodeCache<TypeDesc, InheritedVirtualMethodsNode>(type =>
+            {
+                return new InheritedVirtualMethodsNode(type);
+            });
+
+            _gvmDependenciesNode = new NodeCache<MethodDesc, GVMDependenciesNode>(method =>
+            {
+                return new GVMDependenciesNode(method);
             });
 
             _genericReadyToRunHelpersFromDict = new NodeCache<ReadyToRunGenericHelperKey, ISymbolNode>(helperKey =>
