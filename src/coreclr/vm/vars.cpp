@@ -140,6 +140,7 @@ ETW::CEtwTracer * g_pEtwTracer = NULL;
 GPTR_IMPL(DebugInterface,     g_pDebugInterface);
 // A managed debugger may set this flag to high from out of process.
 GVAL_IMPL_INIT(DWORD,         g_CORDebuggerControlFlags, DBCF_NORMAL_OPERATION);
+GVAL_IMPL_INIT(DWORD,         g_EnableFastHeapDumps, 0);
 
 #ifdef DEBUGGING_SUPPORTED
 GPTR_IMPL(EEDbgInterfaceImpl, g_pEEDbgInterfaceImpl);
