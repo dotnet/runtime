@@ -971,8 +971,6 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.X64_AVXVNNIINT);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_AVX10v2))
                         resultflags.AddInstructionSet(InstructionSet.X64_AVXVNNIINT_V512);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVXVNNI_V512);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_X86Base))
                         resultflags.AddInstructionSet(InstructionSet.X64_Vector128);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_AVX))
@@ -1038,8 +1036,6 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.X86_AVXVNNIINT);
                     if (resultflags.HasInstructionSet(InstructionSet.X86_AVX10v2))
                         resultflags.AddInstructionSet(InstructionSet.X86_AVXVNNIINT_V512);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVX512))
-                        resultflags.AddInstructionSet(InstructionSet.X86_AVXVNNI_V512);
                     if (resultflags.HasInstructionSet(InstructionSet.X86_X86Base))
                         resultflags.AddInstructionSet(InstructionSet.X86_Vector128);
                     if (resultflags.HasInstructionSet(InstructionSet.X86_AVX))

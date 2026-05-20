@@ -16,7 +16,7 @@
 ; vectorinstructionset,<architecture>,<jit instruction set name>
 ;
 ; Add an instruction set implication (i.e, if instruction set A is present, then instruction set B must be present too.)
-; implication,<architecture>,<jit instruction set name>,<implied jit instruction set name>
+; implication,<architecture>,<jit instruction set name>,<implied jit instruction set name>,<optional NoReverse>
 ;
 ; Copy instruction sets defined for other architecture at this point in the file.
 ; copyinstructionsets,<architecture>,<copytoarchitecture>
@@ -189,7 +189,7 @@ implication        ,X86   ,X86Serialize         ,X86Base
 implication        ,X86   ,AVXVNNIINT           ,AVX2
 implication        ,X86   ,AVXVNNIINT_V512      ,AVX10v2
 
-implication        ,X86   ,AVXVNNI_V512         ,AVX512
+implication        ,X86   ,AVXVNNI_V512         ,AVX512, NoReverse
 
 ; These synthetic ISAs need to appear after the core ISAs
 ; as they depend on the other implications being correct first
