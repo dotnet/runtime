@@ -8783,46 +8783,46 @@ GenTree* Compiler::fgOptimizeRelationalComparison(GenTreeOp* cmp)
 {
     assert(cmp->OperIsCmpCompare());
 
-    GenTree* opt = cmp;
+    GenTree* tree = cmp;
 
     // TODO-CQ: Should be called for all comparisons
-    if (opt->OperIs(GT_LT, GT_LE, GT_GE, GT_GT) &&
-        (opt->gtGetOp1()->OperIs(GT_CAST) || opt->gtGetOp2()->OperIs(GT_CAST)))
+    if (tree->OperIs(GT_LT, GT_LE, GT_GE, GT_GT) &&
+        (tree->gtGetOp1()->OperIs(GT_CAST) || tree->gtGetOp2()->OperIs(GT_CAST)))
     {
-        opt = fgOptimizeRelationalComparisonWithCasts(opt->AsOp());
+        tree = fgOptimizeRelationalComparisonWithCasts(tree->AsOp());
     }
 
-    if (opt->OperIs(GT_LT, GT_LE, GT_GE, GT_GT))
+    if (tree->OperIs(GT_LT, GT_LE, GT_GE, GT_GT))
     {
-        if (opt->gtGetOp2()->IsIntegralConst())
+        if (tree->gtGetOp2()->IsIntegralConst())
         {
-            opt = fgOptimizeRelationalComparisonWithConst(opt->AsOp())->AsOp();
+            tree = fgOptimizeRelationalComparisonWithConst(tree->AsOp())->AsOp();
         }
     }
-    else if (opt->OperIs(GT_EQ, GT_NE))
+    else if (tree->OperIs(GT_EQ, GT_NE))
     {
-        if (opt->gtGetOp2()->IsIntegralConst())
+        if (tree->gtGetOp2()->IsIntegralConst())
         {
-            opt = fgOptimizeEqualityComparisonWithConst(opt->AsOp());
+            tree = fgOptimizeEqualityComparisonWithConst(tree->AsOp());
         }
     }
 
-    if (opts.OptimizationEnabled() && fgGlobalMorph && opt->OperIs(GT_LT, GT_LE, GT_GE, GT_GT))
+    if (opts.OptimizationEnabled() && fgGlobalMorph && tree->OperIs(GT_LT, GT_LE, GT_GE, GT_GT))
     {
         // Normalize unsigned comparisons to signed if both operands a known to be never negative.
-        if (opt->IsUnsigned() && varTypeIsIntegral(opt->gtGetOp1()) && opt->gtGetOp1()->IsNeverNegative(this) &&
-            opt->gtGetOp2()->IsNeverNegative(this))
+        if (tree->IsUnsigned() && varTypeIsIntegral(tree->gtGetOp1()) && tree->gtGetOp1()->IsNeverNegative(this) &&
+            tree->gtGetOp2()->IsNeverNegative(this))
         {
-            opt->ClearUnsigned();
+            tree->ClearUnsigned();
         }
 
-        if (opt->gtGetOp1()->IsIntegralConst() || opt->gtGetOp2()->IsIntegralConst())
+        if (tree->gtGetOp1()->IsIntegralConst() || tree->gtGetOp2()->IsIntegralConst())
         {
-            opt = fgOptimizeRelationalComparisonWithFullRangeConst(opt->AsOp());
+            tree = fgOptimizeRelationalComparisonWithFullRangeConst(tree->AsOp());
         }
     }
 
-    return opt;
+    return tree;
 }
 
 //------------------------------------------------------------------------
