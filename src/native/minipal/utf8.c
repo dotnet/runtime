@@ -620,14 +620,14 @@ static size_t GetCharCount(UTF8Encoding* self, unsigned char* bytes, size_t coun
         LongCodeWithMask32 :
 #if BIGENDIAN
         // be careful about the sign extension
-        if (!self->treatAsLE) ch = (int)(((unsigned int)ch) >> 16);
+        if (self->treatAsLE) ch = (int)(((unsigned int)ch) >> 16);
         else
 #endif
         ch &= 0xFF;
 
         LongCodeWithMask16:
 #if BIGENDIAN
-        if (!self->treatAsLE) ch = (int)(((unsigned int)ch) >> 8);
+        if (self->treatAsLE) ch = (int)(((unsigned int)ch) >> 8);
         else
 #endif
         ch &= 0xFF;
@@ -1061,7 +1061,7 @@ static size_t GetChars(UTF8Encoding* self, unsigned char* bytes, size_t byteCoun
 
                 // Unfortunately, this is endianness sensitive
 #if BIGENDIAN
-                if (!self->treatAsLE)
+                if (self->treatAsLE)
                 {
                     *pTarget = (CHAR16_T)((ch >> 8) & 0x7F);
                     pSrc += 2;
@@ -1093,7 +1093,7 @@ static size_t GetChars(UTF8Encoding* self, unsigned char* bytes, size_t byteCoun
 
                 // Unfortunately, this is endianness sensitive
 #if BIGENDIAN
-                if (!self->treatAsLE)
+                if (self->treatAsLE)
                 {
                     *pTarget = (CHAR16_T)((ch >> 24) & 0x7F);
                     *(pTarget + 1) = (CHAR16_T)((ch >> 16) & 0x7F);
@@ -1126,14 +1126,14 @@ static size_t GetChars(UTF8Encoding* self, unsigned char* bytes, size_t byteCoun
             LongCodeWithMask32 :
 #if BIGENDIAN
             // be careful about the sign extension
-            if (!self->treatAsLE) ch = (int)(((unsigned int)ch) >> 16);
+            if (self->treatAsLE) ch = (int)(((unsigned int)ch) >> 16);
             else
 #endif
             ch &= 0xFF;
 
             LongCodeWithMask16:
 #if BIGENDIAN
-            if (!self->treatAsLE) ch = (int)(((unsigned int)ch) >> 8);
+            if (self->treatAsLE) ch = (int)(((unsigned int)ch) >> 8);
             else
 #endif
             ch &= 0xFF;
@@ -1599,7 +1599,7 @@ static size_t GetBytes(UTF8Encoding* self, CHAR16_T* chars, size_t charCount, un
 
                 // Unfortunately, this is endianness sensitive
 #if BIGENDIAN
-                if (!self->treatAsLE)
+                if (self->treatAsLE)
                 {
                     *pTarget = (unsigned char)(ch >> 16);
                     *(pTarget + 1) = (unsigned char)ch;
@@ -1624,7 +1624,7 @@ static size_t GetBytes(UTF8Encoding* self, CHAR16_T* chars, size_t charCount, un
         LongCodeWithMask:
 #if BIGENDIAN
         // be careful about the sign extension
-        if (!self->treatAsLE) ch = (int)(((unsigned int)ch) >> 16);
+        if (self->treatAsLE) ch = (int)(((unsigned int)ch) >> 16);
         else
 #endif
         ch = (CHAR16_T)ch;
@@ -2002,7 +2002,7 @@ static size_t GetByteCount(UTF8Encoding* self, CHAR16_T *chars, size_t count)
         LongCodeWithMask:
 #if BIGENDIAN
         // be careful about the sign extension
-        if (!self->treatAsLE) ch = (int)(((unsigned int)ch) >> 16);
+        if (self->treatAsLE) ch = (int)(((unsigned int)ch) >> 16);
         else
 #endif
         ch = (CHAR16_T)ch;
