@@ -46,7 +46,15 @@ void PerfMap::Initialize()
 {
     LIMITED_METHOD_CONTRACT;
 
-    s_csPerfMap.Init(CrstPerfMap);
+    // Use CRST_UNSAFE_ANYMODE to avoid a GC-mode toggle deadlock: callers such as
+    // CodeFragmentHeap::RealAllocAlignedMem hold CRST_UNSAFE_ANYMODE locks in cooperative
+    // mode. A default Crst here would toggle cooperative->preemptive->acquire->cooperative,
+    // and the post-acquire DisablePreemptiveGC can block on a pending GC suspension,
+    // forming a deadlock cycle with threads waiting on the outer UNSAFE_ANYMODE lock.
+    // All data accessed under this lock is native (FILE*, fd, SString) so holding it
+    // in cooperative mode does not introduce new GC-safety issues -- the I/O was already
+    // performed in cooperative mode with the previous default Crst.
+    s_csPerfMap.Init(CrstPerfMap, CrstFlags(CRST_UNSAFE_ANYMODE));
 
     PerfMapType perfMapType = (PerfMapType)CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerfMapEnabled);
     PerfMap::Enable(perfMapType, false);
@@ -313,7 +321,7 @@ void PerfMap::LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t cod
     CONTRACTL{
         THROWS;
         GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
+        MODE_ANY;
         PRECONDITION(pMethod != nullptr);
         PRECONDITION(pCode != nullptr);
         PRECONDITION(codeSize > 0);
