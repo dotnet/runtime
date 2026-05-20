@@ -6,8 +6,27 @@
 #include "../gchelpers.inl"
 #include "gcheaputilities.h"
 
+#ifdef FEATURE_MULTITHREADING
+#error The current assembly implementation of write barriers assumes single-threaded Wasm
+#endif
+
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+#error The current assembly implementation of write barriers does not implement card bundles
+#endif
+
+// To simplify integration with the rest of the codebase and avoid complicating the build
+// system, Wasm write barriers are implemented using inline assembly inside C functions, below.
+// These write barriers use the Wasm-specific FCDECL2_RAW for a native calling convention instead
+// of a managed calling convention (to omit the sp and pep parameters). This reduces code size
+// considerably and simplifies the JIT. In order to make it safe to call these write barriers from
+// inside of a managed function without manually updating the __stack_pointer global, the barriers
+// *must* be implemented without use of the linear memory stack, and the best way to guarantee that
+// is to implement the barriers by hand in assembly.
+
 #define ASM_HELPER_2(rettype, funcname, a1, a2) \
     EXTERN_C rettype __attribute__((naked)) F_CALL_CONV funcname(a1, a2)
+
+// Helper to make relevant GC globals and constants visible inside of inline assembly
 #define GC_ASM(text) \
     asm(text \
         :: [g_lowest_address] "i" (&g_lowest_address), \
@@ -18,8 +37,8 @@
         [card_byte_shift] "i" (card_byte_shift) \
     )
 
-EXTERN_C FCDECL2_RAW(VOID, JIT_WriteBarrier, Object **dst, Object *ref);
-ASM_HELPER_2(VOID, JIT_WriteBarrier, Object **dst, Object *ref)
+EXTERN_C FCDECL2_RAW(VOID, RhpAssignRef, Object **dst, Object *ref);
+ASM_HELPER_2(VOID, RhpAssignRef, Object **dst, Object *ref)
 {
     GC_ASM(
         /* *dst = ref */
@@ -53,8 +72,8 @@ ASM_HELPER_2(VOID, JIT_WriteBarrier, Object **dst, Object *ref)
     );
 }
 
-EXTERN_C FCDECL2_RAW(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref);
-ASM_HELPER_2(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref)
+EXTERN_C FCDECL2_RAW(VOID, RhpCheckedAssignRef, Object **dst, Object *ref);
+ASM_HELPER_2(VOID, RhpCheckedAssignRef, Object **dst, Object *ref)
 {
     GC_ASM(
         /* *dst = ref */
@@ -94,20 +113,5 @@ ASM_HELPER_2(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref)
         "i32.const 255\n"
         "i32.store8 %[g_card_table]\n"
         "return\n"
-    );
-}
-
-EXTERN_C FCDECL2_RAW(VOID, RhpAssignRef, Object **dst, Object *ref);
-ASM_HELPER_2(VOID, RhpAssignRef, Object **dst, Object *ref)
-__attribute__((alias("JIT_WriteBarrier")));
-
-EXTERN_C FCDECL2_RAW(VOID, RhpCheckedAssignRef, Object **dst, Object *ref);
-ASM_HELPER_2(VOID, RhpCheckedAssignRef, Object **dst, Object *ref)
-__attribute__((alias("JIT_CheckedWriteBarrier")));
-
-EXTERN_C FCDECL2_RAW(VOID, RhpByRefAssignRef, Object **dst, Object **ref);
-ASM_HELPER_2(VOID, RhpByRefAssignRef, Object **dst, Object **ref)
-{
-    GC_ASM("unreachable"
     );
 }

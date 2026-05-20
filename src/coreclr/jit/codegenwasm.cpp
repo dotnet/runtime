@@ -2663,9 +2663,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         // RhpCheckedAssignRef
         HELPER_SIG(CORINFO_HELP_CHECKED_ASSIGN_REF, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I,
                    CORINFO_WASM_TYPE_I);
-        // RhpByRefAssignRef
-        HELPER_SIG(CORINFO_HELP_ASSIGN_BYREF, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I,
-                   CORINFO_WASM_TYPE_I);
+        // RhpByRefAssignRef: Not implemented on Wasm, omitted
         // RhBulkMoveWithWriteBarrier
         HELPER_SIG(CORINFO_HELP_BULK_WRITEBARRIER, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I,
                    CORINFO_WASM_TYPE_I, CORINFO_WASM_TYPE_I);
