@@ -388,6 +388,11 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables.Test
         [InlineData("App___Config", "App:_Config")]
         [InlineData("A____B", "A::B")]
         [InlineData("NoUnderscores", "NoUnderscores")]
+        [InlineData("_X_Y", "_X_Y")]
+        [InlineData("___", ":_")]
+        [InlineData("__", ":")]
+        [InlineData("_", "_")]
+        [InlineData("", "")]
         public void DefaultTransformationReplacesDoubleUnderscore(string input, string expected)
         {
             var result = EnvironmentVariablesConfigurationSource.DefaultTransformation(input);
@@ -405,6 +410,8 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables.Test
         [InlineData("_X_Y", "_X_Y")]
         [InlineData("___", ".")]
         [InlineData("__", ":")]
+        [InlineData("_", "_")]
+        [InlineData("", "")]
         public void ColonAndDotTransformationReplacesTripleUnderscoreWithDotAndDoubleUnderscoreWithColon(string input, string expected)
         {
             var result = EnvironmentVariablesConfigurationSource.ColonAndDotTransformation(input);
@@ -498,6 +505,32 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables.Test
             envConfigSrc.Load(dict);
 
             Assert.Equal("value", envConfigSrc.Get("data__key"));
+        }
+
+        [Fact]
+        public void AddEnvironmentVariablesWithColonAndDotTransformation()
+        {
+            try
+            {
+                Environment.SetEnvironmentVariable("Logging__LogLevel__Microsoft___Hosting", "Debug");
+
+                var config = new ConfigurationBuilder()
+                    .AddEnvironmentVariables(prefix: null, EnvironmentVariablesConfigurationSource.ColonAndDotTransformation)
+                    .Build();
+
+                Assert.Equal("Debug", config["Logging:LogLevel:Microsoft.Hosting"]);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("Logging__LogLevel__Microsoft___Hosting", null);
+            }
+        }
+
+        [Fact]
+        public void TransformationReturningNullThrows()
+        {
+            Assert.Throws<InvalidOperationException>(() =>
+                new EnvironmentVariablesConfigurationProvider(null, static _ => null!));
         }
     }
 }

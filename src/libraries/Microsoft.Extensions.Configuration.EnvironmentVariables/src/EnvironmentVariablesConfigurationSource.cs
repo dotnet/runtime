@@ -16,16 +16,28 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
         /// configuration key delimiter (<c>:</c>).
         /// </summary>
         public static Func<string, string> DefaultTransformation { get; } =
-            static name => name.Replace("__", ConfigurationPath.KeyDelimiter);
+            static name =>
+            {
+                ArgumentNullException.ThrowIfNull(name);
+                return name.Replace("__", ConfigurationPath.KeyDelimiter);
+            };
 
         /// <summary>
         /// A transformation that replaces triple underscores (<c>___</c>) with a dot (<c>.</c>)
         /// and double underscores (<c>__</c>) with the configuration key delimiter (<c>:</c>).
         /// </summary>
+        /// <remarks>
+        /// Runs of underscores are processed greedily from left to right: each <c>___</c> match
+        /// is consumed before any remaining <c>__</c>. As a result, a run of four underscores
+        /// (<c>____</c>) is interpreted as one triple followed by a single literal underscore
+        /// and produces <c>._</c>, not <c>::</c>.
+        /// </remarks>
         public static Func<string, string> ColonAndDotTransformation { get; } = TransformUnderscoresToColonAndDot;
 
         private static string TransformUnderscoresToColonAndDot(string name)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             int first = name.IndexOf("__", StringComparison.Ordinal);
 
             if (first < 0)
@@ -70,6 +82,11 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
         /// <summary>
         /// A prefix used to filter environment variables.
         /// </summary>
+        /// <remarks>
+        /// The prefix is itself passed through <see cref="VariableNameTransformation"/> before
+        /// matching, and the matching (and stripping) is performed against the transformed
+        /// environment variable name.
+        /// </remarks>
         public string? Prefix { get; set; }
 
         /// <summary>

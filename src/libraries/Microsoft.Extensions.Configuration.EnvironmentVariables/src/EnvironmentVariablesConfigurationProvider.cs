@@ -171,6 +171,16 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
             }
         }
 
-        private string Normalize(string key) => _transformation(key);
+        private string Normalize(string key)
+        {
+            string? transformed = _transformation(key);
+
+            if (transformed is null)
+            {
+                throw new InvalidOperationException($"The variable name transformation returned null for environment variable name '{key}'.");
+            }
+
+            return transformed;
+        }
     }
 }
