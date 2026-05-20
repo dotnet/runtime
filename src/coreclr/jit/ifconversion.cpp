@@ -831,6 +831,10 @@ GenTree* OptIfConversionDsc::TrySelectToCnsOpCond(GenTreeConditional* select)
         }
         return retCond;
     }
+    else if (trueVal == falseVal)
+    {
+        return m_compiler->gtWrapWithSideEffects(trueInput, cond);
+    }
 
 #ifdef TARGET_RISCV64
     bool               isCondReversed = false;
