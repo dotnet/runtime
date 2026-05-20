@@ -8,13 +8,12 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Schema;
 
-#pragma warning disable PLATDOC002 // Not platform-specific; Async partial uses established naming convention
-
 namespace System.Xml
 {
-    // Represents a reader that provides fast, non-cached forward only stream access to XML data.
+#pragma warning disable PLATDOC002 // Async partial uses established TypeNameAsync.cs naming convention
     [DebuggerDisplay($"{{{nameof(DebuggerDisplayProxy)}}}")]
     public abstract partial class XmlReader : IDisposable
+#pragma warning restore PLATDOC002
     {
         public virtual Task<string> GetValueAsync()
         {

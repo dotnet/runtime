@@ -4,12 +4,11 @@
 using System.IO;
 using System.Threading.Tasks;
 
-#pragma warning disable PLATDOC003 // Not platform-specific; property lives in this file by convention
-
 namespace System.Xml
 {
     public abstract partial class XmlResolver
     {
+#pragma warning disable PLATDOC003 // Not platform-specific; property lives in this file by convention
         /// <summary>
         /// Gets an XML resolver which resolves only file system URIs.
         /// </summary>
@@ -19,6 +18,7 @@ namespace System.Xml
         /// <see cref="XmlResolver"/> instance returned by this property will resolve only URIs which scheme is file.
         /// </remarks>
         public static XmlResolver FileSystemResolver => XmlFileSystemResolver.s_singleton;
+#pragma warning restore PLATDOC003
 
         // An XML resolver that resolves only file system URIs.
         private sealed class XmlFileSystemResolver : XmlResolver

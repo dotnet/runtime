@@ -6,13 +6,11 @@ using System.Threading.Tasks;
 using System.Xml.Schema;
 using System.Xml.XPath;
 
-#pragma warning disable PLATDOC002 // Not platform-specific; Async partial uses established naming convention
-
 namespace System.Xml
 {
-    // Represents a writer that provides fast non-cached forward-only way of generating XML streams containing XML documents
-    // that conform to the W3C Extensible Markup Language (XML) 1.0 specification and the Namespaces in XML specification.
+#pragma warning disable PLATDOC002 // Async partial uses established TypeNameAsync.cs naming convention
     public abstract partial class XmlWriter : IDisposable, IAsyncDisposable
+#pragma warning restore PLATDOC002
     {
         // Write methods
         // Writes out the XML declaration with the version "1.0".

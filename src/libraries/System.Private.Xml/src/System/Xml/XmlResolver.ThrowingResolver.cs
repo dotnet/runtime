@@ -4,12 +4,11 @@
 using System.Net;
 using System.Threading.Tasks;
 
-#pragma warning disable PLATDOC003 // Not platform-specific; property lives in this file by convention
-
 namespace System.Xml
 {
     public abstract partial class XmlResolver
     {
+#pragma warning disable PLATDOC003 // Not platform-specific; property lives in this file by convention
         /// <summary>
         /// Gets an XML resolver which forbids entity resolution.
         /// </summary>
@@ -23,6 +22,7 @@ namespace System.Xml
         /// prohibited, even when DTD processing is otherwise enabled.
         /// </remarks>
         public static XmlResolver ThrowingResolver => XmlThrowingResolver.s_singleton;
+#pragma warning restore PLATDOC003
 
         // An XmlResolver that forbids all external entity resolution.
         private sealed class XmlThrowingResolver : XmlResolver

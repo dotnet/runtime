@@ -386,8 +386,6 @@ namespace Microsoft.DotNet.Analyzers.PlatformDoc
                 IndexerDeclarationSyntax i => i.ThisKeyword.GetLocation(),
                 OperatorDeclarationSyntax o => o.OperatorToken.GetLocation(),
                 ConversionOperatorDeclarationSyntax c => c.Type.GetLocation(),
-                TypeDeclarationSyntax t => t.Identifier.GetLocation(),
-                DelegateDeclarationSyntax d => d.Identifier.GetLocation(),
                 EnumMemberDeclarationSyntax e => e.Identifier.GetLocation(),
                 _ => member.GetLocation()
             };
@@ -407,8 +405,6 @@ namespace Microsoft.DotNet.Analyzers.PlatformDoc
                 IndexerDeclarationSyntax => "this[]",
                 OperatorDeclarationSyntax o => "operator " + o.OperatorToken.Text,
                 ConversionOperatorDeclarationSyntax c => c.ImplicitOrExplicitKeyword.Text + " operator " + c.Type,
-                TypeDeclarationSyntax t => t.Identifier.Text,
-                DelegateDeclarationSyntax d => d.Identifier.Text,
                 EnumMemberDeclarationSyntax e => e.Identifier.Text,
                 _ => "<member>"
             };
