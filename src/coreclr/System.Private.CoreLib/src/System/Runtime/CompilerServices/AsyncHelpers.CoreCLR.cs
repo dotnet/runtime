@@ -380,7 +380,7 @@ namespace System.Runtime.CompilerServices
 
         // same as above, but with continuation context capture.
         [BypassReadyToRun]
-        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
+        [MethodImpl(MethodImplOptions.Async)]
         private static unsafe void AwaitValueTaskSource(object source, short token)
         {
             ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
@@ -398,6 +398,7 @@ namespace System.Runtime.CompilerServices
 
             Debug.Assert(source != null);
             vtsCont.Initialize(source, token);
+            vtsCont.ExecutionContext = ExecutionContext.CaptureForSuspension(state.CurrentThread!);
 
             // capture continuation context. (this is the difference from the transparent helper)
             // CONSIDER: We capture ContinuationContext for consistency, but we only need flags.
@@ -411,7 +412,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [BypassReadyToRun]
-        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
+        [MethodImpl(MethodImplOptions.Async)]
         private static unsafe void TransparentAwaitValueTaskOfT<T>(ValueTask<T> valueTask)
         {
             ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
@@ -456,6 +457,7 @@ namespace System.Runtime.CompilerServices
 
             Debug.Assert(source != null);
             vtsCont.Initialize<T>(source, token);
+            vtsCont.ExecutionContext = ExecutionContext.CaptureForSuspension(state.CurrentThread!);
 
             // CONSIDER: We capture ContinuationContext for consistency, but we only need flags.
             CaptureContinuationContext(ref vtsCont.ContinuationContext, ref vtsCont.Flags);
