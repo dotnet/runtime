@@ -54,7 +54,6 @@ static unsigned int  emitGetValTypeImmImm(const instrDesc* id);
 const uint8_t* emitGetV128ImmValue(const instrDesc* id);
 const uint8_t  emitGetLaneImmValue(const instrDesc* id);
 
-
 /************************************************************************/
 /*  Private members that deal with target-dependent instr. descriptors  */
 /************************************************************************/
