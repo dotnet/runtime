@@ -35,6 +35,10 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(ReadWrite_Success_Large_MemberData))]
         public override Task ReadWrite_Success_Large(ReadWriteMode mode, int writeSize, bool startWithFlush) => base.ReadWrite_Success_Large(mode, writeSize, startWithFlush);
 
+        [Theory]
+        [MemberData(nameof(ReadWrite_Success_MemberData), MemberType = typeof(ConnectedStreamConformanceTests))]
+        public override Task ReadWrite_Success(ReadWriteMode mode, int writeSize, bool startWithFlush) => base.ReadWrite_Success(mode, writeSize, startWithFlush);
+
         [Fact]
         public static void Ctor()
         {

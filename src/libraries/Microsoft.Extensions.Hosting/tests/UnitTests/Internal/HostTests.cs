@@ -593,7 +593,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         }
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         public async Task HostStopAsyncCanBeCancelledEarly()
         {
             var service = new Mock<IHostedService>();
@@ -625,7 +625,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         }
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         public async Task HostStopAsyncUsesDefaultTimeoutIfGivenTokenDoesNotFire()
         {
             var service = new Mock<IHostedService>();
@@ -658,7 +658,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         }
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         public async Task WebHostStopAsyncUsesDefaultTimeoutIfNoTokenProvided()
         {
             var service = new Mock<IHostedService>();
@@ -1215,7 +1215,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         }
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         public void Dispose_DisposesAppConfigurationProviders()
         {
             var providerMock = new Mock<ConfigurationProvider>().As<IDisposable>();
@@ -1240,7 +1240,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         }
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         public void Dispose_DisposesHostConfigurationProviders()
         {
             var providerMock = new Mock<ConfigurationProvider>().As<IDisposable>();
@@ -1316,7 +1316,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         }
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         public async Task DisposeAsync_DisposesAppConfigurationProviders()
         {
             var providerMock = new Mock<ConfigurationProvider>().As<IDisposable>();
@@ -1341,7 +1341,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         }
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         public async Task DisposeAsync_DisposesHostConfigurationProviders()
         {
             var providerMock = new Mock<ConfigurationProvider>().As<IDisposable>();
@@ -1366,7 +1366,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         }
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         public void ThrowExceptionForCustomImplementationOfIHostApplicationLifetime()
         {
             var hostApplicationLifetimeMock = new Mock<IHostApplicationLifetime>();

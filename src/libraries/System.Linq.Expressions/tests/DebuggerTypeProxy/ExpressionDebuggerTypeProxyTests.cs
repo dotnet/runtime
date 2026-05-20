@@ -163,7 +163,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [ConditionalTheory, MemberData(nameof(OnePerType))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot)), MemberData(nameof(OnePerType))]
         public void ThrowOnNullToCtor(object sourceObject)
         {
             Type type = sourceObject.GetType();

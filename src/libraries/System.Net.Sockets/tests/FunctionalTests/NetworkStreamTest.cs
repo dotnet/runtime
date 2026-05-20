@@ -43,6 +43,11 @@ namespace System.Net.Sockets.Tests
             AssertExtensions.Throws<ArgumentNullException>("socket", () => new NetworkStream(null, FileAccess.ReadWrite, false));
         }
 
+        [Theory]
+        [MemberData(nameof(CopyToAsync_AllDataCopied_MemberData), MemberType = typeof(ConnectedStreamConformanceTests))]
+        public override Task CopyToAsync_AllDataCopied(int byteCount, bool useAsync) =>
+            base.CopyToAsync_AllDataCopied(byteCount, useAsync);
+
         [Fact]
         public void Ctor_NotConnected_Throws()
         {
