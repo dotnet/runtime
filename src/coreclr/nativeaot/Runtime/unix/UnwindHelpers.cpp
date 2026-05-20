@@ -62,6 +62,49 @@ using libunwind::UnwindInfoSections;
 
 LocalAddressSpace _addressSpace;
 
+// Debug logging hooks referenced by libunwind's config.h when NDEBUG is not
+// defined. These were previously in libunwind.cpp which is no longer compiled.
+#ifndef NDEBUG
+#include <stdlib.h>
+
+extern "C" {
+
+_LIBUNWIND_HIDDEN
+bool logAPIs() {
+  static bool checked = false;
+  static bool log = false;
+  if (!checked) {
+    log = (getenv("LIBUNWIND_PRINT_APIS") != NULL);
+    checked = true;
+  }
+  return log;
+}
+
+_LIBUNWIND_HIDDEN
+bool logUnwinding() {
+  static bool checked = false;
+  static bool log = false;
+  if (!checked) {
+    log = (getenv("LIBUNWIND_PRINT_UNWINDING") != NULL);
+    checked = true;
+  }
+  return log;
+}
+
+_LIBUNWIND_HIDDEN
+bool logDWARF() {
+  static bool checked = false;
+  static bool log = false;
+  if (!checked) {
+    log = (getenv("LIBUNWIND_PRINT_DWARF") != NULL);
+    checked = true;
+  }
+  return log;
+}
+
+} // extern "C"
+#endif // NDEBUG
+
 #ifdef TARGET_AMD64
 
 // Shim that implements methods required by libunwind over REGDISPLAY
