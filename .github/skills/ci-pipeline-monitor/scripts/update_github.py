@@ -126,11 +126,8 @@ class IssueGenerator:
         affected = [ap for ap in affected if not os.path.exists(self.get_stamp_path(ap))]
 
         if len(affected) == 0:
-            if creating_new_issue:
-                raise Exception("All affected builds have stamps but there is no github issue!")
-            else:
-                print("All affected builds have stamps; skipping.")
-                return
+            print("All affected builds have stamps; skipping.")
+            return
 
         out.append(f"**Failed in ({len(affected)}):**")
         for ap in affected:

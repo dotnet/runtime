@@ -4,7 +4,7 @@ helix-logs/
 scripts/monitor.db
 scripts/__pycache__/
 
-# Folder for tracking whether a given build has had github comment generated
+# Folder for tracking whether a given build has had GitHub comment generated
 stamps/
 
 # Temporary ad-hoc scripts (created during triage, deleted after use)
