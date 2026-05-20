@@ -11675,7 +11675,7 @@ void Compiler::impWrapTopOfStackInAwait()
     if (taskJitType == TYP_STRUCT)
     {
         awaitable = impNormStructVal(awaitable, CHECK_SPILL_ALL);
-        taskArg = NewCallArg::Struct(awaitable, TYP_STRUCT, typGetObjLayout(taskTypeHnd));
+        taskArg   = NewCallArg::Struct(awaitable, TYP_STRUCT, typGetObjLayout(taskTypeHnd));
     }
     else
     {
