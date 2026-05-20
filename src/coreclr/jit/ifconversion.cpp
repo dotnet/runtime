@@ -637,19 +637,19 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
         }
     }
 
-    // We only produce float SELECTs for optimization into non-SELECTs, otherwise bail
-    if (varTypeIsFloating(select))
-    {
-        return true;
-    }
-
-#ifdef TARGET_RISCV64
     if (select->OperIs(GT_SELECT))
     {
+#ifdef TARGET_RISCV64
         JITDUMP("Skipping if-conversion that could not be optimized to ordinary operations\n");
         return true;
-    }
 #endif
+
+        // We only produce float SELECTs for optimization into non-SELECTs, otherwise bail
+        if (varTypeIsFloating(select))
+        {
+            return true;
+        }
+    }
 
     // Use the SELECT as the source of the Then STORE/RETURN.
     m_thenOperation.node->AddAllEffectsFlags(select);
@@ -976,22 +976,23 @@ GenTree* OptIfConversionDsc::TrySelectToCondOpLcl(GenTreeConditional* select)
 GenTree* OptIfConversionDsc::TrySelectToMinMax(GenTreeConditional* select)
 {
 #ifdef TARGET_XARCH
-    GenTree* condInput = select->gtCond;
+    GenTree* condInput  = select->gtCond;
     GenTree* trueInput  = select->gtOp1;
     GenTree* falseInput = select->gtOp2;
-    
-    if (!varTypeIsFloating(select) || !varTypeIsFloating(condInput->gtGetOp1()) || !varTypeIsFloating(condInput->gtGetOp2()))
+
+    if (!varTypeIsFloating(select) || !varTypeIsFloating(condInput->gtGetOp1()) ||
+        !varTypeIsFloating(condInput->gtGetOp2()))
     {
         return nullptr;
     }
-    
+
     GenCondition cond = GenCondition::FromFloatRelop(condInput);
     if (cond.IsUnordered() || !cond.Is(GenCondition::Code::FLT, GenCondition::Code::FGT))
     {
         return nullptr;
     }
 
-    bool isMax = cond.Is(GenCondition::Code::FGT);
+    bool isMax    = cond.Is(GenCondition::Code::FGT);
     bool reversed = !GenTree::Compare(trueInput, condInput->gtGetOp1());
     if (reversed)
     {
@@ -1000,7 +1001,7 @@ GenTree* OptIfConversionDsc::TrySelectToMinMax(GenTreeConditional* select)
         std::swap(trueInput, falseInput);
     }
 
-    if (GenTree::Compare(trueInput, condInput->gtGetOp1()) && 
+    if (GenTree::Compare(trueInput, condInput->gtGetOp1()) &&
         GenTree::Compare(falseInput, condInput->gtGetOp2()->gtEffectiveVal()))
     {
         return m_compiler->gtNewSimdMinMaxNativeNode(select->TypeGet(),
