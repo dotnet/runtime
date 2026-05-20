@@ -85,10 +85,13 @@ for i in "${!runners[@]}"; do
     fi
 
     runner_dir=$(dirname "$runner")
-    dll_path="$runner_dir/$dll_name"
 
-    if [[ ! -f "$dll_path" ]]; then
-        echo "WARNING: DLL not found: $dll_path, skipping" >&2
+    # Extract the DLL's absolute source path from the runner script metadata.
+    # Format: # dll-source: /absolute/path/to/<name>.dll
+    dll_path=$(grep -oP '^# dll-source: \K.*' "$runner" 2>/dev/null || true)
+
+    if [[ -z "$dll_path" || ! -f "$dll_path" ]]; then
+        echo "WARNING: DLL not found: ${dll_path:-<no dll-source in $runner>}, skipping" >&2
         continue
     fi
 
