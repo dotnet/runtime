@@ -547,7 +547,6 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
         return sizeof(instrDescValTypeImm);
     }
 
-
     return sizeof(instrDesc);
 }
 
