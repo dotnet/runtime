@@ -3452,17 +3452,17 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize, unsigned prologSize, un
         GcInfoEncoder(m_compiler->info.compCompHnd, m_compiler->info.compMethodInfo, allowZeroAlloc, NOMEM);
     assert(gcInfoEncoder != nullptr);
 
-    // For Wasm, encode the max Virtual IP as the code size, and use zero for the prolog size.
-    // Note code size cannot be zero per GC info. So we start at 1.
+    // Encode the max Virtual IP as the code size, and use 1 for the prolog size.
     //
-    unsigned maxVirtualIP = 1;
+    unsigned maxVirtualIP = 0;
     for (FuncInfoDsc* const func : m_compiler->Funcs())
     {
         maxVirtualIP = max(maxVirtualIP, func->endVirtualIP);
     }
+    maxVirtualIP++;
 
     // Follow the code pattern of the x86 gc info encoder (genCreateAndStoreGCInfoJIT32).
-    gcInfo.gcInfoBlockHdrSave(gcInfoEncoder, maxVirtualIP, /* prologSize */ 0);
+    gcInfo.gcInfoBlockHdrSave(gcInfoEncoder, maxVirtualIP, /* prologSize */ 1);
 
     // We keep the call count for the second call to gcMakeRegPtrTable() below.
     unsigned callCnt = 0;

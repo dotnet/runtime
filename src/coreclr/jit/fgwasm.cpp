@@ -2587,6 +2587,14 @@ PhaseStatus Compiler::fgWasmVirtualIP()
     {
         func->startVirtualIP = virtualIP;
 
+        if (func->IsMethod())
+        {
+            // We use Virtual IP as length, and need a value to represent
+            // the prolog, so bump by 2 before we get to any EH or GC point.
+            //
+            virtualIP += 2;
+        }
+
         for (BasicBlock* const block : func->Blocks(this))
         {
             EHblkDsc* const hndDsc = ehGetBlockHndDsc(block);
