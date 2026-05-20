@@ -416,14 +416,6 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                             dependsOnKnownNonLoadableType = true;
                             return null;
                         }
-                        int typeDefRowCount = ecmaModule.MetadataReader.GetTableRowCount(TableIndex.TypeDef);
-                        if (typedefRow > typeDefRowCount)
-                        {
-                            Program.PrintWarning($"TypeDef rid 0x{typedefRow:X} in module '{ecmaModule}' is out of range (max {typeDefRowCount}). " +
-                                "The trace and reference assembly may be mismatched.");
-                            dependsOnKnownNonLoadableType = true;
-                            return null;
-                        }
                         TypeDefinitionHandle typedef = MetadataTokens.TypeDefinitionHandle(typedefRow);
                         MetadataType uninstantiatedType = (MetadataType)ecmaModule.GetType(typedef);
                         // Instantiate the type if requested
