@@ -579,7 +579,7 @@ void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pTaskReturningVariant, MetaSig
         pCode->EmitCALL(isCompletedToken, 1, 1);
         pCode->EmitBRTRUE(valueTaskCompletedLabel);
 
-        // No, tail await to TransparentAwaitValueTask
+        // No, tail await to TransparentSuspendForValueTask
         pCode->EmitLDLOC(valueTaskLocal);
         pCode->EmitCALL(METHOD__ASYNC_HELPERS__TAIL_AWAIT, 0, 0);
         pCode->EmitCALL(transparentSuspendForValueTaskToken, 1, 0);
