@@ -78,18 +78,20 @@ endfunction(add_pgo)
 # On Windows, PGO is handled entirely via link-time flags (/LTCG) so this isn't needed.
 if(NOT WIN32)
     if(CLR_CMAKE_PGO_INSTRUMENT)
-        if(UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELEASE OR UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELWITHDEBINFO)
-            add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-fprofile-instr-generate>)
-            # All shared libraries need to link the profiling runtime to resolve
-            # instrumentation symbols from their static library dependencies.
-            add_link_options(-fprofile-instr-generate)
+        if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+            if(UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELEASE OR UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELWITHDEBINFO)
+                add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-fprofile-instr-generate>)
+                # All shared libraries need to link the profiling runtime to resolve
+                # instrumentation symbols from their static library dependencies.
+                add_link_options(-fprofile-instr-generate)
+            endif()
         endif()
     elseif(CLR_CMAKE_PGO_OPTIMIZE AND NOT CLR_CMAKE_ENABLE_SANITIZERS)
         file(TO_NATIVE_PATH "${CLR_CMAKE_OPTDATA_PATH}/data/coreclr.profdata" _PgoGlobalProfilePath)
-        if(EXISTS ${_PgoGlobalProfilePath})
+        if(EXISTS "${_PgoGlobalProfilePath}")
             if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
                 if(UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELEASE OR UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELWITHDEBINFO)
-                    check_have_lto_and_pgodata_supported(${_PgoGlobalProfilePath})
+                    check_have_lto_and_pgodata_supported("${_PgoGlobalProfilePath}")
                     if(HAVE_LTO_AND_PGO_DATA_SUPPORTED)
                         message(STATUS "Enabling profile guided optimizations globally for coreclr static libraries")
                         add_compile_options(
