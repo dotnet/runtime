@@ -203,7 +203,7 @@ namespace Thunkerator
                             break;
                         case "implication":
                             if ((command.Length != 4) && (command.Length != 5))
-                                throw new Exception("Incorrect number of args for instructionset");
+                                throw new Exception("Incorrect number of args for implication. Expected 4 or 5.");
                             ValidateArchitectureEncountered(command[1]);
                             bool generateReverseImplication = true;
                             if (command.Length == 5)
