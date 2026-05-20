@@ -3144,8 +3144,8 @@ public:
         CORINFO_ASYNC_INFO* pAsyncInfoOut
     ) = 0;
 
-    // Get information about which AsyncHelpers.Await call to use to await the return type
-    // of the non-async version of an async call.
+    // Get information about which AsyncHelpers.TransparentAwait call to use to
+    // await the return type of the non-async version of an async call.
     virtual CORINFO_METHOD_HANDLE getAwaitReturnCall(CORINFO_METHOD_HANDLE callerHandle, CORINFO_LOOKUP* instArg) = 0;
 
     /*********************************************************************************/

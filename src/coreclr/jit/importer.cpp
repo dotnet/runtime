@@ -11636,6 +11636,10 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
     return true;
 }
 
+//------------------------------------------------------------------------
+// impWrapTopOfStackInAwait:
+//   Wrap the value on the top of the stack in AsyncHelpers.TransparentAwait.
+//
 void Compiler::impWrapTopOfStackInAwait()
 {
     if (compIsForInlining())
@@ -11662,6 +11666,7 @@ void Compiler::impWrapTopOfStackInAwait()
     NewCallArg taskArg;
     if (taskJitType == TYP_STRUCT)
     {
+        awaitable = impNormStructVal(awaitable, CHECK_SPILL_ALL);
         taskArg = NewCallArg::Struct(awaitable, TYP_STRUCT, typGetObjLayout(taskTypeHnd));
     }
     else
