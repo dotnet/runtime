@@ -37,6 +37,7 @@ enum ThreadState
 }
 
 record struct ThreadData (
+    TargetPointer ThreadAddress,
     uint Id;
     TargetNUInt OSId;
     ThreadState State;
