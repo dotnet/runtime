@@ -177,7 +177,6 @@ namespace ILCompiler.ObjectWriter
                     // Method symbols should be defined with the thumb bit (+1) set per the AAELF ABI
                     // convention. For BRANCH24, the encoding cannot represent the thumb bit
                     // (per AAELF formula ((S + A) | T) – P), so strip it from the symbol value.
-                    // NOTE: R2R doesn't currently add the thumb bit to the symbol value, so this is a NOP.
                     long symbolValue = relocType is IMAGE_REL_BASED_THUMB_BRANCH24
                         ? definedSymbol.Value & ~1L
                         : definedSymbol.Value;

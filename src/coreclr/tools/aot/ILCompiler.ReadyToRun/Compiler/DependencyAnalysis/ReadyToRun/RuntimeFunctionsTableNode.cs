@@ -130,7 +130,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         }
                         else
                         {
-                            runtimeFunctionsBuilder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_ADDR32NB, delta: frameInfo.StartOffset);
+                            int delta = frameInfo.StartOffset;
+                            if (symbol == method.ColdCodeNode)
+                            {
+                                // Cold code nodes are separate from the main method body and don't carry
+                                // the Thumb bit in their symbol value.
+                                delta += _nodeFactory.Target.CodeDelta;
+                            }
+
+                            runtimeFunctionsBuilder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_ADDR32NB, delta);
                             if (!relocsOnly && _nodeFactory.Target.Architecture == TargetArchitecture.X64)
                             {
                                 // On Amd64, the 2nd word contains the EndOffset of the runtime function

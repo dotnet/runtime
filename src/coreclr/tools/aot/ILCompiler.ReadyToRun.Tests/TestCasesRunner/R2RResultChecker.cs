@@ -84,6 +84,7 @@ internal static class R2RAssert
         result &= DelayLoadHelperImportTargetsAreOdd(reader, failures);
         result &= ExceptionInfoMethodRVAsAreEven(reader, failures);
         result &= RuntimeFunctionStartRVAsAreOdd(reader, failures);
+        result &= BaseRelocatedCodePointersAreOdd(reader, failures);
 
         diagnostic = result
             ? "ARM Thumb-bit relocation targets are encoded as expected."
@@ -188,6 +189,95 @@ internal static class R2RAssert
         }
 
         return result;
+    }
+
+    private static bool BaseRelocatedCodePointersAreOdd(ReadyToRunReader reader, List<string> failures)
+    {
+        byte[] image = reader.Image.ToArray();
+        using var peReader = new PEReader(new MemoryStream(image));
+
+        if (peReader.PEHeaders.PEHeader is null)
+        {
+            failures.Add("Expected PE header to be present.");
+            return false;
+        }
+
+        DirectoryEntry relocDirectory = peReader.PEHeaders.PEHeader.BaseRelocationTableDirectory;
+        if (relocDirectory.Size == 0)
+        {
+            failures.Add("Expected base relocation table to contain entries.");
+            return false;
+        }
+
+        List<(int Start, int End)> runtimeFunctionRanges = GetAllMethods(reader)
+            .SelectMany(method => method.RuntimeFunctions)
+            .Select(function =>
+            {
+                int start = function.StartAddress & ~1;
+                int size = function.Size >= 0 ? function.Size : (function.EndAddress & ~1) - start;
+                return (Start: start, End: start + size);
+            })
+            .Where(range => range.End > range.Start)
+            .OrderBy(range => range.Start)
+            .ToList();
+
+        bool result = true;
+        int entries = 0;
+        int offset = peReader.GetOffset(relocDirectory.RelativeVirtualAddress);
+        int endOffset = offset + relocDirectory.Size;
+        while (offset + 2 * sizeof(int) <= endOffset)
+        {
+            int pageRva = BinaryPrimitives.ReadInt32LittleEndian(image.AsSpan(offset));
+            int blockSize = BinaryPrimitives.ReadInt32LittleEndian(image.AsSpan(offset + sizeof(int)));
+            offset += 2 * sizeof(int);
+
+            if (pageRva == 0 || blockSize < 2 * sizeof(int))
+                break;
+
+            int entryCount = (blockSize - 2 * sizeof(int)) / sizeof(ushort);
+            for (int i = 0; i < entryCount && offset + sizeof(ushort) <= endOffset; i++, offset += sizeof(ushort))
+            {
+                ushort entry = BinaryPrimitives.ReadUInt16LittleEndian(image.AsSpan(offset));
+                const int ImageRelBasedHighLow = 3;
+                if (entry >> 12 != ImageRelBasedHighLow)
+                    continue;
+
+                int relocatedRva = pageRva + (entry & 0x0FFF);
+                int relocatedOffset = peReader.GetOffset(relocatedRva);
+                int targetAddress = BinaryPrimitives.ReadInt32LittleEndian(image.AsSpan(relocatedOffset));
+                int targetRva = targetAddress - (int)reader.ImageBase;
+                if (!IsRuntimeFunctionAddress(runtimeFunctionRanges, targetRva & ~1))
+                    continue;
+
+                entries++;
+                if ((targetAddress & 1) == 0)
+                {
+                    failures.Add($"Base relocation at RVA 0x{relocatedRva:X8} points to code address 0x{targetAddress:X8} without the Thumb bit set.");
+                    result = false;
+                }
+            }
+        }
+
+        if (entries == 0)
+        {
+            failures.Add("Expected at least one base-relocated code pointer.");
+            result = false;
+        }
+
+        return result;
+    }
+
+    private static bool IsRuntimeFunctionAddress(List<(int Start, int End)> ranges, int rva)
+    {
+        foreach ((int start, int end) in ranges)
+        {
+            if (rva < start)
+                return false;
+            if (rva < end)
+                return true;
+        }
+
+        return false;
     }
 
     private static bool RuntimeFunctionStartRVAsAreOdd(ReadyToRunReader reader, List<string> failures)
