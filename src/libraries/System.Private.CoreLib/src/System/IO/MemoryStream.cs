@@ -546,15 +546,15 @@ namespace System.IO
         //
         public override void SetLength(long value)
         {
-            if (value < 0)
+            if (value < 0 || value > int.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(value), SR.Format(SR.ArgumentOutOfRange_StreamLength, Array.MaxLength));
 
             EnsureWriteable();
 
             // Origin wasn't publicly exposed above.
             Debug.Assert(MemStreamMaxLength == Array.MaxLength);  // Check parameter validation logic in this method if this fails.
-            if (value > (MemStreamMaxLength - _origin))
-                throw new OutOfMemoryException();
+            if (value > (int.MaxValue - _origin))
+                throw new ArgumentOutOfRangeException(nameof(value), SR.Format(SR.ArgumentOutOfRange_StreamLength, Array.MaxLength));
 
             int newLength = _origin + (int)value;
             bool allocatedNewArray = EnsureCapacity(newLength);
