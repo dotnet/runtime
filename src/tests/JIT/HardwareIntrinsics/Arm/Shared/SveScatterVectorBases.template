@@ -163,8 +163,7 @@ namespace {Namespace}._Sve
             {
                 if(!dict.Add(input[i]))
                 {
-                    // value already exist
-                    input[i] += sizeof({Op1BaseType});
+                    input[i] = (input[i] + 1) % ({Op2BaseType})OutElementCount;
                     continue;
                 }
                 i++;
