@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 
 namespace System
@@ -190,10 +189,10 @@ namespace System
 
         private interface IMinMaxCalc<T> where T : struct, IBinaryInteger<T>
         {
-            public static abstract bool Compare(T left, T right);
-            public static abstract Vector128<T> Compare(Vector128<T> left, Vector128<T> right);
-            public static abstract Vector256<T> Compare(Vector256<T> left, Vector256<T> right);
-            public static abstract Vector512<T> Compare(Vector512<T> left, Vector512<T> right);
+            static abstract bool Compare(T left, T right);
+            static abstract Vector128<T> Compare(Vector128<T> left, Vector128<T> right);
+            static abstract Vector256<T> Compare(Vector256<T> left, Vector256<T> right);
+            static abstract Vector512<T> Compare(Vector512<T> left, Vector512<T> right);
         }
 
         private readonly struct MinCalc<T> : IMinMaxCalc<T> where T : struct, IBinaryInteger<T>
