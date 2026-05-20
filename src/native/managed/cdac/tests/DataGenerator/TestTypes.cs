@@ -98,3 +98,17 @@ internal sealed partial class TestFieldAddr : IData<TestFieldAddr>
     [Field("A", "_a")]      public uint A { get; }
     [FieldAddress("Anchor")] public TargetPointer AnchorAddress { get; }
 }
+
+// 13. UsePropertyName = false with explicit names -- suppresses property name.
+[CdacType("TestNoPropertyName")]
+internal sealed partial class TestNoPropertyName : IData<TestNoPropertyName>
+{
+    [Field("m_flags", UsePropertyName = false)] public uint Flags { get; }
+}
+
+// 14. DataPointer -- IData<T>-typed property with Pointer = true.
+[CdacType("TestDataPointer")]
+internal sealed partial class TestDataPointer : IData<TestDataPointer>
+{
+    [Field(Pointer = true)] public TestNative Inner { get; }
+}

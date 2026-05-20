@@ -131,7 +131,12 @@ internal readonly struct LayoutPair
         {
             managed = m;
             if (!isValueType)
-                managedDataOffset = target.GetTypeInfo("Object").Size!.Value;
+            {
+                Target.TypeInfo objType = target.GetTypeInfo("Object");
+                managedDataOffset = objType.Size
+                    ?? throw new InvalidOperationException(
+                        "The 'Object' data descriptor must have a known Size to compute managed reference-type field offsets.");
+            }
         }
 
         if (native is null && managed is null)

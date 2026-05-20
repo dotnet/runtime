@@ -339,4 +339,56 @@ public class IDataGeneratorTests
 
         Assert.Equal((TargetPointer)(InstanceAddr + HeaderSize + 12), t.AnchorAddress);
     }
+
+    // ================================================================
+    // UsePropertyName = false
+    // ================================================================
+
+    [Fact]
+    public void UsePropertyName_False_OnlyExplicitNamesUsed()
+    {
+        // Descriptor has "m_flags" but NOT "Flags" (the property name).
+        // UsePropertyName=false means the property name is excluded from the cascade.
+        var target = new TestTarget()
+            .AddNativeType("TestNoPropertyName", size: 4, ("m_flags", 0))
+            .Allocate(InstanceAddr, 4, (0, U32(0xBEEFu)));
+
+        TestNoPropertyName t = Materialize<TestNoPropertyName>(target, InstanceAddr);
+
+        Assert.Equal(0xBEEFu, t.Flags);
+    }
+
+    [Fact]
+    public void UsePropertyName_False_PropertyNameNotUsed()
+    {
+        // Descriptor has only "Flags" (the property name), NOT "m_flags".
+        // UsePropertyName=false means the property name should NOT be tried.
+        var target = new TestTarget()
+            .AddNativeType("TestNoPropertyName", size: 4, ("Flags", 0))
+            .Allocate(InstanceAddr, 4, (0, U32(0xBEEFu)));
+
+        Assert.Throws<InvalidOperationException>(
+            () => Materialize<TestNoPropertyName>(target, InstanceAddr));
+    }
+
+    // ================================================================
+    // DataPointer (IData<T> with Pointer = true)
+    // ================================================================
+
+    [Fact]
+    public void DataPointer_ReadsPointerThenMaterializesIData()
+    {
+        const ulong innerAddr = 0x2000;
+        var target = new TestTarget()
+            .AddNativeType("TestDataPointer", size: 8, ("Inner", 0))
+            .AddNativeType("TestNative", size: 16, ("A", 0), ("B", 8))
+            .Allocate(InstanceAddr, 8, (0, U64(innerAddr)))
+            .Allocate(innerAddr, 16, (0, U32(42u)), (8, U64(0xCAFEul)));
+
+        TestDataPointer t = Materialize<TestDataPointer>(target, InstanceAddr);
+
+        Assert.NotNull(t.Inner);
+        Assert.Equal(42u, t.Inner.A);
+        Assert.Equal((TargetPointer)0xCAFEul, t.Inner.B);
+    }
 }
