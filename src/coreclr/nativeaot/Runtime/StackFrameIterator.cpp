@@ -1868,6 +1868,7 @@ UnwindOutOfCurrentManagedFrame:
         // if the thread is safe to walk, it better not have a hijack in place.
         ASSERT(!m_pThread->IsHijacked());
 
+        m_RegDisplay.SetIP(ReturnAddressToCanonicalPC(m_RegDisplay.GetIP()));
         SetControlPC(dac_cast<PTR_VOID>(m_RegDisplay.GetIP()));
 
         PTR_VOID collapsingTargetFrame = NULL;
