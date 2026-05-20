@@ -10,7 +10,7 @@
  */
 
 import * as Rules from "Sdk.Rules";
-import {Cmd, Transformer} from "Sdk.Transformers";
+import {Cmd} from "Sdk.Transformers";
 import * as Defs from "Defs";
 
 // ============================================================================
@@ -36,11 +36,8 @@ interface IlCompileResult extends Rules.Provider {
     defaultInfo: Rules.DefaultInfo;
 }
 
-const ilCompileToolchain: Rules.Toolchain = { kind: "Toolchain", name: "il-compile" };
-
 const ilCompile = Rules.rule<IlCompileAttrs, IlCompileResolved, Rules.Toolchain, IlCompileResult>({
     doc: "Assemble .il source files into a .dll using ilasm.",
-    toolchain: ilCompileToolchain,
     resolve: (attrs, resolver) => <IlCompileResolved>{
         name: attrs.name,
         srcs: resolver.resolveAll(attrs.srcs),
@@ -97,12 +94,9 @@ interface IlTestRunnerResult extends Rules.Provider {
     defaultInfo: Rules.DefaultInfo;
 }
 
-const ilTestRunnerToolchain: Rules.Toolchain = { kind: "Toolchain", name: "il-test-runner" };
-
 const ilTestRunner = Rules.rule<IlTestRunnerAttrs, IlTestRunnerAttrs, Rules.Toolchain, IlTestRunnerResult>({
     doc: "Run an IL test DLL via corerun.",
     kind: "test",
-    toolchain: ilTestRunnerToolchain,
     resolve: (attrs, _resolver) => attrs,
     impl: (ctx) => {
         const corerunPath = Defs.CORE_ROOT_CORERUN.path.toDiagnosticString();

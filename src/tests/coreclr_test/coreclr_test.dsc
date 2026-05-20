@@ -14,22 +14,55 @@
 
 import * as Rules from "Sdk.Rules";
 import * as CSharp from "Sdk.Rules.CSharp";
-import {Cmd, Transformer} from "Sdk.Transformers";
+import {Cmd} from "Sdk.Transformers";
 import * as Defs from "Defs";
 import * as Common from "Tests.Common";
 
 // ============================================================================
-//  XUnitWrapperGenerator analyzer config
+//  write_file — local rule for generating text files
 //
-//  Generated rather than checked in so the build_property.* values can be
-//  derived from the build configuration. The generator reads these via
-//  csc /analyzerconfig: to emit correct platform/runtime conditionals
-//  for [ActiveIssue]/[SkipOnPlatform]/etc.
+//  Analogous to bazel-skylib's write_file rule. Produces a text file
+//  from a list of lines via ctx.actions.writeFile, returning the bound
+//  Artifact so it can flow through the label system.
 // ============================================================================
 
-const generatorGlobalConfig: File = Transformer.writeAllLines({
-    outputPath: p`${Context.getMount("ObjectRoot").path}/coreclr_test/coreclr.globalconfig`,
-    lines: [
+interface WriteFileAttrs {
+    name: string;
+    out: string;
+    content: string[];
+}
+
+interface WriteFileResult extends Rules.Provider {
+    out: Rules.Artifact;
+    defaultInfo: Rules.DefaultInfo;
+}
+
+const write_file = Rules.rule<WriteFileAttrs, WriteFileAttrs, Rules.Toolchain, WriteFileResult>({
+    doc: "Generate a text file from a list of lines.",
+    resolve: (attrs, _resolver) => attrs,
+    impl: (ctx) => {
+        const output = ctx.actions.declareOutput(ctx.args.out);
+        const bound = ctx.actions.writeFile(output, ctx.args.content);
+        return {
+            kind: "WriteFileResult",
+            out: bound,
+            defaultInfo: Rules.defaultInfo({ files: [Rules.getFile(bound)] }),
+        };
+    },
+});
+
+// ============================================================================
+//  XUnitWrapperGenerator analyzer config
+//
+//  Generated via write_file so the build_property.* values flow through
+//  the label-resolution safety model as an Artifact rather than a raw
+//  Transformer.writeAllLines File.
+// ============================================================================
+
+const generatorGlobalConfig = write_file({
+    name: "coreclr_globalconfig",
+    out: "coreclr.globalconfig",
+    content: [
         "is_global = true",
         "",
         "build_property.TargetOS = linux",
@@ -101,12 +134,9 @@ interface CoreClrTestRunnerResult extends Rules.Provider {
     defaultInfo: Rules.DefaultInfo;
 }
 
-const testRunnerToolchain: Rules.Toolchain = { kind: "Toolchain", name: "coreclr-test-runner" };
-
 const coreclrTestRunner = Rules.rule<CoreClrTestRunnerAttrs, CoreClrTestRunnerAttrs, Rules.Toolchain, CoreClrTestRunnerResult>({
     doc: "Run a CoreCLR test DLL via corerun.",
     kind: "test",
-    toolchain: testRunnerToolchain,
     resolve: (attrs, _resolver) => attrs,
     impl: (ctx) => {
         const corerunPath = Defs.CORE_ROOT_CORERUN.path.toDiagnosticString();
@@ -160,7 +190,7 @@ export function coreclr_test(args: CoreClrTestArguments): CoreClrTestResult {
     const allNowarn = [...testNowarn, ...(args.nowarn || [])];
     const referenceXunitWrapperGenerator = args.referenceXunitWrapperGenerator !== false;
     const analyzerConfigs = referenceXunitWrapperGenerator
-        ? [generatorGlobalConfig]
+        ? [generatorGlobalConfig.out]
         : undefined;
 
     const deps = [Common.testLibrary, ...(referenceXunitWrapperGenerator ? [Common.xunitWrapperLibrary] : []), ...(args.deps || []), ...(args.testDeps || [])];
@@ -175,7 +205,7 @@ export function coreclr_test(args: CoreClrTestArguments): CoreClrTestResult {
         allowUnsafe: args.allowUnsafe !== undefined ? args.allowUnsafe : true,
         defines: args.defines,
         nowarn: allNowarn,
-        analyzers: referenceXunitWrapperGenerator ? [Common.xunitWrapperGenerator.binary] : undefined,
+        analyzers: referenceXunitWrapperGenerator ? [Rules.sourceArtifact(Common.xunitWrapperGenerator.binary)] : undefined,
         analyzerConfigs: analyzerConfigs,
     });
 
