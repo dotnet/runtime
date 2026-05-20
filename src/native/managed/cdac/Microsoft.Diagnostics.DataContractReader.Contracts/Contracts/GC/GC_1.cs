@@ -16,7 +16,7 @@ internal readonly struct GC_1 : IGC
     // Safety caps to limit traversals in case of memory corruption, matching native DAC.
     private const int MaxHandleTableRegions = 8192;
     private const int MaxBookkeepingRegions = 32;
-    private const int MaxSegmentListIterations = 2048;
+    private const int MaxSegmentListIterations = 65536;
 
     private enum GCType
     {
@@ -43,6 +43,7 @@ internal readonly struct GC_1 : IGC
     private readonly TargetPointer _debugDestroyedHandleValue;
     private readonly uint _handleMaxInternalTypes;
     private readonly uint _handleSegmentSize;
+    private readonly uint _heapSegmentFlagsReadonly = 1;
 
     internal GC_1(Target target)
     {
@@ -360,6 +361,85 @@ internal readonly struct GC_1 : IGC
             handleTableMap = handleTableData.Next;
         }
         return handles;
+    }
+
+    IEnumerable<GCHeapSegmentInfo> IGC.EnumerateHeapSegments(GCHeapData heapData)
+    {
+        // The generation table is laid out as gen0, gen1, gen2, LOH, POH (plus optional extras).
+        IReadOnlyList<GCGenerationData> gens = heapData.GenerationTable;
+        if (gens.Count < 5)
+            throw new InvalidOperationException($"Expected at least 5 generations in the generation table, got {gens.Count}.");
+
+        bool regions = ((IGC)this).GetGCIdentifiers().Contains(GCIdentifiers.Regions);
+
+        TargetPointer ephemeralSegment = heapData.EphemeralHeapSegment;
+        TargetPointer allocAllocated = heapData.AllocAllocated;
+
+        if (regions)
+        {
+            // In regions mode each generation has its own segment list. Readonly entries on the
+            // gen2 list represent non-GC (e.g. frozen) regions and are reported as NonGC.
+            foreach ((Data.HeapSegment seg, TargetPointer _) in WalkSegmentList(gens[2].StartSegment))
+            {
+                GCSegmentClassification type = (seg.Flags.Value & _heapSegmentFlagsReadonly) != 0
+                    ? GCSegmentClassification.NonGC
+                    : GCSegmentClassification.Gen2;
+                yield return new GCHeapSegmentInfo(seg.Mem, seg.Allocated, type);
+            }
+            foreach ((Data.HeapSegment seg, TargetPointer _) in WalkSegmentList(gens[1].StartSegment))
+            {
+                yield return new GCHeapSegmentInfo(seg.Mem, seg.Allocated, GCSegmentClassification.Gen1);
+            }
+            foreach ((Data.HeapSegment seg, TargetPointer segAddr) in WalkSegmentList(gens[0].StartSegment))
+            {
+                // For the gen0 segment that matches the ephemeral_heap_segment, end is alloc_allocated.
+                TargetPointer end = segAddr == ephemeralSegment ? allocAllocated : seg.Allocated;
+                yield return new GCHeapSegmentInfo(seg.Mem, end, GCSegmentClassification.Gen0);
+            }
+        }
+        else
+        {
+            // In segments mode the gen2 list contains every SOH segment.
+            foreach ((Data.HeapSegment seg, TargetPointer segAddr) in WalkSegmentList(gens[2].StartSegment))
+            {
+                GCSegmentClassification type;
+                if (segAddr == ephemeralSegment)
+                    type = GCSegmentClassification.Ephemeral;
+                else if ((seg.Flags.Value & _heapSegmentFlagsReadonly) != 0)
+                    type = GCSegmentClassification.NonGC;
+                else
+                    type = GCSegmentClassification.Gen2;
+
+                TargetPointer end = segAddr == ephemeralSegment ? allocAllocated : seg.Allocated;
+                yield return new GCHeapSegmentInfo(seg.Mem, end, type);
+            }
+        }
+
+        // Large object heap segments.
+        foreach ((Data.HeapSegment seg, TargetPointer _) in WalkSegmentList(gens[3].StartSegment))
+        {
+            yield return new GCHeapSegmentInfo(seg.Mem, seg.Allocated, GCSegmentClassification.LOH);
+        }
+
+        // Pinned object heap segments.
+        foreach ((Data.HeapSegment seg, TargetPointer _) in WalkSegmentList(gens[4].StartSegment))
+        {
+            yield return new GCHeapSegmentInfo(seg.Mem, seg.Allocated, GCSegmentClassification.POH);
+        }
+    }
+
+    private IEnumerable<(Data.HeapSegment Segment, TargetPointer Address)> WalkSegmentList(TargetPointer startSegment)
+    {
+        int iterationMax = MaxSegmentListIterations;
+        TargetPointer current = startSegment;
+        while (current != TargetPointer.Null)
+        {
+            Data.HeapSegment seg = _target.ProcessedData.GetOrAdd<Data.HeapSegment>(current);
+            yield return (seg, current);
+            current = seg.Next;
+            if (iterationMax-- <= 0)
+                throw new InvalidOperationException($"Segment list exceeded {MaxSegmentListIterations} iterations; possible cycle.");
+        }
     }
 
     HandleType[] IGC.GetSupportedHandleTypes()

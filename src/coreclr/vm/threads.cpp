@@ -1621,8 +1621,7 @@ BOOL Thread::HasStarted()
     {
         if (__pException != NULL)
         {
-            __pException.SuppressRelease();
-            m_pExceptionDuringStartup = __pException;
+            m_pExceptionDuringStartup = __pException.Detach();
         }
         res = FALSE;
     }

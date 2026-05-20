@@ -17,6 +17,8 @@ public interface IPlatformAgnosticContext
     public TargetPointer InstructionPointer { get; set; }
     public TargetPointer FramePointer { get; set; }
 
+    public uint RawContextFlags { get; set; }
+
     public abstract void Clear();
     public abstract void ReadFromAddress(Target target, TargetPointer address);
     public abstract void FillFromBuffer(Span<byte> buffer);

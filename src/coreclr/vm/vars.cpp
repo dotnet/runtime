@@ -68,8 +68,10 @@ GPTR_IMPL(MethodTable,      g_pWeakReferenceOfTClass);
 
 #ifdef DACCESS_COMPILE
 GPTR_IMPL(MethodTable,      g_pContinuationClassIfSubTypeCreated);
+GPTR_IMPL(EEClass,          g_singletonContinuationEEClass);
 #else
 GVAL_IMPL(Volatile<MethodTable*>, g_pContinuationClassIfSubTypeCreated);
+GVAL_IMPL(Volatile<EEClass*>, g_singletonContinuationEEClass);
 #endif
 
 #ifdef FEATURE_COMINTEROP

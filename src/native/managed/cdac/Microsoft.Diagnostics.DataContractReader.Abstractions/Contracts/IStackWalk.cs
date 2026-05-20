@@ -21,6 +21,27 @@ public class StackReferenceData
     public TargetPointer StackPointer { get; init; }
 }
 
+public enum InternalFrameType
+{
+    None,
+    M2U,
+    U2M,
+    FuncEval,
+    InternalCall,
+    ClassInit,
+    Exception,
+    JitCompilation,
+}
+
+public record struct StackFrameData(
+    TargetPointer FrameAddress,
+    TargetPointer FrameIdentifier,
+    InternalFrameType InternalFrameType);
+
+public record struct DebuggerEvalData(
+    uint MethodToken,
+    TargetPointer AssemblyPtr);
+
 public interface IStackWalk : IContract
 {
     static string IContract.Name => nameof(StackWalk);
@@ -33,6 +54,9 @@ public interface IStackWalk : IContract
     TargetPointer GetMethodDescPtr(TargetPointer framePtr) => throw new NotImplementedException();
     TargetPointer GetMethodDescPtr(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();
     TargetPointer GetInstructionPointer(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();
+    IEnumerable<StackFrameData> GetFrames(TargetPointer threadPointer) => throw new NotImplementedException();
+    bool IsExceptionHandlingHelperInlinedCallFrame(TargetPointer frameAddress) => throw new NotImplementedException();
+    DebuggerEvalData GetDebuggerEvalData(TargetPointer funcEvalFrameAddress) => throw new NotImplementedException();
 }
 
 public struct StackWalk : IStackWalk
