@@ -7007,7 +7007,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 unsigned argListTmp = lvaGrabTemp(false DEBUGARG("arglist tmp"));
                 lvaSetStruct(argListTmp, clsHnd, false);
 
-                op1 = gtNewLclVarAddrNode(lvaVarargsHandleArg, TYP_BYREF);
+                op1 = gtNewLclVarAddrNode(lvaVarargsHandleArg, TYP_I_IMPL);
                 impAppendTree(gtNewStoreLclFldNode(argListTmp, TYP_I_IMPL, 0, op1), CHECK_SPILL_ALL, impCurStmtDI);
 
                 op1      = gtNewLclVarNode(argListTmp, TYP_STRUCT);
