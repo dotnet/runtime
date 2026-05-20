@@ -378,7 +378,6 @@ namespace System.Runtime.CompilerServices
             AsyncSuspend(vtsCont);
         }
 
-        // same as above, but with continuation context capture.
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
         private static unsafe void AwaitValueTaskSource(object source, short token)
