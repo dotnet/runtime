@@ -2716,6 +2716,22 @@ PhaseStatus Compiler::fgWasmVirtualIP()
             JITDUMP(" Handler [%04u..%04u)\n", clauses[clauseIndex].clause.HandlerOffset,
                     clauses[clauseIndex].clause.HandlerLength);
         }
+
+        // Verify that funclet Virtual IP ranges are disjoint.
+        //
+        for (FuncInfoDsc* const func1 : Funcs())
+        {
+            for (FuncInfoDsc* const func2 : Funcs())
+            {
+                if (func1 == func2)
+                {
+                    break;
+                }
+
+                assert((func1->endVirtualIP <= func2->startVirtualIP) ||
+                       (func2->endVirtualIP <= func1->startVirtualIP));
+            }
+        }
     }
 #endif // DEBUG
 
