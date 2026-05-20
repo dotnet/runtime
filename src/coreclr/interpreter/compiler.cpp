@@ -1270,6 +1270,12 @@ void InterpCompiler::EmitCode()
 
         m_compHnd->setVars(m_methodInfo->ftn, m_numILVars, eeVars);
     }
+
+    if (m_ILToNativeMapSize == 0 && m_pILToNativeMap != NULL)
+    {
+        m_compHnd->freeArray(m_pILToNativeMap);
+        m_pILToNativeMap = NULL;
+    }
     m_compHnd->setBoundaries(m_methodInfo->ftn, m_ILToNativeMapSize, m_pILToNativeMap);
     m_pILToNativeMap = NULL; // Ownership transferred to the VM
 
