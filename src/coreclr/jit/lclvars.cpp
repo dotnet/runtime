@@ -871,9 +871,6 @@ void Compiler::lvaInitVarDsc(LclVarDsc*              varDsc,
         case CORINFO_TYPE_PTR:
         case CORINFO_TYPE_BYREF:
         case CORINFO_TYPE_CLASS:
-        case CORINFO_TYPE_STRING:
-        case CORINFO_TYPE_VAR:
-        case CORINFO_TYPE_REFANY:
             varDsc->lvIsPtr = 1;
             break;
         default:

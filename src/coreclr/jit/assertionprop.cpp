@@ -986,7 +986,7 @@ const Compiler::AssertionDsc& Compiler::optGetAssertion(AssertionIndex assertInd
     return assertion;
 }
 
-ValueNum Compiler::optConservativeNormalVN(GenTree* tree)
+ValueNum Compiler::optConservativeNormalVN(const GenTree* tree)
 {
     if (optLocalAssertionProp)
     {
@@ -3879,9 +3879,10 @@ GenTree* Compiler::optAssertionProp_BlockStore(ASSERT_VALARG_TP assertions, GenT
 {
     assert(store->OperIs(GT_STORE_BLK));
 
-    bool didZeroObjProp = optZeroObjAssertionProp(store->Data(), assertions);
-    bool didNonNullProp = optNonNullAssertionProp_Ind(assertions, store);
-    if (didZeroObjProp || didNonNullProp)
+    bool didZeroObjProp      = optZeroObjAssertionProp(store->Data(), assertions);
+    bool didNonNullProp      = optNonNullAssertionProp_Ind(assertions, store);
+    bool didWriteBarrierProp = optWriteBarrierAssertionProp_StoreBlk(assertions, store);
+    if (didZeroObjProp || didNonNullProp || didWriteBarrierProp)
     {
         return optAssertionProp_Update(store, store, stmt);
     }
@@ -5196,7 +5197,7 @@ static GCInfo::WriteBarrierForm GetWriteBarrierForm(Compiler* comp, ValueNum vn)
             // Boxed static - always on the heap
             return GCInfo::WriteBarrierForm::WBF_BarrierUnchecked;
         }
-        if (funcApp.m_func == VNFunc(GT_ADD))
+        if (funcApp.m_func == VNF_ADD)
         {
             // Check arguments of the GT_ADD
             // To make it conservative, we require one of the arguments to be a constant, e.g.:
@@ -5261,7 +5262,7 @@ bool Compiler::optWriteBarrierAssertionProp_StoreInd(ASSERT_VALARG_TP assertions
         return ValueNumStore::VNVisit::Abort;
     };
 
-    if (vnStore->VNVisitReachingVNs(value->gtVNPair.GetConservative(), vnVisitor) == ValueNumStore::VNVisit::Continue)
+    if (vnStore->VNVisitReachingVNs(optConservativeNormalVN(value), vnVisitor) == ValueNumStore::VNVisit::Continue)
     {
         barrierType = GCInfo::WriteBarrierForm::WBF_NoBarrier;
     }
@@ -5270,7 +5271,7 @@ bool Compiler::optWriteBarrierAssertionProp_StoreInd(ASSERT_VALARG_TP assertions
     {
         // NOTE: we might want to inspect indirs with GTF_IND_TGT_HEAP flag as well - what if we can prove
         // that they actually need no barrier? But that comes with a TP regression.
-        barrierType = GetWriteBarrierForm(this, addr->gtVNPair.GetConservative());
+        barrierType = GetWriteBarrierForm(this, optConservativeNormalVN(addr));
     }
 
     JITDUMP("Trying to determine the exact type of write barrier for STOREIND [%d06]: ", dspTreeID(indir));
@@ -5288,6 +5289,43 @@ bool Compiler::optWriteBarrierAssertionProp_StoreInd(ASSERT_VALARG_TP assertions
     }
 
     JITDUMP("unknown (checked).\n");
+    return false;
+}
+
+//------------------------------------------------------------------------
+// optWriteBarrierAssertionProp_StoreBlk: The STORE_BLK counterpart of
+//    optWriteBarrierAssertionProp_StoreInd. For block stores that contain GC
+//    pointers, attempt to prove via VN/assertion analysis that the destination
+//    address is not on the GC heap (or always on the heap).
+//
+// Arguments:
+//    assertions - Active assertions
+//    store      - The STORE_BLK node
+//
+// Return Value:
+//    Whether the exact type of write barrier was determined and marked on the STOREBLK node.
+//
+bool Compiler::optWriteBarrierAssertionProp_StoreBlk(ASSERT_VALARG_TP assertions, GenTreeBlk* store)
+{
+    if (optLocalAssertionProp || !store->GetLayout()->HasGCPtr() ||
+        ((store->gtFlags & (GTF_IND_TGT_NOT_HEAP | GTF_IND_TGT_HEAP)) != 0))
+    {
+        return false;
+    }
+
+    GCInfo::WriteBarrierForm barrierType = GetWriteBarrierForm(this, optConservativeNormalVN(store->Addr()));
+    if (barrierType == GCInfo::WriteBarrierForm::WBF_NoBarrier)
+    {
+        JITDUMP("Add GTF_IND_TGT_NOT_HEAP to STORE_BLK [%06d]: ", dspTreeID(store));
+        store->gtFlags |= GTF_IND_TGT_NOT_HEAP;
+        return true;
+    }
+    if (barrierType == GCInfo::WriteBarrierForm::WBF_BarrierUnchecked)
+    {
+        JITDUMP("Add GTF_IND_TGT_HEAP to STORE_BLK [%06d]: ", dspTreeID(store));
+        store->gtFlags |= GTF_IND_TGT_HEAP;
+        return true;
+    }
     return false;
 }
 
