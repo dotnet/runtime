@@ -380,7 +380,7 @@ namespace System.Runtime.CompilerServices
 
         // same as above, but with continuation context capture.
         [BypassReadyToRun]
-        [MethodImpl(MethodImplOptions.Async)]
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
         private static unsafe void AwaitValueTaskSource(object source, short token)
         {
             ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
@@ -412,7 +412,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [BypassReadyToRun]
-        [MethodImpl(MethodImplOptions.Async)]
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
         private static unsafe void TransparentAwaitValueTaskOfT<T>(ValueTask<T> valueTask)
         {
             ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;

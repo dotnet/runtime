@@ -100,7 +100,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="task">The value task to await.</param>
         [Intrinsic]
         [BypassReadyToRun]
-        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
+        [MethodImpl(MethodImplOptions.Async)]
         [StackTraceHidden]
         public static T Await<T>(ValueTask<T> task)
         {
@@ -127,7 +127,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="task">The task to await.</param>
         [Intrinsic]
         [BypassReadyToRun]
-        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
+        [MethodImpl(MethodImplOptions.Async)]
         [StackTraceHidden]
         public static void Await(ValueTask task)
         {
