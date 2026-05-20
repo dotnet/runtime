@@ -9298,7 +9298,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     if ((info.compRetType == TYP_VOID) && (stackState.esStackDepth > 0))
                     {
                         JITDUMP("\nHave extra IL stack entry after tail await\n");
-                        impAppendTree(impPopStack().val, CHECK_SPILL_ALL, impCurStmtDI);
+                        GenTree* val = impPopStack().val;
+                        if (varTypeIsStruct(val))
+                        {
+                            val = impNormStructVal(val, CHECK_SPILL_ALL);
+                        }
+
+                        impAppendTree(gtUnusedValNode(val), CHECK_SPILL_ALL, impCurStmtDI);
                     }
 
                     goto RET;
