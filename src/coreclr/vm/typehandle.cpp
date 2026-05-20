@@ -456,6 +456,13 @@ bool TypeHandle::IsFloatHfa() const
     return (GetHFAType() == CORINFO_HFA_ELEM_FLOAT);
 }
 
+// Returns true when the type is Vector<T> or any instantiation thereof.
+bool TypeHandle::IsVectorT() const
+{
+    LIMITED_METHOD_CONTRACT;
+    return !IsTypeDesc() && AsMethodTable()->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTORT));
+}
+
 
 #ifdef FEATURE_64BIT_ALIGNMENT
 bool TypeHandle::RequiresAlign8() const
