@@ -20,7 +20,7 @@ import subprocess
 ADO_ORG = "dnceng-public"
 ADO_PROJECT = "public"
 DEFAULT_DB = "monitor.db"
-STAMPS_DIR = "../stamps"
+STAMPS_DIR = os.path.join(__file__, "..", "stamps")
 
 class IssueGenerator:
     def __init__(self, db_path):
@@ -38,7 +38,7 @@ class IssueGenerator:
     def get_stamp_path(self, ap):
         if not os.path.isdir(STAMPS_DIR):
             os.makedirs(STAMPS_DIR)
-        return f"{STAMPS_DIR}/{ap['build_id']}.stamp"
+        return os.path.join(STAMPS_DIR, f"{ap['build_id']}.stamp")
 
     def probe_configuration(self):
         probe_result = subprocess.run(["gh", "repo", "set-default", "-v"], check=True, capture_output=True)
