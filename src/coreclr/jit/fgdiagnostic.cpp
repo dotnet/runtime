@@ -4808,6 +4808,10 @@ void Compiler::fgDebugCheckLoops()
             assert(loop->EntryEdge(0)->getSourceBlock()->KindIs(BBJ_ALWAYS));
             assert(!bbIsTryBeg(loop->GetHeader()));
 
+            // After canonicalization a natural loop has a single backedge.
+            //
+            assert(loop->BackEdges().size() == 1);
+
             loop->VisitRegularExitBlocks([=](BasicBlock* exit) {
                 for (BasicBlock* pred : exit->PredBlocks())
                 {

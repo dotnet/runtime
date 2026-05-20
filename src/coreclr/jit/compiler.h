@@ -7519,6 +7519,8 @@ public:
     bool optCanonicalizeExits(FlowGraphNaturalLoop* loop);
     bool optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit);
 
+    bool optCanonicalizeBackedges(FlowGraphNaturalLoop* loop);
+
     template <typename TFunc>
     bool optLoopComplexityExceeds(FlowGraphNaturalLoop* loop, unsigned limit, TFunc getTreeComplexity);
 
