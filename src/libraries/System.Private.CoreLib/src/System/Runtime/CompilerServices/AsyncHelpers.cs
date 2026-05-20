@@ -100,20 +100,25 @@ namespace System.Runtime.CompilerServices
         /// <param name="task">The value task to await.</param>
         [Intrinsic]
         [BypassReadyToRun]
-        [MethodImpl(MethodImplOptions.Async)]
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
         [StackTraceHidden]
         public static T Await<T>(ValueTask<T> task)
         {
-            if (task.IsCompleted)
+            if (!task.IsCompleted)
             {
-                return task.Result;
+                if (task._obj is Task<T> t)
+                {
+                    TailAwait();
+                    Await(t);
+                }
+                else
+                {
+                    TailAwait();
+                    AwaitValueTaskSourceOfT<T>(task._obj!, task._token);
+                }
             }
 
-            TailAwait();
-            TransparentAwaitValueTaskOfT(task);
-
-            // unreachable
-            while (true) ;
+            return task.Result;
         }
 
         /// <summary>
@@ -122,18 +127,25 @@ namespace System.Runtime.CompilerServices
         /// <param name="task">The task to await.</param>
         [Intrinsic]
         [BypassReadyToRun]
-        [MethodImpl(MethodImplOptions.Async)]
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
         [StackTraceHidden]
         public static void Await(ValueTask task)
         {
-            if (task.IsCompleted)
+            if (!task.IsCompleted)
             {
-                task.ThrowIfCompletedUnsuccessfully();
-                return;
+                if (task._obj is Task t)
+                {
+                    TailAwait();
+                    Await(t);
+                }
+                else
+                {
+                    TailAwait();
+                    AwaitValueTaskSource(task._obj!, task._token);
+                }
             }
 
-            TailAwait();
-            TransparentAwaitValueTask(task);
+            task.ThrowIfCompletedUnsuccessfully();
         }
 
         /// <summary>
