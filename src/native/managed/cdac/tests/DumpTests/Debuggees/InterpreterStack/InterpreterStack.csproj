@@ -1,9 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Full dumps only: Linux createdump segfaults during heap-dump region
-         enumeration when the interpreter is active. Tracked by
-         https://github.com/dotnet/runtime/issues/128044 — revisit once fixed. -->
-    <DumpTypes>Full</DumpTypes>
     <R2RModes>Jit</R2RModes>
     <!-- Selectively interpret MethodA/B/C while Main and CoreLib remain JIT'd,
          producing a mixed stack with InterpreterFrame transition boundaries.
