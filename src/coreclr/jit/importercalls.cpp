@@ -8966,25 +8966,22 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     CORINFO_RESOLVED_TOKEN* pDerivedResolvedToken  = &dvInfo.resolvedTokenDevirtualizedMethod;
     const bool              needsRuntimeLookup     = dvInfo.instParamLookup.lookupKind.needsRuntimeLookup;
     const bool              isArrayInterfaceDevirt = (objClassAttribs & CORINFO_FLG_ARRAY) != 0;
-
-    const bool needsInstParam = needsRuntimeLookup || !(dvInfo.instParamLookup.constLookup.accessType == IAT_VALUE &&
-                                                        dvInfo.instParamLookup.constLookup.handle == nullptr);
+    bool                    needsInstParam         = false;
 
     if (derivedMethod != nullptr)
     {
         assert(exactContext != nullptr);
+        derivedClass = eeGetClassFromContext(exactContext);
 
-        if (((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS)
-        {
-            derivedClass = (CORINFO_CLASS_HANDLE)((size_t)exactContext & ~CORINFO_CONTEXTFLAGS_MASK);
-        }
-        else
+        if (((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD)
         {
             // Array interface devirt can return a nonvirtual generic method of the non-generic SZArrayHelper class.
             // Generic virtual method devirt also returns a generic method.
+            // In which case we need to check if an instantiation argument is needed.
             //
-            assert(((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD);
-            derivedClass = info.compCompHnd->getMethodClass(derivedMethod);
+            CORINFO_SIG_INFO derivedSig;
+            info.compCompHnd->getMethodSig(derivedMethod, &derivedSig);
+            needsInstParam = derivedSig.hasTypeArg();
         }
     }
 

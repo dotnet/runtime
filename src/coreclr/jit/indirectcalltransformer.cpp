@@ -997,15 +997,7 @@ private:
             //
             CORINFO_CONTEXT_HANDLE context      = nullptr;
             CORINFO_CONTEXT_HANDLE exactContext = inlineInfo->exactContextHandle;
-            CORINFO_CLASS_HANDLE   derivedClass = NO_CLASS_HANDLE;
-            if (((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS)
-            {
-                derivedClass = (CORINFO_CLASS_HANDLE)((size_t)exactContext & ~CORINFO_CONTEXTFLAGS_MASK);
-            }
-            else
-            {
-                derivedClass = compiler->info.compCompHnd->getMethodClass(methodHnd);
-            }
+            CORINFO_CLASS_HANDLE   derivedClass = compiler->eeGetClassFromContext(exactContext);
 
             Compiler::DevirtualizedCallInfo dcInfo;
             dcInfo.tokenLookupContext = exactContext;
