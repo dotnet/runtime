@@ -375,6 +375,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [PlatformSpecific(TestPlatforms.Android)]
+        [OuterLoop]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInHelix))]
         public static void BuildChainRepeatedly_DoesNotExhaustGlobalReferences()
         {
