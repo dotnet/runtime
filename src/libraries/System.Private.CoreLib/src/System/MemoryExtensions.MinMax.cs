@@ -155,7 +155,7 @@ namespace System
             }
             else
             {
-                if (i >= span.Length)
+                if (span.IsEmpty)
                 {
                     ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_NoElements);
                 }
