@@ -54,20 +54,23 @@ ASM_HELPER_2(VOID, RhpAssignRef, Object **dst, Object *ref)
         "i32.ge_u\n"
         "i32.or\n"
         "if\n return\n end_if\n"
-        /* dst = dst >> card_byte_shift */
+        /* dst = &g_card_table[(dst >> card_byte_shift)] */
         "local.get 0\n"
         "i32.const %[card_byte_shift]\n"
         "i32.shr_u\n"
+        "i32.const 0\n"
+        "i32.load %[g_card_table]\n"
+        "i32.add\n"
         "local.tee 0\n"
-        /* if (g_card_table[dst] == 255) return */
-        "i32.load8_u %[g_card_table]\n"
+        /* if (*dst == 255) return */
+        "i32.load8_u 0\n"
         "i32.const 255\n"
         "i32.eq\n"
         "if\n return\n end_if\n"
-        /* g_card_table[dst] = 255 */
+        /* *dst = 255 */
         "local.get 0\n"
         "i32.const 255\n"
-        "i32.store8 %[g_card_table]\n"
+        "i32.store8 0\n"
         "return\n"
     );
 }
@@ -98,20 +101,23 @@ ASM_HELPER_2(VOID, RhpCheckedAssignRef, Object **dst, Object *ref)
         "i32.ge_u\n"
         "i32.or\n"
         "if\n return\n end_if\n"
-        /* dst = dst >> card_byte_shift */
+        /* dst = &g_card_table[(dst >> card_byte_shift)] */
         "local.get 0\n"
         "i32.const %[card_byte_shift]\n"
         "i32.shr_u\n"
+        "i32.const 0\n"
+        "i32.load %[g_card_table]\n"
+        "i32.add\n"
         "local.tee 0\n"
-        /* if (g_card_table[dst] == 255) return */
-        "i32.load8_u %[g_card_table]\n"
+        /* if (*dst == 255) return */
+        "i32.load8_u 0\n"
         "i32.const 255\n"
         "i32.eq\n"
         "if\n return\n end_if\n"
-        /* g_card_table[dst] = 255 */
+        /* *dst = 255 */
         "local.get 0\n"
         "i32.const 255\n"
-        "i32.store8 %[g_card_table]\n"
+        "i32.store8 0\n"
         "return\n"
     );
 }
