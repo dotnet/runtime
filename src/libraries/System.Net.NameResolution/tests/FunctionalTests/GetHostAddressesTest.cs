@@ -236,7 +236,7 @@ namespace System.Net.NameResolution.Tests
             // The subdomain goes to OS resolver first. If it fails (likely on most systems),
             // it falls back to resolving plain "localhost", which should return loopback addresses.
             // On Android/Apple mobile platforms the OS resolver may return non-loopback addresses
-            // for *.localhost (e.g. link-local IPv6); we respect that and only require any address.
+            // for *.localhost.
             bool requireLoopback = !PlatformDetection.IsAppleMobile && !PlatformDetection.IsAndroid;
 
             IPAddress[] addresses = Dns.GetHostAddresses(hostName);

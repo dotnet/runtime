@@ -454,11 +454,6 @@ int32_t SystemNative_GetHostEntryForName(const uint8_t* address, int32_t address
 
                 if (ifa->ifa_addr->sa_family == AF_INET)
                 {
-                    if (platformFamily != AF_UNSPEC && platformFamily != AF_INET)
-                    {
-                        continue;
-                    }
-
                     // Remember if there's at least one non-loopback address for IPv4, so that they will be skipped.
                     if ((ifa->ifa_flags & IFF_LOOPBACK) == 0)
                     {
@@ -469,11 +464,6 @@ int32_t SystemNative_GetHostEntryForName(const uint8_t* address, int32_t address
                 }
                 else if (ifa->ifa_addr->sa_family == AF_INET6)
                 {
-                    if (platformFamily != AF_UNSPEC && platformFamily != AF_INET6)
-                    {
-                        continue;
-                    }
-
                     // Remember if there's at least one non-loopback address for IPv6, so that they will be skipped.
                     if ((ifa->ifa_flags & IFF_LOOPBACK) == 0)
                     {
@@ -518,12 +508,6 @@ int32_t SystemNative_GetHostEntryForName(const uint8_t* address, int32_t address
 
                 // Skip the interface if it isn't UP.
                 if ((ifa->ifa_flags & IFF_UP) == 0)
-                {
-                    continue;
-                }
-
-                // Respect the caller's address-family filter.
-                if (platformFamily != AF_UNSPEC && ifa->ifa_addr->sa_family != platformFamily)
                 {
                     continue;
                 }
