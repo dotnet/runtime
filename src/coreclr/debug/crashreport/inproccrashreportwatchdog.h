@@ -5,11 +5,60 @@
 
 #pragma once
 
-#include <stdint.h>
+#include "pal.h"
 
-// Attempts to initialize the watchdog during normal runtime startup. This is
-// not async-signal-safe and must not be called from the crash-reporting path.
-bool CrashReportWatchdogTryInitialize(uint32_t timeoutSeconds);
+#include <pthread.h>
+#include <stdint.h>
+#include <signal.h>
+
+class CrashReportWatchdogScope;
+
+class CrashReportWatchdog
+{
+public:
+    // Attempts to initialize the watchdog during normal runtime startup. This is
+    // not async-signal-safe and must not be called from the crash-reporting path.
+    static bool TryInitialize(uint32_t timeoutSeconds);
+
+private:
+    friend class CrashReportWatchdogScope;
+
+    static constexpr int CRASH_REPORT_WATCHDOG_INFINITE_TIMEOUT_MS = -1;
+
+    enum class Command : char
+    {
+        Started = 'S',
+        Finished = 'F',
+    };
+
+    static uint32_t ClampTimeoutSeconds(uint32_t timeoutSeconds);
+
+    explicit CrashReportWatchdog(uint32_t timeoutSeconds);
+    ~CrashReportWatchdog();
+
+    bool Initialize();
+    bool InitializePipe();
+    bool ConfigurePipeFd(int fd);
+    void ClosePipe();
+
+    static void BuildFatalSignalSet(sigset_t* signalSet);
+    static void* ThreadEntry(void* context);
+
+    void ThreadLoop();
+    bool WaitForCommand(Command expectedCommand, int timeoutMs = CRASH_REPORT_WATCHDOG_INFINITE_TIMEOUT_MS);
+    static void WriteCommand(Command command);
+    static int GetRemainingTimeoutMs(int64_t deadlineMs);
+    static void Abort();
+
+    uint32_t m_timeoutSeconds;
+    int m_timeoutMs;
+    pthread_t m_thread;
+    int m_pipe[2];
+
+    static LONG s_initializationStarted;
+    static CrashReportWatchdog* s_instance;
+    static volatile sig_atomic_t s_writeFd;
+};
 
 class CrashReportWatchdogScope
 {

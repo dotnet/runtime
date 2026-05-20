@@ -10,8 +10,6 @@
 #include "peassembly.h"
 #include <clrconfignocache.h>
 #include <minipal/guid.h>
-#include <errno.h>
-#include <stdlib.h>
 
 #ifdef FEATURE_INPROC_CRASHREPORT
 
@@ -26,6 +24,7 @@ struct WalkContext
 };
 
 static void BuildTypeName(LPUTF8 buffer, size_t bufferSize, LPCUTF8 namespaceName, LPCUTF8 className);
+static bool IsDecimalDigits(const char* value);
 // Parses configuration during CrashReportConfigure initialization. This is not
 // async-signal-safe and must not be called from the crash-reporting path.
 static DWORD GetCrashReportTimeoutSeconds();
@@ -449,6 +448,25 @@ CrashReportConfigure()
     InProcCrashReportInitialize(settings);
 }
 
+static bool
+IsDecimalDigits(const char* value)
+{
+    if (value == nullptr || value[0] == '\0')
+    {
+        return false;
+    }
+
+    for (const char* current = value; *current != '\0'; current++)
+    {
+        if (*current < '0' || *current > '9')
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 // Parses configuration during CrashReportConfigure initialization. This is not
 // async-signal-safe and must not be called from the crash-reporting path.
 static DWORD
@@ -465,20 +483,13 @@ GetCrashReportTimeoutSeconds()
     }
 
     const char* timeoutString = timeoutCfg.AsString();
-    if (timeoutString == nullptr || timeoutString[0] == '\0')
+    DWORD timeoutSeconds;
+    if (!IsDecimalDigits(timeoutString) || !timeoutCfg.TryAsInteger(10, timeoutSeconds))
     {
         return DefaultTimeoutSeconds;
     }
 
-    errno = 0;
-    char* end = nullptr;
-    unsigned long timeoutSeconds = strtoul(timeoutString, &end, 10);
-    if (errno != 0 || end == timeoutString || *end != '\0' || timeoutSeconds > UINT32_MAX)
-    {
-        return DefaultTimeoutSeconds;
-    }
-
-    return static_cast<DWORD>(timeoutSeconds);
+    return timeoutSeconds;
 }
 
 #endif // FEATURE_INPROC_CRASHREPORT

@@ -348,7 +348,7 @@ InProcCrashReporter::Initialize(
     m_enumerateThreadsCallback = settings.enumerateThreadsCallback;
     CrashReportHelpers::CopyString(m_reportPath, sizeof(m_reportPath), settings.reportPath);
 
-    (void)CrashReportWatchdogTryInitialize(settings.timeoutSeconds);
+    (void)CrashReportWatchdog::TryInitialize(settings.timeoutSeconds);
 
     m_processName[0] = '\0';
 #if defined(__ANDROID__)
