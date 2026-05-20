@@ -3460,7 +3460,7 @@ void CodeGen::genWasmEmitterUnitTestsSimd()
 {
     emitter* emit = GetEmitter();
 
-    // --- IF_V128_CONST: v128.const with 16 raw bytes ---
+    // --- IF_V128: v128.const with 16 raw bytes ---
     const uint8_t v128Bytes[16] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
                                    0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F};
     emit->emitIns_V128Imm(INS_v128_const, v128Bytes);
@@ -3508,7 +3508,7 @@ void CodeGen::genWasmEmitterUnitTestsSimd()
     emit->emitIns_MemargLane(INS_v128_store32_lane, EA_4BYTE, 32, 1);
     emit->emitIns_MemargLane(INS_v128_store64_lane, EA_8BYTE, 256, 0);
 
-    // --- IF_SHUFFLE: i8x16.shuffle with 16 lane-index bytes ---
+    // --- IF_V128: i8x16.shuffle with 16 lane-index bytes ---
     // Identity shuffle
     const uint8_t identityShuffle[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
     emit->emitIns_V128Imm(INS_i8x16_shuffle, identityShuffle);

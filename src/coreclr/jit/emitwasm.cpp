@@ -380,7 +380,7 @@ const uint8_t* emitter::emitGetV128ImmValue(const instrDesc* id)
     return static_cast<const instrDescV128Imm*>(id)->v128Bytes;
 }
 
-const uint8_t emitter::emitGetLaneImmValue(const instrDesc* id)
+uint8_t emitter::emitGetLaneImmValue(const instrDesc* id)
 {
     assert(id->idIsMemargLaneImm());
     return static_cast<const instrDescMemargLane*>(id)->lane;
@@ -391,10 +391,10 @@ const uint8_t emitter::emitGetLaneImmValue(const instrDesc* id)
 //------------------------------------------------------------------------
 
 //------------------------------------------------------------------------
-// emitIns_V128Const: Emit a v128.const instruction with 16 raw bytes.
+// emitIns_V128Imm: Emit a packed SIMD instruction with a 16 byte vector immediate.
 //
 // Arguments:
-//   ins   - instruction (INS_v128_const)
+//   ins   - instruction (currently used with INS_v128_const and INS_i8x16_shuffle)
 //   bytes - pointer to 16 bytes of constant data
 //
 void emitter::emitIns_V128Imm(instruction ins, const uint8_t* bytes)
@@ -511,7 +511,22 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
         return SMALL_IDSC_SIZE;
     }
 
-    if (id->idIsLargeCns() && !IsWasmSimdInstruction(id->idIns()))
+    if (IsWasmSimdInstruction(id->idIns()))
+    {
+        // Some (not all) SIMD instructions have larger instrDescs,
+        // and these cases are handled here.
+        switch (id->idInsFmt())
+        {
+            case IF_V128:
+                return sizeof(instrDescV128Imm);
+            case IF_MEMARG_LANE:
+                return sizeof(instrDescMemargLane);
+            default: // all other SIMD instructions can fit in a standard instrDesc
+                break;
+        }
+    }
+
+    if (id->idIsLargeCns())
     {
         assert(!id->idIsLargeDsp());
         assert(!id->idIsLargeCall());
@@ -528,16 +543,6 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
         return sizeof(instrDescValTypeImm);
     }
 
-    // SIMD cases
-    switch (id->idInsFmt())
-    {
-        case IF_V128:
-            return sizeof(instrDescV128Imm);
-        case IF_MEMARG_LANE:
-            return sizeof(instrDescMemargLane);
-        default: // IF_LANE can fit in a standard instrDesc
-            break;
-    }
 
     return sizeof(instrDesc);
 }
@@ -1337,7 +1342,7 @@ void emitter::emitDispIns(
             cnsval_size_t lane = emitGetInsSC(id);
             assert(FitsIn<uint8_t>(lane));
 
-            printf(" %u", lane);
+            printf(" %u", (uint8_t)lane);
         }
         break;
 
@@ -1349,7 +1354,7 @@ void emitter::emitDispIns(
             dispLclVarInfoIfAny();
 
             uint8_t lane = emitGetLaneImmValue(id);
-            printf(" %u", lane);
+            printf(" %u", (uint8_t)lane);
         }
         break;
 
