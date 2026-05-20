@@ -2530,43 +2530,64 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
                 const bool copiesUpperBits = HWIntrinsicInfo::CopiesUpperBits(intrinsicId);
 
+                GenTree* emitOp1 = op1;
+                GenTree* emitOp2 = op2;
+                GenTree* emitOp3 = op3;
+
                 if (op1->isContained() || op1->IsRegOptional())
                 {
                     assert(!copiesUpperBits);
-                    std::swap(op1, op3);
+                    std::swap(emitOp1, emitOp3);
                 }
                 else if (op2->isContained() || op2->IsRegOptional())
                 {
-                    std::swap(op2, op3);
+                    std::swap(emitOp2, emitOp3);
                 }
 
-                tgtPrefUse = BuildUse(op1);
-                srcCount++;
+                // We don't have different intrinsic IDs for the 3 instruction forms and so,
+                // unlike other intrinsics, the operand order and the emit order are not
+                // consistent and have not been adjusted by lowering. Because of this, we
+                // need to track what the expected emit order is to know how to build the use
+                // but still need build the users in the order they exist in LIR.
 
-                if (copiesUpperBits)
+                GenTree* ops[] = {op1, op2, op3};
+                for (GenTree* op : ops)
                 {
-                    srcCount += BuildDelayFreeUses(op2, op1);
-                }
-                else
-                {
-                    tgtPrefUse2 = BuildUse(op2);
-                    srcCount++;
-                }
-
-                if (op3->isContained())
-                {
-                    SingleTypeRegSet apxAwareRegCandidates =
-                        ForceLowGprForApxIfNeeded(op3, RBM_NONE, canHWIntrinsicUseApxRegs);
-                    srcCount += BuildOperandUses(op3, apxAwareRegCandidates);
-                }
-                else if (copiesUpperBits)
-                {
-                    srcCount += BuildDelayFreeUses(op3, op1);
-                }
-                else
-                {
-                    tgtPrefUse3 = BuildUse(op3);
-                    srcCount++;
+                    if (op == emitOp1)
+                    {
+                        tgtPrefUse = BuildUse(op);
+                        srcCount++;
+                    }
+                    else if (op == emitOp2)
+                    {
+                        if (copiesUpperBits)
+                        {
+                            srcCount += BuildDelayFreeUses(op, emitOp1);
+                        }
+                        else
+                        {
+                            tgtPrefUse2 = BuildUse(op);
+                            srcCount++;
+                        }
+                    }
+                    else if (op == emitOp3)
+                    {
+                        if (op->isContained())
+                        {
+                            SingleTypeRegSet apxAwareRegCandidates =
+                                ForceLowGprForApxIfNeeded(op, RBM_NONE, canHWIntrinsicUseApxRegs);
+                            srcCount += BuildOperandUses(op, apxAwareRegCandidates);
+                        }
+                        else if (copiesUpperBits)
+                        {
+                            srcCount += BuildDelayFreeUses(op, emitOp1);
+                        }
+                        else
+                        {
+                            tgtPrefUse3 = BuildUse(op);
+                            srcCount++;
+                        }
+                    }
                 }
 
                 if (intrinsicTree->OperIsEmbRoundingEnabled() && !intrinsicTree->Op(4)->IsCnsIntOrI())
