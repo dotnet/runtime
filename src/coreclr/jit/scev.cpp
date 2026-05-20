@@ -1469,6 +1469,7 @@ ValueNumPair ScalarEvolutionContext::MaterializeVN(Scev* scev)
     return Materialize(scev, false, nullptr, &vnp) ? vnp : ValueNumPair();
 }
 
+#ifdef DEBUG
 //------------------------------------------------------------------------
 // RelopEvaluationResultString: Convert a RelopEvaluationResult to a string.
 //
@@ -1492,6 +1493,7 @@ static const char* RelopEvaluationResultString(RelopEvaluationResult result)
             return "n/a";
     }
 }
+#endif // DEBUG
 
 //------------------------------------------------------------------------
 // EvaluateRelop:

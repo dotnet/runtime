@@ -1256,6 +1256,7 @@ DebuggerEval::DebuggerEval(CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEval
     // AppDomain ID which is safe to use after the AD is unloaded.  It's only safe to
     // use the DebuggerModule* after we've verified the ADID is still valid (i.e. by entering that domain).
     m_debuggerModule = g_pDebugger->LookupOrCreateModule(pEvalInfo->vmAssembly);
+    m_pAssembly = pEvalInfo->vmAssembly.GetRawPtr();
     m_funcEvalKey = pEvalInfo->funcEvalKey;
     m_argCount = pEvalInfo->argCount;
     m_targetCodeAddr = (TADDR)NULL;

@@ -1571,6 +1571,44 @@ void CodeGen::genHWIntrinsic_R_R_R_RM_I(
 #endif // DEBUG
         }
     }
+    else if (node->GetHWIntrinsicId() == NI_AVX512_TernaryLogic)
+    {
+        // These are the control bytes used for TernaryLogic
+
+        const uint8_t A = 0xF0;
+        const uint8_t B = 0xCC;
+        const uint8_t C = 0xAA;
+
+        uint8_t                 control  = static_cast<uint8_t>(ival);
+        const TernaryLogicInfo& info     = TernaryLogicInfo::lookup(control);
+        TernaryLogicUseFlags    useFlags = info.GetAllUseFlags();
+
+        if (useFlags == TernaryLogicUseFlags::ABC)
+        {
+            // We're using all the operands and can potentially have any
+            // operand overlap with the target register. So we need to
+            // detect those cases and adjust the control byte accordingly.
+
+            if (targetReg == op2Reg)
+            {
+                std::swap(op1, op2);
+                std::swap(op1Reg, op2Reg);
+
+                control = TernaryLogicInfo::GetTernaryControlByte(info, B, A, C);
+                ival    = static_cast<int8_t>(control);
+            }
+            else if ((targetReg == op3->GetRegNum()) && !op3->isUsedFromSpillTemp())
+            {
+                assert(!op3->isContained());
+
+                std::swap(op1, op3);
+                op1Reg = op1->GetRegNum();
+
+                control = TernaryLogicInfo::GetTernaryControlByte(info, C, B, A);
+                ival    = static_cast<int8_t>(control);
+            }
+        }
+    }
 
     assert(targetReg != REG_NA);
     assert(op1Reg != REG_NA);

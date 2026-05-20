@@ -2314,7 +2314,7 @@ namespace Internal.JitInterface
                 }
             }
 
-            if (type.Context.Target.Architecture == TargetArchitecture.ARM &&
+            if (type.Context.Target.SupportsAlign8 &&
                 alignment < 8 && type.RequiresAlign8())
             {
                 // If the structure contains 64-bit primitive fields and the platform requires 8-byte alignment for

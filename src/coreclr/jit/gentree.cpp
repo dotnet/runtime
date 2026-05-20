@@ -10467,7 +10467,11 @@ bool GenTreeOp::UsesDivideByConstOptimized(Compiler* comp)
         if (isSignedDivide)
         {
             // If the divisor is the minimum representable integer value then the result is either 0 or 1
-            if ((divType == TYP_INT && divisorValue == INT_MIN) || (divType == TYP_LONG && divisorValue == INT64_MIN))
+            if ((divType == TYP_INT && divisorValue == INT_MIN)
+#if defined(TARGET_64BIT)
+                || (divType == TYP_LONG && divisorValue == INT64_MIN)
+#endif
+            )
             {
                 return true;
             }
@@ -32026,7 +32030,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
             }
             else if (isScalar)
             {
-                reverseCond ? NI_X86Base_CompareScalarNotLessThanOrEqual : NI_X86Base_CompareScalarGreaterThan;
+                id = reverseCond ? NI_X86Base_CompareScalarNotLessThanOrEqual : NI_X86Base_CompareScalarGreaterThan;
             }
             else
             {
