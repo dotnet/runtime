@@ -14,6 +14,10 @@ set(SOURCES
     log.c
 )
 
+if(CLR_CMAKE_HOST_UNIX)
+    list(APPEND SOURCES cpucount.c)
+endif()
+
 # Provide an object library for scenarios where we ship static libraries
 include_directories(${CLR_SRC_NATIVE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
 
