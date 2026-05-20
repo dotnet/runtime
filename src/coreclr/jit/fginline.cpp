@@ -1420,7 +1420,6 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
                 compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_ASYNC);
             }
 
-
 #ifdef DEBUG
             if (pParam->pThis->verbose)
             {
