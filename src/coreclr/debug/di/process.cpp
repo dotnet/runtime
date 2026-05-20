@@ -2190,12 +2190,6 @@ HRESULT CordbProcess::GetGCHeapInformation(COR_HEAPINFO *pHeapInfo)
 
 namespace
 {
-    struct HeapSegmentAccumulator
-    {
-        CQuickArrayList<COR_SEGMENT> segments;
-        HRESULT                      hrError;
-    };
-
     void HeapSegmentCallback(
         CORDB_ADDRESS rangeStart,
         CORDB_ADDRESS rangeEnd,
@@ -2203,25 +2197,12 @@ namespace
         ULONG heap,
         CALLBACK_DATA pUserData)
     {
-        HeapSegmentAccumulator *acc =
-            reinterpret_cast<HeapSegmentAccumulator*>(pUserData);
-
-        if (FAILED(acc->hrError))
-            return;
-
         COR_SEGMENT s;
         s.start = rangeStart;
         s.end = rangeEnd;
         s.type = (CorDebugGenerationTypes)generation;
         s.heap = heap;
-        HRESULT hr = S_OK;
-        EX_TRY
-        {
-            acc->segments.Push(s);
-        }
-        EX_CATCH_HRESULT(hr);
-        if (FAILED(hr))
-            acc->hrError = hr;
+        CallbackAccumulator<COR_SEGMENT>::From(pUserData)->Push(s);
     }
 }
 
@@ -2236,8 +2217,7 @@ HRESULT CordbProcess::EnumerateHeapRegions(ICorDebugHeapSegmentEnum **ppRegions)
 
     EX_TRY
     {
-        HeapSegmentAccumulator acc;
-        acc.hrError = S_OK;
+        CallbackAccumulator<COR_SEGMENT> acc;
 
         hr = GetDAC()->EnumerateHeapSegments(&HeapSegmentCallback, &acc);
         if (SUCCEEDED(hr) && FAILED(acc.hrError))
@@ -2245,9 +2225,9 @@ HRESULT CordbProcess::EnumerateHeapRegions(ICorDebugHeapSegmentEnum **ppRegions)
 
         if (SUCCEEDED(hr))
         {
-            if (acc.segments.Size() != 0)
+            if (acc.items.Size() != 0)
             {
-                CordbHeapSegmentEnumerator *segEnum = new CordbHeapSegmentEnumerator(this, acc.segments.Ptr(), (DWORD)acc.segments.Size());
+                CordbHeapSegmentEnumerator *segEnum = new CordbHeapSegmentEnumerator(this, acc.items.Ptr(), (DWORD)acc.items.Size());
                 GetContinueNeuterList()->Add(this, segEnum);
                 hr = segEnum->QueryInterface(__uuidof(ICorDebugHeapSegmentEnum), (void**)ppRegions);
             }
@@ -2398,7 +2378,7 @@ HRESULT CordbProcess::GetTypeForTypeID(COR_TYPEID id, ICorDebugType **ppType)
     EX_TRY
     {
         DebuggerIPCE_ExpandedTypeData data;
-        IfFailThrow(GetDAC()->GetObjectExpandedTypeInfoFromID(AllBoxed, id, &data));
+        IfFailThrow(GetDAC()->TypeHandleToExpandedTypeInfo(AllBoxed, id.token1, &data));
 
         CordbType *type = 0;
         hr = CordbType::TypeDataToType(GetAppDomain(), &data, &type);

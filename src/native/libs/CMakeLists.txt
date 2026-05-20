@@ -83,20 +83,14 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
 
         add_definitions(-DDEBUG)
     elseif (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELEASE)
-        # Use O1 option when the clang version is smaller than 3.9
-        # Otherwise use O3 option in release build
-        if (CLR_CMAKE_TARGET_ARCH_ARMV7L AND DEFINED ENV{CROSSCOMPILE} AND CMAKE_C_COMPILER_VERSION VERSION_LESS 3.9)
-            add_compile_options (-O1)
-        else ()
-            if(CLR_CMAKE_TARGET_ANDROID)
-                # -O2 optimization generates faster/smaller code on Android
-                # TODO: This duplicates the settings in eng/native/configureoptimization.cmake, we should unify it
-                add_compile_options (-O2)
-            elseif (CLR_CMAKE_TARGET_BROWSER)
-                add_compile_options (-Oz)
-            else()
-                add_compile_options (-O3)
-            endif ()
+        if(CLR_CMAKE_TARGET_ANDROID)
+            # -O2 optimization generates faster/smaller code on Android
+            # TODO: This duplicates the settings in eng/native/configureoptimization.cmake, we should unify it
+            add_compile_options (-O2)
+        elseif (CLR_CMAKE_TARGET_BROWSER)
+            add_compile_options (-Oz)
+        else()
+            add_compile_options (-O3)
         endif ()
     else ()
         message(FATAL_ERROR "Unknown build type. Set CMAKE_BUILD_TYPE to DEBUG or RELEASE.")
