@@ -899,13 +899,8 @@ void Compiler::optPrintAssertion(const AssertionDsc& curAssertion, AssertionInde
             IntegralRange::Print(curAssertion.GetOp2().GetIntegralRange());
             break;
 
-        case O2K_CHECKED_BOUND_ADD_CNS:
-            printf("(Checked_Bnd_BinOp " FMT_VN " + %d)", curAssertion.GetOp2().GetCheckedBound(),
-                   curAssertion.GetOp2().GetCheckedBoundConstant());
-            break;
-
-        case O2K_VN:
-            printf("VN " FMT_VN "", curAssertion.GetOp2().GetVN());
+        case O2K_VN_ADD_CNS:
+            printf("(VN_ADD_CNS " FMT_VN " + %d)", curAssertion.GetOp2().GetVN(), curAssertion.GetOp2().GetCns());
             break;
 
         default:
@@ -991,7 +986,7 @@ const Compiler::AssertionDsc& Compiler::optGetAssertion(AssertionIndex assertInd
     return assertion;
 }
 
-ValueNum Compiler::optConservativeNormalVN(GenTree* tree)
+ValueNum Compiler::optConservativeNormalVN(const GenTree* tree)
 {
     if (optLocalAssertionProp)
     {
@@ -1413,9 +1408,9 @@ AssertionIndex Compiler::optAddAssertion(const AssertionDsc& newAssertion)
         bool mayHaveDuplicates =
             optAssertionHasAssertionsForVN(newAssertion.GetOp1().GetVN(), /* addIfNotFound */ canAddNewAssertions);
         // We need to register op2.vn too, even if we know for sure there are no duplicates
-        if (newAssertion.GetOp2().KindIs(O2K_CHECKED_BOUND_ADD_CNS))
+        if (newAssertion.GetOp2().KindIs(O2K_VN_ADD_CNS))
         {
-            mayHaveDuplicates |= optAssertionHasAssertionsForVN(newAssertion.GetOp2().GetCheckedBound(),
+            mayHaveDuplicates |= optAssertionHasAssertionsForVN(newAssertion.GetOp2().GetVN(),
                                                                 /* addIfNotFound */ canAddNewAssertions);
 
             // Additionally, check for the pattern of "VN + const == checkedBndVN" and register "VN" as well.
@@ -1424,13 +1419,6 @@ AssertionIndex Compiler::optAddAssertion(const AssertionDsc& newAssertion)
             {
                 mayHaveDuplicates |= optAssertionHasAssertionsForVN(addOpVN, /* addIfNotFound */ canAddNewAssertions);
             }
-        }
-        else if (newAssertion.GetOp2().KindIs(O2K_VN))
-        {
-            // For VN <relop> VN assertions, register op2's VN too so consumers can find
-            // the assertion when iterating from the op2 side.
-            mayHaveDuplicates |= optAssertionHasAssertionsForVN(newAssertion.GetOp2().GetVN(),
-                                                                /* addIfNotFound */ canAddNewAssertions);
         }
 
         if (mayHaveDuplicates)
@@ -1561,7 +1549,7 @@ void Compiler::optDebugCheckAssertion(const AssertionDsc& assertion) const
             assert(optLocalAssertionProp);
             break;
 
-        case O2K_VN:
+        case O2K_VN_ADD_CNS:
             assert(!optLocalAssertionProp);
             assert(assertion.GetOp1().KindIs(O1K_VN));
             assert(assertion.IsRelop());
@@ -1650,8 +1638,7 @@ void Compiler::optCreateComplementaryAssertion(AssertionIndex assertionIndex)
         AssertionDsc reversed = candidateAssertion.Reverse();
         optMapComplementary(optAddAssertion(reversed), assertionIndex);
     }
-    else if (candidateAssertion.KindIs(OAK_LT_UN, OAK_LE_UN) &&
-             candidateAssertion.GetOp2().KindIs(O2K_CHECKED_BOUND_ADD_CNS))
+    else if (candidateAssertion.KindIs(OAK_LT_UN, OAK_LE_UN) && candidateAssertion.GetOp2().KindIs(O2K_VN_ADD_CNS))
     {
         // Assertions such as "X > checkedBndVN" aren't very useful.
         return;
@@ -3892,9 +3879,10 @@ GenTree* Compiler::optAssertionProp_BlockStore(ASSERT_VALARG_TP assertions, GenT
 {
     assert(store->OperIs(GT_STORE_BLK));
 
-    bool didZeroObjProp = optZeroObjAssertionProp(store->Data(), assertions);
-    bool didNonNullProp = optNonNullAssertionProp_Ind(assertions, store);
-    if (didZeroObjProp || didNonNullProp)
+    bool didZeroObjProp      = optZeroObjAssertionProp(store->Data(), assertions);
+    bool didNonNullProp      = optNonNullAssertionProp_Ind(assertions, store);
+    bool didWriteBarrierProp = optWriteBarrierAssertionProp_StoreBlk(assertions, store);
+    if (didZeroObjProp || didNonNullProp || didWriteBarrierProp)
     {
         return optAssertionProp_Update(store, store, stmt);
     }
@@ -4360,11 +4348,13 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
             // Look for a relop-like assertion that matches the current relop exactly.
             // Example: currentTree is "X >= Y" and we have an assertion "X >= Y" (or its inverse "X < Y").
             //
+            // For O2K_VN_ADD_CNS the assertion stores op2 as "vn + cns".
+            // - When cns == 0, the stored VN equals the original op2 VN, so direct match works.
+            // - When cns != 0, we'd need to assemble ADD(vn, cns) at the VN level; skip for now.
+            //
             if (curAssertion.IsRelop() && (curAssertion.GetOp1().GetVN() == op1VN) &&
-                // O2K_CHECKED_BOUND_ADD_CNS means op2 is decomposed into op2.vn being checked bound
-                // and op2.cns being the constant offset. We assemble the original relop VN if we want.
-                // For now, just skip such assertions here.
-                !curAssertion.GetOp2().KindIs(O2K_CHECKED_BOUND_ADD_CNS) && (curAssertion.GetOp2().GetVN() == op2VN))
+                (!curAssertion.GetOp2().KindIs(O2K_VN_ADD_CNS) || (curAssertion.GetOp2().GetCns() == 0)) &&
+                (curAssertion.GetOp2().GetVN() == op2VN))
             {
                 bool       isUnsigned;
                 genTreeOps assertionOper = AssertionDsc::ToCompareOper(curAssertion.GetKind(), &isUnsigned);
@@ -5207,7 +5197,7 @@ static GCInfo::WriteBarrierForm GetWriteBarrierForm(Compiler* comp, ValueNum vn)
             // Boxed static - always on the heap
             return GCInfo::WriteBarrierForm::WBF_BarrierUnchecked;
         }
-        if (funcApp.m_func == VNFunc(GT_ADD))
+        if (funcApp.m_func == VNF_ADD)
         {
             // Check arguments of the GT_ADD
             // To make it conservative, we require one of the arguments to be a constant, e.g.:
@@ -5272,7 +5262,7 @@ bool Compiler::optWriteBarrierAssertionProp_StoreInd(ASSERT_VALARG_TP assertions
         return ValueNumStore::VNVisit::Abort;
     };
 
-    if (vnStore->VNVisitReachingVNs(value->gtVNPair.GetConservative(), vnVisitor) == ValueNumStore::VNVisit::Continue)
+    if (vnStore->VNVisitReachingVNs(optConservativeNormalVN(value), vnVisitor) == ValueNumStore::VNVisit::Continue)
     {
         barrierType = GCInfo::WriteBarrierForm::WBF_NoBarrier;
     }
@@ -5281,7 +5271,7 @@ bool Compiler::optWriteBarrierAssertionProp_StoreInd(ASSERT_VALARG_TP assertions
     {
         // NOTE: we might want to inspect indirs with GTF_IND_TGT_HEAP flag as well - what if we can prove
         // that they actually need no barrier? But that comes with a TP regression.
-        barrierType = GetWriteBarrierForm(this, addr->gtVNPair.GetConservative());
+        barrierType = GetWriteBarrierForm(this, optConservativeNormalVN(addr));
     }
 
     JITDUMP("Trying to determine the exact type of write barrier for STOREIND [%d06]: ", dspTreeID(indir));
@@ -5299,6 +5289,43 @@ bool Compiler::optWriteBarrierAssertionProp_StoreInd(ASSERT_VALARG_TP assertions
     }
 
     JITDUMP("unknown (checked).\n");
+    return false;
+}
+
+//------------------------------------------------------------------------
+// optWriteBarrierAssertionProp_StoreBlk: The STORE_BLK counterpart of
+//    optWriteBarrierAssertionProp_StoreInd. For block stores that contain GC
+//    pointers, attempt to prove via VN/assertion analysis that the destination
+//    address is not on the GC heap (or always on the heap).
+//
+// Arguments:
+//    assertions - Active assertions
+//    store      - The STORE_BLK node
+//
+// Return Value:
+//    Whether the exact type of write barrier was determined and marked on the STOREBLK node.
+//
+bool Compiler::optWriteBarrierAssertionProp_StoreBlk(ASSERT_VALARG_TP assertions, GenTreeBlk* store)
+{
+    if (optLocalAssertionProp || !store->GetLayout()->HasGCPtr() ||
+        ((store->gtFlags & (GTF_IND_TGT_NOT_HEAP | GTF_IND_TGT_HEAP)) != 0))
+    {
+        return false;
+    }
+
+    GCInfo::WriteBarrierForm barrierType = GetWriteBarrierForm(this, optConservativeNormalVN(store->Addr()));
+    if (barrierType == GCInfo::WriteBarrierForm::WBF_NoBarrier)
+    {
+        JITDUMP("Add GTF_IND_TGT_NOT_HEAP to STORE_BLK [%06d]: ", dspTreeID(store));
+        store->gtFlags |= GTF_IND_TGT_NOT_HEAP;
+        return true;
+    }
+    if (barrierType == GCInfo::WriteBarrierForm::WBF_BarrierUnchecked)
+    {
+        JITDUMP("Add GTF_IND_TGT_HEAP to STORE_BLK [%06d]: ", dspTreeID(store));
+        store->gtFlags |= GTF_IND_TGT_HEAP;
+        return true;
+    }
     return false;
 }
 
@@ -5449,12 +5476,11 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
             continue;
         }
 
-        assert(curAssertion.GetOp2().GetCheckedBoundConstant() == 0);
-        assert(curAssertion.GetOp2().IsCheckedBoundNeverNegative());
+        assert(curAssertion.GetOp2().GetCns() == 0);
+        assert(curAssertion.GetOp2().IsVNNeverNegative());
 
         // Do we have a previous range check involving the same 'vnLen' upper bound?
-        if (curAssertion.GetOp2().GetCheckedBound() ==
-            vnStore->VNConservativeNormalValue(arrBndsChk->GetArrayLength()->gtVNPair))
+        if (curAssertion.GetOp2().GetVN() == optConservativeNormalVN(arrBndsChk->GetArrayLength()))
         {
             // Do we have the exact same lower bound 'vnIdx'?
             //       a[i] followed by a[i]

@@ -185,11 +185,8 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         assert(m_compiler->lvaWasmFunctionIndex != BAD_VAR_NUM);
 
         // fp[0] == functionIndex
-        //
-        // TODO-WASM: Save the actual function index. For now we save a fixed constant
-        //
         GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
-        GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 0xBBBB);
+        GetEmitter()->emitFuncletAddressConstant(0 /* funcletId for main method */);
         GetEmitter()->emitIns_S(ins_Store(TYP_I_IMPL), EA_PTRSIZE, m_compiler->lvaWasmFunctionIndex, 0);
     }
 }
@@ -251,7 +248,7 @@ void CodeGen::genHomeRegisterParamsOutsideProlog()
             return;
         }
 
-        if (varDsc->lvOnFrame && (!varDsc->lvIsInReg() || varDsc->lvLiveInOutOfHndlr))
+        if (varDsc->lvOnFrame && (!varDsc->lvIsInReg() || varDsc->IsLiveInOutOfHandler()))
         {
             LclVarDsc* paramVarDsc = m_compiler->lvaGetDesc(paramLclNum);
             var_types  storeType   = genParamStackType(paramVarDsc, segment);
@@ -397,10 +394,8 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
         GetEmitter()->emitIns(INS_I_sub);
         GetEmitter()->emitIns_I(INS_local_set, EA_PTRSIZE, GetStackPointerRegIndex());
 
-        // TODO-WASM: Save the funclet index. For now we save a fixed constant
-        //
         GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetStackPointerRegIndex());
-        GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 0xAAAA);
+        GetEmitter()->emitFuncletAddressConstant((cnsval_ssize_t)funcletIndex);
         GetEmitter()->emitIns_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE, 0);
     }
 }
@@ -1459,7 +1454,7 @@ void CodeGen::genCodeForBinaryOverflow(GenTreeOp* treeNode)
             // TODO-WASM-CQ: consider branchless alternative here (and for sub)
             GetEmitter()->emitIns_I(is64BitOp ? INS_i64_const : INS_i32_const, emitActualTypeSize(treeNode), 0);
             GetEmitter()->emitIns(is64BitOp ? INS_i64_ge_s : INS_i32_ge_s);
-            GetEmitter()->emitIns(INS_if);
+            genEmitIf();
             {
                 // Operands have the same sign. If the sum has a different sign, then the add overflowed.
                 GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(resultReg));
@@ -1469,7 +1464,7 @@ void CodeGen::genCodeForBinaryOverflow(GenTreeOp* treeNode)
                 GetEmitter()->emitIns(is64BitOp ? INS_i64_lt_s : INS_i32_lt_s);
                 genJumpToThrowHlpBlk(SCK_OVERFLOW);
             }
-            GetEmitter()->emitIns(INS_end);
+            genEmitEndIf();
             GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(resultReg));
             break;
         }
@@ -1490,7 +1485,7 @@ void CodeGen::genCodeForBinaryOverflow(GenTreeOp* treeNode)
             GetEmitter()->emitIns(is64BitOp ? INS_i64_xor : INS_i32_xor);
             GetEmitter()->emitIns_I(is64BitOp ? INS_i64_const : INS_i32_const, emitActualTypeSize(treeNode), 0);
             GetEmitter()->emitIns(is64BitOp ? INS_i64_lt_s : INS_i32_lt_s);
-            GetEmitter()->emitIns(INS_if);
+            genEmitIf();
             {
                 // Operands have different signs. If the difference has a different sign than op1, then the subtraction
                 // overflowed.
@@ -1501,7 +1496,7 @@ void CodeGen::genCodeForBinaryOverflow(GenTreeOp* treeNode)
                 GetEmitter()->emitIns(is64BitOp ? INS_i64_lt_s : INS_i32_lt_s);
                 genJumpToThrowHlpBlk(SCK_OVERFLOW);
             }
-            GetEmitter()->emitIns(INS_end);
+            genEmitEndIf();
             GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(resultReg));
             break;
         }
@@ -1915,11 +1910,11 @@ void CodeGen::genJumpToThrowHlpBlk(SpecialCodeKind codeKind)
     }
     else
     {
-        GetEmitter()->emitIns_BlockTy(INS_if);
+        genEmitIf();
         // Throw helpers are managed so we need to push the stack pointer before genEmitHelperCall.
         GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetStackPointerRegIndex());
         genEmitHelperCall(m_compiler->acdHelper(codeKind), 0, EA_UNKNOWN);
-        GetEmitter()->emitIns(INS_end);
+        genEmitEndIf();
     }
 }
 
@@ -2668,9 +2663,6 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         // RhpCheckedAssignRef
         HELPER_SIG(CORINFO_HELP_CHECKED_ASSIGN_REF, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I,
                    CORINFO_WASM_TYPE_I);
-        // JIT_WriteBarrierEnsureNonHeapTarget
-        HELPER_SIG(CORINFO_HELP_ASSIGN_REF_ENSURE_NONHEAP, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */,
-                   CORINFO_WASM_TYPE_I, CORINFO_WASM_TYPE_I);
         // RhpByRefAssignRef
         HELPER_SIG(CORINFO_HELP_ASSIGN_BYREF, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I,
                    CORINFO_WASM_TYPE_I);
@@ -2975,7 +2967,6 @@ void CodeGen::genLclHeap(GenTree* tree)
     }
     else
     {
-        bool const is64Bit = (TARGET_POINTER_SIZE == 8);
         genConsumeReg(size);
 
         // Extend size to pointer size, if necessary
@@ -2996,7 +2987,7 @@ void CodeGen::genLclHeap(GenTree* tree)
 
         // Check for zero-sized requests
         GetEmitter()->emitIns(INS_I_eqz);
-        GetEmitter()->emitIns_BlockTy(INS_if, is64Bit ? WasmValueType::I64 : WasmValueType::I32);
+        genEmitIf(WasmValueType::I);
         {
             // If size is zero, leave a zero on the stack
             GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 0);
@@ -3053,7 +3044,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         }
 
         // end if
-        GetEmitter()->emitIns(INS_end);
+        genEmitEndIf();
     }
 
     WasmProduceReg(tree);
@@ -3287,7 +3278,37 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* blkOp)
 void CodeGen::genCallFinally(BasicBlock* block)
 {
     assert(block->KindIs(BBJ_CALLFINALLY));
-    NYI_WASM("genCallFinally");
+    BasicBlock* const finallyTarget = block->GetTarget();
+    EHblkDsc* const   ehDsc         = m_compiler->ehGetBlockHndDsc(finallyTarget);
+    assert(ehDsc->ebdHandlerType == EH_HANDLER_FINALLY);
+    assert(ehDsc->ebdHndBeg == finallyTarget);
+    unsigned const funcletIndex = ehDsc->ebdFuncIndex;
+
+    assert((funcletIndex >= 1) && (funcletIndex < m_compiler->compFuncCount()));
+
+    EmitCallParams params;
+    params.callType = EmitCallType::EC_INDIR_R;
+
+    // A finally takes SP and FP as arguments, and returns nothing.
+    //
+    CorInfoWasmType             ptrType = (TARGET_POINTER_SIZE == 4) ? CORINFO_WASM_TYPE_I32 : CORINFO_WASM_TYPE_I64;
+    ArrayStack<CorInfoWasmType> typeStack(m_compiler->getAllocator(CMK_Codegen));
+    typeStack.Push(CORINFO_WASM_TYPE_VOID);
+    typeStack.Push(ptrType);
+    typeStack.Push(ptrType);
+
+    params.wasmSignature = m_compiler->info.compCompHnd->getWasmTypeSymbol(typeStack.Data(), typeStack.Height());
+
+    GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetStackPointerRegIndex());
+    GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
+    GetEmitter()->emitFuncletAddressConstant(funcletIndex);
+
+    genEmitCallWithCurrentGC(params);
+
+    if (block->HasFlag(BBF_RETLESS_CALL))
+    {
+        GetEmitter()->emitIns(INS_unreachable);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -3344,10 +3365,12 @@ void CodeGen::genEmitGSCookieCheck(bool tailCall)
     NYI_WASM("genEmitGSCookieCheck");
 }
 
+#ifdef PROFILING_SUPPORTED
 void CodeGen::genProfilingLeaveCallback(unsigned helper)
 {
     NYI_WASM("genProfilingLeaveCallback");
 }
+#endif
 
 void CodeGen::genSpillVar(GenTree* tree)
 {
@@ -3371,6 +3394,44 @@ void CodeGen::genLoadLocalIntoReg(regNumber targetReg, unsigned lclNum)
 }
 
 //------------------------------------------------------------------------
+// genEmitIf: Emit an 'if' instruction
+//
+// Arguments:
+//    blockType - simple type for the block, or invalid if none
+//
+// Notes:
+//   This emits an `if` instruction and adds a new label to the control flow stack that is not
+//   modelled by the wasmControlFlowStack. Since we won't explicitly branch to the end
+//   of the `if` we just need to understand that the stack is now deeper.
+//
+void CodeGen::genEmitIf(WasmValueType blockType)
+{
+    wasmExtraControlFlowDepth++;
+
+    if (blockType != WasmValueType::Invalid)
+    {
+        GetEmitter()->emitIns_BlockTy(INS_if, blockType);
+    }
+    else
+    {
+        GetEmitter()->emitIns(INS_if);
+    }
+}
+
+//------------------------------------------------------------------------
+// genEmitEndIf: Emit an 'end' instruction closing an 'if' block
+//
+// Notes:
+//   Removes the added stack depth from genEmitIf.
+//
+void CodeGen::genEmitEndIf()
+{
+    assert(wasmExtraControlFlowDepth > 0);
+    wasmExtraControlFlowDepth--;
+    GetEmitter()->emitIns(INS_end);
+}
+
+//------------------------------------------------------------------------
 // inst_JMP: Emit a jump instruction.
 //
 // Arguments:
@@ -3380,7 +3441,7 @@ void CodeGen::genLoadLocalIntoReg(regNumber targetReg, unsigned lclNum)
 void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock)
 {
     instruction    instr = emitter::emitJumpKindToIns(jmp);
-    unsigned const depth = findTargetDepth(tgtBlock);
+    unsigned const depth = findTargetDepth(tgtBlock) + wasmExtraControlFlowDepth;
     GetEmitter()->emitIns_J(instr, EA_4BYTE, depth, tgtBlock);
 }
 

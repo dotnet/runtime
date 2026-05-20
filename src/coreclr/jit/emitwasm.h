@@ -37,6 +37,7 @@ void emitIns_Lane(instruction ins, emitAttr attr, uint8_t laneIdx);
 void emitIns_MemargLane(instruction ins, emitAttr attr, cnsval_ssize_t offset, uint8_t laneIdx);
 
 void emitAddressConstant(void* address);
+void emitFuncletAddressConstant(cnsval_ssize_t funcletId);
 
 static unsigned SizeOfULEB128(uint64_t value);
 static unsigned SizeOfSLEB128(int64_t value);
@@ -74,6 +75,8 @@ size_t emitRawBytes(uint8_t* destination, const void* source, size_t count);
 size_t emitOutputOpcode(BYTE* dst, instruction ins);
 size_t emitOutputPaddedReloc(uint8_t* destination);
 size_t emitOutputConstant(uint8_t* destination, const instrDesc* id, bool isSigned, CorInfoReloc relocType);
+size_t emitOutputConstantFunclet(uint8_t* destination, const instrDesc* id, CorInfoReloc relocType);
+
 size_t emitOutputValtypeSig(uint8_t* destination, WasmValueType valtype);
 
 void emitUpdateFuncletLocations();
