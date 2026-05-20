@@ -44,19 +44,19 @@ namespace System
         {
             comparer ??= Comparer<T>.Default;
 
-            if (typeof(T) == typeof(byte) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<byte, MinCalc<byte>>(Cast<T, byte>(span));
-            if (typeof(T) == typeof(sbyte) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<sbyte, MinCalc<sbyte>>(Cast<T, sbyte>(span));
-            if (typeof(T) == typeof(ushort) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<ushort, MinCalc<ushort>>(Cast<T, ushort>(span));
-            if (typeof(T) == typeof(short) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<short, MinCalc<short>>(Cast<T, short>(span));
-            if (typeof(T) == typeof(char) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<char, MinCalc<char>>(Cast<T, char>(span));
-            if (typeof(T) == typeof(uint) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<uint, MinCalc<uint>>(Cast<T, uint>(span));
-            if (typeof(T) == typeof(int) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<int, MinCalc<int>>(Cast<T, int>(span));
-            if (typeof(T) == typeof(ulong) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<ulong, MinCalc<ulong>>(Cast<T, ulong>(span));
-            if (typeof(T) == typeof(long) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<long, MinCalc<long>>(Cast<T, long>(span));
-            if (typeof(T) == typeof(nuint) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<nuint, MinCalc<nuint>>(Cast<T, nuint>(span));
-            if (typeof(T) == typeof(nint) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<nint, MinCalc<nint>>(Cast<T, nint>(span));
-            if (typeof(T) == typeof(Int128) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<Int128, MinCalc<Int128>>(Cast<T, Int128>(span));
-            if (typeof(T) == typeof(UInt128) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<UInt128, MinCalc<UInt128>>(Cast<T, UInt128>(span));
+            if (typeof(T) == typeof(byte) && comparer == Comparer<T>.Default) return MinMaxInteger<T, byte, MinCalc<byte>>(span);
+            if (typeof(T) == typeof(sbyte) && comparer == Comparer<T>.Default) return MinMaxInteger<T, sbyte, MinCalc<sbyte>>(span);
+            if (typeof(T) == typeof(ushort) && comparer == Comparer<T>.Default) return MinMaxInteger<T, ushort, MinCalc<ushort>>(span);
+            if (typeof(T) == typeof(short) && comparer == Comparer<T>.Default) return MinMaxInteger<T, short, MinCalc<short>>(span);
+            if (typeof(T) == typeof(char) && comparer == Comparer<T>.Default) return MinMaxInteger<T, char, MinCalc<char>>(span);
+            if (typeof(T) == typeof(uint) && comparer == Comparer<T>.Default) return MinMaxInteger<T, uint, MinCalc<uint>>(span);
+            if (typeof(T) == typeof(int) && comparer == Comparer<T>.Default) return MinMaxInteger<T, int, MinCalc<int>>(span);
+            if (typeof(T) == typeof(ulong) && comparer == Comparer<T>.Default) return MinMaxInteger<T, ulong, MinCalc<ulong>>(span);
+            if (typeof(T) == typeof(long) && comparer == Comparer<T>.Default) return MinMaxInteger<T, long, MinCalc<long>>(span);
+            if (typeof(T) == typeof(nuint) && comparer == Comparer<T>.Default) return MinMaxInteger<T, nuint, MinCalc<nuint>>(span);
+            if (typeof(T) == typeof(nint) && comparer == Comparer<T>.Default) return MinMaxInteger<T, nint, MinCalc<nint>>(span);
+            if (typeof(T) == typeof(Int128) && comparer == Comparer<T>.Default) return MinMaxInteger<T, Int128, MinCalc<Int128>>(span);
+            if (typeof(T) == typeof(UInt128) && comparer == Comparer<T>.Default) return MinMaxInteger<T, UInt128, MinCalc<UInt128>>(span);
 
             return MinMax<T, MinDirection>(span, comparer);
         }
@@ -93,29 +93,22 @@ namespace System
         {
             comparer ??= Comparer<T>.Default;
 
-            if (typeof(T) == typeof(byte) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<byte, MaxCalc<byte>>(Cast<T, byte>(span));
-            if (typeof(T) == typeof(sbyte) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<sbyte, MaxCalc<sbyte>>(Cast<T, sbyte>(span));
-            if (typeof(T) == typeof(ushort) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<ushort, MaxCalc<ushort>>(Cast<T, ushort>(span));
-            if (typeof(T) == typeof(short) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<short, MaxCalc<short>>(Cast<T, short>(span));
-            if (typeof(T) == typeof(char) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<char, MaxCalc<char>>(Cast<T, char>(span));
-            if (typeof(T) == typeof(uint) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<uint, MaxCalc<uint>>(Cast<T, uint>(span));
-            if (typeof(T) == typeof(int) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<int, MaxCalc<int>>(Cast<T, int>(span));
-            if (typeof(T) == typeof(ulong) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<ulong, MaxCalc<ulong>>(Cast<T, ulong>(span));
-            if (typeof(T) == typeof(long) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<long, MaxCalc<long>>(Cast<T, long>(span));
-            if (typeof(T) == typeof(nuint) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<nuint, MaxCalc<nuint>>(Cast<T, nuint>(span));
-            if (typeof(T) == typeof(nint) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<nint, MaxCalc<nint>>(Cast<T, nint>(span));
-            if (typeof(T) == typeof(Int128) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<Int128, MaxCalc<Int128>>(Cast<T, Int128>(span));
-            if (typeof(T) == typeof(UInt128) && comparer == Comparer<T>.Default) return (T)(object)MinMaxInteger<UInt128, MaxCalc<UInt128>>(Cast<T, UInt128>(span));
+            if (typeof(T) == typeof(byte) && comparer == Comparer<T>.Default) return MinMaxInteger<T, byte, MaxCalc<byte>>(span);
+            if (typeof(T) == typeof(sbyte) && comparer == Comparer<T>.Default) return MinMaxInteger<T, sbyte, MaxCalc<sbyte>>(span);
+            if (typeof(T) == typeof(ushort) && comparer == Comparer<T>.Default) return MinMaxInteger<T, ushort, MaxCalc<ushort>>(span);
+            if (typeof(T) == typeof(short) && comparer == Comparer<T>.Default) return MinMaxInteger<T, short, MaxCalc<short>>(span);
+            if (typeof(T) == typeof(char) && comparer == Comparer<T>.Default) return MinMaxInteger<T, char, MaxCalc<char>>(span);
+            if (typeof(T) == typeof(uint) && comparer == Comparer<T>.Default) return MinMaxInteger<T, uint, MaxCalc<uint>>(span);
+            if (typeof(T) == typeof(int) && comparer == Comparer<T>.Default) return MinMaxInteger<T, int, MaxCalc<int>>(span);
+            if (typeof(T) == typeof(ulong) && comparer == Comparer<T>.Default) return MinMaxInteger<T, ulong, MaxCalc<ulong>>(span);
+            if (typeof(T) == typeof(long) && comparer == Comparer<T>.Default) return MinMaxInteger<T, long, MaxCalc<long>>(span);
+            if (typeof(T) == typeof(nuint) && comparer == Comparer<T>.Default) return MinMaxInteger<T, nuint, MaxCalc<nuint>>(span);
+            if (typeof(T) == typeof(nint) && comparer == Comparer<T>.Default) return MinMaxInteger<T, nint, MaxCalc<nint>>(span);
+            if (typeof(T) == typeof(Int128) && comparer == Comparer<T>.Default) return MinMaxInteger<T, Int128, MaxCalc<Int128>>(span);
+            if (typeof(T) == typeof(UInt128) && comparer == Comparer<T>.Default) return MinMaxInteger<T, UInt128, MaxCalc<UInt128>>(span);
 
             return MinMax<T, MaxDirection>(span, comparer);
         }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ReadOnlySpan<TTo> Cast<TFrom, TTo>(ReadOnlySpan<TFrom> span)
-            where TTo : struct
-            => MemoryMarshal.CreateReadOnlySpan(
-                ref Unsafe.As<TFrom, TTo>(ref MemoryMarshal.GetReference(span)),
-                span.Length);
 
         private interface IMinMaxDirection
         {
@@ -218,6 +211,11 @@ namespace System
             public static Vector256<T> Compare(Vector256<T> left, Vector256<T> right) => Vector256.Max(left, right);
             public static Vector512<T> Compare(Vector512<T> left, Vector512<T> right) => Vector512.Max(left, right);
         }
+
+        private static TOuter MinMaxInteger<TOuter, TInner, TMinMax>(this ReadOnlySpan<TOuter> span)
+            where TInner : struct, IBinaryInteger<TInner>
+            where TMinMax : IMinMaxCalc<TInner> =>
+            (TOuter)(object)MinMaxInteger<TInner, TMinMax>(Unsafe.BitCast<ReadOnlySpan<TOuter>, ReadOnlySpan<TInner>>(span));
 
         private static T MinMaxInteger<T, TMinMax>(this ReadOnlySpan<T> span)
             where T : struct, IBinaryInteger<T>
