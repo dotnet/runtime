@@ -16,6 +16,15 @@ if (MSVC)
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/permissive->)
 endif()
 
+# The JIT enforces -Wunused-function, -Wtautological-compare and -Wunused-value
+# (overriding the repo-wide -Wno-* counterparts from configurecompiler.cmake) so
+# that dead helpers, always-true/always-false comparisons and discarded
+# expressions are caught early. Any helper or comparison that is only meaningful
+# under a target/DEBUG #ifdef must be guarded by the same condition.
+if (CLR_CMAKE_HOST_UNIX OR CLR_CMAKE_HOST_WASI)
+  add_compile_options(-Wunused-function -Wtautological-compare -Wunused-value)
+endif()
+
 function(create_standalone_jit)
 
   set(oneValueArgs TARGET OS ARCH)

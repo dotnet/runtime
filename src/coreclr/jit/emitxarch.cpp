@@ -1665,6 +1665,7 @@ bool emitter::Is4ByteSSEInstruction(instruction ins) const
     return !UseVEXEncoding() && EncodedBySSE38orSSE3A(ins);
 }
 
+#ifdef DEBUG
 //------------------------------------------------------------------------
 // isLowSIMDReg: Checks if a register is a register supported by any SIMD encoding
 //
@@ -1681,6 +1682,7 @@ static bool isLowSimdReg(regNumber reg)
     return (reg >= REG_XMM0) && (reg <= REG_XMM7);
 #endif
 }
+#endif // DEBUG
 
 //------------------------------------------------------------------------
 // GetEmbRoundingMode: Get the rounding mode for embedded rounding
