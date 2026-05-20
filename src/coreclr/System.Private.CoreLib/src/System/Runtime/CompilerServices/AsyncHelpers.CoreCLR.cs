@@ -400,9 +400,9 @@ namespace System.Runtime.CompilerServices
             vtsCont.Initialize(source, token);
             vtsCont.ExecutionContext = ExecutionContext.CaptureForSuspension(state.CurrentThread!);
 
-            // capture continuation context. (this is the difference from the transparent helper)
-            // CONSIDER: We capture ContinuationContext for consistency, but we only need flags.
-            CaptureContinuationContext(ref vtsCont.ContinuationContext, ref vtsCont.Flags);
+            // We only need to capture flags.
+            // When needed, VTS will take the scheduling context captured in the "state".
+            CaptureContinuationContextFlags(ref vtsCont.Flags);
 
             sentinelContinuation.Next = vtsCont;
             state.StackState->ValueTaskContinuation = vtsCont;
@@ -459,8 +459,9 @@ namespace System.Runtime.CompilerServices
             vtsCont.Initialize<T>(source, token);
             vtsCont.ExecutionContext = ExecutionContext.CaptureForSuspension(state.CurrentThread!);
 
-            // CONSIDER: We capture ContinuationContext for consistency, but we only need flags.
-            CaptureContinuationContext(ref vtsCont.ContinuationContext, ref vtsCont.Flags);
+            // We only need to capture flags.
+            // When needed, VTS will take the scheduling context captured in the "state".
+            CaptureContinuationContextFlags(ref vtsCont.Flags);
 
             sentinelContinuation.Next = vtsCont;
             state.StackState->ValueTaskContinuation = vtsCont;
@@ -1200,6 +1201,26 @@ namespace System.Runtime.CompilerServices
             {
                 flags |= ContinuationFlags.ContinueOnCapturedTaskScheduler;
                 continuationContext = sched;
+                return;
+            }
+
+            flags |= ContinuationFlags.ContinueOnThreadPool;
+        }
+
+        // Same as above, but only captures flags
+        private static void CaptureContinuationContextFlags(ref ContinuationFlags flags)
+        {
+            SynchronizationContext? syncCtx = Thread.CurrentThreadAssumedInitialized._synchronizationContext;
+            if (syncCtx != null && syncCtx.GetType() != typeof(SynchronizationContext))
+            {
+                flags |= ContinuationFlags.ContinueOnCapturedSynchronizationContext;
+                return;
+            }
+
+            TaskScheduler? sched = TaskScheduler.InternalCurrent;
+            if (sched != null && sched != TaskScheduler.Default)
+            {
+                flags |= ContinuationFlags.ContinueOnCapturedTaskScheduler;
                 return;
             }
 
