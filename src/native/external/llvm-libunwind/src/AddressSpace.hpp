@@ -225,8 +225,6 @@ public:
   template <typename R>
   bool findOtherFDE(typename R::link_hardened_reg_arg_t targetAddr,
                     pint_t &fde);
-
-  static LocalAddressSpace sThisAddressSpace;
 };
 
 inline uintptr_t LocalAddressSpace::getP(pint_t addr) {

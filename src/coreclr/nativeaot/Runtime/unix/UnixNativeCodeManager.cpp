@@ -22,13 +22,11 @@
 
 #include "eventtracebase.h"
 
-// Provide the static LocalAddressSpace singleton that was previously
-// defined in libunwind.cpp. NativeAOT uses libunwind's internal C++
-// classes directly and does not need the public unw_* API surface
-// that libunwind.cpp provides, so that file is excluded from the build
-// to avoid exporting unused symbols (which conflict with platform
-// libunwind on Android).
-libunwind::LocalAddressSpace libunwind::LocalAddressSpace::sThisAddressSpace;
+// Use the LocalAddressSpace instance from UnwindHelpers.cpp instead of
+// the static member LocalAddressSpace::sThisAddressSpace (which was
+// previously defined in libunwind.cpp). This avoids exporting a symbol
+// that conflicts with platform libunwind on Android.
+extern libunwind::LocalAddressSpace _addressSpace;
 
 #define UBF_FUNC_KIND_MASK      0x03
 #define UBF_FUNC_KIND_ROOT      0x00
@@ -64,7 +62,7 @@ UnixNativeCodeManager::UnixNativeCodeManager(TADDR moduleBase,
       m_pClasslibFunctions(pClasslibFunctions), m_nClasslibFunctions(nClasslibFunctions)
 {
     // Cache the location of unwind sections
-    libunwind::LocalAddressSpace::sThisAddressSpace.findUnwindSections(
+    _addressSpace.findUnwindSections(
         (uintptr_t)pvManagedCodeStartRange, m_UnwindInfoSections);
 }
 
