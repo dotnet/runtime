@@ -20,6 +20,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     private readonly TargetPointer _freeObjectMethodTablePointer;
     private readonly TargetPointer _objectMethodTablePointer;
     private readonly TargetPointer _continuationMethodTablePointer;
+    private readonly TargetPointer _continuationSingletonEEClassPointer;
     private readonly ulong _methodDescAlignment;
     private readonly TypeValidation _typeValidation;
     private readonly MethodValidation _methodValidation;
@@ -438,6 +439,8 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             target.ReadGlobalPointer(Constants.Globals.ObjectMethodTable));
         _continuationMethodTablePointer = target.ReadPointer(
             target.ReadGlobalPointer(Constants.Globals.ContinuationMethodTable));
+        _continuationSingletonEEClassPointer = target.ReadPointer(
+            target.ReadGlobalPointer(Constants.Globals.ContinuationSingletonEEClass));
         _methodDescAlignment = target.ReadGlobal<ulong>(Constants.Globals.MethodDescAlignment);
         _typeValidation = new TypeValidation(target, _continuationMethodTablePointer);
         _methodValidation = new MethodValidation(target, _methodDescAlignment);
@@ -531,13 +534,14 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         }
     }
     public TargetPointer GetCanonicalMethodTable(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? TargetPointer.Null : GetClassData(typeHandle).MethodTable;
+    public bool IsCanonicalMethodTable(TypeHandle typeHandle) => typeHandle.IsMethodTable() && _methodTables[typeHandle.Address].IsCanonMT;
     public TargetPointer GetParentMethodTable(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? TargetPointer.Null : _methodTables[typeHandle.Address].ParentMethodTable;
 
     public uint GetBaseSize(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (uint)0 : _methodTables[typeHandle.Address].Flags.BaseSize;
 
     public uint GetComponentSize(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (uint)0 : _methodTables[typeHandle.Address].Flags.ComponentSize;
 
-    private TargetPointer GetClassPointer(TypeHandle typeHandle)
+    public TargetPointer GetClassPointer(TypeHandle typeHandle)
     {
         MethodTable methodTable = _methodTables[typeHandle.Address];
         switch (MethodTableFlags_1.GetEEClassOrCanonMTBits(methodTable.EEClassOrCanonMT))
@@ -578,6 +582,10 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     public bool IsContinuation(TypeHandle typeHandle) => typeHandle.IsMethodTable()
         && _continuationMethodTablePointer != TargetPointer.Null
         && _methodTables[typeHandle.Address].ParentMethodTable == _continuationMethodTablePointer;
+
+    public bool IsContinuationWithoutMetadata(TypeHandle typeHandle) => IsContinuation(typeHandle)
+        && _continuationSingletonEEClassPointer != TargetPointer.Null
+        && GetClassPointer(typeHandle) == _continuationSingletonEEClassPointer;
 
     IEnumerable<(uint Offset, uint Size)> IRuntimeTypeSystem.GetGCDescSeries(TypeHandle typeHandle, uint numComponents)
     {

@@ -109,6 +109,11 @@ public interface IRuntimeTypeSystem : IContract
     // A canonical method table is either the MethodTable itself, or in the case of a generic instantiation, it is the
     // MethodTable of the prototypical instance.
     TargetPointer GetCanonicalMethodTable(TypeHandle typeHandle) => throw new NotImplementedException();
+    // Returns the EEClass pointer for this MethodTable. For non-canonical MTs, follows the tagged pointer
+    // to the canonical MT and returns its EEClass.
+    TargetPointer GetClassPointer(TypeHandle typeHandle) => throw new NotImplementedException();
+    // True if this MethodTable is the canonical MethodTable (i.e., EEClassOrCanonMT points directly to the EEClass)
+    bool IsCanonicalMethodTable(TypeHandle typeHandle) => throw new NotImplementedException();
     TargetPointer GetParentMethodTable(TypeHandle typeHandle) => throw new NotImplementedException();
 
     TargetPointer GetMethodDescForSlot(TypeHandle methodTable, ushort slot) => throw new NotImplementedException();
@@ -131,6 +136,8 @@ public interface IRuntimeTypeSystem : IContract
     bool RequiresAlign8(TypeHandle typeHandle) => throw new NotImplementedException();
     // True if the MethodTable represents a continuation type used by the async continuation feature
     bool IsContinuation(TypeHandle typeHandle) => throw new NotImplementedException();
+    // True if the MethodTable represents a continuation subtype that has no metadata of its own
+    bool IsContinuationWithoutMetadata(TypeHandle typeHandle) => throw new NotImplementedException();
     /// <summary>
     /// Enumerates GC pointer runs from the CGCDesc stored before the method table.
     /// Returns (offset, size) pairs normalized to actual byte lengths.
