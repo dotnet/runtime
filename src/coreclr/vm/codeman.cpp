@@ -66,6 +66,7 @@ VOLATILE_SVAL_IMPL_INIT(LONG, ExecutionManager, m_dwWriterLock, 0);
 
 #ifdef TARGET_WASM
 VirtualIPRangeSection* ExecutionManager::s_pVirtualIPRangeList = nullptr;
+FunctionTableIndexRangeSection* ExecutionManager::s_pFunctionTableIndexRangeList = nullptr;
 static TADDR s_nextVirtualIP = 0x80000001;
 #endif // TARGET_WASM
 
@@ -5787,6 +5788,64 @@ VirtualIPRangeSection* ExecutionManager::FindVirtualIPRangeSection(UINT32 virtua
         pCurrent = pCurrent->pNext;
     }
     return nullptr;
+}
+
+void ExecutionManager::AddFunctionTableIndexRange(DWORD minFunctionTableIndex,
+                                                   DWORD numRuntimeFunctions,
+                                                   PTR_Module pModule)
+{
+    CONTRACTL {
+        THROWS;
+        GC_NOTRIGGER;
+        PRECONDITION(numRuntimeFunctions > 0);
+        PRECONDITION(CheckPointer(pModule));
+    } CONTRACTL_END;
+
+    FunctionTableIndexRangeSection* pNewRange = new FunctionTableIndexRangeSection(
+        minFunctionTableIndex, numRuntimeFunctions, pModule);
+
+    FunctionTableIndexRangeSection* pOldRangeSection = nullptr;
+    do
+    {
+        pOldRangeSection = VolatileLoadWithoutBarrier(&s_pFunctionTableIndexRangeList);
+        pNewRange->pNext = pOldRangeSection;
+    } while (pOldRangeSection != InterlockedCompareExchangeT(&s_pFunctionTableIndexRangeList, pNewRange, pOldRangeSection));
+}
+
+FunctionTableIndexRangeSection* ExecutionManager::FindFunctionTableIndexRangeSection(DWORD functionIndex)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    FunctionTableIndexRangeSection* pCurrent = s_pFunctionTableIndexRangeList;
+    while (pCurrent != nullptr)
+    {
+        if (functionIndex >= pCurrent->minFunctionTableIndex &&
+            functionIndex < pCurrent->minFunctionTableIndex + pCurrent->numRuntimeFunctions)
+        {
+            return pCurrent;
+        }
+        pCurrent = pCurrent->pNext;
+    }
+    return nullptr;
+}
+
+TADDR ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex(DWORD functionIndex)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    FunctionTableIndexRangeSection* pSection = FindFunctionTableIndexRangeSection(functionIndex);
+    if (pSection == nullptr)
+    {
+        return 0;
+    }
+
+    Module* pModule = pSection->pR2RModule;
+    ReadyToRunInfo* pR2RInfo = pModule->GetReadyToRunInfo();
+
+    DWORD localIndex = functionIndex - pSection->minFunctionTableIndex;
+    PTR_RUNTIME_FUNCTION pRuntimeFunction = pR2RInfo->GetRuntimeFunctions() + localIndex;
+
+    return pR2RInfo->GetMinVirtualIP() + pRuntimeFunction->BeginAddress;
 }
 #endif // TARGET_WASM
 

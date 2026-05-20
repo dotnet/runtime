@@ -2325,6 +2325,26 @@ struct VirtualIPRangeSection
     RangeSection        rangeSection;       // Synthetic RangeSection for compatibility with existing APIs
     VirtualIPRangeSection* pNext;           // Next entry in the linked list
 };
+
+//*****************************************************************************
+//
+// FunctionTableIndexRangeSection: a linked list node tracking a range of
+// function table indices registered from a WASM R2R module.
+//
+//*****************************************************************************
+
+struct FunctionTableIndexRangeSection
+{
+    FunctionTableIndexRangeSection(DWORD minIndex, DWORD count, PTR_Module pModule)
+        : minFunctionTableIndex(minIndex), numRuntimeFunctions(count), pR2RModule(pModule), pNext(nullptr)
+    {
+    }
+
+    DWORD               minFunctionTableIndex;  // Start of the function table index range
+    DWORD               numRuntimeFunctions;    // Number of RUNTIME_FUNCTION entries
+    PTR_Module          pR2RModule;             // Module owning this range
+    FunctionTableIndexRangeSection* pNext;      // Next entry in the linked list
+};
 #endif // TARGET_WASM
 
 //*****************************************************************************
@@ -2494,6 +2514,18 @@ public:
         _ASSERTE(IsVirtualIP(pc));
         return (UINT32)((pc >> 1) & 0x3FFFFFFF);
     }
+
+    // Register a function table index range for a WASM R2R module.
+    static void           AddFunctionTableIndexRange(DWORD minFunctionTableIndex,
+                                                     DWORD numRuntimeFunctions,
+                                                     PTR_Module pModule);
+
+    // Find the FunctionTableIndexRangeSection for a given function table index.
+    static FunctionTableIndexRangeSection* FindFunctionTableIndexRangeSection(DWORD functionIndex);
+
+    // Given a function table index, look up the corresponding Module and RUNTIME_FUNCTION,
+    // then compute and return the virtual IP for that entry.
+    static TADDR          GetWasmVirtualIPFromFunctionTableIndex(DWORD functionIndex);
 #endif // TARGET_WASM
 
     static void           DeleteRange(TADDR StartRange);
@@ -2545,6 +2577,7 @@ private:
 
 #ifdef TARGET_WASM
     static VirtualIPRangeSection* s_pVirtualIPRangeList;
+    static FunctionTableIndexRangeSection* s_pFunctionTableIndexRangeList;
 #endif // TARGET_WASM
 
     static CrstStatic       m_JumpStubCrst;

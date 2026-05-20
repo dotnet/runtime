@@ -2887,6 +2887,11 @@ void ReadyToRunInfo::RegisterVirtualIPRange(Module* pModule)
         totalVirtualIPs,
         ExecutionManager::GetReadyToRunJitManager(),
         pModule);
+
+    ExecutionManager::AddFunctionTableIndexRange(
+        m_minFunctionTableIndex,
+        m_nRuntimeFunctions,
+        pModule);
 }
 #endif // TARGET_WASM
 
