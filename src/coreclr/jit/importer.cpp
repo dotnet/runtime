@@ -11640,6 +11640,14 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 // impWrapTopOfStackInAwait:
 //   Wrap the value on the top of the stack in AsyncHelpers.TransparentAwait.
 //
+// Remarks:
+//   Async versions of non-async task-returning methods are compiled with the
+//   exact same IL as the original method. This means the return value is
+//   mistyped; the original IL returns a Task or ValueTask, but the runtime
+//   async version expects to return the unwrapped result. This function
+//   accomplishes the unwrapping by inserting an async call to
+//   AsyncHelpers.TransparentAwait around the value on the top of the stack.
+//
 void Compiler::impWrapTopOfStackInAwait()
 {
     if (compIsForInlining())
