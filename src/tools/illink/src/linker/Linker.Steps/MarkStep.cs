@@ -506,7 +506,6 @@ namespace Mono.Linker.Steps
             {
                 marked = true;
                 MarkMethodVisibleToReflection(method, DependencyInfo.AlreadyMarked, origin);
-                MarkTypeVisibleToReflection(method.DeclaringType, new DependencyInfo(DependencyKind.DeclaringType, method), origin);
             }
 
             foreach (var (field, origin) in Annotations.DrainPendingReflectionVisibleFields())
@@ -2020,6 +2019,10 @@ namespace Mono.Linker.Steps
             {
                 Annotations.MarkReflectionUsed(methodDefinition);
                 Annotations.MarkIndirectlyCalledMethod(methodDefinition);
+
+                // A reflection-visible method's DeclaringType is also accessible
+                // (e.g., via MethodBase.DeclaringType). Mark it as reflection-visible.
+                MarkTypeVisibleToReflection(methodDefinition.DeclaringType, new DependencyInfo(DependencyKind.DeclaringType, methodDefinition), origin);
 
                 // On a reflectable method, perform generic data flow for the return type and all the parameter types
                 // This is a compensation for the DI issue described in https://github.com/dotnet/runtime/issues/81358

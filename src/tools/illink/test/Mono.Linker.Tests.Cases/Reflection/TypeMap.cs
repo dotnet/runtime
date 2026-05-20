@@ -69,6 +69,7 @@ using Mono.Linker.Tests.Cases.Reflection.Dependencies.Library;
 [assembly: TypeMap<UnusedTypeMap>("UnusedName", typeof(UnusedTargetType), typeof(TrimTarget))]
 [assembly: TypeMapAssociation<UsedTypeMap>(typeof(UnusedSourceClass), typeof(UnusedProxyType))]
 [assembly: TypeMap<UsedTypeMap>("ClassWithStaticMethod", typeof(TargetType4), typeof(ClassWithStaticMethod))]
+[assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedTypeMap>), "ClassWithStaticMethod", typeof(TargetType4), typeof(ClassWithStaticMethod))]
 [assembly: TypeMap<UsedTypeMap>("ClassWithStaticMethodAndField", typeof(TargetType5), typeof(ClassWithStaticMethodAndField))]
 
 [assembly: TypeMap<UsedWithoutAssemblyTargetUniverse>("UnimportantString", typeof(PreservedTargetType))]
@@ -420,6 +421,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
     [Kept(By = Tool.NativeAot)] // Kept by NativeAot by the scanner. It is not kept during codegen.
     class TypeCheckOnlyClass;
 
+    [Kept]
     class TargetType4;
 
     [Kept]
