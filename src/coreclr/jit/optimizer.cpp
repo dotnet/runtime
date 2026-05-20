@@ -7150,14 +7150,21 @@ void Compiler::optRecordLoopMemoryDependence(GenTree* tree, BasicBlock* block, V
         updateLoopNum = updateParentLoopNum;
     }
 
-    // If the update block is not the header of a loop containing
-    // block, we can also ignore the update.
+    // If the memory definition is part of an ancestor loop of `loopNum` then
+    // `tree` depends on memory defined in that ancestor loop. Walk up the parent
+    // chain of `updateLoopNum` looking for such an ancestor. Otherwise ignore
+    // the update.
     //
-    if (!optLoopContains(updateLoopNum, loopNum))
+    while ((updateLoopNum != BasicBlock::NOT_IN_LOOP) && !optLoopContains(updateLoopNum, loopNum))
     {
-        JITDUMP("      ==> Not updating loop memory dependence of [%06u]/" FMT_LP ", memory " FMT_VN "/" FMT_LP
-                " is not defined in an enclosing loop\n",
-                dspTreeID(tree), loopNum, memoryVN, updateLoopNum);
+        updateLoopNum = optLoopTable[updateLoopNum].lpParent;
+    }
+
+    if (updateLoopNum == BasicBlock::NOT_IN_LOOP)
+    {
+        JITDUMP("      ==> Not updating loop memory dependence of [%06u]/" FMT_LP ", memory " FMT_VN
+                " is not dependent on an ancestor loop\n",
+                dspTreeID(tree), loopNum, memoryVN);
         return;
     }
 
