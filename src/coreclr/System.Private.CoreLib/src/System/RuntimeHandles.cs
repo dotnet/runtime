@@ -942,7 +942,7 @@ namespace System
         public RuntimeMethodInfoStub(RuntimeMethodHandleInternal methodHandleValue, object keepalive)
         {
             m_keepalive = keepalive;
-            m_value = methodHandleValue;
+            m_value = methodHandleValue.Value;
         }
 
         private readonly object m_keepalive;
@@ -959,9 +959,9 @@ namespace System
         private object? m_h;
 #pragma warning restore CA1823, 414, 169, IDE0044
 
-        public RuntimeMethodHandleInternal m_value;
+        private IntPtr m_value;
 
-        RuntimeMethodHandleInternal IRuntimeMethodInfo.Value => m_value;
+        RuntimeMethodHandleInternal IRuntimeMethodInfo.Value => new RuntimeMethodHandleInternal(m_value);
 
         // implementation of CORINFO_HELP_METHODDESC_TO_STUBRUNTIMEMETHOD
         [StackTraceHidden]
@@ -1417,22 +1417,23 @@ namespace System
         public RuntimeFieldInfoStub(RuntimeFieldHandleInternal fieldHandle, object keepalive)
         {
             m_keepalive = keepalive;
-            m_fieldHandle = fieldHandle;
+            m_fieldHandle = fieldHandle.Value;
         }
 
         private readonly object m_keepalive;
 
         // These unused variables are used to ensure that this class has the same layout as RuntimeFieldInfo
 #pragma warning disable 414, 169, IDE0044
+        private IntPtr m_b;
         private object? m_c;
         private object? m_d;
-        private int m_b;
         private object? m_e;
         private object? m_f;
-        private RuntimeFieldHandleInternal m_fieldHandle;
 #pragma warning restore 414, 169, IDE0044
 
-        RuntimeFieldHandleInternal IRuntimeFieldInfo.Value => m_fieldHandle;
+        private IntPtr m_fieldHandle;
+
+        RuntimeFieldHandleInternal IRuntimeFieldInfo.Value => new RuntimeFieldHandleInternal(m_fieldHandle);
 
         // implementation of CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD
         [StackTraceHidden]
