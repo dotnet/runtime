@@ -402,6 +402,7 @@ void emitter::emitIns_V128Imm(instruction ins, const uint8_t* bytes)
     assert(bytes != nullptr);
     instrDescV128Imm* id  = static_cast<instrDescV128Imm*>(emitAllocAnyInstr(sizeof(instrDescV128Imm), EA_16BYTE));
     insFormat         fmt = emitInsFormat(ins);
+    assert(fmt == IF_V128);
 
     id->idInsFmt(fmt);
     id->idIns(ins);
@@ -423,6 +424,7 @@ void emitter::emitIns_Lane(instruction ins, emitAttr attr, uint8_t laneIdx)
 {
     instrDesc* id  = emitNewInstrSC(attr, laneIdx);
     insFormat  fmt = emitInsFormat(ins);
+    assert(fmt == IF_LANE);
 
     id->idInsFmt(fmt);
     id->idIns(ins);
@@ -444,6 +446,8 @@ void emitter::emitIns_MemargLane(instruction ins, emitAttr attr, cnsval_ssize_t 
 {
     instrDescMemargLane* id  = static_cast<instrDescMemargLane*>(emitAllocAnyInstr(sizeof(instrDescMemargLane), attr));
     insFormat            fmt = emitInsFormat(ins);
+    assert(fmt == IF_MEMARG_LANE);
+    assert(offset >= 0);
 
     id->idInsFmt(fmt);
     id->idIns(ins);
@@ -1034,7 +1038,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             const instrDescMemargLane* idMemLane = static_cast<const instrDescMemargLane*>(id);
             uint64_t                   align     = emitGetAlignHintLog2(id);
             uint64_t                   offset    = emitGetInsSC(id);
-            assert(align <= UINT32_MAX);
             assert(align < 64);
             dst += emitOutputULEB128(dst, align);
             dst += emitOutputULEB128(dst, offset);

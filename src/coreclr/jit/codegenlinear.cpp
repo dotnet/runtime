@@ -2735,7 +2735,7 @@ void CodeGen::genEmitterUnitTests()
     // We skip over the generated emitter test code by nesting it in a block where the
     // first instruction is a "skip" branch to the end of the block.
     genDefineTempLabel(skipLabel);
-    instGen(INS_block);
+    GetEmitter()->emitIns_BlockTy(INS_block);
     GetEmitter()->emitIns_J(INS_br, EA_4BYTE, 0, skipLabel);
 #endif
 
@@ -2792,8 +2792,8 @@ void CodeGen::genEmitterUnitTests()
     if (unitTestSectionAll || (strstr(unitTestSection, "simd") != nullptr))
     {
         genWasmEmitterUnitTestsSimd();
-        instGen(INS_end);
     }
+    instGen(INS_end);
 #endif
 
 #ifndef TARGET_WASM
