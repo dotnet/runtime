@@ -1317,7 +1317,7 @@ uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field, bool isG
         typeIndex = MethodTableAuxiliaryData::GetThreadStaticsInfo(pMT->GetAuxiliaryData())->NonGCTlsIndex.GetIndexOffset();
     }
 
-    assert(typeIndex != TypeIDProvider::INVALID_TYPE_ID);
+    _ASSERTE(typeIndex != TypeIDProvider::INVALID_TYPE_ID);
 
     EE_TO_JIT_TRANSITION();
     return typeIndex;
@@ -10428,7 +10428,7 @@ CORINFO_METHOD_HANDLE CEEInfo::getAwaitReturnCall(CORINFO_METHOD_HANDLE callerHa
 
     MethodDesc* pCallerMD = GetMethod(callerHandle);
 
-    assert(pCallerMD->IsAsyncVariantMethod() && pCallerMD->IsAsyncThunkMethod());
+    _ASSERTE(pCallerMD->IsAsyncVariantMethod() && pCallerMD->IsAsyncThunkMethod());
 
     MetaSig sig(pCallerMD);
     TypeHandle retType = sig.GetRetTypeHandleThrowing();
