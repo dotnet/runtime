@@ -111,7 +111,7 @@ namespace System.Text.Json.Serialization.Converters
                 JsonTokenType tokenType = reader.TokenType;
                 JsonValueType valueType = GetJsonValueType(tokenType);
 
-                if (typeInfo.UnionAmbiguousValueTypes?.Contains(valueType) == true)
+                if ((typeInfo.UnionAmbiguousValueTypes & valueType) != 0)
                 {
                     ThrowHelper.ThrowJsonException_UnionAmbiguousJsonValueType(typeToConvert, valueType);
                 }

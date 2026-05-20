@@ -552,11 +552,12 @@ namespace System.Text.Json.Serialization.Metadata
         internal Dictionary<JsonValueType, Type>? UnionValueTypeMap { get; set; }
 
         /// <summary>
-        /// Set of <see cref="JsonValueType"/> values that two or more declared case types both
+        /// Bitmask of <see cref="JsonValueType"/> shapes that two or more declared case types both
         /// serialize as. Populated alongside <see cref="UnionValueTypeMap"/>; used at deserialize
         /// time to surface a precise "ambiguous case" error when one of these value shapes appears.
+        /// <see cref="JsonValueType.None"/> means no ambiguous shapes were detected.
         /// </summary>
-        internal HashSet<JsonValueType>? UnionAmbiguousValueTypes { get; set; }
+        internal JsonValueType UnionAmbiguousValueTypes { get; set; }
 
         /// <summary>
         /// First nullable union case type, if any. Populated at configuration time from <see cref="UnionCases"/>.
@@ -1184,7 +1185,7 @@ namespace System.Text.Json.Serialization.Metadata
         private static void BuildUnionValueTypeMap(IList<JsonUnionCaseInfo> unionCases, JsonSerializerOptions options, JsonTypeInfo target)
         {
             var map = new Dictionary<JsonValueType, Type>();
-            HashSet<JsonValueType>? ambiguousValueTypes = null;
+            JsonValueType ambiguousValueTypes = JsonValueType.None;
             bool hasCustomConverterCase = false;
 
             foreach (JsonUnionCaseInfo info in unionCases)
@@ -1226,7 +1227,7 @@ namespace System.Text.Json.Serialization.Metadata
                 JsonValueType valueTypes,
                 Type caseType,
                 Dictionary<JsonValueType, Type> map,
-                ref HashSet<JsonValueType>? ambiguousValueTypes)
+                ref JsonValueType ambiguousValueTypes)
             {
                 ReadOnlySpan<JsonValueType> allValueTypes =
                 [
@@ -1250,7 +1251,7 @@ namespace System.Text.Json.Serialization.Metadata
                         // Two declared cases share this JSON value shape. First-wins for the dispatch
                         // map (so unrelated values still deserialize), but record the ambiguity
                         // so deserialize-time can throw a precise error if this shape shows up.
-                        (ambiguousValueTypes ??= new()).Add(valueType);
+                        ambiguousValueTypes |= valueType;
                     }
                 }
             }
