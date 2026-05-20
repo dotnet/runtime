@@ -3219,13 +3219,12 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
             emit->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(destReg));
             emit->emitIns_I(INS_I_const, EA_PTRSIZE, destOffset);
             emit->emitIns(INS_I_add);
+            // Do an I_load here instead of I_const + I_add because we're using the (Object **, Object *) write barrier,
+            //  not the (Object **, Object **) BYREF write barrier used on other architectures.
             emit->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(srcReg));
-            emit->emitIns_I(INS_I_const, EA_PTRSIZE, srcOffset);
-            emit->emitIns(INS_I_add);
-            // NOTE: This helper's signature omits SP/PEP so all we need on the stack is dst and src.
-            // TODO-WASM-CQ: add a version of CORINFO_HELP_ASSIGN_BYREF that returns the updated dest/src
-            // pointers as a multi-value tuple and use it here.
-            genEmitHelperCall(CORINFO_HELP_ASSIGN_BYREF, 0, EA_PTRSIZE);
+            emit->emitIns_I(INS_I_load, EA_PTRSIZE, srcOffset);
+            // NOTE: This helper's signature omits SP/PEP so all we need on the stack is dst and ref.
+            genEmitHelperCall(CORINFO_HELP_CHECKED_ASSIGN_REF, 0, EA_PTRSIZE);
             gcPtrCount--;
         }
         ++i;
