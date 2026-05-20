@@ -208,6 +208,7 @@ export function coreclr_test(args: CoreClrTestArguments): CoreClrTestResult {
         allowUnsafe: args.allowUnsafe !== undefined ? args.allowUnsafe : true,
         defines: args.defines,
         nowarn: allNowarn,
+        useSharedCompilation: true,
         analyzers: referenceXunitWrapperGenerator ? [Rules.sourceArtifact(Common.xunitWrapperGenerator.binary)] : undefined,
         analyzerConfigs: analyzerConfigs,
     });

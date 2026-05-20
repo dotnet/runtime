@@ -17,6 +17,7 @@ export const csharpToolchain = CSharp.csharpToolchainFromContents({
 export const testLibrary = CSharp.csharp_library({
     name: "TestLibrary",
     toolchain: csharpToolchain,
+    useSharedCompilation: true,
     srcs: [
         "CoreCLRTestLibrary/AssertExtensions.cs",
         "CoreCLRTestLibrary/CoreclrTestWrapperLib.cs",
@@ -52,6 +53,7 @@ export const testLibrary = CSharp.csharp_library({
 export const xunitWrapperLibrary = CSharp.csharp_library({
     name: "XUnitWrapperLibrary",
     toolchain: csharpToolchain,
+    useSharedCompilation: true,
     srcs: [
         "XUnitWrapperLibrary/Help.cs",
         "XUnitWrapperLibrary/TestFilter.cs",
@@ -70,6 +72,7 @@ export const xunitWrapperLibrary = CSharp.csharp_library({
 export const xunitWrapperGenerator = CSharp.csharp_library({
     name: "XUnitWrapperGenerator",
     toolchain: csharpToolchain,
+    useSharedCompilation: true,
     srcs: [
         "XUnitWrapperGenerator/CodeBuilder.cs",
         "XUnitWrapperGenerator/Descriptors.cs",
