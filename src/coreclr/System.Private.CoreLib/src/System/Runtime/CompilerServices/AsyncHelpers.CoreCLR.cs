@@ -398,11 +398,10 @@ namespace System.Runtime.CompilerServices
 
             Debug.Assert(source != null);
             vtsCont.Initialize(source, token);
-            vtsCont.ExecutionContext = ExecutionContext.CaptureForSuspension(state.CurrentThread!);
 
             // We only need to capture flags.
-            // When needed, VTS will take the scheduling context captured in the "state".
-            CaptureContinuationContextFlags(ref vtsCont.Flags);
+            // If needed, VTS will use the scheduling context captured in the "state".
+            CaptureContinuationContextFlags(ref vtsCont.Flags, state.CurrentThread!);
 
             sentinelContinuation.Next = vtsCont;
             state.StackState->ValueTaskContinuation = vtsCont;
@@ -457,11 +456,10 @@ namespace System.Runtime.CompilerServices
 
             Debug.Assert(source != null);
             vtsCont.Initialize<T>(source, token);
-            vtsCont.ExecutionContext = ExecutionContext.CaptureForSuspension(state.CurrentThread!);
 
             // We only need to capture flags.
-            // When needed, VTS will take the scheduling context captured in the "state".
-            CaptureContinuationContextFlags(ref vtsCont.Flags);
+            // If needed, VTS will use the scheduling context captured in the "state".
+            CaptureContinuationContextFlags(ref vtsCont.Flags, state.CurrentThread!);
 
             sentinelContinuation.Next = vtsCont;
             state.StackState->ValueTaskContinuation = vtsCont;
@@ -559,7 +557,7 @@ namespace System.Runtime.CompilerServices
                 // Head continuation should be the result of async call to AwaitAwaiter or UnsafeAwaitAwaiter.
                 // These never have special continuation context handling.
                 // Except for the scenario with ValueTaskContinuation that wraps ValueTaskSource
-                // which can capture continuation context.
+                // which can capture continuation context flags.
                 const ContinuationFlags continueFlags =
                     ContinuationFlags.ContinueOnCapturedSynchronizationContext |
                     ContinuationFlags.ContinueOnThreadPool |
@@ -611,8 +609,9 @@ namespace System.Runtime.CompilerServices
 
                             // Skip to a nontransparent/user continuation. Such continuation must exist.
                             // Since we see a VTS notifier, something was directly or indirectly
-                            // awaiting an async thunk for a ValueTask-returning method.
-                            // That can only happen in nontransparent/user code.
+                            // awaiting either an async thunk for a ValueTask-returning method or
+                            // the direct AsyncHelpers.Await(ValueTask/ValueTask<T>) path.
+                            // In either case, that can only happen in nontransparent/user code.
                             Continuation contWithContinueFlags = valueTaskSourceCont;
                             while ((contWithContinueFlags.Flags & continueFlags) == 0 && contWithContinueFlags.Next != null)
                             {
@@ -1208,9 +1207,9 @@ namespace System.Runtime.CompilerServices
         }
 
         // Same as above, but only captures flags
-        private static void CaptureContinuationContextFlags(ref ContinuationFlags flags)
+        private static void CaptureContinuationContextFlags(ref ContinuationFlags flags, Thread currentThread)
         {
-            SynchronizationContext? syncCtx = Thread.CurrentThreadAssumedInitialized._synchronizationContext;
+            SynchronizationContext? syncCtx = currentThread._synchronizationContext;
             if (syncCtx != null && syncCtx.GetType() != typeof(SynchronizationContext))
             {
                 flags |= ContinuationFlags.ContinueOnCapturedSynchronizationContext;
