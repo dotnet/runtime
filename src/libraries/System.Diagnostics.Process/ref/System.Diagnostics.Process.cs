@@ -285,6 +285,7 @@ namespace System.Diagnostics
         public ProcessOutputLine(string content, bool standardError) { throw null; }
         public string Content { get { throw null; } }
         public bool StandardError { get { throw null; } }
+        public override string ToString() { throw null; }
     }
     public enum ProcessPriorityClass
     {

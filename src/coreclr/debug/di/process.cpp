@@ -2188,6 +2188,24 @@ HRESULT CordbProcess::GetGCHeapInformation(COR_HEAPINFO *pHeapInfo)
     return hr;
 }
 
+namespace
+{
+    void HeapSegmentCallback(
+        CORDB_ADDRESS rangeStart,
+        CORDB_ADDRESS rangeEnd,
+        int generation,
+        ULONG heap,
+        CALLBACK_DATA pUserData)
+    {
+        COR_SEGMENT s;
+        s.start = rangeStart;
+        s.end = rangeEnd;
+        s.type = (CorDebugGenerationTypes)generation;
+        s.heap = heap;
+        CallbackAccumulator<COR_SEGMENT>::From(pUserData)->Push(s);
+    }
+}
+
 HRESULT CordbProcess::EnumerateHeapRegions(ICorDebugHeapSegmentEnum **ppRegions)
 {
     if (!ppRegions)
@@ -2199,14 +2217,17 @@ HRESULT CordbProcess::EnumerateHeapRegions(ICorDebugHeapSegmentEnum **ppRegions)
 
     EX_TRY
     {
-        DacDbiArrayList<COR_SEGMENT> segments;
-        hr = GetDAC()->GetHeapSegments(&segments);
+        CallbackAccumulator<COR_SEGMENT> acc;
+
+        hr = GetDAC()->EnumerateHeapSegments(&HeapSegmentCallback, &acc);
+        if (SUCCEEDED(hr) && FAILED(acc.hrError))
+            hr = acc.hrError;
 
         if (SUCCEEDED(hr))
         {
-            if (!segments.IsEmpty())
+            if (acc.items.Size() != 0)
             {
-                CordbHeapSegmentEnumerator *segEnum = new CordbHeapSegmentEnumerator(this, &segments[0], (DWORD)segments.Count());
+                CordbHeapSegmentEnumerator *segEnum = new CordbHeapSegmentEnumerator(this, acc.items.Ptr(), (DWORD)acc.items.Size());
                 GetContinueNeuterList()->Add(this, segEnum);
                 hr = segEnum->QueryInterface(__uuidof(ICorDebugHeapSegmentEnum), (void**)ppRegions);
             }
@@ -2357,7 +2378,7 @@ HRESULT CordbProcess::GetTypeForTypeID(COR_TYPEID id, ICorDebugType **ppType)
     EX_TRY
     {
         DebuggerIPCE_ExpandedTypeData data;
-        IfFailThrow(GetDAC()->GetObjectExpandedTypeInfoFromID(AllBoxed, id, &data));
+        IfFailThrow(GetDAC()->TypeHandleToExpandedTypeInfo(AllBoxed, id.token1, &data));
 
         CordbType *type = 0;
         hr = CordbType::TypeDataToType(GetAppDomain(), &data, &type);

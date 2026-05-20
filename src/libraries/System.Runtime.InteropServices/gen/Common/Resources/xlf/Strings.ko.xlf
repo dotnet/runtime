@@ -477,6 +477,11 @@
         <target state="translated">이 형식은 네이티브 HRESULT가 아니라 네이티브 서명의 구조체로 처리됩니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="IidParameterIndexUnsupportedConfigurationName">
+        <source>{0} (supported only on [MarshalAs(UnmanagedType.Interface)] out object parameters)</source>
+        <target state="new">{0} (supported only on [MarshalAs(UnmanagedType.Interface)] out object parameters)</target>
+        <note>Configuration name reported via the 'configuration not supported' diagnostic when 'MarshalAs.IidParameterIndex' is used on an unsupported parameter shape. {0} is the dotted attribute member name, e.g. 'MarshalAsAttribute.IidParameterIndex'.</note>
+      </trans-unit>
       <trans-unit id="InAttributeNotSupportedOnByValueParameters">
         <source>The '[In]' attribute is only supported on array parameters. By-value parameters are considered read-only by default.</source>
         <target state="translated">'[In]' 특성은 배열 매개 변수에서만 지원됩니다. 값별 매개 변수는 기본적으로 읽기 전용으로 간주됩니다.</target>

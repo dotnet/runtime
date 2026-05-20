@@ -286,6 +286,16 @@ internal sealed class MockThread : TypedView
 
     public ulong FrameAddress => GetFieldAddress(FrameFieldName);
 
+    /// <summary>
+    /// The value of the Thread's m_pFrame field - the address of the topmost explicit
+    /// Frame on this thread's frame chain (or the FRAME_TOP terminator for an empty chain).
+    /// </summary>
+    public ulong Frame
+    {
+        get => ReadPointerField(FrameFieldName);
+        set => WritePointerField(FrameFieldName, value);
+    }
+
     public uint DebuggerControlledThreadState
     {
         get => ReadUInt32Field(DebuggerControlledThreadStateFieldName);
