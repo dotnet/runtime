@@ -1411,7 +1411,6 @@ namespace System
         }
     }
 
-    [StructLayout(LayoutKind.Sequential)]
     internal sealed class RuntimeFieldInfoStub : IRuntimeFieldInfo
     {
         public RuntimeFieldInfoStub(RuntimeFieldHandleInternal fieldHandle, object keepalive)
