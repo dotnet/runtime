@@ -27,6 +27,7 @@ parameters:
   unifiedBuildNameSuffix: ''
   unifiedBuildConfigOverride: ''
   templatePath: 'templates'
+  useHelixMonitor: false
 
 jobs:
   - template: /eng/common/${{ parameters.templatePath }}/job/job.yml
@@ -133,6 +134,8 @@ jobs:
 
           ${{ if ne(parameters.scenarios[0], '') }}:
             scenarios: ${{ parameters.scenarios }}
+
+          useHelixMonitor: ${{ parameters.useHelixMonitor }}
 
       - ${{ if eq(parameters.SuperPmiCollect, true) }}:
         - template: /eng/pipelines/libraries/superpmi-postprocess-step.yml
