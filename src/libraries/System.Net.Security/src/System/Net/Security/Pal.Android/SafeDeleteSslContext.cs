@@ -261,14 +261,22 @@ namespace System.Net
                     {
                         keyBytes = key.ExportPkcs8PrivateKey();
                     }
-                    IntPtr[] ptrs = new IntPtr[context.IntermediateCertificates.Count + 1];
-                    ptrs[0] = cert.Handle;
-                    for (int i = 0; i < context.IntermediateCertificates.Count; i++)
-                    {
-                        ptrs[i + 1] = context.IntermediateCertificates[i].Handle;
-                    }
 
-                    keyManagers = Interop.AndroidCrypto.SSLStreamCreateKeyManagers(keyBytes, algorithm, ptrs);
+                    try
+                    {
+                        IntPtr[] ptrs = new IntPtr[context.IntermediateCertificates.Count + 1];
+                        ptrs[0] = cert.Handle;
+                        for (int i = 0; i < context.IntermediateCertificates.Count; i++)
+                        {
+                            ptrs[i + 1] = context.IntermediateCertificates[i].Handle;
+                        }
+
+                        keyManagers = Interop.AndroidCrypto.SSLStreamCreateKeyManagers(keyBytes, algorithm, ptrs);
+                    }
+                    finally
+                    {
+                        CryptographicOperations.ZeroMemory(keyBytes);
+                    }
                 }
 
                 if (keyManagers == IntPtr.Zero)

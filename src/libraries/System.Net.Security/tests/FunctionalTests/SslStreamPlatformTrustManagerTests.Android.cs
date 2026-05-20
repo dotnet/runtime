@@ -15,9 +15,10 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task SslStream_UntrustedCertificate_ReportsChainErrors()
         {
-            // This test verifies that Android's platform trust manager is consulted.
-            // A self-signed certificate is not in any trust store, so the platform
-            // should report chain errors.
+            // Android platform trust participation is covered by AndroidPlatformTrustTests,
+            // where network_security_config.xml creates a platform-vs-managed trust
+            // difference. This smoke test verifies the Android functional-test path
+            // still reports chain errors for an untrusted certificate.
 
             SslPolicyErrors? reportedErrors = null;
 
