@@ -1148,25 +1148,21 @@ namespace Microsoft.Win32.SafeHandles
             {
                 _runOnThreadPool = true;
                 _executionContext = ExecutionContext.Capture();
-                bool refAdded = false;
-                _owner.DangerousAddRef(ref refAdded);
-                try
-                {
-                    ThreadPool.UnsafeQueueUserWorkItem(this, preferLocal: true);
-                }
-                catch
-                {
-                    _owner.DangerousRelease();
-                    throw;
-                }
+                ThreadPool.UnsafeQueueUserWorkItem(this, preferLocal: true);
             }
 
             private void ExecuteOnThreadPool()
             {
-                bool completed = TryCompleteOperation(_owner);
-                Debug.Assert(completed);
-                _owner.DangerousRelease();
-                OnCompleted(OnCompletedResult.Completed);
+                try
+                {
+                    bool completed = TryCompleteOperation(_owner);
+                    Debug.Assert(completed);
+                    OnCompleted(OnCompletedResult.Completed);
+                }
+                catch (ObjectDisposedException)
+                {
+                    OnCompleted(OnCompletedResult.Aborted);
+                }
             }
 
             protected override void ExecuteThreadPoolWorkItem()
@@ -1376,26 +1372,21 @@ namespace Microsoft.Win32.SafeHandles
             {
                 _runOnThreadPool = true;
                 _executionContext = ExecutionContext.Capture();
-                bool refAdded = false;
-                _owner.DangerousAddRef(ref refAdded);
-                try
-                {
-                    ThreadPool.UnsafeQueueUserWorkItem(this, preferLocal: true);
-                }
-                catch
-                {
-                    _owner.DangerousRelease();
-                    throw;
-                }
+                ThreadPool.UnsafeQueueUserWorkItem(this, preferLocal: true);
             }
 
             private void ExecuteOnThreadPool()
             {
-                while (!TryCompleteOperation(_owner))
+                try
                 {
+                    while (!TryCompleteOperation(_owner))
+                    { }
+                    OnCompleted(OnCompletedResult.Completed);
                 }
-                _owner.DangerousRelease();
-                OnCompleted(OnCompletedResult.Completed);
+                catch (ObjectDisposedException)
+                {
+                    OnCompleted(OnCompletedResult.Aborted);
+                }
             }
 
             protected override void ExecuteThreadPoolWorkItem()

@@ -129,13 +129,21 @@ namespace System.Threading
                 Debug.Assert(oldState == State.Waiting, $"Unexpected operation state: {oldState}");
 
                 // Try to perform the I/O.
-                if (TryCompleteOperation(_owner!.Handle))
+                try
                 {
-                    Debug.Assert(_state is State.Running or State.RunningWithPendingCancellation or State.RunningWithPendingAbort, $"Unexpected operation state: {_state}");
+                    if (TryCompleteOperation(_owner!.Handle))
+                    {
+                        Debug.Assert(_state is State.Running or State.RunningWithPendingCancellation or State.RunningWithPendingAbort, $"Unexpected operation state: {_state}");
 
-                    _state = State.Complete;
+                        _state = State.Complete;
 
-                    return AsyncResult.Completed;
+                        return AsyncResult.Completed;
+                    }
+                }
+                catch (ObjectDisposedException)
+                {
+                    // (unlikely) The handle was disposed before aborting the context, or the user called SetHandleAsInvalid.
+                    _state = State.RunningWithPendingAbort;
                 }
 
                 // Set state back to Waiting, unless we were canceled/aborted,
