@@ -58,7 +58,7 @@ public class FuzzProgram
     public static short s_20 = (short)25584;
     public static ulong s_21 = 1UL;
 
-    public static void Main(Fuzzlyn.ExecutionServer.IRuntime rt)
+    public static void Problem(Fuzzlyn.ExecutionServer.IRuntime rt)
     {
         s_rt = rt;
         M0();
@@ -817,7 +817,7 @@ public class Runtime_122057
     {
         var runtime = new MyRuntime();
         ResetStatics();
-        try { FuzzProgram.Main(runtime); } catch { }
+        try { FuzzProgram.Problem(runtime); } catch { }
         const string expected = "AB1CED180818F52B";
         string actual = runtime.FinishHashCode();
         if (actual != expected)
