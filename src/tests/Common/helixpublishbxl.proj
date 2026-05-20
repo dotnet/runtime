@@ -1,4 +1,4 @@
-<Project DefaultTargets="Test">
+<Project DefaultTargets="SubmitToHelix">
 
   <!--
     Helix submission for BXL-compiled CoreCLR tests.
@@ -6,7 +6,7 @@
     Usage (local dry-run to see work items):
       dotnet msbuild helixpublishbxl.proj /t:printItems /v:n \
         /p:Configuration=Checked /p:TargetArchitecture=x64 /p:TargetOS=linux \
-        /p:BxlStagingDirectory=/path/to/staging
+        /p:BxlStagingDirectory=/path/to/staging /p:UsesHelixSdk=true
 
     Required properties:
       BxlStagingDirectory  - output of prepare-helix-payload.sh (contains chunk-NNN dirs)
@@ -17,6 +17,32 @@
 
   <Import Sdk="Microsoft.DotNet.Helix.Sdk" Project="Sdk.props" Condition=" '$(UsesHelixSdk)' == 'true' " />
   <Import Sdk="Microsoft.Build.NoTargets" Project="Sdk.props" Condition=" '$(UsesHelixSdk)' != 'true' " />
+
+  <!--
+    Wrapper target: re-invoke this project with UsesHelixSdk=true so the
+    Helix SDK loads and provides the "Test" target.  This mirrors the
+    pattern used by helixpublishwitharcade.proj.
+  -->
+  <Target Name="SubmitToHelix" Condition=" '$(UsesHelixSdk)' != 'true' ">
+    <PropertyGroup>
+      <_PropertiesToPass>
+        UsesHelixSdk=true;
+        BxlStagingDirectory=$(BxlStagingDirectory);
+        TargetArchitecture=$(TargetArchitecture);
+        TargetOS=$(TargetOS);
+        Configuration=$(Configuration);
+        Creator=$(_Creator);
+        HelixAccessToken=$(_HelixAccessToken);
+        HelixBuild=$(_HelixBuild);
+        HelixSource=$(_HelixSource);
+        HelixTargetQueues=$(_HelixTargetQueues);
+        HelixType=$(_HelixType);
+        PublishTestResults=$(_PublishTestResults);
+        TimeoutPerTestCollectionInMinutes=$(_TimeoutPerTestCollectionInMinutes)
+      </_PropertiesToPass>
+    </PropertyGroup>
+    <MSBuild Projects="$(MSBuildProjectFile)" Targets="Test" Properties="$(_PropertiesToPass)" />
+  </Target>
 
   <PropertyGroup>
     <TestBinDir Condition="'$(TestBinDir)' == ''">$(MSBuildThisFileDirectory)../../artifacts/tests/coreclr/</TestBinDir>
