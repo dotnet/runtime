@@ -42,7 +42,13 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(UserDefinedJsonUnionOnPlainObject))]
         [JsonSerializable(typeof(UserDefinedUnionViaIUnion))]
         [JsonSerializable(typeof(UserDefinedValueTypeUnion))]
+        [JsonSerializable(typeof(CustomDiscriminatedAnimalUnion))]
+        [JsonSerializable(typeof(CustomDiscriminatedAnimalUnion_NoConvention))]
+        [JsonSerializable(typeof(CustomDiscriminatedScalarUnion))]
+        [JsonSerializable(typeof(CustomDiscriminatedFlora))]
         [JsonSerializable(typeof(NullableEnumUnion))]
+        [JsonSerializable(typeof(RecursiveNat))]
+        [JsonSerializable(typeof(SelfReferentialUnion))]
         internal sealed partial class UnionTestsContext_Metadata : JsonSerializerContext
         {
         }
@@ -92,7 +98,13 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(UserDefinedJsonUnionOnPlainObject))]
         [JsonSerializable(typeof(UserDefinedUnionViaIUnion))]
         [JsonSerializable(typeof(UserDefinedValueTypeUnion))]
+        [JsonSerializable(typeof(CustomDiscriminatedAnimalUnion))]
+        [JsonSerializable(typeof(CustomDiscriminatedAnimalUnion_NoConvention))]
+        [JsonSerializable(typeof(CustomDiscriminatedScalarUnion))]
+        [JsonSerializable(typeof(CustomDiscriminatedFlora))]
         [JsonSerializable(typeof(NullableEnumUnion))]
+        [JsonSerializable(typeof(RecursiveNat))]
+        [JsonSerializable(typeof(SelfReferentialUnion))]
         internal sealed partial class UnionTestsContext_Default : JsonSerializerContext
         {
         }

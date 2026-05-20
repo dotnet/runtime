@@ -82,6 +82,12 @@ namespace System.Text.Json.Serialization.Metadata
             _cache.GetOrAdd(
                 key: (nameof(CreatePropertySetter), typeof(TProperty), propertyInfo),
                 valueFactory: key => _sourceAccessor.CreatePropertySetter<TProperty>((PropertyInfo)key.member!));
+
+        public override UnionTryGetValueAccessor<TUnion> CreateUnionTryGetValueAccessor<TUnion>(IReadOnlyList<KeyValuePair<Type, MethodInfo>> entries) =>
+            // The chained accessor is built once per JsonTypeInfo<TUnion> during metadata
+            // population, so an additional cache layer would not pay for itself; forward
+            // directly to the underlying emit-backed accessor.
+            _sourceAccessor.CreateUnionTryGetValueAccessor<TUnion>(entries);
     }
 }
 #endif

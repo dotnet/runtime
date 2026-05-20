@@ -609,6 +609,90 @@ namespace System.Text.Json.Serialization.Metadata
             return dynamicMethod;
         }
 
+        public override UnionTryGetValueAccessor<TUnion> CreateUnionTryGetValueAccessor<TUnion>(IReadOnlyList<KeyValuePair<Type, MethodInfo>> entries) =>
+            CreateDelegate<UnionTryGetValueAccessor<TUnion>>(CreateUnionTryGetValueAccessor(typeof(TUnion), entries));
+
+        private static DynamicMethod CreateUnionTryGetValueAccessor(Type unionType, IReadOnlyList<KeyValuePair<Type, MethodInfo>> entries)
+        {
+            Debug.Assert(entries.Count > 0, "Should not build a chained accessor for an empty entry list.");
+
+            // Emit a single DynamicMethod that chains the user-declared
+            // 'bool TUnion.TryGetValue(out CaseType)' overloads in caller-supplied order.
+            // First successful overload sets the out parameters and returns true; if none
+            // match, the trailer writes null/null and returns false. Producing one piece of
+            // IL avoids per-entry closure or delegate hop and keeps the dispatch O(chainLength)
+            // with no managed allocations on the hot path.
+            DynamicMethod dynamicMethod = new DynamicMethod(
+                "UnionTryGetValueAccessor",
+                typeof(bool),
+                new[] { unionType, typeof(Type).MakeByRefType(), typeof(object).MakeByRefType() },
+                typeof(ReflectionEmitMemberAccessor).Module,
+                skipVisibility: true);
+
+            ILGenerator generator = dynamicMethod.GetILGenerator();
+            bool unionIsValueType = unionType.IsValueType;
+
+            for (int i = 0; i < entries.Count; i++)
+            {
+                KeyValuePair<Type, MethodInfo> entry = entries[i];
+                Type caseType = entry.Key;
+                MethodInfo method = entry.Value;
+                LocalBuilder extracted = generator.DeclareLocal(caseType);
+                Label nextEntry = generator.DefineLabel();
+
+                // if (!union.TryGetValue(out extracted)) goto nextEntry;
+                if (unionIsValueType)
+                {
+                    generator.Emit(OpCodes.Ldarga_S, (byte)0);
+                    generator.Emit(OpCodes.Ldloca_S, extracted);
+                    generator.Emit(OpCodes.Call, method);
+                }
+                else
+                {
+                    generator.Emit(OpCodes.Ldarg_0);
+                    generator.Emit(OpCodes.Ldloca_S, extracted);
+                    generator.Emit(OpCodes.Callvirt, method);
+                }
+                generator.Emit(OpCodes.Brfalse, nextEntry);
+
+                // caseType = typeof(CaseType);
+                generator.Emit(OpCodes.Ldarg_1);
+                generator.Emit(OpCodes.Ldtoken, caseType);
+                generator.Emit(OpCodes.Call, s_getTypeFromHandleMethod);
+                generator.Emit(OpCodes.Stind_Ref);
+
+                // value = (object?)extracted;
+                generator.Emit(OpCodes.Ldarg_2);
+                generator.Emit(OpCodes.Ldloc, extracted);
+                if (caseType.IsValueType)
+                {
+                    generator.Emit(OpCodes.Box, caseType);
+                }
+                generator.Emit(OpCodes.Stind_Ref);
+
+                // return true;
+                generator.Emit(OpCodes.Ldc_I4_1);
+                generator.Emit(OpCodes.Ret);
+
+                generator.MarkLabel(nextEntry);
+            }
+
+            // No overload matched: caseType = null; value = null; return false;
+            generator.Emit(OpCodes.Ldarg_1);
+            generator.Emit(OpCodes.Ldnull);
+            generator.Emit(OpCodes.Stind_Ref);
+            generator.Emit(OpCodes.Ldarg_2);
+            generator.Emit(OpCodes.Ldnull);
+            generator.Emit(OpCodes.Stind_Ref);
+            generator.Emit(OpCodes.Ldc_I4_0);
+            generator.Emit(OpCodes.Ret);
+
+            return dynamicMethod;
+        }
+
+        private static readonly MethodInfo s_getTypeFromHandleMethod =
+            typeof(Type).GetMethod(nameof(Type.GetTypeFromHandle), new[] { typeof(RuntimeTypeHandle) })!;
+
         private static DynamicMethod CreateGetterMethod(string memberName, Type memberType) =>
             new DynamicMethod(
                 memberName + "Getter",

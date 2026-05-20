@@ -9,6 +9,13 @@ using System.Threading;
 
 namespace System.Text.Json.Serialization.Metadata
 {
+    // Adapts the user-declared 'bool TryGetValue(out TCase)' instance methods on a union type
+    // to a uniform '(TUnion, out Type?, out object?) => bool' shape: a single chained delegate
+    // tries each TryGetValue overload in caller-supplied order and returns the matching case
+    // type alongside the boxed value on first hit. Implementations live alongside the other
+    // MemberAccessor helpers.
+    internal delegate bool UnionTryGetValueAccessor<TUnion>(TUnion union, out Type? caseType, out object? value);
+
     internal abstract class MemberAccessor
     {
         private static MemberAccessor? s_instance;
@@ -63,6 +70,8 @@ namespace System.Text.Json.Serialization.Metadata
         public abstract Func<object, TProperty> CreateFieldGetter<TProperty>(FieldInfo fieldInfo);
 
         public abstract Action<object, TProperty> CreateFieldSetter<TProperty>(FieldInfo fieldInfo);
+
+        public abstract UnionTryGetValueAccessor<TUnion> CreateUnionTryGetValueAccessor<TUnion>(IReadOnlyList<KeyValuePair<Type, MethodInfo>> entries);
 
         public virtual void Clear() { }
     }

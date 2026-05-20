@@ -154,6 +154,15 @@ namespace System.Text.Json.Serialization.Converters
                 return true;
             }
 
+            // Union converters delegate inline to the case converter without emitting
+            // structural JSON tokens (StartObject/StartArray), so the writer's depth
+            // does not increase across union-to-union recursion. Guard against cyclic
+            // union references using the WriteStack frame depth instead.
+            if (state.CurrentDepth >= options.EffectiveMaxDepth)
+            {
+                ThrowHelper.ThrowJsonException_SerializerCycleDetected(options.EffectiveMaxDepth);
+            }
+
             JsonTypeInfo<TUnion> typeInfo = (JsonTypeInfo<TUnion>)state.Current.JsonTypeInfo;
 
             Func<TUnion, (Type?, object?)>? deconstructor = typeInfo.UnionDeconstructor;

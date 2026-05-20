@@ -218,6 +218,7 @@ namespace System.Text.Json.Serialization.Metadata
                 Debug.Assert(typeInfo.UnionDeconstructor is null);
 
                 Func<TUnion, object?> valueAccessor = MemberAccessor.CreatePropertyGetter<TUnion, object?>(valueProperty);
+                UnionTryGetValueAccessor<TUnion>? chainedTryGetValue = PopulateTryGetValueMethod();
 
                 typeInfo.UnionDeconstructor = (TUnion union) =>
                 {
@@ -225,6 +226,17 @@ namespace System.Text.Json.Serialization.Metadata
                     if (!typeof(TUnion).IsValueType && (object?)union is null)
                     {
                         return (null, null);
+                    }
+
+                    // Primary path: when the union declares 'bool TryGetValue(out CaseType)'
+                    // overloads, defer to the chained accessor which mirrors the C# compiler's
+                    // pattern-matching lowering (overloads are tried most-derived-first; first
+                    // true wins). A false return falls through to the default ResolveUnionCase
+                    // path below so unions with partial TryGetValue coverage still dispatch the
+                    // remaining cases by runtime type.
+                    if (chainedTryGetValue is not null && chainedTryGetValue(union, out Type? matchedCaseType, out object? matchedValue))
+                    {
+                        return (matchedCaseType, matchedValue);
                     }
 
                     object? value = valueAccessor(union);
@@ -247,6 +259,83 @@ namespace System.Text.Json.Serialization.Metadata
 
                     return (entry.CaseType, value);
                 };
+
+                // Discovers public instance 'bool TryGetValue(out CaseType)' overloads on TUnion
+                // matching declared case types and folds them into a single chained accessor
+                // delegate. C# pattern matching for [Union] types lowers 'v is CaseType' to a
+                // call to such overloads when present, so the reflection deconstructor must
+                // honor the same convention to stay consistent with the source generator.
+                [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+                [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+                UnionTryGetValueAccessor<TUnion>? PopulateTryGetValueMethod()
+                {
+                    KeyValuePair<Type, MethodInfo>[]? entries = PopulateTryGetValueMethods();
+                    return entries is null
+                        ? null
+                        : MemberAccessor.Instance.CreateUnionTryGetValueAccessor<TUnion>(entries);
+
+                    // Filter by the literal "TryGetValue" name in the reflection query: it cuts
+                    // the candidate set down to the overloads we actually care about and also
+                    // gives the IL trimmer a static signal that this method name is reflected
+                    // over, so it can root the matching overloads instead of every public
+                    // instance method on TUnion. The discovered overloads are then ordered
+                    // most-derived-first via topological sort so when multiple of them can match
+                    // the same instance the nearest declared case wins (mirrors the C#
+                    // compiler's pattern-matching lowering on union types).
+                    [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+                    [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+                    KeyValuePair<Type, MethodInfo>[]? PopulateTryGetValueMethods()
+                    {
+                        Dictionary<Type, MethodInfo>? methodsByCaseType = null;
+                        foreach (MemberInfo member in typeof(TUnion).GetMember("TryGetValue", MemberTypes.Method, BindingFlags.Public | BindingFlags.Instance))
+                        {
+                            MethodInfo method = (MethodInfo)member;
+                            if (method.ReturnType != typeof(bool) || method.IsGenericMethodDefinition)
+                            {
+                                continue;
+                            }
+
+                            ParameterInfo[] parameters = method.GetParameters();
+                            if (parameters.Length != 1)
+                            {
+                                continue;
+                            }
+
+                            ParameterInfo parameter = parameters[0];
+                            if (!parameter.IsOut || !parameter.ParameterType.IsByRef)
+                            {
+                                continue;
+                            }
+
+                            Type caseType = parameter.ParameterType.GetElementType()!;
+                            if (!caseIndex.ContainsKey(caseType))
+                            {
+                                continue;
+                            }
+
+                            // First overload per case type wins; ignore later duplicates.
+                            (methodsByCaseType ??= new()).TryAdd(caseType, method);
+                        }
+
+                        if (methodsByCaseType is null)
+                        {
+                            return null;
+                        }
+
+                        Type[] orderedCaseTypes = SortTypesByInheritanceHierarchy(
+                            new List<Type>(methodsByCaseType.Keys).ToArray(),
+                            mostDerivedTypesFirst: true);
+
+                        KeyValuePair<Type, MethodInfo>[] orderedEntries = new KeyValuePair<Type, MethodInfo>[orderedCaseTypes.Length];
+                        for (int i = 0; i < orderedCaseTypes.Length; i++)
+                        {
+                            Type caseType = orderedCaseTypes[i];
+                            orderedEntries[i] = new KeyValuePair<Type, MethodInfo>(caseType, methodsByCaseType[caseType]);
+                        }
+
+                        return orderedEntries;
+                    }
+                }
             }
 
             private void PopulateUnionConstructor(

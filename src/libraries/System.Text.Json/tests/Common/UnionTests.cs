@@ -1005,6 +1005,371 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(42, caseValue);
         }
 
+        // Hand-rolled discriminated union using the "non-boxing access pattern" described in
+        // https://github.com/dotnet/csharplang/blob/main/proposals/unions.md#non-boxing-access-members.
+        // The struct keeps a discriminator field, exposes the boxed payload through IUnion.Value
+        // (which is what STJ deconstructs), and exposes the user-facing payload through typed
+        // TryGetValue(out T) overloads (which STJ does not consume). The Tag property lets tests
+        // assert which case constructor STJ selected on the way back in.
+#pragma warning disable SYSLIB1227
+        [Union]
+        public readonly struct CustomDiscriminatedAnimalUnion : IUnion
+        {
+            public CustomDiscriminatedAnimalUnion(Animal animal) { Tag = 0; Value = animal; }
+            public CustomDiscriminatedAnimalUnion(Dog dog) { Tag = 1; Value = dog; }
+
+            public int Tag { get; }
+            public object? Value { get; }
+            public bool HasValue => Value is not null;
+
+            public bool TryGetValue(out Animal? animal)
+            {
+                if (Tag == 0 && Value is Animal a)
+                {
+                    animal = a;
+                    return true;
+                }
+
+                animal = null;
+                return false;
+            }
+
+            public bool TryGetValue(out Dog? dog)
+            {
+                if (Tag == 1 && Value is Dog d)
+                {
+                    dog = d;
+                    return true;
+                }
+
+                dog = null;
+                return false;
+            }
+        }
+#pragma warning restore SYSLIB1227
+
+        // Non-boxing pattern + most-derived-declared-case wins: a Dog runtime value flows
+        // through the Dog case constructor, never the Animal one, on the way out and back in.
+        [Fact]
+        public void CustomDiscriminatedAnimalUnion_DogRuntimeType_DispatchesToDogCtor()
+        {
+            JsonTypeInfo<CustomDiscriminatedAnimalUnion> typeInfo = Serializer.GetTypeInfo<CustomDiscriminatedAnimalUnion>();
+            Assert.NotNull(typeInfo.UnionDeconstructor);
+            Assert.NotNull(typeInfo.UnionConstructor);
+
+            Dog dog = new();
+            CustomDiscriminatedAnimalUnion original = new(dog);
+            Assert.Equal(1, original.Tag);
+
+            (Type? caseType, object? caseValue) = typeInfo.UnionDeconstructor!(original);
+            Assert.Equal(typeof(Dog), caseType);
+            Assert.Same(dog, caseValue);
+
+            CustomDiscriminatedAnimalUnion rebuilt = typeInfo.UnionConstructor!(caseType!, caseValue);
+            Assert.Equal(1, rebuilt.Tag);
+            Assert.True(rebuilt.TryGetValue(out Dog? rebuiltDog));
+            Assert.Same(dog, rebuiltDog);
+        }
+
+        // When a [Union] type defines `bool TryGetValue(out CaseType)` overloads, the
+        // reflection-based deconstructor chains those overloads so the deconstructed caseType is
+        // selected by the user-controlled tag rather than the runtime type of the boxed value.
+        // So a Dog upcast through the (Animal) constructor decomposes as typeof(Animal). The
+        // constructor delegate then round-trips on the deconstructed caseType, so feeding
+        // (typeof(Animal), dog) back in selects the (Animal) case constructor and preserves the
+        // user-controlled Tag=0.
+        //
+        // The source generator currently emits a plain `value switch` for both delegates, which
+        // dispatches on the runtime type of the boxed value and does not honor TryGetValue
+        // overloads. Aligning source-gen with the reflection convention is tracked separately,
+        // so the source-generated path is skipped here.
+        [Fact]
+        public void CustomDiscriminatedAnimalUnion_UpcastDog_DispatchesByTagConvention()
+        {
+            if (Serializer.IsSourceGeneratedSerializer)
+            {
+                return;
+            }
+
+            JsonTypeInfo<CustomDiscriminatedAnimalUnion> typeInfo = Serializer.GetTypeInfo<CustomDiscriminatedAnimalUnion>();
+
+            Dog dog = new();
+            CustomDiscriminatedAnimalUnion original = new(animal: dog);
+            Assert.Equal(0, original.Tag);
+
+            (Type? caseType, object? caseValue) = typeInfo.UnionDeconstructor!(original);
+            Assert.Equal(typeof(Animal), caseType);
+            Assert.Same(dog, caseValue);
+
+            CustomDiscriminatedAnimalUnion rebuilt = typeInfo.UnionConstructor!(caseType!, caseValue);
+            Assert.Equal(0, rebuilt.Tag);
+            Assert.True(rebuilt.TryGetValue(out Animal? rebuiltAnimal));
+            Assert.Same(dog, rebuiltAnimal);
+        }
+
+        // Same Tag-keyed convention as above: a Lab (not itself a declared case) passed through
+        // the (Animal) constructor decomposes as typeof(Animal) because TryGetValue(out Animal)
+        // returns true while TryGetValue(out Dog) returns false. The round-trip again funnels
+        // through the (Animal) case constructor since dispatch is keyed on the deconstructed
+        // caseType, preserving Tag=0.
+        //
+        // The source-generated `value switch` does not honor TryGetValue and is skipped here for
+        // the same reason as above.
+        [Fact]
+        public void CustomDiscriminatedAnimalUnion_NonDeclaredDerivedRuntimeType_DispatchesByTagConvention()
+        {
+            if (Serializer.IsSourceGeneratedSerializer)
+            {
+                return;
+            }
+
+            JsonTypeInfo<CustomDiscriminatedAnimalUnion> typeInfo = Serializer.GetTypeInfo<CustomDiscriminatedAnimalUnion>();
+
+            Lab lab = new();
+            CustomDiscriminatedAnimalUnion original = new(animal: lab);
+            Assert.Equal(0, original.Tag);
+
+            (Type? caseType, object? caseValue) = typeInfo.UnionDeconstructor!(original);
+            Assert.Equal(typeof(Animal), caseType);
+            Assert.Same(lab, caseValue);
+
+            CustomDiscriminatedAnimalUnion rebuilt = typeInfo.UnionConstructor!(caseType!, caseValue);
+            Assert.Equal(0, rebuilt.Tag);
+            Assert.True(rebuilt.TryGetValue(out Animal? rebuiltAnimal));
+            Assert.Same(lab, rebuiltAnimal);
+        }
+
+        // Sibling of CustomDiscriminatedAnimalUnion that intentionally OMITS TryGetValue overloads.
+        // Without the convention, the reflection deconstructor and the source generator both fall
+        // back to runtime-type dispatch using union.Value, picking the most-derived declared case
+        // (the rule reasserted in https://github.com/dotnet/runtime/pull/128162#discussion_r3370238345).
+#pragma warning disable SYSLIB1227
+        [Union]
+        public readonly struct CustomDiscriminatedAnimalUnion_NoConvention : IUnion
+        {
+            public CustomDiscriminatedAnimalUnion_NoConvention(Animal animal) { Tag = 0; Value = animal; }
+            public CustomDiscriminatedAnimalUnion_NoConvention(Dog dog) { Tag = 1; Value = dog; }
+
+            public int Tag { get; }
+            public object? Value { get; }
+        }
+#pragma warning restore SYSLIB1227
+
+        // Without TryGetValue conventions, runtime-type dispatch wins regardless of which
+        // constructor was used: an Animal-via-Dog upcast still flows back through the Dog case.
+        [Theory]
+        [InlineData(0)] // Dog constructed via the (Animal) ctor — upcast scenario.
+        [InlineData(1)] // Dog constructed via the (Dog) ctor — direct scenario.
+        public void CustomDiscriminatedAnimalUnion_NoConvention_DogRuntimeType_DispatchesByRuntimeType(int tag)
+        {
+            JsonTypeInfo<CustomDiscriminatedAnimalUnion_NoConvention> typeInfo = Serializer.GetTypeInfo<CustomDiscriminatedAnimalUnion_NoConvention>();
+
+            Dog dog = new();
+            CustomDiscriminatedAnimalUnion_NoConvention original = tag == 1
+                ? new(dog: dog)
+                : new(animal: dog);
+
+            (Type? caseType, object? caseValue) = typeInfo.UnionDeconstructor!(original);
+            Assert.Equal(typeof(Dog), caseType);
+            Assert.Same(dog, caseValue);
+
+            CustomDiscriminatedAnimalUnion_NoConvention rebuilt = typeInfo.UnionConstructor!(caseType!, caseValue);
+            Assert.Same(dog, rebuilt.Value);
+        }
+
+        // Without TryGetValue conventions, a derived runtime type (Lab) that is not itself a
+        // declared case still flows through its nearest declared ancestor (Dog) — most-derived-wins.
+        [Fact]
+        public void CustomDiscriminatedAnimalUnion_NoConvention_DerivedRuntimeType_DispatchesToMostDerivedDeclaredCase()
+        {
+            JsonTypeInfo<CustomDiscriminatedAnimalUnion_NoConvention> typeInfo = Serializer.GetTypeInfo<CustomDiscriminatedAnimalUnion_NoConvention>();
+
+            Lab lab = new();
+            CustomDiscriminatedAnimalUnion_NoConvention original = new(animal: lab);
+
+            (Type? caseType, object? caseValue) = typeInfo.UnionDeconstructor!(original);
+            Assert.Equal(typeof(Dog), caseType);
+            Assert.Same(lab, caseValue);
+        }
+
+        // Without TryGetValue conventions, a plain Animal runtime value selects the Animal case.
+        [Fact]
+        public void CustomDiscriminatedAnimalUnion_NoConvention_AnimalRuntimeType_DispatchesToAnimalCase()
+        {
+            JsonTypeInfo<CustomDiscriminatedAnimalUnion_NoConvention> typeInfo = Serializer.GetTypeInfo<CustomDiscriminatedAnimalUnion_NoConvention>();
+
+            Animal animal = new();
+            CustomDiscriminatedAnimalUnion_NoConvention original = new(animal: animal);
+
+            (Type? caseType, object? caseValue) = typeInfo.UnionDeconstructor!(original);
+            Assert.Equal(typeof(Animal), caseType);
+            Assert.Same(animal, caseValue);
+        }
+
+        // Hand-rolled discriminated union with disjoint JSON value shapes (number vs string),
+        // exercising the full SerializeWrapper/DeserializeWrapper path. The non-boxing TryGetValue
+        // accessors aren't consumed by STJ, but the Tag/Value pair lets the test assert that the
+        // round-tripped instance came from the same case constructor that originally produced it.
+        [Union]
+        public readonly struct CustomDiscriminatedScalarUnion : IUnion
+        {
+            public CustomDiscriminatedScalarUnion(int v) { Tag = 0; Value = v; }
+            public CustomDiscriminatedScalarUnion(string v) { Tag = 1; Value = v; }
+
+            public int Tag { get; }
+            public object? Value { get; }
+
+            public bool TryGetValue(out int v)
+            {
+                if (Tag == 0 && Value is int i)
+                {
+                    v = i;
+                    return true;
+                }
+
+                v = default;
+                return false;
+            }
+
+            public bool TryGetValue(out string? v)
+            {
+                if (Tag == 1 && Value is string s)
+                {
+                    v = s;
+                    return true;
+                }
+
+                v = null;
+                return false;
+            }
+        }
+
+        [Fact]
+        public async Task CustomDiscriminatedScalarUnion_IntCase_RoundTripsViaIntCtor()
+        {
+            CustomDiscriminatedScalarUnion original = new(42);
+            Assert.Equal(0, original.Tag);
+
+            string json = await Serializer.SerializeWrapper(original);
+            Assert.Equal("42", json);
+
+            CustomDiscriminatedScalarUnion rebuilt = await Serializer.DeserializeWrapper<CustomDiscriminatedScalarUnion>("42");
+            Assert.Equal(0, rebuilt.Tag);
+            Assert.True(rebuilt.TryGetValue(out int rebuiltInt));
+            Assert.Equal(42, rebuiltInt);
+        }
+
+        [Fact]
+        public async Task CustomDiscriminatedScalarUnion_StringCase_RoundTripsViaStringCtor()
+        {
+            CustomDiscriminatedScalarUnion original = new("hello");
+            Assert.Equal(1, original.Tag);
+
+            string json = await Serializer.SerializeWrapper(original);
+            Assert.Equal("\"hello\"", json);
+
+            CustomDiscriminatedScalarUnion rebuilt = await Serializer.DeserializeWrapper<CustomDiscriminatedScalarUnion>("\"hello\"");
+            Assert.Equal(1, rebuilt.Tag);
+            Assert.True(rebuilt.TryGetValue(out string? rebuiltString));
+            Assert.Equal("hello", rebuiltString);
+        }
+
+        // Disjoint case types (int, string) — topological sorting has nothing to disambiguate, so
+        // TryGetValue convention and .Value-based dispatch always agree on the case. This test
+        // exercises the deconstructor + constructor delegates directly (no JSON), confirming that
+        // the round trip is symmetric: Tag is preserved because the boxed value's runtime type is
+        // the only thing distinguishing the cases on both the way out and the way back in.
+        [Theory]
+        [InlineData(0)] // int case, Tag = 0
+        [InlineData(1)] // string case, Tag = 1
+        public void CustomDiscriminatedScalarUnion_DirectDelegate_DisjointTypesPreserveTag(int tag)
+        {
+            JsonTypeInfo<CustomDiscriminatedScalarUnion> typeInfo = Serializer.GetTypeInfo<CustomDiscriminatedScalarUnion>();
+
+            CustomDiscriminatedScalarUnion original = tag == 0
+                ? new(42)
+                : new("hello");
+
+            (Type? caseType, object? caseValue) = typeInfo.UnionDeconstructor!(original);
+            Assert.Equal(tag == 0 ? typeof(int) : typeof(string), caseType);
+            Assert.Equal(tag == 0 ? (object)42 : "hello", caseValue);
+
+            CustomDiscriminatedScalarUnion rebuilt = typeInfo.UnionConstructor!(caseType!, caseValue);
+            Assert.Equal(tag, rebuilt.Tag);
+            Assert.Equal(original.Value, rebuilt.Value);
+        }
+
+        // Disjoint reference case types with no shared base — same property as the scalar union
+        // above: there is no inheritance for topological sorting to flatten, so TryGetValue and
+        // value-runtime-type dispatch produce the same selection. Confirms Tag is preserved on
+        // round trip through the deconstructor + constructor delegates.
+        public sealed class Tree
+        {
+            public int Height { get; set; }
+        }
+
+        public sealed class Rock
+        {
+            public string? Kind { get; set; }
+        }
+
+#pragma warning disable SYSLIB1227
+        [Union]
+        public readonly struct CustomDiscriminatedFlora : IUnion
+        {
+            public CustomDiscriminatedFlora(Tree tree) { Tag = 0; Value = tree; }
+            public CustomDiscriminatedFlora(Rock rock) { Tag = 1; Value = rock; }
+
+            public int Tag { get; }
+            public object? Value { get; }
+
+            public bool TryGetValue(out Tree? tree)
+            {
+                if (Tag == 0 && Value is Tree t)
+                {
+                    tree = t;
+                    return true;
+                }
+
+                tree = null;
+                return false;
+            }
+
+            public bool TryGetValue(out Rock? rock)
+            {
+                if (Tag == 1 && Value is Rock r)
+                {
+                    rock = r;
+                    return true;
+                }
+
+                rock = null;
+                return false;
+            }
+        }
+#pragma warning restore SYSLIB1227
+
+        [Theory]
+        [InlineData(0)] // Tree case, Tag = 0
+        [InlineData(1)] // Rock case, Tag = 1
+        public void CustomDiscriminatedFlora_DirectDelegate_DisjointReferenceTypesPreserveTag(int tag)
+        {
+            JsonTypeInfo<CustomDiscriminatedFlora> typeInfo = Serializer.GetTypeInfo<CustomDiscriminatedFlora>();
+
+            Tree tree = new() { Height = 7 };
+            Rock rock = new() { Kind = "Granite" };
+
+            CustomDiscriminatedFlora original = tag == 0 ? new(tree) : new(rock);
+
+            (Type? caseType, object? caseValue) = typeInfo.UnionDeconstructor!(original);
+            Assert.Equal(tag == 0 ? typeof(Tree) : typeof(Rock), caseType);
+            Assert.Same(tag == 0 ? (object)tree : rock, caseValue);
+
+            CustomDiscriminatedFlora rebuilt = typeInfo.UnionConstructor!(caseType!, caseValue);
+            Assert.Equal(tag, rebuilt.Tag);
+            Assert.Same(original.Value, rebuilt.Value);
+        }
+
         public enum Color { Red, Green, Blue }
 
         public union NullableEnumUnion(Color?, string);
@@ -1027,5 +1392,92 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Contains("integer", typeArray.Select(node => (string?)node));
             Assert.Contains("null", typeArray.Select(node => (string?)node));
         }
+        #region Recursive unions
+
+        public union RecursiveNat(bool, RecursiveNat);
+
+        [Fact]
+        public async Task RecursiveUnion_TripleNested_SerializesAsLeafValue()
+        {
+            var tripleNested = new RecursiveNat(new RecursiveNat(new RecursiveNat(true)));
+
+            string json = await Serializer.SerializeWrapper(tripleNested);
+            Assert.Equal("true", json);
+        }
+
+        [Fact]
+        public async Task RecursiveUnion_DoubleNested_SerializesAsLeafValue()
+        {
+            var doubleNested = new RecursiveNat(new RecursiveNat(false));
+
+            string json = await Serializer.SerializeWrapper(doubleNested);
+            Assert.Equal("false", json);
+        }
+
+        [Fact]
+        public async Task RecursiveUnion_Deserialize_YieldsSingleLevelWrapper()
+        {
+            RecursiveNat? result = await Serializer.DeserializeWrapper<RecursiveNat>("true");
+
+            Assert.NotNull(result);
+            Assert.Equal(true, GetUnionValue(result!));
+        }
+
+        [Fact]
+        public async Task RecursiveUnion_RoundTrip_FlattensNesting()
+        {
+            var tripleNested = new RecursiveNat(new RecursiveNat(new RecursiveNat(true)));
+
+            string json = await Serializer.SerializeWrapper(tripleNested);
+            Assert.Equal("true", json);
+
+            RecursiveNat? deserialized = await Serializer.DeserializeWrapper<RecursiveNat>(json);
+            Assert.NotNull(deserialized);
+            Assert.IsType<bool>(GetUnionValue(deserialized!));
+            Assert.Equal(true, GetUnionValue(deserialized!));
+        }
+
+        #endregion
+
+        #region Cyclic object graph
+
+        [Union]
+        public class SelfReferentialUnion : IUnion
+        {
+            public SelfReferentialUnion(string s) { Value = s; }
+            public SelfReferentialUnion(SelfReferentialUnion inner) { Value = inner; }
+            public object? Value { get; set; }
+        }
+
+        [Fact]
+        public void CyclicUnion_Serialize_ThrowsJsonExceptionAtMaxDepth()
+        {
+            var union = new SelfReferentialUnion("seed");
+            union.Value = union; // cyclic reference
+
+            var options = new JsonSerializerOptions(Serializer.DefaultOptions)
+            {
+                MaxDepth = 2,
+            };
+
+            Assert.Throws<JsonException>(() =>
+                JsonSerializer.Serialize(union, options));
+        }
+
+        [Fact]
+        public async Task SelfReferentialUnion_NonCyclic_RoundTrips()
+        {
+            var inner = new SelfReferentialUnion("hello");
+            var outer = new SelfReferentialUnion(inner);
+
+            string json = await Serializer.SerializeWrapper(outer);
+            Assert.Equal("\"hello\"", json);
+
+            SelfReferentialUnion? deserialized = await Serializer.DeserializeWrapper<SelfReferentialUnion>(json);
+            Assert.NotNull(deserialized);
+            Assert.Equal("hello", deserialized!.Value);
+        }
+
+        #endregion
     }
 }
