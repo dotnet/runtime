@@ -3,10 +3,6 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-/// <summary>
-/// Wraps a single <c>ConditionalWeakTable&lt;,&gt;+Entry</c> value-type slot embedded
-/// inline in the <c>_entries</c> array. The slot has no object header.
-/// </summary>
 [CdacType(ManagedFullName = "System.Runtime.CompilerServices.ConditionalWeakTable`2+Entry", IsValueType = true)]
 internal sealed partial class ConditionalWeakTableEntry : IData<ConditionalWeakTableEntry>
 {

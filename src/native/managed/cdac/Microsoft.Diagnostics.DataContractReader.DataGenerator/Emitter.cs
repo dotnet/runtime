@@ -45,6 +45,7 @@ internal static class Emitter
             sb.AppendLine();
         }
 
+        sb.AppendLine(BuildClassDoc(model));
         sb.AppendLine($"partial class {model.ClassName}");
         sb.AppendLine("{");
 
@@ -260,6 +261,21 @@ internal static class Emitter
     private static string QuotedOrNull(string? value)
         => value is null ? "null" : $"\"{value}\"";
 
+    private static string BuildClassDoc(CdacTypeModel model)
+    {
+        string desc = (model.DescriptorName, model.ManagedFullName) switch
+        {
+            (string native, string managed) =>
+                $"/// <summary>Wraps the native <c>{native}</c> data descriptor (with managed fallback <c>{managed}</c>).</summary>",
+            (string native, null) =>
+                $"/// <summary>Wraps the native <c>{native}</c> data descriptor.</summary>",
+            (null, string managed) =>
+                $"/// <summary>Wraps the managed <c>{managed}</c> type.</summary>",
+            _ =>
+                "/// <summary>Generated IData implementation.</summary>",
+        };
+        return desc;
+    }
     private static void EmitCreate(StringBuilder sb, CdacTypeModel model)
     {
         sb.AppendLine($"    static {model.ClassName} {IDataInterface}<{model.ClassName}>.Create({Target} target, {TargetPointer} address)");

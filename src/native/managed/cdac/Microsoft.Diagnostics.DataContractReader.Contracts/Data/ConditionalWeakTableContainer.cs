@@ -3,7 +3,6 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-/// <summary>Wraps a <c>ConditionalWeakTable&lt;,&gt;+Container</c> instance.</summary>
 [CdacType(ManagedFullName = "System.Runtime.CompilerServices.ConditionalWeakTable`2+Container")]
 internal sealed partial class ConditionalWeakTableContainer : IData<ConditionalWeakTableContainer>
 {
