@@ -410,11 +410,17 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                         // CreateMinimalMethodTable in coreclr (used for Reflection.Emit DynamicMethod
                         // hosts and the IL stub cache). These MTs have no typedef token and surface
                         // here as TypeNameID == 0x02000000 (rid 0). Treat them as unresolvable
-                        // dynamic types so trace processing can continue. Out-of-range rids (which
-                        // would happen if the trace and reference assembly are mismatched) are
-                        // handled the same way.
-                        if (typedefRow == 0 || typedefRow > ecmaModule.MetadataReader.GetTableRowCount(TableIndex.TypeDef))
+                        // dynamic types so trace processing can continue.
+                        if (typedefRow == 0)
                         {
+                            dependsOnKnownNonLoadableType = true;
+                            return null;
+                        }
+                        int typeDefRowCount = ecmaModule.MetadataReader.GetTableRowCount(TableIndex.TypeDef);
+                        if (typedefRow > typeDefRowCount)
+                        {
+                            Program.PrintWarning($"TypeDef rid 0x{typedefRow:X} in module '{ecmaModule}' is out of range (max {typeDefRowCount}). " +
+                                "The trace and reference assembly may be mismatched.");
                             dependsOnKnownNonLoadableType = true;
                             return null;
                         }
