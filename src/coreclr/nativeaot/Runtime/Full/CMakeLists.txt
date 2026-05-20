@@ -36,25 +36,38 @@ target_link_libraries(Runtime.ServerGC PRIVATE aotminipal nativeaot_cdac_contrac
 # See: https://github.com/dotnet/runtime/issues/121172
 if(NOT WIN32)
   add_library(libunwind_objects OBJECT ${LLVM_LIBUNWIND_ALL_SOURCES})
-  target_link_libraries(Runtime.WorkstationGC PRIVATE libunwind_objects)
-  target_link_libraries(Runtime.ServerGC PRIVATE libunwind_objects)
 
   if(CMAKE_OBJCOPY)
-    set(LOCALIZE_STAMP "${CMAKE_CURRENT_BINARY_DIR}/libunwind_localized.stamp")
+    # Copy the compiled objects and run objcopy --localize-hidden on the copies.
+    # We must not modify the originals in-place because that changes their mtime,
+    # invalidating Ninja's deps log and causing always-dirty incremental builds.
+    set(LOCALIZE_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/libunwind_localized")
+    set(LOCALIZED_OBJECTS)
+    foreach(src ${LLVM_LIBUNWIND_ALL_SOURCES})
+      get_filename_component(obj_name "${src}" NAME)
+      list(APPEND LOCALIZED_OBJECTS "${LOCALIZE_OUTPUT_DIR}/${obj_name}.o")
+    endforeach()
+
     add_custom_command(
-      OUTPUT ${LOCALIZE_STAMP}
+      OUTPUT ${LOCALIZED_OBJECTS}
       COMMAND ${CMAKE_COMMAND}
         -DOBJCOPY=${CMAKE_OBJCOPY}
         "-DOBJECT_FILES=$<TARGET_OBJECTS:libunwind_objects>"
+        -DOUTPUT_DIR=${LOCALIZE_OUTPUT_DIR}
         -P ${NATIVEAOT_RUNTIME_DIR}/localize-hidden-symbols.cmake
-      COMMAND ${CMAKE_COMMAND} -E touch ${LOCALIZE_STAMP}
-      DEPENDS libunwind_objects
+      DEPENDS $<TARGET_OBJECTS:libunwind_objects>
       COMMENT "Localizing hidden symbols in libunwind objects"
       VERBATIM
     )
-    add_custom_target(localize_libunwind_symbols DEPENDS ${LOCALIZE_STAMP})
+    add_custom_target(localize_libunwind_symbols DEPENDS ${LOCALIZED_OBJECTS})
     add_dependencies(Runtime.WorkstationGC localize_libunwind_symbols)
     add_dependencies(Runtime.ServerGC localize_libunwind_symbols)
+    target_sources(Runtime.WorkstationGC PRIVATE ${LOCALIZED_OBJECTS})
+    target_sources(Runtime.ServerGC PRIVATE ${LOCALIZED_OBJECTS})
+    set_source_files_properties(${LOCALIZED_OBJECTS} PROPERTIES EXTERNAL_OBJECT TRUE GENERATED TRUE)
+  else()
+    target_link_libraries(Runtime.WorkstationGC PRIVATE libunwind_objects)
+    target_link_libraries(Runtime.ServerGC PRIVATE libunwind_objects)
   endif()
 endif()
 
