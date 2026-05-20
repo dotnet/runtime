@@ -334,7 +334,6 @@ build_Tests_WithBxl() {
     fi
 
     echo "Building tests via BuildXL"
-    export RoslynCommandLineLogFile="$__RepoRootDir/artifacts/log/roslyn-compiler.log"
     run_bxl_command "build"
 
     if [[ "$?" -ne 0 ]]; then
