@@ -20,6 +20,7 @@ import subprocess
 ADO_ORG = "dnceng-public"
 ADO_PROJECT = "public"
 DEFAULT_DB = "monitor.db"
+STAMPS_DIR = "../stamps"
 
 class IssueGenerator:
     def __init__(self, db_path):
@@ -34,6 +35,11 @@ class IssueGenerator:
         self.generate_issues(go)
         self.conn.close()
 
+    def get_stamp_path(self, ap):
+        if not os.path.isdir(STAMPS_DIR):
+            os.makedirs(STAMPS_DIR)
+        return f"{STAMPS_DIR}/{ap['build_id']}.stamp"
+
     def probe_configuration(self):
         probe_result = subprocess.run(["gh", "repo", "set-default", "-v"], check=True, capture_output=True)
         if (len(probe_result.stderr)):
@@ -41,9 +47,17 @@ class IssueGenerator:
 
     def generate_issues(self, go):
         cur = self.conn.cursor()
+        error_count = 0
 
         for fail in cur.execute("SELECT * FROM failures ORDER BY id"):
-            self._one_failure(fail, go)
+            try:
+                self._one_failure(fail, go)
+            except Exception as exc:
+                error_count += 1
+                print(f"Failed processing failure #{fail['id']}; continuing: {exc}")
+
+        if error_count:
+            raise Exception("An error occurred, see output above")
 
     def _one_failure(self, fail, go):
         cur = self.conn.cursor()
@@ -107,6 +121,17 @@ class IssueGenerator:
             "WHERE fp.failure_id = ? ORDER BY fp.pipeline_name",
             (fail["id"],)
         ))
+
+        # Filter affected list to build IDs that don't have stamp files
+        affected = [ap for ap in affected if not os.path.exists(self.get_stamp_path(ap))]
+
+        if len(affected) == 0:
+            if creating_new_issue:
+                raise Exception("All affected builds have stamps but there is no github issue!")
+            else:
+                print("All affected builds have stamps; skipping.")
+                return
+
         out.append(f"**Failed in ({len(affected)}):**")
         for ap in affected:
             bn = ap["build_number"] or ""
@@ -196,6 +221,9 @@ class IssueGenerator:
         print(gh_issue_command)
         if (go):
             subprocess.run(gh_issue_command, check=True)
+            for ap in affected:
+                with open(self.get_stamp_path(ap), "w") as stamp_file:
+                    stamp_file.write("ok")
         else:
             print(f"--- {body_path} ---")
             for line in out:
