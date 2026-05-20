@@ -27,6 +27,8 @@ namespace System.SpanTests
         {
             ReadOnlySpan<string?> strings = ReadOnlySpan<string?>.Empty;
             ReadOnlySpan<int?> nullableInts = ReadOnlySpan<int?>.Empty;
+            IComparer<string?> stringComparer = Comparer<string?>.Create((left, right) => string.CompareOrdinal(left, right));
+            IComparer<int?> nullableIntComparer = Comparer<int?>.Create((left, right) => left.GetValueOrDefault().CompareTo(right.GetValueOrDefault()));
 
             Assert.Null(strings.Min());
             Assert.Null(strings.Max());
@@ -37,6 +39,11 @@ namespace System.SpanTests
             Assert.Null(strings.Max(comparer: null));
             Assert.Null(nullableInts.Min(comparer: null));
             Assert.Null(nullableInts.Max(comparer: null));
+
+            Assert.Null(strings.Min(stringComparer));
+            Assert.Null(strings.Max(stringComparer));
+            Assert.Null(nullableInts.Min(nullableIntComparer));
+            Assert.Null(nullableInts.Max(nullableIntComparer));
         }
 
         [Fact]
@@ -56,11 +63,18 @@ namespace System.SpanTests
         {
             ReadOnlySpan<string?> strings = new string?[] { "charlie", null, "bravo", null, "delta" };
             ReadOnlySpan<int?> nullableInts = new int?[] { 4, null, -1, null, 7 };
+            IComparer<string?> stringComparer = Comparer<string?>.Create((left, right) => string.CompareOrdinal(left, right));
+            IComparer<int?> nullableIntComparer = Comparer<int?>.Create((left, right) => left.GetValueOrDefault().CompareTo(right.GetValueOrDefault()));
 
             Assert.Equal("bravo", strings.Min());
             Assert.Equal("delta", strings.Max());
             Assert.Equal(-1, nullableInts.Min());
             Assert.Equal(7, nullableInts.Max());
+
+            Assert.Equal("bravo", strings.Min(stringComparer));
+            Assert.Equal("delta", strings.Max(stringComparer));
+            Assert.Equal(-1, nullableInts.Min(nullableIntComparer));
+            Assert.Equal(7, nullableInts.Max(nullableIntComparer));
         }
 
         [Fact]
