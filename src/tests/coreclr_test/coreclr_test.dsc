@@ -142,10 +142,11 @@ const coreclrTestRunner = Rules.rule<CoreClrTestRunnerAttrs, CoreClrTestRunnerAt
         const corerunPath = Defs.CORE_ROOT_CORERUN.path.toDiagnosticString();
         const dllName = ctx.args.binary.name.toString();
 
-        // Generate a runner script that invokes corerun with the test DLL.
-        // The framework will stage this + deps into the output directory.
-        const runner = ctx.runActions.writeFile(
-            ctx.runActions.declareOutput(`${ctx.args.name}.runner.sh`),
+        // Generate the runner script via ctx.actions (build-time, untagged)
+        // so it is produced by `bxl build` and available for Helix staging.
+        // Test *execution* stays on ctx.runActions (tagged bxl-kind:test).
+        const runner = ctx.actions.writeFile(
+            ctx.actions.declareOutput(`${ctx.args.name}.runner.sh`),
             [
                 "#!/usr/bin/env bash",
                 `exec "${corerunPath}" "$(dirname "$0")/${dllName}" "$@"`,
