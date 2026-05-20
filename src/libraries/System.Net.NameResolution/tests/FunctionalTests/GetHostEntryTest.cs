@@ -434,21 +434,27 @@ namespace System.Net.NameResolution.Tests
 
             string hostName = "test.localhost";
 
+            // On Android and Apple mobile the OS resolver may return addresses of a different
+            // family than requested (e.g. link-local IPv6 results for an IPv4 query), so we
+            // only require the requested family to be represented in the results there.
+            bool strictAddressFamily = !PlatformDetection.IsAppleMobile && !PlatformDetection.IsAndroid;
+
             // The subdomain goes to OS resolver first. If it fails, it falls back to
             // resolving plain "localhost" with the same address family filter.
             IPHostEntry entry = Dns.GetHostEntry(hostName, addressFamily);
-            if (addressFamily == AddressFamily.InterNetwork)
-            {
-                Assert.True(entry.AddressList.Length >= 1, "Expected at least one IPv4 address");
-            }
-            Assert.All(entry.AddressList, addr => Assert.Equal(addressFamily, addr.AddressFamily));
+            VerifyAddressFamily(entry, addressFamily, strictAddressFamily);
 
             entry = await Dns.GetHostEntryAsync(hostName, addressFamily);
-            if (addressFamily == AddressFamily.InterNetwork)
+            VerifyAddressFamily(entry, addressFamily, strictAddressFamily);
+
+            static void VerifyAddressFamily(IPHostEntry entry, AddressFamily addressFamily, bool strictAddressFamily)
             {
-                Assert.True(entry.AddressList.Length >= 1, "Expected at least one IPv4 address");
+                Assert.Contains(entry.AddressList, addr => addr.AddressFamily == addressFamily);
+                if (strictAddressFamily)
+                {
+                    Assert.All(entry.AddressList, addr => Assert.Equal(addressFamily, addr.AddressFamily));
+                }
             }
-            Assert.All(entry.AddressList, addr => Assert.Equal(addressFamily, addr.AddressFamily));
         }
 
         // RFC 6761: Verify that localhost subdomains return loopback addresses.
