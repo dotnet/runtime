@@ -104,13 +104,16 @@ namespace System.Runtime.CompilerServices
         [StackTraceHidden]
         public static T Await<T>(ValueTask<T> task)
         {
-            ValueTaskAwaiter<T> awaiter = task.GetAwaiter();
-            if (!awaiter.IsCompleted)
+            if (task.IsCompleted)
             {
-                UnsafeAwaitAwaiter(awaiter);
+                return task.Result;
             }
 
-            return awaiter.GetResult();
+            TailAwait();
+            TransparentAwaitValueTaskOfT(task);
+
+            // unreachable
+            while (true) ;
         }
 
         /// <summary>
@@ -123,13 +126,14 @@ namespace System.Runtime.CompilerServices
         [StackTraceHidden]
         public static void Await(ValueTask task)
         {
-            ValueTaskAwaiter awaiter = task.GetAwaiter();
-            if (!awaiter.IsCompleted)
+            if (task.IsCompleted)
             {
-                UnsafeAwaitAwaiter(awaiter);
+                task.ThrowIfCompletedUnsuccessfully();
+                return;
             }
 
-            awaiter.GetResult();
+            TailAwait();
+            TransparentAwaitValueTask(task);
         }
 
         /// <summary>
