@@ -150,7 +150,7 @@ namespace Microsoft.Extensions.Hosting.Internal
                 // directory.
                 return AllContentRootFileSourcesAreMissing(contentRootPath);
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SecurityException)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SecurityException or ArgumentException)
             {
                 // This diagnostic is a heuristic. I/O and security failures from
                 // querying the current directory or probing file-based configuration providers
