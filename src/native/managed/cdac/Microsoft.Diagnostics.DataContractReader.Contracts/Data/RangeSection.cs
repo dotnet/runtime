@@ -18,6 +18,7 @@ internal sealed class RangeSection : IData<RangeSection>
         Flags = target.ReadField<int>(address, type, nameof(Flags));
         HeapList = target.ReadPointerField(address, type, nameof(HeapList));
         R2RModule = target.ReadPointerField(address, type, nameof(R2RModule));
+        RangeList = target.ReadPointerField(address, type, nameof(RangeList));
     }
 
     public TargetPointer RangeBegin { get; init; }
@@ -27,4 +28,5 @@ internal sealed class RangeSection : IData<RangeSection>
     public TargetPointer HeapList { get; init; }
     public int Flags { get; init; }
     public TargetPointer R2RModule { get; init; }
+    public TargetPointer RangeList { get; init; }
 }

@@ -99,7 +99,7 @@ namespace System.Runtime.InteropServices
         /// </remarks>
         private static unsafe T ReadValueSlow<T>(object ptr, int ofs, Func<IntPtr, int, T> readValueHelper)
         {
-            // Consumers of this method are documented to throw AccessViolationException on any AV
+            // Compatibility: null input to these obsolete APIs throws AccessViolationException.
             if (ptr is null)
             {
                 throw new AccessViolationException();
@@ -164,7 +164,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         private static unsafe void WriteValueSlow<T>(object ptr, int ofs, T val, Action<IntPtr, int, T> writeValueHelper)
         {
-            // Consumers of this method are documented to throw AccessViolationException on any AV
+            // Compatibility: null input to these obsolete APIs throws AccessViolationException.
             if (ptr is null)
             {
                 throw new AccessViolationException();
@@ -1058,7 +1058,6 @@ namespace System.Runtime.InteropServices
 
 #if DEBUG // Used for testing in Checked or Debug
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetIsInCooperativeGCModeFunctionPointer")]
-        [RequiresUnsafe]
         internal static unsafe partial delegate* unmanaged<int> GetIsInCooperativeGCModeFunctionPointer();
 #endif
     }

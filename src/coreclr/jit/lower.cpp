@@ -141,17 +141,19 @@ bool Lowering::CheckImmedAndMakeContained(GenTree* parentNode, GenTree* childNod
 // computation changing values?
 //
 // Arguments:
-//    node         -  The node.
-//    endExclusive -  The exclusive end of the range to check invariance for.
+//    node              -  The node.
+//    endExclusive      -  The exclusive end of the range to check invariance for.
+//    ignoreFlagsOnNode -  GTF flags to mask off the node's own side-effect set.
+//                         See SideEffectSet::IsLirInvariantInRange for details.
 //
 // Returns:
 //    True if 'node' can be evaluated at any point between its current
 //    location and 'endExclusive' without giving a different result; otherwise
 //    false.
 //
-bool Lowering::IsInvariantInRange(GenTree* node, GenTree* endExclusive) const
+bool Lowering::IsInvariantInRange(GenTree* node, GenTree* endExclusive, GenTreeFlags ignoreFlagsOnNode) const
 {
-    return m_scratchSideEffects.IsLirInvariantInRange(m_compiler, node, endExclusive);
+    return m_scratchSideEffects.IsLirInvariantInRange(m_compiler, node, endExclusive, ignoreFlagsOnNode);
 }
 
 //------------------------------------------------------------------------
@@ -159,18 +161,22 @@ bool Lowering::IsInvariantInRange(GenTree* node, GenTree* endExclusive) const
 // ignoring conflicts with one particular node.
 //
 // Arguments:
-//    node         - The node.
-//    endExclusive - The exclusive end of the range to check invariance for.
-//    ignoreNode   - A node to ignore interference checks with, for example
-//                   because it will retain its relative order with 'node'.
+//    node              - The node.
+//    endExclusive      - The exclusive end of the range to check invariance for.
+//    ignoreNode        - A node to ignore interference checks with, for example
+//                        because it will retain its relative order with 'node'.
+//    ignoreFlagsOnNode - GTF flags to mask off the node's own side-effect set.
 //
 // Returns:
 //    True if 'node' can be evaluated at any point between its current location
 //    and 'endExclusive' without giving a different result; otherwise false.
 //
-bool Lowering::IsInvariantInRange(GenTree* node, GenTree* endExclusive, GenTree* ignoreNode) const
+bool Lowering::IsInvariantInRange(GenTree*     node,
+                                  GenTree*     endExclusive,
+                                  GenTree*     ignoreNode,
+                                  GenTreeFlags ignoreFlagsOnNode) const
 {
-    return m_scratchSideEffects.IsLirInvariantInRange(m_compiler, node, endExclusive, ignoreNode);
+    return m_scratchSideEffects.IsLirInvariantInRange(m_compiler, node, endExclusive, ignoreNode, ignoreFlagsOnNode);
 }
 
 //------------------------------------------------------------------------
@@ -1837,6 +1843,8 @@ void Lowering::SplitArgumentBetweenRegistersAndStack(GenTreeCall* call, CallArg*
         stackNode =
             m_compiler->gtNewLclFldNode(lcl->GetLclNum(), TYP_STRUCT, lcl->GetLclOffs() + stackSeg.Offset, stackLayout);
         BlockRange().InsertBefore(arg, stackNode);
+
+        m_compiler->lvaSetVarDoNotEnregister(lcl->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
 
         registersNode = m_compiler->gtNewFieldList();
         BlockRange().InsertBefore(arg, registersNode);
@@ -3688,80 +3696,6 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
 
     GenTree* callTarget = call->gtControlExpr;
 
-    if (call->IsVirtualStub())
-    {
-        // VSDs go through a resolver instead which skips double validation and
-        // indirection.
-        CallArg* vsdCellArg = call->gtArgs.FindWellKnownArg(WellKnownArg::VirtualStubCell);
-        CallArg* thisArg    = call->gtArgs.GetThisArg();
-
-        assert((vsdCellArg != nullptr) && (thisArg != nullptr));
-        assert(thisArg->GetNode()->OperIs(GT_PUTARG_REG));
-        LIR::Use thisArgUse(BlockRange(), &thisArg->GetNode()->AsOp()->gtOp1, thisArg->GetNode());
-        GenTree* thisArgClone = cloneUse(thisArgUse, true);
-
-        // The VSD cell is not needed for the original call when going through the resolver.
-        // It can be removed without further fixups because it has fixed ABI assignment.
-        call->gtArgs.RemoveUnsafe(vsdCellArg);
-        assert(vsdCellArg->GetNode()->OperIs(GT_PUTARG_REG));
-        // Also PUTARG_REG can be removed.
-        BlockRange().Remove(vsdCellArg->GetNode());
-        // The actual cell we need for the resolver.
-        GenTree* vsdCellArgNode = vsdCellArg->GetNode()->gtGetOp1();
-
-        GenTreeCall* resolve = m_compiler->gtNewHelperCallNode(CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT, TYP_I_IMPL);
-
-        // Use a placeholder for the cell since the cell is already inserted in
-        // LIR.
-        GenTree* vsdCellPlaceholder = m_compiler->gtNewZeroConNode(TYP_I_IMPL);
-        resolve->gtArgs.PushFront(m_compiler,
-                                  NewCallArg::Primitive(vsdCellPlaceholder).WellKnown(WellKnownArg::VirtualStubCell));
-
-        // 'this' arg clone is not inserted, so no need to use a placeholder for that.
-        resolve->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(thisArgClone));
-
-        m_compiler->fgMorphTree(resolve);
-
-        LIR::Range resolveRange = LIR::SeqTree(m_compiler, resolve);
-        GenTree*   resolveFirst = resolveRange.FirstNode();
-        GenTree*   resolveLast  = resolveRange.LastNode();
-        // Resolution comes with a null check, so it must happen after all
-        // arguments are evaluated, hence we insert it right before the call.
-        BlockRange().InsertBefore(call, std::move(resolveRange));
-
-        // Swap out the VSD cell argument.
-        LIR::Use vsdCellUse;
-        bool     gotUse = BlockRange().TryGetUse(vsdCellPlaceholder, &vsdCellUse);
-        assert(gotUse);
-        vsdCellUse.ReplaceWith(vsdCellArgNode);
-        vsdCellPlaceholder->SetUnusedValue();
-
-        // Now we can lower the resolver.
-        LowerRange(resolveFirst, resolveLast);
-
-        // That inserted new PUTARG nodes right before the call, so we need to
-        // legalize the existing call's PUTARG_REG nodes.
-        MovePutArgNodesUpToCall(call);
-
-        // Finally update the call target
-        call->gtCallType    = CT_INDIRECT;
-        call->gtCallMethHnd = NO_METHOD_HANDLE;
-        call->gtFlags &= ~GTF_CALL_VIRT_STUB;
-        call->gtControlExpr = resolve;
-        call->gtCallCookie  = nullptr;
-#ifdef FEATURE_READYTORUN
-        call->gtEntryPoint.addr       = nullptr;
-        call->gtEntryPoint.accessType = IAT_VALUE;
-#endif
-
-        if (callTarget != nullptr)
-        {
-            callTarget->SetUnusedValue();
-        }
-
-        callTarget = resolve;
-    }
-
     if (callTarget == nullptr)
     {
         assert((call->gtCallType != CT_INDIRECT) && (!call->IsVirtual() || call->IsVirtualStubRelativeIndir()));
@@ -4326,8 +4260,8 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 #ifdef TARGET_RISCV64
         if (bitOp->IsIntegralConstUnsignedPow2())
         {
-            INT64 bit  = bitOp->AsIntConCommon()->IntegralValue();
-            int   log2 = BitOperations::Log2((UINT64)bit);
+            UINT64 bit  = bitOp->AsIntConCommon()->UnsignedIntegralValue();
+            int    log2 = BitOperations::Log2(bit);
             bitOp->AsIntConCommon()->SetIntegralValue(log2);
             return true;
         }
@@ -4861,34 +4795,6 @@ GenTree* Lowering::LowerSelect(GenTreeConditional* select)
     GenTree* cond     = select->gtCond;
     GenTree* trueVal  = select->gtOp1;
     GenTree* falseVal = select->gtOp2;
-
-    // Replace SELECT cond 1/0 0/1 with (perhaps reversed) cond
-    if (cond->OperIsCompare() && ((trueVal->IsIntegralConst(0) && falseVal->IsIntegralConst(1)) ||
-                                  (trueVal->IsIntegralConst(1) && falseVal->IsIntegralConst(0))))
-    {
-        assert(select->TypeIs(TYP_INT, TYP_LONG));
-
-        LIR::Use use;
-        if (BlockRange().TryGetUse(select, &use))
-        {
-            if (trueVal->IsIntegralConst(0))
-            {
-                GenTree* reversed = m_compiler->gtReverseCond(cond);
-                assert(reversed == cond);
-            }
-
-            // Codegen supports also TYP_LONG typed compares so we can just
-            // retype the compare instead of inserting a cast.
-            cond->gtType = select->TypeGet();
-
-            BlockRange().Remove(trueVal);
-            BlockRange().Remove(falseVal);
-            BlockRange().Remove(select);
-            use.ReplaceWith(cond);
-
-            return cond->gtNext;
-        }
-    }
 
     JITDUMP("Lowering select:\n");
     DISPTREERANGE(BlockRange(), select);
@@ -7557,6 +7463,35 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
 {
     assert(call->IsVirtualStub());
 
+    if (m_compiler->opts.ShouldUseDispatchHelpers() || m_compiler->opts.IsCFGEnabled())
+    {
+        // Convert from VSD indirect call (call [r11]) to a direct call to a
+        // dispatch helper (call RhpInterfaceDispatch).
+        // The dispatch cell is still passed via the VirtualStubCell arg in r11.
+
+        // For CT_INDIRECT calls (shared generic code with dictionary lookup),
+        // gtControlExpr is a tree node in the LIR that computes the dispatch cell address.
+        // We're converting to a direct call, so mark it unused and let DCE
+        // remove it from the LIR.
+        // The VirtualStubCell arg (a deep clone of this tree) still passes
+        // the dispatch cell address in the VSD param register.
+        if (call->gtCallType == CT_INDIRECT)
+        {
+            call->gtControlExpr->SetUnusedValue();
+            call->gtControlExpr = nullptr;
+        }
+
+        CORINFO_CONST_LOOKUP helperLookup = m_compiler->compGetHelperFtn(CORINFO_HELP_INTERFACEDISPATCH_FOR_SLOT);
+        assert(helperLookup.accessType == IAT_VALUE);
+        call->gtCallType          = CT_USER_FUNC;
+        call->gtCallMethHnd       = nullptr;
+        call->gtDirectCallAddress = helperLookup.addr;
+        call->gtFlags &= ~GTF_CALL_VIRT_STUB;
+        call->gtCallMoreFlags &= ~GTF_CALL_M_VIRTSTUB_REL_INDIRECT;
+
+        return nullptr;
+    }
+
     // An x86 JIT which uses full stub dispatch must generate only
     // the following stub dispatch calls:
     //
@@ -8953,6 +8888,12 @@ PhaseStatus Lowering::DoPhase()
         // `lvDoNotEnregister` flag before we start reading it.
         // The main reason why this flag is not set is that we are running in minOpts.
         m_compiler->lvSetMinOptsDoNotEnreg();
+    }
+    else
+    {
+        // For many locals we know at this point that we won't enregister them,
+        // so DNER these for the same reasons as above.
+        m_compiler->lvSetVarsDoNotEnreg();
     }
 
     if (m_compiler->opts.OptimizationEnabled() && !m_compiler->opts.IsOSR())
@@ -11219,8 +11160,12 @@ GenTree* Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
 
 #if defined(TARGET_ARM64)
     // Verify containment safety before creating an LEA that must be contained.
+    // Ignore GTF_ORDER_SIDEEFF on the addr itself: when the address ADD is
+    // folded into a contained addressing mode, no intermediate byref register
+    // is materialized, so any ordering hint placed on the ADD (e.g. by morph
+    // for an explicit FIELD_ADDR null check) does not block containment.
     //
-    const bool isContainable = IsInvariantInRange(ind->Addr(), ind);
+    const bool isContainable = IsInvariantInRange(ind->Addr(), ind, GTF_ORDER_SIDEEFF);
 #else
     const bool isContainable = true;
 #endif
@@ -11291,8 +11236,9 @@ GenTree* Lowering::LowerIndir(GenTreeIndir* ind)
             var_types targetType = ind->TypeGet();
             ind->ChangeType(ind->TypeIs(TYP_DOUBLE) ? TYP_LONG : TYP_INT);
 
-            // Now it might be eligible for some addressing modes with LDAPUR:
-            const bool isContainable = IsInvariantInRange(ind->Addr(), ind);
+            // Now it might be eligible for some addressing modes with LDAPUR.
+            // See LowerStoreIndirCommon for why GTF_ORDER_SIDEEFF on the addr is ignored.
+            const bool isContainable = IsInvariantInRange(ind->Addr(), ind, GTF_ORDER_SIDEEFF);
             TryCreateAddrMode(ind->Addr(), isContainable, ind);
 
             // Wrap the resulting IND into BITCAST:
@@ -11309,8 +11255,9 @@ GenTree* Lowering::LowerIndir(GenTreeIndir* ind)
 
 #if defined(TARGET_ARM64)
         // Verify containment safety before creating an LEA that must be contained.
+        // See LowerStoreIndirCommon for why GTF_ORDER_SIDEEFF on the addr is ignored.
         //
-        const bool isContainable = IsInvariantInRange(ind->Addr(), ind);
+        const bool isContainable = IsInvariantInRange(ind->Addr(), ind, GTF_ORDER_SIDEEFF);
 #else
         const bool isContainable = true;
 #endif
