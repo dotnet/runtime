@@ -22,12 +22,6 @@
 
 #include "eventtracebase.h"
 
-// Use the LocalAddressSpace instance from UnwindHelpers.cpp instead of
-// the static member LocalAddressSpace::sThisAddressSpace (which was
-// previously defined in libunwind.cpp). This avoids exporting a symbol
-// that conflicts with platform libunwind on Android.
-extern libunwind::LocalAddressSpace _addressSpace;
-
 #define UBF_FUNC_KIND_MASK      0x03
 #define UBF_FUNC_KIND_ROOT      0x00
 #define UBF_FUNC_KIND_HANDLER   0x01
@@ -62,7 +56,7 @@ UnixNativeCodeManager::UnixNativeCodeManager(TADDR moduleBase,
       m_pClasslibFunctions(pClasslibFunctions), m_nClasslibFunctions(nClasslibFunctions)
 {
     // Cache the location of unwind sections
-    _addressSpace.findUnwindSections(
+    UnwindHelpers::FindUnwindSections(
         (uintptr_t)pvManagedCodeStartRange, m_UnwindInfoSections);
 }
 

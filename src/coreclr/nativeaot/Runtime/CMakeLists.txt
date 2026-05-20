@@ -152,6 +152,13 @@ else()
     include_directories($ENV{EMSCRIPTEN/system/lib/libcxxabi/include})
   endif()
 
+  # Disable zero-cost C++ exception dispatch APIs in Unwind-EHABI.cpp.
+  # NativeAOT only uses _Unwind_VRS_Interpret for ARM EHABI unwinding and
+  # has its own managed exception dispatch. The zero-cost APIs also depend
+  # on the public unw_* functions from libunwind.cpp which is excluded from
+  # the build.
+  add_definitions(-D_LIBUNWIND_DISABLE_ZERO_COST_APIS=1)
+
   # Compile unwinding only for the current compilation target architecture
   add_definitions(-D_LIBUNWIND_IS_NATIVE_ONLY)
 

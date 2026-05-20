@@ -443,6 +443,13 @@ _Unwind_VRS_Interpret(_Unwind_Context *context, const uint32_t *data,
   return _URC_CONTINUE_UNWIND;
 }
 
+// Everything below this point implements the C++ zero-cost exception dispatch
+// API (__aeabi_unwind_cpp_pr*, _Unwind_RaiseException, etc.). NativeAOT does
+// not use these — it has its own managed exception dispatch. These functions
+// also depend on the public unw_* API from libunwind.cpp which is not compiled
+// in the NativeAOT build.
+#if !defined(_LIBUNWIND_DISABLE_ZERO_COST_APIS)
+
 extern "C" _LIBUNWIND_EXPORT _Unwind_Reason_Code
 __aeabi_unwind_cpp_pr0(_Unwind_State state, _Unwind_Control_Block *ucbp,
                        _Unwind_Context *context) {
@@ -1209,5 +1216,7 @@ __gnu_unwind_frame(_Unwind_Exception *exception_object,
     return _URC_FAILURE;
   }
 }
+
+#endif // !defined(_LIBUNWIND_DISABLE_ZERO_COST_APIS)
 
 #endif  // defined(_LIBUNWIND_ARM_EHABI)
