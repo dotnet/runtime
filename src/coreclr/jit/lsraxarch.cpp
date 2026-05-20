@@ -2038,14 +2038,14 @@ int LinearScan::BuildIntrinsic(GenTree* tree)
     }
     else
     {
-        tgtPrefUse = BuildUse(op1, BuildEvexIncompatibleMask(op1));
+        tgtPrefUse = BuildUse(op1);
         srcCount   = 1;
     }
     if (internalFloatDef != nullptr)
     {
         buildInternalRegisterUses();
     }
-    BuildDef(tree, BuildEvexIncompatibleMask(tree));
+    BuildDef(tree);
     return srcCount;
 }
 
