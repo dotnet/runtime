@@ -25,7 +25,7 @@ internal static class SignatureMapper
         ["System.Runtime.CompilerServices.QCallTypeHandle"] = 8,
         ["System.GC+GCHeapHardLimitInfo"] = 64,
         // Used by WBT tests
-        ["WasmAppBuilderTests.PairStruct"] = 8,
+        ["WasmAppBuilderTestsPairStruct"] = 8,
         ["WasmAppBuilderTests.S"] = 8,
         ["WasmAppBuilderTests.Test+S"] = 8,
     };
