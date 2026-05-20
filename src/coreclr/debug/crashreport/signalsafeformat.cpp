@@ -24,6 +24,13 @@ SignalSafeFormatter::FormatSignedDecimal(int64_t value)
     return m_signedDecimalBuffer;
 }
 
+const char*
+SignalSafeFormatter::FormatGuid(const GUID& guid)
+{
+    FormatGuid(m_guidBuffer, sizeof(m_guidBuffer), guid);
+    return m_guidBuffer;
+}
+
 void
 SignalSafeFormatter::FormatHex(
     char* buffer,
@@ -125,4 +132,62 @@ SignalSafeFormatter::FormatSignedDecimal(
         return 0;
     }
     return written + 1;
+}
+
+void
+SignalSafeFormatter::FormatGuid(
+    char* buffer,
+    size_t bufferSize,
+    const GUID& guid)
+{
+    if (buffer == nullptr || bufferSize == 0)
+    {
+        return;
+    }
+
+    if (bufferSize < MAX_GUID_BUFFER_SIZE)
+    {
+        buffer[0] = '\0';
+        return;
+    }
+
+    size_t pos = 0;
+    buffer[pos++] = '{';
+    AppendFixedHex(buffer, &pos, guid.Data1, 8);
+    buffer[pos++] = '-';
+    AppendFixedHex(buffer, &pos, guid.Data2, 4);
+    buffer[pos++] = '-';
+    AppendFixedHex(buffer, &pos, guid.Data3, 4);
+    buffer[pos++] = '-';
+    AppendFixedHex(buffer, &pos, guid.Data4[0], 2);
+    AppendFixedHex(buffer, &pos, guid.Data4[1], 2);
+    buffer[pos++] = '-';
+    AppendFixedHex(buffer, &pos, guid.Data4[2], 2);
+    AppendFixedHex(buffer, &pos, guid.Data4[3], 2);
+    AppendFixedHex(buffer, &pos, guid.Data4[4], 2);
+    AppendFixedHex(buffer, &pos, guid.Data4[5], 2);
+    AppendFixedHex(buffer, &pos, guid.Data4[6], 2);
+    AppendFixedHex(buffer, &pos, guid.Data4[7], 2);
+    buffer[pos++] = '}';
+    buffer[pos] = '\0';
+}
+
+char
+SignalSafeFormatter::GetHexDigit(uint32_t value)
+{
+    value &= 0xf;
+    return static_cast<char>(value < 10 ? ('0' + value) : ('a' + value - 10));
+}
+
+void
+SignalSafeFormatter::AppendFixedHex(
+    char* buffer,
+    size_t* pos,
+    uint32_t value,
+    uint32_t digits)
+{
+    for (uint32_t i = digits; i != 0; --i)
+    {
+        buffer[(*pos)++] = GetHexDigit(value >> ((i - 1) * 4));
+    }
 }

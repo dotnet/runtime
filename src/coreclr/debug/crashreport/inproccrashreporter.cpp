@@ -41,6 +41,10 @@ static const char CRASHREPORT_ARCHITECTURE_NAME[] = "amd64";
 static const char CRASHREPORT_ARCHITECTURE_NAME[] = "arm64";
 #elif defined(__arm__)
 static const char CRASHREPORT_ARCHITECTURE_NAME[] = "arm";
+#elif defined(__i386__)
+static const char CRASHREPORT_ARCHITECTURE_NAME[] = "x86";
+#else
+static const char CRASHREPORT_ARCHITECTURE_NAME[] = "unknown";
 #endif
 
 // Prescribed compact crash report log format. One logical line == one
@@ -50,7 +54,7 @@ static const char CRASHREPORT_ARCHITECTURE_NAME[] = "arm";
 //   *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***   (BeginConsoleReport)
 //   .NET Crash Report v<protocol>
 //   Build: <sccsid>                                                    (omitted if empty)
-//   ABI: amd64|arm64|arm
+//   ABI: <architecture>
 //   Cmdline: <process name>                                            (omitted if empty)
 //   pid: <pid>
 //   signal <N> (<NAME>)
@@ -356,7 +360,6 @@ struct InProcCrashReporterStorage
     char processNameScratch[CRASHREPORT_STRING_BUFFER_SIZE];
     char hostName[CRASHREPORT_STRING_BUFFER_SIZE];
     char versionScratch[sizeof(sccsid)];
-    char moduleGuidScratch[MINIPAL_GUID_BUFFER_LEN];
 #if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
     char osVersion[CRASHREPORT_STRING_BUFFER_SIZE];
     char systemModel[CRASHREPORT_STRING_BUFFER_SIZE];
@@ -1388,8 +1391,7 @@ CrashReportHelpers::WriteFrameToJson(
             InProcCrashReporterStorage* storage = s_storage;
             if (storage != nullptr)
             {
-                minipal_guid_as_string(*moduleGuid, storage->moduleGuidScratch, sizeof(storage->moduleGuidScratch));
-                writer->WriteString("guid", storage->moduleGuidScratch);
+                writer->WriteString("guid", storage->formatter.FormatGuid(*moduleGuid));
             }
         }
     }
@@ -1727,9 +1729,17 @@ CrashReportHelpers::WriteFrameToReport(
     if (!consoleCapped)
     {
         InProcCrashReporterStorage* storage = s_storage;
-        int moduleIndex = storage != nullptr && moduleInfoCallback != nullptr && moduleHandle != nullptr
-            ? storage->moduleTable.GetOrAddIndex(moduleHandle)
-            : -1;
+        int moduleIndex = -1;
+        if (storage != nullptr && moduleInfoCallback != nullptr && moduleHandle != nullptr)
+        {
+            const char* resolvedModuleName = nullptr;
+            GUID resolvedModuleGuid;
+            if (moduleInfoCallback(moduleHandle, &resolvedModuleName, &resolvedModuleGuid) &&
+                HasModuleName(resolvedModuleName))
+            {
+                moduleIndex = storage->moduleTable.GetOrAddIndex(moduleHandle);
+            }
+        }
         WriteFrameToConsole(consoleWriter,
             methodNameBuffer,
             methodNameBufferSize,
@@ -1984,7 +1994,7 @@ InProcCrashReporter::EmitStackOverflowCrashThread()
     }
 
     StackOverflowTraceSnapshot& trace = storage->stackOverflowTrace;
-    bool stackOverflowTraceAvailable = trace.available != 0;
+    bool stackOverflowTraceAvailable = InterlockedCompareExchange(&trace.available, 0, 0) != 0;
     uint64_t crashingTid = stackOverflowTraceAvailable && trace.crashingTid != 0
         ? trace.crashingTid
         : static_cast<uint64_t>(minipal_get_current_thread_id());
@@ -2183,8 +2193,7 @@ InProcCrashReporter::EndConsoleReport()
             {
                 storage->consoleWriter.AppendStr(CrashReportHelpers::GetFilename(moduleName));
                 storage->consoleWriter.AppendChar(' ');
-                minipal_guid_as_string(moduleGuid, storage->moduleGuidScratch, sizeof(storage->moduleGuidScratch));
-                storage->consoleWriter.AppendStr(storage->moduleGuidScratch);
+                storage->consoleWriter.AppendStr(storage->formatter.FormatGuid(moduleGuid));
             }
             else
             {

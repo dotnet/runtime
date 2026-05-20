@@ -40,7 +40,9 @@ struct CrashReportStackWalkerState
 
 static CrashReportStackWalkerState* volatile s_crashReportStackWalkerState = nullptr;
 
-static bool EnsureCrashReportStackWalkerState()
+static
+bool
+EnsureCrashReportStackWalkerState()
 {
     if (s_crashReportStackWalkerState != nullptr)
     {
@@ -59,6 +61,25 @@ static bool EnsureCrashReportStackWalkerState()
     }
 
     return true;
+}
+
+static
+DWORD
+GetCrashReportFrameLimitPerThread()
+{
+    DWORD frameLimitPerThread = CLRConfig::INTERNAL_CrashReportFrameLimitPerThread.defaultValue;
+
+    CLRConfigNoCache frameLimitCfg = CLRConfigNoCache::Get("CrashReportFrameLimitPerThread", /*noprefix*/ false, &getenv);
+    if (frameLimitCfg.IsSet())
+    {
+        DWORD configuredFrameLimitPerThread = 0;
+        if (frameLimitCfg.TryAsInteger(10, configuredFrameLimitPerThread))
+        {
+            frameLimitPerThread = configuredFrameLimitPerThread;
+        }
+    }
+
+    return frameLimitPerThread;
 }
 
 static void BuildTypeName(LPUTF8 buffer, size_t bufferSize, LPCUTF8 namespaceName, LPCUTF8 className);
@@ -595,7 +616,7 @@ CrashReportConfigure()
     settings.walkStackCallback = CrashReportWalkStack;
     settings.enumerateThreadsCallback = CrashReportEnumerateThreads;
     settings.moduleInfoCallback = CrashReportGetModuleInfo;
-    settings.frameLimitPerThread = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_CrashReportFrameLimitPerThread);
+    settings.frameLimitPerThread = GetCrashReportFrameLimitPerThread();
 
     // Initialize the reporter and register the PAL signal-path callback last
     // so PAL only observes the reporter after all VM callbacks are wired in.
