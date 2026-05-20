@@ -3571,8 +3571,7 @@ GenTree* Compiler::optCopyAssertionProp(const AssertionDsc&  curAssertion,
     // those up post-propagation (e.g. when the use appears as a FIELD_LIST
     // entry).
     //
-    if (tree->OperIs(GT_LCL_VAR) && varTypeIsStruct(tree) && copyVarDsc->lvPromoted &&
-        !copyVarDsc->lvDoNotEnregister)
+    if (tree->OperIs(GT_LCL_VAR) && varTypeIsStruct(tree) && copyVarDsc->lvPromoted && !copyVarDsc->lvDoNotEnregister)
     {
         return nullptr;
     }
