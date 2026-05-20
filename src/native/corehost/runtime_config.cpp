@@ -73,8 +73,8 @@ void runtime_config_t::parse(const pal::string_t& path, const pal::string_t& dev
 bool runtime_config_t::parse_opts(const json_parser_t::value_t& opts)
 {
     // Note: both runtime_config and dev_runtime_config call into the function.
-    // dev_runtime_config is parsed first and properties it specifies take precedence
-    // over values for the same property from runtime_config.
+    // dev_runtime_config is parsed first. The configProperties from the dev config take precedence
+    // over the configProperties from the runtime config.
     if (opts.IsNull())
     {
         return true;
