@@ -56,7 +56,7 @@
 
   <Target Name="_BuildExtractRootCATask">
     <MSBuild Projects="$(ExtractRootCATaskProject)"
-             Targets="Build"
+             Targets="Restore;Build"
              Properties="Configuration=$(Configuration);TargetFramework=$(BundledNETCoreAppTargetFramework)" />
   </Target>
 

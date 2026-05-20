@@ -4,6 +4,7 @@
     <EnableBinPlacing>false</EnableBinPlacing>
     <UseLocalTargetingRuntimePack>false</UseLocalTargetingRuntimePack>
     <IsPackable>false</IsPackable>
+    <RestoreUseStaticGraphEvaluation>false</RestoreUseStaticGraphEvaluation>
     <NetCoreSdkRoot Condition="'$(NetCoreSdkRoot)' == ''">$(MSBuildToolsPath)/</NetCoreSdkRoot>
   </PropertyGroup>
 
