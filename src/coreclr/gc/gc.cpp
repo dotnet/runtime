@@ -6485,6 +6485,7 @@ public:
         if (GCToOSInterface::CanGetCurrentProcessorNumber())
         {
             uint32_t proc_no = GCToOSInterface::GetCurrentProcessorNumber();
+            assert(proc_no < GCToOSInterface::GetMaxProcessorCount());
             proc_no_to_heap_no[proc_no] = (uint16_t)heap_number;
         }
     }
@@ -6507,6 +6508,7 @@ public:
         if (GCToOSInterface::CanGetCurrentProcessorNumber())
         {
             uint32_t proc_no = GCToOSInterface::GetCurrentProcessorNumber();
+            assert(proc_no < GCToOSInterface::GetMaxProcessorCount());
             int adjusted_heap = proc_no_to_heap_no[proc_no];
             // with dynamic heap count, need to make sure the value is in range.
             if (adjusted_heap >= gc_heap::n_heaps)
@@ -6588,6 +6590,7 @@ public:
         // numa_node_to_heap_map[numa_node] is set to the first heap number on that node and
         // numa_node_to_heap_map[numa_node + 1] is set to the first heap number not on that node
         // Set the start of the heap number range for the first NUMA node
+        assert(heap_no_to_numa_node[0] < maxCpuCount + 1);
         numa_node_to_heap_map[heap_no_to_numa_node[0]] = 0;
 #ifdef HEAP_BALANCE_INSTRUMENTATION
         total_numa_nodes = 0;
@@ -6604,8 +6607,8 @@ public:
                 total_numa_nodes++;
                 heaps_on_node[total_numa_nodes].node_no = heap_no_to_numa_node[i];
 #endif
-                assert(heap_no_to_numa_node[i-1] < maxCpuCount);
-                assert(heap_no_to_numa_node[i] < maxCpuCount);
+                assert(heap_no_to_numa_node[i-1] + 1 < maxCpuCount + 1);
+                assert(heap_no_to_numa_node[i] < maxCpuCount + 1);
                 // Set the end of the heap number range for the previous NUMA node
                 numa_node_to_heap_map[heap_no_to_numa_node[i-1] + 1] =
                 // Set the start of the heap number range for the current NUMA node
@@ -6616,7 +6619,7 @@ public:
 #endif
         }
 
-        assert(heap_no_to_numa_node[nheaps-1] < maxCpuCount);
+        assert(heap_no_to_numa_node[nheaps-1] + 1 < maxCpuCount + 1);
         // Set the end of the heap range for the last NUMA node
         numa_node_to_heap_map[heap_no_to_numa_node[nheaps-1] + 1] = (uint16_t)nheaps; //mark the end with nheaps
 
@@ -6634,6 +6637,7 @@ public:
         if (*node_no == NUMA_NODE_UNDEFINED)
             *node_no = 0;
 
+        assert(*node_no + 1 < GCToOSInterface::GetMaxProcessorCount() + 1);
         *start_heap = (int)numa_node_to_heap_map[*node_no];
         *end_heap = (int)(numa_node_to_heap_map[*node_no + 1]);
 
@@ -6719,6 +6723,7 @@ public:
     static void get_heap_range_for_heap(int hn, int* start, int* end)
     {
         uint16_t numa_node = heap_no_to_numa_node[hn];
+        assert(numa_node + 1 < GCToOSInterface::GetMaxProcessorCount() + 1);
         *start = (int)numa_node_to_heap_map[numa_node];
         *end   = (int)(numa_node_to_heap_map[numa_node+1]);
 #ifdef HEAP_BALANCE_INSTRUMENTATION
@@ -19496,6 +19501,7 @@ void gc_heap::balance_heaps (alloc_context* acontext)
                     last_proc_no = proc_no;
                 }
 
+                assert(proc_no < GCToOSInterface::GetActiveProcessorCount ());
                 int new_home_hp_num = heap_select::proc_no_to_heap_no[proc_no];
 #else
                 int new_home_hp_num = heap_select::select_heap(acontext);
