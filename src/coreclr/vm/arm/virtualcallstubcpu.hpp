@@ -289,7 +289,11 @@ struct VTableCallStub
         size_t cbSize = 4;                                      // First ldr instruction
 
         // If we never save r0 to the red zone, we have the short version of the stub
+#ifdef FEATURE_AVOID_RED_ZONE
+        if (*(UINT32*)(&pStubCode[cbSize]) != 0x0d04f84d)
+#else
         if (*(UINT32*)(&pStubCode[cbSize]) != 0x0c04f84d)
+#endif
         {
             return
                 4 +         // ldr r12,[r0]
@@ -299,7 +303,7 @@ struct VTableCallStub
                 4;          // Slot value (data storage, not a real instruction)
         }
 
-        cbSize += 4;                                                    // Saving r0 into red zone
+        cbSize += 4;                                                    // Saving r0 (push or red zone)
         cbSize += (*(WORD*)(&pStubCode[cbSize]) == 0xf8dc ? 4 : 12);    // Loading of vtable into r12
         cbSize += (*(WORD*)(&pStubCode[cbSize]) == 0xf8dc ? 4 : 12);    // Loading of targe address into r12
 
@@ -335,7 +339,7 @@ struct VTableCallHolder
 
         int indirectionsSize = (offsetOfIndirection > 0xFFF ? 12 : 4) + (offsetAfterIndirection > 0xFFF ? 12 : 4);
         if (offsetOfIndirection > 0xFFF || offsetAfterIndirection > 0xFFF)
-            indirectionsSize += 8;    // Save/restore r0 using red zone
+            indirectionsSize += 8;    // Save/restore r0 (push/pop with FEATURE_AVOID_RED_ZONE, red zone otherwise)
 
         return 6 + indirectionsSize + 4;
     }
@@ -429,8 +433,13 @@ void VTableCallHolder::Initialize(unsigned slot)
 
     if (offsetOfIndirection > 0xFFF || offsetAfterIndirection > 0xFFF)
     {
+#ifdef FEATURE_AVOID_RED_ZONE
+        // str r0, [sp, #-4]! (pre-indexed: decrements SP, stores at new SP)
+        *(UINT32*)p = 0x0d04f84d; p += 4;
+#else
         // str r0, [sp, #-4]. Save r0 in the red zone
         *(UINT32*)p = 0x0c04f84d; p += 4;
+#endif
     }
 
     if (offsetOfIndirection > 0xFFF)
@@ -463,8 +472,13 @@ void VTableCallHolder::Initialize(unsigned slot)
 
     if (offsetOfIndirection > 0xFFF || offsetAfterIndirection > 0xFFF)
     {
+#ifdef FEATURE_AVOID_RED_ZONE
+        // ldr r0, [sp], #4 (post-indexed: loads from SP, then increments SP)
+        *(UINT32*)p = 0x0b04f85d; p += 4;
+#else
         // ldr r0, [sp, #-4]. Restore r0 from the red zone.
         *(UINT32*)p = 0x0c04f85d; p += 4;
+#endif
     }
 
     // bx r12

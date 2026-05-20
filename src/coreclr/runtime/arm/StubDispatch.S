@@ -12,6 +12,62 @@
 .macro DEFINE_INTERFACE_DISPATCH_STUB entries
 
 NESTED_ENTRY RhpInterfaceDispatch\entries, _TEXT, NoHandler
+#ifdef FEATURE_AVOID_RED_ZONE
+        // r12 currently contains the indirection cell address. But we need more scratch registers and
+        // we may A/V on a null this. Save r1 and r2 on the stack.
+        PROLOG_STACK_ALLOC 8
+        str         r1, [sp]
+        str         r2, [sp, #4]
+
+        // r12 currently holds the indirection cell address. We need to get the cache structure instead.
+        ldr         r2, [r12, #OFFSETOF__InterfaceDispatchCell__m_pCache]
+
+        // Validate r2 is a cache pointer matching the expected cache size.
+        tst         r2, #IDC_CACHE_POINTER_MASK
+        bne         LOCAL_LABEL(RaceRetry_\entries)
+        ldr         r1, [r2, #OFFSETOF__InterfaceDispatchCache__m_cEntries]
+        cmp         r1, #\entries
+        bne         LOCAL_LABEL(RaceRetry_\entries)
+
+        // Load the MethodTable from the object instance in r0.
+        GLOBAL_LABEL RhpInterfaceDispatchAVLocation\entries
+        ldr         r1, [r0]
+
+        CurrentOffset = OFFSETOF__InterfaceDispatchCache__m_rgEntries
+        //  R1 : Instance MethodTable*
+        //  R2 : Cache data structure
+        //  R12 : Trashed. On successful check, set to the target address to jump to.
+        .rept \entries
+              ldr        r12, [r2, #CurrentOffset]
+              cmp        r1, r12
+              bne        0f
+              ldr        r12, [r2, #(CurrentOffset + 4)]
+              b          LOCAL_LABEL(99_\entries)
+        0:
+              CurrentOffset = CurrentOffset + 8
+        .endr
+
+        // Point r12 to the indirection cell using the back pointer in the cache block
+        ldr         r12, [r2, #OFFSETOF__InterfaceDispatchCache__m_pCell]
+
+        ldr         r1, [sp]
+        ldr         r2, [sp, #4]
+        EPILOG_STACK_FREE 8
+        b           C_FUNC(RhpInterfaceDispatchSlow)
+
+LOCAL_LABEL(RaceRetry_\entries):
+        ldr         r1, [sp]
+        ldr         r2, [sp, #4]
+        EPILOG_STACK_FREE 8
+        ldr         pc, [r12]
+
+LOCAL_LABEL(99_\entries):
+        ldr         r1, [sp]
+        ldr         r2, [sp, #4]
+        EPILOG_STACK_FREE 8
+        EPILOG_BRANCH_REG r12
+
+#else // !FEATURE_AVOID_RED_ZONE
         // r12 currently contains the indirection cell address. But we need more scratch registers and
         // we may A/V on a null this. Store r1 and r2 in red zone.
         str         r1, [sp, #-8]
@@ -75,6 +131,7 @@ LOCAL_LABEL(99_\entries):
         str         r2, [sp, #-8]
         ldr         r2, [sp, #-4]
         EPILOG_BRANCH_REG r12
+#endif // FEATURE_AVOID_RED_ZONE
 
 NESTED_END RhpInterfaceDispatch\entries, _TEXT
 
@@ -108,6 +165,21 @@ LEAF_END RhpInitialDynamicInterfaceDispatch, _TEXT
 
 // Cache miss case, call the runtime to resolve the target and update the cache.
 // Use universal transition helper to allow an exception to flow out of resolution
+#ifdef FEATURE_AVOID_RED_ZONE
+NESTED_ENTRY RhpInterfaceDispatchSlow, _TEXT, NoHandler
+        // r12 has the interface dispatch cell address in it.
+        // Push the two arguments that the universal transition thunk expects:
+        //   [sp]   = parameter for the universal thunk target (cell address)
+        //   [sp+4] = universal thunk target address (RhpCidResolve)
+        PROLOG_STACK_ALLOC 8
+        str         r12, [sp]
+        PREPARE_EXTERNAL_VAR RhpCidResolve, r12
+        str         r12, [sp, #4]
+
+        // jump to universal transition thunk
+        b           C_FUNC(RhpUniversalTransitionTailCall)
+NESTED_END RhpInterfaceDispatchSlow, _TEXT
+#else
 LEAF_ENTRY RhpInterfaceDispatchSlow, _TEXT
         // r12 has the interface dispatch cell address in it.
         // The calling convention of the universal thunk is that the parameter
@@ -120,5 +192,6 @@ LEAF_ENTRY RhpInterfaceDispatchSlow, _TEXT
         // jump to universal transition thunk
         b           C_FUNC(RhpUniversalTransitionTailCall)
 LEAF_END RhpInterfaceDispatchSlow, _TEXT
+#endif
 
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH
