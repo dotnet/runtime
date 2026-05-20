@@ -688,6 +688,7 @@ extends:
                   testBuildArgs: nativeaot tree nativeaot
                   liveLibrariesBuildConfig: Release
                   testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+                  useHelixMonitor: true
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
                 parameters:
@@ -727,6 +728,7 @@ extends:
                   testBuildArgs: 'nativeaot tree ";nativeaot;Loader;Interop;async;" /p:BuildNativeAotFrameworkObjects=true'
                   liveLibrariesBuildConfig: Release
                   testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+                  useHelixMonitor: true
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
                 parameters:
@@ -771,6 +773,7 @@ extends:
                   testBuildArgs: 'nativeaot tree ";nativeaot;tracing/eventpipe/providervalidation;"'
                   liveLibrariesBuildConfig: Release
                   testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+                  useHelixMonitor: true
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
                 parameters:
@@ -1603,6 +1606,7 @@ extends:
               - template: /eng/pipelines/installer/helix.yml
                 parameters:
                   creator: dotnet-bot
+                  useHelixMonitor: true
             condition:
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
@@ -1634,6 +1638,7 @@ extends:
               - template: /eng/pipelines/installer/helix.yml
                 parameters:
                   creator: dotnet-bot
+                  useHelixMonitor: true
             condition:
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
@@ -1665,6 +1670,7 @@ extends:
               - template: /eng/pipelines/installer/helix.yml
                 parameters:
                   creator: dotnet-bot
+                  useHelixMonitor: true
             condition:
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
