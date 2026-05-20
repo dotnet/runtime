@@ -111,7 +111,7 @@ internal struct ComWrappers_1 : IComWrappers
     public List<TargetPointer> GetMOWs(TargetPointer obj, out bool hasMOWTable)
     {
         hasMOWTable = false;
-        _mowTableAddr ??= Data.Managed.ComWrappers.AllManagedObjectWrapperTable(_target);
+        _mowTableAddr ??= Data.ComWrappers.AllManagedObjectWrapperTable(_target);
 
         List<TargetPointer> mows = new List<TargetPointer>();
 
@@ -121,7 +121,7 @@ internal struct ComWrappers_1 : IComWrappers
         if (cwt.TryGetValue(_mowTableAddr.Value, obj, out TargetPointer mowListObj))
         {
             hasMOWTable = true;
-            Data.Managed.List listData = _target.ProcessedData.GetOrAdd<Data.Managed.List>(mowListObj);
+            Data.List listData = _target.ProcessedData.GetOrAdd<Data.List>(mowListObj);
             TargetPointer listItemsPtr = listData.Items;
             int size = listData.Size;
 
@@ -142,12 +142,12 @@ internal struct ComWrappers_1 : IComWrappers
     public bool IsComWrappersRCW(TargetPointer rcw)
     {
         TargetPointer mt = _target.Contracts.Object.GetMethodTableAddress(rcw);
-        return mt == Data.Managed.NativeObjectWrapper.TypeHandle(_target).Address;
+        return mt == Data.NativeObjectWrapper.TypeHandle(_target).Address;
     }
 
     public TargetPointer GetComWrappersRCWForObject(TargetPointer obj)
     {
-        _nativeObjectWrapperCWTAddr ??= Data.Managed.ComWrappers.NativeObjectWrapperTable(_target);
+        _nativeObjectWrapperCWTAddr ??= Data.ComWrappers.NativeObjectWrapperTable(_target);
         if (_nativeObjectWrapperCWTAddr.Value == TargetPointer.Null)
             return TargetPointer.Null;
         IConditionalWeakTable cwt = _target.Contracts.ConditionalWeakTable;

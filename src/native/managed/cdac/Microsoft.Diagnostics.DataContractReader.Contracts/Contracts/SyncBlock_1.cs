@@ -47,7 +47,7 @@ internal readonly struct SyncBlock_1 : ISyncBlock
 
         if (sb.Lock != null)
         {
-            Data.Managed.Lock lockData = _target.ProcessedData.GetOrAdd<Data.Managed.Lock>(sb.Lock.Object);
+            Data.Lock lockData = _target.ProcessedData.GetOrAdd<Data.Lock>(sb.Lock.Object);
             bool monitorHeld = (lockData.State & 1) != 0;
             if (monitorHeld)
             {

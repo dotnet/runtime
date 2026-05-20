@@ -17,8 +17,8 @@ internal struct ConditionalWeakTable_1 : IConditionalWeakTable
         value = TargetPointer.Null;
 
         // Read _container from the CWT object and _buckets/_entries from the Container.
-        Data.Managed.ConditionalWeakTable cwt = _target.ProcessedData.GetOrAdd<Data.Managed.ConditionalWeakTable>(conditionalWeakTable);
-        Data.Managed.ConditionalWeakTableContainer container = _target.ProcessedData.GetOrAdd<Data.Managed.ConditionalWeakTableContainer>(cwt.Container);
+        Data.ConditionalWeakTable cwt = _target.ProcessedData.GetOrAdd<Data.ConditionalWeakTable>(conditionalWeakTable);
+        Data.ConditionalWeakTableContainer container = _target.ProcessedData.GetOrAdd<Data.ConditionalWeakTableContainer>(cwt.Container);
 
         int hashCode = _target.Contracts.Object.TryGetHashCode(key);
         if (hashCode == 0)
@@ -40,7 +40,7 @@ internal struct ConditionalWeakTable_1 : IConditionalWeakTable
         while (entriesIndex != -1)
         {
             TargetPointer entryAddress = entriesArray.DataPointer + (ulong)((uint)entriesIndex * entrySize);
-            Data.Managed.ConditionalWeakTableEntry entry = _target.ProcessedData.GetOrAdd<Data.Managed.ConditionalWeakTableEntry>(entryAddress);
+            Data.ConditionalWeakTableEntry entry = _target.ProcessedData.GetOrAdd<Data.ConditionalWeakTableEntry>(entryAddress);
 
             if (entry.HashCode == hashCode)
             {
