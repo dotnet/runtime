@@ -530,6 +530,29 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Numerics.Tensors\tests\System.Numerics.Tensors.Tests.csproj" />
   </ItemGroup>
 
+  <!-- https://github.com/dotnet/runtime/issues/126697 -->
+  <ItemGroup Condition="'$(TestNativeAot)' == 'true' and '$(TargetsAppleMobile)' == 'true'">
+    <!-- Test data files not bundled -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Bcl.Cryptography\tests\Microsoft.Bcl.Cryptography.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Hosting\tests\UnitTests\Microsoft.Extensions.Hosting.Unit.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Data.Common\tests\System.Data.DataSetExtensions.Tests\System.Data.DataSetExtensions.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.FileVersionInfo\tests\System.Diagnostics.FileVersionInfo.Tests\System.Diagnostics.FileVersionInfo.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Compression.Brotli\tests\System.IO.Compression.Brotli.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Compression\tests\System.IO.Compression.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Packaging\tests\System.IO.Packaging.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.HttpListener\tests\System.Net.HttpListener.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.NetworkInformation\tests\FunctionalTests\System.Net.NetworkInformation.Functional.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Resources.ResourceManager.Tests\System.Resources.ResourceManager.Tests.csproj" />
+
+    <!-- EventSource tests require EventSourceSupport=true -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.NameResolution\tests\FunctionalTests\System.Net.NameResolution.Functional.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Sockets\tests\FunctionalTests\System.Net.Sockets.Tests.csproj" />
+
+    <!-- Apple-mobile behavioural differences -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Mail\tests\Functional\System.Net.Mail.Functional.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography\tests\System.Security.Cryptography.Tests.csproj" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectExclusions Condition="'$(RunHighAOTResourceRequiringTestsOnly)' != 'true' and '$(RunAOTCompilation)' == 'true'"
                        Include="@(HighAOTResourceRequiringProject)" />
