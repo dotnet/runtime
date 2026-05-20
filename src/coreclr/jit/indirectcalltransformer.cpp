@@ -162,12 +162,6 @@ private:
             , currBlock(block)
             , stmt(stmt)
         {
-            remainderBlock = nullptr;
-            checkBlock     = nullptr;
-            thenBlock      = nullptr;
-            elseBlock      = nullptr;
-            origCall       = nullptr;
-            likelihood     = HIGH_PROBABILITY;
         }
 
         //------------------------------------------------------------------------
@@ -204,15 +198,15 @@ private:
 
         //------------------------------------------------------------------------
         // CreateRemainder: split current block at the call stmt and
-        // insert statements after the call into remainderBlock.
+        // insert statements after the call into m_remainderBlock.
         //
         void CreateRemainder()
         {
-            remainderBlock = compiler->fgSplitBlockAfterStatement(currBlock, stmt);
-            remainderBlock->SetFlags(BBF_INTERNAL);
-            remainderBlock->RemoveFlags(BBF_DONT_REMOVE);
+            m_remainderBlock = compiler->fgSplitBlockAfterStatement(currBlock, stmt);
+            m_remainderBlock->SetFlags(BBF_INTERNAL);
+            m_remainderBlock->RemoveFlags(BBF_DONT_REMOVE);
 
-            // We will be adding more blocks after currBlock, so remove edge to remainderBlock.
+            // We will be adding more blocks after currBlock, so remove edge to m_remainderBlock.
             //
             compiler->fgRemoveRefPred(currBlock->GetTargetEdge());
         }
@@ -266,10 +260,10 @@ private:
         //
         virtual void SetWeights()
         {
-            remainderBlock->inheritWeight(currBlock);
-            checkBlock->inheritWeight(currBlock);
-            thenBlock->inheritWeightPercentage(currBlock, likelihood);
-            elseBlock->inheritWeightPercentage(currBlock, 100 - likelihood);
+            m_remainderBlock->inheritWeight(currBlock);
+            m_checkBlock->inheritWeight(currBlock);
+            m_thenBlock->inheritWeightPercentage(currBlock, m_likelihood);
+            m_elseBlock->inheritWeightPercentage(currBlock, 100 - m_likelihood);
         }
 
         //------------------------------------------------------------------------
@@ -280,49 +274,47 @@ private:
             assert(compiler->fgPredsComputed);
 
             // currBlock
-            if (checkBlock != currBlock)
+            if (m_checkBlock != currBlock)
             {
                 assert(currBlock->KindIs(BBJ_ALWAYS));
-                FlowEdge* const newEdge = compiler->fgAddRefPred(checkBlock, currBlock);
+                FlowEdge* const newEdge = compiler->fgAddRefPred(m_checkBlock, currBlock);
                 currBlock->SetTargetEdge(newEdge);
             }
 
-            // checkBlock
-            // Todo: get likelihoods right
+            // m_checkBlock
+            // Todo: get m_likelihoods right
             //
-            assert(checkBlock->KindIs(BBJ_ALWAYS));
-            FlowEdge* const thenEdge = compiler->fgAddRefPred(thenBlock, checkBlock);
+            assert(m_checkBlock->KindIs(BBJ_ALWAYS));
+            FlowEdge* const thenEdge = compiler->fgAddRefPred(m_thenBlock, m_checkBlock);
             thenEdge->setLikelihood(0.5);
-            FlowEdge* const elseEdge = compiler->fgAddRefPred(elseBlock, checkBlock);
+            FlowEdge* const elseEdge = compiler->fgAddRefPred(m_elseBlock, m_checkBlock);
             elseEdge->setLikelihood(0.5);
-            checkBlock->SetCond(elseEdge, thenEdge);
+            m_checkBlock->SetCond(elseEdge, thenEdge);
 
-            // thenBlock
+            // m_thenBlock
             {
-                assert(thenBlock->KindIs(BBJ_ALWAYS));
-                FlowEdge* const newEdge = compiler->fgAddRefPred(remainderBlock, thenBlock);
-                thenBlock->SetTargetEdge(newEdge);
+                assert(m_thenBlock->KindIs(BBJ_ALWAYS));
+                FlowEdge* const newEdge = compiler->fgAddRefPred(m_remainderBlock, m_thenBlock);
+                m_thenBlock->SetTargetEdge(newEdge);
             }
 
-            // elseBlock
+            // m_elseBlock
             {
-                assert(elseBlock->KindIs(BBJ_ALWAYS));
-                FlowEdge* const newEdge = compiler->fgAddRefPred(remainderBlock, elseBlock);
-                elseBlock->SetTargetEdge(newEdge);
+                assert(m_elseBlock->KindIs(BBJ_ALWAYS));
+                FlowEdge* const newEdge = compiler->fgAddRefPred(m_remainderBlock, m_elseBlock);
+                m_elseBlock->SetTargetEdge(newEdge);
             }
         }
 
-        Compiler*    compiler;
-        BasicBlock*  currBlock;
-        BasicBlock*  remainderBlock;
-        BasicBlock*  checkBlock;
-        BasicBlock*  thenBlock;
-        BasicBlock*  elseBlock;
-        Statement*   stmt;
-        GenTreeCall* origCall;
-        unsigned     likelihood;
-
-        const int HIGH_PROBABILITY = 80;
+        Compiler*    compiler         = nullptr;
+        BasicBlock*  currBlock        = nullptr;
+        BasicBlock*  m_remainderBlock = nullptr;
+        BasicBlock*  m_checkBlock     = nullptr;
+        BasicBlock*  m_thenBlock      = nullptr;
+        BasicBlock*  m_elseBlock      = nullptr;
+        Statement*   stmt             = nullptr;
+        GenTreeCall* m_origCall       = nullptr;
+        unsigned     m_likelihood     = 80;
     };
 
     class FatPointerCallTransformer final : public Transformer
@@ -331,10 +323,10 @@ private:
         FatPointerCallTransformer(Compiler* compiler, BasicBlock* block, Statement* stmt)
             : Transformer(compiler, block, stmt)
         {
-            doesReturnValue = stmt->GetRootNode()->OperIs(GT_STORE_LCL_VAR);
-            origCall        = GetCall(stmt);
-            fptrAddress     = origCall->gtControlExpr;
-            pointerType     = fptrAddress->TypeGet();
+            m_doesReturnValue = stmt->GetRootNode()->OperIs(GT_STORE_LCL_VAR);
+            m_origCall        = GetCall(stmt);
+            m_fptrAddress     = m_origCall->gtControlExpr;
+            m_pointerType     = m_fptrAddress->TypeGet();
         }
 
     protected:
@@ -355,7 +347,7 @@ private:
         {
             GenTree*     tree = callStmt->GetRootNode();
             GenTreeCall* call = nullptr;
-            if (doesReturnValue)
+            if (m_doesReturnValue)
             {
                 assert(tree->OperIs(GT_STORE_LCL_VAR));
                 call = tree->AsLclVar()->Data()->AsCall();
@@ -372,7 +364,7 @@ private:
         //
         virtual void ClearFlag()
         {
-            origCall->ClearFatPointerCandidate();
+            m_origCall->ClearFatPointerCandidate();
         }
 
         // FixupRetExpr: no action needed as we handle this in the importer.
@@ -387,15 +379,15 @@ private:
         {
             assert(checkIdx == 0);
 
-            checkBlock                 = CreateAndInsertBasicBlock(BBJ_ALWAYS, currBlock, currBlock);
-            GenTree*   fatPointerMask  = new (compiler, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, FAT_POINTER_MASK);
-            GenTree*   fptrAddressCopy = compiler->gtCloneExpr(fptrAddress);
-            GenTree*   fatPointerAnd   = compiler->gtNewOperNode(GT_AND, TYP_I_IMPL, fptrAddressCopy, fatPointerMask);
-            GenTree*   zero            = new (compiler, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, 0);
-            GenTree*   fatPointerCmp   = compiler->gtNewOperNode(GT_NE, TYP_INT, fatPointerAnd, zero);
-            GenTree*   jmpTree         = compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, fatPointerCmp);
-            Statement* jmpStmt         = compiler->fgNewStmtFromTree(jmpTree, stmt->GetDebugInfo());
-            compiler->fgInsertStmtAtEnd(checkBlock, jmpStmt);
+            m_checkBlock                 = CreateAndInsertBasicBlock(BBJ_ALWAYS, currBlock, currBlock);
+            GenTree*   fatPointerMask    = new (compiler, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, FAT_POINTER_MASK);
+            GenTree*   m_fptrAddressCopy = compiler->gtCloneExpr(m_fptrAddress);
+            GenTree*   fatPointerAnd = compiler->gtNewOperNode(GT_AND, TYP_I_IMPL, m_fptrAddressCopy, fatPointerMask);
+            GenTree*   zero          = new (compiler, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, 0);
+            GenTree*   fatPointerCmp = compiler->gtNewOperNode(GT_NE, TYP_INT, fatPointerAnd, zero);
+            GenTree*   jmpTree       = compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, fatPointerCmp);
+            Statement* jmpStmt       = compiler->fgNewStmtFromTree(jmpTree, stmt->GetDebugInfo());
+            compiler->fgInsertStmtAtEnd(m_checkBlock, jmpStmt);
         }
 
         //------------------------------------------------------------------------
@@ -404,10 +396,10 @@ private:
         //
         virtual void CreateThen(uint8_t checkIdx)
         {
-            assert(remainderBlock != nullptr);
-            thenBlock                     = CreateAndInsertBasicBlock(BBJ_ALWAYS, checkBlock, currBlock);
+            assert(m_remainderBlock != nullptr);
+            m_thenBlock                   = CreateAndInsertBasicBlock(BBJ_ALWAYS, m_checkBlock, currBlock);
             Statement* copyOfOriginalStmt = compiler->gtCloneStmt(stmt);
-            compiler->fgInsertStmtAtEnd(thenBlock, copyOfOriginalStmt);
+            compiler->fgInsertStmtAtEnd(m_thenBlock, copyOfOriginalStmt);
         }
 
         //------------------------------------------------------------------------
@@ -415,15 +407,15 @@ private:
         //
         virtual void CreateElse()
         {
-            elseBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, thenBlock, currBlock);
+            m_elseBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, m_thenBlock, currBlock);
 
             GenTree* fixedFptrAddress = GetFixedFptrAddress();
             GenTree* actualCallAddress =
-                compiler->gtNewIndir(pointerType, fixedFptrAddress, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+                compiler->gtNewIndir(m_pointerType, fixedFptrAddress, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
             GenTree* hiddenArgument = GetHiddenArgument(fixedFptrAddress);
 
             Statement* fatStmt = CreateFatCallStmt(actualCallAddress, hiddenArgument);
-            compiler->fgInsertStmtAtEnd(elseBlock, fatStmt);
+            compiler->fgInsertStmtAtEnd(m_elseBlock, fatStmt);
         }
 
         //------------------------------------------------------------------------
@@ -433,9 +425,9 @@ private:
         //    address without fat pointer bit set.
         GenTree* GetFixedFptrAddress()
         {
-            GenTree* fptrAddressCopy = compiler->gtCloneExpr(fptrAddress);
-            GenTree* fatPointerMask  = new (compiler, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, FAT_POINTER_MASK);
-            return compiler->gtNewOperNode(GT_SUB, pointerType, fptrAddressCopy, fatPointerMask);
+            GenTree* m_fptrAddressCopy = compiler->gtCloneExpr(m_fptrAddress);
+            GenTree* fatPointerMask    = new (compiler, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, FAT_POINTER_MASK);
+            return compiler->gtNewOperNode(GT_SUB, m_pointerType, m_fptrAddressCopy, fatPointerMask);
         }
 
         //------------------------------------------------------------------------
@@ -450,7 +442,7 @@ private:
         {
             GenTree* fixedFptrAddressCopy = compiler->gtCloneExpr(fixedFptrAddress);
             GenTree* wordSize          = new (compiler, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, genTypeSize(TYP_I_IMPL));
-            GenTree* hiddenArgumentPtr = compiler->gtNewOperNode(GT_ADD, pointerType, fixedFptrAddressCopy, wordSize);
+            GenTree* hiddenArgumentPtr = compiler->gtNewOperNode(GT_ADD, m_pointerType, fixedFptrAddressCopy, wordSize);
             return compiler->gtNewIndir(fixedFptrAddressCopy->TypeGet(), hiddenArgumentPtr,
                                         GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
         }
@@ -476,9 +468,9 @@ private:
     private:
         const int FAT_POINTER_MASK = 0x2;
 
-        GenTree*  fptrAddress;
-        var_types pointerType;
-        bool      doesReturnValue;
+        GenTree*  m_fptrAddress;
+        var_types m_pointerType;
+        bool      m_doesReturnValue;
     };
 
     class GuardedDevirtualizationTransformer final : public Transformer
@@ -486,8 +478,6 @@ private:
     public:
         GuardedDevirtualizationTransformer(Compiler* compiler, BasicBlock* block, Statement* stmt)
             : Transformer(compiler, block, stmt)
-            , returnTemp(BAD_VAR_NUM)
-            , returnValueUnused(false)
         {
         }
 
@@ -496,27 +486,28 @@ private:
         //
         virtual void Run()
         {
-            origCall = GetCall(stmt);
+            m_origCall = GetCall(stmt);
 
             JITDUMP("\n----------------\n\n*** %s contemplating [%06u] in " FMT_BB " \n", Name(),
-                    compiler->dspTreeID(origCall), currBlock->bbNum);
+                    compiler->dspTreeID(m_origCall), currBlock->bbNum);
 
             // We currently need inline candidate info to guarded devirt.
             //
-            if (!origCall->IsInlineCandidate())
+            if (!m_origCall->IsInlineCandidate())
             {
-                JITDUMP("*** %s Bailing on [%06u] -- not an inline candidate\n", Name(), compiler->dspTreeID(origCall));
+                JITDUMP("*** %s Bailing on [%06u] -- not an inline candidate\n", Name(),
+                        compiler->dspTreeID(m_origCall));
                 ClearFlag();
                 return;
             }
 
-            likelihood = origCall->GetGDVCandidateInfo(0)->likelihood;
-            assert((likelihood >= 0) && (likelihood <= 100));
-            JITDUMP("Likelihood of correct guess is %u\n", likelihood);
+            m_likelihood = m_origCall->GetGDVCandidateInfo(0)->likelihood;
+            assert((m_likelihood >= 0) && (m_likelihood <= 100));
+            JITDUMP("Likelihood of correct guess is %u\n", m_likelihood);
 
             // TODO: implement chaining for multiple GDV candidates
             const bool canChainGdv =
-                (GetChecksCount() == 1) && ((origCall->gtCallMoreFlags & GTF_CALL_M_GUARDED_DEVIRT_EXACT) == 0);
+                (GetChecksCount() == 1) && ((m_origCall->gtCallMoreFlags & GTF_CALL_M_GUARDED_DEVIRT_EXACT) == 0);
             if (canChainGdv)
             {
                 compiler->Metrics.GDV++;
@@ -525,7 +516,7 @@ private:
                     compiler->Metrics.MultiGuessGDV++;
                 }
 
-                const bool isChainedGdv = (origCall->gtCallMoreFlags & GTF_CALL_M_GUARDED_DEVIRT_CHAIN) != 0;
+                const bool isChainedGdv = (m_origCall->gtCallMoreFlags & GTF_CALL_M_GUARDED_DEVIRT_CHAIN) != 0;
 
                 if (isChainedGdv)
                 {
@@ -580,7 +571,7 @@ private:
 
         virtual UINT8 GetChecksCount()
         {
-            return origCall->GetInlineCandidatesCount();
+            return m_origCall->GetInlineCandidatesCount();
         }
 
         virtual void ChainFlow()
@@ -592,10 +583,18 @@ private:
 
         virtual void SetWeights()
         {
-            // remainderBlock has the same weight as the original block.
-            remainderBlock->inheritWeight(currBlock);
+            if (m_awaitRemainderBlock != nullptr)
+            {
+                m_remainderBlock->inheritWeightPercentage(currBlock, 0);
+                m_remainderBlock->bbWeight = m_remainderBlock->computeIncomingWeight();
+                m_awaitRemainderBlock->inheritWeight(currBlock);
+            }
+            else
+            {
+                m_remainderBlock->inheritWeight(currBlock);
+            }
 
-            // The rest of the weights are assigned in-place.
+            // Rest of the weights are assigned in-place.
         }
 
         //------------------------------------------------------------------------
@@ -607,41 +606,41 @@ private:
             {
                 // There's no need for a new block here. We can just append to currBlock.
                 //
-                checkBlock        = currBlock;
-                checkFallsThrough = false;
+                m_checkBlock        = currBlock;
+                m_checkFallsThrough = false;
             }
             else
             {
-                // In case of multiple checks, append to the previous thenBlock block
-                // (Set jump target of new checkBlock in CreateThen())
-                BasicBlock* prevCheckBlock = checkBlock;
-                checkBlock                 = CreateAndInsertBasicBlock(BBJ_ALWAYS, thenBlock, currBlock);
-                checkFallsThrough          = false;
+                // In case of multiple checks, append to the previous m_thenBlock block
+                // (Set jump target of new m_checkBlock in CreateThen())
+                BasicBlock* prevCheckBlock = m_checkBlock;
+                m_checkBlock               = CreateAndInsertBasicBlock(BBJ_ALWAYS, m_thenBlock, currBlock);
+                m_checkFallsThrough        = false;
 
-                // We computed the "then" likelihood in CreateThen, so we
-                // just use that to figure out the "else" likelihood.
+                // We computed the "then" m_likelihood in CreateThen, so we
+                // just use that to figure out the "else" m_likelihood.
                 //
                 assert(prevCheckBlock->KindIs(BBJ_ALWAYS));
                 assert(prevCheckBlock->JumpsToNext());
                 FlowEdge* const prevCheckThenEdge = prevCheckBlock->GetTargetEdge();
                 weight_t        checkLikelihood   = max(0.0, 1.0 - prevCheckThenEdge->getLikelihood());
 
-                JITDUMP("Level %u Check block " FMT_BB " success likelihood " FMT_WT "\n", checkIdx, checkBlock->bbNum,
-                        checkLikelihood);
+                JITDUMP("Level %u Check block " FMT_BB " success m_likelihood " FMT_WT "\n", checkIdx,
+                        m_checkBlock->bbNum, checkLikelihood);
 
                 // prevCheckBlock is expected to jump to this new check (if its type check doesn't succeed)
                 //
-                FlowEdge* const prevCheckCheckEdge = compiler->fgAddRefPred(checkBlock, prevCheckBlock);
+                FlowEdge* const prevCheckCheckEdge = compiler->fgAddRefPred(m_checkBlock, prevCheckBlock);
                 prevCheckCheckEdge->setLikelihood(checkLikelihood);
-                checkBlock->inheritWeight(prevCheckBlock);
-                checkBlock->scaleBBWeight(checkLikelihood);
+                m_checkBlock->inheritWeight(prevCheckBlock);
+                m_checkBlock->scaleBBWeight(checkLikelihood);
                 prevCheckBlock->SetCond(prevCheckCheckEdge, prevCheckThenEdge);
             }
 
             // Find last arg with a side effect. All args with any effect
             // before that will need to be spilled.
             CallArg* lastSideEffArg = nullptr;
-            for (CallArg& arg : origCall->gtArgs.Args())
+            for (CallArg& arg : m_origCall->gtArgs.Args())
             {
                 if ((arg.GetNode()->gtFlags & GTF_SIDE_EFFECT) != 0)
                 {
@@ -651,7 +650,7 @@ private:
 
             if (lastSideEffArg != nullptr)
             {
-                for (CallArg& arg : origCall->gtArgs.Args())
+                for (CallArg& arg : m_origCall->gtArgs.Args())
                 {
                     GenTree* argNode = arg.GetNode();
                     if (((argNode->gtFlags & GTF_ALL_EFFECT) != 0) || compiler->gtHasLocalsWithAddrOp(argNode))
@@ -666,7 +665,7 @@ private:
                 }
             }
 
-            CallArg* thisArg = origCall->gtArgs.GetThisArg();
+            CallArg* thisArg = m_origCall->gtArgs.GetThisArg();
             // We spill 'this' if it is complex, regardless of side effects. It
             // is going to be used multiple times due to the guard.
             if (!thisArg->GetNode()->IsLocal())
@@ -682,20 +681,20 @@ private:
             // Note it's important that we clone/copy the temp assign above, if we created one,
             // because flow along the "cold path" is going to bypass the check block.
             //
-            lastStmt = checkBlock->lastStmt();
+            m_lastStmt = m_checkBlock->lastStmt();
 
             // In case if GDV candidates are "exact" (e.g. we have the full list of classes implementing
             // the given interface in the app - NativeAOT only at this moment) we assume the last
             // check will always be true, so we just simplify the block to BBJ_ALWAYS
-            const bool isLastCheck = (checkIdx == origCall->GetInlineCandidatesCount() - 1);
-            if (isLastCheck && ((origCall->gtCallMoreFlags & GTF_CALL_M_GUARDED_DEVIRT_EXACT) != 0))
+            const bool isLastCheck = (checkIdx == m_origCall->GetInlineCandidatesCount() - 1);
+            if (isLastCheck && ((m_origCall->gtCallMoreFlags & GTF_CALL_M_GUARDED_DEVIRT_EXACT) != 0))
             {
-                assert(checkBlock->KindIs(BBJ_ALWAYS));
-                checkFallsThrough = true;
+                assert(m_checkBlock->KindIs(BBJ_ALWAYS));
+                m_checkFallsThrough = true;
                 return;
             }
 
-            InlineCandidateInfo* guardedInfo = origCall->GetGDVCandidateInfo(checkIdx);
+            InlineCandidateInfo* guardedInfo = m_origCall->GetGDVCandidateInfo(checkIdx);
 
             // Create comparison. On success we will jump to do the indirect call.
             GenTree* compare;
@@ -712,14 +711,14 @@ private:
             }
             else
             {
-                assert(origCall->IsVirtualVtable() || origCall->IsDelegateInvoke());
+                assert(m_origCall->IsVirtualVtable() || m_origCall->IsDelegateInvoke());
                 // We reuse the target except if this is a chained GDV, in
                 // which case the check will be moved into the success case of
                 // a previous GDV and thus may not execute when we hit the cold
                 // path.
-                if (origCall->IsVirtualVtable())
+                if (m_origCall->IsVirtualVtable())
                 {
-                    GenTree* tarTree = compiler->fgExpandVirtualVtableCallTarget(origCall);
+                    GenTree* tarTree = compiler->fgExpandVirtualVtableCallTarget(m_origCall);
 
                     CORINFO_METHOD_HANDLE methHnd = guardedInfo->guardedMethodHandle;
                     CORINFO_CONST_LOOKUP  lookup;
@@ -748,7 +747,7 @@ private:
 
             GenTree*   jmpTree = compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, compare);
             Statement* jmpStmt = compiler->fgNewStmtFromTree(jmpTree, stmt->GetDebugInfo());
-            compiler->fgInsertStmtAtEnd(checkBlock, jmpStmt);
+            compiler->fgInsertStmtAtEnd(m_checkBlock, jmpStmt);
         }
 
         //------------------------------------------------------------------------
@@ -775,7 +774,7 @@ private:
             }
 
             Statement* storeStmt = compiler->fgNewStmtFromTree(store, stmt->GetDebugInfo());
-            compiler->fgInsertStmtAtEnd(checkBlock, storeStmt);
+            compiler->fgInsertStmtAtEnd(m_checkBlock, storeStmt);
 
             arg->SetEarlyNode(compiler->gtNewLclVarNode(tmpNum));
         }
@@ -783,25 +782,57 @@ private:
         //------------------------------------------------------------------------
         // FixupRetExpr: set up to repair return value placeholder from call
         //
+        // Remarks:
+        //   Also records whether the return value is substituted into AsyncHelpers.Await,
+        //   in which case GDV candidates can benefit from using an async variant.
+        //
         virtual void FixupRetExpr()
         {
-            // If call returns a value, we need to copy it to a temp, and
-            // bash the associated GT_RET_EXPR to refer to the temp instead
-            // of the call.
-            //
-            // Note implicit by-ref returns should have already been converted
-            // so any struct copy we induce here should be cheap.
-            InlineCandidateInfo* const inlineInfo  = origCall->GetGDVCandidateInfo(0);
+            InlineCandidateInfo* const inlineInfo  = m_origCall->GetGDVCandidateInfo(0);
             GenTree* const             retExprNode = inlineInfo->retExpr;
 
             if (retExprNode == nullptr)
             {
-                // We do not produce GT_RET_EXPRs for CTOR calls, so there is nothing to patch.
+                // We do not produce GT_RET_EXPRs for CTOR/void calls, so there is nothing to patch.
                 return;
             }
 
-            GenTreeRetExpr* const retExpr       = retExprNode->AsRetExpr();
-            bool const            noReturnValue = origCall->TypeIs(TYP_VOID);
+            if (compiler->compIsAsync() && !m_origCall->IsAsync())
+            {
+                Statement* const nextStmt = stmt->GetNextStmt();
+                if (nextStmt != nullptr)
+                {
+                    Compiler::FindLinkData fld    = compiler->gtFindLink(nextStmt, retExprNode);
+                    GenTree* const         parent = fld.parent;
+
+                    if (parent != nullptr && compiler->compIsAsync() && !m_origCall->IsAsync() &&
+                        IsAsyncHelpersAwait(parent))
+                    {
+                        m_awaitingStmt = nextStmt;
+                        m_awaitingCall = parent->AsCall();
+                        JITDUMP("GT_RET_EXPR [%06u] is awaited by [%06u]\n", Compiler::dspTreeID(retExprNode),
+                                Compiler::dspTreeID(parent));
+                    }
+                }
+            }
+
+            // If call returns a value, we need to copy it to a temp, and
+            // bash the associated GT_RET_EXPR to refer to the temp instead
+            // of the call.
+            //
+            // Note retbuffer returns should have already been converted
+            // so any struct copy we induce here should be cheap.
+            m_returnTemp = CreateOrGetLocalForRetExpr(m_origCall, inlineInfo, &m_returnValueUnused);
+        }
+
+        unsigned CreateOrGetLocalForRetExpr(GenTreeCall* call, InlineCandidateInfo* inlineInfo, bool* isUnused)
+        {
+            GenTree* const retExprNode = inlineInfo->retExpr;
+
+            assert(retExprNode != nullptr);
+
+            *isUnused                = false;
+            bool const noReturnValue = call->TypeIs(TYP_VOID);
 
             // If there is a return value, search the next statement to see if we can find
             // retExprNode's parent. If we find it, see if retExprNode's value is unused.
@@ -818,22 +849,23 @@ private:
 
                     if ((parent != nullptr) && parent->OperIs(GT_COMMA) && (parent->AsOp()->gtGetOp1() == retExprNode))
                     {
-                        returnValueUnused = true;
-                        JITDUMP("GT_RET_EXPR [%06u] value is unused\n", compiler->dspTreeID(retExprNode));
+                        *isUnused = true;
+                        JITDUMP("GT_RET_EXPR [%06u] value is unused\n", Compiler::dspTreeID(retExprNode));
                     }
                 }
             }
 
+            unsigned resultLcl = BAD_VAR_NUM;
             if (noReturnValue)
             {
                 JITDUMP("Linking GT_RET_EXPR [%06u] for VOID return to NOP\n",
-                        compiler->dspTreeID(inlineInfo->retExpr));
+                        Compiler::dspTreeID(inlineInfo->retExpr));
                 inlineInfo->retExpr->gtSubstExpr = compiler->gtNewNothingNode();
             }
-            else if (returnValueUnused)
+            else if (*isUnused)
             {
                 JITDUMP("Linking GT_RET_EXPR [%06u] for UNUSED return to NOP\n",
-                        compiler->dspTreeID(inlineInfo->retExpr));
+                        Compiler::dspTreeID(inlineInfo->retExpr));
                 inlineInfo->retExpr->gtSubstExpr = compiler->gtNewNothingNode();
             }
             else
@@ -841,11 +873,11 @@ private:
                 // If there's a spill temp already associated with this inline candidate,
                 // use that instead of allocating a new temp.
                 //
-                returnTemp = inlineInfo->preexistingSpillTemp;
+                resultLcl = inlineInfo->preexistingSpillTemp;
 
-                if (returnTemp != BAD_VAR_NUM)
+                if (resultLcl != BAD_VAR_NUM)
                 {
-                    JITDUMP("Reworking call(s) to return value via a existing return temp V%02u\n", returnTemp);
+                    JITDUMP("Reworking call(s) to return value via a existing return temp V%02u\n", resultLcl);
 
                     // We will be introducing multiple defs for this temp, so make sure
                     // it is no longer marked as single def.
@@ -860,53 +892,81 @@ private:
                     // Note local vars always live in the root method's symbol table. So we
                     // need to use the root compiler for lookup here.
                     //
-                    LclVarDsc* const returnTempLcl = compiler->impInlineRoot()->lvaGetDesc(returnTemp);
+                    LclVarDsc* const returnTempLcl = compiler->impInlineRoot()->lvaGetDesc(resultLcl);
 
                     if (returnTempLcl->lvSingleDef == 1)
                     {
                         // In this case it's ok if we already updated the type assuming single def,
                         // we just don't want any further updates.
                         //
-                        JITDUMP("Return temp V%02u is no longer a single def temp\n", returnTemp);
+                        JITDUMP("Return temp V%02u is no longer a single def temp\n", resultLcl);
                         returnTempLcl->lvSingleDef = 0;
                     }
                 }
                 else
                 {
-                    returnTemp = compiler->lvaGrabTemp(false DEBUGARG("guarded devirt return temp"));
-                    JITDUMP("Reworking call(s) to return value via a new temp V%02u\n", returnTemp);
+                    resultLcl = compiler->lvaGrabTemp(false DEBUGARG("guarded devirt return temp"));
+                    JITDUMP("Reworking call(s) to return value via a new temp V%02u\n", resultLcl);
 
                     // Keep the information about small typedness to avoid
                     // inserting unnecessary casts for normalization, which can
                     // make tailcall invariants unhappy. This is the same logic
                     // that impImportCall uses when it introduces call temps.
-                    if (varTypeIsSmall(origCall->gtReturnType))
+                    if (varTypeIsSmall(call->gtReturnType))
                     {
-                        assert(origCall->NormalizesSmallTypesOnReturn());
-                        compiler->lvaGetDesc(returnTemp)->lvType = origCall->gtReturnType;
+                        assert(call->NormalizesSmallTypesOnReturn());
+                        compiler->lvaGetDesc(resultLcl)->lvType = call->gtReturnType;
                     }
                 }
 
-                if (varTypeIsStruct(origCall))
+                if (varTypeIsStruct(call))
                 {
-                    compiler->lvaSetStruct(returnTemp, origCall->gtRetClsHnd, false);
+                    compiler->lvaSetStruct(resultLcl, call->gtRetClsHnd, false);
                 }
 
-                GenTree* tempTree = compiler->gtNewLclvNode(returnTemp, origCall->TypeGet());
+                GenTree* tempTree = compiler->gtNewLclvNode(resultLcl, call->TypeGet());
 
                 JITDUMP("Linking GT_RET_EXPR [%06u] to refer to temp V%02u\n", compiler->dspTreeID(inlineInfo->retExpr),
-                        returnTemp);
+                        resultLcl);
 
                 inlineInfo->retExpr->gtSubstExpr = tempTree;
             }
+
+            return resultLcl;
+        }
+
+        bool IsAsyncHelpersAwait(GenTree* tree)
+        {
+            if (!tree->IsCall())
+            {
+                return false;
+            }
+
+            GenTreeCall* call = tree->AsCall();
+
+            // Must be a direct user call that is itself async.
+            if (call->gtCallType != CT_USER_FUNC || !call->IsAsync())
+            {
+                return false;
+            }
+
+            // Quick filter: AsyncHelpers.Await is marked [Intrinsic]. Avoid the
+            // (potentially expensive) name lookup if the method isn't an intrinsic at all.
+            if (!compiler->eeIsIntrinsic(call->gtCallMethHnd))
+            {
+                return false;
+            }
+
+            return compiler->lookupNamedIntrinsic(call->gtCallMethHnd) ==
+                   NI_System_Runtime_CompilerServices_AsyncHelpers_Await;
         }
 
         //------------------------------------------------------------------------
-        // Devirtualize origCall using the given inline candidate
+        // Devirtualize m_origCall using the given inline candidate
         //
         void DevirtualizeCall(BasicBlock* block, uint8_t candidateId)
         {
-            InlineCandidateInfo* inlineInfo = origCall->GetGDVCandidateInfo(candidateId);
+            InlineCandidateInfo* inlineInfo = m_origCall->GetGDVCandidateInfo(candidateId);
             CORINFO_CLASS_HANDLE clsHnd     = inlineInfo->guardedClassHandle;
 
             //
@@ -916,9 +976,9 @@ private:
             // stored in the delegate.
             //
             const unsigned thisTemp  = compiler->lvaGrabTemp(false DEBUGARG("guarded devirt this exact temp"));
-            GenTree*       clonedObj = compiler->gtCloneExpr(origCall->gtArgs.GetThisArg()->GetNode());
+            GenTree*       clonedObj = compiler->gtCloneExpr(m_origCall->gtArgs.GetThisArg()->GetNode());
             GenTree*       newThisObj;
-            if (origCall->IsDelegateInvoke())
+            if (m_origCall->IsDelegateInvoke())
             {
                 GenTree* offset =
                     compiler->gtNewIconNode((ssize_t)compiler->eeGetEEInfo()->offsetOfDelegateInstance, TYP_I_IMPL);
@@ -945,7 +1005,7 @@ private:
 
             // Clone call for the devirtualized case. Note we must use the
             // special candidate helper and we need to use the new 'this'.
-            GenTreeCall* call = compiler->gtCloneCandidateCall(origCall);
+            GenTreeCall* call = compiler->gtCloneCandidateCall(m_origCall);
             call->gtArgs.GetThisArg()->SetEarlyNode(compiler->gtNewLclvNode(thisTemp, TYP_REF));
 
             // If the original call was flagged as one that might inspire enumerator de-abstraction
@@ -955,11 +1015,11 @@ private:
             {
                 Compiler::NodeToUnsignedMap* const map           = compiler->getImpEnumeratorGdvLocalMap();
                 unsigned                           enumeratorLcl = BAD_VAR_NUM;
-                if (map->Lookup(origCall, &enumeratorLcl))
+                if (map->Lookup(m_origCall, &enumeratorLcl))
                 {
                     JITDUMP("Flagging [%06u] for enumerator cloning via V%02u\n", compiler->dspTreeID(call),
                             enumeratorLcl);
-                    map->Remove(origCall);
+                    map->Remove(m_origCall);
                     map->Set(call, enumeratorLcl);
                 }
             }
@@ -967,6 +1027,10 @@ private:
             INDEBUG(call->SetIsGuarded());
 
             JITDUMP("Direct call [%06u] in block " FMT_BB "\n", compiler->dspTreeID(call), block->bbNum);
+
+            BasicBlock* remainderBlock    = m_remainderBlock;
+            unsigned    returnTemp        = m_returnTemp;
+            bool        returnValueUnused = m_returnValueUnused;
 
             CORINFO_METHOD_HANDLE  methodHnd = inlineInfo->guardedMethodHandle;
             CORINFO_CONTEXT_HANDLE context   = inlineInfo->exactContextHandle;
@@ -1002,7 +1066,7 @@ private:
                 // TODO-GDV: To support R2R we need to get the entry point
                 // here. We should unify with the tail of impDevirtualizeCall.
 
-                if (origCall->IsVirtual())
+                if (m_origCall->IsVirtual())
                 {
                     // Virtual calls include an implicit null check, which we may
                     // now need to make explicit.
@@ -1013,6 +1077,60 @@ private:
                     if (!objIsNonNull)
                     {
                         call->gtFlags |= GTF_CALL_NULLCHECK;
+                    }
+                }
+
+                if (m_awaitingStmt != nullptr)
+                {
+                    // See if we can switch this to an async variant.
+                    bool                  asyncVariantIsThunk = true;
+                    CORINFO_METHOD_HANDLE asyncVariant =
+                        compiler->info.compCompHnd->getAsyncOtherVariant(methodHnd, &asyncVariantIsThunk);
+                    if ((asyncVariant != NO_METHOD_HANDLE) && !asyncVariantIsThunk)
+                    {
+                        JITDUMP("Guess has an async variant %s; switching to it\n",
+                                compiler->eeGetMethodFullName(asyncVariant));
+                        call->gtCallMethHnd = inlineInfo->guardedMethodHandle = methodHnd = asyncVariant;
+
+                        compiler->info.compCompHnd->getMethodInfo(asyncVariant, &inlineInfo->methInfo,
+                                                                  MAKE_METHODCONTEXT(asyncVariant));
+
+                        call->gtType       = m_awaitingCall->gtType;
+                        call->gtReturnType = m_awaitingCall->gtReturnType;
+                        call->gtRetClsHnd  = m_awaitingCall->gtRetClsHnd;
+                        call->gtCallMoreFlags &= ~GTF_CALL_M_RETBUFFARG;
+                        call->gtCallMoreFlags |= m_awaitingCall->gtCallMoreFlags & GTF_CALL_M_RETBUFFARG;
+
+                        if (call->ShouldHaveRetBufArg())
+                        {
+                            CallArg* retBufArg = m_awaitingCall->gtArgs.GetRetBufferArg();
+                            assert(retBufArg != nullptr);
+
+                            NewCallArg newRetBuf = NewCallArg::Primitive(compiler->gtCloneExpr(retBufArg->GetNode()),
+                                                                         retBufArg->GetSignatureType())
+                                                       .WellKnown(WellKnownArg::RetBuffer);
+
+                            call->gtArgs.InsertAfterThisOrFirst(compiler, newRetBuf);
+                        }
+
+                        AsyncCallInfo* callInfo = new (compiler, CMK_Async) AsyncCallInfo;
+                        // No configuration is currently matched for the awaiter.
+                        callInfo->ContinuationContextHandling = ContinuationContextHandling::ContinueOnCapturedContext;
+                        call->SetIsAsync(callInfo);
+                        call->gtArgs.InsertAsyncContinuation(compiler, compiler->gtNewNull());
+
+                        // Since we have an async variant guess we now split
+                        // off the AsyncHelpers.Await call. We will skip that
+                        // call for async variants, but keep it for non-async
+                        // guesses (and the fallback).
+                        if (m_awaitRemainderBlock == nullptr)
+                        {
+                            SplitAwait();
+                        }
+
+                        remainderBlock    = m_awaitRemainderBlock;
+                        returnTemp        = m_awaitReturnTemp;
+                        returnValueUnused = m_awaitReturnValueUnused;
                     }
                 }
 
@@ -1071,18 +1189,17 @@ private:
 
                 // Re-establish this call as an inline candidate.
                 //
-                GenTreeRetExpr* oldRetExpr       = inlineInfo->retExpr;
                 inlineInfo->clsHandle            = compiler->info.compCompHnd->getMethodClass(methodHnd);
                 inlineInfo->exactContextHandle   = context;
                 inlineInfo->preexistingSpillTemp = returnTemp;
                 call->SetSingleInlineCandidateInfo(inlineInfo);
 
-                // If there was a ret expr for this call, we need to create a new one
+                // If we have a result then we need to create a new RET_EXPR
                 // and append it just after the call.
                 //
-                // Note the original GT_RET_EXPR has been linked to a temp.
+                // Note that the original GT_RET_EXPR has been linked to a temp.
                 // we set all this up in FixupRetExpr().
-                if (oldRetExpr != nullptr)
+                if (call->gtReturnType != TYP_VOID)
                 {
                     inlineInfo->retExpr = compiler->gtNewInlineCandidateReturnExpr(call, call->TypeGet());
                     GenTree* newRetExpr = inlineInfo->retExpr;
@@ -1095,11 +1212,72 @@ private:
                     {
                         // We should always have a return temp if we return results by value
                         // and that value is used.
-                        assert(origCall->TypeIs(TYP_VOID) || returnValueUnused);
+                        assert(call->TypeIs(TYP_VOID) || returnValueUnused);
                         newRetExpr = compiler->gtUnusedValNode(newRetExpr);
                     }
                     compiler->fgNewStmtAtEnd(block, newRetExpr);
                 }
+            }
+
+            FlowEdge* const thenRemainderEdge = compiler->fgAddRefPred(remainderBlock, block);
+            block->SetTargetEdge(thenRemainderEdge);
+        }
+
+        //------------------------------------------------------------------------
+        // SplitAwait:
+        //   For an awaited GDV, furthermore split off the AsyncHelpers.Await
+        //   part so that it can be skipped for candidates with async variants.
+        //
+        void SplitAwait()
+        {
+            m_awaitRemainderBlock = compiler->fgSplitBlockAfterStatement(m_remainderBlock, m_awaitingStmt);
+            m_awaitRemainderBlock->SetFlags(BBF_INTERNAL);
+            m_awaitRemainderBlock->RemoveFlags(BBF_DONT_REMOVE);
+
+            GenTree* awaitNode = m_awaitingStmt->GetRootNode();
+            if (awaitNode->IsCall())
+            {
+                if (awaitNode->AsCall()->IsInlineCandidate())
+                {
+                    InlineCandidateInfo* inlineInfo = awaitNode->AsCall()->GetSingleInlineCandidateInfo();
+
+                    // If this is an await with a result then we will have a
+                    // RET_EXPR that may have floated to a downstream tree. Set
+                    // things up so we substitute that RET_EXPR with a local
+                    // that is stored right after the await from a new
+                    // RET_EXPR.
+                    if (inlineInfo->retExpr != nullptr)
+                    {
+                        m_awaitReturnTemp =
+                            CreateOrGetLocalForRetExpr(awaitNode->AsCall(), inlineInfo, &m_awaitReturnValueUnused);
+
+                        inlineInfo->retExpr =
+                            compiler->gtNewInlineCandidateReturnExpr(awaitNode->AsCall(), awaitNode->TypeGet());
+
+                        GenTree* newRetExpr = inlineInfo->retExpr;
+
+                        if (m_awaitReturnTemp != BAD_VAR_NUM)
+                        {
+                            newRetExpr = compiler->gtNewTempStore(m_awaitReturnTemp, newRetExpr);
+                        }
+                        else
+                        {
+                            // We should always have a return temp if we return results by value
+                            // and that value is used.
+                            assert(awaitNode->TypeIs(TYP_VOID) || m_awaitReturnValueUnused);
+                            newRetExpr = compiler->gtUnusedValNode(newRetExpr);
+                        }
+                        compiler->fgNewStmtAtEnd(m_remainderBlock, newRetExpr);
+                    }
+                }
+            }
+            else if (awaitNode->OperIs(GT_STORE_LCL_VAR) && (awaitNode->AsLclVarCommon()->Data() == m_awaitingCall))
+            {
+                m_awaitReturnTemp = awaitNode->AsLclVarCommon()->GetLclNum();
+            }
+            else
+            {
+                assert(!"Need to split");
             }
         }
 
@@ -1108,14 +1286,14 @@ private:
         //
         virtual void CreateThen(uint8_t checkIdx)
         {
-            // Compute likelihoods
+            // Compute m_likelihoods
             //
-            // If this is the first check the likelihood is just the candidate likelihood.
+            // If this is the first check the m_likelihood is just the candidate m_likelihood.
             // If there are multiple checks things are a bit more complicated.
             //
-            // Say we had three candidates with likelihoods 0.5, 0.3, and 0.1.
+            // Say we had three candidates with m_likelihoods 0.5, 0.3, and 0.1.
             //
-            // The first one's likelihood is 0.5.
+            // The first one's m_likelihood is 0.5.
             //
             // The second one (given that we've already checked the first and failed)
             // is (0.3) / (1.0 - 0.5) = 0.6.
@@ -1123,50 +1301,48 @@ private:
             // The third one is (0.1) / (1.0 - (0.5 + 0.3)) = (0.1)/(0.2) = 0.5
             //
             // So to figure out the proper divisor, we start with 1.0 and subtract off each
-            // preceeding test's likelihood of success.
+            // preceeding test's m_likelihood of success.
             //
-            unsigned const thenLikelihood = origCall->GetGDVCandidateInfo(checkIdx)->likelihood;
+            unsigned const thenLikelihood = m_origCall->GetGDVCandidateInfo(checkIdx)->likelihood;
             unsigned       baseLikelihood = 0;
 
             for (uint8_t i = 0; i < checkIdx; i++)
             {
-                baseLikelihood += origCall->GetGDVCandidateInfo(i)->likelihood;
+                baseLikelihood += m_origCall->GetGDVCandidateInfo(i)->likelihood;
             }
             assert(baseLikelihood < 100);
             baseLikelihood = 100 - baseLikelihood;
 
             weight_t adjustedThenLikelihood = min(((weight_t)thenLikelihood) / baseLikelihood, 100.0);
-            JITDUMP("For check in " FMT_BB ": orig likelihood " FMT_WT ", base likelihood " FMT_WT
-                    ", adjusted likelihood " FMT_WT "\n",
-                    checkBlock->bbNum, (weight_t)thenLikelihood / 100.0, (weight_t)baseLikelihood / 100.0,
+            JITDUMP("For check in " FMT_BB ": orig m_likelihood " FMT_WT ", base m_likelihood " FMT_WT
+                    ", adjusted m_likelihood " FMT_WT "\n",
+                    m_checkBlock->bbNum, (weight_t)thenLikelihood / 100.0, (weight_t)baseLikelihood / 100.0,
                     adjustedThenLikelihood);
 
-            // thenBlock always jumps to remainderBlock
+            // m_thenBlock always jumps to m_remainderBlock
             //
-            thenBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, checkBlock, currBlock);
-            thenBlock->inheritWeight(checkBlock);
-            thenBlock->scaleBBWeight(adjustedThenLikelihood);
-            FlowEdge* const thenRemainderEdge = compiler->fgAddRefPred(remainderBlock, thenBlock);
-            thenBlock->SetTargetEdge(thenRemainderEdge);
+            m_thenBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, m_checkBlock, currBlock);
+            m_thenBlock->inheritWeight(m_checkBlock);
+            m_thenBlock->scaleBBWeight(adjustedThenLikelihood);
 
-            // thenBlock has a single pred - last checkBlock.
+            // m_thenBlock has a single pred - last m_checkBlock.
             //
-            assert(checkBlock->KindIs(BBJ_ALWAYS));
-            FlowEdge* const checkThenEdge = compiler->fgAddRefPred(thenBlock, checkBlock);
-            checkBlock->SetTargetEdge(checkThenEdge);
-            assert(checkBlock->JumpsToNext());
+            assert(m_checkBlock->KindIs(BBJ_ALWAYS));
+            FlowEdge* const checkThenEdge = compiler->fgAddRefPred(m_thenBlock, m_checkBlock);
+            m_checkBlock->SetTargetEdge(checkThenEdge);
+            assert(m_checkBlock->JumpsToNext());
 
-            // SetTargetEdge() gave checkThenEdge a (correct) likelihood of 1.0.
-            // Later on, we might convert this checkBlock into a BBJ_COND.
-            // Since we have the adjusted likelihood calculated here, set it prematurely.
-            // If we leave this block as a BBJ_ALWAYS, we'll assert later that the likelihood is 1.0.
+            // SetTargetEdge() gave checkThenEdge a (correct) m_likelihood of 1.0.
+            // Later on, we might convert this m_checkBlock into a BBJ_COND.
+            // Since we have the adjusted m_likelihood calculated here, set it prematurely.
+            // If we leave this block as a BBJ_ALWAYS, we'll assert later that the m_likelihood is 1.0.
             //
             checkThenEdge->setLikelihood(adjustedThenLikelihood);
 
-            // We will set the "else edge" likelihood in CreateElse later,
-            // based on the thenEdge likelihood.
+            // We will set the "else edge" m_likelihood in CreateElse later,
+            // based on the thenEdge m_likelihood.
             //
-            DevirtualizeCall(thenBlock, checkIdx);
+            DevirtualizeCall(m_thenBlock, checkIdx);
         }
 
         //------------------------------------------------------------------------
@@ -1174,63 +1350,63 @@ private:
         //
         virtual void CreateElse()
         {
-            elseBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, thenBlock, currBlock);
+            m_elseBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, m_thenBlock, currBlock);
 
-            // We computed the "then" likelihood in CreateThen, so we
-            // just use that to figure out the "else" likelihood.
+            // We computed the "then" m_likelihood in CreateThen, so we
+            // just use that to figure out the "else" m_likelihood.
             //
-            assert(checkBlock->KindIs(BBJ_ALWAYS));
-            FlowEdge* const checkThenEdge  = checkBlock->GetTargetEdge();
+            assert(m_checkBlock->KindIs(BBJ_ALWAYS));
+            FlowEdge* const checkThenEdge  = m_checkBlock->GetTargetEdge();
             weight_t        elseLikelihood = max(0.0, 1.0 - checkThenEdge->getLikelihood());
 
-            // CheckBlock flows into elseBlock unless we deal with the case
+            // CheckBlock flows into m_elseBlock unless we deal with the case
             // where we know the last check is always true (in case of "exact" GDV)
             //
-            if (!checkFallsThrough)
+            if (!m_checkFallsThrough)
             {
-                assert(checkBlock->JumpsToNext());
-                FlowEdge* const checkElseEdge = compiler->fgAddRefPred(elseBlock, checkBlock);
+                assert(m_checkBlock->JumpsToNext());
+                FlowEdge* const checkElseEdge = compiler->fgAddRefPred(m_elseBlock, m_checkBlock);
                 checkElseEdge->setLikelihood(elseLikelihood);
-                checkBlock->SetCond(checkElseEdge, checkThenEdge);
+                m_checkBlock->SetCond(checkElseEdge, checkThenEdge);
             }
             else
             {
                 // In theory, we could simplify the IR here, but since it's a rare case
                 // and is NativeAOT-only, we just assume the unreached block will be removed
                 // by other phases.
-                assert(origCall->gtCallMoreFlags & GTF_CALL_M_GUARDED_DEVIRT_EXACT);
+                assert(m_origCall->gtCallMoreFlags & GTF_CALL_M_GUARDED_DEVIRT_EXACT);
 
-                // We aren't converting checkBlock to a BBJ_COND. Its successor edge likelihood should remain 1.0.
+                // We aren't converting m_checkBlock to a BBJ_COND. Its successor edge m_likelihood should remain 1.0.
                 //
                 assert(checkThenEdge->getLikelihood() == 1.0);
             }
 
-            // elseBlock always flows into remainderBlock
-            FlowEdge* const elseRemainderEdge = compiler->fgAddRefPred(remainderBlock, elseBlock);
-            elseBlock->SetTargetEdge(elseRemainderEdge);
+            // m_elseBlock always flows into m_remainderBlock
+            FlowEdge* const elseRemainderEdge = compiler->fgAddRefPred(m_remainderBlock, m_elseBlock);
+            m_elseBlock->SetTargetEdge(elseRemainderEdge);
 
             // Remove everything related to inlining from the original call
-            origCall->ClearInlineInfo();
+            m_origCall->ClearInlineInfo();
 
-            elseBlock->inheritWeight(checkBlock);
-            elseBlock->scaleBBWeight(elseLikelihood);
+            m_elseBlock->inheritWeight(m_checkBlock);
+            m_elseBlock->scaleBBWeight(elseLikelihood);
 
-            GenTreeCall* call    = origCall;
+            GenTreeCall* call    = m_origCall;
             Statement*   newStmt = compiler->gtNewStmt(call, stmt->GetDebugInfo());
 
             call->gtFlags &= ~GTF_CALL_INLINE_CANDIDATE;
 
             INDEBUG(call->SetIsGuarded());
 
-            JITDUMP("Residual call [%06u] moved to block " FMT_BB "\n", compiler->dspTreeID(call), elseBlock->bbNum);
+            JITDUMP("Residual call [%06u] moved to block " FMT_BB "\n", compiler->dspTreeID(call), m_elseBlock->bbNum);
 
-            if (returnTemp != BAD_VAR_NUM)
+            if (m_returnTemp != BAD_VAR_NUM)
             {
-                GenTree* store = compiler->gtNewTempStore(returnTemp, call);
+                GenTree* store = compiler->gtNewTempStore(m_returnTemp, call);
                 newStmt->SetRootNode(store);
             }
 
-            compiler->fgInsertStmtAtEnd(elseBlock, newStmt);
+            compiler->fgInsertStmtAtEnd(m_elseBlock, newStmt);
 
             // Set the original statement to a nop.
             //
@@ -1254,7 +1430,7 @@ private:
             // Find the hot/cold predecessors. (Consider: just record these when
             // we did the scouting).
             //
-            BasicBlock* const coldBlock = checkBlock->Prev();
+            BasicBlock* const coldBlock = m_checkBlock->Prev();
 
             if (!coldBlock->KindIs(BBJ_ALWAYS) || !coldBlock->JumpsToNext())
             {
@@ -1264,7 +1440,7 @@ private:
 
             BasicBlock* const hotBlock = coldBlock->Prev();
 
-            if (!hotBlock->KindIs(BBJ_ALWAYS) || !hotBlock->TargetIs(checkBlock))
+            if (!hotBlock->KindIs(BBJ_ALWAYS) || !hotBlock->TargetIs(m_checkBlock))
             {
                 JITDUMP("Unexpected flow from hot path " FMT_BB "\n", hotBlock->bbNum);
                 return;
@@ -1278,9 +1454,9 @@ private:
             //
             // This will be the "hot" copy of the code.
             //
-            Statement* const afterLastStmt = lastStmt->GetNextStmt();
+            Statement* const afterLastStmt = m_lastStmt->GetNextStmt();
 
-            for (Statement* checkStmt = checkBlock->firstStmt(); checkStmt != afterLastStmt;)
+            for (Statement* checkStmt = m_checkBlock->firstStmt(); checkStmt != afterLastStmt;)
             {
                 Statement* const nextStmt = checkStmt->GetNextStmt();
 
@@ -1297,10 +1473,10 @@ private:
 
             // Now move the same span of statements to the cold block.
             //
-            for (Statement* checkStmt = checkBlock->firstStmt(); checkStmt != afterLastStmt;)
+            for (Statement* checkStmt = m_checkBlock->firstStmt(); checkStmt != afterLastStmt;)
             {
                 Statement* const nextStmt = checkStmt->GetNextStmt();
-                compiler->fgUnlinkStmt(checkBlock, checkStmt);
+                compiler->fgUnlinkStmt(m_checkBlock, checkStmt);
                 compiler->fgInsertStmtAtEnd(coldBlock, checkStmt);
                 checkStmt = nextStmt;
             }
@@ -1308,7 +1484,7 @@ private:
             // Rewire the cold block to jump to the else block,
             // not fall through to the check block.
             //
-            compiler->fgRedirectEdge(coldBlock->TargetEdgeRef(), elseBlock);
+            compiler->fgRedirectEdge(coldBlock->TargetEdgeRef(), m_elseBlock);
 
             // Update the profile data
             //
@@ -1316,8 +1492,8 @@ private:
             {
                 // Check block
                 //
-                FlowEdge* const coldElseEdge   = compiler->fgGetPredForBlock(elseBlock, coldBlock);
-                weight_t        newCheckWeight = checkBlock->bbWeight - coldElseEdge->getLikelyWeight();
+                FlowEdge* const coldElseEdge   = compiler->fgGetPredForBlock(m_elseBlock, coldBlock);
+                weight_t        newCheckWeight = m_checkBlock->bbWeight - coldElseEdge->getLikelyWeight();
 
                 if (newCheckWeight < 0)
                 {
@@ -1345,22 +1521,22 @@ private:
                     //
                     newCheckWeight = 0;
                 }
-                checkBlock->setBBProfileWeight(newCheckWeight);
+                m_checkBlock->setBBProfileWeight(newCheckWeight);
 
                 // Else block
                 //
-                FlowEdge* const checkElseEdge = compiler->fgGetPredForBlock(elseBlock, checkBlock);
+                FlowEdge* const checkElseEdge = compiler->fgGetPredForBlock(m_elseBlock, m_checkBlock);
                 weight_t const  newElseWeight = checkElseEdge->getLikelyWeight() + coldElseEdge->getLikelyWeight();
-                elseBlock->setBBProfileWeight(newElseWeight);
+                m_elseBlock->setBBProfileWeight(newElseWeight);
 
                 // Then block
                 //
-                FlowEdge* const checkThenEdge = compiler->fgGetPredForBlock(thenBlock, checkBlock);
-                thenBlock->setBBProfileWeight(checkThenEdge->getLikelyWeight());
+                FlowEdge* const checkThenEdge = compiler->fgGetPredForBlock(m_thenBlock, m_checkBlock);
+                m_thenBlock->setBBProfileWeight(checkThenEdge->getLikelyWeight());
             }
         }
 
-        // When the current candidate has sufficiently high likelihood, scan
+        // When the current candidate has sufficiently high m_likelihood, scan
         // the remainer block looking for another GDV candidate.
         //
         // (also consider: if currBlock has sufficiently high execution frequency)
@@ -1375,12 +1551,12 @@ private:
             //
             const unsigned gdvChainLikelihood = JitConfig.JitGuardedDevirtualizationChainLikelihood();
 
-            if (likelihood < gdvChainLikelihood)
+            if (m_likelihood < gdvChainLikelihood)
             {
                 return;
             }
 
-            JITDUMP("Scouting for possible GDV chain as likelihood %u >= %u\n", likelihood, gdvChainLikelihood);
+            JITDUMP("Scouting for possible GDV chain as m_likelihood %u >= %u\n", m_likelihood, gdvChainLikelihood);
 
             const unsigned maxStatementDup   = JitConfig.JitGuardedDevirtualizationChainStatements();
             unsigned       chainStatementDup = 0;
@@ -1444,7 +1620,7 @@ private:
                 }
             };
 
-            for (Statement* const nextStmt : remainderBlock->Statements())
+            for (Statement* const nextStmt : m_remainderBlock->Statements())
             {
                 JITDUMP(" Scouting " FMT_STMT "\n", nextStmt->GetID());
 
@@ -1460,7 +1636,7 @@ private:
                     if (call->IsGuardedDevirtualizationCandidate() &&
                         (call->GetGDVCandidateInfo(0)->likelihood >= gdvChainLikelihood))
                     {
-                        JITDUMP("GDV call at [%06u] has likelihood %u >= %u; chaining (%u stmts, %u nodes to dup).\n",
+                        JITDUMP("GDV call at [%06u] has m_likelihood %u >= %u; chaining (%u stmts, %u nodes to dup).\n",
                                 compiler->dspTreeID(call), call->GetGDVCandidateInfo(0)->likelihood, gdvChainLikelihood,
                                 chainStatementDup, chainNodeDup);
 
@@ -1498,10 +1674,16 @@ private:
         }
 
     private:
-        unsigned   returnTemp;
-        Statement* lastStmt;
-        bool       checkFallsThrough;
-        bool       returnValueUnused;
+        unsigned   m_returnTemp        = BAD_VAR_NUM;
+        Statement* m_lastStmt          = nullptr;
+        bool       m_checkFallsThrough = false;
+        bool       m_returnValueUnused = false;
+
+        Statement*   m_awaitingStmt           = nullptr;
+        GenTreeCall* m_awaitingCall           = nullptr;
+        unsigned     m_awaitReturnTemp        = BAD_VAR_NUM;
+        bool         m_awaitReturnValueUnused = false;
+        BasicBlock*  m_awaitRemainderBlock    = nullptr;
 
         //------------------------------------------------------------------------
         // CreateTreeForLookup: Create a tree representing a lookup of a method address.
