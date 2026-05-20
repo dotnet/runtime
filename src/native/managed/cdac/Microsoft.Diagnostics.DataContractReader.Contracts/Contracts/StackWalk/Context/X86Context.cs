@@ -60,6 +60,8 @@ public struct X86Context : IPlatformContext
         set => Ebp = (uint)value.Value;
     }
 
+    public uint RawContextFlags { readonly get => ContextFlags; set => ContextFlags = value; }
+
     public void Unwind(Target target)
     {
         X86Unwinder unwinder = new(target);
