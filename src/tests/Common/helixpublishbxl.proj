@@ -37,16 +37,16 @@
         HelixSource=$(_HelixSource);
         HelixTargetQueues=$(_HelixTargetQueues);
         HelixType=$(_HelixType);
-        PublishTestResults=$(_PublishTestResults);
-        TimeoutPerTestCollectionInMinutes=$(_TimeoutPerTestCollectionInMinutes)
+        PublishTestResults=$(_PublishTestResults)
       </_PropertiesToPass>
+      <_PropertiesToPass Condition=" '$(_TimeoutPerTestCollectionInMinutes)' != '' ">$(_PropertiesToPass);TimeoutPerTestCollectionInMinutes=$(_TimeoutPerTestCollectionInMinutes)</_PropertiesToPass>
     </PropertyGroup>
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="Test" Properties="$(_PropertiesToPass)" />
   </Target>
 
   <PropertyGroup>
     <TestBinDir Condition="'$(TestBinDir)' == ''">$(MSBuildThisFileDirectory)../../artifacts/tests/coreclr/</TestBinDir>
-    <CoreRootDirectory>$(TestBinDir)$(TargetOS).$(TargetArchitecture).$(Configuration)/Tests/Core_Root/</CoreRootDirectory>
+    <CoreRootDirectory>$(TestBinDir)Tests/Core_Root/</CoreRootDirectory>
     <CoreRootDirectory>$([MSBuild]::NormalizeDirectory($(CoreRootDirectory)))</CoreRootDirectory>
     <TimeoutPerTestCollectionInMinutes Condition="'$(TimeoutPerTestCollectionInMinutes)' == ''">60</TimeoutPerTestCollectionInMinutes>
   </PropertyGroup>
