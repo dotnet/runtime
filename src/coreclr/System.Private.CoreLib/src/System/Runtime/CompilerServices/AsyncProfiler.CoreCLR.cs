@@ -123,12 +123,12 @@ namespace System.Runtime.CompilerServices
         /// through the wrapper at index (ContinuationIndex &amp; COUNT_MASK), then increments the index.
         ///
         /// This creates a rotating pattern of unique return addresses on the native callstack. An OS
-        /// CPU profiler (e.g., ETW, perf) captures these native IPs in its stack samples. The async
-        /// profiler emits the wrapper name template and count in the metadata event, so a post-processing
-        /// tool can format the template with each index (0..COUNT-1) to produce method names, resolve
-        /// them via symbol data (rundown events or PDB), and correlate native stack IPs with the
-        /// async resume callstack events emitted at the same logical point. This bridges the gap
-        /// between synchronous native stack samples and the asynchronous continuation chain.
+        /// CPU profiler (e.g., ETW, perf) captures these native IPs in its stack samples. A post-processing
+        /// tool uses the wrapper name template and count (defined by the async profiler contract) to
+        /// format method names, resolve them via symbol data (rundown events), and correlate
+        /// native stack IPs with the async resume callstack events emitted at the same logical point.
+        /// This bridges the gap between synchronous native stack samples and the asynchronous
+        /// continuation chain.
         ///
         /// Every COUNT (32) continuations, a ResetAsyncContinuationWrapperIndex event is emitted
         /// so the tool knows the index has wrapped around and can correctly map subsequent samples.
@@ -140,17 +140,16 @@ namespace System.Runtime.CompilerServices
         internal static partial class ContinuationWrapper
         {
             /// <summary>
-            /// Name template for the continuation wrapper methods. External tools format this template
-            /// with the wrapper index (0..COUNT-1) to produce method names for identifying wrapper frames in stacks.
+            /// Name template for the continuation wrapper methods, defined by contract.
+            /// External tools format this template with the wrapper index (0..COUNT-1) to produce
+            /// method names for identifying wrapper frames in stacks.
             /// Must match the actual method names below (e.g., Continuation_Wrapper_0, Continuation_Wrapper_1, ...).
             /// </summary>
             public const string NameTemplate = "Continuation_Wrapper_{0}";
 
             /// <summary>
-            /// Pre-encoded UTF8 bytes of <see cref="NameTemplate"/> for zero-allocation metadata emission.
+            /// Number of distinct wrapper methods. The wrapper index rotates modulo this value.
             /// </summary>
-            public static ReadOnlySpan<byte> NameTemplateUtf8 => "Continuation_Wrapper_{0}"u8;
-
             public const byte COUNT = 32;
             public const byte COUNT_MASK = COUNT - 1;
 

@@ -113,18 +113,14 @@ namespace System.Runtime.CompilerServices
                             // [utcSync (compressed uint64)]
                             // [eventBufferSize (compressed uint32)]
                             // [wrapperCount byte]
-                            // [wrapperNameTemplateLength (compressed uint32)]
-                            // [wrapperNameTemplate UTF8 bytes]
-                            ReadOnlySpan<byte> templateBytes = ContinuationWrapper.NameTemplateUtf8;
-                            const int MaxStaticEventPayloadSize = Serializer.MaxCompressedUInt64Size + Serializer.MaxCompressedUInt64Size + Serializer.MaxCompressedUInt64Size + Serializer.MaxCompressedUInt32Size + 1 + Serializer.MaxCompressedUInt32Size;
-                            int maxDynamicEventPayloadSize = templateBytes.Length;
+                            const int MaxStaticEventPayloadSize = Serializer.MaxCompressedUInt64Size + Serializer.MaxCompressedUInt64Size + Serializer.MaxCompressedUInt64Size + Serializer.MaxCompressedUInt32Size + 1;
 
                             ref EventBuffer eventBuffer = ref context.EventBuffer;
-                            if (Serializer.AsyncEventHeader(context, ref eventBuffer, AsyncEventID.AsyncProfilerMetadata, MaxStaticEventPayloadSize + maxDynamicEventPayloadSize))
+                            if (Serializer.AsyncEventHeader(context, ref eventBuffer, AsyncEventID.AsyncProfilerMetadata, MaxStaticEventPayloadSize))
                             {
                                 SyncClock(out long utcTimeSync, out long qpcSync);
 
-                                Span<byte> payloadSpan = eventBuffer.Data.AsSpan(eventBuffer.Index, MaxStaticEventPayloadSize + maxDynamicEventPayloadSize);
+                                Span<byte> payloadSpan = eventBuffer.Data.AsSpan(eventBuffer.Index, MaxStaticEventPayloadSize);
                                 int payloadSpanIndex = 0;
 
                                 payloadSpanIndex += Serializer.WriteCompressedUInt64(payloadSpan.Slice(payloadSpanIndex), (ulong)Stopwatch.Frequency);
@@ -133,9 +129,6 @@ namespace System.Runtime.CompilerServices
                                 payloadSpanIndex += Serializer.WriteCompressedUInt32(payloadSpan.Slice(payloadSpanIndex), EventBufferSize);
 
                                 payloadSpan[payloadSpanIndex++] = ContinuationWrapper.COUNT;
-                                payloadSpanIndex += Serializer.WriteCompressedUInt32(payloadSpan.Slice(payloadSpanIndex), (uint)templateBytes.Length);
-                                templateBytes.CopyTo(payloadSpan.Slice(payloadSpanIndex));
-                                payloadSpanIndex += templateBytes.Length;
 
                                 eventBuffer.Index += payloadSpanIndex;
 

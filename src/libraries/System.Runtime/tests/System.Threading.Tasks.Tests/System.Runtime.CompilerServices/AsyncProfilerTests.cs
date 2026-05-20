@@ -440,23 +440,20 @@ namespace System.Threading.Tasks.Tests
 
         private static void SkipMetadataPayload(ReadOnlySpan<byte> buffer, ref int index)
         {
-            ReadMetadataPayload(buffer, ref index, out _, out _, out _, out _, out _, out _);
+            ReadMetadataPayload(buffer, ref index, out _, out _, out _, out _, out _);
         }
 
         private static void ReadMetadataPayload(ReadOnlySpan<byte> buffer, ref int index,
-            out ulong qpcFrequency, out ulong qpcSync, out ulong utcSync, out uint eventBufferSize, out byte wrapperCount, out string wrapperNameTemplate)
+            out ulong qpcFrequency, out ulong qpcSync, out ulong utcSync, out uint eventBufferSize, out byte wrapperCount)
         {
             qpcFrequency = ReadCompressedUInt64(buffer, ref index);
             qpcSync = ReadCompressedUInt64(buffer, ref index);
             utcSync = ReadCompressedUInt64(buffer, ref index);
             eventBufferSize = ReadCompressedUInt32(buffer, ref index);
             wrapperCount = buffer[index++];
-            uint templateLength = ReadCompressedUInt32(buffer, ref index);
-            wrapperNameTemplate = System.Text.Encoding.UTF8.GetString(buffer.Slice(index, (int)templateLength));
-            index += (int)templateLength;
         }
 
-        private record struct MetadataFromBuffer(ulong QpcFrequency, ulong QpcSync, ulong UtcSync, uint EventBufferSize, byte WrapperCount, string WrapperNameTemplate);
+        private record struct MetadataFromBuffer(ulong QpcFrequency, ulong QpcSync, ulong UtcSync, uint EventBufferSize, byte WrapperCount);
 
         private readonly record struct EventBufferHeader(byte Version, uint TotalSize, uint AsyncThreadContextId, ulong OsThreadId, uint EventCount, ulong StartTimestamp, ulong EndTimestamp);
 
@@ -730,14 +727,14 @@ namespace System.Threading.Tasks.Tests
             static ParsedEvent ParseMetadataEvent(long timestamp, ulong osThreadId, ulong currentTaskId,
                 ReadOnlySpan<byte> buffer, ref int index)
             {
-                ReadMetadataPayload(buffer, ref index, out ulong freq, out ulong qpcSync, out ulong utcSync, out uint bufSize, out byte wrapperCount, out string wrapperNameTemplate);
+                ReadMetadataPayload(buffer, ref index, out ulong freq, out ulong qpcSync, out ulong utcSync, out uint bufSize, out byte wrapperCount);
                 return new ParsedEvent
                 {
                     EventId = AsyncEventID.AsyncProfilerMetadata,
                     Timestamp = timestamp,
                     OsThreadId = osThreadId,
                     TaskId = currentTaskId,
-                    Metadata = new MetadataFromBuffer(freq, qpcSync, utcSync, bufSize, wrapperCount, wrapperNameTemplate)
+                    Metadata = new MetadataFromBuffer(freq, qpcSync, utcSync, bufSize, wrapperCount)
                 };
             }
 
@@ -1920,7 +1917,6 @@ namespace System.Threading.Tasks.Tests
             Assert.True(meta.UtcSync > 0, $"UTC sync timestamp should be positive, got {meta.UtcSync}");
             Assert.True(meta.EventBufferSize > 0, $"Event buffer size should be positive, got {meta.EventBufferSize}");
             Assert.True(meta.WrapperCount > 0, "Wrapper count should be positive");
-            Assert.False(string.IsNullOrEmpty(meta.WrapperNameTemplate), "Wrapper name template should not be empty");
         }
 
         // Requires threading:
@@ -2275,11 +2271,9 @@ namespace System.Threading.Tasks.Tests
 
             MetadataFromBuffer meta = metadataList[0];
             Assert.True(meta.WrapperCount > 0, "Expected positive wrapper count in metadata");
-            Assert.False(string.IsNullOrEmpty(meta.WrapperNameTemplate), "Expected non-empty wrapper name template");
-            Assert.Contains("{0}", meta.WrapperNameTemplate);
 
-            // On CoreCLR, verify via reflection that the template produces names matching real methods.
-            // This catches accidental renames of wrapper methods without updating the template.
+            // On CoreCLR, verify via reflection that the contract-defined template produces names matching real methods.
+            // This catches accidental renames of wrapper methods without updating the contract.
             if (PlatformDetection.IsCoreCLR)
             {
                 Type? wrapperType = typeof(System.Runtime.CompilerServices.AsyncTaskMethodBuilder)
@@ -2287,16 +2281,15 @@ namespace System.Threading.Tasks.Tests
                 Assert.NotNull(wrapperType);
                 for (int i = 0; i < meta.WrapperCount; i++)
                 {
-                    string expectedName = string.Format(meta.WrapperNameTemplate, i);
+                    string expectedName = string.Format(WrapperNameTemplate, i);
                     var method = wrapperType.GetMethod(expectedName,
                         System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public);
                     Assert.True(method is not null, $"Expected method '{expectedName}' not found on ContinuationWrapper type");
                 }
 
                 // Verify that the wrapper count matches the actual number of wrapper methods on the type.
-                string prefix = meta.WrapperNameTemplate.Substring(0, meta.WrapperNameTemplate.IndexOf("{0}", StringComparison.Ordinal));
                 int actualCount = wrapperType.GetMethods(System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public)
-                    .Count(m => m.Name.StartsWith(prefix, StringComparison.Ordinal));
+                    .Count(m => m.Name.StartsWith(WrapperNamePrefix, StringComparison.Ordinal));
                 Assert.Equal(meta.WrapperCount, actualCount);
             }
         }
@@ -2495,12 +2488,6 @@ namespace System.Threading.Tasks.Tests
 
             byte wrapperCount = buffer[index++];
             Console.WriteLine($"  WrapperCount: {wrapperCount}");
-
-            Deserializer.ReadCompressedUInt32(buffer, ref index, out uint templateLength);
-            string wrapperNameTemplate = System.Text.Encoding.UTF8.GetString(buffer.Slice(index, (int)templateLength));
-            index += (int)templateLength;
-            Console.WriteLine($"  WrapperNameTemplate: \"{wrapperNameTemplate}\"");
-            Console.WriteLine($"  Methods: {string.Format(wrapperNameTemplate, 0)} .. {string.Format(wrapperNameTemplate, wrapperCount - 1)}");
 
             Console.WriteLine("----------------------------");
             return index;
