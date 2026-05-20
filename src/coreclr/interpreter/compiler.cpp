@@ -6460,7 +6460,19 @@ void InterpCompiler::UpdateLocalIntervalMaps()
         int32_t varIndex = suspendData->returnValueVarStackOffset;
         if (varIndex != -1)
         {
-            suspendData->returnValueVarStackOffset = m_pVars[varIndex].offset;
+            assert(!m_pVars[varIndex].global);
+            if (m_pVars[varIndex].liveStart == m_pVars[varIndex].liveEnd)
+            {
+                // The return result of the async call is not used by the method so the allocated
+                // offset will be immediately reused by any vars that become live. This means that
+                // the async suspend/resume would operate with wrong values. This async call will
+                // be handled as if it is void return.
+                suspendData->returnValueVarStackOffset = -1;
+            }
+            else
+            {
+                suspendData->returnValueVarStackOffset = m_pVars[varIndex].offset;
+            }
         }
     }
 }

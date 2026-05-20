@@ -4581,7 +4581,7 @@ do                                                                      \
 
                     // Explicitly copy the return value from the continuation's result storage
                     // to the interpreter stack.
-                    if (pAsyncSuspendData->returnValueContinuationDataSize > 0)
+                    if (pAsyncSuspendData->returnValueVarStackOffset != -1)
                     {
                         memcpy(LOCAL_VAR_ADDR(pAsyncSuspendData->returnValueVarStackOffset, uint8_t),
                                continuation->GetResultStorage(),
