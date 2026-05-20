@@ -40,7 +40,6 @@ namespace System.Text.Tests
         }
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void AsyncMethods_ReturnCanceledTaskIfCancellationTokenTripped()
         {
@@ -79,7 +78,6 @@ namespace System.Text.Tests
             Assert.Throws<ArgumentNullException>("outerStreamEncoding", () => Encoding.CreateTranscodingStream(Stream.Null, Encoding.UTF8, null));
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [InlineData(true)]
         [InlineData(false)]
@@ -103,7 +101,6 @@ namespace System.Text.Tests
             Assert.False(actualCanReadAfterDispose);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [InlineData(true)]
         [InlineData(false)]
@@ -203,7 +200,6 @@ namespace System.Text.Tests
         }
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void Flush_FlushesInnerStreamButNotDecodedState()
         {
@@ -397,7 +393,6 @@ namespace System.Text.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public Task ReadApm()
         {
@@ -439,7 +434,6 @@ namespace System.Text.Tests
             suppressExpectedCancellationTokenAsserts: true); // APM pattern doesn't allow flowing CancellationToken
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [MemberData(nameof(ReadWriteTestBufferLengths))]
         public Task ReadAsync_ByteArray(int bufferLength)
@@ -459,7 +453,6 @@ namespace System.Text.Tests
             });
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [MemberData(nameof(ReadWriteTestBufferLengths))]
         public async Task ReadAsync_Memory(int bufferLength)
@@ -775,7 +768,6 @@ namespace System.Text.Tests
         }
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public async Task WriteAsync_WithFullData()
         {
@@ -836,7 +828,6 @@ namespace System.Text.Tests
         }
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public async Task WriteAsync_WithPartialData()
         {
@@ -893,7 +884,6 @@ namespace System.Text.Tests
         }
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void WriteApm()
         {

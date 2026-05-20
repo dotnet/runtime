@@ -601,7 +601,6 @@ namespace System.Xml.XslCompiledTransformApiTests
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
         public void XmlResolver7(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             using (new AllowDefaultResolverContext())
@@ -2550,7 +2549,6 @@ namespace System.Xml.XslCompiledTransformApiTests
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
         public void XmlResolver5(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             using (new AllowDefaultResolverContext())

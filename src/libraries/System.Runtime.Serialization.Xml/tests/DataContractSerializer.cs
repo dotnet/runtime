@@ -20,7 +20,9 @@ using System.Xml.Schema;
 using Xunit;
 using System.Runtime.Serialization.Tests;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Runtime.Loader;
+using System.Threading;
 
 public static partial class DataContractSerializerTests
 {
@@ -4568,20 +4570,39 @@ public static partial class DataContractSerializerTests
     private static bool IsNotWindowsRandomOSR => !PlatformDetection.IsWindows || (Environment.GetEnvironmentVariable("DOTNET_JitRandomOnStackReplacement") == null);
 
     [SkipOnPlatform(TestPlatforms.Browser, "Causes a stack overflow")]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/127463", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
     [ConditionalFact(typeof(DataContractSerializerTests), nameof(IsNotWindowsRandomOSR))]
     public static void DCS_DeeplyLinkedData()
     {
-        TypeWithLinkedProperty head = new TypeWithLinkedProperty();
-        TypeWithLinkedProperty cur = head;
-        for (int i = 0; i < 513; i++)
+        // The serializer recurses through dynamic-code paths roughly once per linked node.
+        // Default thread stacks on some platforms (notably Apple mobile) are not large enough
+        // for ~513 frames of dynamic-method-driven recursion, so run the body on a worker
+        // thread with an explicit 16 MB stack to keep the test platform-portable. 16 MB
+        // matches the maxStackSize used elsewhere in System.Threading.Thread tests.
+        const int StackSize = 16 * 1024 * 1024;
+        ExceptionDispatchInfo edi = null;
+        Thread t = new Thread(() =>
         {
-            cur.Child = new TypeWithLinkedProperty();
-            cur = cur.Child;
-        }
-        cur.Children = new List<TypeWithLinkedProperty> { new TypeWithLinkedProperty() };
-        TypeWithLinkedProperty actual = DataContractSerializerHelper.SerializeAndDeserialize(head, baseline: null, skipStringCompare: true);
-        Assert.NotNull(actual);
+            try
+            {
+                TypeWithLinkedProperty head = new TypeWithLinkedProperty();
+                TypeWithLinkedProperty cur = head;
+                for (int i = 0; i < 513; i++)
+                {
+                    cur.Child = new TypeWithLinkedProperty();
+                    cur = cur.Child;
+                }
+                cur.Children = new List<TypeWithLinkedProperty> { new TypeWithLinkedProperty() };
+                TypeWithLinkedProperty actual = DataContractSerializerHelper.SerializeAndDeserialize(head, baseline: null, skipStringCompare: true);
+                Assert.NotNull(actual);
+            }
+            catch (Exception ex)
+            {
+                edi = ExceptionDispatchInfo.Capture(ex);
+            }
+        }, StackSize);
+        t.Start();
+        t.Join();
+        edi?.Throw();
     }
 
     [Fact]
