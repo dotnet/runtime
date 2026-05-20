@@ -32,6 +32,7 @@ void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2)
 void emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs);
 
 void emitAddressConstant(void* address);
+void emitFuncletAddressConstant(cnsval_ssize_t funcletId);
 
 static unsigned SizeOfULEB128(uint64_t value);
 static unsigned SizeOfSLEB128(int64_t value);
@@ -66,6 +67,8 @@ size_t emitRawBytes(uint8_t* destination, const void* source, size_t count);
 size_t emitOutputOpcode(BYTE* dst, instruction ins);
 size_t emitOutputPaddedReloc(uint8_t* destination);
 size_t emitOutputConstant(uint8_t* destination, const instrDesc* id, bool isSigned, CorInfoReloc relocType);
+size_t emitOutputConstantFunclet(uint8_t* destination, const instrDesc* id, CorInfoReloc relocType);
+
 size_t emitOutputValtypeSig(uint8_t* destination, WasmValueType valtype);
 
 void emitUpdateFuncletLocations();

@@ -91,11 +91,11 @@ BOOL TypeHandle::IsString() const
     return !IsTypeDesc() && AsMethodTable()->IsString();
 }
 
-BOOL TypeHandle::IsContinuation() const
+BOOL TypeHandle::IsContinuationWithoutMetadata() const
 {
     LIMITED_METHOD_CONTRACT;
 
-    return !IsTypeDesc() && AsMethodTable()->IsContinuation();
+    return !IsTypeDesc() && AsMethodTable()->IsContinuationWithoutMetadata();
 }
 
 BOOL TypeHandle::IsGenericVariable() const {
@@ -333,7 +333,7 @@ void TypeHandle::AllocateManagedClassObject(RUNTIMETYPEHANDLE* pDest)
     }
     CONTRACTL_END
 
-    if (IsContinuation())
+    if (IsContinuationWithoutMetadata())
     {
         COMPlusThrow(kNotSupportedException, W("NotSupported_Continuation"));
         return;
@@ -454,6 +454,13 @@ bool TypeHandle::IsFloatHfa() const
         return false;
     }
     return (GetHFAType() == CORINFO_HFA_ELEM_FLOAT);
+}
+
+// Returns true when the type is Vector<T> or any instantiation thereof.
+bool TypeHandle::IsVectorT() const
+{
+    LIMITED_METHOD_CONTRACT;
+    return !IsTypeDesc() && AsMethodTable()->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTORT));
 }
 
 

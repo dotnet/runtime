@@ -49,6 +49,7 @@ public class RuntimeTypeSystemDumpTests : DumpTestBase
 
         TypeHandle handle = rts.GetTypeHandle(objectMT);
         Assert.False(rts.IsFreeObjectMethodTable(handle));
+        Assert.True(rts.IsObject(handle));
     }
 
     [ConditionalTheory]
@@ -65,6 +66,7 @@ public class RuntimeTypeSystemDumpTests : DumpTestBase
 
         TypeHandle handle = rts.GetTypeHandle(freeObjMT);
         Assert.True(rts.IsFreeObjectMethodTable(handle));
+        Assert.False(rts.IsObject(handle));
     }
 
     [ConditionalTheory]
@@ -81,6 +83,7 @@ public class RuntimeTypeSystemDumpTests : DumpTestBase
 
         TypeHandle handle = rts.GetTypeHandle(stringMT);
         Assert.True(rts.IsString(handle));
+        Assert.False(rts.IsObject(handle));
     }
 
     [ConditionalTheory]

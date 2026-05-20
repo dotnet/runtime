@@ -55,6 +55,9 @@ else()
             System.IO.Compression.Native-Static
             System.Native-Static
             System.Native.TimeZoneData.Invariant)
+        if (TARGET coreclr_gen_static)
+            target_link_libraries(corerun PRIVATE coreclr_gen_static)
+        endif()
 
         # additional requirements for System.IO.Compression.Native
         include(${CLR_SRC_NATIVE_DIR}/libs/System.IO.Compression.Native/extra_libs.cmake)

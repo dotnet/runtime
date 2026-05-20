@@ -10,6 +10,7 @@ internal readonly struct Thread_1 : IThread
 {
     private readonly Target _target;
     private readonly TargetPointer _threadStoreAddr;
+    private readonly Target.TypeInfo _threadTypeInfo;
 
     [Flags]
     private enum TLSIndexType
@@ -42,6 +43,19 @@ internal readonly struct Thread_1 : IThread
     {
         _target = target;
         _threadStoreAddr = target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.ThreadStore));
+        _threadTypeInfo = target.GetTypeInfo(DataType.Thread);
+    }
+
+    void IThread.SetDebuggerControlledThreadState(TargetPointer thread, DebuggerControlledThreadState state)
+    {
+        uint current = _target.ReadField<uint>(thread, _threadTypeInfo, nameof(Data.Thread.DebuggerControlledThreadState));
+        _target.WriteField(thread, _threadTypeInfo, nameof(Data.Thread.DebuggerControlledThreadState), current | (uint)state);
+    }
+
+    void IThread.ResetDebuggerControlledThreadState(TargetPointer thread, DebuggerControlledThreadState state)
+    {
+        uint current = _target.ReadField<uint>(thread, _threadTypeInfo, nameof(Data.Thread.DebuggerControlledThreadState));
+        _target.WriteField(thread, _threadTypeInfo, nameof(Data.Thread.DebuggerControlledThreadState), current & ~(uint)state);
     }
 
     ThreadStoreData IThread.GetThreadStoreData()
@@ -147,11 +161,10 @@ internal readonly struct Thread_1 : IThread
     void IThread.GetStackLimitData(TargetPointer threadPointer, out TargetPointer stackBase, out TargetPointer stackLimit, out TargetPointer frameAddress)
     {
         Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadPointer);
-        Target.TypeInfo type = _target.GetTypeInfo(DataType.Thread);
 
         stackBase = thread.CachedStackBase;
         stackLimit = thread.CachedStackLimit;
-        frameAddress = threadPointer + (ulong)type.Fields[nameof(Data.Thread.Frame)].Offset;
+        frameAddress = threadPointer + (ulong)_threadTypeInfo.Fields[nameof(Data.Thread.Frame)].Offset;
     }
 
     // happens inside critical section

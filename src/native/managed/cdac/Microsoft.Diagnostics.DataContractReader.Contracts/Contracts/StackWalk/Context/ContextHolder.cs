@@ -21,6 +21,8 @@ public sealed class ContextHolder<T> : IPlatformAgnosticContext, IEquatable<Cont
     public TargetPointer InstructionPointer { get => Context.InstructionPointer; set => Context.InstructionPointer = value; }
     public TargetPointer FramePointer { get => Context.FramePointer; set => Context.FramePointer = value; }
 
+    public uint RawContextFlags { get => Context.RawContextFlags; set => Context.RawContextFlags = value; }
+
     public unsafe void ReadFromAddress(Target target, TargetPointer address)
     {
         Span<byte> buffer = new byte[Size];

@@ -221,6 +221,7 @@ namespace R2RDump
                     OperatingSystem.Apple => TargetOS.OSX,
                     OperatingSystem.FreeBSD => TargetOS.FreeBSD,
                     OperatingSystem.NetBSD => TargetOS.FreeBSD,
+                    OperatingSystem.Unknown => TargetOS.Unknown, // Webcil/WASM images don't encode OS
                     _ => throw new NotImplementedException(r2r.OperatingSystem.ToString()),
                 };
                 TargetDetails details = new(architecture, os, TargetAbi.NativeAot);
@@ -465,7 +466,7 @@ namespace R2RDump
                     // parse the ReadyToRun image
                     ReadyToRunReader r2r = new(model, filename);
                     r2r.ValidateDebugInfo = Get(_command.ValidateDebugInfo);
-                    if (disasm)
+                    if (disasm && !(r2r.CompositeReader is WebcilImageReader))
                     {
                         disassembler = new Disassembler(r2r, model);
                     }
