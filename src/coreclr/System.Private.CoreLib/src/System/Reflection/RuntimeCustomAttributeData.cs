@@ -1859,7 +1859,6 @@ namespace System.Reflection
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void InvokeCustomAttributeCtor(NativeCtorInvokeContract* pContract, object* pResult, Exception* pException)
         {
             try
