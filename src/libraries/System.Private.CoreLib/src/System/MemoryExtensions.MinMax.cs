@@ -23,9 +23,24 @@ namespace System
         /// <para>If <typeparamref name="T" /> is a reference type and the span sequence is empty, this method returns <see langword="null" />.</para>
         /// <para>Null values are ignored when determining the minimum value. If the span contains at least one non-null value, the minimum of those values is returned. If the span does not contain any non-null values, <see langword="null" /> is returned.</para>
         /// </remarks>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T? Min<T>(this ReadOnlySpan<T> span) =>
-            Min(span, comparer: null);
+        public static T? Min<T>(this ReadOnlySpan<T> span)
+        {
+            if (typeof(T) == typeof(byte)) return MinMaxInteger<T, byte, MinCalc<byte>>(span);
+            if (typeof(T) == typeof(sbyte)) return MinMaxInteger<T, sbyte, MinCalc<sbyte>>(span);
+            if (typeof(T) == typeof(ushort)) return MinMaxInteger<T, ushort, MinCalc<ushort>>(span);
+            if (typeof(T) == typeof(short)) return MinMaxInteger<T, short, MinCalc<short>>(span);
+            if (typeof(T) == typeof(char)) return MinMaxInteger<T, char, MinCalc<char>>(span);
+            if (typeof(T) == typeof(uint)) return MinMaxInteger<T, uint, MinCalc<uint>>(span);
+            if (typeof(T) == typeof(int)) return MinMaxInteger<T, int, MinCalc<int>>(span);
+            if (typeof(T) == typeof(ulong)) return MinMaxInteger<T, ulong, MinCalc<ulong>>(span);
+            if (typeof(T) == typeof(long)) return MinMaxInteger<T, long, MinCalc<long>>(span);
+            if (typeof(T) == typeof(nuint)) return MinMaxInteger<T, nuint, MinCalc<nuint>>(span);
+            if (typeof(T) == typeof(nint)) return MinMaxInteger<T, nint, MinCalc<nint>>(span);
+            if (typeof(T) == typeof(Int128)) return MinMaxInteger<T, Int128, MinCalc<Int128>>(span);
+            if (typeof(T) == typeof(UInt128)) return MinMaxInteger<T, UInt128, MinCalc<UInt128>>(span);
+
+            return MinMax<T, MinDirection>(span, Comparer<T>.Default);
+        }
 
         /// <summary>
         /// Returns the minimum value in the span.
@@ -41,21 +56,10 @@ namespace System
         /// </remarks>
         public static T? Min<T>(this ReadOnlySpan<T> span, IComparer<T>? comparer)
         {
-            comparer ??= Comparer<T>.Default;
-
-            if (typeof(T) == typeof(byte) && comparer == Comparer<T>.Default) return MinMaxInteger<T, byte, MinCalc<byte>>(span);
-            if (typeof(T) == typeof(sbyte) && comparer == Comparer<T>.Default) return MinMaxInteger<T, sbyte, MinCalc<sbyte>>(span);
-            if (typeof(T) == typeof(ushort) && comparer == Comparer<T>.Default) return MinMaxInteger<T, ushort, MinCalc<ushort>>(span);
-            if (typeof(T) == typeof(short) && comparer == Comparer<T>.Default) return MinMaxInteger<T, short, MinCalc<short>>(span);
-            if (typeof(T) == typeof(char) && comparer == Comparer<T>.Default) return MinMaxInteger<T, char, MinCalc<char>>(span);
-            if (typeof(T) == typeof(uint) && comparer == Comparer<T>.Default) return MinMaxInteger<T, uint, MinCalc<uint>>(span);
-            if (typeof(T) == typeof(int) && comparer == Comparer<T>.Default) return MinMaxInteger<T, int, MinCalc<int>>(span);
-            if (typeof(T) == typeof(ulong) && comparer == Comparer<T>.Default) return MinMaxInteger<T, ulong, MinCalc<ulong>>(span);
-            if (typeof(T) == typeof(long) && comparer == Comparer<T>.Default) return MinMaxInteger<T, long, MinCalc<long>>(span);
-            if (typeof(T) == typeof(nuint) && comparer == Comparer<T>.Default) return MinMaxInteger<T, nuint, MinCalc<nuint>>(span);
-            if (typeof(T) == typeof(nint) && comparer == Comparer<T>.Default) return MinMaxInteger<T, nint, MinCalc<nint>>(span);
-            if (typeof(T) == typeof(Int128) && comparer == Comparer<T>.Default) return MinMaxInteger<T, Int128, MinCalc<Int128>>(span);
-            if (typeof(T) == typeof(UInt128) && comparer == Comparer<T>.Default) return MinMaxInteger<T, UInt128, MinCalc<UInt128>>(span);
+            if (comparer is null || comparer == Comparer<T>.Default)
+            {
+                return Min(span);
+            }
 
             return MinMax<T, MinDirection>(span, comparer);
         }
@@ -72,9 +76,24 @@ namespace System
         /// <para>If <typeparamref name="T" /> is a reference type and the span sequence is empty, this method returns <see langword="null" />.</para>
         /// <para>Null values are ignored when determining the maximum value. If the span contains at least one non-null value, the maximum of those values is returned. If the span does not contain any non-null values, <see langword="null" /> is returned.</para>
         /// </remarks>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T? Max<T>(this ReadOnlySpan<T> span) =>
-            Max(span, comparer: null);
+        public static T? Max<T>(this ReadOnlySpan<T> span)
+        {
+            if (typeof(T) == typeof(byte)) return MinMaxInteger<T, byte, MaxCalc<byte>>(span);
+            if (typeof(T) == typeof(sbyte)) return MinMaxInteger<T, sbyte, MaxCalc<sbyte>>(span);
+            if (typeof(T) == typeof(ushort)) return MinMaxInteger<T, ushort, MaxCalc<ushort>>(span);
+            if (typeof(T) == typeof(short)) return MinMaxInteger<T, short, MaxCalc<short>>(span);
+            if (typeof(T) == typeof(char)) return MinMaxInteger<T, char, MaxCalc<char>>(span);
+            if (typeof(T) == typeof(uint)) return MinMaxInteger<T, uint, MaxCalc<uint>>(span);
+            if (typeof(T) == typeof(int)) return MinMaxInteger<T, int, MaxCalc<int>>(span);
+            if (typeof(T) == typeof(ulong)) return MinMaxInteger<T, ulong, MaxCalc<ulong>>(span);
+            if (typeof(T) == typeof(long)) return MinMaxInteger<T, long, MaxCalc<long>>(span);
+            if (typeof(T) == typeof(nuint)) return MinMaxInteger<T, nuint, MaxCalc<nuint>>(span);
+            if (typeof(T) == typeof(nint)) return MinMaxInteger<T, nint, MaxCalc<nint>>(span);
+            if (typeof(T) == typeof(Int128)) return MinMaxInteger<T, Int128, MaxCalc<Int128>>(span);
+            if (typeof(T) == typeof(UInt128)) return MinMaxInteger<T, UInt128, MaxCalc<UInt128>>(span);
+
+            return MinMax<T, MaxDirection>(span, Comparer<T>.Default);
+        }
 
         /// <summary>
         /// Returns the maximum value in the span.
@@ -90,21 +109,10 @@ namespace System
         /// </remarks>
         public static T? Max<T>(this ReadOnlySpan<T> span, IComparer<T>? comparer)
         {
-            comparer ??= Comparer<T>.Default;
-
-            if (typeof(T) == typeof(byte) && comparer == Comparer<T>.Default) return MinMaxInteger<T, byte, MaxCalc<byte>>(span);
-            if (typeof(T) == typeof(sbyte) && comparer == Comparer<T>.Default) return MinMaxInteger<T, sbyte, MaxCalc<sbyte>>(span);
-            if (typeof(T) == typeof(ushort) && comparer == Comparer<T>.Default) return MinMaxInteger<T, ushort, MaxCalc<ushort>>(span);
-            if (typeof(T) == typeof(short) && comparer == Comparer<T>.Default) return MinMaxInteger<T, short, MaxCalc<short>>(span);
-            if (typeof(T) == typeof(char) && comparer == Comparer<T>.Default) return MinMaxInteger<T, char, MaxCalc<char>>(span);
-            if (typeof(T) == typeof(uint) && comparer == Comparer<T>.Default) return MinMaxInteger<T, uint, MaxCalc<uint>>(span);
-            if (typeof(T) == typeof(int) && comparer == Comparer<T>.Default) return MinMaxInteger<T, int, MaxCalc<int>>(span);
-            if (typeof(T) == typeof(ulong) && comparer == Comparer<T>.Default) return MinMaxInteger<T, ulong, MaxCalc<ulong>>(span);
-            if (typeof(T) == typeof(long) && comparer == Comparer<T>.Default) return MinMaxInteger<T, long, MaxCalc<long>>(span);
-            if (typeof(T) == typeof(nuint) && comparer == Comparer<T>.Default) return MinMaxInteger<T, nuint, MaxCalc<nuint>>(span);
-            if (typeof(T) == typeof(nint) && comparer == Comparer<T>.Default) return MinMaxInteger<T, nint, MaxCalc<nint>>(span);
-            if (typeof(T) == typeof(Int128) && comparer == Comparer<T>.Default) return MinMaxInteger<T, Int128, MaxCalc<Int128>>(span);
-            if (typeof(T) == typeof(UInt128) && comparer == Comparer<T>.Default) return MinMaxInteger<T, UInt128, MaxCalc<UInt128>>(span);
+            if (comparer is null || comparer == Comparer<T>.Default)
+            {
+                return Max(span);
+            }
 
             return MinMax<T, MaxDirection>(span, comparer);
         }
