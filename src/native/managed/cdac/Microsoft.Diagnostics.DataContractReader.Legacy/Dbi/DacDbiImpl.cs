@@ -2338,9 +2338,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                         isValid = Interop.BOOL.TRUE;
                 }
             }
-            catch (System.Exception ex)
+            catch (System.Exception)
             {
-                hr = ex.HResult;
                 isValid = Interop.BOOL.FALSE;
             }
         }
@@ -3019,7 +3018,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     // parent (continuation base) type handle instead.
     private static TypeHandle UpCastTypeIfNeeded(IRuntimeTypeSystem rts, TypeHandle typeHandle)
     {
-        if (rts.IsContinuation(typeHandle))
+        if (rts.IsContinuationWithoutMetadata(typeHandle))
         {
             TargetPointer parentMT = rts.GetParentMethodTable(typeHandle);
             if (parentMT != TargetPointer.Null)

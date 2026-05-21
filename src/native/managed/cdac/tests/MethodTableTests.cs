@@ -303,7 +303,7 @@ public class MethodTableTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void IsContinuationReturnsTrueForContinuationType(MockTarget.Architecture arch)
+    public void IsContinuationWithoutMetadata_ReturnsTrueForContinuationType(MockTarget.Architecture arch)
     {
         TargetPointer continuationInstanceMethodTablePtr = default;
         TestPlaceholderTarget target = CreateTarget(
@@ -314,19 +314,17 @@ public class MethodTableTests
                 TargetPointer systemObjectMethodTablePtr = rtsBuilder.SystemObjectMethodTable.Address;
                 MockMethodTable continuationBaseMethodTable = rtsBuilder.ContinuationMethodTable;
 
-                MockEEClass continuationInstanceEEClass = rtsBuilder.AddEEClass("ContinuationInstance");
                 MockMethodTable continuationInstanceMethodTable = rtsBuilder.AddMethodTable("ContinuationInstance");
                 continuationInstanceMethodTable.BaseSize = targetTestHelpers.ObjectBaseSize;
                 continuationInstanceMethodTable.ParentMethodTable = continuationBaseMethodTable.Address;
                 continuationInstanceMethodTable.NumVirtuals = 3;
                 continuationInstanceMethodTablePtr = continuationInstanceMethodTable.Address;
-                continuationInstanceEEClass.MethodTable = continuationInstanceMethodTable.Address;
-                continuationInstanceMethodTable.EEClassOrCanonMT = continuationInstanceEEClass.Address;
+                continuationInstanceMethodTable.EEClassOrCanonMT = rtsBuilder.ContinuationEEClass.Address;
             });
 
         IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
         Contracts.TypeHandle continuationTypeHandle = contract.GetTypeHandle(continuationInstanceMethodTablePtr);
-        Assert.True(contract.IsContinuation(continuationTypeHandle));
+        Assert.True(contract.IsContinuationWithoutMetadata(continuationTypeHandle));
         Assert.False(contract.IsFreeObjectMethodTable(continuationTypeHandle));
         Assert.False(contract.IsString(continuationTypeHandle));
     }
@@ -435,21 +433,7 @@ public class MethodTableTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void IsContinuationReturnsFalseForRegularType(MockTarget.Architecture arch)
-    {
-        TargetPointer systemObjectMethodTablePtr = default;
-        TestPlaceholderTarget target = CreateTarget(
-            arch,
-            rtsBuilder => systemObjectMethodTablePtr = rtsBuilder.SystemObjectMethodTable.Address);
-
-        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
-        Contracts.TypeHandle objectTypeHandle = contract.GetTypeHandle(systemObjectMethodTablePtr);
-        Assert.False(contract.IsContinuation(objectTypeHandle));
-    }
-
-    [Theory]
-    [ClassData(typeof(MockTarget.StdArch))]
-    public void IsContinuationReturnsFalseWhenGlobalIsNull(MockTarget.Architecture arch)
+    public void IsContinuationWithoutMetadata_ReturnsFalseWhenGlobalIsNull(MockTarget.Architecture arch)
     {
         TargetPointer systemObjectMethodTablePtr = default;
         TargetPointer childMethodTablePtr = default;
@@ -473,10 +457,36 @@ public class MethodTableTests
 
         IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
         Contracts.TypeHandle objectTypeHandle = contract.GetTypeHandle(systemObjectMethodTablePtr);
-        Assert.False(contract.IsContinuation(objectTypeHandle));
+        Assert.False(contract.IsContinuationWithoutMetadata(objectTypeHandle));
 
         Contracts.TypeHandle childTypeHandle = contract.GetTypeHandle(childMethodTablePtr);
-        Assert.False(contract.IsContinuation(childTypeHandle));
+        Assert.False(contract.IsContinuationWithoutMetadata(childTypeHandle));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void IsContinuationWithoutMetadata_ReturnsFalseWhenSingletonEEClassGlobalIsNull(MockTarget.Architecture arch)
+    {
+        TargetPointer continuationInstanceMethodTablePtr = default;
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            rtsBuilder =>
+            {
+                TargetTestHelpers targetTestHelpers = rtsBuilder.Builder.TargetTestHelpers;
+                MockMethodTable continuationBaseMethodTable = rtsBuilder.ContinuationMethodTable;
+                rtsBuilder.SetContinuationSingletonEEClass(0);
+
+                MockMethodTable continuationInstanceMethodTable = rtsBuilder.AddMethodTable("ContinuationInstance");
+                continuationInstanceMethodTable.BaseSize = targetTestHelpers.ObjectBaseSize;
+                continuationInstanceMethodTable.ParentMethodTable = continuationBaseMethodTable.Address;
+                continuationInstanceMethodTable.NumVirtuals = 3;
+                continuationInstanceMethodTablePtr = continuationInstanceMethodTable.Address;
+                continuationInstanceMethodTable.EEClassOrCanonMT = rtsBuilder.ContinuationEEClass.Address;
+            });
+
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+        TypeHandle continuationTypeHandle = contract.GetTypeHandle(continuationInstanceMethodTablePtr);
+        Assert.False(contract.IsContinuationWithoutMetadata(continuationTypeHandle));
     }
 
     [Theory]
@@ -511,7 +521,7 @@ public class MethodTableTests
         IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
         Contracts.TypeHandle continuationTypeHandle = contract.GetTypeHandle(continuationInstanceMethodTablePtr);
         Assert.Equal(continuationInstanceMethodTablePtr.Value, continuationTypeHandle.Address.Value);
-        Assert.True(contract.IsContinuation(continuationTypeHandle));
+        Assert.False(contract.IsContinuationWithoutMetadata(continuationTypeHandle));
     }
 
     [Theory]
@@ -538,7 +548,6 @@ public class MethodTableTests
 
         IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
         TypeHandle continuationTypeHandle = contract.GetTypeHandle(continuationInstanceMethodTablePtr);
-        Assert.True(contract.IsContinuation(continuationTypeHandle));
         Assert.True(contract.IsContinuationWithoutMetadata(continuationTypeHandle));
     }
 
@@ -567,7 +576,6 @@ public class MethodTableTests
 
         IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
         TypeHandle continuationTypeHandle = contract.GetTypeHandle(continuationInstanceMethodTablePtr);
-        Assert.True(contract.IsContinuation(continuationTypeHandle));
         Assert.False(contract.IsContinuationWithoutMetadata(continuationTypeHandle));
     }
 

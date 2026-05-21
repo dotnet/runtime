@@ -134,8 +134,6 @@ public interface IRuntimeTypeSystem : IContract
     bool ContainsGCPointers(TypeHandle typeHandle) => throw new NotImplementedException();
     // True if the type requires 8-byte alignment on platforms that don't 8-byte align by default (FEATURE_64BIT_ALIGNMENT)
     bool RequiresAlign8(TypeHandle typeHandle) => throw new NotImplementedException();
-    // True if the MethodTable represents a continuation type used by the async continuation feature
-    bool IsContinuation(TypeHandle typeHandle) => throw new NotImplementedException();
     // True if the MethodTable represents a continuation subtype that has no metadata of its own
     bool IsContinuationWithoutMetadata(TypeHandle typeHandle) => throw new NotImplementedException();
     /// <summary>

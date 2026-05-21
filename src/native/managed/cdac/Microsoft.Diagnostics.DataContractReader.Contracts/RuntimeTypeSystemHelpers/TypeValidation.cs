@@ -227,7 +227,7 @@ internal sealed class TypeValidation
         }
     }
 
-    // NOTE: The continuation check is duplicated here and in RuntimeTypeSystem_1.IsContinuation.
+    // NOTE: The continuation check is duplicated here and in RuntimeTypeSystem_1.IsContinuationWithoutMetadata.
     // TypeValidation runs before the MethodTable is added to the RuntimeTypeSystem's cache, so we
     // cannot call into RuntimeTypeSystem_1 — the type handle does not exist yet. Instead we
     // duplicate the check using the raw ParentMethodTable read from target memory.
