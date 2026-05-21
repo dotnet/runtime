@@ -3294,7 +3294,7 @@ namespace System.Runtime.Intrinsics
         public static Vector64<ulong> ShiftRightLogical(Vector64<ulong> vector, int shiftCount) => vector >>> shiftCount;
 
         private static Vector64<T> ShuffleFallback<T, TIndex>(Vector64<T> vector, Vector64<TIndex> indices)
-                    where TIndex : IBinaryInteger<TIndex>
+            where TIndex : IBinaryInteger<TIndex>
         {
             Debug.Assert(Vector64<T>.Count == Vector64<TIndex>.Count);
             Vector64<T> result = Vector64<T>.Zero;
