@@ -29,5 +29,4 @@ steps:
       ${{ if eq(variables['System.TeamProject'], 'public') }}:
         Creator: ${{ parameters.creator }}
         HelixTargetQueues: ${{ join('+', parameters.helixQueues) }}
-      ${{ if eq(parameters.useHelixMonitor, true) }}:
-        WaitForWorkItemCompletion: false
+      WaitForWorkItemCompletion: ${{ not(parameters.useHelixMonitor) }}
