@@ -541,7 +541,6 @@ EXTERN_C void JIT_StackProbe_End()
 
 EXTERN_C VOID STDCALL ResetCurrentContext()
 {
-    PORTABILITY_ASSERT("ResetCurrentContext is not implemented on wasm");
 }
 
 extern "C" void STDCALL GenericPInvokeCalliHelper(void)
