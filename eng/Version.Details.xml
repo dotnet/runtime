@@ -343,6 +343,10 @@
       <Uri>https://github.com/dotnet/dotnet</Uri>
       <Sha>0eae08ed2f094f44e0151e4815e7cdd1a334fcdf</Sha>
     </Dependency>
+    <Dependency Name="Microsoft.CodeAnalysis.BannedApiAnalyzers" Version="5.7.0-1.26257.113">
+      <Uri>https://github.com/dotnet/dotnet</Uri>
+      <Sha>0eae08ed2f094f44e0151e4815e7cdd1a334fcdf</Sha>
+    </Dependency>
     <Dependency Name="Microsoft.CodeAnalysis.NetAnalyzers" Version="11.0.100-preview.5.26257.113">
       <Uri>https://github.com/dotnet/dotnet</Uri>
       <Sha>0eae08ed2f094f44e0151e4815e7cdd1a334fcdf</Sha>
