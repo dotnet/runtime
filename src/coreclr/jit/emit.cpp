@@ -8464,7 +8464,10 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
                 BYTE* target = emitOffsetToPtr(lab->igOffs);
 
 #ifdef TARGET_ARM
-                target = (BYTE*)((size_t)target | 1); // Or in thumb bit
+                if (!m_compiler->opts.compReloc)
+                {
+                    target = (BYTE*)((size_t)target | 1); // Or in thumb bit
+                }
 #endif
                 bDstRW[i] = (target_size_t)(size_t)target;
                 if (m_compiler->opts.compReloc)

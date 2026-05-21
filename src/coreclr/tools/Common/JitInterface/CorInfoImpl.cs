@@ -4332,15 +4332,6 @@ namespace Internal.JitInterface
             RelocType relocType = GetRelocType(fRelocType);
             relocDelta += addlDelta;
 
-            if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.ARM &&
-                relocType == RelocType.IMAGE_REL_BASED_HIGHLOW &&
-                targetBlock == BlockType.Code)
-            {
-                // The ARM JIT reports PCode targets with the Thumb bit set. Method symbols also
-                // carry the Thumb bit, so keep the relocation addend as an offset from the code byte.
-                relocDelta -= _compilation.TypeSystemContext.Target.CodeDelta;
-            }
-
             // relocDelta is stored as the value
             Relocation.WriteValue(relocType, location, relocDelta);
 

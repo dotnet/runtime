@@ -407,7 +407,7 @@ namespace ILCompiler.ObjectWriter
                     sectionWriter.EmitAlignment(nodeContents.Alignment);
                 }
 
-                bool isMethod = node is IMethodBodyNode or AssemblyStubNode;
+                bool isMethod = node is IPCodeSymbolNode;
                 long thumbBit = _nodeFactory.Target.Architecture == TargetArchitecture.ARM && isMethod ? 1 : 0;
 
                 if (node is WasmTypeNode signature)
@@ -428,6 +428,7 @@ namespace ILCompiler.ObjectWriter
                 foreach (ISymbolDefinitionNode n in nodeContents.DefinedSymbols)
                 {
                     Utf8String mangledName = n == node ? currentSymbolName : GetMangledName(n);
+                    Debug.Assert(((ulong)thumbBit & (ulong)(uint)n.Offset) == 0);
                     sectionWriter.EmitSymbolDefinition(
                         mangledName,
                         n.Offset + thumbBit,
