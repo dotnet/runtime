@@ -10412,7 +10412,7 @@ void CEEInfo::getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut)
     EE_TO_JIT_TRANSITION();
 }
 
-CORINFO_METHOD_HANDLE CEEInfo::getAwaitReturnCall(CORINFO_METHOD_HANDLE callerHandle, bool transparent, CORINFO_LOOKUP* instArg)
+CORINFO_METHOD_HANDLE CEEInfo::getAwaitReturnCall(CORINFO_METHOD_HANDLE callerHandle, CORINFO_LOOKUP* instArg)
 {
     CONTRACTL {
         THROWS;
@@ -10438,11 +10438,11 @@ CORINFO_METHOD_HANDLE CEEInfo::getAwaitReturnCall(CORINFO_METHOD_HANDLE callerHa
     {
         if (sig.IsReturnTypeVoid())
         {
-            pTypicalAwaitMD = pMD = CoreLibBinder::GetMethod(transparent ? METHOD__ASYNC_HELPERS__TRANSPARENT_AWAIT_VALUETASK : METHOD__ASYNC_HELPERS__AWAIT_VALUETASK);
+            pTypicalAwaitMD = pMD = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__TRANSPARENT_AWAIT_VALUETASK);
         }
         else
         {
-            pTypicalAwaitMD = CoreLibBinder::GetMethod(transparent ? METHOD__ASYNC_HELPERS__TRANSPARENT_AWAIT_VALUETASK_OF_T : METHOD__ASYNC_HELPERS__AWAIT_VALUETASK_OF_T);
+            pTypicalAwaitMD = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__TRANSPARENT_AWAIT_VALUETASK_OF_T);
             pMD = MethodDesc::FindOrCreateAssociatedMethodDesc(pTypicalAwaitMD, pTypicalAwaitMD->GetMethodTable(), FALSE, Instantiation(&retType, 1), TRUE);
         }
     }
@@ -10450,11 +10450,11 @@ CORINFO_METHOD_HANDLE CEEInfo::getAwaitReturnCall(CORINFO_METHOD_HANDLE callerHa
     {
         if (sig.IsReturnTypeVoid())
         {
-            pTypicalAwaitMD = pMD = CoreLibBinder::GetMethod(transparent ? METHOD__ASYNC_HELPERS__TRANSPARENT_AWAIT_TASK : METHOD__ASYNC_HELPERS__AWAIT_TASK);
+            pTypicalAwaitMD = pMD = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__TRANSPARENT_AWAIT_TASK);
         }
         else
         {
-            pTypicalAwaitMD = CoreLibBinder::GetMethod(transparent ? METHOD__ASYNC_HELPERS__TRANSPARENT_AWAIT_TASK_OF_T : METHOD__ASYNC_HELPERS__AWAIT_TASK_OF_T);
+            pTypicalAwaitMD = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__TRANSPARENT_AWAIT_TASK_OF_T);
             pMD = MethodDesc::FindOrCreateAssociatedMethodDesc(pTypicalAwaitMD, pTypicalAwaitMD->GetMethodTable(), FALSE, Instantiation(&retType, 1), TRUE);
         }
     }

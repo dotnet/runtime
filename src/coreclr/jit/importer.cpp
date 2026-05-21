@@ -11634,10 +11634,8 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 //
 void Compiler::impWrapTopOfStackInAwait()
 {
-    bool transparent = impInlineRoot()->compIsAsyncVersion();
-
     CORINFO_LOOKUP        instArgLookup;
-    CORINFO_METHOD_HANDLE awaitMethod = info.compCompHnd->getAwaitReturnCall(info.compMethodHnd, true, &instArgLookup);
+    CORINFO_METHOD_HANDLE awaitMethod = info.compCompHnd->getAwaitReturnCall(info.compMethodHnd, &instArgLookup);
 
     CORINFO_SIG_INFO awaitSig;
     info.compCompHnd->getMethodSig(awaitMethod, &awaitSig);
@@ -11700,7 +11698,7 @@ void Compiler::impWrapTopOfStackInAwait()
 
     AsyncCallInfo* asyncInfo = new (this, CMK_Async) AsyncCallInfo;
 
-    if (transparent)
+    if (impInlineRoot()->compIsAsyncVersion())
     {
         asyncInfo->IsTailAwait = !compIsForInlining() || impInlineInfo->iciCall->GetAsyncInfo().IsTailAwait;
     }
@@ -11708,7 +11706,6 @@ void Compiler::impWrapTopOfStackInAwait()
     {
         // We are inlining into an async method. This means we have a proper
         // async await, and we require proper handling.
-        //asyncInfo->ContinuationContextHandling = 
         assert(compIsForInlining() && impInlineInfo->iciCall->IsAsync());
         GenTreeCall* inlCall = impInlineInfo->iciCall;
 

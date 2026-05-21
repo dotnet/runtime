@@ -1212,10 +1212,10 @@ void MyICJI::getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfo)
     jitInstance->mc->repGetAsyncInfo(pAsyncInfo);
 }
 
-CORINFO_METHOD_HANDLE MyICJI::getAwaitReturnCall(CORINFO_METHOD_HANDLE callerHandle, bool transparent, CORINFO_LOOKUP* instArg)
+CORINFO_METHOD_HANDLE MyICJI::getAwaitReturnCall(CORINFO_METHOD_HANDLE callerHandle, CORINFO_LOOKUP* instArg)
 {
     jitInstance->mc->cr->AddCall("getAwaitReturnCall");
-    return jitInstance->mc->repGetAwaitReturnCall(callerHandle, transparent, instArg);
+    return jitInstance->mc->repGetAwaitReturnCall(callerHandle, instArg);
 }
 
 /*********************************************************************************/
