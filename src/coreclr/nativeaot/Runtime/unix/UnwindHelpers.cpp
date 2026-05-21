@@ -15,6 +15,94 @@
 // libunwind headers
 #include <libunwind.h>
 
+// HP libunwind uses AARCH64 register enum names while historical NativeAOT
+// code used ARM64-prefixed names from llvm-libunwind internals.
+#if defined(TARGET_ARM64) && defined(UNW_TARGET_AARCH64) && !defined(UNW_ARM64_X0)
+#define UNW_ARM64_X0 UNW_AARCH64_X0
+#define UNW_ARM64_X1 UNW_AARCH64_X1
+#define UNW_ARM64_X2 UNW_AARCH64_X2
+#define UNW_ARM64_X3 UNW_AARCH64_X3
+#define UNW_ARM64_X4 UNW_AARCH64_X4
+#define UNW_ARM64_X5 UNW_AARCH64_X5
+#define UNW_ARM64_X6 UNW_AARCH64_X6
+#define UNW_ARM64_X7 UNW_AARCH64_X7
+#define UNW_ARM64_X8 UNW_AARCH64_X8
+#define UNW_ARM64_X9 UNW_AARCH64_X9
+#define UNW_ARM64_X10 UNW_AARCH64_X10
+#define UNW_ARM64_X11 UNW_AARCH64_X11
+#define UNW_ARM64_X12 UNW_AARCH64_X12
+#define UNW_ARM64_X13 UNW_AARCH64_X13
+#define UNW_ARM64_X14 UNW_AARCH64_X14
+#define UNW_ARM64_X15 UNW_AARCH64_X15
+#define UNW_ARM64_X16 UNW_AARCH64_X16
+#define UNW_ARM64_X17 UNW_AARCH64_X17
+#define UNW_ARM64_X18 UNW_AARCH64_X18
+#define UNW_ARM64_X19 UNW_AARCH64_X19
+#define UNW_ARM64_X20 UNW_AARCH64_X20
+#define UNW_ARM64_X21 UNW_AARCH64_X21
+#define UNW_ARM64_X22 UNW_AARCH64_X22
+#define UNW_ARM64_X23 UNW_AARCH64_X23
+#define UNW_ARM64_X24 UNW_AARCH64_X24
+#define UNW_ARM64_X25 UNW_AARCH64_X25
+#define UNW_ARM64_X26 UNW_AARCH64_X26
+#define UNW_ARM64_X27 UNW_AARCH64_X27
+#define UNW_ARM64_X28 UNW_AARCH64_X28
+#define UNW_ARM64_FP UNW_AARCH64_X29
+#define UNW_ARM64_LR UNW_AARCH64_X30
+#define UNW_ARM64_SP UNW_AARCH64_SP
+#define UNW_ARM64_D8 UNW_AARCH64_V8
+#define UNW_ARM64_D15 UNW_AARCH64_V15
+#endif
+
+// HP libunwind uses LOONGARCH64 register enum names while NativeAOT code
+// historically used LOONGARCH-prefixed names from llvm-libunwind internals.
+#if defined(TARGET_LOONGARCH64) && defined(UNW_TARGET_LOONGARCH64) && !defined(UNW_LOONGARCH_R0)
+#define UNW_LOONGARCH_R0 UNW_LOONGARCH64_R0
+#define UNW_LOONGARCH_R1 UNW_LOONGARCH64_R1
+#define UNW_LOONGARCH_R2 UNW_LOONGARCH64_R2
+#define UNW_LOONGARCH_R3 UNW_LOONGARCH64_R3
+#define UNW_LOONGARCH_R4 UNW_LOONGARCH64_R4
+#define UNW_LOONGARCH_R5 UNW_LOONGARCH64_R5
+#define UNW_LOONGARCH_R6 UNW_LOONGARCH64_R6
+#define UNW_LOONGARCH_R7 UNW_LOONGARCH64_R7
+#define UNW_LOONGARCH_R8 UNW_LOONGARCH64_R8
+#define UNW_LOONGARCH_R9 UNW_LOONGARCH64_R9
+#define UNW_LOONGARCH_R10 UNW_LOONGARCH64_R10
+#define UNW_LOONGARCH_R11 UNW_LOONGARCH64_R11
+#define UNW_LOONGARCH_R12 UNW_LOONGARCH64_R12
+#define UNW_LOONGARCH_R13 UNW_LOONGARCH64_R13
+#define UNW_LOONGARCH_R14 UNW_LOONGARCH64_R14
+#define UNW_LOONGARCH_R15 UNW_LOONGARCH64_R15
+#define UNW_LOONGARCH_R16 UNW_LOONGARCH64_R16
+#define UNW_LOONGARCH_R17 UNW_LOONGARCH64_R17
+#define UNW_LOONGARCH_R18 UNW_LOONGARCH64_R18
+#define UNW_LOONGARCH_R19 UNW_LOONGARCH64_R19
+#define UNW_LOONGARCH_R20 UNW_LOONGARCH64_R20
+#define UNW_LOONGARCH_R21 UNW_LOONGARCH64_R21
+#define UNW_LOONGARCH_R22 UNW_LOONGARCH64_R22
+#define UNW_LOONGARCH_R23 UNW_LOONGARCH64_R23
+#define UNW_LOONGARCH_R24 UNW_LOONGARCH64_R24
+#define UNW_LOONGARCH_R25 UNW_LOONGARCH64_R25
+#define UNW_LOONGARCH_R26 UNW_LOONGARCH64_R26
+#define UNW_LOONGARCH_R27 UNW_LOONGARCH64_R27
+#define UNW_LOONGARCH_R28 UNW_LOONGARCH64_R28
+#define UNW_LOONGARCH_R29 UNW_LOONGARCH64_R29
+#define UNW_LOONGARCH_R30 UNW_LOONGARCH64_R30
+#define UNW_LOONGARCH_R31 UNW_LOONGARCH64_R31
+#define UNW_LOONGARCH_PC UNW_LOONGARCH64_PC
+#endif
+
+#if defined(TARGET_LOONGARCH64) && !defined(UNW_LOONGARCH_F24) && defined(UNW_LOONGARCH64_F24)
+#define UNW_LOONGARCH_F24 UNW_LOONGARCH64_F24
+#define UNW_LOONGARCH_F25 UNW_LOONGARCH64_F25
+#define UNW_LOONGARCH_F26 UNW_LOONGARCH64_F26
+#define UNW_LOONGARCH_F27 UNW_LOONGARCH64_F27
+#define UNW_LOONGARCH_F28 UNW_LOONGARCH64_F28
+#define UNW_LOONGARCH_F29 UNW_LOONGARCH64_F29
+#define UNW_LOONGARCH_F30 UNW_LOONGARCH64_F30
+#define UNW_LOONGARCH_F31 UNW_LOONGARCH64_F31
+#endif
+
 template <class To, class From>
 inline To unwindhelpers_bitcast(From from)
 {
@@ -728,7 +816,14 @@ void Registers_REGDISPLAY::setFloatRegister(int num, double value)
 // Shim that implements methods required by libunwind over REGDISPLAY
 struct Registers_REGDISPLAY : REGDISPLAY
 {
-    static constexpr int lastDwarfRegNum() { return UNW_LOONGARCH_F31; }
+    static constexpr int lastDwarfRegNum()
+    {
+#if defined(UNW_LOONGARCH_F31)
+        return UNW_LOONGARCH_F31;
+#else
+        return UNW_LOONGARCH_R31;
+#endif
+    }
 
     bool        validRegister(int num) const;
     bool        validFloatRegister(int num) const;
@@ -761,15 +856,22 @@ inline bool Registers_REGDISPLAY::validRegister(int num) const {
     if (num >= UNW_LOONGARCH_R0 && num <= UNW_LOONGARCH_R31)
         return true;
 
+#if defined(UNW_LOONGARCH_F24) && defined(UNW_LOONGARCH_F31)
     if (num >= UNW_LOONGARCH_F24 && num <= UNW_LOONGARCH_F31)
         return true;
+#endif
 
     return false;
 }
 
 bool Registers_REGDISPLAY::validFloatRegister(int num) const
 {
+#if defined(UNW_LOONGARCH_F24) && defined(UNW_LOONGARCH_F31)
     return num >= UNW_LOONGARCH_F24 && num <= UNW_LOONGARCH_F31;
+#else
+    (void)num;
+    return false;
+#endif
 }
 
 inline uint64_t Registers_REGDISPLAY::getRegister(int regNum) const {
@@ -968,14 +1070,26 @@ void Registers_REGDISPLAY::setRegister(int num, uint64_t value, uint64_t locatio
 
 double Registers_REGDISPLAY::getFloatRegister(int num) const
 {
+#if defined(UNW_LOONGARCH_F24)
     assert(validFloatRegister(num));
     return unwindhelpers_bitcast<double>(F[num - UNW_LOONGARCH_F24]);
+#else
+    (void)num;
+    PORTABILITY_ASSERT("unsupported loongarch64 float register");
+    return 0.0;
+#endif
 }
 
 void Registers_REGDISPLAY::setFloatRegister(int num, double value)
 {
+#if defined(UNW_LOONGARCH_F24)
     assert(validFloatRegister(num));
     F[num - UNW_LOONGARCH_F24] = unwindhelpers_bitcast<uint64_t>(value);
+#else
+    (void)num;
+    (void)value;
+    PORTABILITY_ASSERT("unsupported loongarch64 float register");
+#endif
 }
 
 #endif // TARGET_LOONGARCH64

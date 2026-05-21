@@ -95,7 +95,7 @@ bool UnixNativeCodeManager::FindMethodInfo(PTR_VOID        ControlPC,
 
     pMethodInfo->start_ip = procInfo.start_ip;
     pMethodInfo->format = procInfo.format;
-    pMethodInfo->unwind_info = procInfo.unwind_info;
+    pMethodInfo->unwind_info = static_cast<unw_word_t>(reinterpret_cast<uintptr_t>(procInfo.unwind_info));
 
     uintptr_t lsda = procInfo.lsda;
 

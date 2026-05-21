@@ -145,6 +145,11 @@ else()
 
   include(${GC_DIR}/unix/configure.cmake)
 
+  # NativeAOT sources include "config.h" from unix/configure.cmake output.
+  # Keep this include directory ahead of external/libunwind to avoid pulling
+  # in libunwind's unrelated config.h.
+  include_directories(BEFORE ${CMAKE_CURRENT_BINARY_DIR})
+
   if(CLR_CMAKE_TARGET_ARCH_WASM)
     include_directories($ENV{EMSCRIPTEN/system/lib/libcxxabi/include})
   endif()
@@ -163,7 +168,9 @@ else()
     include_directories(${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind/include)
     include_directories(${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind/include/tdep)
 
-    add_subdirectory(${CLR_SRC_NATIVE_DIR}/external/libunwind_extras ${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind)
+    if(NOT TARGET libunwind AND NOT TARGET libunwind_dac)
+      add_subdirectory(${CLR_SRC_NATIVE_DIR}/external/libunwind_extras ${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind)
+    endif()
   endif()
 
   list(APPEND COMMON_RUNTIME_SOURCES
@@ -185,7 +192,7 @@ else()
   )
 
   if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
-    list(APPEND FULL_RUNTIME_SOURCES $<TARGET_OBJECTS:libunwind>)
+    set(NATIVEAOT_RUNTIME_LIBUNWIND_TARGET libunwind)
   endif()
 
   set(ASM_SUFFIX S)
