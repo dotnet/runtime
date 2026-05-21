@@ -106,24 +106,38 @@ bool RhConfig::Environment::TryGetStringValue(const char* name, char** value)
     if (actualLen == 0)
         return false;
 
+    char* strValue = nullptr;
+
     if (actualLen < bufferLen)
     {
-        *value = PalCopyTCharAsChar(buffer);
+        strValue = PalCopyTCharAsChar(buffer);
+        if (strValue == nullptr)
+            return false;
+
+        *value = strValue;
         return true;
     }
 
     // Expand the buffer to get the value
     bufferLen = actualLen + 1;
     NewArrayHolder<TCHAR> newBuffer {new (nothrow) TCHAR[bufferLen]};
+
+    if (newBuffer.IsNull())
+        return false;
+
     actualLen = PalGetEnvironmentVariable(variableName, newBuffer, bufferLen);
     if (actualLen >= bufferLen)
         return false;
 
 #ifdef TARGET_WINDOWS
-    *value = PalCopyTCharAsChar(newBuffer);
+    strValue = PalCopyTCharAsChar(newBuffer);
+    if (strValue == nullptr)
+        return false;
 #else
-    *value = newBuffer.Extract();
+    strValue = newBuffer.Extract();
 #endif
+
+    *value = strValue;
     return true;
 }
 
