@@ -94,16 +94,14 @@ namespace ILCompiler.DependencyAnalysis
                 // to make the type check as cheap as possible we check for specific
                 // *sealed* types instead of doing `entry is EETypeNode` which has
                 // to walk the whole class hierarchy for the non matching nodes.
-                if (entry is not ConstructedEETypeNode constructedEETypeNode)
+                if (entry is not ConstructedEETypeNode typeNode)
                     continue;
-
-                TypeDesc potentialOverrideType = constructedEETypeNode.Type;
 #else
                 if (entry is not InheritedVirtualMethodsNode typeNode)
                     continue;
+#endif
 
                 TypeDesc potentialOverrideType = typeNode.Type;
-#endif
                 if (!potentialOverrideType.IsDefType || potentialOverrideType.IsInterface)
                     continue;
 

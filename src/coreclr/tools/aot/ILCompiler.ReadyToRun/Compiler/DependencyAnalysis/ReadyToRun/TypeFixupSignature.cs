@@ -233,10 +233,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private static bool TypeHasGVMSlots(TypeDesc type)
         {
-            foreach (MethodDesc method in type.EnumAllVirtualSlots())
+            TypeDesc currentType = type;
+            while (currentType != null)
             {
-                if (method.HasInstantiation)
-                    return true;
+                foreach (MethodDesc method in currentType.GetVirtualMethods())
+                {
+                    if (method.HasInstantiation)
+                        return true;
+                }
+                currentType = currentType.BaseType;
             }
 
             return false;
