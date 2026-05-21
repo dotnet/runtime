@@ -247,8 +247,6 @@ jobs:
 
       - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) -bxl $(buildConfig) $(archType)
         displayName: Build tests via BuildXL
-        env:
-          RoslynCommandLineLogFile: $(Build.SourcesDirectory)/artifacts/log/roslyn-compiler.log
 
       - script: |
           echo "Looking for Out/ directory..."
@@ -257,21 +255,6 @@ jobs:
           echo "Looking for .runner.sh files..."
           find $(Build.SourcesDirectory)/Out -name '*.runner.sh' -type f 2>/dev/null | head -5 || echo "No .runner.sh files found"
         displayName: Debug BXL output locations
-
-      - script: |
-          echo "=== Roslyn Compiler Server Log ==="
-          if [ -f "$(Build.SourcesDirectory)/artifacts/log/roslyn-compiler.log" ]; then
-            head -50 "$(Build.SourcesDirectory)/artifacts/log/roslyn-compiler.log"
-            echo "..."
-            echo "Total lines: $(wc -l < $(Build.SourcesDirectory)/artifacts/log/roslyn-compiler.log)"
-            echo "=== Success vs Failure ==="
-            grep -c 'Server compilation completed: Success' "$(Build.SourcesDirectory)/artifacts/log/roslyn-compiler.log" || echo "0 successes"
-            grep -c 'CannotConnect\|Server build failed' "$(Build.SourcesDirectory)/artifacts/log/roslyn-compiler.log" || echo "0 failures"
-          else
-            echo "No roslyn-compiler.log found"
-          fi
-        displayName: Check Roslyn compiler server status
-        condition: always()
 
       - script: $(Build.SourcesDirectory)/eng/bxl/prepare-helix-payload.sh --output $(Build.SourcesDirectory)/artifacts/tests/bxl-helix-staging --objects-dir $(Build.SourcesDirectory)/Out/Objects --chunks 30
         displayName: Prepare BXL Helix payload

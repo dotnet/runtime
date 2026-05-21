@@ -27,7 +27,7 @@ config({
                     moduleName: "bxl_rules_dotnet_repo",
                     owner: "agocke",
                     repository: "bxl_rules_dotnet",
-                    commit: "fbe03b1af0b7012d00e5b5eccd8030a0408a2f68",
+                    commit: "3145173d7a2a8cce1d25ede95e8608d90fdb8bb8",
                 },
             ],
         },
