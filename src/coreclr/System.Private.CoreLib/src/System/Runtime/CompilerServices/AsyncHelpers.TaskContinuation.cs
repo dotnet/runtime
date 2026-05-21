@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Threading;
 using System.Threading.Tasks;
-using System.Threading.Tasks.Sources;
 
 namespace System.Runtime.CompilerServices
 {
@@ -25,7 +23,7 @@ namespace System.Runtime.CompilerServices
                 Debug.Assert(Task != null);
 
                 // Avoid retaining the task. The call below may throw.
-                Task? task = Task;
+                Task task = Task;
                 Task = null;
 
                 _getResult(task, ref returnValue);
