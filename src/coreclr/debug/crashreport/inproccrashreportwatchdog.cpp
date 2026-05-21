@@ -205,7 +205,15 @@ CrashReportWatchdog::ThreadLoop()
     // Keep within minipal's portable 15-character limit to avoid truncation.
     (void)minipal_set_thread_name(pthread_self(), ".NET CrashWdg");
 
-    while (!WaitForCommand(Command::Started)) {}
+    if (!WaitForCommand(Command::Started))
+    {
+        // The watchdog is best-effort: if the notification pipe is broken, the
+        // watchdog can no longer observe crash-report progress. Retrying would
+        // spin forever, so leave termination to the platform's normal handling.
+        minipal_log_write_error(
+            "In-proc crash report watchdog failed while waiting for a start notification; exiting watchdog thread.\n");
+        return;
+    }
 
     minipal_log_print_info(
         "In-proc crash report watchdog started monitoring with a %lu second timeout.\n",
