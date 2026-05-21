@@ -310,7 +310,7 @@ namespace System.IO
                 ArgumentOutOfRangeException.ThrowIfNegative(value);
                 EnsureNotClosed();
 
-                if (value > MemStreamMaxLength - _origin)
+                if (value > int.MaxValue - _origin)
                     throw new ArgumentOutOfRangeException(nameof(value), SR.Format(SR.ArgumentOutOfRange_StreamLength, Array.MaxLength));
                 _position = _origin + (int)value;
             }
@@ -523,7 +523,7 @@ namespace System.IO
 
         private long SeekCore(long offset, int loc)
         {
-            if (offset > MemStreamMaxLength - loc)
+            if (offset > int.MaxValue - loc)
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.Format(SR.ArgumentOutOfRange_StreamLength, Array.MaxLength));
             int tempPosition = unchecked(loc + (int)offset);
             if (unchecked(loc + offset) < _origin || tempPosition < _origin)

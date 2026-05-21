@@ -105,8 +105,8 @@ namespace System.IO.Tests
             byte[] buffer = new byte[bufferSize];
             using (MemoryStream ms = new MemoryStream(buffer, origin, buffer.Length - origin, true))
             {
-                Seek(mode, ms, Array.MaxLength - origin);
-                Assert.Throws<ArgumentOutOfRangeException>(() => Seek(mode, ms, (long)Array.MaxLength - origin + 1));
+                Seek(mode, ms, int.MaxValue - origin);
+                Assert.Throws<ArgumentOutOfRangeException>(() => Seek(mode, ms, (long)int.MaxValue - origin + 1));
                 Assert.ThrowsAny<Exception>(() => Seek(mode, ms, long.MinValue + 1));
                 Assert.ThrowsAny<Exception>(() => Seek(mode, ms, long.MaxValue - 1));
             }
