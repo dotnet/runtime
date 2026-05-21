@@ -32,7 +32,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 ContextGenerationSpec ctx2 = result2.ContextGenerationSpecs[i];
 
                 Assert.NotSame(ctx1, ctx2);
-#pragma warning disable IL2026 // Checks structural equality using reflection
+#pragma warning disable IL2026 // https://github.com/dotnet/runtime/issues/126862
                 GeneratorTestHelpers.AssertStructurallyEqual(ctx1, ctx2);
 #pragma warning restore IL2026
 
@@ -91,7 +91,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             ContextGenerationSpec ctx2 = result2.ContextGenerationSpecs[0];
 
             Assert.NotSame(ctx1, ctx2);
-#pragma warning disable IL2026 // Checks structural equality using reflection
+#pragma warning disable IL2026 // https://github.com/dotnet/runtime/issues/126862
             GeneratorTestHelpers.AssertStructurallyEqual(ctx1, ctx2);
 #pragma warning restore IL2026
 

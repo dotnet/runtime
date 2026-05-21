@@ -68,7 +68,7 @@ namespace System.Net.Quic.Tests
             {
                 // copy and box the instance because reflection methods take a reference type arg
                 object boxed = settings;
-#pragma warning disable IL2026 // Resets members using reflection
+#pragma warning disable IL2026 // https://github.com/dotnet/runtime/issues/126862
                 ResetMember(member, boxed);
 #pragma warning restore IL2026
                 Assert.False(settings.Equals((QUIC_SETTINGS)boxed), $"Member {member.Name} is not compared.");

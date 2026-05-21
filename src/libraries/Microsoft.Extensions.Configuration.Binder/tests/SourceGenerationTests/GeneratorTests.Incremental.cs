@@ -22,7 +22,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 SourceGenerationSpec spec2 = (await new ConfigBindingGenTestDriver().RunGeneratorAndUpdateCompilation(BindCallSampleCode)).GenerationSpec;
 
                 Assert.NotSame(spec1, spec2);
-#pragma warning disable IL2026 // Checks structural equality using reflection
+#pragma warning disable IL2026 // https://github.com/dotnet/runtime/issues/126862
                 GeneratorTestHelpers.AssertStructurallyEqual(spec1, spec2);
 #pragma warning restore IL2026
 

@@ -92,7 +92,7 @@ namespace System.Buffers.ArrayPool.Tests
 
                 const int AllocSize = 1024 * 1024 * 64;
                 int PageSize = Environment.SystemPageSize;
-#pragma warning disable IL2075 // This private reflection is broken since .NET 6
+#pragma warning disable IL2075 // This private reflection is broken since .NET 6: https://github.com/dotnet/runtime/issues/128431
                 var pressureMethod = ArrayPool<byte>.Shared.GetType().GetMethod("GetMemoryPressure", BindingFlags.Static | BindingFlags.NonPublic);
 #pragma warning restore IL2075
                 do
