@@ -257,6 +257,14 @@ If neither variation hits, also try with the test-name STEM — strip common ver
 
 Open PRs (always run): `is:pr is:open "<test-name>"`, `is:pr is:open "<test-file-path>"`, `is:pr is:open "<assembly>" in:title`. Fetch each candidate body; if it claims to fix this failure or links the same KBE, record `existing-PR #<n>` (in-flight fix) and stop.
 
+For JIT / runtime / build-level failures (no test workitem) — assert in `coreclr!*`, `clrjit!*`, native crash, compiler diagnostic — the queries above never match because there is no test name. ADD the following queries:
+
+- `is:pr is:open "<source-symbol>"` for every distinct C/C++ identifier in the stack frame or assertion text (e.g. `CompressDebugInfo`, `iOffsetMapping`, `m_pILToNativeMap`). Pick the 2-3 most unique identifiers; skip generic ones (`Compress`, `Map`, `Buffer`).
+- `is:pr is:open "<assertion-text>"` using a 6-12 word literal slice of the assert / diagnostic / exception message (NOT the full line; GitHub search treats quoted strings as exact phrases and trims punctuation).
+- `is:pr is:open "Fixes #<tracker>"` if Step 4.3 recorded `linked-tracker #<n>`.
+
+Each candidate body must be fetched and read; do not match on title alone. Same disposition: on hit, record `existing-PR #<n>` (in-flight fix) and stop the walk.
+
 Merged PRs (last 14 days) — only when Step 4.2 found a KBE or Step 4.3 found a tracker:
 
 - `is:pr is:merged "<test-name>" merged:>=<14-days-ago>`
@@ -435,14 +443,20 @@ Walk all nine before submission. Canonical reference: [`dotnet/arcade-skills/...
 4. Closing fence is exactly three backticks, same length as open.
 5. **All four keys** (`ErrorMessage`, `ErrorPattern`, `BuildRetry`, `ExcludeConsoleLog`) are present. Exactly one of `ErrorMessage` / `ErrorPattern` is non-empty; the unused one is `""` (empty string), NOT deleted. Build Analysis only treats an issue as a tracking KBE when the full schema is intact — omitting a key silently breaks `Tracking` linkage even though the JSON itself is valid.
 6. The signature is NOT a bare identifier. A fully-qualified test name, a stack-frame line, or a bare exception type all appear in `[PASS]` and `[SKIP]` lines for the same test. Applies to BOTH `ErrorMessage` and `ErrorPattern`. When using the array form (Template C), every element must be specific on its own; do not pair a bare test name with a generic xunit assertion stem (`Assert.Equal() Failure: Values differ`, `Assert.True() Failure`, `Assert.All() Failure: <N> out of <M> items...`). Include the unique `Expected: <v>` / `Actual: <v>` line, or pair with the actual exception type + message.
-7. Verbatim match against `failure.log` (MANDATORY). Build Analysis runs `String.Contains` on the actual log; paraphrased signatures close with "Known issue did not match with the provided build". Verify against the log saved by Step 3:
+7. **Verbatim match against `failure.log` (MANDATORY, HARD GATE).** Build Analysis runs `String.Contains` on the actual log; paraphrased signatures close with "Known issue did not match with the provided build". Verify against the log saved by Step 3:
 
    ```bash
    grep -Fc "<ErrorMessage value>" /tmp/gh-aw/agent/failure.log | tee /tmp/gh-aw/agent/pos_count.txt
    grep -F  "<ErrorMessage value>" /tmp/gh-aw/agent/failure.log | grep -E '^\[(PASS|SKIP)\]' | tee /tmp/gh-aw/agent/neg_lines.txt
    ```
 
-   Positive count MUST be >= 1; negative output MUST be empty. Swap `-F` for `-E` when verifying `ErrorPattern`. If positive is 0, rewrite to a verbatim substring; if negative is non-empty, narrow the signature. Embed the count as `<!-- ci-scan-match-count: N hits in failure.log -->` in the body.
+   For array form, repeat the positive `grep -Fc` for EVERY element. Swap `-F` for `-E` when verifying `ErrorPattern`.
+
+   The KBE MUST embed `<!-- ci-scan-match-count: N hits in failure.log -->` in the body where N is the positive count of the most-specific element. If you cannot produce this marker — positive count is 0 for any element, OR you cannot run `grep` against `failure.log` (Step 3 saved no log, log too large, redaction), OR the `failure.log` you have is a test-runner xunit log but the actual error is a JIT / runtime / build-level assert that doesn't appear there — DO NOT emit the KBE. Record `skipped: signature did not match failure.log (N=<count>)` and stop. A KBE without a verified positive count is guaranteed Build Analysis noise.
+
+   JIT / runtime / build-level asserts: the per-workitem xunit log Build Analysis indexes typically does NOT contain native assert output from `CHECK::Trigger`, `_ASSERTE`, NativeAOT diagnostics, or crash dumps. Native asserts print to stderr / the leg's raw console, which is a different log source. Prefer Template C (array form) pairing the source-symbol or method name with the assertion text — Build Analysis is more likely to find at least one of two anchors. If neither element greps positive in `failure.log`, treat as "skipped: native assert not in xunit log" and rely on the linked tracker + test-disable PR instead.
+
+   Negative output MUST be empty. If non-empty, narrow the signature.
 
 8. Single-line, no escapes. Build Analysis matchers do not strip newlines, ANSI escapes (`\u001b[`), or time-prefixes (`[12:34:56.789]`). Use array form for multi-line; use `[^\n]*` instead of `.*` in regexes.
 9. JSON escaping is correct. Inside the JSON string value: `"` -> `\"`, `\` -> `\\`, real newlines -> `\n`. Regex patterns double-escape: literal dot = `\\.` in JSON.
