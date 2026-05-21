@@ -9355,13 +9355,10 @@ void Compiler::impTransformDevirtualizedCall(GenTreeCall*            call,
             {
                 assert(((SIZE_T)dcInfo->tokenLookupContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS);
 
-                if (!info.compCompHnd->isValueClass(derivedClass))
-                {
-                    CORINFO_CLASS_HANDLE exactClassHandle =
-                        (CORINFO_CLASS_HANDLE)((SIZE_T)dcInfo->tokenLookupContext & ~CORINFO_CONTEXTFLAGS_MASK);
+                CORINFO_CLASS_HANDLE exactClassHandle =
+                    (CORINFO_CLASS_HANDLE)((SIZE_T)dcInfo->tokenLookupContext & ~CORINFO_CONTEXTFLAGS_MASK);
 
-                    instParam = getLookupTree(dcInfo->pInstParamLookup, GTF_ICON_CLASS_HDL, exactClassHandle);
-                }
+                instParam = getLookupTree(dcInfo->pInstParamLookup, GTF_ICON_CLASS_HDL, exactClassHandle);
             }
         }
     }
