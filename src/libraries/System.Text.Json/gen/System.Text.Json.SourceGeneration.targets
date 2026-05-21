@@ -73,6 +73,7 @@
     <Compile Include="Model\JsonPrimitiveTypeKind.cs" />
     <Compile Include="Model\ObjectConstructionStrategy.cs" />
     <Compile Include="Model\ParameterGenerationSpec.cs" />
+    <Compile Include="Model\PolymorphicDerivedTypeSpec.cs" />
     <Compile Include="Model\PropertyGenerationSpec.cs" />
     <Compile Include="Model\PropertyInitializerGenerationSpec.cs" />
     <Compile Include="Model\SourceGenerationOptionsSpec.cs" />

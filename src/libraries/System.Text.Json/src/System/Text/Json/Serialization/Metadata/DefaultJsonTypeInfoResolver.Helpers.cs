@@ -63,7 +63,7 @@ namespace System.Text.Json.Serialization.Metadata
                 typeInfo.UnmappedMemberHandling = unmappedMemberHandling;
             }
 
-            typeInfo.PopulatePolymorphismMetadata();
+            PopulatePolymorphismFromAttributes(typeInfo);
             typeInfo.MapInterfaceTypesToCallbacks();
 
             Func<object>? createObject = DetermineCreateObjectDelegate(type, converter);
@@ -639,6 +639,133 @@ namespace System.Text.Json.Serialization.Metadata
 #endif
             NullabilityInfo nullability = nullabilityCtx.Create(parameterInfo);
             return nullability.WriteState;
+        }
+
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+        private static void PopulatePolymorphismFromAttributes(JsonTypeInfo typeInfo)
+        {
+            Debug.Assert(!typeInfo.IsReadOnly);
+
+            Type baseType = typeInfo.Type;
+            JsonPolymorphismOptions? options = null;
+
+            if (baseType.GetCustomAttribute<JsonPolymorphicAttribute>(inherit: false) is JsonPolymorphicAttribute polymorphicAttribute)
+            {
+                options = new()
+                {
+                    IgnoreUnrecognizedTypeDiscriminators = polymorphicAttribute.IgnoreUnrecognizedTypeDiscriminators,
+                    UnknownDerivedTypeHandling = polymorphicAttribute.UnknownDerivedTypeHandling,
+                    TypeDiscriminatorPropertyName = polymorphicAttribute.TypeDiscriminatorPropertyName,
+                };
+            }
+
+            Type? baseTypeDefinition = null;
+            Type[]? baseTypeArgs = null;
+
+            foreach (JsonDerivedTypeAttribute attr in baseType.GetCustomAttributes<JsonDerivedTypeAttribute>(inherit: false))
+            {
+                Type derivedType = attr.DerivedType;
+
+                if (derivedType is { IsGenericTypeDefinition: true })
+                {
+                    if (!baseType.IsGenericType)
+                    {
+                        ThrowHelper.ThrowInvalidOperationException_OpenGenericDerivedTypeNotSupported(baseType, derivedType);
+                    }
+
+                    baseTypeDefinition ??= baseType.GetGenericTypeDefinition();
+                    baseTypeArgs ??= baseType.GetGenericArguments();
+
+                    if (!TryResolveOpenGenericDerivedType(derivedType, baseTypeDefinition, baseTypeArgs, out Type? resolvedType))
+                    {
+                        ThrowHelper.ThrowInvalidOperationException_OpenGenericDerivedTypeNotSupported(baseType, derivedType);
+                    }
+
+                    derivedType = resolvedType;
+                }
+
+                (options ??= new()).DerivedTypes.Add(new JsonDerivedType(derivedType, attr.TypeDiscriminator));
+            }
+
+            if (options != null)
+            {
+                typeInfo.SetPolymorphismOptions(options);
+            }
+        }
+
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+        private static bool TryResolveOpenGenericDerivedType(
+            Type openDerivedType,
+            Type baseTypeDefinition,
+            Type[] baseTypeArgs,
+            [NotNullWhen(true)] out Type? closedDerivedType)
+        {
+            closedDerivedType = null;
+
+            // Find the ancestor of the open derived type that matches the base type definition.
+            Type? matchingBase = FindMatchingBaseType(openDerivedType, baseTypeDefinition);
+            if (matchingBase is null)
+            {
+                return false;
+            }
+
+            // Only support direct parameter matching: the derived type's generic parameters
+            // must appear directly as the matching base type's type arguments, in corresponding positions.
+            // Complex forms like Derived<T> : Base<List<T>> or Derived<T1,T2> : Base<T2,T1> are not supported.
+            Type[] matchingBaseArgs = matchingBase.GetGenericArguments();
+            Type[] derivedTypeParams = openDerivedType.GetGenericArguments();
+
+            if (matchingBaseArgs.Length != derivedTypeParams.Length)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < matchingBaseArgs.Length; i++)
+            {
+                if (matchingBaseArgs[i] != derivedTypeParams[i])
+                {
+                    return false;
+                }
+            }
+
+            try
+            {
+                closedDerivedType = openDerivedType.MakeGenericType(baseTypeArgs);
+                return true;
+            }
+            catch (ArgumentException)
+            {
+                // Type constraints were violated.
+                return false;
+            }
+
+            static Type? FindMatchingBaseType(Type derivedType, Type baseTypeDefinition)
+            {
+                if (baseTypeDefinition.IsInterface)
+                {
+                    foreach (Type iface in derivedType.GetInterfaces())
+                    {
+                        if (iface.IsGenericType && iface.GetGenericTypeDefinition() == baseTypeDefinition)
+                        {
+                            return iface;
+                        }
+                    }
+                }
+                else
+                {
+                    for (Type? current = derivedType.BaseType; current is not null; current = current.BaseType)
+                    {
+                        if (current.IsGenericType && current.GetGenericTypeDefinition() == baseTypeDefinition)
+                        {
+                            return current;
+                        }
+                    }
+                }
+
+                return null;
+            }
         }
     }
 }

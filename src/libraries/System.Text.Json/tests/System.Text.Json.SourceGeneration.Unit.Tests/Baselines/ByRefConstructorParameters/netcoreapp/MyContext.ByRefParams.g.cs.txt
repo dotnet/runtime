@@ -34,6 +34,7 @@ namespace TestApp
                     ConstructorParameterMetadataInitializer = ByRefParamsCtorParamInit,
                     ConstructorAttributeProviderFactory = static () => typeof(global::TestApp.ByRefParams).GetConstructor(InstanceMemberBindingFlags, binder: null, new[] {typeof(global::System.DateTime), typeof(string), typeof(int)}, modifiers: null),
                     SerializeHandler = ByRefParamsSerializeHandler,
+                    DerivedTypes = null,
                 };
                 
                 jsonTypeInfo = global::System.Text.Json.Serialization.Metadata.JsonMetadataServices.CreateObjectInfo<global::TestApp.ByRefParams>(options, objectInfo);

@@ -49,7 +49,13 @@ namespace System.Text.Json.SourceGeneration
         public required bool ImplementsIJsonOnSerialized { get; init; }
         public required bool ImplementsIJsonOnSerializing { get; init; }
 
-        public required bool IsPolymorphic { get; init; }
+        /// <summary>
+        /// Resolved derived types for polymorphic serialization.
+        /// These are <c>[JsonDerivedType]</c> declarations resolved at compile time.
+        /// Open generic derived types are resolved to closed types using the base type's type arguments.
+        /// A non-null value indicates the type is polymorphic.
+        /// </summary>
+        public required ImmutableEquatableArray<PolymorphicDerivedTypeSpec>? ResolvedDerivedTypes { get; init; }
 
         public required bool IsValueTuple { get; init; }
 
@@ -112,7 +118,7 @@ namespace System.Text.Json.SourceGeneration
 
         public bool IsFastPathSupported()
         {
-            if (IsPolymorphic)
+            if (ResolvedDerivedTypes is not null)
             {
                 return false;
             }

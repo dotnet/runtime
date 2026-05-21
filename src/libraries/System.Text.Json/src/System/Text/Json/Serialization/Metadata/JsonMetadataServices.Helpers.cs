@@ -56,7 +56,18 @@ namespace System.Text.Json.Serialization.Metadata
             typeInfo.ConstructorAttributeProviderFactory = objectInfo.ConstructorAttributeProviderFactory;
             typeInfo.SerializeHandler = objectInfo.SerializeHandler;
             typeInfo.NumberHandling = objectInfo.NumberHandling;
-            typeInfo.PopulatePolymorphismMetadata();
+
+            if (objectInfo.DerivedTypes != null)
+            {
+                PopulatePolymorphismFromDerivedTypes(typeInfo, objectInfo.DerivedTypes);
+            }
+            else
+            {
+                // Legacy path: populate from attributes for backward compatibility
+                // with older versions of the source generator.
+                typeInfo.PopulatePolymorphismMetadata();
+            }
+
             typeInfo.MapInterfaceTypesToCallbacks();
 
             // Plug in any converter configuration -- should be run last.
@@ -125,6 +136,37 @@ namespace System.Text.Json.Serialization.Metadata
             else
             {
                 typeInfo.PropertyMetadataSerializationNotSupported = true;
+            }
+        }
+
+        private static void PopulatePolymorphismFromDerivedTypes(JsonTypeInfo typeInfo, JsonDerivedType[] derivedTypes)
+        {
+            Debug.Assert(!typeInfo.IsReadOnly);
+
+            JsonPolymorphismOptions? options = null;
+
+            if (typeInfo.Type.GetCustomAttribute<JsonPolymorphicAttribute>(inherit: false) is JsonPolymorphicAttribute polymorphicAttribute)
+            {
+                options = new()
+                {
+                    IgnoreUnrecognizedTypeDiscriminators = polymorphicAttribute.IgnoreUnrecognizedTypeDiscriminators,
+                    UnknownDerivedTypeHandling = polymorphicAttribute.UnknownDerivedTypeHandling,
+                    TypeDiscriminatorPropertyName = polymorphicAttribute.TypeDiscriminatorPropertyName,
+                };
+            }
+
+            if (derivedTypes.Length > 0)
+            {
+                options ??= new();
+                foreach (JsonDerivedType derivedType in derivedTypes)
+                {
+                    options.DerivedTypes.Add(derivedType);
+                }
+            }
+
+            if (options != null)
+            {
+                typeInfo.PolymorphismOptions = options;
             }
         }
 

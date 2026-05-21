@@ -1235,12 +1235,31 @@ namespace System.Text.Json.Serialization.Metadata
         {
             Debug.Assert(!IsReadOnly);
 
+            // If polymorphism options have already been set (e.g., programmatically
+            // or by a future source generator pattern), skip attribute-based resolution.
+            if (_polymorphismOptions is not null)
+            {
+                return;
+            }
+
             JsonPolymorphismOptions? options = JsonPolymorphismOptions.CreateFromAttributeDeclarations(Type);
             if (options != null)
             {
                 options.DeclaringTypeInfo = this;
                 _polymorphismOptions = options;
             }
+        }
+
+        /// <summary>
+        /// Sets polymorphism options bypassing the public setter's Kind validation.
+        /// Used by the reflection resolver, which reads [JsonDerivedType] attributes on all types
+        /// regardless of Kind and defers validation to PolymorphicTypeResolver during configuration.
+        /// </summary>
+        internal void SetPolymorphismOptions(JsonPolymorphismOptions options)
+        {
+            Debug.Assert(!IsReadOnly);
+            options.DeclaringTypeInfo = this;
+            _polymorphismOptions = options;
         }
 
         internal void MapInterfaceTypesToCallbacks()
