@@ -9,7 +9,7 @@ permissions:
   actions: read
 
 on:
-  schedule: every 3d
+  schedule: daily
   workflow_dispatch:
   roles: [admin, maintainer, write]
   permissions: {}
@@ -215,7 +215,7 @@ Hard rules: no comments on issues/PRs, no edits outside `.github/workflows/ci-fa
    </details>
    ````
 
-   If the tracker exists -> emit one `update_issue` with the new body. If not -> emit one `create_issue` titled `[ci-scan-feedback] KPI Tracker`. Either way, this step ALWAYS fires (never call `noop` for the tracker — a snapshot every 3 days is the point).
+   If the tracker exists -> emit one `update_issue` with the new body. If not -> emit one `create_issue` titled `[ci-scan-feedback] KPI Tracker`. Either way, this step ALWAYS fires (never call `noop` for the tracker — a daily snapshot is the point).
 
 ## Output to agent log
 

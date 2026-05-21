@@ -80,7 +80,7 @@ network:
 
 You are a CI triage agent. Each scheduled run, you scan a fixed list of `dnceng-public/public` outer-loop AzDO pipelines on `main`, classify failures, and emit gh-aw `safe-outputs` requests so every actionable failure converges on a Known Build Error issue (immediate effect on PR CI via Build Analysis) plus a follow-up test-disable PR (permanent effect after human merge).
 
-To suggest changes, edit this file or comment on the issues/PRs it files — the [`ci-failure-scan-feedback`](ci-failure-scan-feedback.md) workflow reads recent runs and that feedback every few days, and opens (or updates) a single draft PR with proposed edits.
+To suggest changes, edit this file or comment on the issues/PRs it files — the [`ci-failure-scan-feedback`](ci-failure-scan-feedback.md) workflow reads recent runs and that feedback daily, and opens (or updates) a single draft PR with proposed edits.
 
 The agent runs read-only. All writes go through `safe-outputs`.
 
@@ -384,7 +384,7 @@ Pull request: <link to the PR if the build was a PR build, otherwise omit this l
 ```
 
 ---
-Filed by [`ci-failure-scan`](.github/workflows/ci-failure-scan.md), which scans dnceng-public outer-loop pipelines on `main` and converts stable failures into KBEs and test-disable PRs. Comment here or on the workflow file to suggest changes; [`ci-failure-scan-feedback`](.github/workflows/ci-failure-scan-feedback.md) reads in-scope feedback every 3 days and opens (or updates) a PR with prompt edits.
+Filed by [`ci-failure-scan`](.github/workflows/ci-failure-scan.md), which scans dnceng-public outer-loop pipelines on `main` and converts stable failures into KBEs and test-disable PRs. Comment here or on the workflow file to suggest changes; [`ci-failure-scan-feedback`](.github/workflows/ci-failure-scan-feedback.md) reads in-scope feedback daily and opens (or updates) a PR with prompt edits.
 ````
 
 ### Template: KBE issue body — regex match
@@ -421,7 +421,7 @@ Pull request: <link, omit if not a PR build>
 ```
 
 ---
-Filed by [`ci-failure-scan`](.github/workflows/ci-failure-scan.md), which scans dnceng-public outer-loop pipelines on `main` and converts stable failures into KBEs and test-disable PRs. Comment here or on the workflow file to suggest changes; [`ci-failure-scan-feedback`](.github/workflows/ci-failure-scan-feedback.md) reads in-scope feedback every 3 days and opens (or updates) a PR with prompt edits.
+Filed by [`ci-failure-scan`](.github/workflows/ci-failure-scan.md), which scans dnceng-public outer-loop pipelines on `main` and converts stable failures into KBEs and test-disable PRs. Comment here or on the workflow file to suggest changes; [`ci-failure-scan-feedback`](.github/workflows/ci-failure-scan-feedback.md) reads in-scope feedback daily and opens (or updates) a PR with prompt edits.
 ````
 
 ### Template: KBE body verification (9 checks, mandatory)
@@ -536,7 +536,7 @@ Match verification (from Step 4.8):
 <if ActiveIssue reference used, link the issue>
 
 ---
-Filed by [`ci-failure-scan`](.github/workflows/ci-failure-scan.md), which scans dnceng-public outer-loop pipelines on `main` and converts stable failures into KBEs and test-disable PRs. Comment here or on the workflow file to suggest changes; [`ci-failure-scan-feedback`](.github/workflows/ci-failure-scan-feedback.md) reads in-scope feedback every 3 days and opens (or updates) a PR with prompt edits.
+Filed by [`ci-failure-scan`](.github/workflows/ci-failure-scan.md), which scans dnceng-public outer-loop pipelines on `main` and converts stable failures into KBEs and test-disable PRs. Comment here or on the workflow file to suggest changes; [`ci-failure-scan-feedback`](.github/workflows/ci-failure-scan-feedback.md) reads in-scope feedback daily and opens (or updates) a PR with prompt edits.
 ````
 
 Allowed test-disable mechanisms:
