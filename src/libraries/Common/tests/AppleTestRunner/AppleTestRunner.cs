@@ -41,6 +41,11 @@ public class SimpleTestRunner : iOSApplicationEntryPoint, IDevice
         }
         Console.WriteLine(".");
 
+        // On Apple-mobile NativeAOT the runtime does not redirect CurrentDirectory to the bundle
+        // root the way mono_ios_runtime_init does on the Mono path, so test data shipped alongside
+        // the test assemblies (via Content/CopyToOutputDirectory) is not reachable via relative paths.
+        Directory.SetCurrentDirectory(AppContext.BaseDirectory);
+
         foreach (string arg in args.Where(a => a.StartsWith("testlib:")))
         {
             s_testLibs.Add(arg.Remove(0, "testlib:".Length));
