@@ -57,8 +57,9 @@ namespace Internal.Runtime.TypeLoader
             private RuntimeTypeHandle _declaringType;
             private MethodHandle _handle;
             private RuntimeTypeHandle[] _genericArgs;
+            private bool _isAsyncVariant;
 
-            public RuntimeMethodHandleKey(RuntimeTypeHandle declaringType, MethodHandle handle, RuntimeTypeHandle[] genericArgs)
+            public RuntimeMethodHandleKey(RuntimeTypeHandle declaringType, MethodHandle handle, RuntimeTypeHandle[] genericArgs, bool isAsyncVariant)
             {
                 // genericArgs will be null if this is a (typical or not) method definition
                 // genericArgs are non-null only for instantiated generic methods.
@@ -67,6 +68,7 @@ namespace Internal.Runtime.TypeLoader
                 _declaringType = declaringType;
                 _handle = handle;
                 _genericArgs = genericArgs;
+                _isAsyncVariant = isAsyncVariant;
             }
 
             public override bool Equals(object obj)
@@ -80,6 +82,9 @@ namespace Internal.Runtime.TypeLoader
 
             public bool Equals(RuntimeMethodHandleKey other)
             {
+                if (_isAsyncVariant != other._isAsyncVariant)
+                    return false;
+
                 if (!_declaringType.Equals(other._declaringType) || !_handle.Equals(other._handle))
                     return false;
 
@@ -100,7 +105,7 @@ namespace Internal.Runtime.TypeLoader
             }
 
             public override int GetHashCode()
-                => _handle.GetHashCode() ^ (_genericArgs == null
+                => (_isAsyncVariant ? 0x5f356495 : 0x2d2816fe) ^ _handle.GetHashCode() ^ (_genericArgs == null
                 ? _declaringType.GetHashCode()
                 : VersionResilientHashCode.GenericInstanceHashCode(_declaringType.GetHashCode(), _genericArgs));
         }
@@ -157,7 +162,7 @@ namespace Internal.Runtime.TypeLoader
         /// </summary>
         public unsafe RuntimeMethodHandle GetRuntimeMethodHandleForComponents(RuntimeTypeHandle declaringTypeHandle, MethodHandle handle, RuntimeTypeHandle[] genericMethodArgs, bool isAsyncVariant)
         {
-            RuntimeMethodHandleKey key = new RuntimeMethodHandleKey(declaringTypeHandle, handle, genericMethodArgs);
+            RuntimeMethodHandleKey key = new RuntimeMethodHandleKey(declaringTypeHandle, handle, genericMethodArgs, isAsyncVariant);
 
             lock (_runtimeMethodHandles)
             {
