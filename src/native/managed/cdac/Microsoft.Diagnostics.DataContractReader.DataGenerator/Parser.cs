@@ -89,7 +89,6 @@ internal static class Parser
             Names: names,
             HasTypeHandle: hasTypeHandle,
             ImplementsIData: implementsIData,
-            HintFilePath: syntaxRef?.SyntaxTree.FilePath,
             Members: EquatableArray<MemberModel>.FromEnumerable(members));
     }
     private static bool GetNamedBool(AttributeData attr, string name)

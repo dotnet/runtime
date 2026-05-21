@@ -73,5 +73,4 @@ internal sealed record CdacTypeModel(
     EquatableArray<string> Names,
     bool HasTypeHandle,
     bool ImplementsIData,
-    string? HintFilePath,
     EquatableArray<MemberModel> Members) : IEquatable<CdacTypeModel>;
