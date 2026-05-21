@@ -989,7 +989,7 @@ private:
             dcInfo.isExplicitTailCall   = (call->gtCallMoreFlags & GTF_CALL_M_EXPLICIT_TAILCALL) != 0;
             dcInfo.objClassIsExact      = (clsHnd != NO_CLASS_HANDLE) && objClassIsExact;
             dcInfo.objClassIsFinal      = false;
-            dcInfo.ilOffset             = BAD_IL_OFFSET;
+            dcInfo.ilOffset             = inlineInfo->ilOffset;
             dcInfo.pInstParamLookup     = &inlineInfo->guardedMethodInstParamLookup;
 
             m_compiler->impTransformDevirtualizedCall(call, &methodHnd, &derivedMethodAttribs, &dcInfo, block, &context,
