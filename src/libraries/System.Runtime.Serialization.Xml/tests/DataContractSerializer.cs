@@ -4599,9 +4599,13 @@ public static partial class DataContractSerializerTests
             {
                 edi = ExceptionDispatchInfo.Capture(ex);
             }
-        }, StackSize);
+        }, StackSize)
+        {
+            IsBackground = true,
+        };
         t.Start();
-        t.Join();
+        // Bounded join so a runtime-side deadlock can't hang the entire Helix work item.
+        Assert.True(t.Join(TimeSpan.FromMinutes(2)), "DCS_DeeplyLinkedData worker thread did not complete within timeout.");
         edi?.Throw();
     }
 
