@@ -3275,7 +3275,7 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static Vector512<ulong> ShiftRightLogical(Vector512<ulong> vector, int shiftCount) => vector >>> shiftCount;
 
- private static Vector512<T> ShuffleFallback<T, TIndex>(Vector512<T> vector, Vector512<TIndex> indices)
+        private static Vector512<T> ShuffleFallback<T, TIndex>(Vector512<T> vector, Vector512<TIndex> indices)
                     where TIndex : IBinaryInteger<TIndex>
         {
             Debug.Assert(Vector512<T>.Count == Vector512<TIndex>.Count);
@@ -3312,51 +3312,51 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static Vector512<byte> Shuffle(Vector512<byte> vector, Vector512<byte> indices) => ShuffleFallback(vector, indices);
 
-        /// <inheritdoc cref="Shuffle(Vector512{Byte}, Vector512{Byte})" />
+        /// <inheritdoc cref="Shuffle(Vector512{byte}, Vector512{byte})" />
         [Intrinsic]
         public static Vector512<double> Shuffle(Vector512<double> vector, Vector512<long> indices) => ShuffleFallback(vector, indices);
 
-        /// <inheritdoc cref="Shuffle(Vector512{Byte}, Vector512{Byte})" />
+        /// <inheritdoc cref="Shuffle(Vector512{byte}, Vector512{byte})" />
         [Intrinsic]
         public static Vector512<short> Shuffle(Vector512<short> vector, Vector512<short> indices) => ShuffleFallback(vector, indices);
 
-        /// <inheritdoc cref="Shuffle(Vector512{Byte}, Vector512{Byte})" />
+        /// <inheritdoc cref="Shuffle(Vector512{byte}, Vector512{byte})" />
         [Intrinsic]
         public static Vector512<int> Shuffle(Vector512<int> vector, Vector512<int> indices) => ShuffleFallback(vector, indices);
 
-        /// <inheritdoc cref="Shuffle(Vector512{Byte}, Vector512{Byte})" />
+        /// <inheritdoc cref="Shuffle(Vector512{byte}, Vector512{byte})" />
         [Intrinsic]
         public static Vector512<long> Shuffle(Vector512<long> vector, Vector512<long> indices) => ShuffleFallback(vector, indices);
 
-        /// <inheritdoc cref="Shuffle(Vector512{Byte}, Vector512{Byte})" />
+        /// <inheritdoc cref="Shuffle(Vector512{byte}, Vector512{byte})" />
         [Intrinsic]
         public static Vector512<nint> Shuffle(Vector512<nint> vector, Vector512<nint> indices) => ShuffleFallback(vector, indices);
 
-        /// <inheritdoc cref="Shuffle(Vector512{Byte}, Vector512{Byte})" />
+        /// <inheritdoc cref="Shuffle(Vector512{byte}, Vector512{byte})" />
         [Intrinsic]
         [CLSCompliant(false)]
         public static Vector512<sbyte> Shuffle(Vector512<sbyte> vector, Vector512<sbyte> indices) => ShuffleFallback(vector, indices);
 
-        /// <inheritdoc cref="Shuffle(Vector512{Byte}, Vector512{Byte})" />
+        /// <inheritdoc cref="Shuffle(Vector512{byte}, Vector512{byte})" />
         [Intrinsic]
         public static Vector512<float> Shuffle(Vector512<float> vector, Vector512<int> indices) => ShuffleFallback(vector, indices);
 
-        /// <inheritdoc cref="Shuffle(Vector512{Byte}, Vector512{Byte})" />
+        /// <inheritdoc cref="Shuffle(Vector512{byte}, Vector512{byte})" />
         [Intrinsic]
         [CLSCompliant(false)]
         public static Vector512<ushort> Shuffle(Vector512<ushort> vector, Vector512<ushort> indices) => ShuffleFallback(vector, indices);
 
-        /// <inheritdoc cref="Shuffle(Vector512{Byte}, Vector512{Byte})" />
+        /// <inheritdoc cref="Shuffle(Vector512{byte}, Vector512{byte})" />
         [Intrinsic]
         [CLSCompliant(false)]
         public static Vector512<uint> Shuffle(Vector512<uint> vector, Vector512<uint> indices) => ShuffleFallback(vector, indices);
 
-        /// <inheritdoc cref="Shuffle(Vector512{Byte}, Vector512{Byte})" />
+        /// <inheritdoc cref="Shuffle(Vector512{byte}, Vector512{byte})" />
         [Intrinsic]
         [CLSCompliant(false)]
         public static Vector512<ulong> Shuffle(Vector512<ulong> vector, Vector512<ulong> indices) => ShuffleFallback(vector, indices);
 
-        /// <inheritdoc cref="Shuffle(Vector512{Byte}, Vector512{Byte})" />
+        /// <inheritdoc cref="Shuffle(Vector512{byte}, Vector512{byte})" />
         [Intrinsic]
         [CLSCompliant(false)]
         public static Vector512<nuint> Shuffle(Vector512<nuint> vector, Vector512<nuint> indices) => ShuffleFallback(vector, indices);
@@ -3370,61 +3370,61 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<byte> ShuffleNative(Vector512<byte> vector, Vector512<byte> indices) => ShuffleNativeFallback(vector, indices);
 
-        /// <inheritdoc cref="ShuffleNative(Vector512{Byte}, Vector512{Byte})" />
+        /// <inheritdoc cref="ShuffleNative(Vector512{byte}, Vector512{byte})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<double> ShuffleNative(Vector512<double> vector, Vector512<long> indices) => ShuffleNativeFallback(vector, indices);
 
-        /// <inheritdoc cref="ShuffleNative(Vector512{Byte}, Vector512{Byte})" />
+        /// <inheritdoc cref="ShuffleNative(Vector512{byte}, Vector512{byte})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<short> ShuffleNative(Vector512<short> vector, Vector512<short> indices) => ShuffleNativeFallback(vector, indices);
 
-        /// <inheritdoc cref="ShuffleNative(Vector512{Byte}, Vector512{Byte})" />
+        /// <inheritdoc cref="ShuffleNative(Vector512{byte}, Vector512{byte})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<int> ShuffleNative(Vector512<int> vector, Vector512<int> indices) => ShuffleNativeFallback(vector, indices);
 
-        /// <inheritdoc cref="ShuffleNative(Vector512{Byte}, Vector512{Byte})" />
+        /// <inheritdoc cref="ShuffleNative(Vector512{byte}, Vector512{byte})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<long> ShuffleNative(Vector512<long> vector, Vector512<long> indices) => ShuffleNativeFallback(vector, indices);
 
-        /// <inheritdoc cref="ShuffleNative(Vector512{Byte}, Vector512{Byte})" />
+        /// <inheritdoc cref="ShuffleNative(Vector512{byte}, Vector512{byte})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<nint> ShuffleNative(Vector512<nint> vector, Vector512<nint> indices) => ShuffleNativeFallback(vector, indices);
 
-        /// <inheritdoc cref="ShuffleNative(Vector512{Byte}, Vector512{Byte})" />
+        /// <inheritdoc cref="ShuffleNative(Vector512{byte}, Vector512{byte})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static Vector512<sbyte> ShuffleNative(Vector512<sbyte> vector, Vector512<sbyte> indices) => ShuffleNativeFallback(vector, indices);
 
-        /// <inheritdoc cref="ShuffleNative(Vector512{Byte}, Vector512{Byte})" />
+        /// <inheritdoc cref="ShuffleNative(Vector512{byte}, Vector512{byte})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<float> ShuffleNative(Vector512<float> vector, Vector512<int> indices) => ShuffleNativeFallback(vector, indices);
 
-        /// <inheritdoc cref="ShuffleNative(Vector512{Byte}, Vector512{Byte})" />
+        /// <inheritdoc cref="ShuffleNative(Vector512{byte}, Vector512{byte})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static Vector512<ushort> ShuffleNative(Vector512<ushort> vector, Vector512<ushort> indices) => ShuffleNativeFallback(vector, indices);
 
-        /// <inheritdoc cref="ShuffleNative(Vector512{Byte}, Vector512{Byte})" />
+        /// <inheritdoc cref="ShuffleNative(Vector512{byte}, Vector512{byte})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static Vector512<uint> ShuffleNative(Vector512<uint> vector, Vector512<uint> indices) => ShuffleNativeFallback(vector, indices);
 
-        /// <inheritdoc cref="ShuffleNative(Vector512{Byte}, Vector512{Byte})" />
+        /// <inheritdoc cref="ShuffleNative(Vector512{byte}, Vector512{byte})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static Vector512<ulong> ShuffleNative(Vector512<ulong> vector, Vector512<ulong> indices) => ShuffleNativeFallback(vector, indices);
 
-        /// <inheritdoc cref="ShuffleNative(Vector512{Byte}, Vector512{Byte})" />
+        /// <inheritdoc cref="ShuffleNative(Vector512{byte}, Vector512{byte})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]

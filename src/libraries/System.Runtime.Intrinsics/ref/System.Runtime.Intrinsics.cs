@@ -326,8 +326,6 @@ namespace System.Runtime.Intrinsics
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector128<ulong> ShiftRightLogical(System.Runtime.Intrinsics.Vector128<ulong> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<byte> Shuffle(System.Runtime.Intrinsics.Vector128<byte> vector, System.Runtime.Intrinsics.Vector128<byte> indices) { throw null; }
-        [System.CLSCompliantAttribute(false)]
-        public static System.Runtime.Intrinsics.Vector128<char> Shuffle(System.Runtime.Intrinsics.Vector128<char> vector, System.Runtime.Intrinsics.Vector128<ushort> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<double> Shuffle(System.Runtime.Intrinsics.Vector128<double> vector, System.Runtime.Intrinsics.Vector128<long> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<short> Shuffle(System.Runtime.Intrinsics.Vector128<short> vector, System.Runtime.Intrinsics.Vector128<short> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<int> Shuffle(System.Runtime.Intrinsics.Vector128<int> vector, System.Runtime.Intrinsics.Vector128<int> indices) { throw null; }
@@ -345,8 +343,6 @@ namespace System.Runtime.Intrinsics
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector128<nuint> Shuffle(System.Runtime.Intrinsics.Vector128<nuint> vector, System.Runtime.Intrinsics.Vector128<nuint> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<byte> ShuffleNative(System.Runtime.Intrinsics.Vector128<byte> vector, System.Runtime.Intrinsics.Vector128<byte> indices) { throw null; }
-        [System.CLSCompliantAttribute(false)]
-        public static System.Runtime.Intrinsics.Vector128<char> ShuffleNative(System.Runtime.Intrinsics.Vector128<char> vector, System.Runtime.Intrinsics.Vector128<ushort> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<double> ShuffleNative(System.Runtime.Intrinsics.Vector128<double> vector, System.Runtime.Intrinsics.Vector128<long> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<short> ShuffleNative(System.Runtime.Intrinsics.Vector128<short> vector, System.Runtime.Intrinsics.Vector128<short> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<int> ShuffleNative(System.Runtime.Intrinsics.Vector128<int> vector, System.Runtime.Intrinsics.Vector128<int> indices) { throw null; }
@@ -782,8 +778,6 @@ namespace System.Runtime.Intrinsics
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector256<ulong> ShiftRightLogical(System.Runtime.Intrinsics.Vector256<ulong> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<byte> Shuffle(System.Runtime.Intrinsics.Vector256<byte> vector, System.Runtime.Intrinsics.Vector256<byte> indices) { throw null; }
-        [System.CLSCompliantAttribute(false)]
-        public static System.Runtime.Intrinsics.Vector256<char> Shuffle(System.Runtime.Intrinsics.Vector256<char> vector, System.Runtime.Intrinsics.Vector256<ushort> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<double> Shuffle(System.Runtime.Intrinsics.Vector256<double> vector, System.Runtime.Intrinsics.Vector256<long> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<short> Shuffle(System.Runtime.Intrinsics.Vector256<short> vector, System.Runtime.Intrinsics.Vector256<short> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<int> Shuffle(System.Runtime.Intrinsics.Vector256<int> vector, System.Runtime.Intrinsics.Vector256<int> indices) { throw null; }
@@ -801,8 +795,6 @@ namespace System.Runtime.Intrinsics
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector256<nuint> Shuffle(System.Runtime.Intrinsics.Vector256<nuint> vector, System.Runtime.Intrinsics.Vector256<nuint> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<byte> ShuffleNative(System.Runtime.Intrinsics.Vector256<byte> vector, System.Runtime.Intrinsics.Vector256<byte> indices) { throw null; }
-        [System.CLSCompliantAttribute(false)]
-        public static System.Runtime.Intrinsics.Vector256<char> ShuffleNative(System.Runtime.Intrinsics.Vector256<char> vector, System.Runtime.Intrinsics.Vector256<ushort> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<double> ShuffleNative(System.Runtime.Intrinsics.Vector256<double> vector, System.Runtime.Intrinsics.Vector256<long> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<short> ShuffleNative(System.Runtime.Intrinsics.Vector256<short> vector, System.Runtime.Intrinsics.Vector256<short> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<int> ShuffleNative(System.Runtime.Intrinsics.Vector256<int> vector, System.Runtime.Intrinsics.Vector256<int> indices) { throw null; }
@@ -1239,8 +1231,6 @@ namespace System.Runtime.Intrinsics
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector512<ulong> ShiftRightLogical(System.Runtime.Intrinsics.Vector512<ulong> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<byte> Shuffle(System.Runtime.Intrinsics.Vector512<byte> vector, System.Runtime.Intrinsics.Vector512<byte> indices) { throw null; }
-        [System.CLSCompliantAttribute(false)]
-        public static System.Runtime.Intrinsics.Vector512<char> Shuffle(System.Runtime.Intrinsics.Vector512<char> vector, System.Runtime.Intrinsics.Vector512<ushort> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<double> Shuffle(System.Runtime.Intrinsics.Vector512<double> vector, System.Runtime.Intrinsics.Vector512<long> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<short> Shuffle(System.Runtime.Intrinsics.Vector512<short> vector, System.Runtime.Intrinsics.Vector512<short> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<int> Shuffle(System.Runtime.Intrinsics.Vector512<int> vector, System.Runtime.Intrinsics.Vector512<int> indices) { throw null; }
@@ -1258,8 +1248,6 @@ namespace System.Runtime.Intrinsics
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector512<nuint> Shuffle(System.Runtime.Intrinsics.Vector512<nuint> vector, System.Runtime.Intrinsics.Vector512<nuint> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<byte> ShuffleNative(System.Runtime.Intrinsics.Vector512<byte> vector, System.Runtime.Intrinsics.Vector512<byte> indices) { throw null; }
-        [System.CLSCompliantAttribute(false)]
-        public static System.Runtime.Intrinsics.Vector512<char> ShuffleNative(System.Runtime.Intrinsics.Vector512<char> vector, System.Runtime.Intrinsics.Vector512<ushort> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<double> ShuffleNative(System.Runtime.Intrinsics.Vector512<double> vector, System.Runtime.Intrinsics.Vector512<long> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<short> ShuffleNative(System.Runtime.Intrinsics.Vector512<short> vector, System.Runtime.Intrinsics.Vector512<short> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<int> ShuffleNative(System.Runtime.Intrinsics.Vector512<int> vector, System.Runtime.Intrinsics.Vector512<int> indices) { throw null; }
@@ -1665,8 +1653,6 @@ namespace System.Runtime.Intrinsics
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector64<ulong> ShiftRightLogical(System.Runtime.Intrinsics.Vector64<ulong> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<byte> Shuffle(System.Runtime.Intrinsics.Vector64<byte> vector, System.Runtime.Intrinsics.Vector64<byte> indices) { throw null; }
-        [System.CLSCompliantAttribute(false)]
-        public static System.Runtime.Intrinsics.Vector64<char> Shuffle(System.Runtime.Intrinsics.Vector64<char> vector, System.Runtime.Intrinsics.Vector64<ushort> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<short> Shuffle(System.Runtime.Intrinsics.Vector64<short> vector, System.Runtime.Intrinsics.Vector64<short> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<int> Shuffle(System.Runtime.Intrinsics.Vector64<int> vector, System.Runtime.Intrinsics.Vector64<int> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<nint> Shuffle(System.Runtime.Intrinsics.Vector64<nint> vector, System.Runtime.Intrinsics.Vector64<nint> indices) { throw null; }
@@ -1680,8 +1666,6 @@ namespace System.Runtime.Intrinsics
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector64<nuint> Shuffle(System.Runtime.Intrinsics.Vector64<nuint> vector, System.Runtime.Intrinsics.Vector64<nuint> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<byte> ShuffleNative(System.Runtime.Intrinsics.Vector64<byte> vector, System.Runtime.Intrinsics.Vector64<byte> indices) { throw null; }
-        [System.CLSCompliantAttribute(false)]
-        public static System.Runtime.Intrinsics.Vector64<char> ShuffleNative(System.Runtime.Intrinsics.Vector64<char> vector, System.Runtime.Intrinsics.Vector64<ushort> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<short> ShuffleNative(System.Runtime.Intrinsics.Vector64<short> vector, System.Runtime.Intrinsics.Vector64<short> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<int> ShuffleNative(System.Runtime.Intrinsics.Vector64<int> vector, System.Runtime.Intrinsics.Vector64<int> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<nint> ShuffleNative(System.Runtime.Intrinsics.Vector64<nint> vector, System.Runtime.Intrinsics.Vector64<nint> indices) { throw null; }
