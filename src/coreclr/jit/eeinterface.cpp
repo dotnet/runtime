@@ -92,11 +92,10 @@ void Compiler::eePrintCorInfoType(StringPrinter* printer, CorInfoType corInfoTyp
 {
     static const char* preciseVarTypeMap[CORINFO_TYPE_COUNT] = {// see the definition of enum CorInfoType in file
                                                                 // inc/corinfo.h
-                                                                "<UNDEF>", "void",       "bool",   "char",  "sbyte",
-                                                                "byte",    "short",      "ushort", "int",   "uint",
-                                                                "long",    "ulong",      "nint",   "nuint", "float",
-                                                                "double",  "string",     "ptr",    "byref", "struct",
-                                                                "class",   "typedbyref", "var"};
+                                                                "<UNDEF>", "void",  "bool",   "char",   "sbyte",
+                                                                "byte",    "short", "ushort", "int",    "uint",
+                                                                "long",    "ulong", "nint",   "nuint",  "float",
+                                                                "double",  "ptr",   "byref",  "struct", "class"};
 
     const char* corInfoTypeName = "CORINFO_TYPE_INVALID";
     if (corInfoType >= 0 && corInfoType < CORINFO_TYPE_COUNT)

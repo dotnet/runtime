@@ -636,8 +636,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             if (sig->retTypeSigClass != actualMethodRetTypeSigClass)
             {
                 if (actualMethodRetTypeSigClass != nullptr && sig->retType != CORINFO_TYPE_CLASS &&
-                    sig->retType != CORINFO_TYPE_BYREF && sig->retType != CORINFO_TYPE_PTR &&
-                    sig->retType != CORINFO_TYPE_VAR)
+                    sig->retType != CORINFO_TYPE_BYREF && sig->retType != CORINFO_TYPE_PTR)
                 {
                     // Make sure that all valuetypes (including enums) that we push are loaded.
                     // This is to guarantee that if a GC is triggered from the prestub of this methods,
@@ -4777,8 +4776,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                                 // This is now known to be a multi-dimension array with a constant dimension
                                 // that is in range; we can expand it as an intrinsic.
 
-                                impPopStack().val; // Pop the dim and array object; we already have a pointer to them.
-                                impPopStack().val;
+                                impPopStack(2); // Pop the dim and array object; we already have a pointer to them.
 
                                 // Make sure there are no global effects in the array (such as it being a function
                                 // call), so we can mark the generated indirection with GTF_IND_INVARIANT. In the
@@ -6554,7 +6552,7 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
         params[i].CorType = strip(info.compCompHnd->getArgType(sig, sigArg, &params[i].ClassHandle));
 
         if (params[i].CorType != CORINFO_TYPE_CLASS && params[i].CorType != CORINFO_TYPE_BYREF &&
-            params[i].CorType != CORINFO_TYPE_PTR && params[i].CorType != CORINFO_TYPE_VAR)
+            params[i].CorType != CORINFO_TYPE_PTR)
         {
             CORINFO_CLASS_HANDLE argRealClass = info.compCompHnd->getArgClass(sig, sigArg);
             if (argRealClass != nullptr)
@@ -6572,8 +6570,7 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
     }
 
     if ((sig->retTypeSigClass != nullptr) && (sig->retType != CORINFO_TYPE_CLASS) &&
-        (sig->retType != CORINFO_TYPE_BYREF) && (sig->retType != CORINFO_TYPE_PTR) &&
-        (sig->retType != CORINFO_TYPE_VAR))
+        (sig->retType != CORINFO_TYPE_BYREF) && (sig->retType != CORINFO_TYPE_PTR))
     {
         // Make sure that all valuetypes (including enums) that we push are loaded.
         // This is to guarantee that if a GC is triggered from the prestub of this methods,
@@ -9284,188 +9281,66 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
             if (unboxedEntryMethod != nullptr)
             {
-                bool optimizedTheBox = false;
-
-                // If the 'this' object is a local box, see if we can revise things
-                // to not require boxing.
+                // Rewrite the call to target the unboxed entry on the box payload. Keep the heap box,
+                // since the callee may return an interior managed pointer into it; object stack allocation
+                // can later promote the box to the stack when escape analysis proves the receiver does not
+                // escape.
                 //
-                if (thisObj->IsBoxedValue() && !isExplicitTailCall)
+                if (requiresInstMethodTableArg)
                 {
-                    // Since the call is the only consumer of the box, we know the box can't escape
-                    // since it is being passed an interior pointer.
+                    // Get the method table from the boxed object.
                     //
-                    // So, revise the box to simply create a local copy, use the address of that copy
-                    // as the this pointer, and update the entry point to the unboxed entry.
-                    //
-                    // Ideally, we then inline the boxed method and and if it turns out not to modify
-                    // the copy, we can undo the copy too.
-                    GenTree* localCopyThis = nullptr;
+                    // TODO-CallArgs-REVIEW: Use thisObj here? Differs by gtEffectiveVal.
+                    GenTree* const clonedThisArg = gtClone(thisArg->GetEarlyNode());
 
-                    if (requiresInstMethodTableArg)
+                    if (clonedThisArg == nullptr)
                     {
-                        // Perform a trial box removal and ask for the type handle tree that fed the box.
-                        //
-                        JITDUMP("Unboxed entry needs method table arg...\n");
-                        GenTree* methodTableArg =
-                            gtTryRemoveBoxUpstreamEffects(thisObj, BR_DONT_REMOVE_WANT_TYPE_HANDLE);
-
-                        if (methodTableArg != nullptr)
-                        {
-                            // If that worked, turn the box into a copy to a local var
-                            //
-                            JITDUMP("Found suitable method table arg tree [%06u]\n", dspTreeID(methodTableArg));
-                            localCopyThis = gtTryRemoveBoxUpstreamEffects(thisObj, BR_MAKE_LOCAL_COPY);
-
-                            if (localCopyThis != nullptr)
-                            {
-                                // Pass the local var as this and the type handle as a new arg
-                                //
-                                JITDUMP("Success! invoking unboxed entry point on local copy, and passing method table "
-                                        "arg\n");
-                                // TODO-CallArgs-REVIEW: Might discard commas otherwise?
-                                assert(thisObj == thisArg->GetEarlyNode());
-                                thisArg->SetEarlyNode(localCopyThis);
-                                INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_UNBOXED);
-
-                                call->gtArgs.InsertInstParam(this, methodTableArg);
-
-                                call->gtCallMethHnd   = unboxedEntryMethod;
-                                derivedMethod         = unboxedEntryMethod;
-                                pDerivedResolvedToken = &dvInfo.resolvedTokenDevirtualizedUnboxedMethod;
-
-                                // Method attributes will differ because unboxed entry point is shared
-                                //
-                                const DWORD unboxedMethodAttribs =
-                                    info.compCompHnd->getMethodAttribs(unboxedEntryMethod);
-                                JITDUMP("Updating method attribs from 0x%08x to 0x%08x\n", derivedMethodAttribs,
-                                        unboxedMethodAttribs);
-                                derivedMethodAttribs = unboxedMethodAttribs;
-                                optimizedTheBox      = true;
-                            }
-                            else
-                            {
-                                JITDUMP("Sorry, failed to undo the box -- can't convert to local copy\n");
-                            }
-                        }
-                        else
-                        {
-                            JITDUMP("Sorry, failed to undo the box -- can't find method table arg\n");
-                        }
+                        JITDUMP("unboxed entry needs MT arg, but `this` was too complex to clone. Deferring update.\n");
                     }
                     else
                     {
-                        JITDUMP("Found unboxed entry point, trying to simplify box to a local copy\n");
-                        localCopyThis = gtTryRemoveBoxUpstreamEffects(thisObj, BR_MAKE_LOCAL_COPY);
+                        JITDUMP("revising call to invoke unboxed entry with additional method table arg\n");
 
-                        if (localCopyThis != nullptr)
-                        {
-                            JITDUMP("Success! invoking unboxed entry point on local copy\n");
-                            assert(thisObj == thisArg->GetEarlyNode());
-                            // TODO-CallArgs-REVIEW: Might discard commas otherwise?
-                            thisArg->SetEarlyNode(localCopyThis);
-                            call->gtCallMethHnd = unboxedEntryMethod;
-                            INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_UNBOXED);
-                            derivedMethod         = unboxedEntryMethod;
-                            pDerivedResolvedToken = &dvInfo.resolvedTokenDevirtualizedUnboxedMethod;
+                        GenTree* const methodTableArg = gtNewMethodTableLookup(clonedThisArg);
 
-                            optimizedTheBox = true;
-                        }
-                        else
-                        {
-                            JITDUMP("Sorry, failed to undo the box\n");
-                        }
-                    }
-
-                    if (optimizedTheBox)
-                    {
-                        assert(localCopyThis->IsLclVarAddr());
-
-                        // We may end up inlining this call, so the local copy must be marked as "aliased",
-                        // making sure the inlinee importer will know when to spill references to its value.
-                        lvaGetDesc(localCopyThis->AsLclFld())->lvHasLdAddrOp = true;
-                        Metrics.DevirtualizedCallRemovedBox++;
-                        Metrics.DevirtualizedCallUnboxedEntry++;
-
-#if FEATURE_TAILCALL_OPT
-                        if (call->IsImplicitTailCall())
-                        {
-                            JITDUMP("Clearing the implicit tail call flag\n");
-
-                            // If set, we clear the implicit tail call flag
-                            // as we just introduced a new address taken local variable
-                            //
-                            call->gtCallMoreFlags &= ~GTF_CALL_M_IMPLICIT_TAILCALL;
-                        }
-#endif // FEATURE_TAILCALL_OPT
-                    }
-                }
-
-                if (!optimizedTheBox)
-                {
-                    // If we get here, we have a boxed value class that either wasn't boxed
-                    // locally, or was boxed locally but we were unable to remove the box for
-                    // various reasons.
-                    //
-                    // We can still update the call to invoke the unboxed entry, if the
-                    // boxed value is simple.
-                    //
-                    if (requiresInstMethodTableArg)
-                    {
-                        // Get the method table from the boxed object.
+                        // Update the 'this' pointer to refer to the box payload
                         //
-                        // TODO-CallArgs-REVIEW: Use thisObj here? Differs by gtEffectiveVal.
-                        GenTree* const clonedThisArg = gtClone(thisArg->GetEarlyNode());
-
-                        if (clonedThisArg == nullptr)
-                        {
-                            JITDUMP(
-                                "unboxed entry needs MT arg, but `this` was too complex to clone. Deferring update.\n");
-                        }
-                        else
-                        {
-                            JITDUMP("revising call to invoke unboxed entry with additional method table arg\n");
-
-                            GenTree* const methodTableArg = gtNewMethodTableLookup(clonedThisArg);
-
-                            // Update the 'this' pointer to refer to the box payload
-                            //
-                            GenTree* const payloadOffset = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
-                            GenTree* const boxPayload =
-                                gtNewOperNode(GT_ADD, TYP_BYREF, thisArg->GetEarlyNode(), payloadOffset);
-
-                            assert(thisObj == thisArg->GetEarlyNode());
-                            thisArg->SetEarlyNode(boxPayload);
-                            call->gtCallMethHnd = unboxedEntryMethod;
-                            INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_UNBOXED);
-
-                            // Method attributes will differ because unboxed entry point is shared
-                            //
-                            const DWORD unboxedMethodAttribs = info.compCompHnd->getMethodAttribs(unboxedEntryMethod);
-                            JITDUMP("Updating method attribs from 0x%08x to 0x%08x\n", derivedMethodAttribs,
-                                    unboxedMethodAttribs);
-                            derivedMethod         = unboxedEntryMethod;
-                            pDerivedResolvedToken = &dvInfo.resolvedTokenDevirtualizedUnboxedMethod;
-                            derivedMethodAttribs  = unboxedMethodAttribs;
-
-                            call->gtArgs.InsertInstParam(this, methodTableArg);
-                            Metrics.DevirtualizedCallUnboxedEntry++;
-                        }
-                    }
-                    else
-                    {
-                        JITDUMP("revising call to invoke unboxed entry\n");
-
                         GenTree* const payloadOffset = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
                         GenTree* const boxPayload =
                             gtNewOperNode(GT_ADD, TYP_BYREF, thisArg->GetEarlyNode(), payloadOffset);
 
+                        assert(thisObj == thisArg->GetEarlyNode());
                         thisArg->SetEarlyNode(boxPayload);
                         call->gtCallMethHnd = unboxedEntryMethod;
                         INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_UNBOXED);
+
+                        // Method attributes will differ because unboxed entry point is shared
+                        //
+                        const DWORD unboxedMethodAttribs = info.compCompHnd->getMethodAttribs(unboxedEntryMethod);
+                        JITDUMP("Updating method attribs from 0x%08x to 0x%08x\n", derivedMethodAttribs,
+                                unboxedMethodAttribs);
                         derivedMethod         = unboxedEntryMethod;
                         pDerivedResolvedToken = &dvInfo.resolvedTokenDevirtualizedUnboxedMethod;
+                        derivedMethodAttribs  = unboxedMethodAttribs;
+
+                        call->gtArgs.InsertInstParam(this, methodTableArg);
                         Metrics.DevirtualizedCallUnboxedEntry++;
                     }
+                }
+                else
+                {
+                    JITDUMP("revising call to invoke unboxed entry\n");
+
+                    GenTree* const payloadOffset = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
+                    GenTree* const boxPayload =
+                        gtNewOperNode(GT_ADD, TYP_BYREF, thisArg->GetEarlyNode(), payloadOffset);
+
+                    thisArg->SetEarlyNode(boxPayload);
+                    call->gtCallMethHnd = unboxedEntryMethod;
+                    INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_UNBOXED);
+                    derivedMethod         = unboxedEntryMethod;
+                    pDerivedResolvedToken = &dvInfo.resolvedTokenDevirtualizedUnboxedMethod;
+                    Metrics.DevirtualizedCallUnboxedEntry++;
                 }
             }
             else

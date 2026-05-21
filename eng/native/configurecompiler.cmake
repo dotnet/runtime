@@ -740,8 +740,15 @@ if (CLR_CMAKE_HOST_UNIX OR CLR_CMAKE_HOST_WASI)
   # We mark the function which needs exporting with DLLEXPORT
   add_compile_options(-fvisibility=hidden)
 
-  # Separate functions so linker can remove them.
+  # Separate functions and data into their own sections so the linker can remove
+  # unreferenced ones.
   add_compile_options(-ffunction-sections)
+  add_compile_options(-fdata-sections)
+  if(LD_OSX)
+    add_linker_flag(-Wl,-dead_strip CHECKED RELEASE RELWITHDEBINFO)
+  elseif(NOT LD_SOLARIS)
+    add_linker_flag(-Wl,--gc-sections CHECKED RELEASE RELWITHDEBINFO)
+  endif()
 
   # Specify the minimum supported version of macOS
   # Mac Catalyst needs a special CFLAG, exclusive with mmacosx-version-min

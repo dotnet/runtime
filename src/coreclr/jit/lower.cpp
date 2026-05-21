@@ -1844,6 +1844,8 @@ void Lowering::SplitArgumentBetweenRegistersAndStack(GenTreeCall* call, CallArg*
             m_compiler->gtNewLclFldNode(lcl->GetLclNum(), TYP_STRUCT, lcl->GetLclOffs() + stackSeg.Offset, stackLayout);
         BlockRange().InsertBefore(arg, stackNode);
 
+        m_compiler->lvaSetVarDoNotEnregister(lcl->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
+
         registersNode = m_compiler->gtNewFieldList();
         BlockRange().InsertBefore(arg, registersNode);
 
@@ -3693,80 +3695,6 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
     };
 
     GenTree* callTarget = call->gtControlExpr;
-
-    if (call->IsVirtualStub())
-    {
-        // VSDs go through a resolver instead which skips double validation and
-        // indirection.
-        CallArg* vsdCellArg = call->gtArgs.FindWellKnownArg(WellKnownArg::VirtualStubCell);
-        CallArg* thisArg    = call->gtArgs.GetThisArg();
-
-        assert((vsdCellArg != nullptr) && (thisArg != nullptr));
-        assert(thisArg->GetNode()->OperIs(GT_PUTARG_REG));
-        LIR::Use thisArgUse(BlockRange(), &thisArg->GetNode()->AsOp()->gtOp1, thisArg->GetNode());
-        GenTree* thisArgClone = cloneUse(thisArgUse, true);
-
-        // The VSD cell is not needed for the original call when going through the resolver.
-        // It can be removed without further fixups because it has fixed ABI assignment.
-        call->gtArgs.RemoveUnsafe(vsdCellArg);
-        assert(vsdCellArg->GetNode()->OperIs(GT_PUTARG_REG));
-        // Also PUTARG_REG can be removed.
-        BlockRange().Remove(vsdCellArg->GetNode());
-        // The actual cell we need for the resolver.
-        GenTree* vsdCellArgNode = vsdCellArg->GetNode()->gtGetOp1();
-
-        GenTreeCall* resolve = m_compiler->gtNewHelperCallNode(CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT, TYP_I_IMPL);
-
-        // Use a placeholder for the cell since the cell is already inserted in
-        // LIR.
-        GenTree* vsdCellPlaceholder = m_compiler->gtNewZeroConNode(TYP_I_IMPL);
-        resolve->gtArgs.PushFront(m_compiler,
-                                  NewCallArg::Primitive(vsdCellPlaceholder).WellKnown(WellKnownArg::VirtualStubCell));
-
-        // 'this' arg clone is not inserted, so no need to use a placeholder for that.
-        resolve->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(thisArgClone));
-
-        m_compiler->fgMorphTree(resolve);
-
-        LIR::Range resolveRange = LIR::SeqTree(m_compiler, resolve);
-        GenTree*   resolveFirst = resolveRange.FirstNode();
-        GenTree*   resolveLast  = resolveRange.LastNode();
-        // Resolution comes with a null check, so it must happen after all
-        // arguments are evaluated, hence we insert it right before the call.
-        BlockRange().InsertBefore(call, std::move(resolveRange));
-
-        // Swap out the VSD cell argument.
-        LIR::Use vsdCellUse;
-        bool     gotUse = BlockRange().TryGetUse(vsdCellPlaceholder, &vsdCellUse);
-        assert(gotUse);
-        vsdCellUse.ReplaceWith(vsdCellArgNode);
-        vsdCellPlaceholder->SetUnusedValue();
-
-        // Now we can lower the resolver.
-        LowerRange(resolveFirst, resolveLast);
-
-        // That inserted new PUTARG nodes right before the call, so we need to
-        // legalize the existing call's PUTARG_REG nodes.
-        MovePutArgNodesUpToCall(call);
-
-        // Finally update the call target
-        call->gtCallType    = CT_INDIRECT;
-        call->gtCallMethHnd = NO_METHOD_HANDLE;
-        call->gtFlags &= ~GTF_CALL_VIRT_STUB;
-        call->gtControlExpr = resolve;
-        call->gtCallCookie  = nullptr;
-#ifdef FEATURE_READYTORUN
-        call->gtEntryPoint.addr       = nullptr;
-        call->gtEntryPoint.accessType = IAT_VALUE;
-#endif
-
-        if (callTarget != nullptr)
-        {
-            callTarget->SetUnusedValue();
-        }
-
-        callTarget = resolve;
-    }
 
     if (callTarget == nullptr)
     {
@@ -7535,6 +7463,35 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
 {
     assert(call->IsVirtualStub());
 
+    if (m_compiler->opts.ShouldUseDispatchHelpers() || m_compiler->opts.IsCFGEnabled())
+    {
+        // Convert from VSD indirect call (call [r11]) to a direct call to a
+        // dispatch helper (call RhpInterfaceDispatch).
+        // The dispatch cell is still passed via the VirtualStubCell arg in r11.
+
+        // For CT_INDIRECT calls (shared generic code with dictionary lookup),
+        // gtControlExpr is a tree node in the LIR that computes the dispatch cell address.
+        // We're converting to a direct call, so mark it unused and let DCE
+        // remove it from the LIR.
+        // The VirtualStubCell arg (a deep clone of this tree) still passes
+        // the dispatch cell address in the VSD param register.
+        if (call->gtCallType == CT_INDIRECT)
+        {
+            call->gtControlExpr->SetUnusedValue();
+            call->gtControlExpr = nullptr;
+        }
+
+        CORINFO_CONST_LOOKUP helperLookup = m_compiler->compGetHelperFtn(CORINFO_HELP_INTERFACEDISPATCH_FOR_SLOT);
+        assert(helperLookup.accessType == IAT_VALUE);
+        call->gtCallType          = CT_USER_FUNC;
+        call->gtCallMethHnd       = nullptr;
+        call->gtDirectCallAddress = helperLookup.addr;
+        call->gtFlags &= ~GTF_CALL_VIRT_STUB;
+        call->gtCallMoreFlags &= ~GTF_CALL_M_VIRTSTUB_REL_INDIRECT;
+
+        return nullptr;
+    }
+
     // An x86 JIT which uses full stub dispatch must generate only
     // the following stub dispatch calls:
     //
@@ -8200,8 +8157,11 @@ bool Lowering::TryLowerConstIntUDivOrUMod(GenTreeOp* divMod)
     {
         // If the divisor is greater or equal than 2^(N - 1) then the result is 1
         // iff the dividend is greater or equal than the divisor.
-        if (((type == TYP_INT) && (divisorValue > (UINT32_MAX / 2))) ||
-            ((type == TYP_LONG) && (divisorValue > (UINT64_MAX / 2))))
+        if (((type == TYP_INT) && (divisorValue > (UINT32_MAX / 2)))
+#if defined(TARGET_64BIT)
+            || ((type == TYP_LONG) && (divisorValue > (UINT64_MAX / 2)))
+#endif
+        )
         {
             divMod->ChangeOper(GT_GE);
             divMod->SetUnsigned();
@@ -8491,7 +8451,11 @@ bool Lowering::TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode)
 
     if (isDiv)
     {
-        if ((type == TYP_INT && divisorValue == INT_MIN) || (type == TYP_LONG && divisorValue == INT64_MIN))
+        if ((type == TYP_INT && divisorValue == INT_MIN)
+#if defined(TARGET_64BIT)
+            || (type == TYP_LONG && divisorValue == INT64_MIN)
+#endif
+        )
         {
             // If the divisor is the minimum representable integer value then we can use a compare,
             // the result is 1 iff the dividend equals divisor.
@@ -8931,6 +8895,12 @@ PhaseStatus Lowering::DoPhase()
         // `lvDoNotEnregister` flag before we start reading it.
         // The main reason why this flag is not set is that we are running in minOpts.
         m_compiler->lvSetMinOptsDoNotEnreg();
+    }
+    else
+    {
+        // For many locals we know at this point that we won't enregister them,
+        // so DNER these for the same reasons as above.
+        m_compiler->lvSetVarsDoNotEnreg();
     }
 
     if (m_compiler->opts.OptimizationEnabled() && !m_compiler->opts.IsOSR())
@@ -10437,6 +10407,7 @@ static bool IsStoreCoalescingInvariantNode(Compiler* compiler, GenTree* node, bo
     return node->OperIs(GT_LCL_VAR) && !compiler->lvaVarAddrExposed(node->AsLclVar()->GetLclNum());
 }
 
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
 //------------------------------------------------------------------------
 // TryGetStoreCoalescingConstantBits: get the raw bits for a constant used by store
 //    coalescing.
@@ -10479,6 +10450,7 @@ static bool TryGetStoreCoalescingConstantBits(GenTree* value, uint64_t* bits)
 
     return false;
 }
+#endif // TARGET_XARCH || TARGET_ARM64
 
 //------------------------------------------------------------------------
 // GetLoadStoreCoalescingData: given a STOREIND/IND node, get the data needed to perform
