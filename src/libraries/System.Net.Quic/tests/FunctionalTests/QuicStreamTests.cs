@@ -787,6 +787,32 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
+        public async Task WritesCompleted_WritesAsync_Throws()
+        {
+            SemaphoreSlim sem = new SemaphoreSlim(0);
+            await RunBidirectionalClientServer(
+                async clientStream =>
+                {
+                    // Close and wait for write completion.
+                    clientStream.CompleteWrites();
+                    await clientStream.WritesClosed;
+
+                    // This should throw.
+                    await clientStream.WriteAsync(new byte[2] {1, 2}, false);
+
+                    await sem.WaitAsync();
+                },
+                async serverStream =>
+                {
+                    int received = await serverStream.ReadAsync(new byte[1]);
+                    Assert.Equal(0, received);
+                    await serverStream.ReadsClosed;
+
+                    sem.Release();
+                });
+        }
+
+        [Fact]
         public async Task WaitForWritesClosedAsync_ServerWriteAborted_Throws()
         {
             const int ExpectedErrorCode = 0xfffffff;
