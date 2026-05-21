@@ -30,7 +30,7 @@
 #endif
 
 // HP libunwind uses AARCH64 register enum names while historical NativeAOT
-// code used ARM64-prefixed names from llvm-libunwind internals.
+// code used ARM64-prefixed names from libunwind internals.
 #if defined(TARGET_ARM64) && defined(UNW_TARGET_AARCH64) && !defined(UNW_ARM64_X0)
 #define UNW_ARM64_X0 UNW_AARCH64_X0
 #define UNW_ARM64_X1 UNW_AARCH64_X1
@@ -69,7 +69,7 @@
 #endif
 
 // HP libunwind uses LOONGARCH64 register enum names while NativeAOT code
-// historically used LOONGARCH-prefixed names from llvm-libunwind internals.
+// historically used LOONGARCH-prefixed names from libunwind internals.
 #if defined(TARGET_LOONGARCH64) && defined(UNW_TARGET_LOONGARCH64) && !defined(UNW_LOONGARCH_R0)
 #define UNW_LOONGARCH_R0 UNW_LOONGARCH64_R0
 #define UNW_LOONGARCH_R1 UNW_LOONGARCH64_R1
@@ -1487,19 +1487,7 @@ bool UnwindHelpers::StepFrame(REGDISPLAY *regs, unw_word_t start_ip, uint32_t fo
             continue;
         }
 
-        unw_word_t location = 0;
-#if !defined(TARGET_APPLE)
-        unw_save_loc_t saveLoc;
-        if (unw_get_save_loc(&cursor, regNum, &saveLoc) == UNW_ESUCCESS && saveLoc.type == UNW_SLT_MEMORY)
-        {
-            location = saveLoc.u.addr;
-        }
-#endif
-
-        if (location == 0)
-        {
-            location = (unw_word_t)GetPreviousRegisterLocation(previousRegisterSet, regNum);
-        }
+        unw_word_t location = (unw_word_t)GetPreviousRegisterLocation(previousRegisterSet, regNum);
 
 #if defined(TARGET_APPLE) && defined(TARGET_ARM64)
         if (regNum == UNW_ARM64_LR)
@@ -1536,7 +1524,7 @@ bool UnwindHelpers::StepFrame(REGDISPLAY *regs, unw_word_t start_ip, uint32_t fo
 
 bool UnwindHelpers::GetUnwindProcInfo(PCODE pc, unw_proc_info_t *procInfo)
 {
-#if !defined(TARGET_APPLE)
+#if !defined(TARGET_APPLE) && defined(unw_get_proc_info_by_ip)
     return unw_get_proc_info_by_ip(unw_local_addr_space, pc, procInfo, nullptr) == UNW_ESUCCESS;
 #else
     unw_context_t unwContext;
