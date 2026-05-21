@@ -137,7 +137,7 @@ namespace System.Buffers
             if (IndexOfAnyAsciiSearcher.IsVectorizationSupported && PackedSpanHelpers.PackedIndexOfIsSupported &&
                 maxInclusive < 128 && values.Length == 4 && minInclusive > 0)
             {
-                Span<char> copy = stackalloc char[4];
+                Span<char> copy = ['\0', '\0', '\0', '\0'];
                 values.CopyTo(copy);
                 copy.Sort();
 
