@@ -3,11 +3,12 @@
 
 using System;
 using System.Diagnostics;
-using System.Net.Security;
-using System.Threading.Tasks;
-using System.Runtime.InteropServices;
-using System.Reflection;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Net.Security;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -17,38 +18,28 @@ namespace System.Net.Quic.Tests
 {
     public class MsQuicInteropTests
     {
-        private static MemberInfo[] GetMembers<T>()
+        private static MemberInfo[] GetMembers<
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields | DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)] T>()
         {
-#pragma warning disable IL2090
-            var members = typeof(T).FindMembers(MemberTypes.Field | MemberTypes.Property, BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public, (mi, _) =>
-#pragma warning restore IL2090
-            {
-                if (mi is PropertyInfo property && property.GetSetMethod() == null)
-                {
-                    return false;
-                }
-
-                return true;
-            }, null);
+            var members = typeof(T).GetFields(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public).Cast<MemberInfo>()
+                .Concat(typeof(T).GetProperties(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public).Where(property => property.GetSetMethod() is not null))
+                .ToArray();
 
             Assert.NotEmpty(members);
 
             return members;
         }
 
+        [RequiresUnreferencedCode("Resets members using reflection")]
         private static void ResetMember(MemberInfo member, object instance)
         {
             switch (member)
             {
                 case FieldInfo field:
-#pragma warning disable IL2072
                     field.SetValue(instance, Activator.CreateInstance(field.FieldType));
-#pragma warning restore IL2072
                     break;
                 case PropertyInfo property:
-#pragma warning disable IL2072
                     property.SetValue(instance, Activator.CreateInstance(property.PropertyType));
-#pragma warning restore IL2072
                     break;
                 default:
                     throw new InvalidOperationException($"Unexpected member type: {member.MemberType}");
@@ -72,7 +63,9 @@ namespace System.Net.Quic.Tests
             {
                 // copy and box the instance because reflection methods take a reference type arg
                 object boxed = settings;
+#pragma warning disable IL2026 // Resets members using reflection
                 ResetMember(member, boxed);
+#pragma warning restore IL2026
                 Assert.False(settings.Equals((QUIC_SETTINGS)boxed), $"Member {member.Name} is not compared.");
             }
         }

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using Xunit;
@@ -37,19 +38,17 @@ namespace System.Runtime.Serialization.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
+        [RequiresDynamicCode("BinaryFormatter serialization uses dynamic code generation")]
+        [RequiresUnreferencedCode("BinaryFormatter serialization is not trim compatible")]
         public void Ctor_SerializationInfo_StreamingContext()
         {
             using (var memoryStream = new MemoryStream())
             {
                 var formatter = new BinaryFormatter();
-#pragma warning disable IL2026
                 formatter.Serialize(memoryStream, new InvalidDataContractException());
-#pragma warning restore IL2026
 
                 memoryStream.Seek(0, SeekOrigin.Begin);
-#pragma warning disable IL2026, IL3050
                 Assert.IsType<InvalidDataContractException>(formatter.Deserialize(memoryStream));
-#pragma warning restore IL2026, IL3050
             }
         }
     }

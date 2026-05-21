@@ -4,6 +4,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using Xunit;
@@ -15,6 +16,7 @@ namespace SourceGenerators.Tests
         /// <summary>
         /// Asserts for structural equality, returning a path to the mismatching data when not equal.
         /// </summary>
+        [RequiresUnreferencedCode("Checks structural equality using reflection")]
         public static void AssertStructurallyEqual<T>(T expected, T actual)
         {
             CheckAreEqualCore(expected, actual, new());
@@ -59,14 +61,10 @@ namespace SourceGenerators.Tests
                     }
                 }
 
-#pragma warning disable IL2075
                 if (type.GetProperty("EqualityContract", BindingFlags.Instance | BindingFlags.NonPublic, null, returnType: typeof(Type), types: Array.Empty<Type>(), null) != null)
-#pragma warning restore IL2075
                 {
                     // Type is a C# record, run pointwise equality comparison.
-#pragma warning disable IL2075
                     foreach (PropertyInfo property in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
-#pragma warning restore IL2075
                     {
                         path.Push("." + property.Name);
                         CheckAreEqualCore(property.GetValue(expected), property.GetValue(actual), path);

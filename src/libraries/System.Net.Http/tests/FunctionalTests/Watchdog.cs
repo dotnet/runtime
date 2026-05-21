@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -13,7 +11,7 @@ namespace System.Net.Http.Functional.Tests
 {
     /// <summary>
     /// This is using similar trick to GetStateMachineData
-    /// If marked test runs for more than 60s it will print machine state and make sure it fails
+    /// If marked test runs for more than 60s it will make sure it fails
     /// Usage (await MUST be run directly in the test, should not be called from other async method):
     ///     using (await Watchdog.CreateAsync())
     ///     {
@@ -30,7 +28,7 @@ namespace System.Net.Http.Functional.Tests
             => new Watchdog();
 
         public IDisposable GetResult()
-            => new WatchdogImpl(_box);
+            => new WatchdogImpl();
 
         public Watchdog GetAwaiter() => this;
         public bool IsCompleted => false;
@@ -46,14 +44,13 @@ namespace System.Net.Http.Functional.Tests
             private bool _passed = true;
             private Timer _timer;
 
-            public WatchdogImpl(object stateMachineData)
+            public WatchdogImpl()
             {
-                _timer = new Timer(s =>
+                _timer = new Timer(_ =>
                     {
                         _passed = false;
-                        Console.WriteLine(GetStateMachineData.Describe(s));
                     },
-                    stateMachineData,
+                    null,
                     60_000,
                     60_000);
             }

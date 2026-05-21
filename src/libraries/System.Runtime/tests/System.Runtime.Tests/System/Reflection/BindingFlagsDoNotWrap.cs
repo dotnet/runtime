@@ -133,7 +133,7 @@ namespace System.Reflection.Tests
         {
             Assembly a = typeof(TestClass).Assembly;
             const BindingFlags flags = BindingFlags.Public | BindingFlags.Instance;
-#pragma warning disable IL2058
+#pragma warning disable IL2058 // https://github.com/dotnet/runtime/issues/126862
             TestDoNotWrap<MyException2>((bf) => a.CreateInstance(typeof(TestClass).FullName, false, bf | flags, null, Array.Empty<object>(), null, null));
 #pragma warning restore IL2058
         }
@@ -143,7 +143,7 @@ namespace System.Reflection.Tests
         {
             Assembly a = typeof(TestClass).Assembly;
             const BindingFlags flags = BindingFlags.Public | BindingFlags.Instance;
-#pragma warning disable IL2058
+#pragma warning disable IL2058 // https://github.com/dotnet/runtime/issues/126862
             TestDoNotWrap<TypeInitializationException>((bf) => a.CreateInstance(typeof(TestClassBadCCtor).FullName, false, bf | flags, null, Array.Empty<object>(), null, null));
 #pragma warning restore IL2058
         }
