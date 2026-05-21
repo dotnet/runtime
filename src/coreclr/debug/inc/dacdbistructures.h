@@ -802,7 +802,7 @@ typedef DacDbiArrayList<DebuggerIPCE_ExpandedTypeData> TypeParamsList;
 
 // A struct for passing version information from DBI to DAC.
 // See code:CordbProcess::CordbProcess#DBIVersionChecking for more information.
-const DWORD kCurrentDacDbiProtocolBreakingChangeCounter = 1;
+const DWORD kCurrentDacDbiProtocolBreakingChangeCounter = 2;
 
 struct DbiVersion
 {
