@@ -48,7 +48,7 @@ while IFS= read -r test_relative || [[ -n "$test_relative" ]]; do
     fi
 
     set +e
-    timeout --foreground --kill-after=10 "$TIMEOUT_SECONDS" "$test_path" 2>&1
+    timeout --foreground --kill-after=10 "$TIMEOUT_SECONDS" bash "$test_path" 2>&1
     rc=$?
     set -e
 
