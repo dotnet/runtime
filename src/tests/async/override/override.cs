@@ -79,7 +79,7 @@ public class Async2Override
             return 12;
         }
 
-        public override async Task<List<T>> M2<T>(T first, T second)
+        public override async Task<T> M2<T>(T first, T second)
         {
             await Task.Yield();
             return first;
