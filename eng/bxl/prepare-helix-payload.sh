@@ -112,6 +112,20 @@ for i in "${!runners[@]}"; do
     # Hard-link (fast, same filesystem) or fall back to copy
     ln "$dll_path" "$target_dir/$dll_name" 2>/dev/null || cp "$dll_path" "$target_dir/$dll_name"
 
+    # Copy runtime dependencies declared by the generated runner metadata.
+    # Format: # runtime-source: /absolute/path/to/<dependency>
+    while IFS= read -r runtime_path; do
+        [[ -n "$runtime_path" ]] || continue
+
+        if [[ ! -f "$runtime_path" ]]; then
+            echo "WARNING: Runtime dependency not found: $runtime_path" >&2
+            continue
+        fi
+
+        runtime_name=$(basename "$runtime_path")
+        ln "$runtime_path" "$target_dir/$runtime_name" 2>/dev/null || cp "$runtime_path" "$target_dir/$runtime_name"
+    done < <(grep -oP '^# runtime-source: \K.*' "$runner" 2>/dev/null || true)
+
     echo "tests/$subdir/$dll_name" >> "$chunk_dir/manifest.txt"
     chunk_count=$((chunk_count + 1))
 done

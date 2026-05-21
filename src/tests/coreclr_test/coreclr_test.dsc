@@ -146,11 +146,13 @@ const coreclrTestRunner = Rules.rule<CoreClrTestRunnerAttrs, CoreClrTestRunnerAt
         // so it is produced by `bxl build` and available for Helix staging.
         // Test *execution* stays on ctx.runActions (tagged bxl-kind:test).
         const dllPath = ctx.args.binary.path.toDiagnosticString();
+        const runtimeSources = ctx.args.runtimeFiles.map(f => `# runtime-source: ${f.path.toDiagnosticString()}`);
         const runner = ctx.actions.writeFile(
             ctx.actions.declareOutput(`${ctx.args.name}.runner.sh`),
             [
                 "#!/usr/bin/env bash",
                 `# dll-source: ${dllPath}`,
+                ...runtimeSources,
                 `exec "${corerunPath}" "$(dirname "$0")/${dllName}" "$@"`,
             ]);
 
