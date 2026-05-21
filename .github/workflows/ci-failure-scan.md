@@ -252,6 +252,8 @@ If two candidate KBEs share more than 70% of their `ErrorMessage`/`ErrorPattern`
 
 `is:pr is:open in:title "<test-name>" "[ci-scan]"` and `is:pr is:open "<test-name>" ActiveIssue`. On hit, record `existing-PR #<n>` (test-disable) and stop the walk for this signature.
 
+If neither variation hits, also try with the test-name STEM — strip common verb prefixes (`DnsGetHostEntry_`, `DnsGetHostAddresses_`, `Get*_`, `Set*_`, `Try*_`) and platform/arch suffixes (`_linux`, `_windows`, `_arm64`). Search the stem `is:pr is:open in:title "<stem>" "[ci-scan]"`. PR titles often abbreviate the test name (e.g. test `DnsGetHostEntry_LocalhostSubdomain_RespectsAddressFamily` -> PR title `Skip LocalhostSubdomain_RespectsAddressFamily tests on Android`). The stem catches these.
+
 #### Step 4.5 — Search for an in-flight OR recently-merged fix PR by anyone
 
 Open PRs (always run): `is:pr is:open "<test-name>"`, `is:pr is:open "<test-file-path>"`, `is:pr is:open "<assembly>" in:title`. Fetch each candidate body; if it claims to fix this failure or links the same KBE, record `existing-PR #<n>` (in-flight fix) and stop.
@@ -433,7 +435,7 @@ Walk all nine before submission. Canonical reference: [`dotnet/arcade-skills/...
 3. Opening fence is exactly three backticks + `json`, lowercase, nothing else on the line.
 4. Closing fence is exactly three backticks, same length as open.
 5. **All four keys** (`ErrorMessage`, `ErrorPattern`, `BuildRetry`, `ExcludeConsoleLog`) are present. Exactly one of `ErrorMessage` / `ErrorPattern` is non-empty; the unused one is `""` (empty string), NOT deleted. Build Analysis only treats an issue as a tracking KBE when the full schema is intact — omitting a key silently breaks `Tracking` linkage even though the JSON itself is valid.
-6. The signature is NOT a bare identifier. A fully-qualified test name, a stack-frame line, or a bare exception type all appear in `[PASS]` and `[SKIP]` lines for the same test. Applies to BOTH `ErrorMessage` and `ErrorPattern`.
+6. The signature is NOT a bare identifier. A fully-qualified test name, a stack-frame line, or a bare exception type all appear in `[PASS]` and `[SKIP]` lines for the same test. Applies to BOTH `ErrorMessage` and `ErrorPattern`. When using the array form (Template C), every element must be specific on its own; do not pair a bare test name with a generic xunit assertion stem (`Assert.Equal() Failure: Values differ`, `Assert.True() Failure`, `Assert.All() Failure: <N> out of <M> items...`). Include the unique `Expected: <v>` / `Actual: <v>` line, or pair with the actual exception type + message.
 7. Verbatim match against `failure.log` (MANDATORY). Build Analysis runs `String.Contains` on the actual log; paraphrased signatures close with "Known issue did not match with the provided build". Verify against the log saved by Step 3:
 
    ```bash
@@ -492,6 +494,7 @@ If you cannot produce a signature meeting this bar -> skip emission entirely (re
 | Bad | Why bad | Good |
 |---|---|---|
 | `"Some.Test.Class.TestMethodName"` | bare test name; matches `[PASS]` lines | array: `["Some.Test.Class.TestMethodName", "System.Net.Sockets.SocketException : Try again"]` |
+| array: `["TestMethodName", "Assert.Equal() Failure: Values differ"]` | test-name + generic xunit assertion stem; matches every `Assert.Equal` mismatch in the test | array: `["TestMethodName", "Assert.Equal() Failure: Values differ", "Expected: 2", "Actual:   0"]` |
 | `"SomeTests.Prefix_"` (trailing `_`) | trailing `_`/`*`/`.` is literal not glob | `ErrorPattern: "^SomeTests\\.Prefix_[A-Za-z]+\\b[^\\n]*Xunit\\.Sdk\\."` |
 | `"Some.Type.Method"` | matches stack scans of unrelated tests | `ErrorPattern: "^System\\.NullReferenceException\\b[^\\n]*\\n\\s+at Some\\.Type\\.Method\\b"` |
 | `"BadImageFormatException"` | bare exception type | `"System.BadImageFormatException: Could not load file or assembly 'System.Private.CoreLib'"` |
