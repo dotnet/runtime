@@ -3460,8 +3460,11 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize, unsigned prologSize, un
         maxVirtualIP = max(maxVirtualIP, func->endVirtualIP);
     }
 
+    codeSize   = maxVirtualIP;
+    prologSize = 1;
+
     // Follow the code pattern of the x86 gc info encoder (genCreateAndStoreGCInfoJIT32).
-    gcInfo.gcInfoBlockHdrSave(gcInfoEncoder, maxVirtualIP, /* prologSize */ 1);
+    gcInfo.gcInfoBlockHdrSave(gcInfoEncoder, codeSize, prologSize);
 
     // We keep the call count for the second call to gcMakeRegPtrTable() below.
     unsigned callCnt = 0;

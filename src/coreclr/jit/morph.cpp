@@ -14471,11 +14471,17 @@ void Compiler::fgSetOptions()
     }
 #endif
 
+#if defined(TARGET_WASM)
+    // Wasm requires GC polls, and only supports partially interruptible GC reporting.
+    optMethodFlags |= OMF_NEEDS_GCPOLLS;
+    assert(!GetInterruptible());
+#else
     if (opts.compDbgCode)
     {
         assert(!codeGen->isGCTypeFixed());
         SetInterruptible(true); // debugging is easier this way ...
     }
+#endif // defined(TARGET_WASM)
 
     /* Assume we won't need an explicit stack frame if this is allowed */
 
