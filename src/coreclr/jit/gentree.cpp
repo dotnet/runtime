@@ -3037,6 +3037,9 @@ AGAIN:
                    Compare(op1->AsCmpXchg()->Data(), op2->AsCmpXchg()->Data()) &&
                    Compare(op1->AsCmpXchg()->Comparand(), op2->AsCmpXchg()->Comparand());
 
+        case GT_SELECT:
+            return GenTreeConditional::Equals(op1->AsConditional(), op2->AsConditional());
+
         default:
             assert(!"unexpected operator");
     }
