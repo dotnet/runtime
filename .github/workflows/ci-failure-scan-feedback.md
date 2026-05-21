@@ -96,7 +96,7 @@ Hard rules: no comments on issues/PRs, no edits outside `.github/workflows/ci-fa
 
    ```bash
    gh run view <run-id> --log \
-     | awk '/^\| pipeline \|/{flag=1} flag{print; if (NR>0 && !/^\|/) exit}' \
+     | awk '/^\| pipeline \|/{flag=1} flag && /^\|/{print; next} flag{exit}' \
      | tee /tmp/gh-aw/agent/tally_<run-id>.txt
    ```
 
@@ -153,11 +153,12 @@ Hard rules: no comments on issues/PRs, no edits outside `.github/workflows/ci-fa
    Compute the window. The window starts at the timestamp of the FIRST recorded run of `ci-failure-scan.lock.yml` (NOT the workflow file's creation time, which can predate any run by days when the file is added but its lock isn't yet checked in). On the first tick, derive it from the runs list and persist the resulting ISO-8601 timestamp inside the tracker body as `<!-- ci-scan-feedback:window-start=<ts> -->`. On every subsequent tick, prefer the cached value parsed from the existing tracker body (read via the `github` MCP `issue_read get` tool) over re-deriving — this keeps the window stable even if old runs are deleted.
 
    ```bash
-   gh api "/repos/dotnet/runtime/actions/workflows/ci-failure-scan.lock.yml/runs?per_page=1&order=asc" \
-     | jq -r '.workflow_runs[0].created_at // empty' | tee /tmp/gh-aw/agent/window_start_first_run.txt
+   gh api --paginate "/repos/dotnet/runtime/actions/workflows/ci-failure-scan.lock.yml/runs?per_page=100" \
+     | jq -s '[.[].workflow_runs[]] | sort_by(.created_at) | .[0].created_at // empty' -r \
+     | tee /tmp/gh-aw/agent/window_start_first_run.txt
    ```
 
-   Fall back to the workflow's `.created_at` only if no runs exist yet (first-ever invocation). Once the tracker exists, the cached marker is authoritative.
+   The `/runs` endpoint does NOT accept `order=asc`; you MUST paginate and pick `min(created_at)`. Fall back to the workflow's `.created_at` only if no runs exist yet (first-ever invocation). Once the tracker exists, the cached marker is authoritative.
 
    Collect the full universe of `[ci-scan]` issues and PRs (open + closed) since `window_start` via `gh search issues` / `gh search prs` with `created:>=<window_start>`. This produces a list of issue/PR numbers and metadata; do NOT read bodies with `gh`.
 
@@ -177,7 +178,7 @@ Hard rules: no comments on issues/PRs, no edits outside `.github/workflows/ci-fa
 
    ````markdown
    <!-- ci-scan-feedback:kpi-tracker -->
-   Tracking quality of `[ci-scan]` issues and PRs since <window_start>. Updated every tick of [ci-failure-scan-feedback.lock.yml]. To raise a concern, comment here or on any `[ci-scan]` issue/PR; the next tick reads in-scope feedback and either opens a `[ci-scan-feedback]` PR with prompt edits or pushes to the existing one.
+   Tracking quality of `[ci-scan]` issues and PRs since <window_start>. Updated every tick of [ci-failure-scan-feedback.lock.yml](https://github.com/dotnet/runtime/blob/main/.github/workflows/ci-failure-scan-feedback.lock.yml). To raise a concern, comment here or on any `[ci-scan]` issue/PR; the next tick reads in-scope feedback and either opens a `[ci-scan-feedback]` PR with prompt edits or pushes to the existing one.
 
    ## Snapshot — <UTC timestamp>
 
