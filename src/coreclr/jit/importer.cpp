@@ -11709,7 +11709,8 @@ void Compiler::impWrapTopOfStackInAwait()
         assert(compIsForInlining() && impInlineInfo->iciCall->IsAsync());
         GenTreeCall* inlCall = impInlineInfo->iciCall;
 
-        JITDUMP("Inheriting continuation handling %d from caller [%06u]\n", (unsigned)inlCall->GetAsyncInfo().ContinuationContextHandling, dspTreeID(inlCall));
+        JITDUMP("Inheriting continuation handling %d from caller [%06u]\n",
+                (unsigned)inlCall->GetAsyncInfo().ContinuationContextHandling, dspTreeID(inlCall));
         asyncInfo->ContinuationContextHandling = inlCall->GetAsyncInfo().ContinuationContextHandling;
         impAddAsyncArgsToInlinedCall(awaitCall);
     }
