@@ -480,6 +480,9 @@ void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
 
 void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
+    pRD->IsCallerContextValid = FALSE;
+    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
+
     pRD->pCurrentContext->InterpreterIP = GetReturnAddress();
     pRD->pCurrentContext->InterpreterSP = GetSP();
 
@@ -1361,4 +1364,45 @@ TADDR GetWasmVirtualIPFromStackPointer(TADDR sp)
         TADDR baseVirtualIP = ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex(r2rFunctionTableEntryNumber);
         return baseVirtualIP + logicalVirtualIP;
     }
+}
+
+PEXCEPTION_ROUTINE
+RtlVirtualUnwind (
+    _In_ DWORD HandlerType,
+    _In_ DWORD ImageBase,
+    _In_ DWORD ControlPc,
+    _In_ PRUNTIME_FUNCTION FunctionEntry,
+    __inout PT_CONTEXT ContextRecord,
+    _Out_ PVOID *HandlerData,
+    _Out_ PDWORD EstablisherFrame,
+    __inout_opt PT_KNONVOLATILE_CONTEXT_POINTERS ContextPointers
+    )
+{
+    _ASSERTE(FunctionEntry != NULL);
+    _ASSERTE(HandlerType == 0);
+    _ASSERTE(ExecutionManager::IsVirtualIP(ControlPc));
+    _ASSERTE(ImageBase != 0);
+
+    // I don't believe any users of this api actually use HandlerData or EstablisherFrame, so we will just set them to 0 rather than trying to unwind them properly. 
+    // If we do need to support them in the future we can add support for setting them properly.
+    *HandlerData = 0;
+    *EstablisherFrame = 0;
+
+    TADDR sp = ContextRecord->InterpreterSP;
+    TADDR fp = GetWasmFramePointerFromStackPointer(sp);
+    if (fp != 0)
+    {
+        PTR_BYTE pUnwindData = dac_cast<PTR_BYTE>(FunctionEntry->UnwindData + ImageBase);
+        ContextRecord->InterpreterSP = fp + DecodeULEB128AsU32(&pUnwindData); // Unwind the frame pointer to the callers stack pointer
+        ContextRecord->InterpreterIP = GetWasmVirtualIPFromStackPointer(ContextRecord->InterpreterSP);
+    }
+    else
+    {
+        // Unwind failed!
+        _ASSERTE(FALSE);
+        ContextRecord->InterpreterIP = 0;
+        ContextRecord->InterpreterSP = 0;
+    }
+
+    return nullptr;
 }

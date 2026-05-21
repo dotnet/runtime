@@ -3154,6 +3154,12 @@ public:
         return GetJitManager()->JitTokenToModuleRVABase(GetMethodToken());
     }
 
+    TADDR       GetModuleFunctionsBase()
+    {
+        WRAPPER_NO_CONTRACT;
+        return GetJitManager()->JitTokenToModuleFunctionsBase(GetMethodToken());
+    }
+
     PTR_RUNTIME_FUNCTION GetFunctionEntry();
     BOOL        IsFunclet();
     EECodeInfo  GetMainFunctionInfo();

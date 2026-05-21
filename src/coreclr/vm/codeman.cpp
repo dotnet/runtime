@@ -1160,7 +1160,7 @@ TADDR IJitManager::GetFuncletStartAddress(EECodeInfo * pCodeInfo)
     _ASSERTE((pFunctionEntry->UnwindData & RUNTIME_FUNCTION_INDIRECT) == 0);
 #endif
 
-    TADDR baseAddress = pCodeInfo->GetModuleBase();
+    TADDR baseAddress = pCodeInfo->GetModuleFunctionsBase();
     TADDR funcletStartAddress = baseAddress + RUNTIME_FUNCTION__BeginAddress(pFunctionEntry);
 
 #if defined(EXCEPTION_DATA_SUPPORTS_FUNCTION_FRAGMENTS)
