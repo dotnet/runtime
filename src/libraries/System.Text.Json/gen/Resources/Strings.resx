@@ -207,4 +207,16 @@
   <data name="JsonIgnoreConditionAlwaysInvalidOnTypeFormat" xml:space="preserve">
     <value>The type '{0}' has been annotated with 'JsonIgnoreAttribute' using 'JsonIgnoreCondition.Always' which is not valid on type declarations. The attribute will be ignored.</value>
   </data>
+  <data name="JsonSerializableTypeMustBePartialTitle" xml:space="preserve">
+    <value>Types annotated with the parameterless JsonSerializableAttribute must be partial.</value>
+  </data>
+  <data name="JsonSerializableTypeMustBePartialMessageFormat" xml:space="preserve">
+    <value>The type '{0}' has been annotated with the parameterless JsonSerializableAttribute but is not declared as partial. The type and all containing types must be made partial to kick off source generation.</value>
+  </data>
+  <data name="JsonSerializableTypeHasJsonTypeInfoMemberTitle" xml:space="preserve">
+    <value>Type already contains a member named 'JsonTypeInfo'.</value>
+  </data>
+  <data name="JsonSerializableTypeHasJsonTypeInfoMemberMessageFormat" xml:space="preserve">
+    <value>The type '{0}' already contains a member named 'JsonTypeInfo'. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to specify a different name for the generated property.</value>
+  </data>
 </root>

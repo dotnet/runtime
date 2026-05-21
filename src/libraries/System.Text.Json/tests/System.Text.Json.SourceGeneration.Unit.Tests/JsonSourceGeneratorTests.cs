@@ -1239,5 +1239,219 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             Compilation compilation = CompilationHelper.CreateCompilation(source);
             CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
         }
+
+        [Fact]
+        public void PocoJsonSerializable_GeneratesContextAndStaticProperty()
+        {
+            string source = """
+                    using System.Text.Json.Serialization;
+
+                    namespace TestNamespace
+                    {
+                        [JsonSerializable]
+                        public partial class WeatherForecast
+                        {
+                            public string City { get; set; }
+                            public int Temperature { get; set; }
+                        }
+                    }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
+
+            // Verify that the generated code compiles without errors
+            result.NewCompilation.GetDiagnostics().AssertMaxSeverity(DiagnosticSeverity.Info);
+
+            // Verify no source generator diagnostics
+            Assert.Empty(result.Diagnostics);
+
+            // Verify generated source files contain the expected content
+            var generatedTrees = result.NewCompilation.SyntaxTrees
+                .Where(t => t.FilePath.Contains("WeatherForecast.JsonSerializable.g.cs"))
+                .ToArray();
+            Assert.Single(generatedTrees);
+
+            string generatedCode = generatedTrees[0].GetText().ToString();
+            Assert.Contains("partial class WeatherForecast", generatedCode);
+            Assert.Contains("JsonTypeInfo", generatedCode);
+            Assert.Contains("__JsonContext_WeatherForecast", generatedCode);
+        }
+
+        [Fact]
+        public void PocoJsonSerializable_Struct_GeneratesContextAndStaticProperty()
+        {
+            string source = """
+                    using System.Text.Json.Serialization;
+
+                    namespace TestNamespace
+                    {
+                        [JsonSerializable]
+                        public partial struct Point
+                        {
+                            public int X { get; set; }
+                            public int Y { get; set; }
+                        }
+                    }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
+
+            result.NewCompilation.GetDiagnostics().AssertMaxSeverity(DiagnosticSeverity.Info);
+            Assert.Empty(result.Diagnostics);
+
+            var generatedTrees = result.NewCompilation.SyntaxTrees
+                .Where(t => t.FilePath.Contains("Point.JsonSerializable.g.cs"))
+                .ToArray();
+            Assert.Single(generatedTrees);
+
+            string generatedCode = generatedTrees[0].GetText().ToString();
+            Assert.Contains("partial struct Point", generatedCode);
+            Assert.Contains("JsonTypeInfo", generatedCode);
+        }
+
+        [Fact]
+        public void PocoJsonSerializable_NonPartialType_EmitsDiagnostic()
+        {
+            string source = """
+                    using System.Text.Json.Serialization;
+
+                    namespace TestNamespace
+                    {
+                        [JsonSerializable]
+                        public class NotPartialClass
+                        {
+                            public string Name { get; set; }
+                        }
+                    }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            // Expect SYSLIB1227 diagnostic
+            Assert.Contains(result.Diagnostics, d => d.Id == "SYSLIB1227");
+        }
+
+        [Fact]
+        public void PocoJsonSerializable_MemberNameCollision_EmitsDiagnostic()
+        {
+            string source = """
+                    using System.Text.Json.Serialization;
+
+                    namespace TestNamespace
+                    {
+                        [JsonSerializable]
+                        public partial class MyType
+                        {
+                            public string Name { get; set; }
+                            public static int JsonTypeInfo => 42;
+                        }
+                    }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            // Expect SYSLIB1228 diagnostic
+            Assert.Contains(result.Diagnostics, d => d.Id == "SYSLIB1228");
+        }
+
+        [Fact]
+        public void PocoJsonSerializable_CustomTypeInfoPropertyName_Works()
+        {
+            string source = """
+                    using System.Text.Json.Serialization;
+
+                    namespace TestNamespace
+                    {
+                        [JsonSerializable(TypeInfoPropertyName = "MyTypeInfo")]
+                        public partial class MyType
+                        {
+                            public string Name { get; set; }
+                        }
+                    }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
+
+            result.NewCompilation.GetDiagnostics().AssertMaxSeverity(DiagnosticSeverity.Info);
+            Assert.Empty(result.Diagnostics);
+
+            var generatedTrees = result.NewCompilation.SyntaxTrees
+                .Where(t => t.FilePath.Contains("MyType.JsonSerializable.g.cs"))
+                .ToArray();
+            Assert.Single(generatedTrees);
+
+            string generatedCode = generatedTrees[0].GetText().ToString();
+            Assert.Contains("MyTypeInfo", generatedCode);
+        }
+
+        [Fact]
+        public void PocoJsonSerializable_CoexistsWithExplicitContext()
+        {
+            string source = """
+                    using System.Text.Json.Serialization;
+
+                    namespace TestNamespace
+                    {
+                        [JsonSerializable]
+                        public partial class WeatherForecast
+                        {
+                            public string City { get; set; }
+                            public int Temperature { get; set; }
+                        }
+
+                        public class OtherType
+                        {
+                            public string Value { get; set; }
+                        }
+
+                        [JsonSerializable(typeof(OtherType))]
+                        internal partial class ExplicitContext : JsonSerializerContext
+                        {
+                        }
+                    }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
+
+            result.NewCompilation.GetDiagnostics().AssertMaxSeverity(DiagnosticSeverity.Info);
+            Assert.Empty(result.Diagnostics);
+
+            // Verify both the POCO-generated and the explicit context generated code exist
+            var pocoTrees = result.NewCompilation.SyntaxTrees
+                .Where(t => t.FilePath.Contains("WeatherForecast.JsonSerializable.g.cs"))
+                .ToArray();
+            Assert.Single(pocoTrees);
+
+            var contextTrees = result.NewCompilation.SyntaxTrees
+                .Where(t => t.FilePath.Contains("ExplicitContext.g.cs"))
+                .ToArray();
+            Assert.Single(contextTrees);
+        }
+
+        [Fact]
+        public void PocoJsonSerializable_GlobalNamespace_Works()
+        {
+            string source = """
+                    using System.Text.Json.Serialization;
+
+                    [JsonSerializable]
+                    public partial class GlobalType
+                    {
+                        public string Name { get; set; }
+                    }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
+
+            result.NewCompilation.GetDiagnostics().AssertMaxSeverity(DiagnosticSeverity.Info);
+            Assert.Empty(result.Diagnostics);
+        }
     }
 }

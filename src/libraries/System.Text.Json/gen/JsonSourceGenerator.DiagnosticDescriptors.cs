@@ -131,6 +131,22 @@ namespace System.Text.Json.SourceGeneration
                 category: JsonConstants.SystemTextJsonSourceGenerationName,
                 defaultSeverity: DiagnosticSeverity.Warning,
                 isEnabledByDefault: true);
+
+            public static DiagnosticDescriptor JsonSerializableTypeMustBePartial { get; } = DiagnosticDescriptorHelper.Create(
+                id: "SYSLIB1227",
+                title: new LocalizableResourceString(nameof(SR.JsonSerializableTypeMustBePartialTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                messageFormat: new LocalizableResourceString(nameof(SR.JsonSerializableTypeMustBePartialMessageFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                category: JsonConstants.SystemTextJsonSourceGenerationName,
+                defaultSeverity: DiagnosticSeverity.Warning,
+                isEnabledByDefault: true);
+
+            public static DiagnosticDescriptor JsonSerializableTypeHasJsonTypeInfoMember { get; } = DiagnosticDescriptorHelper.Create(
+                id: "SYSLIB1228",
+                title: new LocalizableResourceString(nameof(SR.JsonSerializableTypeHasJsonTypeInfoMemberTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                messageFormat: new LocalizableResourceString(nameof(SR.JsonSerializableTypeHasJsonTypeInfoMemberMessageFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                category: JsonConstants.SystemTextJsonSourceGenerationName,
+                defaultSeverity: DiagnosticSeverity.Warning,
+                isEnabledByDefault: true);
         }
     }
 }

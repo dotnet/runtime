@@ -11,7 +11,12 @@ namespace System.Text.Json.Serialization
     /// Instructs the System.Text.Json source generator to generate source code to help optimize performance
     /// when serializing and deserializing instances of the specified type and types in its object graph.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
+    /// <remarks>
+    /// This attribute can be applied to a <see cref="JsonSerializerContext"/>-derived class to register types
+    /// for source generation, or directly to a partial class or struct to enable simplified source generation
+    /// with an auto-generated context and a static <c>JsonTypeInfo</c> property.
+    /// </remarks>
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, AllowMultiple = true)]
 
 #if BUILDING_SOURCE_GENERATOR
     internal
@@ -27,6 +32,16 @@ namespace System.Text.Json.Serialization
         /// <param name="type">The type to generate source code for.</param>
         public JsonSerializableAttribute(Type type) { }
 #pragma warning restore IDE0060
+
+        /// <summary>
+        /// Initializes a new instance of <see cref="JsonSerializableAttribute"/> when applied directly to the type to be serialized.
+        /// </summary>
+        /// <remarks>
+        /// When this parameterless constructor is used on a partial class or struct, the source generator will
+        /// automatically generate a backing <see cref="JsonSerializerContext"/> and a static <c>JsonTypeInfo</c>
+        /// property on the annotated type.
+        /// </remarks>
+        public JsonSerializableAttribute() { }
 
         /// <summary>
         /// The name of the property for the generated <see cref="JsonTypeInfo{T}"/> for
