@@ -800,7 +800,6 @@ bool GCToEEInterface::GetStringConfigValue(const char* privateKey, const char* p
     UNREFERENCED_PARAMETER(privateKey);
     UNREFERENCED_PARAMETER(publicKey);
     UNREFERENCED_PARAMETER(value);
-
     if (g_pRhConfig->ReadStringConfigValue(privateKey, value))
     {
         return true;
