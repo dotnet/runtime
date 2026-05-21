@@ -11,6 +11,7 @@ using System.Diagnostics;
 using Internal.TypeSystem;
 using Internal.CorConstants;
 using Internal.JitInterface;
+using Internal.Runtime;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -188,7 +189,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         /// </param>
         /// <param name="typ">parameter type</param>
         /// <param name="thArgType">Exact type info is used to check struct enregistration</param>
-        public bool IsArgumentInRegister(ref int pNumRegistersUsed, CorElementType typ, TypeHandle thArgType)
+        public bool IsArgumentInRegister(ref int pNumRegistersUsed, CorElementType typ, ITypeHandle thArgType)
         {
             Debug.Assert(IsX86);
 
@@ -230,44 +231,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return false;
         }
 
-        private bool IsTrivialPointerSizedStruct(TypeHandle thArgType)
+        private bool IsTrivialPointerSizedStruct(ITypeHandle thArgType)
         {
-            Debug.Assert(IsX86);
-            Debug.Assert(thArgType.IsValueType());
-            if (thArgType.GetSize() != 4)
-            {
-                // Type does not have trivial layout or has the wrong size.
-                return false;
-            }
-            TypeDesc typeOfEmbeddedField = null;
-            foreach (var field in thArgType.GetRuntimeTypeHandle().GetFields())
-            {
-                if (field.IsStatic)
-                    continue;
-                if (typeOfEmbeddedField != null)
-                {
-                    // Type has more than one instance field
-                    return false;
-                }
-
-                typeOfEmbeddedField = field.FieldType;
-            }
-
-            if ((typeOfEmbeddedField != null) && ((typeOfEmbeddedField.IsValueType) || (typeOfEmbeddedField.IsPointer)))
-            {
-                switch (typeOfEmbeddedField.UnderlyingType.Category)
-                {
-                    case TypeFlags.IntPtr:
-                    case TypeFlags.UIntPtr:
-                    case TypeFlags.Int32:
-                    case TypeFlags.UInt32:
-                    case TypeFlags.Pointer:
-                        return true;
-                    case TypeFlags.ValueType:
-                        return IsTrivialPointerSizedStruct(new TypeHandle(typeOfEmbeddedField));
-                }
-            }
-            return false;
+            return thArgType.IsTrivialPointerSizedStruct();
         }
 
         /// <summary>
@@ -292,7 +258,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         /// The method is only overridden to do something meaningful on X64, ARM64 and WASM.
         /// </summary>
         /// <param name="th">Type to analyze</param>
-        public virtual bool IsArgPassedByRef(TypeHandle th)
+        public virtual bool IsArgPassedByRef(ITypeHandle th)
         {
             throw new NotImplementedException(Architecture.ToString());
         }
@@ -307,7 +273,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return size > EnregisteredParamTypeMaxSize;
         }
 
-        public void ComputeReturnValueTreatment(CorElementType type, TypeHandle thRetType, bool isVarArgMethod, out bool usesRetBuffer, out uint fpReturnSize, out uint returnedFpFieldOffset1st, out uint returnedFpFieldOffset2nd)
+        public void ComputeReturnValueTreatment(CorElementType type, ITypeHandle thRetType, bool isVarArgMethod, out bool usesRetBuffer, out uint fpReturnSize, out uint returnedFpFieldOffset1st, out uint returnedFpFieldOffset2nd)
         {
             usesRetBuffer = false;
             fpReturnSize = 0;
@@ -348,7 +314,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         if ((Architecture == TargetArchitecture.X64) && IsX64UnixABI)
                         {
                             SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR descriptor;
-                            SystemVStructClassificator.GetSystemVAmd64PassStructInRegisterDescriptor(thRetType.GetRuntimeTypeHandle(), out descriptor);
+                            thRetType.GetSystemVAmd64PassStructInRegisterDescriptor(out descriptor);
 
                             if (descriptor.passedInRegisters)
                             {
@@ -410,8 +376,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             {
                                 if (IsLoongArch64 || IsRiscV64)
                                 {
-                                    FpStructInRegistersInfo info = RiscVLoongArch64FpStruct.GetFpStructInRegistersInfo(
-                                        thRetType.GetRuntimeTypeHandle(), Architecture);
+                                    FpStructInRegistersInfo info = thRetType.GetFpStructInRegistersInfo(Architecture);
                                     fpReturnSize = (uint)info.flags;
                                     returnedFpFieldOffset1st = info.offset1st;
                                     returnedFpFieldOffset2nd = info.offset2nd;
@@ -477,7 +442,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
             }
 
-            public override bool IsArgPassedByRef(TypeHandle th) => false;
+            public override bool IsArgPassedByRef(ITypeHandle th) => false;
 
             /// <summary>
             /// x86 is special as always
@@ -505,7 +470,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             public override int PointerSize => 8;
             public override int FloatRegisterSize => 16;
 
-            public override bool IsArgPassedByRef(TypeHandle th)
+            public override bool IsArgPassedByRef(ITypeHandle th)
             {
                 Debug.Assert(!th.IsNull());
                 Debug.Assert(th.IsValueType());
@@ -560,7 +525,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             public override int OffsetOfFloatArgumentRegisters => SizeOfM128A * NUM_FLOAT_ARGUMENT_REGISTERS;
             public override int EnregisteredParamTypeMaxSize => 16;
             public override int EnregisteredReturnTypeIntegerMaxSize => 16;
-            public override bool IsArgPassedByRef(TypeHandle th) => false;
+            public override bool IsArgPassedByRef(ITypeHandle th) => false;
         }
 
         private class Arm32TransitionBlock : TransitionBlock
@@ -584,7 +549,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             public override bool IsArmhfABI => true;
 
-            public sealed override bool IsArgPassedByRef(TypeHandle th) => false;
+            public sealed override bool IsArgPassedByRef(ITypeHandle th) => false;
 
             public sealed override int GetRetBuffArgOffset(bool hasThis) => OffsetOfArgumentRegisters + (hasThis ? PointerSize : 0);
 
@@ -624,7 +589,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             public override int EnregisteredParamTypeMaxSize => 16;
             public override int EnregisteredReturnTypeIntegerMaxSize => 16;
 
-            public override bool IsArgPassedByRef(TypeHandle th)
+            public override bool IsArgPassedByRef(ITypeHandle th)
             {
                 Debug.Assert(!th.IsNull());
                 Debug.Assert(th.IsValueType());
@@ -689,7 +654,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             public override int EnregisteredParamTypeMaxSize => 16;
             public override int EnregisteredReturnTypeIntegerMaxSize => 16;
 
-            public override bool IsArgPassedByRef(TypeHandle th)
+            public override bool IsArgPassedByRef(ITypeHandle th)
             {
                 Debug.Assert(!th.IsNull());
                 Debug.Assert(th.IsValueType());
@@ -733,7 +698,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             public override int EnregisteredParamTypeMaxSize => 16;
             public override int EnregisteredReturnTypeIntegerMaxSize => 16;
 
-            public override bool IsArgPassedByRef(TypeHandle th)
+            public override bool IsArgPassedByRef(ITypeHandle th)
             {
                 Debug.Assert(!th.IsNull());
                 Debug.Assert(th.IsValueType());
@@ -778,7 +743,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             public override int GetRetBuffArgOffset(bool hasThis) => OffsetOfArgumentRegisters + (hasThis ? StackElemSize(PointerSize, false, false) : 0);
 
-            public override bool IsArgPassedByRef(TypeHandle th)
+            public override bool IsArgPassedByRef(ITypeHandle th)
             {
                 return false;
             }

@@ -165,6 +165,8 @@
     <Compile Include="..\..\Common\JitInterface\SystemVStructClassificator.cs" Link="JitInterface\SystemVStructClassificator.cs" />
     <Compile Include="..\..\Common\CallingConvention\ArgIterator.cs" Link="CallingConvention\ArgIterator.cs" />
     <Compile Include="..\..\Common\CallingConvention\TransitionBlock.cs" Link="CallingConvention\TransitionBlock.cs" />
+    <Compile Include="..\..\Common\CallingConvention\ITypeHandle.cs" Link="CallingConvention\ITypeHandle.cs" />
+    <Compile Include="..\..\Common\CallingConvention\TypeHandle.cs" Link="CallingConvention\TypeHandle.cs" />
     <Compile Include="..\..\Common\Internal\Runtime\RiscVLoongArch64FpStruct.cs" Link="Common\RiscVLoongArch64FpStruct.cs" />
     <Compile Include="..\..\Common\JitInterface\SwiftPhysicalLowering.cs" Link="JitInterface\SwiftPhysicalLowering.cs" />
     <Compile Include="..\..\Common\JitInterface\WasmLowering.cs" Link="JitInterface\WasmLowering.cs" />
