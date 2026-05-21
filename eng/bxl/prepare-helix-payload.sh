@@ -112,6 +112,19 @@ for i in "${!runners[@]}"; do
     # Hard-link (fast, same filesystem) or fall back to copy
     ln "$dll_path" "$target_dir/$dll_name" 2>/dev/null || cp "$dll_path" "$target_dir/$dll_name"
 
+    env_file="$target_dir/$dll_name.env"
+    while IFS= read -r env_entry; do
+        [[ -n "$env_entry" ]] || continue
+
+        env_name="${env_entry%%=*}"
+        env_value="${env_entry#*=}"
+        printf 'export %s=%q\n' "$env_name" "$env_value" >> "$env_file"
+    done < <(grep -oP '^# env: \K.*' "$runner" 2>/dev/null || true)
+
+    if [[ ! -s "$env_file" ]]; then
+        rm -f "$env_file"
+    fi
+
     # Copy runtime dependencies declared by the generated runner metadata.
     # Format: # runtime-source: /absolute/path/to/<dependency>
     while IFS= read -r runtime_path; do

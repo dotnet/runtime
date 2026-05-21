@@ -106,11 +106,13 @@ const ilTestRunner = Rules.rule<IlTestRunnerAttrs, IlTestRunnerAttrs, Rules.Tool
         // so it is produced by `bxl build` and available for Helix staging.
         // Test *execution* stays on ctx.runActions (tagged bxl-kind:test).
         const dllPath = ctx.args.binary.path.toDiagnosticString();
+        const envLines = (ctx.args.env || []).map(e => `# env: ${e.name}=${e.value}`);
         const runner = ctx.actions.writeFile(
             ctx.actions.declareOutput(`${ctx.args.name}.runner.sh`),
             [
                 "#!/usr/bin/env bash",
                 `# dll-source: ${dllPath}`,
+                ...envLines,
                 `exec "${corerunPath}" "$(dirname "$0")/${dllName}" "$@"`,
             ]);
 

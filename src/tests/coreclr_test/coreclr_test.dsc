@@ -147,12 +147,14 @@ const coreclrTestRunner = Rules.rule<CoreClrTestRunnerAttrs, CoreClrTestRunnerAt
         // Test *execution* stays on ctx.runActions (tagged bxl-kind:test).
         const dllPath = ctx.args.binary.path.toDiagnosticString();
         const runtimeSources = ctx.args.runtimeFiles.map(f => `# runtime-source: ${f.path.toDiagnosticString()}`);
+        const envLines = (ctx.args.env || []).map(e => `# env: ${e.name}=${e.value}`);
         const runner = ctx.actions.writeFile(
             ctx.actions.declareOutput(`${ctx.args.name}.runner.sh`),
             [
                 "#!/usr/bin/env bash",
                 `# dll-source: ${dllPath}`,
                 ...runtimeSources,
+                ...envLines,
                 `exec "${corerunPath}" "$(dirname "$0")/${dllName}" "$@"`,
             ]);
 

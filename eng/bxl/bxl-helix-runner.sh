@@ -45,8 +45,17 @@ while IFS= read -r dll_relative || [[ -n "$dll_relative" ]]; do
         continue
     fi
 
+    env_file="${dll_path}.env"
+
     set +e
-    timeout --foreground --kill-after=10 "$TIMEOUT_SECONDS" "$CORE_ROOT/corerun" "$dll_path" 2>&1
+    if [[ -f "$env_file" ]]; then
+        (
+            source "$env_file"
+            timeout --foreground --kill-after=10 "$TIMEOUT_SECONDS" "$CORE_ROOT/corerun" "$dll_path" 2>&1
+        )
+    else
+        timeout --foreground --kill-after=10 "$TIMEOUT_SECONDS" "$CORE_ROOT/corerun" "$dll_path" 2>&1
+    fi
     rc=$?
     set -e
 
