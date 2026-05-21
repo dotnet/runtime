@@ -79,7 +79,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             bool isVarArg = false;
             TypeHandle returnType = new TypeHandle(signature.ReturnType);
-            TypeHandle[] parameterTypes = new TypeHandle[signature.Length];
+            ITypeHandle[] parameterTypes = new ITypeHandle[signature.Length];
             for (int parameterIndex = 0; parameterIndex < parameterTypes.Length; parameterIndex++)
             {
                 parameterTypes[parameterIndex] = new TypeHandle(signature[parameterIndex]);

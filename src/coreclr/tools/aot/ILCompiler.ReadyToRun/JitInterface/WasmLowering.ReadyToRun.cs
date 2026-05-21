@@ -19,9 +19,9 @@ namespace Internal.JitInterface
             if (argit.IsValueType())
             {
                 // Check to see if this argument lowers to a byref on the wasm side
-                TypeHandle typeHandle;
+                ITypeHandle typeHandle;
                 argit.GetArgType(out typeHandle);
-                if (WasmLowering.LowerToAbiType(typeHandle.GetRuntimeTypeHandle()) == null)
+                if (WasmLowering.LowerToAbiType(((TypeHandle)typeHandle).GetRuntimeTypeHandle()) == null)
                 {
                     return true;
                 }
