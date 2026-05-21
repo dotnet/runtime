@@ -860,7 +860,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
                     return CorElementType.SzArray;
                 case MethodTableFlags_1.WFLAGS_HIGH.Category_ValueType:
                 case MethodTableFlags_1.WFLAGS_HIGH.Category_Nullable:
-                case MethodTableFlags_1.WFLAGS_HIGH.Category_PrimitiveValueType:
+                case MethodTableFlags_1.WFLAGS_HIGH.Category_Primitive:
                     return CorElementType.ValueType;
                 case MethodTableFlags_1.WFLAGS_HIGH.Category_TruePrimitive:
                     return (CorElementType)GetClassData(typeHandle).InternalCorElementType;
@@ -908,18 +908,14 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     public bool IsEnum(TypeHandle typeHandle)
     {
-        // Enums have Category_PrimitiveValueType in their MethodTable flags and their
+        // Enums have Category_Primitive in their MethodTable flags and their
         // InternalCorElementType is a primitive type (I1, U1, I2, U2, I4, U4, I8, U8),
-        // not ValueType. Regular primitive value types (IntPtr/UIntPtr) have Category_TruePrimitive.
+        // not ValueType.
         if (!typeHandle.IsMethodTable())
             return false;
 
-        CorElementType sigType = GetSignatureCorElementType(typeHandle);
-        if (sigType != CorElementType.ValueType)
-            return false;
-
-        CorElementType internalType = (CorElementType)GetClassData(typeHandle).InternalCorElementType;
-        return internalType != CorElementType.ValueType;
+        MethodTable methodTable = _methodTables[typeHandle.Address];
+        return methodTable.Flags.GetFlag(MethodTableFlags_1.WFLAGS_HIGH.Category_Mask) == MethodTableFlags_1.WFLAGS_HIGH.Category_Primitive;
     }
 
     // return true if the TypeHandle represents an array, and set the rank to either 0 (if the type is not an array), or the rank number if it is.

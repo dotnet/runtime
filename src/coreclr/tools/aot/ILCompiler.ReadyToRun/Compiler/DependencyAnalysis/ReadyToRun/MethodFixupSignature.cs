@@ -54,15 +54,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
             DependencyList list = base.ComputeNonRelocationBasedDependencies(factory);
+            MethodDesc canonMethod = Method.GetCanonMethodTarget(CanonicalFormKind.Specific);
             if (_fixupKind == ReadyToRunFixupKind.VirtualEntry &&
                 !Method.IsAbstract &&
                 !Method.HasInstantiation &&
-                Method.GetCanonMethodTarget(CanonicalFormKind.Specific) is var canonMethod &&
                 !factory.CompilationModuleGroup.VersionsWithMethodBody(canonMethod) &&
                 factory.CompilationModuleGroup.CrossModuleCompileable(canonMethod) &&
                 factory.CompilationModuleGroup.ContainsMethodBody(canonMethod, false))
             {
-                list = list ?? new DependencyAnalysisFramework.DependencyNodeCore<NodeFactory>.DependencyList();
+                list = list ?? new DependencyList();
                 try
                 {
                     factory.DetectGenericCycles(_method.Method, canonMethod);
@@ -73,7 +73,37 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
             }
 
+            // For generic virtual method calls, create a virtual dependency node that will
+            // dynamically discover implementations on types as they are added to the graph.
+            if (_fixupKind == ReadyToRunFixupKind.VirtualEntry &&
+                Method.IsVirtual &&
+                Method.HasInstantiation &&
+                !Method.IsFinal &&
+                !Method.IsGenericMethodDefinition &&
+                !Method.OwningType.IsGenericDefinition &&
+                (Method.OwningType.IsInterface || !Method.OwningType.IsSealed()))
+            {
+                // Because methods with generic parameters are already compiled in their canonical form, we are only interested in finding
+                // instantiations of virtual methods that have at least one non-canonical argument (aka a valuetype).
+                if (HasNonCanonicalInstantiationArguments(canonMethod))
+                {
+                    list = list ?? new DependencyList();
+                    list.Add(factory.GVMDependencies(Method), "Virtual dispatch dependency");
+                }
+            }
+
             return list;
+        }
+
+        private static bool HasNonCanonicalInstantiationArguments(MethodDesc canonMethod)
+        {
+            TypeDesc canonType = canonMethod.Context.CanonType;
+            foreach (TypeDesc arg in canonMethod.Instantiation)
+            {
+                if (arg != canonType)
+                    return true;
+            }
+            return false;
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
