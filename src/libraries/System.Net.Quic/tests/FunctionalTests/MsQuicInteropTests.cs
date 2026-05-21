@@ -18,11 +18,16 @@ namespace System.Net.Quic.Tests
 {
     public class MsQuicInteropTests
     {
+        private const DynamicallyAccessedMemberTypes FieldsAndProperties =
+            DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields |
+            DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties;
+        private const BindingFlags InstanceMembers = BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public;
+
         private static MemberInfo[] GetMembers<
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields | DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)] T>()
+            [DynamicallyAccessedMembers(FieldsAndProperties)] T>()
         {
-            var members = typeof(T).GetFields(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public).Cast<MemberInfo>()
-                .Concat(typeof(T).GetProperties(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public).Where(property => property.GetSetMethod() is not null))
+            var members = typeof(T).GetFields(InstanceMembers).Cast<MemberInfo>()
+                .Concat(typeof(T).GetProperties(InstanceMembers).Where(property => property.GetSetMethod() is not null))
                 .ToArray();
 
             Assert.NotEmpty(members);
