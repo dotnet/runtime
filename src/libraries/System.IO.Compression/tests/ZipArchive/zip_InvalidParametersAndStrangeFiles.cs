@@ -2438,12 +2438,10 @@ namespace System.IO.Compression.Tests
         [Fact]
         public static void Zip64ExtraField_NegativeUncompressedSize_DoesNotCauseHarm()
         {
-            // Validation for IO-021: Zip64 extra field with negative UncompressedSize (-1).
-            // The minimal 16-byte Zip64 extra field bypasses the negative-value check in
-            // Zip64ExtraField.TryGetZip64BlockFromGenericExtraField (the check only runs after
-            // all four fields would have been read). This test verifies that the bypassed
-            // negative value does NOT lead to memory corruption, buffer over-read, infinite
-            // loop, or other harmful behavior — downstream code handles it safely.
+            // Validation for IO-021: a ZIP64 extra field encodes the uncompressed size as
+            // 0xFFFF_FFFF_FFFF_FFFF, which is observed as -1L. This malformed metadata must
+            // not lead to memory corruption, buffer over-read, infinite loop, or other
+            // harmful behavior. The archive should continue to handle the entry safely.
             byte[] zipArchive = CreateZipWithNegativeZip64UncompressedSize();
 
             using ZipArchive archive = new ZipArchive(new MemoryStream(zipArchive), ZipArchiveMode.Read);
@@ -2455,12 +2453,10 @@ namespace System.IO.Compression.Tests
             Assert.Equal(-1L, entry.Length);
             Assert.Equal(0L, entry.CompressedLength);
 
-            // Attempting to actually read the data must fail safely — either by throwing,
-            // or by returning zero bytes (matching the actual stored data). It must NOT
-            // crash, hang, allocate based on the negative size, or read past the end of
-            // the underlying stream. Defense-in-depth in CrcValidatingReadStream rejects
-            // a negative expected length on Open(), so an ArgumentOutOfRangeException or
-            // InvalidDataException is the expected outcome here.
+            // Attempting to actually read the data must fail safely — either by throwing
+            // InvalidDataException, or by returning zero bytes (matching the actual stored
+            // data). It must NOT crash, hang, allocate based on the negative size, or read
+            // past the end of the underlying stream.
             try
             {
                 using Stream s = entry.Open();
@@ -2476,7 +2472,7 @@ namespace System.IO.Compression.Tests
                 }
                 Assert.Equal(0, totalRead);
             }
-            catch (Exception ex) when (ex is InvalidDataException or ArgumentOutOfRangeException)
+            catch (InvalidDataException)
             {
                 // Acceptable: downstream code rejects the malformed entry on Open/Read.
             }
@@ -2538,8 +2534,8 @@ namespace System.IO.Compression.Tests
                 // Tag (2 bytes) = 1, Size (2 bytes) = 16 (for 2 x 8-byte fields), UncompressedSize (8 bytes), CompressedSize (8 bytes)
                 const ushort zip64Tag = 1;
                 const ushort zip64Size = 16; // 8 bytes for uncompressed + 8 bytes for compressed
-                long negativeUncompressedSize = -1; // 0xFFFFFFFFFFFFFFFF in two's complement
-                long negativeCompressedSize = 0;
+                long zip64UncompressedSize = -1; // 0xFFFFFFFFFFFFFFFF in two's complement
+                long zip64CompressedSize = 0;
 
                 // Write local file header
                 WriteUInt32(ms, localFileHeaderSig);
@@ -2562,11 +2558,11 @@ namespace System.IO.Compression.Tests
                 // Write Zip64 extra field
                 WriteUInt16(ms, zip64Tag);
                 WriteUInt16(ms, zip64Size);
-                WriteInt64(ms, negativeUncompressedSize); // Negative value!
-                WriteInt64(ms, negativeCompressedSize);
+                WriteInt64(ms, zip64UncompressedSize); // Negative value!
+                WriteInt64(ms, zip64CompressedSize);
 
                 // No file data
-                long dataOffset = ms.Position;
+                long centralDirectoryOffset = ms.Position;
 
                 // Central Directory File Header
                 const uint centralDirSig = 0x02014b50;
@@ -2596,11 +2592,10 @@ namespace System.IO.Compression.Tests
                 // Write Zip64 extra field
                 WriteUInt16(ms, zip64Tag);
                 WriteUInt16(ms, zip64Size);
-                WriteInt64(ms, negativeUncompressedSize);
-                WriteInt64(ms, negativeCompressedSize);
+                WriteInt64(ms, zip64UncompressedSize);
+                WriteInt64(ms, zip64CompressedSize);
 
-                long centralDirSize = ms.Position - dataOffset;
-                long centralDirOffset = dataOffset;
+                long centralDirSize = ms.Position - centralDirectoryOffset;
 
                 // End of Central Directory Record
                 const uint endCentralDirSig = 0x06054b50;
@@ -2610,7 +2605,7 @@ namespace System.IO.Compression.Tests
                 WriteUInt16(ms, 1); // Number of entries on this disk
                 WriteUInt16(ms, 1); // Total number of entries
                 WriteUInt32(ms, (uint)centralDirSize);
-                WriteUInt32(ms, (uint)centralDirOffset);
+                WriteUInt32(ms, (uint)centralDirectoryOffset);
                 WriteUInt16(ms, 0); // Comment length
 
                 return ms.ToArray();
