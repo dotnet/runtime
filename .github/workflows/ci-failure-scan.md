@@ -14,7 +14,6 @@ on:
   permissions: {}
 
 if: |
-  github.event_name == 'workflow_dispatch' ||
   github.repository == 'dotnet/runtime'
 
 # ###############################################################
