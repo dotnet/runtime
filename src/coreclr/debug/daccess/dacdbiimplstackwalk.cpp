@@ -1,9 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-// DacDbiImplStackWalk.cpp
-//
 
+// DacDbiImplStackWalk.cpp
 //
 // This file contains the implementation of the stackwalking-related functions on the DacDbiInterface.
 //
@@ -26,6 +24,31 @@
 #include "exinfo.h"
 
 typedef IDacDbiInterface::StackWalkHandle StackWalkHandle;
+
+// See declaration in dacdbiimpl.h.
+bool DacDbiInterfaceImpl::IsFuncEvalScaffoldingChain(Frame *pFrame)
+{
+    SUPPORTS_DAC;
+
+    for (int hops = 0; hops < 8; hops++)
+    {
+        if (pFrame == NULL || pFrame == FRAME_TOP)
+        {
+            return false;
+        }
+        FrameIdentifier id = pFrame->GetFrameIdentifier();
+        if (id == FrameIdentifier::FuncEvalFrame)
+        {
+            return true;
+        }
+        if (id != FrameIdentifier::InlinedCallFrame)
+        {
+            return false;
+        }
+        pFrame = pFrame->Next();
+    }
+    return false;
+}
 
 // Persistent data needed to do a stackwalk. This is allocated on the forDbi heap.
 // It can survive across multiple DD calls.
@@ -427,6 +450,12 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetStackWalkCurrentFrameInfo(Stac
                         {
                             ftResult = kRuntimeEntryPointFrame;
                         }
+                        // Skip IL stubs (e.g. LibraryImport P/Invoke stubs) on the funceval chain;
+                        // they otherwise surface as "[IL Method without Metadata]".
+                        else if (pMD->IsILStub() && IsFuncEvalScaffoldingChain(pIter->m_crawl.GetFrame()))
+                        {
+                            ftResult = kRuntimeEntryPointFrame;
+                        }
                         else
                         {
                             ftResult = kManagedStackFrame;
@@ -441,20 +470,13 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetStackWalkCurrentFrameInfo(Stac
                     //
                 case StackFrameIterator::SFITER_SKIPPED_FRAME_FUNCTION:
                     {
-                        // Suppress explicit Frames belonging to the managed funceval trampoline.
-                        // We identify them structurally: the next Frame in the chain is a
-                        // FuncEvalFrame, which means this Frame is scaffolding the trampoline
-                        // (typically the InlinedCallFrame for its inner QCall) erected between
-                        // the user method and the FuncEvalFrame.
+                        // Skip funceval trampoline scaffolding.
                         Frame *pCurFrame = pIter->m_crawl.GetFrame();
                         bool isFuncEvalScaffolding = false;
                         if (pCurFrame != NULL && pCurFrame != FRAME_TOP &&
                             pCurFrame->GetFrameIdentifier() != FrameIdentifier::FuncEvalFrame)
                         {
-                            Frame *pNextFrame = pCurFrame->Next();
-                            isFuncEvalScaffolding =
-                                (pNextFrame != NULL && pNextFrame != FRAME_TOP &&
-                                 pNextFrame->GetFrameIdentifier() == FrameIdentifier::FuncEvalFrame);
+                            isFuncEvalScaffolding = IsFuncEvalScaffoldingChain(pCurFrame->Next());
                         }
                         if (isFuncEvalScaffolding)
                         {
@@ -558,20 +580,12 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetCountOfInternalFrames(VMPTR_Th
             }
 #endif // FEATURE_INTERPRETER
 
-            // Skip explicit Frames belonging to the managed funceval trampoline
-            // (RuntimeHelpers.InvokeFuncEval). They are an implementation detail of
-            // debugger function evaluation and should not appear in the stack shown
-            // to debugger clients. Identified structurally as scaffolding immediately
-            // preceding a FuncEvalFrame.
-            if (pFrame->GetFrameIdentifier() != FrameIdentifier::FuncEvalFrame)
+            // Skip funceval trampoline scaffolding.
+            if (pFrame->GetFrameIdentifier() != FrameIdentifier::FuncEvalFrame &&
+                IsFuncEvalScaffoldingChain(pFrame))
             {
-                Frame *pNextFrame = pFrame->Next();
-                if (pNextFrame != NULL && pNextFrame != FRAME_TOP &&
-                    pNextFrame->GetFrameIdentifier() == FrameIdentifier::FuncEvalFrame)
-                {
-                    pFrame = pNextFrame;
-                    continue;
-                }
+                pFrame = pFrame->Next();
+                continue;
             }
 
             CorDebugInternalFrameType ift = GetInternalFrameType(pFrame);
@@ -637,17 +651,12 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thr
             }
 #endif // FEATURE_INTERPRETER
 
-            // Skip explicit Frames belonging to the managed funceval trampoline
-            // (RuntimeHelpers.InvokeFuncEval). See GetCountOfInternalFrames for rationale.
-            if (pFrame->GetFrameIdentifier() != FrameIdentifier::FuncEvalFrame)
+            // Skip funceval trampoline scaffolding.
+            if (pFrame->GetFrameIdentifier() != FrameIdentifier::FuncEvalFrame &&
+                IsFuncEvalScaffoldingChain(pFrame))
             {
-                Frame *pNextFrame = pFrame->Next();
-                if (pNextFrame != NULL && pNextFrame != FRAME_TOP &&
-                    pNextFrame->GetFrameIdentifier() == FrameIdentifier::FuncEvalFrame)
-                {
-                    pFrame = pNextFrame;
-                    continue;
-                }
+                pFrame = pFrame->Next();
+                continue;
             }
 
             // check if the internal frame is interesting
