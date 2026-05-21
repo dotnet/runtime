@@ -127,7 +127,7 @@ For each row in the pipeline table below:
 
 1. Pre-bind the build-list URL to a shell variable, then `curl -s "$url" | tee /tmp/gh-aw/agent/builds_<id>.json`. Fetch at least 25 builds.
 2. Pick `source` = most recent build with `result in {failed, partiallySucceeded}` that has at least one strictly newer COMPLETED build behind it. The newer one is the `follow_up` anchor for Step 3.5; without it, a freshly-fixed regression cannot be distinguished from a still-failing one.
-3. Skip reasons: `source.finishTime > 72h` -> `pipeline-skipped: stale build window (>72h)`. No `follow_up` (source is the absolute latest) -> `pipeline-skipped: no follow-up build yet — defer to next run`. No qualifying build in 7 days -> `pipeline-skipped: stale`.
+3. Skip reasons: `source.finishTime > 14d` -> `pipeline-skipped: stale build window (>14d)`. No `follow_up` (source is the absolute latest) -> `pipeline-skipped: no follow-up build yet — defer to next run`. No qualifying build in 7 days -> `pipeline-skipped: stale`. The 14-day window accommodates JIT-stress family pipelines (defs 109–160, 230, 235) that run on a weekly-or-longer cadence; tightening to 72h blanket-suppresses their actionable failures.
 4. Otherwise pass `source`'s failed timeline records to Step 3.
 
 | Pipeline | Definition ID | Notes |
@@ -334,7 +334,7 @@ Per signature, append one outcome line to `/tmp/gh-aw/agent/coverage/<pipeline>.
 
 `<outcome>` is one of: `filed-issue #aw_<id>`, `filed-PR #aw_<id>`, `existing-issue #<n>`, `existing-PR #<n>`, `skipped: <reason>`.
 
-A skipped signature MUST have a reason. Recognized values: `build canceled`, `< 2 occurrences and not blocking`, `do-not-disable on issue #<n>`, `cap reached`, `infra noise — no stable signature`, `build break — no test-disable path`, `signature absent from follow-up build #<id>`, `stale build window (>72h)`, `no follow-up build yet — defer to next run`, `fix already merged after source build`, `fix recently merged in #<n>`, `dup of filed-issue #aw_<id> earlier in this run`, `ambiguous dup #<a>/#<b>, needs human review`, `integrity-filtered candidate, needs human review`, `suspected infra outage`, `weak signature`, `recommendation already present in source`.
+A skipped signature MUST have a reason. Recognized values: `build canceled`, `< 2 occurrences and not blocking`, `do-not-disable on issue #<n>`, `cap reached`, `infra noise — no stable signature`, `build break — no test-disable path`, `signature absent from follow-up build #<id>`, `stale build window (>14d)`, `no follow-up build yet — defer to next run`, `fix already merged after source build`, `fix recently merged in #<n>`, `dup of filed-issue #aw_<id> earlier in this run`, `ambiguous dup #<a>/#<b>, needs human review`, `integrity-filtered candidate, needs human review`, `suspected infra outage`, `weak signature`, `recommendation already present in source`.
 
 At end of run, print this table to the agent log:
 
