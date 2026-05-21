@@ -1019,8 +1019,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_V128:
         {
             dst += emitOutputOpcode(dst, ins);
-            const instrDescV128Imm* idConst = static_cast<const instrDescV128Imm*>(id);
-            dst += emitRawBytes(dst, idConst->idV128Const(), 16);
+            const uint8_t* v128Value = emitGetV128ImmValue(id);
+            dst += emitRawBytes(dst, v128Value, 16);
             break;
         }
         case IF_LANE:
@@ -1034,13 +1034,13 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_MEMARG_LANE:
         {
             dst += emitOutputOpcode(dst, ins);
-            const instrDescMemargLane* idMemLane = static_cast<const instrDescMemargLane*>(id);
-            uint64_t                   align     = emitGetAlignHintLog2(id);
-            uint64_t                   offset    = emitGetInsSC(id);
+            uint8_t  laneIdx = emitGetLaneImmValue(id);
+            uint64_t align   = emitGetAlignHintLog2(id);
+            uint64_t offset  = emitGetInsSC(id);
             assert(align < 64);
             dst += emitOutputULEB128(dst, align);
             dst += emitOutputULEB128(dst, offset);
-            dst += emitOutputByte(dst, idMemLane->idLaneIdx());
+            dst += emitOutputByte(dst, laneIdx);
             break;
         }
         default:
