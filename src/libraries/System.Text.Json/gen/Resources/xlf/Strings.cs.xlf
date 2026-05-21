@@ -154,22 +154,22 @@
       </trans-unit>
       <trans-unit id="UnionCaseTypesNotClassifiableMessageFormat">
         <source>Union type '{0}': {1}. Set JsonUnionAttribute.TypeClassifier to provide a custom classifier that can disambiguate.</source>
-        <target state="new">Union type '{0}': {1}. Set JsonUnionAttribute.TypeClassifier to provide a custom classifier that can disambiguate.</target>
+        <target state="translated">Typ sjednocení {0}: {1}. Nastavte JsonUnionAttribute.TypeClassifier tak, aby poskytoval vlastní klasifikátor, který může být jednoznačný.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnionCaseTypesNotClassifiableTitle">
         <source>Union case types cannot be unambiguously classified by JSON value type.</source>
-        <target state="new">Union case types cannot be unambiguously classified by JSON value type.</target>
+        <target state="translated">Typy případů sjednocení nelze jednoznačně klasifikovat podle typu hodnoty JSON.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnionTypeShapeNotSupportedMessageFormat">
         <source>Union type '{0}' does not match the C# union shape convention: it must declare at least one public single-parameter case constructor and a public instance property named 'Value' with type 'object'.</source>
-        <target state="new">Union type '{0}' does not match the C# union shape convention: it must declare at least one public single-parameter case constructor and a public instance property named 'Value' with type 'object'.</target>
+        <target state="translated">Typ sjednocení {0} neodpovídá konvenci obrazce sjednocení jazyka C#: musí deklarovat alespoň jeden veřejný konstruktor případu s jedním parametrem a veřejnou vlastnost instance s názvem Value s typem object.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnionTypeShapeNotSupportedTitle">
         <source>Union type shape is not a valid C# union.</source>
-        <target state="new">Union type shape is not a valid C# union.</target>
+        <target state="translated">Obrazec typu sjednocení není platným sjednocení jazyka C#.</target>
         <note />
       </trans-unit>
     </body>

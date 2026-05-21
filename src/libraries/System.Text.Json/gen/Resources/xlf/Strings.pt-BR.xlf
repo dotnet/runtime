@@ -154,22 +154,22 @@
       </trans-unit>
       <trans-unit id="UnionCaseTypesNotClassifiableMessageFormat">
         <source>Union type '{0}': {1}. Set JsonUnionAttribute.TypeClassifier to provide a custom classifier that can disambiguate.</source>
-        <target state="new">Union type '{0}': {1}. Set JsonUnionAttribute.TypeClassifier to provide a custom classifier that can disambiguate.</target>
+        <target state="translated">Tipo de união "{0}": {1}. Defina JsonUnionAttribute.TypeClassifier para fornecer um classificador personalizado que possa diferenciá-los.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnionCaseTypesNotClassifiableTitle">
         <source>Union case types cannot be unambiguously classified by JSON value type.</source>
-        <target state="new">Union case types cannot be unambiguously classified by JSON value type.</target>
+        <target state="translated">Os tipos de caso de união não podem ser classificados sem ambiguidade pelo tipo de valor JSON.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnionTypeShapeNotSupportedMessageFormat">
         <source>Union type '{0}' does not match the C# union shape convention: it must declare at least one public single-parameter case constructor and a public instance property named 'Value' with type 'object'.</source>
-        <target state="new">Union type '{0}' does not match the C# union shape convention: it must declare at least one public single-parameter case constructor and a public instance property named 'Value' with type 'object'.</target>
+        <target state="translated">O tipo de união "{0}" não corresponde à convenção de forma união do C#: ele deve declarar pelo menos um construtor de caso de parâmetro único público e uma propriedade de instância pública chamada "Value" com o tipo "object".</target>
         <note />
       </trans-unit>
       <trans-unit id="UnionTypeShapeNotSupportedTitle">
         <source>Union type shape is not a valid C# union.</source>
-        <target state="new">Union type shape is not a valid C# union.</target>
+        <target state="translated">A forma do tipo união não é uma união C# válida.</target>
         <note />
       </trans-unit>
     </body>
