@@ -2590,9 +2590,9 @@ PhaseStatus Compiler::fgWasmVirtualIP()
         if (func->IsMethod())
         {
             // We use Virtual IP as length, and need a value to represent
-            // the prolog, so bump by 2 before we get to any EH or GC point.
+            // the prolog, so bump by 1 before we get to any EH or GC point.
             //
-            virtualIP += 2;
+            virtualIP += 1;
         }
 
         for (BasicBlock* const block : func->Blocks(this))
@@ -2696,6 +2696,11 @@ PhaseStatus Compiler::fgWasmVirtualIP()
                 // Filter length is implicit
                 virtualIP++;
             }
+        }
+
+        if (func->IsMethod())
+        {
+            virtualIP += 1;
         }
 
         func->endVirtualIP = virtualIP;

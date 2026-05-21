@@ -3459,7 +3459,6 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize, unsigned prologSize, un
     {
         maxVirtualIP = max(maxVirtualIP, func->endVirtualIP);
     }
-    maxVirtualIP++;
 
     // Follow the code pattern of the x86 gc info encoder (genCreateAndStoreGCInfoJIT32).
     gcInfo.gcInfoBlockHdrSave(gcInfoEncoder, maxVirtualIP, /* prologSize */ 1);
