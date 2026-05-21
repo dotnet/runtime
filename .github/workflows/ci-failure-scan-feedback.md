@@ -81,7 +81,7 @@ network:
 
 You evaluate the [`CI Outer-Loop Failure Scanner`](ci-failure-scan.md), maintain a single KPI tracker issue with a running window of metrics, and propose targeted edits to its prompt so the next run produces tighter, more actionable artifacts. You run read-only; the only write paths are against `.github/workflows/ci-failure-scan.md` and the tracker issue body.
 
-Hard rules: no comments on issues/PRs, no edits outside `.github/workflows/ci-failure-scan.md`, max 1 PR + 1 tracker issue open at a time. All issue/PR reads go through tools with `min-integrity: approved`; `[Filtered]` results are skipped (record the count, do not chase them).
+Hard rules: no comments on issues/PRs, no edits outside `.github/workflows/ci-failure-scan.md`, max 1 PR + 1 tracker issue open at a time. Reading issue/PR bodies and comments (the user-supplied content the integrity gate exists to filter) MUST go through the `github` MCP tool with `min-integrity: approved`; `[Filtered]` results are skipped (record the count, do not chase them). `gh` calls are allowed for workflow-run metadata (`gh api .../actions/...`, `gh run view --log`) and for enumerating this workflow's own artifacts (finding the `[ci-scan-feedback]` PR/tracker by title or repository-owned label), but NOT for reading maintainer-supplied content — do not use `gh issue view`, `gh pr view`, or `gh api /repos/.../comments` to substitute for the integrity-gated reads.
 
 ## Steps
 
@@ -98,20 +98,22 @@ Hard rules: no comments on issues/PRs, no edits outside `.github/workflows/ci-fa
    gh run view <run-id> --log | grep -E '^\| pipeline ' -A 200 | tee /tmp/gh-aw/agent/tally_<run-id>.txt
    ```
 
-3. Read in-scope feedback. Issues and PRs are in scope when EITHER the `agentic-workflows` label is present OR the title starts with `[ci-scan]`. For each in-scope item open in the last 30 days, fetch body + all comments. Quote any maintainer comment matching: "too broad", "doesn't match", "duplicate", "wrong label", "JSON malformed", "fix-forward", "don't disable", "Known issue did not match", "should be supported", "wait for #".
+3. Read in-scope feedback. Issues and PRs are in scope when EITHER the `agentic-workflows` label is present OR the title starts with `[ci-scan]`. For each in-scope item updated in the last 30 days, fetch body + all comments via the `github` MCP tool (NOT `gh`, per the hard rule above). Quote any maintainer comment matching: "too broad", "doesn't match", "duplicate", "wrong label", "JSON malformed", "fix-forward", "don't disable", "Known issue did not match", "should be supported", "wait for #".
 
-   ```bash
-   gh issue list -R dotnet/runtime --label agentic-workflows --state open --limit 200 \
-     --json number,title,labels,createdAt,updatedAt,url | tee /tmp/gh-aw/agent/bot_issues.json
-   gh search issues 'repo:dotnet/runtime is:issue is:open in:title "[ci-scan]"' \
-     --json number,title,url,createdAt,updatedAt | tee /tmp/gh-aw/agent/title_issues.json
-   ```
+   Discover candidates with the `github` tool's `search_issues` and `search_pull_requests` over both label and title scopes, applying the 30-day window via the search query itself:
+
+   - `repo:dotnet/runtime is:issue label:agentic-workflows updated:>=<today-30d>`
+   - `repo:dotnet/runtime is:issue in:title "[ci-scan]" updated:>=<today-30d>`
+   - `repo:dotnet/runtime is:pr label:agentic-workflows updated:>=<today-30d>`
+   - `repo:dotnet/runtime is:pr in:title "[ci-scan]" updated:>=<today-30d>`
+
+   Both the closed and open state buckets are in scope (closed items often carry the most informative feedback about why the artifact was rejected). For each result, read the body and comments via the `github` tool. Record `integrity-filtered: N` for any `[Filtered]` results and continue.
 
 4. Score each artifact against the rubric:
 
    - Title is scoped to a single failure shape (not a list of pipelines).
    - Classification matches the failure (KBE-eligible test/hang -> `Known Build Error`; build break -> KBE without test-disable; infra noise -> no issue at all).
-   - JSON block is valid: exactly one fenced ```json block, all four keys present, exactly one of `ErrorMessage`/`ErrorPattern` non-empty.
+   - JSON block is valid: exactly one fenced `` ```json `` block, all four keys present, exactly one of `ErrorMessage`/`ErrorPattern` non-empty.
    - Signature is specific: not a bare test/method name, not a generic exception/exit-code, not a phrase that also appears in `[PASS]`/`[SKIP]` lines of the same log.
    - For a sample of in-scope KBEs, cross-check the signature against the cited failing log (`gh run view <id> --log-failed | head -300` or the AzDO/Helix URL in the body) and flag PASS-line collisions or paraphrased signatures.
 
@@ -136,7 +138,7 @@ Hard rules: no comments on issues/PRs, no edits outside `.github/workflows/ci-fa
 
    If no signal warrants an edit, skip this step (do NOT call `noop` — Step 7 still emits the tracker update).
 
-7. KPI tracker. Maintain a single pinned `[ci-scan-feedback] KPI Tracker` issue whose body is rewritten every tick with a running window of metrics measured since the scanner was established. The body must be regenerated in full, not appended to — there is only one current snapshot.
+7. KPI tracker. Maintain a single `[ci-scan-feedback] KPI Tracker` issue whose body is rewritten every tick with a running window of metrics measured since the scanner was established. The body must be regenerated in full, not appended to — there is only one current snapshot. The workflow cannot pin issues; maintainers may pin the tracker manually if desired.
 
    Find or bootstrap the tracker:
 

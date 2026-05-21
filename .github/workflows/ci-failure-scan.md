@@ -169,7 +169,7 @@ For each row in the pipeline table below:
 
 Classification here drives WHERE the agent reads the signature text from. It does NOT drive WHERE the issue gets filed — every actionable signature flows through Step 4 + Step 5 Branch A. The timeline graph is `Stage -> Phase -> Job -> Task`; walk it via `parentId`. Drill into one representative console log per signature to confirm the shape.
 
-Save the canonical failure log to `/tmp/gh-aw/agent/failure.log` per signature before extracting; Step 4.0 and KBE check 7 read it back.
+Save the canonical failure log to `/tmp/gh-aw/agent/failure.log` per signature before extracting; KBE check 7 greps it for the verbatim signature.
 
 ```bash
 log_url="<console URL from Helix work item or AzDO task log>"
@@ -189,7 +189,7 @@ If the same signature appears in *every* sampled build (100% failure rate in the
 #### Data sources
 
 - **AzDO REST.** `https://dev.azure.com/dnceng-public/public/_apis/build/...`. Anonymous, no auth.
-  - List builds: `?definitions={id}&branchName=refs/heads/main&statusFilter=completed&resultFilter=succeeded,failed,partiallySucceeded&%24top=20&api-version=7.1`
+  - List builds: `?definitions={id}&branchName=refs/heads/main&statusFilter=completed&resultFilter=succeeded,failed,partiallySucceeded&%24top=25&api-version=7.1`
   - Timeline: `/builds/{id}/timeline?api-version=7.1` returns flat `records[]`; reconstruct via `parentId`. A failed record with non-null log id is a leaf to inspect.
 - **Helix REST.** `https://helix.dot.net/api/jobs/{jobId}/workitems?api-version=2019-06-17`. Each item has `Name`, `State`, `ExitCode`, `ConsoleOutputUri`. Failed: `ExitCode != 0` or `State == "Failed"`.
 - **Build Analysis attachment (best-effort).** `https://dev.azure.com/dnceng-public/public/_apis/build/builds/{id}/attachments/Build_Analysis_KnownIssues_v1?api-version=7.1`. Use to dedupe. 404 = none attached; do not fail.
@@ -393,7 +393,7 @@ Pull request: <link to the PR if the build was a PR build, otherwise omit this l
 ```
 
 ---
-Filed by [`ci-failure-scan`](.github/workflows/ci-failure-scan.md), which scans dnceng-public outer-loop pipelines on `main` and converts stable failures into KBEs and test-disable PRs. Comment here or on the workflow file to suggest changes; [`ci-failure-scan-feedback`](.github/workflows/ci-failure-scan-feedback.md) reads in-scope feedback daily and opens (or updates) a PR with prompt edits.
+Filed by [`ci-failure-scan`](https://github.com/dotnet/runtime/blob/main/.github/workflows/ci-failure-scan.md), which scans dnceng-public outer-loop pipelines on `main` and converts stable failures into KBEs and test-disable PRs. Comment here or on the workflow file to suggest changes; [`ci-failure-scan-feedback`](https://github.com/dotnet/runtime/blob/main/.github/workflows/ci-failure-scan-feedback.md) reads in-scope feedback daily and opens (or updates) a PR with prompt edits.
 ````
 
 ### Template: KBE issue body — regex match
@@ -430,7 +430,7 @@ Pull request: <link, omit if not a PR build>
 ```
 
 ---
-Filed by [`ci-failure-scan`](.github/workflows/ci-failure-scan.md), which scans dnceng-public outer-loop pipelines on `main` and converts stable failures into KBEs and test-disable PRs. Comment here or on the workflow file to suggest changes; [`ci-failure-scan-feedback`](.github/workflows/ci-failure-scan-feedback.md) reads in-scope feedback daily and opens (or updates) a PR with prompt edits.
+Filed by [`ci-failure-scan`](https://github.com/dotnet/runtime/blob/main/.github/workflows/ci-failure-scan.md), which scans dnceng-public outer-loop pipelines on `main` and converts stable failures into KBEs and test-disable PRs. Comment here or on the workflow file to suggest changes; [`ci-failure-scan-feedback`](https://github.com/dotnet/runtime/blob/main/.github/workflows/ci-failure-scan-feedback.md) reads in-scope feedback daily and opens (or updates) a PR with prompt edits.
 ````
 
 ### Template: KBE body verification (9 checks, mandatory)
@@ -552,7 +552,7 @@ Match verification (from Step 4.8):
 <if ActiveIssue reference used, link the issue>
 
 ---
-Filed by [`ci-failure-scan`](.github/workflows/ci-failure-scan.md), which scans dnceng-public outer-loop pipelines on `main` and converts stable failures into KBEs and test-disable PRs. Comment here or on the workflow file to suggest changes; [`ci-failure-scan-feedback`](.github/workflows/ci-failure-scan-feedback.md) reads in-scope feedback daily and opens (or updates) a PR with prompt edits.
+Filed by [`ci-failure-scan`](https://github.com/dotnet/runtime/blob/main/.github/workflows/ci-failure-scan.md), which scans dnceng-public outer-loop pipelines on `main` and converts stable failures into KBEs and test-disable PRs. Comment here or on the workflow file to suggest changes; [`ci-failure-scan-feedback`](https://github.com/dotnet/runtime/blob/main/.github/workflows/ci-failure-scan-feedback.md) reads in-scope feedback daily and opens (or updates) a PR with prompt edits.
 ````
 
 Allowed test-disable mechanisms:
