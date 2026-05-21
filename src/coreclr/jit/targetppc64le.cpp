@@ -39,7 +39,7 @@ Ppc64leClassifier::Ppc64leClassifier(const ClassifierInfo& info)
 
 //-----------------------------------------------------------------------------
 // Classify:
-//   Classify a parameter for the S390X ABI.
+//   Classify a parameter for the PPC64LE ELFv2 ABI.
 //
 // Parameters:
 //   comp           - Compiler instance
@@ -51,145 +51,183 @@ Ppc64leClassifier::Ppc64leClassifier(const ClassifierInfo& info)
 // Returns:
 //   Classification information for the parameter.
 //
+// Notes:
+//   PPC64LE ELFv2 ABI has a unique characteristic: when a floating-point argument
+//   is passed in a float register (f1-f13), it also consumes the corresponding
+//   integer register slot (r3-r10) if within the first 8 parameter slots.
+//
 ABIPassingInformation Ppc64leClassifier::Classify(Compiler*    comp,
                                                   var_types    type,
                                                   ClassLayout* structLayout,
                                                   WellKnownArg wellKnownParam)
 {
+    // PPC64LE ELFv2 ABI: Stack offset = 32 + (m_numTotalSlots * 8)
+    // - 32 bytes: mandatory header
+    // - m_numTotalSlots: cumulative count of 8-byte slots consumed by all previous arguments
+    unsigned currentArgOffset = 32 + (m_numTotalSlots * 8);
+    
     if ((wellKnownParam == WellKnownArg::RetBuffer) && hasFixedRetBuffReg(m_info.CallConv))
     {
+        // Return buffer is passed in r3
+        m_intRegs.Dequeue(); // Consume r3
+        m_argNum++; // Increment argument count
+        m_numTotalSlots++; // Consumes 1 slot
         return ABIPassingInformation::FromSegment(comp, ABIPassingSegment::InRegister(REG_ARG_RET_BUFF, 0, TARGET_POINTER_SIZE));
     }
 
-    // First handle HFA/HVAs. These are allowed to be passed in more registers
-    // than other structures.
-    if (varTypeIsStruct(type) && !m_info.IsVarArgs)
+    // Handle floating-point and double arguments
+    if (varTypeUsesFloatArgReg(type) && !m_info.IsVarArgs)
     {
-        var_types hfaType = comp->GetHfaType(structLayout->GetClassHandle());
-
-        if (hfaType != TYP_UNDEF)
+        // PPC64LE ELFv2 ABI: Float args consume both float reg AND corresponding int reg slot(s)
+        if (m_floatRegs.Count() > 0)
         {
-            unsigned              elemSize = genTypeSize(hfaType);
-            unsigned              slots    = structLayout->GetSize() / elemSize;
-            ABIPassingInformation info;
-            if (m_floatRegs.Count() >= slots)
+            regNumber floatReg = m_floatRegs.Dequeue();
+            unsigned size = (type == TYP_FLOAT) ? 4 : 8;
+            
+            // Determine how many slots this float argument consumes
+            // TYP_FLOAT and TYP_DOUBLE consume 1 slot (8 bytes)
+            // Future: 16-byte float types would consume 2 slots
+            unsigned slotsNeeded = 1;
+            
+            // Consume corresponding integer register slot(s) if within first 8 total slots
+            // This maintains the parallel consumption of int and float register spaces
+            if (m_numTotalSlots < 8)
             {
-                info = ABIPassingInformation(comp, slots);
-
-                for (unsigned i = 0; i < slots; i++)
+                unsigned slotsToConsume = min(slotsNeeded, 8 - m_numTotalSlots);
+                for (unsigned i = 0; i < slotsToConsume && m_intRegs.Count() > 0; i++)
                 {
-                    info.Segment(i) = ABIPassingSegment::InRegister(m_floatRegs.Dequeue(), i * elemSize, elemSize);
+                    m_intRegs.Dequeue();
                 }
             }
-	    else
-            {
-                unsigned alignment =
-                    compAppleArm64Abi() ? min(elemSize, (unsigned)TARGET_POINTER_SIZE) : TARGET_POINTER_SIZE;
-		m_stackArgSize = roundUp(m_stackArgSize, alignment);
-                info           = ABIPassingInformation::FromSegment(comp, ABIPassingSegment::OnStack(m_stackArgSize, 0, structLayout->GetSize()));
-                m_stackArgSize += roundUp(structLayout->GetSize(), alignment);
-
-                // After passing any float value on the stack, we should not enregister more float values.
-		m_floatRegs.Clear();
-            }
-
-        return info;
+            
+            m_argNum++; // Increment argument count
+            m_numTotalSlots += slotsNeeded; // Float/double consumes slot(s)
+            return ABIPassingInformation::FromSegment(comp, ABIPassingSegment::InRegister(floatReg, 0, size));
+        }
+        else
+        {
+            // No float registers available, pass on stack
+            unsigned size = (type == TYP_FLOAT) ? 4 : 8;
+            ABIPassingInformation info = ABIPassingInformation::FromSegment(comp,
+                ABIPassingSegment::OnStack(currentArgOffset, 0, size));
+            m_argNum++; // Increment argument count
+            m_numTotalSlots++; // Consumes 1 slot
+            m_stackArgSize = currentArgOffset + TARGET_POINTER_SIZE;
+            
+            // Clear remaining registers once we go to stack
+            m_floatRegs.Clear();
+            m_intRegs.Clear();
+            
+            return info;
         }
     }
-    unsigned slots;
-    unsigned passedSize;
+
+    // Handle struct types
     if (varTypeIsStruct(type))
     {
-	unsigned size = structLayout->GetSize();
-	if (size > 16)
-	{
-	    slots      = 1; // Passed by implicit byref
-            passedSize = TARGET_POINTER_SIZE;
-	}
-	else
-	{
-	    slots      = (size + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
-	    passedSize = size;
-	}
-    }
-    else
-    {
-	assert(genTypeSize(type) <= TARGET_POINTER_SIZE);
-        slots      = 1;
-	passedSize = genTypeSize(type);
-    }
-
-    assert((slots == 1) || (slots == 2));
-
-    ABIPassingInformation info;
-    if (m_info.IsVarArgs && (slots == 2) && (m_intRegs.Count() == 1))
-    {
-	// For varargs we split structs between register and stack in this
-	// case. Normally a struct that does not fit in registers will always
-	// be passed on stack.
-	assert(compFeatureArgSplit());
-	info = ABIPassingInformation::FromSegments(comp,
-						ABIPassingSegment::InRegister(m_intRegs.Dequeue(), 0, TARGET_POINTER_SIZE),
-						ABIPassingSegment::OnStack(m_stackArgSize, TARGET_POINTER_SIZE, 
-							structLayout->GetSize() - TARGET_POINTER_SIZE));
-
-	m_stackArgSize += TARGET_POINTER_SIZE;
-    }
-    else
-    {
-	RegisterQueue* regs = &m_intRegs;
-
-	// In varargs methods (only supported on Windows) all parameters go in
-        // integer registers.
-        if (varTypeUsesFloatArgReg(type) && !m_info.IsVarArgs)
+        unsigned size = structLayout->GetSize();
+        
+        // PPC64LE ELFv2 ABI: Structs are passed by value in registers or on stack
+        // Calculate number of 8-byte slots needed
+        unsigned slots = (size + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
+        
+        if (m_intRegs.Count() >= slots)
         {
-            regs = &m_floatRegs;
+            // Pass entirely in registers
+            ABIPassingInformation info = ABIPassingInformation(comp, slots);
+            unsigned offset = 0;
+            
+            for (unsigned i = 0; i < slots; i++)
+            {
+                unsigned slotSize = min(size - offset, (unsigned)TARGET_POINTER_SIZE);
+                info.Segment(i) = ABIPassingSegment::InRegister(m_intRegs.Dequeue(), offset, slotSize);
+                offset += slotSize;
+            }
+            
+            m_argNum++; // Increment argument count
+            m_numTotalSlots += slots; // Struct consumes 'slots' number of slots
+            return info;
         }
-
-        if (regs->Count() >= slots)
+        else if (m_intRegs.Count() > 0)
         {
-	    info              = ABIPassingInformation(comp, slots);
-	    unsigned slotSize = min(passedSize, (unsigned)TARGET_POINTER_SIZE);
-	    info.Segment(0)   = ABIPassingSegment::InRegister(regs->Dequeue(), 0, slotSize);
-	    if (slots == 2)
-	    {
-		assert(varTypeIsStruct(type));
-		unsigned tailSize = structLayout->GetSize() - slotSize;
-		info.Segment(1)   = ABIPassingSegment::InRegister(regs->Dequeue(), slotSize, tailSize);
-	    }
-	}
-	else
+            // Split between registers and stack
+            // Pass what fits in remaining registers, rest on stack
+            unsigned regsAvailable = m_intRegs.Count();
+            unsigned regsUsed = min(regsAvailable, slots);
+            unsigned stackSlots = slots - regsUsed;
+            
+            ABIPassingInformation info = ABIPassingInformation(comp, slots);
+            unsigned offset = 0;
+            
+            // Fill available registers
+            for (unsigned i = 0; i < regsUsed; i++)
+            {
+                unsigned slotSize = min(size - offset, (unsigned)TARGET_POINTER_SIZE);
+                info.Segment(i) = ABIPassingSegment::InRegister(m_intRegs.Dequeue(), offset, slotSize);
+                offset += slotSize;
+            }
+            
+            // Put remainder on stack
+            unsigned stackOffset = currentArgOffset + (regsUsed * TARGET_POINTER_SIZE);
+            for (unsigned i = regsUsed; i < slots; i++)
+            {
+                unsigned slotSize = min(size - offset, (unsigned)TARGET_POINTER_SIZE);
+                info.Segment(i) = ABIPassingSegment::OnStack(stackOffset, offset, slotSize);
+                offset += slotSize;
+                stackOffset += TARGET_POINTER_SIZE;
+            }
+            
+            m_argNum++; // Increment argument count
+            m_numTotalSlots += slots; // Struct consumes 'slots' number of slots
+            m_stackArgSize = currentArgOffset + (slots * TARGET_POINTER_SIZE);
+            return info;
+        }
+        else
         {
-	    unsigned alignment;
-	    if (compAppleArm64Abi())
-	    {
-		if (varTypeIsStruct(type))
-	        {
-	            alignment = TARGET_POINTER_SIZE;
-	        }
-	        else
-		{
-	            alignment = genTypeSize(type);
-	        }
-
-	        m_stackArgSize = roundUp(m_stackArgSize, alignment);
-	    }
-	    else
-	    {
-		alignment = TARGET_POINTER_SIZE;
-		assert((m_stackArgSize % TARGET_POINTER_SIZE) == 0);
-	    }
-
-	    info = ABIPassingInformation::FromSegment(comp, ABIPassingSegment::OnStack(m_stackArgSize, 0, passedSize));
-
-	    m_stackArgSize += roundUp(passedSize, alignment);
-
-	    // As soon as we pass something on stack we cannot go back and
-	    // enregister something else.
-	   regs->Clear();
-	}
+            // Pass entirely on stack
+            ABIPassingInformation info = ABIPassingInformation(comp, slots);
+            unsigned offset = 0;
+            unsigned stackOffset = currentArgOffset;
+            
+            for (unsigned i = 0; i < slots; i++)
+            {
+                unsigned slotSize = min(size - offset, (unsigned)TARGET_POINTER_SIZE);
+                info.Segment(i) = ABIPassingSegment::OnStack(stackOffset, offset, slotSize);
+                offset += slotSize;
+                stackOffset += TARGET_POINTER_SIZE;
+            }
+            
+            m_argNum++; // Increment argument count
+            m_numTotalSlots += slots; // Struct consumes 'slots' number of slots
+            m_stackArgSize = currentArgOffset + (slots * TARGET_POINTER_SIZE);
+            m_intRegs.Clear();
+            return info;
+        }
     }
 
-    return info;
+    // Handle integer and pointer types
+    assert(genTypeSize(type) <= TARGET_POINTER_SIZE);
+    
+    if (m_intRegs.Count() > 0)
+    {
+        // Pass in integer register
+        unsigned size = genTypeSize(type);
+        m_argNum++; // Increment argument count
+        m_numTotalSlots++; // Integer consumes 1 slot
+        return ABIPassingInformation::FromSegment(comp,
+            ABIPassingSegment::InRegister(m_intRegs.Dequeue(), 0, size));
+    }
+    else
+    {
+        // Pass on stack
+        unsigned size = genTypeSize(type);
+        ABIPassingInformation info = ABIPassingInformation::FromSegment(comp,
+            ABIPassingSegment::OnStack(currentArgOffset, 0, size));
+        m_argNum++; // Increment argument count
+        m_numTotalSlots++; // Integer consumes 1 slot
+        m_stackArgSize = currentArgOffset + TARGET_POINTER_SIZE;
+        m_intRegs.Clear();
+        return info;
+    }
 }
 #endif

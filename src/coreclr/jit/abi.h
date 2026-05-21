@@ -285,6 +285,8 @@ class Ppc64leClassifier
     RegisterQueue         m_intRegs;
     RegisterQueue         m_floatRegs;
     unsigned              m_stackArgSize = 0;
+    unsigned              m_argNum = 0;          // Track argument count (0, 1, 2, ...)
+    unsigned              m_numTotalSlots = 0;   // Track cumulative slot count (for offset calculation)
 
 public:
     Ppc64leClassifier(const ClassifierInfo& info);

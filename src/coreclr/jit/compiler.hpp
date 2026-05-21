@@ -2675,6 +2675,18 @@ inline
 
         FPbased = varDsc->lvFramePointerBased;
 
+#ifdef TARGET_POWERPC64
+        // For PPC64LE incoming stack parameters that are frame-pointer-based,
+        // adjust the offset to account for the frame size since the offset is
+        // relative to the caller's SP but we're accessing from the callee's FP (which equals callee's SP)
+        if (FPbased && varDsc->lvIsParam && !varDsc->lvIsRegArg && (lvaDoneFrameLayout == Compiler::FINAL_FRAME_LAYOUT))
+        {
+            varOffset = varDsc->GetStackOffset() + codeGen->genTotalFrameSize();
+            *pFPbased = FPbased;
+            return varOffset;
+        }
+#endif
+
 #ifdef DEBUG
 #if FEATURE_FIXED_OUT_ARGS
         if ((unsigned)varNum == lvaOutgoingArgSpaceVar)

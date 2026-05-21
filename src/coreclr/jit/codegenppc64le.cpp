@@ -365,7 +365,15 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 	    genPutArgReg(treeNode->AsOp());
 	    break;
 
-        case GT_ADD:
+	case GT_PUTARG_STK:
+	    genPutArgStk(treeNode->AsPutArgStk());
+	    break;
+
+	case GT_PUTARG_SPLIT:
+	    genPutArgSplit(treeNode->AsPutArgSplit());
+	    break;
+
+	       case GT_ADD:
         case GT_SUB:
         case GT_MUL:
             genConsumeOperands(treeNode->AsOp());
@@ -607,8 +615,242 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
 //
 void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 {
-    //_ASSERTE("!NYI");
-    abort();
+    assert(treeNode->OperIs(GT_PUTARG_STK));
+    emitter* emit = GetEmitter();
+
+    // This is the varNum for our store operations,
+    // typically this is the varNum for the Outgoing arg space
+    // When we are generating a tail call it will be the varNum for arg0
+    unsigned varNumOut    = (unsigned)-1;
+    unsigned argOffsetMax = (unsigned)-1; // Records the maximum size of this area for assert checks
+
+    // Get argument offset to use with 'varNumOut'
+    // Here we cross check that argument offset hasn't changed from lowering to codegen since
+    // we are storing arg slot number in GT_PUTARG_STK node in lowering phase.
+    unsigned argOffsetOut = treeNode->getArgOffset();
+
+    // Whether to setup stk arg in incoming or out-going arg area?
+    // Fast tail calls implemented as epilog+jmp = stk arg is setup in incoming arg area.
+    // All other calls - stk arg is setup in out-going arg area.
+    if (treeNode->putInIncomingArgArea())
+    {
+        varNumOut    = getFirstArgWithStackSlot();
+        argOffsetMax = compiler->compArgSize;
+#if FEATURE_FASTTAILCALL
+        // This must be a fast tail call.
+        assert(treeNode->gtCall->IsFastTailCall());
+
+        // Since it is a fast tail call, the existence of first incoming arg is guaranteed
+        // because fast tail call requires that in-coming arg area of caller is >= out-going
+        // arg area required for tail call.
+        LclVarDsc* varDsc = compiler->lvaGetDesc(varNumOut);
+        assert(varDsc != nullptr);
+#endif // FEATURE_FASTTAILCALL
+    }
+    else
+    {
+        varNumOut    = compiler->lvaOutgoingArgSpaceVar;
+        argOffsetMax = compiler->lvaOutgoingArgSpaceSize;
+    }
+
+    GenTree* source = treeNode->gtGetOp1();
+
+    if (!source->TypeIs(TYP_STRUCT)) // a normal non-Struct argument
+    {
+        if (varTypeIsSIMD(source->TypeGet()))
+        {
+            // SIMD types not yet supported for PPC64LE
+            NYI_POWERPC64("genPutArgStk - SIMD types");
+        }
+
+        var_types slotType = genActualType(source);
+
+        instruction storeIns  = ins_Store(slotType);
+        emitAttr    storeAttr = emitTypeSize(slotType);
+
+        // If it is contained then source must be the integer constant zero
+        if (source->isContained())
+        {
+            assert(source->OperGet() == GT_CNS_INT);
+            assert(source->AsIntConCommon()->IconValue() == 0);
+
+            // Use r0 (which is always zero in PPC64LE when used as source)
+            // Actually, we need to load 0 into a register first
+            regNumber zeroReg = REG_R0;
+            emit->emitIns_R_I(INS_li, EA_PTRSIZE, zeroReg, 0);
+            emit->emitIns_S_R(storeIns, storeAttr, zeroReg, varNumOut, argOffsetOut);
+        }
+        else
+        {
+            genConsumeReg(source);
+            emit->emitIns_S_R(storeIns, storeAttr, source->GetRegNum(), varNumOut, argOffsetOut);
+        }
+        argOffsetOut += EA_SIZE_IN_BYTES(storeAttr);
+        assert(argOffsetOut <= argOffsetMax); // We can't write beyond the outgoing arg area
+    }
+    else // We have some kind of a struct argument
+    {
+        assert(source->isContained()); // We expect that this node was marked as contained in Lower
+
+        if (source->OperGet() == GT_FIELD_LIST)
+        {
+            genPutArgStkFieldList(treeNode, varNumOut);
+        }
+        else
+        {
+            noway_assert(source->OperIsLocalRead() || source->OperIs(GT_BLK));
+
+            var_types targetType = source->TypeGet();
+            noway_assert(varTypeIsStruct(targetType));
+
+            // We will copy this struct to the stack, possibly using a ld/std instruction
+            // Setup loReg from the internal registers that we reserved in lower.
+            //
+            regNumber loReg = internalRegisters.Extract(treeNode);
+
+            GenTreeLclVarCommon* srcLclNode = nullptr;
+            regNumber            addrReg    = REG_NA;
+            ClassLayout*         layout     = nullptr;
+
+            // Setup "layout", "srcLclNode" and "addrReg".
+            if (source->OperIsLocalRead())
+            {
+                srcLclNode        = source->AsLclVarCommon();
+                layout            = srcLclNode->GetLayout(compiler);
+                LclVarDsc* varDsc = compiler->lvaGetDesc(srcLclNode);
+
+                // This struct must live on the stack frame.
+                assert(varDsc->lvOnFrame && !varDsc->lvRegister);
+            }
+            else // we must have a GT_BLK
+            {
+                layout  = source->AsBlk()->GetLayout();
+                addrReg = genConsumeReg(source->AsBlk()->Addr());
+            }
+
+            unsigned srcSize = layout->GetSize();
+
+            // If we have an HFA we can't have any GC pointers,
+            // if not then the max size for the struct is 16 bytes
+            if (compiler->IsHfa(layout->GetClassHandle()))
+            {
+                noway_assert(!layout->HasGCPtr());
+            }
+            else
+            {
+                noway_assert(srcSize <= 2 * TARGET_POINTER_SIZE);
+            }
+
+            noway_assert(srcSize <= MAX_PASS_MULTIREG_BYTES);
+
+            unsigned dstSize = treeNode->GetStackByteSize();
+
+            // We can generate smaller code if store size is a multiple of TARGET_POINTER_SIZE.
+            // The dst size can be rounded up to PUTARG_STK size. The src size can be rounded up
+            // if it reads a local variable because reading "too much" from a local cannot fault.
+            //
+            if ((dstSize != srcSize) && (srcLclNode != nullptr))
+            {
+                unsigned widenedSrcSize = roundUp(srcSize, TARGET_POINTER_SIZE);
+                if (widenedSrcSize <= dstSize)
+                {
+                    srcSize = widenedSrcSize;
+                }
+            }
+
+            assert(srcSize <= dstSize);
+
+            int      remainingSize = srcSize;
+            unsigned structOffset  = 0;
+            unsigned lclOffset     = (srcLclNode != nullptr) ? srcLclNode->GetLclOffs() : 0;
+            unsigned nextIndex     = 0;
+
+            // For PPC64LE, we will generate a ld and std instruction each loop
+            //             ld      r2, 0(r3)
+            //             std     r2, offset(r1)
+            while (remainingSize >= TARGET_POINTER_SIZE)
+            {
+                var_types type = layout->GetGCPtrType(nextIndex);
+
+                if (srcLclNode != nullptr)
+                {
+                    // Load from our local source
+                    emit->emitIns_R_S(INS_ld, emitTypeSize(type), loReg, srcLclNode->GetLclNum(),
+                                      lclOffset + structOffset);
+                }
+                else
+                {
+                    // check for case of destroying the addrRegister while we still need it
+                    assert(loReg != addrReg || remainingSize == TARGET_POINTER_SIZE);
+
+                    // Load from our address expression source
+                    emit->emitIns_R_R_I(INS_ld, emitTypeSize(type), loReg, addrReg, structOffset);
+                }
+
+                // Emit std instruction to store the register into the outgoing argument area
+                emit->emitIns_S_R(INS_std, emitTypeSize(type), loReg, varNumOut, argOffsetOut);
+                argOffsetOut += TARGET_POINTER_SIZE;  // We stored 8-bytes of the struct
+                assert(argOffsetOut <= argOffsetMax); // We can't write beyond the outgoing arg area
+
+                remainingSize -= TARGET_POINTER_SIZE; // We loaded 8-bytes of the struct
+                structOffset += TARGET_POINTER_SIZE;
+                nextIndex++;
+            }
+
+            // Handle any remaining bytes (less than 8 bytes)
+            while (remainingSize > 0)
+            {
+                var_types type;
+                instruction loadIns;
+                instruction storeIns;
+                unsigned moveSize;
+
+                if (remainingSize >= 4)
+                {
+                    moveSize = 4;
+                    type = layout->GetGCPtrType(nextIndex);
+                    loadIns = INS_lwz;
+                    storeIns = INS_stw;
+                }
+                else if (remainingSize >= 2)
+                {
+                    moveSize = 2;
+                    type = TYP_USHORT;
+                    loadIns = INS_lhz;
+                    storeIns = INS_sth;
+                }
+                else
+                {
+                    moveSize = 1;
+                    type = TYP_UBYTE;
+                    loadIns = INS_lbz;
+                    storeIns = INS_stb;
+                }
+
+                emitAttr attr = emitTypeSize(type);
+
+                if (srcLclNode != nullptr)
+                {
+                    // Load from our local source
+                    emit->emitIns_R_S(loadIns, attr, loReg, srcLclNode->GetLclNum(), lclOffset + structOffset);
+                }
+                else
+                {
+                    assert(loReg != addrReg);
+                    // Load from our address expression source
+                    emit->emitIns_R_R_I(loadIns, attr, loReg, addrReg, structOffset);
+                }
+
+                // Emit a store instruction to store the register into the outgoing argument area
+                emit->emitIns_S_R(storeIns, attr, loReg, varNumOut, argOffsetOut);
+                argOffsetOut += moveSize;
+                assert(argOffsetOut <= argOffsetMax); // We can't write beyond the outgoing arg area
+
+                structOffset += moveSize;
+                remainingSize -= moveSize;
+            }
+        }
+    }
 }
 
 //---------------------------------------------------------------------
@@ -649,8 +891,236 @@ void CodeGen::genPutArgReg(GenTreeOp* tree)
 //
 void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
 {
-    //_ASSERTE("!NYI");
-    abort();
+    assert(treeNode->OperIs(GT_PUTARG_SPLIT));
+
+    GenTree* source       = treeNode->gtOp1;
+    emitter* emit         = GetEmitter();
+    unsigned varNumOut    = compiler->lvaOutgoingArgSpaceVar;
+    unsigned argOffsetMax = compiler->lvaOutgoingArgSpaceSize;
+
+    if (source->OperGet() == GT_FIELD_LIST)
+    {
+        // Evaluate each of the GT_FIELD_LIST items into their register
+        // and store their register into the outgoing argument area
+        unsigned regIndex         = 0;
+        unsigned firstOnStackOffs = UINT_MAX;
+
+        for (GenTreeFieldList::Use& use : source->AsFieldList()->Uses())
+        {
+            GenTree*  nextArgNode = use.GetNode();
+            regNumber fieldReg    = nextArgNode->GetRegNum();
+            genConsumeReg(nextArgNode);
+
+            if (regIndex >= treeNode->gtNumRegs)
+            {
+                if (firstOnStackOffs == UINT_MAX)
+                {
+                    firstOnStackOffs = use.GetOffset();
+                }
+
+                var_types type   = use.GetType();
+                unsigned  offset = treeNode->getArgOffset() + use.GetOffset() - firstOnStackOffs;
+                // We can't write beyond the outgoing arg area
+                assert((offset + genTypeSize(type)) <= argOffsetMax);
+
+                // Emit store instructions to store the registers produced by the GT_FIELD_LIST into the outgoing
+                // argument area
+                emit->emitIns_S_R(ins_Store(type), emitActualTypeSize(type), fieldReg, varNumOut, offset);
+            }
+            else
+            {
+                var_types type   = treeNode->GetRegType(regIndex);
+                regNumber argReg = treeNode->GetRegNumByIdx(regIndex);
+
+                // If child node is not already in the register we need, move it
+                inst_Mov(type, argReg, fieldReg, /* canSkip */ true);
+
+                regIndex++;
+            }
+        }
+    }
+    else
+    {
+        var_types targetType = source->TypeGet();
+        assert(source->isContained() && varTypeIsStruct(targetType));
+
+        // We need a register to store intermediate values that we are loading
+        // from the source into. We can usually use one of the target registers
+        // that will be overridden anyway. The exception is when the source is
+        // in a register and that register is the unique target register we are
+        // placing. LSRA will always allocate an internal register when there
+        // is just one target register to handle this situation.
+        //
+        int          firstRegToPlace;
+        regNumber    valueReg     = REG_NA;
+        unsigned     srcLclNum    = BAD_VAR_NUM;
+        unsigned     srcLclOffset = 0;
+        regNumber    addrReg      = REG_NA;
+        var_types    addrType     = TYP_UNDEF;
+        ClassLayout* layout       = nullptr;
+
+        if (source->OperIsLocalRead())
+        {
+            srcLclNum         = source->AsLclVarCommon()->GetLclNum();
+            srcLclOffset      = source->AsLclVarCommon()->GetLclOffs();
+            layout            = source->AsLclVarCommon()->GetLayout(compiler);
+            LclVarDsc* varDsc = compiler->lvaGetDesc(srcLclNum);
+
+            // This struct must live on the stack frame.
+            assert(varDsc->lvOnFrame && !varDsc->lvRegister);
+
+            // No possible conflicts, just use the first register as the value register.
+            firstRegToPlace = 0;
+            valueReg        = treeNode->GetRegNumByIdx(0);
+        }
+        else // we must have a GT_BLK
+        {
+            layout   = source->AsBlk()->GetLayout();
+            addrReg  = genConsumeReg(source->AsBlk()->Addr());
+            addrType = source->AsBlk()->Addr()->TypeGet();
+
+            regNumber allocatedValueReg = REG_NA;
+            if (treeNode->gtNumRegs == 1)
+            {
+                allocatedValueReg = internalRegisters.Extract(treeNode);
+            }
+
+            // Pick a register to store intermediate values in for the to-stack
+            // copy. It must not conflict with addrReg.
+            valueReg = treeNode->GetRegNumByIdx(0);
+            if (valueReg == addrReg)
+            {
+                if (treeNode->gtNumRegs == 1)
+                {
+                    valueReg = allocatedValueReg;
+                }
+                else
+                {
+                    valueReg = treeNode->GetRegNumByIdx(1);
+                }
+            }
+
+            // Find first register to place. If we are placing addrReg, then
+            // make sure we place it last to avoid clobbering its value.
+            //
+            // The loop below will start at firstRegToPlace and place
+            // treeNode->gtNumRegs registers in order, with wraparound. For
+            // example, if the registers to place are r3, r4, r5=addrReg, r6
+            // then we will set firstRegToPlace = 3 (r6) and the loop below
+            // will place r6, r3, r4, r5. The last placement will clobber
+            // addrReg.
+            firstRegToPlace = 0;
+            for (unsigned i = 0; i < treeNode->gtNumRegs; i++)
+            {
+                if (treeNode->GetRegNumByIdx(i) == addrReg)
+                {
+                    firstRegToPlace = i + 1;
+                    break;
+                }
+            }
+        }
+
+        // Put on stack first
+        unsigned structOffset  = treeNode->gtNumRegs * TARGET_POINTER_SIZE;
+        unsigned remainingSize = layout->GetSize() - structOffset;
+        unsigned argOffsetOut  = treeNode->getArgOffset();
+
+        assert((remainingSize > 0) && (roundUp(remainingSize, TARGET_POINTER_SIZE) == treeNode->GetStackByteSize()));
+        while (remainingSize > 0)
+        {
+            var_types type;
+            instruction loadIns;
+            instruction storeIns;
+            unsigned moveSize;
+
+            if (remainingSize >= TARGET_POINTER_SIZE)
+            {
+                type = layout->GetGCPtrType(structOffset / TARGET_POINTER_SIZE);
+                loadIns = INS_ld;
+                storeIns = INS_std;
+                moveSize = TARGET_POINTER_SIZE;
+            }
+            else if (remainingSize >= 4)
+            {
+                type = TYP_INT;
+                loadIns = INS_lwz;
+                storeIns = INS_stw;
+                moveSize = 4;
+            }
+            else if (remainingSize >= 2)
+            {
+                type = TYP_USHORT;
+                loadIns = INS_lhz;
+                storeIns = INS_sth;
+                moveSize = 2;
+            }
+            else
+            {
+                assert(remainingSize == 1);
+                type = TYP_UBYTE;
+                loadIns = INS_lbz;
+                storeIns = INS_stb;
+                moveSize = 1;
+            }
+
+            emitAttr attr = emitActualTypeSize(type);
+
+            if (srcLclNum != BAD_VAR_NUM)
+            {
+                // Load from our local source
+                emit->emitIns_R_S(loadIns, attr, valueReg, srcLclNum, srcLclOffset + structOffset);
+            }
+            else
+            {
+                assert(valueReg != addrReg);
+
+                // Load from our address expression source
+                emit->emitIns_R_R_I(loadIns, attr, valueReg, addrReg, structOffset);
+            }
+
+            // Emit the instruction to store the register into the outgoing argument area
+            emit->emitIns_S_R(storeIns, attr, valueReg, varNumOut, argOffsetOut);
+            argOffsetOut += moveSize;
+            assert(argOffsetOut <= argOffsetMax);
+
+            remainingSize -= moveSize;
+            structOffset += moveSize;
+        }
+
+        // Place registers starting from firstRegToPlace. It should ensure we
+        // place addrReg last (if we place it at all).
+        structOffset         = static_cast<unsigned>(firstRegToPlace) * TARGET_POINTER_SIZE;
+        unsigned curRegIndex = firstRegToPlace;
+
+        for (unsigned regsPlaced = 0; regsPlaced < treeNode->gtNumRegs; regsPlaced++)
+        {
+            if (curRegIndex == treeNode->gtNumRegs)
+            {
+                curRegIndex  = 0;
+                structOffset = 0;
+            }
+
+            regNumber targetReg = treeNode->GetRegNumByIdx(curRegIndex);
+            var_types type      = treeNode->GetRegType(curRegIndex);
+
+            if (srcLclNum != BAD_VAR_NUM)
+            {
+                // Load from our local source
+                emit->emitIns_R_S(INS_ld, emitTypeSize(type), targetReg, srcLclNum, srcLclOffset + structOffset);
+            }
+            else
+            {
+                assert((addrReg != targetReg) || (regsPlaced == treeNode->gtNumRegs - 1));
+
+                // Load from our address expression source
+                emit->emitIns_R_R_I(INS_ld, emitTypeSize(type), targetReg, addrReg, structOffset);
+            }
+
+            curRegIndex++;
+            structOffset += TARGET_POINTER_SIZE;
+        }
+    }
+    genProduceReg(treeNode);
 }
 
 #ifdef FEATURE_SIMD
@@ -781,7 +1251,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
             instruction ins  = ins_Store(targetType);
             emitAttr    attr = emitActualTypeSize(targetType);
 
-            emit->emitIns_S_R(ins, attr, dataReg, varNum, /* offset */ 0); //TODO ALHAD Calculate correct offset if there parameters size span more than 8 registers
+            emit->emitIns_S_R(ins, attr, dataReg, varNum, /* offset */ 0); //This will be handled via code implemented at lclvars.cpp:7063
         }
         else // store into register (i.e move into register)
         {
@@ -1984,7 +2454,19 @@ void CodeGen::genPushCalleeSavedRegisters()
 #endif // DEBUG
 
     int totalFrameSize = genTotalFrameSize();
-    int localFrameSize = compiler->compLclFrameSize + 96;
+    
+    // Calculate localFrameSize using same logic as genTotalFrameSize()
+    // PPC64LE ELFv2 ABI: 32 (linkage) + parameter save area + compLclFrameSize
+    const int LINKAGE_AREA_SIZE = 32;
+    const int PARAM_SAVE_AREA_SIZE = 64;
+    
+    int paramSaveArea = PARAM_SAVE_AREA_SIZE;
+    if (compiler->info.compArgsCount > 0 && compiler->compArgSize > PARAM_SAVE_AREA_SIZE)
+    {
+        paramSaveArea = compiler->compArgSize;
+    }
+    
+    int localFrameSize = LINKAGE_AREA_SIZE + paramSaveArea + compiler->compLclFrameSize;
 
     if (compiler->lvaPSPSym != BAD_VAR_NUM)
     {
@@ -2139,22 +2621,57 @@ int CodeGenInterface::genSPtoFPdelta() const
 //---------------------------------------------------------------------
 // genTotalFrameSize - return the total size of the stack frame, including local size,
 // callee-saved register size, etc.
-///
+//
 // Return value:
 //    Total frame size
+//
+// Notes:
+//    PPC64LE ELFv2 ABI requires:
+//    - Linkage area: 32 bytes (mandatory)
+//    - Parameter save area: 64 bytes (8 registers * 8 bytes) for incoming register parameters
+//      (only if function has parameters - this is where callee can spill r3-r10)
+//    - Local variables and spills: compLclFrameSize (includes outgoing arg space)
+//    - Callee-saved registers: compCalleeRegsPushed * 8
+//
+//    Note: compArgSize tracks incoming parameter size. If we have incoming parameters,
+//    we need the parameter save area. If compLclFrameSize already accounts for this
+//    (e.g., includes space for parameters), we should not double-count.
 //
 
 int CodeGenInterface::genTotalFrameSize() const
 {
     assert(!IsUninitialized(compiler->compCalleeRegsPushed));
 
-    // PPC64LE ABI-specific fixed frame addition currently required by this
-    // backend:
-    //   - 112 bytes fixed frame reservation
-    //
-    // The fixed pre-allocation FP backchain save at -8(sp) is not part of the
-    // post-allocation frame size.
-    int totalFrameSize = compiler->compCalleeRegsPushed * REGSIZE_BYTES + compiler->compLclFrameSize + 112;
+    // PPC64LE ELFv2 ABI frame layout:
+    // - 32 bytes: Linkage area (back chain, CR save, LR save, TOC save, etc.)
+    // - Parameter save area: Space for incoming parameters
+    //   * Minimum 64 bytes (for r3-r10) if function has parameters
+    //   * If compArgSize > 64, use compArgSize (parameters spilled to stack)
+    // - compLclFrameSize: Local variables + outgoing argument space
+    // - 16 bytes: Temporary storage (8 bytes for GT_CNS_DBL + 8 bytes for frame pointer)
+    // - compCalleeRegsPushed * 8: Callee-saved registers
+    
+    const int LINKAGE_AREA_SIZE = 32;
+    const int PARAM_SAVE_AREA_SIZE = 64;  // Minimum: 8 registers * 8 bytes
+    const int TEMP_STORAGE_SIZE = 16;     // 8 bytes for GT_CNS_DBL + 8 bytes for FP
+    
+    // Calculate parameter save area size
+    // PPC64LE ELFv2 ABI requires parameter save area to always be allocated
+    // (minimum 64 bytes for 8 register parameters r3-r10)
+    int paramSaveArea = PARAM_SAVE_AREA_SIZE;
+    
+    // If we have parameters and compArgSize > 64, use compArgSize
+    // (this means we have stack parameters beyond the register parameters)
+    if (compiler->info.compArgsCount > 0 && compiler->compArgSize > PARAM_SAVE_AREA_SIZE)
+    {
+        paramSaveArea = compiler->compArgSize;
+    }
+    
+    int totalFrameSize = LINKAGE_AREA_SIZE +
+                         paramSaveArea +
+                         compiler->compCalleeRegsPushed * REGSIZE_BYTES +
+                         compiler->compLclFrameSize +
+                         TEMP_STORAGE_SIZE;
 
     assert(totalFrameSize >= 0);
     return totalFrameSize;

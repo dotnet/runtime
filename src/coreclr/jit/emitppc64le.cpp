@@ -129,7 +129,11 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
     // Handle other descriptor types based on flags
     if (id->idIsLargeCns())
     {
-        if (id->idIsLargeDsp())
+        if (id->idIsLclVarPair())
+        {
+            return sizeof(instrDescLclVarPairCns);
+        }
+        else if (id->idIsLargeDsp())
         {
             return sizeof(instrDescCnsDsp);
         }
@@ -140,7 +144,11 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
     }
     else
     {
-        if (id->idIsLargeDsp())
+        if (id->idIsLclVarPair())
+        {
+            return sizeof(instrDescLclVarPair);
+        }
+        else if (id->idIsLargeDsp())
         {
             return sizeof(instrDescDsp);
         }
@@ -293,18 +301,10 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
         assert(imm >= -32768 && imm <= 32767);
     }
 
-    // Create instruction descriptor with immediate offset.
-    // Use small descriptor for small constants, otherwise use emitNewInstrCns for large constants
-    instrDesc* id;
-    if (instrDesc::fitsInSmallCns(imm))
-    {
-        id = emitNewInstrSmall(attr);
-        id->idSmallCns(imm);
-    }
-    else
-    {
-        id = emitNewInstrCns(attr, imm);
-    }
+    // Create instruction descriptor for local variable access.
+    // We need to store both the immediate offset (imm) and local variable info (varx, offs).
+    // Use emitNewInstrLclVarPair which has space for both constant and address union.
+    instrDesc* id = emitNewInstrLclVarPair(attr, imm);
 
     id->idIns(ins);
     id->idInsOpt(INS_OPTS_NONE);
@@ -400,8 +400,10 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
         assert(imm >= -32768 && imm <= 32767);
     }
 
-    // Create instruction descriptor with immediate offset
-    instrDesc* id = emitNewInstrCns(attr, imm);
+    // Create instruction descriptor with local variable address
+    // Use emitNewInstrLclVarPair which always creates a descriptor with address union
+    // This is necessary because we call id->idAddr() below
+    instrDesc* id = emitNewInstrLclVarPair(attr, imm);
 
     id->idIns(ins);
     //id->idInsFmt(fmt);
@@ -1704,6 +1706,11 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
     }
 
     instrDescJmp* id = emitNewInstrJmp();
+
+    // emitNewInstrJmp() sets the size (incorrectly) to EA_1BYTE
+    // Override it to EA_PTRSIZE so the descriptor is not treated as small
+    // This allows access to idAddr() which requires a large descriptor
+    id->idOpSize(EA_PTRSIZE);
 
     id->idIns(ins);
     // TODO TARGET_POWERPC64 - Not using Instruction Formats yet

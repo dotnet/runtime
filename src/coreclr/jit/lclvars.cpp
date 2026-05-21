@@ -1817,6 +1817,112 @@ void Compiler::lvaClassifyParameterABI()
     {
         PlatformClassifier classifier(cInfo);
         lvaClassifyParameterABI(classifier);
+
+#ifdef TARGET_POWERPC64
+        // Update LclVarDsc fields from the ABI classification results
+        // PPC64LE ELFv2 ABI requires all parameters (including register parameters) to have
+        // slots in the parameter save area, and float args consume int register slots
+        for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
+        {
+            LclVarDsc*                   dsc     = lvaGetDesc(lclNum);
+            const ABIPassingInformation& abiInfo = lvaGetParameterABIInfo(lclNum);
+
+            // For simple cases with a single segment
+            if (abiInfo.NumSegments == 1)
+            {
+                const ABIPassingSegment& segment = abiInfo.Segment(0);
+                if (segment.IsPassedInRegister())
+                {
+                    // Update register assignment from ABI classifier
+                    dsc->lvIsRegArg = true;
+                    dsc->SetArgReg(segment.GetRegister());
+#if FEATURE_MULTIREG_ARGS
+                    dsc->SetOtherArgReg(REG_NA);
+#endif
+                }
+                else
+                {
+                    // Update the stack offset from ABI classifier
+                    dsc->lvIsRegArg = false;
+                    dsc->SetArgReg(REG_STK);
+#if FEATURE_MULTIREG_ARGS
+                    dsc->SetOtherArgReg(REG_NA);
+#endif
+                    dsc->SetStackOffset(segment.GetStackOffset());
+                    // Mark incoming stack parameters as frame-pointer-based
+                    // so they are accessed relative to the frame pointer (r31)
+                    dsc->lvFramePointerBased = true;
+                }
+            }
+#if FEATURE_MULTIREG_ARGS && defined(TARGET_POWERPC64)
+            else if (abiInfo.NumSegments >= 2)
+            {
+                // Handle multi-segment arguments (structs)
+                // For now, we only track the first two segments in LclVarDsc
+                // Larger structs (>2 segments) will need special handling
+                const ABIPassingSegment& segment0 = abiInfo.Segment(0);
+                const ABIPassingSegment& segment1 = abiInfo.Segment(1);
+
+                if (segment0.IsPassedInRegister() && segment1.IsPassedInRegister())
+                {
+                    dsc->lvIsRegArg = true;
+                    dsc->SetArgReg(segment0.GetRegister());
+                    dsc->SetOtherArgReg(segment1.GetRegister());
+                }
+                else if (segment0.IsPassedInRegister() && segment1.IsPassedOnStack())
+                {
+                    // Split argument
+                    dsc->lvIsRegArg = true;
+                    dsc->SetArgReg(segment0.GetRegister());
+                    dsc->SetOtherArgReg(REG_STK);
+                    dsc->SetStackOffset(segment1.GetStackOffset());
+                    dsc->lvFramePointerBased = true;
+                }
+                else if (segment0.IsPassedOnStack())
+                {
+                    // All on stack
+                    dsc->lvIsRegArg = false;
+                    dsc->SetArgReg(REG_STK);
+                    dsc->SetOtherArgReg(REG_NA);
+                    dsc->SetStackOffset(segment0.GetStackOffset());
+                    dsc->lvFramePointerBased = true;
+                }
+            }
+#elif FEATURE_MULTIREG_ARGS
+            else if (abiInfo.NumSegments == 2)
+            {
+                // Handle two-segment arguments
+                const ABIPassingSegment& segment0 = abiInfo.Segment(0);
+                const ABIPassingSegment& segment1 = abiInfo.Segment(1);
+
+                if (segment0.IsPassedInRegister() && segment1.IsPassedInRegister())
+                {
+                    dsc->lvIsRegArg = true;
+                    dsc->SetArgReg(segment0.GetRegister());
+                    dsc->SetOtherArgReg(segment1.GetRegister());
+                }
+                else if (segment0.IsPassedInRegister() && segment1.IsPassedOnStack())
+                {
+                    // Split argument
+                    dsc->lvIsRegArg = true;
+                    dsc->SetArgReg(segment0.GetRegister());
+                    dsc->SetOtherArgReg(REG_STK);
+                    dsc->SetStackOffset(segment1.GetStackOffset());
+                    dsc->lvFramePointerBased = true;
+                }
+                else if (segment0.IsPassedOnStack())
+                {
+                    // Both on stack
+                    dsc->lvIsRegArg = false;
+                    dsc->SetArgReg(REG_STK);
+                    dsc->SetOtherArgReg(REG_NA);
+                    dsc->SetStackOffset(segment0.GetStackOffset());
+                    dsc->lvFramePointerBased = true;
+                }
+            }
+#endif // FEATURE_MULTIREG_ARGS
+        }
+#endif // TARGET_POWERPC64
     }
 
 #ifdef DEBUG
@@ -1885,6 +1991,8 @@ void Compiler::lvaClassifyParameterABI()
                     // The LclVarDsc value does not account for the 4 shadow slots allocated by the caller.
                     dscStackOffset += 32;
 #endif
+                    // Note: For TARGET_POWERPC64, the LclVarDsc value already includes the 32-byte header
+                    // because it's set from the ABI classifier which accounts for it, so no adjustment needed
 
 // On x86, varargs methods access stack args off of a base pointer, and the
 // first stack arg is not considered to be at offset 0.
@@ -7005,7 +7113,12 @@ int Compiler::lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, i
                             ))
     {
         // Note that stack offsets are negative or equal to zero
+        // Exception: PPC64LE uses positive offsets (grows upward from frame pointer)
+#if defined(TARGET_POWERPC64)
+        assert(stkOffs >= 0);
+#else
         assert(stkOffs <= 0);
+#endif
 
         // alignment padding
         unsigned pad = 0;
@@ -7037,12 +7150,22 @@ int Compiler::lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, i
             }
             else
             {
+#if defined(TARGET_POWERPC64)
+                // PPC64LE: positive offsets grow upward, so we subtract the remainder
+                pad = 8 - (stkOffs % 8); // +1 to +7 bytes
+#else
                 pad = 8 + (stkOffs % 8); // +1 to +7 bytes
+#endif
             }
         }
         // Will the pad ever be anything except 4? Do we put smaller-than-4-sized objects on the stack?
         lvaIncrementFrameSize(pad);
+#if defined(TARGET_POWERPC64)
+        // PPC64LE: positive offsets grow upward
+        stkOffs += pad;
+#else
         stkOffs -= pad;
+#endif
 
 #ifdef DEBUG
         if (verbose)
@@ -7060,7 +7183,18 @@ int Compiler::lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, i
 
     lvaIncrementFrameSize(size);
 #if defined(TARGET_POWERPC64)
-    lcl->SetStackOffset(stkOffs + 96); // TODO ALHAD Set appropriate stack offset when parameters size is more than 8 registers
+    // PPC64LE ELFv2 ABI: Calculate offset using linkage area + parameter save area
+    const int LINKAGE_AREA_SIZE = 32;
+    const int PARAM_SAVE_AREA_SIZE = 64;
+    
+    int paramSaveArea = PARAM_SAVE_AREA_SIZE;
+    if (info.compArgsCount > 0 && compArgSize > PARAM_SAVE_AREA_SIZE)
+    {
+        paramSaveArea = compArgSize;
+    }
+    
+    int frameOffset = LINKAGE_AREA_SIZE + paramSaveArea;
+    lcl->SetStackOffset(stkOffs + frameOffset);
     stkOffs += size;
 #else
     stkOffs -= size;

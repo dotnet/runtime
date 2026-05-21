@@ -53,7 +53,11 @@
   #define FP_REGSIZE_BYTES         8       // number of bytes in one FP/SIMD register
   #define FPSAVE_REGSIZE_BYTES     8       // number of bytes in one FP/SIMD register that are saved/restored, for callee-saved registers
 
-  #define MIN_ARG_AREA_FOR_CALL    0       // Minimum required outgoing argument space for a call.
+  // PPC64LE ELFv2 ABI requires a 32-byte mandatory header at the bottom of each stack frame.
+  // The parameter save area starts at offset 32.
+  // Each parameter (register or stack) gets an 8-byte slot starting from offset 32.
+  // Offset for parameter N = 32 + (N * 8), where N is 0-based.
+  #define MIN_ARG_AREA_FOR_CALL    32      // Minimum required outgoing argument space (header only).
 
   #define CODE_ALIGN               4       // code alignment requirement
   #define STACK_ALIGN              16      // stack alignment requirement

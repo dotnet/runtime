@@ -192,7 +192,63 @@ int LinearScan::BuildCast(GenTreeCast* cast)
 //
 int LinearScan::BuildPutArgStk(GenTreePutArgStk* argNode)
 {
-    _ASSERTE(!"NYI");
+    assert(argNode->gtOper == GT_PUTARG_STK);
+
+    GenTree* src      = argNode->Data();
+    int      srcCount = 0;
+
+    // Do we have a TYP_STRUCT argument, if so it must be a multireg pass-by-value struct
+    if (src->TypeIs(TYP_STRUCT))
+    {
+        // We will use store instructions that each write a register sized value
+
+        if (src->OperIs(GT_FIELD_LIST))
+        {
+            assert(src->isContained());
+            // We consume all of the items in the GT_FIELD_LIST
+            for (GenTreeFieldList::Use& use : src->AsFieldList()->Uses())
+            {
+                BuildUse(use.GetNode());
+                srcCount++;
+
+#if defined(FEATURE_SIMD)
+                if (use.GetType() == TYP_SIMD12)
+                {
+                    // Vector3 is read/written as two reads/writes: 8 byte and 4 byte.
+                    // To assemble the vector properly we would need an additional int register.
+                    buildInternalIntRegisterDefForNode(use.GetNode());
+                }
+#endif // FEATURE_SIMD
+            }
+        }
+        else
+        {
+            // We can use a ld/std sequence so we need two internal registers for PPC64LE
+            buildInternalIntRegisterDefForNode(argNode);
+            buildInternalIntRegisterDefForNode(argNode);
+
+            assert(src->isContained());
+
+            if (src->OperIs(GT_BLK))
+            {
+                // Build uses for the address to load from.
+                //
+                srcCount = BuildOperandUses(src->AsBlk()->Addr());
+            }
+            else
+            {
+                // No source registers.
+                assert(src->OperIs(GT_LCL_VAR, GT_LCL_FLD));
+            }
+        }
+    }
+    else
+    {
+        assert(!src->isContained());
+        srcCount = BuildOperandUses(src);
+    }
+    buildInternalRegisterUses();
+    return srcCount;
 }
 
 //------------------------------------------------------------------------
@@ -493,8 +549,12 @@ int LinearScan::BuildNode(GenTree* tree)
             break;
 
 	case GT_PUTARG_REG:
-            srcCount = BuildPutArgReg(tree->AsUnOp());
-            break;
+	           srcCount = BuildPutArgReg(tree->AsUnOp());
+	           break;
+
+	case GT_PUTARG_STK:
+	           srcCount = BuildPutArgStk(tree->AsPutArgStk());
+	           break;
 
 	case GT_NOP:
             srcCount = 0;
