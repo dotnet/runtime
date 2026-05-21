@@ -465,7 +465,7 @@ namespace System.Net
         // Owned here so the lifetime is tied to ReleaseHandle, which only
         // runs once all outstanding P/Invokes (and therefore any in-flight
         // callbacks) have completed.
-        private GCHandle _connectionGCHandle;
+        private GCHandle<SafeDeleteSslContext> _connectionGCHandle;
 
         public SafeSslHandle()
             : base(IntPtr.Zero, ownsHandle: true)
@@ -477,7 +477,7 @@ namespace System.Net
         {
         }
 
-        internal void SetConnectionGCHandle(GCHandle handle)
+        internal void SetConnectionGCHandle(GCHandle<SafeDeleteSslContext> handle)
         {
             Debug.Assert(!_connectionGCHandle.IsAllocated, "Connection GCHandle already set");
             _connectionGCHandle = handle;
@@ -487,10 +487,7 @@ namespace System.Net
         {
             Interop.CoreFoundation.CFRelease(handle);
             SetHandle(IntPtr.Zero);
-            if (_connectionGCHandle.IsAllocated)
-            {
-                _connectionGCHandle.Free();
-            }
+            _connectionGCHandle.Dispose();
 
             return true;
         }
