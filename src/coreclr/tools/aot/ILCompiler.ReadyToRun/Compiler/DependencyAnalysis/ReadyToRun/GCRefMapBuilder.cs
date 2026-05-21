@@ -7,6 +7,8 @@ using System.Diagnostics;
 using System.Linq;
 using System.Xml.Linq;
 using Internal.TypeSystem;
+using Internal.Runtime.CallingConvention;
+using ArgIterator = Internal.Runtime.CallingConvention.ArgIterator;
 
 // The GCRef map is used to encode GC type of arguments for callsites. Logically, it is sequence <pos, token> where pos is
 // position of the reference in the stack frame and token is type of GC reference (one of GCREFMAP_XXX values).
@@ -105,7 +107,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ArgIteratorData argIteratorData = new ArgIteratorData(hasThis, isVarArg, parameterTypes, returnType);
 
             ArgIterator argit = new ArgIterator(
-                context,
+                transitionBlock,
                 argIteratorData,
                 callingConventions,
                 hasParamType,
@@ -113,7 +115,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 extraFunctionPointerArg,
                 forcedByRefParams,
                 skipFirstArg,
-                extraObjectFirstArg);
+                extraObjectFirstArg,
+                isWindows: context.Target.IsWindows,
+                objectTypeHandle: new TypeHandle(context.GetWellKnownType(WellKnownType.Object)),
+                intPtrTypeHandle: new TypeHandle(context.GetWellKnownType(WellKnownType.IntPtr)));
 
             return (argit, transitionBlock);
         }

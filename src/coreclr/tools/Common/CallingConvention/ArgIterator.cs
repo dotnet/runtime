@@ -10,14 +10,12 @@ using System.Diagnostics;
 
 using Internal.JitInterface;
 using Internal.NativeFormat;
-using Internal.TypeSystem;
 using Internal.CorConstants;
 using Internal.Runtime;
-using Internal;
-using ILCompiler.DependencyAnalysis.Wasm;
+using Internal.TypeSystem;
 
 
-namespace ILCompiler.DependencyAnalysis.ReadyToRun
+namespace Internal.Runtime.CallingConvention
 {
     public enum CORCOMPILE_GCREFMAP_TOKENS : byte
     {
@@ -269,8 +267,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     //template<class ARGITERATOR_BASE>
     internal struct ArgIterator
     {
-        private readonly TypeSystemContext _context;
-
         private readonly TransitionBlock _transitionBlock;
 
         private bool _hasThis;
@@ -284,6 +280,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private CallingConventions _interpreterCallingConvention;
         private bool _hasArgLocDescForStructInRegs;
         private ArgLocDesc _argLocDescForStructInRegs;
+        private ITypeHandle _objectTypeHandle;
+        private ITypeHandle _intPtrTypeHandle;
+        private bool _isWindows;
 
         public bool HasThis => _hasThis;
         public bool IsVarArg => _argData.IsVarArg();
@@ -298,7 +297,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             if (_extraObjectFirstArg && argNum == 0)
             {
-                thArgType = new TypeHandle(_context.GetWellKnownType(WellKnownType.Object));
+                thArgType = _objectTypeHandle;
                 return CorElementType.ELEMENT_TYPE_CLASS;
             }
 
@@ -310,7 +309,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             if (_extraFunctionPointerArg && argNum == _argData.NumFixedArgs())
             {
-                thArgType = new TypeHandle(_context.GetWellKnownType(WellKnownType.IntPtr));
+                thArgType = _intPtrTypeHandle;
                 return CorElementType.ELEMENT_TYPE_I;
             }
 
@@ -342,18 +341,21 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         // Constructor
         //------------------------------------------------------------
         public ArgIterator(
-            TypeSystemContext context,
-            ArgIteratorData argData, 
-            CallingConventions callConv, 
+            TransitionBlock transitionBlock,
+            ArgIteratorData argData,
+            CallingConventions callConv,
             bool hasParamType,
             bool hasAsyncContinuation,
-            bool extraFunctionPointerArg, 
-            bool[] forcedByRefParams, 
-            bool skipFirstArg, 
-            bool extraObjectFirstArg)
+            bool extraFunctionPointerArg,
+            bool[] forcedByRefParams,
+            bool skipFirstArg,
+            bool extraObjectFirstArg,
+            bool isWindows = false,
+            ITypeHandle objectTypeHandle = null,
+            ITypeHandle intPtrTypeHandle = null)
         {
             this = default(ArgIterator);
-            _context = context;
+            _transitionBlock = transitionBlock;
             _argData = argData;
             _hasThis = callConv == CallingConventions.ManagedInstance;
             _hasParamType = hasParamType;
@@ -363,7 +365,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _skipFirstArg = skipFirstArg;
             _extraObjectFirstArg = extraObjectFirstArg;
             _interpreterCallingConvention = callConv;
-            _transitionBlock = TransitionBlock.FromTarget(context.Target);
+            _isWindows = isWindows;
+            _objectTypeHandle = objectTypeHandle;
+            _intPtrTypeHandle = intPtrTypeHandle;
         }
 
         private uint SizeOfArgStack()
@@ -1179,7 +1183,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                                 _arm64IdxGenReg += regSlots;
                                 return argOfsInner;
                             }
-                            else if (_context.Target.IsWindows && IsVarArg && (_arm64IdxGenReg < 8))
+                            else if (_isWindows && IsVarArg && (_arm64IdxGenReg < 8))
                             {
                                 // Address the Windows ARM64 varargs case where an arg is split between regs and stack.
                                 // This can happen in the varargs case because the first 64 bytes of the stack are loaded
