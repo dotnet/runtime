@@ -112,18 +112,9 @@ for i in "${!runners[@]}"; do
     # Hard-link (fast, same filesystem) or fall back to copy
     ln "$dll_path" "$target_dir/$dll_name" 2>/dev/null || cp "$dll_path" "$target_dir/$dll_name"
 
-    env_file="$target_dir/$dll_name.env"
-    while IFS= read -r env_entry; do
-        [[ -n "$env_entry" ]] || continue
-
-        env_name="${env_entry%%=*}"
-        env_value="${env_entry#*=}"
-        printf 'export %s=%q\n' "$env_name" "$env_value" >> "$env_file"
-    done < <(grep -oP '^# env: \K.*' "$runner" 2>/dev/null || true)
-
-    if [[ ! -s "$env_file" ]]; then
-        rm -f "$env_file"
-    fi
+    runner_name=$(basename "$runner")
+    cp "$runner" "$target_dir/$runner_name"
+    chmod +x "$target_dir/$runner_name"
 
     # Copy runtime dependencies declared by the generated runner metadata.
     # Format: # runtime-source: /absolute/path/to/<dependency>
@@ -139,7 +130,7 @@ for i in "${!runners[@]}"; do
         ln "$runtime_path" "$target_dir/$runtime_name" 2>/dev/null || cp "$runtime_path" "$target_dir/$runtime_name"
     done < <(grep -oP '^# runtime-source: \K.*' "$runner" 2>/dev/null || true)
 
-    echo "tests/$subdir/$dll_name" >> "$chunk_dir/manifest.txt"
+    echo "tests/$subdir/$runner_name" >> "$chunk_dir/manifest.txt"
     chunk_count=$((chunk_count + 1))
 done
 

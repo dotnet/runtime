@@ -27,35 +27,28 @@ if [[ ! -f "$MANIFEST" ]]; then
     exit 1
 fi
 
+export CORE_ROOT
+
 total=0
 passed=0
 failed=0
 failed_tests=()
 
-while IFS= read -r dll_relative || [[ -n "$dll_relative" ]]; do
-    [[ -z "$dll_relative" ]] && continue
-    [[ "$dll_relative" == \#* ]] && continue
+while IFS= read -r test_relative || [[ -n "$test_relative" ]]; do
+    [[ -z "$test_relative" ]] && continue
+    [[ "$test_relative" == \#* ]] && continue
 
-    dll_path="${SCRIPT_DIR}/${dll_relative}"
-    test_name=$(basename "$dll_relative" .dll)
+    test_path="${SCRIPT_DIR}/${test_relative}"
+    test_name=$(basename "$(dirname "$test_relative")")
     total=$((total + 1))
 
-    if [[ ! -f "$dll_path" ]]; then
-        echo "SKIP: $test_name — DLL not found: $dll_path"
+    if [[ ! -f "$test_path" ]]; then
+        echo "SKIP: $test_name — test runner not found: $test_path"
         continue
     fi
 
-    env_file="${dll_path}.env"
-
     set +e
-    if [[ -f "$env_file" ]]; then
-        (
-            source "$env_file"
-            timeout --foreground --kill-after=10 "$TIMEOUT_SECONDS" "$CORE_ROOT/corerun" "$dll_path" 2>&1
-        )
-    else
-        timeout --foreground --kill-after=10 "$TIMEOUT_SECONDS" "$CORE_ROOT/corerun" "$dll_path" 2>&1
-    fi
+    timeout --foreground --kill-after=10 "$TIMEOUT_SECONDS" "$test_path" 2>&1
     rc=$?
     set -e
 

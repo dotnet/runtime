@@ -147,15 +147,18 @@ const coreclrTestRunner = Rules.rule<CoreClrTestRunnerAttrs, CoreClrTestRunnerAt
         // Test *execution* stays on ctx.runActions (tagged bxl-kind:test).
         const dllPath = ctx.args.binary.path.toDiagnosticString();
         const runtimeSources = ctx.args.runtimeFiles.map(f => `# runtime-source: ${f.path.toDiagnosticString()}`);
-        const envLines = (ctx.args.env || []).map(e => `# env: ${e.name}=${e.value}`);
+        const envLines = (ctx.args.env || []).map(e => `export "${e.name}=${e.value}"`);
         const runner = ctx.actions.writeFile(
             ctx.actions.declareOutput(`${ctx.args.name}.runner.sh`),
             [
                 "#!/usr/bin/env bash",
                 `# dll-source: ${dllPath}`,
                 ...runtimeSources,
+                "core_root=\"${CORE_ROOT:-${HELIX_CORRELATION_PAYLOAD:-}}\"",
+                "corerun=\"${core_root:+$core_root/corerun}\"",
+                "corerun=\"${corerun:-" + corerunPath + "}\"",
                 ...envLines,
-                `exec "${corerunPath}" "$(dirname "$0")/${dllName}" "$@"`,
+                `exec "$corerun" "$(dirname "$0")/${dllName}" "$@"`,
             ]);
 
         // Let the framework handle timeout, stamp, runat, success codes.
