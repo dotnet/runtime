@@ -2900,8 +2900,11 @@ RtlVirtualUnwind(
 
     return HandlerRoutine;
 }
+#endif // HOST_UNIX
 
+EXTERN_C
 PEXCEPTION_ROUTINE
+NTAPI
 RtlVirtualUnwindWithSpForPacSign(
     IN ULONG HandlerType,
     IN ULONG64 ImageBase,
@@ -2941,4 +2944,3 @@ RtlVirtualUnwindWithSpForPacSign(
 
     return HandlerRoutine;
 }
-#endif

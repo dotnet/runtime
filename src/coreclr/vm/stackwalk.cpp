@@ -436,10 +436,6 @@ PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
     }
     CONTRACTL_END;
 
-#if defined(TARGET_ARM64) && !defined(TARGET_UNIX)
-    UNREFERENCED_PARAMETER(pSpForPacSign);
-#endif // TARGET_ARM64 && !TARGET_UNIX
-
     PCODE           uControlPc = GetIP(pContext);
 
 #if !defined(DACCESS_COMPILE)
@@ -535,7 +531,7 @@ PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
     #endif // HOST_64BIT
         PVOID               HandlerData;
 
-#if defined(TARGET_UNIX) && defined(TARGET_ARM64)
+#if defined(TARGET_ARM64)
         RtlVirtualUnwindWithSpForPacSign(0,
                                          uImageBase,
                                          uControlPc,

@@ -29,9 +29,6 @@ BOOL AdjustContextForJITHelpers(EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pCo
 // General purpose functions for use on an IP in jitted code.
 bool IsIPInProlog(EECodeInfo *pCodeInfo);
 bool IsIPInEpilog(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, BOOL *pSafeToInjectThreadAbort);
-#if defined(TARGET_ARM64) && !defined(TARGET_UNIX)
-bool GetPacSignInfo(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, TADDR retAddrLocation, TADDR *pSpForPacSign);
-#endif // TARGET_ARM64 && !TARGET_UNIX
 #endif // FEATURE_HIJACK && (!TARGET_X86 || TARGET_UNIX)
 
 // Enums

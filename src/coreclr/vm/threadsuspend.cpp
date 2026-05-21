@@ -4752,9 +4752,9 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
                         pES->m_ppvRetAddrPtr = (void **) pRDT->pCallerContextPointers->Ra;
 #else
                         pES->m_ppvRetAddrPtr = (void **) pRDT->pCallerContextPointers->Lr;
-#if defined(TARGET_ARM64) && defined(TARGET_UNIX)
+#if defined(TARGET_ARM64)
                         pES->m_pSpForPacSign = (void *)pRDT->CallerContextSpForPacSign;
-#endif // TARGET_ARM64 && TARGET_UNIX
+#endif // TARGET_ARM64
 #endif
                     }
 #elif defined(TARGET_X86)
@@ -5288,18 +5288,6 @@ BOOL Thread::HandledJITCase()
             X86_ONLY(bool hasAsyncRet;)
             if (GetReturnAddressHijackInfo(&codeInfo X86_ARG(&returnKind) X86_ARG(&hasAsyncRet)))
             {
-#if defined(TARGET_ARM64) && !defined(TARGET_UNIX)
-                if (esb.m_pSpForPacSign == nullptr)
-                {
-                    TADDR spForPacSign = 0;
-                    if (!GetPacSignInfo(&ctx, &codeInfo, dac_cast<TADDR>(esb.m_ppvRetAddrPtr), &spForPacSign))
-                    {
-                        return FALSE;
-                    }
-
-                    esb.m_pSpForPacSign = (PVOID)spForPacSign;
-                }
-#endif // TARGET_ARM64 && !TARGET_UNIX
                 HijackThread(&esb X86_ARG(returnKind) X86_ARG(hasAsyncRet));
             }
         }
@@ -5849,19 +5837,6 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext)
         // This is necessary to allow the signature parsing functions to work without triggering any loads.
         StackWalkerWalkingThreadHolder threadStackWalking(pThread);
 
-        // Hijack the return address to point to the appropriate routine based on the method's return type.
-#if defined(TARGET_ARM64) && !defined(TARGET_UNIX)
-        if (executionState.m_pSpForPacSign == nullptr)
-        {
-            TADDR spForPacSign = 0;
-            if (!GetPacSignInfo(interruptedContext, &codeInfo, dac_cast<TADDR>(executionState.m_ppvRetAddrPtr), &spForPacSign))
-            {
-                return;
-            }
-
-            executionState.m_pSpForPacSign = (PVOID)spForPacSign;
-        }
-#endif // TARGET_ARM64 && !TARGET_UNIX
         pThread->HijackThread(&executionState X86_ARG(returnKind) X86_ARG(hasAsyncRet));
     }
 }
