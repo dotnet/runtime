@@ -3,9 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
-using Microsoft.Diagnostics.DataContractReader.SignatureHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
@@ -19,6 +16,7 @@ internal class GcScanner
     private readonly Target _target;
     private readonly IExecutionManager _eman;
     private readonly IGCInfo _gcInfo;
+    private ICallingConvention? _callingConvention;
     private readonly FrameHelpers _frameHelpers;
 
     internal GcScanner(Target target)
@@ -28,6 +26,8 @@ internal class GcScanner
         _gcInfo = target.Contracts.GCInfo;
         _frameHelpers = new FrameHelpers(target);
     }
+
+    private ICallingConvention CallingConvention => _callingConvention ??= _target.Contracts.CallingConvention;
 
     /// <summary>
     /// Enumerates live GC slots for a managed (frameless) code frame.
@@ -329,144 +329,51 @@ internal class GcScanner
         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
         MethodDescHandle mdh = rts.GetMethodDescHandle(methodDescPtr);
 
-        MethodSignature<GcTypeKind> methodSig;
-        try
+        CallSiteLayout layout = CallingConvention.ComputeCallSiteLayout(mdh);
+
+        if (layout.ThisOffset is int thisOff)
         {
-            TargetPointer methodTablePtr = rts.GetMethodTable(mdh);
-            TypeHandle typeHandle = rts.GetTypeHandle(methodTablePtr);
-            TargetPointer modulePtr = rts.GetModule(typeHandle);
-
-            ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
-            MetadataReader? mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle);
-            if (mdReader is null)
-                return;
-
-            GcSignatureTypeProvider provider = new(_target, moduleHandle);
-            GcSignatureContext genericContext = new(typeHandle, mdh);
-            RuntimeSignatureDecoder<GcTypeKind, GcSignatureContext> decoder = new(
-                provider, _target, mdReader, genericContext);
-
-            // Match native MethodDesc::GetSig: prefer stored signature (dynamic, EEImpl,
-            // and array method descs) before falling back to a metadata token lookup.
-            if (rts.IsStoredSigMethodDesc(mdh, out ReadOnlySpan<byte> storedSig))
-            {
-                unsafe
-                {
-                    fixed (byte* pStoredSig = storedSig)
-                    {
-                        BlobReader blobReader = new BlobReader(pStoredSig, storedSig.Length);
-                        methodSig = decoder.DecodeMethodSignature(ref blobReader);
-                    }
-                }
-            }
-            else
-            {
-                uint methodToken = rts.GetMethodToken(mdh);
-                if (methodToken == (uint)EcmaMetadataUtils.TokenType.mdtMethodDef)
-                    return;
-
-                MethodDefinitionHandle methodDefHandle = MetadataTokens.MethodDefinitionHandle((int)EcmaMetadataUtils.GetRowId(methodToken));
-                MethodDefinition methodDef = mdReader.GetMethodDefinition(methodDefHandle);
-
-                BlobReader blobReader = mdReader.GetBlobReader(methodDef.Signature);
-                methodSig = decoder.DecodeMethodSignature(ref blobReader);
-            }
-        }
-        catch (System.Exception)
-        {
-            return;
-        }
-
-        if (methodSig.Header.CallingConvention is SignatureCallingConvention.VarArgs)
-            return;
-
-        bool hasThis = methodSig.Header.IsInstance;
-        bool hasRetBuf = methodSig.ReturnType is GcTypeKind.Other;
-        bool requiresInstArg = false;
-        bool isAsync = false;
-        bool isValueTypeThis = false;
-
-        try
-        {
-            requiresInstArg = rts.GetGenericContextLoc(mdh) == GenericContextLoc.InstArg;
-            isAsync = rts.IsAsyncMethod(mdh);
-        }
-        catch
-        {
-        }
-
-        PromoteCallerStackHelper(transitionBlock, methodSig, hasThis, hasRetBuf,
-            requiresInstArg, isAsync, isValueTypeThis, scanContext);
-    }
-
-    /// <summary>
-    /// Core logic for promoting caller stack GC references.
-    /// Matches native TransitionFrame::PromoteCallerStackHelper (frames.cpp:1560).
-    /// </summary>
-    private void PromoteCallerStackHelper(
-        TargetPointer transitionBlock,
-        MethodSignature<GcTypeKind> methodSig,
-        bool hasThis,
-        bool hasRetBuf,
-        bool requiresInstArg,
-        bool isAsync,
-        bool isValueTypeThis,
-        GcScanContext scanContext)
-    {
-        Data.TransitionBlock tb = _target.ProcessedData.GetOrAdd<Data.TransitionBlock>(transitionBlock);
-
-        int numRegistersUsed = 0;
-        if (hasThis)
-            numRegistersUsed++;
-        if (hasRetBuf)
-            numRegistersUsed++;
-        if (requiresInstArg)
-            numRegistersUsed++;
-        if (isAsync)
-            numRegistersUsed++;
-
-        bool isArm64 = IsTargetArm64();
-        if (isArm64)
-            numRegistersUsed++;
-
-        if (hasThis)
-        {
-            int thisPos = isArm64 ? 1 : 0;
-            TargetPointer thisAddr = AddressFromGCRefMapPos(tb, thisPos);
-            GcScanFlags thisFlags = isValueTypeThis ? GcScanFlags.GC_CALL_INTERIOR : GcScanFlags.None;
+            TargetPointer thisAddr = new(transitionBlock.Value + (ulong)thisOff);
+            GcScanFlags thisFlags = layout.IsValueTypeThis ? GcScanFlags.GC_CALL_INTERIOR : GcScanFlags.None;
             scanContext.GCReportCallback(thisAddr, thisFlags);
         }
 
-        int pos = numRegistersUsed;
-        foreach (GcTypeKind kind in methodSig.ParameterTypes)
+        if (layout.AsyncContinuationOffset is int asyncOff)
         {
-            TargetPointer slotAddress = AddressFromGCRefMapPos(tb, pos);
+            TargetPointer asyncAddr = new(transitionBlock.Value + (ulong)asyncOff);
+            scanContext.GCReportCallback(asyncAddr, GcScanFlags.None);
+        }
 
-            switch (kind)
+        foreach (ArgLayout arg in layout.Arguments)
+        {
+            foreach (ArgSlot slot in arg.Slots)
             {
-                case GcTypeKind.Ref:
-                    scanContext.GCReportCallback(slotAddress, GcScanFlags.None);
-                    break;
-                case GcTypeKind.Interior:
-                    scanContext.GCReportCallback(slotAddress, GcScanFlags.GC_CALL_INTERIOR);
-                    break;
-                case GcTypeKind.Other:
-                    break;
-                case GcTypeKind.None:
-                    break;
+                TargetPointer slotAddress = new(transitionBlock.Value + (ulong)slot.Offset);
+                switch (GcTypeKindClassifier.GetGcKind(slot.ElementType))
+                {
+                    case GcTypeKind.Ref:
+                        scanContext.GCReportCallback(slotAddress, GcScanFlags.None);
+                        break;
+                    case GcTypeKind.Interior:
+                        scanContext.GCReportCallback(slotAddress, GcScanFlags.GC_CALL_INTERIOR);
+                        break;
+                    case GcTypeKind.Other:
+                        if (arg.IsPassedByRef)
+                        {
+                            scanContext.GCReportCallback(slotAddress, GcScanFlags.GC_CALL_INTERIOR);
+                        }
+                        // TODO: For value types passed by value, enumerate fields for embedded GC refs
+                        break;
+                    case GcTypeKind.None:
+                        break;
+                }
             }
-            pos++;
         }
     }
 
     private TargetPointer AddressFromGCRefMapPos(Data.TransitionBlock tb, int pos)
     {
         return new TargetPointer(tb.FirstGCRefMapSlot.Value + (ulong)(pos * _target.PointerSize));
-    }
-
-    private bool IsTargetArm64()
-    {
-        return _target.Contracts.RuntimeInfo.GetTargetArchitecture() is RuntimeInfoArchitecture.Arm64;
     }
 
     private TargetPointer GetCallerSP(IPlatformAgnosticContext context, ref TargetPointer? cached)

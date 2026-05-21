@@ -86,7 +86,6 @@ internal sealed class LayoutBuilder
     public LayoutBuilder AddField(string name, int offset, int size)
     {
         ArgumentException.ThrowIfNullOrEmpty(name);
-        ArgumentOutOfRangeException.ThrowIfNegative(offset);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(size);
 
         _fields[name] = new LayoutField(name, offset, size);

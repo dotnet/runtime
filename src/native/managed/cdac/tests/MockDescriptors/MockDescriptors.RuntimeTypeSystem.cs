@@ -106,6 +106,7 @@ internal sealed class MockEEClass : TypedView
     private const string NumThreadStaticFieldsFieldName = nameof(Data.EEClass.NumThreadStaticFields);
     private const string FieldDescListFieldName = nameof(Data.EEClass.FieldDescList);
     private const string NumNonVirtualSlotsFieldName = nameof(Data.EEClass.NumNonVirtualSlots);
+    private const string BaseSizePaddingFieldName = nameof(Data.EEClass.BaseSizePadding);
 
     public static Layout<MockEEClass> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("EEClass", architecture)
@@ -119,6 +120,7 @@ internal sealed class MockEEClass : TypedView
             .AddUInt16Field(NumThreadStaticFieldsFieldName)
             .AddPointerField(FieldDescListFieldName)
             .AddUInt16Field(NumNonVirtualSlotsFieldName)
+            .AddByteField(BaseSizePaddingFieldName)
             .Build<MockEEClass>();
 
     public ulong MethodTable
@@ -151,10 +153,34 @@ internal sealed class MockEEClass : TypedView
         set => WriteUInt16Field(NumInstanceFieldsFieldName, value);
     }
 
+    public ushort NumStaticFields
+    {
+        get => ReadUInt16Field(NumStaticFieldsFieldName);
+        set => WriteUInt16Field(NumStaticFieldsFieldName, value);
+    }
+
+    public ushort NumThreadStaticFields
+    {
+        get => ReadUInt16Field(NumThreadStaticFieldsFieldName);
+        set => WriteUInt16Field(NumThreadStaticFieldsFieldName, value);
+    }
+
+    public ulong FieldDescList
+    {
+        get => ReadPointerField(FieldDescListFieldName);
+        set => WritePointerField(FieldDescListFieldName, value);
+    }
+
     public ushort NumNonVirtualSlots
     {
         get => ReadUInt16Field(NumNonVirtualSlotsFieldName);
         set => WriteUInt16Field(NumNonVirtualSlotsFieldName, value);
+    }
+
+    public byte BaseSizePadding
+    {
+        get => ReadByteField(BaseSizePaddingFieldName);
+        set => WriteByteField(BaseSizePaddingFieldName, value);
     }
 }
 
@@ -300,7 +326,8 @@ internal partial class MockDescriptors
     {
         internal const ulong TestFreeObjectMethodTableGlobalAddress = 0x00000000_7a0000a0;
         internal const ulong TestContinuationMethodTableGlobalAddress = 0x00000000_7a0000b0;
-        internal const ulong TestObjectMethodTableGlobalAddress = 0x00000000_7a0000c0;
+        internal const ulong TestTypedReferenceMethodTableGlobalAddress = 0x00000000_7a0000c0;
+        internal const ulong TestObjectMethodTableGlobalAddress = 0x00000000_7a0000d0;
 
         private const ulong DefaultAllocationRangeStart = 0x00000000_4a000000;
         private const ulong DefaultAllocationRangeEnd = 0x00000000_4b000000;
@@ -327,6 +354,7 @@ internal partial class MockDescriptors
         internal ulong FreeObjectMethodTableAddress { get; private set; }
         internal ulong FreeObjectMethodTableGlobalAddress => TestFreeObjectMethodTableGlobalAddress;
         internal ulong ContinuationMethodTableGlobalAddress => TestContinuationMethodTableGlobalAddress;
+        internal ulong TypedReferenceMethodTableGlobalAddress => TestTypedReferenceMethodTableGlobalAddress;
         internal ulong ObjectMethodTableGlobalAddress => TestObjectMethodTableGlobalAddress;
         internal ulong MethodDescAlignment => GetMethodDescAlignment(Builder.TargetTestHelpers);
         internal ulong ArrayBaseSize => Builder.TargetTestHelpers.ArrayBaseBaseSize;
@@ -360,6 +388,7 @@ internal partial class MockDescriptors
         {
             AddFreeObjectMethodTable();
             AddContinuationMethodTableGlobal();
+            AddTypedReferenceMethodTableGlobal();
             AddObjectMethodTableGlobal();
         }
 
@@ -381,9 +410,15 @@ internal partial class MockDescriptors
             AddPointerGlobal("Address of Continuation Method Table", TestContinuationMethodTableGlobalAddress, 0);
         }
 
+        // Default to a null slot; tests that need a real System.TypedReference MT call
+        // SetTypedReferenceMethodTable to point the global at one.
+        private void AddTypedReferenceMethodTableGlobal()
+        {
+            AddPointerGlobal("Address of TypedReference Method Table", TestTypedReferenceMethodTableGlobalAddress, 0);
+        }
+
         private void AddObjectMethodTableGlobal()
         {
-            // Initialized to 0; patched to point to SystemObjectMethodTable in AddSystemObjectType.
             AddPointerGlobal("Address of Object Method Table", TestObjectMethodTableGlobalAddress, 0);
         }
 
@@ -402,9 +437,7 @@ internal partial class MockDescriptors
             SystemObjectEEClass.MethodTable = SystemObjectMethodTable.Address;
             SystemObjectMethodTable.EEClassOrCanonMT = SystemObjectEEClass.Address;
 
-            // Patch the ObjectMethodTable global to point to System.Object's MethodTable.
-            Span<byte> globalAddrBytes = Builder.BorrowAddressRange(TestObjectMethodTableGlobalAddress, Builder.TargetTestHelpers.PointerSize);
-            Builder.TargetTestHelpers.WritePointer(globalAddrBytes, SystemObjectMethodTable.Address);
+            SetObjectMethodTable(SystemObjectMethodTable.Address);
         }
 
         private void AddContinuationType()
@@ -437,6 +470,22 @@ internal partial class MockDescriptors
         {
             Span<byte> globalAddrBytes = Builder.BorrowAddressRange(TestContinuationMethodTableGlobalAddress, Builder.TargetTestHelpers.PointerSize);
             Builder.TargetTestHelpers.WritePointer(globalAddrBytes, continuationMethodTable);
+        }
+
+        internal void SetObjectMethodTable(ulong objectMethodTable)
+        {
+            Span<byte> globalAddrBytes = Builder.BorrowAddressRange(TestObjectMethodTableGlobalAddress, Builder.TargetTestHelpers.PointerSize);
+            Builder.TargetTestHelpers.WritePointer(globalAddrBytes, objectMethodTable);
+        }
+
+        // Repoints the TypedReferenceMethodTable global at the given MT. Tests that
+        // exercise TypedByRef arg/return handling first allocate a value-type MT
+        // matching System.TypedReference's layout ({ ref byte, IntPtr }) and then
+        // call this to install it as the well-known target.
+        internal void SetTypedReferenceMethodTable(ulong typedReferenceMethodTable)
+        {
+            Span<byte> globalAddrBytes = Builder.BorrowAddressRange(TestTypedReferenceMethodTableGlobalAddress, Builder.TargetTestHelpers.PointerSize);
+            Builder.TargetTestHelpers.WritePointer(globalAddrBytes, typedReferenceMethodTable);
         }
 
         internal MockEEClass AddEEClass(string name)

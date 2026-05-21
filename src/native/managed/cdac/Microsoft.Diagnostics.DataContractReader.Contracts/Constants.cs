@@ -26,6 +26,8 @@ public static class Constants
         public const string FeatureOnStackReplacement = nameof(FeatureOnStackReplacement);
         public const string FeaturePortableEntrypoints = nameof(FeaturePortableEntrypoints);
         public const string FeatureWebcil = nameof(FeatureWebcil);
+        public const string FeatureHFA = nameof(FeatureHFA);
+        public const string FeatureArmSoftFP = nameof(FeatureArmSoftFP);
 
         public const string ObjectToMethodTableUnmask = nameof(ObjectToMethodTableUnmask);
         public const string SOSBreakingChangeVersion = nameof(SOSBreakingChangeVersion);
@@ -37,6 +39,7 @@ public static class Constants
         public const string ObjectMethodTable = nameof(ObjectMethodTable);
         public const string ObjectArrayMethodTable = nameof(ObjectArrayMethodTable);
         public const string StringMethodTable = nameof(StringMethodTable);
+        public const string TypedReferenceMethodTable = nameof(TypedReferenceMethodTable);
 
         public const string MiniMetaDataBuffAddress = nameof(MiniMetaDataBuffAddress);
         public const string MiniMetaDataBuffMaxSize = nameof(MiniMetaDataBuffMaxSize);

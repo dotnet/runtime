@@ -20,6 +20,7 @@ internal sealed class EEClass : IData<EEClass>
         NumThreadStaticFields = target.ReadField<ushort>(address, type, nameof(NumThreadStaticFields));
         FieldDescList = target.ReadPointerField(address, type, nameof(FieldDescList));
         NumNonVirtualSlots = target.ReadField<ushort>(address, type, nameof(NumNonVirtualSlots));
+        BaseSizePadding = target.ReadField<byte>(address, type, nameof(BaseSizePadding));
     }
 
     public TargetPointer MethodTable { get; init; }
@@ -40,4 +41,5 @@ internal sealed class EEClass : IData<EEClass>
     public ushort NumThreadStaticFields { get; init; }
     public TargetPointer FieldDescList { get; init; }
     public ushort NumNonVirtualSlots { get; init; }
+    public byte BaseSizePadding { get; init; }
 }
