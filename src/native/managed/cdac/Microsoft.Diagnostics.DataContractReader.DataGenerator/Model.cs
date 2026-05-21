@@ -70,10 +70,8 @@ internal sealed record CdacTypeModel(
     string Accessibility,
     bool IsSealed,
     bool IsPartial,
-    string? DataTypeEnumValue,
-    string? DescriptorName,
-    string? ManagedFullName,
-    bool IsValueType,
+    EquatableArray<string> Names,
+    bool HasTypeHandle,
     bool ImplementsIData,
     string? HintFilePath,
     EquatableArray<MemberModel> Members) : IEquatable<CdacTypeModel>;

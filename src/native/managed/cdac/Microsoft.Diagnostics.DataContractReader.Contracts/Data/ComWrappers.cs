@@ -3,7 +3,7 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-[CdacType(ManagedFullName = "System.Runtime.InteropServices.ComWrappers")]
+[CdacType("System.Runtime.InteropServices.ComWrappers")]
 internal sealed partial class ComWrappers : IData<ComWrappers>
 {
     // Both static fields are managed object references (the ConditionalWeakTable<,> instances).

@@ -14,35 +14,28 @@ namespace Microsoft.Diagnostics.DataContractReader;
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
 public sealed class CdacTypeAttribute : Attribute
 {
-    /// <summary>Descriptor type by name (resolved via <c>Target.GetTypeInfo(string)</c>).</summary>
-    public CdacTypeAttribute(string descriptorName)
+    /// <summary>
+    /// One or more candidate type names tried in priority order. Each name
+    /// is tried against the native cdac descriptor first; if no match is
+    /// found, it is then tried against the managed type metadata via
+    /// <c>IManagedTypeSource</c>. This allows a type to be migrated from
+    /// managed to native descriptor (or vice versa) in the runtime without
+    /// changing the CDAC code.
+    /// </summary>
+    public CdacTypeAttribute(params string[] names)
     {
-        DescriptorName = descriptorName;
+        Names = names;
     }
 
-    /// <summary>Managed-type wrapper with no descriptor cache entry.</summary>
-    public CdacTypeAttribute()
-    {
-    }
-
-    /// <summary>The descriptor type name, when constructed via the string overload.</summary>
-    public string? DescriptorName { get; }
+    /// <summary>Candidate type names in priority order.</summary>
+    public string[] Names { get; }
 
     /// <summary>
-    /// Fully-qualified managed type name (e.g. <c>System.Threading.Lock</c>).
-    /// When set, the generator emits a <c>TypeHandle(Target)</c> accessor and
-    /// routes the layout lookup through <c>IManagedTypeSource</c>.
+    /// When <c>true</c>, the generator emits a <c>TypeHandle(Target)</c>
+    /// accessor that resolves the runtime <c>TypeHandle</c> by trying each
+    /// candidate name against <c>IManagedTypeSource</c>.
     /// </summary>
-    public string? ManagedFullName { get; set; }
-
-    /// <summary>
-    /// If <c>true</c>, the managed type is a value type embedded inline
-    /// (typically inside an array element slot), with no object header. The
-    /// generator reads fields starting at <c>address</c> rather than
-    /// <c>address + Object.Size</c>. Only meaningful when
-    /// <see cref="ManagedFullName"/> is set.
-    /// </summary>
-    public bool IsValueType { get; set; }
+    public bool HasTypeHandle { get; set; }
 }
 
 /// <summary>

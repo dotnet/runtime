@@ -34,15 +34,18 @@ public sealed class CdacGenerator : IIncrementalGenerator
         // copy via [InternalsVisibleTo] and shouldn't emit its own).
         IncrementalValueProvider<bool> shouldEmitLayoutPair = context.CompilationProvider
             .Select(static (compilation, _) =>
-                compilation.GetTypeByMetadataName(PostInitSources.LayoutPairFullyQualifiedName) is null);
+                compilation.GetTypeByMetadataName(LayoutPairSource.FullyQualifiedName) is null);
 
         context.RegisterSourceOutput(shouldEmitLayoutPair, static (ctx, shouldEmit) =>
         {
             if (shouldEmit)
             {
                 ctx.AddSource(
-                    PostInitSources.LayoutPairSourceHintName,
-                    SourceText.From(PostInitSources.LayoutPairSource, Encoding.UTF8));
+                    LayoutPairSource.HintName,
+                    SourceText.From(LayoutPairSource.Source, Encoding.UTF8));
+                ctx.AddSource(
+                    TypeNameResolverSource.HintName,
+                    SourceText.From(TypeNameResolverSource.Source, Encoding.UTF8));
             }
         });
 

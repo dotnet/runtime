@@ -3,7 +3,7 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-[CdacType(ManagedFullName = "System.Runtime.CompilerServices.ConditionalWeakTable`2+Entry", IsValueType = true)]
+[CdacType("System.Runtime.CompilerServices.ConditionalWeakTable`2+Entry")]
 internal sealed partial class ConditionalWeakTableEntry : IData<ConditionalWeakTableEntry>
 {
     [Field("HashCode")]

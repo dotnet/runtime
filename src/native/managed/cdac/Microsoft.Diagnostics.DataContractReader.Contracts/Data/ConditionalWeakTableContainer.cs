@@ -3,7 +3,7 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-[CdacType(ManagedFullName = "System.Runtime.CompilerServices.ConditionalWeakTable`2+Container")]
+[CdacType("System.Runtime.CompilerServices.ConditionalWeakTable`2+Container")]
 internal sealed partial class ConditionalWeakTableContainer : IData<ConditionalWeakTableContainer>
 {
     /// <summary>Pointer to the <c>int[]</c> hash buckets array.</summary>

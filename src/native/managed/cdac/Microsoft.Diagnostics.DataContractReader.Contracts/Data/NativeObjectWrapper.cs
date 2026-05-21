@@ -3,7 +3,7 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-[CdacType(ManagedFullName = "System.Runtime.InteropServices.ComWrappers+NativeObjectWrapper")]
+[CdacType("System.Runtime.InteropServices.ComWrappers+NativeObjectWrapper", HasTypeHandle = true)]
 internal sealed partial class NativeObjectWrapper : IData<NativeObjectWrapper>
 {
 }

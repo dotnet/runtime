@@ -3,7 +3,7 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-[CdacType(nameof(DataType.Exception), ManagedFullName = "System.Exception")]
+[CdacType(nameof(DataType.Exception), "System.Exception")]
 internal sealed partial class Exception : IData<Exception>
 {
     [Field("_message")]

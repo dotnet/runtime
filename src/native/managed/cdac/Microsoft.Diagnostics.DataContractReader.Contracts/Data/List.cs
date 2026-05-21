@@ -3,7 +3,7 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-[CdacType(ManagedFullName = "System.Collections.Generic.List`1")]
+[CdacType("System.Collections.Generic.List`1")]
 internal sealed partial class List : IData<List>
 {
     /// <summary>Pointer to the backing <c>T[]</c> array.</summary>

@@ -3,7 +3,7 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-[CdacType(ManagedFullName = "System.Threading.Lock")]
+[CdacType("System.Threading.Lock")]
 internal sealed partial class Lock : IData<Lock>
 {
     [Field("_state")]

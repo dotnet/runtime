@@ -168,6 +168,19 @@ internal sealed class ManagedTypeSource_1 : IManagedTypeSource
 
         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
 
+        // For reference types, FieldDesc offsets are relative to the end of the
+        // Object portion (after the MT pointer), so we pre-adjust by Object.Size
+        // to make offsets relative to the instance address.
+        bool isValueType = rts.IsValueType(th);
+        ulong objectSize = 0;
+        if (!isValueType)
+        {
+            Target.TypeInfo objType = _target.GetTypeInfo(DataType.Object);
+            objectSize = objType.Size
+                ?? throw new InvalidOperationException(
+                    "The 'Object' data descriptor must have a known Size to compute managed reference-type field offsets.");
+        }
+
         Dictionary<string, Target.FieldInfo> instanceFields = new();
 
         foreach (FieldDefinitionHandle fieldHandle in typeDef.GetFields())
@@ -184,12 +197,9 @@ internal sealed class ManagedTypeSource_1 : IManagedTypeSource
 
             uint fdOffset = rts.GetFieldDescOffset(fieldDescAddr, fieldDef);
             CorElementType elementType = rts.GetFieldDescType(fieldDescAddr);
-            // Raw field offset, relative to the start of the instance data. Reference-type
-            // consumers must add the object header size; value-type consumers (e.g. struct
-            // entries embedded in arrays) read directly from the slot address.
             instanceFields[fieldName] = new Target.FieldInfo
             {
-                Offset = (int)fdOffset,
+                Offset = (int)(fdOffset + objectSize),
                 TypeName = MapCorElementTypeToDescriptorName(elementType),
             };
         }

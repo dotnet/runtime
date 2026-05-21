@@ -2,10 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Data;
 using Microsoft.Diagnostics.DataContractReader.Data.GeneratorTests;
-using Moq;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.DataGeneratorTests;
@@ -16,24 +14,15 @@ namespace Microsoft.Diagnostics.DataContractReader.DataGeneratorTests;
 /// minimal Target subclass that doesn't depend on the production cdac mocking
 /// framework.
 /// </summary>
-public class IDataGeneratorTests
+public class DataGeneratorTests
 {
     // --- Helpers -----------------------------------------------------
 
-    /// <summary>Object.Size for tests that need the managed reference-type header offset.</summary>
-    private const uint HeaderSize = 8;
-
     private const ulong InstanceAddr = 0x1000;
-
-    /// <summary>Build a target with an "Object" TypeInfo so cross-source ref-type managed reads pick up the header offset.</summary>
-    private static TestTarget NewTargetWithObject()
-        => new TestTarget()
-            .AddNativeType("Object", size: HeaderSize);
 
     private static byte[] U32(uint value) => BitConverter.GetBytes(value);
     private static byte[] U64(ulong value) => BitConverter.GetBytes(value);
 
-    /// <summary>Materialize an IData via its generated ctor through the static abstract.</summary>
     private static T Materialize<T>(TestTarget target, ulong address) where T : IData<T>
         => target.ProcessedData.GetOrAdd<T>(new TargetPointer(address));
 
@@ -60,45 +49,31 @@ public class IDataGeneratorTests
     }
 
     [Fact]
-    public void Managed_Ref_AppliesObjectSizeOffset()
+    public void Managed_Baseline_Reads()
     {
-        // Managed reference types: field reads at address + Object.Size + fieldOffset.
-        var target = NewTargetWithObject()
+        var target = new TestTarget()
             .AddManagedType("Test.Managed.Ref", size: 4, ("_a", 0))
-            .Allocate(InstanceAddr, 16,
-                ((int)HeaderSize + 0, U32(0xABCDu)));
+            .Allocate(InstanceAddr, 4, (0, U32(0xABCDu)));
 
         TestManagedRef t = Materialize<TestManagedRef>(target, InstanceAddr);
 
         Assert.Equal(0xABCDu, t.A);
     }
 
-    [Fact]
-    public void Managed_Val_NoObjectSizeOffset()
-    {
-        // Value types have no object header: reads at address + fieldOffset.
-        var target = new TestTarget()
-            .AddManagedType("Test.Managed.Val", size: 4, ("A", 0))
-            .Allocate(InstanceAddr, 4, (0, U32(7u)));
-
-        TestManagedVal t = Materialize<TestManagedVal>(target, InstanceAddr);
-
-        Assert.Equal(7u, t.A);
-    }
-
     // ================================================================
-    // Cross-source cascade
+    // Source cascade (native preferred over managed)
     // ================================================================
 
     [Fact]
     public void Cross_NativeAvailableHasField_UsesNative()
     {
-        var target = NewTargetWithObject()
+        // Both sources have the same field names; native should win.
+        var target = new TestTarget()
             .AddNativeType("TestCross", size: 16, ("A", 0), ("B", 8))
-            .AddManagedType("Test.Cross", size: 12, ("_a", 0), ("_b", 4))
+            .AddManagedType("Test.Cross", size: 32, ("A", 16), ("B", 20))
             .Allocate(InstanceAddr, 16,
-                (0, U32(0xAAAAu)),               // native A
-                ((int)HeaderSize + 0, U32(0xBBBBu))); // would be managed _a if cascade went wrong
+                (0, U32(0xAAAAu)),
+                (8, U64(0xBBBBu)));
 
         TestCross t = Materialize<TestCross>(target, InstanceAddr);
 
@@ -108,17 +83,13 @@ public class IDataGeneratorTests
     [Fact]
     public void Cross_NativeMissingField_FallsBackToManaged()
     {
-        // Native descriptor exists but doesn't contain "A"; managed has "_a".
-        // Offsets chosen so native and managed describe the SAME bytes (the
-        // realistic relationship for a managed ref type with header):
-        //   native B at offset 12   ==  managed _b at offset 4 (after Header=8)
-        //   native (no A)               managed _a at offset 0 (after Header=8) == address+8
-        var target = NewTargetWithObject()
+        // Native descriptor exists but doesn't contain "A"; managed has it.
+        var target = new TestTarget()
             .AddNativeType("TestCross", size: 20, ("B", 12))
-            .AddManagedType("Test.Cross", size: 8, ("_a", 0), ("_b", 4))
+            .AddManagedType("Test.Cross", size: 8, ("A", 0), ("B", 4))
             .Allocate(InstanceAddr, 20,
-                (8, U32(0xCAFEu)),    // bytes 8-11   = managed _a (addr+Header+0)
-                (12, U64(0x4444u)));  // bytes 12-19  = native B (addr+12)
+                (0, U32(0xCAFEu)),
+                (12, U64(0x4444u)));
 
         TestCross t = Materialize<TestCross>(target, InstanceAddr);
 
@@ -130,11 +101,11 @@ public class IDataGeneratorTests
     public void Cross_NativeDescriptorAbsent_UsesManaged()
     {
         // Only managed registered.
-        var target = NewTargetWithObject()
-            .AddManagedType("Test.Cross", size: 12, ("_a", 0), ("_b", 4))
-            .Allocate(InstanceAddr, 16 + (int)HeaderSize,
-                ((int)HeaderSize + 0, U32(0xDEEDu)),
-                ((int)HeaderSize + 4, U64(0xFEEDu)));
+        var target = new TestTarget()
+            .AddManagedType("Test.Cross", size: 12, ("A", 0), ("B", 4))
+            .Allocate(InstanceAddr, 12,
+                (0, U32(0xDEEDu)),
+                (4, U64(0xFEEDu)));
 
         TestCross t = Materialize<TestCross>(target, InstanceAddr);
 
@@ -145,11 +116,10 @@ public class IDataGeneratorTests
     [Fact]
     public void Cross_BothMissingField_Throws()
     {
-        // Native descriptor exists but lacks "A"; managed descriptor exists but lacks "_a".
-        // (Both have B/_b so the ctor only fails when reading A.)
-        var target = NewTargetWithObject()
+        // Neither source has "A".
+        var target = new TestTarget()
             .AddNativeType("TestCross", size: 16, ("B", 8))
-            .AddManagedType("Test.Cross", size: 8, ("_b", 0))
+            .AddManagedType("Test.Cross", size: 8, ("B", 0))
             .Allocate(InstanceAddr, 32);
 
         Assert.Throws<InvalidOperationException>(
@@ -157,13 +127,13 @@ public class IDataGeneratorTests
     }
 
     // ================================================================
-    // Aliases
+    // Name fallback (multiple candidate names tried in order)
     // ================================================================
 
     [Fact]
     public void Native_AliasFallback()
     {
-        // Primary "A" missing in native descriptor; alias "A_old" present.
+        // Primary "A" missing; alias "A_old" present.
         var target = new TestTarget()
             .AddNativeType("TestNativeAlias", size: 4, ("A_old", 0))
             .Allocate(InstanceAddr, 4, (0, U32(99u)));
@@ -176,10 +146,10 @@ public class IDataGeneratorTests
     [Fact]
     public void Managed_AliasFallback()
     {
-        var target = NewTargetWithObject()
+        // Primary "_a" missing; alias "_a_old" present.
+        var target = new TestTarget()
             .AddManagedType("Test.ManagedAlias", size: 4, ("_a_old", 0))
-            .Allocate(InstanceAddr, 4 + (int)HeaderSize,
-                ((int)HeaderSize + 0, U32(123u)));
+            .Allocate(InstanceAddr, 4, (0, U32(123u)));
 
         TestManagedAlias t = Materialize<TestManagedAlias>(target, InstanceAddr);
 
@@ -189,8 +159,8 @@ public class IDataGeneratorTests
     [Fact]
     public void Cross_NativeAliasOnly()
     {
-        // Native has only the alias; managed isn't registered at all.
-        var target = NewTargetWithObject()
+        // Native has only the alias "A_old"; managed not registered.
+        var target = new TestTarget()
             .AddNativeType("TestCrossAlias", size: 4, ("A_old", 0))
             .Allocate(InstanceAddr, 4, (0, U32(0x1111u)));
 
@@ -202,11 +172,10 @@ public class IDataGeneratorTests
     [Fact]
     public void Cross_ManagedAliasOnly()
     {
-        // No native descriptor; managed has only the alias.
-        var target = NewTargetWithObject()
+        // No native descriptor; managed has only the alias "_a_old".
+        var target = new TestTarget()
             .AddManagedType("Test.CrossAlias", size: 4, ("_a_old", 0))
-            .Allocate(InstanceAddr, 4 + (int)HeaderSize,
-                ((int)HeaderSize + 0, U32(0x2222u)));
+            .Allocate(InstanceAddr, 4, (0, U32(0x2222u)));
 
         TestCrossAlias t = Materialize<TestCrossAlias>(target, InstanceAddr);
 
@@ -229,55 +198,53 @@ public class IDataGeneratorTests
 
         t.WriteFlags(target, 0xFEED_FACEu);
 
-        Assert.Equal(0xFEED_FACEu, t.Flags); // in-memory snapshot refreshed
+        Assert.Equal(0xFEED_FACEu, t.Flags);
         Assert.Equal(0xFEED_FACEu, BitConverter.ToUInt32(target.Bytes(InstanceAddr)));
     }
 
     [Fact]
     public void WriteManaged_RoundTrip()
     {
-        var target = NewTargetWithObject()
+        var target = new TestTarget()
             .AddManagedType("Test.WriteManaged", size: 4, ("_flags", 0))
-            .Allocate(InstanceAddr, 4 + (int)HeaderSize,
-                ((int)HeaderSize + 0, U32(1u)));
+            .Allocate(InstanceAddr, 4, (0, U32(1u)));
 
         TestWriteManaged t = Materialize<TestWriteManaged>(target, InstanceAddr);
 
         t.WriteFlags(target, 0xABCDu);
 
         Assert.Equal(0xABCDu, t.Flags);
-        Assert.Equal(0xABCDu, BitConverter.ToUInt32(target.Bytes(InstanceAddr).Slice((int)HeaderSize, 4)));
+        Assert.Equal(0xABCDu, BitConverter.ToUInt32(target.Bytes(InstanceAddr)));
     }
 
     [Fact]
     public void WriteCross_NativeResolves_WritesNative()
     {
-        var target = NewTargetWithObject()
-            .AddNativeType("TestWriteCross", size: 4, ("Flags", 0))
-            .AddManagedType("Test.WriteCross", size: 4, ("_flags", 0))
-            .Allocate(InstanceAddr, 4 + (int)HeaderSize, (0, U32(0u)), ((int)HeaderSize + 0, U32(0u)));
+        var target = new TestTarget()
+            .AddNativeType("TestWriteCross", size: 8, ("Flags", 0))
+            .AddManagedType("Test.WriteCross", size: 4, ("Flags", 4))
+            .Allocate(InstanceAddr, 8, (0, U32(0u)), (4, U32(0u)));
 
         TestWriteCross t = Materialize<TestWriteCross>(target, InstanceAddr);
         t.WriteFlags(target, 0x33u);
 
-        // Write must hit the NATIVE region (address + 0), not the managed region.
         Assert.Equal(0x33u, BitConverter.ToUInt32(target.Bytes(InstanceAddr).Slice(0, 4)));
-        Assert.Equal(0u, BitConverter.ToUInt32(target.Bytes(InstanceAddr).Slice((int)HeaderSize, 4)));
+        Assert.Equal(0u, BitConverter.ToUInt32(target.Bytes(InstanceAddr).Slice(4, 4)));
     }
 
     [Fact]
-    public void WriteCross_ManagedResolves_WritesManagedWithOffset()
+    public void WriteCross_ManagedResolves_WritesManagedOffset()
     {
-        // Native descriptor lacks "Flags"; write should fall back to managed _flags.
-        var target = NewTargetWithObject()
-            .AddNativeType("TestWriteCross", size: 4 + (int)HeaderSize) // No "Flags" field declared.
-            .AddManagedType("Test.WriteCross", size: 4, ("_flags", 0))
-            .Allocate(InstanceAddr, 4 + (int)HeaderSize, ((int)HeaderSize + 0, U32(0u)));
+        // Native descriptor lacks "Flags"; write should fall back to managed.
+        var target = new TestTarget()
+            .AddNativeType("TestWriteCross", size: 8)
+            .AddManagedType("Test.WriteCross", size: 4, ("Flags", 4))
+            .Allocate(InstanceAddr, 8, (4, U32(0u)));
 
         TestWriteCross t = Materialize<TestWriteCross>(target, InstanceAddr);
         t.WriteFlags(target, 0x44u);
 
-        Assert.Equal(0x44u, BitConverter.ToUInt32(target.Bytes(InstanceAddr).Slice((int)HeaderSize, 4)));
+        Assert.Equal(0x44u, BitConverter.ToUInt32(target.Bytes(InstanceAddr).Slice(4, 4)));
     }
 
     // ================================================================
@@ -300,7 +267,6 @@ public class IDataGeneratorTests
     [Fact]
     public void Optional_FieldAbsent_ReturnsNull()
     {
-        // Descriptor doesn't include "Optional"; the IsOptional path uses ContainsKey + default.
         var target = new TestTarget()
             .AddNativeType("TestOptional", size: 4, ("Required", 0))
             .Allocate(InstanceAddr, 4, (0, U32(5u)));
@@ -318,7 +284,7 @@ public class IDataGeneratorTests
     [Fact]
     public void FieldAddress_NativeResolves()
     {
-        var target = NewTargetWithObject()
+        var target = new TestTarget()
             .AddNativeType("TestFieldAddr", size: 16, ("A", 0), ("Anchor", 12))
             .Allocate(InstanceAddr, 16, (0, U32(1u)));
 
@@ -330,14 +296,13 @@ public class IDataGeneratorTests
     [Fact]
     public void FieldAddress_ManagedResolves()
     {
-        // No native descriptor.
-        var target = NewTargetWithObject()
-            .AddManagedType("Test.FieldAddr", size: 16, ("_a", 0), ("Anchor", 12))
-            .Allocate(InstanceAddr, 16 + (int)HeaderSize, ((int)HeaderSize, U32(1u)));
+        var target = new TestTarget()
+            .AddManagedType("Test.FieldAddr", size: 16, ("A", 0), ("Anchor", 12))
+            .Allocate(InstanceAddr, 16, (0, U32(1u)));
 
         TestFieldAddr t = Materialize<TestFieldAddr>(target, InstanceAddr);
 
-        Assert.Equal((TargetPointer)(InstanceAddr + HeaderSize + 12), t.AnchorAddress);
+        Assert.Equal((TargetPointer)(InstanceAddr + 12), t.AnchorAddress);
     }
 
     // ================================================================
@@ -347,8 +312,6 @@ public class IDataGeneratorTests
     [Fact]
     public void UsePropertyName_False_OnlyExplicitNamesUsed()
     {
-        // Descriptor has "m_flags" but NOT "Flags" (the property name).
-        // UsePropertyName=false means the property name is excluded from the cascade.
         var target = new TestTarget()
             .AddNativeType("TestNoPropertyName", size: 4, ("m_flags", 0))
             .Allocate(InstanceAddr, 4, (0, U32(0xBEEFu)));
@@ -361,8 +324,6 @@ public class IDataGeneratorTests
     [Fact]
     public void UsePropertyName_False_PropertyNameNotUsed()
     {
-        // Descriptor has only "Flags" (the property name), NOT "m_flags".
-        // UsePropertyName=false means the property name should NOT be tried.
         var target = new TestTarget()
             .AddNativeType("TestNoPropertyName", size: 4, ("Flags", 0))
             .Allocate(InstanceAddr, 4, (0, U32(0xBEEFu)));
@@ -391,4 +352,75 @@ public class IDataGeneratorTests
         Assert.Equal(42u, t.Inner.A);
         Assert.Equal((TargetPointer)0xCAFEul, t.Inner.B);
     }
+
+    // ================================================================
+    // Static field accessors (native globals + managed fallback)
+    // ================================================================
+
+    [Fact]
+    public void StaticAddress_NativeGlobal_Resolves()
+    {
+        const ulong slotAddr = 0x5000;
+        var target = new TestTarget()
+            .AddNativeType("TestStaticAddr", size: 0)
+            .AddGlobal("TestStaticAddr.s_instance", slotAddr);
+
+        TargetPointer result = TestStaticAddr.Instance(target);
+
+        Assert.Equal((TargetPointer)slotAddr, result);
+    }
+
+    [Fact]
+    public void StaticAddress_ManagedFallback_Resolves()
+    {
+        const ulong slotAddr = 0x6000;
+        var target = new TestTarget()
+            .AddManagedStaticField("Test.StaticAddr", "s_instance", slotAddr);
+
+        TargetPointer result = TestStaticAddr.Instance(target);
+
+        Assert.Equal((TargetPointer)slotAddr, result);
+    }
+
+    [Fact]
+    public void StaticAddress_NativeGlobalTakesPrecedence()
+    {
+        const ulong nativeAddr = 0x7000;
+        const ulong managedAddr = 0x8000;
+        var target = new TestTarget()
+            .AddNativeType("TestStaticAddr", size: 0)
+            .AddGlobal("TestStaticAddr.s_instance", nativeAddr)
+            .AddManagedStaticField("Test.StaticAddr", "s_instance", managedAddr);
+
+        TargetPointer result = TestStaticAddr.Instance(target);
+
+        Assert.Equal((TargetPointer)nativeAddr, result);
+    }
+
+    [Fact]
+    public void StaticReference_NativeGlobal_DereferencesSlot()
+    {
+        const ulong slotAddr = 0x9000;
+        const ulong objAddr = 0xBEEF;
+        var target = new TestTarget()
+            .AddNativeType("TestStaticRef", size: 0)
+            .AddGlobal("TestStaticRef.s_cache", slotAddr)
+            .Allocate(slotAddr, 8, (0, U64(objAddr)));
+
+        TargetPointer result = TestStaticRef.Cache(target);
+
+        Assert.Equal((TargetPointer)objAddr, result);
+    }
+
+    [Fact]
+    public void StaticReference_NoGlobalOrManaged_ReturnsNull()
+    {
+        var target = new TestTarget()
+            .AddNativeType("TestStaticRef", size: 0);
+
+        TargetPointer result = TestStaticRef.Cache(target);
+
+        Assert.Equal(TargetPointer.Null, result);
+    }
+
 }

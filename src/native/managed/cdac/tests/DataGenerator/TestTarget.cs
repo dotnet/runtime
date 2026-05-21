@@ -25,6 +25,7 @@ namespace Microsoft.Diagnostics.DataContractReader.DataGeneratorTests;
 internal sealed class TestTarget : Target
 {
     private readonly Dictionary<string, TypeInfo> _nativeTypes = new();
+    private readonly Dictionary<string, TargetPointer> _globals = new();
     private readonly SortedDictionary<ulong, byte[]> _memory = new();
     private readonly TestContractRegistry _contracts;
     private readonly TestDataCache _processedData;
@@ -88,6 +89,38 @@ internal sealed class TestTarget : Target
     }
 
     private delegate bool TryGetTypeInfoDelegate(string name, out TypeInfo info);
+
+    // --- Global pointer registration ----------------------------------
+
+    /// <summary>
+    /// Register a native global pointer value. Used to test static field
+    /// resolution via the native descriptor path.
+    /// </summary>
+    public TestTarget AddGlobal(string name, ulong address)
+    {
+        _globals[name] = new TargetPointer(address);
+        return this;
+    }
+
+    /// <summary>
+    /// Register a managed static field on the mocked IManagedTypeSource.
+    /// When the generated code calls TryGetStaticFieldAddress with the
+    /// given type and field name, it will return the specified address.
+    /// </summary>
+    public TestTarget AddManagedStaticField(string typeName, string fieldName, ulong address)
+    {
+        var addr = new TargetPointer(address);
+        ManagedTypeSourceMock
+            .Setup(m => m.TryGetStaticFieldAddress(typeName, fieldName, out It.Ref<TargetPointer>.IsAny))
+            .Returns(new TryGetStaticFieldAddressDelegate((string _, string _, out TargetPointer a) =>
+            {
+                a = addr;
+                return true;
+            }));
+        return this;
+    }
+
+    private delegate bool TryGetStaticFieldAddressDelegate(string typeName, string fieldName, out TargetPointer address);
 
     // --- TypeInfo lookup --------------------------------------------
 
@@ -184,10 +217,28 @@ internal sealed class TestTarget : Target
         else Write<uint>(address, (uint)value.Value);
     }
 
+    // --- Global pointer reads ----------------------------------------
+
+    public override TargetPointer ReadGlobalPointer(string global)
+    {
+        if (_globals.TryGetValue(global, out TargetPointer value))
+            return value;
+        throw new InvalidOperationException($"TestTarget: no global registered for '{global}'.");
+    }
+
+    public override bool TryReadGlobalPointer(string name, [NotNullWhen(true)] out TargetPointer? value)
+    {
+        if (_globals.TryGetValue(name, out TargetPointer v))
+        {
+            value = v;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
     // --- Everything else throws --------------------------------------
 
-    public override TargetPointer ReadGlobalPointer(string global) => throw new NotImplementedException();
-    public override bool TryReadGlobalPointer(string name, [NotNullWhen(true)] out TargetPointer? value) => throw new NotImplementedException();
     public override bool TryReadPointer(ulong address, out TargetPointer value) => throw new NotImplementedException();
     public override bool TryReadCodePointer(ulong address, out TargetCodePointer value) => throw new NotImplementedException();
     public override void ReadBuffer(ulong address, Span<byte> buffer) => throw new NotImplementedException();

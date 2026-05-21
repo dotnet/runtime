@@ -33,9 +33,11 @@ internal static class Parser
             return null;
         }
 
-        (string? dataTypeEnumValue, string? descriptorName) = ParseDescriptorRef(cdacAttr);
-        string? managedFullName = GetNamedArg<string>(cdacAttr, "ManagedFullName");
-        bool isValueType = GetNamedArg<bool>(cdacAttr, "IsValueType");
+        EquatableArray<string> names = EquatableArray<string>.FromEnumerable(
+            cdacAttr.ConstructorArguments[0].Values
+                .Select(v => (string)v.Value!)
+                .ToList());
+        bool hasTypeHandle = GetNamedBool(cdacAttr, "HasTypeHandle");
 
         bool implementsIData = classSymbol.AllInterfaces.Any(i =>
             i.OriginalDefinition.ToDisplayString() == "Microsoft.Diagnostics.DataContractReader.Data.IData<TSelf>");
@@ -84,91 +86,43 @@ internal static class Parser
             Accessibility: accessibility,
             IsSealed: classSymbol.IsSealed,
             IsPartial: isPartial,
-            DataTypeEnumValue: dataTypeEnumValue,
-            DescriptorName: descriptorName,
-            ManagedFullName: managedFullName,
-            IsValueType: isValueType,
+            Names: names,
+            HasTypeHandle: hasTypeHandle,
             ImplementsIData: implementsIData,
             HintFilePath: syntaxRef?.SyntaxTree.FilePath,
             Members: EquatableArray<MemberModel>.FromEnumerable(members));
     }
-
-    private static (string?, string?) ParseDescriptorRef(AttributeData attr)
-    {
-        if (attr.ConstructorArguments.Length == 0)
-        {
-            return (null, null);
-        }
-
-        TypedConstant ctor0 = attr.ConstructorArguments[0];
-
-        if (ctor0.Kind == TypedConstantKind.Enum)
-        {
-            if (ctor0.Type is INamedTypeSymbol enumType && ctor0.Value is not null)
-            {
-                IFieldSymbol? member = enumType.GetMembers()
-                    .OfType<IFieldSymbol>()
-                    .FirstOrDefault(f => f.HasConstantValue && f.ConstantValue is not null && f.ConstantValue.Equals(ctor0.Value));
-                return (member?.Name, null);
-            }
-        }
-
-        if (ctor0.Kind == TypedConstantKind.Primitive && ctor0.Value is string s)
-        {
-            return (null, s);
-        }
-
-        return (null, null);
-    }
-
-    private static T? GetNamedArg<T>(AttributeData attr, string name)
-    {
-        foreach (KeyValuePair<string, TypedConstant> kv in attr.NamedArguments)
-        {
-            if (kv.Key == name && kv.Value.Value is T t)
-            {
-                return t;
-            }
-        }
-
-        return default;
-    }
-
-    /// <summary>
-    /// Reads a bool named-arg with an explicit default for the "not set" case,
-    /// so consumers can distinguish "explicitly false" from "not specified".
-    /// </summary>
-    private static bool GetNamedBoolArg(AttributeData attr, string name, bool defaultValue)
+    private static bool GetNamedBool(AttributeData attr, string name)
     {
         foreach (KeyValuePair<string, TypedConstant> kv in attr.NamedArguments)
         {
             if (kv.Key == name && kv.Value.Value is bool b)
-            {
                 return b;
-            }
         }
-
-        return defaultValue;
+        return false;
     }
 
-    private static string[]? GetNamedArrayArg(AttributeData attr, string name)
+    private static string[]? ReadStringArray(TypedConstant constant)
+    {
+        if (constant.Kind != TypedConstantKind.Array || constant.IsNull)
+            return null;
+
+        var result = new List<string>();
+        foreach (TypedConstant item in constant.Values)
+        {
+            if (item.Value is string s)
+                result.Add(s);
+        }
+        return result.ToArray();
+    }
+
+    private static string[]? GetNamedStringArray(AttributeData attr, string name)
     {
         foreach (KeyValuePair<string, TypedConstant> kv in attr.NamedArguments)
         {
-            if (kv.Key == name && kv.Value.Kind == TypedConstantKind.Array && !kv.Value.IsNull)
-            {
-                var result = new List<string>();
-                foreach (TypedConstant item in kv.Value.Values)
-                {
-                    if (item.Value is string s)
-                    {
-                        result.Add(s);
-                    }
-                }
-                return result.ToArray();
-            }
+            if (kv.Key == name)
+                return ReadStringArray(kv.Value);
         }
-
         return null;
     }
 
@@ -239,7 +193,7 @@ internal static class Parser
         if (fieldOffsetAttr is not null)
         {
             int offset = fieldOffsetAttr.ConstructorArguments.Length > 0 && fieldOffsetAttr.ConstructorArguments[0].Value is int o ? o : 0;
-            bool littleEndian = GetNamedArg<bool>(fieldOffsetAttr, "LittleEndian");
+            bool littleEndian = GetNamedBool(fieldOffsetAttr, "LittleEndian");
             (FieldReadKind readKind, string? dataTypeArg, bool isNullable) = ClassifyFieldRead(prop, isPointer: false);
             string fqnType = prop.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
 
@@ -264,12 +218,11 @@ internal static class Parser
             // [Field(params string[] names)] -- the positional args (if any)
             // become the candidate name list. We also accept a Names = [..]
             // named-arg form, which the constructor populates the same way.
-            string[]? ctorNames = ReadStringParamsCtorArg(fieldAttr);
-            string[]? namedNames = GetNamedArrayArg(fieldAttr, "Names");
-            string[]? rawNames = ctorNames ?? namedNames;
-            bool usePropertyName = GetNamedBoolArg(fieldAttr, "UsePropertyName", defaultValue: true);
+            string[]? ctorNames = fieldAttr.ConstructorArguments.Length > 0 ? ReadStringArray(fieldAttr.ConstructorArguments[0]) : null;
+            string[]? rawNames = ctorNames ?? GetNamedStringArray(fieldAttr, "Names");
+            bool usePropertyName = !fieldAttr.NamedArguments.Any(kv => kv.Key == "UsePropertyName" && kv.Value.Value is false);
 
-            bool isPointer = GetNamedArg<bool>(fieldAttr, "Pointer");
+            bool isPointer = GetNamedBool(fieldAttr, "Pointer");
             (FieldReadKind readKind, string? dataTypeArg, bool isNullable) = ClassifyFieldRead(prop, isPointer);
             string fqnType = prop.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
 
@@ -288,17 +241,16 @@ internal static class Parser
                 IsNullable: isNullable,
                 RawOffset: null,
                 LittleEndian: false,
-                HasSetter: GetNamedArg<bool>(fieldAttr, "Writable"),
+                HasSetter: GetNamedBool(fieldAttr, "Writable"),
                 Names: ComputeFieldNames(prop.Name, rawNames, usePropertyName));
             return true;
         }
 
         if (addrAttr is not null)
         {
-            string[]? ctorNames = ReadStringParamsCtorArg(addrAttr);
-            string[]? namedNames = GetNamedArrayArg(addrAttr, "Names");
-            string[]? rawNames = ctorNames ?? namedNames;
-            bool usePropertyName = GetNamedBoolArg(addrAttr, "UsePropertyName", defaultValue: true);
+            string[]? ctorNames = addrAttr.ConstructorArguments.Length > 0 ? ReadStringArray(addrAttr.ConstructorArguments[0]) : null;
+            string[]? rawNames = ctorNames ?? GetNamedStringArray(addrAttr, "Names");
+            bool usePropertyName = !addrAttr.NamedArguments.Any(kv => kv.Key == "UsePropertyName" && kv.Value.Value is false);
             string descriptorName = rawNames is { Length: > 0 } ? rawNames[0] : prop.Name;
             model = new MemberModel(
                 Name: prop.Name,
@@ -335,29 +287,6 @@ internal static class Parser
         }
 
         return false;
-    }
-
-    /// <summary>
-    /// Read a <c>params string[]</c> constructor argument. The compiler folds
-    /// <c>[Field("a", "b")]</c> into a single <c>TypedConstant</c> of kind
-    /// <c>Array</c>; we unwrap into a plain string[] (or null when no args).
-    /// </summary>
-    private static string[]? ReadStringParamsCtorArg(AttributeData attr)
-    {
-        if (attr.ConstructorArguments.Length == 0)
-            return null;
-
-        TypedConstant first = attr.ConstructorArguments[0];
-        if (first.Kind != TypedConstantKind.Array || first.IsNull)
-            return null;
-
-        var result = new List<string>();
-        foreach (TypedConstant item in first.Values)
-        {
-            if (item.Value is string s)
-                result.Add(s);
-        }
-        return result.ToArray();
     }
 
     private static bool TryParseStaticMethod(IMethodSymbol method, out MemberModel? model)
