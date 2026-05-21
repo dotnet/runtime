@@ -1803,7 +1803,9 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
         // IR that lower is not yet prepared to handle.
         //
         if (isReturn)
+        {
             return false;
+        }
 
         // The locals we introduce cannot be be enregistered in multiple
         // registers since we do not promote them, so they would always be
@@ -1811,7 +1813,9 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
         // destinations when replacing the CSEs uses and we do not currently do
         // that.
         if (tree->IsMultiRegNode())
+        {
             return false;
+        }
     }
 
     // No good if the expression contains side effects or if it was marked as DONT CSE
