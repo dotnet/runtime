@@ -598,6 +598,13 @@ bool CodeGenInterface::instHasPseudoName(instruction ins)
 }
 #endif // TARGET_XARCH
 
+#if defined(TARGET_WASM)
+uint8_t CodeGenInterface::instSimdElemSize(instruction ins)
+{
+    return static_cast<uint8_t>((instInfo[ins] >> INST_INFO_ELEM_SIZE_SHIFT));
+}
+#endif
+
 /*****************************************************************************
  *
  *  Generate a set instruction.

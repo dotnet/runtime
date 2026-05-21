@@ -17,6 +17,44 @@
 };
 // clang-format on
 
+bool isValidSimdElemSize(unsigned elemSize)
+{
+    // Valid SIMD configurations are i8x16, i16x8, i32x4, i64x2, f32x4, f64x2
+    return (elemSize == 1) || (elemSize == 2) || (elemSize == 4) || (elemSize == 8);
+}
+
+// --------------------------------------------------
+// isValidVectorIndex - returns true if the specified index is valid for the given SIMD element size
+// Arguments:
+//  elemSize - emitAttr describing the size of the SIMD vector elements
+//  index    - the index to validate
+
+bool emitter::isValidVectorIndex(uint8_t elemSize, uint8_t index)
+{
+    assert(isValidSimdElemSize(elemSize));
+
+    bool isValid = false;
+    switch (elemSize)
+    {
+        case 1:
+            isValid = (index < 16);
+            break;
+        case 2:
+            isValid = (index < 8);
+            break;
+        case 4:
+            isValid = (index < 4);
+            break;
+        case 8:
+            isValid = (index < 2);
+            break;
+        default:
+            unreached();
+    }
+
+    return isValid;
+}
+
 void emitter::emitIns(instruction ins)
 {
     instrDesc* id  = emitNewInstrSmall(EA_8BYTE);
@@ -422,9 +460,11 @@ void emitter::emitIns_V128Imm(instruction ins, const uint8_t* bytes)
 //
 void emitter::emitIns_Lane(instruction ins, emitAttr attr, uint8_t laneIdx)
 {
-    instrDesc* id  = emitNewInstrSC(attr, laneIdx);
-    insFormat  fmt = emitInsFormat(ins);
+    instrDesc* id       = emitNewInstrSC(attr, laneIdx);
+    insFormat  fmt      = emitInsFormat(ins);
+    uint8_t    elemSize = CodeGenInterface::instSimdElemSize(ins);
     assert(fmt == IF_LANE);
+    assert(isValidVectorIndex(elemSize, laneIdx));
 
     id->idInsFmt(fmt);
     id->idIns(ins);
@@ -446,8 +486,10 @@ void emitter::emitIns_MemargLane(instruction ins, emitAttr attr, cnsval_ssize_t 
 {
     instrDescMemargLane* id  = static_cast<instrDescMemargLane*>(emitAllocAnyInstr(sizeof(instrDescMemargLane), attr));
     insFormat            fmt = emitInsFormat(ins);
+    uint8_t              elemSize = CodeGenInterface::instSimdElemSize(ins);
     assert(fmt == IF_MEMARG_LANE);
     assert(offset >= 0);
+    assert(isValidVectorIndex(elemSize, laneIdx));
 
     id->idInsFmt(fmt);
     id->idIns(ins);
