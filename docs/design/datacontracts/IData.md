@@ -67,7 +67,8 @@ analyzer. It scans for classes carrying `[CdacType]` and emits a
 * For types with `HasTypeHandle = true`: a
   `public static TypeHandle TypeHandle(Target target)` accessor.
 * For each `[Field(Writable = true)]` property: a
-  `public void Write{Name}(Target target, T value)` method.
+  `public void Write{Name}(T value)` method. The class captures the
+  `Target` in a private `_target` field when any writable fields exist.
 * For each `[StaticAddress]` / `[StaticReference]` partial method
   declaration: a corresponding implementation that tries native globals
   first (`TypeName.fieldName`), then falls back to `ManagedTypeSource`.
@@ -165,13 +166,15 @@ Parameters:
   pointer is guaranteed non-null; otherwise expose the property as a
   raw `TargetPointer` and let the consumer materialize on demand.
 * `[Field(Writable = true)]` -- emit a
-  `public void Write{Name}(Target target, T value)` method that writes
-  the value back to the target's memory and updates the in-memory
-  snapshot. The property must have a setter (`set` or `private set`),
-  the read kind must be `Primitive` or `Bool`, and the class must use
-  a descriptor (`[CdacType("Name")]` or `[CdacType("Name1", "Name2")]`
-  -- writes go through the descriptor field offset regardless of which
-  side supplied it).
+  `public void Write{Name}(T value)` method that writes the value back
+  to the target's memory and updates the in-memory snapshot. When any
+  writable fields exist, the generator emits a `private readonly Target
+  _target` field that is captured in the constructor, so Write methods
+  do not need a `Target` parameter. The property must have a setter
+  (`set` or `private set`), the read kind must be `Primitive`, `Bool`,
+  or `NUInt`, and the class must use a descriptor (`[CdacType("Name")]`
+  or `[CdacType("Name1", "Name2")]` -- writes go through the descriptor
+  field offset regardless of which side supplied it).
 
 ### Property-level: `[RawOffset]`
 
@@ -229,9 +232,11 @@ name), then falls back to `ManagedTypeSource`.
 | `[StaticAddress("field")]` | Tries `target.TryReadGlobalPointer("TypeName.field")` for each candidate type name. Falls back to `target.Contracts.ManagedTypeSource.TryGetStaticFieldAddress(name, "field")`. Returns the address of the static slot. |
 | `[StaticReference("field")]` | Same resolution as `StaticAddress`, but dereferences the result: `target.ReadPointer(addr)`. Returns `TargetPointer.Null` if neither source has the static. |
 
-> **Note:** Thread statics are not currently supported by the source
-> generator. Types that need thread-static field access should use a
-> hand-written implementation.
+### Method-level (`static partial`): thread-static field accessor
+
+| Attribute | Generated method body |
+|---|---|
+| `[ThreadStaticAddress("field")]` | Tries `target.Contracts.ManagedTypeSource.TryGetThreadStaticFieldAddress(name, "field", thread)` for each candidate type name. The generated method takes an additional `TargetPointer thread` parameter identifying the thread whose TLS slot to read. |
 
 Example:
 
@@ -308,18 +313,19 @@ internal sealed partial class Module : IData<Module>
     // ...
 }
 
-// Generated:
-public void WriteFlags(Target target, uint value)
+// Generated (the class captures _target when any writable fields exist):
+public void WriteFlags(uint value)
 {
-    Target.TypeInfo type = target.GetTypeInfo("Module");
-    target.WriteField<uint>(Address, type, "Flags", value);
+    LayoutPair layouts = LayoutPair.Resolve(_target, _typeNames);
+    layouts.Select(Address, out var t, out var b, out var n, "Flags");
+    _target.WriteField<uint>(b, t, n, value);
     Flags = value;
 }
 ```
 
 Rules:
 
-* Property type must be a primitive integer or `bool`.
+* Property type must be a primitive integer, `bool`, or `TargetNUInt`.
 * Property must have an explicit setter (`set` or `private set`, not
   `init`).
 * Class must use a descriptor source (`[CdacType("Name")]` or
@@ -350,22 +356,24 @@ at a time) without C# changes.
 ### How the cascade works
 
 1. The generator emits a call to
-   `TypeNameResolver.Resolve(target, typeNames)` at the top of the ctor.
+   `LayoutPair.Resolve(target, typeNames)` at the top of the ctor.
    This tries each candidate type name against the native descriptors
    first, then against managed metadata. It returns a `LayoutPair`
    carrying whichever `Target.TypeInfo`(s) exist.
 
-2. Every `[Field]` read goes through
-   `LayoutPair.ReadField<T>(target, address, names)`. The helper walks
-   `names` against the native `TypeInfo`'s `Fields` map first; if a name
-   matches, the read is anchored at `address` (native offsets already
-   include the object header by convention). If no name matches against
-   native (or the native descriptor wasn't available), the helper walks
-   `names` against the managed `TypeInfo`'s `Fields` map; if a name
-   matches, the read is anchored at `address` as well (managed offsets
-   are pre-adjusted by `ManagedTypeSource` to include the object header).
+2. Every `[Field]` read calls
+   `LayoutPair.Select(address, out type, out baseAddr, out name, ...names)`.
+   The helper walks `names` against the native `TypeInfo`'s `Fields`
+   map first; if a name matches, the read is anchored at `address`
+   (native offsets already include the object header by convention). If
+   no name matches against native (or the native descriptor wasn't
+   available), the helper walks `names` against the managed `TypeInfo`'s
+   `Fields` map; if a name matches, the read is anchored at `address`
+   as well (managed offsets are pre-adjusted by `ManagedTypeSource` to
+   include the object header). The generated code then calls the
+   appropriate `target.ReadField<T>(baseAddr, type, name)` overload.
 
-3. If no name matches in either source, `LayoutPair` throws
+3. If no name matches in either source, `LayoutPair.Select` throws
    `InvalidOperationException` with the candidate name list in the
    message. If the resolution at step 1 found *neither* source, the
    ctor itself throws.
@@ -446,14 +454,14 @@ the header for managed reference types -- so native reads also use
 ### `[FieldAddress]` and `[InstanceDataStart]` under fallback
 
 `[FieldAddress]` accepts the same `params string[]` name list as
-`[Field]`, and works through `LayoutPair.GetFieldAddress` to return
-the correct absolute address regardless of which source resolves the
-field.
+`[Field]`, and works through `LayoutPair.Select` to obtain the
+resolved type info and base address, then computes the absolute
+field address regardless of which source resolves the field.
 
-`[InstanceDataStart]` returns `address + ManagedDataOffset +
-InstanceSize`, where `InstanceSize` is whichever side's `Size` is
-populated (native preferred when both have one). For pure native-only
-classes this reduces to `address + type.Size` exactly as before.
+`[InstanceDataStart]` returns `address + layouts.InstanceSize`,
+where `InstanceSize` is whichever side's `Size` is populated (native
+preferred when both have one). For pure native-only classes this
+reduces to `address + type.Size` exactly as before.
 
 ## Examples
 
@@ -569,7 +577,7 @@ internal sealed partial class Module : IData<Module>
 
 // usage
 Data.Module module = target.ProcessedData.GetOrAdd<Data.Module>(addr);
-module.WriteFlags(target, newFlags);
+module.WriteFlags(newFlags);
 ```
 
 ### Hand-written extension via `OnInit`
@@ -799,8 +807,11 @@ naming scheme `TypeName.fieldName`. For example, a managed static
 `[StaticReference]` attributes try native globals first, then fall back
 to `ManagedTypeSource`.
 
-> **Note:** Thread statics are not currently supported by the source
-> generator's native global path.
+**Thread statics:** Thread-static fields are supported via the
+`[ThreadStaticAddress]` attribute. The generated method takes a
+`TargetPointer thread` parameter and resolves the field through
+`ManagedTypeSource.TryGetThreadStaticFieldAddress`. Native global
+thread statics are not currently supported.
 
 ### Migrating native types to managed
 
