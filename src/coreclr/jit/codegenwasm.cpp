@@ -3665,7 +3665,6 @@ void CodeGen::genWasmEmitterUnitTestsSimd()
 #undef DROP
 #undef TEST_UNARY_V128
 #undef TEST_BINARY_V128
-#undef TEST_V128_TO_I32
 #undef TEST_EXTRACT_LANE
 #undef TEST_REPLACE_LANE_I32
 #undef TEST_REPLACE_LANE_I64

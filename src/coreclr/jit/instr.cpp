@@ -601,6 +601,7 @@ bool CodeGenInterface::instHasPseudoName(instruction ins)
 #if defined(TARGET_WASM)
 uint8_t CodeGenInterface::instSimdElemSize(instruction ins)
 {
+    assert((unsigned)ins < ArrLen(instInfo));
     return static_cast<uint8_t>((instInfo[ins] >> InstInfoElemSizeShift));
 }
 #endif

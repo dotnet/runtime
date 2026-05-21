@@ -432,10 +432,10 @@ uint8_t emitter::emitGetLaneImmValue(const instrDesc* id)
     }
     else
     {
-        noway_assert(!"Unexpected instruction format for lane immediate");
+        unreached();
     }
 
-    return 255;
+    return 0;
 }
 
 //------------------------------------------------------------------------

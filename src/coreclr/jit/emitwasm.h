@@ -33,7 +33,7 @@ void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2)
 void emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs);
 
 // Packed SIMD instruction emit functions
-void emitIns_V128Imm(instruction ins, const uint8_t* bytes);
+void emitIns_V128Imm(instruction ins, const uint8_t bytes[16]);
 void emitIns_Lane(instruction ins, emitAttr attr, uint8_t laneIdx);
 void emitIns_MemargLane(instruction ins, emitAttr attr, cnsval_ssize_t offset, uint8_t laneIdx);
 
