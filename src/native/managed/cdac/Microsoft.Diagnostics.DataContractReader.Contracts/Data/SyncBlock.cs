@@ -18,14 +18,10 @@ internal sealed partial class SyncBlock : IData<SyncBlock>
         Target.TypeInfo type = target.GetTypeInfo(DataType.SyncBlock);
         TargetPointer interopInfoPointer = target.ReadPointerField(address, type, nameof(InteropInfo));
         if (interopInfoPointer != TargetPointer.Null)
-        {
             InteropInfo = target.ProcessedData.GetOrAdd<InteropSyncBlockInfo>(interopInfoPointer);
-        }
 
         ObjectHandle lockHandle = target.ReadDataField<ObjectHandle>(address, type, nameof(Lock));
         if (lockHandle.Handle != TargetPointer.Null)
-        {
             Lock = lockHandle;
-        }
     }
 }

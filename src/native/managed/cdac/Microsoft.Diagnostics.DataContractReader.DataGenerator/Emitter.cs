@@ -107,9 +107,9 @@ internal static class Emitter
     }
 
     /// <summary>
-    /// Emits a <c>Write{Name}(Target target, T value)</c> method for each
-    /// settable <c>[Field]</c> property. Only supported for primitive integer
-    /// and bool read kinds.
+    /// Emits a <c>Write{Name}(T value)</c> method for each settable
+    /// <c>[Field]</c> property. Uses the captured <c>_target</c> field.
+    /// Only supported for primitive integer, bool, and NUInt read kinds.
     /// </summary>
     private static void EmitWriteBackMethods(StringBuilder sb, CdacTypeModel model)
     {
