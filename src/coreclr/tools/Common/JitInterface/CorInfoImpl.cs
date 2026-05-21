@@ -3494,7 +3494,7 @@ namespace Internal.JitInterface
             pAsyncInfoOut.finishSuspensionWithContinuationContextMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("FinishSuspensionWithContinuationContext"u8, null));
         }
 
-        private CORINFO_METHOD_STRUCT_* getAwaitReturnCall(CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_LOOKUP instArg)
+        private CORINFO_METHOD_STRUCT_* getAwaitReturnCall(CORINFO_METHOD_STRUCT_* callerHandle, bool transparent, ref CORINFO_LOOKUP instArg)
         {
             instArg = default;
             return null;

@@ -509,6 +509,7 @@ void getAsyncInfo(
 
 CORINFO_METHOD_HANDLE getAwaitReturnCall(
           CORINFO_METHOD_HANDLE callerHandle,
+          bool transparent,
           CORINFO_LOOKUP* instArg) override;
 
 mdMethodDef getMethodDefFromMethod(

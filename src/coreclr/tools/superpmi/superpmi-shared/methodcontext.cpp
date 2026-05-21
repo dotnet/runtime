@@ -4519,26 +4519,36 @@ void MethodContext::repGetAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut)
     DEBUG_REP(dmpGetAsyncInfo(0, value));
 }
 
-void MethodContext::recGetAwaitReturnCall(CORINFO_METHOD_HANDLE callerHnd, CORINFO_LOOKUP* instArg, CORINFO_METHOD_HANDLE methHnd)
+void MethodContext::recGetAwaitReturnCall(CORINFO_METHOD_HANDLE callerHnd, bool transparent, CORINFO_LOOKUP* instArg, CORINFO_METHOD_HANDLE methHnd)
 {
     if (GetAwaitReturnCall == nullptr)
-        GetAwaitReturnCall = new LightWeightMap<DWORDLONG, Agnostic_GetAwaitReturnCallResult>();
+        GetAwaitReturnCall = new LightWeightMap<DLD, Agnostic_GetAwaitReturnCallResult>();
+
+    DLD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = CastHandle(callerHnd);
+    key.B = transparent ? 1 : 0;
 
     Agnostic_GetAwaitReturnCallResult value;
     ZeroMemory(&value, sizeof(value));
     value.methodHnd = CastHandle(methHnd);
     value.instArg = SpmiRecordsHelper::StoreAgnostic_CORINFO_LOOKUP(instArg);
 
-    GetAwaitReturnCall->Add(CastHandle(callerHnd), value);
-    DEBUG_REC(dmpGetAwaitReturnCall(CastHandle(callerHnd), value));
+    GetAwaitReturnCall->Add(key, value);
+    DEBUG_REC(dmpGetAwaitReturnCall(key, value));
 }
-void MethodContext::dmpGetAwaitReturnCall(DWORDLONG key, Agnostic_GetAwaitReturnCallResult& value)
+void MethodContext::dmpGetAwaitReturnCall(DLD key, Agnostic_GetAwaitReturnCallResult& value)
 {
-    printf("GetAwaitReturnCall key %016" PRIX64 " value methodHnd-%016" PRIX64, key, value.methodHnd);
+    printf("GetAwaitReturnCall key %016" PRIX64 " value methodHnd-%016" PRIX64, key.A, value.methodHnd);
 }
-CORINFO_METHOD_HANDLE MethodContext::repGetAwaitReturnCall(CORINFO_METHOD_HANDLE callerHnd, CORINFO_LOOKUP* instArg)
+CORINFO_METHOD_HANDLE MethodContext::repGetAwaitReturnCall(CORINFO_METHOD_HANDLE callerHnd, bool transparent, CORINFO_LOOKUP* instArg)
 {
-    const Agnostic_GetAwaitReturnCallResult& result = LookupByKeyOrMissNoMessage(GetAwaitReturnCall, CastHandle(callerHnd));
+    DLD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = CastHandle(callerHnd);
+    key.B = transparent ? 1 : 0;
+
+    const Agnostic_GetAwaitReturnCallResult& result = LookupByKeyOrMissNoMessage(GetAwaitReturnCall, key);
     *instArg = SpmiRecordsHelper::RestoreCORINFO_LOOKUP(result.instArg);
     return (CORINFO_METHOD_HANDLE)result.methodHnd;
 }
