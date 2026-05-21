@@ -192,11 +192,12 @@ namespace System.Net
         private void SslSetConnection(SafeSslHandle sslContext)
         {
             // The GCHandle is owned by the SafeSslHandle and freed in its
-            // ReleaseHandle override, which only runs after all outstanding
-            // P/Invokes (and therefore any in-flight Read/Write callbacks)
-            // have completed. Freeing it here in Dispose would race with
-            // callbacks that are still in flight on another thread.
-            GCHandle handle = GCHandle.Alloc(this, GCHandleType.Weak);
+            // ReleaseHandle override, which only runs once the ref count drops
+            // to zero (i.e. after all outstanding P/Invokes and any in-flight
+            // native Read/Write callbacks have completed). A strong (Normal)
+            // handle is used so that this SafeDeleteSslContext stays rooted
+            // for as long as the native SSLContext can call back into us.
+            GCHandle handle = GCHandle.Alloc(this, GCHandleType.Normal);
             sslContext.SetConnectionGCHandle(handle);
 
             Interop.AppleCrypto.SslSetConnection(sslContext, GCHandle.ToIntPtr(handle));
@@ -227,7 +228,12 @@ namespace System.Net
         private static unsafe int WriteToConnection(IntPtr connection, byte* data, void** dataLength)
         {
             SafeDeleteSslContext? context = (SafeDeleteSslContext?)GCHandle.FromIntPtr(connection).Target;
-            Debug.Assert(context != null);
+            if (context is null)
+            {
+                // The managed context has already been collected. Fail the
+                // I/O cleanly so SecureTransport tears down the handshake.
+                return OSStatus.WritErr;
+            }
 
             // We don't pool these buffers and we can't because there's a race between their us in the native
             // read/write callbacks and being disposed when the SafeHandle is disposed. This race is benign currently,
@@ -262,7 +268,12 @@ namespace System.Net
         private static unsafe int ReadFromConnection(IntPtr connection, byte* data, void** dataLength)
         {
             SafeDeleteSslContext? context = (SafeDeleteSslContext?)GCHandle.FromIntPtr(connection).Target;
-            Debug.Assert(context != null);
+            if (context is null)
+            {
+                // The managed context has already been collected. Fail the
+                // I/O cleanly so SecureTransport tears down the handshake.
+                return OSStatus.ReadErr;
+            }
 
             try
             {
