@@ -166,7 +166,6 @@
     <Compile Include="..\..\Common\CallingConvention\ArgIterator.cs" Link="CallingConvention\ArgIterator.cs" />
     <Compile Include="..\..\Common\CallingConvention\TransitionBlock.cs" Link="CallingConvention\TransitionBlock.cs" />
     <Compile Include="..\..\Common\CallingConvention\ITypeHandle.cs" Link="CallingConvention\ITypeHandle.cs" />
-    <Compile Include="..\..\Common\CallingConvention\TypeHandle.cs" Link="CallingConvention\TypeHandle.cs" />
     <Compile Include="..\..\Common\Internal\Runtime\RiscVLoongArch64FpStruct.cs" Link="Common\RiscVLoongArch64FpStruct.cs" />
     <Compile Include="..\..\Common\JitInterface\SwiftPhysicalLowering.cs" Link="JitInterface\SwiftPhysicalLowering.cs" />
     <Compile Include="..\..\Common\JitInterface\WasmLowering.cs" Link="JitInterface\WasmLowering.cs" />
@@ -309,6 +308,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Target_X64\ImportThunk.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Target_X86\ImportThunk.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\TypeFixupSignature.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\TypeHandle.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\TypesTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\VirtualResolutionFixupSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\WasmImportThunkPortableEntrypoint.cs" />
