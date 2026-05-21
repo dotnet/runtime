@@ -82,10 +82,10 @@ namespace Internal.Runtime.TypeLoader
 
             public bool Equals(RuntimeMethodHandleKey other)
             {
-                if (_isAsyncVariant != other._isAsyncVariant)
+                if (!_declaringType.Equals(other._declaringType) || !_handle.Equals(other._handle))
                     return false;
 
-                if (!_declaringType.Equals(other._declaringType) || !_handle.Equals(other._handle))
+                if (_isAsyncVariant != other._isAsyncVariant)
                     return false;
 
                 if ((_genericArgs == null) != (other._genericArgs == null))
@@ -105,9 +105,12 @@ namespace Internal.Runtime.TypeLoader
             }
 
             public override int GetHashCode()
-                => (_isAsyncVariant ? 0x5f356495 : 0x2d2816fe) ^ _handle.GetHashCode() ^ (_genericArgs == null
-                ? _declaringType.GetHashCode()
-                : VersionResilientHashCode.GenericInstanceHashCode(_declaringType.GetHashCode(), _genericArgs));
+            {
+                int declaringTypeHashCode = _genericArgs == null
+                    ? _declaringType.GetHashCode()
+                    : VersionResilientHashCode.GenericInstanceHashCode(_declaringType.GetHashCode(), _genericArgs);
+                return HashCode.Combine(_handle, declaringTypeHashCode, _isAsyncVariant);
+            }
         }
 
         private LowLevelDictionary<RuntimeFieldHandleKey, RuntimeFieldHandle> _runtimeFieldHandles = new LowLevelDictionary<RuntimeFieldHandleKey, RuntimeFieldHandle>();
