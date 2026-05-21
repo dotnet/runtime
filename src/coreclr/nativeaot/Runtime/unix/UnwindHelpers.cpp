@@ -15,6 +15,20 @@
 // libunwind headers
 #include <libunwind.h>
 
+// HP libunwind ARM headers define only UNW_ARM_Rxx register names.
+// NativeAOT unwind code historically used SP/LR/IP aliases.
+#if defined(TARGET_ARM)
+#ifndef UNW_ARM_SP
+#define UNW_ARM_SP UNW_ARM_R13
+#endif
+#ifndef UNW_ARM_LR
+#define UNW_ARM_LR UNW_ARM_R14
+#endif
+#ifndef UNW_ARM_IP
+#define UNW_ARM_IP UNW_ARM_R12
+#endif
+#endif
+
 // HP libunwind uses AARCH64 register enum names while historical NativeAOT
 // code used ARM64-prefixed names from llvm-libunwind internals.
 #if defined(TARGET_ARM64) && defined(UNW_TARGET_AARCH64) && !defined(UNW_ARM64_X0)
