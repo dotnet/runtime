@@ -365,9 +365,7 @@ RtlVirtualUnwind(
     IN OUT PKNONVOLATILE_CONTEXT_POINTERS ContextPointers OPTIONAL
     );
 
-#if defined(TARGET_UNIX)
 EXTERN_C
-NTSYSAPI
 PEXCEPTION_ROUTINE
 NTAPI
 RtlVirtualUnwindWithSpForPacSign(
@@ -381,7 +379,6 @@ RtlVirtualUnwindWithSpForPacSign(
     IN OUT PKNONVOLATILE_CONTEXT_POINTERS ContextPointers OPTIONAL,
     OUT PULONG64 SpForPacSign OPTIONAL
     );
-#endif // TARGET_UNIX
 
 // Mirror the XSTATE_ARM64_SVE flags from winnt.h
 
