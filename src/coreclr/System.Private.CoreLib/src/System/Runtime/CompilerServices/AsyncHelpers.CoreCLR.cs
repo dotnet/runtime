@@ -987,7 +987,7 @@ namespace System.Runtime.CompilerServices
             syncCtx = curThread._synchronizationContext;
         }
 
-        // Restore contexts onto current Thread. If "resumed" then this is not the first starting call for the async method.
+        // Restore contexts onto thread. If "resumed" then this is not the first starting call for the async method.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void RestoreContexts(bool resumed, Thread thread, ExecutionContext? previousExecCtx, SynchronizationContext? previousSyncCtx)
         {
