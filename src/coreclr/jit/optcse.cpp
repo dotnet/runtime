@@ -1807,11 +1807,12 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
             return false;
         }
 
-        // The locals we introduce cannot be be enregistered in multiple
-        // registers since we do not promote them, so they would always be
-        // spilled. Also, for correctness we would need to DNER existing store
-        // destinations when replacing the CSEs uses and we do not currently do
-        // that.
+        // Skip all multireg nodes. The locals we introduce cannot be
+        // enregistered in multiple registers since we do not promote them, so
+        // they would always be spilled. Also, for correctness we would need to
+        // DNER existing store destinations when replacing the CSE uses and we
+        // do not currently do that.
+        //
         if (tree->IsMultiRegNode())
         {
             return false;
