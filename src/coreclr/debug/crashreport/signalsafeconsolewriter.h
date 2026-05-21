@@ -37,7 +37,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "signalsafeformat.h"
+#include "signalsafeformatter.h"
 
 static constexpr size_t SIGNAL_SAFE_CONSOLE_BUFFER_SIZE = 512;
 

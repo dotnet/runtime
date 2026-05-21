@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include "signalsafeformat.h"
+#include "signalsafeformatter.h"
 
 const char*
 SignalSafeFormatter::FormatHex(uint64_t value)

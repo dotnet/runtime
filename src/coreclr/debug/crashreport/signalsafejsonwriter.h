@@ -12,7 +12,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "signalsafeformat.h"
+#include "signalsafeformatter.h"
 
 using SignalSafeJsonOutputCallback = bool (*)(const char* buffer, size_t len, void* ctx);
 

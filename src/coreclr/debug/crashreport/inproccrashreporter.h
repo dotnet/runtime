@@ -81,56 +81,10 @@ struct InProcCrashReporterSettings
     uint32_t frameLimitPerThread;
 };
 
-class InProcCrashReporter
-{
-public:
-    static InProcCrashReporter& GetInstance();
-
-    // Capture configuration and the crash-report template path. Must be called
-    // before the PAL enables signal-handler dispatch to CreateReport.
-    bool Initialize(const InProcCrashReporterSettings& settings);
-
-    void CreateReport(
-        int signal,
-        void* context);
-
-private:
-    InProcCrashReporter() = default;
-    InProcCrashReporter(const InProcCrashReporter&) = delete;
-    InProcCrashReporter& operator=(const InProcCrashReporter&) = delete;
-
-    void EmitSynthesizedCrashThread(
-        void* context,
-        bool walkStack);
-
-    void EmitStackOverflowCrashThread();
-
-    void EmitThreads(
-        InProcCrashReportCrashKind crashKind,
-        void* context);
-
-    void BeginConsoleReport(int signal);
-    void EndConsoleReport();
-
-    void BeginJsonReport();
-    void EndJsonReport(
-        int signal,
-        bool jsonEnabled,
-        int fd);
-
-    bool BuildReportPath();
-    size_t ExpandDumpTemplate(
-        char* buffer,
-        size_t bufferSize,
-        const char* pattern);
-
-    static const char* GetSignalNameAscii(int signal);
-};
-
 // Free-function entry point used by the runtime to wire the in-proc crash
-// reporter into the PAL signal-handler path. Captures `settings` into
-// init-time allocated storage and registers a signal-safe dispatcher with PAL via
-// PAL_SetInProcCrashReportCallback. PAL has no direct dependency on the
+// reporter into the PAL signal-handler path. Captures `settings` into an
+// init-time allocated reporter and registers a signal-safe dispatcher with PAL
+// via PAL_SetInProcCrashReportCallback. PAL has no direct dependency on the
 // reporter; the only coupling is through this registered callback.
 void InProcCrashReportInitialize(const InProcCrashReporterSettings& settings);
 
