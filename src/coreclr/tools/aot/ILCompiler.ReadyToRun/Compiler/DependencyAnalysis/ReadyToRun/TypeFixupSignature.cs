@@ -213,13 +213,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 dependencies.Add(factory.AllMethodsOnType(_typeDesc), "Methods on generic type instantiation");
             }
 
-            // We record the usage of this type, so that GVM dependency analysis can resolve all implementations.
+            // We record the usage of this type, so that virtual method dependency analysis can resolve implementations.
+            // GVMDependenciesNode uses this for generic virtual methods (dynamic dependencies).
+            // InheritedVirtualMethodsNode uses conditional static dependencies for non-GVM virtual methods.
             if (!_typeDesc.IsGenericDefinition &&
                 !_typeDesc.IsInterface &&
                 _typeDesc.IsDefType &&
                 (factory.CompilationCurrentPhase == 0) &&
-                factory.CompilationModuleGroup.VersionsWithType(_typeDesc) &&
-                TypeHasGVMSlots(_typeDesc))
+                factory.CompilationModuleGroup.VersionsWithType(_typeDesc))
             {
                 dependencies.Add(factory.InheritedVirtualMethods(_typeDesc), "Inherited virtual/interface methods on type");
             }
@@ -229,22 +230,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 AddDependenciesForAsyncStateMachineBox(ref dependencies, factory, _typeDesc);
             }
             return dependencies;
-        }
-
-        private static bool TypeHasGVMSlots(TypeDesc type)
-        {
-            TypeDesc currentType = type;
-            while (currentType != null)
-            {
-                foreach (MethodDesc method in currentType.GetVirtualMethods())
-                {
-                    if (method.HasInstantiation)
-                        return true;
-                }
-                currentType = currentType.BaseType;
-            }
-
-            return false;
         }
 
         public static void AddDependenciesForAsyncStateMachineBox(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
