@@ -85,7 +85,7 @@ namespace System.Text.Json.Serialization
         internal bool CanBePolymorphic { get; init; }
 
         /// <summary>
-        /// The converter can read/write multiple JSON token types (e.g. both strings and objects).
+        /// The converter can read/write multiple JSON value shapes (e.g. both strings and objects).
         /// Relaxes debug validation that non-value converters must always read StartObject/StartArray tokens.
         /// </summary>
         internal bool SupportsMultipleTokenTypes { get; init; }
@@ -223,6 +223,22 @@ namespace System.Text.Json.Serialization
         /// Gets a schema from the type being converted
         /// </summary>
         internal virtual JsonSchema? GetSchema(JsonNumberHandling numberHandling) => null;
+
+        /// <summary>
+        /// Gets the set of leading JSON value shapes that this converter can read
+        /// for the given <paramref name="numberHandling"/>. Returning <see cref="JsonValueType.None"/> means
+        /// the converter does not advertise its supported values; internal converter callers may
+        /// fall back to a default based on <see cref="ConverterStrategy"/>. Used by union-type dispatch to build a
+        /// value-shape-to-case map without re-walking type metadata. Mirrors <see cref="GetSchema"/>.
+        /// </summary>
+        /// <remarks>
+        /// When adding or changing an override on a built-in converter (under
+        /// <c>Serialization/Converters/Value/</c>), also update
+        /// <c>gen/JsonSourceGenerator.Parser.cs::GetSupportedJsonValueTypes</c> so the source
+        /// generator's union ambiguity diagnostic (SYSLIB1227) agrees with the runtime
+        /// union value-shape map.
+        /// </remarks>
+        internal virtual JsonValueType GetSupportedJsonValueTypes(JsonNumberHandling numberHandling) => JsonValueType.None;
 
         // Whether a type (ConverterStrategy.Object) is deserialized using a parameterized constructor.
         internal virtual bool ConstructorIsParameterized { get; }
