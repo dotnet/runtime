@@ -3,8 +3,11 @@
 //
 
 #include <fcall.h>
-#include "../../vm/gchelpers.inl"
-#include "../../vm/gcheaputilities.h"
+
+#ifndef FEATURE_NATIVEAOT
+#include "gchelpers.inl"
+#include "gcheaputilities.h"
+#endif
 
 #ifdef FEATURE_MULTITHREADING
 #error The current assembly implementation of write barriers assumes single-threaded Wasm

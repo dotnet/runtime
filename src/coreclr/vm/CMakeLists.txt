@@ -655,9 +655,6 @@ if (FEATURE_PORTABLE_HELPERS)
     )
 
     if(CLR_CMAKE_TARGET_ARCH_WASM)
-        list(APPEND VM_SOURCES_WKS
-            ${PORTABLE_SOURCES_DIR}/../wasm/writebarriers.cpp
-        )
     else()
         list(APPEND VM_SOURCES_WKS
             ${PORTABLE_SOURCES_DIR}/WriteBarriers.cpp
@@ -950,6 +947,7 @@ elseif(CLR_CMAKE_TARGET_ARCH_WASM)
         ${ARCH_SOURCES_DIR}/entrypoints.h
     )
     set(VM_SOURCES_WKS_ARCH
+        ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/writebarriers.cpp
         ${ARCH_SOURCES_DIR}/calldescrworkerwasm.cpp
         ${ARCH_SOURCES_DIR}/profiler.cpp
         ${ARCH_SOURCES_DIR}/helpers.cpp
