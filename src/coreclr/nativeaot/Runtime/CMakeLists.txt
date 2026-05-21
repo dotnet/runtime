@@ -149,14 +149,21 @@ else()
     include_directories($ENV{EMSCRIPTEN/system/lib/libcxxabi/include})
   endif()
 
-  # Disable building _Unwind_XXX style APIs of libunwind, since we don't use them.
-  add_definitions(-D_LIBUNWIND_DISABLE_ZERO_COST_APIS=1)
-
-  # Compile unwinding only for the current compilation target architecture
-  add_definitions(-D_LIBUNWIND_IS_NATIVE_ONLY)
+  if(CLR_CMAKE_TARGET_APPLE OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_OPENBSD OR CLR_CMAKE_TARGET_HAIKU)
+    set(CLR_CMAKE_USE_SYSTEM_LIBUNWIND 1)
+  endif()
 
   if(CLR_CMAKE_TARGET_HAIKU)
     add_definitions(-DPT_GNU_EH_FRAME=PT_EH_FRAME)
+  endif()
+
+  if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
+    include_directories(${CLR_SRC_NATIVE_DIR}/external/libunwind/include)
+    include_directories(${CLR_SRC_NATIVE_DIR}/external/libunwind/include/tdep)
+    include_directories(${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind/include)
+    include_directories(${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind/include/tdep)
+
+    add_subdirectory(${CLR_SRC_NATIVE_DIR}/external/libunwind_extras ${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind)
   endif()
 
   list(APPEND COMMON_RUNTIME_SOURCES
@@ -177,10 +184,9 @@ else()
     unix/UnixNativeCodeManager.cpp
   )
 
-  include(${CLR_SRC_NATIVE_DIR}/external/llvm-libunwind.cmake)
-
-  list(APPEND FULL_RUNTIME_SOURCES ${LLVM_LIBUNWIND_SOURCES})
-  set(RUNTIME_SOURCES_ARCH_ASM ${LLVM_LIBUNWIND_ASM_SOURCES})
+  if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
+    list(APPEND FULL_RUNTIME_SOURCES $<TARGET_OBJECTS:libunwind>)
+  endif()
 
   set(ASM_SUFFIX S)
 endif()
