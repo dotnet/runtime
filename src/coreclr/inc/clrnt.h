@@ -372,11 +372,11 @@ RtlVirtualUnwindWithSpForPacSign(
     IN ULONG HandlerType,
     IN ULONG64 ImageBase,
     IN ULONG64 ControlPc,
-    IN PRUNTIME_FUNCTION FunctionEntry,
-    IN OUT PCONTEXT ContextRecord,
+    IN PT_RUNTIME_FUNCTION FunctionEntry,
+    IN OUT PT_CONTEXT ContextRecord,
     OUT PVOID *HandlerData,
     OUT PULONG64 EstablisherFrame,
-    IN OUT PKNONVOLATILE_CONTEXT_POINTERS ContextPointers OPTIONAL,
+    IN OUT PT_KNONVOLATILE_CONTEXT_POINTERS ContextPointers OPTIONAL,
     OUT PULONG64 SpForPacSign OPTIONAL
     );
 
