@@ -345,8 +345,9 @@ jobs:
 
           helixQueues: ${{ parameters.helixQueues }}
 
-          ${{ if eq(join('', parameters.helixQueues), '') }}:
-            condition: false
+          # Temporarily skip executing BXL tests on Helix while validating cache behavior
+          # for a successful BXL test-build-only job.
+          condition: false
 
           publishTestResults: true
           timeoutPerTestCollectionInMinutes: $(timeoutPerTestCollectionInMinutes)
