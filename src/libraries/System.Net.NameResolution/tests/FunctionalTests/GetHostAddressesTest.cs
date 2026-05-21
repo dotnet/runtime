@@ -256,6 +256,7 @@ namespace System.Net.NameResolution.Tests
 
         // RFC 6761: "*.localhost" subdomains should respect AddressFamily parameter.
         // OS resolver is tried first, falling back to plain "localhost" resolution.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/128371", TestPlatforms.Android)]
         [Theory]
         [InlineData(AddressFamily.InterNetwork)]
         [InlineData(AddressFamily.InterNetworkV6)]
