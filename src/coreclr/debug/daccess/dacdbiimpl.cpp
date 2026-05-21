@@ -4499,9 +4499,12 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetThreadHandle(VMPTR_Thread vmTh
     HRESULT hr = S_OK;
     EX_TRY
     {
-
+#ifdef TARGET_WINDOWS
         Thread * pThread = vmThread.GetDacPtr();
         *pRetVal = pThread->GetThreadHandle();
+#else
+        *pRetVal = NULL;
+#endif // TARGET_WINDOWS
     }
     EX_CATCH_HRESULT(hr);
     return hr;
