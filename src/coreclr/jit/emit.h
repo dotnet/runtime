@@ -2435,7 +2435,7 @@ protected:
 
         uint8_t v128Bytes[16];
 
-        void idV128Const(const uint8_t* bytes)
+        void idV128Const(const uint8_t bytes[16])
         {
             assert(bytes != nullptr);
             memcpy(v128Bytes, bytes, 16);

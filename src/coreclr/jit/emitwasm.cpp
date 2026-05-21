@@ -420,8 +420,22 @@ const uint8_t* emitter::emitGetV128ImmValue(const instrDesc* id)
 
 uint8_t emitter::emitGetLaneImmValue(const instrDesc* id)
 {
-    assert(id->idIsMemargLaneImm());
-    return static_cast<const instrDescMemargLane*>(id)->lane;
+    if (id->idIsMemargLaneImm())
+    {
+        return static_cast<const instrDescMemargLane*>(id)->lane;
+    }
+    else if (id->idInsFmt() == IF_LANE)
+    {
+        cnsval_size_t lane = emitGetInsSC(id);
+        assert(FitsIn<uint8_t>(lane));
+        return static_cast<uint8_t>(lane);
+    }
+    else
+    {
+        noway_assert(!"Unexpected instruction format for lane immediate");
+    }
+
+    return 255;
 }
 
 //------------------------------------------------------------------------
@@ -435,7 +449,7 @@ uint8_t emitter::emitGetLaneImmValue(const instrDesc* id)
 //   ins   - instruction (currently used with INS_v128_const and INS_i8x16_shuffle)
 //   bytes - pointer to 16 bytes of constant data
 //
-void emitter::emitIns_V128Imm(instruction ins, const uint8_t* bytes)
+void emitter::emitIns_V128Imm(instruction ins, const uint8_t bytes[16])
 {
     assert(bytes != nullptr);
     instrDescV128Imm* id  = static_cast<instrDescV128Imm*>(emitAllocAnyInstr(sizeof(instrDescV128Imm), EA_16BYTE));
@@ -1068,9 +1082,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_LANE:
         {
             dst += emitOutputOpcode(dst, ins);
-            cnsval_size_t laneIdx = emitGetInsSC(id);
-            assert(FitsIn<uint8_t>(laneIdx));
-            dst += emitOutputByte(dst, static_cast<uint8_t>(laneIdx));
+            uint8_t laneIdx = emitGetLaneImmValue(id);
+            dst += emitOutputByte(dst, laneIdx);
             break;
         }
         case IF_MEMARG_LANE:
@@ -1373,20 +1386,17 @@ void emitter::emitDispIns(
         case IF_V128:
         {
             const uint8_t* imm = emitGetV128ImmValue(id);
-            printf(" 0x");
-            for (int i = 15; i >= 0; i--)
+            for (int i = 0; i < 16; i++)
             {
-                printf("%02x", imm[i]);
+                printf(" 0x%02x", imm[i]);
             }
         }
         break;
 
         case IF_LANE:
         {
-            cnsval_size_t lane = emitGetInsSC(id);
-            assert(FitsIn<uint8_t>(lane));
-
-            printf(" %u", (uint8_t)lane);
+            uint8_t lane = emitGetLaneImmValue(id);
+            printf(" [%u]", (uint8_t)lane);
         }
         break;
 
@@ -1398,7 +1408,7 @@ void emitter::emitDispIns(
             dispLclVarInfoIfAny();
 
             uint8_t lane = emitGetLaneImmValue(id);
-            printf(" %u", (uint8_t)lane);
+            printf(" [%u]", (uint8_t)lane);
         }
         break;
 
