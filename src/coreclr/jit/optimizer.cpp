@@ -1850,6 +1850,53 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
         return false;
     }
 
+    // If the loop is already bottom-tested (has a BBJ_COND latch that exits the loop),
+    // there is no need to invert. Also handle the canonical multi-backedge case, where
+    // optCanonicalizeBackedges has installed a BBJ_ALWAYS latch whose in-loop predecessors
+    // are the original bottom tests.
+    //
+    auto isExitingCondLatch = [&](BasicBlock* block) -> bool {
+        if ((block == condBlock) || !block->KindIs(BBJ_COND))
+        {
+            return false;
+        }
+        for (FlowEdge* const exitEdge : loop->ExitEdges())
+        {
+            if (exitEdge->getSourceBlock() == block)
+            {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    for (FlowEdge* const backEdge : loop->BackEdges())
+    {
+        BasicBlock* const latch = backEdge->getSourceBlock();
+
+        if (isExitingCondLatch(latch))
+        {
+            JITDUMP("No loop-inversion for " FMT_LP "; latch " FMT_BB " already makes it bottom-tested\n",
+                    loop->GetIndex(), latch->bbNum);
+            return false;
+        }
+
+        if (latch->KindIs(BBJ_ALWAYS) && latch->isEmpty())
+        {
+            for (FlowEdge* const predEdge : latch->PredEdges())
+            {
+                BasicBlock* const pred = predEdge->getSourceBlock();
+                if (loop->ContainsBlock(pred) && isExitingCondLatch(pred))
+                {
+                    JITDUMP("No loop-inversion for " FMT_LP "; predecessor " FMT_BB " of canonical latch " FMT_BB
+                            " already makes it bottom-tested\n",
+                            loop->GetIndex(), pred->bbNum, latch->bbNum);
+                    return false;
+                }
+            }
+        }
+    }
+
     JITDUMP("Condition in block " FMT_BB " of loop " FMT_LP " is a candidate for duplication to invert the loop\n",
             condBlock->bbNum, loop->GetIndex());
 
