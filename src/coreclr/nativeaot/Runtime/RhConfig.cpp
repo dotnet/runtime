@@ -130,6 +130,36 @@ bool RhConfig::Environment::TryGetStringValue(const char* name, char** value)
 extern "C" RhConfig::Config g_compilerEmbeddedSettingsBlob;
 extern "C" RhConfig::Config g_compilerEmbeddedKnobsBlob;
 
+bool RhConfig::ReadStringConfigValue(_In_z_ const char* name, const char** pValue)
+{
+    char *envValue = nullptr;
+    if (Environment::TryGetStringValue(name, &envValue))
+    {
+        *pValue = envValue;
+        return true;
+    }
+
+    const char *embeddedValue = nullptr;
+    if (GetEmbeddedVariable(&g_compilerEmbeddedSettingsBlob, name, true, &embeddedValue))
+    {
+        char* strCopy = new (nothrow) char[strlen(embeddedValue) + 1];
+        if (strCopy != nullptr)
+        {
+            strcpy(strCopy, embeddedValue);
+            *pValue = strCopy;
+
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void RhConfig::FreeStringConfigValue(const char* value)
+{
+    delete[] value;
+}
+
 bool RhConfig::ReadConfigValue(_In_z_ const char *name, uint64_t* pValue, bool decimal)
 {
     if (Environment::TryGetIntegerValue(name, pValue, decimal))
@@ -141,6 +171,24 @@ bool RhConfig::ReadConfigValue(_In_z_ const char *name, uint64_t* pValue, bool d
     {
         *pValue = strtoull(embeddedValue, NULL, decimal ? 10 : 16);
         return true;
+    }
+
+    return false;
+}
+
+bool RhConfig::ReadKnobStringValue(_In_z_ const char *name, const char** pValue)
+{
+    const char *embeddedValue = nullptr;
+    if (GetEmbeddedVariable(&g_compilerEmbeddedKnobsBlob, name, false, &embeddedValue))
+    {
+        char* strCopy = new (nothrow) char[strlen(embeddedValue) + 1];
+        if (strCopy != nullptr)
+        {
+            strcpy(strCopy, embeddedValue);
+            *pValue = strCopy;
+
+            return true;
+        }
     }
 
     return false;
