@@ -7,8 +7,8 @@ using System.Text;
 using ILCompiler;
 using ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
-using Internal.Runtime.CallingConvention;
-using ArgIterator = Internal.Runtime.CallingConvention.ArgIterator;
+using Internal.CallingConvention;
+using ArgIterator = Internal.CallingConvention.ArgIterator;
 
 using Internal.TypeSystem;
 

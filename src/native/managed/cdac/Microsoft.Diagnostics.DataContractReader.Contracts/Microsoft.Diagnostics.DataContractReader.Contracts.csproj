@@ -24,5 +24,12 @@
     <Compile Include="..\..\..\..\coreclr\tools\aot\ILCompiler.Reflection.ReadyToRun\NativeReader.cs" Link="Common\NativeReader.cs" />
     <Compile Include="..\..\..\..\coreclr\tools\aot\ILCompiler.Reflection.ReadyToRun\NibbleReader.cs" Link="Common\NibbleReader.cs" />
     <Compile Include="..\..\..\..\coreclr\tools\aot\ILCompiler.Reflection.ReadyToRun\NativeArray.cs" Link="Common\NativeArray.cs" />
+    <Compile Include="..\..\..\..\coreclr\tools\Common\CallingConvention\ArgIterator.cs" Link="Common\CallingConvention\ArgIterator.cs" />
+    <Compile Include="..\..\..\..\coreclr\tools\Common\CallingConvention\TransitionBlock.cs" Link="Common\CallingConvention\TransitionBlock.cs" />
+    <Compile Include="..\..\..\..\coreclr\tools\Common\CallingConvention\ITypeHandle.cs" Link="Common\CallingConvention\ITypeHandle.cs" />
+    <Compile Include="..\..\..\..\coreclr\tools\Common\CallingConvention\SystemVAmd64PassingDescriptor.cs" Link="Common\CallingConvention\SystemVAmd64PassingDescriptor.cs" />
+    <Compile Include="..\..\..\..\coreclr\tools\Common\CallingConvention\FpStructInRegistersInfo.cs" Link="Common\CallingConvention\FpStructInRegistersInfo.cs" />
+    <Compile Include="..\..\..\..\coreclr\tools\Common\Internal\Runtime\CorConstants.cs" Link="Common\CallingConvention\CorConstants.cs" />
+    <Compile Include="..\..\..\..\coreclr\tools\Common\TypeSystem\Common\TargetArchitecture.cs" Link="Common\CallingConvention\TargetArchitecture.cs" />
   </ItemGroup>
 </Project>

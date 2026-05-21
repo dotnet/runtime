@@ -7,8 +7,8 @@ using System.Diagnostics;
 using System.Linq;
 using System.Xml.Linq;
 using Internal.TypeSystem;
-using Internal.Runtime.CallingConvention;
-using ArgIterator = Internal.Runtime.CallingConvention.ArgIterator;
+using Internal.CallingConvention;
+using ArgIterator = Internal.CallingConvention.ArgIterator;
 
 // The GCRef map is used to encode GC type of arguments for callsites. Logically, it is sequence <pos, token> where pos is
 // position of the reference in the stack frame and token is type of GC reference (one of GCREFMAP_XXX values).
@@ -65,12 +65,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _bits = 0;
             _pos = 0;
             Builder = new ObjectDataBuilder(target, relocsOnly);
-            _transitionBlock = TransitionBlock.FromTarget(target);
+            _transitionBlock = TransitionBlock.FromTarget(target.Architecture,
+                target.OperatingSystem == TargetOS.Windows,
+                target.IsApplePlatform,
+                target.Abi == TargetAbi.NativeAotArmel);
         }
 
         internal static (ArgIterator, TransitionBlock) BuildArgIterator(MethodSignature signature, TypeSystemContext context, bool methodRequiresInstArg = false, bool isUnboxingStub = false, bool methodIsArrayAddressMethod = false, bool methodIsStringConstructor = false, bool methodIsAsyncCall = false)
         {
-            TransitionBlock transitionBlock = TransitionBlock.FromTarget(context.Target);
+            TransitionBlock transitionBlock = TransitionBlock.FromTarget(context.Target.Architecture,
+                context.Target.OperatingSystem == TargetOS.Windows,
+                context.Target.IsApplePlatform,
+                context.Target.Abi == TargetAbi.NativeAotArmel);
 
             bool hasThis = (signature.Flags & MethodSignatureFlags.Static) == 0;
 
@@ -293,7 +299,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 if (argDest.IsStructPassedInRegs())
                 {
-                    argDest.ReportPointersFromStructInRegisters(type, delta, frame);
+                    argDest.ReportPointersFromStructInRegisters(new TypeHandle(type), delta, frame);
                     return;
                 }
             }

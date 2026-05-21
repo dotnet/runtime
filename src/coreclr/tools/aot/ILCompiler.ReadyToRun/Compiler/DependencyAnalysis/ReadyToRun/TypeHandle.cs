@@ -8,7 +8,7 @@ using Internal.JitInterface;
 using Internal.TypeSystem;
 using Internal.CorConstants;
 using Internal.Runtime;
-using Internal.Runtime.CallingConvention;
+using Internal.CallingConvention;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
