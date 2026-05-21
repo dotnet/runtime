@@ -12,20 +12,12 @@ namespace System.Runtime.CompilerServices
     {
         private sealed unsafe class TaskContinuation : Continuation
         {
-            // Currently all continuations are expected to capture and restore
-            // ExecutionContext, even though we do not actually need it here.
-            public ExecutionContext? ExecutionContext;
             internal Task? Task;
             private delegate*<Task, ref byte, void> _getResult;
 
             public TaskContinuation()
             {
                 ResumeInfo = (ResumeInfo*)Unsafe.AsPointer(in TaskContinuationResume.ResumeInfo);
-
-                EncodeFieldOffsetInFlags(
-                    ref Unsafe.As<ExecutionContext?, byte>(ref ExecutionContext),
-                    ContinuationFlags.ExecutionContextIndexFirstBit,
-                    ContinuationFlags.ExecutionContextIndexNumBits);
             }
 
             public void GetResult(ref byte returnValue)
@@ -78,7 +70,6 @@ namespace System.Runtime.CompilerServices
                 {
                     var taskCont = (TaskContinuation)cont;
                     taskCont.Next = null;
-                    taskCont.ExecutionContext = null;
                     t_runtimeAsyncAwaitState.CachedTaskContinuation = taskCont;
 
                     taskCont.GetResult(ref result);
