@@ -11,6 +11,7 @@
 #include "signalsafeformatter.h"
 
 #include "pal.h"
+#include "volatile.h"
 
 #include <fcntl.h>
 #include <errno.h>
@@ -429,7 +430,7 @@ private:
 #endif
 };
 
-static InProcCrashReporter* volatile s_reporter = nullptr;
+static InProcCrashReporter* s_reporter = nullptr;
 
 class CrashReportHelpers
 {
@@ -702,14 +703,14 @@ InProcCrashReporter::EmitThreads(
 InProcCrashReporter*
 InProcCrashReporter::GetInstance()
 {
-    return s_reporter;
+    return VolatileLoad(&s_reporter);
 }
 
 bool
 InProcCrashReporter::InitializeInstance(
     const InProcCrashReporterSettings& settings)
 {
-    if (s_reporter != nullptr)
+    if (VolatileLoad(&s_reporter) != nullptr)
     {
         return true;
     }
