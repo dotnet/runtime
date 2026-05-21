@@ -121,6 +121,8 @@ public interface IRuntimeTypeSystem : IContract
 
     // True if the MethodTable is the sentinel value associated with unallocated space in the managed heap
     bool IsFreeObjectMethodTable(TypeHandle typeHandle) => throw new NotImplementedException();
+    // True if the MethodTable is the System.Object MethodTable (g_pObjectClass)
+    bool IsObject(TypeHandle typeHandle) => throw new NotImplementedException();
     bool IsString(TypeHandle typeHandle) => throw new NotImplementedException();
     bool IsObjRef(TypeHandle typeHandle) => throw new NotImplementedException();
     // True if the MethodTable represents a type that contains managed references

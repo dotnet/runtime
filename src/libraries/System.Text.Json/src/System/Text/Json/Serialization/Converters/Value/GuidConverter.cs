@@ -32,5 +32,7 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override JsonSchema? GetSchema(JsonNumberHandling numberHandling) =>
             new() { Type = JsonSchemaType.String, Format = "uuid" };
+
+        internal override JsonValueType GetSupportedJsonValueTypes(JsonNumberHandling _) => JsonValueType.String;
     }
 }

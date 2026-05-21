@@ -1067,6 +1067,8 @@ CDAC_TYPE_BEGIN(DebuggerEval)
 CDAC_TYPE_SIZE(sizeof(DebuggerEval))
 CDAC_TYPE_FIELD(DebuggerEval, EXTERN_TYPE(Context), TargetContext, offsetof(DebuggerEval, m_context))
 CDAC_TYPE_FIELD(DebuggerEval, T_BOOL, EvalUsesHijack, offsetof(DebuggerEval, m_evalUsesHijack))
+CDAC_TYPE_FIELD(DebuggerEval, T_UINT32, MethodToken, offsetof(DebuggerEval, m_methodToken))
+CDAC_TYPE_FIELD(DebuggerEval, T_POINTER, AssemblyPtr, offsetof(DebuggerEval, m_pAssembly))
 CDAC_TYPE_END(DebuggerEval)
 #endif // DEBUGGING_SUPPORTED
 

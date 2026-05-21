@@ -18,6 +18,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     private const int TYPE_MASK_OFFSET = 27; // offset of type in field desc flags2
     private readonly Target _target;
     private readonly TargetPointer _freeObjectMethodTablePointer;
+    private readonly TargetPointer _objectMethodTablePointer;
     private readonly TargetPointer _continuationMethodTablePointer;
     private readonly ulong _methodDescAlignment;
     private readonly TypeValidation _typeValidation;
@@ -433,6 +434,8 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         _target = target;
         _freeObjectMethodTablePointer = target.ReadPointer(
             target.ReadGlobalPointer(Constants.Globals.FreeObjectMethodTable));
+        _objectMethodTablePointer = target.ReadPointer(
+            target.ReadGlobalPointer(Constants.Globals.ObjectMethodTable));
         _continuationMethodTablePointer = target.ReadPointer(
             target.ReadGlobalPointer(Constants.Globals.ContinuationMethodTable));
         _methodDescAlignment = target.ReadGlobal<ulong>(Constants.Globals.MethodDescAlignment);
@@ -442,6 +445,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     }
 
     internal TargetPointer FreeObjectMethodTablePointer => _freeObjectMethodTablePointer;
+    internal TargetPointer ObjectMethodTablePointer => _objectMethodTablePointer;
     internal TargetPointer ContinuationMethodTablePointer => _continuationMethodTablePointer;
 
     internal ulong MethodDescAlignment => _methodDescAlignment;
@@ -559,6 +563,8 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
 
     public bool IsFreeObjectMethodTable(TypeHandle typeHandle) => FreeObjectMethodTablePointer == typeHandle.Address;
+
+    public bool IsObject(TypeHandle typeHandle) => ObjectMethodTablePointer != TargetPointer.Null && ObjectMethodTablePointer == typeHandle.Address;
 
     public bool IsString(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.IsString;
     public bool IsObjRef(TypeHandle typeHandle)
