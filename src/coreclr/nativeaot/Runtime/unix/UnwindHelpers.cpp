@@ -134,13 +134,14 @@ struct Registers_REGDISPLAY : REGDISPLAY
 {
     inline uint64_t getRegister(int regNum) const
     {
+        if (regNum == UNW_REG_IP || regNum == UNW_X86_64_RIP)
+            return IP;
+
+        if (regNum == UNW_REG_SP || regNum == UNW_X86_64_RSP)
+            return SP;
+
         switch (regNum)
         {
-        case UNW_REG_IP:
-        case UNW_X86_64_RIP:
-            return IP;
-        case UNW_REG_SP:
-            return SP;
         case UNW_X86_64_RAX:
             return *pRax;
         case UNW_X86_64_RDX:
@@ -155,8 +156,6 @@ struct Registers_REGDISPLAY : REGDISPLAY
             return *pRdi;
         case UNW_X86_64_RBP:
             return *pRbp;
-        case UNW_X86_64_RSP:
-            return SP;
         case UNW_X86_64_R8:
             return *pR8;
         case UNW_X86_64_R9:
@@ -181,15 +180,20 @@ struct Registers_REGDISPLAY : REGDISPLAY
 
     inline void setRegister(int regNum, uint64_t value, uint64_t location)
     {
-        switch (regNum)
+        if (regNum == UNW_REG_IP || regNum == UNW_X86_64_RIP)
         {
-        case UNW_REG_IP:
-        case UNW_X86_64_RIP:
             IP = value;
             return;
-        case UNW_REG_SP:
+        }
+
+        if (regNum == UNW_REG_SP || regNum == UNW_X86_64_RSP)
+        {
             SP = value;
             return;
+        }
+
+        switch (regNum)
+        {
         case UNW_X86_64_RAX:
             pRax = (PTR_uintptr_t)location;
             return;
@@ -210,9 +214,6 @@ struct Registers_REGDISPLAY : REGDISPLAY
             return;
         case UNW_X86_64_RBP:
             pRbp = (PTR_uintptr_t)location;
-            return;
-        case UNW_X86_64_RSP:
-            SP = value;
             return;
         case UNW_X86_64_R8:
             pR8 = (PTR_uintptr_t)location;
@@ -1157,14 +1158,15 @@ inline bool Registers_REGDISPLAY::validFloatRegister(int num) const {
 }
 
 inline uint64_t Registers_REGDISPLAY::getRegister(int regNum) const {
-    switch (regNum) {
-    case UNW_REG_IP:
+    if (regNum == UNW_REG_IP)
         return IP;
+
+    if (regNum == UNW_REG_SP || regNum == UNW_RISCV_X2)
+        return SP;
+
+    switch (regNum) {
     case UNW_RISCV_X1:
         return *pRA;
-    case UNW_REG_SP:
-    case UNW_RISCV_X2:
-        return SP;
     case UNW_RISCV_X3:
         return *pGP;
     case UNW_RISCV_X4:
@@ -1209,16 +1211,21 @@ inline uint64_t Registers_REGDISPLAY::getRegister(int regNum) const {
 
 void Registers_REGDISPLAY::setRegister(int regNum, uint64_t value, uint64_t location)
 {
-    switch (regNum) {
-    case UNW_REG_IP:
+    if (regNum == UNW_REG_IP)
+    {
         IP = (uintptr_t)value;
-        break;
+        return;
+    }
+
+    if (regNum == UNW_REG_SP || regNum == UNW_RISCV_X2)
+    {
+        SP = (uintptr_t)value;
+        return;
+    }
+
+    switch (regNum) {
     case UNW_RISCV_X1:
         pRA = (PTR_uintptr_t)location;
-        break;
-    case UNW_REG_SP:
-    case UNW_RISCV_X2:
-        SP = (uintptr_t)value;
         break;
     case UNW_RISCV_X3:
         pGP = (PTR_uintptr_t)location;
