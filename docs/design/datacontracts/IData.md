@@ -20,19 +20,28 @@ pair is materialized at most once per target session.
 
 ## Authoring an IData class
 
-There are two ways to write an `IData<T>` implementation:
+There are three approaches to writing an `IData<T>` implementation,
+listed in order of preference:
 
-1. **Source-generated** -- recommended for the common case. The user
-   declares only the C# property surface, decorates it with cdac
-   attributes, and the source generator emits the constructor,
-   `IData<T>.Create`, optional `TypeHandle`, optional `Write{Name}`
-   write-back methods, and the `Address` property.
-2. **Hand-written** -- used when the class needs logic that doesn't fit
-   the declarative attribute surface (variable-count loops, raw byte
-   buffers from descriptor-driven sizes, multiple `Target.TypeInfo`
-   lookups in one constructor). A class can also be partially generated
-   + partially hand-written by combining `[CdacType]` attributes with the
-   `partial void OnInit(Target, TargetPointer)` escape hatch.
+1. **Source-generated** (recommended) -- declare the C# property surface,
+   decorate it with cdac attributes, and the source generator emits the
+   constructor, `IData<T>.Create`, optional `TypeHandle`, optional
+   `Write{Name}` write-back methods, static field accessors, and the
+   `Address` property. Use this for all new types unless the declarative
+   surface cannot express the required logic.
+
+2. **Source-generated with `OnInit`** -- when the declarative attributes
+   cover most of the type but a few fields need custom logic (e.g.
+   stripping a tag bit from a pointer, reading from a second descriptor),
+   add a `partial void OnInit(Target target, TargetPointer address)`
+   implementation. The generator calls it at the end of the constructor
+   after all `[Field]` reads are complete.
+
+3. **Hand-written** -- used only when the class needs logic that cannot
+   fit the attribute surface even with `OnInit` (variable-count loops,
+   raw byte buffers from descriptor-driven sizes, multiple
+   `Target.TypeInfo` lookups in one constructor). These are rare and
+   should be kept to a minimum.
 
 This document describes the source-generated path. Hand-written classes
 follow the same `IData<T>` contract but provide all the read/write logic
@@ -49,17 +58,19 @@ analyzer. It scans for classes carrying `[CdacType]` and emits a
 * A `public TargetPointer Address { get; }` property (always emitted --
   the instance remembers the address it was constructed from).
 * A `public {Name}(Target target, TargetPointer address)` constructor
-  that does the descriptor lookup and per-field reads.
+  that resolves the type name against native descriptors and managed
+  metadata, then does per-field reads through the `LayoutPair` cascade.
 * A `static {Name} IData<{Name}>.Create(...) => new {Name}(target, address);`
   one-liner.
-* For managed types: a `private const string FullyQualifiedName = "..."`
-  and `public static TypeHandle TypeHandle(Target target)` accessor.
+* A `private static readonly string[] _typeNames = { ... }` array
+  holding the candidate type names from `[CdacType]`.
+* For types with `HasTypeHandle = true`: a
+  `public static TypeHandle TypeHandle(Target target)` accessor.
 * For each `[Field(Writable = true)]` property: a
   `public void Write{Name}(Target target, T value)` method.
-* For each `[StaticAddress]` / `[StaticReference]` /
-  `[ThreadStaticAddress]` partial method declaration in the user
-  source: a corresponding implementation that routes through
-  `ManagedTypeSource`.
+* For each `[StaticAddress]` / `[StaticReference]` partial method
+  declaration: a corresponding implementation that tries native globals
+  first (`TypeName.fieldName`), then falls back to `ManagedTypeSource`.
 * A `partial void OnInit(Target target, TargetPointer address);`
   declaration plus a call to it at the end of the constructor.
 
@@ -89,15 +100,23 @@ All attributes live in the root
 
 ### Class-level: `[CdacType]`
 
-Marks a class for source generation. Choose **one** descriptor source:
+Marks a class for source generation. The constructor accepts any number
+of candidate type names (`params string[] names`). At runtime the
+cascade tries each name against native data descriptors first, then
+managed metadata. The first match wins.
 
-| Constructor / property | Meaning |
-|---|---|
-| `[CdacType("DescriptorName")]` | Native cdac descriptor. The recommended form is `[CdacType(nameof(DataType.X))]`, which gives compile-time validation against the `DataType` enum while still passing a plain string to the attribute. |
-| `[CdacType]` (parameterless) | No descriptor lookup at all. Use with `[RawOffset]` properties or `OnInit` only. |
-| `[CdacType(ManagedFullName = "System.X.Y")]` | Pure managed type; layout from `ManagedTypeSource`. Generator emits a `TypeHandle` accessor and applies the standard `address + Object.Size` offset to access instance fields. |
-| `[CdacType(nameof(DataType.X), ManagedFullName = "System.X.Y")]` | Both sources -- triggers **per-field fallback**. Each `[Field]` resolves against the native descriptor first; if a given field is missing there, the read falls back to the managed-metadata layout. The class also exposes a `TypeHandle(Target)` accessor. Used for types where the runtime is migrating between sources (or wants to be resilient to the cdac descriptor not covering every field yet). See [Fallback](#fallback) below. |
-| `IsValueType = true` | (Managed only.) The class wraps an inline value type with no object header. The generator reads fields starting at `address` rather than `address + Object.Size`. |
+```csharp
+// One or more candidate type names.
+[CdacType("MethodTable")]
+[CdacType("Lock", "System.Threading.Lock")]
+[CdacType(nameof(DataType.Exception), "System.Exception")]
+
+// Parameterless -- no descriptor lookup. Use with [RawOffset] or OnInit only.
+[CdacType]
+
+// HasTypeHandle -- emits a TypeHandle(Target) accessor.
+[CdacType("Lock", "System.Threading.Lock", HasTypeHandle = true)]
+```
 
 ### Property-level: `[Field]`
 
@@ -150,9 +169,9 @@ Parameters:
   the value back to the target's memory and updates the in-memory
   snapshot. The property must have a setter (`set` or `private set`),
   the read kind must be `Primitive` or `Bool`, and the class must use
-  a descriptor (either `[CdacType("Name")]` or
-  `[CdacType(ManagedFullName = "...")]` -- writes go through the
-  descriptor field offset regardless of which side supplied it).
+  a descriptor (`[CdacType("Name")]` or `[CdacType("Name1", "Name2")]`
+  -- writes go through the descriptor field offset regardless of which
+  side supplied it).
 
 ### Property-level: `[RawOffset]`
 
@@ -200,20 +219,24 @@ public TargetPointer Data { get; }
 
 ### Method-level (`static partial`): static-field accessors
 
-These attributes target `static partial` method declarations on a
-class with `ManagedFullName` set. The generator emits the
-implementation, routed through `ManagedTypeSource`.
+These attributes target `static partial` method declarations. The
+generator emits the implementation, which first tries native globals
+(using the naming scheme `TypeName.fieldName` for each candidate type
+name), then falls back to `ManagedTypeSource`.
 
 | Attribute | Generated method body |
 |---|---|
-| `[StaticAddress("field")]` | `target.Contracts.ManagedTypeSource.GetStaticFieldAddress(FullyQualifiedName, "field")` |
-| `[StaticReference("field")]` | `target.Contracts.ManagedTypeSource.TryGetStaticFieldAddress(...) ? target.ReadPointer(addr) : TargetPointer.Null` -- for managed object references; returns `Null` if the static slot isn't allocated. |
-| `[ThreadStaticAddress("field")]` | `target.Contracts.ManagedTypeSource.GetThreadStaticFieldAddress(FullyQualifiedName, "field", thread)` -- the method must also take a `TargetPointer thread` parameter. |
+| `[StaticAddress("field")]` | Tries `target.TryReadGlobalPointer("TypeName.field")` for each candidate type name. Falls back to `target.Contracts.ManagedTypeSource.TryGetStaticFieldAddress(name, "field")`. Returns the address of the static slot. |
+| `[StaticReference("field")]` | Same resolution as `StaticAddress`, but dereferences the result: `target.ReadPointer(addr)`. Returns `TargetPointer.Null` if neither source has the static. |
+
+> **Note:** Thread statics are not currently supported by the source
+> generator. Types that need thread-static field access should use a
+> hand-written implementation.
 
 Example:
 
 ```csharp
-[CdacType(ManagedFullName = "System.Runtime.InteropServices.ComWrappers")]
+[CdacType("ComWrappers", "System.Runtime.InteropServices.ComWrappers")]
 internal sealed partial class ComWrappers : IData<ComWrappers>
 {
     [StaticReference("s_allManagedObjectWrapperTable")]
@@ -300,18 +323,18 @@ Rules:
 * Property must have an explicit setter (`set` or `private set`, not
   `init`).
 * Class must use a descriptor source (`[CdacType("Name")]` or
-  `[CdacType(ManagedFullName = "...")]`); writes go through the
+  `[CdacType("Name1", "Name2")]`); writes go through the
   descriptor field offset regardless of which side supplied it.
 * Plain `[RawOffset]` is not writable (no descriptor entry to update).
 
 ## Fallback
 
-`[Field]` accepts one or more candidate field names. At runtime the cdac
+`[Field]` accepts one or more candidate field names. At runtime the
 generator's emitted ctor tries every candidate name against the native
 descriptor first, then every candidate name against the managed metadata.
-The first match wins. No explicit fallback flag -- if a class supplies
-both a native descriptor name and a managed full name, the runtime cascade
-naturally consults both sources.
+The first match wins. The `[CdacType]` bag of names lists candidate type
+names that are tried against both sources -- if any candidate resolves
+to a native descriptor or managed metadata, that source is used.
 
 ### Why it exists
 
@@ -326,11 +349,11 @@ at a time) without C# changes.
 
 ### How the cascade works
 
-1. The generator emits a single call to
-   `LayoutPairResolver.Resolve(target, nativeName, managedFullName, isValueType)`
-   at the top of the ctor. This returns a `LayoutPair` carrying whichever
-   of the two `Target.TypeInfo`s exists plus the managed data offset
-   (`Object.Size` for reference types, `0` for value types).
+1. The generator emits a call to
+   `TypeNameResolver.Resolve(target, typeNames)` at the top of the ctor.
+   This tries each candidate type name against the native descriptors
+   first, then against managed metadata. It returns a `LayoutPair`
+   carrying whichever `Target.TypeInfo`(s) exist.
 
 2. Every `[Field]` read goes through
    `LayoutPair.ReadField<T>(target, address, names)`. The helper walks
@@ -339,21 +362,43 @@ at a time) without C# changes.
    include the object header by convention). If no name matches against
    native (or the native descriptor wasn't available), the helper walks
    `names` against the managed `TypeInfo`'s `Fields` map; if a name
-   matches, the read is anchored at `address + ManagedDataOffset`.
+   matches, the read is anchored at `address` as well (managed offsets
+   are pre-adjusted by `ManagedTypeSource` to include the object header).
 
 3. If no name matches in either source, `LayoutPair` throws
    `InvalidOperationException` with the candidate name list in the
    message. If the resolution at step 1 found *neither* source, the
    ctor itself throws.
 
-### Cross-source: list both candidate names
+### Cross-source: same field names
+
+When native and managed metadata use the same field names, a single
+name per field is sufficient. The cascade tries the name against native
+first, then managed:
+
+```csharp
+[CdacType("Lock", "System.Threading.Lock")]
+internal sealed partial class Lock : IData<Lock>
+{
+    [Field("_owningThreadId")] public int  OwningThreadId  { get; }
+    [Field("_state")]          public uint State           { get; }
+    [Field("_recursionCount")] public uint RecursionCount  { get; }
+}
+```
+
+When the native cdac descriptor for `Lock` is present, the cascade
+finds `"_owningThreadId"` in the native type info and reads at
+`address + nativeOffset`. When only managed metadata is present, it
+finds `"_owningThreadId"` in the managed type info instead.
+
+### Cross-source: different field names
 
 When native and managed metadata disagree on field names, list both
 candidates. The cascade picks the first one that matches in either
 source:
 
 ```csharp
-[CdacType("Lock", ManagedFullName = "System.Threading.Lock")]
+[CdacType("Lock", "System.Threading.Lock")]
 internal sealed partial class Lock : IData<Lock>
 {
     [Field("OwningThreadId", "_owningThreadId")] public int  OwningThreadId  { get; }
@@ -362,25 +407,10 @@ internal sealed partial class Lock : IData<Lock>
 }
 ```
 
-When the native cdac descriptor for `Lock` is present, the cascade
-finds `"OwningThreadId"` first and reads at `address + nativeOffset`.
-When only managed metadata is present (native absent), it falls past
-the unmatched `"OwningThreadId"` on the native side, then tries
-`"_owningThreadId"` against managed and reads at
-`address + Object.Size + managedOffset`.
-
-For a class where the same name works on both sides (e.g. `Exception`
-where the native cdac descriptor uses underscore-prefixed names that
-match the managed names), a single name is enough:
-
-```csharp
-[CdacType(nameof(DataType.Exception), ManagedFullName = "System.Exception")]
-internal sealed partial class Exception : IData<Exception>
-{
-    [Field("_message")] public TargetPointer Message { get; }
-    [Field("_HResult")] public int           HResult { get; }
-}
-```
+When the native descriptor uses `"OwningThreadId"`, the cascade finds
+it first. When only managed metadata is present, it falls past the
+unmatched `"OwningThreadId"` on the native side, then tries
+`"_owningThreadId"` against managed.
 
 ### Cross-version aliases
 
@@ -404,25 +434,14 @@ all candidates are equal entries in one list, tried in declaration order.
 
 For a managed reference type the metadata's field offsets are anchored
 at the *first instance-data byte*, i.e. *after* the object header
-(MethodTable pointer + sync block index). So managed reads need
-`address + Object.Size + offset`. For a value type there is no header,
-so managed reads use `address + offset`. The native cdac descriptor's
-field offsets, by convention, already include the header for managed
-reference types -- so native reads always use `address + offset`
-directly.
+(MethodTable pointer + sync block index). `ManagedTypeSource` pre-adjusts
+these offsets by adding `Object.Size`, so all reads use `address + offset`
+uniformly -- the caller does not need to know whether the field came from
+a native descriptor or managed metadata.
 
-`LayoutPair.ManagedDataOffset` captures this:
-
-| Class form | `ManagedDataOffset` |
-|---|---|
-| `[CdacType("X")]` only (native-only) | 0 (managed side absent) |
-| `[CdacType(ManagedFullName = "X")]` (managed ref type) | `Object.Size` |
-| `[CdacType(ManagedFullName = "X", IsValueType = true)]` | 0 |
-| `[CdacType("X", ManagedFullName = "Y")]` cross-source, ref | `Object.Size` |
-
-`LayoutPair.TrySelect` applies the offset only when a field resolves
-via the managed side -- native-resolved fields always read from
-`address` directly.
+The native cdac descriptor's field offsets, by convention, already include
+the header for managed reference types -- so native reads also use
+`address + offset` directly.
 
 ### `[FieldAddress]` and `[InstanceDataStart]` under fallback
 
@@ -436,7 +455,7 @@ InstanceSize`, where `InstanceSize` is whichever side's `Size` is
 populated (native preferred when both have one). For pure native-only
 classes this reduces to `address + type.Size` exactly as before.
 
-## Worked examples
+## Examples
 
 ### Pure native descriptor read
 
@@ -469,7 +488,7 @@ internal sealed partial class Object : IData<Object>
 ### Managed type with field aliasing
 
 ```csharp
-[CdacType(ManagedFullName = "System.Threading.Lock")]
+[CdacType("System.Threading.Lock")]
 internal sealed partial class Lock : IData<Lock>
 {
     [Field("_state")]          public uint State { get; }
@@ -481,7 +500,7 @@ internal sealed partial class Lock : IData<Lock>
 ### Hybrid native + managed
 
 ```csharp
-[CdacType(nameof(DataType.Exception), ManagedFullName = "System.Exception")]
+[CdacType(nameof(DataType.Exception), "System.Exception")]
 internal sealed partial class Exception : IData<Exception>
 {
     [Field("_message")]          public TargetPointer Message { get; }
@@ -498,7 +517,7 @@ layout).
 ### Inline value type (no object header)
 
 ```csharp
-[CdacType(ManagedFullName = "...+Entry", IsValueType = true)]
+[CdacType("...+Entry")]
 internal sealed partial class ConditionalWeakTableEntry : IData<ConditionalWeakTableEntry>
 {
     [Field("HashCode")] public int HashCode { get; }
@@ -519,10 +538,10 @@ internal sealed partial class ImageDosHeader : IData<ImageDosHeader>
 }
 ```
 
-### Statics-only managed type
+### Statics-only type
 
 ```csharp
-[CdacType(ManagedFullName = "System.Runtime.InteropServices.ComWrappers")]
+[CdacType("ComWrappers", "System.Runtime.InteropServices.ComWrappers")]
 internal sealed partial class ComWrappers : IData<ComWrappers>
 {
     [StaticReference("s_allManagedObjectWrapperTable")]
@@ -574,7 +593,7 @@ internal sealed partial class RangeSectionFragment : IData<RangeSectionFragment>
 }
 ```
 
-## Good practices
+## Good practices for authoring IData classes
 
 The IData abstraction works best when classes are kept as **dumb data
 views** -- one C# property per descriptor field, no derived logic, no
@@ -583,7 +602,7 @@ keeps the per-`Create` cost predictable, the descriptor surface
 visible at the property level, and the consumer in control of what
 gets materialized.
 
-### Don't put algorithm logic in IData classes
+### Avoid algorithm logic in IData classes
 
 The constructor (and `OnInit`) should be limited to reads from the
 target -- enough to populate the declared properties. Derived
@@ -624,44 +643,7 @@ Expression-bodied properties for *trivial* projections of an already-
 read field (e.g. `bool IsAlive => ReferenceCount != 0;`) are fine --
 they don't add target reads or hide work.
 
-### Materialize cached instances through `GetOrAdd`, never `new`
-
-IData instances are cached by `(T, address)` in
-`target.ProcessedData`. Materialize them through
-`target.ProcessedData.GetOrAdd<T>(addr)`, which returns the cached
-instance if one exists and otherwise constructs and caches a fresh
-one. Direct construction (`new T(target, addr)`) bypasses the cache:
-
-* It pays the full set of descriptor field reads on every call rather
-  than once per `(T, address)` pair per target session.
-* For classes with `[Field(Writable = true)]`, a subsequent
-  `Write{Name}` call on the standalone instance updates only that
-  instance's in-memory snapshot. Other callers that hold the cached
-  instance continue to see the pre-write value, silently diverging
-  from the target.
-
-Avoid:
-
-```csharp
-void IThread.SetDebuggerControlledThreadState(TargetPointer thread, ...)
-{
-    // BAD: fresh ctor, cached instance not updated.
-    Data.Thread t = new Data.Thread(_target, thread);
-    t.WriteDebuggerControlledThreadState(_target, ...);
-}
-```
-
-Prefer:
-
-```csharp
-void IThread.SetDebuggerControlledThreadState(TargetPointer thread, ...)
-{
-    Data.Thread t = _target.ProcessedData.GetOrAdd<Data.Thread>(thread);
-    t.WriteDebuggerControlledThreadState(_target, ...);
-}
-```
-
-### Don't capture `Target` in instance state
+### Avoid capturing `Target` in instance state
 
 An IData instance is a *cached snapshot* of target memory at the
 moment of materialization. The `Target` itself is the live channel to
@@ -703,11 +685,11 @@ the `Write{Name}` path safely.
 (`ReadField<byte>(...) != 0`) with the corresponding write back as
 `(byte)(value ? 1 : 0)`.
 
-### Don't eagerly dereference pointers to other IData classes
+### Avoid eagerly dereferencing pointers to other IData classes
 
 When a field is a `TargetPointer` that points to another IData
 type, expose it as a plain `TargetPointer` and let the consumer
-materialize on demand. Don't use `[Field(Pointer = true)]` to
+materialize on demand. Avoid using `[Field(Pointer = true)]` to
 auto-`GetOrAdd` the pointee.
 
 The problem is **null semantics**. A `TargetPointer` field can
@@ -727,6 +709,15 @@ Storing the raw pointer leaves both signals in the same shape
 (`TargetPointer` with `TargetPointer.Null` as the absence sentinel)
 and pushes the "should I materialize this" decision to the consumer,
 which already has the context to decide.
+
+The only cases where `[Field(Pointer = true)]` is appropriate:
+
+* The pointee is **guaranteed non-null** at all times (e.g.
+  `Object.MethodTable` -- every managed object has a non-null MT).
+* The cost of always materializing it is acceptable for *every*
+  reader of the parent type.
+
+When in doubt, expose a `TargetPointer` and let the caller decide.
 
 Avoid:
 
@@ -772,17 +763,6 @@ internal sealed partial class LoaderAllocator : IData<LoaderAllocator>
 }
 ```
 
-### Use `[Field(Pointer = true)]` sparingly
-
-The only cases where eager dereference is appropriate:
-
-* The pointee is **guaranteed non-null** at all times (e.g.
-  `Object.MethodTable` -- every managed object has a non-null MT).
-* The cost of always materializing it is acceptable for *every*
-  reader of the parent type.
-
-When in doubt, expose a `TargetPointer` and let the caller decide.
-
 ### One IData class, one descriptor
 
 Don't read fields from a different `Target.TypeInfo` than the one the
@@ -792,24 +772,51 @@ base `TypeDesc` descriptor), use `OnInit` to do the cross-descriptor
 read explicitly -- don't try to express it through `[CdacType]`
 alone.
 
-### Keep `OnInit` small
+## Migrating types between sources
 
-`OnInit` is an escape hatch, not a second constructor. If you find
-yourself writing more than ~10 lines, consider whether the logic
-belongs in the consumer contract instead.
+The IData source generator is designed so that types can move between
+managed metadata and native data descriptors without changing the C#
+IData class. The bag-of-names `[CdacType]` constructor and the
+field-name cascade make migration transparent to contract consumers.
 
-## When not to use the source generator
+### Migrating managed types to native
 
-Some classes' constructors are too unique to fit the generator surface
-without significant gymnastics. Keep them hand-written:
+When a type currently backed by managed metadata needs to move to a
+native data descriptor (e.g. for dump analysis without managed metadata),
+add a native data descriptor entry using the managed type's fully
+qualified name and field names. No changes to the IData class are needed.
 
-* Classes whose properties are mutable through unrelated setter logic
-  that doesn't map to a single `Write{Name}` (e.g. legacy types that
-  expose `{ get; set; }` for testing-only assignment after the IData
-  factory completes).
-* Classes that need to call non-IData helpers (`Target.IDataCache`,
-  custom proxy types) in ways that don't fit the
-  read-then-OnInit pattern.
+**Steps:**
 
-These should still implement `IData<T>.Create` themselves and provide
-their own constructor.
+1. In `datadescriptor.inc`, add a `CDAC_TYPE_BEGIN` / `CDAC_TYPE_FIELD`
+   block using the fully qualified managed type name as the descriptor
+   name:
+
+   ```cpp
+   CDAC_TYPE_BEGIN(System.Threading.Lock)
+   CDAC_TYPE_FIELD(System.Threading.Lock, /*fieldtype*/, _state,
+                   cdac_data<System.Threading.Lock>::_state)
+   CDAC_TYPE_END(System.Threading.Lock)
+   ```
+
+2. The IData class already has the managed name in its `[CdacType]`
+   names list. The cascade will find the native descriptor first and
+   read from it; the managed fallback remains available if the native
+   descriptor is absent (e.g. older runtimes).
+
+**Statics:** Static fields are supported as native globals using the
+naming scheme `TypeName.fieldName`. For example, a managed static
+`s_instance` on type `System.Foo.Bar` becomes a native global named
+`System.Foo.Bar.s_instance`. The `[StaticAddress]` and
+`[StaticReference]` attributes try native globals first, then fall back
+to `ManagedTypeSource`.
+
+> **Note:** Thread statics are not currently supported by the source
+> generator's native global path.
+
+### Migrating native types to managed
+
+> **TODO:** A type forwarding system for native-to-managed migration is
+> planned but not yet implemented. This section will be updated when the
+> forwarding mechanism is available.
+
