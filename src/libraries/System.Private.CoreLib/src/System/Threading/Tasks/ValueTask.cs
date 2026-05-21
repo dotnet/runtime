@@ -179,21 +179,6 @@ namespace System.Threading.Tasks
                 GetTaskForValueTaskSource(Unsafe.As<IValueTaskSource>(obj));
         }
 
-        /// <summary>
-        /// Helper to invoke IValueTaskSource.OnCompleted from a caller that does not know the actual type of the source.
-        /// </summary>
-        private static void OnCompleted(object obj, Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags) =>
-                Unsafe.As<IValueTaskSource>(obj).OnCompleted(continuation, state, token, flags);
-
-        internal unsafe object AsTaskOrNotifier()
-        {
-            object? obj = _obj;
-            Debug.Assert(obj is Task || obj is IValueTaskSource);
-            return
-                obj as Task ??
-                (object)ValueTaskSourceNotifier.GetInstance(obj, &OnCompleted, _token);
-        }
-
         /// <summary>Gets a <see cref="ValueTask"/> that may be used at any point in the future.</summary>
         public ValueTask Preserve() => _obj == null ? this : new ValueTask(AsTask());
 
@@ -603,21 +588,6 @@ namespace System.Threading.Tasks
             return GetTaskForValueTaskSource(Unsafe.As<IValueTaskSource<TResult>>(obj));
         }
 
-        /// <summary>
-        /// Helper to invoke IValueTaskSource.OnCompleted from a caller that does not know the actual type of the source.
-        /// </summary>
-        private static void OnCompleted(object obj, Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags) =>
-                Unsafe.As<IValueTaskSource<TResult>>(obj).OnCompleted(continuation, state, token, flags);
-
-        internal unsafe object AsTaskOrNotifier()
-        {
-            object? obj = _obj;
-            Debug.Assert(obj is Task<TResult> || obj is IValueTaskSource<TResult>);
-            return
-                obj as Task ??
-                (object)ValueTaskSourceNotifier.GetInstance(obj, &OnCompleted, _token);
-        }
-
         /// <summary>Gets a <see cref="ValueTask{TResult}"/> that may be used at any point in the future.</summary>
         public ValueTask<TResult> Preserve() => _obj == null ? this : new ValueTask<TResult>(AsTask());
 
@@ -876,56 +846,6 @@ namespace System.Threading.Tasks
             }
 
             return string.Empty;
-        }
-    }
-
-    internal sealed unsafe class ValueTaskSourceNotifier
-    {
-        // ValueTaskSourceNotifier is used only during suspension sequence, thus
-        // a given thread will never need more than one instance.
-        // We will just reuse the same instance when needed.
-        [ThreadStatic]
-        private static ValueTaskSourceNotifier? t_instance;
-
-        private object _source;
-        private delegate* managed<object, Action<object?>, object?, short, ValueTaskSourceOnCompletedFlags, void> _onCompleted;
-        private short _token;
-
-        private ValueTaskSourceNotifier(
-            object source,
-            delegate* managed<object, Action<object?>, object?, short, ValueTaskSourceOnCompletedFlags, void> onCompleted,
-            short token)
-        {
-            _source = source;
-            _onCompleted = onCompleted;
-            _token = token;
-        }
-
-        public static ValueTaskSourceNotifier GetInstance(
-            object source,
-            delegate* managed<object, Action<object?>, object?, short, ValueTaskSourceOnCompletedFlags, void> onCompleted,
-            short token)
-        {
-            ValueTaskSourceNotifier? instance = t_instance;
-            if (instance == null)
-            {
-                return t_instance = new ValueTaskSourceNotifier(source, onCompleted, token);
-            }
-
-            instance._source = source;
-            instance._onCompleted = onCompleted;
-            instance._token = token;
-
-            return instance;
-        }
-
-        public void OnCompleted(Action<object?> continuation, object? state, ValueTaskSourceOnCompletedFlags flags)
-        {
-            _onCompleted(_source, continuation, state, _token, flags);
-
-            // The data that we store is effectively single-use.
-            // Once used, clear the _source to not retain unknown data.
-            _source = null!;
         }
     }
 }

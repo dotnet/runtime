@@ -156,6 +156,14 @@ void emitter::emitAddressConstant(void* address)
     emitIns(INS_i32_add);
 }
 
+void emitter::emitFuncletAddressConstant(cnsval_ssize_t funcletId)
+{
+    // Load our table base, then load our funclet pointer offset, then sum them.
+    emitIns_I(INS_global_get, EA_4BYTE, 2 /* __table_start */);
+    emitIns_I(INS_i32_const_funcletptr, EA_PTRSIZE, (cnsval_ssize_t)funcletId);
+    emitIns(INS_i32_add);
+}
+
 /*****************************************************************************
  *
  *  Add a call instruction (direct or indirect).
@@ -522,6 +530,10 @@ unsigned emitter::instrDesc::idCodeSize() const
         case IF_SLEB128:
             size += idIsCnsReloc() ? PADDED_RELOC_SIZE : SizeOfSLEB128(emitGetInsSC(this));
             break;
+        case IF_FUNCLETPTR:
+        case IF_FUNCLETIDX:
+            size += PADDED_RELOC_SIZE; // funclet indices and pointers are always emitted as relocations
+            break;
         case IF_CALL_INDIRECT:
         {
             size += idIsCnsReloc() ? PADDED_RELOC_SIZE : SizeOfULEB128(emitGetInsSC(this));
@@ -677,6 +689,12 @@ size_t emitter::emitOutputPaddedReloc(uint8_t* destination)
     return PADDED_RELOC_SIZE;
 }
 
+size_t emitter::emitOutputConstantFunclet(uint8_t* destination, const instrDesc* id, CorInfoReloc relocType)
+{
+    emitRecordRelocationWithAddlDelta(destination, emitCodeBlock, relocType, (int32_t)emitGetInsSC(id));
+    return emitOutputPaddedReloc(destination);
+}
+
 size_t emitter::emitOutputConstant(uint8_t* destination, const instrDesc* id, bool isSigned, CorInfoReloc relocType)
 {
     if (id->idIsCnsReloc())
@@ -750,6 +768,18 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             // TODO-WASM: The below reloc we're emitting here is specific to R2R and assumes the address we want
             // is an offset from __image_base
             dst += emitOutputConstant(dst, id, SIGNED, CorInfoReloc::WASM_MEMORY_ADDR_REL_SLEB);
+            break;
+        }
+        case IF_FUNCLETIDX:
+        {
+            dst += emitOutputOpcode(dst, ins);
+            dst += emitOutputConstantFunclet(dst, id, CorInfoReloc::WASM_FUNCTION_INDEX_LEB);
+            break;
+        }
+        case IF_FUNCLETPTR:
+        {
+            dst += emitOutputOpcode(dst, ins);
+            dst += emitOutputConstantFunclet(dst, id, CorInfoReloc::WASM_TABLE_INDEX_SLEB);
             break;
         }
         case IF_FUNCPTR:
@@ -1072,6 +1102,15 @@ void emitter::emitDispIns(
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
             printf(" %lli", (int64_t)imm);
+            dispLclVarInfoIfAny();
+        }
+        break;
+
+        case IF_FUNCLETPTR:
+        case IF_FUNCLETIDX:
+        {
+            cnsval_ssize_t imm = emitGetInsSC(id);
+            printf("funclet %lli", (int64_t)imm);
             dispLclVarInfoIfAny();
         }
         break;
