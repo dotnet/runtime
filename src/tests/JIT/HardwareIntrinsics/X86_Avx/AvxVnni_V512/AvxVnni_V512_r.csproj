@@ -5,7 +5,6 @@
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>Embedded</DebugType>
-    <Optimize />
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Program.AvxVnni_V512.cs" />

@@ -208,13 +208,14 @@ namespace Thunkerator
                             bool generateReverseImplication = true;
                             if (command.Length == 5)
                             {
-                                if (command[4] == "NoReverse")
+                                string implicationOption = command[4].Trim();
+                                if (implicationOption == "NoReverse")
                                 {
                                     generateReverseImplication = false;
                                 }
                                 else
                                 {
-                                    throw new Exception("Unknown implication option");
+                                    throw new Exception($"Unknown implication option '{implicationOption}'. Expected NoReverse.");
                                 }
                             }
                             _implications.Add(new InstructionSetImplication(command[1], command[2], command[3], generateReverseImplication));
