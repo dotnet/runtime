@@ -92,10 +92,12 @@ Hard rules: no comments on issues/PRs, no edits outside `.github/workflows/ci-fa
      | tee /tmp/gh-aw/agent/runs.json | jq -r '.workflow_runs[] | "\(.id) \(.conclusion) \(.head_branch) \(.event) \(.created_at) \(.html_url)"'
    ```
 
-2. For the latest 2 runs, list the issues/PRs they produced and download the agent log to extract the final tally line emitted by Step 6 of `ci-failure-scan.md`:
+2. For the latest 2 runs, list the issues/PRs they produced and download the agent log to extract the final tally line emitted by Step 6 of `ci-failure-scan.md`. Extract ONLY the tally table block (header + body rows, terminated by the first non-pipe line) — do NOT pipe arbitrary trailing log content through, since the scanner agent's log may contain quoted maintainer-supplied content that bypasses the integrity gate:
 
    ```bash
-   gh run view <run-id> --log | grep -E '^\| pipeline ' -A 200 | tee /tmp/gh-aw/agent/tally_<run-id>.txt
+   gh run view <run-id> --log \
+     | awk '/^\| pipeline \|/{flag=1} flag{print; if (NR>0 && !/^\|/) exit}' \
+     | tee /tmp/gh-aw/agent/tally_<run-id>.txt
    ```
 
 3. Read in-scope feedback. Issues and PRs are in scope when EITHER the `agentic-workflows` label is present OR the title starts with `[ci-scan]`. For each in-scope item updated in the last 30 days, fetch body + all comments via the `github` MCP tool (NOT `gh`, per the hard rule above). Quote any maintainer comment matching: "too broad", "doesn't match", "duplicate", "wrong label", "JSON malformed", "fix-forward", "don't disable", "Known issue did not match", "should be supported", "wait for #".
@@ -116,6 +118,7 @@ Hard rules: no comments on issues/PRs, no edits outside `.github/workflows/ci-fa
    - JSON block is valid: exactly one fenced `` ```json `` block, all four keys present, exactly one of `ErrorMessage`/`ErrorPattern` non-empty.
    - Signature is specific: not a bare test/method name, not a generic exception/exit-code, not a phrase that also appears in `[PASS]`/`[SKIP]` lines of the same log.
    - For a sample of in-scope KBEs, cross-check the signature against the cited failing log (`gh run view <id> --log-failed | head -300` or the AzDO/Helix URL in the body) and flag PASS-line collisions or paraphrased signatures.
+   - Skip-reason vocabulary stability: any tally row using a `skipped:` reason NOT in the Step 6 'Recognized values' list in `ci-failure-scan.md` is flagged as `unknown-skip-reason: <verbatim string>`. The recognized values list is the source of truth; the feedback PR should propose adding new reasons there before they start appearing in tallies.
 
 5. Translate each failure mode into a targeted edit to `.github/workflows/ci-failure-scan.md`. Prefer rule-shaped edits (tighten Step 4.2, extend Step 4.7's phrase list, add a Bad/Good row, narrow KBE check 7) over wholesale rewrites. Read the file first; reuse the existing voice and section structure.
 
@@ -211,13 +214,15 @@ Hard rules: no comments on issues/PRs, no edits outside `.github/workflows/ci-fa
    ```
 
    <details>
-   <summary>Raw weekly buckets</summary>
+   <summary>Raw weekly buckets (last 12 weeks)</summary>
 
    | iso-week | filed | closed | median-hrs |
    |---|---|---|---|
    | <w1> | <n> | <n> | <h> |
    ...
    </details>
+
+   The raw weekly buckets table MUST be windowed to the same 12 weeks the mermaid charts use — emit at most 12 rows. Older buckets are dropped on each regeneration; this is intentional (the tracker body is a current snapshot, not a permanent ledger).
    ````
 
    If the tracker exists -> emit one `update_issue` with the new body. If not -> emit one `create_issue` titled `[ci-scan-feedback] KPI Tracker`. Either way, this step ALWAYS fires (never call `noop` for the tracker — a daily snapshot is the point).
