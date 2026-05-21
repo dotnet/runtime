@@ -341,7 +341,7 @@ Per signature, append one outcome line to `/tmp/gh-aw/agent/coverage/<pipeline>.
 
 `<outcome>` is one of: `filed-issue #aw_<id>`, `filed-PR #aw_<id>`, `existing-issue #<n>`, `existing-PR #<n>`, `skipped: <reason>`.
 
-A skipped signature MUST have a reason. Recognized values: `build canceled`, `< 2 occurrences and not blocking`, `do-not-disable on issue #<n>`, `cap reached`, `infra noise — no stable signature`, `build break — no test-disable path`, `signature absent from follow-up build #<id>`, `stale build window (>14d)`, `no follow-up build yet — defer to next run`, `fix already merged after source build`, `fix recently merged in #<n>`, `dup of filed-issue #aw_<id> earlier in this run`, `ambiguous dup #<a>/#<b>, needs human review`, `integrity-filtered candidate, needs human review`, `suspected infra outage`, `weak signature`, `recommendation already present in source`.
+A skipped signature MUST have a reason. Recognized values: `build canceled`, `< 2 occurrences and not blocking`, `do-not-disable on issue #<n>`, `cap reached`, `infra noise — no stable signature`, `build break — no test-disable path`, `signature absent from follow-up build #<id>`, `stale build window (>14d)`, `no follow-up build yet — defer to next run`, `fix already merged after source build`, `fix recently merged in #<n>`, `dup of filed-issue #aw_<id> earlier in this run`, `ambiguous dup #<a>/#<b>, needs human review`, `integrity-filtered candidate, needs human review`, `suspected infra outage`, `weak signature`, `recommendation already present in source`, `signature did not match failure.log (N=<count>)`, `native assert not in xunit log`. The list is non-exhaustive but additions SHOULD reuse one of these phrasings to keep the feedback workflow's tally aggregation stable.
 
 At end of run, print this table to the agent log:
 
@@ -351,7 +351,7 @@ At end of run, print this table to the agent log:
 
 ## Templates
 
-Emit each template verbatim except for `<placeholder>` slots. Match headings exactly — Build Analysis is strict about `## Error Message` and the JSON fence shape.
+Emit each template verbatim except for `<placeholder>` slots and the required `<!-- ci-scan-match-count: ... -->` marker (KBE check 7). Match headings exactly — Build Analysis is strict about `## Error Message` and the JSON fence shape.
 
 ### Template: KBE issue body — literal substring match (default)
 
@@ -392,6 +392,8 @@ Pull request: <link to the PR if the build was a PR build, otherwise omit this l
 }
 ```
 
+<!-- ci-scan-match-count: <N> hits in failure.log -->
+
 ---
 Filed by [`ci-failure-scan`](https://github.com/dotnet/runtime/blob/main/.github/workflows/ci-failure-scan.md), which scans dnceng-public outer-loop pipelines on `main` and converts stable failures into KBEs and test-disable PRs. Comment here or on the workflow file to suggest changes; [`ci-failure-scan-feedback`](https://github.com/dotnet/runtime/blob/main/.github/workflows/ci-failure-scan-feedback.md) reads in-scope feedback daily and opens (or updates) a PR with prompt edits.
 ````
@@ -428,6 +430,8 @@ Pull request: <link, omit if not a PR build>
   "ExcludeConsoleLog": false
 }
 ```
+
+<!-- ci-scan-match-count: <N> hits in failure.log -->
 
 ---
 Filed by [`ci-failure-scan`](https://github.com/dotnet/runtime/blob/main/.github/workflows/ci-failure-scan.md), which scans dnceng-public outer-loop pipelines on `main` and converts stable failures into KBEs and test-disable PRs. Comment here or on the workflow file to suggest changes; [`ci-failure-scan-feedback`](https://github.com/dotnet/runtime/blob/main/.github/workflows/ci-failure-scan-feedback.md) reads in-scope feedback daily and opens (or updates) a PR with prompt edits.
@@ -476,6 +480,8 @@ Both `ErrorMessage` and `ErrorPattern` accept arrays — each element matches a 
   "ExcludeConsoleLog": false
 }
 ```
+
+<!-- ci-scan-match-count: <N> hits in failure.log -->
 
 Rules: one element = one line (NOT concatenated). All elements must match in order. Don't mix `ErrorMessage` + `ErrorPattern` in one array. Don't pad with generic tokens (`exitcode: 139`, `Crash`) — they add no specificity and risk false negatives if log format changes.
 

@@ -147,14 +147,18 @@ Hard rules: no comments on issues/PRs, no edits outside `.github/workflows/ci-fa
      --json number,url | tee /tmp/gh-aw/agent/tracker.json
    ```
 
-   Compute the window. The window starts at the workflow's first run; cache the date on the tracker body and reuse it:
+   Compute the window. The window starts at the timestamp of the FIRST recorded run of `ci-failure-scan.lock.yml` (NOT the workflow file's creation time, which can predate any run by days when the file is added but its lock isn't yet checked in). On the first tick, derive it from the runs list and persist the resulting ISO-8601 timestamp inside the tracker body as `<!-- ci-scan-feedback:window-start=<ts> -->`. On every subsequent tick, prefer the cached value parsed from the existing tracker body (read via the `github` MCP `issue_read get` tool) over re-deriving — this keeps the window stable even if old runs are deleted.
 
    ```bash
-   gh api "/repos/dotnet/runtime/actions/workflows/ci-failure-scan.lock.yml" \
-     | jq -r '.created_at' | tee /tmp/gh-aw/agent/window_start.txt
+   gh api "/repos/dotnet/runtime/actions/workflows/ci-failure-scan.lock.yml/runs?per_page=1&order=asc" \
+     | jq -r '.workflow_runs[0].created_at // empty' | tee /tmp/gh-aw/agent/window_start_first_run.txt
    ```
 
-   Collect the full universe of `[ci-scan]` issues and PRs (open + closed) since `window_start` via `gh search issues` / `gh search prs` with `created:>=<window_start>`. Bucket by ISO week.
+   Fall back to the workflow's `.created_at` only if no runs exist yet (first-ever invocation). Once the tracker exists, the cached marker is authoritative.
+
+   Collect the full universe of `[ci-scan]` issues and PRs (open + closed) since `window_start` via `gh search issues` / `gh search prs` with `created:>=<window_start>`. This produces a list of issue/PR numbers and metadata; do NOT read bodies with `gh`.
+
+   For metrics that require body content (`top_pipelines`), fetch the bodies of the discovered items through the `github` MCP `issue_read get` / `pull_request_read get` tool, one per item, respecting `min-integrity: approved`. Skip `[Filtered]` items.
 
    Compute these KPIs:
 
@@ -164,7 +168,7 @@ Hard rules: no comments on issues/PRs, no edits outside `.github/workflows/ci-fa
    - `p90_time_to_close_30d`
    - `pct_closed_as_not_planned` (state_reason `not_planned` / total closed) — proxy for false positives flagged by maintainers
    - `prs_total`, `prs_merged`, `prs_closed_unmerged`
-   - `top_pipelines` (top 3 `definition_id` mentions in issue bodies)
+   - `top_pipelines` (top 3 `definition_id` values appearing in issue bodies fetched via the `github` MCP tool per the step above; if a fetched body is `[Filtered]`, count it under `integrity_filtered_pipelines` and exclude from the top 3)
 
    Emit a body with this exact shape (regenerate every tick):
 
