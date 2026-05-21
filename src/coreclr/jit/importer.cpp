@@ -11637,7 +11637,7 @@ void Compiler::impWrapTopOfStackInAwait()
     bool transparent = impInlineRoot()->compIsAsyncVersion();
 
     CORINFO_LOOKUP        instArgLookup;
-    CORINFO_METHOD_HANDLE awaitMethod = info.compCompHnd->getAwaitReturnCall(info.compMethodHnd, transparent, &instArgLookup);
+    CORINFO_METHOD_HANDLE awaitMethod = info.compCompHnd->getAwaitReturnCall(info.compMethodHnd, true, &instArgLookup);
 
     CORINFO_SIG_INFO awaitSig;
     info.compCompHnd->getMethodSig(awaitMethod, &awaitSig);
@@ -11702,7 +11702,7 @@ void Compiler::impWrapTopOfStackInAwait()
 
     if (transparent)
     {
-        asyncInfo->IsTailAwait = true;
+        asyncInfo->IsTailAwait = !compIsForInlining() || impInlineInfo->iciCall->GetAsyncInfo().IsTailAwait;
     }
     else
     {
@@ -11712,6 +11712,7 @@ void Compiler::impWrapTopOfStackInAwait()
         assert(compIsForInlining() && impInlineInfo->iciCall->IsAsync());
         GenTreeCall* inlCall = impInlineInfo->iciCall;
 
+        JITDUMP("Inheriting continuation handling %d from caller [%06u]\n", (unsigned)inlCall->GetAsyncInfo().ContinuationContextHandling, dspTreeID(inlCall));
         asyncInfo->ContinuationContextHandling = inlCall->GetAsyncInfo().ContinuationContextHandling;
         impAddAsyncArgsToInlinedCall(awaitCall);
     }
