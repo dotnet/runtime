@@ -23,10 +23,10 @@ static bool isValidSimdElemSize(unsigned elemSize)
     return (elemSize == 1) || (elemSize == 2) || (elemSize == 4) || (elemSize == 8);
 }
 
-// --------------------------------------------------
+// --------------------------------------------------------------------------------------------------
 // isValidVectorIndex - returns true if the specified index is valid for the given SIMD element size
 // Arguments:
-//  elemSize - emitAttr describing the size of the SIMD vector elements
+//  elemSize - element size in bytes (1, 2, 4, or 8)
 //  index    - the index to validate
 
 bool emitter::isValidVectorIndex(uint8_t elemSize, uint8_t index)
