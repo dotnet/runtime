@@ -428,7 +428,6 @@ namespace System.Runtime.CompilerServices
             }
 
             taskCont.Initialize(task);
-            taskCont.ExecutionContext = ExecutionContext.CaptureForSuspension(state.CurrentThread!);
 
             sentinelContinuation.Next = taskCont;
             state.StackState->TaskContinuation = taskCont;
@@ -459,7 +458,6 @@ namespace System.Runtime.CompilerServices
             }
 
             taskCont.Initialize<T>(task);
-            taskCont.ExecutionContext = ExecutionContext.CaptureForSuspension(state.CurrentThread!);
 
             sentinelContinuation.Next = taskCont;
             state.StackState->TaskContinuation = taskCont;
