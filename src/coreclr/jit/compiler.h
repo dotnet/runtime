@@ -4962,10 +4962,10 @@ public:
     // Information needed to turn a resolved devirtualization target into a direct call.
     struct DevirtualizedCallInfo
     {
-        CORINFO_CONTEXT_HANDLE  tokenLookupContext;
-        CORINFO_CLASS_HANDLE    derivedClass;
+        CORINFO_CONTEXT_HANDLE  tokenLookupContext;      // The class context or method context
         CORINFO_RESOLVED_TOKEN* pResolvedToken;          // Resolved token for the target method, used by R2R.
         CORINFO_RESOLVED_TOKEN* pUnboxedResolvedToken;   // Resolved token for the unboxed entry, used by R2R.
+        CORINFO_LOOKUP*         pInstParamLookup;        // All the information needed for the instantiation parameter lookup.
         bool                    objIsNonNull;            // True if the receiver is known non-null.
         bool                    hadImplicitNullCheck;    // True if the original call's null check was implicit.
         bool                    isDelegateCall;          // True when transforming a delegate invoke into a direct call.

@@ -960,27 +960,7 @@ private:
 
             JITDUMP("Direct call [%06u] in block " FMT_BB "\n", m_compiler->dspTreeID(call), block->bbNum);
 
-            CORINFO_METHOD_HANDLE  methodHnd              = inlineInfo->guardedMethodHandle;
-            CORINFO_CONTEXT_HANDLE contextForTokenLookups = inlineInfo->exactContextHandle;
-            GenTree*               instParam              = nullptr;
-
-            if (inlineInfo->methInfo.args.hasTypeArg())
-            {
-                if (((SIZE_T)contextForTokenLookups & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD)
-                {
-                    CORINFO_METHOD_HANDLE exactMethodHandle =
-                        (CORINFO_METHOD_HANDLE)((SIZE_T)contextForTokenLookups & ~CORINFO_CONTEXTFLAGS_MASK);
-
-                    instParam = m_compiler->getLookupTree(&inlineInfo->guardedMethodInstParamLookup,
-                                                          GTF_ICON_METHOD_HDL, exactMethodHandle);
-                }
-            }
-
-            if (instParam != nullptr)
-            {
-                assert(call->gtArgs.FindWellKnownArg(WellKnownArg::InstParam) == nullptr);
-                call->gtArgs.InsertInstParam(m_compiler, instParam);
-            }
+            CORINFO_METHOD_HANDLE methodHnd = inlineInfo->guardedMethodHandle;
 
             bool objClassIsExact;
             bool objIsNonNull;
@@ -994,11 +974,9 @@ private:
             //
             CORINFO_CONTEXT_HANDLE context      = nullptr;
             CORINFO_CONTEXT_HANDLE exactContext = inlineInfo->exactContextHandle;
-            CORINFO_CLASS_HANDLE   derivedClass = m_compiler->eeGetClassFromContext(exactContext);
 
             Compiler::DevirtualizedCallInfo dcInfo;
             dcInfo.tokenLookupContext = exactContext;
-            dcInfo.derivedClass       = derivedClass;
 
             // only for class-based GDV in R2R
             dcInfo.pResolvedToken = (clsHnd != NO_CLASS_HANDLE) ? &inlineInfo->guardedMethodResolvedToken : nullptr;
@@ -1012,6 +990,7 @@ private:
             dcInfo.objClassIsExact      = (clsHnd != NO_CLASS_HANDLE) && objClassIsExact;
             dcInfo.objClassIsFinal      = false;
             dcInfo.ilOffset             = BAD_IL_OFFSET;
+            dcInfo.pInstParamLookup     = &inlineInfo->guardedMethodInstParamLookup;
 
             m_compiler->impTransformDevirtualizedCall(call, &methodHnd, &derivedMethodAttribs, &dcInfo, block, &context,
                                                       &exactContext COMMA_INDEBUG(inlineInfo->originalMethodHandle));

@@ -8959,30 +8959,9 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
     info.compCompHnd->resolveVirtualMethod(&dvInfo);
 
-    CORINFO_METHOD_HANDLE   derivedMethod          = dvInfo.devirtualizedMethod;
-    CORINFO_CONTEXT_HANDLE  exactContext           = dvInfo.tokenLookupContext;
-    CORINFO_CLASS_HANDLE    derivedClass           = NO_CLASS_HANDLE;
-    CORINFO_RESOLVED_TOKEN* pDerivedResolvedToken  = &dvInfo.resolvedTokenDevirtualizedMethod;
-    const bool              needsRuntimeLookup     = dvInfo.instParamLookup.lookupKind.needsRuntimeLookup;
-    const bool              isArrayInterfaceDevirt = (objClassAttribs & CORINFO_FLG_ARRAY) != 0;
-    bool                    needsInstParam         = false;
-
-    if (derivedMethod != nullptr)
-    {
-        assert(exactContext != nullptr);
-        derivedClass = eeGetClassFromContext(exactContext);
-
-        if (((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD)
-        {
-            // Array interface devirt can return a nonvirtual generic method of the non-generic SZArrayHelper class.
-            // Generic virtual method devirt also returns a generic method.
-            // In which case we need to check if an instantiation argument is needed.
-            //
-            CORINFO_SIG_INFO derivedSig;
-            info.compCompHnd->getMethodSig(derivedMethod, &derivedSig);
-            needsInstParam = derivedSig.hasTypeArg();
-        }
-    }
+    CORINFO_METHOD_HANDLE   derivedMethod         = dvInfo.devirtualizedMethod;
+    CORINFO_CONTEXT_HANDLE  exactContext          = dvInfo.tokenLookupContext;
+    CORINFO_RESOLVED_TOKEN* pDerivedResolvedToken = &dvInfo.resolvedTokenDevirtualizedMethod;
 
     unsigned derivedMethodAttribs = 0;
     bool     derivedMethodIsFinal = false;
@@ -8992,25 +8971,18 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     const char* note = "inexact or not final";
 #endif
 
-    CORINFO_METHOD_HANDLE instParam = NO_METHOD_HANDLE;
-
-    if (derivedMethod != nullptr && needsInstParam && !needsRuntimeLookup)
+    // Array interface devirt can return a nonvirtual generic method of the non-generic SZArrayHelper class.
+    if ((((SIZE_T)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD))
     {
         // If we don't know the array type exactly we may have the wrong interface type here.
         // Bail out.
         //
+        const bool isArrayInterfaceDevirt = (objClassAttribs & CORINFO_FLG_ARRAY) != 0;
         if (isArrayInterfaceDevirt && !isExact)
         {
             JITDUMP("Array interface devirt: array type is inexact, sorry.\n");
             return;
         }
-
-        // We don't expect R2R/NAOT to end up here for array interface devirtualization.
-        // For NAOT, it has Array<T> and normal devirtualization.
-        // For R2R, we don't (yet) support array interface devirtualization.
-        assert(call->IsGenericVirtual(this) || !IsAot());
-
-        instParam = (CORINFO_METHOD_HANDLE)dvInfo.instParamLookup.constLookup.handle;
     }
 
     // If we failed to get a method handle, we can't directly devirtualize.
@@ -9043,14 +9015,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         }
         if (verbose)
         {
-            const char* instArg = "";
-            if (needsInstParam)
-            {
-                instArg = needsRuntimeLookup ? "runtime lookup" : eeGetMethodFullName(instParam);
-            }
-
-            printf("    devirt to %s -- %s%s%s\n", eeGetMethodFullName(derivedMethod), note,
-                   needsInstParam ? ", instantiation: " : "", instArg);
+            printf("    devirt to %s -- %s\n", eeGetMethodFullName(derivedMethod), note);
             gtDispTree(call);
         }
 #endif // defined(DEBUG)
@@ -9088,29 +9053,6 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         return;
     }
 
-    // Insert the instantiation argument when necessary.
-    if (needsInstParam)
-    {
-        assert(call->gtArgs.FindWellKnownArg(WellKnownArg::InstParam) == nullptr);
-
-        CORINFO_METHOD_HANDLE compileTimeHandle = derivedMethod;
-        if (instParam != NO_METHOD_HANDLE)
-        {
-            compileTimeHandle = instParam;
-        }
-
-        GenTree* instParamNode = getLookupTree(&dvInfo.instParamLookup, GTF_ICON_METHOD_HDL, compileTimeHandle);
-
-        if (instParamNode == nullptr)
-        {
-            // If we're inlining, impLookupToTree can return nullptr after recording a fatal observation.
-            JITDUMP("Failed to produce the lookup for devirtualized call, sorry.\n");
-            return;
-        }
-
-        call->gtArgs.InsertInstParam(this, instParamNode);
-    }
-
     // All checks done. Time to transform the call.
     //
     assert(canDevirtualize);
@@ -9119,7 +9061,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
     DevirtualizedCallInfo dcInfo;
     dcInfo.tokenLookupContext    = exactContext;
-    dcInfo.derivedClass          = derivedClass;
+    dcInfo.pInstParamLookup      = &dvInfo.instParamLookup;
     dcInfo.pResolvedToken        = pDerivedResolvedToken;
     dcInfo.pUnboxedResolvedToken = &dvInfo.resolvedTokenDevirtualizedUnboxedMethod;
     dcInfo.objIsNonNull          = objIsNonNull;
@@ -9171,6 +9113,7 @@ void Compiler::impTransformDevirtualizedCall(GenTreeCall*            call,
     CORINFO_METHOD_HANDLE   derivedMethod         = *method;
     unsigned                derivedMethodAttribs  = *methodFlags;
     CORINFO_RESOLVED_TOKEN* pDerivedResolvedToken = dcInfo->pResolvedToken;
+    CORINFO_CLASS_HANDLE    derivedClass          = eeGetClassFromContext(dcInfo->tokenLookupContext);
 
     assert(derivedMethod != nullptr);
     assert(call->gtArgs.HasThisPointer());
@@ -9229,12 +9172,6 @@ void Compiler::impTransformDevirtualizedCall(GenTreeCall*            call,
     call->ClearInlineInfo();
 
 #if defined(DEBUG)
-    if (verbose)
-    {
-        printf("... after devirt...\n");
-        gtDispTree(call);
-    }
-
     // If we successfully devirtualized based on an exact or final class,
     // and we have dynamic PGO data describing the likely class, make sure they agree.
     //
@@ -9261,7 +9198,7 @@ void Compiler::impTransformDevirtualizedCall(GenTreeCall*            call,
         {
             // PGO had better agree the class we devirtualized to is plausible.
             //
-            if (likelyClass != dcInfo->derivedClass)
+            if (likelyClass != derivedClass)
             {
                 // Managed type system may report different addresses for a class handle
                 // at different times....?
@@ -9278,7 +9215,7 @@ void Compiler::impTransformDevirtualizedCall(GenTreeCall*            call,
                     CORINFO_CLASS_HANDLE parentClass = likelyClass;
                     while (parentClass != NO_CLASS_HANDLE)
                     {
-                        if (parentClass == dcInfo->derivedClass)
+                        if (parentClass == derivedClass)
                         {
                             mismatch = false;
                             break;
@@ -9290,8 +9227,8 @@ void Compiler::impTransformDevirtualizedCall(GenTreeCall*            call,
                     if (mismatch || (numberOfClasses != 1) || (likelihood != 100))
                     {
                         printf("@@@ Likely %p (%s) != Derived %p (%s) [n=%u, l=%u, il=%u] in %s \n", likelyClass,
-                               eeGetClassName(likelyClass), dcInfo->derivedClass, eeGetClassName(dcInfo->derivedClass),
-                               numberOfClasses, likelihood, dcInfo->ilOffset, info.compFullName);
+                               eeGetClassName(likelyClass), derivedClass, eeGetClassName(derivedClass), numberOfClasses,
+                               likelihood, dcInfo->ilOffset, info.compFullName);
                     }
 
                     assert(!(mismatch || (numberOfClasses != 1) || (likelihood != 100)));
@@ -9300,6 +9237,8 @@ void Compiler::impTransformDevirtualizedCall(GenTreeCall*            call,
         }
     }
 #endif // defined(DEBUG)
+
+    GenTree* instParam = nullptr;
 
     // If the 'this' object is a value class, see if we can rework the call to invoke the
     // unboxed entry. This effectively inlines the normally un-inlineable wrapper stub
@@ -9310,7 +9249,7 @@ void Compiler::impTransformDevirtualizedCall(GenTreeCall*            call,
     //
     // Note we may not have a derived class in some cases (eg interface call on an array)
     //
-    if (info.compCompHnd->isValueClass(dcInfo->derivedClass))
+    if (info.compCompHnd->isValueClass(derivedClass))
     {
         if (dcInfo->isExplicitTailCall)
         {
@@ -9347,7 +9286,7 @@ void Compiler::impTransformDevirtualizedCall(GenTreeCall*            call,
                     {
                         JITDUMP("revising call to invoke unboxed entry with additional method table arg\n");
 
-                        GenTree* const methodTableArg = gtNewMethodTableLookup(clonedThisArg);
+                        instParam = gtNewMethodTableLookup(clonedThisArg);
 
                         // Update the 'this' pointer to refer to the box payload
                         //
@@ -9368,8 +9307,6 @@ void Compiler::impTransformDevirtualizedCall(GenTreeCall*            call,
                         derivedMethod         = unboxedEntryMethod;
                         pDerivedResolvedToken = dcInfo->pUnboxedResolvedToken;
                         derivedMethodAttribs  = unboxedMethodAttribs;
-
-                        call->gtArgs.InsertInstParam(this, methodTableArg);
                         Metrics.DevirtualizedCallUnboxedEntry++;
                     }
                 }
@@ -9399,6 +9336,40 @@ void Compiler::impTransformDevirtualizedCall(GenTreeCall*            call,
                 JITDUMP("Sorry, failed to find unboxed entry point\n");
             }
         }
+    }
+    else
+    {
+        CORINFO_SIG_INFO derivedSig;
+        info.compCompHnd->getMethodSig(derivedMethod, &derivedSig);
+
+        if (derivedSig.hasTypeArg())
+        {
+            if (((SIZE_T)dcInfo->tokenLookupContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD)
+            {
+                CORINFO_METHOD_HANDLE exactMethodHandle =
+                    (CORINFO_METHOD_HANDLE)((SIZE_T)dcInfo->tokenLookupContext & ~CORINFO_CONTEXTFLAGS_MASK);
+
+                instParam = getLookupTree(dcInfo->pInstParamLookup, GTF_ICON_METHOD_HDL, exactMethodHandle);
+            }
+            else
+            {
+                assert(((SIZE_T)dcInfo->tokenLookupContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS);
+
+                if (!info.compCompHnd->isValueClass(derivedClass))
+                {
+                    CORINFO_CLASS_HANDLE exactClassHandle =
+                        (CORINFO_CLASS_HANDLE)((SIZE_T)dcInfo->tokenLookupContext & ~CORINFO_CONTEXTFLAGS_MASK);
+
+                    instParam = getLookupTree(dcInfo->pInstParamLookup, GTF_ICON_CLASS_HDL, exactClassHandle);
+                }
+            }
+        }
+    }
+
+    if (instParam != nullptr)
+    {
+        assert(call->gtArgs.FindWellKnownArg(WellKnownArg::InstParam) == nullptr);
+        call->gtArgs.InsertInstParam(this, instParam);
     }
 
     // Need to update call info too.
@@ -9448,6 +9419,14 @@ void Compiler::impTransformDevirtualizedCall(GenTreeCall*            call,
         call->setEntryPoint(derivedCallInfo.codePointerLookup.constLookup);
     }
 #endif // FEATURE_READYTORUN
+
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("... after devirt...\n");
+        gtDispTree(call);
+    }
+#endif // DEBUG
 }
 
 //------------------------------------------------------------------------
