@@ -32,8 +32,8 @@ namespace System.Numerics
         private const ulong NaNMask = 0x7C00_0000_0000_0000;
         private const ulong InfinityMask = 0x7800_0000_0000_0000;
         private const ulong MaxSignificand = 9_999_999_999_999_999;
-        private const ulong MaxInternalValue = 0x77FB_86F2_6FC0_FFFF; // 9_999_999_999_999_999 x 10^369
-        private const ulong MinInternalValue = 0xF7FB_86F2_6FC0_FFFF; // -9_999_999_999_999_999 x 10^369
+        private const ulong MaxInternalValue = 0x77FB_86F2_6FC0_FFFF; // 9.999_999_999_999_999 * 10^384; aka 9_999_999_999_999_999 * 10^369
+        private const ulong MinInternalValue = 0xF7FB_86F2_6FC0_FFFF; // -9.999_999_999_999_999 * 10^384; aka -9_999_999_999_999_999 * 10^369
 
         public static Decimal64 PositiveInfinity => new Decimal64(PositiveInfinityValue);
         public static Decimal64 NegativeInfinity => new Decimal64(NegativeInfinityValue);
@@ -43,6 +43,7 @@ namespace System.Numerics
         public static Decimal64 MinValue => new Decimal64(MinInternalValue);
         public static Decimal64 MaxValue => new Decimal64(MaxInternalValue);
 
+        public static Decimal64 Epsilon => new Decimal64(0x0000_0000_0000_0001); // Smallest positive subnormal value, aka 1 * 10^-398
 
         private static ReadOnlySpan<ulong> UInt64Powers10 =>
             [
@@ -64,10 +65,10 @@ namespace System.Numerics
                 1000000000000000,
             ];
 
-        public Decimal64(long significand, int exponent)
+        internal Decimal64(long significand, int exponent)
         {
             bool isNegative = significand < 0;
-            ulong magnitude = isNegative ? 0UL - (ulong)significand : (ulong)significand;
+            ulong magnitude = isNegative ? (ulong)-significand : (ulong)significand;
             _value = Number.ConstructorToDecimalIeee754Bits<Decimal64, ulong>(isNegative, magnitude, exponent);
         }
 

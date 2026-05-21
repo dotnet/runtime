@@ -32,8 +32,6 @@ namespace System.Numerics
         private static readonly UInt128 ZeroValue = new UInt128(0, 0);
         private static readonly UInt128 NegativeZeroValue = new UInt128(0x8000_0000_0000_0000, 0);
         private static readonly UInt128 QuietNaNValue = new UInt128(0xFC00_0000_0000_0000, 0);
-        private static readonly UInt128 MaxInternalValue = new UInt128(upper: 0x5FFF_ED09_BEAD_87C0, lower: 0x378D_8E63_FFFF_FFFF);
-        private static readonly UInt128 MinInternalValue = new UInt128(upper: 0xDFFF_ED09_BEAD_87C0, lower: 0x378D_8E63_FFFF_FFFF);
 
         private const ulong SignMaskUpper = 0x8000_0000_0000_0000;
         private const ulong NaNMaskUpper = 0x7C00_0000_0000_0000;
@@ -44,8 +42,10 @@ namespace System.Numerics
         public static Decimal128 NaN => new Decimal128(QuietNaNValue);
         public static Decimal128 NegativeZero => new Decimal128(NegativeZeroValue);
         public static Decimal128 Zero => new Decimal128(ZeroValue);
-        public static Decimal128 MinValue => new Decimal128(MinInternalValue);
-        public static Decimal128 MaxValue => new Decimal128(MaxInternalValue);
+        public static Decimal128 MinValue => new Decimal128(upper: 0xDFFF_ED09_BEAD_87C0, lower: 0x378D_8E63_FFFF_FFFF);
+        public static Decimal128 MaxValue => new Decimal128(upper: 0x5FFF_ED09_BEAD_87C0, lower: 0x378D_8E63_FFFF_FFFF);
+
+        public static Decimal128 Epsilon => new Decimal128(upper: 0x0000_0000_0000_0000, lower: 0x0000_0000_0000_0001); // Smallest positive subnormal value, aka 1 * 10^-6176
 
         internal Decimal128(UInt128 value)
         {
@@ -53,7 +53,13 @@ namespace System.Numerics
             _lower = value.Lower;
         }
 
-        public Decimal128(Int128 significand, int exponent)
+        internal Decimal128(ulong upper, ulong lower)
+        {
+            _upper = upper;
+            _lower = lower;
+        }
+
+        internal Decimal128(Int128 significand, int exponent)
         {
             bool isNegative = significand < 0;
             UInt128 magnitude;

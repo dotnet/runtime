@@ -11307,8 +11307,6 @@ namespace System.Numerics
           System.ISpanParsable<Decimal32>,
           System.Numerics.IMinMaxValue<Decimal32>
     {
-        public Decimal32(int significand, int exponent) { throw null; }
-
         public int CompareTo(object? value) { throw null; }
         public int CompareTo(Decimal32 other) { throw null; }
         public bool Equals(Decimal32 other) { throw null; }
@@ -11327,6 +11325,8 @@ namespace System.Numerics
         public static Decimal32 Zero { get { throw null; } }
         public static Decimal32 MaxValue { get { throw null; } }
         public static Decimal32 MinValue { get { throw null; } }
+
+        public static Decimal32 Epsilon { get { throw null; } }
 
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
@@ -11348,8 +11348,6 @@ namespace System.Numerics
           System.ISpanParsable<Decimal64>,
           System.Numerics.IMinMaxValue<Decimal64>
     {
-        public Decimal64(long significand, int exponent) { throw null; }
-
         public int CompareTo(object? value) { throw null; }
         public int CompareTo(Decimal64 other) { throw null; }
         public bool Equals(Decimal64 other) { throw null; }
@@ -11368,6 +11366,8 @@ namespace System.Numerics
         public static Decimal64 Zero { get { throw null; } }
         public static Decimal64 MaxValue { get { throw null; } }
         public static Decimal64 MinValue { get { throw null; } }
+
+        public static Decimal64 Epsilon { get { throw null; } }
 
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
@@ -11389,8 +11389,6 @@ namespace System.Numerics
           System.ISpanParsable<Decimal128>,
           System.Numerics.IMinMaxValue<Decimal128>
     {
-        public Decimal128(Int128 significand, int exponent) { throw null; }
-
         public int CompareTo(object? value) { throw null; }
         public int CompareTo(Decimal128 other) { throw null; }
         public bool Equals(Decimal128 other) { throw null; }
@@ -11409,6 +11407,8 @@ namespace System.Numerics
         public static Decimal128 Zero { get { throw null; } }
         public static Decimal128 MaxValue { get { throw null; } }
         public static Decimal128 MinValue { get { throw null; } }
+
+        public static Decimal128 Epsilon { get { throw null; } }
 
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }

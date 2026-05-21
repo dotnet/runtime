@@ -39,8 +39,8 @@ namespace System.Numerics
         private const uint NaNMask = 0x7C00_0000;
         private const uint InfinityMask = 0x7800_0000;
         private const uint MaxSignificand = 9_999_999;
-        private const uint MaxInternalValue = 0x77F8_967F; // 9,999,999 x 10^90
-        private const uint MinInternalValue = 0xF7F8_967F; // -9,999,999 x 10^90
+        private const uint MaxInternalValue = 0x77F8_967F; // +9.999_999 * 10^96; aka +9_999_999 * 10^90
+        private const uint MinInternalValue = 0xF7F8_967F; // -9.999_999 * 10^96; aka -9_999_999 * 10^90
 
         public static Decimal32 PositiveInfinity => new Decimal32(PositiveInfinityValue);
         public static Decimal32 NegativeInfinity => new Decimal32(NegativeInfinityValue);
@@ -49,6 +49,8 @@ namespace System.Numerics
         public static Decimal32 Zero => new Decimal32(ZeroValue);
         public static Decimal32 MinValue => new Decimal32(MinInternalValue);
         public static Decimal32 MaxValue => new Decimal32(MaxInternalValue);
+
+        public static Decimal32 Epsilon => new Decimal32(0x0000_0001); // Smallest positive subnormal value, aka 1 * 10^-101
 
         private static ReadOnlySpan<uint> UInt32Powers10 =>
             [
@@ -61,10 +63,10 @@ namespace System.Numerics
                 1000000,
             ];
 
-        public Decimal32(int significand, int exponent)
+        internal Decimal32(int significand, int exponent)
         {
             bool isNegative = significand < 0;
-            uint unsignedSignificand = isNegative ? (uint)(-(long)significand) : (uint)significand;
+            uint unsignedSignificand = isNegative ? (uint)-significand : (uint)significand;
             _value = Number.ConstructorToDecimalIeee754Bits<Decimal32, uint>(isNegative, unsignedSignificand, exponent);
         }
 
