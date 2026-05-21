@@ -26,6 +26,9 @@ namespace Microsoft.DotNet.Analyzers.PlatformDoc
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public sealed class PlatformDocAnalyzer : DiagnosticAnalyzer
     {
+        private static readonly Regex s_memberRegex = new(@"<member\s+name=""([^""]+)"">(.*?)</member>", RegexOptions.Singleline | RegexOptions.Compiled);
+        private static readonly Regex s_whitespaceRegex = new(@"\s+", RegexOptions.Compiled);
+
         public const string DiagnosticIdMissingPrimaryFile = "PLATDOC001";
         public const string DiagnosticIdBadPartialFileName = "PLATDOC002";
         public const string DiagnosticIdDocsOnNonPrimaryFile = "PLATDOC003";
@@ -129,7 +132,7 @@ namespace Microsoft.DotNet.Analyzers.PlatformDoc
 
             // Use regex to extract member elements to avoid XML parser normalization
             // that could cause false mismatches with GetDocumentationCommentXml() output.
-            foreach (Match match in Regex.Matches(xml, @"<member\s+name=""([^""]+)"">(.*?)</member>", RegexOptions.Singleline))
+            foreach (Match match in s_memberRegex.Matches(xml))
             {
                 string name = match.Groups[1].Value;
                 string innerXml = match.Groups[2].Value;
@@ -161,6 +164,10 @@ namespace Microsoft.DotNet.Analyzers.PlatformDoc
 
                 // Skip accessors; they're covered by the property/event.
                 if (member is IMethodSymbol { AssociatedSymbol: not null })
+                    continue;
+
+                // Skip nested types; they get their own SymbolKind.NamedType callback.
+                if (member is INamedTypeSymbol)
                     continue;
 
                 CheckSymbolDoc(context, member, canonicalDocs);
@@ -219,7 +226,7 @@ namespace Microsoft.DotNet.Analyzers.PlatformDoc
         private static string NormalizeDocXml(string xml)
         {
             // Normalize whitespace: collapse runs of whitespace into single spaces, trim.
-            return Regex.Replace(xml, @"\s+", " ").Trim();
+            return s_whitespaceRegex.Replace(xml, " ").Trim();
         }
 
         private static bool IsPlatformSpecificTfm(string tfm)

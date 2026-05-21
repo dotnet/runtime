@@ -129,6 +129,9 @@
       <CanonicalDocSourceTargetFramework Condition="'@(_NonPlatformDocCandidate)' != ''">@(_NonPlatformDocCandidate)</CanonicalDocSourceTargetFramework>
       <CanonicalDocSourceTargetFramework Condition="'$(CanonicalDocSourceTargetFramework)' == '' and '@(_AnyDocCandidate)' != ''">@(_AnyDocCandidate)</CanonicalDocSourceTargetFramework>
     </PropertyGroup>
+
+    <Error Condition="'$(IsPlatformNotSupportedAssembly)' == 'true' and '$(CanonicalDocSourceTargetFramework)' == ''"
+           Text="Could not find a compatible TargetFramework to use as the documentation source for this PNSE build. Set 'CanonicalDocSourceTargetFramework' to the desired target framework." />
   </Target>
 
   <!-- Add a ProjectReference to the canonical doc source to ensure it builds first.
@@ -141,9 +144,6 @@
                      '$(CanonicalDocSourceTargetFramework)' != '' and
                      '$(CanonicalDocSourceTargetFramework)' != '$(TargetFramework)' and
                      ('$(BuildTargetFramework)' == '' or '$(TargetFrameworkIdentifier)' == '.NETCoreApp')">
-
-    <Error Condition="'$(IsPlatformNotSupportedAssembly)' == 'true' and '$(CanonicalDocSourceTargetFramework)' == ''"
-           Text="Could not find a compatible TargetFramework to use as the documentation source for this PNSE build. Set 'CanonicalDocSourceTargetFramework' to the desired target framework." />
 
     <ItemGroup>
       <ProjectReference Include="$(MSBuildProjectFullPath)"
