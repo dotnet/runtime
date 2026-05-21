@@ -2731,12 +2731,10 @@ void CodeGen::genEmitterUnitTests()
 #ifndef TARGET_WASM
     inst_JMP(EJ_jmp, skipLabel);
 #else
-    // On Wasm, we need a pre-defined label to emit a branch, so we use skipLabel for this.
-    // We skip over the generated emitter test code by nesting it in a block where the
-    // first instruction is a "skip" branch to the end of the block.
-    genDefineTempLabel(skipLabel);
+    // On Wasm, we skip over the generated emitter test code by nesting it in a block where the
+    // first instruction branches to the end of the block.
     GetEmitter()->emitIns_BlockTy(INS_block);
-    GetEmitter()->emitIns_J(INS_br, EA_4BYTE, 0, skipLabel);
+    GetEmitter()->emitIns_J(INS_br, EA_4BYTE, 0, nullptr);
 #endif
 
     // Add NOPs at the start and end for easier script parsing.
@@ -2796,9 +2794,7 @@ void CodeGen::genEmitterUnitTests()
     instGen(INS_end);
 #endif
 
-#ifndef TARGET_WASM
     genDefineTempLabel(skipLabel);
-#endif
     instGen(INS_nop);
     instGen(INS_nop);
     instGen(INS_nop);
