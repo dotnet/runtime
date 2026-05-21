@@ -3,21 +3,14 @@
 
 using System.Collections.Generic;
 using System.Numerics;
-using System.Runtime.Intrinsics;
 
 namespace System.Linq
 {
     public static partial class Enumerable
     {
-        public static int Max(this IEnumerable<int> source) => MinMaxInteger<int, MaxCalc<int>>(source);
+        public static int Max(this IEnumerable<int> source) => Max(source, comparer: null);
 
-        public static long Max(this IEnumerable<long> source) => MinMaxInteger<long, MaxCalc<long>>(source);
-
-        private readonly struct MaxCalc<T> : IMinMaxCalc<T> where T : struct, IBinaryInteger<T>
-        {
-            public static bool Compare(T left, T right) => left > right;
-            public static T MinMax(ReadOnlySpan<T> span) => MemoryExtensions.Max(span);
-        }
+        public static long Max(this IEnumerable<long> source) => Max(source, comparer: null);
 
         public static int? Max(this IEnumerable<int?> source) => MaxInteger(source);
 
