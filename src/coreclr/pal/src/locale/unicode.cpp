@@ -61,6 +61,7 @@ MultiByteToWideChar(
         IN int cchWideChar)
 {
     INT retval =0;
+    dwFlags |= MINIPAL_TREAT_AS_LITTLE_ENDIAN;
 
     PERF_ENTRY(MultiByteToWideChar);
     ENTRY("MultiByteToWideChar(CodePage=%u, dwFlags=%#x, lpMultiByteStr=%p (%s),"
@@ -68,7 +69,7 @@ MultiByteToWideChar(
     CodePage, dwFlags, lpMultiByteStr?lpMultiByteStr:"NULL", lpMultiByteStr?lpMultiByteStr:"NULL",
     cbMultiByte, lpWideCharStr, cchWideChar);
 
-    if (dwFlags & ~(MB_ERR_INVALID_CHARS | MB_PRECOMPOSED))
+    if (dwFlags & ~(MB_ERR_INVALID_CHARS | MB_PRECOMPOSED | MINIPAL_TREAT_AS_LITTLE_ENDIAN))
     {
         ASSERT("Error dwFlags(0x%x) parameter is invalid\n", dwFlags);
         SetLastError(ERROR_INVALID_FLAGS);
@@ -137,6 +138,7 @@ WideCharToMultiByte(
     INT retval =0;
     char defaultChar = '?';
     BOOL usedDefaultChar = FALSE;
+    dwFlags |= MINIPAL_TREAT_AS_LITTLE_ENDIAN;
 
     PERF_ENTRY(WideCharToMultiByte);
     ENTRY("WideCharToMultiByte(CodePage=%u, dwFlags=%#x, lpWideCharStr=%p (%S), "
@@ -146,7 +148,7 @@ WideCharToMultiByte(
           cchWideChar, lpMultiByteStr, cbMultiByte,
           lpDefaultChar, lpUsedDefaultChar);
 
-    if (dwFlags & ~WC_NO_BEST_FIT_CHARS)
+    if (dwFlags & ~(WC_NO_BEST_FIT_CHARS | MINIPAL_TREAT_AS_LITTLE_ENDIAN))
     {
         ERROR("dwFlags %d invalid\n", dwFlags);
         SetLastError(ERROR_INVALID_FLAGS);
