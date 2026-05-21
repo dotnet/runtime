@@ -6,7 +6,7 @@ using Internal.JitInterface;
 using Internal.Runtime;
 using Internal.TypeSystem;
 
-namespace ILCompiler.DependencyAnalysis.ReadyToRun
+namespace Internal.Runtime.CallingConvention
 {
     /// <summary>
     /// Abstraction over type information needed by ArgIterator and TransitionBlock

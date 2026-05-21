@@ -13,7 +13,7 @@ using Internal.CorConstants;
 using Internal.JitInterface;
 using Internal.Runtime;
 
-namespace ILCompiler.DependencyAnalysis.ReadyToRun
+namespace Internal.Runtime.CallingConvention
 {
     internal abstract class TransitionBlock
     {
