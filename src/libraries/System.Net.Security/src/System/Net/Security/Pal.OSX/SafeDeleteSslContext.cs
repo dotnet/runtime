@@ -194,10 +194,8 @@ namespace System.Net
             // The GCHandle is owned by the SafeSslHandle and freed in its
             // ReleaseHandle override, which only runs once the ref count drops
             // to zero (i.e. after all outstanding P/Invokes and any in-flight
-            // native Read/Write callbacks have completed). A strong (Normal)
-            // handle is used so that this SafeDeleteSslContext stays rooted
-            // for as long as the native SSLContext can call back into us.
-            GCHandle handle = GCHandle.Alloc(this, GCHandleType.Normal);
+            // native Read/Write callbacks have completed).
+            GCHandle handle = GCHandle.Alloc(this);
             sslContext.SetConnectionGCHandle(handle);
 
             Interop.AppleCrypto.SslSetConnection(sslContext, GCHandle.ToIntPtr(handle));
