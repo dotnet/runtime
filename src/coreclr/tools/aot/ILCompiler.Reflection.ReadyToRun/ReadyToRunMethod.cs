@@ -644,6 +644,10 @@ namespace ILCompiler.Reflection.ReadyToRun
                 {
                     unwindInfo = new RiscV64.UnwindInfo(_readyToRunReader.ImageReader, unwindOffset);
                 }
+                else if (_readyToRunReader.Machine == WasmMachine.Wasm32)
+                {
+                    unwindInfo = new Wasm32.UnwindInfo(_readyToRunReader.ImageReader, unwindOffset);
+                }
 
                 if (i == 0 && unwindInfo != null)
                 {

@@ -530,8 +530,9 @@ RtlpGetFunctionEndAddress (
     _In_ TADDR ImageBase
     );
 
-#define RUNTIME_FUNCTION__BeginAddress(FunctionEntry)               ((FunctionEntry)->BeginAddress)
-#define RUNTIME_FUNCTION__SetBeginAddress(FunctionEntry,address)    ((FunctionEntry)->BeginAddress = (address))
+#define RUNTIME_FUNCTION__IsFunclet(FunctionEntry) ((FunctionEntry)->BeginAddress & 0x80000000)
+#define RUNTIME_FUNCTION__BeginAddress(FunctionEntry)               ((FunctionEntry)->BeginAddress & 0x7FFFFFFF)
+#define RUNTIME_FUNCTION__SetBeginAddress(FunctionEntry,address)    ((FunctionEntry)->BeginAddress =  address)
 
 #define RUNTIME_FUNCTION__EndAddress(FunctionEntry, ImageBase)      (RtlpGetFunctionEndAddress(FunctionEntry, (ULONG64)(ImageBase)))
 

@@ -766,6 +766,10 @@ inline CONTEXT * GETREDIRECTEDCONTEXT(Thread * thread) { LIMITED_METHOD_CONTRACT
 
 typedef DPTR(class TransitionFrame) PTR_TransitionFrame;
 
+#ifdef TARGET_WASM
+TADDR GetWasmVirtualIPFromStackPointer(TADDR sp);
+#endif
+
 class TransitionFrame : public Frame
 {
 #ifndef DACCESS_COMPILE
@@ -848,7 +852,19 @@ public:
     TADDR GetSP()
     {
         LIMITED_METHOD_DAC_CONTRACT;
+#ifdef TARGET_WASM
+        TransitionBlock* pTransitionBlock = (TransitionBlock*)GetTransitionBlock();
+        if (pTransitionBlock != NULL)
+        {
+            if (pTransitionBlock->m_ReturnAddress != 0)
+            {
+                return pTransitionBlock->m_StackPointer;
+            }
+        }
+        return 0;
+#else
         return GetTransitionBlock() + sizeof(TransitionBlock);
+#endif
     }
 
     BOOL NeedsUpdateRegDisplay_Impl()
@@ -1169,6 +1185,17 @@ public:
     TADDR GetTransitionBlock_Impl()
     {
         LIMITED_METHOD_DAC_CONTRACT;
+#ifdef TARGET_WASM
+        TransitionBlock* pTransitionBlock = (TransitionBlock*)m_pTransitionBlock;
+        if (pTransitionBlock != NULL)
+        {
+            if (pTransitionBlock->m_ReturnAddress == 0)
+            {
+                // Lazy compute the virtual IP for the frame
+                pTransitionBlock->m_ReturnAddress = GetWasmVirtualIPFromStackPointer(pTransitionBlock->m_StackPointer);
+            }
+        }
+#endif
         return m_pTransitionBlock;
     }
 

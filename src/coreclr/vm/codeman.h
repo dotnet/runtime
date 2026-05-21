@@ -2524,7 +2524,8 @@ public:
     static FunctionTableIndexRangeSection* FindFunctionTableIndexRangeSection(DWORD functionIndex);
 
     // Given a function table index, look up the corresponding Module and RUNTIME_FUNCTION,
-    // then compute and return the virtual IP for that entry.
+    // then compute and return the virtual IP for that the entrypoint for that function
+    // (which may require a walk back to find the main function if functionIndex represents a funclet)
     static TADDR          GetWasmVirtualIPFromFunctionTableIndex(DWORD functionIndex);
 #endif // TARGET_WASM
 

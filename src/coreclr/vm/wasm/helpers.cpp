@@ -1324,3 +1324,41 @@ void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet
 {
     PORTABILITY_ASSERT("Attempted to execute unmanaged code from interpreter on wasm, this is not yet implemented");
 }
+
+TADDR GetWasmFramePointerFromStackPointer(TADDR sp)
+{
+    if (sp <= 0x1000)
+    return 0;
+    else
+    {
+        if (*(int*)sp == 0)
+        {
+            sp = *(TADDR*)(sp + sizeof(TADDR));
+        }
+        if (*(int*)sp == TERMINATE_R2R_STACK_WALK)
+        {
+            return 0;
+        }
+        else
+        {
+            return sp;
+        }
+    }
+}
+
+TADDR GetWasmVirtualIPFromStackPointer(TADDR sp)
+{
+    TADDR fp = GetWasmFramePointerFromStackPointer(sp);
+
+    if (fp == 0)
+    {
+        return 0;
+    }
+    else
+    {
+        uint32_t r2rFunctionTableEntryNumber = ((uint32_t*)fp)[0];
+        uint32_t logicalVirtualIP = ((uint32_t*)fp)[1] * 2; // Multiple by 2 as virtual IPs are encoded in units of 2 to leave the low bit in the VirtualIP mapping available to distinguish between virtual IPs and interpreter addresses/PortableEntryPoints.
+        TADDR baseVirtualIP = ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex(r2rFunctionTableEntryNumber);
+        return baseVirtualIP + logicalVirtualIP;
+    }
+}

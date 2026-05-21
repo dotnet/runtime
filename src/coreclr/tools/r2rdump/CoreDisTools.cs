@@ -187,6 +187,7 @@ namespace R2RDump
                     // to 7 * 3 characters; see https://github.com/dotnet/llilc/blob/master/lib/CoreDisTools/coredistools.cpp.
                     Machine.I386 => 7 * 3,
                     Machine.Amd64 => 7 * 3,
+                    WasmMachine.Wasm32 => 7 * 3,
 
                     // Instructions are either 2 or 4 bytes long
                     Machine.ArmThumb2 => 4 * 3,

@@ -1138,6 +1138,13 @@ PTR_VOID GetUnwindDataBlob(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntimeFuncti
     *pSize = size;
     return xdata;
 
+#elif defined(TARGET_WASM)
+    PTR_BYTE pUnwindInfo(dac_cast<PTR_BYTE>(moduleBase + pRuntimeFunction->UnwindData));
+    PTR_BYTE pUnwindData = pUnwindInfo;
+    DecodeULEB128AsU32(&pUnwindData); // Skip the count of bytes to unwind
+    DecodeULEB128AsU32(&pUnwindData); // Read the function length in virtual IP units
+    *pSize = static_cast<SIZE_T>(pUnwindData - pUnwindInfo);
+    return pUnwindInfo;
 #else
     PORTABILITY_ASSERT("GetUnwindDataBlob");
     return NULL;
@@ -5843,9 +5850,16 @@ TADDR ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex(DWORD functionInd
     ReadyToRunInfo* pR2RInfo = pModule->GetReadyToRunInfo();
 
     DWORD localIndex = functionIndex - pSection->minFunctionTableIndex;
-    PTR_RUNTIME_FUNCTION pRuntimeFunction = pR2RInfo->GetRuntimeFunctions() + localIndex;
-
-    return pR2RInfo->GetMinVirtualIP() + pRuntimeFunction->BeginAddress;
+    do
+    {
+        PTR_RUNTIME_FUNCTION pRuntimeFunction = pR2RInfo->GetRuntimeFunctions() + localIndex;
+        if (RUNTIME_FUNCTION__IsFunclet(pRuntimeFunction))
+        {
+            localIndex--;
+            continue;
+        }
+        return pR2RInfo->GetMinVirtualIP() + RUNTIME_FUNCTION__BeginAddress(pRuntimeFunction);
+    } while (true);
 }
 #endif // TARGET_WASM
 
@@ -6441,6 +6455,9 @@ int NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod(DWORD RelativePc,
 
 #ifdef TARGET_ARM
     RelativePc |= THUMB_CODE;
+#define RUNTIME_FUNCTION__BeginAddress_NoRemoveThumbBit(pFunctionEntry) ((pFunctionEntry)->BeginAddress)
+#else
+#define RUNTIME_FUNCTION__BeginAddress_NoRemoveThumbBit(pFunctionEntry) RUNTIME_FUNCTION__BeginAddress(pFunctionEntry)
 #endif
 
     // Entries are sorted and terminated by sentinel value (DWORD)-1
@@ -6453,7 +6470,7 @@ int NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod(DWORD RelativePc,
        int Middle = Low + (High - Low) / 2;
 
        PTR_RUNTIME_FUNCTION pFunctionEntry = pRuntimeFunctionTable + Middle;
-       if (RelativePc < pFunctionEntry->BeginAddress)
+       if (RelativePc < RUNTIME_FUNCTION__BeginAddress_NoRemoveThumbBit(pFunctionEntry))
        {
            High = Middle - 1;
        }
@@ -6468,10 +6485,10 @@ int NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod(DWORD RelativePc,
         // This is safe because of entries are terminated by sentinel value (DWORD)-1
         PTR_RUNTIME_FUNCTION pNextFunctionEntry = pRuntimeFunctionTable + (i + 1);
 
-        if (RelativePc < pNextFunctionEntry->BeginAddress)
+        if (RelativePc < RUNTIME_FUNCTION__BeginAddress_NoRemoveThumbBit(pNextFunctionEntry))
         {
             PTR_RUNTIME_FUNCTION pFunctionEntry = pRuntimeFunctionTable + i;
-            if (RelativePc >= pFunctionEntry->BeginAddress)
+            if (RelativePc >= RUNTIME_FUNCTION__BeginAddress_NoRemoveThumbBit(pFunctionEntry))
             {
                 return i;
             }

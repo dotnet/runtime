@@ -375,7 +375,7 @@ PTR_MethodDesc ReadyToRunInfo::GetMethodDescForEntryPointInNativeImage(PCODE ent
         return NULL;
 #endif
 
-    TADDR val = (TADDR)m_entryPointToMethodDescMap.LookupValue(PCODEToPINSTR(entryPoint), (LPVOID)PCODEToPINSTR(entryPoint));
+    TADDR val = (TADDR)m_entryPointToMethodDescMap.LookupValue(PCODEToPINSTR(entryPoint), 0);
     if (val == (TADDR)INVALIDENTRY)
         return NULL;
 
@@ -394,7 +394,7 @@ bool ReadyToRunInfo::SetMethodDescForEntryPointInNativeImage(PCODE entryPoint, M
     CONTRACTL_END;
 
     CrstHolder ch(&m_Crst);
-    if ((TADDR)m_entryPointToMethodDescMap.LookupValue(PCODEToPINSTR(entryPoint), (LPVOID)PCODEToPINSTR(entryPoint)) == (TADDR)INVALIDENTRY)
+    if ((TADDR)m_entryPointToMethodDescMap.LookupValue(PCODEToPINSTR(entryPoint), 0) == (TADDR)INVALIDENTRY)
     {
         m_entryPointToMethodDescMap.InsertValue(PCODEToPINSTR(entryPoint), methodDesc);
         return true;
@@ -1396,7 +1396,7 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
 
     _ASSERTE(id < m_nRuntimeFunctions);
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
-    pEntryPoint = dac_cast<TADDR>(GetImage()->GetBase()) + m_pRuntimeFunctions[id].BeginAddress;
+    pEntryPoint = dac_cast<TADDR>(GetImage()->GetBase()) + RUNTIME_FUNCTION__BeginAddress(&m_pRuntimeFunctions[id]);
     m_pCompositeInfo->SetMethodDescForEntryPointInNativeImage(pEntryPoint, pMD);
 #else
     // When we have portable entrypoints enabled, the R2R image contains actual entrypoints.
@@ -1406,7 +1406,7 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     PCODE actualEntryPoint;
     actualEntryPoint = GetMinFunctionTableIndex() + id;
     PCODE virtualEntrypointIP;
-    virtualEntrypointIP = GetMinVirtualIP() + m_pRuntimeFunctions[id].BeginAddress;
+    virtualEntrypointIP = GetMinVirtualIP() + RUNTIME_FUNCTION__BeginAddress(&m_pRuntimeFunctions[id]);
     pEntryPoint = pMD->GetTemporaryEntryPoint();
     PortableEntryPoint::SetActualCode(pEntryPoint, actualEntryPoint);
     m_pCompositeInfo->SetMethodDescForEntryPointInNativeImage(virtualEntrypointIP, pMD);
@@ -1609,9 +1609,9 @@ MethodDesc * ReadyToRunInfo::MethodIterator::GetMethodDesc_NoRestore()
 
     _ASSERTE(id < m_pInfo->m_nRuntimeFunctions);
 #ifdef TARGET_WASM
-    PCODE pEntryPoint = ExecutionManager::EncodeVirtualIP(m_pInfo->GetMinVirtualIP() + m_pInfo->m_pRuntimeFunctions[id].BeginAddress);
+    PCODE pEntryPoint = ExecutionManager::EncodeVirtualIP(m_pInfo->GetMinVirtualIP() + RUNTIME_FUNCTION__BeginAddress(&m_pInfo->m_pRuntimeFunctions[id]));
 #else
-    PCODE pEntryPoint = dac_cast<TADDR>(m_pInfo->GetImage()->GetBase()) + m_pInfo->m_pRuntimeFunctions[id].BeginAddress;
+    PCODE pEntryPoint = dac_cast<TADDR>(m_pInfo->GetImage()->GetBase()) + RUNTIME_FUNCTION__BeginAddress(&m_pInfo->m_pRuntimeFunctions[id]);
 #endif
 
     return m_pInfo->GetMethodDescForEntryPoint(pEntryPoint);
@@ -2873,7 +2873,7 @@ void ReadyToRunInfo::RegisterVirtualIPRange(Module* pModule)
     // The last RUNTIME_FUNCTION entry's BeginAddress is the virtual IP index of that entry.
     // Total virtual IPs = lastEntry.BeginAddress + virtualIPCount(lastEntry)
     T_RUNTIME_FUNCTION* pLastEntry = &m_pRuntimeFunctions[m_nRuntimeFunctions - 1];
-    UINT32 lastEntryVirtualIPIndex = pLastEntry->BeginAddress;
+    UINT32 lastEntryVirtualIPIndex = RUNTIME_FUNCTION__BeginAddress(pLastEntry);
 
     // Decode the virtual IP count from the last entry's unwind data.
     // Unwind format: ULEB128(frameSize) ULEB128(virtualIPCount)
