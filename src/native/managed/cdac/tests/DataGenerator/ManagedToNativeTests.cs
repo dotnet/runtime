@@ -68,7 +68,7 @@ public class ManagedToNativeTests
             .Allocate(Addr, 4, (0, U32(0u)));
 
         MigrateMNWritable t = Materialize<MigrateMNWritable>(target, Addr);
-        t.Write_flags(target, 0xFACEu);
+        t.Write_flags(0xFACEu);
 
         Assert.Equal(0xFACEu, t._flags);
     }
@@ -82,7 +82,7 @@ public class ManagedToNativeTests
             .Allocate(Addr, 4, (0, U32(0u)));
 
         MigrateMNWritable t = Materialize<MigrateMNWritable>(target, Addr);
-        t.Write_flags(target, 0xBEEFu);
+        t.Write_flags(0xBEEFu);
 
         Assert.Equal(0xBEEFu, t._flags);
     }

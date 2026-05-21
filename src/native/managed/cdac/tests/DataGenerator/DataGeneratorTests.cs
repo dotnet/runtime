@@ -196,7 +196,7 @@ public class DataGeneratorTests
         TestWriteNative t = Materialize<TestWriteNative>(target, InstanceAddr);
         Assert.Equal(1u, t.Flags);
 
-        t.WriteFlags(target, 0xFEED_FACEu);
+        t.WriteFlags(0xFEED_FACEu);
 
         Assert.Equal(0xFEED_FACEu, t.Flags);
         Assert.Equal(0xFEED_FACEu, BitConverter.ToUInt32(target.Bytes(InstanceAddr)));
@@ -211,7 +211,7 @@ public class DataGeneratorTests
 
         TestWriteManaged t = Materialize<TestWriteManaged>(target, InstanceAddr);
 
-        t.WriteFlags(target, 0xABCDu);
+        t.WriteFlags(0xABCDu);
 
         Assert.Equal(0xABCDu, t.Flags);
         Assert.Equal(0xABCDu, BitConverter.ToUInt32(target.Bytes(InstanceAddr)));
@@ -226,7 +226,7 @@ public class DataGeneratorTests
             .Allocate(InstanceAddr, 8, (0, U32(0u)), (4, U32(0u)));
 
         TestWriteCross t = Materialize<TestWriteCross>(target, InstanceAddr);
-        t.WriteFlags(target, 0x33u);
+        t.WriteFlags(0x33u);
 
         Assert.Equal(0x33u, BitConverter.ToUInt32(target.Bytes(InstanceAddr).Slice(0, 4)));
         Assert.Equal(0u, BitConverter.ToUInt32(target.Bytes(InstanceAddr).Slice(4, 4)));
@@ -242,7 +242,7 @@ public class DataGeneratorTests
             .Allocate(InstanceAddr, 8, (4, U32(0u)));
 
         TestWriteCross t = Materialize<TestWriteCross>(target, InstanceAddr);
-        t.WriteFlags(target, 0x44u);
+        t.WriteFlags(0x44u);
 
         Assert.Equal(0x44u, BitConverter.ToUInt32(target.Bytes(InstanceAddr).Slice(4, 4)));
     }

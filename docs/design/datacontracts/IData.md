@@ -643,18 +643,6 @@ Expression-bodied properties for *trivial* projections of an already-
 read field (e.g. `bool IsAlive => ReferenceCount != 0;`) are fine --
 they don't add target reads or hide work.
 
-### Avoid capturing `Target` in instance state
-
-An IData instance is a *cached snapshot* of target memory at the
-moment of materialization. The `Target` itself is the live channel to
-the process / dump and is supplied by the contract or other consumer
-on each call. Methods that need to touch the target (the generated
-`Write{Name}` is the canonical example; an `OnInit` body is another)
-take `Target` as a parameter -- don't stash it as an instance field.
-Capturing `Target` couples every cached IData object to one specific
-target, bloats the cache, and invites stale-target bugs when the
-target is rebuilt after a `Flush`.
-
 ### Match the descriptor's field type verbatim
 
 The C# property's declared type should follow the descriptor's

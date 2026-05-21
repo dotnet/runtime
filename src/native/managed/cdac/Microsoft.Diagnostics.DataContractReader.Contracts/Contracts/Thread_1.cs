@@ -49,13 +49,13 @@ internal readonly struct Thread_1 : IThread
     void IThread.SetDebuggerControlledThreadState(TargetPointer thread, DebuggerControlledThreadState state)
     {
         Data.Thread t = _target.ProcessedData.GetOrAdd<Data.Thread>(thread);
-        t.WriteDebuggerControlledThreadState(_target, t.DebuggerControlledThreadState | (uint)state);
+        t.WriteDebuggerControlledThreadState(t.DebuggerControlledThreadState | (uint)state);
     }
 
     void IThread.ResetDebuggerControlledThreadState(TargetPointer thread, DebuggerControlledThreadState state)
     {
         Data.Thread t = _target.ProcessedData.GetOrAdd<Data.Thread>(thread);
-        t.WriteDebuggerControlledThreadState(_target, t.DebuggerControlledThreadState & ~(uint)state);
+        t.WriteDebuggerControlledThreadState(t.DebuggerControlledThreadState & ~(uint)state);
     }
 
     ThreadStoreData IThread.GetThreadStoreData()
