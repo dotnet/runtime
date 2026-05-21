@@ -19,6 +19,7 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 /// on the stack with a JIT'd gap between them. Both InterpreterFrame regions have
 /// multiple interpreted methods (pParent chain).
 /// </summary>
+[ActiveIssue("https://github.com/dotnet/runtime/issues/128195")]
 public class InterpreterStackDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "InterpreterStack";
