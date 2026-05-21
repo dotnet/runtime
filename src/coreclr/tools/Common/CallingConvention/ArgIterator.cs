@@ -2,20 +2,30 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // Provides an abstraction over platform specific calling conventions (specifically, the calling convention
-// utilized by the JIT on that platform). The caller enumerates each argument of a signature in turn, and is 
+// utilized by the JIT on that platform). The caller enumerates each argument of a signature in turn, and is
 // provided with information mapping that argument into registers and/or stack locations.
+
+#nullable disable
+// Suppress analyzer warnings for crossgen2 code style when file-linked into cDAC
+#pragma warning disable SA1028 // Code should not contain trailing whitespace
+#pragma warning disable SA1129 // Do not use default value type constructor
+#pragma warning disable SA1206 // Modifier order
+#pragma warning disable SA1400 // Element should declare an access modifier
+#pragma warning disable CA1822 // Mark members as static
+#pragma warning disable IDE0059 // Unnecessary assignment
 
 using System;
 using System.Diagnostics;
 
 using Internal.JitInterface;
-using Internal.NativeFormat;
 using Internal.CorConstants;
-using Internal.Runtime;
 using Internal.TypeSystem;
+#if READYTORUN
+using Internal.NativeFormat;
+#endif
 
 
-namespace Internal.Runtime.CallingConvention
+namespace Internal.CallingConvention
 {
     public enum CORCOMPILE_GCREFMAP_TOKENS : byte
     {
@@ -144,14 +154,14 @@ namespace Internal.Runtime.CallingConvention
         //  fn - promotion function to apply to each managed object pointer
         //  sc - scan context to pass to the promotion function
         //  fieldBytes - size of the structure
-        internal void ReportPointersFromStructInRegisters(TypeDesc type, int delta, CORCOMPILE_GCREFMAP_TOKENS[] frame)
+        internal void ReportPointersFromStructInRegisters(ITypeHandle type, int delta, CORCOMPILE_GCREFMAP_TOKENS[] frame)
         {
             Debug.Assert(IsStructPassedInRegs());
 
             int genRegDest = GetStructGenRegDestinationAddress();
 
             SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR descriptor;
-            SystemVStructClassificator.GetSystemVAmd64PassStructInRegisterDescriptor(type, out descriptor);
+            type.GetSystemVAmd64PassStructInRegisterDescriptor(out descriptor);
 
             for (int i = 0; i < descriptor.eightByteCount; i++)
             {
@@ -221,9 +231,19 @@ namespace Internal.Runtime.CallingConvention
 
         public override int GetHashCode()
         {
+#if READYTORUN
             return 37 + (_parameterTypes == null ?
                 _returnType.GetHashCode() :
                 VersionResilientHashCode.GenericInstanceHashCode(_returnType.GetHashCode(), _parameterTypes));
+#else
+            int hashcode = 37 + _returnType.GetHashCode();
+            if (_parameterTypes != null)
+            {
+                for (int i = 0; i < _parameterTypes.Length; i++)
+                    hashcode = hashcode * 31 + _parameterTypes[i].GetHashCode();
+            }
+            return hashcode;
+#endif
         }
 
         public bool HasThis() { return _hasThis; }

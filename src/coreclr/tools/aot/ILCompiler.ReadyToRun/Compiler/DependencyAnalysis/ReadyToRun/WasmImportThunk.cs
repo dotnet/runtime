@@ -5,14 +5,14 @@ using ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.ObjectWriter;
 using ILCompiler.ObjectWriter.WasmInstructions;
 using Internal.JitInterface;
-using Internal.Runtime.CallingConvention;
+using Internal.CallingConvention;
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.ReadyToRunConstants;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using ArgIterator = Internal.Runtime.CallingConvention.ArgIterator;
+using ArgIterator = Internal.CallingConvention.ArgIterator;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {

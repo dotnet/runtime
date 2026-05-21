@@ -1,12 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+// Suppress analyzer warnings for crossgen2 code style when file-linked into cDAC
+#pragma warning disable SA1001 // Commas should be followed by whitespace
+
 using Internal.CorConstants;
 using Internal.JitInterface;
-using Internal.Runtime;
 using Internal.TypeSystem;
 
-namespace Internal.Runtime.CallingConvention
+namespace Internal.CallingConvention
 {
     /// <summary>
     /// Abstraction over type information needed by ArgIterator and TransitionBlock

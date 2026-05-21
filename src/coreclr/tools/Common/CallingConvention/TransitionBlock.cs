@@ -2,8 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // Provides an abstraction over platform specific calling conventions (specifically, the calling convention
-// utilized by the JIT on that platform). The caller enumerates each argument of a signature in turn, and is 
+// utilized by the JIT on that platform). The caller enumerates each argument of a signature in turn, and is
 // provided with information mapping that argument into registers and/or stack locations.
+
+// Suppress analyzer warnings for crossgen2 code style when file-linked into cDAC
+#pragma warning disable SA1028 // Code should not contain trailing whitespace
+#pragma warning disable SA1206 // Modifier order
+#pragma warning disable CA1822 // Mark members as static
 
 using System;
 using System.Diagnostics;
@@ -11,36 +16,30 @@ using System.Diagnostics;
 using Internal.TypeSystem;
 using Internal.CorConstants;
 using Internal.JitInterface;
-using Internal.Runtime;
 
-namespace Internal.Runtime.CallingConvention
+namespace Internal.CallingConvention
 {
     internal abstract class TransitionBlock
     {
-        public static TransitionBlock FromTarget(TargetDetails target)
+        public static TransitionBlock FromTarget(TargetArchitecture arch, bool isWindows, bool isApplePlatform, bool isArmel)
         {
-            switch (target.Architecture)
+            switch (arch)
             {
                 case TargetArchitecture.X86:
                     return X86TransitionBlock.Instance;
 
                 case TargetArchitecture.X64:
-                    return target.OperatingSystem == TargetOS.Windows ?
+                    return isWindows ?
                         X64WindowsTransitionBlock.Instance :
                         X64UnixTransitionBlock.Instance;
 
                 case TargetArchitecture.ARM:
-                    if (target.Abi == TargetAbi.NativeAotArmel)
-                    {
-                        return Arm32ElTransitionBlock.Instance;
-                    }
-                    else
-                    {
-                        return Arm32TransitionBlock.Instance;
-                    }
+                    return isArmel ?
+                        Arm32ElTransitionBlock.Instance :
+                        Arm32TransitionBlock.Instance;
 
                 case TargetArchitecture.ARM64:
-                    return target.IsApplePlatform ?
+                    return isApplePlatform ?
                         AppleArm64TransitionBlock.Instance :
                         Arm64TransitionBlock.Instance;
 
@@ -54,7 +53,7 @@ namespace Internal.Runtime.CallingConvention
                     return Wasm32TransitionBlock.Instance;
 
                 default:
-                    throw new NotImplementedException(target.Architecture.ToString());
+                    throw new NotImplementedException(arch.ToString());
             }
         }
 
