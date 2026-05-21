@@ -715,6 +715,8 @@ namespace ILCompiler.DependencyAnalysis
                 RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L => 4,
                 RelocType.IMAGE_REL_BASED_THUMB_MOV32 => 8,
                 RelocType.IMAGE_REL_BASED_THUMB_MOV32_PCREL => 8,
+                RelocType.IMAGE_REL_BASED_THUMB_BRANCH24 => 4,
+                RelocType.IMAGE_REL_BASED_ARM64_BRANCH26 => 4,
                 RelocType.IMAGE_REL_BASED_LOONGARCH64_PC => 8,
                 RelocType.IMAGE_REL_BASED_LOONGARCH64_JIR => 8,
                 RelocType.IMAGE_REL_BASED_RISCV64_CALL_PLT => 8,
