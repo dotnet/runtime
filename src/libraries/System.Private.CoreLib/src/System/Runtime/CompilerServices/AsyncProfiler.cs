@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Runtime.InteropServices;
 using System.Threading;
+using static System.Runtime.CompilerServices.AsyncProfiler;
 using static System.Runtime.CompilerServices.AsyncProfilerEventSource;
 using Serializer = System.Runtime.CompilerServices.AsyncProfiler.EventBuffer.Serializer;
 
@@ -696,6 +697,21 @@ namespace System.Runtime.CompilerServices
 
         internal static partial class CreateAsyncContext
         {
+            public static void Create(ulong id)
+            {
+                Info info = default;
+                AsyncThreadContext context = AsyncThreadContext.Acquire(ref info);
+
+                SyncPoint.Check(context);
+
+                if (IsEnabled.CreateAsyncContextEvent(context.ActiveEventKeywords))
+                {
+                    EmitEvent(context, Stopwatch.GetTimestamp(), id);
+                }
+
+                AsyncThreadContext.Release(context);
+            }
+
             public static void EmitEvent(AsyncThreadContext context, long currentTimestamp, ulong id)
             {
                 const int MaxEventPayloadSize = Serializer.MaxCompressedUInt64Size;
@@ -710,6 +726,32 @@ namespace System.Runtime.CompilerServices
 
         internal static partial class ResumeAsyncContext
         {
+            public static ulong GetId(ref AsyncTaskDispatcherInfo info)
+            {
+                if (info.Dispatcher != null)
+                {
+                    return info.Dispatcher.ContextId;
+                }
+
+                return 0;
+            }
+
+            public static void Resume(ref AsyncTaskDispatcherInfo info)
+            {
+                AsyncThreadContext context = AsyncThreadContext.Acquire(ref info.AsyncProfilerInfo);
+
+                // TODO: SyncPoint.Check needs to re-emit V1 contexts (like V2 does).
+                // Temporarily bypass so Resume always fires.
+                SyncPoint.Check(context);
+
+                if (IsEnabled.ResumeAsyncContextEvent(context.ActiveEventKeywords))
+                {
+                    EmitEvent(context, Stopwatch.GetTimestamp(), GetId(ref info));
+                }
+
+                AsyncThreadContext.Release(context);
+            }
+
             public static void EmitEvent(AsyncThreadContext context, long currentTimestamp, ulong id)
             {
                 const int MaxEventPayloadSize = Serializer.MaxCompressedUInt64Size;
@@ -724,6 +766,20 @@ namespace System.Runtime.CompilerServices
 
         internal static partial class SuspendAsyncContext
         {
+            public static void Suspend(ref Info info)
+            {
+                AsyncThreadContext context = AsyncThreadContext.Acquire(ref info);
+
+                SyncPoint.Check(context);
+
+                if (IsEnabled.SuspendAsyncContextEvent(context.ActiveEventKeywords))
+                {
+                    EmitEvent(context, Stopwatch.GetTimestamp());
+                }
+
+                AsyncThreadContext.Release(context);
+            }
+
             public static void EmitEvent(AsyncThreadContext context, long currentTimestamp)
             {
                 Serializer.AsyncEventHeader(context, ref context.EventBuffer, currentTimestamp, AsyncEventID.SuspendAsyncContext, 0);
@@ -779,6 +835,11 @@ namespace System.Runtime.CompilerServices
             }
 
             public static void Handled(ref Info info, uint unwindedFrames)
+            {
+                UnwindFrames(ref info, unwindedFrames);
+            }
+
+            public static void UnwindFrames(ref Info info, uint unwindedFrames)
             {
                 AsyncThreadContext context = AsyncThreadContext.Acquire(ref info);
 

@@ -33,7 +33,7 @@ namespace System.Threading.Tasks.Tests
     }
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/127951", TestPlatforms.Android | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
-    public class AsyncProfilerTests
+    public partial class AsyncProfilerTests
     {
         // The test scenarios drive async work via Task.Run(...).GetAwaiter().GetResult() (see
         // RunScenarioAndFlush / RunScenario), which requires synchronous blocking waits. On
@@ -2376,6 +2376,7 @@ namespace System.Threading.Tasks.Tests
                         AsyncEventID.ResetAsyncThreadContext => OutputResetAsyncThreadContextEvent(),
                         AsyncEventID.ResetAsyncContinuationWrapperIndex => OutputResetAsyncContinuationWrapperIndexEvent(),
                         AsyncEventID.AsyncProfilerMetadata => OutputAsyncProfilerMetadataEvent(buffer.Slice(index)),
+                        AsyncEventID.AsyncProfilerSyncClock => OutputAsyncProfilerSyncClockEvent(buffer.Slice(index)),
                         _ => throw new InvalidOperationException($"Unknown eventId {eventId}."),
                     };
                 }
@@ -2494,6 +2495,21 @@ namespace System.Threading.Tasks.Tests
 
             byte wrapperCount = buffer[index++];
             Console.WriteLine($"  WrapperCount: {wrapperCount}");
+
+            Console.WriteLine("----------------------------");
+            return index;
+        }
+
+        private static int OutputAsyncProfilerSyncClockEvent(ReadOnlySpan<byte> buffer)
+        {
+            int index = 0;
+            Console.WriteLine("--- AsyncProfilerSyncClock ---");
+
+            Deserializer.ReadCompressedUInt64(buffer, ref index, out ulong qpcSync);
+            Console.WriteLine($"  QPCSync: {qpcSync}");
+
+            Deserializer.ReadCompressedUInt64(buffer, ref index, out ulong utcSync);
+            Console.WriteLine($"  UTCSync: {utcSync}");
 
             Console.WriteLine("----------------------------");
             return index;

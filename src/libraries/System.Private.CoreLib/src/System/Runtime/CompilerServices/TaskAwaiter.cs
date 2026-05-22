@@ -194,12 +194,35 @@ namespace System.Runtime.CompilerServices
         {
             Debug.Assert(stateMachineBox != null);
 
+            AsyncInstrumentation.Flags flags = AsyncInstrumentation.SyncActiveFlags();
+            if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
+            {
+                if (continueOnCapturedContext)
+                {
+                    if (SynchronizationContext.Current is SynchronizationContext syncCtx && syncCtx.GetType() != typeof(SynchronizationContext))
+                    {
+                        stateMachineBox = AsyncTaskDispatcher.Create(stateMachineBox);
+                    }
+                    else if (TaskScheduler.InternalCurrent is TaskScheduler scheduler && scheduler != TaskScheduler.Default)
+                    {
+                        stateMachineBox = AsyncTaskDispatcher.Create(stateMachineBox);
+                    }
+                }
+
+                // If we're awaiting a non-async task (I/O, Timer, TCS, etc.),
+                // this box is the root of a V1 async chain. Wrap or reuse a dispatch box.
+                // For mid-chain boxes (awaiting another async method), the continuation will
+                // be inlined via RunContinuations, so no dispatcher wrapping is needed here.
+                if (task is not IAsyncStateMachineBox)
+                {
+                    stateMachineBox = AsyncTaskDispatcher.Create(stateMachineBox);
+                }
+            }
+
             // If TaskWait* ETW events are enabled, trace a beginning event for this await
             // and set up an ending event to be traced when the asynchronous await completes.
             if (TplEventSource.Log.IsEnabled() || Task.s_asyncDebuggingEnabled)
             {
-                // TODO: AsyncProfiler — the ETW path bypasses UnsafeSetContinuationForAwait and
-                // uses the Action-based SetContinuationForAwait. Dispatcher wrapping is not applied here.
                 task.SetContinuationForAwait(OutputWaitEtwEvents(task, stateMachineBox.MoveNextAction), continueOnCapturedContext, flowExecutionContext: false);
             }
             else
