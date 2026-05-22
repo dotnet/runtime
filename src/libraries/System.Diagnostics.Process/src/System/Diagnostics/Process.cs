@@ -139,11 +139,21 @@ namespace System.Diagnostics
             }
             if (standardOutput is not null)
             {
+                if (OperatingSystem.IsWindows() && !standardOutput.IsAsync)
+                {
+                    throw new ArgumentException(SR.Argument_HandleNotAsync, nameof(standardOutput));
+                }
+
                 _standardOutput = new StreamReader(OpenStream(standardOutput, FileAccess.Read),
                     startInfo?.StandardOutputEncoding ?? GetStandardOutputEncoding(), true, StreamBufferSize);
             }
             if (standardError is not null)
             {
+                if (OperatingSystem.IsWindows() && !standardError.IsAsync)
+                {
+                    throw new ArgumentException(SR.Argument_HandleNotAsync, nameof(standardError));
+                }
+
                 _standardError = new StreamReader(OpenStream(standardError, FileAccess.Read),
                     startInfo?.StandardErrorEncoding ?? GetStandardOutputEncoding(), true, StreamBufferSize);
             }

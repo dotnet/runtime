@@ -106,8 +106,8 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void ProcessStartedWithAnonymousPipeHandles_CanCaptureOutput()
         {
-            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle outputReadHandle, out SafeFileHandle outputWriteHandle);
-            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle errorReadHandle, out SafeFileHandle errorWriteHandle);
+            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle outputReadHandle, out SafeFileHandle outputWriteHandle, asyncRead: true);
+            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle errorReadHandle, out SafeFileHandle errorWriteHandle, asyncRead: true);
 
             using (outputReadHandle)
             using (outputWriteHandle)
@@ -159,10 +159,7 @@ namespace System.Diagnostics.Tests
                     outputWriteHandle.Close();
                     errorWriteHandle.Close();
 
-                    string stdout = process.StandardOutput.ReadToEnd();
-                    string stderr = process.StandardError.ReadToEnd();
-
-                    process.WaitForExit(WaitInMS);
+                    (string stdout, string stderr) = process.ReadAllText();
 
                     Assert.Equal("stdout_hello", stdout);
                     Assert.Equal("stderr_hello", stderr);
