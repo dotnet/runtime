@@ -24,6 +24,7 @@ namespace System.Runtime.Loader.Tests
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static string UseCorruptAssembly() => BindFailureTest.Corrupt.TestClass.GetMessage();
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/128406", TestPlatforms.iOS)]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.HasAssemblyFiles))]
         public void NotFound_ExceptionContainsAssemblyPath()
         {
@@ -71,6 +72,7 @@ namespace System.Runtime.Loader.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/128406", TestPlatforms.iOS)]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.HasAssemblyFiles))]
         public void Corrupt_ExceptionContainsPathAndHResult()
         {
