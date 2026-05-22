@@ -2182,6 +2182,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
+    // Should be called repeatedly until it returns S_FALSE. E_FAIL is not fatal, just indicates partial heap corruption.
     public int WalkHeap(nuint handle, uint count, COR_HEAPOBJECT* objects, uint* fetched)
     {
         if (fetched is null)
@@ -2242,7 +2243,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 hrLocal = _legacy.WalkHeap((nuint)walk.LegacyHandle.Value, count, objectsLocalPtr, &fetchedLocal);
             }
             Debug.ValidateHResult(hr, hrLocal);
-            if (hr >= HResults.S_OK && hrLocal >= HResults.S_OK)
+            if (hr >= HResults.S_OK)
             {
                 Debug.Assert(*fetched == fetchedLocal,
                     $"cDAC WalkHeap fetched {*fetched}, legacy fetched {fetchedLocal}");
