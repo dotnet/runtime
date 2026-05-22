@@ -299,7 +299,7 @@ bool Compiler::gsFindVulnerableParams()
                         // A function pointer is treated like a write-through pointer since
                         // it controls what code gets executed, and so indirectly can cause
                         // a write to memory.
-                        gsMarkPointers(node->AsCall()->gtCallAddr);
+                        gsMarkPointers(node->AsCall()->gtControlExpr);
                     }
 
                     break;
@@ -498,8 +498,6 @@ bool Compiler::gsCreateShadowingLocals()
         shadowVarDsc->SetAddressExposed(varDsc->IsAddressExposed() DEBUGARG(varDsc->GetAddrExposedReason()));
         shadowVarDsc->lvDoNotEnregister       = varDsc->lvDoNotEnregister;
         shadowVarDsc->lvSingleDefRegCandidate = varDsc->lvSingleDefRegCandidate;
-        // The old variable will not be used in handlers anymore, allow it to stay enregistered
-        varDsc->lvLiveInOutOfHndlr = false;
 #ifdef DEBUG
         shadowVarDsc->SetDoNotEnregReason(varDsc->GetDoNotEnregReason());
         shadowVarDsc->SetDefinedViaAddress(varDsc->IsDefinedViaAddress());
@@ -627,8 +625,8 @@ void Compiler::gsCopyIntoShadow(unsigned lclNum, unsigned shadowLclNum)
 
             for (GenTree* node : LIR::AsRange(fgFirstBB))
             {
-                if (node->IsHelperCall(this, CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER) ||
-                    node->IsHelperCall(this, CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER_TRACK_TRANSITIONS))
+                if (node->IsHelperCall(CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER) ||
+                    node->IsHelperCall(CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER_TRACK_TRANSITIONS))
                 {
                     insertAfter = node;
                     break;

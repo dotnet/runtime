@@ -14,7 +14,7 @@ internal class FuncEvalFrame : IData<FuncEvalFrame>
     public FuncEvalFrame(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.FuncEvalFrame);
-        DebuggerEvalPtr = target.ReadPointer(address + (ulong)type.Fields[nameof(DebuggerEvalPtr)].Offset);
+        DebuggerEvalPtr = target.ReadPointerField(address, type, nameof(DebuggerEvalPtr));
         Address = address;
     }
 

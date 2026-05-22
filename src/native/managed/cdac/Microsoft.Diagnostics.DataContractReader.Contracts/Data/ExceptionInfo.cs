@@ -12,21 +12,23 @@ internal sealed class ExceptionInfo : IData<ExceptionInfo>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.ExceptionInfo);
 
-        PreviousNestedInfo = target.ReadPointer(address + (ulong)type.Fields[nameof(PreviousNestedInfo)].Offset);
-        ThrownObjectHandle = target.ReadPointer(address + (ulong)type.Fields[nameof(ThrownObjectHandle)].Offset);
-        ExceptionFlags = target.Read<uint>(address + (ulong)type.Fields[nameof(ExceptionFlags)].Offset);
-        StackLowBound = target.ReadPointer(address + (ulong)type.Fields[nameof(StackLowBound)].Offset);
-        StackHighBound = target.ReadPointer(address + (ulong)type.Fields[nameof(StackHighBound)].Offset);
+        PreviousNestedInfo = target.ReadPointerField(address, type, nameof(PreviousNestedInfo));
+        ThrownObject = target.ReadPointerField(address, type, nameof(ThrownObject));
         if (type.Fields.ContainsKey(nameof(ExceptionWatsonBucketTrackerBuckets)))
-            ExceptionWatsonBucketTrackerBuckets = target.ReadPointer(address + (ulong)type.Fields[nameof(ExceptionWatsonBucketTrackerBuckets)].Offset);
-        PassNumber = target.Read<byte>(address + (ulong)type.Fields[nameof(PassNumber)].Offset);
-        CSFEHClause = target.ReadPointer(address + (ulong)type.Fields[nameof(CSFEHClause)].Offset);
-        CSFEnclosingClause = target.ReadPointer(address + (ulong)type.Fields[nameof(CSFEnclosingClause)].Offset);
-        CallerOfActualHandlerFrame = target.ReadPointer(address + (ulong)type.Fields[nameof(CallerOfActualHandlerFrame)].Offset);
+            ExceptionWatsonBucketTrackerBuckets = target.ReadPointerField(address, type, nameof(ExceptionWatsonBucketTrackerBuckets));
+        ExceptionFlags = target.ReadField<uint>(address, type, nameof(ExceptionFlags));
+        StackLowBound = target.ReadPointerField(address, type, nameof(StackLowBound));
+        StackHighBound = target.ReadPointerField(address, type, nameof(StackHighBound));
+        PassNumber = target.ReadField<byte>(address, type, nameof(PassNumber));
+        CSFEHClause = target.ReadPointerField(address, type, nameof(CSFEHClause));
+        CSFEnclosingClause = target.ReadPointerField(address, type, nameof(CSFEnclosingClause));
+        CallerOfActualHandlerFrame = target.ReadPointerField(address, type, nameof(CallerOfActualHandlerFrame));
+        ClauseForCatchHandlerStartPC = target.ReadField<uint>(address, type, nameof(ClauseForCatchHandlerStartPC));
+        ClauseForCatchHandlerEndPC = target.ReadField<uint>(address, type, nameof(ClauseForCatchHandlerEndPC));
     }
 
     public TargetPointer PreviousNestedInfo { get; }
-    public TargetPointer ThrownObjectHandle { get; }
+    public TargetPointer ThrownObject { get; }
     public uint ExceptionFlags { get; }
     public TargetPointer StackLowBound { get; }
     public TargetPointer StackHighBound { get; }
@@ -35,4 +37,6 @@ internal sealed class ExceptionInfo : IData<ExceptionInfo>
     public TargetPointer CSFEHClause { get; }
     public TargetPointer CSFEnclosingClause { get; }
     public TargetPointer CallerOfActualHandlerFrame { get; }
+    public uint ClauseForCatchHandlerStartPC { get; }
+    public uint ClauseForCatchHandlerEndPC { get; }
 }

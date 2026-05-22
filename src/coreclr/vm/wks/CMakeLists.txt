@@ -8,9 +8,17 @@ add_library_clr(cee_wks_core OBJECT ${VM_SOURCES_WKS} ${VM_SOURCES_WKS_ARCH_ASM}
 add_library_clr(cee_wks OBJECT ${VM_SOURCES_WKS_SPECIAL})
 add_library_clr(cee_wks_mergeable OBJECT ${VM_SOURCES_WKS_SPECIAL})
 
+if (CLR_CMAKE_TARGET_ARCH_WASM AND VM_SOURCES_WKS_GEN)
+    add_library_clr(cee_wks_gen OBJECT ${VM_SOURCES_WKS_GEN})
+endif()
+
 target_precompile_headers(cee_wks_core PRIVATE [["common.h"]])
 target_precompile_headers(cee_wks PRIVATE [["common.h"]])
 target_precompile_headers(cee_wks_mergeable PRIVATE [["common.h"]])
+
+if (TARGET cee_wks_gen)
+    target_precompile_headers(cee_wks_gen PRIVATE [["common.h"]])
+endif()
 
 if (MSVC)
     # corelib.cpp does not compile with precompiled header file
@@ -20,6 +28,10 @@ endif()
 add_dependencies(cee_wks_core eventing_headers)
 add_dependencies(cee_wks eventing_headers)
 add_dependencies(cee_wks_mergeable eventing_headers)
+
+if (TARGET cee_wks_gen)
+    add_dependencies(cee_wks_gen eventing_headers)
+endif()
 
 if (CLR_CMAKE_TARGET_WIN32)
   if(NOT CLR_CMAKE_HOST_ARCH_ARM AND NOT CLR_CMAKE_HOST_ARCH_ARM64)
@@ -45,6 +57,10 @@ add_custom_target(precompiled_asm DEPENDS ${VM_WKS_ARCH_ASM_OBJECTS})
 add_dependencies(cee_wks_core precompiled_asm)
 add_dependencies(cee_wks precompiled_asm)
 add_dependencies(cee_wks_mergeable precompiled_asm)
+
+if (TARGET cee_wks_gen)
+    add_dependencies(cee_wks_gen precompiled_asm)
+endif()
 
 target_compile_definitions(cee_wks_mergeable PUBLIC FEATURE_STATICALLY_LINKED)
 target_compile_definitions(cee_wks_mergeable PUBLIC CORECLR_EMBEDDED)

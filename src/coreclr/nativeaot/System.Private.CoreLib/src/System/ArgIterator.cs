@@ -15,7 +15,6 @@ namespace System
         }
 
         [CLSCompliant(false)]
-        [RequiresUnsafe]
         public unsafe ArgIterator(RuntimeArgumentHandle arglist, void* ptr)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ArgIterator);

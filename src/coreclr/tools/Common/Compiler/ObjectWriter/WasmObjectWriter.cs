@@ -128,7 +128,7 @@ namespace ILCompiler.ObjectWriter
         {
             SectionWriter writer = GetOrCreateSection(WasmObjectNodeSection.FunctionSection);
 
-            WasmFuncType signature = WasmLowering.GetSignature(managedSignature, flags);
+            WasmFuncType signature = WasmLowering.GetSignature(managedSignature, flags).FuncType;
             Utf8String key = signature.GetMangledName(_nodeFactory.NameMangler);
             if (!_uniqueSignatures.TryGetValue(key, out int signatureIndex))
             {
@@ -359,8 +359,6 @@ namespace ILCompiler.ObjectWriter
             byte[] data = new byte[codeSize];
             body.Encode(data);
 
-            // The code writer should already be set up to write the function body size as a prefix, so just emit the function body here
-            Debug.Assert(codeWriter.HasLengthPrefix);
             codeWriter.EmitData(data);
             _uniqueSymbols.Add(name.ToString(), _methodCount);
             _methodCount++;
@@ -478,23 +476,6 @@ namespace ILCompiler.ObjectWriter
 
             return section;
         }
-
-        private protected override SectionWriter.Params WriterParams(ObjectNodeSection section)
-        {
-            if (section == ObjectNodeSection.WasmCodeSection)
-            {
-                return new SectionWriter.Params
-                {
-                    LengthEncodeFormat = LengthEncodeFormat.ULEB128
-                };
-            }
-
-            return new SectionWriter.Params
-            {
-                LengthEncodeFormat = LengthEncodeFormat.None
-            };
-        }
-
 
         private protected override void CreateSection(ObjectNodeSection section, Utf8String comdatName, Utf8String symbolName, int sectionIndex, Stream sectionStream)
         {
@@ -946,7 +927,7 @@ namespace ILCompiler.ObjectWriter
                         case RelocType.WASM_MEMORY_ADDR_REL_SLEB:
                         {
                             // These relocs should be for cases of the form:
-                            //  global.get __image_base
+                            //  global.get $imageBase
                             //  i32.const <reloc>
                             //  i32.add
                             //  i32.load 0
@@ -961,16 +942,34 @@ namespace ILCompiler.ObjectWriter
                             Relocation.WriteValue(reloc.Type, pData, virtualSymbolImageOffset + addend);
                             break;
                         }
+                        case RelocType.WASM_MEMORY_ADDR_REL_LEB:
+                        {
+                            // These relocs should be for cases of the form:
+                            //  global.get $imageBase
+                            //  i32.load <reloc>
+                            // So, the relocated address value should always represent an offset relative to image base. 
+                            // This offset should ALWAYS be equal to the actual offset from image base at runtime, due to Webcil's
+                            // flag mapping
+                            if (symbolWebcilSection is null)
+                            {
+                                throw new InvalidDataException();
+                            }
+
+                            Relocation.WriteValue(reloc.Type, pData, virtualSymbolImageOffset + addend);
+                            break;
+                        }
                         case RelocType.WASM_TABLE_INDEX_I32:
                         case RelocType.WASM_TABLE_INDEX_I64:
                         case RelocType.WASM_TABLE_INDEX_SLEB:
+                        case RelocType.WASM_TABLE_INDEX_REL_I32:
                         {
                             string symbolName = reloc.SymbolName.ToString();
                             int index = _uniqueSymbols[symbolName];
                             // Here, we are effectively writing a table offset relative to the table_base.
-                            // These will need to be fixed up by the runtime after load by adding __image_function_pointer_base
-                            // TODO-WASM: We need to emit these for fixup with an addend at runtime
-                            Relocation.WriteValue(reloc.Type, pData, index);
+                            // These will need to be fixed up by the runtime after load by adding tableBase
+                            // except for WASM_TABLE_INDEX_REL_I32 and WASM_TABLE_INDEX_SLEB which are relative
+                            // to the start of the table.
+                            Relocation.WriteValue(reloc.Type, pData, index + addend);
                             break;
                         }
                         case RelocType.WASM_FUNCTION_INDEX_LEB:
@@ -980,7 +979,7 @@ namespace ILCompiler.ObjectWriter
 
                             // These are module-local function pointer indices, so we can simply write out the assigned function index
                             // for this particular symbol
-                            Relocation.WriteValue(reloc.Type, pData, index);
+                            Relocation.WriteValue(reloc.Type, pData, index + addend);
                             break;
                         }
                         default:

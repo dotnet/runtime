@@ -7,6 +7,54 @@ using System.Text;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
+internal sealed class MockLoaderHeap : TypedView
+{
+    private const string FirstBlockFieldName = "FirstBlock";
+
+    public static Layout<MockLoaderHeap> CreateLayout(MockTarget.Architecture architecture)
+        => new SequentialLayoutBuilder("LoaderHeap", architecture)
+            .AddPointerField(FirstBlockFieldName)
+            .Build<MockLoaderHeap>();
+
+    public ulong FirstBlock
+    {
+        get => ReadPointerField(FirstBlockFieldName);
+        set => WritePointerField(FirstBlockFieldName, value);
+    }
+}
+
+internal sealed class MockLoaderHeapBlock : TypedView
+{
+    private const string NextFieldName = "Next";
+    private const string VirtualAddressFieldName = "VirtualAddress";
+    private const string VirtualSizeFieldName = "VirtualSize";
+
+    public static Layout<MockLoaderHeapBlock> CreateLayout(MockTarget.Architecture architecture)
+        => new SequentialLayoutBuilder("LoaderHeapBlock", architecture)
+            .AddPointerField(NextFieldName)
+            .AddPointerField(VirtualAddressFieldName)
+            .AddNUIntField(VirtualSizeFieldName)
+            .Build<MockLoaderHeapBlock>();
+
+    public ulong Next
+    {
+        get => ReadPointerField(NextFieldName);
+        set => WritePointerField(NextFieldName, value);
+    }
+
+    public ulong VirtualAddress
+    {
+        get => ReadPointerField(VirtualAddressFieldName);
+        set => WritePointerField(VirtualAddressFieldName, value);
+    }
+
+    public ulong VirtualSize
+    {
+        get => ReadPointerField(VirtualSizeFieldName);
+        set => WritePointerField(VirtualSizeFieldName, value);
+    }
+}
+
 internal sealed class MockLoaderModule : TypedView
 {
     private const string AssemblyFieldName = "Assembly";
@@ -62,6 +110,12 @@ internal sealed class MockLoaderModule : TypedView
         set => WritePointerField(AssemblyFieldName, value);
     }
 
+    public ulong PEAssembly
+    {
+        get => ReadPointerField(PEAssemblyFieldName);
+        set => WritePointerField(PEAssemblyFieldName, value);
+    }
+
     public ulong SimpleName
     {
         get => ReadPointerField(SimpleNameFieldName);
@@ -80,10 +134,22 @@ internal sealed class MockLoaderModule : TypedView
         set => WritePointerField(FileNameFieldName, value);
     }
 
+    public uint Flags
+    {
+        get => ReadUInt32Field(FlagsFieldName);
+        set => WriteUInt32Field(FlagsFieldName, value);
+    }
+
     public ulong ReadyToRunInfo
     {
         get => ReadPointerField(ReadyToRunInfoFieldName);
         set => WritePointerField(ReadyToRunInfoFieldName, value);
+    }
+
+    public ulong GrowableSymbolStream
+    {
+        get => ReadPointerField(GrowableSymbolStreamFieldName);
+        set => WritePointerField(GrowableSymbolStreamFieldName, value);
     }
 }
 
@@ -113,6 +179,46 @@ internal sealed class MockLoaderAssembly : TypedView
     }
 }
 
+internal sealed class MockEEConfig : TypedView
+{
+    private const string ModifiableAssembliesFieldName = "ModifiableAssemblies";
+
+    public static Layout<MockEEConfig> CreateLayout(MockTarget.Architecture architecture)
+        => new SequentialLayoutBuilder("EEConfig", architecture)
+            .AddUInt32Field(ModifiableAssembliesFieldName)
+            .Build<MockEEConfig>();
+
+    public uint ModifiableAssemblies
+    {
+        get => ReadUInt32Field(ModifiableAssembliesFieldName);
+        set => WriteUInt32Field(ModifiableAssembliesFieldName, value);
+    }
+}
+
+internal sealed class MockCGrowableSymbolStream : TypedView
+{
+    private const string BufferFieldName = "Buffer";
+    private const string SizeFieldName = "Size";
+
+    public static Layout<MockCGrowableSymbolStream> CreateLayout(MockTarget.Architecture architecture)
+        => new SequentialLayoutBuilder("CGrowableSymbolStream", architecture)
+            .AddPointerField(BufferFieldName)
+            .AddUInt32Field(SizeFieldName)
+            .Build<MockCGrowableSymbolStream>();
+
+    public ulong Buffer
+    {
+        get => ReadPointerField(BufferFieldName);
+        set => WritePointerField(BufferFieldName, value);
+    }
+
+    public uint Size
+    {
+        get => ReadUInt32Field(SizeFieldName);
+        set => WriteUInt32Field(SizeFieldName, value);
+    }
+}
+
 internal sealed class MockLoaderBuilder
 {
     private const ulong DefaultAllocationRangeStart = 0x0001_0000;
@@ -121,6 +227,10 @@ internal sealed class MockLoaderBuilder
     internal MockMemorySpace.Builder Builder { get; }
     internal Layout<MockLoaderModule> ModuleLayout { get; }
     internal Layout<MockLoaderAssembly> AssemblyLayout { get; }
+    internal Layout<MockEEConfig> EEConfigLayout { get; }
+    internal Layout<MockLoaderHeap> LoaderHeapLayout { get; }
+    internal Layout<MockLoaderHeapBlock> LoaderHeapBlockLayout { get; }
+    internal Layout<MockCGrowableSymbolStream> CGrowableSymbolStreamLayout { get; }
 
     private readonly MockMemorySpace.BumpAllocator _allocator;
 
@@ -138,15 +248,41 @@ internal sealed class MockLoaderBuilder
 
         ModuleLayout = MockLoaderModule.CreateLayout(builder.TargetTestHelpers.Arch);
         AssemblyLayout = MockLoaderAssembly.CreateLayout(builder.TargetTestHelpers.Arch);
+        EEConfigLayout = MockEEConfig.CreateLayout(builder.TargetTestHelpers.Arch);
+        LoaderHeapLayout = MockLoaderHeap.CreateLayout(builder.TargetTestHelpers.Arch);
+        LoaderHeapBlockLayout = MockLoaderHeapBlock.CreateLayout(builder.TargetTestHelpers.Arch);
+        CGrowableSymbolStreamLayout = MockCGrowableSymbolStream.CreateLayout(builder.TargetTestHelpers.Arch);
+    }
+
+    internal MockLoaderHeap AddLoaderHeap(ulong firstBlockAddress = 0)
+    {
+        MockLoaderHeap heap = LoaderHeapLayout.Create(_allocator.Allocate((ulong)LoaderHeapLayout.Size, "LoaderHeap"));
+        heap.FirstBlock = firstBlockAddress;
+        return heap;
+    }
+
+    internal MockLoaderHeapBlock AddLoaderHeapBlock(ulong virtualAddress, ulong virtualSize, ulong nextBlockAddress = 0)
+    {
+        MockLoaderHeapBlock block = LoaderHeapBlockLayout.Create(_allocator.Allocate((ulong)LoaderHeapBlockLayout.Size, "LoaderHeapBlock"));
+        block.VirtualAddress = virtualAddress;
+        block.VirtualSize = virtualSize;
+        block.Next = nextBlockAddress;
+        return block;
     }
 
     internal MockLoaderModule AddModule(
         string? path = null,
         string? fileName = null,
         string? simpleName = null,
-        byte[]? simpleNameBytes = null)
+        byte[]? simpleNameBytes = null,
+        uint flags = 0)
     {
-        MockLoaderModule module = ModuleLayout.Create(AllocateAndAdd((ulong)ModuleLayout.Size, "Module"));
+        MockLoaderModule module = ModuleLayout.Create(_allocator.Allocate((ulong)ModuleLayout.Size, "Module"));
+
+        if (flags != 0)
+        {
+            module.Flags = flags;
+        }
 
         byte[]? rawSimpleName = simpleName is not null ? Encoding.UTF8.GetBytes(simpleName) : simpleNameBytes;
         if (rawSimpleName is not null)
@@ -164,15 +300,48 @@ internal sealed class MockLoaderBuilder
             module.FileName = AddUtf16String(fileName, $"Module file name = {fileName}");
         }
 
-        MockLoaderAssembly assembly = AssemblyLayout.Create(AllocateAndAdd((ulong)AssemblyLayout.Size, "Assembly"));
+        MockLoaderAssembly assembly = AssemblyLayout.Create(_allocator.Allocate((ulong)AssemblyLayout.Size, "Assembly"));
         assembly.Module = module.Address;
         module.Assembly = assembly.Address;
         return module;
     }
 
+    internal MockEEConfig AddEEConfig(uint modifiableAssemblies)
+    {
+        MockEEConfig config = EEConfigLayout.Create(_allocator.Allocate((ulong)EEConfigLayout.Size, "EEConfig"));
+        config.ModifiableAssemblies = modifiableAssemblies;
+        return config;
+    }
+
+    /// <summary>
+    /// Allocates a CGrowableSymbolStream with an associated symbol byte buffer and attaches it
+    /// to <paramref name="module"/> via the GrowableSymbolStream field.
+    /// </summary>
+    /// <param name="module">Module to attach the symbol stream to.</param>
+    /// <param name="symbols">Symbol bytes to allocate in the target. If null, only the stream object is created.</param>
+    /// <returns>The stream allocation, with Buffer/Size populated.</returns>
+    internal MockCGrowableSymbolStream AddInMemorySymbolStream(MockLoaderModule module, byte[]? symbols)
+    {
+        MockCGrowableSymbolStream stream = CGrowableSymbolStreamLayout.Create(_allocator.Allocate((ulong)CGrowableSymbolStreamLayout.Size, "CGrowableSymbolStream"));
+        if (symbols is not null && symbols.Length > 0)
+        {
+            MockMemorySpace.HeapFragment bufferFragment = _allocator.Allocate((ulong)symbols.Length, "CGrowableSymbolStream buffer");
+            symbols.CopyTo(bufferFragment.Data);
+            stream.Buffer = bufferFragment.Address;
+            stream.Size = (uint)symbols.Length;
+        }
+        else
+        {
+            stream.Buffer = 0;
+            stream.Size = 0;
+        }
+        module.GrowableSymbolStream = stream.Address;
+        return stream;
+    }
+
     private ulong AddNullTerminatedUtf8(ReadOnlySpan<byte> bytes, string name)
     {
-        MockMemorySpace.HeapFragment fragment = AllocateAndAdd((ulong)bytes.Length + 1, name);
+        MockMemorySpace.HeapFragment fragment = _allocator.Allocate((ulong)bytes.Length + 1, name);
         bytes.CopyTo(fragment.Data);
         fragment.Data[^1] = 0;
         return fragment.Address;
@@ -182,15 +351,8 @@ internal sealed class MockLoaderBuilder
     {
         TargetTestHelpers helpers = Builder.TargetTestHelpers;
         Encoding encoding = helpers.Arch.IsLittleEndian ? Encoding.Unicode : Encoding.BigEndianUnicode;
-        MockMemorySpace.HeapFragment fragment = AllocateAndAdd((ulong)encoding.GetByteCount(value) + sizeof(char), name);
+        MockMemorySpace.HeapFragment fragment = _allocator.Allocate((ulong)encoding.GetByteCount(value) + sizeof(char), name);
         helpers.WriteUtf16String(fragment.Data, value);
         return fragment.Address;
-    }
-
-    private MockMemorySpace.HeapFragment AllocateAndAdd(ulong size, string name)
-    {
-        MockMemorySpace.HeapFragment fragment = _allocator.Allocate(size, name);
-        Builder.AddHeapFragment(fragment);
-        return fragment;
     }
 }

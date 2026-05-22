@@ -1452,6 +1452,20 @@ EEFileLoadException::EEFileLoadException(const SString &name, HRESULT hr, Except
 }
 
 
+EEFileLoadException::EEFileLoadException(const SString &name, HRESULT hr, const SString &diagnosticInfo, Exception *pInnerException/* = NULL*/)
+  : EEFileLoadException(name, hr, pInnerException)
+{
+    CONTRACTL
+    {
+        GC_NOTRIGGER;
+        THROWS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    m_diagnosticInfo.Set(diagnosticInfo);
+}
+
 EEFileLoadException::~EEFileLoadException()
 {
     STATIC_CONTRACT_NOTHROW;
@@ -1587,10 +1601,12 @@ OBJECTREF EEFileLoadException::CreateThrowable()
     GCPROTECT_BEGIN(gc);
 
     LPCWSTR pFileName = m_name.GetUnicode();
+    LPCWSTR pDiagnosticInfo = m_diagnosticInfo.IsEmpty() ? NULL : m_diagnosticInfo.GetUnicode();
+    LPCWSTR pRequestingChain = m_requestingAssemblyChain.IsEmpty() ? NULL : m_requestingAssemblyChain.GetUnicode();
     UnmanagedCallersOnlyCaller createFileLoadEx(METHOD__FILE_LOAD_EXCEPTION__CREATE);
 
     FileLoadExceptionKind kind = GetFileLoadExceptionKind(m_hr);
-    createFileLoadEx.InvokeThrowing(kind, pFileName, (int)m_hr, &gc.pNewException);
+    createFileLoadEx.InvokeThrowing(kind, pFileName, pRequestingChain, (int)m_hr, pDiagnosticInfo, &gc.pNewException);
     _ASSERTE(gc.pNewException->GetMethodTable() == CoreLibBinder::GetException(m_kind));
 
     GCPROTECT_END();
@@ -1625,8 +1641,6 @@ BOOL EEFileLoadException::CheckType(Exception* ex)
 // <TODO>@todo: ideally we would use inner exceptions with these routines</TODO>
 
 /* static */
-
-/* static */
 void DECLSPEC_NORETURN EEFileLoadException::Throw(AssemblySpec  *pSpec, HRESULT hr, Exception *pInnerException/* = NULL*/)
 {
     CONTRACTL
@@ -1644,7 +1658,104 @@ void DECLSPEC_NORETURN EEFileLoadException::Throw(AssemblySpec  *pSpec, HRESULT 
 
     StackSString name;
     pSpec->GetDisplayName(0, name);
-    EX_THROW_WITH_INNER(EEFileLoadException, (name, hr), pInnerException);
+
+    // Extract the requesting assembly chain for diagnostic purposes
+    {
+        FAULT_NOT_FATAL();
+
+        Exception *inner2 = ExThrowWithInnerHelper(pInnerException);
+        EEFileLoadException *pException = new EEFileLoadException(name, hr);
+        pException->SetInnerException(inner2);
+
+        Assembly *pParentAssembly = pSpec->GetParentAssembly();
+        if (pParentAssembly != NULL)
+        {
+            StackSString requestingChain;
+
+            EX_TRY
+            {
+                // Build the requesting assembly chain: start with the immediate parent,
+                // then walk up the binding cache to find transitive requesting assemblies.
+                pParentAssembly->GetDisplayName(requestingChain);
+
+                const int MaxChainDepth = 10;
+                AppDomain::GetCurrentDomain()->GetParentAssemblyChain(
+                    pParentAssembly, requestingChain, MaxChainDepth);
+
+                pException->SetRequestingAssemblyChain(requestingChain);
+            }
+            EX_CATCH
+            {
+                // Ignore failures while building best-effort diagnostic data and preserve
+                // the primary file load exception.
+            }
+            EX_END_CATCH
+        }
+
+        STRESS_LOG3(LF_EH, LL_INFO100, "EX_THROW_WITH_INNER Type = 0x%x HR = 0x%x, "
+                    INDEBUG(__FILE__) " line %d\n", EEFileLoadException::GetType(),
+                    pException->GetHR(), __LINE__);
+        EX_THROW_DEBUG_TRAP(__FUNCTION__, __FILE__, __LINE__, "EEFileLoadException", pException->GetHR(), "(name, hr)");
+        PAL_CPP_THROW(EEFileLoadException *, pException);
+    }
+}
+
+/* static */
+void DECLSPEC_NORETURN EEFileLoadException::Throw(AssemblySpec *pSpec, HRESULT hr, const SString &diagnosticInfo, Exception *pInnerException/* = NULL*/)
+{
+    CONTRACTL
+    {
+        GC_TRIGGERS;
+        THROWS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    if (hr == COR_E_THREADABORTED)
+        COMPlusThrow(kThreadAbortException);
+    if (hr == E_OUTOFMEMORY)
+        COMPlusThrowOM();
+
+    StackSString name;
+    pSpec->GetDisplayName(0, name);
+
+    // Extract the requesting assembly chain for diagnostic purposes
+    {
+        FAULT_NOT_FATAL();
+
+        Exception *inner2 = ExThrowWithInnerHelper(pInnerException);
+        EEFileLoadException *pException = new EEFileLoadException(name, hr, diagnosticInfo);
+        pException->SetInnerException(inner2);
+
+        Assembly *pParentAssembly = pSpec->GetParentAssembly();
+        if (pParentAssembly != NULL)
+        {
+            StackSString requestingChain;
+
+            EX_TRY
+            {
+                pParentAssembly->GetDisplayName(requestingChain);
+
+                const int MaxChainDepth = 10;
+                AppDomain::GetCurrentDomain()->GetParentAssemblyChain(
+                    pParentAssembly, requestingChain, MaxChainDepth);
+
+                pException->SetRequestingAssemblyChain(requestingChain);
+            }
+            EX_CATCH
+            {
+                // Ignore failures while building best-effort diagnostic data and preserve
+                // the primary file load exception.
+            }
+            EX_END_CATCH
+        }
+
+        STRESS_LOG3(LF_EH, LL_INFO100, "EX_THROW_WITH_INNER Type = 0x%x HR = 0x%x, "
+                    INDEBUG(__FILE__) " line %d\n", EEFileLoadException::GetType(),
+                    pException->GetHR(), __LINE__);
+        EX_THROW_DEBUG_TRAP(__FUNCTION__, __FILE__, __LINE__, "EEFileLoadException", pException->GetHR(), "(name, hr, diagnosticInfo)");
+        PAL_CPP_THROW(EEFileLoadException *, pException);
+    }
 }
 
 /* static */

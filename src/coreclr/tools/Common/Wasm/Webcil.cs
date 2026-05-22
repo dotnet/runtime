@@ -40,6 +40,8 @@ public struct WebcilHeader
     public uint PeDebugRva;
     public uint PeDebugSize;
     // 28 bytes
+    public uint TableBase;
+    // 32 bytes
 }
 
 /// <summary>

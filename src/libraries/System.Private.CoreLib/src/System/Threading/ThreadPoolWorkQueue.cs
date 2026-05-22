@@ -1047,7 +1047,7 @@ namespace System.Threading
             {
                 // Task workitems catch their exceptions for later observation
                 // We do not need to pass unhandled ones to ExceptionHandling.s_handler
-                task.ExecuteFromThreadPool(currentThread);
+                task.ExecuteDirectly(currentThread);
             }
             else
             {
@@ -1428,6 +1428,19 @@ namespace System.Threading
             }
         };
 
+        /// <summary>Shim used to invoke <see cref="Task.ExecuteDirectly"/> of a supplied <see cref="Task"/>.</summary>
+        internal static readonly Action<object?> s_dispatchRuntimeAsyncContinuationsCallback = static state =>
+        {
+            if (state is Task t)
+            {
+                t.ExecuteDirectly(null);
+            }
+            else
+            {
+                ThrowHelper.ThrowUnexpectedStateForKnownCallback(state);
+            }
+        };
+
         internal static bool EnableWorkerTracking => IsWorkerTrackingEnabledInConfig && EventSource.IsSupported;
 
 #if !FEATURE_WASM_MANAGED_THREADS
@@ -1640,6 +1653,20 @@ namespace System.Threading
                 if (state is not IAsyncStateMachineBox)
                 {
                     // The provided state must be the internal IAsyncStateMachineBox (Task) type
+                    ThrowHelper.ThrowUnexpectedStateForKnownCallback(state);
+                }
+
+                UnsafeQueueUserWorkItemInternal((object)state, preferLocal);
+                return true;
+            }
+
+            // Similarly, for runtime async, user code may call with the
+            // runtime async callback directly.
+            if (ReferenceEquals(callBack, s_dispatchRuntimeAsyncContinuationsCallback))
+            {
+                if (state is not Task)
+                {
+                    // The provided state must be the internal RuntimeAsyncTask (Task)
                     ThrowHelper.ThrowUnexpectedStateForKnownCallback(state);
                 }
 

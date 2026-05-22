@@ -12,16 +12,16 @@ internal sealed class NativeCodeVersionNode : IData<NativeCodeVersionNode>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.NativeCodeVersionNode);
 
-        Next = target.ReadPointer(address + (ulong)type.Fields[nameof(Next)].Offset);
-        MethodDesc = target.ReadPointer(address + (ulong)type.Fields[nameof(MethodDesc)].Offset);
-        NativeCode = target.ReadCodePointer(address + (ulong)type.Fields[nameof(NativeCode)].Offset);
-        Flags = target.Read<uint>(address + (ulong)type.Fields[nameof(Flags)].Offset);
-        ILVersionId = target.ReadNUInt(address + (ulong)type.Fields[nameof(ILVersionId)].Offset);
+        Next = target.ReadPointerField(address, type, nameof(Next));
+        MethodDesc = target.ReadPointerField(address, type, nameof(MethodDesc));
+        NativeCode = target.ReadCodePointerField(address, type, nameof(NativeCode));
+        Flags = target.ReadField<uint>(address, type, nameof(Flags));
+        ILVersionId = target.ReadNUIntField(address, type, nameof(ILVersionId));
         if (type.Fields.ContainsKey(nameof(GCCoverageInfo)))
         {
-            GCCoverageInfo = target.ReadPointer(address + (ulong)type.Fields[nameof(GCCoverageInfo)].Offset);
+            GCCoverageInfo = target.ReadPointerField(address, type, nameof(GCCoverageInfo));
         }
-        OptimizationTier = target.Read<uint>(address + (ulong)type.Fields[nameof(OptimizationTier)].Offset);
+        OptimizationTier = target.ReadField<uint>(address, type, nameof(OptimizationTier));
     }
 
     public TargetPointer Next { get; init; }

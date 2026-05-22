@@ -19,7 +19,7 @@ namespace System.Formats.Tar
         // Attempts to retrieve the next header from the specified tar archive stream.
         // Throws if end of stream is reached or if any data type conversion fails.
         // Returns a valid TarHeader object if the attributes were read successfully, null otherwise.
-        internal static TarHeader? TryGetNextHeader(Stream archiveStream, bool copyData, TarEntryFormat initialFormat, bool processDataBlock)
+        internal static unsafe TarHeader? TryGetNextHeader(Stream archiveStream, bool copyData, TarEntryFormat initialFormat, bool processDataBlock)
         {
             // The four supported formats have a header that fits in the default record size
             Span<byte> buffer = stackalloc byte[TarHelpers.RecordSize];
@@ -151,7 +151,42 @@ namespace System.Formats.Tar
             // The 'size' header field only fits 12 bytes, so the data section length that surpases that limit needs to be retrieved
             if (TarHelpers.TryGetStringAsBaseTenLong(ExtendedAttributes, PaxEaSize, out long size))
             {
+                if (size < 0)
+                {
+                    throw new InvalidDataException(SR.Format(SR.TarSizeFieldNegative));
+                }
+
                 _size = size;
+            }
+
+            // GNU sparse format 1.0 (encoded via PAX) uses RegularFile type flag ('0') and stores sparse metadata in
+            // PAX extended attributes. Process all GNU sparse 1.0 attributes together in this block.
+            if (_typeFlag is TarEntryType.RegularFile or TarEntryType.V7RegularFile)
+            {
+                // 'GNU.sparse.name' overrides the placeholder path (e.g. 'GNUSparseFile.0/...') in the header's 'path' field.
+                if (ExtendedAttributes.TryGetValue(PaxEaGnuSparseName, out string? gnuSparseName))
+                {
+                    _name = gnuSparseName;
+                }
+
+                // 'GNU.sparse.realsize' is the expanded (virtual) file size; stored separately from _size so that
+                // _size retains the archive data section length needed for correct stream positioning.
+                if (TarHelpers.TryGetStringAsBaseTenLong(ExtendedAttributes, PaxEaGnuSparseRealSize, out long gnuSparseRealSize))
+                {
+                    if (gnuSparseRealSize < 0)
+                    {
+                        throw new InvalidDataException(SR.TarSizeFieldNegative);
+                    }
+                    _gnuSparseRealSize = gnuSparseRealSize;
+                }
+
+                // 'GNU.sparse.major=1' and 'GNU.sparse.minor=0' identify format 1.0, where the data section begins
+                // with an embedded text-format sparse map followed by the packed non-zero data segments.
+                if (ExtendedAttributes.TryGetValue(PaxEaGnuSparseMajor, out string? gnuSparseMajor) && gnuSparseMajor == "1" &&
+                    ExtendedAttributes.TryGetValue(PaxEaGnuSparseMinor, out string? gnuSparseMinor) && gnuSparseMinor == "0")
+                {
+                    _isGnuSparse10 = true;
+                }
             }
 
             // The 'uid' header field only fits 8 bytes, or the user could've stored an override in the extended attributes
@@ -230,6 +265,17 @@ namespace System.Formats.Tar
                 case TarEntryType.TapeVolume: // Might contain data
                 default: // Unrecognized entry types could potentially have a data section
                     _dataStream = GetDataStream(archiveStream, copyData);
+
+                    // GNU sparse format 1.0 PAX entries embed a sparse map at the start of the
+                    // data section. Create a GnuSparseStream wrapper that presents the expanded
+                    // virtual file content. The sparse map is parsed lazily on first Read, so
+                    // _dataStream remains unconsumed here — TarWriter can copy the raw condensed
+                    // data, and AdvanceDataStreamIfNeeded can advance past it normally.
+                    if (_isGnuSparse10 && _gnuSparseRealSize > 0 && _dataStream is not null)
+                    {
+                        _gnuSparseDataStream = new GnuSparseStream(_dataStream, _gnuSparseRealSize);
+                    }
+
                     if (_dataStream is SeekableSubReadStream)
                     {
                         TarHelpers.AdvanceStream(archiveStream, _size);
@@ -292,6 +338,12 @@ namespace System.Formats.Tar
                 case TarEntryType.TapeVolume: // Might contain data
                 default: // Unrecognized entry types could potentially have a data section
                     _dataStream = await GetDataStreamAsync(archiveStream, copyData, _size, cancellationToken).ConfigureAwait(false);
+
+                    if (_isGnuSparse10 && _gnuSparseRealSize > 0 && _dataStream is not null)
+                    {
+                        _gnuSparseDataStream = new GnuSparseStream(_dataStream, _gnuSparseRealSize);
+                    }
+
                     if (_dataStream is SeekableSubReadStream)
                     {
                         await TarHelpers.AdvanceStreamAsync(archiveStream, _size, cancellationToken).ConfigureAwait(false);
@@ -672,7 +724,7 @@ namespace System.Formats.Tar
 
         private void ValidateSize()
         {
-            if ((uint)_size > (uint)Array.MaxLength)
+            if ((ulong)_size > (ulong)MaxMetadataBlockSize)
             {
                 ThrowSizeFieldTooLarge();
             }

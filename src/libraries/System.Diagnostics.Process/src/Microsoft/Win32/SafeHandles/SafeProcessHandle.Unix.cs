@@ -29,22 +29,40 @@ namespace Microsoft.Win32.SafeHandles
         private readonly SafeWaitHandle? _handle;
         private readonly bool _releaseRef;
         private int _pidfd = -1;
+        private readonly ProcessWaitState.Holder? _waitStateHolder;
 
-        private SafeProcessHandle(int processId, ProcessWaitState.Holder waitStateHolder) : base(ownsHandle: true)
+        internal SafeProcessHandle(ProcessWaitState.Holder waitStateHolder) : base(ownsHandle: true)
         {
-            ProcessId = processId;
-
-            _handle = waitStateHolder._state.EnsureExitedEvent().GetSafeWaitHandle();
+            _waitStateHolder = waitStateHolder;
+            _handle = _waitStateHolder._state.EnsureExitedEvent().GetSafeWaitHandle();
             _handle.DangerousAddRef(ref _releaseRef);
             SetHandle(_handle.DangerousGetHandle());
         }
 
-        internal SafeProcessHandle(int processId, SafeWaitHandle handle) :
-            this(handle.DangerousGetHandle(), ownsHandle: true)
+        /// <summary>
+        /// Gets the process ID.
+        /// </summary>
+        public int ProcessId
         {
-            ProcessId = processId;
-            _handle = handle;
-            handle.DangerousAddRef(ref _releaseRef);
+            get
+            {
+                Validate();
+
+                if (_waitStateHolder is null)
+                {
+                    throw new InvalidOperationException(SR.InvalidProcessHandle);
+                }
+
+                return _waitStateHolder._state._processId;
+            }
+        }
+
+        /// <summary>
+        /// Sets a value indicating whether the process has been terminated due to timeout or cancellation.
+        /// </summary>
+        private bool Canceled
+        {
+            set => GetWaitState()._canceled = value;
         }
 
         private SafeProcessHandle(int pidfd, int processId) : base(ownsHandle: true)
@@ -67,11 +85,9 @@ namespace Microsoft.Win32.SafeHandles
                 Interop.Sys.Close(_pidfd);
             }
 
+            _waitStateHolder?.Dispose();
             return true;
         }
-
-        // On Unix, we don't use process descriptors yet, so we can't get PID.
-        private static int GetProcessIdCore() => throw new PlatformNotSupportedException();
 
         private static SafeProcessHandle OpenCore(int processId)
         {
@@ -84,6 +100,7 @@ namespace Microsoft.Win32.SafeHandles
 
             return new SafeProcessHandle(pidfd != -1 ? pidfd : int.MinValue, processId);
         }
+
 
         private bool SignalCore(PosixSignal signal)
         {
@@ -115,19 +132,74 @@ namespace Microsoft.Win32.SafeHandles
             return true;
         }
 
+        private ProcessExitStatus WaitForExitCore()
+        {
+            ProcessWaitState waitState = GetWaitState();
+            waitState.WaitForExit(Timeout.Infinite);
+
+            return GetExitStatus(waitState);
+        }
+
+        private bool TryWaitForExitCore(int milliseconds, [NotNullWhen(true)] out ProcessExitStatus? exitStatus)
+        {
+            ProcessWaitState waitState = GetWaitState();
+            if (!waitState.WaitForExit(milliseconds))
+            {
+                exitStatus = null;
+                return false;
+            }
+
+            exitStatus = GetExitStatus(waitState);
+            return true;
+        }
+
+        private ProcessExitStatus WaitForExitOrKillOnTimeoutCore(int milliseconds)
+        {
+            ProcessWaitState waitState = GetWaitState();
+
+            if (!waitState.WaitForExit(milliseconds))
+            {
+                waitState._canceled = true;
+                SignalCore(PosixSignal.SIGKILL);
+                waitState.WaitForExit(Timeout.Infinite);
+            }
+
+            return GetExitStatus(waitState);
+        }
+
+        private ManualResetEvent GetWaitHandle() => GetWaitState().EnsureExitedEvent();
+
+        private ProcessWaitState GetWaitState()
+        {
+            if (_waitStateHolder is null)
+            {
+                throw new InvalidOperationException(SR.InvalidProcessHandle);
+            }
+
+            if (!_waitStateHolder._state._isChild)
+            {
+                throw new PlatformNotSupportedException(SR.NotSupportedForNonChildProcess);
+            }
+
+            return _waitStateHolder._state;
+        }
+
+        private ProcessExitStatus GetExitStatus() => GetExitStatus(GetWaitState());
+
+        private static ProcessExitStatus GetExitStatus(ProcessWaitState waitState)
+        {
+            // GetWaitState ensures the process is a child process, so obtaining the exit status should never fail.
+            bool exited = waitState.GetExited(out ProcessExitStatus? exitStatus, refresh: false);
+            Debug.Assert(exited);
+            Debug.Assert(exitStatus is not null);
+            return exitStatus ?? throw new InvalidOperationException();
+        }
+
         private delegate SafeProcessHandle StartWithShellExecuteDelegate(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, out ProcessWaitState.Holder? waitStateHolder);
         private static StartWithShellExecuteDelegate? s_startWithShellExecute;
 
         private static SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, SafeHandle[]? inheritedHandlesSnapshot = null)
-        {
-            SafeProcessHandle startedProcess = StartCore(startInfo, stdinHandle, stdoutHandle, stderrHandle, inheritedHandlesSnapshot, out ProcessWaitState.Holder? waitStateHolder);
-
-            // For standalone SafeProcessHandle.Start, we dispose the wait state holder immediately.
-            // The DangerousAddRef on the SafeWaitHandle (Unix) keeps the handle alive.
-            waitStateHolder?.Dispose();
-
-            return startedProcess;
-        }
+            => StartCore(startInfo, stdinHandle, stdoutHandle, stderrHandle, inheritedHandlesSnapshot, out _);
 
         internal static SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle,
             SafeFileHandle? stderrHandle, SafeHandle[]? inheritedHandles, out ProcessWaitState.Holder? waitStateHolder)
@@ -282,7 +354,9 @@ namespace Microsoft.Win32.SafeHandles
                     resolvedFilename, argv, env, cwd,
                     setCredentials, userId, groupId, groups,
                     out childPid, stdinHandle, stdoutHandle, stderrHandle,
-                    inheritedHandles, out pidfd);
+#pragma warning disable CA1416 // KillOnParentExit getter works on all platforms; the native shim is a no-op where unsupported
+                    startInfo.StartDetached, startInfo.KillOnParentExit, inheritedHandles, out pidfd);
+#pragma warning restore CA1416
 
                 if (errno == 0)
                 {
@@ -319,7 +393,7 @@ namespace Microsoft.Win32.SafeHandles
                 throw ProcessUtils.CreateExceptionForErrorStartingProcess(new Interop.ErrorInfo(errno).GetErrorMessage(), errno, resolvedFilename, cwd);
             }
 
-            SafeProcessHandle processHandle = new SafeProcessHandle(childPid, waitStateHolder!);
+            SafeProcessHandle processHandle = new SafeProcessHandle(waitStateHolder!);
             processHandle._pidfd = pidfd;
             return processHandle;
         }

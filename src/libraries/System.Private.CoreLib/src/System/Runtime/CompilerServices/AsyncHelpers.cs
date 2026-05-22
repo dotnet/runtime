@@ -25,14 +25,11 @@ namespace System.Runtime.CompilerServices
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
         [StackTraceHidden]
-        public static void AwaitAwaiter<TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion
+        public static unsafe void AwaitAwaiter<TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion
         {
             ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
-            Continuation? sentinelContinuation = state.SentinelContinuation;
-            if (sentinelContinuation == null)
-                state.SentinelContinuation = sentinelContinuation = new Continuation();
-
-            state.Notifier = awaiter;
+            Continuation? sentinelContinuation = state.SentinelContinuation ??= new Continuation();
+            state.StackState->Notifier = awaiter;
             state.CaptureContexts();
             AsyncSuspend(sentinelContinuation);
         }
@@ -48,14 +45,11 @@ namespace System.Runtime.CompilerServices
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
         [StackTraceHidden]
-        public static void UnsafeAwaitAwaiter<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion
+        public static unsafe void UnsafeAwaitAwaiter<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion
         {
             ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
-            Continuation? sentinelContinuation = state.SentinelContinuation;
-            if (sentinelContinuation == null)
-                state.SentinelContinuation = sentinelContinuation = new Continuation();
-
-            state.CriticalNotifier = awaiter;
+            Continuation? sentinelContinuation = state.SentinelContinuation ??= new Continuation();
+            state.StackState->CriticalNotifier = awaiter;
             state.CaptureContexts();
             AsyncSuspend(sentinelContinuation);
         }
@@ -110,13 +104,21 @@ namespace System.Runtime.CompilerServices
         [StackTraceHidden]
         public static T Await<T>(ValueTask<T> task)
         {
-            ValueTaskAwaiter<T> awaiter = task.GetAwaiter();
-            if (!awaiter.IsCompleted)
+            if (!task.IsCompleted)
             {
-                UnsafeAwaitAwaiter(awaiter);
+                if (task._obj is Task<T> t)
+                {
+                    TailAwait();
+                    Await(t);
+                }
+                else
+                {
+                    TailAwait();
+                    AwaitValueTaskSourceOfT<T>(task._obj!, task._token);
+                }
             }
 
-            return awaiter.GetResult();
+            return task.Result;
         }
 
         /// <summary>
@@ -129,13 +131,21 @@ namespace System.Runtime.CompilerServices
         [StackTraceHidden]
         public static void Await(ValueTask task)
         {
-            ValueTaskAwaiter awaiter = task.GetAwaiter();
-            if (!awaiter.IsCompleted)
+            if (!task.IsCompleted)
             {
-                UnsafeAwaitAwaiter(awaiter);
+                if (task._obj is Task t)
+                {
+                    TailAwait();
+                    Await(t);
+                }
+                else
+                {
+                    TailAwait();
+                    AwaitValueTaskSource(task._obj!, task._token);
+                }
             }
 
-            awaiter.GetResult();
+            task.ThrowIfCompletedUnsuccessfully();
         }
 
         /// <summary>

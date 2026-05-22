@@ -78,7 +78,7 @@ internal static class MockExtensions
         CodeBlockHandle handle = new CodeBlockHandle(block.StartAddress.AsTargetPointer);
         mock.Setup(e => e.GetCodeBlockHandle(It.Is<TargetCodePointer>(ip => ip >= block.StartAddress && ip < block.StartAddress + block.Length)))
             .Returns(handle);
-        mock.Setup(e => e.GetStartAddress(handle)).Returns(block.StartAddress);
+        mock.Setup(e => e.GetStartAddress(handle)).Returns(block.StartAddress.AsTargetPointer);
         mock.Setup(e => e.GetMethodDesc(handle)).Returns(block.MethodDesc.Address);
     }
 
@@ -153,19 +153,18 @@ public class CodeVersionsTests
         mockExecutionManager ??= new Mock<IExecutionManager>();
         mockRuntimeTypeSystem ??= new Mock<IRuntimeTypeSystem>();
 
-        TestPlaceholderTarget target = new TestPlaceholderTarget(
-            arch,
-            builder.Builder.GetMemoryContext().ReadFromTarget,
-            CreateContractTypes(builder));
+        Mock<IPlatformMetadata> mockPlatformMetadata = new Mock<IPlatformMetadata>();
+        mockPlatformMetadata.Setup(p => p.GetCodePointerFlags()).Returns(default(CodePointerFlags));
 
-        IContractFactory<ICodeVersions> cvfactory = new CodeVersionsFactory();
-        ContractRegistry reg = Mock.Of<ContractRegistry>(
-            c => c.CodeVersions == cvfactory.CreateContract(target, 1)
-                && c.RuntimeTypeSystem == mockRuntimeTypeSystem.Object
-                && c.ExecutionManager == mockExecutionManager.Object
-                && c.Loader == mockLoader.Object);
-        target.SetContracts(reg);
-        return target;
+        return new TestPlaceholderTarget.Builder(arch)
+            .UseReader(builder.Builder.GetMemoryContext().ReadFromTarget)
+            .AddTypes(CreateContractTypes(builder))
+            .AddContract<ICodeVersions>(version: "c1")
+            .AddMockContract(mockRuntimeTypeSystem)
+            .AddMockContract(mockExecutionManager)
+            .AddMockContract(mockLoader)
+            .AddMockContract(mockPlatformMetadata)
+            .Build();
     }
 
     [Theory]

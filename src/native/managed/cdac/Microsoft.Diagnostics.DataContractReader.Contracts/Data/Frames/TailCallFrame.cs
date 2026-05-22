@@ -13,7 +13,7 @@ internal class TailCallFrame : IData<TailCallFrame>
         Target.TypeInfo type = target.GetTypeInfo(DataType.TailCallFrame);
         Address = address;
         CalleeSavedRegisters = address + (ulong)type.Fields[nameof(CalleeSavedRegisters)].Offset;
-        ReturnAddress = target.ReadPointer(address + (ulong)type.Fields[nameof(ReturnAddress)].Offset);
+        ReturnAddress = target.ReadPointerField(address, type, nameof(ReturnAddress));
     }
 
     public TargetPointer Address { get; }

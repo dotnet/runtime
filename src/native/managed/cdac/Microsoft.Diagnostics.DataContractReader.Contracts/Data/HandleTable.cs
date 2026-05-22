@@ -12,7 +12,7 @@ internal sealed class HandleTable : IData<HandleTable>
     public HandleTable(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.HandleTable);
-        SegmentList = target.ReadPointer(address + (ulong)type.Fields[nameof(SegmentList)].Offset);
+        SegmentList = target.ReadPointerField(address, type, nameof(SegmentList));
     }
 
     public TargetPointer SegmentList { get; init; }

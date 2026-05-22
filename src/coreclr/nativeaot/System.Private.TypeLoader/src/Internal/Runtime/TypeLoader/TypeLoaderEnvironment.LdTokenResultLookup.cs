@@ -203,10 +203,10 @@ namespace Internal.Runtime.TypeLoader
             if (genericMethodArgs != null)
             {
                 Instantiation methodInst = context.ResolveRuntimeTypeHandles(genericMethodArgs);
-                return context.ResolveGenericMethodInstantiation(unboxingStub: false, isAsyncVariant, type, nameAndSignature, methodInst);
+                return context.ResolveGenericMethodInstantiation(unboxingStub: false, isAsyncVariant, returnDroppingAsyncThunk: false, type, nameAndSignature, methodInst);
             }
 
-            return context.ResolveRuntimeMethod(unboxingStub: false, isAsyncVariant, type, nameAndSignature);
+            return context.ResolveRuntimeMethod(unboxingStub: false, isAsyncVariant, returnDroppingAsyncThunk: false, type, nameAndSignature);
         }
 
         public unsafe bool TryGetRuntimeMethodHandleComponents(RuntimeMethodHandle runtimeMethodHandle, out RuntimeTypeHandle declaringTypeHandle, out QMethodDefinition handle, out RuntimeTypeHandle[] genericMethodArgs)

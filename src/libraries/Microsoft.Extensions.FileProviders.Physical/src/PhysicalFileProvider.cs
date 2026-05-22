@@ -23,8 +23,6 @@ namespace Microsoft.Extensions.FileProviders
     public class PhysicalFileProvider : IFileProvider, IDisposable
     {
         private const string PollingEnvironmentKey = "DOTNET_USE_POLLING_FILE_WATCHER";
-        private static readonly char[] _pathSeparators = new[]
-            {Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar};
 
         private readonly ExclusionFilters _filters;
 
@@ -61,14 +59,6 @@ namespace Microsoft.Extensions.FileProviders
             string fullRoot = Path.GetFullPath(root);
             // When we do matches in GetFullPath, we want to only match full directory names.
             Root = PathUtils.EnsureTrailingSlash(fullRoot);
-            if (!Directory.Exists(Root))
-            {
-#if NET11_0_OR_GREATER
-                throw new DirectoryNotFoundException(null, Root);
-#else
-                throw new DirectoryNotFoundException(Root);
-#endif
-            }
 
             _filters = filters;
             _fileWatcherFactory = CreateFileWatcher;
@@ -178,7 +168,7 @@ namespace Microsoft.Extensions.FileProviders
 #endif
             {
                 // When UsePollingFileWatcher & UseActivePolling are set, we won't use a FileSystemWatcher.
-                watcher = UsePollingFileWatcher && UseActivePolling ? null : new FileSystemWatcher(root);
+                watcher = UsePollingFileWatcher && UseActivePolling ? null : new FileSystemWatcher();
             }
 
             return new PhysicalFilesWatcher(root, watcher, UsePollingFileWatcher, _filters)
@@ -272,7 +262,7 @@ namespace Microsoft.Extensions.FileProviders
             }
 
             // Relative paths starting with leading slashes are okay
-            subpath = subpath.TrimStart(_pathSeparators);
+            subpath = subpath.TrimStart(PathUtils.PathSeparators);
 
             // Absolute paths not permitted.
             if (Path.IsPathRooted(subpath))
@@ -317,7 +307,7 @@ namespace Microsoft.Extensions.FileProviders
                 }
 
                 // Relative paths starting with leading slashes are okay
-                subpath = subpath.TrimStart(_pathSeparators);
+                subpath = subpath.TrimStart(PathUtils.PathSeparators);
 
                 // Absolute paths not permitted.
                 if (Path.IsPathRooted(subpath))
@@ -347,11 +337,11 @@ namespace Microsoft.Extensions.FileProviders
         ///     <para>Globbing patterns are interpreted by <see cref="Microsoft.Extensions.FileSystemGlobbing.Matcher" />.</para>
         /// </summary>
         /// <param name="filter">
-        /// Filter string used to determine what files or folders to monitor. Example: **/*.cs, *.*,
-        /// subFolder/**/*.cshtml.
+        /// Filter string used to determine what files or directories to monitor. Example: **/*.cs, *.*,
+        /// subDirectory/**/*.cshtml.
         /// </param>
         /// <returns>
-        /// An <see cref="IChangeToken" /> that is notified when a file matching <paramref name="filter" /> is added,
+        /// An <see cref="IChangeToken" /> that is notified when a file or directory matching <paramref name="filter" /> is added,
         /// modified, or deleted. Returns a <see cref="NullChangeToken" /> if <paramref name="filter" /> has invalid filter
         /// characters or if <paramref name="filter" /> is an absolute path or outside the root directory specified in the
         /// constructor <see cref="PhysicalFileProvider(string)" />.
@@ -364,7 +354,7 @@ namespace Microsoft.Extensions.FileProviders
             }
 
             // Relative paths starting with leading slashes are okay
-            filter = filter.TrimStart(_pathSeparators);
+            filter = filter.TrimStart(PathUtils.PathSeparators);
 
             return FileWatcher.CreateFileChangeToken(filter);
         }

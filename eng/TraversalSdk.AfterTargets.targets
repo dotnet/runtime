@@ -19,11 +19,9 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(FilterTraversalProjectReferences)' == 'true'">
-    <!-- Override the Traversal SDK setting as filtering relies on the TargetFrameworkProperties being fetched
-         and don't flow the BuildTargetFramework property down. -->
+    <!-- Override the Traversal SDK setting as filtering relies on the TargetFrameworkProperties being fetched. -->
     <ProjectReference Update="@(ProjectReference)"
-                      SkipGetTargetFrameworkProperties="false"
-                      UndefineProperties="%(UndefineProperties);BuildTargetFramework"  />
+                      SkipGetTargetFrameworkProperties="false"  />
   </ItemGroup>
 
 </Project>
