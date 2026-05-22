@@ -84,8 +84,9 @@ pal::string_t fx_ver_t::as_str() const
 
     // SemVer does not define a hard limit on version string length:
     // https://semver.org/#does-semver-have-a-size-limit-on-the-version-string
-    // Use a fixed stack buffer and assert in debug that no truncation is possible.
+    // Use a fixed stack buffer; in debug builds assert that no truncation is possible.
     pal_char_t buf[256];
+#ifdef _DEBUG
     size_t required_len =
         pal::to_string(m_major).size() +
         pal::to_string(m_minor).size() +
@@ -94,6 +95,7 @@ pal::string_t fx_ver_t::as_str() const
         m_build.size() +
         3; // '.' + '.' + '\0'
     assert(required_len <= ARRAY_SIZE(buf));
+#endif
     c_fx_ver_as_str(&c_ver, buf, ARRAY_SIZE(buf));
 
     return pal::string_t(buf);
