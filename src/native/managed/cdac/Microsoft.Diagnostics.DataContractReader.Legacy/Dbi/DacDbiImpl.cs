@@ -2317,10 +2317,15 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                     }
 
                     size = _gc.AlignObjectSize(size, seg.Generation);
+                    if (currentObj.Value + size > seg.End.Value)
+                    {
+                        pendingFailure = true;
+                        break;
+                    }
 
                     // Advance past this object (and any allocation-context tail) in a single call.
                     TargetPointer nextObj = _gc.GetPotentialNextObjectAddress(currentObj, size, seg);
-                    if (nextObj.Value > seg.End.Value || nextObj.Value <= currentObj.Value)
+                    if (nextObj.Value > seg.End.Value)
                     {
                         break;
                     }
