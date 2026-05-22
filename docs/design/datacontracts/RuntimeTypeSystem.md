@@ -576,12 +576,12 @@ Contracts used:
 
     public uint GetComponentSize(TypeHandle TypeHandle) =>!typeHandle.IsMethodTable() ? (uint)0 :  GetComponentSize(_methodTables[TypeHandle.Address]);
 
-    private TargetPointer GetClassPointer(TypeHandle TypeHandle)
+    public TargetPointer GetClassPointer(TypeHandle TypeHandle)
     {
-        ... // if the MethodTable stores a pointer to the EEClass, return it
-            // otherwise the MethodTable stores a pointer to the canonical MethodTable
-            // in that case, return the canonical MethodTable's EEClass.
-            // Canonical MethodTables always store an EEClass pointer.
+        // Returns TargetPointer.Null if not a MethodTable.
+        // If EEClassOrCanonMT points directly to an EEClass, returns that pointer.
+        // If EEClassOrCanonMT is a tagged pointer to a canonical MethodTable, follows
+        // the canonical MT and returns its EEClass pointer.
     }
 
     private Data.EEClass GetClassData(TypeHandle TypeHandle)
@@ -601,14 +601,6 @@ Contracts used:
     public bool ContainsGCPointers(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[TypeHandle.Address].Flags.ContainsGCPointers;
 
     public bool RequiresAlign8(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.RequiresAlign8;
-
-    public TargetPointer GetClassPointer(TypeHandle typeHandle)
-    {
-        // Returns TargetPointer.Null if not a MethodTable.
-        // If EEClassOrCanonMT points directly to an EEClass, returns that pointer.
-        // If EEClassOrCanonMT is a tagged pointer to a canonical MethodTable, follows
-        // the canonical MT and returns its EEClass pointer.
-    }
 
     public bool IsCanonicalMethodTable(TypeHandle typeHandle)
         => typeHandle.IsMethodTable() && _methodTables[typeHandle.Address].IsCanonMT;
