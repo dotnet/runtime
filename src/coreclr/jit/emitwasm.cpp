@@ -559,11 +559,6 @@ static bool HasOpcodePrefix(instruction ins)
     return GetOpcodePrefix(ins) != 0;
 }
 
-inline static bool IsWasmSimdInstruction(instruction ins)
-{
-    return GetOpcodePrefix(ins) == 0xFD;
-}
-
 size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
 {
     if (emitIsSmallInsDsc(id))
@@ -571,19 +566,14 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
         return SMALL_IDSC_SIZE;
     }
 
-    if (IsWasmSimdInstruction(id->idIns()))
+    if (id->idIsMemargLaneImm())
     {
-        // Some (not all) SIMD instructions have larger instrDescs,
-        // and these cases are handled here.
-        switch (id->idInsFmt())
-        {
-            case IF_V128:
-                return sizeof(instrDescV128Imm);
-            case IF_MEMARG_LANE:
-                return sizeof(instrDescMemargLane);
-            default: // all other SIMD instructions can fit in a standard instrDesc
-                break;
-        }
+        return sizeof(instrDescMemargLane);
+    }
+
+    if (id->idIsV128Imm())
+    {
+        return sizeof(instrDescV128Imm);
     }
 
     if (id->idIsLargeCns())
@@ -746,6 +736,7 @@ unsigned emitter::instrDesc::idCodeSize() const
         case IF_MEMARG_LANE:
         {
             uint64_t align = emitGetAlignHintLog2(this);
+            assert(align < 64); // spec says align > 2^6 produces a memidx for multiple memories.
             size += SizeOfULEB128(align);
             size += idIsCnsReloc() ? PADDED_RELOC_SIZE : SizeOfULEB128(emitGetInsSC(this));
             size += 1; // 1 byte lane index
