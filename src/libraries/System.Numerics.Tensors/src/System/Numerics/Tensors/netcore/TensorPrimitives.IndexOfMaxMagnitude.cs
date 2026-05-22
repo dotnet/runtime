@@ -72,7 +72,9 @@ namespace System.Numerics.Tensors
                     || typeof(T) == typeof(nint))
                 {
                     // Consider overflows (when IsNegative(Abs(x))) from Abs(MinValue) which implies maximum magnitude.
-                    return Vector128.AndNot(Vector128.GreaterThan(xMag, yMag) | IsNegative(xMag), IsNegative(yMag));
+                    Vector128<T> equalResult = Vector128.IsPositive(x) & Vector128.IsNegative(y);
+                    Vector128<T> nonOverflowResult = Vector128.GreaterThan(xMag, yMag) | (Vector128.Equals(xMag, yMag) & equalResult);
+                    return Vector128.AndNot(nonOverflowResult | IsNegative(xMag), IsNegative(yMag));
                 }
                 else
                 {
@@ -96,7 +98,9 @@ namespace System.Numerics.Tensors
                     || typeof(T) == typeof(nint))
                 {
                     // Consider overflows (when IsNegative(Abs(x))) from Abs(MinValue) which implies maximum magnitude.
-                    return Vector256.AndNot(Vector256.GreaterThan(xMag, yMag) | IsNegative(xMag), IsNegative(yMag));
+                    Vector256<T> equalResult = Vector256.IsPositive(x) & Vector256.IsNegative(y);
+                    Vector256<T> nonOverflowResult = Vector256.GreaterThan(xMag, yMag) | (Vector256.Equals(xMag, yMag) & equalResult);
+                    return Vector256.AndNot(nonOverflowResult | Vector256.IsNegative(xMag), Vector256.IsNegative(yMag));
                 }
                 else
                 {
@@ -120,7 +124,9 @@ namespace System.Numerics.Tensors
                     || typeof(T) == typeof(nint))
                 {
                     // Consider overflows (when IsNegative(Abs(x))) from Abs(MinValue) which implies maximum magnitude.
-                    return Vector512.AndNot(Vector512.GreaterThan(xMag, yMag) | IsNegative(xMag), IsNegative(yMag));
+                    Vector512<T> equalResult = Vector512.IsPositive(x) & Vector512.IsNegative(y);
+                    Vector512<T> nonOverflowResult = Vector512.GreaterThan(xMag, yMag) | (Vector512.Equals(xMag, yMag) & equalResult);
+                    return Vector512.AndNot(nonOverflowResult | Vector512.IsNegative(xMag), Vector512.IsNegative(yMag));
                 }
                 else
                 {
