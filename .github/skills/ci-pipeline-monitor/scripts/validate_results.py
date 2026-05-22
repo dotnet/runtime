@@ -594,7 +594,7 @@ def main():
                 break
 
             for name in page_label_names:
-                all_label_names.add(name)
+                all_label_names.add(name.lower())
 
     all_failure_rows = conn.execute("""
         SELECT id, labels FROM failures
@@ -603,7 +603,7 @@ def main():
     for failure_row in all_failure_rows:
         failure_labels = failure_row["labels"].split(',')
         for failure_label in failure_labels:
-            failure_label = failure_label.strip()
+            failure_label = failure_label.strip().lower()
             if not (failure_label in all_label_names):
                 print(f"  [FAIL] Invalid label '{failure_label}' for failure {failure_row['id']}")
                 bad_labels.append(failure_row)
