@@ -219,7 +219,17 @@ FileMappingCleanupRoutine(
 
         if (-1 != pLocalData->UnixFd)
         {
+#ifdef TARGET_WASI
+            // On WASI we never dup()'d the source file's fd (dup is not
+            // available in the WASI sysroot). The mapping borrowed the fd
+            // from the source CFileProcessLocalData; closing it here would
+            // close the source file. mmap-wasi.c already copies file
+            // contents into a malloc'd buffer at mmap() time, so the
+            // mapping does not need the fd after view creation. Lifetime
+            // of the fd belongs to the originating file handle.
+#else
             close(pLocalData->UnixFd);
+#endif // !TARGET_WASI
             pLocalData->UnixFd = -1;
             fDataChanged = TRUE;
         }

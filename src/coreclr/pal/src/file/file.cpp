@@ -133,7 +133,16 @@ FileCleanupRoutine(
 
     if (!fShutdown && -1 != pLocalData->unix_fd)
     {
-        close(pLocalData->unix_fd);
+#ifdef TARGET_WASI
+        // On WASI we never dup()'d the fd (dup is not available in the WASI
+        // sysroot). init_std_handle stores fileno(stdin/stdout/stderr)
+        // directly, so closing here would close the process's real stdio.
+        // Other file handles get a real fd from open() and are safe to close.
+        if (pLocalData->unix_fd > STDERR_FILENO)
+#endif // TARGET_WASI
+        {
+            close(pLocalData->unix_fd);
+        }
     }
 
     pLocalDataLock->ReleaseLock(pThread, FALSE);
