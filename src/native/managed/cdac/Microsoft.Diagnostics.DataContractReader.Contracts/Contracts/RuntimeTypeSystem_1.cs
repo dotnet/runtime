@@ -442,7 +442,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         _continuationSingletonEEClassPointer = target.ReadPointer(
             target.ReadGlobalPointer(Constants.Globals.ContinuationSingletonEEClass));
         _methodDescAlignment = target.ReadGlobal<ulong>(Constants.Globals.MethodDescAlignment);
-        _typeValidation = new TypeValidation(target, _continuationMethodTablePointer);
+        _typeValidation = new TypeValidation(target, _continuationMethodTablePointer, _continuationSingletonEEClassPointer);
         _methodValidation = new MethodValidation(target, _methodDescAlignment);
         _methodValidation.SetMethodTableQueries(new NonValidatedMethodTableQueries(this));
     }

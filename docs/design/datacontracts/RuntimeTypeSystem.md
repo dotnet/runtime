@@ -61,7 +61,7 @@ partial interface IRuntimeTypeSystem : IContract
     // True if the type requires 8-byte alignment on platforms that don't 8-byte align by default (FEATURE_64BIT_ALIGNMENT)
     public virtual bool RequiresAlign8(TypeHandle typeHandle);
     // True if the MethodTable represents a continuation type used by the async continuation feature
-    public virtual bool IsContinuation(TypeHandle typeHandle);
+    public virtual bool IsContinuationWithoutMetadata(TypeHandle typeHandle);
     // Returns the GC pointer runs for the method table as (offset, size) pairs. Each
     // run starts Offset bytes from the object pointer (`this`), where offset 0
     // is the method table pointer, and includes Size bytes of contiguous pointers
