@@ -137,7 +137,7 @@ public readonly struct GCOomData
         TargetPointer currentAddress,
         ulong currentObjectSize,
         GCHeapSegmentInfo segment,
-        IReadOnlyList<(TargetPointer Pointer, TargetPointer Limit)> allocContexts);
+        IReadOnlyList<AllocContext> allocContexts);
 
     // Aligns an object's raw size (base size + component bytes) to the alignment required by its containing segment
     ulong AlignObjectSize(ulong size, GCSegmentClassification generation);
@@ -1148,9 +1148,9 @@ TargetPointer IGC.GetPotentialNextObjectAddress(
     TargetPointer currentAddress,
     ulong currentObjectSize,
     GCHeapSegmentInfo segment,
-    IReadOnlyList<(TargetPointer Pointer, TargetPointer Limit)> allocContexts)
+    IReadOnlyList<AllocContext> allocContexts)
 {
-    TargetPointer next = currentAddress + currentObjectSize;
+    TargetPointer next = new TargetPointer(currentAddress.Value + currentObjectSize);
 
     // Only Gen0/Ephemeral segments contain active allocation contexts that interleave with
     // committed objects.
@@ -1159,11 +1159,11 @@ TargetPointer IGC.GetPotentialNextObjectAddress(
 
     // If `next` matches an allocation-context cursor, jump past the reserved-but-unallocated
     // tail of that context (rounded up by the GC's minimum object size).
-    ulong minObjSize = AlignForSmallObject(target.PointerSize * 3);
-    foreach (var (ptr, limit) in allocContexts)
+    ulong minObjSize = AlignForSmallObject((ulong)_target.PointerSize * 3);
+    foreach (AllocContext context in allocContexts)
     {
-        if (next == ptr)
-            return limit + minObjSize;
+        if (next == context.Pointer)
+            return new TargetPointer(context.Limit.Value + minObjSize);
     }
     return next;
 }
