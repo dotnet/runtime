@@ -2020,8 +2020,14 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	else
 		return NULL;
 
-	if (vector_size == 256 || vector_size == 512)
+	if (vector_size == 256 || vector_size == 512) {
+		if (id == SN_get_IsHardwareAccelerated) {
+			MonoInst* ins;
+			EMIT_NEW_ICONST (cfg, ins, 0);
+			return ins;
+		}
 		return NULL;
+	}
 
 	if (!(cfg->opt & MONO_OPT_SIMD))
 		return NULL;

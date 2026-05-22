@@ -80,8 +80,14 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
     else if (!strcmp(namespaceName, "System.Runtime.Intrinsics"))
     {
         // Vector128<T> etc
-        if (HAS_PREFIX(className, "Vector") && !strcmp(methodName, "get_IsHardwareAccelerated"))
-            return NI_IsSupported_False;
+        if (HAS_PREFIX(className, "Vector"))
+        {
+            if (!strcmp(methodName, "get_IsHardwareAccelerated"))
+                return NI_IsSupported_False;
+
+            if (!strcmp(methodName, "get_IsSupported"))
+                return NI_IsSupported_Type;
+        }
 
         // Fall back to managed implementation for everything else.
         return NI_Illegal;

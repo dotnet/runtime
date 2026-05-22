@@ -56,7 +56,7 @@ lookup_intrins (guint16 *intrinsics, int size, const char *cmethod_name)
 
 // These items need to be in ASCII order, which means alphabetical order where lowercase is after uppercase
 // i.e. all 'get_' and 'op_' need to come after regular title-case names
-static guint16 sri_vector128_methods [] = {
+static guint16 sri_vector_methods [] = {
 	SN_AndNot,
 	SN_As,
 	SN_AsByte,
@@ -96,10 +96,11 @@ static guint16 sri_vector128_methods [] = {
 	SN_get_IsHardwareAccelerated,
 };
 
-static guint16 sri_vector128_t_methods [] = {
+static guint16 sri_vector_t_methods [] = {
 	SN_EqualsFloatingPoint,
 	SN_get_AllBitsSet,
 	SN_get_Count,
+	SN_get_IsSupported,
 	SN_get_One,
 	SN_get_Zero,
 	SN_op_Addition,
@@ -122,6 +123,7 @@ static guint16 sn_vector_t_methods [] = {
 	SN_ctor,
 	SN_get_AllBitsSet,
 	SN_get_Count,
+	SN_get_IsSupported,
 	SN_get_One,
 	SN_get_Zero,
 	SN_op_Addition,
@@ -220,11 +222,18 @@ static const char *
 strip_explicit_isimd_prefix (const char *cmethod_name)
 {
 	if (strncmp(cmethod_name, "System.Runtime.Intrinsics.ISimdVector<System.", 45) == 0) {
+		if (strncmp (cmethod_name + 45, "Runtime.Intrinsics.Vector", 25) == 0) {
 		// We want explicitly implemented ISimdVector<TSelf, T> APIs to still be expanded where possible
 		// but, they all prefix the qualified name of the interface first, so we'll check for that and
 		// skip the prefix before trying to resolve the method.
-		if (strncmp (cmethod_name + 45, "Runtime.Intrinsics.Vector128<T>,T>.", 35) == 0) {
-			cmethod_name += 80;
+
+			if (strncmp(cmethod_name + 70, "64<T>,T>.", 9) == 0) {
+				cmethod_name += 79;
+			} else if ((strncmp(cmethod_name + 70, "128<T>,T>.", 10) == 0) ||
+				(strncmp(cmethod_name + 70, "256<T>,T>.", 10) == 0) ||
+				(strncmp(cmethod_name + 70, "512<T>,T>.", 10) == 0)) {
+				cmethod_name += 80;
+			}
 		} else if (strncmp(cmethod_name + 45, "Numerics.Vector<T>,T>.", 22) == 0) {
 			cmethod_name += 67;
 		}
@@ -248,6 +257,9 @@ emit_common_simd_operations (TransformData *td, int id, int atype, int vector_si
 		case SN_get_Count:
 			interp_add_ins (td, MINT_LDC_I4_S);
 			td->last_ins->data [0] = vector_size / arg_size;
+			return TRUE;
+		case SN_get_IsSupported:
+			interp_add_ins (td, MINT_LDC_I4_1);
 			return TRUE;
 		case SN_get_One:
 			if (atype == MONO_TYPE_I1 || atype == MONO_TYPE_U1) {
@@ -408,11 +420,9 @@ get_common_simd_info (MonoClass *vector_klass, MonoMethodSignature *csignature, 
 	if (!mono_class_is_ginst (vector_klass))
 		return FALSE;
 	MonoType *arg_type = mono_class_get_context (vector_klass)->class_inst->type_argv [0];
-	if (!mono_type_is_primitive (arg_type))
+	if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (arg_type))
 		return FALSE;
 	*atype = arg_type->type;
-	if (*atype == MONO_TYPE_BOOLEAN)
-		return FALSE;
 	*vector_size = mono_class_value_size (vector_klass, NULL);
 	if (*vector_size != SIZEOF_V128)
 		return FALSE;
@@ -512,7 +522,7 @@ emit_vector_create (TransformData *td, MonoMethodSignature *csignature, MonoClas
 }
 
 static gboolean
-emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *csignature)
+emit_sri_vector (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *csignature)
 {
 	if (csignature->hasthis)
 		return FALSE;
@@ -523,17 +533,12 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 #endif
 	const char *cmethod_name = strip_explicit_isimd_prefix (cmethod->name);
 
-	int id = lookup_intrins (sri_vector128_methods, sizeof (sri_vector128_methods), cmethod_name);
+	int id = lookup_intrins (sri_vector_methods, sizeof (sri_vector_methods), cmethod_name);
 	if (id == -1)
 		return FALSE;
 
 	MonoClass *vector_klass = NULL;
 	int vector_size = 0;
-
-	if (id == SN_get_IsHardwareAccelerated) {
-		interp_add_ins (td, MINT_LDC_I4_1);
-		goto opcode_added;
-	}
 
 	gint16 simd_opcode = -1;
 	gint16 simd_intrins = -1;
@@ -548,8 +553,20 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 
 	MonoTypeEnum atype;
 	int arg_size, scalar_arg;
-	if (!get_common_simd_info (vector_klass, csignature, &atype, &vector_size, &arg_size, &scalar_arg))
+	if (!get_common_simd_info (vector_klass, csignature, &atype, &vector_size, &arg_size, &scalar_arg)) {
+		if (id == SN_get_IsHardwareAccelerated) {
+			interp_add_ins (td, MINT_LDC_I4_0);
+			goto opcode_added;
+		}
 		return FALSE;
+	}
+
+	g_assert (vector_size == 128);
+
+	if (id == SN_get_IsHardwareAccelerated) {
+		interp_add_ins (td, MINT_LDC_I4_1);
+		goto opcode_added;
+	}
 
 	switch (id) {
 		case SN_AndNot:
@@ -729,7 +746,7 @@ opcode_added:
 }
 
 static gboolean
-emit_sri_vector128_t (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *csignature)
+emit_sri_vector_t (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *csignature)
 {
 #ifdef HOST_BROWSER
 	if (emit_sri_packedsimd (td, cmethod, csignature))
@@ -738,10 +755,10 @@ emit_sri_vector128_t (TransformData *td, MonoMethod *cmethod, MonoMethodSignatur
 	const char *cmethod_name = strip_explicit_isimd_prefix (cmethod->name);
 	bool explicitly_implemented = cmethod_name != cmethod->name;
 
-	int id = lookup_intrins (sri_vector128_t_methods, sizeof (sri_vector128_t_methods), cmethod->name);
+	int id = lookup_intrins (sri_vector_t_methods, sizeof (sri_vector_t_methods), cmethod->name);
 	if (id == -1) {
 		if (explicitly_implemented) {
-			return emit_sri_vector128 (td, cmethod, csignature);
+			return emit_sri_vector (td, cmethod, csignature);
 		} else {
 			return FALSE;
 		}
@@ -755,8 +772,13 @@ emit_sri_vector128_t (TransformData *td, MonoMethod *cmethod, MonoMethodSignatur
 
 	MonoTypeEnum atype;
 	int vector_size, arg_size, scalar_arg;
-	if (!get_common_simd_info (vector_klass, csignature, &atype, &vector_size, &arg_size, &scalar_arg))
+	if (!get_common_simd_info (vector_klass, csignature, &atype, &vector_size, &arg_size, &scalar_arg)) {
+		if (id == SN_get_IsSupported) {
+			interp_add_ins (td, MINT_LDC_I4_0);
+			goto opcode_added;
+		}
 		return FALSE;
+	}
 
 	if (emit_common_simd_operations (td, id, atype, vector_size, arg_size, scalar_arg, &simd_opcode, &simd_intrins))
 		goto opcode_added;
@@ -785,7 +807,7 @@ emit_sn_vector_t (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *c
 	int id = lookup_intrins (sn_vector_t_methods, sizeof (sn_vector_t_methods), cmethod_name);
 	if (id == -1) {
 		if (explicitly_implemented) {
-			return emit_sri_vector128 (td, cmethod, csignature);
+			return emit_sri_vector (td, cmethod, csignature);
 		} else {
 			return FALSE;
 		}
@@ -801,8 +823,13 @@ emit_sn_vector_t (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *c
 
 	MonoTypeEnum atype;
 	int vector_size, arg_size, scalar_arg;
-	if (!get_common_simd_info (vector_klass, csignature, &atype, &vector_size, &arg_size, &scalar_arg))
+	if (!get_common_simd_info (vector_klass, csignature, &atype, &vector_size, &arg_size, &scalar_arg)) {
+		if (id == SN_get_IsSupported) {
+			interp_add_ins (td, MINT_LDC_I4_0);
+			goto opcode_added;
+		}
 		return FALSE;
+	}
 
 	if (emit_common_simd_operations (td, id, atype, vector_size, arg_size, scalar_arg, &simd_opcode, &simd_intrins)) {
 		goto opcode_added;
@@ -1337,13 +1364,13 @@ interp_emit_simd_intrinsics (TransformData *td, MonoMethod *cmethod, MonoMethodS
 	class_name = m_class_get_name (cmethod->klass);
 
 	if (!strcmp (class_ns, "System.Runtime.Intrinsics")) {
-		if (!strcmp (class_name, "Vector128"))
-			return emit_sri_vector128 (td, cmethod, csignature);
-		else if (!strcmp (class_name, "Vector128`1"))
-			return emit_sri_vector128_t (td, cmethod, csignature);
+		if (!strcmp (class_name, "Vector64") || !strcmp (class_name, "Vector128") || !strcmp (class_name, "Vector256") || !strcmp (class_name, "Vector512"))
+			return emit_sri_vector (td, cmethod, csignature);
+		if (!strcmp (class_name, "Vector64`1") || !strcmp (class_name, "Vector128`1") || !strcmp (class_name, "Vector256`1") || !strcmp (class_name, "Vector512`1"))
+			return emit_sri_vector_t (td, cmethod, csignature);
 	} else if (!strcmp (class_ns, "System.Numerics")) {
 		if (!strcmp (class_name, "Vector"))
-			return emit_sri_vector128 (td, cmethod, csignature);
+			return emit_sri_vector (td, cmethod, csignature);
 		else if (!strcmp (class_name, "Vector`1"))
 			return emit_sn_vector_t (td, cmethod, csignature, newobj);
 		else if (!strcmp (class_name, "Vector4"))

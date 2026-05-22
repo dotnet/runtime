@@ -2677,9 +2677,19 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			*op = MINT_LDC_I4_0;
 	} else if (in_corlib && (!strncmp ("System.Runtime.Intrinsics", klass_name_space, 25))) {
 		if (klass_name_space[25] == '\0' &&
-			!strncmp ("Vector", klass_name, 6) &&
-			!strcmp (tm, "get_IsHardwareAccelerated")) {
-			*op = MINT_LDC_I4_0;
+			!strncmp ("Vector", klass_name, 6)) {
+				if (!strcmp (tm, "get_IsHardwareAccelerated")) {
+					*op = MINT_LDC_I4_0;
+				} else if (!strcmp (tm, "get_IsSupported")) {
+					if (mono_class_is_ginst (target_method->klass)) {
+						MonoType *element_type = mono_class_get_context (target_method->klass)->class_inst->type_argv [0];
+						if (MONO_TYPE_IS_VECTOR_PRIMITIVE (element_type)) {
+							*op = MINT_LDC_I4_1;
+						} else {
+							*op = MINT_LDC_I4_0;
+						}
+					}
+				}
 		} else if (klass_name_space[25] == '.') {
 			if (!strncmp ("Arm", klass_name_space + 26, 3) ||
 				!strncmp ("X86", klass_name_space + 26, 3)) {
@@ -2712,9 +2722,19 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			}
 		}
 	} else if (in_corlib && !strncmp ("System.Numerics", klass_name_space, 15)) {
-		if (!strcmp ("Vector", klass_name) &&
-				!strcmp (tm, "get_IsHardwareAccelerated")) {
-			*op = MINT_LDC_I4_0;
+		if (!strcmp ("Vector", klass_name)) {
+			if (!strcmp (tm, "get_IsHardwareAccelerated")) {
+				*op = MINT_LDC_I4_0;
+			} else if (!strcmp (tm, "get_IsSupported")) {
+				if (mono_class_is_ginst (target_method->klass)) {
+					MonoType *element_type = mono_class_get_context (target_method->klass)->class_inst->type_argv [0];
+					if (MONO_TYPE_IS_VECTOR_PRIMITIVE (element_type)) {
+						*op = MINT_LDC_I4_1;
+					} else {
+						*op = MINT_LDC_I4_0;
+					}
+				}
+			}
 		} else if (!strcmp ("BitOperations", klass_name)) {
 			int arg_type = (csignature->param_count > 0) ? csignature->params [0]->type : MONO_TYPE_VOID;
 			if ((!strcmp (tm, "RotateLeft") || !strcmp (tm, "RotateRight")) && MINT_IS_LDC_I4 (td->last_ins->opcode)) {
