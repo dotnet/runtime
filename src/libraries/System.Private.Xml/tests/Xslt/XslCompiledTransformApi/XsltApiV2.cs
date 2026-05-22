@@ -35,7 +35,10 @@ namespace System.Xml.XslCompiledTransformApiTests
 
     internal static class XsltApiTestRequirements
     {
-        public static bool IsSupported => PlatformDetection.IsReflectionEmitSupported;
+        public static bool IsSupported =>
+            PlatformDetection.IsReflectionEmitSupported &&
+            // [ActiveIssue("https://github.com/dotnet/runtime/issues/124344")]
+            !(PlatformDetection.IsAppleMobile && PlatformDetection.IsCoreCLR);
     }
 
     ////////////////////////////////////////////////////////////////
