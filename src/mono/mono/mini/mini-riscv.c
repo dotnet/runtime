@@ -3845,7 +3845,7 @@ mono_riscv_emit_store (guint8 *code, int rs2, int rs1, target_mgreg_t imm, int l
 #ifdef TARGET_RISCV64
 		riscv_sd (code, rs2, rs1, imm);
 #else
-		riscv_sd (code, rs2, rs1, imm);
+		riscv_sw (code, rs2, rs1, imm);
 #endif
 		break;
 	case 1:

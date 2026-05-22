@@ -589,11 +589,7 @@ DEFINE_LSPTR_TYPE(class DebuggerEval,       LSPTR_DEBUGGEREVAL);
 DEFINE_LSPTR_TYPE(class DebuggerStepper,    LSPTR_STEPPER);
 
 // Need to be careful not to annoy the compiler here since DT_CONTEXT is a typedef, not a struct.
-#if defined(RIGHT_SIDE_COMPILE)
 typedef LsPointer<DT_CONTEXT> LSPTR_CONTEXT;
-#else  // RIGHT_SIDE_COMPILE
-typedef LsPointer<DT_CONTEXT> LSPTR_CONTEXT;
-#endif // RIGHT_SIDE_COMPILE
 
 DEFINE_LSPTR_TYPE(struct OBJECTHANDLE__,    LSPTR_OBJECTHANDLE);
 DEFINE_LSPTR_TYPE(class TypeHandleDummyPtr, LSPTR_TYPEHANDLE); // TypeHandle in the LS is not a direct pointer.
