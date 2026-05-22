@@ -1806,11 +1806,15 @@ void CodeGen::genCodeForShift(GenTree* tree)
 void CodeGen::genCodeForBitCast(GenTreeOp* tree)
 {
     assert(tree->OperIs(GT_BITCAST));
-    genConsumeOperands(tree);
 
     if (tree->gtGetOp1()->isContained())
     {
-        NYI_WASM("Contained bitcast operands");
+        assert(tree->gtGetOp1()->OperIs(GT_LCL_VAR));
+        genCodeForLclVar(tree->gtGetOp1()->AsLclVar());
+    }
+    else
+    {
+        genConsumeOperands(tree);
     }
 
     var_types toType   = tree->TypeGet();
