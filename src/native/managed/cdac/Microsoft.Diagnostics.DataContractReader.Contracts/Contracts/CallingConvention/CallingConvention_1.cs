@@ -34,7 +34,11 @@ internal sealed class CallingConvention_1 : ICallingConvention
 
         if (methodSig.Header.CallingConvention is SignatureCallingConvention.VarArgs)
         {
-            yield break;
+            // TODO: VarArgs support - need to read VASigCookie from target memory
+            // to get the actual argument types at the call site. The ArgIterator
+            // supports this via IsVarArg/GetVASigCookieOffset but we need the
+            // cookie data to know the variable argument types.
+            throw new NotImplementedException("VarArgs support not implemented");
         }
 
         bool hasThis = methodSig.Header.IsInstance;
@@ -125,6 +129,9 @@ internal sealed class CallingConvention_1 : ICallingConvention
                 CdacCorElementType elemType = rts.GetSignatureCorElementType(
                     methodSig.ParameterTypes[argIndex]);
 
+                if (argOffset == TransitionBlock.StructInRegsOffset)
+                    throw new NotImplementedException("SystemV AMD64 struct-in-registers is not yet supported by the cDAC.");
+
                 switch (elemType)
                 {
                     case CdacCorElementType.Class:
@@ -154,6 +161,19 @@ internal sealed class CallingConvention_1 : ICallingConvention
                                 Offset = argOffset,
                                 IsInterior = true,
                             };
+                        }
+                        else
+                        {
+                            // Walk embedded GC references in the struct using GCDesc.
+                            // GCDesc series offsets are relative to the start of the boxed object
+                            // (MethodTable pointer). For an unboxed value type on the stack,
+                            // subtract one pointer size to get the field offset within the struct.
+                            // See native ReportPointersFromValueType in siginfo.cpp.
+                            foreach (CallerStackGCRef gcRef in EnumerateValueTypeGCRefs(
+                                rts, methodSig.ParameterTypes[argIndex], argOffset))
+                            {
+                                yield return gcRef;
+                            }
                         }
                         break;
                 }
@@ -222,5 +242,37 @@ internal sealed class CallingConvention_1 : ICallingConvention
         bool isApplePlatform = os == RuntimeInfoOperatingSystem.Apple;
 
         return TransitionBlock.FromTarget(targetArch, isWindows, isApplePlatform, isArmel: false);
+    }
+
+    /// <summary>
+    /// Enumerate GC references within an unboxed value type using CGCDesc series.
+    /// This is the cDAC equivalent of the native ReportPointersFromValueType (siginfo.cpp).
+    /// GCDesc series offsets are relative to the MethodTable pointer in the boxed layout.
+    /// For unboxed value types, we subtract one pointer size to get the field offset.
+    /// </summary>
+    internal IEnumerable<CallerStackGCRef> EnumerateValueTypeGCRefs(
+        IRuntimeTypeSystem rts, TypeHandle typeHandle, int argOffset)
+    {
+        if (!rts.ContainsGCPointers(typeHandle))
+            yield break;
+
+        int pointerSize = _target.PointerSize;
+
+        foreach ((uint seriesOffset, uint seriesSize) in rts.GetGCDescSeries(typeHandle))
+        {
+            // Convert from boxed object offset to unboxed value type offset.
+            // GCDesc offset includes the MethodTable pointer; subtract it for unboxed layout.
+            int fieldOffset = (int)seriesOffset - pointerSize;
+            int runBytes = (int)seriesSize;
+
+            // Each pointer-sized slot in the run is an object reference
+            for (int off = 0; off < runBytes; off += pointerSize)
+            {
+                yield return new CallerStackGCRef
+                {
+                    Offset = argOffset + fieldOffset + off,
+                };
+            }
+        }
     }
 }
