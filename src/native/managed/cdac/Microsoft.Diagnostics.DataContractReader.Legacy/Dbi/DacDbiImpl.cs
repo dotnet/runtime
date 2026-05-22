@@ -2141,7 +2141,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             nuint legacyHandle = 0;
             int hrLocal = _legacy.CreateHeapWalk(&legacyHandle);
-            // The cDAC walker uses a lazy C# iterator and so doesn't touch target memory at construction time;
+            // The cDAC walker uses a lazy C# iterator and doesn't pre-validate objects at construction time;
             // the legacy walker eagerly validates the heap-start object and can refuse if it's corrupt.
             Debug.ValidateHResult(hr, hrLocal, HResultValidationMode.AllowCdacSuccess);
             if (hrLocal == HResults.S_OK && walk is not null)
