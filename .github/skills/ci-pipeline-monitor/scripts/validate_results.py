@@ -578,10 +578,11 @@ def main():
     # 16h. Every failure's suggested labels are valid labels on the dotnet/runtime repo
     # Otherwise, update_github will fail to file the issue
 
+    total += 1
     all_label_names = set()
     # TODO: If dotnet/runtime ever has more than 999 labels, increase this page limit. At time of script authoring
     #  we have around 300 so this is more than enough.
-    for page_index in range(10):
+    for page_index in range(1, 10):
         req = urllib.request.Request(f"{LABELS_API_ENDPOINT}?per_page=100&page={page_index}", headers={
             "Accept": "application/vnd.github+json",
             "User-Agent": "ci-pipeline-monitor-validator",
@@ -601,9 +602,12 @@ def main():
     """).fetchall()
     bad_labels = []
     for failure_row in all_failure_rows:
-        failure_labels = failure_row["labels"].split(',')
+        raw_labels = failure_row["labels"]
+        failure_labels = raw_labels.split(',') if raw_labels else []
         for failure_label in failure_labels:
             failure_label = failure_label.strip().lower()
+            if not failure_label:
+                continue
             if not (failure_label in all_label_names):
                 print(f"  [FAIL] Invalid label '{failure_label}' for failure {failure_row['id']}")
                 bad_labels.append(failure_row)
@@ -612,6 +616,8 @@ def main():
             len(bad_labels) == 0,
             f"{len(bad_labels)} label(s) were invalid (see above)" if len(bad_labels) else "")
     if not ok:
+        print("Full set of valid labels follows:")
+        print(", ".join(sorted(all_label_names)))
         failures += 1
 
     # Report checks (only if --report provided)
