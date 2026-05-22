@@ -112,21 +112,35 @@
       <Output ItemName="_DocSourceTargetFrameworks" TaskParameter="TargetOutputs" />
     </MSBuild>
 
-    <!-- Prefer a non-platform candidate (no '-' in the TFM name). -->
-    <XmlPeek XmlContent="@(_DocSourceTargetFrameworks->'%(AdditionalPropertiesFromProject)')"
+    <!-- For platform-specific TFMs, first try the exact TFM with the platform suffix stripped
+         (e.g. net11.0-windows → net11.0). This ensures the canonical matches the same version. -->
+    <PropertyGroup Condition="'$(TargetPlatformIdentifier)' != ''">
+      <_StrippedTfm>$(TargetFramework.Substring(0, $(TargetFramework.IndexOf('-'))))</_StrippedTfm>
+    </PropertyGroup>
+
+    <XmlPeek Condition="'$(_StrippedTfm)' != ''"
+             XmlContent="@(_DocSourceTargetFrameworks->'%(AdditionalPropertiesFromProject)')"
+             Query="/AdditionalProjectProperties/TargetFramework[@Name='$(_StrippedTfm)' and IsCandidateCompilerGeneratedDocFile='true']/@Name">
+      <Output TaskParameter="Result" ItemName="_StrippedTfmCandidate" />
+    </XmlPeek>
+
+    <!-- Otherwise, prefer any non-platform candidate (no '-' in the TFM name). -->
+    <XmlPeek Condition="'@(_StrippedTfmCandidate)' == ''"
+             XmlContent="@(_DocSourceTargetFrameworks->'%(AdditionalPropertiesFromProject)')"
              Query="/AdditionalProjectProperties/TargetFramework[IsCandidateCompilerGeneratedDocFile='true' and not(contains(@Name, '-'))][1]/@Name">
       <Output TaskParameter="Result" ItemName="_NonPlatformDocCandidate" />
     </XmlPeek>
 
     <!-- Fall back to the first candidate (stable across all TFMs). -->
-    <XmlPeek Condition="'@(_NonPlatformDocCandidate)' == ''"
+    <XmlPeek Condition="'@(_StrippedTfmCandidate)' == '' and '@(_NonPlatformDocCandidate)' == ''"
              XmlContent="@(_DocSourceTargetFrameworks->'%(AdditionalPropertiesFromProject)')"
              Query="/AdditionalProjectProperties/TargetFramework[IsCandidateCompilerGeneratedDocFile='true'][1]/@Name">
       <Output TaskParameter="Result" ItemName="_AnyDocCandidate" />
     </XmlPeek>
 
     <PropertyGroup>
-      <CanonicalDocSourceTargetFramework Condition="'@(_NonPlatformDocCandidate)' != ''">@(_NonPlatformDocCandidate)</CanonicalDocSourceTargetFramework>
+      <CanonicalDocSourceTargetFramework Condition="'@(_StrippedTfmCandidate)' != ''">@(_StrippedTfmCandidate)</CanonicalDocSourceTargetFramework>
+      <CanonicalDocSourceTargetFramework Condition="'$(CanonicalDocSourceTargetFramework)' == '' and '@(_NonPlatformDocCandidate)' != ''">@(_NonPlatformDocCandidate)</CanonicalDocSourceTargetFramework>
       <CanonicalDocSourceTargetFramework Condition="'$(CanonicalDocSourceTargetFramework)' == '' and '@(_AnyDocCandidate)' != ''">@(_AnyDocCandidate)</CanonicalDocSourceTargetFramework>
     </PropertyGroup>
 

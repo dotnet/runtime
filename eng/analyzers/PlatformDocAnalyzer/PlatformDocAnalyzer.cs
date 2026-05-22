@@ -353,9 +353,17 @@ namespace Microsoft.DotNet.Analyzers.PlatformDoc
 
         private static bool IsEffectivelyPublic(MemberDeclarationSyntax member, TypeDeclarationSyntax containingType)
         {
-            // Interface members are implicitly public
+            // Interface members without explicit access modifiers are implicitly public.
+            // C# 8+ allows private/protected/internal members in interfaces.
             if (containingType is InterfaceDeclarationSyntax)
-                return true;
+            {
+                if (member.Modifiers.Count == 0)
+                    return true;
+
+                return !member.Modifiers.Any(SyntaxKind.PrivateKeyword) &&
+                       !member.Modifiers.Any(SyntaxKind.ProtectedKeyword) &&
+                       !member.Modifiers.Any(SyntaxKind.InternalKeyword);
+            }
 
             // Enum members are implicitly public
             if (member is EnumMemberDeclarationSyntax)
