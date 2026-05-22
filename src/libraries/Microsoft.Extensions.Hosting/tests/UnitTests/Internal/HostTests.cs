@@ -593,7 +593,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         }
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/128405", TestPlatforms.iOS, TestRuntimes.CoreCLR)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/128405", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, TestRuntimes.CoreCLR)]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public async Task HostStopAsyncCanBeCancelledEarly()
         {
@@ -626,7 +626,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         }
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/128405", TestPlatforms.iOS, TestRuntimes.CoreCLR)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/128405", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, TestRuntimes.CoreCLR)]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public async Task HostStopAsyncUsesDefaultTimeoutIfGivenTokenDoesNotFire()
         {
@@ -660,7 +660,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         }
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/128405", TestPlatforms.iOS, TestRuntimes.CoreCLR)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/128405", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, TestRuntimes.CoreCLR)]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public async Task WebHostStopAsyncUsesDefaultTimeoutIfNoTokenProvided()
         {
@@ -1218,7 +1218,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         }
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/128405", TestPlatforms.iOS, TestRuntimes.CoreCLR)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/128405", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, TestRuntimes.CoreCLR)]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void Dispose_DisposesAppConfigurationProviders()
         {
@@ -1244,7 +1244,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         }
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/128405", TestPlatforms.iOS, TestRuntimes.CoreCLR)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/128405", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, TestRuntimes.CoreCLR)]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void Dispose_DisposesHostConfigurationProviders()
         {
@@ -1321,7 +1321,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         }
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/128405", TestPlatforms.iOS, TestRuntimes.CoreCLR)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/128405", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, TestRuntimes.CoreCLR)]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public async Task DisposeAsync_DisposesAppConfigurationProviders()
         {
@@ -1347,7 +1347,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         }
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/128405", TestPlatforms.iOS, TestRuntimes.CoreCLR)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/128405", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, TestRuntimes.CoreCLR)]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public async Task DisposeAsync_DisposesHostConfigurationProviders()
         {
