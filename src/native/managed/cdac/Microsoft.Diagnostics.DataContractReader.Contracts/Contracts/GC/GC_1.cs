@@ -446,7 +446,7 @@ internal readonly struct GC_1 : IGC
         TargetPointer currentAddress,
         ulong currentObjectSize,
         GCHeapSegmentInfo segment,
-        IReadOnlyList<(TargetPointer Pointer, TargetPointer Limit)> allocContexts)
+        IReadOnlyList<AllocContext> allocContexts)
     {
         TargetPointer next = new TargetPointer(currentAddress.Value + currentObjectSize);
 
@@ -459,10 +459,10 @@ internal readonly struct GC_1 : IGC
         // allocation context's bump pointer, jump past the reserved-but-unallocated tail of that
         // context (rounded up by the GC's minimum object size).
         ulong minObjSize = AlignForSmallObject((ulong)_target.PointerSize * 3);
-        foreach ((TargetPointer ptr, TargetPointer limit) in allocContexts)
+        foreach (AllocContext context in allocContexts)
         {
-            if (next == ptr)
-                return new TargetPointer(limit.Value + minObjSize);
+            if (next == context.Pointer)
+                return new TargetPointer(context.Limit.Value + minObjSize);
         }
         return next;
     }

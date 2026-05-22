@@ -2269,7 +2269,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         private readonly IGC _gc;
         private readonly IRuntimeTypeSystem _rts;
         private readonly TargetPointer _freeObjectMT;
-        private readonly IReadOnlyList<(TargetPointer Pointer, TargetPointer Limit)> _allocContexts;
+        private readonly IReadOnlyList<AllocContext> _allocContexts;
         private readonly LinearReadCache _cache;
         private readonly uint _numComponentsOffsetArray;
         private readonly uint _numComponentsOffsetString;
@@ -2415,9 +2415,9 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             }
         }
 
-        private static List<(TargetPointer Pointer, TargetPointer Limit)> CollectAllocContexts(Target target)
+        private static List<AllocContext> CollectAllocContexts(Target target)
         {
-            List<(TargetPointer Pointer, TargetPointer Limit)> contexts = new();
+            List<AllocContext> contexts = new();
 
             // Per-thread allocation contexts.
             IThread thread = target.Contracts.Thread;
@@ -2428,14 +2428,14 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             {
                 ThreadData td = thread.GetThreadData(current);
                 if (td.AllocContextPointer != TargetPointer.Null)
-                    contexts.Add((td.AllocContextPointer, td.AllocContextLimit));
+                    contexts.Add(new AllocContext(td.AllocContextPointer, td.AllocContextLimit));
                 current = td.NextThread;
             }
 
             // Global allocation context.
             target.Contracts.GC.GetGlobalAllocationContext(out TargetPointer gAllocPtr, out TargetPointer gAllocLimit);
             if (gAllocPtr != TargetPointer.Null)
-                contexts.Add((gAllocPtr, gAllocLimit));
+                contexts.Add(new AllocContext(gAllocPtr, gAllocLimit));
 
             // Per-heap gen0 allocation contexts. The native walker also tracks YoungestGenPtr (the
             // gen0 generation's allocation context cursor) and skips past it when encountered.
@@ -2451,7 +2451,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                     TargetPointer ptr = heap.GenerationTable[0].AllocationContextPointer;
                     TargetPointer limit = heap.GenerationTable[0].AllocationContextLimit;
                     if (ptr != TargetPointer.Null)
-                        contexts.Add((ptr, limit));
+                        contexts.Add(new AllocContext(ptr, limit));
                 }
             }
             return contexts;

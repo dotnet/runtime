@@ -133,6 +133,8 @@ public readonly record struct GCHeapSegmentInfo(
     TargetPointer End,
     GCSegmentClassification Generation);
 
+public readonly record struct AllocContext(TargetPointer Pointer, TargetPointer Limit);
+
 public interface IGC : IContract
 {
     static string IContract.Name { get; } = nameof(GC);
@@ -178,7 +180,7 @@ public interface IGC : IContract
         TargetPointer currentAddress,
         ulong currentObjectSize,
         GCHeapSegmentInfo segment,
-        IReadOnlyList<(TargetPointer Pointer, TargetPointer Limit)> allocContexts) => throw new NotImplementedException();
+        IReadOnlyList<AllocContext> allocContexts) => throw new NotImplementedException();
 
     // Aligns an object's raw size to the alignment required by its containing segment.
     ulong AlignObjectSize(ulong size, GCSegmentClassification generation) => throw new NotImplementedException();
