@@ -125,7 +125,7 @@ Read once at start:
 For each row in the pipeline table below:
 
 1. Pre-bind the build-list URL to a shell variable, then `curl -s "$url" | tee /tmp/gh-aw/agent/builds_<id>.json`. Fetch at least 25 builds.
-2. Pick `source` = most recent build with `result in {failed, partiallySucceeded}` that has at least one strictly newer COMPLETED build behind it. The newer one is the `follow_up` anchor for Step 3.5; without it, a freshly-fixed regression cannot be distinguished from a still-failing one.
+2. Pick `source` = most recent build with `result in {failed, partiallySucceeded}` that has at least one COMPLETED build with a strictly later `finishTime`. That later build is the `follow_up` anchor for Step 3.5; without it, a freshly-fixed regression cannot be distinguished from a still-failing one. (The dnceng-public build-list is sorted DESC by `queueTime`, so `source` will appear AFTER its `follow_up` in the JSON array; "later in time" refers to wall-clock, not array position.)
 3. Skip reasons: `source.finishTime > 14d` -> `pipeline-skipped: stale build window (>14d)`. No `follow_up` (source is the absolute latest) -> `pipeline-skipped: no follow-up build yet — defer to next run`. No qualifying build in 7 days -> `pipeline-skipped: stale`. The 14-day window accommodates JIT-stress family pipelines (defs 109–160, 230, 235) that run on a weekly-or-longer cadence; tightening to 72h blanket-suppresses their actionable failures.
 4. Otherwise pass `source`'s failed timeline records to Step 3.
 
@@ -210,12 +210,13 @@ For each `(definition_id, phase, queue, stress_mode, signature)` produced by Ste
 
 #### Step 4.0 — Same-run dedup cache (check first)
 
-Cache filed signatures in `/tmp/gh-aw/agent/filed.tsv` as `<key>\t<aw_id>` where `key = <definition_id>|<queue>|<stress_mode>|<signature>`. On match, record `skipped: dup of filed-issue #aw_<id> earlier in this run` and stop. Append after every Branch A emission.
+Cache filed signatures in `/tmp/gh-aw/agent/filed.tsv` as `<key>\t<aw_id>` where `key = <definition_id>|<queue>|<stress_mode>|<signature_norm>`. `<signature_norm>` is the signature with tab/newline/CR characters stripped — needed because raw signatures are copied verbatim from logs and may contain whitespace that would corrupt the TSV. On match, record `skipped: dup of filed-issue #aw_<id> earlier in this run` and stop. Append after every Branch A emission.
 
 ```bash
-key="<definition_id>|<queue>|<stress_mode>|<signature>"
+signature_norm=$(printf '%s' "<signature>" | tr -d '\t\n\r')
+key="<definition_id>|<queue>|<stress_mode>|${signature_norm}"
 test -f /tmp/gh-aw/agent/filed.tsv && cut -f1 /tmp/gh-aw/agent/filed.tsv | grep -Fxq "$key"  # dup if exit 0
-printf '%s\t%s\n' "$key" "aw_<id>" | tee -a /tmp/gh-aw/agent/filed.tsv                       # after emit
+printf '%s\t%s\n' "$key" "aw_<id>" >> /tmp/gh-aw/agent/filed.tsv                              # after emit
 ```
 
 #### Step 4.1 — Load the matching skill

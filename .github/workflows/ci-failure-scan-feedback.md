@@ -109,7 +109,7 @@ Hard rules: no comments on issues/PRs, no edits outside `.github/workflows/ci-fa
    - `repo:dotnet/runtime is:pr label:agentic-workflows updated:>=<today-30d>`
    - `repo:dotnet/runtime is:pr in:title "[ci-scan]" updated:>=<today-30d>`
 
-   Both the closed and open state buckets are in scope (closed items often carry the most informative feedback about why the artifact was rejected). For each result, read the body and comments via the `github` tool. Record `integrity-filtered: N` for any `[Filtered]` results and continue.
+   Both the closed and open state buckets are in scope (closed items often carry the most informative feedback about why the artifact was rejected). For each result, read the body and comments via the `github` tool. When listing comments, request only the most recent 100 (one page at the MCP default size) — the 30-day `updated:>=...` window is the primary filter, and threads with >100 comments are vanishingly rare for `[ci-scan]` artifacts. If a result has >100 comments, fetch the latest page only; do NOT paginate further (older comments are out-of-scope by construction). Record `integrity-filtered: N` for any `[Filtered]` results and continue.
 
 4. Score each artifact against the rubric:
 
