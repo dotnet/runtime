@@ -5075,6 +5075,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         public void IsSupportedByte() => TestIsSupported<byte>();
 
         [Fact]
+        public void IsSupportedChar() => TestIsSupported<char>();
+
+        [Fact]
         public void IsSupportedDouble() => TestIsSupported<double>();
 
         [Fact]
@@ -5118,9 +5121,6 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
         [Fact]
         public void IsNotSupportedBoolean() => TestIsNotSupported<bool>();
-
-        [Fact]
-        public void IsNotSupportedChar() => TestIsNotSupported<char>();
 
         [Fact]
         public void IsNotSupportedHalf() => TestIsNotSupported<Half>();

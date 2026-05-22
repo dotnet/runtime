@@ -413,6 +413,8 @@ get_common_simd_info (MonoClass *vector_klass, MonoMethodSignature *csignature, 
 	*atype = arg_type->type;
 	if (*atype == MONO_TYPE_BOOLEAN)
 		return FALSE;
+	if (*atype == MONO_TYPE_CHAR)
+		*atype = MONO_TYPE_U2;
 	*vector_size = mono_class_value_size (vector_klass, NULL);
 	if (*vector_size != SIZEOF_V128)
 		return FALSE;
@@ -443,6 +445,8 @@ get_vector_t_elem_type (MonoType *vector_type)
 		!strcmp (m_class_get_name (klass), "Vector256`1") ||
 		!strcmp (m_class_get_name (klass), "Vector512`1"));
 	etype = mono_class_get_context (klass)->class_inst->type_argv [0];
+	if (etype->type == MONO_TYPE_CHAR)
+		etype = m_class_get_byval_arg (mono_defaults.uint16_class);
 	return etype;
 }
 
@@ -1012,6 +1016,9 @@ lookup_packedsimd_intrinsic (const char *name, MonoType *arg1)
 		// g_printf ("%s arg1 type was not pointer or simd type: %s\n", name, m_class_get_name (vector_klass));
 		return FALSE;
 	}
+
+	if (arg_type->type == MONO_TYPE_CHAR)
+		arg_type = m_class_get_byval_arg (mono_defaults.uint16_class);
 
 	if (!mono_type_is_primitive (arg_type)) {
 		// g_printf ("%s arg1 inner type was not primitive\n", name);

@@ -110,11 +110,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> Abs<T>(Vector<T> value)
         {
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong))
-             || (typeof(T) == typeof(nuint)))
+            if (Scalar<T>.IsUnsigned)
             {
                 return value;
             }
@@ -239,6 +235,14 @@ namespace System.Numerics
         [Intrinsic]
         public static Vector<byte> AsVectorByte<T>(Vector<T> value) => value.As<T, byte>();
 
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;Char&gt;" />.</summary>
+        /// <typeparam name="T">The type of the input vector.</typeparam>
+        /// <param name="value">The vector to reinterpret.</param>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector&lt;Char&gt;" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        public static Vector<char> AsVectorChar<T>(Vector<T> value) => value.As<T, char>();
+
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;Double&gt;" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
         /// <param name="value">The vector to reinterpret.</param>
@@ -355,20 +359,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector<T> Ceiling<T>(Vector<T> vector)
         {
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(short))
-             || (typeof(T) == typeof(int))
-             || (typeof(T) == typeof(long))
-             || (typeof(T) == typeof(nint))
-             || (typeof(T) == typeof(nuint))
-             || (typeof(T) == typeof(sbyte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong)))
-            {
-                return vector;
-            }
-            else
+            if (Scalar<T>.IsFloatingPoint)
             {
                 Unsafe.SkipInit(out Vector<T> result);
 
@@ -379,6 +370,10 @@ namespace System.Numerics
                 }
 
                 return result;
+            }
+            else
+            {
+                return vector;
             }
         }
 
@@ -737,11 +732,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> CopySign<T>(Vector<T> value, Vector<T> sign)
         {
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong))
-             || (typeof(T) == typeof(nuint)))
+            if (Scalar<T>.IsUnsigned)
             {
                 return value;
             }
@@ -1072,20 +1063,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector<T> Floor<T>(Vector<T> vector)
         {
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(short))
-             || (typeof(T) == typeof(int))
-             || (typeof(T) == typeof(long))
-             || (typeof(T) == typeof(nint))
-             || (typeof(T) == typeof(nuint))
-             || (typeof(T) == typeof(sbyte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong)))
-            {
-                return vector;
-            }
-            else
+            if (Scalar<T>.IsFloatingPoint)
             {
                 Unsafe.SkipInit(out Vector<T> result);
 
@@ -1096,6 +1074,10 @@ namespace System.Numerics
                 }
 
                 return result;
+            }
+            else
+            {
+                return vector;
             }
         }
 
@@ -1534,11 +1516,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> IsNegative<T>(Vector<T> vector)
         {
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong))
-             || (typeof(T) == typeof(nuint)))
+            if (Scalar<T>.IsUnsigned)
             {
                 return Vector<T>.Zero;
             }
@@ -1609,11 +1587,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> IsPositive<T>(Vector<T> vector)
         {
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong))
-             || (typeof(T) == typeof(nuint)))
+            if (Scalar<T>.IsUnsigned)
             {
                 return Vector<T>.AllBitsSet;
             }
@@ -2611,20 +2585,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector<T> Round<T>(Vector<T> vector)
         {
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(short))
-             || (typeof(T) == typeof(int))
-             || (typeof(T) == typeof(long))
-             || (typeof(T) == typeof(nint))
-             || (typeof(T) == typeof(nuint))
-             || (typeof(T) == typeof(sbyte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong)))
-            {
-                return vector;
-            }
-            else
+            if (Scalar<T>.IsFloatingPoint)
             {
                 Unsafe.SkipInit(out Vector<T> result);
 
@@ -2635,6 +2596,10 @@ namespace System.Numerics
                 }
 
                 return result;
+            }
+            else
+            {
+                return vector;
             }
         }
 
@@ -2660,6 +2625,13 @@ namespace System.Numerics
         /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         public static Vector<byte> ShiftLeft(Vector<byte> value, int shiftCount) => value << shiftCount;
+
+        /// <summary>Shifts each element of a vector left by the specified amount.</summary>
+        /// <param name="value">The vector whose elements are to be shifted.</param>
+        /// <param name="shiftCount">The number of bits by which to shift each element.</param>
+        /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
+        [Intrinsic]
+        public static Vector<char> ShiftLeft(Vector<char> value, int shiftCount) => value << shiftCount;
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
         /// <param name="value">The vector whose elements are to be shifted.</param>
@@ -2807,6 +2779,13 @@ namespace System.Numerics
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         public static Vector<byte> ShiftRightLogical(Vector<byte> value, int shiftCount) => value >>> shiftCount;
+
+        /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
+        /// <param name="value">The vector whose elements are to be shifted.</param>
+        /// <param name="shiftCount">The number of bits by which to shift each element.</param>
+        /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
+        [Intrinsic]
+        public static Vector<char> ShiftRightLogical(Vector<char> value, int shiftCount) => value >>> shiftCount;
 
         /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="value">The vector whose elements are to be shifted.</param>
@@ -3110,20 +3089,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector<T> Truncate<T>(Vector<T> vector)
         {
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(short))
-             || (typeof(T) == typeof(int))
-             || (typeof(T) == typeof(long))
-             || (typeof(T) == typeof(nint))
-             || (typeof(T) == typeof(nuint))
-             || (typeof(T) == typeof(sbyte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong)))
-            {
-                return vector;
-            }
-            else
+            if (Scalar<T>.IsFloatingPoint)
             {
                 Unsafe.SkipInit(out Vector<T> result);
 
@@ -3134,6 +3100,10 @@ namespace System.Numerics
                 }
 
                 return result;
+            }
+            else
+            {
+                return vector;
             }
         }
 

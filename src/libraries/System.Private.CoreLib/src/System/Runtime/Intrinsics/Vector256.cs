@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -140,11 +139,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> Abs<T>(Vector256<T> vector)
         {
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong))
-             || (typeof(T) == typeof(nuint)))
+            if (Scalar<T>.IsUnsigned)
             {
                 return vector;
             }
@@ -260,6 +255,14 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static Vector256<byte> AsByte<T>(this Vector256<T> vector) => vector.As<T, byte>();
+
+        /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see langword="Vector256&lt;Char&gt;" />.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="vector">The vector to reinterpret.</param>
+        /// <returns><paramref name="vector" /> reinterpreted as a new <see langword="Vector256&lt;Char&gt;" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        public static Vector256<char> AsChar<T>(this Vector256<T> vector) => vector.As<T, char>();
 
         /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see langword="Vector256&lt;Double&gt;" />.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -427,25 +430,16 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector256<T> Ceiling<T>(Vector256<T> vector)
         {
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(short))
-             || (typeof(T) == typeof(int))
-             || (typeof(T) == typeof(long))
-             || (typeof(T) == typeof(nint))
-             || (typeof(T) == typeof(nuint))
-             || (typeof(T) == typeof(sbyte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong)))
-            {
-                return vector;
-            }
-            else
+            if (Scalar<T>.IsFloatingPoint)
             {
                 return Create(
                     Vector128.Ceiling(vector._lower),
                     Vector128.Ceiling(vector._upper)
                 );
+            }
+            else
+            {
+                return vector;
             }
         }
 
@@ -729,11 +723,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> CopySign<T>(Vector256<T> value, Vector256<T> sign)
         {
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong))
-             || (typeof(T) == typeof(nuint)))
+            if (Scalar<T>.IsUnsigned)
             {
                 return value;
             }
@@ -939,6 +929,13 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static Vector256<byte> Create(byte value) => Create<byte>(value);
 
+        /// <summary>Creates a new <see langword="Vector256&lt;Char&gt;" /> instance with all elements initialized to the specified value.</summary>
+        /// <param name="value">The value that all elements will be initialized to.</param>
+        /// <returns>A new <see langword="Vector256&lt;Char&gt;" /> with all elements initialized to <paramref name="value" />.</returns>
+        /// <remarks>On x86, this method corresponds to __m256i _mm256_set1_epi16</remarks>
+        [Intrinsic]
+        public static Vector256<char> Create(char value) => Create<char>(value);
+
         /// <summary>Creates a new <see langword="Vector256&lt;Double&gt;" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
         /// <returns>A new <see langword="Vector256&lt;Double&gt;" /> with all elements initialized to <paramref name="value" />.</returns>
@@ -1120,6 +1117,35 @@ namespace System.Runtime.Intrinsics
             return Create(
                 Vector128.Create(e0,  e1,  e2,  e3,  e4,  e5,  e6,  e7,  e8,  e9,  e10, e11, e12, e13, e14, e15),
                 Vector128.Create(e16, e17, e18, e19, e20, e21, e22, e23, e24, e25, e26, e27, e28, e29, e30, e31)
+            );
+        }
+
+        /// <summary>Creates a new <see langword="Vector256&lt;Char&gt;" /> instance with each element initialized to the corresponding specified value.</summary>
+        /// <param name="e0">The value that element 0 will be initialized to.</param>
+        /// <param name="e1">The value that element 1 will be initialized to.</param>
+        /// <param name="e2">The value that element 2 will be initialized to.</param>
+        /// <param name="e3">The value that element 3 will be initialized to.</param>
+        /// <param name="e4">The value that element 4 will be initialized to.</param>
+        /// <param name="e5">The value that element 5 will be initialized to.</param>
+        /// <param name="e6">The value that element 6 will be initialized to.</param>
+        /// <param name="e7">The value that element 7 will be initialized to.</param>
+        /// <param name="e8">The value that element 8 will be initialized to.</param>
+        /// <param name="e9">The value that element 9 will be initialized to.</param>
+        /// <param name="e10">The value that element 10 will be initialized to.</param>
+        /// <param name="e11">The value that element 11 will be initialized to.</param>
+        /// <param name="e12">The value that element 12 will be initialized to.</param>
+        /// <param name="e13">The value that element 13 will be initialized to.</param>
+        /// <param name="e14">The value that element 14 will be initialized to.</param>
+        /// <param name="e15">The value that element 15 will be initialized to.</param>
+        /// <returns>A new <see langword="Vector256&lt;Char&gt;" /> with each element initialized to corresponding specified value.</returns>
+        /// <remarks>On x86, this method corresponds to __m256i _mm256_setr_epi16</remarks>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<char> Create(char e0, char e1, char e2, char e3, char e4, char e5, char e6, char e7, char e8, char e9, char e10, char e11, char e12, char e13, char e14, char e15)
+        {
+            return Create(
+                Vector128.Create(e0, e1, e2, e3, e4, e5, e6, e7),
+                Vector128.Create(e8, e9, e10, e11, e12, e13, e14, e15)
             );
         }
 
@@ -1393,6 +1419,12 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new <see langword="Vector256&lt;Byte&gt;" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
         public static Vector256<byte> Create(Vector128<byte> lower, Vector128<byte> upper) => Create<byte>(lower, upper);
 
+        /// <summary>Creates a new <see langword="Vector256&lt;Char&gt;" /> instance from two <see langword="Vector128&lt;Char&gt;" /> instances.</summary>
+        /// <param name="lower">The value that the lower 128-bits will be initialized to.</param>
+        /// <param name="upper">The value that the upper 128-bits will be initialized to.</param>
+        /// <returns>A new <see langword="Vector256&lt;Char&gt;" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        public static Vector256<char> Create(Vector128<char> lower, Vector128<char> upper) => Create<char>(lower, upper);
+
         /// <summary>Creates a new <see langword="Vector256&lt;Double&gt;" /> instance from two <see langword="Vector128&lt;Double&gt;" /> instances.</summary>
         /// <param name="lower">The value that the lower 128-bits will be initialized to.</param>
         /// <param name="upper">The value that the upper 128-bits will be initialized to.</param>
@@ -1481,6 +1513,12 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new <see langword="Vector256&lt;Byte&gt;" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
         [Intrinsic]
         public static Vector256<byte> CreateScalar(byte value) => CreateScalar<byte>(value);
+
+        /// <summary>Creates a new <see langword="Vector256&lt;Char&gt;" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
+        /// <param name="value">The value that element 0 will be initialized to.</param>
+        /// <returns>A new <see langword="Vector256&lt;Char&gt;" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
+        public static Vector256<char> CreateScalar(char value) => CreateScalar<char>(value);
 
         /// <summary>Creates a new <see langword="Vector256&lt;Double&gt;" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
@@ -1577,6 +1615,12 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new <see langword="Vector256&lt;Byte&gt;" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
         [Intrinsic]
         public static Vector256<byte> CreateScalarUnsafe(byte value) => CreateScalarUnsafe<byte>(value);
+
+        /// <summary>Creates a new <see langword="Vector256&lt;Char&gt;" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
+        /// <param name="value">The value that element 0 will be initialized to.</param>
+        /// <returns>A new <see langword="Vector256&lt;Char&gt;" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
+        [Intrinsic]
+        public static Vector256<char> CreateScalarUnsafe(char value) => CreateScalarUnsafe<char>(value);
 
         /// <summary>Creates a new <see langword="Vector256&lt;Double&gt;" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
@@ -1823,25 +1867,16 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector256<T> Floor<T>(Vector256<T> vector)
         {
-            if ((typeof(T) == typeof(byte))
-                 || (typeof(T) == typeof(short))
-                 || (typeof(T) == typeof(int))
-                 || (typeof(T) == typeof(long))
-                 || (typeof(T) == typeof(nint))
-                 || (typeof(T) == typeof(nuint))
-                 || (typeof(T) == typeof(sbyte))
-                 || (typeof(T) == typeof(ushort))
-                 || (typeof(T) == typeof(uint))
-                 || (typeof(T) == typeof(ulong)))
-            {
-                return vector;
-            }
-            else
+            if (Scalar<T>.IsFloatingPoint)
             {
                 return Create(
                     Vector128.Floor(vector._lower),
                     Vector128.Floor(vector._upper)
                 );
+            }
+            else
+            {
+                return vector;
             }
         }
 
@@ -2150,11 +2185,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> IsNegative<T>(Vector256<T> vector)
         {
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong))
-             || (typeof(T) == typeof(nuint)))
+            if (Scalar<T>.IsUnsigned)
             {
                 return Vector256<T>.Zero;
             }
@@ -2225,11 +2256,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> IsPositive<T>(Vector256<T> vector)
         {
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong))
-             || (typeof(T) == typeof(nuint)))
+            if (Scalar<T>.IsUnsigned)
             {
                 return Vector256<T>.AllBitsSet;
             }
@@ -3037,25 +3064,16 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector256<T> Round<T>(Vector256<T> vector)
         {
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(short))
-             || (typeof(T) == typeof(int))
-             || (typeof(T) == typeof(long))
-             || (typeof(T) == typeof(nint))
-             || (typeof(T) == typeof(nuint))
-             || (typeof(T) == typeof(sbyte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong)))
-            {
-                return vector;
-            }
-            else
+            if (Scalar<T>.IsFloatingPoint)
             {
                 return Create(
                     Vector128.Round(vector._lower),
                     Vector128.Round(vector._upper)
                 );
+            }
+            else
+            {
+                return vector;
             }
         }
 
@@ -3088,6 +3106,13 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         public static Vector256<byte> ShiftLeft(Vector256<byte> vector, int shiftCount) => vector << shiftCount;
+
+        /// <summary>Shifts each element of a vector left by the specified amount.</summary>
+        /// <param name="vector">The vector whose elements are to be shifted.</param>
+        /// <param name="shiftCount">The number of bits by which to shift each element.</param>
+        /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
+        [Intrinsic]
+        public static Vector256<char> ShiftLeft(Vector256<char> vector, int shiftCount) => vector << shiftCount;
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -3237,6 +3262,13 @@ namespace System.Runtime.Intrinsics
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
+        public static Vector256<char> ShiftRightLogical(Vector256<char> vector, int shiftCount) => vector >>> shiftCount;
+
+        /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
+        /// <param name="vector">The vector whose elements are to be shifted.</param>
+        /// <param name="shiftCount">The number of bits by which to shift each element.</param>
+        /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
+        [Intrinsic]
         public static Vector256<short> ShiftRightLogical(Vector256<short> vector, int shiftCount) => vector >>> shiftCount;
 
         /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
@@ -3300,95 +3332,42 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static Vector256<ulong> ShiftRightLogical(Vector256<ulong> vector, int shiftCount) => vector >>> shiftCount;
 
-#if !MONO
-        // These fallback methods only exist so that ShuffleNative has the same behaviour when called directly or via
+        private static Vector256<T> ShuffleFallback<T, TIndex>(Vector256<T> vector, Vector256<TIndex> indices)
+                    where TIndex : IBinaryInteger<TIndex>
+        {
+            Debug.Assert(Vector256<T>.Count == Vector256<TIndex>.Count);
+            Vector256<T> result = Vector256<T>.Zero;
+
+            for (int index = 0; index < Vector256<T>.Count; index++)
+            {
+                int selectedIndex = int.CreateSaturating(indices.GetElementUnsafe(index));
+
+                if ((uint)selectedIndex < (uint)Vector256<T>.Count)
+                {
+                    T selectedValue = vector.GetElementUnsafe(selectedIndex);
+                    result.SetElementUnsafe(index, selectedValue);
+                }
+            }
+            return result;
+        }
+
+        // This method only exists so that ShuffleNative has the same behaviour when called directly or via
         // reflection - reflecting into internal runtime methods is not supported, so we don't worry about others
         // reflecting into these. TODO: figure out if this can be solved in a nicer way.
 
         [Intrinsic]
-        internal static Vector256<byte> ShuffleNativeFallback(Vector256<byte> vector, Vector256<byte> indices)
+        private static Vector256<T> ShuffleNativeFallback<T, TIndex>(Vector256<T> vector, Vector256<TIndex> indices)
+            where TIndex : IBinaryInteger<TIndex>
         {
-            return Shuffle(vector, indices);
+            return ShuffleFallback(vector, indices);
         }
-
-        [Intrinsic]
-        internal static Vector256<sbyte> ShuffleNativeFallback(Vector256<sbyte> vector, Vector256<sbyte> indices)
-        {
-            return Shuffle(vector, indices);
-        }
-
-        [Intrinsic]
-        internal static Vector256<short> ShuffleNativeFallback(Vector256<short> vector, Vector256<short> indices)
-        {
-            return Shuffle(vector, indices);
-        }
-
-        [Intrinsic]
-        internal static Vector256<ushort> ShuffleNativeFallback(Vector256<ushort> vector, Vector256<ushort> indices)
-        {
-            return Shuffle(vector, indices);
-        }
-
-        [Intrinsic]
-        internal static Vector256<int> ShuffleNativeFallback(Vector256<int> vector, Vector256<int> indices)
-        {
-            return Shuffle(vector, indices);
-        }
-
-        [Intrinsic]
-        internal static Vector256<uint> ShuffleNativeFallback(Vector256<uint> vector, Vector256<uint> indices)
-        {
-            return Shuffle(vector, indices);
-        }
-
-        [Intrinsic]
-        internal static Vector256<float> ShuffleNativeFallback(Vector256<float> vector, Vector256<int> indices)
-        {
-            return Shuffle(vector, indices);
-        }
-
-        [Intrinsic]
-        internal static Vector256<long> ShuffleNativeFallback(Vector256<long> vector, Vector256<long> indices)
-        {
-            return Shuffle(vector, indices);
-        }
-
-        [Intrinsic]
-        internal static Vector256<ulong> ShuffleNativeFallback(Vector256<ulong> vector, Vector256<ulong> indices)
-        {
-            return Shuffle(vector, indices);
-        }
-
-        [Intrinsic]
-        internal static Vector256<double> ShuffleNativeFallback(Vector256<double> vector, Vector256<long> indices)
-        {
-            return Shuffle(vector, indices);
-        }
-#endif
 
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
         /// <param name="vector">The input vector from which values are selected.</param>
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
         [Intrinsic]
-        public static Vector256<byte> Shuffle(Vector256<byte> vector, Vector256<byte> indices)
-        {
-            Unsafe.SkipInit(out Vector256<byte> result);
-
-            for (int index = 0; index < Vector256<byte>.Count; index++)
-            {
-                byte selectedIndex = indices.GetElementUnsafe(index);
-                byte selectedValue = 0;
-
-                if (selectedIndex < Vector256<byte>.Count)
-                {
-                    selectedValue = vector.GetElementUnsafe(selectedIndex);
-                }
-                result.SetElementUnsafe(index, selectedValue);
-            }
-
-            return result;
-        }
+        public static Vector256<byte> Shuffle(Vector256<byte> vector, Vector256<byte> indices) => ShuffleFallback(vector, indices);
 
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
         /// <param name="vector">The input vector from which values are selected.</param>
@@ -3396,24 +3375,89 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
         [Intrinsic]
         [CLSCompliant(false)]
-        public static Vector256<sbyte> Shuffle(Vector256<sbyte> vector, Vector256<sbyte> indices)
-        {
-            Unsafe.SkipInit(out Vector256<sbyte> result);
+        public static Vector256<char> Shuffle(Vector256<char> vector, Vector256<ushort> indices) => ShuffleFallback(vector, indices);
 
-            for (int index = 0; index < Vector256<sbyte>.Count; index++)
-            {
-                byte selectedIndex = (byte)indices.GetElementUnsafe(index);
-                sbyte selectedValue = 0;
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
+        public static Vector256<double> Shuffle(Vector256<double> vector, Vector256<long> indices) => ShuffleFallback(vector, indices);
 
-                if (selectedIndex < Vector256<sbyte>.Count)
-                {
-                    selectedValue = vector.GetElementUnsafe(selectedIndex);
-                }
-                result.SetElementUnsafe(index, selectedValue);
-            }
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
+        public static Vector256<short> Shuffle(Vector256<short> vector, Vector256<short> indices) => ShuffleFallback(vector, indices);
 
-            return result;
-        }
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
+        public static Vector256<int> Shuffle(Vector256<int> vector, Vector256<int> indices) => ShuffleFallback(vector, indices);
+
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
+        public static Vector256<long> Shuffle(Vector256<long> vector, Vector256<long> indices) => ShuffleFallback(vector, indices);
+
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
+        public static Vector256<nint> Shuffle(Vector256<nint> vector, Vector256<nint> indices) => ShuffleFallback(vector, indices);
+
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        public static Vector256<sbyte> Shuffle(Vector256<sbyte> vector, Vector256<sbyte> indices) => ShuffleFallback(vector, indices);
+
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
+        public static Vector256<float> Shuffle(Vector256<float> vector, Vector256<int> indices) => ShuffleFallback(vector, indices);
+
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        public static Vector256<ushort> Shuffle(Vector256<ushort> vector, Vector256<ushort> indices) => ShuffleFallback(vector, indices);
+
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        public static Vector256<uint> Shuffle(Vector256<uint> vector, Vector256<uint> indices) => ShuffleFallback(vector, indices);
+
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        public static Vector256<ulong> Shuffle(Vector256<ulong> vector, Vector256<ulong> indices) => ShuffleFallback(vector, indices);
+
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        public static Vector256<nuint> Shuffle(Vector256<nuint> vector, Vector256<nuint> indices) => ShuffleFallback(vector, indices);
 
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.
         /// Behavior is platform-dependent for out-of-range indices.</summary>
@@ -3421,19 +3465,64 @@ namespace System.Runtime.Intrinsics
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
         /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 31].</remarks>
-#if !MONO
         [Intrinsic]
-#else
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
-        public static Vector256<byte> ShuffleNative(Vector256<byte> vector, Vector256<byte> indices)
-        {
-#if !MONO
-            return ShuffleNativeFallback(vector, indices);
-#else
-            return Shuffle(vector, indices);
-#endif
-        }
+        public static Vector256<byte> ShuffleNative(Vector256<byte> vector, Vector256<byte> indices) => ShuffleNativeFallback(vector, indices);
+
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 15].</remarks>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static Vector256<char> ShuffleNative(Vector256<char> vector, Vector256<ushort> indices) => ShuffleNativeFallback(vector, indices);
+
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 3].</remarks>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<double> ShuffleNative(Vector256<double> vector, Vector256<long> indices) => ShuffleNativeFallback(vector, indices);
+
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 15].</remarks>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<short> ShuffleNative(Vector256<short> vector, Vector256<short> indices) => ShuffleNativeFallback(vector, indices);
+
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 7].</remarks>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<int> ShuffleNative(Vector256<int> vector, Vector256<int> indices) => ShuffleNativeFallback(vector, indices);
+
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 3].</remarks>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<long> ShuffleNative(Vector256<long> vector, Vector256<long> indices) => ShuffleNativeFallback(vector, indices);
+
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 3].</remarks>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<nint> ShuffleNative(Vector256<nint> vector, Vector256<nint> indices) => ShuffleNativeFallback(vector, indices);
 
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.
         /// Behavior is platform-dependent for out-of-range indices.</summary>
@@ -3441,370 +3530,59 @@ namespace System.Runtime.Intrinsics
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
         /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 31].</remarks>
-#if !MONO
         [Intrinsic]
-#else
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
         [CLSCompliant(false)]
-        public static Vector256<sbyte> ShuffleNative(Vector256<sbyte> vector, Vector256<sbyte> indices)
-        {
-#if !MONO
-            return ShuffleNativeFallback(vector, indices);
-#else
-            return Shuffle(vector, indices);
-#endif
-        }
+        public static Vector256<sbyte> ShuffleNative(Vector256<sbyte> vector, Vector256<sbyte> indices) => ShuffleNativeFallback(vector, indices);
 
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
         /// <param name="vector">The input vector from which values are selected.</param>
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 7].</remarks>
         [Intrinsic]
-        public static Vector256<short> Shuffle(Vector256<short> vector, Vector256<short> indices)
-        {
-            Unsafe.SkipInit(out Vector256<short> result);
-
-            for (int index = 0; index < Vector256<short>.Count; index++)
-            {
-                ushort selectedIndex = (ushort)indices.GetElementUnsafe(index);
-                short selectedValue = 0;
-
-                if (selectedIndex < Vector256<short>.Count)
-                {
-                    selectedValue = vector.GetElementUnsafe(selectedIndex);
-                }
-                result.SetElementUnsafe(index, selectedValue);
-            }
-
-            return result;
-        }
-
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
-        [Intrinsic]
-        [CLSCompliant(false)]
-        public static Vector256<ushort> Shuffle(Vector256<ushort> vector, Vector256<ushort> indices)
-        {
-            Unsafe.SkipInit(out Vector256<ushort> result);
-
-            for (int index = 0; index < Vector256<ushort>.Count; index++)
-            {
-                ushort selectedIndex = indices.GetElementUnsafe(index);
-                ushort selectedValue = 0;
-
-                if (selectedIndex < Vector256<ushort>.Count)
-                {
-                    selectedValue = vector.GetElementUnsafe(selectedIndex);
-                }
-                result.SetElementUnsafe(index, selectedValue);
-            }
-
-            return result;
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<float> ShuffleNative(Vector256<float> vector, Vector256<int> indices) => ShuffleNativeFallback(vector, indices);
 
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
         /// <param name="vector">The input vector from which values are selected.</param>
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
         /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 15].</remarks>
-#if !MONO
         [Intrinsic]
-#else
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
-        public static Vector256<short> ShuffleNative(Vector256<short> vector, Vector256<short> indices)
-        {
-#if !MONO
-            return ShuffleNativeFallback(vector, indices);
-#else
-            return Shuffle(vector, indices);
-#endif
-        }
-
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
-        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 15].</remarks>
-#if !MONO
-        [Intrinsic]
-#else
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
         [CLSCompliant(false)]
-        public static Vector256<ushort> ShuffleNative(Vector256<ushort> vector, Vector256<ushort> indices)
-        {
-#if !MONO
-            return ShuffleNativeFallback(vector, indices);
-#else
-            return Shuffle(vector, indices);
-#endif
-        }
-
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
-        [Intrinsic]
-        public static Vector256<int> Shuffle(Vector256<int> vector, Vector256<int> indices)
-        {
-            Unsafe.SkipInit(out Vector256<int> result);
-
-            for (int index = 0; index < Vector256<int>.Count; index++)
-            {
-                uint selectedIndex = (uint)indices.GetElementUnsafe(index);
-                int selectedValue = 0;
-
-                if (selectedIndex < Vector256<int>.Count)
-                {
-                    selectedValue = vector.GetElementUnsafe((int)selectedIndex);
-                }
-                result.SetElementUnsafe(index, selectedValue);
-            }
-
-            return result;
-        }
-
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
-        [Intrinsic]
-        [CLSCompliant(false)]
-        public static Vector256<uint> Shuffle(Vector256<uint> vector, Vector256<uint> indices)
-        {
-            Unsafe.SkipInit(out Vector256<uint> result);
-
-            for (int index = 0; index < Vector256<uint>.Count; index++)
-            {
-                uint selectedIndex = indices.GetElementUnsafe(index);
-                uint selectedValue = 0;
-
-                if (selectedIndex < Vector256<uint>.Count)
-                {
-                    selectedValue = vector.GetElementUnsafe((int)selectedIndex);
-                }
-                result.SetElementUnsafe(index, selectedValue);
-            }
-
-            return result;
-        }
-
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
-        [Intrinsic]
-        public static Vector256<float> Shuffle(Vector256<float> vector, Vector256<int> indices)
-        {
-            Unsafe.SkipInit(out Vector256<float> result);
-
-            for (int index = 0; index < Vector256<float>.Count; index++)
-            {
-                uint selectedIndex = (uint)indices.GetElementUnsafe(index);
-                float selectedValue = 0;
-
-                if (selectedIndex < Vector256<float>.Count)
-                {
-                    selectedValue = vector.GetElementUnsafe((int)selectedIndex);
-                }
-                result.SetElementUnsafe(index, selectedValue);
-            }
-
-            return result;
-        }
+        public static Vector256<ushort> ShuffleNative(Vector256<ushort> vector, Vector256<ushort> indices) => ShuffleNativeFallback(vector, indices);
 
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
         /// <param name="vector">The input vector from which values are selected.</param>
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
         /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 7].</remarks>
-#if !MONO
         [Intrinsic]
-#else
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
-        public static Vector256<int> ShuffleNative(Vector256<int> vector, Vector256<int> indices)
-        {
-#if !MONO
-            return ShuffleNativeFallback(vector, indices);
-#else
-            return Shuffle(vector, indices);
-#endif
-        }
-
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
-        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 7].</remarks>
-#if !MONO
-        [Intrinsic]
-#else
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
         [CLSCompliant(false)]
-        public static Vector256<uint> ShuffleNative(Vector256<uint> vector, Vector256<uint> indices)
-        {
-#if !MONO
-            return ShuffleNativeFallback(vector, indices);
-#else
-            return Shuffle(vector, indices);
-#endif
-        }
-
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
-        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 7].</remarks>
-#if !MONO
-        [Intrinsic]
-#else
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
-        public static Vector256<float> ShuffleNative(Vector256<float> vector, Vector256<int> indices)
-        {
-#if !MONO
-            return ShuffleNativeFallback(vector, indices);
-#else
-            return Shuffle(vector, indices);
-#endif
-        }
-
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
-        [Intrinsic]
-        public static Vector256<long> Shuffle(Vector256<long> vector, Vector256<long> indices)
-        {
-            Unsafe.SkipInit(out Vector256<long> result);
-
-            for (int index = 0; index < Vector256<long>.Count; index++)
-            {
-                ulong selectedIndex = (ulong)indices.GetElementUnsafe(index);
-                long selectedValue = 0;
-
-                if (selectedIndex < (uint)Vector256<long>.Count)
-                {
-                    selectedValue = vector.GetElementUnsafe((int)selectedIndex);
-                }
-                result.SetElementUnsafe(index, selectedValue);
-            }
-
-            return result;
-        }
-
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
-        [Intrinsic]
-        [CLSCompliant(false)]
-        public static Vector256<ulong> Shuffle(Vector256<ulong> vector, Vector256<ulong> indices)
-        {
-            Unsafe.SkipInit(out Vector256<ulong> result);
-
-            for (int index = 0; index < Vector256<ulong>.Count; index++)
-            {
-                ulong selectedIndex = indices.GetElementUnsafe(index);
-                ulong selectedValue = 0;
-
-                if (selectedIndex < (uint)Vector256<ulong>.Count)
-                {
-                    selectedValue = vector.GetElementUnsafe((int)selectedIndex);
-                }
-                result.SetElementUnsafe(index, selectedValue);
-            }
-
-            return result;
-        }
-
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
-        [Intrinsic]
-        public static Vector256<double> Shuffle(Vector256<double> vector, Vector256<long> indices)
-        {
-            Unsafe.SkipInit(out Vector256<double> result);
-
-            for (int index = 0; index < Vector256<double>.Count; index++)
-            {
-                ulong selectedIndex = (ulong)indices.GetElementUnsafe(index);
-                double selectedValue = 0;
-
-                if (selectedIndex < (uint)Vector256<double>.Count)
-                {
-                    selectedValue = vector.GetElementUnsafe((int)selectedIndex);
-                }
-                result.SetElementUnsafe(index, selectedValue);
-            }
-
-            return result;
-        }
+        public static Vector256<uint> ShuffleNative(Vector256<uint> vector, Vector256<uint> indices) => ShuffleNativeFallback(vector, indices);
 
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
         /// <param name="vector">The input vector from which values are selected.</param>
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
         /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 3].</remarks>
-#if !MONO
         [Intrinsic]
-#else
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
-        public static Vector256<long> ShuffleNative(Vector256<long> vector, Vector256<long> indices)
-        {
-#if !MONO
-            return ShuffleNativeFallback(vector, indices);
-#else
-            return Shuffle(vector, indices);
-#endif
-        }
-
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
-        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 3].</remarks>
-#if !MONO
-        [Intrinsic]
-#else
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
         [CLSCompliant(false)]
-        public static Vector256<ulong> ShuffleNative(Vector256<ulong> vector, Vector256<ulong> indices)
-        {
-#if !MONO
-            return ShuffleNativeFallback(vector, indices);
-#else
-            return Shuffle(vector, indices);
-#endif
-        }
+        public static Vector256<ulong> ShuffleNative(Vector256<ulong> vector, Vector256<ulong> indices) => ShuffleNativeFallback(vector, indices);
 
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
         /// <param name="vector">The input vector from which values are selected.</param>
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
         /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 3].</remarks>
-#if !MONO
         [Intrinsic]
-#else
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
-        public static Vector256<double> ShuffleNative(Vector256<double> vector, Vector256<long> indices)
-        {
-#if !MONO
-            return ShuffleNativeFallback(vector, indices);
-#else
-            return Shuffle(vector, indices);
-#endif
-        }
+        [CLSCompliant(false)]
+        public static Vector256<nuint> ShuffleNative(Vector256<nuint> vector, Vector256<nuint> indices) => ShuffleNativeFallback(vector, indices);
 
         /// <inheritdoc cref="Vector128.Sin(Vector128{double})" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -4067,25 +3845,16 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector256<T> Truncate<T>(Vector256<T> vector)
         {
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(short))
-             || (typeof(T) == typeof(int))
-             || (typeof(T) == typeof(long))
-             || (typeof(T) == typeof(nint))
-             || (typeof(T) == typeof(nuint))
-             || (typeof(T) == typeof(sbyte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong)))
-            {
-                return vector;
-            }
-            else
+            if (Scalar<T>.IsFloatingPoint)
             {
                 return Create(
                     Vector128.Truncate(vector._lower),
                     Vector128.Truncate(vector._upper)
                 );
+            }
+            else
+            {
+                return vector;
             }
         }
 
