@@ -82,9 +82,8 @@ pal::string_t fx_ver_t::as_str() const
     c_ver.pre = const_cast<pal_char_t*>(m_pre.c_str());
     c_ver.build = const_cast<pal_char_t*>(m_build.c_str());
 
-    // SemVer does not define a hard limit on version string length:
+    // SemVer does not define a size limit on version string, but calls out a reasonable max of 255 characters:
     // https://semver.org/#does-semver-have-a-size-limit-on-the-version-string
-    // Use a fixed stack buffer; in debug builds assert that no truncation is possible.
     pal_char_t buf[256];
 #ifdef _DEBUG
     size_t required_len =
