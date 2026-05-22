@@ -133,11 +133,11 @@ public readonly struct GCOomData
 
     // Given the current probe address within a heap segment and the (aligned) size of the
     // object that lives at that address, returns the next candidate object address.
+    // Implementations may consult cached per-target allocation-context state.
     TargetPointer GetPotentialNextObjectAddress(
         TargetPointer currentAddress,
         ulong currentObjectSize,
-        GCHeapSegmentInfo segment,
-        IReadOnlyList<AllocContext> allocContexts);
+        GCHeapSegmentInfo segment);
 
     // Aligns an object's raw size (base size + component bytes) to the alignment required by its containing segment
     ulong AlignObjectSize(ulong size, GCSegmentClassification generation);
@@ -1143,24 +1143,23 @@ IEnumerable<(HeapSegment Segment, TargetPointer Address)> WalkSegmentList(Target
 
 GetPotentialNextObjectAddress
 
+Depends on `IThread.GetThreadStoreData`, `IThread.GetThreadData`,
+`IGC.GetGlobalAllocationContext`, `IGC.GetGCIdentifiers`, `IGC.GetGCHeaps`, and
+`IGC.GetHeapData` to enumerate active allocation contexts.
+
 ```csharp
 TargetPointer IGC.GetPotentialNextObjectAddress(
     TargetPointer currentAddress,
     ulong currentObjectSize,
-    GCHeapSegmentInfo segment,
-    IReadOnlyList<AllocContext> allocContexts)
+    GCHeapSegmentInfo segment)
 {
     TargetPointer next = new TargetPointer(currentAddress.Value + currentObjectSize);
 
-    // Only Gen0/Ephemeral segments contain active allocation contexts that interleave with
-    // committed objects.
     if (segment.Generation is not (GCSegmentClassification.Gen0 or GCSegmentClassification.Ephemeral))
         return next;
 
-    // If `next` matches an allocation-context cursor, jump past the reserved-but-unallocated
-    // tail of that context (rounded up by the GC's minimum object size).
     ulong minObjSize = AlignForSmallObject((ulong)_target.PointerSize * 3);
-    foreach (AllocContext context in allocContexts)
+    foreach (AllocContext context in GetAllocContexts())
     {
         if (next == context.Pointer)
             return new TargetPointer(context.Limit.Value + minObjSize);

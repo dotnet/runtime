@@ -9,7 +9,7 @@ using Microsoft.Diagnostics.DataContractReader.Contracts.GCHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal readonly struct GC_1 : IGC
+internal struct GC_1 : IGC
 {
     private const uint WRK_HEAP_COUNT = 1;
 
@@ -44,6 +44,15 @@ internal readonly struct GC_1 : IGC
     private readonly uint _handleMaxInternalTypes;
     private readonly uint _handleSegmentSize;
     private readonly uint _heapSegmentFlagsReadonly = 1;
+
+    private List<AllocContext>? _allocContexts;
+
+    private readonly record struct AllocContext(TargetPointer Pointer, TargetPointer Limit);
+
+    public void Flush()
+    {
+        _allocContexts = null;
+    }
 
     internal GC_1(Target target)
     {
@@ -445,26 +454,69 @@ internal readonly struct GC_1 : IGC
     TargetPointer IGC.GetPotentialNextObjectAddress(
         TargetPointer currentAddress,
         ulong currentObjectSize,
-        GCHeapSegmentInfo segment,
-        IReadOnlyList<AllocContext> allocContexts)
+        GCHeapSegmentInfo segment)
     {
         TargetPointer next = new TargetPointer(currentAddress.Value + currentObjectSize);
 
-        // Only Gen0/Ephemeral segments contain active allocation contexts that interleave with
-        // committed objects.
         if (segment.Generation is not (GCSegmentClassification.Gen0 or GCSegmentClassification.Ephemeral))
             return next;
 
-        // Mirrors DacHeapWalker::CheckAllocAndSegmentRange: if the address coincides with any
-        // allocation context's bump pointer, jump past the reserved-but-unallocated tail of that
-        // context (rounded up by the GC's minimum object size).
         ulong minObjSize = AlignForSmallObject((ulong)_target.PointerSize * 3);
-        foreach (AllocContext context in allocContexts)
+        foreach (AllocContext context in GetAllocContexts())
         {
             if (next == context.Pointer)
                 return new TargetPointer(context.Limit.Value + minObjSize);
         }
         return next;
+    }
+
+    private List<AllocContext> GetAllocContexts()
+    {
+        if (_allocContexts is not null)
+            return _allocContexts;
+
+        List<AllocContext> contexts = new();
+
+        IThread thread = _target.Contracts.Thread;
+        ThreadStoreData store = thread.GetThreadStoreData();
+        TargetPointer current = store.FirstThread;
+        int safety = store.ThreadCount;
+        while (current != TargetPointer.Null && safety-- > 0)
+        {
+            ThreadData td = thread.GetThreadData(current);
+            if (td.AllocContextPointer != TargetPointer.Null)
+                contexts.Add(new AllocContext(td.AllocContextPointer, td.AllocContextLimit));
+            current = td.NextThread;
+        }
+
+        IGC gc = _target.Contracts.GC;
+        gc.GetGlobalAllocationContext(out TargetPointer gAllocPtr, out TargetPointer gAllocLimit);
+        if (gAllocPtr != TargetPointer.Null)
+            contexts.Add(new AllocContext(gAllocPtr, gAllocLimit));
+
+        string[] gcIdentifiers = gc.GetGCIdentifiers();
+        IEnumerable<GCHeapData> heaps = gcIdentifiers.Contains(GCIdentifiers.Workstation)
+            ? new[] { gc.GetHeapData() }
+            : EnumerateServerHeaps(gc);
+        foreach (GCHeapData heap in heaps)
+        {
+            if (heap.GenerationTable.Count > 0)
+            {
+                TargetPointer ptr = heap.GenerationTable[0].AllocationContextPointer;
+                TargetPointer limit = heap.GenerationTable[0].AllocationContextLimit;
+                if (ptr != TargetPointer.Null)
+                    contexts.Add(new AllocContext(ptr, limit));
+            }
+        }
+
+        _allocContexts = contexts;
+        return contexts;
+    }
+
+    private static IEnumerable<GCHeapData> EnumerateServerHeaps(IGC gc)
+    {
+        foreach (TargetPointer heapAddress in gc.GetGCHeaps())
+            yield return gc.GetHeapData(heapAddress);
     }
 
     ulong IGC.AlignObjectSize(ulong size, GCSegmentClassification generation)

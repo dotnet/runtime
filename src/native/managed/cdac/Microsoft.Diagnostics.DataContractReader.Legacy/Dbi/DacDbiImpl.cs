@@ -2268,7 +2268,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         private readonly IGC _gc;
         private readonly IRuntimeTypeSystem _rts;
         private readonly TargetPointer _freeObjectMT;
-        private readonly IReadOnlyList<AllocContext> _allocContexts;
         private readonly LinearReadCache _cache;
         private readonly uint _numComponentsOffsetArray;
         private readonly uint _numComponentsOffsetString;
@@ -2283,7 +2282,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             _gc = target.Contracts.GC;
             _rts = target.Contracts.RuntimeTypeSystem;
             _freeObjectMT = target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.FreeObjectMethodTable));
-            _allocContexts = CollectAllocContexts(target);
             _cache = new LinearReadCache(target);
             // use these fields directly instead of through RuntimeTypeSystem so that we can use our cache that we really only need for heap walking
             _numComponentsOffsetArray = (uint)target.GetTypeInfo(DataType.Array).Fields[Constants.FieldNames.Array.NumComponents].Offset;
@@ -2302,7 +2300,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 if (seg.Start.Value >= seg.End.Value)
                     continue;
 
-                TargetPointer currentObj = _gc.GetPotentialNextObjectAddress(seg.Start, 0, seg, _allocContexts);
+                TargetPointer currentObj = _gc.GetPotentialNextObjectAddress(seg.Start, 0, seg);
                 while (currentObj.Value < seg.End.Value)
                 {
                     if (!_cache.TryReadPointer(currentObj.Value + _methodTableOffset, out TargetPointer mt))
@@ -2321,7 +2319,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                     size = _gc.AlignObjectSize(size, seg.Generation);
 
                     // Advance past this object (and any allocation-context tail) in a single call.
-                    TargetPointer nextObj = _gc.GetPotentialNextObjectAddress(currentObj, size, seg, _allocContexts);
+                    TargetPointer nextObj = _gc.GetPotentialNextObjectAddress(currentObj, size, seg);
                     if (nextObj.Value > seg.End.Value || nextObj.Value <= currentObj.Value)
                     {
                         break;
@@ -2412,54 +2410,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 foreach (TargetPointer heapAddress in gc.GetGCHeaps())
                     yield return gc.GetHeapData(heapAddress);
             }
-        }
-
-        private static List<AllocContext> CollectAllocContexts(Target target)
-        {
-            List<AllocContext> contexts = new();
-
-            // Per-thread allocation contexts.
-            IThread thread = target.Contracts.Thread;
-            ThreadStoreData store = thread.GetThreadStoreData();
-            TargetPointer current = store.FirstThread;
-            int safety = store.ThreadCount;
-            while (current != TargetPointer.Null && safety-- > 0)
-            {
-                ThreadData td = thread.GetThreadData(current);
-                if (td.AllocContextPointer != TargetPointer.Null)
-                    contexts.Add(new AllocContext(td.AllocContextPointer, td.AllocContextLimit));
-                current = td.NextThread;
-            }
-
-            // Global allocation context.
-            target.Contracts.GC.GetGlobalAllocationContext(out TargetPointer gAllocPtr, out TargetPointer gAllocLimit);
-            if (gAllocPtr != TargetPointer.Null)
-                contexts.Add(new AllocContext(gAllocPtr, gAllocLimit));
-
-            // Per-heap gen0 allocation contexts. The native walker also tracks YoungestGenPtr (the
-            // gen0 generation's allocation context cursor) and skips past it when encountered.
-            IGC gc = target.Contracts.GC;
-            string[] gcIdentifiers = gc.GetGCIdentifiers();
-            IEnumerable<GCHeapData> heaps = gcIdentifiers.Contains(GCIdentifiers.Workstation)
-                ? new[] { gc.GetHeapData() }
-                : EnumerateServerHeaps(gc);
-            foreach (GCHeapData heap in heaps)
-            {
-                if (heap.GenerationTable.Count > 0)
-                {
-                    TargetPointer ptr = heap.GenerationTable[0].AllocationContextPointer;
-                    TargetPointer limit = heap.GenerationTable[0].AllocationContextLimit;
-                    if (ptr != TargetPointer.Null)
-                        contexts.Add(new AllocContext(ptr, limit));
-                }
-            }
-            return contexts;
-        }
-
-        private static IEnumerable<GCHeapData> EnumerateServerHeaps(IGC gc)
-        {
-            foreach (TargetPointer heapAddress in gc.GetGCHeaps())
-                yield return gc.GetHeapData(heapAddress);
         }
 
         // Linear page cache used by the per-object heap walk.
