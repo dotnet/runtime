@@ -42,7 +42,13 @@ if(CLR_CMAKE_TARGET_WASI)
   # WASI doesn't define these fcntl constants — provide them as no-ops
   add_compile_definitions(F_DUPFD_CLOEXEC=1030)
   add_compile_definitions(O_CLOEXEC=0)
-  # WASI stub headers for missing POSIX headers
+  # WASI sysroot is missing entire POSIX subsystems (signal, ucontext, parts
+  # of pthread, sys/wait, sys/vfs, sys/resource, dlfcn, link, pwd). The shim
+  # headers under pal/src/include/pal/wasi/ use #include_next to layer the
+  # missing declarations and link-time stubs on top of the WASI sysroot
+  # headers. They must be visible BEFORE SYSTEM at the CoreCLR scope because
+  # minipal, debug, hosts and other non-PAL targets also include the affected
+  # headers. See pal/src/include/pal/wasi/README.md for the design rationale.
   include_directories(BEFORE SYSTEM ${CMAKE_CURRENT_SOURCE_DIR}/pal/src/include/pal/wasi)
 endif()
 
