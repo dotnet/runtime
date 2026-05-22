@@ -288,7 +288,7 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void Open_RunningProcess_ReturnsValidHandle()
         {
-            Process process = CreateProcess(static () =>
+            using Process process = CreateProcess(static () =>
             {
                 Thread.Sleep(Timeout.Infinite);
                 return RemoteExecutor.SuccessExitCode;
@@ -311,7 +311,7 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void Open_ThenKill_TerminatesProcess()
         {
-            Process process = CreateProcess(static () =>
+            using Process process = CreateProcess(static () =>
             {
                 Thread.Sleep(Timeout.Infinite);
                 return RemoteExecutor.SuccessExitCode;
@@ -321,7 +321,7 @@ namespace System.Diagnostics.Tests
             using SafeProcessHandle handle = SafeProcessHandle.Open(process.Id);
             handle.Kill();
 
-            Assert.True(process.WaitForExit(WaitInMS));
+            Assert.True(handle.TryWaitForExit(TimeSpan.FromMilliseconds(WaitInMS), out _));
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
