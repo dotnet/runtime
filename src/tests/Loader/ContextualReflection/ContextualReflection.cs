@@ -49,7 +49,7 @@ namespace ContextualReflectionTest
             InitializeIsolation(true);
         }
 
-        public Program(bool isolated)
+        internal Program(bool isolated)
         {
             InitializeIsolation(isolated);
         }

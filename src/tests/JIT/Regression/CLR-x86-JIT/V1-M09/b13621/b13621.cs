@@ -32,6 +32,8 @@ namespace b13621
             }
         }
 
+        public RootMem() { }
+
         private RootMem(int i)
         {
             if (i > 0)
