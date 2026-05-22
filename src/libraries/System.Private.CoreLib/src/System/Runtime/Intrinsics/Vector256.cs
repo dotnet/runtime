@@ -831,6 +831,23 @@ namespace System.Runtime.Intrinsics
             }
         }
 
+        /// <inheritdoc cref="Vector128.Asinh(Vector128{double})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<double> Asinh(Vector256<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.AsinhDouble<Vector256<double>, Vector256<long>, Vector256<ulong>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector128.Asinh(vector._lower),
+                    Vector128.Asinh(vector._upper)
+                );
+            }
+        }
+
         /// <inheritdoc cref="Vector128.Asin(Vector128{float})" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<float> Asin(Vector256<float> vector)
@@ -851,6 +868,30 @@ namespace System.Runtime.Intrinsics
                 return Create(
                     Vector128.Asin(vector._lower),
                     Vector128.Asin(vector._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.Asinh(Vector128{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<float> Asinh(Vector256<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                if (Vector512.IsHardwareAccelerated)
+                {
+                    return VectorMath.AsinhSingle<Vector256<float>, Vector256<int>, Vector256<uint>, Vector512<double>, Vector512<long>, Vector512<ulong>>(vector);
+                }
+                else
+                {
+                    return VectorMath.AsinhSingle<Vector256<float>, Vector256<int>, Vector256<uint>, Vector256<double>, Vector256<long>, Vector256<ulong>>(vector);
+                }
+            }
+            else
+            {
+                return Create(
+                    Vector128.Asinh(vector._lower),
+                    Vector128.Asinh(vector._upper)
                 );
             }
         }
