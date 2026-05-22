@@ -134,7 +134,7 @@ namespace Microsoft.AspNetCore.Hosting.FunctionalTests
         {
             if (kill(processId, SIGINT) != 0)
             {
-                throw new Win32Exception(Marshal.GetLastPInvokeError());
+                throw new Win32Exception(Marshal.GetLastWin32Error());
             }
         }
 
