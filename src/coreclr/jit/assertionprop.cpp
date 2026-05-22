@@ -2392,8 +2392,8 @@ AssertionIndex Compiler::optAssertionIsSubrange(GenTree* tree, IntegralRange ran
 //    reach via PHI definitions.
 //
 // Arguments:
-//   vn         - VN to check
-//   castTo     - class handle to test the cast against
+//   objVN      - VN to check
+//   castToVN   - VN representing the type handle being cast to.
 //   assertions - set of live assertions
 //   budget     - limits the depth of recursion when chasing assertions across
 //                phi-def reaching VNs.
@@ -2401,12 +2401,9 @@ AssertionIndex Compiler::optAssertionIsSubrange(GenTree* tree, IntegralRange ran
 // Return Value:
 //   True if the VN is known to be a subtype of castTo.
 //
-bool Compiler::optAssertionVNIsSubtype(ValueNum             vn,
-                                       CORINFO_CLASS_HANDLE castTo,
-                                       ASSERT_VALARG_TP     assertions,
-                                       int                  budget)
+bool Compiler::optAssertionVNIsSubtype(ValueNum objVN, ValueNum castToVN, ASSERT_VALARG_TP assertions, int budget)
 {
-    if ((budget <= 0) || (vn == ValueNumStore::NoVN) || (castTo == NO_CLASS_HANDLE))
+    if ((budget <= 0) || (objVN == ValueNumStore::NoVN))
     {
         return false;
     }
@@ -2414,9 +2411,16 @@ bool Compiler::optAssertionVNIsSubtype(ValueNum             vn,
     bool isExact;
     bool isNonNull;
 
+    CORINFO_CLASS_HANDLE castTo;
+    if (!vnStore->IsVNTypeHandle(castToVN, &castTo))
+    {
+        return false;
+    }
+    assert(castTo != NO_CLASS_HANDLE);
+
     // First, try the VN's version of gtGetClassHandle over the vn itself, e.g. vn being
     // Jit_NewObj(MyClass) while we're trying to prove "Jit_NewObj(MyClass) is MyClass".
-    CORINFO_CLASS_HANDLE castFromVN = vnStore->GetObjectType(vn, &isExact, &isNonNull);
+    CORINFO_CLASS_HANDLE castFromVN = vnStore->GetObjectType(objVN, &isExact, &isNonNull);
     if ((castFromVN != NO_CLASS_HANDLE) &&
         (info.compCompHnd->compareTypesForCast(castFromVN, castTo) == TypeCompareState::Must))
     {
@@ -2433,7 +2437,7 @@ bool Compiler::optAssertionVNIsSubtype(ValueNum             vn,
         const AssertionDsc&  curAssertion = optGetAssertion(index);
 
         if (!curAssertion.KindIs(OAK_EQUAL) || !curAssertion.GetOp1().KindIs(O1K_SUBTYPE, O1K_EXACT_TYPE) ||
-            (curAssertion.GetOp1().GetVN() != vn))
+            (curAssertion.GetOp1().GetVN() != objVN))
         {
             // TODO-CQ: We might benefit from OAK_NOT_EQUAL assertion as well, e.g.:
             // if (obj is not MyClass) // obj is known to be never of MyClass class
@@ -2451,8 +2455,8 @@ bool Compiler::optAssertionVNIsSubtype(ValueNum             vn,
             continue;
         }
 
-        // Now we have "thisVN is (exactly/subtype) cls" assertion.
-        // We want to see if this implies "thisVN is (exactly/subtype) cls".
+        // Now we have "objVN is (exactly/subtype) cls" assertion.
+        // We want to see if this implies "objVN is (exactly/subtype) castTo".
         if (info.compCompHnd->compareTypesForCast(cls, castTo) == TypeCompareState::Must)
         {
             // The assertion implies the cast is always successful.
@@ -2461,9 +2465,10 @@ bool Compiler::optAssertionVNIsSubtype(ValueNum             vn,
     }
 
     // For PHI-defs, walk reaching assertions/VNs and recursively check.
-    return optVisitReachingAssertions(vn, [this, castTo, budget](ValueNum reachingVN, ASSERT_TP reachingAssertions) {
-        return optAssertionVNIsSubtype(reachingVN, castTo, reachingAssertions, budget - 1) ? AssertVisit::Continue
-                                                                                           : AssertVisit::Abort;
+    return optVisitReachingAssertions(objVN,
+                                      [this, castToVN, budget](ValueNum reachingVN, ASSERT_TP reachingAssertions) {
+        return optAssertionVNIsSubtype(reachingVN, castToVN, reachingAssertions, budget - 1) ? AssertVisit::Continue
+                                                                                             : AssertVisit::Abort;
     }) == AssertVisit::Continue;
 }
 
@@ -5391,10 +5396,10 @@ GenTree* Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCal
             CallArg* objCallArg    = call->gtArgs.GetArgByIndex(1);
             GenTree* castToArg     = castToCallArg->GetNode();
             GenTree* objArg        = objCallArg->GetNode();
+            ValueNum objVN         = optConservativeNormalVN(objArg);
+            ValueNum castToVN      = optConservativeNormalVN(castToArg);
 
-            CORINFO_CLASS_HANDLE castTo;
-            if (vnStore->IsVNTypeHandle(optConservativeNormalVN(castToArg), &castTo) &&
-                optAssertionVNIsSubtype(optConservativeNormalVN(objArg), castTo, assertions))
+            if (optAssertionVNIsSubtype(objVN, castToVN, assertions))
             {
                 JITDUMP("\nDid VN based subtype prop in " FMT_BB ":\n", compCurBB->bbNum);
                 DISPTREE(call);
