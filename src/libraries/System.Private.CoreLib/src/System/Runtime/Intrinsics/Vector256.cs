@@ -431,6 +431,7 @@ namespace System.Runtime.Intrinsics
             }
             else
             {
+                ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
                 return vector;
             }
         }
@@ -1814,6 +1815,7 @@ namespace System.Runtime.Intrinsics
             }
             else
             {
+                ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
                 return vector;
             }
         }
@@ -3011,6 +3013,7 @@ namespace System.Runtime.Intrinsics
             }
             else
             {
+                ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
                 return vector;
             }
         }
@@ -3681,6 +3684,7 @@ namespace System.Runtime.Intrinsics
             }
             else
             {
+                ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
                 return vector;
             }
         }
