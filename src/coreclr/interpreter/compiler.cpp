@@ -4826,27 +4826,6 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         int32_t isResumedArg = m_pStackPointer[-1].var;
         m_pStackPointer--;
 
-        AddIns(INTOP_MOV_P);
-        m_pLastNewIns->SetSVar(m_threadObjVarIndex);
-        PushInterpType(InterpTypeO, NULL);
-        m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
-        int32_t threadAddressVar = m_pStackPointer[-1].var;
-        m_pStackPointer--;
-
-        AddIns(INTOP_MOV_P);
-        m_pLastNewIns->SetSVar(m_execContextVarIndex);
-        PushInterpType(InterpTypeO, NULL);
-        m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
-        int32_t execContextAddressVar = m_pStackPointer[-1].var;
-        m_pStackPointer--;
-
-        AddIns(INTOP_MOV_P);
-        m_pLastNewIns->SetSVar(m_syncContextVarIndex);
-        PushInterpType(InterpTypeO, NULL);
-        m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
-        int32_t syncContextAddressVar = m_pStackPointer[-1].var;
-        m_pStackPointer--;
-
         // Create a new dummy var to serve as the dVar of the call
         // FIXME Consider adding special dVar type (ex -1), that is
         // resolved to null offset. The opcode shouldn't really write to it
@@ -4867,9 +4846,9 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         int32_t numArgs = 4;
         int32_t *callArgs = getAllocator(IMK_CallInfo).allocate<int32_t>(numArgs + 1);
         callArgs[0] = isResumedArg;
-        callArgs[1] = threadAddressVar;
-        callArgs[2] = execContextAddressVar;
-        callArgs[3] = syncContextAddressVar;
+        callArgs[1] = m_threadObjVarIndex;
+        callArgs[2] = m_execContextVarIndex;
+        callArgs[3] = m_syncContextVarIndex;
         callArgs[4] = CALL_ARGS_TERMINATOR;
         m_pLastNewIns->info.pCallInfo->pCallArgs = callArgs;
 
