@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
@@ -15,6 +16,7 @@ namespace Microsoft.AspNetCore.Hosting.FunctionalTests
 {
     public class ShutdownTests
     {
+        private const int SIGINT = 2;
         private static readonly string StartedMessage = "Started";
         private static readonly string CompletionMessage = "Stopping firing\n" +
                                                             "Stopping end\n" +
@@ -130,16 +132,10 @@ namespace Microsoft.AspNetCore.Hosting.FunctionalTests
 
         private static void SendSIGINT(int processId)
         {
-            var startInfo = new ProcessStartInfo
+            if (kill(processId, SIGINT) != 0)
             {
-                FileName = "kill",
-                Arguments = processId.ToString(),
-                RedirectStandardOutput = true,
-                UseShellExecute = false
-            };
-
-            var process = Process.Start(startInfo);
-            WaitForExitOrKill(process);
+                throw new Win32Exception(Marshal.GetLastPInvokeError());
+            }
         }
 
         private static void WaitForExitOrKill(Process process)
@@ -166,5 +162,8 @@ namespace Microsoft.AspNetCore.Hosting.FunctionalTests
             public override Task<PublishedApplication> Publish(DeploymentParameters deploymentParameters, ILogger logger)
                 => Task.FromResult(new PublishedApplication(_applicationPath, logger));
         }
+
+        [DllImport("libc", SetLastError = true)]
+        private static extern int kill(int pid, int sig);
     }
 }
