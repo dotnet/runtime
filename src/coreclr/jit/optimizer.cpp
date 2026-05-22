@@ -1840,15 +1840,8 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
 
     // There may be multiple exits, and one of the other exits may also be a
     // latch. That latch could be preferable to leave (for example because it
-    // is an IV test).
-    NaturalLoopIterInfo iterInfo;
-    if (loop->AnalyzeIteration(&iterInfo) &&
-        (iterInfo.TestBlock->TrueTargetIs(loop->GetHeader()) != iterInfo.TestBlock->FalseTargetIs(loop->GetHeader())))
-    {
-        // Test block is both a latch and exit, so the loop is already inverted in a preferable way.
-        JITDUMP("No loop-inversion for " FMT_LP " since it is already inverted (with an IV test)\n", loop->GetIndex());
-        return false;
-    }
+    // is an IV test). The general BBJ_COND-latch-that-exits check below
+    // subsumes the IV-test case.
 
     // If the loop is already bottom-tested (has a BBJ_COND latch that exits the loop),
     // there is no need to invert. Also handle the canonical multi-backedge case, where
