@@ -27,11 +27,11 @@ namespace System.Numerics
         private const int MinExponent = -6143;
         private const int Precision = 34;
         private const int ExponentBias = 6176;
-        private static readonly UInt128 PositiveInfinityValue = new UInt128(upper: 0x7800_0000_0000_0000, lower: 0);
-        private static readonly UInt128 NegativeInfinityValue = new UInt128(upper: 0xf800_0000_0000_0000, lower: 0);
-        private static readonly UInt128 ZeroValue = new UInt128(0, 0);
-        private static readonly UInt128 NegativeZeroValue = new UInt128(0x8000_0000_0000_0000, 0);
-        private static readonly UInt128 QuietNaNValue = new UInt128(0xFC00_0000_0000_0000, 0);
+        private static UInt128 PositiveInfinityValue => new UInt128(upper: 0x7800_0000_0000_0000, lower: 0);
+        private static UInt128 NegativeInfinityValue => new UInt128(upper: 0xf800_0000_0000_0000, lower: 0);
+        private static UInt128 ZeroValue => new UInt128(0, 0);
+        private static UInt128 NegativeZeroValue => new UInt128(0x8000_0000_0000_0000, 0);
+        private static UInt128 QuietNaNValue => new UInt128(0xFC00_0000_0000_0000, 0);
 
         private const ulong SignMaskUpper = 0x8000_0000_0000_0000;
         private const ulong NaNMaskUpper = 0x7C00_0000_0000_0000;
