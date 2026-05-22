@@ -812,6 +812,36 @@ namespace System.IO.Compression
             }
         }
 
+        [Theory]
+        [InlineData(8)]
+        [InlineData(10)]
+        [InlineData(15)]
+        [InlineData(-1)]
+        public void RoundTrip_WithWindowLog(int windowLog)
+        {
+            byte[] input = new byte[1024];
+            Random.Shared.NextBytes(input);
+
+            var options = new ZLibCompressionOptions
+            {
+                CompressionLevel = 6,
+                WindowLog = windowLog
+            };
+
+            using var compressed = new MemoryStream();
+            using (var compressor = CreateStream(compressed, options, leaveOpen: true))
+            {
+                compressor.Write(input);
+            }
+
+            compressed.Position = 0;
+            using var decompressor = CreateStream(compressed, CompressionMode.Decompress);
+            using var decompressed = new MemoryStream();
+            decompressor.CopyTo(decompressed);
+
+            Assert.Equal(input, decompressed.ToArray());
+        }
+
     }
 
     public enum TestScenario

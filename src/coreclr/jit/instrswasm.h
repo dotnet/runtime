@@ -28,12 +28,13 @@
 
 // control flow
 //
-INST2(invalid,              "INVALID",              0, IF_NONE,         0xFC, BAD_CODE)
+INST2(invalid,             "INVALID",              0, IF_NONE,          0xFC, BAD_CODE)
 INST(unreachable,          "unreachable",          0, IF_OPCODE,        0x00)
 INST(label,                "label",                0, IF_RAW_ULEB128,   0x00)
 INST(catch_ref,            "catch_ref",            0, IF_CATCH_DECL,    0x00)
 INST(local_cnt,            "local.cnt",            0, IF_RAW_ULEB128,   0x00)
 INST(local_decl,           "local",                0, IF_LOCAL_DECL,    0x00)
+INST(code_size,            "code.size",            0, IF_CODE_SIZE,     0x00)
 INST(nop,                  "nop",                  0, IF_OPCODE,        0x01)
 INST(block,                "block",                0, IF_BLOCK,         0x02)
 INST(loop,                 "loop",                 0, IF_BLOCK,         0x03)
@@ -49,6 +50,8 @@ INST(call,                 "call",                 0, IF_FUNCIDX,       0x10)
 INST(call_indirect,        "call_indirect",        0, IF_CALL_INDIRECT, 0x11)
 INST(return_call,          "return_call",          0, IF_FUNCIDX,       0x12)
 INST(return_call_indirect, "return_call_indirect", 0, IF_CALL_INDIRECT, 0x13)
+// Pseudo-instructions for relocations
+INST(call_funclet,         "call.funclet",         0, IF_FUNCLETIDX,    0x10)
 
 INST(drop,        "drop",        0, IF_OPCODE,  0x1A)
 INST(try_table,   "try_table",   0, IF_TRY_TABLE,   0x1F)
@@ -84,8 +87,9 @@ INST(i32_store16, "i32.store16", 0, IF_MEMARG,  0x3B)
 // Constants
 INST(i32_const,         "i32.const",         0, IF_SLEB128, 0x41)
 // Pseudo-instructions for relocations
-INST(i32_const_address, "i32.const_address", 0, IF_MEMADDR, 0x41)
-INST(i32_const_funcptr, "i32.const_funcptr", 0, IF_FUNCPTR, 0x41)
+INST(i32_const_address,    "i32.const_address",    0, IF_MEMADDR, 0x41)
+INST(i32_const_funcptr,    "i32.const_funcptr",    0, IF_FUNCPTR, 0x41)
+INST(i32_const_funcletptr, "i32.const_funcletptr", 0, IF_FUNCLETPTR, 0x41)
 // Constants, continued
 INST(i64_const,         "i64.const",         0, IF_SLEB128, 0x42)
 INST(f32_const,         "f32.const",         0, IF_F32,     0x43)

@@ -4,6 +4,8 @@
     <IsHighAotMemoryUsageTest>true</IsHighAotMemoryUsageTest>
     <!-- this Roslyn version brings in NS1.x dependencies -->
     <FlagNetStandard1XDependencies>false</FlagNetStandard1XDependencies>
+    <!-- https://github.com/dotnet/runtime/issues/126862 -->
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
   </PropertyGroup>
 
   <ItemGroup>

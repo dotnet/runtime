@@ -25,6 +25,11 @@
 static int32_t isLoaded = 0;
 static int32_t isDataSet = 0;
 
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wjump-misses-init"
+#endif
+
 static void log_shim_error(const char* format, ...)
 {
     va_list args;
@@ -131,7 +136,7 @@ cstdlib_load_icu_data(const char *path)
         goto error;
     }
 
-    file_buf = (char*)malloc(sizeof(char) * (unsigned long)(file_buf_size + 1));
+    file_buf = (char *)malloc(sizeof(char) * (unsigned long)(file_buf_size + 1));
 
     if (file_buf == NULL)
     {

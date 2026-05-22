@@ -156,6 +156,14 @@ void emitter::emitAddressConstant(void* address)
     emitIns(INS_i32_add);
 }
 
+void emitter::emitFuncletAddressConstant(cnsval_ssize_t funcletId)
+{
+    // Load our table base, then load our funclet pointer offset, then sum them.
+    emitIns_I(INS_global_get, EA_4BYTE, 2 /* __table_start */);
+    emitIns_I(INS_i32_const_funcletptr, EA_PTRSIZE, (cnsval_ssize_t)funcletId);
+    emitIns(INS_i32_add);
+}
+
 /*****************************************************************************
  *
  *  Add a call instruction (direct or indirect).
@@ -502,6 +510,10 @@ unsigned emitter::instrDesc::idCodeSize() const
             assert(!idIsCnsReloc());
             size = SizeOfULEB128(emitGetInsSC(this));
             break;
+        case IF_CODE_SIZE:
+            assert(!idIsCnsReloc());
+            size = PADDED_RELOC_SIZE;
+            break;
         case IF_LOCAL_DECL:
         {
             assert(idIsLclVarDecl());
@@ -517,6 +529,10 @@ unsigned emitter::instrDesc::idCodeSize() const
         case IF_FUNCPTR:
         case IF_SLEB128:
             size += idIsCnsReloc() ? PADDED_RELOC_SIZE : SizeOfSLEB128(emitGetInsSC(this));
+            break;
+        case IF_FUNCLETPTR:
+        case IF_FUNCLETIDX:
+            size += PADDED_RELOC_SIZE; // funclet indices and pointers are always emitted as relocations
             break;
         case IF_CALL_INDIRECT:
         {
@@ -592,6 +608,22 @@ size_t emitter::emitOutputULEB128(uint8_t* destination, uint64_t value)
     }
 }
 
+size_t emitter::emitOutputULEB128Padded(uint8_t* destination, uint64_t value)
+{
+    uint8_t* buffer = destination + writeableOffset;
+    unsigned i      = 0;
+
+    for (; i < PADDED_RELOC_SIZE - 1; i++)
+    {
+        buffer[i] = (uint8_t)((value & 0x7F) | 0x80);
+        value >>= 7;
+    }
+
+    buffer[i] = (uint8_t)value;
+
+    return PADDED_RELOC_SIZE;
+}
+
 size_t emitter::emitOutputSLEB128(uint8_t* destination, int64_t value)
 {
     uint8_t* buffer = destination + writeableOffset;
@@ -655,6 +687,12 @@ size_t emitter::emitOutputPaddedReloc(uint8_t* destination)
 
     emitOutputByte(destination, 0x0);
     return PADDED_RELOC_SIZE;
+}
+
+size_t emitter::emitOutputConstantFunclet(uint8_t* destination, const instrDesc* id, CorInfoReloc relocType)
+{
+    emitRecordRelocationWithAddlDelta(destination, emitCodeBlock, relocType, (int32_t)emitGetInsSC(id));
+    return emitOutputPaddedReloc(destination);
 }
 
 size_t emitter::emitOutputConstant(uint8_t* destination, const instrDesc* id, bool isSigned, CorInfoReloc relocType)
@@ -730,6 +768,18 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             // TODO-WASM: The below reloc we're emitting here is specific to R2R and assumes the address we want
             // is an offset from __image_base
             dst += emitOutputConstant(dst, id, SIGNED, CorInfoReloc::WASM_MEMORY_ADDR_REL_SLEB);
+            break;
+        }
+        case IF_FUNCLETIDX:
+        {
+            dst += emitOutputOpcode(dst, ins);
+            dst += emitOutputConstantFunclet(dst, id, CorInfoReloc::WASM_FUNCTION_INDEX_LEB);
+            break;
+        }
+        case IF_FUNCLETPTR:
+        {
+            dst += emitOutputOpcode(dst, ins);
+            dst += emitOutputConstantFunclet(dst, id, CorInfoReloc::WASM_TABLE_INDEX_SLEB);
             break;
         }
         case IF_FUNCPTR:
@@ -834,6 +884,17 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             // TODO-WASM: figure out how to get proper tag index here
             // dst += emitOutputPaddedReloc(dst);
             dst += emitOutputULEB128(dst, (int64_t)emitGetInsSC(id));
+            break;
+        }
+        case IF_CODE_SIZE:
+        {
+            // We always emit this as 5 bytes
+            FuncInfoDsc* const func        = m_compiler->funGetFunc(emitCurIG->igFuncIdx);
+            UNATIVE_OFFSET     startOffset = func->startLoc->CodeOffset(this);
+            UNATIVE_OFFSET     endOffset   = func->endLoc->CodeOffset(this);
+            assert(endOffset >= (startOffset + PADDED_RELOC_SIZE));
+            unsigned const size = endOffset - startOffset - PADDED_RELOC_SIZE;
+            dst += emitOutputULEB128Padded(dst, (int64_t)size);
             break;
         }
         default:
@@ -1045,6 +1106,15 @@ void emitter::emitDispIns(
         }
         break;
 
+        case IF_FUNCLETPTR:
+        case IF_FUNCLETIDX:
+        {
+            cnsval_ssize_t imm = emitGetInsSC(id);
+            printf("funclet %lli", (int64_t)imm);
+            dispLclVarInfoIfAny();
+        }
+        break;
+
         case IF_F32:
         case IF_F64:
         {
@@ -1080,6 +1150,35 @@ void emitter::emitDispIns(
             // TODO: catch type
             // target label
             dispJumpTargetIfAny();
+        }
+        break;
+
+        case IF_CODE_SIZE:
+        {
+            // We should either have a non-null ig parameter, or emitCurIG should be set
+            insGroup* curIG = ig;
+            if (curIG == nullptr)
+            {
+                curIG = emitCurIG;
+            }
+            assert(curIG != nullptr);
+
+            FuncInfoDsc* const func = m_compiler->funGetFunc(curIG->igFuncIdx);
+            assert(func != nullptr);
+
+            emitLocation* const startLoc = func->startLoc;
+            emitLocation* const endLoc   = func->endLoc;
+
+            if (startLoc != nullptr)
+            {
+                assert(endLoc != nullptr);
+                UNATIVE_OFFSET codeSize = endLoc->CodeOffset(this) - startLoc->CodeOffset(this) - PADDED_RELOC_SIZE;
+                printf(" %u", codeSize);
+            }
+            else
+            {
+                printf(" <not yet determined>");
+            }
         }
         break;
 
@@ -1143,3 +1242,32 @@ void emitter::emitInsSanityCheck(instrDesc* id)
 {
 }
 #endif // DEBUG
+
+//----------------------------------------------------------------------------------------
+// emitUpdateFuncletLocations: update the start and end locations of each funclet
+//
+void emitter::emitUpdateFuncletLocations()
+{
+    insGroup* ig   = emitIGlist;
+    insGroup* prev = nullptr;
+
+    while (ig != nullptr)
+    {
+        FuncInfoDsc* const func = m_compiler->funGetFunc(ig->igFuncIdx);
+
+        if ((prev == nullptr) || (prev->igFuncIdx != ig->igFuncIdx))
+        {
+            func->startLoc = new (m_compiler, CMK_UnwindInfo) emitLocation(ig);
+        }
+
+        insGroup* const next = ig->igNext;
+
+        if ((next == nullptr) || (next->igFuncIdx != ig->igFuncIdx))
+        {
+            func->endLoc = new (m_compiler, CMK_UnwindInfo) emitLocation(ig, ig->igInsCnt);
+        }
+
+        prev = ig;
+        ig   = next;
+    }
+}

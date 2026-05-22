@@ -935,8 +935,14 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
 
     if (opcode == INTOP_HANDLE_CONTINUATION_SUSPEND)
     {
-        // Capture meaningful start IP for async suspend diagnostics
-        ((InterpAsyncSuspendData*)GetDataItemAtIndex(ins->data[0]))->resumeInfo.DiagnosticIP = (size_t)startIp - (size_t)m_pMethodCode;
+        InterpAsyncSuspendData* pSuspendData = (InterpAsyncSuspendData*)GetDataItemAtIndex(ins->data[0]);
+        // Store as native offset from the start of the method (including the InterpByteCodeStart header)
+        // so it matches OffsetMapping.nativeOffset and AsyncSuspensionPoint.DiagnosticNativeOffset.
+        pSuspendData->resumeInfo.DiagnosticIP = sizeof(InterpByteCodeStart) + ((size_t)startIp - (size_t)m_pMethodCode);
+
+        // SUSPEND occupies 3 int32_t slots; the matching RESUME starts immediately after.
+        size_t resumeOffset = sizeof(InterpByteCodeStart) + ((size_t)(startIp - m_pMethodCode) + 3) * sizeof(int32_t);
+        m_suspensionPointIPOffsets.Set(pSuspendData->suspensionPointIndex, (int32_t)resumeOffset);
     }
 
     if (opcode == INTOP_SWITCH)
@@ -1054,7 +1060,9 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
         if (ilOffset < (uint32_t)m_ILCodeSizeFromILHeader)
         {
             uint32_t nativeOffset = ConvertOffset(ins->nativeOffset);
-            if ((m_ILToNativeMapSize == 0) || (m_pILToNativeMap[m_ILToNativeMapSize - 1].ilOffset != ilOffset))
+            // Only emit mapping entries at IL offsets where the evaluation stack is empty
+            if ((ins->flags & INTERP_INST_FLAG_EMPTY_IL_STACK) &&
+                ((m_ILToNativeMapSize == 0) || (m_pILToNativeMap[m_ILToNativeMapSize - 1].ilOffset != ilOffset)))
             {
                 // This code assumes that instructions for the same IL offset are emitted in a single run without
                 // any other IL offsets in between and that they don't repeat again after the run ends.
@@ -1076,7 +1084,7 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
 
                 m_pILToNativeMap[m_ILToNativeMapSize].ilOffset = ilOffset;
                 m_pILToNativeMap[m_ILToNativeMapSize].nativeOffset = nativeOffset;
-                m_pILToNativeMap[m_ILToNativeMapSize].source = (ins->flags & INTERP_INST_FLAG_EMPTY_IL_STACK) ? ICorDebugInfo::STACK_EMPTY : ICorDebugInfo::SOURCE_TYPE_INVALID;
+                m_pILToNativeMap[m_ILToNativeMapSize].source = ICorDebugInfo::STACK_EMPTY;
                 m_ILToNativeMapSize++;
             }
         }
@@ -1120,6 +1128,14 @@ int32_t *InterpCompiler::EmitBBCode(int32_t *ip, InterpBasicBlock *bb, TArray<Re
         if (InterpOpIsEmitNop(ins->opcode))
         {
             ins->nativeOffset = (int32_t)(ip - m_pMethodCode);
+            if (m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE))
+            {
+                // Emit a debug sequence point so that eliminated IL instructions
+                // still occupy a bytecode slot. This ensures return addresses after
+                // calls land within the call's native offset range rather than on
+                // the next statement boundary.
+                *ip++ = INTOP_DEBUG_SEQ_POINT;
+            }
             continue;
         }
 
@@ -1169,6 +1185,11 @@ void InterpCompiler::EmitCode()
     // This will eventually be freed by the VM, using freeArray.
     // If we fail before handing them to the VM, there is logic in the InterpCompiler destructor to free it.
     m_pILToNativeMap = (ICorDebugInfo::OffsetMapping*)m_compHnd->allocateArray(m_ILCodeSize * sizeof(ICorDebugInfo::OffsetMapping));
+
+    // Pre-size the suspension-point IP-offset table so EmitCodeIns can write entries by index
+    // instead of relying on emission order (BB emission can reorder in EH waves).
+    if (m_asyncSuspendDataItems.GetSize() > 0)
+        m_suspensionPointIPOffsets.GrowBy(m_asyncSuspendDataItems.GetSize());
 
     // For each BB, compute the number of EH clauses that overlap with it.
     for (unsigned int i = 0; i < getEHcount(m_methodInfo); i++)
@@ -1251,6 +1272,40 @@ void InterpCompiler::EmitCode()
     }
     m_compHnd->setBoundaries(m_methodInfo->ftn, m_ILToNativeMapSize, m_pILToNativeMap);
     m_pILToNativeMap = NULL; // Ownership transferred to the VM
+
+    ReportAsyncDebugInfo();
+}
+
+void InterpCompiler::ReportAsyncDebugInfo()
+{
+    int32_t numSuspensionPoints = m_asyncDebugSuspensionPoints.GetSize();
+    if (numSuspensionPoints == 0)
+        return;
+
+    for (int32_t i = 0; i < numSuspensionPoints; i++)
+    {
+        m_asyncDebugSuspensionPoints.GetUnderlyingArray()[i].DiagnosticNativeOffset =
+            (uint32_t)m_asyncSuspendDataItems.Get(i)->resumeInfo.DiagnosticIP;
+    }
+
+    ICorDebugInfo::AsyncInfo asyncInfo;
+    asyncInfo.NumSuspensionPoints = (uint32_t)numSuspensionPoints;
+
+    size_t spBytes = (size_t)numSuspensionPoints * sizeof(ICorDebugInfo::AsyncSuspensionPoint);
+    ICorDebugInfo::AsyncSuspensionPoint* hostSuspensionPoints =
+        (ICorDebugInfo::AsyncSuspensionPoint*)m_compHnd->allocateArray(spBytes);
+    memcpy(hostSuspensionPoints, m_asyncDebugSuspensionPoints.GetUnderlyingArray(), spBytes);
+
+    int32_t numVars = m_asyncDebugContinuationVars.GetSize();
+    ICorDebugInfo::AsyncContinuationVarInfo* hostVars = NULL;
+    if (numVars > 0)
+    {
+        size_t vBytes = (size_t)numVars * sizeof(ICorDebugInfo::AsyncContinuationVarInfo);
+        hostVars = (ICorDebugInfo::AsyncContinuationVarInfo*)m_compHnd->allocateArray(vBytes);
+        memcpy(hostVars, m_asyncDebugContinuationVars.GetUnderlyingArray(), vBytes);
+    }
+
+    m_compHnd->reportAsyncDebugInfo(&asyncInfo, hostSuspensionPoints, hostVars, (uint32_t)numVars);
 }
 
 #ifdef FEATURE_INTERPRETER
@@ -1899,6 +1954,12 @@ void InterpCompiler::PrepareInterpMethod()
         count++; // Include the terminator entry
         m_methodDataBuilder.AllocateIntervalMap(count);
     }
+
+    if (m_asyncSuspendDataItems.GetSize() > 0)
+    {
+        m_methodDataBuilder.AllocateInSection(InterpMethodDataSection::IntervalMaps,
+            (uint32_t)m_asyncSuspendDataItems.GetSize() * (uint32_t)sizeof(int32_t));
+    }
 }
 
 int32_t* InterpCompiler::GetCode(int32_t *pCodeSize)
@@ -2018,8 +2079,34 @@ InterpMethod* InterpCompiler::FinalizeMethodData(void* baseAddressRW, void* base
             dstDataRW->zeroedLocalsIntervals = dstMapRX;
             currentIntervalMapOffset += mapSize;
         }
-        
+
         currentAsyncOffset += sizeof(InterpAsyncSuspendData);
+    }
+
+    {
+        int32_t numSuspensionPoints = m_asyncSuspendDataItems.GetSize();
+        InterpMethod* pInterpMethodRW = (InterpMethod*)(rwBase + interpMethodOffset);
+        if (numSuspensionPoints > 0)
+        {
+            uint32_t tableSize = (uint32_t)numSuspensionPoints * (uint32_t)sizeof(int32_t);
+            assert(currentIntervalMapOffset + tableSize <= intervalMapsSectionEnd);
+            assert(m_suspensionPointIPOffsets.GetSize() == numSuspensionPoints);
+
+            int32_t* tableRW = (int32_t*)(rwBase + currentIntervalMapOffset);
+            int32_t* tableRX = (int32_t*)(rxBase + currentIntervalMapOffset);
+            for (int32_t i = 0; i < numSuspensionPoints; i++)
+            {
+                tableRW[i] = m_suspensionPointIPOffsets.Get(i);
+            }
+            pInterpMethodRW->numSuspensionPoints = numSuspensionPoints;
+            pInterpMethodRW->suspensionPointIPOffsets = tableRX;
+            currentIntervalMapOffset += tableSize;
+        }
+        else
+        {
+            pInterpMethodRW->numSuspensionPoints = 0;
+            pInterpMethodRW->suspensionPointIPOffsets = NULL;
+        }
     }
 
     assert(currentAsyncOffset <= asyncSuspendDataSectionEnd);
@@ -2079,6 +2166,9 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
     , m_leavesTable(GetMemPoolAllocator(IMK_EHClause))
     , m_dataItems(GetMemPoolAllocator(IMK_DataItem))
     , m_asyncSuspendDataItems(GetMemPoolAllocator(IMK_DataItem))
+    , m_suspensionPointIPOffsets(GetMemPoolAllocator(IMK_DataItem))
+    , m_asyncDebugSuspensionPoints(GetMemPoolAllocator(IMK_DataItem))
+    , m_asyncDebugContinuationVars(GetMemPoolAllocator(IMK_DataItem))
     , m_dataItemAsyncSuspendRefs(GetMemPoolAllocator(IMK_DataItem))
     , m_initLocals(false)
     , m_unmanagedCallersOnly(false)
@@ -2258,7 +2348,6 @@ static InterpType GetInterpType(CorInfoType corInfoType)
             return InterpTypeR4;
         case CORINFO_TYPE_DOUBLE:
             return InterpTypeR8;
-        case CORINFO_TYPE_STRING:
         case CORINFO_TYPE_CLASS:
             return InterpTypeO;
         case CORINFO_TYPE_PTR:
@@ -2266,7 +2355,6 @@ static InterpType GetInterpType(CorInfoType corInfoType)
         case CORINFO_TYPE_BYREF:
             return InterpTypeByRef;
         case CORINFO_TYPE_VALUECLASS:
-        case CORINFO_TYPE_REFANY:
             return InterpTypeVT;
         case CORINFO_TYPE_VOID:
             return InterpTypeVoid;
@@ -5773,14 +5861,15 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
 
     TArray<int32_t, MemPoolAllocator> liveVars(GetMemPoolAllocator(IMK_AsyncSuspend));
     TArray<int32_t, MemPoolAllocator> varsToZero(GetMemPoolAllocator(IMK_AsyncSuspend));
+    int32_t debugVarsStartCount = m_asyncDebugContinuationVars.GetSize();
 
     // Step 2: Handle live stack vars (excluding return value)
     int32_t stackDepth = (int32_t)(m_pStackPointer - m_pStackBase);
     int32_t returnValueVar = -1;
     if (stackDepth > 0 && callInfo.sig.retType != CORINFO_TYPE_VOID)
     {
+        // The return value var is written explicitly during resume, it is not included in the set of liveVars
         returnValueVar = m_pStackPointer[-1].var;
-        liveVars.Add(returnValueVar);
     }
 
     // Step 1: Collect live IL vars
@@ -5869,27 +5958,35 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
         flags |= index << firstBit;
     };
 
-    for (int32_t i = -3; i < liveVars.GetSize(); i++)
+    for (int32_t i = -4; i < liveVars.GetSize(); i++)
     {
         int32_t var;
 
-        if (i == -3)
+        if (i == -4)
         {
-            if (!needsEHHandling)
-                continue;
-            INTERP_DUMP("Allocate EH at offset %d\n", currentOffset);
+            INTERP_DUMP("Allocate ExecutionContext at offset %d\n", currentOffset);
             SetSlotToTrue(objRefSlots, currentOffset);
-            encodeIndex(currentOffset, CORINFO_CONTINUATION_EXCEPTION_INDEX_FIRST_BIT, CORINFO_CONTINUATION_EXCEPTION_INDEX_NUM_BITS);
+            encodeIndex(currentOffset, CORINFO_CONTINUATION_EXECUTION_CONTEXT_INDEX_FIRST_BIT, CORINFO_CONTINUATION_EXECUTION_CONTEXT_INDEX_NUM_BITS);
             currentOffset += sizeof(void*); // Align to pointer size to match the expected layout
             continue;
         }
-        if (i == -2)
+        if (i == -3)
         {
             if (!captureContinuationContext)
                 continue;
             INTERP_DUMP("Allocate ContinuationContext at offset %d\n", currentOffset);
             SetSlotToTrue(objRefSlots, currentOffset);
             encodeIndex(currentOffset, CORINFO_CONTINUATION_CONTEXT_INDEX_FIRST_BIT, CORINFO_CONTINUATION_CONTEXT_INDEX_NUM_BITS);
+            currentOffset += sizeof(void*); // Align to pointer size to match the expected layout
+            continue;
+        }
+        if (i == -2)
+        {
+            if (!needsEHHandling)
+                continue;
+            INTERP_DUMP("Allocate EH at offset %d\n", currentOffset);
+            SetSlotToTrue(objRefSlots, currentOffset);
+            encodeIndex(currentOffset, CORINFO_CONTINUATION_EXCEPTION_INDEX_FIRST_BIT, CORINFO_CONTINUATION_EXCEPTION_INDEX_NUM_BITS);
             currentOffset += sizeof(void*); // Align to pointer size to match the expected layout
             continue;
         }
@@ -5925,6 +6022,26 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
 
         INTERP_DUMP("Allocate var %d at data offset %d (size %d) (offsetFromStartOfReturnValue = %d)\n", var, currentOffset, size, currentOffset - returnValueDataStartOffset);
 
+        if (var >= 0 && var != returnValueVar)
+        {
+            uint32_t debugVarNum = UINT32_MAX;
+            if (var < m_numILVars)
+            {
+                debugVarNum = (uint32_t)var;
+            }
+            else if (var == m_paramArgIndex && m_methodInfo->args.hasTypeArg())
+            {
+                debugVarNum = (uint32_t)ICorDebugInfo::TYPECTXT_ILNUM;
+            }
+            if (debugVarNum != UINT32_MAX)
+            {
+                ICorDebugInfo::AsyncContinuationVarInfo varInf;
+                varInf.VarNumber = debugVarNum;
+                varInf.Offset = (uint32_t)(currentOffset + OFFSETOF__CORINFO_Continuation__data);
+                m_asyncDebugContinuationVars.Add(varInf);
+            }
+        }
+
         if (interpType == InterpTypeO)
         {
             // Mark as GC reference
@@ -5945,15 +6062,6 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
         currentOffset += size;
     }
 
-    int32_t execContextOffset = 0;
-    {
-        // Mark ExecContext pointer as a GC reference
-        execContextOffset = currentOffset;
-        INTERP_DUMP("Allocate ExecutableContext at offset %d\n", currentOffset);
-        SetSlotToTrue(objRefSlots, currentOffset);
-        currentOffset += sizeof(void*);
-    }
-
     int32_t keepAliveOffset = 0;
     if (needsKeepAlive)
     {
@@ -5964,8 +6072,14 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
         currentOffset += sizeof(void*);
     }
 
+    // Tail of the data may not have had any object refs to grow objRefSlots, finish growing it now
+    int32_t numSlotsExpected = currentOffset / sizeof(void*);
+    if (objRefSlots.GetSize() < numSlotsExpected)
+    {
+        objRefSlots.GrowBy(numSlotsExpected - objRefSlots.GetSize());
+    }
+
     // Step 5: Get continuation type handle
-    assert((int32_t)(currentOffset / sizeof(void*)) <= objRefSlots.GetSize());
     CORINFO_CLASS_HANDLE continuationTypeHnd = m_compHnd->getContinuationType(
         currentOffset,
         objRefSlots.GetUnderlyingArray(),
@@ -5980,7 +6094,9 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
     }
 
     InterpAsyncSuspendData* suspendData = (InterpAsyncSuspendData*)AllocMethodData(sizeof(InterpAsyncSuspendData));
+    int32_t suspensionPointIndex = m_asyncSuspendDataItems.GetSize();
     m_asyncSuspendDataItems.Add(suspendData);
+    suspendData->suspensionPointIndex = suspensionPointIndex;
     CORINFO_ASYNC_INFO asyncInfo;
     m_compHnd->getAsyncInfo(&asyncInfo);
     
@@ -5996,15 +6112,36 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
 
     suspendData->flags = (CorInfoContinuationFlags)flags;
 
-    suspendData->offsetIntoContinuationTypeForExecutionContext = execContextOffset + OFFSETOF__CORINFO_Continuation__data;
     suspendData->keepAliveOffset = keepAliveOffset + OFFSETOF__CORINFO_Continuation__data;
     suspendData->captureSyncContextMethod = asyncInfo.captureContinuationContextMethHnd;
-    suspendData->restoreExecutionContextMethod = asyncInfo.restoreExecutionContextMethHnd;
     suspendData->restoreContextsOnSuspensionMethod = asyncInfo.restoreContextsOnSuspensionMethHnd;
     suspendData->resumeInfo.Resume = (size_t)m_asyncResumeFuncPtr;
     suspendData->resumeInfo.DiagnosticIP = (size_t)NULL;
     suspendData->methodStartIP = 0; // This is filled in by logic later in emission once we know the final address of the method
     suspendData->continuationArgOffset = m_pVars[m_continuationArgIndex].offset;
+
+    if (returnValueVar != -1)
+    {
+        int32_t alignDummy;
+        int32_t size = GetInterpTypeStackSize(m_pVars[returnValueVar].clsHnd, m_pVars[returnValueVar].interpType, &alignDummy);
+        suspendData->returnValueContinuationDataSize = ALIGN_UP_TO(size, INTERP_STACK_SLOT_SIZE);
+    }
+    else
+    {
+        suspendData->returnValueContinuationDataSize = 0;
+    }
+
+    // Patched up in UpdateLocalIntervalMaps to hold the actual offset of the var
+    suspendData->returnValueVarStackOffset = returnValueVar;
+
+    {
+        ICorDebugInfo::AsyncSuspensionPoint sp;
+        sp.DiagnosticNativeOffset = (uint32_t)suspendData->resumeInfo.DiagnosticIP;
+        sp.NumContinuationVars = (uint32_t)(m_asyncDebugContinuationVars.GetSize() - debugVarsStartCount);
+        m_asyncDebugSuspensionPoints.Add(sp);
+        assert(m_asyncDebugSuspensionPoints.GetSize() - 1 == suspensionPointIndex);
+    }
+
     suspendData->asyncMethodReturnType = NULL;
     switch (m_methodInfo->args.retType)
     {
@@ -6012,7 +6149,6 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
             suspendData->asyncMethodReturnType = m_methodInfo->args.retTypeClass;
             suspendData->asyncMethodReturnTypePrimitiveSize = 0;
             break;
-        case CORINFO_TYPE_STRING:
         case CORINFO_TYPE_CLASS:
             suspendData->asyncMethodReturnType = m_compHnd->getBuiltinClass(CLASSID_SYSTEM_OBJECT);
             suspendData->asyncMethodReturnTypePrimitiveSize = 0;
@@ -6060,13 +6196,7 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
         case CORINFO_TYPE_PTR:
             suspendData->asyncMethodReturnTypePrimitiveSize = sizeof(void*);
             break;
-        case CORINFO_TYPE_REFANY:
-            BADCODE("TypedReference return types not supported for async methods");
-            break;
 
-        case CORINFO_TYPE_VAR:
-            BADCODE("VAR return types should have been translated before we get here on async methods");
-            break;
         default:
             // Other types are not supported
             BADCODE("Unsupported async method return type");
@@ -6312,6 +6442,17 @@ void InterpCompiler::UpdateLocalIntervalMaps()
     for (int32_t i = 0; i < m_varIntervalMaps.GetSize(); i++)
     {
         ConvertToIntervalMapData_ForOffsets(m_varIntervalMaps.Get(i));
+    }
+
+    // Fix up return value var stack offsets for async suspend data
+    for (int32_t i = 0; i < m_asyncSuspendDataItems.GetSize(); i++)
+    {
+        InterpAsyncSuspendData* suspendData = m_asyncSuspendDataItems.Get(i);
+        int32_t varIndex = suspendData->returnValueVarStackOffset;
+        if (varIndex != -1)
+        {
+            suspendData->returnValueVarStackOffset = m_pVars[varIndex].offset;
+        }
     }
 }
 
@@ -11493,7 +11634,6 @@ static void DumpInterpAsyncSuspendData(InterpAsyncSuspendData* pSuspendInfo)
     printf(" AsyncSuspendData[");
     printf("continuationTypeHnd=%p", pSuspendInfo->continuationTypeHnd);
     printf(", flags=%d", pSuspendInfo->flags);
-    printf(", offsetIntoContinuationTypeForExecutionContext=%d", pSuspendInfo->offsetIntoContinuationTypeForExecutionContext);
     printf(", liveLocalsIntervals=");
     PrintLocalIntervals(pSuspendInfo->liveLocalsIntervals);
     printf(", zeroedLocalsIntervals=");

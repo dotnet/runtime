@@ -12,6 +12,26 @@ namespace System.Text.RegularExpressions
 {
     public partial class Regex
     {
+        /// <summary>
+        /// Gets or sets the maximum number of entries in the current static cache of regular expression
+        /// instances.
+        /// </summary>
+        /// <value>The maximum number of entries in the static cache.</value>
+        /// <remarks>
+        /// <para>
+        /// The <see cref="Regex"/> class maintains an internal cache of regular expression instances used in
+        /// static <see cref="Regex"/> method calls, such as <see cref="Regex.Match(string, string)"/> or
+        /// <see cref="Regex.Replace(string, string, string)"/>. If the value specified in a set operation is
+        /// less than the current cache size, cache entries are discarded until the cache size is equal to the
+        /// specified value.
+        /// </para>
+        /// <para>
+        /// By default, the cache holds 15 static regular expression instances. Your application typically
+        /// will not have to modify the size of the cache. Use the <see cref="CacheSize"/> property only when
+        /// you want to turn off caching or when you have an unusually large cache.
+        /// </para>
+        /// </remarks>
+        /// <exception cref="ArgumentOutOfRangeException">The value in a set operation is less than zero.</exception>
         public static int CacheSize
         {
             get => RegexCache.MaxCacheSize;

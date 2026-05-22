@@ -30,7 +30,7 @@ void RegValueHome::CopyToIPCEType(RemoteAddress * pRegAddr)
 {
     pRegAddr->kind = RAK_REG;
     pRegAddr->reg1 = m_reg1Info.m_kRegNumber;
-    pRegAddr->reg1Addr = CORDB_ADDRESS_TO_PTR(m_reg1Info.m_regAddr);
+    pRegAddr->reg1Addr = m_reg1Info.m_regAddr;
     pRegAddr->reg1Value = m_reg1Info.m_regValue;
 } // RegValueHome::CopyToIPCEType
 
@@ -256,10 +256,10 @@ void RegRegValueHome::CopyToIPCEType(RemoteAddress * pRegAddr)
 {
     pRegAddr->kind = RAK_REGREG;
     pRegAddr->reg1 = m_reg1Info.m_kRegNumber;
-    pRegAddr->reg1Addr = CORDB_ADDRESS_TO_PTR(m_reg1Info.m_regAddr);
+    pRegAddr->reg1Addr = m_reg1Info.m_regAddr;
     pRegAddr->reg1Value = m_reg1Info.m_regValue;
     pRegAddr->u.reg2 = m_reg2Info.m_kRegNumber;
-    pRegAddr->u.reg2Addr = CORDB_ADDRESS_TO_PTR(m_reg2Info.m_regAddr);
+    pRegAddr->u.reg2Addr = m_reg2Info.m_regAddr;
     pRegAddr->u.reg2Value = m_reg2Info.m_regValue;
 } // RegRegValueHome::CopyToIPCEType
 
@@ -317,7 +317,7 @@ void RegMemValueHome::CopyToIPCEType(RemoteAddress * pRegAddr)
 {
     pRegAddr->kind = RAK_REGMEM;
     pRegAddr->reg1 = m_reg1Info.m_kRegNumber;
-    pRegAddr->reg1Addr = CORDB_ADDRESS_TO_PTR(m_reg1Info.m_regAddr);
+    pRegAddr->reg1Addr = m_reg1Info.m_regAddr;
     pRegAddr->reg1Value = m_reg1Info.m_regValue;
     pRegAddr->addr = m_memAddr;
 } // RegMemValueHome::CopyToIPCEType
@@ -379,7 +379,7 @@ void MemRegValueHome::CopyToIPCEType(RemoteAddress * pRegAddr)
 {
     pRegAddr->kind = RAK_MEMREG;
     pRegAddr->reg1 = m_reg1Info.m_kRegNumber;
-    pRegAddr->reg1Addr = CORDB_ADDRESS_TO_PTR(m_reg1Info.m_regAddr);
+    pRegAddr->reg1Addr = m_reg1Info.m_regAddr;
     pRegAddr->reg1Value = m_reg1Info.m_regValue;
     pRegAddr->addr = m_memAddr;
 } // MemRegValueHome::CopyToIPCEType
@@ -440,7 +440,7 @@ void MemRegValueHome::GetEnregisteredValue(MemoryRange valueOutBuffer)
 void FloatRegValueHome::CopyToIPCEType(RemoteAddress * pRegAddr)
 {
     pRegAddr->kind = RAK_FLOAT;
-    pRegAddr->reg1Addr = NULL;
+    pRegAddr->reg1Addr = (CORDB_ADDRESS)0;
     pRegAddr->floatIndex = m_floatIndex;
 } // FloatRegValueHome::CopyToIPCEType
 
@@ -915,9 +915,9 @@ void HandleValueHome::SetValue(MemoryRange src, CordbType * pType)
 
     m_pProcess->InitIPCEvent(&event, DB_IPCE_SET_REFERENCE, true, VMPTR_AppDomain::NullPtr());
 
-    event.SetReference.objectRefAddress = NULL;
+    event.SetReference.objectRefAddress = (CORDB_ADDRESS)0;
     event.SetReference.vmObjectHandle = m_vmObjectHandle;
-    event.SetReference.newReference = *((void **)src.StartAddress());
+    event.SetReference.newReference = PTR_TO_CORDB_ADDRESS(*((void **)src.StartAddress()));
 
     // Note: two-way event here...
     IfFailThrow(m_pProcess->SendIPCEvent(&event, sizeof(DebuggerIPCEvent)));
@@ -985,8 +985,8 @@ void VCRemoteValueHome::SetValue(MemoryRange src, CordbType * pType)
 
     // Finally, send over the Set Value Class message.
     m_pProcess->InitIPCEvent(&event, DB_IPCE_SET_VALUE_CLASS, true, VMPTR_AppDomain::NullPtr());
-    event.SetValueClass.oldData = CORDB_ADDRESS_TO_PTR(m_remoteValue.pAddress);
-    event.SetValueClass.newData = buffer;
+    event.SetValueClass.oldData = m_remoteValue.pAddress;
+    event.SetValueClass.newData = PTR_TO_CORDB_ADDRESS(buffer);
     IfFailThrow(pType->TypeToBasicTypeData(&event.SetValueClass.type));
 
     // Note: two-way event here...
@@ -1044,9 +1044,9 @@ void RefRemoteValueHome::SetValue(MemoryRange src, CordbType * pType)
 
         m_pProcess->InitIPCEvent(&event, DB_IPCE_SET_REFERENCE, true, VMPTR_AppDomain::NullPtr());
 
-        event.SetReference.objectRefAddress = CORDB_ADDRESS_TO_PTR(m_remoteValue.pAddress);
+        event.SetReference.objectRefAddress = m_remoteValue.pAddress;
         event.SetReference.vmObjectHandle = VMPTR_OBJECTHANDLE::NullPtr();
-        event.SetReference.newReference = *((void **)src.StartAddress());
+        event.SetReference.newReference = PTR_TO_CORDB_ADDRESS(*((void **)src.StartAddress()));
 
         // Note: two-way event here...
         IfFailThrow(m_pProcess->SendIPCEvent(&event, sizeof(DebuggerIPCEvent)));

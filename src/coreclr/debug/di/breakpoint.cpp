@@ -201,13 +201,13 @@ HRESULT CordbFunctionBreakpoint::Activate(BOOL fActivate)
         pProcess->InitIPCEvent(pEvent, DB_IPCE_BREAKPOINT_ADD, true, pAppDomain->GetADToken());
 
         pEvent->BreakpointData.funcMetadataToken = m_code->GetMetadataToken();
-        pEvent->BreakpointData.vmDomainAssembly = m_code->GetModule()->GetRuntimeDomainAssembly();
-        pEvent->BreakpointData.encVersion = m_code->GetVersion();
+        pEvent->BreakpointData.vmAssembly = m_code->GetModule()->GetRuntimeAssembly();
+        pEvent->BreakpointData.encVersion = (UINT)(m_code->GetVersion());
 
         BOOL codeIsIL = m_code->IsIL();
 
         pEvent->BreakpointData.isIL = m_offsetIsIl ? true : false;
-        pEvent->BreakpointData.offset = m_offset;
+        pEvent->BreakpointData.offset = (UINT)m_offset;
         if (codeIsIL)
         {
             pEvent->BreakpointData.nativeCodeMethodDescToken = pEvent->BreakpointData.nativeCodeMethodDescToken.NullPtr();

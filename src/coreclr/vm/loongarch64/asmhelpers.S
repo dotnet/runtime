@@ -112,20 +112,6 @@ LOCAL_LABEL(EphemeralCheckEnabled):
 
 WRITE_BARRIER_END JIT_UpdateWriteBarrierState
 
-// ----------------------------------------------------------------------------------------
-// __declspec(naked) void F_CALL_CONV JIT_WriteBarrier_Callable(Object **dst, Object* val)
-LEAF_ENTRY  JIT_WriteBarrier_Callable, _TEXT
-
-    // Setup args for JIT_WriteBarrier. $t0 = dst ; $t1 = val
-    ori     $t6, $a0, 0                 // $t6 = dst
-    ori     $t7, $a1, 0                 // $t7 = val
-
-    // Branch to the write barrier
-    la.local  $r21, JIT_WriteBarrier_Loc
-    ld.d  $r21, $r21, 0
-    jirl  $r0, $r21, 0
-LEAF_END JIT_WriteBarrier_Callable, _TEXT
-
 
 .balign 64  // Align to power of two at least as big as patchable literal pool so that it fits optimally in cache line
 // ------------------------------------------------------------------

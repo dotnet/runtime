@@ -11,7 +11,7 @@ internal sealed class AssemblyBinder : IData<AssemblyBinder>
     public AssemblyBinder(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.AssemblyBinder);
-        AssemblyLoadContext = target.ReadPointerField(address, type, nameof(AssemblyLoadContext));
+        AssemblyLoadContext = target.ReadDataField<ObjectHandle>(address, type, nameof(AssemblyLoadContext));
     }
-    public TargetPointer AssemblyLoadContext { get; init; }
+    public ObjectHandle AssemblyLoadContext { get; init; }
 }

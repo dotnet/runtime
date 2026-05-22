@@ -27,11 +27,7 @@ using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Extensions;
-#if ILTRIM
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-#else
 using Xunit;
-#endif
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
@@ -511,11 +507,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
             if (checkRemainingErrors)
             {
                 var remainingErrors = unmatchedMessages.Where(m => Regex.IsMatch(m.ToString(), @".*(error | warning): \d{4}.*"));
-#if ILTRIM
-                Assert.IsFalse(remainingErrors.Any(), $"Found unexpected errors:{Environment.NewLine}{string.Join(Environment.NewLine, remainingErrors)}");
-#else
                 Assert.False(remainingErrors.Any(), $"Found unexpected errors:{Environment.NewLine}{string.Join(Environment.NewLine, remainingErrors)}");
-#endif
             }
 
             static bool LogMessageHasSameOriginMember(MessageContainer mc, ICustomAttributeProvider expectedOriginProvider)

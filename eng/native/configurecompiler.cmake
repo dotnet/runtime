@@ -350,8 +350,38 @@ elseif(CLR_CMAKE_HOST_APPLE)
     endif()
   endif()
 elseif(CLR_CMAKE_HOST_HAIKU)
+  # Haiku uses the GNU toolchain, which supports WHOLE_ARCHIVE, but only CMake 3.31.0+ recognizes this.
+  if(CMAKE_VERSION VERSION_LESS 3.31)
+    if(NOT DEFINED _CMAKE_LINKER_PUSHPOP_STATE_SUPPORTED)
+      execute_process(COMMAND "${CMAKE_LINKER}" --help
+                      OUTPUT_VARIABLE __linker_help
+                      ERROR_VARIABLE __linker_help)
+      if(__linker_help MATCHES "--push-state" AND __linker_help MATCHES "--pop-state")
+        set(_CMAKE_LINKER_PUSHPOP_STATE_SUPPORTED TRUE CACHE INTERNAL "linker supports push/pop state")
+      else()
+        set(_CMAKE_LINKER_PUSHPOP_STATE_SUPPORTED FALSE CACHE INTERNAL "linker supports push/pop state")
+      endif()
+      unset(__linker_help)
+    endif()
+    if(_CMAKE_LINKER_PUSHPOP_STATE_SUPPORTED)
+      set(CMAKE_LINK_LIBRARY_USING_WHOLE_ARCHIVE "LINKER:--push-state,--whole-archive"
+                                                 "<LINK_ITEM>"
+                                                 "LINKER:--pop-state")
+    else()
+      set(CMAKE_LINK_LIBRARY_USING_WHOLE_ARCHIVE "LINKER:--whole-archive"
+                                                 "<LINK_ITEM>"
+                                                 "LINKER:--no-whole-archive")
+    endif()
+    set(CMAKE_LINK_LIBRARY_USING_WHOLE_ARCHIVE_SUPPORTED TRUE)
+    set(CMAKE_LINK_LIBRARY_WHOLE_ARCHIVE_ATTRIBUTES LIBRARY_TYPE=STATIC DEDUPLICATION=YES OVERRIDE=DEFAULT)
+  endif()
+  # Haiku uses the GNU toolchain, which supports RESCAN, but only CMake 4.4.0+ recognizes this.
+  if(CMAKE_VERSION VERSION_LESS 4.4)
+    set(CMAKE_LINK_GROUP_USING_RESCAN "LINKER:--start-group" "LINKER:--end-group")
+    set(CMAKE_LINK_GROUP_USING_RESCAN_SUPPORTED TRUE)
+  endif()
   add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
-  add_linker_flag("-Wl,--no-undefined")
+  add_linker_flag("-Wl,--build-id=sha1")
 endif()
 
 #------------------------------------
@@ -710,8 +740,15 @@ if (CLR_CMAKE_HOST_UNIX OR CLR_CMAKE_HOST_WASI)
   # We mark the function which needs exporting with DLLEXPORT
   add_compile_options(-fvisibility=hidden)
 
-  # Separate functions so linker can remove them.
+  # Separate functions and data into their own sections so the linker can remove
+  # unreferenced ones.
   add_compile_options(-ffunction-sections)
+  add_compile_options(-fdata-sections)
+  if(LD_OSX)
+    add_linker_flag(-Wl,-dead_strip CHECKED RELEASE RELWITHDEBINFO)
+  elseif(NOT LD_SOLARIS)
+    add_linker_flag(-Wl,--gc-sections CHECKED RELEASE RELWITHDEBINFO)
+  endif()
 
   # Specify the minimum supported version of macOS
   # Mac Catalyst needs a special CFLAG, exclusive with mmacosx-version-min
@@ -842,6 +879,11 @@ if(CLR_CMAKE_HOST_UNIX_ARMV6)
    add_compile_options(-mcpu=arm1176jzf-s)
    add_compile_options(-mfloat-abi=hard)
 endif(CLR_CMAKE_HOST_UNIX_ARMV6)
+
+if(CLR_CMAKE_HOST_UNIX_RISCV64)
+  add_compile_options(-march=rv64gc)
+  add_compile_options(-mabi=lp64d)
+endif(CLR_CMAKE_HOST_UNIX_RISCV64)
 
 if(CLR_CMAKE_HOST_UNIX_X86)
   add_compile_options(-msse2)

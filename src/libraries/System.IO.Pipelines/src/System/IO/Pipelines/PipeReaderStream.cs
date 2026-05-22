@@ -55,7 +55,7 @@ namespace System.IO.Pipelines
             return ReadInternal(new Span<byte>(buffer, offset, count));
         }
 
-        public override int ReadByte()
+        public override unsafe int ReadByte()
         {
             Span<byte> oneByte = stackalloc byte[1];
             return ReadInternal(oneByte) == 0 ? -1 : oneByte[0];

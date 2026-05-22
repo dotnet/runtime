@@ -224,6 +224,7 @@ DEFINE_METASIG_T(SM(PtrPropertyInfo_PtrException_RetInt, P(C(PROPERTY_INFO)) P(C
 DEFINE_METASIG(SM(IntPtr_RefObj_IntPtr_RetVoid, I r(j) I, v))
 DEFINE_METASIG(SM(IntPtr_RefObj_IntPtr_Int_RetVoid, I r(j) I i,v))
 DEFINE_METASIG(SM(IntPtr_IntPtr_Int_Int_RetVoid, I I i i, v))
+DEFINE_METASIG(SM(IntPtr_IntPtr_Int_Int_IntPtr_IntPtr_RetVoid, I I i i I I, v))
 DEFINE_METASIG(SM(IntPtr_RefObj_IntPtr_Obj_RetVoid, I r(j) I j, v))
 DEFINE_METASIG(SM(Obj_Int_RetVoid, j i,v))
 DEFINE_METASIG(SM(PtrVoid_Obj_RetObj, P(v) j, j))
@@ -335,6 +336,7 @@ DEFINE_METASIG(SM(PtrSByt_RetStr, P(B), s))
 DEFINE_METASIG(SM(PtrSByt_Int_Int_RetStr, P(B) i i, s))
 DEFINE_METASIG_T(SM(PtrSByt_Int_Int_Encoding_RetStr, P(B) i i C(ENCODING), s))
 DEFINE_METASIG(IM(Obj_Int_RetIntPtr, j i, I))
+DEFINE_METASIG(IM(Obj_Int_RetVoid, j i, v))
 
 
 DEFINE_METASIG(IM(Char_Int_RetVoid, u i, v))
@@ -547,8 +549,10 @@ DEFINE_METASIG(SM(PtrByte_RetStr, P(b), s))
 DEFINE_METASIG(SM(Str_RetPtrByte, s, P(b)))
 DEFINE_METASIG(SM(PtrByte_RetVoid, P(b), v))
 
-DEFINE_METASIG_T(GM(RetTaskOfT, IMAGE_CEE_CS_CALLCONV_DEFAULT, 1, , GI(C(TASK_1), 1, M(0))))
-DEFINE_METASIG_T(GM(RetValueTaskOfT, IMAGE_CEE_CS_CALLCONV_DEFAULT, 1, , GI(g(VALUETASK_1), 1, M(0))))
+DEFINE_METASIG_T(SM(RefRuntimeAsyncAwaitState_RetTask, r(g(RUNTIME_ASYNC_AWAIT_STATE)), C(TASK)))
+DEFINE_METASIG_T(SM(RefRuntimeAsyncAwaitState_RetValueTask, r(g(RUNTIME_ASYNC_AWAIT_STATE)), g(VALUETASK)))
+DEFINE_METASIG_T(GM(RefRuntimeAsyncAwaitState_RetTaskOfT, IMAGE_CEE_CS_CALLCONV_DEFAULT, 1, r(g(RUNTIME_ASYNC_AWAIT_STATE)), GI(C(TASK_1), 1, M(0))))
+DEFINE_METASIG_T(GM(RefRuntimeAsyncAwaitState_RetValueTaskOfT, IMAGE_CEE_CS_CALLCONV_DEFAULT, 1, r(g(RUNTIME_ASYNC_AWAIT_STATE)), GI(g(VALUETASK_1), 1, M(0))))
 
 // Undefine macros in case we include the file again in the compilation unit
 

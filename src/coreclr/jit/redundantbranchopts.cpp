@@ -797,6 +797,19 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
         return false;
     }
 
+    // Exclude floating point compares.
+    //
+    VNFuncApp treeApp;
+    if (!vnStore->GetVNFunc(treeNormVN, &treeApp) || !ValueNumStore::VNFuncIsComparison(treeApp.m_func))
+    {
+        return false;
+    }
+
+    if (varTypeIsFloating(vnStore->TypeOfVN(treeApp.m_args[0])))
+    {
+        return false;
+    }
+
     // Skip through chains of empty or side effect free blocks.
     // Watch for cycles.
     //
@@ -881,6 +894,8 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
             JITDUMP("failed -- dominator " FMT_BB " is not BBJ_COND\n", domBlockProbe->bbNum);
             break;
         }
+
+        currentBlock = skipSideEffectFreeBlocks(currentBlock);
 
         // Make sure this conditional dominator branches to the same
         // shared block as the original block.
@@ -974,8 +989,68 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
         rii.domCmpNormVN = blockPathVN;
 
         optRelopImpliesRelop(&rii);
+        bool canOptimize = rii.canInfer && rii.canInferFromTrue && !rii.reverseSense;
 
-        if (!(rii.canInfer && rii.canInferFromTrue && !rii.reverseSense))
+        genTreeOps newRelop   = GT_NONE;
+        bool       isUnsigned = false;
+
+        if (!canOptimize)
+        {
+            if (rii.canInfer)
+            {
+                JITDUMP("Can't infer along the path we care about; trying simplification instead\n");
+            }
+            else
+            {
+                JITDUMP("Can't infer, trying simplification instead\n");
+            }
+
+            // See if we can simplify the VN for blockPathVN AND domPathVN
+            //
+            ValueNum  andVN = vnStore->VNForFunc(TYP_INT, VNF_AND, blockPathVN, domPathVN);
+            VNFuncApp andApp;
+            VNFuncApp pathApp;
+            VNFunc    newRelopFunc = VNF_NONE;
+            if (vnStore->IsVNRelop(andVN, &andApp) && vnStore->GetVNFunc(blockPathVN, &pathApp))
+            {
+                if (andApp.m_args[0] == pathApp.m_args[0] && andApp.m_args[1] == pathApp.m_args[1])
+                {
+                    newRelopFunc = andApp.m_func;
+                }
+                else if (andApp.m_args[0] == pathApp.m_args[1] && andApp.m_args[1] == pathApp.m_args[0])
+                {
+                    andVN = vnStore->GetRelatedRelop(andVN, ValueNumStore::VN_RELATION_KIND::VRK_Swap);
+                    vnStore->GetVNFunc(andVN, &andApp);
+                    newRelopFunc = andApp.m_func;
+                }
+
+                JITDUMPEXEC(vnStore->vnDump(this, blockPathVN));
+                JITDUMP(" AND");
+                JITDUMPEXEC(vnStore->vnDump(this, domPathVN));
+                JITDUMP(" ==>");
+                JITDUMPEXEC(vnStore->vnDump(this, andVN));
+            }
+
+            // TODO-CQ: if the AND simplifies to a constant, we can optimize both the dominating branch
+            // and the current branch. This is likely rare.
+
+            if (newRelopFunc != VNF_NONE)
+            {
+                newRelop = vnStore->VNRelopToGenTreeOp(newRelopFunc, &isUnsigned);
+
+                if (newRelop != GT_NONE)
+                {
+                    JITDUMP("; simplified to %s%s\n", GenTree::OpName(newRelop), isUnsigned ? " (unsigned)" : "");
+                    canOptimize = true;
+                }
+            }
+            else
+            {
+                JITDUMP("; not a relop, cannot simplify\n");
+            }
+        }
+
+        if (!canOptimize)
         {
             JITDUMP("failed -- Dominated VN " FMT_VN " does not imply dominating VN " FMT_VN "\n", blockPathVN,
                     domPathVN);
@@ -1008,6 +1083,29 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
         fgMorphBlockStmt(domBlockProbe, domStmt DEBUGARG(__FUNCTION__), /* allowFGChange */ true,
                          /* invalidateDFSTreeOnFGChange */ false);
         Metrics.RedundantBranchesEliminated++;
+
+        if (newRelop != GT_NONE)
+        {
+            if (sharedSuccessor == blockTrueSucc)
+            {
+                newRelop = GenTree::ReverseRelop(newRelop);
+            }
+
+            tree->SetOper(newRelop);
+
+            // Update GTF_UNSIGNED before re-value-numbering.
+            //
+            if (isUnsigned)
+            {
+                tree->SetUnsigned();
+            }
+            else
+            {
+                tree->ClearUnsigned();
+            }
+
+            fgValueNumberTree(tree);
+        }
         madeChanges = true;
 
         // We can keep looking if we haven't seen any side effects yet along the path to block.
@@ -1336,6 +1434,7 @@ struct JumpThreadInfo
         , m_truePreds(BitVecOps::MakeEmpty(&traits))
         , m_ambiguousPreds(BitVecOps::MakeEmpty(&traits))
         , m_phiUses(comp->getAllocator(CMK_RedundantBranch))
+        , m_phiDefsToRemove(comp->getAllocator(CMK_RedundantBranch))
         , m_numPreds(0)
         , m_numAmbiguousPreds(0)
         , m_numTruePreds(0)
@@ -1374,6 +1473,9 @@ struct JumpThreadInfo
         unsigned             m_replacementSsaNum = SsaConfig::RESERVED_SSA_NUM;
     };
     ArrayStack<PhiUse> m_phiUses;
+    // Phi-def statements in the threaded block that become redundant once
+    // all remaining incoming paths agree on the same reaching SSA def.
+    ArrayStack<Statement*> m_phiDefsToRemove;
     // Total number of predecessors
     int m_numPreds;
     // Number of predecessors that can't be threaded or for which the predicate
@@ -1439,6 +1541,56 @@ private:
 };
 
 //------------------------------------------------------------------------
+// optGetThreadedSsaNumForBlock: determine the replacement SSA number for
+//   uses in the threaded block once only ambiguous preds still reach it.
+//
+// Arguments:
+//   jti               - threading classification for the block
+//   phiDef            - phi definition in the threaded block
+//   replacementSsaNum - [OUT] the common reaching SSA number for ambiguous preds
+//
+// Returns:
+//   True if all ambiguous preds reaching block agree on one SSA number.
+//
+static bool optGetThreadedSsaNumForBlock(JumpThreadInfo& jti, GenTreeLclVar* phiDef, unsigned* replacementSsaNum)
+{
+    assert(jti.m_numAmbiguousPreds != 0);
+
+    bool              foundReplacement = false;
+    unsigned          replacementSsa   = SsaConfig::RESERVED_SSA_NUM;
+    GenTreePhi* const phi              = phiDef->Data()->AsPhi();
+
+    for (GenTreePhi::Use& use : phi->Uses())
+    {
+        GenTreePhiArg* const phiArgNode = use.GetNode()->AsPhiArg();
+        BasicBlock* const    predBlock  = phiArgNode->gtPredBB;
+
+        if (!BitVecOps::IsMember(&jti.traits, jti.m_ambiguousPreds, predBlock->bbPostorderNum))
+        {
+            continue;
+        }
+
+        if (!foundReplacement)
+        {
+            replacementSsa   = phiArgNode->GetSsaNum();
+            foundReplacement = true;
+        }
+        else if (replacementSsa != phiArgNode->GetSsaNum())
+        {
+            return false;
+        }
+    }
+
+    if (!foundReplacement)
+    {
+        return false;
+    }
+
+    *replacementSsaNum = replacementSsa;
+    return true;
+}
+
+//------------------------------------------------------------------------
 // optGetThreadedSsaNumForSuccessor: determine the replacement SSA number
 //   for uses in a successor once all non-ambiguous preds are threaded.
 //
@@ -1450,7 +1602,7 @@ private:
 //   replacementSsaNum - [OUT] the common reaching SSA number for those preds
 //
 // Returns:
-//   True if all redirected preds reaching successor agree on one SSA number.
+//   True if all post-threading paths reaching successor agree on one SSA number.
 //
 static bool optGetThreadedSsaNumForSuccessor(JumpThreadInfo& jti,
                                              GenTreeLclVar*  phiDef,
@@ -1474,18 +1626,16 @@ static bool optGetThreadedSsaNumForSuccessor(JumpThreadInfo& jti,
         bool const           isTruePred = BitVecOps::IsMember(&jti.traits, jti.m_truePreds, predBlock->bbPostorderNum);
         bool const isAmbiguousPred = BitVecOps::IsMember(&jti.traits, jti.m_ambiguousPreds, predBlock->bbPostorderNum);
 
-        if (isAmbiguousPred)
+        if (!isAmbiguousPred)
         {
-            continue;
-        }
+            BasicBlock* const predTarget = isTruePred ? jti.m_trueTarget : jti.m_falseTarget;
+            if (predTarget != successor)
+            {
+                continue;
+            }
 
-        BasicBlock* const predTarget = isTruePred ? jti.m_trueTarget : jti.m_falseTarget;
-        if (predTarget != successor)
-        {
-            continue;
+            *hasThreadedPreds = true;
         }
-
-        *hasThreadedPreds = true;
 
         if (!foundReplacement)
         {
@@ -1572,25 +1722,6 @@ bool Compiler::optCanRewritePhiUses(JumpThreadInfo& jti)
 {
     BasicBlock* const block = jti.m_block;
 
-    // If any pred remains ambiguous, the block can still reach its successors
-    // after threading and we would need successor phis instead of simple rewrites.
-    //
-    if (jti.m_numAmbiguousPreds != 0)
-    {
-        return false;
-    }
-
-    // Likewise if any successor is already a join, it may have or may need to
-    // have a PHI.
-    //
-    for (BasicBlock* const successor : block->Succs())
-    {
-        if (successor->GetUniquePred(this) != block)
-        {
-            return false;
-        }
-    }
-
     // Now check if we can find all of the uses of the PHIs in block,
     // either in block or in its successors.
     //
@@ -1613,7 +1744,52 @@ bool Compiler::optCanRewritePhiUses(JumpThreadInfo& jti)
 
         if (!optFindPhiUsesInBlockAndSuccessors(block, phiDef, jti))
         {
+            JITDUMP("Could not find all uses for V%02u.%u in " FMT_BB " or its successors\n", lclNum, ssaNum,
+                    block->bbNum);
             return false;
+        }
+
+        bool hasBlockUse = false;
+        for (JumpThreadInfo::PhiUse& phiUse : jti.m_phiUses.BottomUpOrder())
+        {
+            if ((phiUse.m_use->GetLclNum() != lclNum) || (phiUse.m_use->GetSsaNum() != ssaNum))
+            {
+                continue;
+            }
+
+            if (phiUse.m_block == block)
+            {
+                hasBlockUse = true;
+                break;
+            }
+        }
+
+        bool     removePhiDef        = false;
+        unsigned blockReplacementSsa = SsaConfig::RESERVED_SSA_NUM;
+        if (hasBlockUse && (jti.m_numAmbiguousPreds != 0))
+        {
+            if (!optGetThreadedSsaNumForBlock(jti, phiDef, &blockReplacementSsa))
+            {
+                JITDUMP("Ambiguous preds do not agree on a replacement SSA for V%02u.%u in " FMT_BB "\n", lclNum,
+                        ssaNum, block->bbNum);
+                return false;
+            }
+
+            for (JumpThreadInfo::PhiUse& phiUse : jti.m_phiUses.BottomUpOrder())
+            {
+                if ((phiUse.m_use->GetLclNum() != lclNum) || (phiUse.m_use->GetSsaNum() != ssaNum))
+                {
+                    continue;
+                }
+
+                if (phiUse.m_block == block)
+                {
+                    phiUse.m_replacementSsaNum = blockReplacementSsa;
+                }
+            }
+
+            jti.m_phiDefsToRemove.Push(stmt);
+            removePhiDef = true;
         }
 
         for (BasicBlock* const successor : block->Succs())
@@ -1638,20 +1814,34 @@ bool Compiler::optCanRewritePhiUses(JumpThreadInfo& jti)
                 continue;
             }
 
-            // Verify that all preds that will be redirected to successor agree on the same SSA number
-            // so no phi is needed in successor, just a rewrite of the uses to the common SSA number.
+            // If successor is a join, we might need to introduce or modify a PHI. Bail instead.
+            //
+            if (successor->GetUniquePred(this) != block)
+            {
+                JITDUMP(FMT_BB " successor " FMT_BB " is a join with phi uses; cannot rewrite phi uses\n", block->bbNum,
+                        successor->bbNum);
+                return false;
+            }
+
+            // Verify that all post-threading incoming defs that can reach successor agree on the same
+            // SSA number so no phi is needed in successor, just a rewrite of the uses to the common SSA number.
             //
             bool     hasThreadedPreds = false;
             unsigned replacementSsa   = SsaConfig::RESERVED_SSA_NUM;
             if (!optGetThreadedSsaNumForSuccessor(jti, phiDef, successor, &hasThreadedPreds, &replacementSsa))
             {
+                JITDUMP(FMT_BB " successor " FMT_BB " incoming defs for V%02u.%u do not agree\n", block->bbNum,
+                        successor->bbNum, lclNum, ssaNum);
                 return false;
             }
 
-            if (!hasThreadedPreds)
+            if (!hasThreadedPreds && !removePhiDef)
             {
                 continue;
             }
+
+            assert(!removePhiDef || (jti.m_numAmbiguousPreds != 0));
+            assert(!removePhiDef || (replacementSsa != SsaConfig::RESERVED_SSA_NUM));
 
             for (JumpThreadInfo::PhiUse& phiUse : jti.m_phiUses.BottomUpOrder())
             {
@@ -1762,8 +1952,8 @@ Compiler::JumpThreadCheckResult Compiler::optJumpThreadCheck(BasicBlock* const b
                 //
                 if (ssaVarDsc->HasGlobalUse())
                 {
-                    JITDUMP(FMT_BB " has global phi for V%02u.%u; deferring jump threading pending use analysis\n",
-                            block->bbNum, lclNum, ssaNum);
+                    JITDUMP(FMT_BB " has global phi for V%02u.%u; must look for phi uses\n", block->bbNum, lclNum,
+                            ssaNum);
                     hasGlobalPhiUses = true;
                 }
             }
@@ -2303,23 +2493,45 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
 
         GenTreeLclVarCommon* const use       = phiUse.m_use;
         unsigned const             oldSsaNum = use->GetSsaNum();
+        unsigned const             lclNum    = use->GetLclNum();
 
-        if (oldSsaNum == phiUse.m_replacementSsaNum)
-        {
-            continue;
-        }
+        assert(oldSsaNum != phiUse.m_replacementSsaNum);
 
         JITDUMP("Updating [%06u] in " FMT_BB " from u:%u to u:%u\n", dspTreeID(use), phiUse.m_block->bbNum, oldSsaNum,
                 phiUse.m_replacementSsaNum);
 
-        LclSsaVarDsc* const replacementSsaDef = lvaGetDesc(use->GetLclNum())->GetPerSsaData(phiUse.m_replacementSsaNum);
+        LclSsaVarDsc* const replacementSsaDef = lvaGetDesc(lclNum)->GetPerSsaData(phiUse.m_replacementSsaNum);
 
         use->SetSsaNum(phiUse.m_replacementSsaNum);
 
         // Keep the use's value number in sync with the rewritten SSA def.
+        //
         if (use->gtVNPair != replacementSsaDef->m_vnPair)
         {
-            use->SetVNs(replacementSsaDef->m_vnPair);
+            ValueNumPair newVNPair = replacementSsaDef->m_vnPair;
+
+            // If this is a field use, get the proper field VN.
+
+            if (use->OperIs(GT_LCL_FLD))
+            {
+                GenTreeLclFld* const lclFld = use->AsLclFld();
+
+                newVNPair = vnStore->VNPairForLoad(replacementSsaDef->m_vnPair, lvaLclValueSize(lclNum),
+                                                   lclFld->TypeGet(), lclFld->GetLclOffs(), lclFld->GetValueSize());
+            }
+            else
+            {
+                assert(use->OperIs(GT_LCL_VAR));
+            }
+
+            JITDUMP("Updating [%06u] VN from ", dspTreeID(use));
+            JITDUMPEXEC(vnpPrint(use->gtVNPair, 1));
+            JITDUMP(" to ");
+            JITDUMPEXEC(vnpPrint(newVNPair, 1));
+            JITDUMP("\n");
+
+            use->SetVNs(newVNPair);
+
             GenTree* node   = use;
             GenTree* parent = node->gtGetParent(nullptr);
 
@@ -2334,6 +2546,15 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
         }
 
         replacementSsaDef->AddUse(phiUse.m_block);
+    }
+
+    // If there were ambiguous preds, and all agreed on the incoming SSA def
+    // for some local, we can remove the associated PHI.
+    //
+    for (Statement* const phiDefStmt : jti.m_phiDefsToRemove.BottomUpOrder())
+    {
+        JITDUMP("Removing redundant phi def from " FMT_BB "\n", jti.m_block->bbNum);
+        fgRemoveStmt(jti.m_block, phiDefStmt);
     }
 
     bool setNoCseIn = false;

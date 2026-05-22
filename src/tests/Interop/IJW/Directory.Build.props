@@ -11,6 +11,8 @@
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <!-- C++/CLI not supported with NativeAOT -->
     <NativeAotIncompatible>true</NativeAotIncompatible>
+    <!-- IJW assemblies contain native code that cannot be round-tripped through ilasm -->
+    <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
   </PropertyGroup>
 
 </Project>

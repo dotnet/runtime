@@ -29,6 +29,8 @@ Data descriptors used:
 | --- | --- | --- |
 | ProfControlBlock | GlobalEventMask | an `ICorProfiler` `COR_PRF_MONITOR` value |
 | ProfControlBlock | RejitOnAttachEnabled | cached value of the `ProfAPI_RejitOnAttach` configuration knob |
+| ProfControlBlock | MainProfilerProfInterface | pointer to the main profiler's `ICorProfilerCallback` interface, non-null means a main profiler is attached |
+| ProfControlBlock | NotificationProfilerCount | number of notification-only profilers currently attached |
 | ILCodeVersionNode | VersionId | `ILCodeVersion` ReJIT ID
 | ILCodeVersionNode | RejitState | a `RejitFlags` value |
 

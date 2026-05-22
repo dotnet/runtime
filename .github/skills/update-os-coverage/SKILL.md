@@ -94,7 +94,7 @@ Before making any changes, confirm the **exact target container tag** exists in 
 ```bash
 TARGET_TAG="<exact-image-tag>"
 curl -sL https://github.com/dotnet/versions/raw/refs/heads/main/build-info/docker/image-info.dotnet-dotnet-buildtools-prereqs-docker-main.json \
-  | jq -r --arg tag "$TARGET_TAG" '[.repos[].images[].platforms[].simpleTags[]] | unique | map(select(. == $tag)) | .[]'
+  | jq -e --arg tag "$TARGET_TAG" 'any(.repos[].images[].platforms[].simpleTags[]; . == $tag)'
 ```
 
 If the exact tag is **not found in `image-info`**, stop and inform the user. Treat that as authoritative even if a registry lookup appears to work. The image must be created first at [dotnet/dotnet-buildtools-prereqs-docker](https://github.com/dotnet/dotnet-buildtools-prereqs-docker). Check if an open issue or PR already exists, for example:
