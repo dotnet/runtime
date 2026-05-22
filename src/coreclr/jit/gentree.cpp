@@ -18683,7 +18683,7 @@ bool Compiler::gtSplitTree(BasicBlock* block,
                 GenTree* store = m_compiler->gtNewTempStore(lclNum, value);
 
                 LclVarDsc* const lclDsc = m_compiler->lvaGetDesc(lclNum);
-                lclDsc->lvSingleDef = 1;
+                lclDsc->lvSingleDef     = 1;
                 JITDUMP("Marked V%02u as a single def temp\n", lclNum);
 
                 if (value->TypeIs(TYP_REF))
