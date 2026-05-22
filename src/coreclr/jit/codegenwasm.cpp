@@ -1810,7 +1810,8 @@ void CodeGen::genCodeForBitCast(GenTreeOp* tree)
 
     if (tree->gtGetOp1()->isContained())
     {
-        NYI_WASM("Contained bitcast operands");
+        assert(tree->gtGetOp1()->OperIs(GT_LCL_VAR));
+        genCodeForLclVar(tree->gtGetOp1()->AsLclVar());
     }
 
     var_types toType   = tree->TypeGet();
