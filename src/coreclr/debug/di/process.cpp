@@ -2425,7 +2425,7 @@ COM_METHOD CordbProcess::GetTypeFields(COR_TYPEID id, ULONG32 celt, COR_FIELD fi
     HRESULT hr = S_OK;
     PUBLIC_API_BEGIN(this);
 
-    hr = GetProcess()->GetDAC()->GetObjectFields(id, celt, fields, pceltNeeded);
+    hr = GetProcess()->GetDAC()->GetObjectFields(id.token1, celt, fields, pceltNeeded);
 
     PUBLIC_API_END(hr);
     return hr;

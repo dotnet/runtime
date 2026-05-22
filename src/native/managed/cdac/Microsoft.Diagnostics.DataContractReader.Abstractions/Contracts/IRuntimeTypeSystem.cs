@@ -150,7 +150,7 @@ public interface IRuntimeTypeSystem : IContract
     ushort GetNumInstanceFields(TypeHandle typeHandle) => throw new NotImplementedException();
     ushort GetNumStaticFields(TypeHandle typeHandle) => throw new NotImplementedException();
     ushort GetNumThreadStaticFields(TypeHandle typeHandle) => throw new NotImplementedException();
-    TargetPointer GetFieldDescList(TypeHandle typeHandle) => throw new NotImplementedException();
+    IEnumerable<TargetPointer> GetFieldDescList(TypeHandle typeHandle) => throw new NotImplementedException();
     // True if the MethodTable represents a type tracked as an Objective-C reference type with a finalizer
     bool IsTrackedReferenceWithFinalizer(TypeHandle typeHandle) => throw new NotImplementedException();
     TargetPointer GetGCStaticsBasePointer(TypeHandle typeHandle) => throw new NotImplementedException();
@@ -191,6 +191,7 @@ public interface IRuntimeTypeSystem : IContract
     bool IsGenericVariable(TypeHandle typeHandle, out TargetPointer module, out uint token) => throw new NotImplementedException();
     bool IsFunctionPointer(TypeHandle typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out byte callConv) => throw new NotImplementedException();
     bool IsPointer(TypeHandle typeHandle) => throw new NotImplementedException();
+    bool IsTypeDesc(TypeHandle typeHandle) => throw new NotImplementedException();
     // Returns null if the TypeHandle is not a class/struct/generic variable
     #endregion TypeHandle inspection APIs
 

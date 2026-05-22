@@ -82,7 +82,7 @@ partial interface IRuntimeTypeSystem : IContract
     public ushort GetNumThreadStaticFields(TypeHandle typeHandle);
     public TargetPointer GetGCThreadStaticsBasePointer(TypeHandle typeHandle, TargetPointer threadPtr);
     public TargetPointer GetNonGCThreadStaticsBasePointer(TypeHandle typeHandle, TargetPointer threadPtr);
-    public TargetPointer GetFieldDescList(TypeHandle typeHandle);
+    public IEnumerable<TargetPointer> GetFieldDescList(TypeHandle typeHandle);
     // True if the MethodTable represents a type tracked as an Objective-C reference type with a finalizer
     public bool IsTrackedReferenceWithFinalizer(TypeHandle typeHandle);
     public TargetPointer GetGCStaticsBasePointer(TypeHandle typeHandle);
@@ -117,6 +117,7 @@ partial interface IRuntimeTypeSystem : IContract
     bool IsGenericVariable(TypeHandle typeHandle, out TargetPointer module, out uint token);
     bool IsFunctionPointer(TypeHandle typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out byte callConv);
     bool IsPointer(TypeHandle typeHandle);
+    bool IsTypeDesc(TypeHandle typeHandle);
     TargetPointer GetLoaderModule(TypeHandle typeHandle);
 
     #endregion TypeHandle inspection APIs
@@ -682,7 +683,27 @@ Contracts used:
 
     public ushort GetNumThreadStaticFields(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (ushort)0 : GetClassData(typeHandle).NumThreadStaticFields;
 
-    public TargetPointer GetFieldDescList(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? TargetPointer.Null : GetClassData(typeHandle).FieldDescList;
+    public IEnumerable<TargetPointer> GetFieldDescList(TypeHandle typeHandle)
+    {
+        if (!typeHandle.IsMethodTable())
+            yield break;
+
+        TargetPointer fieldDescListPtr = GetClassData(typeHandle).FieldDescList;
+        uint fieldDescSize = _target.GetTypeInfo(DataType.FieldDesc).Size!.Value;
+
+        ushort numInstanceFields = GetNumInstanceFields(typeHandle);
+        TargetPointer parentMT = GetParentMethodTable(typeHandle);
+        if (parentMT != TargetPointer.Null)
+        {
+            TypeHandle parentHandle = GetTypeHandle(parentMT);
+            numInstanceFields -= GetNumInstanceFields(parentHandle);
+        }
+        int totalFields = numInstanceFields + GetNumStaticFields(typeHandle);
+        for (int i = 0; i < totalFields; i++)
+        {
+            yield return fieldDescListPtr + (ulong)i * fieldDescSize;
+        }
+    }
 
     public bool IsTrackedReferenceWithFinalizer(TypeHandle typeHandle) => typeHandle.IsMethodTable() && _methodTables[typeHandle.Address].Flags.IsTrackedReferenceWithFinalizer;
 
@@ -1078,6 +1099,8 @@ Contracts used:
         CorElementType elemType = (CorElementType)(TypeAndFlags & 0xFF);
         return elemType == CorElementType.Ptr;
     }
+
+    public bool IsTypeDesc(TypeHandle typeHandle) => typeHandle.IsTypeDesc();
 
     public TargetPointer GetLoaderModule(TypeHandle typeHandle)
     {
