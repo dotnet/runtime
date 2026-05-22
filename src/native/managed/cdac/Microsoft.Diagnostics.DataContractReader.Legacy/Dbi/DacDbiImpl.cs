@@ -2313,7 +2313,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                     }
                     mt = new TargetPointer(mt.Value & _methodTableMask);
 
-                    if (!TryGetObjectSize(currentObj, mt, out ulong size))
+                    if (!TryGetObjectSize(currentObj, mt, out ulong size) || size == 0)
                     {
                         pendingFailure = true;
                         break;
@@ -2323,9 +2323,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
                     // Advance past this object (and any allocation-context tail) in a single call.
                     TargetPointer nextObj = _gc.GetPotentialNextObjectAddress(currentObj, size, seg, _allocContexts);
-                    if (size == 0 || nextObj.Value > seg.End.Value || nextObj.Value <= currentObj.Value)
+                    if (nextObj.Value > seg.End.Value || nextObj.Value <= currentObj.Value)
                     {
-                        pendingFailure = true;
                         break;
                     }
 
@@ -2424,8 +2423,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             IThread thread = target.Contracts.Thread;
             ThreadStoreData store = thread.GetThreadStoreData();
             TargetPointer current = store.FirstThread;
-            int safety = 0;
-            while (current != TargetPointer.Null && safety++ < 1_000_000)
+            int safety = store.ThreadCount;
+            while (current != TargetPointer.Null && safety-- > 0)
             {
                 ThreadData td = thread.GetThreadData(current);
                 if (td.AllocContextPointer != TargetPointer.Null)
