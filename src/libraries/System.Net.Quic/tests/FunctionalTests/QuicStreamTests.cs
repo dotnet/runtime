@@ -797,8 +797,9 @@ namespace System.Net.Quic.Tests
                     clientStream.CompleteWrites();
                     await clientStream.WritesClosed;
 
-                    // This should throw.
-                    await clientStream.WriteAsync(new byte[2] {1, 2}, false);
+                    // These both should throw the same exception.
+                    await Assert.ThrowsAsync<InvalidOperationException>(async () => await clientStream.WriteAsync(new byte[0], false));
+                    await Assert.ThrowsAsync<InvalidOperationException>(async () => await clientStream.WriteAsync(new byte[0], false));
 
                     await sem.WaitAsync();
                 },
