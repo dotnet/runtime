@@ -45,7 +45,7 @@
  #error "sys/time.h required by GC PAL for the time being"
 #endif
 
-#if HAVE_SYS_MMAN_H || defined(_WASI_EMULATED_MMAN)
+#if HAVE_SYS_MMAN_H
  #include <sys/mman.h>
 #else
  #error "sys/mman.h required by GC PAL"
@@ -828,7 +828,7 @@ static uint64_t GetMemorySizeMultiplier(char units)
     return 1;
 }
 
-#if !defined(__APPLE__) && !defined(__HAIKU__) && !defined(__wasi__)
+#if !defined(__APPLE__) && !defined(__HAIKU__)
 // Try to read the MemAvailable entry from /proc/meminfo.
 // Return true if the /proc/meminfo existed, the entry was present and we were able to parse it.
 static bool ReadMemAvailable(uint64_t* memAvailable)
@@ -1105,11 +1105,6 @@ uint64_t GetAvailablePhysicalMemory()
     {
         available = info.free_memory;
     }
-#elif defined(__wasi__)
-    // Match Emscripten's approach: max memory minus current usage.
-    // WASI wasm32 linear memory can grow up to 4GB when --max-memory is not set.
-    uint64_t current = (uint64_t)__builtin_wasm_memory_size(0) * 65536;
-    available = (uint64_t)4 * 1024 * 1024 * 1024 - current;
 #else // Linux
     static volatile bool tryReadMemInfo = true;
 
