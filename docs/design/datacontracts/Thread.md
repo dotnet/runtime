@@ -133,7 +133,7 @@ The contract additionally depends on these data descriptors
 | `Thread` | `DebuggerFilterContext` | Pointer to the debugger filter context for the thread |
 | `Thread` | `RuntimeThreadLocals` | Pointer to some thread-local storage |
 | `Thread` | `ThreadLocalDataPtr` | Pointer to thread local data structure |
-| `Thread` | `ThreadHandle` | OS thread handle |
+| `Thread` | `ThreadHandle` | OS thread handle (optional, Windows only; readers should expect `TargetPointer.Null` on non-Windows targets) |
 | `Thread` | `UEWatsonBucketTrackerBuckets` | Pointer to thread Watson buckets data (optional, Windows only) |
 | `ThreadLocalData` | `NonCollectibleTlsData` | Count of non-collectible TLS data entries |
 | `ThreadLocalData` | `NonCollectibleTlsArrayData` | Pointer to non-collectible TLS array data |
