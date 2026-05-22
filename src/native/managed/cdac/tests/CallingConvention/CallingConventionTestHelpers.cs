@@ -13,12 +13,6 @@ using TypeHandle = Microsoft.Diagnostics.DataContractReader.Contracts.TypeHandle
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
-/// <summary>
-/// End-to-end test harness for the <see cref="ICallingConvention"/> contract.
-/// Builds a mock target containing a single stored-sig EEImpl method whose
-/// signature is encoded as a raw blob — so the harness bypasses the
-/// metadata reader entirely.
-/// </summary>
 internal static class CallingConventionTestHelpers
 {
     public static (Target Target, MethodDescHandle Handle) CreateTargetWithStaticMethod(
@@ -36,19 +30,6 @@ internal static class CallingConventionTestHelpers
         SyntheticVectorMetadata? syntheticMetadata = null)
         => CreateTargetWithMethod(testCase, hasThis, (_, sig) => buildSignature(sig), hasParamType, hasAsyncContinuation, syntheticMetadata: syntheticMetadata);
 
-    /// <summary>
-    /// Richer overload that gives the test callback access to the
-    /// <see cref="MockDescriptors.RuntimeTypeSystem"/> builder so it can
-    /// allocate auxiliary mock types (e.g. value-type MTs for
-    /// <c>ELEMENT_TYPE_INTERNAL</c> sig references) before building the
-    /// method signature.
-    /// </summary>
-    /// <param name="enclosingMTOverride">
-    /// Optional callback to choose a different MethodTable as the enclosing
-    /// class of the test method (default is <c>System.Object</c>). The callback
-    /// runs after the <c>configure</c> callback so it can refer to MTs the
-    /// configure callback allocated.
-    /// </param>
     public static (Target Target, MethodDescHandle Handle) CreateTargetWithMethod(
         CallConvTestCase testCase,
         bool hasThis,

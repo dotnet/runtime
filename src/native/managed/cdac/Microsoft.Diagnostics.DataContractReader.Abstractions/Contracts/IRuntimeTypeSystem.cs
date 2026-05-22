@@ -288,25 +288,8 @@ public interface IRuntimeTypeSystem : IContract
     TargetPointer GetFieldDescStaticAddress(TargetPointer fieldDescPointer, bool unboxValueTypes = true) => throw new NotImplementedException();
     TargetPointer GetFieldDescThreadStaticAddress(TargetPointer fieldDescPointer, TargetPointer thread, bool unboxValueTypes = true) => throw new NotImplementedException();
 
-    /// <summary>
-    /// Enumerates the FieldDesc pointers for the instance (non-static) fields of
-    /// <paramref name="typeHandle"/>, in field-list order. Statics interleaved in
-    /// the underlying FieldDesc array are skipped.
-    /// </summary>
-    /// <remarks>
-    /// Returns an empty sequence for type handles that do not refer to a MethodTable,
-    /// or for types with no FieldDescList.
-    /// </remarks>
     IEnumerable<TargetPointer> EnumerateInstanceFieldDescs(TypeHandle typeHandle) => throw new NotImplementedException();
 
-    /// <summary>
-    /// Resolves a field's declared type without triggering type loading. Mirrors
-    /// native <c>FieldDesc::LookupApproxFieldTypeHandle</c> (DAC variant): decodes
-    /// the field's metadata signature and returns the resulting <see cref="TypeHandle"/>.
-    /// Returns a default (null) TypeHandle when the field's type is not currently
-    /// resolvable (e.g., the enclosing module's metadata is unavailable, or the
-    /// referenced type is not loaded).
-    /// </summary>
     TypeHandle LookupApproxFieldTypeHandle(TargetPointer fieldDescPointer) => throw new NotImplementedException();
     #endregion FieldDesc inspection APIs
     #region Other APIs

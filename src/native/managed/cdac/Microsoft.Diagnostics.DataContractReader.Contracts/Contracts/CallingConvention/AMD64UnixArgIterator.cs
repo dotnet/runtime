@@ -6,12 +6,6 @@ using Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.CallingConventionHelpers;
 
-/// <summary>
-/// Linux/macOS x64 (System V AMD64 ABI) argument iterator. GP args go in
-/// RDI/RSI/RDX/RCX/R8/R9; FP args in XMM0-XMM7. Value-type structs &lt;= 16 bytes
-/// are classified per the SystemV "eightbyte" rules and may be split across
-/// the GP and SSE register banks.
-/// </summary>
 internal sealed class AMD64UnixArgIterator : ArgIteratorBase
 {
     private readonly Target _target;

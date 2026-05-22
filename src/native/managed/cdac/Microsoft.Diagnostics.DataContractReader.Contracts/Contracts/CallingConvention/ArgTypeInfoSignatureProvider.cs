@@ -11,33 +11,8 @@ using Microsoft.Diagnostics.DataContractReader.SignatureHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.CallingConventionHelpers;
 
-/// <summary>
-/// Generic context used to resolve <c>ELEMENT_TYPE_VAR</c> and <c>ELEMENT_TYPE_MVAR</c>
-/// while decoding a method signature into <see cref="ArgTypeInfo"/> values.
-/// <see cref="ClassContext"/> is the owning type's <see cref="TypeHandle"/> (used for VAR),
-/// and <see cref="MethodContext"/> is the owning method's <see cref="MethodDescHandle"/>
-/// (used for MVAR).
-/// </summary>
 internal readonly record struct ArgTypeInfoSignatureContext(TypeHandle ClassContext, MethodDescHandle MethodContext);
 
-/// <summary>
-/// Decodes signature elements directly into <see cref="ArgTypeInfo"/> so that
-/// <see cref="ArgIterator"/> can drive argument iteration without an intermediate
-/// classification stage.
-/// Implements <see cref="IRuntimeSignatureTypeProvider{TType, TGenericContext}"/>, which
-/// is a superset of SRM's <see cref="ISignatureTypeProvider{TType, TGenericContext}"/>
-/// adding support for <c>ELEMENT_TYPE_INTERNAL</c>.
-/// </summary>
-/// <remarks>
-/// The provider is scoped to a single module: <c>GetTypeFromDefinition</c> and
-/// <c>GetTypeFromReference</c> resolve TypeDef/TypeRef tokens via the module's lookup
-/// tables so enums (and other runtime-normalized value types) are classified using their
-/// actual <see cref="CorElementType"/>, matching native
-/// <c>SigPointer::PeekElemTypeNormalized</c>. For value-type elements the resolved
-/// <see cref="TypeHandle"/> is surfaced in <see cref="ArgTypeInfo.RuntimeTypeHandle"/> so
-/// <c>ArgIterator</c> sees the correct size / HFA / alignment in a single signature walk
-/// (mirroring native <c>MetaSig::GetByValType</c>).
-/// </remarks>
 internal sealed class ArgTypeInfoSignatureProvider
     : IRuntimeSignatureTypeProvider<ArgTypeInfo, ArgTypeInfoSignatureContext>
 {
@@ -75,11 +50,6 @@ internal sealed class ArgTypeInfoSignatureProvider
     private ArgTypeInfo PrimitiveWithHandle(CorElementType corType)
         => ArgTypeInfo.ForPrimitive(corType, _target.PointerSize, ResolvePrimitiveTypeHandle(corType));
 
-    /// <summary>
-    /// Resolves the canonical <see cref="TypeHandle"/> for a primitive <see cref="CorElementType"/>
-    /// via the CoreLib binder. Returns <c>default</c> on failure (e.g. older runtime image, or a
-    /// CorElementType with no binder entry such as <see cref="CorElementType.Class"/>).
-    /// </summary>
     private TypeHandle ResolvePrimitiveTypeHandle(CorElementType corType)
     {
         if (_primitiveTypeHandles.TryGetValue(corType, out TypeHandle cached))
@@ -269,12 +239,6 @@ internal sealed class ArgTypeInfoSignatureProvider
         }
     }
 
-    /// <summary>
-    /// Resolve a TypeDef/TypeRef token via the module's lookup tables and build an
-    /// <see cref="ArgTypeInfo"/> from the resulting <see cref="TypeHandle"/>. Falls back
-    /// to a <paramref name="rawTypeKind"/>-driven conservative placeholder when the type
-    /// has not been loaded.
-    /// </summary>
     private ArgTypeInfo FromTokenLookup(TargetPointer lookupTable, int token, byte rawTypeKind)
     {
         try
@@ -296,14 +260,6 @@ internal sealed class ArgTypeInfoSignatureProvider
             ? UnresolvedValueType()
             : ArgTypeInfo.ForPrimitive(CorElementType.Class, _target.PointerSize);
 
-    /// <summary>
-    /// Build an <see cref="ArgTypeInfo"/> from a resolved <see cref="TypeHandle"/>. Mirrors
-    /// native <c>SigPointer::PeekElemTypeNormalized</c> + <c>MetaSig::GetByValType</c>:
-    /// enums collapse to their underlying primitive (via <c>GetSignatureCorElementType</c>);
-    /// value types surface the resolved <see cref="TypeHandle"/> with full size / HFA /
-    /// alignment for ArgIterator; reference types preserve the handle for generic
-    /// type-argument matching.
-    /// </summary>
     private ArgTypeInfo BuildFromTypeHandle(TypeHandle typeHandle)
     {
         if (typeHandle.Address == TargetPointer.Null)
@@ -312,11 +268,6 @@ internal sealed class ArgTypeInfoSignatureProvider
         return ArgTypeInfo.FromTypeHandle(_target, typeHandle);
     }
 
-    /// <summary>
-    /// Conservative value-type placeholder used when a TypeSpec / TypedReference /
-    /// unloaded TypeDef/TypeRef can't be resolved to a concrete <see cref="TypeHandle"/>.
-    /// ArgIterator sees a pointer-sized value type with no HFA classification.
-    /// </summary>
     private ArgTypeInfo UnresolvedValueType()
         => new ArgTypeInfo
         {

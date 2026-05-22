@@ -8,15 +8,6 @@ using Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
-/// <summary>
-/// Per-architecture <c>TransitionBlock</c> descriptor TypeInfo for the
-/// calling-convention test harness. cDAC's data-descriptor convention
-/// encodes ABI constants in the "field offsets" (<c>ArgumentRegistersOffset</c>,
-/// <c>FirstGCRefMapSlot</c>, <c>OffsetOfArgs</c>, optional
-/// <c>OffsetOfFloatArgumentRegisters</c>), with <c>Size</c> carrying the
-/// transition-block size. The values come directly from the
-/// <see cref="CallConvTestCase"/> so tests can reference the same constants.
-/// </summary>
 internal partial class MockDescriptors
 {
     public static class CallingConvention
@@ -42,29 +33,14 @@ internal partial class MockDescriptors
 
         // ----- FieldDesc layout / Value-type MT allocator -----
 
-        /// <summary>
-        /// Production <c>FieldDesc</c> layout: two DWORDs of flag bits packed with
-        /// the metadata token (DWord1) and the field offset + CorElementType (DWord2),
-        /// followed by a pointer to the enclosing <c>MethodTable</c>.
-        /// </summary>
         public static Layout<MockFieldDesc> CreateFieldDescLayout(MockTarget.Architecture arch)
             => MockFieldDesc.CreateLayout(arch);
 
         public static Target.TypeInfo CreateFieldDescTypeInfo(MockTarget.Architecture arch)
             => TargetTestHelpers.CreateTypeInfo(CreateFieldDescLayout(arch));
 
-        /// <summary>
-        /// Describes a single instance field for <see cref="AddValueTypeMethodTable"/>.
-        /// Statics are excluded by definition — only instance fields are reported.
-        /// </summary>
         public readonly record struct ValueTypeField(int Offset, CorElementType ElementType);
 
-        /// <summary>
-        /// Allocates a value-type MethodTable + EEClass + FieldDesc array in mock
-        /// memory. Returns the MT address; tests embed that pointer into a
-        /// stored-sig blob via <c>ELEMENT_TYPE_INTERNAL</c> to reference the
-        /// value type without going through the metadata reader.
-        /// </summary>
         public static MockMethodTable AddValueTypeMethodTable(
             MockDescriptors.RuntimeTypeSystem rts,
             string name,
@@ -214,10 +190,6 @@ internal partial class MockDescriptors
     }
 }
 
-/// <summary>
-/// Mock view of <c>Data.FieldDesc</c> for the calling-convention test harness.
-/// Layout: two uint flag/offset words + a pointer to the enclosing MT.
-/// </summary>
 internal sealed class MockFieldDesc : TypedView
 {
     private const string DWord1FieldName = nameof(Data.FieldDesc.DWord1);

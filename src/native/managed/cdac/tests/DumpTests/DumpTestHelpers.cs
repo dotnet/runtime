@@ -13,10 +13,6 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 /// </summary>
 internal static class DumpTestHelpers
 {
-    /// <summary>
-    /// Resolves a <see cref="TypeHandle"/> to its ECMA-335 type name (no namespace).
-    /// Returns <c>null</c> if the name cannot be resolved (e.g., missing metadata).
-    /// </summary>
     public static string? GetTypeName(ContractDescriptorTarget target, TypeHandle typeHandle)
     {
         IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;

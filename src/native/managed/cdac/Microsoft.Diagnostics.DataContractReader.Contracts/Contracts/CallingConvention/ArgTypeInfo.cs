@@ -10,16 +10,6 @@ using Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.CallingConventionHelpers;
 
-/// <summary>
-/// Pre-computed type information needed by <see cref="ArgIterator"/> for
-/// calling convention analysis. This is a value type to avoid allocations
-/// during argument iteration.
-/// </summary>
-/// <remarks>
-/// Mirrors crossgen2's <c>TypeHandle</c> struct in ArgIterator.cs, but uses
-/// data from the cDAC's <see cref="IRuntimeTypeSystem"/> rather than
-/// crossgen2's <c>TypeDesc</c>.
-/// </remarks>
 internal readonly struct ArgTypeInfo
 {
     public CorElementType CorElementType { get; init; }
@@ -29,19 +19,10 @@ internal readonly struct ArgTypeInfo
     public bool IsHomogeneousAggregate { get; init; }
     public int HomogeneousAggregateElementSize { get; init; }
 
-    /// <summary>
-    /// The TypeHandle from the target runtime, used for value type field enumeration
-    /// and SystemV struct classification.
-    /// </summary>
     public TypeHandle RuntimeTypeHandle { get; init; }
 
     public bool IsNull => CorElementType == default && Size == 0;
 
-    /// <summary>
-    /// Gets the element size for a given CorElementType, matching crossgen2's
-    /// <c>TypeHandle.GetElemSize</c>. Returns the type's actual size for value
-    /// types, or pointer size for reference types.
-    /// </summary>
     public static int GetElemSize(CorElementType t, ArgTypeInfo thValueType, int pointerSize)
     {
         if ((int)t <= 0x1d)
@@ -90,14 +71,6 @@ internal readonly struct ArgTypeInfo
         -2, // ELEMENT_TYPE_SZARRAY      0x1d
     ];
 
-    /// <summary>
-    /// Creates an <see cref="ArgTypeInfo"/> from a target TypeHandle using the
-    /// runtime type system contract. Handles primitives (using the static element-size
-    /// table), reference types (pointer-sized, projected to <see cref="CorElementType.Class"/>
-    /// to match downstream classifier expectations), and real value types (full MT layout
-    /// query for size / HFA / alignment). Mirrors native <c>MetaSig::GetByValType</c> +
-    /// <c>SigPointer::PeekElemTypeNormalized</c>.
-    /// </summary>
     public static ArgTypeInfo FromTypeHandle(Target target, TypeHandle th)
     {
         IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
@@ -162,19 +135,6 @@ internal readonly struct ArgTypeInfo
         };
     }
 
-    /// <summary>
-    /// Computes the element size of a Homogeneous Floating-point Aggregate (HFA),
-    /// matching crossgen2's <c>DefType.GetHomogeneousAggregateElementSize</c>.
-    /// </summary>
-    /// <remarks>
-    /// On ARM, the element size is fully determined by the alignment requirement:
-    /// HFAs of doubles have 8-byte alignment; HFAs of floats use 4-byte alignment.
-    ///
-    /// On ARM64, we walk the first field of the value type, recursing through nested
-    /// value types until we reach a primitive (R4/R8) or a Vector intrinsic
-    /// (Vector64`1, Vector128`1, or System.Numerics.Vector`1). This mirrors the
-    /// runtime's <c>MethodTable::GetHFAType</c> in src/coreclr/vm/class.cpp.
-    /// </remarks>
     private static int ComputeHfaElementSize(Target target, IRuntimeTypeSystem rts, TypeHandle th, bool requiresAlign8)
     {
         RuntimeInfoArchitecture arch = target.Contracts.RuntimeInfo.GetTargetArchitecture();
@@ -224,19 +184,9 @@ internal readonly struct ArgTypeInfo
         return 0;
     }
 
-    /// <summary>
-    /// Creates an <see cref="ArgTypeInfo"/> for a primitive type that doesn't need
-    /// type handle resolution.
-    /// </summary>
     public static ArgTypeInfo ForPrimitive(CorElementType corType, int pointerSize)
         => ForPrimitive(corType, pointerSize, default);
 
-    /// <summary>
-    /// Creates an <see cref="ArgTypeInfo"/> for a primitive / reference type, optionally
-    /// carrying its resolved <see cref="TypeHandle"/>. The handle is used downstream by
-    /// generic-instantiation lookup so a type argument like <c>string</c> or <c>int</c>
-    /// can be matched against an instantiated type's <c>PerInstInfo</c>.
-    /// </summary>
     public static ArgTypeInfo ForPrimitive(CorElementType corType, int pointerSize, TypeHandle runtimeTypeHandle)
     {
         return new ArgTypeInfo

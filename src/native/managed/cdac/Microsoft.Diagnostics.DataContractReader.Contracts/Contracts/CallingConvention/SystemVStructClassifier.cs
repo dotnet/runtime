@@ -8,18 +8,6 @@ using Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.CallingConventionHelpers;
 
-/// <summary>
-/// SystemV AMD64 ABI struct classifier. Walks a value type's instance fields,
-/// builds a per-byte map of field classifications, and assembles eightbyte
-/// classifications per the SystemV spec (§3.2.3 "Passing"). Mirrors
-/// <c>SystemVStructClassificator.GetSystemVAmd64PassStructInRegisterDescriptor</c>
-/// in <c>src/coreclr/tools/Common/JitInterface/SystemVStructClassificator.cs</c>.
-/// </summary>
-/// <remarks>
-/// Used only by <see cref="AMD64UnixArgIterator"/> to decide between register
-/// placement (with possible GP+SSE split), implicit by-reference, and stack
-/// passing for value types on Linux/macOS x64.
-/// </remarks>
 internal static class SystemVStructClassifier
 {
     private const int MaxFields = SystemVStructDescriptor.MaxEightBytes * SystemVStructDescriptor.EightByteSizeInBytes;
@@ -55,11 +43,6 @@ internal static class SystemVStructClassifier
         };
     }
 
-    /// <summary>
-    /// Attempts to classify the given value type per the SystemV AMD64 ABI.
-    /// Returns a descriptor with <see cref="SystemVStructDescriptor.PassedInRegisters"/>
-    /// set to true when the struct can be passed in registers, false otherwise.
-    /// </summary>
     public static SystemVStructDescriptor Classify(Target target, TypeHandle typeHandle, int structSize)
     {
         if (!typeHandle.IsMethodTable() || structSize == 0
@@ -109,11 +92,6 @@ internal static class SystemVStructClassifier
         }
     }
 
-    /// <summary>
-    /// Maps a primitive <see cref="CorElementType"/> to its initial SystemV
-    /// classification. Mirrors <c>TypeDef2SystemVClassification</c> in the JIT
-    /// classifier.
-    /// </summary>
     private static SystemVClassification CorElementTypeToClassification(CorElementType et) => et switch
     {
         CorElementType.Boolean or CorElementType.Char
@@ -138,10 +116,6 @@ internal static class SystemVStructClassifier
         _ => SystemVClassification.Unknown,
     };
 
-    /// <summary>
-    /// Merge lattice for overlapping/union fields. Matches
-    /// <c>SystemVStructClassificator.ReClassifyField</c>.
-    /// </summary>
     private static SystemVClassification ReClassifyField(SystemVClassification original, SystemVClassification @new)
     {
         switch (@new)
@@ -165,12 +139,6 @@ internal static class SystemVStructClassifier
         }
     }
 
-    /// <summary>
-    /// Walks the instance fields of <paramref name="typeHandle"/>, classifying each.
-    /// Returns false if the struct cannot be enregistered (unaligned field, embedded
-    /// struct that can't enregister, etc.); true if the helper has been populated
-    /// successfully.
-    /// </summary>
     private static bool ClassifyEightBytes(
         Target target,
         IRuntimeTypeSystem rts,
@@ -303,11 +271,6 @@ internal static class SystemVStructClassifier
         return true;
     }
 
-    /// <summary>
-    /// Byte-by-byte sweep that assembles eightbyte classifications from the
-    /// per-field classifications recorded in <paramref name="helper"/>. Matches
-    /// <c>SystemVStructClassificator.AssignClassifiedEightByteTypes</c>.
-    /// </summary>
     private static void AssignClassifiedEightByteTypes(ref Helper helper)
     {
         const int MaxBytes = SystemVStructDescriptor.MaxEightBytes * SystemVStructDescriptor.EightByteSizeInBytes;

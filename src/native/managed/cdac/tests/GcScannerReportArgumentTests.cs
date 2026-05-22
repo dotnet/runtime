@@ -11,11 +11,6 @@ using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
-/// <summary>
-/// Unit tests for <see cref="GcScanner.ReportArgument"/>, the per-argument GC reporting
-/// dispatch used by <c>GcScanner.PromoteCallerStack</c>. Mirrors native
-/// <c>MetaSig::GcScanRoots</c> behavior.
-/// </summary>
 public class GcScannerReportArgumentTests
 {
     private const ulong TransitionBlockBase = 0x10_0000;
@@ -250,15 +245,6 @@ public class GcScannerReportArgumentTests
 
     // ===== ByRefLike (Span<T>, ref structs): field-walk branch =====
 
-    /// <summary>
-    /// Synthesizes an <see cref="IRuntimeTypeSystem"/> mock whose
-    /// <see cref="IRuntimeTypeSystem.IsByRefLike"/> returns true for the supplied
-    /// <paramref name="byRefLikeType"/>, and whose
-    /// <see cref="IRuntimeTypeSystem.EnumerateInstanceFieldDescs"/> yields synthetic
-    /// FieldDesc pointers (1, 2, 3, ...) for that type. Each FieldDesc's offset, element
-    /// type, and (for ValueType fields) inner-type-handle are wired from
-    /// <paramref name="fields"/>.
-    /// </summary>
     private static IRuntimeTypeSystem RtsForByRefLike(
         TypeHandle byRefLikeType,
         params (uint Offset, CorElementType Type, TypeHandle? Inner, bool InnerIsByRefLike, (uint Offset, uint Size)[]? InnerSeries)[] fields)

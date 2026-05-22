@@ -3,13 +3,6 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.CallingConventionHelpers;
 
-/// <summary>
-/// Pure-data view over the target's <c>TransitionBlock</c> layout. Holds the
-/// descriptor-read offsets plus the target's <see cref="RuntimeInfoArchitecture"/>
-/// and <see cref="RuntimeInfoOperatingSystem"/>. Has no per-architecture logic —
-/// per-arch ABI knowledge lives entirely in the <see cref="ArgIteratorBase"/>
-/// hierarchy.
-/// </summary>
 internal sealed class TransitionBlockLayout
 {
     public Target Target { get; }

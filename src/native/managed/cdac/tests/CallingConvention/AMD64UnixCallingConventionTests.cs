@@ -7,17 +7,6 @@ using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
-/// <summary>
-/// AMD64-Unix (System V AMD64 ABI) calling-convention tests. GP args go in
-/// RDI/RSI/RDX/RCX/R8/R9 (6 slots); FP args in XMM0-XMM7 (8 slots). The two
-/// banks are independent.
-/// <para>
-/// The SysV struct classifier (<c>SystemVStructClassifier</c>) is exercised
-/// end-to-end via the contract: each struct test allocates a value-type MT
-/// in mock memory and references it via <c>ELEMENT_TYPE_INTERNAL</c> in the
-/// stored sig blob.
-/// </para>
-/// </summary>
 public class AMD64UnixCallingConventionTests
 {
     private static readonly Lazy<SyntheticVectorMetadata> s_syntheticVectorMetadata = new(SyntheticVectorMetadata.Create);

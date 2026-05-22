@@ -12,11 +12,6 @@ using Microsoft.Diagnostics.DataContractReader.SignatureHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-/// <summary>
-/// CoreCLR implementation of <see cref="ICallingConvention"/>. Decodes method
-/// signatures and drives a per-arch <see cref="ArgIteratorBase"/> subclass to
-/// compute per-argument offsets and pass-style for a call site.
-/// </summary>
 internal sealed class CallingConvention_1 : ICallingConvention
 {
     private static readonly IReadOnlyList<ArgLayout> EmptyArgs = Array.Empty<ArgLayout>();
@@ -98,24 +93,6 @@ internal sealed class CallingConvention_1 : ICallingConvention
         return new CallSiteLayout(thisOffset, isValueTypeThis, asyncOffset, varArgCookieOffset, args);
     }
 
-    /// <summary>
-    /// Mirrors native <c>MetaSig::GcScanRoots</c>'s value-type branch
-    /// (see <c>src/coreclr/vm/siginfo.cpp</c>): when an argument is a value type
-    /// passed by value in storage that the per-arch iterator did <em>not</em>
-    /// GC-decompose, the GC scanner walks the type's layout to report embedded
-    /// refs. Surface the value-type's <see cref="TypeHandle"/> on
-    /// <see cref="ArgLayout"/> so the scanner can do that walk. The scanner
-    /// dispatches on <see cref="IRuntimeTypeSystem.IsByRefLike"/> to choose
-    /// between a CGCDesc walk (ordinary value types) and a field walk
-    /// (ByRefLike types: <c>Span&lt;T&gt;</c>, ref structs).
-    /// </summary>
-    /// <returns>
-    /// The value type's <see cref="TypeHandle"/> when the layout describes a
-    /// contiguous by-value buffer that requires a layout-driven walk to report
-    /// refs (including ByRefLike types); <see langword="null"/> otherwise
-    /// (primitives, references, byref-passed value types, iterator-decomposed
-    /// slots).
-    /// </returns>
     private static TypeHandle? ComputeValueTypeHandle(ArgLocDesc loc, List<ArgSlot> slots)
     {
         // Pass-by-implicit-reference: the slot holds an interior pointer and the
@@ -154,12 +131,6 @@ internal sealed class CallingConvention_1 : ICallingConvention
         return th;
     }
 
-    /// <summary>
-    /// Decodes the signature for <paramref name="method"/> into a
-    /// <see cref="MethodSignature{ArgTypeInfo}"/>. Matches native
-    /// <c>MethodDesc::GetSig</c>: prefers a stored signature (dynamic, EEImpl, and
-    /// array method descs) before falling back to a metadata token lookup.
-    /// </summary>
     private bool TryDecodeSignature(MethodDescHandle method, out MethodSignature<ArgTypeInfo> methodSig)
     {
         methodSig = default;

@@ -8,14 +8,6 @@ using System.Numerics;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.CallingConventionHelpers;
 
-/// <summary>
-/// Shared ABI-independent logic for cDAC argument iterators.
-/// </summary>
-/// <remarks>
-/// Architecture-specific iterators provide register counts, stack-slot sizing, and
-/// per-argument location enumeration, while this base class handles hidden argument
-/// bookkeeping, return-buffer decisions, and lazy stack-size computation.
-/// </remarks>
 internal abstract class ArgIteratorBase
 {
     protected readonly TransitionBlockLayout _layout;
@@ -33,9 +25,6 @@ internal abstract class ArgIteratorBase
 
     #region Construction
 
-    /// <summary>
-    /// Initializes a new iterator over a method signature using the supplied transition-block layout.
-    /// </summary>
     protected ArgIteratorBase(
         TransitionBlockLayout layout,
         ArgIteratorData argData,
@@ -72,9 +61,6 @@ internal abstract class ArgIteratorBase
 
     #region Hidden arguments
 
-    /// <summary>
-    /// Gets the transition-block offset of the hidden <c>this</c> argument.
-    /// </summary>
     public virtual int GetThisOffset()
         => _layout.ArgumentRegistersOffset;
 
@@ -165,9 +151,6 @@ internal abstract class ArgIteratorBase
     public virtual bool IsArgPassedByRefBySize(int size)
         => size > EnregisteredParamTypeMaxSize;
 
-    /// <summary>
-    /// Computes the number of register slots consumed by hidden arguments before user arguments begin.
-    /// </summary>
     protected virtual int ComputeInitialNumRegistersUsed()
     {
         int numRegistersUsed = 0;
@@ -202,26 +185,17 @@ internal abstract class ArgIteratorBase
         return numRegistersUsed;
     }
 
-    /// <summary>
-    /// Enumerates the fixed user-visible arguments and their locations.
-    /// </summary>
     public abstract IEnumerable<ArgLocDesc> EnumerateArgs();
 
     #endregion
 
     #region Signature inspection
 
-    /// <summary>
-    /// Gets the argument type at the specified user-visible argument index.
-    /// </summary>
     public CorElementType GetArgumentType(int argNum, out ArgTypeInfo thArgType)
     {
         return _argData.GetArgumentType(argNum, out thArgType);
     }
 
-    /// <summary>
-    /// Gets the method return type.
-    /// </summary>
     public CorElementType GetReturnType(out ArgTypeInfo thRetType)
         => _argData.GetReturnType(out thRetType);
 
@@ -229,9 +203,6 @@ internal abstract class ArgIteratorBase
 
     #region Return handling
 
-    /// <summary>
-    /// Determines whether the signature uses a hidden return-buffer argument.
-    /// </summary>
     public bool HasRetBuffArg()
     {
         if (!_RETURN_FLAGS_COMPUTED)
@@ -242,9 +213,6 @@ internal abstract class ArgIteratorBase
         return _RETURN_HAS_RET_BUFFER;
     }
 
-    /// <summary>
-    /// Default return-buffer policy for value-type returns.
-    /// </summary>
     protected virtual bool ValueTypeReturnNeedsRetBuf(ArgTypeInfo thRetType)
     {
         int size = thRetType.Size;
@@ -277,9 +245,6 @@ internal abstract class ArgIteratorBase
 
     #region Stack sizing
 
-    /// <summary>
-    /// Gets the total stack space consumed by user arguments above the transition block.
-    /// </summary>
     protected uint SizeOfArgStack()
     {
         if (!_SIZE_OF_ARG_STACK_COMPUTED)
@@ -298,9 +263,6 @@ internal abstract class ArgIteratorBase
         _SIZE_OF_ARG_STACK_COMPUTED = true;
     }
 
-    /// <summary>
-    /// Computes the stack footprint by walking the argument locations produced by <see cref="EnumerateArgs"/>.
-    /// </summary>
     protected virtual void ComputeSizeOfArgStack()
     {
         int maxOffset = _layout.OffsetOfArgs;

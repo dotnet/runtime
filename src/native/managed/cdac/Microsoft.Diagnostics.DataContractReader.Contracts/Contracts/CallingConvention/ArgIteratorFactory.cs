@@ -6,10 +6,6 @@ using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.CallingConventionHelpers;
 
-/// <summary>
-/// Factory to create the appropriate per-arch <see cref="ArgIteratorBase"/>
-/// subclass for the target architecture.
-/// </summary>
 internal static class ArgIteratorFactory
 {
     public static ArgIteratorBase Create(

@@ -351,31 +351,7 @@ internal class GcScanner
     }
 
     /// <summary>
-    /// Reports GC references for a single argument from a transition frame's caller-stack
-    /// arguments. Mirrors the per-argument dispatch in native
-    /// <c>MetaSig::GcScanRoots</c> (<c>src/coreclr/vm/siginfo.cpp</c>):
-    /// <list type="bullet">
-    ///   <item><description>Reference slots are reported directly.</description></item>
-    ///   <item><description>Byref slots are reported as interior pointers.</description></item>
-    ///   <item><description>Value-type / TypedByRef slots passed by implicit reference are
-    ///     reported as a single interior pointer (the caller-allocated buffer).</description></item>
-    ///   <item><description>Value-type slots passed by value with a known
-    ///     <see cref="ArgLayout.ValueTypeHandle"/> have their embedded refs enumerated:
-    ///     ordinary value types via a CGCDesc walk (mirroring
-    ///     <c>ReportPointersFromValueType</c>), ByRefLike types (<c>Span&lt;T&gt;</c>,
-    ///     ref structs) via a field-by-field walk that also reports managed byref
-    ///     fields as <see cref="GcScanFlags.GC_CALL_INTERIOR"/> (mirroring
-    ///     <c>ByRefPointerOffsetsReporter</c>).</description></item>
-    /// </list>
     /// </summary>
-    /// <remarks>
-    /// When the per-arch iterator GC-decomposed an argument (SysV split structs, ARM64
-    /// HFAs), each slot already carries a GC-typed <see cref="ArgSlot.ElementType"/>
-    /// (<c>Class</c>, <c>Byref</c>, etc.) and <see cref="ArgLayout.ValueTypeHandle"/> is
-    /// null; the per-slot loop handles those cases. The layout-driven walks only fire
-    /// when the storage is contiguous and undecomposed, indicated by a non-null
-    /// <see cref="ArgLayout.ValueTypeHandle"/>.
-    /// </remarks>
     internal static void ReportArgument(
         ArgLayout arg,
         TargetPointer transitionBlock,

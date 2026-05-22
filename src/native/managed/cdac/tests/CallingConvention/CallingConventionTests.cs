@@ -6,27 +6,6 @@ using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
-/// <summary>
-/// Cross-architecture tests for <see cref="ICallingConvention"/>. These
-/// verify harness-level invariants (the contract decodes without throwing,
-/// arg counts match) that should hold on every supported architecture.
-/// Per-architecture offset assertions live in the platform-specific test
-/// classes (e.g. <c>AMD64WindowsCallingConventionTests</c>).
-/// </summary>
-/// <remarks>
-/// <para>Gaps NOT covered by Skip-tagged tests anywhere:</para>
-/// <list type="bullet">
-///   <item>#8 Base <c>ComputeSizeOfArgStack</c> byref adjustment — observable
-///   via internal <c>CbStackPop()</c> / <c>SizeOfFrameArgumentArray()</c>
-///   only, which are not exposed through <see cref="CallSiteLayout"/>.</item>
-///   <item>#12 ARM64 / RV byref classification differences — the cDAC
-///   heuristic agrees with native for all currently exercised struct shapes;
-///   a divergent shape would need to be identified from native source.</item>
-///   <item>Arm32 softfp detection — no detection mechanism in cDAC today.</item>
-///   <item>SysV generic value-type TypeSpec resolution — needs generic
-///   instantiation infrastructure in the mock RTS.</item>
-/// </list>
-/// </remarks>
 public class CallingConventionTests
 {
     [Theory]
@@ -58,12 +37,6 @@ public class CallingConventionTests
         Assert.NotNull(layout.ThisOffset);
     }
 
-    /// <summary>
-    /// Verifies <see cref="CallSiteLayout.IsValueTypeThis"/> is true when the
-    /// instance method's enclosing class is a value type. Not arch-specific —
-    /// the bit is computed by <c>CallingConvention_1</c> directly from the
-    /// enclosing MT's <c>IsValueType</c> flag.
-    /// </summary>
     [Fact]
     public void InstanceMethod_OnValueType_IsValueTypeThisShouldBeTrue()
     {

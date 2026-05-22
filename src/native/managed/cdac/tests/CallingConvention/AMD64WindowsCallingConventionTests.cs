@@ -8,11 +8,6 @@ using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
-/// <summary>
-/// AMD64-Windows (Microsoft x64) calling-convention tests. Each fixed arg
-/// occupies a single pointer-sized slot; FP args shadow into XMM0-XMM3 at
-/// the same index as their GP slot.
-/// </summary>
 public class AMD64WindowsCallingConventionTests
 {
     private static readonly Lazy<SyntheticVectorMetadata> s_syntheticVectorMetadata = new(SyntheticVectorMetadata.Create);
@@ -208,12 +203,6 @@ public class AMD64WindowsCallingConventionTests
         Assert.Equal(OffsetOfFirstFPArg + 2 * Case.FloatRegisterSize, layout.Arguments[0].Slots[0].Offset);
     }
 
-    /// <summary>
-    /// Verifies the CLR's hidden-arg prefix on AMD64 Windows. Each hidden arg (this,
-    /// retBuf, genericContext, asyncContinuation) consumes one of RCX/RDX/R8/R9.
-    /// The first user-arg double therefore lands at XMM&lt;count-of-hidden-args&gt;,
-    /// or on the stack when all 4 register slots are consumed.
-    /// </summary>
     [Theory]
     [InlineData(false, false, false, false, 0)]
     [InlineData(true, false, false, false, 1)]
@@ -269,11 +258,6 @@ public class AMD64WindowsCallingConventionTests
         Assert.Equal(expectedOffset, layout.Arguments[0].Slots[0].Offset);
     }
 
-    /// <summary>
-    /// Verifies the CLR managed-vararg prefix order on AMD64 Windows. The cookie
-    /// occupies the slot after this/retBuf and before user args. The first user
-    /// arg therefore lands at slot index (hidden-arg count + 1 [for cookie]).
-    /// </summary>
     [Theory]
     [InlineData(false, false, 0, 1)]
     [InlineData(true, false, 1, 2)]
@@ -550,13 +534,6 @@ public class AMD64WindowsCallingConventionTests
         Assert.Equal(OffsetOfFirstGPArg, arg.Slots[0].Offset);
     }
 
-    /// <summary>
-    /// On AMD64 Windows, vector types are classified purely by size — the iterator
-    /// never consults GetVectorSize. Vector64 (8 B) enregisters as a GP slot;
-    /// Vector128 (16 B) is passed via implicit byref. This test confirms that
-    /// end-to-end vector detection (synthetic metadata -> GetVectorSize -> ArgTypeInfo)
-    /// produces the same placement the size rule would.
-    /// </summary>
     [Theory]
     [InlineData("Vector64`1", 8, false)]
     [InlineData("Vector128`1", 16, true)]

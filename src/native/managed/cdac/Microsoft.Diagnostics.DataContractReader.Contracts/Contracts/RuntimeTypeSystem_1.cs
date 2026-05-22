@@ -2277,19 +2277,9 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         fieldDef = mdReader.GetFieldDefinition(fieldHandle);
     }
 
-    /// <summary>
-    /// Mirrors native <c>MethodTable::GetNumInstanceFieldBytes</c>:
-    /// returns <c>BaseSize - EEClass.BaseSizePadding</c>, the number of bytes occupied
-    /// by the instance fields of the type.
-    /// </summary>
     public int GetNumInstanceFieldBytes(TypeHandle typeHandle)
         => (int)GetBaseSize(typeHandle) - GetClassData(typeHandle).BaseSizePadding;
 
-    /// <summary>
-    /// Gets the <see cref="ModuleHandle"/> and <see cref="MetadataReader"/> for the module that
-    /// owns the given <paramref name="typeHandle"/>. Returns false if the TypeHandle does not
-    /// refer to a method table, has no owning module, or the module's metadata cannot be located.
-    /// </summary>
     private bool TryGetMetadataReader(TypeHandle typeHandle, out ModuleHandle moduleHandle, [NotNullWhen(true)] out MetadataReader? mdReader)
     {
         moduleHandle = default;

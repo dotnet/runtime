@@ -6,23 +6,6 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 
-/// <summary>
-/// Debuggee for cDAC <c>CallSiteLayoutDumpTests_*</c>. Builds one deep call
-/// chain where every frame is held live to <see cref="Environment.FailFast"/>.
-/// Each frame exercises a single calling-convention axis (or, in the Combo
-/// section, a deliberate combination). Test classes inspect each frame's
-/// MethodDesc and assert the expected <c>ArgLayout</c> for the target ABI.
-///
-/// Categories (Program order = simple-to-complex, top-of-stack first):
-///   A. Register-bank fill / spill (no GC refs)
-///   B. Reference-typed args (Class/Byref dispatch)
-///   C. Small by-value structs (size matrix, incl. structs holding refs)
-///   D. Large stack-passed structs (>16 byte)
-///   E. ByRefLike (Span&lt;T&gt;, ref structs)
-///   F. Special arg slots (this, retbuf, generic context, varargs)
-///   G. SIMD vectors (Vector64/128/256/512)
-///   H. Composite kitchen-sink frames
-/// </summary>
 internal static class Program
 {
     private static void Main()
@@ -534,10 +517,6 @@ internal struct Big64Struct
     public long E; public long F; public long G; public long H;
 }
 
-/// <summary>
-/// Pointer-sized ref struct containing a single managed byref. Sized to be passed
-/// by-value on Win-x64 (1-slot), exercising the ByRefLike walker dispatch.
-/// </summary>
 internal ref struct SmallRefStruct
 {
     public ref int Field;
@@ -550,22 +529,12 @@ internal ref struct SmallRefStruct
     public void Bump() => Field++;
 }
 
-/// <summary>
-/// Ref struct with mixed contents: an object field and a primitive. Exercises
-/// the ByRefLike walker emitting an object root (None) without any byref.
-/// </summary>
 internal ref struct RefStructWithObject
 {
     public object Obj;
     public int Prim;
 }
 
-/// <summary>
-/// Ref struct with three GC-trackable members: a byref, an object, and a
-/// string. Used by the kitchen-sink combo to exercise multi-field ByRefLike
-/// walker emission ordering and recursion (none here, but recursion-ready
-/// shape).
-/// </summary>
 internal ref struct MultiRefStruct
 {
     public ref int Local;

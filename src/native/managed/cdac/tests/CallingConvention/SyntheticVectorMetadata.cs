@@ -89,11 +89,6 @@ internal sealed class SyntheticVectorMetadata
         return new SyntheticVectorMetadata(provider, typeDefTokens);
     }
 
-    /// <summary>
-    /// Creates a metadata image containing the standard vector types plus one
-    /// additional type. Used by tests that need an intrinsic-flagged type whose
-    /// name the runtime does NOT recognize (e.g. to verify GetVectorSize returns 0).
-    /// </summary>
     public static SyntheticVectorMetadata CreateWithExtraType(string extraNamespace, string extraName)
     {
         MetadataBuilder builder = new();

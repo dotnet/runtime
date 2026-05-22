@@ -6,15 +6,6 @@ using System.Numerics;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.CallingConventionHelpers;
 
-/// <summary>
-/// Windows x64 (Microsoft AMD64) argument iterator. Each fixed arg occupies a
-/// single pointer-sized slot; FP args (R4/R8) shadow into XMM0-XMM3. Implicit
-/// byref applies to non-power-of-two structs or structs larger than 8 bytes.
-/// </summary>
-/// <remarks>
-/// See <c>cdac-calling-conventions/amd64-windows.md</c> at the repository root for the full
-/// managed calling-convention write-up.
-/// </remarks>
 internal sealed class AMD64WindowsArgIterator : ArgIteratorBase
 {
     public override int NumArgumentRegisters => 4;   // RCX, RDX, R8, R9

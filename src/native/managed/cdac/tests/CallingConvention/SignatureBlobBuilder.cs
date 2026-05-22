@@ -8,12 +8,6 @@ using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
-/// <summary>
-/// Builds a method signature blob (ECMA-335 §II.23.2.1) for tests. Supports
-/// primitive element types and the cDAC-extension <c>ELEMENT_TYPE_INTERNAL</c>
-/// (0x21) for referencing mock value-type method tables directly without a
-/// metadata reader.
-/// </summary>
 internal sealed class SignatureBlobBuilder
 {
     private const byte HASTHIS_FLAG = 0x20;
@@ -62,14 +56,6 @@ internal sealed class SignatureBlobBuilder
         return this;
     }
 
-    /// <summary>
-    /// Adds a parameter of <c>ELEMENT_TYPE_CLASS</c> with a dummy TypeDef token.
-    /// The token is encoded per ECMA-335 §II.23.2.8 (TypeDefOrRefOrSpecEncoded).
-    /// The cDAC signature decoder resolves this via the Loader's lookup tables;
-    /// when those aren't populated (as in most tests), it falls back to a
-    /// pointer-sized <c>CorElementType.Class</c> placeholder -- which is the
-    /// correct calling-convention shape for any managed reference type.
-    /// </summary>
     public SignatureBlobBuilder ParamClass()
     {
         _params.Add(new ParamSpec(CorElementType.Class, default, true));

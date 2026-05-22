@@ -6,21 +6,6 @@ using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 
-/// <summary>
-/// Windows x64 dump-based tests for
-/// <see cref="ICallingConvention.ComputeCallSiteLayout"/>. The debuggee
-/// (<c>CallSiteLayout</c>) builds a deep call chain that holds every relevant
-/// calling-convention shape live to <c>Environment.FailFast</c>. Each test
-/// asserts the Win-x64 ABI layout for one frame.
-///
-/// Win-x64 rules in one paragraph: every argument occupies exactly one 8-byte
-/// slot in the transition block. A value type is passed by value iff its size
-/// is 1, 2, 4, or 8 bytes; otherwise it is copied to the caller's stack and the
-/// slot holds a pointer to that copy (<c>IsPassedByRef = true</c>, set by
-/// <c>ArgIterator</c>, not a user <c>ref</c>). HFAs are not enregistered on
-/// Win-x64 (Microsoft ABI). 4 GP arg registers (RCX/RDX/R8/R9), 4 XMM lanes
-/// mirrored; further args spill to the stack at +0x20.
-/// </summary>
 public class CallSiteLayoutDumpTests_WinX64 : CallSiteLayoutDumpTestsBase
 {
     // ===== Category A: register-bank fill / spill (no GC refs) =====

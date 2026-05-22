@@ -7,12 +7,6 @@ using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 
-/// <summary>
-/// Shared infrastructure for the CallSiteLayout dump tests. Each ABI gets its
-/// own subclass (<see cref="CallSiteLayoutDumpTests_WinX64"/>, etc.) that
-/// applies <c>[SkipOnOS]</c> / <c>[SkipOnArch]</c> attributes and encodes
-/// the expected ABI-specific layout for every frame.
-/// </summary>
 public abstract class CallSiteLayoutDumpTestsBase : DumpTestBase
 {
     protected override string DebuggeeName => "CallSiteLayout";
@@ -22,10 +16,6 @@ public abstract class CallSiteLayoutDumpTestsBase : DumpTestBase
     // FailFast thread; resolution then visits every frame above it.
     private const string LeafFrame = "M_Combo_RefStructWithMultipleRefs";
 
-    /// <summary>
-    /// Walks the FailFast thread once, recording the MethodDescHandle of
-    /// every named frame visited. Frame names beyond the chain are ignored.
-    /// </summary>
     protected Dictionary<string, MethodDescHandle> CollectChainMethods()
     {
         ThreadData thread = DumpTestHelpers.FindThreadWithMethod(Target, LeafFrame);
@@ -47,9 +37,6 @@ public abstract class CallSiteLayoutDumpTestsBase : DumpTestBase
         return result;
     }
 
-    /// <summary>
-    /// Looks up the named frame on the FailFast thread and computes its layout.
-    /// </summary>
     protected CallSiteLayout LayoutFor(string methodName)
     {
         Dictionary<string, MethodDescHandle> methods = CollectChainMethods();
@@ -60,7 +47,6 @@ public abstract class CallSiteLayoutDumpTestsBase : DumpTestBase
 
     // ===== Common assertion helpers =====
 
-    /// <summary>Asserts a single-arg signature where the arg is passed by managed/implicit byref.</summary>
     protected void AssertSingleByRef(string frame)
     {
         CallSiteLayout layout = LayoutFor(frame);
@@ -70,7 +56,6 @@ public abstract class CallSiteLayoutDumpTestsBase : DumpTestBase
         Assert.Null(arg.ValueTypeHandle);
     }
 
-    /// <summary>Asserts a single-arg signature passed by value with the given value-type name.</summary>
     protected void AssertSingleByValueVT(string frame, string typeName)
     {
         CallSiteLayout layout = LayoutFor(frame);
@@ -81,7 +66,6 @@ public abstract class CallSiteLayoutDumpTestsBase : DumpTestBase
         Assert.Equal(typeName, DumpTestHelpers.GetTypeName(Target, arg.ValueTypeHandle.Value));
     }
 
-    /// <summary>Asserts a single-arg signature for a managed object reference (no VTH, not byref).</summary>
     protected void AssertSingleManagedRef(string frame)
     {
         CallSiteLayout layout = LayoutFor(frame);
