@@ -18,7 +18,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         public static void Main()
         {
             DataFlowInConstructor.Test();
-            DataFlowInPrimaryConstructor.Test();
             DataFlowInStaticConstructor.Test();
         }
 
@@ -93,18 +92,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             {
                 var instance = new DataFlowInConstructor();
                 var _ = instance.PropertyWithReturnStatementInGetter;
-            }
-        }
-
-        class DataFlowInPrimaryConstructor(Type type)
-        {
-            [ExpectedWarning("IL2069", nameof(annotatedField), nameof(type))]
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-            Type annotatedField = type;
-
-            public static void Test()
-            {
-                new DataFlowInPrimaryConstructor(null);
             }
         }
 

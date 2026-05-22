@@ -6,7 +6,6 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using ILLink.Shared.DataFlow;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.FlowAnalysis;
 using Microsoft.CodeAnalysis.Operations;
@@ -81,12 +80,15 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 return succeeded;
             }
 
-            if (!TryGetDataFlowOwningSymbol(Context.OwningSymbol, out ISymbol owningSymbol))
+            // Delegate types with default parameter values produce operation blocks whose
+            // OwningSymbol is the delegate INamedTypeSymbol. These blocks contain only
+            // simple constant initializers with no interesting dataflow, so skip them.
+            if (Context.OwningSymbol is INamedTypeSymbol { TypeKind: TypeKind.Delegate })
                 return succeeded;
 
-            Debug.Assert(owningSymbol is not IMethodSymbol methodSymbol ||
+            Debug.Assert(Context.OwningSymbol is not IMethodSymbol methodSymbol ||
                 methodSymbol.MethodKind is not (MethodKind.LambdaMethod or MethodKind.LocalFunction));
-            var startMethod = new MethodBodyValue(owningSymbol, Context.GetControlFlowGraph(OperationBlock));
+            var startMethod = new MethodBodyValue(Context.OwningSymbol, Context.GetControlFlowGraph(OperationBlock));
             interproceduralState.TrackMethod(startMethod);
 
             while (!interproceduralState.Equals(oldInterproceduralState))
@@ -100,42 +102,6 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 }
             }
             return succeeded;
-        }
-
-        private static bool TryGetDataFlowOwningSymbol(ISymbol owningSymbol, out ISymbol dataFlowOwningSymbol)
-        {
-            dataFlowOwningSymbol = owningSymbol;
-
-            if (owningSymbol is not INamedTypeSymbol namedType)
-                return true;
-
-            // Delegate types with default parameter values produce operation blocks whose
-            // OwningSymbol is the delegate INamedTypeSymbol. These blocks contain only
-            // simple constant initializers with no interesting dataflow, so skip them.
-            if (namedType.TypeKind == TypeKind.Delegate)
-                return false;
-
-            // Primary constructors produce operation blocks whose OwningSymbol is the
-            // containing INamedTypeSymbol. Analyze those blocks as the primary constructor
-            // so that parameters and instance references are handled like normal constructors.
-            foreach (IMethodSymbol constructor in namedType.InstanceConstructors)
-            {
-                if (constructor.IsImplicitlyDeclared)
-                    continue;
-
-                foreach (SyntaxReference syntaxReference in constructor.DeclaringSyntaxReferences)
-                {
-                    if (syntaxReference.GetSyntax() is TypeDeclarationSyntax { ParameterList: not null })
-                    {
-                        dataFlowOwningSymbol = constructor;
-                        return true;
-                    }
-                }
-            }
-
-            // Let MethodBodyValue assert with the control-flow graph context if Roslyn
-            // introduces another named-type-owned operation block shape.
-            return true;
         }
 
         private bool AnalyzeAttribute(ISymbol owningSymbol, IAttributeOperation attribute)
