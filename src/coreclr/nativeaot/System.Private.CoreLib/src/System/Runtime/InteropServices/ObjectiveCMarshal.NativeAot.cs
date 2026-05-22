@@ -126,6 +126,16 @@ namespace System.Runtime.InteropServices.ObjectiveC
             out int memInSizeT,
             out IntPtr mem)
         {
+            // Rely on GetOrCreateTaggedMemoryInternal for state checking.
+            GetOrCreateTaggedMemoryInternal(obj, out memInSizeT, out mem);
+            return RuntimeImports.RhHandleAllocRefCounted(obj);
+        }
+
+        private static void GetOrCreateTaggedMemoryInternal(
+            object obj,
+            out int memInSizeT,
+            out IntPtr mem)
+        {
             if (!s_initialized)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_ObjectiveCMarshalNotInitialized);
@@ -139,7 +149,6 @@ namespace System.Runtime.InteropServices.ObjectiveC
             var trackerInfo = s_objects.GetOrAdd(obj, static o => new ObjcTrackingInformation());
             trackerInfo.EnsureInitialized(obj);
             trackerInfo.GetTaggedMemory(out memInSizeT, out mem);
-            return RuntimeImports.RhHandleAllocRefCounted(obj);
         }
 
         internal class ObjcTrackingInformation

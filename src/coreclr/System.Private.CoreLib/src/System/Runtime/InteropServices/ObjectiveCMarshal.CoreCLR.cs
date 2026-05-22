@@ -39,6 +39,12 @@ namespace System.Runtime.InteropServices.ObjectiveC
             out int memInSizeT,
             out IntPtr mem);
 
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjCMarshal_GetOrCreateTaggedMemory")]
+        private static partial void GetOrCreateTaggedMemoryInternal(
+            ObjectHandleOnStack obj,
+            out int memInSizeT,
+            out IntPtr mem);
+
         [UnmanagedCallersOnly]
         internal static unsafe void* InvokeUnhandledExceptionPropagation(Exception* pExceptionArg, IntPtr methodDesc, IntPtr* pContext, Exception* pException)
         {

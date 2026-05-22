@@ -94,6 +94,9 @@ namespace System.Runtime.InteropServices.ObjectiveC
             out Span<IntPtr> taggedMemory)
             => throw new PlatformNotSupportedException();
 
+        public static Span<IntPtr> GetOrCreateTaggedMemory(object obj)
+            => throw new PlatformNotSupportedException();
+
         /// <summary>
         /// Objective-C msgSend function override options.
         /// </summary>
