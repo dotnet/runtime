@@ -43,7 +43,7 @@ bool FinalizerThread::IsCurrentThreadFinalizer()
     return GetThreadNULLOk() == g_pFinalizerThread;
 }
 
-#ifdef TARGET_BROWSER
+#if defined(TARGET_BROWSER) || defined(TARGET_WASI)
 
 extern "C" void SystemJS_ScheduleFinalization();
 
@@ -65,7 +65,44 @@ extern "C" void SystemJS_ExecuteFinalizationCallback()
     UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
 }
 
-#endif // TARGET_BROWSER
+#endif // TARGET_BROWSER || TARGET_WASI
+
+#ifdef TARGET_WASI
+
+// Managed code (System.Threading.WasiFinalizerScheduler) registers a callback
+// here at startup. The callback uses ThreadPool.UnsafeQueueUserWorkItem to
+// defer SystemJS_ExecuteFinalizationCallback to the WasiEventLoop pump, so
+// finalization never runs inline from EnableFinalization (which is called
+// from inside the GC). Mirrors the browser pattern where the JS event loop
+// supplies the deferred-execution mechanism.
+typedef void (*WasiScheduleFinalizationFn)();
+static WasiScheduleFinalizationFn s_wasiScheduleFinalization = nullptr;
+
+extern "C" void QCALLTYPE WasiFinalizerScheduler_Register(WasiScheduleFinalizationFn callback)
+{
+    QCALL_CONTRACT;
+    BEGIN_QCALL;
+    s_wasiScheduleFinalization = callback;
+    END_QCALL;
+}
+
+extern "C" void SystemJS_ScheduleFinalization()
+{
+    if (s_wasiScheduleFinalization != nullptr)
+    {
+        s_wasiScheduleFinalization();
+    }
+    else
+    {
+        // Startup race window before WasiFinalizerScheduler.Register runs.
+        // Falling back to a no-op is safe: the GC will request finalization
+        // again on the next collection. The first such collection on WASI
+        // typically happens after CoreLib is initialized, so this branch
+        // should never fire in practice.
+    }
+}
+
+#endif // TARGET_WASI
 
 void FinalizerThread::EnableFinalization()
 {
@@ -74,11 +111,14 @@ void FinalizerThread::EnableFinalization()
 #ifndef TARGET_WASM
     hEventFinalizer->Set();
 #else  // !TARGET_WASM
-#ifdef TARGET_BROWSER
+    // Defer finalization to the host's event loop. Running it inline from here
+    // is unsafe: EnableFinalization is called from inside the GC, while
+    // FinalizerThreadWorkerIteration declares GC_TRIGGERS + MODE_COOPERATIVE
+    // and re-enters preemptive mode via EnablePreemptiveGC(). Re-entering the
+    // GC, transitioning thread modes from inside a collection, and the risk
+    // of unbounded recursion through finalizer-triggered allocations all make
+    // synchronous execution wrong here.
     SystemJS_ScheduleFinalization();
-#else
-    // WASI is not implemented yet
-#endif // TARGET_BROWSER
 #endif // !TARGET_WASM
 }
 
