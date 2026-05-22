@@ -4569,8 +4569,12 @@ public static partial class DataContractSerializerTests
     // Random OSR might cause a stack overflow on Windows x64
     private static bool IsNotWindowsRandomOSR => !PlatformDetection.IsWindows || (Environment.GetEnvironmentVariable("DOTNET_JitRandomOnStackReplacement") == null);
 
+    // DCS_DeeplyLinkedData runs the test body on a worker thread for stack-size control,
+    // so it requires multithreading support in addition to the OSR guard.
+    private static bool IsDeeplyLinkedDataSupported => IsNotWindowsRandomOSR && PlatformDetection.IsMultithreadingSupported;
+
     [SkipOnPlatform(TestPlatforms.Browser, "Causes a stack overflow")]
-    [ConditionalFact(typeof(DataContractSerializerTests), nameof(IsNotWindowsRandomOSR))]
+    [ConditionalFact(typeof(DataContractSerializerTests), nameof(IsDeeplyLinkedDataSupported))]
     public static void DCS_DeeplyLinkedData()
     {
         // The serializer recurses through dynamic-code paths roughly once per linked node.
