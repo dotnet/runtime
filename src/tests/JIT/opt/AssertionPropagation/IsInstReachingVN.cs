@@ -23,7 +23,7 @@ public class IsInstReachingVN
 
     public static object s_sink;
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static bool PhiOfDerived(int len)
     {
         object bc;
@@ -37,7 +37,7 @@ public class IsInstReachingVN
         return bc is BaseClass;
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static bool PhiWithNull(int len)
     {
         object bc;
@@ -51,7 +51,7 @@ public class IsInstReachingVN
         return bc is BaseClass;
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static bool DirectAlloc()
     {
         object bc = new DerivedClass1();
@@ -59,7 +59,7 @@ public class IsInstReachingVN
         return bc is BaseClass;
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static bool PhiWithUnrelated(int len)
     {
         object bc;
