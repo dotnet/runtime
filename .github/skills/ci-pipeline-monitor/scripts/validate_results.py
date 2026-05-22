@@ -19,6 +19,7 @@ import urllib.parse
 import urllib.request
 
 LABELS_API_ENDPOINT = "https://api.github.com/repos/dotnet/runtime/labels"
+LABELS_CACHE_FILE = os.path.join(__file__, "..", "cached_labels.json")
 
 def check(name, passed, detail="", warn_only=False):
     if not passed and warn_only:
@@ -580,22 +581,32 @@ def main():
 
     total += 1
     all_label_names = set()
-    # TODO: If dotnet/runtime ever has more than 999 labels, increase this page limit. At time of script authoring
-    #  we have around 300 so this is more than enough.
-    for page_index in range(1, 10):
-        req = urllib.request.Request(f"{LABELS_API_ENDPOINT}?per_page=100&page={page_index}", headers={
-            "Accept": "application/vnd.github+json",
-            "User-Agent": "ci-pipeline-monitor-validator",
-        })
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            data = json.loads(resp.read())
-            page_label_names = set([item["name"] for item in data])
-            # Don't bother querying additional empty pages after this one.
-            if len(page_label_names) <= 0:
-                break
+    try:
+        # TODO: If dotnet/runtime ever has more than 999 labels, increase this page limit. At time of script authoring
+        #  we have around 300 so this is more than enough.
+        for page_index in range(1, 10):
+            req = urllib.request.Request(f"{LABELS_API_ENDPOINT}?per_page=100&page={page_index}", headers={
+                "Accept": "application/vnd.github+json",
+                "User-Agent": "ci-pipeline-monitor-validator",
+            })
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                data = json.loads(resp.read())
+                page_label_names = set([item["name"] for item in data])
+                # Don't bother querying additional empty pages after this one.
+                if len(page_label_names) <= 0:
+                    break
 
-            for name in page_label_names:
-                all_label_names.add(name.lower())
+                for name in page_label_names:
+                    all_label_names.add(name.lower())
+
+        with open(LABELS_CACHE_FILE) as f:
+            f.write(json.dumps(sorted(all_label_names)))
+    except urllib.error.HTTPError:
+        print("  [WARN] Failed to fetch labels list from GitHub due to an HTTP error. Loading cached labels list.")
+        with open(LABELS_CACHE_FILE) as f:
+            labels_json = f.read()
+            labels_list = json.loads(labels_json)
+            all_label_names = set(labels_list)
 
     all_failure_rows = conn.execute("""
         SELECT id, labels FROM failures
