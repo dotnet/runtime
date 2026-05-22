@@ -94,13 +94,15 @@ namespace System.Runtime.CompilerServices
             }
             else if (obj != null)
             {
-#if !MONO
                 // TODO-AsyncProfiler: Optimize by using a static delegate + original box as state instead of
                 // allocating a full AsyncTaskDispatcher (Task-derived). The IValueTaskSource.OnCompleted API
                 // already takes Action<object?> + state separately, so we can use a lightweight static callback
                 // that performs PUSH/MoveNext/POP inline without the Task overhead.
-                box = AsyncTaskDispatcher.Create(box);
-#endif
+                if (AsyncInstrumentation.IsEnabled.AsyncProfiler(AsyncInstrumentation.SyncActiveFlags()))
+                {
+                    box = AsyncTaskDispatcher.Create(box);
+                }
+
                 Unsafe.As<IValueTaskSource>(obj).OnCompleted(ThreadPool.s_invokeAsyncStateMachineBox, box, _value._token, ValueTaskSourceOnCompletedFlags.UseSchedulingContext);
             }
             else
@@ -183,9 +185,11 @@ namespace System.Runtime.CompilerServices
             }
             else if (obj != null)
             {
-#if !MONO
-                box = AsyncTaskDispatcher.Create(box);
-#endif
+                if (AsyncInstrumentation.IsEnabled.AsyncProfiler(AsyncInstrumentation.SyncActiveFlags()))
+                {
+                    box = AsyncTaskDispatcher.Create(box);
+                }
+
                 Unsafe.As<IValueTaskSource<TResult>>(obj).OnCompleted(ThreadPool.s_invokeAsyncStateMachineBox, box, _value._token, ValueTaskSourceOnCompletedFlags.UseSchedulingContext);
             }
             else
