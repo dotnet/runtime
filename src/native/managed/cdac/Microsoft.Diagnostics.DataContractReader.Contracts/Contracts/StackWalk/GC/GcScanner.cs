@@ -350,8 +350,6 @@ internal class GcScanner
         }
     }
 
-    /// <summary>
-    /// </summary>
     internal static void ReportArgument(
         ArgLayout arg,
         TargetPointer transitionBlock,
