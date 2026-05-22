@@ -39,6 +39,11 @@ partial interface IRuntimeTypeSystem : IContract
     // A canonical method table is either the MethodTable itself, or in the case of a generic instantiation, it is the
     // MethodTable of the prototypical instance.
     public virtual TargetPointer GetCanonicalMethodTable(TypeHandle typeHandle);
+    // Returns the EEClass pointer for this MethodTable. For non-canonical MTs, follows the tagged pointer
+    // to the canonical MT and returns its EEClass.
+    public virtual TargetPointer GetClassPointer(TypeHandle typeHandle);
+    // True if this MethodTable is the canonical MethodTable (i.e., EEClassOrCanonMT points directly to the EEClass)
+    public virtual bool IsCanonicalMethodTable(TypeHandle typeHandle);
     public virtual TargetPointer GetParentMethodTable(TypeHandle typeHandle);
 
     public virtual TargetPointer GetMethodDescForSlot(TypeHandle typeHandle, ushort slot);
@@ -527,7 +532,7 @@ Contracts used:
     internal TargetPointer FreeObjectMethodTablePointer {get; }
     internal TargetPointer ObjectMethodTablePointer {get; }
     internal TargetPointer ContinuationMethodTablePointer {get; }
-    internal TargetPointer ContinuationSingletonEEClassPointer {get; }
+    private TargetPointer _continuationSingletonEEClassPointer;
 
     public TypeHandle GetTypeHandle(TargetPointer typeHandlePointer)
     {
@@ -611,8 +616,8 @@ Contracts used:
     public bool IsContinuationWithoutMetadata(TypeHandle typeHandle) => typeHandle.IsMethodTable()
         && ContinuationMethodTablePointer != TargetPointer.Null
         && _methodTables[typeHandle.Address].ParentMethodTable == ContinuationMethodTablePointer
-        && ContinuationSingletonEEClassPointer != TargetPointer.Null
-        && GetClassPointer(typeHandle) == ContinuationSingletonEEClassPointer;
+        && _continuationSingletonEEClassPointer != TargetPointer.Null
+        && GetClassPointer(typeHandle) == _continuationSingletonEEClassPointer;
 
     IEnumerable<(uint Offset, uint Size)> GetGCDescSeries(TypeHandle typeHandle, uint numComponents = 0)
     {

@@ -311,7 +311,6 @@ public class MethodTableTests
             rtsBuilder =>
             {
                 TargetTestHelpers targetTestHelpers = rtsBuilder.Builder.TargetTestHelpers;
-                TargetPointer systemObjectMethodTablePtr = rtsBuilder.SystemObjectMethodTable.Address;
                 MockMethodTable continuationBaseMethodTable = rtsBuilder.ContinuationMethodTable;
 
                 MockMethodTable continuationInstanceMethodTable = rtsBuilder.AddMethodTable("ContinuationInstance");
@@ -499,7 +498,6 @@ public class MethodTableTests
             rtsBuilder =>
             {
                 TargetTestHelpers targetTestHelpers = rtsBuilder.Builder.TargetTestHelpers;
-                TargetPointer systemObjectMethodTablePtr = rtsBuilder.SystemObjectMethodTable.Address;
                 MockMethodTable continuationBaseMethodTable = rtsBuilder.ContinuationMethodTable;
 
                 MockEEClass sharedEEClass = rtsBuilder.AddEEClass("SubContinuation");

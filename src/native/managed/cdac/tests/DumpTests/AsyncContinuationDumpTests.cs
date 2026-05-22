@@ -38,7 +38,8 @@ public class AsyncContinuationDumpTests : DumpTestBase
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
 
         // The ContinuationMethodTable global points to the Continuation base class itself.
-        // IsContinuationWithoutMetadata checks if a type's parent is the Continuation base class,
+        // IsContinuationWithoutMetadata checks if a type's parent is the Continuation base class
+        // and its EEClass matches the singleton continuation EEClass,
         // so the base class itself is NOT considered a continuation (its parent is Object).
         TargetPointer continuationMTGlobal = Target.ReadGlobalPointer("ContinuationMethodTable");
         TargetPointer continuationMT = Target.ReadPointer(continuationMTGlobal);
