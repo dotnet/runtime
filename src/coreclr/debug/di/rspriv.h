@@ -69,6 +69,45 @@ struct MachineInfo;
 #define WriteProcessMemory DONT_USE_WRITEPROCESS_MEMORY
 
 
+//-----------------------------------------------------------------------------
+// CallbackAccumulator<T>
+//
+// Helper for FP_*_CALLBACK consumers on the DI side that need to collect a
+// list of values produced by the DAC and surface a single HRESULT. The
+// callback can call Push() without worrying about exceptions - the first
+// failure is captured in hrError and subsequent pushes are short-circuited.
+// After the enumeration call returns, the caller should check both the DAC's
+// returned HRESULT and acc.hrError, then consume acc.items.
+//-----------------------------------------------------------------------------
+template <typename T>
+struct CallbackAccumulator
+{
+    CQuickArrayList<T> items;
+    HRESULT            hrError;
+
+    CallbackAccumulator() : hrError(S_OK) { }
+
+    void Push(const T& item)
+    {
+        if (FAILED(hrError))
+            return;
+        HRESULT hr = S_OK;
+        EX_TRY
+        {
+            items.Push(item);
+        }
+        EX_CATCH_HRESULT(hr);
+        if (FAILED(hr))
+            hrError = hr;
+    }
+
+    static CallbackAccumulator* From(CALLBACK_DATA pUserData)
+    {
+        return reinterpret_cast<CallbackAccumulator*>(pUserData);
+    }
+};
+
+
 /* ------------------------------------------------------------------------- *
  * Forward class declarations
  * ------------------------------------------------------------------------- */
@@ -716,6 +755,10 @@ public:
         // to count this lock in m_cTotalDbgApiLocks, which is asserted to be 0 on entry
         // to public APIs.  Example of such a lock: LL_SHIM_PROCESS_DISPOSE_LOCK
         cLockNonDbgApi  = 0x00000004,
+
+        // Skip the leak assert in the destructor. Use for static-lifetime locks
+        // whose owning shutdown path is not guaranteed to run.
+        cLockAllowLeak  = 0x00000008,
     };
 
     // To prevent deadlocks, we order all locks.
@@ -1632,11 +1675,6 @@ typedef CordbEnumerator<COR_SEGMENT,
                         COR_SEGMENT,
                         ICorDebugHeapSegmentEnum, IID_ICorDebugHeapSegmentEnum,
                         IdentityConvert<COR_SEGMENT> > CordbHeapSegmentEnumerator;
-
-typedef CordbEnumerator<COR_MEMORY_RANGE,
-                        COR_MEMORY_RANGE,
-                        ICorDebugMemoryRangeEnum, IID_ICorDebugMemoryRangeEnum,
-                        IdentityConvert<COR_MEMORY_RANGE> > CordbMemoryRangeEnumerator;
 
 typedef CordbEnumerator<CorDebugExceptionObjectStackFrame,
                         CorDebugExceptionObjectStackFrame,
@@ -2743,9 +2781,6 @@ const int DEBUG_EVENTQUEUE_SIZE = 30;
 const int DEBUG_EVENTQUEUE_SIZE = 10;
 #endif
 
-void DeleteIPCEventHelper(DebuggerIPCEvent *pDel);
-
-
 // Private interface on CordbProcess that ShimProcess needs to emulate V2 functionality.
 // The fact that we need private hooks means that V3 is not sufficiently finished to allow building
 // a V2 debugger. This interface should shrink over time (and eventually go away) as the functionality gets exposed
@@ -2899,7 +2934,7 @@ public:
 #endif // OUT_OF_PROCESS_SETTHREADCONTEXT
 };
 
-class EMPTY_BASES_DECL CUnmanagedThreadSHashTraits : public DefaultSHashTraits<UnmanagedThreadTracker*>
+class EMPTY_BASES CUnmanagedThreadSHashTraits : public DefaultSHashTraits<UnmanagedThreadTracker*>
 {
     public:
         typedef DWORD key_t;
@@ -2922,7 +2957,6 @@ class CordbProcess :
     public ICorDebugProcess5,
     public ICorDebugProcess7,
     public ICorDebugProcess8,
-    public ICorDebugProcess11,
     public ICorDebugProcess12,
     public IDacDbiInterface::IAllocator,
     public IDacDbiInterface::IMetaDataLookup,
@@ -3137,11 +3171,6 @@ public:
     COM_METHOD EnableGCNotificationEvents(BOOL fEnable);
 
     //-----------------------------------------------------------
-    // ICorDebugProcess11
-    //-----------------------------------------------------------
-    COM_METHOD EnumerateLoaderHeapMemoryRegions(ICorDebugMemoryRangeEnum **ppRanges);
-
-    //-----------------------------------------------------------
     // ICorDebugProcess12
     //-----------------------------------------------------------
     COM_METHOD GetAsyncStack(CORDB_ADDRESS continuationAddress, ICorDebugStackWalk **ppStackWalk);
@@ -3224,9 +3253,6 @@ public:
 
     // Queue the RC event.
     void QueueRCEvent(DebuggerIPCEvent * pManagedEvent);
-
-    // This marshals a managed debug event from the
-    void MarshalManagedEvent(DebuggerIPCEvent * pManagedEvent);
 
     // This copies a managed debug event from the IPC block and to pManagedEvent.
     // The event still needs to be marshalled.
@@ -3423,9 +3449,7 @@ public:
         memset( ipce, 0, sizeof(DebuggerIPCEvent) );
 
         _ASSERTE((!vmAppDomain.IsNull()) ||
-                 type == DB_IPCE_GET_GCHANDLE_INFO ||
                  type == DB_IPCE_ENABLE_LOG_MESSAGES ||
-                 type == DB_IPCE_MODIFY_LOGSWITCH ||
                  type == DB_IPCE_ASYNC_BREAK ||
                  type == DB_IPCE_CONTINUE ||
                  type == DB_IPCE_GET_BUFFER ||
@@ -3436,11 +3460,8 @@ public:
                  type == DB_IPCE_CONTROL_C_EVENT_RESULT ||
                  type == DB_IPCE_SET_REFERENCE ||
                  type == DB_IPCE_SET_ALL_DEBUG_STATE ||
-                 type == DB_IPCE_GET_THREAD_FOR_TASKID ||
                  type == DB_IPCE_DETACH_FROM_PROCESS ||
                  type == DB_IPCE_INTERCEPT_EXCEPTION ||
-                 type == DB_IPCE_GET_NGEN_COMPILER_FLAGS ||
-                 type == DB_IPCE_SET_NGEN_COMPILER_FLAGS ||
                  type == DB_IPCE_SET_VALUE_CLASS);
 
         ipce->type = type;
@@ -3450,7 +3471,6 @@ public:
         ipce->vmThread = VMPTR_Thread::NullPtr();
         ipce->replyRequired = twoWay;
         ipce->asyncSend = false;
-        ipce->next = NULL;
     }
 
     // Looks up a previously constructed CordbClass instance without creating. May return NULL if the
@@ -4310,7 +4330,7 @@ private:
     BOOL IsFileMetaDataValid();
 
     // Helper to copy metadata buffer from the Target to the host.
-    void CopyRemoteMetaData(TargetBuffer buffer, CoTaskMemHolder<VOID> * pLocalBuffer);
+    void CopyRemoteMetaData(TargetBuffer buffer, VOID** pLocalBuffer);
 
 
     CordbAssembly * ResolveAssemblyInternal(mdToken tkAssemblyRef);
@@ -6053,7 +6073,7 @@ public:
     //-----------------------------------------------------------
 
     // callback used to enumerate the internal frames on a thread
-    static void GetActiveInternalFramesCallback(const DebuggerIPCE_STRData * pFrameData,
+    static void GetActiveInternalFramesCallback(const Debugger_STRData * pFrameData,
                                                 void *                 pUserData);
 
     CorDebugUserState GetUserState();
@@ -6255,7 +6275,7 @@ public:
     // we need to communicate the IP back to LS. So we stash the address of where
     // to store the IP here and stuff it in on RemapFunction.
     // If we're not at an outstanding RemapOpportunity, this will be NULL
-    REMOTE_PTR            m_EnCRemapFunctionIP;
+    CORDB_ADDRESS            m_EnCRemapFunctionIP;
 
 private:
     void ClearStackFrameCache();
@@ -6539,7 +6559,7 @@ public:
     CordbInternalFrame(CordbThread *          pThread,
                        FramePointer           fp,
                        CordbAppDomain *       pCurrentAppDomain,
-                       const DebuggerIPCE_STRData * pData);
+                       const Debugger_STRData * pData);
 
     CordbInternalFrame(CordbThread *             pThread,
                        FramePointer              fp,
@@ -6764,11 +6784,11 @@ typedef std::function<HRESULT(DWORD index, ICorDebugValue** ppValue)> ValueGette
 class CordbValueEnum : public CordbBase, public ICorDebugValueEnum
 {
 public:
-    CordbValueEnum(CordbProcess* pProcess, 
-                   UINT maxCount, 
+    CordbValueEnum(CordbProcess* pProcess,
+                   UINT maxCount,
                    ValueGetter valueGetter,
                    NeuterList* pNeuterList);
-    
+
     virtual ~CordbValueEnum();
     virtual void Neuter();
 
@@ -6820,7 +6840,7 @@ public:
     CordbMiscFrame();
 
     // new-style constructor
-    CordbMiscFrame(DebuggerIPCE_JITFuncData * pJITFuncData);
+    CordbMiscFrame(Debugger_JITFuncData * pJITFuncData);
 
     SIZE_T             parentIP;
     FramePointer       fpParentOrSelf;
@@ -6841,7 +6861,6 @@ public:
                      SIZE_T               ip,
                      DebuggerREGDISPLAY * pDRD,
                      TADDR                addrAmbientESP,
-                     bool                 fQuicklyUnwound,
                      CordbAppDomain *     pCurrentAppDomain,
                      CordbMiscFrame *     pMisc = NULL,
                      DT_CONTEXT *         pContext = NULL);
@@ -7020,9 +7039,6 @@ public:
 public:
     // the register set
     DebuggerREGDISPLAY m_rd;
-
-    // This field is only true for Enter-Managed chain.  It means that the register set is invalid.
-    bool               m_quicklyUnwound;
 
     // each CordbNativeFrame corresponds to exactly one CordbJITILFrame and one CordbNativeCode
     RSSmartPtr<CordbJITILFrame> m_JITILFrame;
@@ -9926,7 +9942,7 @@ public:
     bool                       m_complete;
     bool                       m_successful;
     bool                       m_aborted;
-    void                      *m_resultAddr;
+    CORDB_ADDRESS              m_resultAddr;
 
     // This is an OBJECTHANDLE on the LS if func-eval creates a strong handle.
     // This is a resource in the left-side and must be cleaned up in the left-side.

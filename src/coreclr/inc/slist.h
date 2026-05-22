@@ -21,6 +21,7 @@
 #endif
 
 #include "cdacdata.h"
+#include <minipal/utils.h>
 #include <utility> // std::forward (used by SListElem)
 
 // ---------------------------------------------------------------------------
@@ -78,7 +79,7 @@ struct SListTailBase<PTR_T, true>
 // field. Use SListTraits<T, SListMode::Tail> for O(1) tail insertion.
 // ---------------------------------------------------------------------------
 template <typename T, typename Traits = SListTraits<T>>
-struct SList : public Traits, private SListTailBase<typename Traits::PTR_T, Traits::HasTail>
+struct EMPTY_BASES SList : public Traits, private SListTailBase<typename Traits::PTR_T, Traits::HasTail>
 {
     typedef typename Traits::PTR_T PTR_T;
     typedef typename Traits::PTR_PTR_T PTR_PTR_T;
@@ -385,6 +386,14 @@ public:
 // Convenience alias for tail-tracking SList.
 // ---------------------------------------------------------------------------
 template <typename T> using SListTail = SList<T, SListTraits<T, SListMode::Tail>>;
+
+struct SListLayoutValidationElem
+{
+    SListLayoutValidationElem* m_pNext;
+};
+
+static_assert(sizeof(SList<SListLayoutValidationElem>) == sizeof(SListTraits<SListLayoutValidationElem>::PTR_T));
+static_assert(sizeof(SListTail<SListLayoutValidationElem>) == 2 * sizeof(SListTraits<SListLayoutValidationElem>::PTR_T));
 
 // ---------------------------------------------------------------------------
 // SListElem — non-intrusive list element wrapper.

@@ -165,6 +165,10 @@ namespace Wasm.Build.Tests
                     EnvVars["WASM_APP_BUILDER_TASKS_ASSEMBLY_PATH"] = EnvironmentVariables.WasmAppBuilderTasksAssemblyPath;
                 if (!string.IsNullOrEmpty(EnvironmentVariables.EmsdkPath))
                     EnvVars["EMSDK_PATH"] = EnvironmentVariables.EmsdkPath;
+                if (!string.IsNullOrEmpty(EnvironmentVariables.MinipalIncludeDir))
+                    EnvVars["MINIPAL_INCLUDE_DIR"] = EnvironmentVariables.MinipalIncludeDir;
+                if (!string.IsNullOrEmpty(EnvironmentVariables.CoreCLRVmWasmIncludeDir))
+                    EnvVars["CORECLR_VM_WASM_INCLUDE_DIR"] = EnvironmentVariables.CoreCLRVmWasmIncludeDir;
             }
 
             DotNet = Path.Combine(sdkForWorkloadPath!, "dotnet");
@@ -195,11 +199,17 @@ namespace Wasm.Build.Tests
                     : throw new ArgumentException($"No runtime pack version found for tfm={tfm} .");
 
         public string GetRuntimePackDir(string tfm, RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded)
-            => Path.Combine(WorkloadPacksDir,
-                    runtimeType is RuntimeVariant.SingleThreaded
-                        ? $"Microsoft.NETCore.App.Runtime.Mono.{DefaultRuntimeIdentifier}"
-                        : $"Microsoft.NETCore.App.Runtime.Mono.multithread.{DefaultRuntimeIdentifier}",
-                    GetRuntimePackVersion(tfm));
+            => Path.Combine(WorkloadPacksDir, GetRuntimePackName(runtimeType), GetRuntimePackVersion(tfm));
+
+        private string GetRuntimePackName(RuntimeVariant runtimeType)
+        {
+            // CoreCLR ships browser-wasm via Microsoft.NETCore.App.Runtime.{rid}, with a separate .multithread. variant.
+            // Mono uses Microsoft.NETCore.App.Runtime.Mono.{rid}, with a separate .multithread. variant.
+            string flavor = IsCoreClrRuntime ? string.Empty : "Mono.";
+            return runtimeType is RuntimeVariant.SingleThreaded
+                ? $"Microsoft.NETCore.App.Runtime.{flavor}{DefaultRuntimeIdentifier}"
+                : $"Microsoft.NETCore.App.Runtime.{flavor}multithread.{DefaultRuntimeIdentifier}";
+        }
         public string GetRuntimeNativeDir(string tfm, RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded)
             => Path.Combine(GetRuntimePackDir(tfm, runtimeType), "runtimes", DefaultRuntimeIdentifier, "native");
         public bool IsMultiThreadingRuntimePackAvailableFor(string tfm)
