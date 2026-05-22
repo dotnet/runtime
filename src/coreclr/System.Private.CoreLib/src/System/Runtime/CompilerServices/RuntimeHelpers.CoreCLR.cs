@@ -688,6 +688,12 @@ namespace System.Runtime.CompilerServices
             // the GC does not track embedded byrefs in boxed payloads. Native funceval
             // passes raw byrefs in RawByRefs[i] and leaves Args[i] null.
             public IntPtr* RawByRefs;
+            // For byref-like instance method receivers (e.g. Span<T>.Length) there is no
+            // object representation of `this`. Native funceval allocates a stable carrier
+            // for the receiver, wraps it in a ProtectValueClassFrame, and passes the raw
+            // byref here; in that case *ThisObj is null and the trampoline forwards the
+            // byref straight into RuntimeMethodHandle.InvokeMethod.
+            public IntPtr RawThisByRef;
         }
 
         [UnmanagedCallersOnly]
@@ -758,7 +764,7 @@ namespace System.Runtime.CompilerServices
                         }
                     }
 
-                    result = RuntimeMethodHandle.InvokeMethod(thisObj, (void**)pByRefStorage, sig, isConstructor: isNewObj);
+                    result = RuntimeMethodHandle.InvokeMethod(thisObj, (void**)pByRefStorage, sig, isConstructor: isNewObj, rawThisByRef: (void*)pInvokeArgs->RawThisByRef);
                 }
                 finally
                 {

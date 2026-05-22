@@ -1125,8 +1125,12 @@ static OBJECTREF ReadAndBoxArgValue(DebuggerEval *pDE,
             OBJECTHANDLE oh = (OBJECTHANDLE)CORDB_ADDRESS_TO_PTR(pFEAD->argAddr);
             return ObjectFromHandle(oh);
         }
-        else if (pFEAD->argAddr != (CORDB_ADDRESS)0)
+        else if (pArgAddr != NULL)
         {
+            // Always prefer the caller-supplied (GC-protected) address when available.
+            // For literal/register args, this is a snapshot slot kept current by the
+            // GCPROTECT_ARRAY_BEGIN cover in DoNormalFuncEval; for memory-resident args
+            // it is the original interior pointer protected by GCPROTECT_BEGININTERIOR_ARRAY.
             return *(OBJECTREF *)pArgAddr;
         }
         else if (pFEAD->argIsLiteral)
@@ -1151,7 +1155,7 @@ static OBJECTREF ReadAndBoxArgValue(DebuggerEval *pDE,
         INT64 bigVal = 0;
         SIZE_T regVal = 0;
 
-        if (pFEAD->argAddr != (CORDB_ADDRESS)0)
+        if (pArgAddr != NULL)
         {
             pData = pArgAddr;
         }
@@ -1205,7 +1209,7 @@ static OBJECTREF ReadAndBoxArgValue(DebuggerEval *pDE,
     {
         INT64 rawValue = 0;
 
-        if (pFEAD->argAddr != (CORDB_ADDRESS)0)
+        if (pArgAddr != NULL)
         {
             unsigned size = g_pEEInterface->GetSizeForCorElementType(pFEAD->argElementType);
             memcpy(&rawValue, pArgAddr, min(size, (unsigned)sizeof(rawValue)));
@@ -1262,10 +1266,24 @@ static void DoNormalFuncEval(DebuggerEval *pDE)
 
     DebuggerIPCE_FuncEvalArgData *argData = pDE->GetArgData();
 
-    // GC-protect all arg addresses as interior pointers before any GC-triggering operations
+    // GC-protect all arg locations before any GC-triggering operations
     // (ResolveFuncEvalGenericArgInfo, AllocateObject, GatherFuncEvalArgInfo, GetRetTypeHandleThrowing
-    // can all trigger GC). Some argAddr values may point into managed objects on the GC heap (e.g. fields
-    // of heap-allocated objects). Protecting them ensures the GC updates these pointers if objects move.
+    // can all trigger GC). Three parallel stack arrays cover the cases:
+    //
+    //   pArgAddrs       - interior pointers into the GC heap (when pFEAD->argAddr != 0).
+    //                     Protected via GCPROTECT_BEGININTERIOR_ARRAY so the GC updates
+    //                     these pointers if the underlying object moves.
+    //   pObjRefSnapshot - object references read out of debugger-supplied literals or
+    //                     non-leaf register snapshots (where no GC-tracked location exists).
+    //                     Conservatively protected as OBJECTREF[] so a GC during the rest of
+    //                     func-eval setup updates the snapshot.
+    //   pInteriorSnapshot - up to sizeof(void*) of any non-objref arg read out of a literal
+    //                       or register snapshot. Conservatively protected as interior
+    //                       pointers so any held byref/interior pointer is updated.
+    //
+    // For literal/register args, pArgAddrs[i] is patched to point at the corresponding
+    // protected slot so the rest of the pipeline (ReadAndBoxArgValue, the byref-like raw
+    // byref path, etc.) reads values that the GC has been keeping current.
     SIZE_T cbAllocSize;
     if (!(ClrSafeInt<SIZE_T>::multiply(pDE->m_argCount, sizeof(void *), cbAllocSize)) ||
         (cbAllocSize != (size_t)(cbAllocSize)))
@@ -1274,12 +1292,71 @@ static void DoNormalFuncEval(DebuggerEval *pDE)
     }
     void **pArgAddrs = (void **)_alloca(cbAllocSize);
     memset(pArgAddrs, 0, cbAllocSize);
+
+    SIZE_T cbObjRefSnapshot = 0;
+    if (!(ClrSafeInt<SIZE_T>::multiply(pDE->m_argCount, sizeof(OBJECTREF), cbObjRefSnapshot)) ||
+        (cbObjRefSnapshot != (size_t)cbObjRefSnapshot))
+    {
+        ThrowHR(COR_E_OVERFLOW);
+    }
+    OBJECTREF *pObjRefSnapshot = (OBJECTREF *)_alloca(cbObjRefSnapshot);
+    memset(pObjRefSnapshot, 0, cbObjRefSnapshot);
+
+    void **pInteriorSnapshot = (void **)_alloca(cbAllocSize);
+    memset(pInteriorSnapshot, 0, cbAllocSize);
+
     for (unsigned i = 0; i < pDE->m_argCount; i++)
     {
-        if (argData[i].argAddr != (CORDB_ADDRESS)0)
-            pArgAddrs[i] = CORDB_ADDRESS_TO_PTR(argData[i].argAddr);
+        DebuggerIPCE_FuncEvalArgData *pFEAD = &argData[i];
+
+        if (pFEAD->argAddr != (CORDB_ADDRESS)0)
+        {
+            pArgAddrs[i] = CORDB_ADDRESS_TO_PTR(pFEAD->argAddr);
+            continue;
+        }
+
+        bool isRef = !!IsElementTypeSpecial(pFEAD->argElementType);
+
+        if (pFEAD->argIsLiteral)
+        {
+            if (isRef)
+            {
+                _ASSERTE(sizeof(pFEAD->argLiteralData) >= sizeof(OBJECTREF));
+                memcpy(&pObjRefSnapshot[i], pFEAD->argLiteralData, sizeof(OBJECTREF));
+                pArgAddrs[i] = &pObjRefSnapshot[i];
+            }
+            else if (sizeof(pFEAD->argLiteralData) >= sizeof(void *))
+            {
+                // Could be a byref or interior pointer encoded as a literal.
+                memcpy(&pInteriorSnapshot[i], pFEAD->argLiteralData, sizeof(void *));
+                pArgAddrs[i] = &pInteriorSnapshot[i];
+            }
+        }
+        else if (pFEAD->argHome.kind == RAK_REG)
+        {
+            // Non-leaf-frame enregistered args are passed by value through the IPC
+            // channel. Capture the register value into a GC-protected stack slot before
+            // any subsequent GC can invalidate it.
+            SIZE_T v = GetRegisterValue(pDE, pFEAD->argHome.reg1, pFEAD->argHome.reg1Addr, pFEAD->argHome.reg1Value);
+            if (isRef)
+            {
+                pObjRefSnapshot[i] = (OBJECTREF)v;
+                pArgAddrs[i] = &pObjRefSnapshot[i];
+            }
+            else
+            {
+                pInteriorSnapshot[i] = (void *)v;
+                pArgAddrs[i] = &pInteriorSnapshot[i];
+            }
+        }
+        // Other register-home shapes (RAK_FLOAT, RAK_REGREG, etc.) cannot hold a GC
+        // pointer in a single slot; ReadAndBoxArgValue will read them later via the
+        // primitive path.
     }
+
     GCPROTECT_BEGININTERIOR_ARRAY(*pArgAddrs, pDE->m_argCount);
+    GCPROTECT_ARRAY_BEGIN(*pObjRefSnapshot, pDE->m_argCount);
+    GCPROTECT_BEGININTERIOR_ARRAY(*pInteriorSnapshot, pDE->m_argCount);
 
     ResolveFuncEvalGenericArgInfo(pDE);
 
@@ -1346,6 +1423,16 @@ static void DoNormalFuncEval(DebuggerEval *pDE)
     UINT methodArgCount = mSig.NumFixedArgs();
     unsigned firstArgIndex = 0;
 
+    // Byref-like 'this' (e.g. ref Span<T>) cannot be routed through a heap box: boxed
+    // payloads aren't scanned for embedded byrefs, so a GC during the inner call would
+    // leave the boxed value's byref fields pointing at stale memory. For these receivers
+    // we instead allocate a stable carrier on the stack, copy the receiver into it, and
+    // hand a raw byref to that carrier straight to RuntimeMethodHandle.InvokeMethod. A
+    // ProtectValueClassFrame (set up further below) keeps the carrier's byref fields
+    // GC-reported and updated across the call.
+    MethodTable *pThisRawByRefMT = NULL;
+    void        *pThisRawByRefCarrier = NULL;
+
     // Build 'this'
     if (pDE->m_evalType == DB_IPCE_FET_NEW_OBJECT)
     {
@@ -1354,7 +1441,21 @@ static void DoNormalFuncEval(DebuggerEval *pDE)
     else if (!staticMethod && pDE->m_argCount > 0)
     {
         firstArgIndex = 1;
-        ucoGc.thisArg = ReadAndBoxArgValue(pDE, &argData[0], NULL, pArgAddrs[0], pDE->m_md->GetMethodTable());
+        MethodTable *pThisMT = pDE->m_md->GetMethodTable();
+
+        if (pThisMT->IsByRefLike() &&
+            argData[0].argAddr != (CORDB_ADDRESS)0 &&
+            pArgAddrs[0] != NULL)
+        {
+            unsigned thisSize = pThisMT->GetNumInstanceFieldBytes();
+            pThisRawByRefCarrier = _alloca(thisSize);
+            CopyValueClass(pThisRawByRefCarrier, pArgAddrs[0], pThisMT);
+            pThisRawByRefMT = pThisMT;
+        }
+        else
+        {
+            ucoGc.thisArg = ReadAndBoxArgValue(pDE, &argData[0], NULL, pArgAddrs[0], pDE->m_md->GetMethodTable());
+        }
     }
 
     // Build managed object[] from the remaining arguments.
@@ -1389,11 +1490,15 @@ static void DoNormalFuncEval(DebuggerEval *pDE)
                 pArgMT = pFEArgInfo[srcIndex].sigTypeHandle.GetMethodTable();
             }
 
-            if (pArgMT != NULL && pArgMT->IsByRefLike() && pArgAddrs[srcIndex] != NULL)
+            if (pArgMT != NULL && pArgMT->IsByRefLike() &&
+                argData[srcIndex].argAddr != (CORDB_ADDRESS)0 &&
+                pArgAddrs[srcIndex] != NULL)
             {
                 // Byref-like with a real source address: hand the raw byref to the trampoline
                 // and leave the object[] slot null. pArgAddrs[srcIndex] is already kept alive
-                // and updated by the funceval-frame GC reporting.
+                // and updated by the funceval-frame GC reporting. The literal/register
+                // snapshot path doesn't apply here -- a byref-like in a single register can't
+                // hold the full struct, so we must have a real argAddr to take this path.
                 pRawByRefs[i] = pArgAddrs[srcIndex];
                 continue;
             }
@@ -1412,6 +1517,7 @@ static void DoNormalFuncEval(DebuggerEval *pDE)
         PTRARRAYREF *pArgs;
         INT32        isNewObj;
         void       **pRawByRefs;
+        void        *pThisRawByRef;
     } invokeArgs;
 
     invokeArgs.pMD = pDE->m_md;
@@ -1420,6 +1526,7 @@ static void DoNormalFuncEval(DebuggerEval *pDE)
     invokeArgs.pArgs = &ucoGc.argsArray;
     invokeArgs.isNewObj = (pDE->m_evalType == DB_IPCE_FET_NEW_OBJECT) ? 1 : 0;
     invokeArgs.pRawByRefs = pRawByRefs;
+    invokeArgs.pThisRawByRef = pThisRawByRefCarrier;
 
     LOG((LF_CORDB, LL_EVERYTHING,
          "Func eval for %s::%s via UCOA\n",
@@ -1431,7 +1538,27 @@ static void DoNormalFuncEval(DebuggerEval *pDE)
     {
         g_pInvokeFuncEvalMethodDesc = CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__INVOKE_FUNC_EVAL);
     }
-    funcEvalInvoker.InvokeThrowing(&invokeArgs, &ucoGc.resultObj);
+
+    if (pThisRawByRefCarrier != NULL)
+    {
+        // Push a frame that GC-reports the byref-like 'this' carrier (including any
+        // byref fields inside it) for the duration of the inner call.
+        ValueClassInfo thisVCInfo(pThisRawByRefCarrier, pThisRawByRefMT, NULL);
+        ProtectValueClassFrame thisProtectFrame(GetThread(), &thisVCInfo);
+
+        funcEvalInvoker.InvokeThrowing(&invokeArgs, &ucoGc.resultObj);
+
+        thisProtectFrame.Pop();
+
+        // Reflect any mutations the callee made to 'this' back to the original source
+        // location so the debugger sees updated state, mirroring the byref-arg writeback
+        // performed further below.
+        CopyValueClass(pArgAddrs[0], pThisRawByRefCarrier, pThisRawByRefMT);
+    }
+    else
+    {
+        funcEvalInvoker.InvokeThrowing(&invokeArgs, &ucoGc.resultObj);
+    }
 
     // Unpack results.
     LOG((LF_CORDB, LL_EVERYTHING, "FuncEval call has returned\n"));
@@ -1601,6 +1728,8 @@ static void DoNormalFuncEval(DebuggerEval *pDE)
 
     GCPROTECT_END();    // ucoGc
     GCPROTECT_END();    // newObj
+    GCPROTECT_END();    // pInteriorSnapshot
+    GCPROTECT_END();    // pObjRefSnapshot
     GCPROTECT_END();    // pArgAddrs
 }
 
