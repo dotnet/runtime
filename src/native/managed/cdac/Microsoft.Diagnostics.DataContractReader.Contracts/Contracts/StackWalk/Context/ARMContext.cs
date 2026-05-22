@@ -53,6 +53,8 @@ internal struct ARMContext : IPlatformContext
         set => R11 = (uint)value.Value;
     }
 
+    public uint RawContextFlags { readonly get => ContextFlags; set => ContextFlags = value; }
+
     public void Unwind(Target target)
     {
         ARMUnwinder unwinder = new(target);

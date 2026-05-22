@@ -104,13 +104,21 @@ namespace System.Runtime.CompilerServices
         [StackTraceHidden]
         public static T Await<T>(ValueTask<T> task)
         {
-            ValueTaskAwaiter<T> awaiter = task.GetAwaiter();
-            if (!awaiter.IsCompleted)
+            if (!task.IsCompleted)
             {
-                UnsafeAwaitAwaiter(awaiter);
+                if (task._obj is Task<T> t)
+                {
+                    TailAwait();
+                    Await(t);
+                }
+                else
+                {
+                    TailAwait();
+                    AwaitValueTaskSourceOfT<T>(task._obj!, task._token);
+                }
             }
 
-            return awaiter.GetResult();
+            return task.Result;
         }
 
         /// <summary>
@@ -123,13 +131,21 @@ namespace System.Runtime.CompilerServices
         [StackTraceHidden]
         public static void Await(ValueTask task)
         {
-            ValueTaskAwaiter awaiter = task.GetAwaiter();
-            if (!awaiter.IsCompleted)
+            if (!task.IsCompleted)
             {
-                UnsafeAwaitAwaiter(awaiter);
+                if (task._obj is Task t)
+                {
+                    TailAwait();
+                    Await(t);
+                }
+                else
+                {
+                    TailAwait();
+                    AwaitValueTaskSource(task._obj!, task._token);
+                }
             }
 
-            awaiter.GetResult();
+            task.ThrowIfCompletedUnsuccessfully();
         }
 
         /// <summary>

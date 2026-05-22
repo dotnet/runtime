@@ -1364,11 +1364,11 @@ void EEDbgInterfaceImpl::SetDebugState(Thread *pThread,
 
     if (state == THREAD_SUSPEND)
     {
-        pThread->SetThreadStateNC(Thread::TSNC_DebuggerUserSuspend);
+        pThread->SetDebuggerControlledThreadState(Thread::DCTS_UserSuspend);
     }
     else
     {
-        pThread->ResetThreadStateNC(Thread::TSNC_DebuggerUserSuspend);
+        pThread->ResetDebuggerControlledThreadState(Thread::DCTS_UserSuspend);
     }
 }
 

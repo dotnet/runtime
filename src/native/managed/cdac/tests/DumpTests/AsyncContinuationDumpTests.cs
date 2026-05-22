@@ -88,21 +88,17 @@ public class AsyncContinuationDumpTests : DumpTestBase
         System.Reflection.Metadata.MetadataReader? md = ecmaMetadata.GetMetadata(coreLibModule);
         Assert.NotNull(md);
 
-        TargetPointer fieldDescList = rts.GetFieldDescList(asyncDispatcherInfoHandle);
         ushort numStaticFields = rts.GetNumStaticFields(asyncDispatcherInfoHandle);
         ushort numThreadStaticFields = rts.GetNumThreadStaticFields(asyncDispatcherInfoHandle);
         ushort numInstanceFields = rts.GetNumInstanceFields(asyncDispatcherInfoHandle);
 
-        // FieldDescList has instance fields first, then static fields.
-        // Thread-static fields are among the static fields.
+        // FieldDescList yields introduced instance fields followed by static fields.
+        // Thread-static fields are the tail subset of the statics; filter via IsFieldDescThreadStatic.
         uint tCurrentOffset = 0;
         bool foundField = false;
-        int totalFields = numInstanceFields + numStaticFields;
-        uint fieldDescSize = Target.GetTypeInfo(DataType.FieldDesc).Size!.Value;
 
-        for (int i = numInstanceFields; i < totalFields; i++)
+        foreach (TargetPointer fieldDesc in rts.GetFieldDescList(asyncDispatcherInfoHandle))
         {
-            TargetPointer fieldDesc = fieldDescList + (ulong)(i * (int)fieldDescSize);
             if (!rts.IsFieldDescThreadStatic(fieldDesc))
                 continue;
 

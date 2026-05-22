@@ -3528,18 +3528,103 @@ unsigned Compiler::fgGetFieldMorphingTemp(GenTreeFieldAddr* fieldNode)
 }
 
 //------------------------------------------------------------------------
+// fgMarkAddrModeForFieldAddr: Walk an indirection's unmorphed address tree to
+// identify FIELD_ADDR nodes whose explicit null check can be elided because
+// this indirection will fault on null instead.
+//
+// For each instance FIELD_ADDR whose base object could be null:
+//   * If the cumulative offset (including this field's offset) is small enough
+//     that the OS page guard catches the access, mark the FIELD_ADDR with
+//     GTF_FLD_TGT_NONFAULTING so morphing can elide the explicit null check,
+//     and clear GTF_IND_NONFAULTING on the consuming indirection so it faults
+//     on null instead.
+//   * Otherwise, the FIELD_ADDR will introduce an explicit NULLCHECK and stop
+//     propagation: mark the indirection as having an ordering side effect (so
+//     downstream optimizations treat the inserted NULLCHECK conservatively),
+//     and stop walking past this FIELD_ADDR.
+//
+// Arguments:
+//    indir - The indirection whose address operand will be morphed.
+//
+void Compiler::fgMarkAddrModeForFieldAddr(GenTreeIndir* indir)
+{
+    GenTree*                   addr = indir->Addr();
+    ClrSafeInt<target_ssize_t> total((target_ssize_t)0);
+
+    // For stores with a side-effecting value operand, we must not elide an explicit null check
+    // and let it sink to the consuming indirection: morphing of the value happens before the
+    // indirection's null fault, which would reorder the null check past the value's side
+    // effects. Conservatively skip elision in that case unless the base is provably non-null.
+    bool const storeWithSideEffectfulValue = indir->OperIsStore() && ((indir->Data()->gtFlags & GTF_SIDE_EFFECT) != 0);
+
+    while (true)
+    {
+        while (addr->OperIs(GT_ADD) && !addr->gtOverflow())
+        {
+            GenTree* offset = addr->gtGetOp2();
+            if (!offset->IsCnsIntOrI() || !offset->TypeIs(TYP_I_IMPL) || offset->AsIntCon()->IsIconHandle())
+            {
+                break;
+            }
+
+            total += ClrSafeInt<target_ssize_t>((target_ssize_t)offset->AsIntCon()->IconValue());
+            if (total.IsOverflow())
+            {
+                return;
+            }
+
+            addr = addr->gtGetOp1();
+        }
+
+        if (!addr->OperIs(GT_FIELD_ADDR) || !addr->AsFieldAddr()->IsInstance())
+        {
+            return;
+        }
+
+        GenTreeFieldAddr* fld = addr->AsFieldAddr();
+        total += ClrSafeInt<target_ssize_t>(fld->gtFldOffset);
+        if (total.IsOverflow())
+        {
+            return;
+        }
+
+        GenTree* objRef = fld->GetFldObj();
+        if (fgAddrCouldBeNull(objRef))
+        {
+            target_ssize_t accessOffset = total.Value();
+            bool const     elidable     = (accessOffset >= 0) && !fgIsBigOffset((size_t)accessOffset);
+            bool const     baseNonNull  = optLocalAssertionProp && optAssertionIsNonNull(objRef, apLocal);
+
+            if (!elidable || (storeWithSideEffectfulValue && !baseNonNull))
+            {
+                // The FIELD_ADDR will introduce an explicit NULLCHECK, which acts as a
+                // barrier in the consuming indirection's address chain.
+                indir->SetHasOrderingSideEffect();
+                return;
+            }
+
+            fld->gtFlags |= GTF_FLD_TGT_NONFAULTING;
+            // We can elide the null check only by letting it happen as part of the
+            // consuming indirection, so it is no longer non-faulting.
+            indir->gtFlags &= ~GTF_IND_NONFAULTING;
+        }
+
+        addr = objRef;
+    }
+}
+
+//------------------------------------------------------------------------
 // fgMorphFieldAddr: Fully morph a FIELD_ADDR tree.
 //
 // Expands the field node into explicit additions.
 //
 // Arguments:
 //    tree - The FIELD_ADDR tree
-//    mac  - The morphing context, used to elide adding null checks
 //
 // Return Value:
 //    The fully morphed "tree".
 //
-GenTree* Compiler::fgMorphFieldAddr(GenTree* tree, MorphAddrContext* mac)
+GenTree* Compiler::fgMorphFieldAddr(GenTree* tree)
 {
     assert(tree->OperIs(GT_FIELD_ADDR));
 
@@ -3549,7 +3634,7 @@ GenTree* Compiler::fgMorphFieldAddr(GenTree* tree, MorphAddrContext* mac)
 
     if (fieldNode->IsInstance())
     {
-        tree = fgMorphExpandInstanceField(tree, mac);
+        tree = fgMorphExpandInstanceField(tree);
     }
     else if (fieldNode->IsTlsStatic())
     {
@@ -3560,11 +3645,10 @@ GenTree* Compiler::fgMorphFieldAddr(GenTree* tree, MorphAddrContext* mac)
         assert(!"Normal statics are expected to be handled in the importer");
     }
 
-    // Pass down the current mac; if non null we are computing an address
     GenTree* result;
     if (tree->OperIsSimple())
     {
-        result = fgMorphSmpOp(tree, mac);
+        result = fgMorphSmpOp(tree);
         result->SetMorphed(this);
 
         // Quirk: preserve previous behavior with this NO_CSE.
@@ -3575,7 +3659,7 @@ GenTree* Compiler::fgMorphFieldAddr(GenTree* tree, MorphAddrContext* mac)
     }
     else
     {
-        result = fgMorphTree(tree, mac);
+        result = fgMorphTree(tree);
     }
 
     JITDUMP("\nFinal value of Compiler::fgMorphFieldAddr after morphing:\n");
@@ -3591,12 +3675,11 @@ GenTree* Compiler::fgMorphFieldAddr(GenTree* tree, MorphAddrContext* mac)
 //
 // Arguments:
 //    tree - The FIELD_ADDR tree
-//    mac  - The morphing context, used to elide adding null checks
 //
 // Return Value:
 //    The expanded "tree" of an arbitrary shape.
 //
-GenTree* Compiler::fgMorphExpandInstanceField(GenTree* tree, MorphAddrContext* mac)
+GenTree* Compiler::fgMorphExpandInstanceField(GenTree* tree)
 {
     assert(tree->OperIs(GT_FIELD_ADDR) && tree->AsFieldAddr()->IsInstance());
 
@@ -3673,29 +3756,18 @@ GenTree* Compiler::fgMorphExpandInstanceField(GenTree* tree, MorphAddrContext* m
 
     if (fgAddrCouldBeNull(objRef))
     {
-        // A non-null context here implies our [+ some offset] parent is an indirection, one that
-        // will implicitly null-check the produced address.
-        addExplicitNullCheck = (mac == nullptr) || fgIsBigOffset(mac->m_totalOffset + fieldOffset);
+        // The pre-walk performed by fgMarkAddrModeForFieldAddr sets GTF_FLD_TGT_NONFAULTING when
+        // the consuming indirection will implicitly null-check the produced address (the cumulative
+        // constant offset down to this FIELD_ADDR is small enough that the OS page guard catches it).
+        addExplicitNullCheck = (tree->gtFlags & GTF_FLD_TGT_NONFAULTING) == 0;
 
         // The transformation here turns a value dependency (FIELD_ADDR being a
         // known non-null operand) into a control-flow dependency (introducing
         // explicit COMMA(NULLCHECK, ...)). This effectively "disconnects" the
-        // null check from the parent of the FIELD_ADDR node. For the cases
-        // where we made use of non-nullness we need to make the dependency
-        // explicit now.
-        if (addExplicitNullCheck)
-        {
-            if (mac != nullptr)
-            {
-                mac->m_user->SetHasOrderingSideEffect();
-            }
-        }
-        else
-        {
-            // We can elide the null check only by letting it happen as part of
-            // the consuming indirection, so it is no longer non-faulting.
-            mac->m_user->gtFlags &= ~GTF_IND_NONFAULTING;
-        }
+        // null check from the parent of the FIELD_ADDR node.
+        //
+        // For the elided case, the consuming indirection has already been marked
+        // (~GTF_IND_NONFAULTING) by fgMarkAddrModeForFieldAddr; nothing else to do here.
     }
 
     if (addExplicitNullCheck)
@@ -6935,14 +7007,13 @@ GenTreeOp* Compiler::fgMorphCommutative(GenTreeOp* tree)
 //
 // Arguments:
 //    tree - tree to morph
-//    mac  - address context for morphing
 //    optAssertionPropDone - [out, optional] set true if local assertions
 //       were killed/genned while morphing this tree
 //
 // Returns:
 //    Tree, possibly updated
 //
-GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optAssertionPropDone)
+GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
 {
     assert(tree->OperKind() & GTK_SMPOP);
 
@@ -7037,7 +7108,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             break;
 
         case GT_FIELD_ADDR:
-            return fgMorphFieldAddr(tree, mac);
+            return fgMorphFieldAddr(tree);
 
         case GT_INDEX_ADDR:
             return fgMorphIndexAddr(tree->AsIndexAddr());
@@ -7166,7 +7237,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             {
                 assert(tree->OperIs(GT_DIV));
                 tree->ChangeOper(GT_UDIV, GenTree::PRESERVE_VN);
-                return fgMorphSmpOp(tree, mac);
+                return fgMorphSmpOp(tree);
             }
 
 #if !defined(TARGET_64BIT) && !defined(TARGET_WASM)
@@ -7233,7 +7304,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             {
                 assert(tree->OperIs(GT_MOD));
                 tree->ChangeOper(GT_UMOD, GenTree::PRESERVE_VN);
-                return fgMorphSmpOp(tree, mac);
+                return fgMorphSmpOp(tree);
             }
 
             // Do not use optimizations (unlike UMOD's idiv optimizing during codegen) for signed mod.
@@ -7571,38 +7642,14 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             BitVecOps::Assign(apTraits, origAssertions, apLocal);
         }
 
-        // TODO-Bug: Moving the null check to this indirection should nominally check for interference with
-        // the other operands in case this is a store. However, doing so unconditionally preserves previous
-        // behavior and "fixes up" field store importation that places the null check in the wrong location
-        // (before the 'value' operand is evaluated).
-        MorphAddrContext indMac;
         if (tree->OperIsIndir() && !tree->OperIsAtomicOp())
         {
-            // Communicate to FIELD_ADDR morphing that the parent is an indirection.
-            indMac.m_user = tree->AsIndir();
-            mac           = &indMac;
-        }
-        // For additions, if we already have a context, keep track of whether all offsets added
-        // to the address are constant, and their sum does not overflow.
-        else if ((mac != nullptr) && tree->OperIs(GT_ADD) && op2->IsCnsIntOrI())
-        {
-            ClrSafeInt<size_t> offset(mac->m_totalOffset);
-            offset += op2->AsIntCon()->IconValue();
-            if (!offset.IsOverflow())
-            {
-                mac->m_totalOffset = offset.Value();
-            }
-            else
-            {
-                mac = nullptr;
-            }
-        }
-        else // Reset the context.
-        {
-            mac = nullptr;
+            // Examine the unmorphed address tree to identify any FIELD_ADDR whose null check
+            // can be elided because this indirection will fault on null instead.
+            fgMarkAddrModeForFieldAddr(tree->AsIndir());
         }
 
-        tree->AsOp()->gtOp1 = op1 = fgMorphTree(op1, mac);
+        tree->AsOp()->gtOp1 = op1 = fgMorphTree(op1);
 
         // If we are exiting the "then" part of a Qmark-Colon we must
         // save the state of the current assertions table so that we
@@ -7810,72 +7857,25 @@ DONE_MORPHING_CHILDREN:
 
         case GT_EQ:
         case GT_NE:
-        {
-            fgPushConstantsRight(tree->AsOp());
-            assert(tree->OperIsCompare());
-
-            oper = tree->OperGet();
-            op1  = tree->gtGetOp1();
-            op2  = tree->gtGetOp2();
-
-            if (op2->IsIntegralConst())
-            {
-                tree = fgOptimizeEqualityComparisonWithConst(tree->AsOp());
-                assert(tree->OperIsCompare());
-
-                oper = tree->OperGet();
-                op1  = tree->gtGetOp1();
-                op2  = tree->gtGetOp2();
-            }
-            break;
-        }
-
         case GT_LT:
         case GT_LE:
         case GT_GE:
         case GT_GT:
         {
+            assert(tree->OperIsCmpCompare());
             fgPushConstantsRight(tree->AsOp());
-            assert(tree->OperIsCompare());
 
+            tree = fgOptimizeRelationalComparison(tree->AsOp());
+            if (!tree->OperIsBinary())
+            {
+                return tree;
+            }
+
+            typ  = tree->TypeGet();
             oper = tree->OperGet();
             op1  = tree->gtGetOp1();
             op2  = tree->gtGetOp2();
 
-            if (op1->OperIs(GT_CAST) || op2->OperIs(GT_CAST))
-            {
-                tree = fgOptimizeRelationalComparisonWithCasts(tree->AsOp());
-                oper = tree->OperGet();
-                op1  = tree->gtGetOp1();
-                op2  = tree->gtGetOp2();
-            }
-
-            if (op2->IsIntegralConst())
-            {
-                tree = fgOptimizeRelationalComparisonWithConst(tree->AsOp());
-                oper = tree->OperGet();
-                op1  = tree->gtGetOp1();
-                op2  = tree->gtGetOp2();
-            }
-
-            if (opts.OptimizationEnabled() && fgGlobalMorph)
-            {
-                // Normalize unsigned comparisons to signed if both operands a known to be never negative.
-                if (tree->IsUnsigned() && varTypeIsIntegral(op1) && op1->IsNeverNegative(this) &&
-                    op2->IsNeverNegative(this))
-                {
-                    tree->ClearUnsigned();
-                }
-
-                if (op2->IsIntegralConst() || op1->IsIntegralConst())
-                {
-                    tree = fgOptimizeRelationalComparisonWithFullRangeConst(tree->AsOp());
-                    if (tree->OperIs(GT_CNS_INT))
-                    {
-                        return tree;
-                    }
-                }
-            }
             break;
         }
 
@@ -8125,16 +8125,6 @@ DONE_MORPHING_CHILDREN:
             if (opts.OptimizationDisabled())
             {
                 break;
-            }
-
-            // Remove double negation/not.
-            if (op1->OperIs(oper))
-            {
-                JITDUMP("Remove double negation/not\n")
-                GenTree* op1op1 = op1->gtGetOp1();
-                DEBUG_DESTROY_NODE(tree);
-                DEBUG_DESTROY_NODE(op1);
-                return op1op1;
             }
 
             // Distribute negation over simple multiplication/division expressions
@@ -8781,10 +8771,65 @@ GenTree* Compiler::fgOptimizeBitCast(GenTreeUnOp* bitCast)
 }
 
 //------------------------------------------------------------------------
+// fgOptimizeRelationalComparison: Optimizes the GT_EQ/GT_NE/GT_LT/GT_LE/GT_GE/GT_GT tree
+//
+// Arguments:
+//    cmp - The compare tree
+//
+// Return Value:
+//    The optimized tree that can have any shape.
+//
+GenTree* Compiler::fgOptimizeRelationalComparison(GenTreeOp* cmp)
+{
+    assert(cmp->OperIsCmpCompare());
+
+    GenTree* tree = cmp;
+
+    // TODO-CQ: Should be called for all comparisons
+    if (tree->OperIs(GT_LT, GT_LE, GT_GE, GT_GT) &&
+        (tree->gtGetOp1()->OperIs(GT_CAST) || tree->gtGetOp2()->OperIs(GT_CAST)))
+    {
+        tree = fgOptimizeRelationalComparisonWithCasts(tree->AsOp());
+    }
+
+    if (tree->OperIs(GT_LT, GT_LE, GT_GE, GT_GT))
+    {
+        if (tree->gtGetOp2()->IsIntegralConst())
+        {
+            tree = fgOptimizeRelationalComparisonWithConst(tree->AsOp())->AsOp();
+        }
+    }
+    else if (tree->OperIs(GT_EQ, GT_NE))
+    {
+        if (tree->gtGetOp2()->IsIntegralConst())
+        {
+            tree = fgOptimizeEqualityComparisonWithConst(tree->AsOp());
+        }
+    }
+
+    if (opts.OptimizationEnabled() && fgGlobalMorph && tree->OperIs(GT_LT, GT_LE, GT_GE, GT_GT))
+    {
+        // Normalize unsigned comparisons to signed if both operands a known to be never negative.
+        if (tree->IsUnsigned() && varTypeIsIntegral(tree->gtGetOp1()) && tree->gtGetOp1()->IsNeverNegative(this) &&
+            tree->gtGetOp2()->IsNeverNegative(this))
+        {
+            tree->ClearUnsigned();
+        }
+
+        if (tree->gtGetOp1()->IsIntegralConst() || tree->gtGetOp2()->IsIntegralConst())
+        {
+            tree = fgOptimizeRelationalComparisonWithFullRangeConst(tree->AsOp());
+        }
+    }
+
+    return tree;
+}
+
+//------------------------------------------------------------------------
 // fgOptimizeEqualityComparisonWithConst: optimizes various EQ/NE(OP, CONST) patterns.
 //
 // Arguments:
-//    cmp - The GT_NE/GT_EQ tree the second operand of which is an integral constant
+//    cmp - The GT_EQ/GT_NE tree the second operand of which is an integral constant
 //
 // Return Value:
 //    The optimized tree, "cmp" in case no optimizations were done.
@@ -9073,7 +9118,7 @@ SKIP:
 // them into zero/one.
 //
 // Arguments:
-//   cmp - the GT_LT/GT_GT tree to morph.
+//   cmp - the GT_LT/GT_LE/GT_GE/GT_GT tree to morph.
 //
 // Return Value:
 //   1. The unmodified "cmp" tree.
@@ -9084,6 +9129,8 @@ SKIP:
 //
 GenTree* Compiler::fgOptimizeRelationalComparisonWithFullRangeConst(GenTreeOp* cmp)
 {
+    assert(cmp->OperIsCmpCompare());
+
     if (gtTreeHasSideEffects(cmp, GTF_SIDE_EFFECT))
     {
         return cmp;
@@ -9198,7 +9245,7 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithFullRangeConst(GenTreeOp* c
 // them, if possible, into comparisons against zero.
 //
 // Arguments:
-//   cmp - the GT_LE/GT_LT/GT_GE/GT_GT tree to morph.
+//   cmp - the GT_LT/GT_LE/GT_GE/GT_GT tree to morph.
 //
 // Return Value:
 //   The "cmp" tree, possibly with a modified oper.
@@ -9210,7 +9257,7 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithFullRangeConst(GenTreeOp* c
 //
 GenTree* Compiler::fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp)
 {
-    assert(cmp->OperIs(GT_LE, GT_LT, GT_GE, GT_GT));
+    assert(cmp->OperIs(GT_LT, GT_LE, GT_GE, GT_GT));
     assert(cmp->gtGetOp2()->IsIntegralConst());
 
     GenTree*             op1 = cmp->gtGetOp1();
@@ -10886,7 +10933,7 @@ GenTree* Compiler::fgOptimizeBitwiseAnd(GenTreeOp* andOp)
 //   These patterns quite often show up along with index checks
 //
 // Arguments:
-//   cmp - the GT_LE/GT_LT/GT_GE/GT_GT tree to morph.
+//   cmp - the GT_EQ/GT_NE/GT_LT/GT_LE/GT_GE/GT_GT tree to morph.
 //
 // Return Value:
 //   Returns the same tree where operands might have narrower types
@@ -10896,15 +10943,12 @@ GenTree* Compiler::fgOptimizeBitwiseAnd(GenTreeOp* andOp)
 //
 GenTree* Compiler::fgOptimizeRelationalComparisonWithCasts(GenTreeOp* cmp)
 {
-    assert(cmp->OperIs(GT_LE, GT_LT, GT_GE, GT_GT));
+    assert(cmp->OperIsCmpCompare());
+    assert(cmp->gtGetOp1()->OperIs(GT_CAST) || cmp->gtGetOp2()->OperIs(GT_CAST));
+    assert(genActualType(cmp->gtGetOp1()) == genActualType(cmp->gtGetOp2()));
 
     GenTree* op1 = cmp->gtGetOp1();
     GenTree* op2 = cmp->gtGetOp2();
-
-    // Caller is expected to call this function only if we have at least one CAST node
-    assert(op1->OperIs(GT_CAST) || op2->OperIs(GT_CAST));
-
-    assert(genActualType(op1) == genActualType(op2));
 
     if (!op1->TypeIs(TYP_LONG))
     {
@@ -12187,8 +12231,8 @@ GenTree* Compiler::fgMorphUModToAndSub(GenTreeOp* tree)
 
     const var_types type = tree->TypeGet();
 
-    const size_t   cnsValue = (static_cast<size_t>(tree->gtOp2->AsIntConCommon()->IntegralValue())) - 1;
-    GenTree* const newTree  = gtNewOperNode(GT_AND, type, tree->gtOp1, gtNewIconNodeWithVN(this, cnsValue, type));
+    const size_t   mask    = static_cast<size_t>(tree->gtOp2->AsIntConCommon()->UnsignedIntegralValue() - 1);
+    GenTree* const newTree = gtNewOperNode(GT_AND, type, tree->gtOp1, gtNewIconNodeWithVN(this, mask, type));
 
     newTree->SetMorphed(this);
     DEBUG_DESTROY_NODE(tree->gtOp2);
@@ -12544,7 +12588,7 @@ GenTreeOp* Compiler::fgMorphLongMul(GenTreeOp* mul)
  *  Transform the given tree for code generation and return an equivalent tree.
  */
 
-GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
+GenTree* Compiler::fgMorphTree(GenTree* tree)
 {
     // We should never be called from CSE. Various optimizations below
     // assume that it is safe to swap operands if one is a constant.
@@ -12658,7 +12702,7 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
 
     if (kind & GTK_SMPOP)
     {
-        tree = fgMorphSmpOp(tree, mac, &optAssertionPropDone);
+        tree = fgMorphSmpOp(tree, &optAssertionPropDone);
         goto DONE;
     }
 
@@ -15359,7 +15403,6 @@ PhaseStatus Compiler::fgRetypeImplicitByRefArgs()
                 // Propagate address-taken-ness and do-not-enregister-ness.
                 newVarDsc->SetAddressExposed(varDsc->IsAddressExposed() DEBUGARG(varDsc->GetAddrExposedReason()));
                 newVarDsc->lvDoNotEnregister       = varDsc->lvDoNotEnregister;
-                newVarDsc->lvLiveInOutOfHndlr      = varDsc->lvLiveInOutOfHndlr;
                 newVarDsc->lvSingleDef             = varDsc->lvSingleDef;
                 newVarDsc->lvSingleDefRegCandidate = varDsc->lvSingleDefRegCandidate;
                 newVarDsc->lvSpillAtSingleDef      = varDsc->lvSpillAtSingleDef;

@@ -97,9 +97,9 @@ public abstract class ContractRegistry
     /// </summary>
     public virtual ICodeNotifications CodeNotifications => GetContract<ICodeNotifications>();
     /// <summary>
-    /// Gets an instance of the SignatureDecoder contract for the target.
+    /// Gets an instance of the Signature contract for the target.
     /// </summary>
-    public virtual ISignatureDecoder SignatureDecoder => GetContract<ISignatureDecoder>();
+    public virtual ISignature Signature => GetContract<ISignature>();
     /// <summary>
     /// Gets an instance of the SyncBlock contract for the target.
     /// </summary>
