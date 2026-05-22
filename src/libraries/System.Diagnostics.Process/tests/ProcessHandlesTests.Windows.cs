@@ -11,6 +11,8 @@ namespace System.Diagnostics.Tests
 {
     public partial class ProcessHandlesTests
     {
+        private const nint INVALID_HANDLE_VALUE = -1;
+
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void ProcessStartedWithInvalidHandles_ConsoleReportsInvalidHandles()
         {
@@ -23,7 +25,7 @@ namespace System.Diagnostics.Tests
                 return RemoteExecutor.SuccessExitCode;
             });
 
-            Assert.Equal(RemoteExecutor.SuccessExitCode, RunWithHandles(process.StartInfo, (nint)(-1), (nint)(-1), (nint)(-1)));
+            Assert.Equal(RemoteExecutor.SuccessExitCode, RunWithHandles(process.StartInfo, INVALID_HANDLE_VALUE, INVALID_HANDLE_VALUE, INVALID_HANDLE_VALUE));
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -60,7 +62,7 @@ namespace System.Diagnostics.Tests
                 }
             }, restrictHandles.ToString(), killOnParentExit.ToString());
 
-            Assert.Equal(RemoteExecutor.SuccessExitCode, RunWithHandles(process.StartInfo, (nint)(-1), (nint)(-1), (nint)(-1)));
+            Assert.Equal(RemoteExecutor.SuccessExitCode, RunWithHandles(process.StartInfo, INVALID_HANDLE_VALUE, INVALID_HANDLE_VALUE, INVALID_HANDLE_VALUE));
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -98,11 +100,11 @@ namespace System.Diagnostics.Tests
                 }
             }, restrictHandles.ToString());
 
-            Assert.Equal(RemoteExecutor.SuccessExitCode, RunWithHandles(process.StartInfo, (nint)(-1), (nint)(-1), (nint)(-1)));
+            Assert.Equal(RemoteExecutor.SuccessExitCode, RunWithHandles(process.StartInfo, INVALID_HANDLE_VALUE, INVALID_HANDLE_VALUE, INVALID_HANDLE_VALUE));
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public unsafe void ProcessStartedWithAnonymousPipeHandles_CanCaptureOutput()
+        public void ProcessStartedWithAnonymousPipeHandles_CanCaptureOutput()
         {
             SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle outputReadHandle, out SafeFileHandle outputWriteHandle);
             SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle errorReadHandle, out SafeFileHandle errorWriteHandle);
@@ -137,39 +139,12 @@ namespace System.Diagnostics.Tests
                     return RemoteExecutor.SuccessExitCode;
                 });
 
-                ProcessStartInfo startInfo = remoteProcess.StartInfo;
-                string arguments = $"\"{startInfo.FileName}\" {startInfo.Arguments}\0";
-
-                Interop.Kernel32.STARTUPINFOEX startupInfoEx = default;
-                Interop.Kernel32.PROCESS_INFORMATION processInfo = default;
-                Interop.Kernel32.SECURITY_ATTRIBUTES unused_SecAttrs = default;
-
-                startupInfoEx.StartupInfo.cb = sizeof(Interop.Kernel32.STARTUPINFOEX);
-                startupInfoEx.StartupInfo.hStdInput = (nint)(-1);
-                startupInfoEx.StartupInfo.hStdOutput = outputWriteHandle.DangerousGetHandle();
-                startupInfoEx.StartupInfo.hStdError = errorWriteHandle.DangerousGetHandle();
-                startupInfoEx.StartupInfo.dwFlags = Interop.Advapi32.StartupInfoOptions.STARTF_USESTDHANDLES;
-
-                fixed (char* commandLinePtr = arguments)
-                {
-                    bool retVal = Interop.Kernel32.CreateProcess(
-                        null,
-                        commandLinePtr,
-                        ref unused_SecAttrs,
-                        ref unused_SecAttrs,
-                        bInheritHandles: true,
-                        Interop.Kernel32.EXTENDED_STARTUPINFO_PRESENT,
-                        null,
-                        null,
-                        &startupInfoEx,
-                        &processInfo
-                    );
-
-                    if (!retVal)
-                    {
-                        throw new Win32Exception();
-                    }
-                }
+                Interop.Kernel32.PROCESS_INFORMATION processInfo = CreateProcessWithHandles(
+                    remoteProcess.StartInfo,
+                    INVALID_HANDLE_VALUE,
+                    outputWriteHandle.DangerousGetHandle(),
+                    errorWriteHandle.DangerousGetHandle(),
+                    inheritHandles: true);
 
                 try
                 {
@@ -200,45 +175,9 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        private unsafe int RunWithHandles(ProcessStartInfo startInfo, nint hStdInput, nint hStdOutput, nint hStdError, bool inheritHandles = false)
+        private int RunWithHandles(ProcessStartInfo startInfo, nint hStdInput, nint hStdOutput, nint hStdError, bool inheritHandles = false)
         {
-            // RemoteExector has provided us with the right path and arguments,
-            // we just need to add the terminating null character.
-            string arguments = $"\"{startInfo.FileName}\" {startInfo.Arguments}\0";
-
-            Interop.Kernel32.STARTUPINFOEX startupInfoEx = default;
-            Interop.Kernel32.PROCESS_INFORMATION processInfo = default;
-            Interop.Kernel32.SECURITY_ATTRIBUTES unused_SecAttrs = default;
-
-            startupInfoEx.StartupInfo.cb = sizeof(Interop.Kernel32.STARTUPINFOEX);
-            startupInfoEx.StartupInfo.hStdInput = hStdInput;
-            startupInfoEx.StartupInfo.hStdOutput = hStdOutput;
-            startupInfoEx.StartupInfo.hStdError = hStdError;
-
-            // If STARTF_USESTDHANDLES is not set, the new process will inherit the standard handles.
-            startupInfoEx.StartupInfo.dwFlags = Interop.Advapi32.StartupInfoOptions.STARTF_USESTDHANDLES;
-
-            bool retVal = false;
-            fixed (char* commandLinePtr = arguments)
-            {
-                retVal = Interop.Kernel32.CreateProcess(
-                    null,
-                    commandLinePtr,
-                    ref unused_SecAttrs,
-                    ref unused_SecAttrs,
-                    bInheritHandles: inheritHandles,
-                    Interop.Kernel32.EXTENDED_STARTUPINFO_PRESENT,
-                    null,
-                    null,
-                    &startupInfoEx,
-                    &processInfo
-                );
-
-                if (!retVal)
-                {
-                    throw new Win32Exception();
-                }
-            }
+            Interop.Kernel32.PROCESS_INFORMATION processInfo = CreateProcessWithHandles(startInfo, hStdInput, hStdOutput, hStdError, inheritHandles);
 
             try
             {
@@ -258,6 +197,48 @@ namespace System.Diagnostics.Tests
             {
                 Interop.Kernel32.CloseHandle(processInfo.hThread);
             }
+        }
+
+        private static unsafe Interop.Kernel32.PROCESS_INFORMATION CreateProcessWithHandles(ProcessStartInfo startInfo, nint hStdInput, nint hStdOutput, nint hStdError, bool inheritHandles)
+        {
+            // RemoteExector has provided us with the right path and arguments,
+            // we just need to add the terminating null character.
+            string arguments = $"\"{startInfo.FileName}\" {startInfo.Arguments}\0";
+
+            Interop.Kernel32.STARTUPINFOEX startupInfoEx = default;
+            Interop.Kernel32.PROCESS_INFORMATION processInfo = default;
+            Interop.Kernel32.SECURITY_ATTRIBUTES unused_SecAttrs = default;
+
+            startupInfoEx.StartupInfo.cb = sizeof(Interop.Kernel32.STARTUPINFOEX);
+            startupInfoEx.StartupInfo.hStdInput = hStdInput;
+            startupInfoEx.StartupInfo.hStdOutput = hStdOutput;
+            startupInfoEx.StartupInfo.hStdError = hStdError;
+
+            // If STARTF_USESTDHANDLES is not set, the new process will inherit the standard handles.
+            startupInfoEx.StartupInfo.dwFlags = Interop.Advapi32.StartupInfoOptions.STARTF_USESTDHANDLES;
+
+            fixed (char* commandLinePtr = arguments)
+            {
+                bool retVal = Interop.Kernel32.CreateProcess(
+                    null,
+                    commandLinePtr,
+                    ref unused_SecAttrs,
+                    ref unused_SecAttrs,
+                    bInheritHandles: inheritHandles,
+                    Interop.Kernel32.EXTENDED_STARTUPINFO_PRESENT,
+                    null,
+                    null,
+                    &startupInfoEx,
+                    &processInfo
+                );
+
+                if (!retVal)
+                {
+                    throw new Win32Exception();
+                }
+            }
+
+            return processInfo;
         }
 
         private static unsafe string GetSafeFileHandleId(SafeFileHandle handle)

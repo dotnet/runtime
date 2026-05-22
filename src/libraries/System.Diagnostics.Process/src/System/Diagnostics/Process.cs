@@ -124,14 +124,10 @@ namespace System.Diagnostics
             _machineName = ".";
             _outputStreamReadMode = StreamReadMode.Undefined;
             _errorStreamReadMode = StreamReadMode.Undefined;
+            _startInfo = startInfo;
 
             SetProcessHandle(processHandle);
             SetProcessId(processHandle.ProcessId);
-
-            if (startInfo is not null)
-            {
-                _startInfo = startInfo;
-            }
 
             if (standardInput is not null)
             {
