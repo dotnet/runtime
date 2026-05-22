@@ -1146,7 +1146,36 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.UnwindStackWalkFrame(pSFIHandle, pResult) : HResults.E_NOTIMPL;
 
     public int CheckContext(ulong vmThread, nint pContext)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.CheckContext(vmThread, pContext) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            IPlatformAgnosticContext ctx = IPlatformAgnosticContext.GetContextForPlatform(_target);
+            ctx.FillFromBuffer(new Span<byte>((void*)pContext, (int)ctx.Size));
+
+            if ((ctx.RawContextFlags & ctx.ContextControlFlags) != 0)
+            {
+                _target.Contracts.Thread.GetStackLimitData(new TargetPointer(vmThread), out TargetPointer stackBase, out TargetPointer stackLimit, out _);
+                TargetPointer sp = ctx.StackPointer;
+                if (sp < stackLimit || stackBase <= sp)
+                {
+                    hr = CorDbgHResults.CORDBG_E_NON_MATCHING_CONTEXT;
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            int hrLocal = _legacy.CheckContext(vmThread, pContext);
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+        return hr;
+    }
 
     public int GetStackWalkCurrentFrameInfo(nuint pSFIHandle, nint pFrameData, int* pRetVal)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetStackWalkCurrentFrameInfo(pSFIHandle, pFrameData, pRetVal) : HResults.E_NOTIMPL;
