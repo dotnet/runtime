@@ -91,7 +91,7 @@ namespace Microsoft.Win32.SafeHandles
                 throw new Win32Exception();
             }
 
-            var waitStateHolder = new ProcessWaitState.Holder(processId);
+            ProcessWaitState.Holder waitStateHolder = new(processId);
             SafeProcessHandle processHandle = new SafeProcessHandle(waitStateHolder);
             processHandle._pidfd = pidfd != -1 ? pidfd : int.MinValue;
             return processHandle;
