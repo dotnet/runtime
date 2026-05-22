@@ -2436,6 +2436,19 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			ins->type = STACK_I4;
 			return ins;
 		}
+
+		if (!strcmp (cmethod_name, "get_IsSupported")) {
+			g_assert (mono_class_is_ginst (cmethod->klass));
+
+			MonoType *element_type = mono_class_get_context (cmethod->klass)->class_inst->type_argv [0];
+			if (MONO_TYPE_IS_VECTOR_PRIMITIVE (element_type)) {
+				EMIT_NEW_ICONST (cfg, ins, 1);
+			} else {
+				EMIT_NEW_ICONST (cfg, ins, 0);
+			}
+			ins->type = STACK_I4;
+			return ins;
+		}
 	}
 
 	// On FullAOT, return false for RuntimeFeature:

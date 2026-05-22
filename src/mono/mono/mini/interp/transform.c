@@ -2681,13 +2681,13 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 				if (!strcmp (tm, "get_IsHardwareAccelerated")) {
 					*op = MINT_LDC_I4_0;
 				} else if (!strcmp (tm, "get_IsSupported")) {
-					if (mono_class_is_ginst (target_method->klass)) {
-						MonoType *element_type = mono_class_get_context (target_method->klass)->class_inst->type_argv [0];
-						if (MONO_TYPE_IS_VECTOR_PRIMITIVE (element_type)) {
-							*op = MINT_LDC_I4_1;
-						} else {
-							*op = MINT_LDC_I4_0;
-						}
+					g_assert (mono_class_is_ginst (target_method->klass));
+
+					MonoType *element_type = mono_class_get_context (target_method->klass)->class_inst->type_argv [0];
+					if (MONO_TYPE_IS_VECTOR_PRIMITIVE (element_type)) {
+						*op = MINT_LDC_I4_1;
+					} else {
+						*op = MINT_LDC_I4_0;
 					}
 				}
 		} else if (klass_name_space[25] == '.') {
@@ -2725,14 +2725,16 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 		if (!strcmp ("Vector", klass_name)) {
 			if (!strcmp (tm, "get_IsHardwareAccelerated")) {
 				*op = MINT_LDC_I4_0;
-			} else if (!strcmp (tm, "get_IsSupported")) {
-				if (mono_class_is_ginst (target_method->klass)) {
-					MonoType *element_type = mono_class_get_context (target_method->klass)->class_inst->type_argv [0];
-					if (MONO_TYPE_IS_VECTOR_PRIMITIVE (element_type)) {
-						*op = MINT_LDC_I4_1;
-					} else {
-						*op = MINT_LDC_I4_0;
-					}
+			}
+		} else if (!strcmp ("Vector`1", klass_name)) {
+			if (!strcmp (tm, "get_IsSupported")) {
+				g_assert (mono_class_is_ginst (target_method->klass));
+
+				MonoType *element_type = mono_class_get_context (target_method->klass)->class_inst->type_argv [0];
+				if (MONO_TYPE_IS_VECTOR_PRIMITIVE (element_type)) {
+					*op = MINT_LDC_I4_1;
+				} else {
+					*op = MINT_LDC_I4_0;
 				}
 			}
 		} else if (!strcmp ("BitOperations", klass_name)) {
