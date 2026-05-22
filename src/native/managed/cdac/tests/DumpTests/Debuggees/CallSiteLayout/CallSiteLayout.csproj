@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- TODO: should work with Heap dumps; currently fails because the cDAC's
+         Thread_1.GetThreadData path eagerly loads RuntimeThreadLocals (TLS),
+         and TLS pages aren't included in minidump-with-heap. Other dump tests
+         appear to avoid that path. Investigate and switch back to Heap. -->
+    <DumpTypes>Full</DumpTypes>
+    <!-- Use JIT-only so the predictable [NoInlining] call frames are not
+         pre-compiled by crossgen2. The argument-layout asserts depend on
+         the runtime calling convention, not on the codegen path. -->
+    <R2RModes>Jit</R2RModes>
+    <!-- Vararg P/Invoke and ref-struct calling-convention behavior we test
+         here is most stable on Windows x64. Tests use SkipOn attributes to
+         enforce that, but limit dump generation to Windows up front. -->
+    <WindowsOnly>true</WindowsOnly>
+  </PropertyGroup>
+</Project>

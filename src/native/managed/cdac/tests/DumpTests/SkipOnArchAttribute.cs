@@ -14,12 +14,19 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
 public sealed class SkipOnArchAttribute : Attribute
 {
-    public string Arch { get; }
-    public string Reason { get; }
+    public string? Arch { get; }
+
+    public string? IncludeOnly { get; set; }
+
+    public string Reason { get; set; } = string.Empty;
 
     public SkipOnArchAttribute(string arch, string reason)
     {
         Arch = arch;
         Reason = reason;
+    }
+
+    public SkipOnArchAttribute()
+    {
     }
 }

@@ -465,6 +465,7 @@ CDAC_TYPE_FIELD(EEClass, T_UINT16, NumInstanceFields, cdac_data<EEClass>::NumIns
 CDAC_TYPE_FIELD(EEClass, T_UINT16, NumStaticFields, cdac_data<EEClass>::NumStaticFields)
 CDAC_TYPE_FIELD(EEClass, T_UINT16, NumThreadStaticFields, cdac_data<EEClass>::NumThreadStaticFields)
 CDAC_TYPE_FIELD(EEClass, T_UINT16, NumNonVirtualSlots, cdac_data<EEClass>::NumNonVirtualSlots)
+CDAC_TYPE_FIELD(EEClass, T_UINT8, BaseSizePadding, cdac_data<EEClass>::BaseSizePadding)
 CDAC_TYPE_END(EEClass)
 
 CDAC_TYPE_BEGIN(GenericsDictInfo)
@@ -1047,14 +1048,28 @@ CDAC_TYPE_FIELD(TransitionBlock, T_UINT32, OffsetOfArgs, sizeof(TransitionBlock)
 // Offset to argument registers and first GCRefMap slot (platform-specific)
 #if (defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)) || defined(TARGET_WASM)
 CDAC_TYPE_FIELD(TransitionBlock, T_UINT32, ArgumentRegisters, sizeof(TransitionBlock))
+CDAC_TYPE_FIELD(TransitionBlock, T_UINT32, ArgumentRegistersOffset, sizeof(TransitionBlock))
 CDAC_TYPE_FIELD(TransitionBlock, T_UINT32, FirstGCRefMapSlot, sizeof(TransitionBlock))
 #elif defined(TARGET_ARM64)
 CDAC_TYPE_FIELD(TransitionBlock, T_UINT32, ArgumentRegisters, offsetof(TransitionBlock, m_argumentRegisters))
+CDAC_TYPE_FIELD(TransitionBlock, T_UINT32, ArgumentRegistersOffset, offsetof(TransitionBlock, m_argumentRegisters))
 CDAC_TYPE_FIELD(TransitionBlock, T_UINT32, FirstGCRefMapSlot, offsetof(TransitionBlock, m_x8RetBuffReg))
 #else
 CDAC_TYPE_FIELD(TransitionBlock, T_UINT32, ArgumentRegisters, offsetof(TransitionBlock, m_argumentRegisters))
+CDAC_TYPE_FIELD(TransitionBlock, T_UINT32, ArgumentRegistersOffset, offsetof(TransitionBlock, m_argumentRegisters))
 CDAC_TYPE_FIELD(TransitionBlock, T_UINT32, FirstGCRefMapSlot, offsetof(TransitionBlock, m_argumentRegisters))
 #endif
+
+// Negative offset to where float argument registers are saved (relative to TransitionBlock pointer).
+// This is -sizeof(FloatArgumentRegisters) (-padding) on platforms that have them, 0 otherwise.
+#ifdef CALLDESCR_FPARGREGS
+#ifdef TARGET_ARM
+// ARM has 8-byte alignment padding after FloatArgumentRegisters
+CDAC_TYPE_FIELD(TransitionBlock, T_INT32, OffsetOfFloatArgumentRegisters, -(int)(sizeof(FloatArgumentRegisters) + TARGET_POINTER_SIZE))
+#else
+CDAC_TYPE_FIELD(TransitionBlock, T_INT32, OffsetOfFloatArgumentRegisters, -(int)sizeof(FloatArgumentRegisters))
+#endif
+#endif // CALLDESCR_FPARGREGS
 CDAC_TYPE_END(TransitionBlock)
 
 #ifdef DEBUGGING_SUPPORTED
@@ -1505,6 +1520,14 @@ CDAC_GLOBAL(FeatureWebcil, T_UINT8, 1)
 #else
 CDAC_GLOBAL(FeatureWebcil, T_UINT8, 0)
 #endif
+#ifdef FEATURE_HFA
+CDAC_GLOBAL(FeatureHFA, T_UINT8, 1)
+#else
+CDAC_GLOBAL(FeatureHFA, T_UINT8, 0)
+#endif
+#ifdef ARM_SOFTFP
+CDAC_GLOBAL(FeatureArmSoftFP, T_UINT8, 1)
+#endif
 // See Object::GetGCSafeMethodTable
 #ifdef TARGET_64BIT
 CDAC_GLOBAL(ObjectToMethodTableUnmask, T_UINT8, 1 | 1 << 1 | 1 << 2)
@@ -1543,6 +1566,7 @@ CDAC_GLOBAL_POINTER(FreeObjectMethodTable, &::g_pFreeObjectMethodTable)
 CDAC_GLOBAL_POINTER(ObjectMethodTable, &::g_pObjectClass)
 CDAC_GLOBAL_POINTER(ObjectArrayMethodTable, &::g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT])
 CDAC_GLOBAL_POINTER(StringMethodTable, &::g_pStringClass)
+CDAC_GLOBAL_POINTER(TypedReferenceMethodTable, &::g_TypedReferenceMT)
 CDAC_GLOBAL_POINTER(SyncTableEntries, &::g_pSyncTable)
 CDAC_GLOBAL_POINTER(MiniMetaDataBuffAddress, &::g_MiniMetaDataBuffAddress)
 CDAC_GLOBAL_POINTER(MiniMetaDataBuffMaxSize, &::g_MiniMetaDataBuffMaxSize)
@@ -1612,6 +1636,7 @@ CDAC_GLOBAL_CONTRACT(AuxiliarySymbols, c1)
 #if FEATURE_COMINTEROP
 CDAC_GLOBAL_CONTRACT(BuiltInCOM, c1)
 #endif // FEATURE_COMINTEROP
+CDAC_GLOBAL_CONTRACT(CallingConvention, c1)
 CDAC_GLOBAL_CONTRACT(CodeVersions, c1)
 CDAC_GLOBAL_CONTRACT(CodeNotifications, c1)
 #ifdef FEATURE_COMWRAPPERS

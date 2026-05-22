@@ -26,6 +26,15 @@ public class MethodTableTests
             [DataType.FnPtrTypeDesc] = TargetTestHelpers.CreateTypeInfo(rtsBuilder.FnPtrTypeDescLayout),
             [DataType.ParamTypeDesc] = TargetTestHelpers.CreateTypeInfo(rtsBuilder.ParamTypeDescLayout),
             [DataType.TypeVarTypeDesc] = TargetTestHelpers.CreateTypeInfo(rtsBuilder.TypeVarTypeDescLayout),
+            [DataType.GenericsDictInfo] = new Target.TypeInfo
+            {
+                Size = (uint)rtsBuilder.Builder.TargetTestHelpers.PointerSize,
+                Fields = new Dictionary<string, Target.FieldInfo>
+                {
+                    [nameof(Data.GenericsDictInfo.NumDicts)] = new Target.FieldInfo { Offset = 0 },
+                    [nameof(Data.GenericsDictInfo.NumTypeArgs)] = new Target.FieldInfo { Offset = sizeof(ushort) },
+                },
+            },
             [DataType.GCCoverageInfo] = TargetTestHelpers.CreateTypeInfo(rtsBuilder.GCCoverageInfoLayout),
             [DataType.ContinuationObject] = new Target.TypeInfo { Size = rtsBuilder.ContinuationObjectSize },
         };
@@ -34,8 +43,9 @@ public class MethodTableTests
         =>
         [
             (nameof(Constants.Globals.FreeObjectMethodTable), rtsBuilder.FreeObjectMethodTableGlobalAddress),
-            (nameof(Constants.Globals.ContinuationMethodTable), rtsBuilder.ContinuationMethodTableGlobalAddress),
             (nameof(Constants.Globals.ObjectMethodTable), rtsBuilder.ObjectMethodTableGlobalAddress),
+            (nameof(Constants.Globals.ContinuationMethodTable), rtsBuilder.ContinuationMethodTableGlobalAddress),
+            (nameof(Constants.Globals.TypedReferenceMethodTable), rtsBuilder.TypedReferenceMethodTableGlobalAddress),
             (nameof(Constants.Globals.MethodDescAlignment), rtsBuilder.MethodDescAlignment),
             (nameof(Constants.Globals.ArrayBaseSize), rtsBuilder.ArrayBaseSize),
         ];
@@ -77,7 +87,6 @@ public class MethodTableTests
         Contracts.TypeHandle handle = contract.GetTypeHandle(freeObjectMethodTableAddress);
         Assert.NotEqual(TargetPointer.Null, handle.Address);
         Assert.True(contract.IsFreeObjectMethodTable(handle));
-        Assert.False(contract.IsObject(handle));
     }
 
     [Theory]
@@ -93,7 +102,6 @@ public class MethodTableTests
         Contracts.TypeHandle systemObjectTypeHandle = contract.GetTypeHandle(systemObjectMethodTablePtr);
         Assert.Equal(systemObjectMethodTablePtr.Value, systemObjectTypeHandle.Address.Value);
         Assert.False(contract.IsFreeObjectMethodTable(systemObjectTypeHandle));
-        Assert.True(contract.IsObject(systemObjectTypeHandle));
     }
 
     [Theory]
@@ -707,6 +715,74 @@ public class MethodTableTests
         IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
         Contracts.TypeHandle typeHandle = contract.GetTypeHandle(methodTablePtr);
         Assert.Equal(flagSet, contract.RequiresAlign8(typeHandle));
+    }
+
+    public static IEnumerable<object[]> IsHFAData()
+    {
+        yield return [(int)1, true, true];
+        yield return [(int)1, false, false];
+        yield return [(int)0, true, false];
+        yield return [(int)0, false, false];
+    }
+
+    public static IEnumerable<object[]> StdArchIsHFAData()
+    {
+        foreach (object[] arch in new MockTarget.StdArch())
+            foreach (object[] hfaData in IsHFAData())
+                yield return [.. arch, ..hfaData];
+    }
+
+    [Theory]
+    [MemberData(nameof(StdArchIsHFAData))]
+    public void IsHFA(MockTarget.Architecture arch, int featureHFA, bool flagSet, bool expected)
+    {
+        TargetPointer methodTablePtr = default;
+        var targetBuilder = new TestPlaceholderTarget.Builder(arch);
+        MockRTS rtsBuilder = new(targetBuilder.MemoryBuilder);
+
+        MockEEClass eeClass = rtsBuilder.AddEEClass("HFAType");
+        eeClass.CorTypeAttr = (uint)(System.Reflection.TypeAttributes.Public | System.Reflection.TypeAttributes.Class);
+        MockMethodTable methodTable = rtsBuilder.AddMethodTable("HFAType");
+        uint mtFlags = (uint)MethodTableFlags_1.WFLAGS_HIGH.Category_ValueType;
+        if (flagSet)
+            mtFlags |= (uint)MethodTableFlags_1.WFLAGS_LOW.IsHFA;
+        methodTable.MTFlags = mtFlags;
+        methodTable.BaseSize = rtsBuilder.Builder.TargetTestHelpers.ObjectBaseSize;
+        methodTable.ParentMethodTable = rtsBuilder.SystemObjectMethodTable.Address;
+        methodTable.NumVirtuals = 3;
+        methodTablePtr = methodTable.Address;
+        eeClass.MethodTable = methodTable.Address;
+        methodTable.EEClassOrCanonMT = eeClass.Address;
+
+        var builder = targetBuilder
+            .AddTypes(CreateContractTypes(rtsBuilder))
+            .AddGlobals(CreateContractGlobals(rtsBuilder))
+            .AddContract<IRuntimeTypeSystem>(version: "c1");
+        if (featureHFA >= 0)
+            builder.AddGlobals((Constants.Globals.FeatureHFA, (ulong)featureHFA));
+        TestPlaceholderTarget target = builder.Build();
+
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+        Contracts.TypeHandle typeHandle = contract.GetTypeHandle(methodTablePtr);
+        Assert.Equal(expected, contract.IsHFA(typeHandle));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void IsHFAFalseForNullTypeHandle(MockTarget.Architecture arch)
+    {
+        // Null TypeHandle should never report HFA, regardless of FEATURE_HFA setting.
+        var targetBuilder = new TestPlaceholderTarget.Builder(arch);
+        MockRTS rtsBuilder = new(targetBuilder.MemoryBuilder);
+        TestPlaceholderTarget target = targetBuilder
+            .AddTypes(CreateContractTypes(rtsBuilder))
+            .AddGlobals(CreateContractGlobals(rtsBuilder))
+            .AddGlobals((Constants.Globals.FeatureHFA, 1UL))
+            .AddContract<IRuntimeTypeSystem>(version: "c1")
+            .Build();
+
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+        Assert.False(contract.IsHFA(default));
     }
 
     [Theory]

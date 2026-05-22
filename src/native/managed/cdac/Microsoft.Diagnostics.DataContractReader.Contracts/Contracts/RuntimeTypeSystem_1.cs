@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Metadata.Ecma335;
 using Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
 using Microsoft.Diagnostics.DataContractReader.Data;
@@ -574,7 +575,65 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return elementType is CorElementType.Class or CorElementType.Array or CorElementType.SzArray;
     }
     public bool ContainsGCPointers(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.ContainsGCPointers;
+    public bool IsByRefLike(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.IsByRefLike;
     public bool RequiresAlign8(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.RequiresAlign8;
+
+    public bool IsHFA(TypeHandle typeHandle)
+    {
+        if (!typeHandle.IsMethodTable())
+            return false;
+
+        // The IsHFA bit in the MethodTable flags is only meaningful when the target runtime
+        // was built with FEATURE_HFA. On other configurations the bit is either unused or
+        // reused for a different purpose (UNIX_AMD64_ABI uses it as IsRegStructPassed).
+        if (!_target.TryReadGlobal(Constants.Globals.FeatureHFA, out byte? featureHFA) || featureHFA == 0)
+            return false;
+
+        return _methodTables[typeHandle.Address].Flags.IsHFA;
+    }
+
+    public int GetVectorSize(TypeHandle typeHandle)
+    {
+        // Mirrors MethodTable::GetVectorSize in src/coreclr/vm/class.cpp.
+
+        if (!typeHandle.IsMethodTable() ||
+            _target.PointerSize != 8 ||
+            !_methodTables[typeHandle.Address].Flags.IsIntrinsicType ||
+            !TryGetMetadataReader(typeHandle, out _, out MetadataReader? mdReader))
+        {
+            return 0;
+        }
+
+        uint typeDefTok = GetTypeDefToken(typeHandle);
+        EntityHandle entityHandle = MetadataTokens.EntityHandle((int)typeDefTok);
+        if (entityHandle.IsNil || entityHandle.Kind != HandleKind.TypeDefinition)
+            return 0;
+
+        TypeDefinition typeDef = mdReader.GetTypeDefinition((TypeDefinitionHandle)entityHandle);
+        string name = mdReader.GetString(typeDef.Name);
+        string ns = mdReader.GetString(typeDef.Namespace);
+
+        // Mirrors MethodTable::GetVectorSize in src/coreclr/vm/class.cpp.
+        int vectorSize = (ns, name) switch
+        {
+            // System.Numerics.Vector`1's runtime size depends on the runtime-chosen vector width.
+            ("System.Numerics", "Vector`1") => GetNumInstanceFieldBytes(typeHandle),
+            ("System.Runtime.Intrinsics", "Vector128`1") => 16,
+            ("System.Runtime.Intrinsics", "Vector64`1") => 8,
+            _ => 0,
+        };
+        if (vectorSize == 0)
+            return 0;
+
+        // Validate that T (the element type) is a primitive type, matching the runtime check.
+        TypeHandle typeArg = GetInstantiation(typeHandle)[0];
+        CorElementType elemType = GetSignatureCorElementType(typeArg);
+        bool isPrimitive = (elemType >= CorElementType.I1 && elemType <= CorElementType.R8)
+            || elemType == CorElementType.I
+            || elemType == CorElementType.U;
+        return isPrimitive ? vectorSize : 0;
+    }
+
     public bool IsContinuation(TypeHandle typeHandle) => typeHandle.IsMethodTable()
         && _continuationMethodTablePointer != TargetPointer.Null
         && _methodTables[typeHandle.Address].ParentMethodTable == _continuationMethodTablePointer;
@@ -2036,10 +2095,6 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         if (!typeHandle.IsMethodTable())
             return TargetPointer.Null;
 
-        TargetPointer modulePtr = GetModule(typeHandle);
-        if (modulePtr == TargetPointer.Null)
-            return TargetPointer.Null;
-
         uint typeDefToken = GetTypeDefToken(typeHandle);
         if (typeDefToken == 0)
             return TargetPointer.Null;
@@ -2050,12 +2105,10 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
         TypeDefinitionHandle typeDefHandle = (TypeDefinitionHandle)entityHandle;
 
-        ILoader loader = _target.Contracts.Loader;
-        ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
-        MetadataReader? md = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle);
-        if (md is null)
+        if (!TryGetMetadataReader(typeHandle, out ModuleHandle moduleHandle, out MetadataReader? md))
             return TargetPointer.Null;
 
+        ILoader loader = _target.Contracts.Loader;
         TargetPointer fieldDefToDescMap = loader.GetLookupTables(moduleHandle).FieldDefToDesc;
         foreach (FieldDefinitionHandle fieldDefHandle in md.GetTypeDefinition(typeDefHandle).GetFields())
         {
@@ -2090,9 +2143,6 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     {
         TargetPointer enclosingMT = ((IRuntimeTypeSystem)this).GetMTOfEnclosingClass(fieldDescPointer);
         TypeHandle ctx = GetTypeHandle(enclosingMT);
-        TargetPointer modulePtr = GetModule(ctx);
-        ILoader loader = _target.Contracts.Loader;
-        ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
         CorElementType type = ((IRuntimeTypeSystem)this).GetFieldDescType(fieldDescPointer);
         TargetPointer @base;
         if (type == CorElementType.Class || type == CorElementType.ValueType)
@@ -2121,7 +2171,9 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         if (@base == TargetPointer.Null)
             return TargetPointer.Null;
 
-        MetadataReader mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle)!;
+        if (!TryGetMetadataReader(ctx, out ModuleHandle moduleHandle, out MetadataReader? mdReader))
+            return TargetPointer.Null;
+
         uint token = ((IRuntimeTypeSystem)this).GetFieldDescMemberDef(fieldDescPointer);
         FieldDefinitionHandle fieldHandle = (FieldDefinitionHandle)MetadataTokens.Handle((int)token);
         FieldDefinition fieldDef = mdReader.GetFieldDefinition(fieldHandle);
@@ -2142,6 +2194,75 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     TargetPointer IRuntimeTypeSystem.GetFieldDescThreadStaticAddress(TargetPointer fieldDescPointer, TargetPointer thread, bool unboxValueTypes) => GetFieldDescStaticOrThreadStaticAddress(fieldDescPointer, thread, unboxValueTypes);
 
+    IEnumerable<TargetPointer> IRuntimeTypeSystem.EnumerateInstanceFieldDescs(TypeHandle typeHandle)
+    {
+        if (!typeHandle.IsMethodTable())
+            yield break;
+
+        TargetPointer firstFieldDesc = ((IRuntimeTypeSystem)this).GetFieldDescList(typeHandle);
+        if (firstFieldDesc == TargetPointer.Null)
+            yield break;
+
+        IRuntimeTypeSystem rts = this;
+        ushort numInstanceFields = rts.GetNumInstanceFields(typeHandle);
+        if (numInstanceFields == 0)
+            yield break;
+
+        // Statics are intermixed with instance fields in the FieldDesc array, so
+        // we iterate the whole array and filter. Total = instance + static + thread-static.
+        ushort totalFields = (ushort)(numInstanceFields
+            + rts.GetNumStaticFields(typeHandle)
+            + rts.GetNumThreadStaticFields(typeHandle));
+
+        uint fieldDescSize = (uint)_target.GetTypeInfo(DataType.FieldDesc).Size!;
+
+        ushort seenInstance = 0;
+        for (ushort i = 0; i < totalFields && seenInstance < numInstanceFields; i++)
+        {
+            TargetPointer fdPtr = new(firstFieldDesc.Value + i * fieldDescSize);
+            if (rts.IsFieldDescStatic(fdPtr))
+                continue;
+            seenInstance++;
+            yield return fdPtr;
+        }
+    }
+
+    TypeHandle IRuntimeTypeSystem.LookupApproxFieldTypeHandle(TargetPointer fieldDescPointer)
+    {
+        if (fieldDescPointer == TargetPointer.Null)
+            return default;
+
+        IRuntimeTypeSystem rts = this;
+        uint token = rts.GetFieldDescMemberDef(fieldDescPointer);
+        EntityHandle entityHandle = MetadataTokens.EntityHandle((int)token);
+        if (entityHandle.IsNil || entityHandle.Kind != HandleKind.FieldDefinition)
+            return default;
+
+        TargetPointer enclosingMT = rts.GetMTOfEnclosingClass(fieldDescPointer);
+        TypeHandle ctx = rts.GetTypeHandle(enclosingMT);
+        if (!ctx.IsMethodTable())
+            return default;
+
+        TargetPointer modulePtr = rts.GetModule(ctx);
+        if (modulePtr == TargetPointer.Null)
+            return default;
+
+        ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
+        MetadataReader? mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle);
+        if (mdReader is null)
+            return default;
+
+        FieldDefinition fieldDef = mdReader.GetFieldDefinition((FieldDefinitionHandle)entityHandle);
+        try
+        {
+            return _target.Contracts.Signature.DecodeFieldSignature(fieldDef.Signature, moduleHandle, ctx);
+        }
+        catch
+        {
+            return default;
+        }
+    }
+
     void IRuntimeTypeSystem.GetCoreLibFieldDescAndDef(string @namespace, string typeName, string fieldName, out TargetPointer fieldDescAddr, out FieldDefinition fieldDef)
     {
         ILoader loader = _target.Contracts.Loader;
@@ -2154,5 +2275,24 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         FieldDefinitionHandle fieldHandle = (FieldDefinitionHandle)MetadataTokens.Handle((int)token);
         MetadataReader mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle)!;
         fieldDef = mdReader.GetFieldDefinition(fieldHandle);
+    }
+
+    public int GetNumInstanceFieldBytes(TypeHandle typeHandle)
+        => (int)GetBaseSize(typeHandle) - GetClassData(typeHandle).BaseSizePadding;
+
+    private bool TryGetMetadataReader(TypeHandle typeHandle, out ModuleHandle moduleHandle, [NotNullWhen(true)] out MetadataReader? mdReader)
+    {
+        moduleHandle = default;
+        mdReader = null;
+        if (!typeHandle.IsMethodTable())
+            return false;
+
+        TargetPointer modulePtr = GetModule(typeHandle);
+        if (modulePtr == TargetPointer.Null)
+            return false;
+
+        moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
+        mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle);
+        return mdReader is not null;
     }
 }

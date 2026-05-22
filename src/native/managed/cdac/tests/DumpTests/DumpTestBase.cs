@@ -190,8 +190,16 @@ public abstract class DumpTestBase : IDisposable
 
             foreach (SkipOnArchAttribute attr in method.GetCustomAttributes<SkipOnArchAttribute>())
             {
-                if (string.Equals(attr.Arch, _dumpInfo.Arch, StringComparison.OrdinalIgnoreCase))
-                    throw new SkipTestException($"[{_dumpInfo.Arch}] {attr.Reason}");
+                if (attr.IncludeOnly is not null)
+                {
+                    if (!string.Equals(attr.IncludeOnly, _dumpInfo.Arch, StringComparison.OrdinalIgnoreCase))
+                        throw new SkipTestException($"[{_dumpInfo.Arch}] {attr.Reason}");
+                }
+                else if (attr.Arch is not null)
+                {
+                    if (string.Equals(attr.Arch, _dumpInfo.Arch, StringComparison.OrdinalIgnoreCase))
+                        throw new SkipTestException($"[{_dumpInfo.Arch}] {attr.Reason}");
+                }
             }
         }
     }

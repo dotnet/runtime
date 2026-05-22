@@ -119,6 +119,9 @@ public interface IRuntimeTypeSystem : IContract
     // The component size is only available for strings and arrays.  It is the size of the element type of the array, or the size of an ECMA 335 character (2 bytes)
     uint GetComponentSize(TypeHandle typeHandle) => throw new NotImplementedException();
 
+    // Mirrors native MethodTable::GetNumInstanceFieldBytes: BaseSize - EEClass.BaseSizePadding.
+    int GetNumInstanceFieldBytes(TypeHandle typeHandle) => throw new NotImplementedException();
+
     // True if the MethodTable is the sentinel value associated with unallocated space in the managed heap
     bool IsFreeObjectMethodTable(TypeHandle typeHandle) => throw new NotImplementedException();
     // True if the MethodTable is the System.Object MethodTable (g_pObjectClass)
@@ -129,6 +132,14 @@ public interface IRuntimeTypeSystem : IContract
     bool ContainsGCPointers(TypeHandle typeHandle) => throw new NotImplementedException();
     // True if the type requires 8-byte alignment on platforms that don't 8-byte align by default (FEATURE_64BIT_ALIGNMENT)
     bool RequiresAlign8(TypeHandle typeHandle) => throw new NotImplementedException();
+    // True if the type is a Homogeneous Floating-point Aggregate (HFA), i.e. a value type whose
+    // fields are all of the same floating-point or short-vector type. Only meaningful on platforms with HFA (ARM/ARM64);
+    // returns false on other architectures.
+    bool IsHFA(TypeHandle typeHandle) => throw new NotImplementedException();
+    // Returns the size in bytes of this type if it is a hardware vector type (System.Numerics.Vector`1,
+    // System.Runtime.Intrinsics.Vector64`1, or System.Runtime.Intrinsics.Vector128`1) with a primitive
+    // element type, or 0 otherwise. Used by HFA element-size resolution on platforms with HFA.
+    int GetVectorSize(TypeHandle typeHandle) => throw new NotImplementedException();
     // True if the MethodTable represents a continuation type used by the async continuation feature
     bool IsContinuation(TypeHandle typeHandle) => throw new NotImplementedException();
     /// <summary>
@@ -173,6 +184,12 @@ public interface IRuntimeTypeSystem : IContract
     // HasTypeParam will return true for cases where this is the interop view
     CorElementType GetSignatureCorElementType(TypeHandle typeHandle) => throw new NotImplementedException();
     bool IsValueType(TypeHandle typeHandle) => throw new NotImplementedException();
+
+    // True if the type is a "ByRefLike" / ref struct (e.g. Span<T>, ReadOnlySpan<T>,
+    // TypedReference). ByRefLike types can have managed references *and* byref-typed
+    // fields embedded at arbitrary offsets, and require special handling in the GC
+    // scanner — the standard GCDesc walk only covers ordinary managed references.
+    bool IsByRefLike(TypeHandle typeHandle) => throw new NotImplementedException();
 
     // Internal element type of the type. Unlike GetSignatureCorElementType, this returns the underlying primitive
     // type for enums (e.g. I4 for an enum with int underlying type) and for PrimitiveValueType categories.
@@ -270,6 +287,10 @@ public interface IRuntimeTypeSystem : IContract
     TargetPointer GetFieldDescByName(TypeHandle typeHandle, string fieldName) => throw new NotImplementedException();
     TargetPointer GetFieldDescStaticAddress(TargetPointer fieldDescPointer, bool unboxValueTypes = true) => throw new NotImplementedException();
     TargetPointer GetFieldDescThreadStaticAddress(TargetPointer fieldDescPointer, TargetPointer thread, bool unboxValueTypes = true) => throw new NotImplementedException();
+
+    IEnumerable<TargetPointer> EnumerateInstanceFieldDescs(TypeHandle typeHandle) => throw new NotImplementedException();
+
+    TypeHandle LookupApproxFieldTypeHandle(TargetPointer fieldDescPointer) => throw new NotImplementedException();
     #endregion FieldDesc inspection APIs
     #region Other APIs
     void GetCoreLibFieldDescAndDef(string typeNamespace, string typeName, string fieldName, out TargetPointer fieldDescAddr, out FieldDefinition fieldDef) => throw new NotImplementedException();
