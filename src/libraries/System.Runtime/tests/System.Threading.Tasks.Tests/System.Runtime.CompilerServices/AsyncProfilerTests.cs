@@ -819,6 +819,7 @@ namespace System.Threading.Tasks.Tests
                     // Clear SynchronizationContext so RuntimeAsync continuations don't capture
                     // xunit's context, which would cause per-frame re-queuing instead of inlining.
                     var prevCtx = SynchronizationContext.Current;
+                    int originalThreadId = Environment.CurrentManagedThreadId;
                     SynchronizationContext.SetSynchronizationContext(null);
                     try
                     {
@@ -826,7 +827,13 @@ namespace System.Threading.Tasks.Tests
                     }
                     finally
                     {
-                        SynchronizationContext.SetSynchronizationContext(prevCtx);
+                        // Only restore the SynchronizationContext if we're still on the same thread.
+                        // ConfigureAwait(false) may resume on a different thread pool thread, and
+                        // setting the original thread's context there would be incorrect.
+                        if (Environment.CurrentManagedThreadId == originalThreadId)
+                        {
+                            SynchronizationContext.SetSynchronizationContext(prevCtx);
+                        }
                     }
                     SendFlushCommand();
                 }).ConfigureAwait(false);
