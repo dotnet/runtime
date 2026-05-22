@@ -773,6 +773,7 @@ PosRem:
             /// Adjust the quotient to deal with an overflow.
             /// We need to divide by 10, feed in the high bit to undo the overflow and then round as required.
             /// </summary>
+            [MethodImpl(MethodImplOptions.NoInlining)]
             private static int OverflowUnscale(ref Buf12 bufQuo, int scale, bool sticky)
             {
                 if (--scale < 0)
@@ -2528,7 +2529,7 @@ done:
                 new PowerOvfl(42,        4078814305, 410238783),   // 10^8 remainder 0.09991616
             ];
 
-            [StructLayout(LayoutKind.Explicit)]
+            [StructLayout(LayoutKind.Explicit, Pack = sizeof(uint))]
             private struct Buf12
             {
                 [FieldOffset(0 * 4)]
