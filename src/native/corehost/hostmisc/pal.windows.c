@@ -52,7 +52,7 @@ pal_char_t* pal_getenv(const pal_char_t* name)
     if (needed == 0)
     {
         DWORD err = GetLastError();
-        if (err != ERROR_ENVVAR_NOT_FOUND)
+        if (err != ERROR_ENVVAR_NOT_FOUND && err != ERROR_SUCCESS)
         {
             trace_warning(_X("Failed to read environment variable [%s], HRESULT: 0x%X"), name, HRESULT_FROM_WIN32(err));
         }
@@ -67,7 +67,7 @@ pal_char_t* pal_getenv(const pal_char_t* name)
     if (written == 0 || written >= needed)
     {
         DWORD err = GetLastError();
-        if (err != ERROR_ENVVAR_NOT_FOUND)
+        if (err != ERROR_ENVVAR_NOT_FOUND && err != ERROR_SUCCESS)
         {
             trace_warning(_X("Failed to read environment variable [%s], HRESULT: 0x%X"), name, HRESULT_FROM_WIN32(err));
         }
