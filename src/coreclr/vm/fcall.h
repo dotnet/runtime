@@ -148,6 +148,7 @@
 #define FCDECL1(rettype, funcname, a1) rettype F_CALL_CONV funcname(uintptr_t callersStackPointer, a1, PCODE portableEntryPointContext); rettype F_CALL_CONV funcname ## _IMPL(uintptr_t callersStackPointer, a1, PCODE portableEntryPointContext)
 #define FCDECL1_V(rettype, funcname, a1) rettype F_CALL_CONV funcname(uintptr_t callersStackPointer, a1, PCODE portableEntryPointContext); rettype F_CALL_CONV funcname ## _IMPL(uintptr_t callersStackPointer, a1, PCODE portableEntryPointContext)
 #define FCDECL2(rettype, funcname, a1, a2) rettype F_CALL_CONV funcname(uintptr_t callersStackPointer, a1, a2, PCODE portableEntryPointContext); rettype F_CALL_CONV funcname ## _IMPL(uintptr_t callersStackPointer, a1, a2, PCODE portableEntryPointContext)
+#define FCDECL2_RAW(rettype, funcname, a1, a2) rettype F_CALL_CONV funcname(a1, a2)
 #define FCDECL2_VV(rettype, funcname, a1, a2) rettype F_CALL_CONV funcname(uintptr_t callersStackPointer, a1, a2, PCODE portableEntryPointContext); rettype F_CALL_CONV funcname ## _IMPL(uintptr_t callersStackPointer, a1, a2, PCODE portableEntryPointContext)
 #define FCDECL2_VI(rettype, funcname, a1, a2) rettype F_CALL_CONV funcname(uintptr_t callersStackPointer, a1, a2, PCODE portableEntryPointContext); rettype F_CALL_CONV funcname ## _IMPL(uintptr_t callersStackPointer, a1, a2, PCODE portableEntryPointContext)
 #define FCDECL2_IV(rettype, funcname, a1, a2) rettype F_CALL_CONV funcname(uintptr_t callersStackPointer, a1, a2, PCODE portableEntryPointContext); rettype F_CALL_CONV funcname ## _IMPL(uintptr_t callersStackPointer, a1, a2, PCODE portableEntryPointContext)
@@ -189,6 +190,10 @@
 
 
 #endif // !SWIZZLE_STKARG_ORDER
+
+#ifndef FCDECL2_RAW
+#define FCDECL2_RAW(rettype, funcname, a1, a2) FCDECL2(rettype, funcname, a1, a2)
+#endif
 
 #if defined(ENABLE_CONTRACTS)
 #define FC_CAN_TRIGGER_GC()         FCallGCCanTrigger::Enter()
@@ -410,6 +415,8 @@ public:
 #define FCIMPL1(rettype, funcname, a1) WASM_CALLABLE_FUNC_2(rettype, funcname, a1, PCODE portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
 #define FCIMPL1_V(rettype, funcname, a1) WASM_CALLABLE_FUNC_2(rettype, funcname, a1, PCODE portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
 #define FCIMPL2(rettype, funcname, a1, a2) WASM_CALLABLE_FUNC_3(rettype, funcname, a1, a2, PCODE portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
+#define FCIMPL2_RAW(rettype, funcname, a1, a2) FCSIGCHECK(funcname, #rettype "," #a1 "," #a2) \
+    rettype F_CALL_CONV funcname(a1, a2) { FCIMPL_PROLOG(funcname)
 #define FCIMPL2VA(rettype, funcname, a1, a2) WASM_CALLABLE_FUNC_3(rettype, funcname, a1, a2, PCODE portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
 #define FCIMPL2_VV(rettype, funcname, a1, a2) WASM_CALLABLE_FUNC_3(rettype, funcname, a1, a2, PCODE portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
 #define FCIMPL2_VI(rettype, funcname, a1, a2) WASM_CALLABLE_FUNC_3(rettype, funcname, a1, a2, PCODE portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
@@ -514,6 +521,10 @@ public:
 
 #define HCIMPLEND_RAW }
 #define HCIMPLEND }
+
+#ifndef FCIMPL2_RAW
+#define FCIMPL2_RAW(rettype, funcname, a1, a2) FCIMPL2(rettype, funcname, a1, a2)
+#endif
 
 // The managed calling convention expects returned small types (e.g. bool) to be
 // widened to 32-bit on return. The C/C++ calling convention does not guarantee returned
