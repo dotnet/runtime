@@ -7174,6 +7174,26 @@ bool ValueNumStore::IsVNTypeHandle(ValueNum vn)
     return IsVNHandle(vn, GTF_ICON_CLASS_HDL);
 }
 
+//------------------------------------------------------------------------
+// IsVNTypeHandle: check whether a VN represents a class type handle and,
+//    if so, recover the underlying compile-time class handle.
+//
+// Arguments:
+//    vn   - the VN to inspect
+//    pCls - [out] set to the resolved compile-time class handle on success,
+//           or NO_CLASS_HANDLE on failure
+//
+// Return Value:
+//    True if vn is a constant class-handle VN and its compile-time class
+//    handle was found in the embedded-handle map; false otherwise.
+//
+// Notes:
+//    Always go through this helper (rather than reinterpret-casting the
+//    raw VN constant) when recovering a class handle from a type-handle VN.
+//    In AOT/R2R builds the constant in the VN is an embedded handle that
+//    must be mapped back to the compile-time handle before being passed
+//    to the EE.
+//
 bool ValueNumStore::IsVNTypeHandle(ValueNum vn, CORINFO_CLASS_HANDLE* pCls)
 {
     ssize_t handle = 0;
