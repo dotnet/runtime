@@ -44,7 +44,15 @@ public class SimpleTestRunner : iOSApplicationEntryPoint, IDevice
         // On Apple-mobile NativeAOT the runtime does not redirect CurrentDirectory to the bundle
         // root the way mono_ios_runtime_init does on the Mono path, so test data shipped alongside
         // the test assemblies (via Content/CopyToOutputDirectory) is not reachable via relative paths.
-        Directory.SetCurrentDirectory(AppContext.BaseDirectory);
+        // On Mac Catalyst the bundle places binaries in .app/Contents/MacOS and data in
+        // .app/Contents/Resources; use the Resources directory when present.
+        string cwd = AppContext.BaseDirectory;
+        string maccatResources = Path.Combine(cwd, "..", "Resources");
+        if (Directory.Exists(maccatResources))
+        {
+            cwd = Path.GetFullPath(maccatResources);
+        }
+        Directory.SetCurrentDirectory(cwd);
 
         foreach (string arg in args.Where(a => a.StartsWith("testlib:")))
         {
