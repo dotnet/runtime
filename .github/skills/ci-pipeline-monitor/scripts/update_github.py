@@ -93,7 +93,7 @@ class IssueGenerator:
             if creating_new_issue:
                 for label in fail["labels"].split(','):
                     stripped_label = label.strip()
-                    if stripped_label:
+                    if stripped_label and (stripped_label != "blocking-clean-ci-optional"):
                         gh_issue_command.append('--label')
                         gh_issue_command.append(stripped_label)
 
