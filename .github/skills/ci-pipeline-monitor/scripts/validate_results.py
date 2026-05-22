@@ -599,7 +599,7 @@ def main():
                 for name in page_label_names:
                     all_label_names.add(name.lower())
 
-        with open(LABELS_CACHE_FILE) as f:
+        with open(LABELS_CACHE_FILE, "w") as f:
             f.write(json.dumps(sorted(all_label_names)))
     except urllib.error.HTTPError:
         print("  [WARN] Failed to fetch labels list from GitHub due to an HTTP error. Loading cached labels list.")
