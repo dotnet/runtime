@@ -5902,17 +5902,31 @@ void LinearScan::allocateRegisters()
                 RefPosition* nextRefPosition        = currentRefPosition.nextRefPosition;
                 bool         isExtraUpperVectorSave = currentRefPosition.IsExtraUpperVectorSave();
 
-                if ((lclVarInterval->physReg == REG_NA) || isExtraUpperVectorSave ||
+                // Normally, the only live physReg here would be callee-save (lower half only) d8-d15.
+                // But PROF_HOOK fully preserves q0-q7, so an UpperVectorSave here does not require a spill.
+                bool profHookUpperHalfPreserved = (lclVarInterval->physReg != REG_NA) &&
+                                                  (currentRefPosition.treeNode != nullptr) &&
+                                                  currentRefPosition.treeNode->OperIs(GT_PROF_HOOK) &&
+                                                  !getKillSetForProfilerHook().IsRegNumInMask(lclVarInterval->physReg) &&
+                                                  !RBM_FLT_CALLEE_SAVED.IsRegNumInMask(lclVarInterval->physReg);
+
+                if ((lclVarInterval->physReg == REG_NA) || isExtraUpperVectorSave || profHookUpperHalfPreserved ||
                     (lclVarInterval->isPartiallySpilled && (currentInterval->physReg == REG_STK)))
                 {
-                    if (!currentRefPosition.liveVarUpperSave)
+                    if (!currentRefPosition.liveVarUpperSave || profHookUpperHalfPreserved)
                     {
                         if (isExtraUpperVectorSave)
                         {
-                            // If this was just an extra upperVectorSave that do not have corresponding
+                            // If this was just an extra upperVectorSave that does not have a corresponding
                             // upperVectorRestore, we do not need to mark this as isPartiallySpilled
                             // or need to insert the save/restore.
                             currentRefPosition.skipSaveRestore = true;
+                        }
+                        else if (profHookUpperHalfPreserved)
+                        {
+                            currentRefPosition.skipSaveRestore = true;
+                            assert(nextRefPosition->refType == RefTypeUpperVectorRestore);
+                            nextRefPosition->skipSaveRestore = true;
                         }
 
                         if (assignedRegister != REG_NA)
