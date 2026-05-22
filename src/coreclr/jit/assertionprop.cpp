@@ -2386,24 +2386,94 @@ AssertionIndex Compiler::optAssertionIsSubrange(GenTree* tree, IntegralRange ran
     return NO_ASSERTION_INDEX;
 }
 
-/**********************************************************************************
- *
- * Given a "tree" that is usually arg1 of a isinst/cast kind of GT_CALL (a class
- * handle), and "methodTableArg" which is a const int (a class handle), then search
- * if there is an assertion in "assertions", that asserts the equality of the two
- * class handles and then returns the index of the assertion. If one such assertion
- * could not be found, then it returns NO_ASSERTION_INDEX.
- *
- */
-AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTableArg, ASSERT_VALARG_TP assertions)
+//------------------------------------------------------------------------
+// optAssertionIsSubtype: see if a tree is known to be castable to a class.
+//
+// Determines whether the object value behind "tree" is known to be a
+// subtype of the class indicated by "methodTableArg", using the live
+// assertion set, VN-level type info (e.g. VNF_JitNew exact-type), and
+// assertions that reach via PHI definitions.
+//
+// Arguments:
+//   tree           - the object being cast (usually the second arg of an
+//                    isinst/castclass helper)
+//   methodTableArg - the helper's first arg, expected to be a class handle
+//                    (constant int) identifying the target type
+//   assertions     - set of live assertions at the call site
+//
+// Return Value:
+//   True if the cast can be proven to succeed.
+//
+bool Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTableArg, ASSERT_VALARG_TP assertions)
 {
+    ValueNum objVN = optConservativeNormalVN(tree);
+    if (objVN == ValueNumStore::NoVN)
+    {
+        return false;
+    }
+
+    // Resolve the compile-time class handle from the method-table arg.
+    //
+    CORINFO_CLASS_HANDLE castTo = gtGetHelperArgClassHandle(methodTableArg);
+    if (castTo == NO_CLASS_HANDLE)
+    {
+        // Fall back to VN-based resolution (covers cases where the helper-arg
+        // recognizer can't find the handle but the VN encodes a type handle).
+        ValueNum castToVN = optConservativeNormalVN(methodTableArg);
+        if (vnStore->IsVNTypeHandle(castToVN))
+        {
+            ssize_t handle = 0;
+            if (vnStore->EmbeddedHandleMapLookup(vnStore->ConstantValue<ssize_t>(castToVN), &handle) && (handle != 0))
+            {
+                castTo = reinterpret_cast<CORINFO_CLASS_HANDLE>(handle);
+            }
+        }
+    }
+
+    if (castTo == NO_CLASS_HANDLE)
+    {
+        return false;
+    }
+
+    return optAssertionVNIsSubtype(objVN, castTo, assertions);
+}
+
+//------------------------------------------------------------------------
+// optAssertionVNIsSubtype: see if a VN is known to be a subtype of castTo
+//    using the given assertion set, VN-level type info, and assertions that
+//    reach via PHI definitions.
+//
+// Arguments:
+//   vn         - VN to check
+//   castTo     - class handle to test the cast against
+//   assertions - set of live assertions
+//   budget     - limits the depth of recursion when chasing assertions across
+//                phi-def reaching VNs.
+//
+// Return Value:
+//   True if the VN is known to be a subtype of castTo.
+//
+bool Compiler::optAssertionVNIsSubtype(ValueNum             vn,
+                                       CORINFO_CLASS_HANDLE castTo,
+                                       ASSERT_VALARG_TP     assertions,
+                                       int                  budget)
+{
+    if ((vn == ValueNumStore::NoVN) || (castTo == NO_CLASS_HANDLE))
+    {
+        return false;
+    }
+
+    // 1. Check assertions for a Subtype/ExactType assertion on this VN.
+    //
     BitVecOps::Iter iter(apTraits, assertions);
     unsigned        bvIndex = 0;
     while (iter.NextElem(&bvIndex))
     {
         AssertionIndex const index        = GetAssertionIndex(bvIndex);
         const AssertionDsc&  curAssertion = optGetAssertion(index);
-        if (!curAssertion.KindIs(OAK_EQUAL) || !curAssertion.GetOp1().KindIs(O1K_SUBTYPE, O1K_EXACT_TYPE))
+
+        if (!curAssertion.KindIs(OAK_EQUAL) || !curAssertion.GetOp1().KindIs(O1K_SUBTYPE, O1K_EXACT_TYPE) ||
+            !curAssertion.GetOp2().KindIs(O2K_CONST_INT))
         {
             // TODO-CQ: We might benefit from OAK_NOT_EQUAL assertion as well, e.g.:
             // if (obj is not MyClass) // obj is known to be never of MyClass class
@@ -2414,27 +2484,61 @@ AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTab
             continue;
         }
 
-        if ((curAssertion.GetOp1().GetVN() != vnStore->VNConservativeNormalValue(tree->gtVNPair) ||
-             !curAssertion.GetOp2().KindIs(O2K_CONST_INT)))
+        if (curAssertion.GetOp1().GetVN() != vn)
         {
             continue;
         }
 
-        ssize_t      methodTableVal = 0;
-        GenTreeFlags iconFlags      = GTF_EMPTY;
-        if (!optIsTreeKnownIntValue(!optLocalAssertionProp, methodTableArg, &methodTableVal, &iconFlags))
+        // Resolve the source class handle from the type-handle VN stored in the
+        // assertion. We must go through the embedded-handle map so AOT/R2R works.
+        //
+        ValueNum castFromVN     = curAssertion.GetOp2().GetVN();
+        ssize_t  castFromHandle = 0;
+        if (!vnStore->IsVNTypeHandle(castFromVN) ||
+            !vnStore->EmbeddedHandleMapLookup(vnStore->ConstantValue<ssize_t>(castFromVN), &castFromHandle) ||
+            (castFromHandle == 0))
         {
             continue;
         }
 
-        if (curAssertion.GetOp2().GetIntConstant() == methodTableVal)
+        CORINFO_CLASS_HANDLE castFrom = (CORINFO_CLASS_HANDLE)castFromHandle;
+
+        // For O1K_EXACT_TYPE the object is exactly castFrom; for O1K_SUBTYPE it
+        // is some subtype of castFrom. In both cases, if castFrom is castable
+        // to castTo (Must), every actual runtime type of obj is too.
+        //
+        if (info.compCompHnd->compareTypesForCast(castFrom, castTo) == TypeCompareState::Must)
         {
-            // TODO-CQ: if they don't match, we might still be able to prove that the result is foldable via
-            // compareTypesForCast.
-            return index;
+            return true;
         }
     }
-    return NO_ASSERTION_INDEX;
+
+    // 2. Try to recover a class from the VN itself (e.g. VNF_JitNew(classHandle)).
+    //
+    bool                 isExact;
+    bool                 isNonNull;
+    CORINFO_CLASS_HANDLE castFromVN = vnStore->GetObjectType(vn, &isExact, &isNonNull);
+    if ((castFromVN != NO_CLASS_HANDLE) &&
+        (info.compCompHnd->compareTypesForCast(castFromVN, castTo) == TypeCompareState::Must))
+    {
+        return true;
+    }
+
+    if (budget <= 0)
+    {
+        return false;
+    }
+
+    // 3. For PHI-defs, walk reaching assertions/VNs and recursively check.
+    //    optVisitReachingAssertions yields per-edge assertion sets so each
+    //    reaching VN is evaluated against the assertions that hold on its edge.
+    //
+    auto visitor = [this, castTo, budget](ValueNum reachingVN, ASSERT_TP reachingAssertions) {
+        return optAssertionVNIsSubtype(reachingVN, castTo, reachingAssertions, budget - 1) ? AssertVisit::Continue
+                                                                                           : AssertVisit::Abort;
+    };
+
+    return optVisitReachingAssertions(vn, visitor) == AssertVisit::Continue;
 }
 
 //------------------------------------------------------------------------------
@@ -5362,10 +5466,9 @@ GenTree* Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCal
             GenTree* castToArg     = castToCallArg->GetNode();
             GenTree* objArg        = objCallArg->GetNode();
 
-            const unsigned index = optAssertionIsSubtype(objArg, castToArg, assertions);
-            if (index != NO_ASSERTION_INDEX)
+            if (optAssertionIsSubtype(objArg, castToArg, assertions))
             {
-                JITDUMP("\nDid VN based subtype prop for index #%02u in " FMT_BB ":\n", index, compCurBB->bbNum);
+                JITDUMP("\nDid VN based subtype prop in " FMT_BB ":\n", compCurBB->bbNum);
                 DISPTREE(call);
 
                 // if castObjArg is not simple, we replace the arg with a temp assignment and
