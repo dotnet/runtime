@@ -1165,10 +1165,10 @@ TargetPointer IGC.GetPotentialNextObjectAddress(
         return next;
 
     ulong minObjSize = AlignForSmallObject((ulong)_target.PointerSize * 3);
-    foreach (AllocContext context in GetAllocContexts())
+    foreach (/* context in allocation contexts */ )
     {
-        if (next == context.Pointer)
-            return new TargetPointer(context.Limit.Value + minObjSize);
+        if (next == /* context pointer */)
+            return new TargetPointer(/* context limit */ + minObjSize);
     }
     return next;
 }
