@@ -20,7 +20,7 @@ pair is materialized at most once per target session.
 
 ## Authoring an IData class
 
-There are three approaches to writing an `IData<T>` implementation,
+There are two approaches to writing an `IData<T>` implementation,
 listed in order of preference:
 
 1. **Source-generated** (recommended) -- declare the C# property surface,
@@ -32,20 +32,15 @@ listed in order of preference:
 
 2. **Source-generated with `OnInit`** -- when the declarative attributes
    cover most of the type but a few fields need custom logic (e.g.
-   stripping a tag bit from a pointer, reading from a second descriptor),
-   add a `partial void OnInit(Target target, TargetPointer address)`
+   stripping a tag bit from a pointer, reading from a second descriptor,
+   variable-count loops, raw byte buffers, or multiple
+   `Target.TypeInfo` lookups), add a
+   `partial void OnInit(Target target, TargetPointer address)`
    implementation. The generator calls it at the end of the constructor
-   after all `[Field]` reads are complete.
+   after all `[Field]` reads are complete. This covers all scenarios
+   that the declarative surface cannot express.
 
-3. **Hand-written** -- used only when the class needs logic that cannot
-   fit the attribute surface even with `OnInit` (variable-count loops,
-   raw byte buffers from descriptor-driven sizes, multiple
-   `Target.TypeInfo` lookups in one constructor). These are rare and
-   should be kept to a minimum.
-
-This document describes the source-generated path. Hand-written classes
-follow the same `IData<T>` contract but provide all the read/write logic
-themselves.
+This document describes the source-generated path.
 
 ## The source generator at a glance
 
@@ -580,7 +575,7 @@ Data.Module module = target.ProcessedData.GetOrAdd<Data.Module>(addr);
 module.WriteFlags(newFlags);
 ```
 
-### Hand-written extension via `OnInit`
+### Source-generated with `OnInit` custom logic
 
 ```csharp
 [CdacType(nameof(DataType.RangeSectionFragment))]

@@ -15,8 +15,9 @@ internal sealed partial class ComWrappersVtablePtrs : IData<ComWrappersVtablePtr
     partial void OnInit(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.ComWrappersVtablePtrs);
-        List<TargetCodePointer> pointers = new((int)(type.Size!.Value / (uint)target.PointerSize));
-        for (int i = 0; i < type.Size / target.PointerSize; i++)
+        int count = (int)(type.Size!.Value / (uint)target.PointerSize);
+        List<TargetCodePointer> pointers = new(count);
+        for (int i = 0; i < count; i++)
         {
             pointers.Add(target.ReadCodePointer(address + (ulong)(i * target.PointerSize)));
         }

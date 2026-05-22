@@ -32,18 +32,24 @@ public sealed class CdacGenerator : IIncrementalGenerator
         // + InternalsVisibleTo). This avoids CS0436 type-conflict errors in assemblies
         // that inherit the helpers from a referenced assembly (e.g. the Tests project
         // sees Contracts' copy via [InternalsVisibleTo] and shouldn't emit its own).
-        IncrementalValueProvider<bool> shouldEmitHelpers = context.CompilationProvider
-            .Select(static (compilation, _) =>
-                compilation.GetTypeByMetadataName(LayoutPairSource.FullyQualifiedName) is null
-                || compilation.GetTypeByMetadataName(TypeNameResolverSource.FullyQualifiedName) is null);
+        // Each helper is gated independently to handle version-skew scenarios where
+        // one helper is present but the other is not.
+        IncrementalValueProvider<(bool EmitLayoutPair, bool EmitTypeNameResolver)> shouldEmitHelpers = context.CompilationProvider
+            .Select(static (compilation, _) => (
+                EmitLayoutPair: compilation.GetTypeByMetadataName(LayoutPairSource.FullyQualifiedName) is null,
+                EmitTypeNameResolver: compilation.GetTypeByMetadataName(TypeNameResolverSource.FullyQualifiedName) is null));
 
-        context.RegisterSourceOutput(shouldEmitHelpers, static (ctx, shouldEmit) =>
+        context.RegisterSourceOutput(shouldEmitHelpers, static (ctx, flags) =>
         {
-            if (shouldEmit)
+            if (flags.EmitLayoutPair)
             {
                 ctx.AddSource(
                     LayoutPairSource.HintName,
                     SourceText.From(LayoutPairSource.Source, Encoding.UTF8));
+            }
+
+            if (flags.EmitTypeNameResolver)
+            {
                 ctx.AddSource(
                     TypeNameResolverSource.HintName,
                     SourceText.From(TypeNameResolverSource.Source, Encoding.UTF8));
