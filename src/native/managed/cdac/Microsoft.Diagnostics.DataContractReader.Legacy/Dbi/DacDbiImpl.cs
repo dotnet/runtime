@@ -2156,7 +2156,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     public int DeleteHeapWalk(nuint handle)
     {
         if (handle == 0)
-            return HResults.E_INVALIDARG;
+            return HResults.S_OK;
 
         int hr = HResults.S_OK;
         TargetPointer legacyHandle = TargetPointer.Null;
