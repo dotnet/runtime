@@ -3010,6 +3010,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWasi)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Wasi\WasiEventLoop.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Wasi\WasiFinalizerScheduler.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Wasi\WasiPoll.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Wasi\WasiPollWorld.wit.Imports.wasi.clocks.v0_2_8.IMonotonicClockImports.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Wasi\WasiPollWorld.wit.Imports.wasi.clocks.v0_2_8.MonotonicClockImportsInterop.cs" />
