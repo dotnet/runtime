@@ -29,6 +29,7 @@ namespace Microsoft.Win32.SafeHandles
         private readonly SafeWaitHandle? _handle;
         private readonly bool _releaseRef;
         private int _pidfd = -1;
+        private int _processId = -1;
         private readonly ProcessWaitState.Holder? _waitStateHolder;
 
         internal SafeProcessHandle(ProcessWaitState.Holder waitStateHolder) : base(ownsHandle: true)
@@ -48,12 +49,17 @@ namespace Microsoft.Win32.SafeHandles
             {
                 Validate();
 
-                if (_waitStateHolder is null)
+                if (_waitStateHolder is not null)
                 {
-                    throw new InvalidOperationException(SR.InvalidProcessHandle);
+                    return _waitStateHolder._state._processId;
                 }
 
-                return _waitStateHolder._state._processId;
+                if (_processId > 0)
+                {
+                    return _processId;
+                }
+
+                throw new InvalidOperationException(SR.InvalidProcessHandle);
             }
         }
 
@@ -67,7 +73,7 @@ namespace Microsoft.Win32.SafeHandles
 
         private SafeProcessHandle(int pidfd, int processId) : base(ownsHandle: true)
         {
-            ProcessId = processId;
+            _processId = processId;
             _pidfd = pidfd;
             SetHandle(new IntPtr(pidfd));
         }
