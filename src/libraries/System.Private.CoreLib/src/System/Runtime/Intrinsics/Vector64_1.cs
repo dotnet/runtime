@@ -81,7 +81,18 @@ namespace System.Runtime.Intrinsics
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                return Scalar<T>.IsSupported;
+                return (typeof(T) == typeof(byte))
+                    || (typeof(T) == typeof(double))
+                    || (typeof(T) == typeof(short))
+                    || (typeof(T) == typeof(int))
+                    || (typeof(T) == typeof(long))
+                    || (typeof(T) == typeof(nint))
+                    || (typeof(T) == typeof(sbyte))
+                    || (typeof(T) == typeof(float))
+                    || (typeof(T) == typeof(ushort))
+                    || (typeof(T) == typeof(uint))
+                    || (typeof(T) == typeof(ulong))
+                    || (typeof(T) == typeof(nuint));
             }
         }
 

@@ -13,27 +13,39 @@ namespace System.Runtime.Intrinsics
 {
     internal static class Scalar<T>
     {
-        public static bool IsFloatingPoint => (typeof(T) == typeof(double))
-                                           || (typeof(T) == typeof(float));
+        public static bool IsFloatingPoint
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => (typeof(T) == typeof(double))
+                || (typeof(T) == typeof(float));
+        }
 
-        public static bool IsSupported => (typeof(T) == typeof(byte))
-                                       || (typeof(T) == typeof(double))
-                                       || (typeof(T) == typeof(short))
-                                       || (typeof(T) == typeof(int))
-                                       || (typeof(T) == typeof(long))
-                                       || (typeof(T) == typeof(nint))
-                                       || (typeof(T) == typeof(sbyte))
-                                       || (typeof(T) == typeof(float))
-                                       || (typeof(T) == typeof(ushort))
-                                       || (typeof(T) == typeof(uint))
-                                       || (typeof(T) == typeof(ulong))
-                                       || (typeof(T) == typeof(nuint));
+        public static bool IsSupported
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => (typeof(T) == typeof(byte))
+                || (typeof(T) == typeof(double))
+                || (typeof(T) == typeof(short))
+                || (typeof(T) == typeof(int))
+                || (typeof(T) == typeof(long))
+                || (typeof(T) == typeof(nint))
+                || (typeof(T) == typeof(sbyte))
+                || (typeof(T) == typeof(float))
+                || (typeof(T) == typeof(ushort))
+                || (typeof(T) == typeof(uint))
+                || (typeof(T) == typeof(ulong))
+                || (typeof(T) == typeof(nuint));
+        }
 
-        public static bool IsUnsigned => (typeof(T) == typeof(byte))
-                                      || (typeof(T) == typeof(ushort))
-                                      || (typeof(T) == typeof(uint))
-                                      || (typeof(T) == typeof(ulong))
-                                      || (typeof(T) == typeof(nuint));
+        public static bool IsUnsigned
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => (typeof(T) == typeof(byte))
+                || (typeof(T) == typeof(ushort))
+                || (typeof(T) == typeof(uint))
+                || (typeof(T) == typeof(ulong))
+                || (typeof(T) == typeof(nuint));
+        }
 
         public static T AllBitsSet
         {
