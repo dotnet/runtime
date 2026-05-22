@@ -584,7 +584,7 @@ def main():
     try:
         # TODO: If dotnet/runtime ever has more than 999 labels, increase this page limit. At time of script authoring
         #  we have around 300 so this is more than enough.
-        for page_index in range(1, 10):
+        for page_index in range(1, 11):
             req = urllib.request.Request(f"{LABELS_API_ENDPOINT}?per_page=100&page={page_index}", headers={
                 "Accept": "application/vnd.github+json",
                 "User-Agent": "ci-pipeline-monitor-validator",
