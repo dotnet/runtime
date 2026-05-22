@@ -662,6 +662,13 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.TraceSource\tests\System.Diagnostics.TraceSource.Config.Tests\System.Diagnostics.TraceSource.Config.Tests.csproj" />
   </ItemGroup>
 
+  <!-- https://github.com/dotnet/runtime/issues/124344 -->
+  <ItemGroup Condition="('$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'maccatalyst') and '$(RuntimeFlavor)' == 'CoreCLR' and '$(UseNativeAOTRuntime)' != 'true'">
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.Emit\tests\System.Reflection.Emit.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.Emit.ILGeneration\tests\System.Reflection.Emit.ILGeneration.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Numerics.Tensors\tests\System.Numerics.Tensors.Tests.csproj" Condition="'$(TargetArchitecture)' == 'x64'" />
+  </ItemGroup>
+
   <!--
       There is a decent number of hidden tests that fail with TestReadyToRun, and
       it's proven to be a neverending task to flush all of them at once. So, we will
