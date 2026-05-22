@@ -525,3 +525,7 @@ End
 Crst CallStubCache
     AcquiredBefore LoaderHeap
 End
+
+Crst PregeneratedStringThunks
+    AcquiredBefore UnresolvedClassLock
+End

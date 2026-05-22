@@ -1163,8 +1163,11 @@ HRESULT CordbType::TypeDataToType(CordbAppDomain *pAppDomain, DebuggerIPCE_Basic
 
                     {
                         RSLockHolder lockHolder(pProcess->GetProcessLock());
+                        CORDB_ADDRESS vmTypeHandleRaw = 0;
+                        static_assert(sizeof(data->vmTypeHandle) <= sizeof(vmTypeHandleRaw), "VMPTR_TypeHandle is larger than CORDB_ADDRESS");
+                        memcpy(&vmTypeHandleRaw, &data->vmTypeHandle, sizeof(data->vmTypeHandle));
                         IfFailThrow(pProcess->GetDAC()->TypeHandleToExpandedTypeInfo(NoValueTypeBoxing,  // could be generics which are never boxed
-                                                                                    data->vmTypeHandle,
+                                                                                    vmTypeHandleRaw,
                                                                                     &typeInfo));
                     }
 

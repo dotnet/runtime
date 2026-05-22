@@ -95,6 +95,10 @@ private:
     char m_reportPath[CRASHREPORT_PATH_BUFFER_SIZE] = {};
     char m_processName[CRASHREPORT_STRING_BUFFER_SIZE] = {};
     char m_hostName[CRASHREPORT_STRING_BUFFER_SIZE] = {};
+#ifdef __APPLE__
+    char m_osVersion[CRASHREPORT_STRING_BUFFER_SIZE] = {};
+    char m_systemModel[CRASHREPORT_STRING_BUFFER_SIZE] = {};
+#endif
 };
 
 // Free-function entry point used by the runtime to wire the in-proc crash

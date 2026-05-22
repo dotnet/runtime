@@ -355,7 +355,7 @@ namespace System
                 }
 
                 // We only have 1-byte so read it directly
-                result = MemoryMarshal.GetReference(source);
+                result = source[0];
             }
 
             value = result;
@@ -373,8 +373,7 @@ namespace System
         {
             if (destination.Length >= sizeof(byte))
             {
-                byte value = m_value;
-                MemoryMarshal.GetReference(destination) = value;
+                destination[0] = m_value;
 
                 bytesWritten = sizeof(byte);
                 return true;
@@ -391,8 +390,7 @@ namespace System
         {
             if (destination.Length >= sizeof(byte))
             {
-                byte value = m_value;
-                MemoryMarshal.GetReference(destination) = value;
+                destination[0] = m_value;
 
                 bytesWritten = sizeof(byte);
                 return true;

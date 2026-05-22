@@ -519,6 +519,126 @@ namespace System.Collections.Generic.Tests
         }
 
         [Fact]
+        public void EqualityComparerCreate_KeySelectorNull_Throws()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("keySelector", () => EqualityComparer<string>.Create<int>(keySelector: null));
+        }
+
+        [Fact]
+        public void EqualityComparerCreate_KeySelectorUsed()
+        {
+            var original = "foo";
+            var otherEqualLen = "bar";
+            var otherLongerLen = "fooo";
+
+            var comparer = EqualityComparer<string>.Create(str => str.Length);
+
+            Assert.True(comparer.Equals(original, original));
+            Assert.True(comparer.Equals(original, otherEqualLen));
+            Assert.False(comparer.Equals(original, otherLongerLen));
+
+            Assert.Equal(comparer.GetHashCode(original), comparer.GetHashCode(otherEqualLen));
+        }
+
+        [Fact]
+        public void EqualityComparerCreate_KeySelectorPassesNullToSelector()
+        {
+            int selectorCalls = 0;
+            var comparer = EqualityComparer<string>.Create<string>(str =>
+            {
+                selectorCalls++;
+                return str ?? "default";
+            });
+
+            // Null is passed through to keySelector in Equals, mapping to "default"
+            Assert.True(comparer.Equals(null, null));
+            Assert.Equal(2, selectorCalls);
+
+            selectorCalls = 0;
+            Assert.True(comparer.Equals(null, "default"));
+            Assert.Equal(2, selectorCalls);
+
+            selectorCalls = 0;
+            Assert.True(comparer.Equals("default", null));
+            Assert.Equal(2, selectorCalls);
+
+            selectorCalls = 0;
+            Assert.False(comparer.Equals(null, "other"));
+            Assert.Equal(2, selectorCalls);
+
+            // Null is passed through to keySelector in GetHashCode
+            selectorCalls = 0;
+            int hashCode = comparer.GetHashCode(null);
+            Assert.Equal(1, selectorCalls);
+            Assert.Equal(comparer.GetHashCode("default"), hashCode);
+        }
+
+        [Fact]
+        public void EqualityComparerCreate_KeySelectorReturnsNullKey()
+        {
+            var comparer = EqualityComparer<string>.Create<string>(str => str == "nil" ? null : str);
+
+            // When keySelector returns null for both, they are equal
+            Assert.True(comparer.Equals("nil", "nil"));
+
+            // When keySelector returns null for one side only, they are not equal
+            Assert.False(comparer.Equals("nil", "foo"));
+            Assert.False(comparer.Equals("foo", "nil"));
+
+            // GetHashCode returns 0 for a null key
+            Assert.Equal(0, comparer.GetHashCode("nil"));
+            Assert.Equal(comparer.GetHashCode("nil"), comparer.GetHashCode("nil"));
+        }
+
+        [Fact]
+        public void EqualityComparerCreate_KeySelectorNotHandlingNull_Throws()
+        {
+            var comparer = EqualityComparer<string>.Create<int>(str => str.Length);
+
+            // keySelector doesn't guard against null, so NullReferenceException propagates
+            Assert.Throws<NullReferenceException>(() => comparer.Equals(null, "foo"));
+            Assert.Throws<NullReferenceException>(() => comparer.Equals("foo", null));
+            Assert.Throws<NullReferenceException>(() => comparer.GetHashCode(null));
+        }
+
+        [Fact]
+        public void EqualityComparerCreate_KeySelectorComparerUsed()
+        {
+            var evenLen1 = "12";
+            var evenLen2 = "1234";
+            var evenLen3 = "123456";
+            var oddLen1 = "1";
+            var oddLen2 = "123";
+
+            bool isEven(int len) => len % 2 == 0;
+
+            var evenOrOddComparer = EqualityComparer<int>.Create(equals: (len1, len2) => isEven(len1) == isEven(len2), getHashCode: len => isEven(len) ? 0 : 1);
+            var comparer = EqualityComparer<string>.Create(str => str?.Length ?? 0, keyComparer: evenOrOddComparer);
+
+            Assert.True(comparer.Equals(evenLen1, evenLen1));
+            Assert.True(comparer.Equals(evenLen1, evenLen2));
+            Assert.True(comparer.Equals(evenLen1, evenLen3));
+            Assert.True(comparer.Equals(oddLen1, oddLen2));
+
+            Assert.False(comparer.Equals(evenLen1, oddLen1));
+            Assert.False(comparer.Equals(evenLen1, oddLen2));
+            Assert.False(comparer.Equals(oddLen1, evenLen2));
+
+            Assert.True(comparer.Equals(null, null));
+            Assert.True(comparer.Equals(evenLen1, null));
+            Assert.True(comparer.Equals(null, evenLen1));
+            Assert.False(comparer.Equals(oddLen1, null));
+            Assert.False(comparer.Equals(null, oddLen1));
+
+            Assert.Equal(comparer.GetHashCode(evenLen1), comparer.GetHashCode(evenLen2));
+            Assert.Equal(comparer.GetHashCode(oddLen1), comparer.GetHashCode(oddLen2));
+            Assert.NotEqual(comparer.GetHashCode(evenLen1), comparer.GetHashCode(oddLen1));
+            Assert.Equal(comparer.GetHashCode(null), comparer.GetHashCode(null));
+            Assert.Equal(comparer.GetHashCode(null), comparer.GetHashCode(evenLen1));
+            Assert.NotEqual(comparer.GetHashCode(null), comparer.GetHashCode(oddLen1));
+        }
+
+        [Fact]
         public void EqualityComparerCreate_ArgsNotDereferenced()
         {
             EqualityComparer<string> ec = EqualityComparer<string>.Create((x, y) => true, x => 0);

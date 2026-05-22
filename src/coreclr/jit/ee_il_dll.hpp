@@ -213,25 +213,10 @@ inline var_types JITtype2varType(CorInfoType type)
         TYP_I_IMPL, // CORINFO_TYPE_NATIVEUINT      = 0xd,
         TYP_FLOAT,  // CORINFO_TYPE_FLOAT           = 0xe,
         TYP_DOUBLE, // CORINFO_TYPE_DOUBLE          = 0xf,
-        TYP_REF,    // CORINFO_TYPE_STRING          = 0x10,         // Not used, should remove
-        TYP_I_IMPL, // CORINFO_TYPE_PTR             = 0x11,
-        TYP_BYREF,  // CORINFO_TYPE_BYREF           = 0x12,
-        TYP_STRUCT, // CORINFO_TYPE_VALUECLASS      = 0x13,
-        TYP_REF,    // CORINFO_TYPE_CLASS           = 0x14,
-        TYP_STRUCT, // CORINFO_TYPE_REFANY          = 0x15,
-
-        // Generic type variables only appear when we're doing
-        // verification of generic code, in which case we're running
-        // in "import only" mode.  Annoyingly the "import only"
-        // mode of the JIT actually does a fair bit of compilation,
-        // so we have to trick the compiler into thinking it's compiling
-        // a real instantiation.  We do that by just pretending we're
-        // compiling the "object" instantiation of the code, i.e. by
-        // turing all generic type variables refs, except for a few
-        // choice places to do with verification, where we use
-        // verification types and CLASS_HANDLEs to track the difference.
-
-        TYP_REF, // CORINFO_TYPE_VAR             = 0x16,
+        TYP_I_IMPL, // CORINFO_TYPE_PTR             = 0x10,
+        TYP_BYREF,  // CORINFO_TYPE_BYREF           = 0x11,
+        TYP_STRUCT, // CORINFO_TYPE_VALUECLASS      = 0x12,
+        TYP_REF,    // CORINFO_TYPE_CLASS           = 0x13,
     };
 
     // spot check to make certain enumerations have not changed
@@ -244,7 +229,6 @@ inline var_types JITtype2varType(CorInfoType type)
     assert(varTypeMap[CORINFO_TYPE_DOUBLE] == TYP_DOUBLE);
     assert(varTypeMap[CORINFO_TYPE_VOID] == TYP_VOID);
     assert(varTypeMap[CORINFO_TYPE_VALUECLASS] == TYP_STRUCT);
-    assert(varTypeMap[CORINFO_TYPE_REFANY] == TYP_STRUCT);
 
     assert(type < CORINFO_TYPE_COUNT);
     assert(varTypeMap[type] != TYP_UNDEF);
@@ -274,25 +258,11 @@ inline var_types JitType2PreciseVarType(CorInfoType type)
         TYP_U_IMPL, // CORINFO_TYPE_NATIVEUINT      = 0xd,
         TYP_FLOAT,  // CORINFO_TYPE_FLOAT           = 0xe,
         TYP_DOUBLE, // CORINFO_TYPE_DOUBLE          = 0xf,
-        TYP_REF,    // CORINFO_TYPE_STRING          = 0x10,         // Not used, should remove
-        TYP_U_IMPL, // CORINFO_TYPE_PTR             = 0x11,
-        TYP_BYREF,  // CORINFO_TYPE_BYREF           = 0x12,
-        TYP_STRUCT, // CORINFO_TYPE_VALUECLASS      = 0x13,
-        TYP_REF,    // CORINFO_TYPE_CLASS           = 0x14,
-        TYP_STRUCT, // CORINFO_TYPE_REFANY          = 0x15,
+        TYP_U_IMPL, // CORINFO_TYPE_PTR             = 0x10,
+        TYP_BYREF,  // CORINFO_TYPE_BYREF           = 0x11,
+        TYP_STRUCT, // CORINFO_TYPE_VALUECLASS      = 0x12,
+        TYP_REF,    // CORINFO_TYPE_CLASS           = 0x13,
 
-        // Generic type variables only appear when we're doing
-        // verification of generic code, in which case we're running
-        // in "import only" mode.  Annoyingly the "import only"
-        // mode of the JIT actually does a fair bit of compilation,
-        // so we have to trick the compiler into thinking it's compiling
-        // a real instantiation.  We do that by just pretending we're
-        // compiling the "object" instantiation of the code, i.e. by
-        // turing all generic type variables refs, except for a few
-        // choice places to do with verification, where we use
-        // verification types and CLASS_HANDLEs to track the difference.
-
-        TYP_REF, // CORINFO_TYPE_VAR             = 0x16,
     };
 
     // spot check to make certain enumerations have not changed
@@ -305,7 +275,6 @@ inline var_types JitType2PreciseVarType(CorInfoType type)
     assert(preciseVarTypeMap[CORINFO_TYPE_DOUBLE] == TYP_DOUBLE);
     assert(preciseVarTypeMap[CORINFO_TYPE_VOID] == TYP_VOID);
     assert(preciseVarTypeMap[CORINFO_TYPE_VALUECLASS] == TYP_STRUCT);
-    assert(preciseVarTypeMap[CORINFO_TYPE_REFANY] == TYP_STRUCT);
 
     assert(type < CORINFO_TYPE_COUNT);
     assert(preciseVarTypeMap[type] != TYP_UNDEF);
