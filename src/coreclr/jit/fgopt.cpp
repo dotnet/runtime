@@ -2376,14 +2376,50 @@ bool Compiler::fgFoldSimpleCondByForwardSub(BasicBlock* block)
         return false;
     }
 
-    if (!store->Data()->IsIntegralConst())
+    if (genActualType(store) != genActualType(store->Data()) || (genActualType(store) != genActualType(lcl)))
     {
         return false;
     }
 
-    if (genActualType(store) != genActualType(store->Data()) || (genActualType(store) != genActualType(lcl)))
+    LclVarDsc* varDsc      = lvaGetDesc(lcl);
+    const bool dataIsConst = store->Data()->IsIntegralConst();
+
+    if (!dataIsConst)
     {
-        return false;
+        // Non-constant data: we cannot rely on the JTRUE folding to a constant.
+        // Substituting still helps codegen (e.g. lets Lowering fold an HW intrinsic
+        // that sets flags into a single JCC) when the resulting tree becomes a
+        // contiguous sequence that Lowering can recognize.
+        //
+        // We narrowly target the case where the data is an int-producing HW
+        // intrinsic (typically a vectorized comparison such as op_Equality)
+        // whose result is being tested against zero. Lowering can fold the
+        // tree HW_INTRINSIC -> EQ/NE(_, 0) -> JTRUE into a single JCC, but
+        // only when these nodes are contiguous in the LIR. Substituting them
+        // into the JTRUE here removes the intervening local store and lets
+        // Lowering's existing LowerNodeCC chain recognize the pattern.
+        //
+        // We do not remove the original store; later dead-store elimination
+        // will do that when the local turns out to be single-use.
+        //
+        if (!store->Data()->OperIs(GT_HWINTRINSIC))
+        {
+            return false;
+        }
+
+        if (!store->Data()->TypeIs(TYP_INT))
+        {
+            return false;
+        }
+
+        // Don't duplicate or reorder potentially harmful side effects.
+        // The data was already being evaluated right before the JTRUE, so
+        // memory reads and faulting operations are fine to clone into the JTRUE.
+        //
+        if ((store->Data()->gtFlags & (GTF_CALL | GTF_ASG | GTF_ORDER_SIDEEFF)) != 0)
+        {
+            return false;
+        }
     }
 
     JITDUMP("Forward substituting local after jump threading. Before:\n");
@@ -2391,8 +2427,7 @@ bool Compiler::fgFoldSimpleCondByForwardSub(BasicBlock* block)
 
     JITDUMP("\nAfter:\n");
 
-    LclVarDsc* varDsc  = lvaGetDesc(lcl);
-    GenTree*   newData = gtCloneExpr(store->Data());
+    GenTree* newData = gtCloneExpr(store->Data());
     if (varTypeIsSmall(varDsc) && fgCastNeeded(store->Data(), varDsc->TypeGet()))
     {
         newData = gtNewCastNode(TYP_INT, newData, false, varDsc->TypeGet());
@@ -2401,6 +2436,13 @@ bool Compiler::fgFoldSimpleCondByForwardSub(BasicBlock* block)
 
     *lclUse = newData;
     DISPSTMT(block->lastStmt());
+
+    if (!dataIsConst)
+    {
+        // The substituted data may bring new side-effect flags into the JTRUE tree
+        // (e.g. GTF_GLOB_REF, GTF_EXCEPT from an IND); refresh them here.
+        gtUpdateStmtSideEffects(block->lastStmt());
+    }
 
     JITDUMP("\nNow trying to fold...\n");
     jtrue->AsUnOp()->gtOp1 = gtFoldExpr(relop);
