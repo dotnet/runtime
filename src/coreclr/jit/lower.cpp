@@ -8157,8 +8157,11 @@ bool Lowering::TryLowerConstIntUDivOrUMod(GenTreeOp* divMod)
     {
         // If the divisor is greater or equal than 2^(N - 1) then the result is 1
         // iff the dividend is greater or equal than the divisor.
-        if (((type == TYP_INT) && (divisorValue > (UINT32_MAX / 2))) ||
-            ((type == TYP_LONG) && (divisorValue > (UINT64_MAX / 2))))
+        if (((type == TYP_INT) && (divisorValue > (UINT32_MAX / 2)))
+#if defined(TARGET_64BIT)
+            || ((type == TYP_LONG) && (divisorValue > (UINT64_MAX / 2)))
+#endif
+        )
         {
             divMod->ChangeOper(GT_GE);
             divMod->SetUnsigned();
@@ -8448,7 +8451,11 @@ bool Lowering::TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode)
 
     if (isDiv)
     {
-        if ((type == TYP_INT && divisorValue == INT_MIN) || (type == TYP_LONG && divisorValue == INT64_MIN))
+        if ((type == TYP_INT && divisorValue == INT_MIN)
+#if defined(TARGET_64BIT)
+            || (type == TYP_LONG && divisorValue == INT64_MIN)
+#endif
+        )
         {
             // If the divisor is the minimum representable integer value then we can use a compare,
             // the result is 1 iff the dividend equals divisor.
@@ -10400,6 +10407,7 @@ static bool IsStoreCoalescingInvariantNode(Compiler* compiler, GenTree* node, bo
     return node->OperIs(GT_LCL_VAR) && !compiler->lvaVarAddrExposed(node->AsLclVar()->GetLclNum());
 }
 
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
 //------------------------------------------------------------------------
 // TryGetStoreCoalescingConstantBits: get the raw bits for a constant used by store
 //    coalescing.
@@ -10442,6 +10450,7 @@ static bool TryGetStoreCoalescingConstantBits(GenTree* value, uint64_t* bits)
 
     return false;
 }
+#endif // TARGET_XARCH || TARGET_ARM64
 
 //------------------------------------------------------------------------
 // GetLoadStoreCoalescingData: given a STOREIND/IND node, get the data needed to perform
