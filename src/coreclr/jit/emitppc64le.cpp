@@ -802,10 +802,12 @@ void emitter::emitIns_R_I(instruction ins,
             break;
         case INS_ori:
         case INS_oris:
+	case INS_andi:
         case INS_sldi:
-            // For ori/oris/sldi with same source and destination: ori rD, rD, imm
+	case INS_srdi:
+	    // For ori/oris/sldi/srdi with same source and destination: ori rD, rD, imm
             id->idReg2(reg);  // Set both source and destination to same register
-            fmt = IF_RI_1D;   // ori/oris/sldi rD, rA, imm16
+            fmt = IF_RI_1D;   // ori/oris/andi/sldi/srdi rD, rA, imm16
             break;
         default:
             fmt = IF_RI_1C;  // Generic register-immediate (addi, etc.)
@@ -849,7 +851,66 @@ void emitter::emitIns_R_R(instruction     ins,
             assert(isFloatReg(reg2));
             fmt = IF_RR_1A;  // Will set proper format later
             break;
-  
+ 
+        case INS_frsp:
+            // Floating-point round to single precision - frsp fD, fB
+            assert(isFloatReg(reg1));
+            assert(isFloatReg(reg2));
+            fmt = IF_RR_1A;
+            break;
+            
+        case INS_fcfid:
+        case INS_fcfids:
+        case INS_fcfidu:
+        case INS_fcfidus:
+            // Floating-point convert from integer doubleword
+            // fcfid fD, fB - converts signed integer in FP reg to double
+            // fcfids fD, fB - converts signed integer in FP reg to single
+            // fcfidu fD, fB - converts unsigned integer in FP reg to double
+            // fcfidus fD, fB - converts unsigned integer in FP reg to single
+            assert(isFloatReg(reg1));
+            assert(isFloatReg(reg2));
+            fmt = IF_RR_1A;
+            break;
+            
+        case INS_fctiwz:
+        case INS_fctidz:
+        case INS_fctiwuz:
+        case INS_fctiduz:
+            // Floating-point convert to integer word/doubleword with round toward zero
+            // fctiwz fD, fB - converts double/single to signed 32-bit int
+            // fctidz fD, fB - converts double/single to signed 64-bit int
+            // fctiwuz fD, fB - converts double/single to unsigned 32-bit int
+            // fctiduz fD, fB - converts double/single to unsigned 64-bit int
+            assert(isFloatReg(reg1));
+            assert(isFloatReg(reg2));
+            fmt = IF_RR_1A;
+            break;
+
+        case INS_extsb:
+	    // Extend Sign Byte - extsb rA, rS
+            // Sign-extends an 8-bit value to 64-bit
+	    assert(isGeneralRegister(reg1));
+	    assert(isGeneralRegister(reg2));
+	    fmt = IF_RR_1A;
+	    break;
+
+	case INS_extsh:
+	    // Extend Sign Halfword - extsh rA, rS
+	    // Sign-extends a 16-bit value to 64-bit
+	    assert(isGeneralRegister(reg1));
+	    assert(isGeneralRegister(reg2));
+	    fmt = IF_RR_1A;
+	    break;
+		       
+        case INS_extsw:
+            // Extend Sign Word - extsw rA, rS
+            // Sign-extends a 32-bit value to 64-bit
+            assert(isGeneralRegister(reg1));
+            assert(isGeneralRegister(reg2));
+            fmt = IF_RR_1A;
+            break;
+ 
   	case INS_fcmpu:
         case INS_fcmpo:
             // Floating-point comparison - fcmpu/fcmpo crD, fA, fB
@@ -1039,6 +1100,19 @@ void emitter::emitIns_R_R_R(instruction ins,
         case INS_divdu:
         case INS_divw:
         case INS_divwu:
+            assert(isGeneralRegister(reg1));
+            assert(isGeneralRegister(reg2));
+            assert(isGeneralRegister(reg3));
+            assert(size == EA_4BYTE || size == EA_8BYTE);
+            break;
+        // Logical/Bitwise instructions (X-form)
+        case INS_and_ins:
+        case INS_or_ins:
+        case INS_xor_ins:
+        case INS_nor:
+        case INS_nand:
+        case INS_andc:
+        case INS_orc:
             assert(isGeneralRegister(reg1));
             assert(isGeneralRegister(reg2));
             assert(isGeneralRegister(reg3));
@@ -1286,6 +1360,66 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
            ppc_fmr(dstRW, id->idReg1() - REG_F0, id->idReg2() - REG_F0);
            break;
 
+       case INS_frsp:
+           // frsp fD, fB - Floating Round to Single Precision
+           ppc_frsp(dstRW, id->idReg1() - REG_F0, id->idReg2() - REG_F0);
+           break;
+
+       case INS_fcfid:
+           // fcfid fD, fB - Floating Convert From Integer Doubleword (signed to double)
+           ppc_fcfid(dstRW, id->idReg1() - REG_F0, id->idReg2() - REG_F0);
+           break;
+
+       case INS_fcfids:
+           // fcfids fD, fB - Floating Convert From Integer Doubleword Single (signed to single)
+           ppc_fcfids(dstRW, id->idReg1() - REG_F0, id->idReg2() - REG_F0);
+           break;
+
+       case INS_fcfidu:
+           // fcfidu fD, fB - Floating Convert From Integer Doubleword Unsigned (unsigned to double)
+           ppc_fcfidu(dstRW, id->idReg1() - REG_F0, id->idReg2() - REG_F0);
+           break;
+
+       case INS_fcfidus:
+           // fcfidus fD, fB - Floating Convert From Integer Doubleword Unsigned Single (unsigned to single)
+           ppc_fcfidus(dstRW, id->idReg1() - REG_F0, id->idReg2() - REG_F0);
+           break;
+
+       case INS_fctiwz:
+           // fctiwz fD, fB - Floating Convert To Integer Word with round toward Zero (to signed 32-bit)
+           ppc_fctiwz(dstRW, id->idReg1() - REG_F0, id->idReg2() - REG_F0);
+           break;
+
+       case INS_fctidz:
+           // fctidz fD, fB - Floating Convert To Integer Doubleword with round toward Zero (to signed 64-bit)
+           ppc_fctidz(dstRW, id->idReg1() - REG_F0, id->idReg2() - REG_F0);
+           break;
+
+       case INS_fctiwuz:
+           // fctiwuz fD, fB - Floating Convert To Integer Word Unsigned with round toward Zero (to unsigned 32-bit)
+           ppc_fctiwuz(dstRW, id->idReg1() - REG_F0, id->idReg2() - REG_F0);
+           break;
+
+       case INS_fctiduz:
+           // fctiduz fD, fB - Floating Convert To Integer Doubleword Unsigned with round toward Zero (to unsigned 64-bit)
+           ppc_fctiduz(dstRW, id->idReg1() - REG_F0, id->idReg2() - REG_F0);
+           break;
+
+	case INS_extsb:
+	    // extsb rA, rS - Extend Sign Byte (sign-extend 8-bit to 64-bit)
+	    ppc_extsb(dstRW, id->idReg1(), id->idReg2());
+	    break;
+
+	case INS_extsh:
+	    // extsh rA, rS - Extend Sign Halfword (sign-extend 16-bit to 64-bit)
+	    ppc_extsh(dstRW, id->idReg1(), id->idReg2());
+	    break;
+
+ 	case INS_extsw:
+           // extsw rA, rS - Extend Sign Word (sign-extend 32-bit to 64-bit)
+           ppc_extsw(dstRW, id->idReg1(), id->idReg2());
+           break;
+
        case INS_movi:
            abort();
            break;
@@ -1365,9 +1499,18 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
            ppc_oris (dstRW, id->idReg2(), id->idReg1(), emitGetInsSC(id));
            break;
 
+       case INS_andi:
+           // andi. rA, rS, UIMM (AND Immediate with record bit)
+           ppc_andi (dstRW, id->idReg1(), id->idReg2(), emitGetInsSC(id));
+           break;
+
        case INS_sldi:
            // sldi rA, rS, n (pseudo-op: rldicr)
            ppc_sldi (dstRW, id->idReg1(), id->idReg2(), emitGetInsSC(id));
+           break;
+       case INS_srdi:
+           // srdi rA, rS, n (pseudo-op: rldicl)
+           ppc_srdi (dstRW, id->idReg1(), id->idReg2(), emitGetInsSC(id));
            break;
 
        case INS_cmpw:
@@ -1621,6 +1764,42 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
            ppc_divwu (dstRW, id->idReg1(), id->idReg2(), id->idReg3());
            break;
 
+       // Logical/Bitwise instructions
+       case INS_and_ins:
+           // and rA, rS, rB - AND
+           ppc_and (dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+           break;
+
+       case INS_or_ins:
+           // or rA, rS, rB - OR
+           ppc_or (dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+           break;
+
+       case INS_xor_ins:
+           // xor rA, rS, rB - XOR
+           ppc_xor (dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+           break;
+
+       case INS_nor:
+           // nor rA, rS, rB - NOR
+           ppc_nor (dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+           break;
+
+       case INS_nand:
+           // nand rA, rS, rB - NAND
+           ppc_nand (dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+           break;
+
+       case INS_andc:
+           // andc rA, rS, rB - AND with Complement
+           ppc_andc (dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+           break;
+
+       case INS_orc:
+           // orc rA, rS, rB - OR with Complement
+           ppc_orc (dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+           break;
+
        default:
            _ASSERTE(!"NYI");
     }
@@ -1661,8 +1840,13 @@ const char* emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id
         case INS_mtlr:    return "mtlr    ";
         case INS_nop:     return "nop     ";
         case INS_sldi:    return "sldi    ";
+	case INS_srdi:    return "srdi    ";
         case INS_oris:    return "oris    ";
-        
+	case INS_andi:    return "andi   ";
+        case INS_extsb:   return "extsb   ";
+        case INS_extsh:   return "extsh   ";
+        case INS_extsw:   return "extsw   ";
+ 
         default:
             return "???     ";
     }
@@ -1826,12 +2010,17 @@ void emitter::emitDispIns(
         case INS_ori:
         case INS_addi:
         case INS_oris:
+	case INS_andi:
         case INS_sldi:
+	case INS_srdi:
             printf("r%d, r%d, %d", id->idReg1(), id->idReg2(), (int)emitGetInsSC(id));
             break;
             
         case INS_mov:
         case INS_cmpw:
+        case INS_extsb:
+        case INS_extsh:
+        case INS_extsw:
             printf("r%d, r%d", id->idReg1(), id->idReg2());
             break;
             

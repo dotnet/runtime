@@ -373,7 +373,11 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 	    genPutArgSplit(treeNode->AsPutArgSplit());
 	    break;
 
-	       case GT_ADD:
+	case GT_CAST:
+	    genCodeForCast(treeNode->AsOp());
+	    break;
+
+        case GT_ADD:
         case GT_SUB:
         case GT_MUL:
             genConsumeOperands(treeNode->AsOp());
@@ -387,7 +391,15 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genConsumeOperands(treeNode->AsOp());
             genCodeForBinary(treeNode->AsOp());
             break;
-        default:
+
+        case GT_AND:
+        case GT_OR:
+        case GT_XOR:
+            genConsumeOperands(treeNode->AsOp());
+            genCodeForBinary(treeNode->AsOp());
+            break;
+
+	default:
 	    printf("ERROR: Unhandled tree node operation: %s (oper=%d)\n",
                    GenTree::OpName(treeNode->gtOper), treeNode->gtOper);
             printf("Tree node details: type=%s, flags=0x%x\n",
@@ -415,7 +427,8 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
           emitter*         emit       = GetEmitter();
 
           assert(oper == GT_ADD || oper == GT_SUB || oper == GT_MUL ||
-                 oper == GT_DIV || oper == GT_UDIV || oper == GT_MOD || oper == GT_UMOD);
+                 oper == GT_DIV || oper == GT_UDIV || oper == GT_MOD || oper == GT_UMOD ||
+                 oper == GT_AND || oper == GT_OR || oper == GT_XOR);
 
           GenTree* op1 = treeNode->gtGetOp1();
           GenTree* op2 = treeNode->gtGetOp2();
@@ -538,7 +551,25 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
 		    }
 		    break;
 
-		  default:
+                case GT_AND:
+                    // and: bitwise AND
+                    ins = INS_and_ins;
+                    emit->emitIns_R_R_R(ins, attr, targetReg, op1reg, op2reg);
+                    break;
+
+                case GT_OR:
+                    // or: bitwise OR
+                    ins = INS_or_ins;
+                    emit->emitIns_R_R_R(ins, attr, targetReg, op1reg, op2reg);
+                    break;
+
+                case GT_XOR:
+                    // xor: bitwise XOR
+                    ins = INS_xor_ins;
+                    emit->emitIns_R_R_R(ins, attr, targetReg, op1reg, op2reg);
+                    break;
+
+		default:
                       unreached();
               }
           }
@@ -2932,8 +2963,98 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
 //
 void CodeGen::genIntToFloatCast(GenTree* treeNode)
 {
-    //_ASSERTE("!NYI");
-    abort();
+    // Casting from int/long to float/double on PowerPC64 requires:
+    // 1. Store integer value to stack
+    // 2. Load from stack into FP register using lfd
+    // 3. Convert using fcfid/fcfids/fcfidu/fcfidus
+    
+    assert(treeNode->OperGet() == GT_CAST);
+
+    GenTree*  op1       = treeNode->AsOp()->gtOp1;
+    var_types dstType   = treeNode->CastToType();
+    var_types srcType   = genActualType(op1->TypeGet());
+    regNumber targetReg = treeNode->GetRegNum();
+    regNumber srcReg    = genConsumeReg(op1);
+    bool      isUnsigned = treeNode->IsUnsigned(); // Check the GTF_UNSIGNED flag on the cast node
+
+    assert(varTypeIsFloating(dstType));
+    assert(varTypeIsIntegral(srcType));
+    assert(genIsValidFloatReg(targetReg));
+    assert(genIsValidIntReg(srcReg));
+
+    // Get internal FP register allocated by LSRA
+    regNumber tmpFpReg = internalRegisters.GetSingle(treeNode, RBM_ALLFLOAT);
+    assert(genIsValidFloatReg(tmpFpReg));
+
+    // Calculate stack offset for temporary storage
+    int tmpOffset = 0;
+
+    // Step 1: Handle 32-bit to 64-bit extension if needed
+    regNumber extendedReg = srcReg;
+    if (varTypeIsInt(srcType))
+    {
+        if (isUnsigned)
+        {
+            // Zero-extend 32-bit unsigned to 64-bit
+            // Clear upper 32 bits by using clrldi (Clear Left Double Immediate)
+            // clrldi rA, rS, n  clears the leftmost n bits
+            // We want to clear the upper 32 bits, so n = 32
+            // This is encoded as rldicl rA, rS, 0, 32
+            // For now, use a mask operation: andi. can only handle 16-bit immediates
+            // So we'll use a different approach: store 32-bit, load 64-bit zero-extended
+
+            // Store as 32-bit word
+            GetEmitter()->emitIns_R_R_I(INS_stw, EA_4BYTE, srcReg, REG_SPBASE, tmpOffset);
+            // Load as 64-bit doubleword (zero-extends automatically)
+            GetEmitter()->emitIns_R_R_I(INS_lwz, EA_4BYTE, srcReg, REG_SPBASE, tmpOffset);
+            // Now srcReg contains the zero-extended 64-bit value
+        }
+        else
+        {
+            // Sign-extend 32-bit signed to 64-bit
+            GetEmitter()->emitIns_R_R(INS_extsw, EA_8BYTE, srcReg, srcReg);
+        }
+    }
+
+    // Store the 64-bit integer to stack
+    GetEmitter()->emitIns_R_R_I(INS_std, EA_8BYTE, srcReg, REG_SPBASE, tmpOffset);
+
+    // Step 2: Load from stack into FP register using lfd
+    // This loads the bit pattern without conversion
+    GetEmitter()->emitIns_R_R_I(INS_lfd, EA_8BYTE, tmpFpReg, REG_SPBASE, tmpOffset);
+
+    // Step 3: Convert integer to float/double
+    instruction convertIns;
+    
+    if (isUnsigned)
+    {
+        // Unsigned conversion
+        if (dstType == TYP_FLOAT)
+        {
+            convertIns = INS_fcfidus; // Convert unsigned int to single-precision
+        }
+        else
+        {
+            convertIns = INS_fcfidu;  // Convert unsigned int to double-precision
+        }
+    }
+    else
+    {
+        // Signed conversion
+        if (dstType == TYP_FLOAT)
+        {
+            convertIns = INS_fcfids;  // Convert signed int to single-precision
+        }
+        else
+        {
+            convertIns = INS_fcfid;   // Convert signed int to double-precision
+        }
+    }
+
+    // Perform the conversion: targetReg = convert(tmpFpReg)
+    GetEmitter()->emitIns_R_R(convertIns, emitActualTypeSize(dstType), targetReg, tmpFpReg);
+
+    genProduceReg(treeNode);
 }
 
 //-----------------------------------------------------------------------------
@@ -3317,8 +3438,69 @@ void CodeGen::genFuncletEpilog()
 //
 void CodeGen::genFloatToIntCast(GenTree* treeNode)
 {
-    //_ASSERTE("!NYI");
-    abort();
+    assert(treeNode->OperGet() == GT_CAST);
+    
+    GenTree*  op1     = treeNode->AsOp()->gtOp1;
+    var_types dstType = treeNode->CastToType();
+    var_types srcType = op1->TypeGet();
+   
+    assert(varTypeIsFloating(srcType));
+    assert(varTypeIsIntegral(dstType));
+    
+    regNumber srcReg = genConsumeReg(op1);
+    regNumber dstReg = treeNode->GetRegNum();
+   
+    assert(genIsValidFloatReg(srcReg));
+    assert(genIsValidIntReg(dstReg));
+    
+    emitter* emit = GetEmitter();
+    
+    // PowerPC64 float-to-int conversion requires:
+    // 1. Convert float to integer in FP register
+    // 2. Store FP register to stack
+    // 3. Load from stack to integer register
+    
+    instruction convertIns;
+    bool isUnsigned = varTypeIsUnsigned(dstType);
+    bool is64Bit = (genTypeSize(dstType) == 8);
+    
+    // Select appropriate conversion instruction
+    if (is64Bit)
+    {
+        convertIns = isUnsigned ? INS_fctiduz : INS_fctidz;
+    }
+    else
+    {
+        convertIns = isUnsigned ? INS_fctiwuz : INS_fctiwz;
+    }
+    
+    // Use a temporary FP register for the converted value
+    regNumber tempFpReg = internalRegisters.GetSingle(treeNode, RBM_ALLFLOAT);
+    
+    // Convert float to integer (result in FP register)
+    emit->emitIns_R_R(convertIns, EA_8BYTE, tempFpReg, srcReg);
+    
+    // Store FP register to stack and load to integer register
+    // PowerPC64 cannot directly move from FP to GPR, must use stack
+    int tmpOffset = 0;  // Use offset 0 from stack pointer for temporary storage
+    
+    // Step 1: Store the FP register (with converted integer) to stack
+    emit->emitIns_R_R_I(INS_stfd, EA_8BYTE, tempFpReg, REG_SPBASE, tmpOffset);
+    
+    // Step 2: Load from stack to integer register
+    if (is64Bit)
+    {
+        // Load 64-bit value
+        emit->emitIns_R_R_I(INS_ld, EA_8BYTE, dstReg, REG_SPBASE, tmpOffset);
+    }
+    else
+    {
+        // Load 32-bit value from stack
+        // In little-endian, the 32-bit result is at offset 0
+        emit->emitIns_R_R_I(INS_lwz, EA_4BYTE, dstReg, REG_SPBASE, tmpOffset);
+    }
+    
+    genProduceReg(treeNode);
 }
 
 /*****************************************************************************
@@ -3416,8 +3598,71 @@ void CodeGen::genSIMDSplitReturn(GenTree* src, ReturnTypeDesc* retTypeDesc)
 //
 void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& desc, regNumber reg)
 {
-    //_ASSERTE("!NYI");
-    abort();
+    emitter* emit = GetEmitter();
+    
+    switch (desc.CheckKind())
+    {
+        case GenIntCastDesc::CHECK_POSITIVE:
+            // Check if value >= 0
+            emit->emitIns_R_I(INS_cmpdi, EA_ATTR(desc.CheckSrcSize()), reg, 0);
+            genJumpToThrowHlpBlk(EJ_lt, SCK_OVERFLOW);
+            break;
+
+#ifdef TARGET_64BIT
+        case GenIntCastDesc::CHECK_UINT_RANGE:
+        {
+            // Check if value fits in unsigned 32-bit range (upper 32 bits must be zero)
+            // Use a temporary register to test upper bits
+            regNumber tempReg = internalRegisters.GetSingle(cast);
+            // Shift right 32 bits and check if result is zero
+            emit->emitIns_R_R_I(INS_sldi, EA_8BYTE, tempReg, reg, 32);
+            emit->emitIns_R_I(INS_cmpdi, EA_8BYTE, tempReg, 0);
+            genJumpToThrowHlpBlk(EJ_ne, SCK_OVERFLOW);
+            break;
+        }
+
+        case GenIntCastDesc::CHECK_POSITIVE_INT_RANGE:
+        {
+            // Check if value fits in signed 32-bit range (0 to 0x7FFFFFFF)
+            regNumber tempReg = internalRegisters.GetSingle(cast);
+            // Check upper 33 bits are zero
+            emit->emitIns_R_R_I(INS_sldi, EA_8BYTE, tempReg, reg, 33);
+            emit->emitIns_R_I(INS_cmpdi, EA_8BYTE, tempReg, 0);
+            genJumpToThrowHlpBlk(EJ_ne, SCK_OVERFLOW);
+            break;
+        }
+
+        case GenIntCastDesc::CHECK_INT_RANGE:
+        {
+            // Check if value fits in signed 32-bit range (INT32_MIN to INT32_MAX)
+            // Sign extend from 32-bit and compare with original
+            regNumber tempReg = internalRegisters.GetSingle(cast);
+            emit->emitIns_R_R(INS_extsw, EA_8BYTE, tempReg, reg);
+            emit->emitIns_R_R(INS_cmpd, EA_8BYTE, reg, tempReg);
+            genJumpToThrowHlpBlk(EJ_ne, SCK_OVERFLOW);
+            break;
+        }
+#endif
+
+        default:
+        {
+            assert(desc.CheckKind() == GenIntCastDesc::CHECK_SMALL_INT_RANGE);
+            const int castMaxValue = desc.CheckSmallIntMax();
+            const int castMinValue = desc.CheckSmallIntMin();
+
+            // Check upper bound
+            emit->emitIns_R_I(INS_cmpdi, EA_ATTR(desc.CheckSrcSize()), reg, castMaxValue);
+            genJumpToThrowHlpBlk(EJ_gt, SCK_OVERFLOW);
+
+            // Check lower bound if not zero
+            if (castMinValue != 0)
+            {
+                emit->emitIns_R_I(INS_cmpdi, EA_ATTR(desc.CheckSrcSize()), reg, castMinValue);
+                genJumpToThrowHlpBlk(EJ_lt, SCK_OVERFLOW);
+            }
+            break;
+        }
+    }
 }
 
 //------------------------------------------------------------------------
@@ -3431,8 +3676,83 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
 //
 void CodeGen::genIntToIntCast(GenTreeCast* cast)
 {
-    //_ASSERTE("!NYI");
-    abort();
+    genConsumeRegs(cast->CastOp());
+
+    emitter*        emit    = GetEmitter();
+    var_types       dstType = cast->CastToType();
+    var_types       srcType = genActualType(cast->CastOp()->TypeGet());
+    const regNumber srcReg  = cast->CastOp()->GetRegNum();
+    const regNumber dstReg  = cast->GetRegNum();
+
+    assert(genIsValidIntReg(srcReg));
+    assert(genIsValidIntReg(dstReg));
+
+    GenIntCastDesc desc(cast);
+
+    if (desc.CheckKind() != GenIntCastDesc::CHECK_NONE)
+    {
+        genIntCastOverflowCheck(cast, desc, srcReg);
+    }
+
+    if ((desc.ExtendKind() != GenIntCastDesc::COPY) || (srcReg != dstReg))
+    {
+        instruction ins;
+
+        switch (desc.ExtendKind())
+        {
+            case GenIntCastDesc::ZERO_EXTEND_SMALL_INT:
+                if (desc.ExtendSrcSize() == 1)
+                {
+                    // Zero extend byte: AND with 0xFF
+                    emit->emitIns_R_R_I(INS_andi, EA_PTRSIZE, dstReg, srcReg, 0xFF);
+                }
+                else
+                {
+                    // Zero extend halfword: AND with 0xFFFF
+                    emit->emitIns_R_R_I(INS_andi, EA_PTRSIZE, dstReg, srcReg, 0xFFFF);
+                }
+                break;
+
+            case GenIntCastDesc::SIGN_EXTEND_SMALL_INT:
+                ins = (desc.ExtendSrcSize() == 1) ? INS_extsb : INS_extsh;
+                emit->emitIns_R_R(ins, EA_PTRSIZE, dstReg, srcReg);
+                break;
+
+#ifdef TARGET_64BIT
+            case GenIntCastDesc::ZERO_EXTEND_INT:
+                // Zero extend 32-bit to 64-bit: clear upper 32 bits
+                // Use rotate and mask or shift operations
+                emit->emitIns_R_R_I(INS_sldi, EA_8BYTE, dstReg, srcReg, 32);
+                emit->emitIns_R_R_I(INS_srdi, EA_8BYTE, dstReg, dstReg, 32);
+                break;
+
+            case GenIntCastDesc::SIGN_EXTEND_INT:
+                emit->emitIns_R_R(INS_extsw, EA_8BYTE, dstReg, srcReg);
+                break;
+#endif
+
+            case GenIntCastDesc::COPY:
+                if (srcReg != dstReg)
+                {
+                    emit->emitIns_Mov(INS_mov, EA_ATTR(desc.ExtendSrcSize()), dstReg, srcReg, /* canSkip */ false);
+                }
+                break;
+
+            case GenIntCastDesc::LOAD_ZERO_EXTEND_SMALL_INT:
+            case GenIntCastDesc::LOAD_SIGN_EXTEND_SMALL_INT:
+            case GenIntCastDesc::LOAD_ZERO_EXTEND_INT:
+            case GenIntCastDesc::LOAD_SIGN_EXTEND_INT:
+            case GenIntCastDesc::LOAD_SOURCE:
+                // These are handled by containment - should not reach here
+                unreached();
+                break;
+
+            default:
+                unreached();
+        }
+    }
+
+    genProduceReg(cast);
 }
  
 //------------------------------------------------------------------------
@@ -3451,8 +3771,50 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
 //
 void CodeGen::genFloatToFloatCast(GenTree* treeNode)
 {
-    //_ASSERTE("!NYI");
-    abort();
+    // float <--> double conversions are always non-overflow ones
+    assert(treeNode->OperGet() == GT_CAST);
+    assert(!treeNode->gtOverflow());
+
+    regNumber targetReg = treeNode->GetRegNum();
+    assert(genIsValidFloatReg(targetReg));
+
+    GenTree* op1 = treeNode->AsOp()->gtOp1;
+    assert(!op1->isContained());                  // Cannot be contained
+    assert(genIsValidFloatReg(op1->GetRegNum())); // Must be a valid float reg.
+
+    var_types dstType = treeNode->CastToType();
+    var_types srcType = op1->TypeGet();
+    assert(varTypeIsFloating(srcType) && varTypeIsFloating(dstType));
+
+    genConsumeOperands(treeNode->AsOp());
+
+    // treeNode must be a reg
+    assert(!treeNode->isContained());
+
+    if (srcType != dstType)
+    {
+        if (srcType == TYP_FLOAT)
+        {
+            // Float to Double: no explicit conversion needed in PowerPC64
+            // Just move to double register (already in correct format)
+            if (treeNode->GetRegNum() != op1->GetRegNum())
+            {
+                GetEmitter()->emitIns_R_R(INS_fmr, EA_8BYTE, treeNode->GetRegNum(), op1->GetRegNum());
+            }
+        }
+        else
+        {
+            // Double to Float: use frsp (round to single precision)
+            GetEmitter()->emitIns_R_R(INS_frsp, EA_4BYTE, treeNode->GetRegNum(), op1->GetRegNum());
+        }
+    }
+    else if (treeNode->GetRegNum() != op1->GetRegNum())
+    {
+        // Same type cast - just move
+        GetEmitter()->emitIns_R_R(INS_fmr, emitActualTypeSize(treeNode), treeNode->GetRegNum(), op1->GetRegNum());
+    }
+
+    genProduceReg(treeNode);
 }
 
 

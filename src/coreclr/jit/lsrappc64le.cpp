@@ -175,7 +175,43 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
 //
 int LinearScan::BuildCast(GenTreeCast* cast)
 {
-	_ASSERTE(!"NYI");
+    GenTree* src = cast->CastOp();
+
+    // Casts can have contained memory operands.
+    if (src->isContained())
+    {
+        return BuildOperandUses(src);
+    }
+
+    SingleTypeRegSet candidates = RBM_NONE;
+    
+    // For float <-> int casts, we may need specific register types
+    var_types srcType = genActualType(src->TypeGet());
+    var_types dstType = cast->TypeGet();
+    
+    if (varTypeIsFloating(srcType) && !varTypeIsFloating(dstType))
+    {
+        // Float/Double to Int cast - source must be in float register
+        candidates = allRegs(TYP_FLOAT);
+	// PowerPC64 needs an internal FP register to hold the converted value
+        // before transferring to integer register via stack
+        buildInternalFloatRegisterDefForNode(cast);
+    }
+    else if (!varTypeIsFloating(srcType) && varTypeIsFloating(dstType))
+    {
+        // Int to Float/Double cast - source must be in int register
+        candidates = allRegs(TYP_INT);
+	// PowerPC64 needs an internal FP register to hold the integer value
+	// after loading from stack before conversion
+	buildInternalFloatRegisterDefForNode(cast);
+    }
+
+    BuildUse(src, candidates);
+    // Build internal register definitions if any were requested
+    buildInternalRegisterUses();
+    BuildDef(cast);
+    
+    return 1;
 }
 
 //------------------------------------------------------------------------

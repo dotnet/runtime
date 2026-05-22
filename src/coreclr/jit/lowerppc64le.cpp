@@ -321,8 +321,29 @@ void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
 //    i) GT_CAST(float/double, int type with overflow detection)
 //
 GenTree* Lowering::LowerCast(GenTree* tree)
-{ 
-	_ASSERTE(!"NYI");
+{
+    assert(tree->OperGet() == GT_CAST);
+
+    JITDUMP("LowerCast for: ");
+    DISPNODE(tree);
+    JITDUMP("\n");
+
+    GenTree*  op1     = tree->AsOp()->gtOp1;
+    var_types dstType = tree->CastToType();
+    var_types srcType = genActualType(op1->TypeGet());
+
+    if (varTypeIsFloating(srcType))
+    {
+        noway_assert(!tree->gtOverflow());
+        assert(!varTypeIsSmall(dstType)); // fgMorphCast creates intermediate casts when converting from float to small int.
+    }
+
+    assert(!varTypeIsSmall(srcType));
+
+    // Now determine if we have operands that should be contained.
+    ContainCheckCast(tree->AsCast());
+
+    return nullptr;
 }
 
 //------------------------------------------------------------------------
@@ -601,7 +622,52 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
 //
 void Lowering::ContainCheckCast(GenTreeCast* node)
 {
-	_ASSERTE(!"NYI");
+    GenTree*  castOp     = node->CastOp();
+    var_types castToType = node->CastToType();
+
+    // PowerPC64LE can contain memory operands for integral casts in certain cases
+    if (comp->opts.OptimizationEnabled() && !node->gtOverflow() && varTypeIsIntegral(castOp) &&
+        varTypeIsIntegral(castToType))
+    {
+        // Most integral casts can be re-expressed as loads, except those that would be changing the sign.
+        if (!varTypeIsSmall(castOp) || (varTypeIsUnsigned(castOp) == node->IsZeroExtending()))
+        {
+            bool srcIsContainable = false;
+
+            // Make sure to only contain indirections codegen can handle.
+            if (castOp->OperIs(GT_IND))
+            {
+                GenTreeIndir* indir = castOp->AsIndir();
+
+                if (!indir->IsVolatile() && !indir->IsUnaligned())
+                {
+                    GenTree* addr = indir->Addr();
+
+                    if (!addr->isContained())
+                    {
+                        srcIsContainable = true;
+                    }
+                }
+            }
+            else
+            {
+                assert(castOp->OperIsLocalRead() || !IsContainableMemoryOp(castOp));
+                srcIsContainable = true;
+            }
+
+            if (srcIsContainable)
+            {
+                if (IsContainableMemoryOp(castOp) && IsSafeToContainMem(node, castOp))
+                {
+                    MakeSrcContained(node, castOp);
+                }
+                else if (IsSafeToMarkRegOptional(node, castOp))
+                {
+                    castOp->SetRegOptional();
+                }
+            }
+        }
+    }
 }
 
 

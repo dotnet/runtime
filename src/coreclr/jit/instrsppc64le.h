@@ -44,6 +44,8 @@ INST(lis,   	  "lis",   	  0, 	  D_FORM,   	0x3C000000)  // addis with RA=0
 INST(ori,   	  "ori",   	  0, 	  D_FORM,   	0x60000000)
 INST(oris,  	  "oris",  	  0, 	  D_FORM,   	0x64000000)
 INST(sldi,  	  "sldi",  	  0, 	  MD_FORM,  	0x78000000)  // rldicr
+INST(srdi,        "srdi",         0,      MD_FORM,      0x78000002)  // rldicl - Shift Right Doubleword Immediate
+INST(andi,        "andi.",        0,      D_FORM,       0x70000000)  // AND Immediate (with record bit)
 INST(cmpw,	  "cmpw",	  0,	  X_FORM,	0x7C000000) // cmp with L=0
 INST(cmpd,        "cmpd",          0,      X_FORM,       0x7C200000) // cmp with L=1
 INST(cmpwi,	  "cmpwi",	  0,	  D_FORM,	0x2C000000) // cmpi with L=0
@@ -83,13 +85,23 @@ INST(fdiv,        "fdiv",         0,      A_FORM,       0xFC000024)  // Floating
 INST(fmr,         "fmr",          0,      X_FORM,       0xFC000090)  // Floating Move Register
 INST(fcmpu,       "fcmpu",        0,      X_FORM,       0xFC000000)  // Floating Compare Unordered
 INST(fcmpo,       "fcmpo",        0,      X_FORM,       0xFC000020)  // Floating Compare Ordered
-					
+INST(frsp,        "frsp",         0,      X_FORM,       0xFC000018)  // Floating Round to Single Precision
+
 // Floating-point conversion instructions
-INST(fcfid,       "fcfid",        0,      X_FORM,       0xFC00069C)  // Floating Convert From Integer Doubleword
-INST(fcfids,      "fcfids",       0,      X_FORM,       0xEC00069C)  // Floating Convert From Integer Doubleword Single
-INST(fcfidu,      "fcfidu",       0,      X_FORM,       0xFC00079C)  // Floating Convert From Integer Doubleword Unsigned
-INST(fcfidus,     "fcfidus",      0,      X_FORM,       0xEC00079C)  // Floating Convert From Integer Doubleword Unsigned Single
-								     
+INST(fctiwz,      "fctiwz",       0,      X_FORM,       0xFC00001E)  // Float Convert to Int Word, Round toward Zero
+INST(fctidz,      "fctidz",       0,      X_FORM,       0xFC00065E)  // Float Convert to Int Doubleword, Round toward Zero
+INST(fctiwuz,     "fctiwuz",      0,      X_FORM,       0xFC00011E)  // Float Convert to Unsigned Int Word, Round toward Zero
+INST(fctiduz,     "fctiduz",      0,      X_FORM,       0xFC00075E)  // Float Convert to Unsigned Int Doubleword, Round toward Zero
+INST(fcfid,       "fcfid",        0,      X_FORM,       0xFC00069C)  // Float Convert From Int Doubleword
+INST(fcfids,      "fcfids",       0,      X_FORM,       0xEC00069C)  // Float Convert From Int Doubleword to Single
+INST(fcfidu,      "fcfidu",       0,      X_FORM,       0xFC00079C)  // Float Convert From Unsigned Int Doubleword
+INST(fcfidus,     "fcfidus",      0,      X_FORM,       0xEC00079C)  // Float Convert From Unsigned Int Doubleword to Single
+
+// Sign extension instructions
+INST(extsb,       "extsb",        0,      X_FORM,       0x7C000774)  // Extend Sign Byte
+INST(extsh,       "extsh",        0,      X_FORM,       0x7C000734)  // Extend Sign Halfword
+INST(extsw,       "extsw",        0,      X_FORM,       0x7C0007B4)  // Extend Sign Word
+ 
 // Integer arithmetic instructions
 INST(add,         "add",          0,      XO_FORM,      0x7C000214)  // Add
 INST(subf,        "subf",         0,      XO_FORM,      0x7C000050)  // Subtract From
@@ -99,6 +111,17 @@ INST(divd,        "divd",         0,      XO_FORM,      0x7C0003D2)  // Divide D
 INST(divdu,       "divdu",        0,      XO_FORM,      0x7C000392)  // Divide Doubleword Unsigned
 INST(divw,        "divw",         0,      XO_FORM,      0x7C0003D6)  // Divide Word
 INST(divwu,       "divwu",        0,      XO_FORM,      0x7C000396)  // Divide Word Unsigned
+
+// Logical/Bitwise instructions
+INST(and_ins,     "and",          0,      X_FORM,       0x7C000038)  // AND (renamed to avoid C++ keyword conflict)
+INST(or_ins,      "or",           0,      X_FORM,       0x7C000378)  // OR (renamed to avoid C++ keyword conflict)
+INST(xor_ins,     "xor",          0,      X_FORM,       0x7C000278)  // XOR (renamed to avoid C++ keyword conflict)
+INST(nor,         "nor",          0,      X_FORM,       0x7C0000F8)  // NOR
+INST(nand,        "nand",         0,      X_FORM,       0x7C0003B8)  // NAND
+INST(andc,        "andc",         0,      X_FORM,       0x7C000078)  // AND with Complement
+INST(orc,         "orc",          0,      X_FORM,       0x7C000338)  // OR with Complement
+INST(xori,        "xori",         0,      D_FORM,       0x68000000)  // XOR Immediate
+INST(xoris,       "xoris",        0,      D_FORM,       0x6C000000)  // XOR Immediate Shifted
 
 // clang-format on
 /*****************************************************************************/

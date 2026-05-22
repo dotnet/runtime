@@ -35,6 +35,7 @@
 #define ppc_mr(c,a,s)      ppc_or     (c, a, s, s)
 #define ppc_ori(c,S,A,ui)  ppc_emit32 (c, (24 << 26) | ((S) << 21) | ((A) << 16) | (uint16_t)(ui))
 #define ppc_oris(c,S,A,ui) ppc_emit32 (c, (25 << 26) | ((S) << 21) | ((A) << 16) | (uint16_t)(ui))
+#define ppc_andi(c,A,S,ui) ppc_emit32 (c, (28 << 26) | ((S) << 21) | ((A) << 16) | (uint16_t)(ui))
 #define ppc_nop(c)         ppc_ori    (c, 0, 0, 0)
 
 // Arithmetic instructions
@@ -45,7 +46,9 @@
 
 // Rotate and shift instructions
 #define ppc_rldicr(c,A,S,n,b) ppc_emit32(c, (30 << 26) | ((S) << 21) | ((A) << 16) | (((n) & 0x1f) << 11) | (((b) & 0x1f) << 6) | ((((n) & 0x20) >> 5) << 1) | ((((b) & 0x20) >> 5) << 5) | (1 << 2))
+#define ppc_rldicl(c,A,S,n,b) ppc_emit32(c, (30 << 26) | ((S) << 21) | ((A) << 16) | (((n) & 0x1f) << 11) | (((b) & 0x1f) << 6) | ((((n) & 0x20) >> 5) << 1) | ((((b) & 0x20) >> 5) << 5) | (0 << 2))
 #define ppc_sldi(c,A,S,n)  ppc_rldicr(c, A, S, n, 63 - (n))
+#define ppc_srdi(c,A,S,n)  ppc_rldicl(c, A, S, 64 - (n), (n))
 
 // Compare instructions
 #define ppc_cmp(c,cfrD,L,A,B)   ppc_emit32(c, (31 << 26) | ((cfrD) << 23) | (0 << 22) | ((L) << 21) | ((A) << 16) | ((B) << 11) | (0 << 1) | 0)
@@ -89,11 +92,35 @@
 // Format: opcode(6) | fD(5) | 0(5) | fB(5) | XO(10) | Rc(1)
 #define ppc_fmr(c,D,B)     ppc_emit32 (c, (63 << 26) | ((D) << 21) | (0 << 16) | ((B) << 11) | (72 << 1) | 0)
 
+// Floating-point round to single precision (X-form)
+// Format: opcode(6) | fD(5) | 0(5) | fB(5) | XO(10) | Rc(1)
+#define ppc_frsp(c,D,B)    ppc_emit32 (c, (63 << 26) | ((D) << 21) | (0 << 16) | ((B) << 11) | (12 << 1) | 0)
+
+// Floating-point convert from integer doubleword (X-form)
+// Format: opcode(6) | fD(5) | 0(5) | fB(5) | XO(10) | Rc(1)
+#define ppc_fcfid(c,D,B)   ppc_emit32 (c, (63 << 26) | ((D) << 21) | (0 << 16) | ((B) << 11) | (846 << 1) | 0)
+#define ppc_fcfids(c,D,B)  ppc_emit32 (c, (59 << 26) | ((D) << 21) | (0 << 16) | ((B) << 11) | (846 << 1) | 0)
+#define ppc_fcfidu(c,D,B)  ppc_emit32 (c, (63 << 26) | ((D) << 21) | (0 << 16) | ((B) << 11) | (974 << 1) | 0)
+#define ppc_fcfidus(c,D,B) ppc_emit32 (c, (59 << 26) | ((D) << 21) | (0 << 16) | ((B) << 11) | (974 << 1) | 0)
+
+// Floating-point convert to integer word/doubleword with round toward zero (X-form)
+// Format: opcode(6) | fD(5) | 0(5) | fB(5) | XO(10) | Rc(1)
+#define ppc_fctiwz(c,D,B)  ppc_emit32 (c, (63 << 26) | ((D) << 21) | (0 << 16) | ((B) << 11) | (15 << 1) | 0)
+#define ppc_fctidz(c,D,B)  ppc_emit32 (c, (63 << 26) | ((D) << 21) | (0 << 16) | ((B) << 11) | (815 << 1) | 0)
+#define ppc_fctiwuz(c,D,B) ppc_emit32 (c, (63 << 26) | ((D) << 21) | (0 << 16) | ((B) << 11) | (143 << 1) | 0)
+#define ppc_fctiduz(c,D,B) ppc_emit32 (c, (63 << 26) | ((D) << 21) | (0 << 16) | ((B) << 11) | (943 << 1) | 0)
+
 // Floating-point comparison instructions (X-form)
 // Format: opcode(6) | crD(3) | 0(2) | fA(5) | fB(5) | XO(10) | 0(1)
 // crD specifies which CR field to update (0-7), typically use 0 for CR0
 #define ppc_fcmpu(c,crD,A,B)  ppc_emit32 (c, (63 << 26) | ((crD) << 23) | ((A) << 16) | ((B) << 11) | (0 << 1) | 0)
 #define ppc_fcmpo(c,crD,A,B)  ppc_emit32 (c, (63 << 26) | ((crD) << 23) | ((A) << 16) | ((B) << 11) | (32 << 1) | 0)
+
+// Sign/Zero extension instructions (X-form)
+// Format: opcode(6) | rS(5) | rA(5) | rB(5) | XO(10) | Rc(1)
+#define ppc_extsb(c,A,S)   ppc_emit32 (c, (31 << 26) | ((S) << 21) | ((A) << 16) | (0 << 11) | (954 << 1) | 0)
+#define ppc_extsh(c,A,S)   ppc_emit32 (c, (31 << 26) | ((S) << 21) | ((A) << 16) | (0 << 11) | (922 << 1) | 0)
+#define ppc_extsw(c,A,S)   ppc_emit32 (c, (31 << 26) | ((S) << 21) | ((A) << 16) | (0 << 11) | (986 << 1) | 0)
 
 // Integer arithmetic instructions (XO-form)
 // Format: opcode(6) | rD(5) | rA(5) | rB(5) | OE(1) | XO(9) | Rc(1)
@@ -105,6 +132,16 @@
 #define ppc_divdu(c,D,A,B) ppc_emit32 (c, (31 << 26) | ((D) << 21) | ((A) << 16) | ((B) << 11) | (0 << 10) | (457 << 1) | 0) 
 #define ppc_divw(c,D,A,B)  ppc_emit32 (c, (31 << 26) | ((D) << 21) | ((A) << 16) | ((B) << 11) | (0 << 10) | (491 << 1) | 0) 
 #define ppc_divwu(c,D,A,B) ppc_emit32 (c, (31 << 26) | ((D) << 21) | ((A) << 16) | ((B) << 11) | (0 << 10) | (459 << 1) | 0) 
+
+// Logical/Bitwise instructions (X-form)
+// Format: opcode(6) | rS(5) | rA(5) | rB(5) | XO(10) | Rc(1)
+#define ppc_and(c,A,S,B)   ppc_emit32 (c, (31 << 26) | ((S) << 21) | ((A) << 16) | ((B) << 11) | (28 << 1) | 0)
+#define ppc_or(c,A,S,B)    ppc_emit32 (c, (31 << 26) | ((S) << 21) | ((A) << 16) | ((B) << 11) | (444 << 1) | 0)
+#define ppc_xor(c,A,S,B)   ppc_emit32 (c, (31 << 26) | ((S) << 21) | ((A) << 16) | ((B) << 11) | (316 << 1) | 0)
+#define ppc_nor(c,A,S,B)   ppc_emit32 (c, (31 << 26) | ((S) << 21) | ((A) << 16) | ((B) << 11) | (124 << 1) | 0)
+#define ppc_nand(c,A,S,B)  ppc_emit32 (c, (31 << 26) | ((S) << 21) | ((A) << 16) | ((B) << 11) | (476 << 1) | 0)
+#define ppc_andc(c,A,S,B)  ppc_emit32 (c, (31 << 26) | ((S) << 21) | ((A) << 16) | ((B) << 11) | (60 << 1) | 0)
+#define ppc_orc(c,A,S,B)   ppc_emit32 (c, (31 << 26) | ((S) << 21) | ((A) << 16) | ((B) << 11) | (412 << 1) | 0)
 
 // Trap instruction
 #define ppc_trap(c)        ppc_emit32 (c, 0x7FE00008)
