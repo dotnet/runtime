@@ -18679,10 +18679,28 @@ bool Compiler::gtSplitTree(BasicBlock* block,
                     m_compiler->lvaGetDesc(lclNum)->lvIsMultiRegRet = true;
                 }
 
-                GenTree* store = m_compiler->gtNewTempStore(lclNum, *use);
-                stmt           = m_compiler->fgNewStmtFromTree(store, m_splitStmt->GetDebugInfo());
-                *use           = m_compiler->gtNewLclvNode(lclNum, genActualType(*use));
-                MadeChanges    = true;
+                GenTree* value = *use;
+                GenTree* store = m_compiler->gtNewTempStore(lclNum, value);
+
+                LclVarDsc* const lclDsc = m_compiler->lvaGetDesc(lclNum);
+                assert(lclDsc->lvSingleDef == 0);
+                lclDsc->lvSingleDef = 1;
+                JITDUMP("Marked V%02u as a single def temp\n", lclNum);
+
+                if (value->TypeIs(TYP_REF))
+                {
+                    bool                 isExact   = false;
+                    bool                 isNonNull = false;
+                    CORINFO_CLASS_HANDLE clsHnd    = m_compiler->gtGetClassHandle(value, &isExact, &isNonNull);
+                    if (clsHnd != NO_CLASS_HANDLE)
+                    {
+                        m_compiler->lvaSetClass(lclNum, clsHnd, isExact);
+                    }
+                }
+
+                stmt        = m_compiler->fgNewStmtFromTree(store, m_splitStmt->GetDebugInfo());
+                *use        = m_compiler->gtNewLclvNode(lclNum, genActualType(value));
+                MadeChanges = true;
             }
 
             if (stmt != nullptr)
