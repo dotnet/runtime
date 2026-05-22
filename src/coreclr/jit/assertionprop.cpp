@@ -2406,13 +2406,25 @@ bool Compiler::optAssertionVNIsSubtype(ValueNum             vn,
                                        ASSERT_VALARG_TP     assertions,
                                        int                  budget)
 {
-    if ((vn == ValueNumStore::NoVN) || (castTo == NO_CLASS_HANDLE))
+    if ((budget <= 0) || (vn == ValueNumStore::NoVN) || (castTo == NO_CLASS_HANDLE))
     {
         return false;
     }
 
-    // 1. Check assertions for a Subtype/ExactType assertion on this VN.
-    //
+    bool isExact;
+    bool isNonNull;
+
+    // First, try the VN's version of gtGetClassHandle over the vn itself, e.g. vn being
+    // Jit_NewObj(MyClass) while we're trying to prove "Jit_NewObj(MyClass) is MyClass".
+    CORINFO_CLASS_HANDLE castFromVN = vnStore->GetObjectType(vn, &isExact, &isNonNull);
+    if ((castFromVN != NO_CLASS_HANDLE) &&
+        (info.compCompHnd->compareTypesForCast(castFromVN, castTo) == TypeCompareState::Must))
+    {
+        return true;
+    }
+
+    // Now look through assertions directly on the VN.
+    // We're looking for "vn is (exactly/subtype) cls" assertions that can help us prove the cast.
     BitVecOps::Iter iter(apTraits, assertions);
     unsigned        bvIndex = 0;
     while (iter.NextElem(&bvIndex))
@@ -2421,7 +2433,7 @@ bool Compiler::optAssertionVNIsSubtype(ValueNum             vn,
         const AssertionDsc&  curAssertion = optGetAssertion(index);
 
         if (!curAssertion.KindIs(OAK_EQUAL) || !curAssertion.GetOp1().KindIs(O1K_SUBTYPE, O1K_EXACT_TYPE) ||
-            !curAssertion.GetOp2().KindIs(O2K_CONST_INT))
+            (curAssertion.GetOp1().GetVN() != vn))
         {
             // TODO-CQ: We might benefit from OAK_NOT_EQUAL assertion as well, e.g.:
             // if (obj is not MyClass) // obj is known to be never of MyClass class
@@ -2432,55 +2444,23 @@ bool Compiler::optAssertionVNIsSubtype(ValueNum             vn,
             continue;
         }
 
-        if (curAssertion.GetOp1().GetVN() != vn)
+        // Extract CORINFO_CLASS_HANDLE from curAssertion.GetOp2()
+        CORINFO_CLASS_HANDLE cls;
+        if (!vnStore->IsVNTypeHandle(curAssertion.GetOp2().GetVN(), &cls))
         {
             continue;
         }
 
-        // Resolve the source class handle from the type-handle VN stored in the
-        // assertion. We must go through the embedded-handle map so AOT/R2R works.
-        //
-        ValueNum castFromVN     = curAssertion.GetOp2().GetVN();
-        ssize_t  castFromHandle = 0;
-        if (!vnStore->IsVNTypeHandle(castFromVN) ||
-            !vnStore->EmbeddedHandleMapLookup(vnStore->ConstantValue<ssize_t>(castFromVN), &castFromHandle) ||
-            (castFromHandle == 0))
+        // Now we have "thisVN is (exactly/subtype) cls" assertion.
+        // We want to see if this implies "thisVN is (exactly/subtype) cls".
+        if (info.compCompHnd->compareTypesForCast(cls, castTo) == TypeCompareState::Must)
         {
-            continue;
-        }
-
-        CORINFO_CLASS_HANDLE castFrom = (CORINFO_CLASS_HANDLE)castFromHandle;
-
-        // For O1K_EXACT_TYPE the object is exactly castFrom; for O1K_SUBTYPE it
-        // is some subtype of castFrom. In both cases, if castFrom is castable
-        // to castTo (Must), every actual runtime type of obj is too.
-        //
-        if (info.compCompHnd->compareTypesForCast(castFrom, castTo) == TypeCompareState::Must)
-        {
+            // The assertion implies the cast is always successful.
             return true;
         }
     }
 
-    // 2. Try to recover a class from the VN itself (e.g. VNF_JitNew(classHandle)).
-    //
-    bool                 isExact;
-    bool                 isNonNull;
-    CORINFO_CLASS_HANDLE castFromVN = vnStore->GetObjectType(vn, &isExact, &isNonNull);
-    if ((castFromVN != NO_CLASS_HANDLE) &&
-        (info.compCompHnd->compareTypesForCast(castFromVN, castTo) == TypeCompareState::Must))
-    {
-        return true;
-    }
-
-    if (budget <= 0)
-    {
-        return false;
-    }
-
-    // 3. For PHI-defs, walk reaching assertions/VNs and recursively check.
-    //    optVisitReachingAssertions yields per-edge assertion sets so each
-    //    reaching VN is evaluated against the assertions that hold on its edge.
-    //
+    // For PHI-defs, walk reaching assertions/VNs and recursively check.
     return optVisitReachingAssertions(vn, [this, castTo, budget](ValueNum reachingVN, ASSERT_TP reachingAssertions) {
         return optAssertionVNIsSubtype(reachingVN, castTo, reachingAssertions, budget - 1) ? AssertVisit::Continue
                                                                                            : AssertVisit::Abort;
@@ -5411,13 +5391,10 @@ GenTree* Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCal
             CallArg* objCallArg    = call->gtArgs.GetArgByIndex(1);
             GenTree* castToArg     = castToCallArg->GetNode();
             GenTree* objArg        = objCallArg->GetNode();
-            ValueNum objVN         = optConservativeNormalVN(objArg);
-            ValueNum castToVN      = optConservativeNormalVN(castToArg);
 
-            ssize_t handle = 0;
-            if (vnStore->IsVNTypeHandle(castToVN) &&
-                vnStore->EmbeddedHandleMapLookup(vnStore->ConstantValue<ssize_t>(castToVN), &handle) &&
-                optAssertionVNIsSubtype(objVN, reinterpret_cast<CORINFO_CLASS_HANDLE>(handle), assertions))
+            CORINFO_CLASS_HANDLE castTo;
+            if (vnStore->IsVNTypeHandle(optConservativeNormalVN(castToArg), &castTo) &&
+                optAssertionVNIsSubtype(optConservativeNormalVN(objArg), castTo, assertions))
             {
                 JITDUMP("\nDid VN based subtype prop in " FMT_BB ":\n", compCurBB->bbNum);
                 DISPTREE(call);

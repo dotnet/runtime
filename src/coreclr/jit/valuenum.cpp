@@ -7174,6 +7174,18 @@ bool ValueNumStore::IsVNTypeHandle(ValueNum vn)
     return IsVNHandle(vn, GTF_ICON_CLASS_HDL);
 }
 
+bool ValueNumStore::IsVNTypeHandle(ValueNum vn, CORINFO_CLASS_HANDLE* pCls)
+{
+    ssize_t handle = 0;
+    if (IsVNTypeHandle(vn) && EmbeddedHandleMapLookup(ConstantValue<ssize_t>(vn), &handle) && (handle != 0))
+    {
+        *pCls = reinterpret_cast<CORINFO_CLASS_HANDLE>(handle);
+        return true;
+    }
+    *pCls = NO_CLASS_HANDLE;
+    return false;
+}
+
 //------------------------------------------------------------------------
 // SwapRelop: return VNFunc for swapped relop
 //
@@ -15849,17 +15861,15 @@ CORINFO_CLASS_HANDLE ValueNumStore::GetObjectType(ValueNum vn, bool* pIsExact, b
     const VNFunc func = funcApp.m_func;
     if ((func == VNF_CastClass) || (func == VNF_IsInstanceOf) || (func == VNF_JitNew))
     {
-        ssize_t  clsHandle = 0;
-        ValueNum clsVN     = funcApp.m_args[0];
+        ValueNum clsVN = funcApp.m_args[0];
 
-        // NOTE: EmbeddedHandleMapLookup may return 0 for non-0 embedded handle
-        if (IsVNTypeHandle(clsVN) && EmbeddedHandleMapLookup(ConstantValue<ssize_t>(clsVN), &clsHandle) &&
-            (clsHandle != 0))
+        CORINFO_CLASS_HANDLE clsHandle;
+        if (IsVNTypeHandle(clsVN, &clsHandle))
         {
             // JitNew returns an exact and non-null obj, castclass and isinst do not have this guarantee.
             *pIsNonNull = func == VNF_JitNew;
             *pIsExact   = func == VNF_JitNew;
-            return (CORINFO_CLASS_HANDLE)clsHandle;
+            return clsHandle;
         }
     }
 

@@ -1133,6 +1133,9 @@ public:
     // Returns true iff the VN represents a Type handle constant.
     bool IsVNTypeHandle(ValueNum vn);
 
+    // Returns true iff the VN represents a Type handle constant.
+    bool IsVNTypeHandle(ValueNum vn, CORINFO_CLASS_HANDLE* pCls);
+
     // Returns true iff the VN represents a relop
     bool IsVNRelop(ValueNum vn, VNFuncApp* pFuncApp = nullptr);
 
