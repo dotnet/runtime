@@ -8088,7 +8088,10 @@ bool Lowering::TryLowerConstIntUDivOrUMod(GenTreeOp* divMod)
     assert(varTypeIsFloating(divMod->TypeGet()));
 #endif // USE_HELPERS_FOR_INT_DIV
 #if defined(TARGET_ARM64)
-    assert(!divMod->OperIs(GT_UMOD));
+    // ARM64 has no remainder instruction. Morph rewrites every non-pow2 MOD/UMOD
+    // into a SUB-MUL-DIV form except when the FastMod path here can apply, which
+    // requires a constant uint16 divisor (and a uint16-range dividend).
+    assert(!divMod->OperIs(GT_UMOD) || divMod->gtGetOp2()->IsCnsIntOrI());
 #endif // TARGET_ARM64
 
     GenTree* dividend = divMod->gtGetOp1();
@@ -8170,10 +8173,78 @@ bool Lowering::TryLowerConstIntUDivOrUMod(GenTreeOp* divMod)
         }
     }
 
+    assert(divisorValue >= 3);
+
     // TODO-ARM-CQ: Currently there's no GT_MULHI for ARM32
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    if (!m_compiler->opts.MinOpts() && (divisorValue >= 3))
+    if (!m_compiler->opts.MinOpts())
     {
+#ifdef TARGET_64BIT
+        // Replace (uint16 % uint16) with a cheaper variant of FastMod, specialized for 16-bit operands.
+        //
+        // uint multiplier = uint.MaxValue / divisor + 1;
+        // ulong result = ((ulong)(dividend * multiplier) * divisor) >> 32;
+        // return (int)result;
+        //
+        // The dividend is first truncated to TYP_INT (safe because we know it fits in
+        // uint16), and the final value (always in [0, divisor)) is widened back to the
+        // mod's result type. The dividend's range may have been recovered either
+        // statically by IntegralRange::ForNode at this point, or earlier by assertion
+        // propagation (which leaves GTF_UMOD_UINT16_OPERANDS for us).
+        if (!isDiv && FitsIn<uint16_t>(divisorValue) &&
+            (((divMod->gtFlags & GTF_UMOD_UINT16_OPERANDS) != 0) ||
+             IntegralRange::ForType(TYP_USHORT).Contains(IntegralRange::ForNode(dividend, m_compiler))))
+        {
+            GenTree* dividendInt = dividend;
+            if (genActualType(dividend) != TYP_INT)
+            {
+                assert(genActualType(dividend) == TYP_LONG);
+                dividendInt = m_compiler->gtNewCastNode(TYP_INT, dividend, /* unsigned */ true, TYP_INT);
+                BlockRange().InsertBefore(divMod, dividendInt);
+            }
+
+            GenTree* multiplier =
+                m_compiler->gtNewIconNode(static_cast<ssize_t>((UINT32_MAX / divisorValue) + 1), TYP_INT);
+            GenTree* mul1 = m_compiler->gtNewOperNode(GT_MUL, TYP_INT, dividendInt, multiplier);
+            mul1->SetUnsigned();
+            GenTree* castUp = m_compiler->gtNewCastNode(TYP_LONG, mul1, /* unsigned */ true, TYP_LONG);
+            BlockRange().InsertBefore(divMod, multiplier, mul1, castUp);
+
+            // Reuse the existing constant divisor as a TYP_LONG operand for the second multiply.
+            divisor->BashToConst(static_cast<int64_t>(divisorValue));
+
+            GenTree* mul2 = m_compiler->gtNewOperNode(GT_MUL, TYP_LONG, castUp, divisor);
+            mul2->SetUnsigned();
+            GenTree* shiftAmount = m_compiler->gtNewIconNode(32);
+            BlockRange().InsertBefore(divMod, mul2, shiftAmount);
+
+            GenTree* firstNode = (dividendInt == dividend) ? multiplier : dividendInt;
+
+            if (type == TYP_LONG)
+            {
+                // The shift result is already TYP_LONG; turn divMod itself into the shift.
+                divMod->ChangeOper(GT_RSZ);
+                divMod->gtOp1 = mul2;
+                divMod->gtOp2 = shiftAmount;
+            }
+            else
+            {
+                assert(type == TYP_INT);
+                GenTree* shift = m_compiler->gtNewOperNode(GT_RSZ, TYP_LONG, mul2, shiftAmount);
+                BlockRange().InsertBefore(divMod, shift);
+
+                divMod->ChangeOper(GT_CAST);
+                divMod->AsCast()->gtCastType = TYP_INT;
+                divMod->gtOp1                = shift;
+                divMod->gtOp2                = nullptr;
+                divMod->SetUnsigned();
+            }
+
+            ContainCheckRange(firstNode, divMod);
+            return true;
+        }
+#endif // TARGET_64BIT
+
         size_t magic;
         bool   increment;
         int    preShift;

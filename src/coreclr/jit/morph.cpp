@@ -7424,6 +7424,26 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
             else if (tree->OperIs(GT_MOD) && op2->IsIntegralConst() && !op2->IsIntegralConstAbsPow2())
 #endif
             {
+#if defined(TARGET_64BIT)
+                // Skip this transform when lowering will be able to apply the
+                // cheaper uint16 FastMod sequence. This requires the divisor to
+                // be a non-zero constant in uint16 range and the dividend's
+                // static IntegralRange to already fit in uint16.
+                if (op2->IsCnsIntOrI())
+                {
+                    ssize_t modDivisor = op2->AsIntCon()->IconValue();
+                    if ((modDivisor > 0) && FitsIn<uint16_t>(modDivisor) &&
+                        IntegralRange::ForType(TYP_USHORT).Contains(IntegralRange::ForNode(op1, this)))
+                    {
+                        if (tree->OperIs(GT_MOD))
+                        {
+                            tree->SetOper(GT_UMOD);
+                        }
+                        break;
+                    }
+                }
+#endif // TARGET_64BIT
+
                 // Transformation: a % b = a - (a / b) * b;
                 tree = fgMorphModToSubMulDiv(tree->AsOp());
                 op1  = tree->AsOp()->gtOp1;

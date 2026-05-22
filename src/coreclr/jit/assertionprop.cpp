@@ -228,6 +228,24 @@ bool IntegralRange::Contains(int64_t value) const
                 rangeType = compiler->lvaGetDesc(node->AsLclVar())->TypeGet();
             }
 
+            // If the local's conservative VN identifies it as the result of a CAST
+            // to a small type, the value stored is bounded by that type's range.
+            if (compiler->vnStore != nullptr)
+            {
+                ValueNum  vn = compiler->vnStore->VNConservativeNormalValue(node->gtVNPair);
+                VNFuncApp funcApp;
+                if (compiler->vnStore->GetVNFunc(vn, &funcApp) && (funcApp.m_func == VNF_Cast))
+                {
+                    var_types castToType;
+                    bool      srcIsUnsigned;
+                    compiler->vnStore->GetCastOperFromVN(funcApp.m_args[1], &castToType, &srcIsUnsigned);
+                    if (varTypeIsSmall(castToType))
+                    {
+                        return ForType(castToType);
+                    }
+                }
+            }
+
             if (varDsc->IsNeverNegative())
             {
                 return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
@@ -532,12 +550,21 @@ bool IntegralRange::Contains(int64_t value) const
     // CAST(ulong/long <- int)      - [INT_MIN..INT_MAX]
     if (!cast->gtOverflow())
     {
-        if ((fromType == TYP_INT) && fromUnsigned)
+        IntegralRange typeRange = (fromType == TYP_INT) && fromUnsigned
+                                      ? IntegralRange{SymbolicIntegerValue::Zero, SymbolicIntegerValue::UIntMax}
+                                      : IntegralRange{SymbolicIntegerValue::IntMin, SymbolicIntegerValue::IntMax};
+
+        // Refine using the operand's known range: when the operand fits entirely
+        // inside what the cast can represent, the cast preserves the value, so we
+        // can tighten the output range to the operand's range. This handles cases
+        // like CAST(int <- ulong) of a value already known to be in uint16 range.
+        IntegralRange operandRange = ForNode(cast->CastOp(), compiler);
+        if (typeRange.Contains(operandRange))
         {
-            return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::UIntMax};
+            return operandRange;
         }
 
-        return {SymbolicIntegerValue::IntMin, SymbolicIntegerValue::IntMax};
+        return typeRange;
     }
 
     SymbolicIntegerValue lowerBound;
@@ -4044,6 +4071,7 @@ GenTree* Compiler::optAssertionProp_AddMulSub(ASSERT_VALARG_TP assertions, GenTr
 //    1) Convert DIV/MOD to UDIV/UMOD if both operands are proven to be never negative
 //    2) Marks DIV/UDIV/MOD/UMOD with GTF_DIV_MOD_NO_BY_ZERO if divisor is proven to be never zero
 //    3) Marks DIV/UDIV/MOD/UMOD with GTF_DIV_MOD_NO_OVERFLOW if both operands are proven to be never negative
+//    4) Marks UMOD with GTF_UMOD_UINT16_OPERANDS if both operands are proven to be in uint16 range
 //
 // Arguments:
 //    assertions - set of live assertions
@@ -4090,6 +4118,22 @@ GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions,
         tree->gtFlags |= GTF_DIV_MOD_NO_OVERFLOW;
         changed = true;
     }
+
+#ifdef TARGET_64BIT
+    // Detect "uint16 % const-uint16" patterns so lowering can emit a cheaper FastMod sequence.
+    if (((tree->gtFlags & GTF_UMOD_UINT16_OPERANDS) == 0) && tree->OperIs(GT_UMOD) && !opts.MinOpts() &&
+        op2->IsCnsIntOrI())
+    {
+        ssize_t divisorValue = op2->AsIntCon()->IconValue();
+        if ((divisorValue > 0) && FitsIn<uint16_t>(divisorValue) &&
+            IntegralRange::ForType(TYP_USHORT).Contains(IntegralRange::ForNode(op1, this)))
+        {
+            JITDUMP("Both operands for UMOD are in uint16 range...\n")
+            tree->gtFlags |= GTF_UMOD_UINT16_OPERANDS;
+            changed = true;
+        }
+    }
+#endif // TARGET_64BIT
 
     return changed ? optAssertionProp_Update(tree, tree, stmt) : nullptr;
 }
