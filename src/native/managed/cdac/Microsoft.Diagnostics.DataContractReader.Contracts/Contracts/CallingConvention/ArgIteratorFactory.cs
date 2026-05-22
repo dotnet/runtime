@@ -20,20 +20,10 @@ internal static class ArgIteratorFactory
     {
         return layout.Architecture switch
         {
-            RuntimeInfoArchitecture.X86 => new X86ArgIterator(
-                layout, argData, hasParamType, hasAsyncContinuation),
             RuntimeInfoArchitecture.X64 => layout.OperatingSystem != RuntimeInfoOperatingSystem.Windows
                 ? new AMD64UnixArgIterator(
                     layout, argData, hasParamType, hasAsyncContinuation)
                 : new AMD64WindowsArgIterator(
-                    layout, argData, hasParamType, hasAsyncContinuation),
-            RuntimeInfoArchitecture.Arm => new Arm32ArgIterator(
-                layout, argData, hasParamType, hasAsyncContinuation,
-                isArmhfABI: !layout.Target.TryReadGlobal(Constants.Globals.FeatureArmSoftFP, out byte? _)),
-            RuntimeInfoArchitecture.Arm64 => new Arm64ArgIterator(
-                layout, argData, hasParamType, hasAsyncContinuation),
-            RuntimeInfoArchitecture.LoongArch64 or RuntimeInfoArchitecture.RiscV64
-                => new RiscV64LoongArch64ArgIterator(
                     layout, argData, hasParamType, hasAsyncContinuation),
             _ => throw new NotSupportedException(layout.Architecture.ToString()),
         };

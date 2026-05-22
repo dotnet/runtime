@@ -11,7 +11,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Tests;
 /// verify harness-level invariants (the contract decodes without throwing,
 /// arg counts match) that should hold on every supported architecture.
 /// Per-architecture offset assertions live in the platform-specific test
-/// classes (e.g. <c>X86CallingConventionTests</c>).
+/// classes (e.g. <c>AMD64WindowsCallingConventionTests</c>).
 /// </summary>
 /// <remarks>
 /// <para>Gaps NOT covered by Skip-tagged tests anywhere:</para>
