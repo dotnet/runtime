@@ -4235,6 +4235,126 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector<uint> ReciprocalSqrtEstimate(Vector<uint> value) { throw new PlatformNotSupportedException(); }
 
 
+        // Saturating extract narrow (bottom)
+
+        /// <summary>
+        /// svint16_t svqxtnb[_s32](svint32_t op)
+        ///   SQXTNB Zresult.H, Zop.S
+        /// </summary>
+        public static Vector<short> SaturatingExtractNarrowingLower(Vector<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svqxtnb[_s64](svint64_t op)
+        ///   SQXTNB Zresult.S, Zop.D
+        /// </summary>
+        public static Vector<int> SaturatingExtractNarrowingLower(Vector<long> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svqxtnb[_s16](svint16_t op)
+        ///   SQXTNB Zresult.B, Zop.H
+        /// </summary>
+        public static Vector<sbyte> SaturatingExtractNarrowingLower(Vector<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svqxtnb[_u32](svuint32_t op)
+        ///   UQXTNB Zresult.H, Zop.S
+        /// </summary>
+        public static Vector<ushort> SaturatingExtractNarrowingLower(Vector<uint> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svqxtnb[_u64](svuint64_t op)
+        ///   UQXTNB Zresult.S, Zop.D
+        /// </summary>
+        public static Vector<uint> SaturatingExtractNarrowingLower(Vector<ulong> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint8_t svqxtnb[_u16](svuint16_t op)
+        ///   UQXTNB Zresult.B, Zop.H
+        /// </summary>
+        public static Vector<byte> SaturatingExtractNarrowingLower(Vector<ushort> value) { throw new PlatformNotSupportedException(); }
+
+
+        // Saturating extract narrow (top)
+
+        /// <summary>
+        /// svint16_t svqxtnt[_s32](svint16_t even, svint32_t op)
+        ///   SQXTNT Ztied.H, Zop.S
+        /// </summary>
+        public static Vector<short> SaturatingExtractNarrowingUpper(Vector<short> even, Vector<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svqxtnt[_s64](svint32_t even, svint64_t op)
+        ///   SQXTNT Ztied.S, Zop.D
+        /// </summary>
+        public static Vector<int> SaturatingExtractNarrowingUpper(Vector<int> even, Vector<long> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svqxtnt[_s16](svint8_t even, svint16_t op)
+        ///   SQXTNT Ztied.B, Zop.H
+        /// </summary>
+        public static Vector<sbyte> SaturatingExtractNarrowingUpper(Vector<sbyte> even, Vector<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svqxtnt[_u32](svuint16_t even, svuint32_t op)
+        ///   UQXTNT Ztied.H, Zop.S
+        /// </summary>
+        public static Vector<ushort> SaturatingExtractNarrowingUpper(Vector<ushort> even, Vector<uint> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svqxtnt[_u64](svuint32_t even, svuint64_t op)
+        ///   UQXTNT Ztied.S, Zop.D
+        /// </summary>
+        public static Vector<uint> SaturatingExtractNarrowingUpper(Vector<uint> even, Vector<ulong> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint8_t svqxtnt[_u16](svuint8_t even, svuint16_t op)
+        ///   UQXTNT Ztied.B, Zop.H
+        /// </summary>
+        public static Vector<byte> SaturatingExtractNarrowingUpper(Vector<byte> even, Vector<ushort> value) { throw new PlatformNotSupportedException(); }
+
+
+        // Saturating extract unsigned narrow (bottom)
+
+        /// <summary>
+        /// svuint8_t svqxtunb[_s16](svint16_t op)
+        ///   SQXTUNB Zresult.B, Zop.H
+        /// </summary>
+        public static Vector<byte> SaturatingExtractUnsignedNarrowingLower(Vector<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svqxtunb[_s32](svint32_t op)
+        ///   SQXTUNB Zresult.H, Zop.S
+        /// </summary>
+        public static Vector<ushort> SaturatingExtractUnsignedNarrowingLower(Vector<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svqxtunb[_s64](svint64_t op)
+        ///   SQXTUNB Zresult.S, Zop.D
+        /// </summary>
+        public static Vector<uint> SaturatingExtractUnsignedNarrowingLower(Vector<long> value) { throw new PlatformNotSupportedException(); }
+
+
+        // Saturating extract unsigned narrow (top)
+
+        /// <summary>
+        /// svuint8_t svqxtunt[_s16](svuint8_t even, svint16_t op)
+        ///   SQXTUNT Ztied.B, Zop.H
+        /// </summary>
+        public static Vector<byte> SaturatingExtractUnsignedNarrowingUpper(Vector<byte> even, Vector<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svqxtunt[_s32](svuint16_t even, svint32_t op)
+        ///   SQXTUNT Ztied.H, Zop.S
+        /// </summary>
+        public static Vector<ushort> SaturatingExtractUnsignedNarrowingUpper(Vector<ushort> even, Vector<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svqxtunt[_s64](svuint32_t even, svint64_t op)
+        ///   SQXTUNT Ztied.S, Zop.D
+        /// </summary>
+        public static Vector<uint> SaturatingExtractUnsignedNarrowingUpper(Vector<uint> even, Vector<long> value) { throw new PlatformNotSupportedException(); }
+
+
         // Truncate to 16 bits and store, non-temporal
 
         // <summary>
