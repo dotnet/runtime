@@ -18,6 +18,12 @@ fx_ver_t::fx_ver_t(int major, int minor, int patch, const pal::string_t& pre, co
     , m_pre(pre)
     , m_build(build)
 {
+    // Verify preconditions.
+    assert(is_empty() || m_major >= 0);
+    assert(is_empty() || m_minor >= 0);
+    assert(is_empty() || m_patch >= 0);
+    assert(m_pre.empty() || m_pre[0] == _X('-'));
+    assert(m_build.empty() || m_build[0] == _X('+'));
 }
 
 fx_ver_t::fx_ver_t(int major, int minor, int patch, const pal::string_t& pre)
@@ -76,7 +82,18 @@ pal::string_t fx_ver_t::as_str() const
     c_ver.pre = const_cast<pal_char_t*>(m_pre.c_str());
     c_ver.build = const_cast<pal_char_t*>(m_build.c_str());
 
-    pal_char_t buf[512];
+    // SemVer does not define a hard limit on version string length:
+    // https://semver.org/#does-semver-have-a-size-limit-on-the-version-string
+    // Use a fixed stack buffer and assert in debug that no truncation is possible.
+    pal_char_t buf[256];
+    size_t required_len =
+        pal::to_string(m_major).size() +
+        pal::to_string(m_minor).size() +
+        pal::to_string(m_patch).size() +
+        m_pre.size() +
+        m_build.size() +
+        3; // '.' + '.' + '\0'
+    assert(required_len <= ARRAY_SIZE(buf));
     c_fx_ver_as_str(&c_ver, buf, ARRAY_SIZE(buf));
 
     return pal::string_t(buf);
