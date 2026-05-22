@@ -486,6 +486,7 @@ CodeGenInterface::siVarLoc::siVarLoc(const LclVarDsc* varDsc, regNumber baseReg,
 //
 // Arguments:
 //    varDsc       - the variable it is desired to build the "siVarLoc".
+//    offset       - offset into the variable to add
 //    stackLevel   - the current stack level. If the stack pointer changes in
 //                   the function, we must adjust stack pointer-based local
 //                   variable offsets to compensate.
@@ -494,12 +495,12 @@ CodeGenInterface::siVarLoc::siVarLoc(const LclVarDsc* varDsc, regNumber baseReg,
 //    A "siVarLoc" representing the variable location, which could live
 //    in a register, an stack position, or a combination of both.
 //
-CodeGenInterface::siVarLoc CodeGenInterface::getSiVarLoc(const LclVarDsc* varDsc, unsigned int stackLevel) const
+CodeGenInterface::siVarLoc CodeGenInterface::getSiVarLoc(const LclVarDsc* varDsc, unsigned offset, unsigned stackLevel) const
 {
     // For stack vars, find the base register, and offset
 
     regNumber baseReg;
-    signed    offset = varDsc->GetStackOffset();
+    offset += varDsc->GetStackOffset();
 
     if (!varDsc->lvFramePointerBased)
     {
@@ -1080,7 +1081,7 @@ void CodeGenInterface::VariableLiveKeeper::siStartVariableLiveRange(const LclVar
     {
         // Build siVarLoc for this born "varDsc"
         CodeGenInterface::siVarLoc varLocation =
-            m_compiler->codeGen->getSiVarLoc(varDsc, m_compiler->codeGen->getCurrentStackLevel());
+            m_compiler->codeGen->getSiVarLoc(varDsc, 0, m_compiler->codeGen->getCurrentStackLevel());
 
         VariableLiveDescriptor* varLiveDsc = &m_vlrLiveDsc[varNum];
         // this variable live range is valid from this point
@@ -1149,7 +1150,7 @@ void CodeGenInterface::VariableLiveKeeper::siUpdateVariableLiveRange(const LclVa
     {
         // Build the location of the variable
         CodeGenInterface::siVarLoc siVarLoc =
-            m_compiler->codeGen->getSiVarLoc(varDsc, m_compiler->codeGen->getCurrentStackLevel());
+            m_compiler->codeGen->getSiVarLoc(varDsc, 0, m_compiler->codeGen->getCurrentStackLevel());
 
         // Report the home change for this variable
         VariableLiveDescriptor* varLiveDsc = &m_vlrLiveDsc[varNum];
@@ -1781,9 +1782,7 @@ void CodeGen::genSetScopeInfo()
     }
 #endif
 
-    unsigned varsLocationsCount = 0;
-
-    varsLocationsCount = (unsigned int)varLiveKeeper->getLiveRangesCount();
+    unsigned varsLocationsCount = (unsigned int)(varLiveKeeper->getLiveRangesCount() + emittedCallReturnInfo->size());
 
     if (varsLocationsCount == 0)
     {
@@ -1811,6 +1810,18 @@ void CodeGen::genSetScopeInfo()
     // intervals, and may not indicate the same variable location.
 
     genSetScopeInfoUsingVariableRanges();
+
+    for (const EmittedCallReturnInfo& callReturnInfo : *emittedCallReturnInfo)
+    {
+        UNATIVE_OFFSET retOffset = callReturnInfo.returnLocation.CodeOffset(GetEmitter());
+
+        m_compiler->eeSetLVinfo(
+            m_compiler->eeVarsCount++,
+            retOffset, retOffset + 1,
+            callReturnInfo.callILOffset,
+            ICorDebugInfo::CALL_RETURN_ILNUM,
+            callReturnInfo.returnValueLoc);
+    }
 
     m_compiler->eeSetLVdone();
 }
@@ -2001,7 +2012,7 @@ void CodeGen::genSetScopeInfo(unsigned       which,
 
 #endif // DEBUG
 
-    m_compiler->eeSetLVinfo(which, startOffs, length, ilVarNum, *varLoc);
+    m_compiler->eeSetLVinfo(which, startOffs, startOffs + length, 0, ilVarNum, *varLoc);
 }
 
 /*****************************************************************************/

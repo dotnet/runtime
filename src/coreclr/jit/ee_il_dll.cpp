@@ -670,10 +670,10 @@ void Compiler::eeSetLVcount(unsigned count)
 
     JITDUMP("VarLocInfo count is %d\n", count);
 
-    eeVarsCount = count;
-    if (eeVarsCount)
+    eeVarsCapacity = count;
+    if (count > 0)
     {
-        eeVars = (VarResultInfo*)info.compCompHnd->allocateArray(eeVarsCount * sizeof(eeVars[0]));
+        eeVars = (VarResultInfo*)info.compCompHnd->allocateArray(count * sizeof(eeVars[0]));
     }
     else
     {
@@ -683,7 +683,8 @@ void Compiler::eeSetLVcount(unsigned count)
 
 void Compiler::eeSetLVinfo(unsigned                          which,
                            UNATIVE_OFFSET                    startOffs,
-                           UNATIVE_OFFSET                    length,
+                           UNATIVE_OFFSET                    endOffs,
+                           uint32_t                          callReturnValueILOffset,
                            unsigned                          varNum,
                            const CodeGenInterface::siVarLoc& varLoc)
 {
@@ -691,13 +692,13 @@ void Compiler::eeSetLVinfo(unsigned                          which,
     // This is checked in siInit()
 
     assert(opts.compScopeInfo);
-    assert(eeVarsCount > 0);
-    assert(which < eeVarsCount);
+    assert(which < eeVarsCapacity);
 
     if (eeVars != nullptr)
     {
         eeVars[which].startOffset = startOffs;
-        eeVars[which].endOffset   = startOffs + length;
+        eeVars[which].endOffset   = endOffs;
+        eeVars[which].callReturnValueILOffset   = callReturnValueILOffset;
         eeVars[which].varNumber   = varNum;
         eeVars[which].loc         = varLoc;
     }
@@ -870,7 +871,12 @@ void Compiler::eeDispVar(ICorDebugInfo::NativeVarInfo* var)
     {
         name = "typeCtx";
     }
-    if (0 <= var->varNumber && var->varNumber < lvaCount)
+
+    if (var->varNumber == (DWORD)ICorDebugInfo::CALL_RETURN_ILNUM)
+    {
+        int printed = printf("(call %03u)", var->callReturnValueILOffset);
+    }
+    else if (0 <= var->varNumber && var->varNumber < lvaCount)
     {
         printf("(");
         gtDispLclVar(var->varNumber, false);
@@ -878,7 +884,7 @@ void Compiler::eeDispVar(ICorDebugInfo::NativeVarInfo* var)
     }
     else
     {
-        printf("(%10s)", (VarNameToStr(name) == nullptr) ? "UNKNOWN" : VarNameToStr(name));
+        printf("(%8s)", (VarNameToStr(name) == nullptr) ? "UNKNOWN" : VarNameToStr(name));
     }
     printf(" : From %08Xh to %08Xh, in ", var->startOffset, var->endOffset);
 

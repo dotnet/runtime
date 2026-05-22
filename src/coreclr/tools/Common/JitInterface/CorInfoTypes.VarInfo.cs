@@ -34,6 +34,7 @@ namespace Internal.JitInterface
     {
         public uint startOffset;
         public uint endOffset;
+        public uint callReturnValueILOffset;
         public uint varNumber;
         public VarLoc varLoc;
     };

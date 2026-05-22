@@ -1759,6 +1759,88 @@ void CodeGen::genEmitCallWithCurrentGC(EmitCallParams& params)
     params.gcrefRegs = gcInfo.gcRegGCrefSetCur;
     params.byrefRegs = gcInfo.gcRegByrefSetCur;
     GetEmitter()->emitIns_Call(params);
+
+    // Emit an entry for managed return value reporting, if needed.
+    GenTreeCall* call = params.returnValueCall;
+    JITDUMP("Emit ret val for [%06u]\n", call == nullptr ? 0 : Compiler::dspTreeID(call));
+    if ((call == nullptr) || !m_compiler->opts.compDbgInfo || (m_compiler->genCallSite2DebugInfoMap == nullptr) || params.isJump)
+    {
+        return;
+    }
+
+    if (call->gtReturnType == TYP_VOID)
+    {
+        return;
+    }
+
+    DebugInfo di;
+    if (!m_compiler->genCallSite2DebugInfoMap->Lookup(call, &di))
+    {
+        return;
+    }
+
+    emitLocation retLoc;
+    retLoc.CaptureLocation(GetEmitter());
+
+    CodeGenInterface::EmittedCallReturnInfo info;
+    info.callILOffset = di.GetRoot().GetLocation().GetOffset();
+    info.returnLocation = retLoc;
+
+    CallArg* retBuf = call->gtArgs.GetRetBufferArg();
+    if (retBuf != nullptr)
+    {
+        GenTree* node = retBuf->GetNode();
+        assert(node->OperIsPutArg());
+
+        node = node->gtGetOp1()->gtSkipReloadOrCopy();
+        if (!node->OperIs(GT_LCL_ADDR))
+        {
+            return;
+        }
+
+        unsigned lclNum = node->AsLclVarCommon()->GetLclNum();
+        unsigned lclOffs = node->AsLclVarCommon()->GetLclOffs();
+        info.returnValueLoc = getSiVarLoc(m_compiler->lvaGetDesc(lclNum), lclOffs, 0);
+    }
+    else if (call->HasMultiRegRetVal())
+    {
+        const ReturnTypeDesc* retDesc = call->GetReturnTypeDesc();
+        unsigned numRegs = retDesc->GetReturnRegCount();
+        if (numRegs > 2)
+        {
+            // Cannot encode more than 2 registers.
+            return;
+        }
+
+        assert(numRegs == 2);
+        info.returnValueLoc.storeVariableInRegisters(
+            retDesc->GetABIReturnReg(0, call->GetUnmanagedCallConv()),
+            retDesc->GetABIReturnReg(1, call->GetUnmanagedCallConv()));
+    }
+    else if (varTypeIsFloating(call))
+    {
+#ifdef TARGET_X86
+        info.returnValueLoc.vlType = VLT_FPSTK;
+        info.returnValueLoc.vlFPstk.vlfReg = 0;
+#else
+        info.returnValueLoc.storeVariableInRegisters(REG_FLOATRET, REG_NA);
+#endif
+    }
+    else if (varTypeUsesFloatReg(call))
+    {
+        info.returnValueLoc.storeVariableInRegisters(REG_FLOATRET, REG_NA);
+    }
+    else
+    {
+        info.returnValueLoc.storeVariableInRegisters(REG_INTRET, REG_NA);
+    }
+
+    if (emittedCallReturnInfo == nullptr)
+    {
+        emittedCallReturnInfo = new (m_compiler, CMK_DebugInfo) jitstd::vector<EmittedCallReturnInfo>(m_compiler->getAllocator(CMK_DebugInfo));
+    }
+
+    emittedCallReturnInfo->push_back(info);
 }
 
 /*****************************************************************************
