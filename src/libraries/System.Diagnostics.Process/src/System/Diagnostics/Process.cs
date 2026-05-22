@@ -112,9 +112,9 @@ namespace System.Diagnostics
         /// with optional standard I/O stream handles and start info.
         /// </summary>
         /// <param name="processHandle">A <see cref="SafeProcessHandle"/> representing the process.</param>
-        /// <param name="standardInput">An optional <see cref="SafeFileHandle"/> for the standard input stream of the process.</param>
-        /// <param name="standardOutput">An optional <see cref="SafeFileHandle"/> for the standard output stream of the process.</param>
-        /// <param name="standardError">An optional <see cref="SafeFileHandle"/> for the standard error stream of the process.</param>
+        /// <param name="standardInput">An optional <see cref="SafeFileHandle"/> for the standard input stream of the process. The handle must support write access.</param>
+        /// <param name="standardOutput">An optional <see cref="SafeFileHandle"/> for the standard output stream of the process. The handle must support read access.</param>
+        /// <param name="standardError">An optional <see cref="SafeFileHandle"/> for the standard error stream of the process. The handle must support read access.</param>
         /// <param name="startInfo">An optional <see cref="ProcessStartInfo"/> containing encoding information for the streams.</param>
         public Process(SafeProcessHandle processHandle, SafeFileHandle? standardInput = null, SafeFileHandle? standardOutput = null, SafeFileHandle? standardError = null, ProcessStartInfo? startInfo = null)
         {

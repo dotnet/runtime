@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
-using System.IO;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
@@ -202,7 +200,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        private unsafe int RunWithHandles(ProcessStartInfo startInfo, nint hStdInput, nint hStdOutput, nint hStdError)
+        private unsafe int RunWithHandles(ProcessStartInfo startInfo, nint hStdInput, nint hStdOutput, nint hStdError, bool inheritHandles = false)
         {
             // RemoteExector has provided us with the right path and arguments,
             // we just need to add the terminating null character.
@@ -228,7 +226,7 @@ namespace System.Diagnostics.Tests
                     commandLinePtr,
                     ref unused_SecAttrs,
                     ref unused_SecAttrs,
-                    bInheritHandles: true,
+                    bInheritHandles: inheritHandles,
                     Interop.Kernel32.EXTENDED_STARTUPINFO_PRESENT,
                     null,
                     null,
