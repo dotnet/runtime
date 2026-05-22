@@ -60,9 +60,9 @@ namespace Microsoft.Extensions.Hosting.Tests
             RemoteExecutor.Invoke(static async () =>
             {
                 using var dir = new CwdTempDirectory();
-                File.WriteAllText(Path.Combine(dir.Path, "appsettings.json"), "{}");
+                File.WriteAllText(Path.Combine(dir.ResolvedPath, "appsettings.json"), "{}");
 
-                string[] messages = await RunWithDefaultsAsync(contentRootPath: dir.Path);
+                string[] messages = await RunWithDefaultsAsync(contentRootPath: dir.ResolvedPath);
 
                 Assert.DoesNotContain(messages, m => m.StartsWith(ContentRootDiagnosticMessagePrefix));
             }).Dispose();
@@ -74,9 +74,9 @@ namespace Microsoft.Extensions.Hosting.Tests
             RemoteExecutor.Invoke(static async () =>
             {
                 using var dir = new CwdTempDirectory();
-                Assert.False(File.Exists(Path.Combine(dir.Path, "appsettings.json")));
+                Assert.False(File.Exists(Path.Combine(dir.ResolvedPath, "appsettings.json")));
 
-                string[] messages = await RunWithDefaultsAsync(contentRootPath: dir.Path);
+                string[] messages = await RunWithDefaultsAsync(contentRootPath: dir.ResolvedPath);
 
                 Assert.Contains(messages, m => m.StartsWith(ContentRootDiagnosticMessagePrefix));
             }).Dispose();
@@ -90,9 +90,9 @@ namespace Microsoft.Extensions.Hosting.Tests
             RemoteExecutor.Invoke(static async () =>
             {
                 using var dir = new CwdTempDirectory();
-                Assert.False(File.Exists(Path.Combine(dir.Path, "appsettings.json")));
+                Assert.False(File.Exists(Path.Combine(dir.ResolvedPath, "appsettings.json")));
 
-                string[] messages = await RunWithoutDefaultsAsync(contentRootPath: dir.Path);
+                string[] messages = await RunWithoutDefaultsAsync(contentRootPath: dir.ResolvedPath);
 
                 Assert.DoesNotContain(messages, m => m.StartsWith(ContentRootDiagnosticMessagePrefix));
             }).Dispose();
@@ -127,7 +127,7 @@ namespace Microsoft.Extensions.Hosting.Tests
                 var loggerProvider = new TestLoggerProvider();
                 IHostBuilder builder = new HostBuilder()
                     .ConfigureDefaults(Array.Empty<string>())
-                    .UseContentRoot(dir.Path)
+                    .UseContentRoot(dir.ResolvedPath)
                     .ConfigureLogging(logging => logging.AddProvider(loggerProvider))
                     .ConfigureServices(services => services.AddHostedService<ThrowingHostedService>());
 
@@ -182,14 +182,22 @@ namespace Microsoft.Extensions.Hosting.Tests
         // TempDirectory that also sets the current working directory to its path for the lifetime
         // of the instance. Always used inside RemoteExecutor.Invoke to keep the CWD change
         // isolated from the test runner process.
+        //
+        // On macOS, Path.GetTempPath() returns a path under /tmp while Directory.GetCurrentDirectory()
+        // returns the resolved path (under /private/tmp). Capture the resolved CWD so callers can use
+        // a path that matches what ConsoleLifetime sees at runtime.
         private sealed class CwdTempDirectory : TempDirectory
         {
             private readonly string _previousCwd;
+
+            /// <summary>The resolved current directory after this instance's <c>SetCurrentDirectory</c> call.</summary>
+            public string ResolvedPath { get; }
 
             public CwdTempDirectory()
             {
                 _previousCwd = Directory.GetCurrentDirectory();
                 Directory.SetCurrentDirectory(Path);
+                ResolvedPath = Directory.GetCurrentDirectory();
             }
 
             protected override void DeleteDirectory()
