@@ -1800,7 +1800,17 @@ void CodeGen::genEmitCallWithCurrentGC(EmitCallParams& params)
 
         unsigned lclNum = node->AsLclVarCommon()->GetLclNum();
         unsigned lclOffs = node->AsLclVarCommon()->GetLclOffs();
-        info.returnValueLoc = getSiVarLoc(m_compiler->lvaGetDesc(lclNum), lclOffs, 0);
+        int stackLevelBias = 0;
+#ifdef TARGET_X86
+        stackLevelBias = getCurrentStackLevel();
+        if (params.argSize > 0)
+        {
+            // Call popped these but stack level hasn't been adjusted yet, account for it here
+            stackLevelBias -= params.argSize;
+        }
+#endif
+
+        info.returnValueLoc = getSiVarLoc(m_compiler->lvaGetDesc(lclNum), lclOffs, stackLevelBias);
     }
     else if (call->HasMultiRegRetVal())
     {
