@@ -206,8 +206,44 @@ void UnwindAndContinueRethrowHelperInsideCatch(Frame* pEntryFrame, Exception* pE
 VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFrame, Exception* pException, bool nativeRethrow);
 
 #ifdef FEATURE_INTERPRETER
-VOID DECLSPEC_NORETURN UnwindAndContinueResumeAfterCatch(TADDR resumeSP, TADDR resumeIP);
-#endif // FEATURE_INTERPRETER
+class ResumeAfterCatchException;
+#endif
+
+#if defined(FEATURE_INTERPRETER) && !defined(HOST_WASM)
+VOID DECLSPEC_NORETURN RethrowResumeAfterCatchException(const ResumeAfterCatchException& ex, Frame *pFrame);
+
+// Install / uninstall handler at a native to managed code boundary.
+
+#define INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT(pContext) \
+        CONTEXT *__pResumeAfterCatchContext = pContext;           \
+        try                                                       \
+        {
+
+#define INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pFrame) \
+        Frame *__pResumeAfterCatchFrame = pFrame;  \
+        try                                        \
+        {
+
+#define UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT                                      \
+        }                                                                                      \
+        catch (const ResumeAfterCatchException& ex)                                            \
+        {                                                                                      \
+            RethrowResumeAfterCatchExceptionSkipManagedFrames(ex, __pResumeAfterCatchContext); \
+        }
+
+#define UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME                     \
+        }                                                                   \
+        catch (const ResumeAfterCatchException& ex)                         \
+        {                                                                   \
+            RethrowResumeAfterCatchException(ex, __pResumeAfterCatchFrame); \
+        }
+
+#else // FEATURE_INTERPRETER && !HOST_WASM
+#define INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pFrame)
+#define INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT(pContext)
+#define UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME
+#define UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT
+#endif // FEATURE_INTERPRETER && !HOST_WASM
 
 #ifdef TARGET_UNIX
 VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHardwareException);
