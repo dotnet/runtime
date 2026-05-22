@@ -1020,8 +1020,8 @@ DEVIRT:
         }
         else if (call->AsCall()->IsDelegateInvoke())
         {
-            considerGuardedDevirtualization(call->AsCall(), rawILOffset, false, NO_METHOD_HANDLE, NO_CLASS_HANDLE,
-                                            nullptr);
+            considerGuardedDevirtualization(call->AsCall(), rawILOffset, false, call->AsCall()->gtCallMethHnd,
+                                            NO_CLASS_HANDLE, nullptr);
         }
     }
 
