@@ -775,4 +775,75 @@ public class AMD64UnixCallingConventionTests
     }
 
 #pragma warning restore xUnit1004
+
+    // ----- ValueTypeHandle population for by-value value-type args -----
+    //
+    // AMD64-Unix (SysV) pre-decomposes by-value structs into GC-typed eightbytes
+    // (I8/Class/Byref/R8) when they're passed in registers or split between
+    // regs+stack. For those cases ValueTypeHandle MUST be null (the existing
+    // per-slot ElementType already gives the GC scanner everything it needs;
+    // walking GCDesc would duplicate or contradict the eightbyte classification).
+    //
+    // ValueTypeHandle is only populated when the iterator hands back a single
+    // ValueType-typed slot, which happens when the struct is too large for
+    // enregistration and lands entirely on the stack as a contiguous buffer.
+
+    [Fact]
+    public void ValueTypeByValue_LargeOnStack_PopulatesValueTypeHandle()
+    {
+        // 32-byte struct > 16 -> ineligible for enregistration -> passed by value
+        // on the stack as a contiguous buffer. The iterator emits a single
+        // ValueType-typed slot; ValueTypeHandle carries the MT for GCDesc walk.
+        ulong expectedMtAddress = 0;
+        var (target, mdh) = CallingConventionTestHelpers.CreateTargetWithMethod(
+            Case, hasThis: false,
+            (rts, sig) =>
+            {
+                MockMethodTable mt = MockDescriptors.CallingConvention.AddValueTypeMethodTable(
+                    rts, "FourLongs", structSize: 32,
+                    fields:
+                    [
+                        new(0, CorElementType.I8),
+                        new(8, CorElementType.I8),
+                        new(16, CorElementType.I8),
+                        new(24, CorElementType.I8),
+                    ]);
+                expectedMtAddress = mt.Address;
+                sig.Return(CorElementType.Void).ParamValueType(new TargetPointer(mt.Address));
+            });
+
+        CallSiteLayout layout = target.Contracts.CallingConvention.ComputeCallSiteLayout(mdh);
+        Assert.Single(layout.Arguments);
+        ArgLayout arg = layout.Arguments[0];
+        Assert.False(arg.IsPassedByRef);
+        Assert.NotNull(arg.ValueTypeHandle);
+        Assert.Equal(expectedMtAddress, (ulong)arg.ValueTypeHandle.Value.Address);
+    }
+
+    [Fact]
+    public void ValueTypeByValue_SysVDecomposed_DoesNotPopulateValueTypeHandle()
+    {
+        // { object o; double d; } -> SysV-classified into two eightbytes
+        // (IntegerReference, SSE). The iterator emits one ArgSlot with
+        // ElementType=Class and another with ElementType=R8. Because the per-slot
+        // ElementType already encodes GC refs precisely, ValueTypeHandle must be
+        // null -- the GCDesc walk would otherwise double-report or contradict.
+        // Pins the "all slots ValueType" discriminator in ComputeValueTypeHandle.
+        var (target, mdh) = CallingConventionTestHelpers.CreateTargetWithMethod(
+            Case, hasThis: false,
+            (rts, sig) =>
+            {
+                MockMethodTable mt = MockDescriptors.CallingConvention.AddValueTypeMethodTable(
+                    rts, "ObjectAndDouble2", structSize: 16,
+                    fields: [new(0, CorElementType.Object), new(8, CorElementType.R8)]);
+                sig.Return(CorElementType.Void).ParamValueType(new TargetPointer(mt.Address));
+            });
+
+        CallSiteLayout layout = target.Contracts.CallingConvention.ComputeCallSiteLayout(mdh);
+        Assert.Single(layout.Arguments);
+        ArgLayout arg = layout.Arguments[0];
+        Assert.False(arg.IsPassedByRef);
+        Assert.Equal(2, arg.Slots.Count);
+        Assert.Null(arg.ValueTypeHandle);
+    }
 }

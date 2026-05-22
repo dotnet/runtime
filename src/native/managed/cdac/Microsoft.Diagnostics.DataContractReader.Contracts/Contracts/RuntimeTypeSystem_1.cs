@@ -575,6 +575,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return elementType is CorElementType.Class or CorElementType.Array or CorElementType.SzArray;
     }
     public bool ContainsGCPointers(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.ContainsGCPointers;
+    public bool IsByRefLike(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.IsByRefLike;
     public bool RequiresAlign8(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.RequiresAlign8;
 
     public bool IsHFA(TypeHandle typeHandle)
@@ -2192,6 +2193,75 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     TargetPointer IRuntimeTypeSystem.GetFieldDescStaticAddress(TargetPointer fieldDescPointer, bool unboxValueTypes) => GetFieldDescStaticOrThreadStaticAddress(fieldDescPointer, null, unboxValueTypes);
 
     TargetPointer IRuntimeTypeSystem.GetFieldDescThreadStaticAddress(TargetPointer fieldDescPointer, TargetPointer thread, bool unboxValueTypes) => GetFieldDescStaticOrThreadStaticAddress(fieldDescPointer, thread, unboxValueTypes);
+
+    IEnumerable<TargetPointer> IRuntimeTypeSystem.EnumerateInstanceFieldDescs(TypeHandle typeHandle)
+    {
+        if (!typeHandle.IsMethodTable())
+            yield break;
+
+        TargetPointer firstFieldDesc = ((IRuntimeTypeSystem)this).GetFieldDescList(typeHandle);
+        if (firstFieldDesc == TargetPointer.Null)
+            yield break;
+
+        IRuntimeTypeSystem rts = this;
+        ushort numInstanceFields = rts.GetNumInstanceFields(typeHandle);
+        if (numInstanceFields == 0)
+            yield break;
+
+        // Statics are intermixed with instance fields in the FieldDesc array, so
+        // we iterate the whole array and filter. Total = instance + static + thread-static.
+        ushort totalFields = (ushort)(numInstanceFields
+            + rts.GetNumStaticFields(typeHandle)
+            + rts.GetNumThreadStaticFields(typeHandle));
+
+        uint fieldDescSize = (uint)_target.GetTypeInfo(DataType.FieldDesc).Size!;
+
+        ushort seenInstance = 0;
+        for (ushort i = 0; i < totalFields && seenInstance < numInstanceFields; i++)
+        {
+            TargetPointer fdPtr = new(firstFieldDesc.Value + i * fieldDescSize);
+            if (rts.IsFieldDescStatic(fdPtr))
+                continue;
+            seenInstance++;
+            yield return fdPtr;
+        }
+    }
+
+    TypeHandle IRuntimeTypeSystem.LookupApproxFieldTypeHandle(TargetPointer fieldDescPointer)
+    {
+        if (fieldDescPointer == TargetPointer.Null)
+            return default;
+
+        IRuntimeTypeSystem rts = this;
+        uint token = rts.GetFieldDescMemberDef(fieldDescPointer);
+        EntityHandle entityHandle = MetadataTokens.EntityHandle((int)token);
+        if (entityHandle.IsNil || entityHandle.Kind != HandleKind.FieldDefinition)
+            return default;
+
+        TargetPointer enclosingMT = rts.GetMTOfEnclosingClass(fieldDescPointer);
+        TypeHandle ctx = rts.GetTypeHandle(enclosingMT);
+        if (!ctx.IsMethodTable())
+            return default;
+
+        TargetPointer modulePtr = rts.GetModule(ctx);
+        if (modulePtr == TargetPointer.Null)
+            return default;
+
+        ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
+        MetadataReader? mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle);
+        if (mdReader is null)
+            return default;
+
+        FieldDefinition fieldDef = mdReader.GetFieldDefinition((FieldDefinitionHandle)entityHandle);
+        try
+        {
+            return _target.Contracts.Signature.DecodeFieldSignature(fieldDef.Signature, moduleHandle, ctx);
+        }
+        catch
+        {
+            return default;
+        }
+    }
 
     void IRuntimeTypeSystem.GetCoreLibFieldDescAndDef(string @namespace, string typeName, string fieldName, out TargetPointer fieldDescAddr, out FieldDefinition fieldDef)
     {

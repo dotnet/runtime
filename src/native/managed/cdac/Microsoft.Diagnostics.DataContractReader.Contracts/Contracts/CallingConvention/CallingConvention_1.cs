@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using Microsoft.Diagnostics.DataContractReader.Contracts.CallingConventionHelpers;
+using Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
 using Microsoft.Diagnostics.DataContractReader.SignatureHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
@@ -90,11 +91,67 @@ internal sealed class CallingConvention_1 : ICallingConvention
             foreach (ArgLocation l in loc.Locations)
                 slots.Add(new ArgSlot(l.TransitionBlockOffset, l.ElementType));
 
-            args.Add(new ArgLayout(loc.IsByRef, slots));
+            args.Add(new ArgLayout(loc.IsByRef, slots, ComputeValueTypeHandle(loc, slots)));
             argIndex++;
         }
 
         return new CallSiteLayout(thisOffset, isValueTypeThis, asyncOffset, varArgCookieOffset, args);
+    }
+
+    /// <summary>
+    /// Mirrors native <c>MetaSig::GcScanRoots</c>'s value-type branch
+    /// (see <c>src/coreclr/vm/siginfo.cpp</c>): when an argument is a value type
+    /// passed by value in storage that the per-arch iterator did <em>not</em>
+    /// GC-decompose, the GC scanner walks the type's layout to report embedded
+    /// refs. Surface the value-type's <see cref="TypeHandle"/> on
+    /// <see cref="ArgLayout"/> so the scanner can do that walk. The scanner
+    /// dispatches on <see cref="IRuntimeTypeSystem.IsByRefLike"/> to choose
+    /// between a CGCDesc walk (ordinary value types) and a field walk
+    /// (ByRefLike types: <c>Span&lt;T&gt;</c>, ref structs).
+    /// </summary>
+    /// <returns>
+    /// The value type's <see cref="TypeHandle"/> when the layout describes a
+    /// contiguous by-value buffer that requires a layout-driven walk to report
+    /// refs (including ByRefLike types); <see langword="null"/> otherwise
+    /// (primitives, references, byref-passed value types, iterator-decomposed
+    /// slots).
+    /// </returns>
+    private static TypeHandle? ComputeValueTypeHandle(ArgLocDesc loc, List<ArgSlot> slots)
+    {
+        // Pass-by-implicit-reference: the slot holds an interior pointer and the
+        // GC scanner reports it via the byref path; no value-type walk needed.
+        if (loc.IsByRef)
+            return null;
+
+        // Native dispatches by gElementTypeInfo[etype].m_gc; only ValueType /
+        // TypedByRef route through the GCDesc walk. Other types are handled by
+        // the per-slot ElementType already.
+        if (loc.ArgType is not (CorElementType.ValueType or CorElementType.TypedByRef))
+            return null;
+
+        // If the per-arch iterator pre-decomposed the storage (e.g. SysV split
+        // structs on AMD64-Unix emit per-eightbyte ElementTypes like Class/Byref/R8;
+        // ARM64 HFAs emit per-FP-reg R4/R8 slots), the GC scanner already has
+        // sufficient information via ArgSlot.ElementType. Walking GCDesc would
+        // duplicate or contradict the iterator's classification. Discriminator:
+        // every slot has ElementType == ValueType iff the iterator did NOT
+        // decompose this argument.
+        foreach (ArgSlot s in slots)
+        {
+            if (s.ElementType != CorElementType.ValueType)
+                return null;
+        }
+
+        TypeHandle th = loc.ArgTypeInfo.RuntimeTypeHandle;
+        if (!th.IsMethodTable())
+            return null;
+
+        // Both ordinary value types and ByRefLike types (Span<T>, ref structs) are
+        // reported through ValueTypeHandle. The GC scanner dispatches on
+        // IRuntimeTypeSystem.IsByRefLike to choose the walk strategy: a CGCDesc
+        // series walk for ordinary value types, a field-by-field walk (parallel to
+        // native ByRefPointerOffsetsReporter in siginfo.cpp) for ByRefLike types.
+        return th;
     }
 
     /// <summary>

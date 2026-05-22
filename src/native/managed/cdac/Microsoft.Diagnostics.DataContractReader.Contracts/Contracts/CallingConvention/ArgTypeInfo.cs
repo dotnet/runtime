@@ -92,37 +92,69 @@ internal readonly struct ArgTypeInfo
 
     /// <summary>
     /// Creates an <see cref="ArgTypeInfo"/> from a target TypeHandle using the
-    /// runtime type system contract.
+    /// runtime type system contract. Handles primitives (using the static element-size
+    /// table), reference types (pointer-sized, projected to <see cref="CorElementType.Class"/>
+    /// to match downstream classifier expectations), and real value types (full MT layout
+    /// query for size / HFA / alignment). Mirrors native <c>MetaSig::GetByValType</c> +
+    /// <c>SigPointer::PeekElemTypeNormalized</c>.
     /// </summary>
     public static ArgTypeInfo FromTypeHandle(Target target, TypeHandle th)
     {
         IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
         CorElementType corType = rts.GetSignatureCorElementType(th);
 
-        bool isValueType = corType is CorElementType.ValueType;
-        int size = isValueType
-            ? rts.GetNumInstanceFieldBytes(th)
-            : target.PointerSize;
-
-        bool requiresAlign8 = false;
-        bool isHfa = false;
-        int hfaElemSize = 0;
-
-        if (isValueType)
+        switch (corType)
         {
-            requiresAlign8 = rts.RequiresAlign8(th);
-            isHfa = rts.IsHFA(th);
-            if (isHfa)
-            {
-                hfaElemSize = ComputeHfaElementSize(target, rts, th, requiresAlign8);
-            }
+            case CorElementType.ValueType:
+                return FromValueType(target, rts, th, corType);
+
+            // Primitives have static sizes -- consult s_elemSizes rather than reading
+            // the MethodTable. CorElementType for primitives is already normalized by
+            // GetSignatureCorElementType (e.g. enums collapse to their underlying type).
+            case CorElementType.Void:
+            case CorElementType.Boolean:
+            case CorElementType.Char:
+            case CorElementType.I1:
+            case CorElementType.U1:
+            case CorElementType.I2:
+            case CorElementType.U2:
+            case CorElementType.I4:
+            case CorElementType.U4:
+            case CorElementType.I8:
+            case CorElementType.U8:
+            case CorElementType.R4:
+            case CorElementType.R8:
+            case CorElementType.I:
+            case CorElementType.U:
+            case CorElementType.FnPtr:
+            case CorElementType.Ptr:
+                return ForPrimitive(corType, target.PointerSize, th);
+
+            case CorElementType.Byref:
+                return ForPrimitive(CorElementType.Byref, target.PointerSize, th);
+
+            default:
+                // Reference types (Class, String, Object, Array, SzArray, etc.) are
+                // projected to CorElementType.Class so downstream classification
+                // (X86ArgIterator, SystemVStructClassifier) sees them as a single
+                // category. The TypeHandle is preserved for generic-instantiation
+                // matching.
+                return ForPrimitive(CorElementType.Class, target.PointerSize, th);
         }
+    }
+
+    private static ArgTypeInfo FromValueType(Target target, IRuntimeTypeSystem rts, TypeHandle th, CorElementType corType)
+    {
+        int size = rts.GetNumInstanceFieldBytes(th);
+        bool requiresAlign8 = rts.RequiresAlign8(th);
+        bool isHfa = rts.IsHFA(th);
+        int hfaElemSize = isHfa ? ComputeHfaElementSize(target, rts, th, requiresAlign8) : 0;
 
         return new ArgTypeInfo
         {
             CorElementType = corType,
             Size = size,
-            IsValueType = isValueType,
+            IsValueType = true,
             RequiresAlign8 = requiresAlign8,
             IsHomogeneousAggregate = isHfa,
             HomogeneousAggregateElementSize = hfaElemSize,
@@ -178,7 +210,7 @@ internal readonly struct ArgTypeInfo
                 case CorElementType.R8:
                     return 8;
                 case CorElementType.ValueType:
-                    TypeHandle nested = LookupApproxFieldTypeHandle(target, rts, firstField);
+                    TypeHandle nested = rts.LookupApproxFieldTypeHandle(firstField);
                     if (nested.IsNull || !nested.IsMethodTable())
                         return 0;
                     current = nested;
@@ -193,51 +225,19 @@ internal readonly struct ArgTypeInfo
     }
 
     /// <summary>
-    /// Resolves a field's declared type without triggering type loading. Mirrors native
-    /// <c>FieldDesc::LookupApproxFieldTypeHandle</c> (DAC variant): walks the field's
-    /// metadata signature and returns the resulting <see cref="TypeHandle"/>, or a null
-    /// handle when the type isn't already loaded.
-    /// </summary>
-    private static TypeHandle LookupApproxFieldTypeHandle(Target target, IRuntimeTypeSystem rts, TargetPointer fieldDescPointer)
-    {
-        if (fieldDescPointer == TargetPointer.Null)
-            return default;
-
-        uint token = rts.GetFieldDescMemberDef(fieldDescPointer);
-        EntityHandle entityHandle = MetadataTokens.EntityHandle((int)token);
-        if (entityHandle.IsNil || entityHandle.Kind != HandleKind.FieldDefinition)
-            return default;
-
-        TargetPointer enclosingMT = rts.GetMTOfEnclosingClass(fieldDescPointer);
-        TypeHandle ctx = rts.GetTypeHandle(enclosingMT);
-        if (!ctx.IsMethodTable())
-            return default;
-
-        TargetPointer modulePtr = rts.GetModule(ctx);
-        if (modulePtr == TargetPointer.Null)
-            return default;
-
-        ModuleHandle moduleHandle = target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
-        MetadataReader? mdReader = target.Contracts.EcmaMetadata.GetMetadata(moduleHandle);
-        if (mdReader is null)
-            return default;
-
-        FieldDefinition fieldDef = mdReader.GetFieldDefinition((FieldDefinitionHandle)entityHandle);
-        try
-        {
-            return target.Contracts.Signature.DecodeFieldSignature(fieldDef.Signature, moduleHandle, ctx);
-        }
-        catch
-        {
-            return default;
-        }
-    }
-
-    /// <summary>
     /// Creates an <see cref="ArgTypeInfo"/> for a primitive type that doesn't need
     /// type handle resolution.
     /// </summary>
     public static ArgTypeInfo ForPrimitive(CorElementType corType, int pointerSize)
+        => ForPrimitive(corType, pointerSize, default);
+
+    /// <summary>
+    /// Creates an <see cref="ArgTypeInfo"/> for a primitive / reference type, optionally
+    /// carrying its resolved <see cref="TypeHandle"/>. The handle is used downstream by
+    /// generic-instantiation lookup so a type argument like <c>string</c> or <c>int</c>
+    /// can be matched against an instantiated type's <c>PerInstInfo</c>.
+    /// </summary>
+    public static ArgTypeInfo ForPrimitive(CorElementType corType, int pointerSize, TypeHandle runtimeTypeHandle)
     {
         return new ArgTypeInfo
         {
@@ -247,7 +247,7 @@ internal readonly struct ArgTypeInfo
             RequiresAlign8 = false,
             IsHomogeneousAggregate = false,
             HomogeneousAggregateElementSize = 0,
-            RuntimeTypeHandle = default,
+            RuntimeTypeHandle = runtimeTypeHandle,
         };
     }
 }

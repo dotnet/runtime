@@ -346,27 +346,95 @@ internal class GcScanner
 
         foreach (ArgLayout arg in layout.Arguments)
         {
-            foreach (ArgSlot slot in arg.Slots)
+            ReportArgument(arg, transitionBlock, rts, _target.PointerSize, scanContext);
+        }
+    }
+
+    /// <summary>
+    /// Reports GC references for a single argument from a transition frame's caller-stack
+    /// arguments. Mirrors the per-argument dispatch in native
+    /// <c>MetaSig::GcScanRoots</c> (<c>src/coreclr/vm/siginfo.cpp</c>):
+    /// <list type="bullet">
+    ///   <item><description>Reference slots are reported directly.</description></item>
+    ///   <item><description>Byref slots are reported as interior pointers.</description></item>
+    ///   <item><description>Value-type / TypedByRef slots passed by implicit reference are
+    ///     reported as a single interior pointer (the caller-allocated buffer).</description></item>
+    ///   <item><description>Value-type slots passed by value with a known
+    ///     <see cref="ArgLayout.ValueTypeHandle"/> have their embedded refs enumerated:
+    ///     ordinary value types via a CGCDesc walk (mirroring
+    ///     <c>ReportPointersFromValueType</c>), ByRefLike types (<c>Span&lt;T&gt;</c>,
+    ///     ref structs) via a field-by-field walk that also reports managed byref
+    ///     fields as <see cref="GcScanFlags.GC_CALL_INTERIOR"/> (mirroring
+    ///     <c>ByRefPointerOffsetsReporter</c>).</description></item>
+    /// </list>
+    /// </summary>
+    /// <remarks>
+    /// When the per-arch iterator GC-decomposed an argument (SysV split structs, ARM64
+    /// HFAs), each slot already carries a GC-typed <see cref="ArgSlot.ElementType"/>
+    /// (<c>Class</c>, <c>Byref</c>, etc.) and <see cref="ArgLayout.ValueTypeHandle"/> is
+    /// null; the per-slot loop handles those cases. The layout-driven walks only fire
+    /// when the storage is contiguous and undecomposed, indicated by a non-null
+    /// <see cref="ArgLayout.ValueTypeHandle"/>.
+    /// </remarks>
+    internal static void ReportArgument(
+        ArgLayout arg,
+        TargetPointer transitionBlock,
+        IRuntimeTypeSystem rts,
+        int pointerSize,
+        GcScanContext scanContext)
+    {
+        // By-value, undecomposed value type with a resolved MethodTable: enumerate
+        // embedded GC refs. The Phase 1 producer (CallingConvention_1.ComputeValueTypeHandle)
+        // guarantees the storage is contiguous starting at arg.Slots[0].Offset. The walk
+        // strategy depends on the type:
+        //   - Ordinary value type: CGCDesc series walk (covers object refs only).
+        //   - ByRefLike (Span<T>, ref structs): field-by-field walk that also reports
+        //     managed byref fields as GC_CALL_INTERIOR (the CGCDesc series omits byrefs).
+        if (arg.ValueTypeHandle is { } valueTypeHandle && arg.Slots.Count > 0)
+        {
+            TargetPointer baseAddress = new(transitionBlock.Value + (ulong)arg.Slots[0].Offset);
+            if (rts.IsByRefLike(valueTypeHandle))
             {
-                TargetPointer slotAddress = new(transitionBlock.Value + (ulong)slot.Offset);
-                switch (GcTypeKindClassifier.GetGcKind(slot.ElementType))
+                foreach ((TargetPointer addr, GcScanFlags flags) in
+                         GcRefEnumeration.EnumerateByRefLikeRoots(rts, valueTypeHandle, baseAddress, pointerSize))
                 {
-                    case GcTypeKind.Ref:
-                        scanContext.GCReportCallback(slotAddress, GcScanFlags.None);
-                        break;
-                    case GcTypeKind.Interior:
-                        scanContext.GCReportCallback(slotAddress, GcScanFlags.GC_CALL_INTERIOR);
-                        break;
-                    case GcTypeKind.Other:
-                        if (arg.IsPassedByRef)
-                        {
-                            scanContext.GCReportCallback(slotAddress, GcScanFlags.GC_CALL_INTERIOR);
-                        }
-                        // TODO: For value types passed by value, enumerate fields for embedded GC refs
-                        break;
-                    case GcTypeKind.None:
-                        break;
+                    scanContext.GCReportCallback(addr, flags);
                 }
+            }
+            else
+            {
+                foreach (TargetPointer refAddr in GcRefEnumeration.EnumerateValueTypeRefs(
+                    rts, valueTypeHandle, baseAddress, pointerSize))
+                {
+                    scanContext.GCReportCallback(refAddr, GcScanFlags.None);
+                }
+            }
+            return;
+        }
+
+        foreach (ArgSlot slot in arg.Slots)
+        {
+            TargetPointer slotAddress = new(transitionBlock.Value + (ulong)slot.Offset);
+            switch (GcTypeKindClassifier.GetGcKind(slot.ElementType))
+            {
+                case GcTypeKind.Ref:
+                    scanContext.GCReportCallback(slotAddress, GcScanFlags.None);
+                    break;
+                case GcTypeKind.Interior:
+                    scanContext.GCReportCallback(slotAddress, GcScanFlags.GC_CALL_INTERIOR);
+                    break;
+                case GcTypeKind.Other:
+                    if (arg.IsPassedByRef)
+                    {
+                        scanContext.GCReportCallback(slotAddress, GcScanFlags.GC_CALL_INTERIOR);
+                    }
+                    // else: the per-arch iterator GC-decomposed the storage so each
+                    // ref-bearing slot already carries Class/Byref ElementType handled
+                    // above, OR ValueTypeHandle would have been populated and handled
+                    // by the CGCDesc-walk branch at the top of this method.
+                    break;
+                case GcTypeKind.None:
+                    break;
             }
         }
     }

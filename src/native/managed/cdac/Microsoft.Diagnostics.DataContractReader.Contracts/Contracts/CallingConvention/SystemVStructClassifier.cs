@@ -208,11 +208,10 @@ internal static class SystemVStructClassifier
             if (entity.IsNil || entity.Kind != HandleKind.FieldDefinition)
                 return false;
 
-            // Resolve the field's declared type (only needed for ValueType fields, but
-            // the offset comes from FieldDef in all cases).
+            // Resolve the field's FieldDefinition (used by GetFieldDescOffset for the
+            // BigRVA path on static RVA fields — instance walks never hit it, but we
+            // keep the lookup for safety/parity with the offset API contract).
             FieldDefinition fieldDef = default;
-            ModuleHandle moduleHandle = default;
-            MetadataReader? mdReader = null;
             try
             {
                 TargetPointer enclosingMT = rts.GetMTOfEnclosingClass(fdPtr);
@@ -220,8 +219,8 @@ internal static class SystemVStructClassifier
                 TargetPointer modulePtr = rts.GetModule(ctx);
                 if (modulePtr != TargetPointer.Null)
                 {
-                    moduleHandle = target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
-                    mdReader = target.Contracts.EcmaMetadata.GetMetadata(moduleHandle);
+                    ModuleHandle moduleHandle = target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
+                    MetadataReader? mdReader = target.Contracts.EcmaMetadata.GetMetadata(moduleHandle);
                     if (mdReader is not null)
                         fieldDef = mdReader.GetFieldDefinition((FieldDefinitionHandle)entity);
                 }
@@ -238,7 +237,7 @@ internal static class SystemVStructClassifier
             if (fieldType == CorElementType.ValueType)
             {
                 // For nested value-type fields, resolve the field's TypeHandle to get its size.
-                TypeHandle fieldTH = ResolveFieldTypeHandle(target, rts, fdPtr, mdReader, fieldDef, moduleHandle);
+                TypeHandle fieldTH = rts.LookupApproxFieldTypeHandle(fdPtr);
                 if (fieldTH.IsMethodTable())
                     fieldSize = rts.GetNumInstanceFieldBytes(fieldTH);
             }
@@ -250,7 +249,7 @@ internal static class SystemVStructClassifier
             if (fieldClass == SystemVClassification.Struct)
             {
                 // Recurse into the nested value type's fields.
-                TypeHandle nested = ResolveFieldTypeHandle(target, rts, fdPtr, mdReader, fieldDef, moduleHandle);
+                TypeHandle nested = rts.LookupApproxFieldTypeHandle(fdPtr);
                 if (!nested.IsMethodTable())
                     return false;
 
@@ -302,33 +301,6 @@ internal static class SystemVStructClassifier
 
         AssignClassifiedEightByteTypes(ref helper);
         return true;
-    }
-
-    /// <summary>
-    /// Resolves a FieldDesc's declared type to its <see cref="TypeHandle"/>. Used for
-    /// nested-value-type recursion. Returns a null TypeHandle if resolution fails.
-    /// </summary>
-    private static TypeHandle ResolveFieldTypeHandle(
-        Target target,
-        IRuntimeTypeSystem rts,
-        TargetPointer fdPtr,
-        MetadataReader? mdReader,
-        FieldDefinition fieldDef,
-        ModuleHandle moduleHandle)
-    {
-        if (mdReader is null || moduleHandle.Address == TargetPointer.Null)
-            return default;
-
-        try
-        {
-            TargetPointer enclosingMT = rts.GetMTOfEnclosingClass(fdPtr);
-            TypeHandle ctx = rts.GetTypeHandle(enclosingMT);
-            return target.Contracts.Signature.DecodeFieldSignature(fieldDef.Signature, moduleHandle, ctx);
-        }
-        catch
-        {
-            return default;
-        }
     }
 
     /// <summary>

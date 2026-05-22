@@ -14,6 +14,28 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 internal static class DumpTestHelpers
 {
     /// <summary>
+    /// Resolves a <see cref="TypeHandle"/> to its ECMA-335 type name (no namespace).
+    /// Returns <c>null</c> if the name cannot be resolved (e.g., missing metadata).
+    /// </summary>
+    public static string? GetTypeName(ContractDescriptorTarget target, TypeHandle typeHandle)
+    {
+        IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
+        uint token = rts.GetTypeDefToken(typeHandle);
+        TargetPointer modulePtr = rts.GetModule(typeHandle);
+
+        ILoader loader = target.Contracts.Loader;
+        ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
+
+        IEcmaMetadata ecmaMetadata = target.Contracts.EcmaMetadata;
+        MetadataReader? reader = ecmaMetadata.GetMetadata(moduleHandle);
+        if (reader is null)
+            return null;
+
+        TypeDefinitionHandle typeDef = MetadataTokens.TypeDefinitionHandle((int)(token & 0x00FFFFFF));
+        return reader.GetString(reader.GetTypeDefinition(typeDef).Name);
+    }
+
+    /// <summary>
     /// Resolves the method name for a <see cref="MethodDescHandle"/> using the
     /// RuntimeTypeSystem, Loader, and EcmaMetadata contracts. Returns <c>null</c>
     /// if the name cannot be resolved (e.g., missing metadata).

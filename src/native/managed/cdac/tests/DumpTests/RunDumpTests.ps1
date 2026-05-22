@@ -93,6 +93,8 @@ param(
 
     [string]$TestHostConfiguration = "Release",
 
+    [string]$RuntimeConfiguration = "",
+
     [string]$Filter = "",
 
     [string]$DumpArchive = "",
@@ -326,6 +328,10 @@ if ($Action -in @("dumps", "all")) {
         "/p:DumpVersions=`"$($selectedVersions -join ';')`"",
         "/v:$msbuildVerbosity"
     )
+
+    if ($RuntimeConfiguration) {
+        $msbuildArgs += "/p:RuntimeConfiguration=$RuntimeConfiguration"
+    }
 
     if ($SetSignatureCheck) {
         $msbuildArgs += "/p:SetDisableAuxProviderSignatureCheck=true"

@@ -614,4 +614,113 @@ public class AMD64WindowsCallingConventionTests
         Assert.Single(arg.Slots);
         Assert.Equal(OffsetOfFirstGPArg, arg.Slots[0].Offset);
     }
+
+    // ----- ValueTypeHandle population for by-value value-type args -----
+    //
+    // The GC scanner needs the value-type's TypeHandle to walk the GCDesc and
+    // report embedded managed references inside structs that the iterator did
+    // NOT pre-decompose into GC-typed ArgSlots. On AMD64-Windows, enregistered
+    // and stack-passed value-type args go through the GP path without per-slot
+    // GC typing, so ValueTypeHandle must be populated.
+
+    [Fact]
+    public void ValueTypeByValue_Enregistered_PopulatesValueTypeHandle()
+    {
+        // 8-byte struct -> fits in RCX, NOT byref. ValueTypeHandle should point
+        // to the struct's MethodTable so GC scanner can walk its GCDesc.
+        ulong expectedMtAddress = 0;
+        var (target, mdh) = CallingConventionTestHelpers.CreateTargetWithMethod(
+            Case, hasThis: false,
+            (rts, sig) =>
+            {
+                MockMethodTable mt = MockDescriptors.CallingConvention.AddValueTypeMethodTable(
+                    rts, "ObjectAndPad", structSize: 8,
+                    fields: [new(0, CorElementType.Object)]);
+                expectedMtAddress = mt.Address;
+                sig.Return(CorElementType.Void).ParamValueType(new TargetPointer(mt.Address));
+            });
+
+        CallSiteLayout layout = target.Contracts.CallingConvention.ComputeCallSiteLayout(mdh);
+        Assert.Single(layout.Arguments);
+        ArgLayout arg = layout.Arguments[0];
+        Assert.False(arg.IsPassedByRef);
+        Assert.NotNull(arg.ValueTypeHandle);
+        Assert.Equal(expectedMtAddress, (ulong)arg.ValueTypeHandle.Value.Address);
+    }
+
+    [Fact]
+    public void ValueTypeByValue_OnStack_PopulatesValueTypeHandle()
+    {
+        // 8-byte enregisterable struct as the 5th arg lands on the stack
+        // (RCX/RDX/R8/R9 consumed by 4 prior I8s) -- still by value, MT populated.
+        ulong expectedMtAddress = 0;
+        var (target, mdh) = CallingConventionTestHelpers.CreateTargetWithMethod(
+            Case, hasThis: false,
+            (rts, sig) =>
+            {
+                MockMethodTable mt = MockDescriptors.CallingConvention.AddValueTypeMethodTable(
+                    rts, "ObjectAndPad", structSize: 8,
+                    fields: [new(0, CorElementType.Object)]);
+                expectedMtAddress = mt.Address;
+                sig.Return(CorElementType.Void);
+                for (int i = 0; i < 4; i++) sig.Param(CorElementType.I8);
+                sig.ParamValueType(new TargetPointer(mt.Address));
+            });
+
+        CallSiteLayout layout = target.Contracts.CallingConvention.ComputeCallSiteLayout(mdh);
+        Assert.Equal(5, layout.Arguments.Count);
+        ArgLayout structArg = layout.Arguments[4];
+        Assert.False(structArg.IsPassedByRef);
+        Assert.NotNull(structArg.ValueTypeHandle);
+        Assert.Equal(expectedMtAddress, (ulong)structArg.ValueTypeHandle.Value.Address);
+    }
+
+    [Fact]
+    public void ValueTypeByRef_DoesNotPopulateValueTypeHandle()
+    {
+        // 9-byte struct -> implicit byref. The slot carries a pointer, not the
+        // value bytes; GC scanner reports it via the byref path, not GCDesc walk.
+        // Regression guard: pins the IsByRef short-circuit in ComputeValueTypeHandle.
+        var (target, mdh) = CallingConventionTestHelpers.CreateTargetWithMethod(
+            Case, hasThis: false,
+            (rts, sig) =>
+            {
+                MockMethodTable mt = MockDescriptors.CallingConvention.AddValueTypeMethodTable(
+                    rts, "NineBytes", structSize: 9,
+                    fields: [new(0, CorElementType.I8), new(8, CorElementType.I1)]);
+                sig.Return(CorElementType.Void).ParamValueType(new TargetPointer(mt.Address));
+            });
+
+        CallSiteLayout layout = target.Contracts.CallingConvention.ComputeCallSiteLayout(mdh);
+        Assert.True(layout.Arguments[0].IsPassedByRef);
+        Assert.Null(layout.Arguments[0].ValueTypeHandle);
+    }
+
+    [Fact]
+    public void ValueTypeByValue_ByRefLike_PopulatesValueTypeHandle()
+    {
+        // ByRefLike value-type args (Span<T>, ref structs) are surfaced through
+        // ValueTypeHandle just like ordinary value types. The GC scanner queries
+        // IRuntimeTypeSystem.IsByRefLike to choose its walk strategy: a CGCDesc
+        // walk for ordinary types, or a field-by-field walk for ByRefLike types
+        // (the CGCDesc series doesn't encode managed byref fields).
+        const uint IsByRefLikeFlag = 0x00001000;
+        var (target, mdh) = CallingConventionTestHelpers.CreateTargetWithMethod(
+            Case, hasThis: false,
+            (rts, sig) =>
+            {
+                MockMethodTable mt = MockDescriptors.CallingConvention.AddValueTypeMethodTable(
+                    rts, "ByRefLikeStruct", structSize: 8,
+                    fields: [new(0, CorElementType.I8)]);
+                mt.MTFlags |= IsByRefLikeFlag;
+                sig.Return(CorElementType.Void).ParamValueType(new TargetPointer(mt.Address));
+            });
+
+        CallSiteLayout layout = target.Contracts.CallingConvention.ComputeCallSiteLayout(mdh);
+        Assert.Single(layout.Arguments);
+        ArgLayout arg = layout.Arguments[0];
+        Assert.False(arg.IsPassedByRef);
+        Assert.Single(arg.Slots);
+        Assert.NotNull(arg.ValueTypeHandle);
+    }
 }

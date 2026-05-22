@@ -25,6 +25,7 @@ internal struct MethodTableFlags_1
         GenericsMask_NonGeneric = 0x00000000,   // no instantiation
         GenericsMask_TypicalInstantiation = 0x00000030,   // the type instantiated at its formal parameters, e.g. List<T>
         IsHFA = 0x00000800,
+        IsByRefLike = 0x00001000,
 
         StringArrayValues =
             GenericsMask_NonGeneric |
@@ -107,6 +108,7 @@ internal struct MethodTableFlags_1
     public bool ContainsGCPointers => GetFlag(WFLAGS_HIGH.ContainsGCPointers) != 0;
     public bool RequiresAlign8 => GetFlag(WFLAGS_HIGH.RequiresAlign8) != 0;
     public bool IsHFA => TestFlagWithMask(WFLAGS_LOW.IsHFA, WFLAGS_LOW.IsHFA);
+    public bool IsByRefLike => TestFlagWithMask(WFLAGS_LOW.IsByRefLike, WFLAGS_LOW.IsByRefLike);
     public bool IsCollectible => GetFlag(WFLAGS_HIGH.Collectible) != 0;
     public bool IsTrackedReferenceWithFinalizer => GetFlag(WFLAGS_HIGH.IsTrackedReferenceWithFinalizer) != 0;
     public bool IsDynamicStatics => GetFlag(WFLAGS2_ENUM.DynamicStatics) != 0;

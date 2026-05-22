@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Reflection.Metadata;
@@ -43,6 +44,7 @@ internal sealed class ArgTypeInfoSignatureProvider
     private readonly Target _target;
     private readonly ModuleHandle _moduleHandle;
     private ArgTypeInfo? _cachedTypedReferenceInfo;
+    private readonly Dictionary<CorElementType, TypeHandle> _primitiveTypeHandles = new();
 
     public ArgTypeInfoSignatureProvider(Target target, ModuleHandle moduleHandle)
     {
@@ -53,16 +55,49 @@ internal sealed class ArgTypeInfoSignatureProvider
     public ArgTypeInfo GetPrimitiveType(PrimitiveTypeCode typeCode)
         => typeCode switch
         {
-            PrimitiveTypeCode.String or PrimitiveTypeCode.Object
-                => ArgTypeInfo.ForPrimitive(CorElementType.Class, _target.PointerSize),
+            // Surface the resolved MethodTable for reference primitives so they can be
+            // matched as type arguments inside generic instantiations (see
+            // GetGenericInstantiation). The CorElementType.Class projection is preserved
+            // for backward compatibility with downstream Iterator/SystemV classification.
+            PrimitiveTypeCode.String
+                => ArgTypeInfo.ForPrimitive(CorElementType.Class, _target.PointerSize, ResolvePrimitiveTypeHandle(CorElementType.String)),
+            PrimitiveTypeCode.Object
+                => ArgTypeInfo.ForPrimitive(CorElementType.Class, _target.PointerSize, ResolvePrimitiveTypeHandle(CorElementType.Object)),
             // TypedReference has no class token in the signature blob -- the runtime
             // identifies its layout via the well-known g_TypedReferenceMT global.
             // Mirroring native callingconvention.h:1351-1355, we substitute the
             // TypedReference MethodTable here so the rest of ArgIterator (and the
             // SystemV struct classifier) see it as an ordinary 16-byte value type.
             PrimitiveTypeCode.TypedReference => GetTypedReferenceInfo(),
-            _ => ArgTypeInfo.ForPrimitive(PrimitiveToCorElementType(typeCode), _target.PointerSize),
+            _ => PrimitiveWithHandle(PrimitiveToCorElementType(typeCode)),
         };
+
+    private ArgTypeInfo PrimitiveWithHandle(CorElementType corType)
+        => ArgTypeInfo.ForPrimitive(corType, _target.PointerSize, ResolvePrimitiveTypeHandle(corType));
+
+    /// <summary>
+    /// Resolves the canonical <see cref="TypeHandle"/> for a primitive <see cref="CorElementType"/>
+    /// via the CoreLib binder. Returns <c>default</c> on failure (e.g. older runtime image, or a
+    /// CorElementType with no binder entry such as <see cref="CorElementType.Class"/>).
+    /// </summary>
+    private TypeHandle ResolvePrimitiveTypeHandle(CorElementType corType)
+    {
+        if (_primitiveTypeHandles.TryGetValue(corType, out TypeHandle cached))
+            return cached;
+
+        TypeHandle th;
+        try
+        {
+            th = _target.Contracts.RuntimeTypeSystem.GetPrimitiveType(corType);
+        }
+        catch
+        {
+            th = default;
+        }
+
+        _primitiveTypeHandles[corType] = th;
+        return th;
+    }
 
     private ArgTypeInfo GetTypedReferenceInfo()
     {
@@ -102,11 +137,13 @@ internal sealed class ArgTypeInfoSignatureProvider
         => FromTokenLookup(_target.Contracts.Loader.GetLookupTables(_moduleHandle).TypeRefToMethodTable, MetadataTokens.GetToken(handle), rawTypeKind);
 
     public ArgTypeInfo GetTypeFromSpecification(MetadataReader reader, ArgTypeInfoSignatureContext genericContext, TypeSpecificationHandle handle, byte rawTypeKind)
-        // TODO: Resolve the TypeSpec to a concrete (already-loaded) TypeHandle so that
-        // generic value-type instantiations get correct size / HFA classification. Native
-        // does this via SigPointer::GetTypeHandleThrowing + the instantiated-type
-        // hashtable; cDAC needs an equivalent lookup-only RTS API. Until then, fall back
-        // to a conservative pointer-sized placeholder for value types.
+        // Inline GENERICINST blobs in a method signature are dispatched to
+        // GetGenericInstantiation directly by SRM (recursing through nested levels), so
+        // common cases like KeyValuePair<int, KeyValuePair<int,int>> never reach this
+        // path. This handler only fires for actual TypeSpec *tokens* referenced from a
+        // signature (e.g., certain custom-modifier encodings). For those, native
+        // resolves via SigPointer::GetTypeHandleThrowing; cDAC would need an equivalent
+        // lookup-only RTS API. Until then, fall back to a conservative placeholder.
         => rawTypeKind == (byte)SignatureTypeKind.ValueType
             ? UnresolvedValueType()
             : ArgTypeInfo.ForPrimitive(CorElementType.Class, _target.PointerSize);
@@ -118,11 +155,49 @@ internal sealed class ArgTypeInfoSignatureProvider
 
     public ArgTypeInfo GetGenericInstantiation(ArgTypeInfo genericType, ImmutableArray<ArgTypeInfo> typeArguments)
     {
-        // TODO: lookup the instantiated MethodTable so generic value-type args get correct
-        // size / HFA. For reference-type generic instantiations the open-generic's
-        // ArgTypeInfo (pointer-sized Class) is already correct; for value-type
-        // instantiations the open generic's size is not meaningful, so we downgrade to a
-        // conservative pointer-sized placeholder.
+        // Resolve the constructed instantiation to a concrete loaded TypeHandle so that
+        // value-type instantiations (KeyValuePair<T,U>, Span<T>, ValueTuple<...>, etc.)
+        // surface their actual size / HFA / alignment to ArgIterator -- matching native
+        // SigPointer::GetTypeHandleThrowing + the loader's available-instantiations
+        // lookup. Requires the open generic's TypeHandle and a TypeHandle for every
+        // type argument; if anything is missing we fall back to a conservative
+        // pointer-sized placeholder for value types (and pass-through for reference
+        // generics, whose pointer-sized representation is already correct).
+        TypeHandle openGeneric = genericType.RuntimeTypeHandle;
+        if (openGeneric.Address != TargetPointer.Null)
+        {
+            ImmutableArray<TypeHandle>.Builder argBuilder = ImmutableArray.CreateBuilder<TypeHandle>(typeArguments.Length);
+            bool haveAllArgHandles = true;
+            for (int i = 0; i < typeArguments.Length; i++)
+            {
+                TypeHandle argHandle = typeArguments[i].RuntimeTypeHandle;
+                if (argHandle.Address == TargetPointer.Null)
+                {
+                    haveAllArgHandles = false;
+                    break;
+                }
+                argBuilder.Add(argHandle);
+            }
+
+            if (haveAllArgHandles)
+            {
+                try
+                {
+                    TypeHandle constructed = _target.Contracts.RuntimeTypeSystem.GetConstructedType(
+                        openGeneric,
+                        CorElementType.GenericInst,
+                        rank: 0,
+                        argBuilder.MoveToImmutable());
+                    if (constructed.Address != TargetPointer.Null)
+                        return BuildFromTypeHandle(constructed);
+                }
+                catch
+                {
+                    // Fall through to the conservative placeholder below.
+                }
+            }
+        }
+
         if (genericType.CorElementType == CorElementType.ValueType)
             return UnresolvedValueType();
         return genericType;
@@ -224,50 +299,17 @@ internal sealed class ArgTypeInfoSignatureProvider
     /// <summary>
     /// Build an <see cref="ArgTypeInfo"/> from a resolved <see cref="TypeHandle"/>. Mirrors
     /// native <c>SigPointer::PeekElemTypeNormalized</c> + <c>MetaSig::GetByValType</c>:
-    /// enums collapse to their underlying primitive (via <c>GetSignatureCorElementType</c>)
-    /// so they classify as a non-GC scalar; value types surface the resolved
-    /// <see cref="TypeHandle"/> with full size / HFA / alignment for ArgIterator.
+    /// enums collapse to their underlying primitive (via <c>GetSignatureCorElementType</c>);
+    /// value types surface the resolved <see cref="TypeHandle"/> with full size / HFA /
+    /// alignment for ArgIterator; reference types preserve the handle for generic
+    /// type-argument matching.
     /// </summary>
     private ArgTypeInfo BuildFromTypeHandle(TypeHandle typeHandle)
     {
         if (typeHandle.Address == TargetPointer.Null)
             return ArgTypeInfo.ForPrimitive(CorElementType.Class, _target.PointerSize);
 
-        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-        CorElementType corType = rts.GetSignatureCorElementType(typeHandle);
-
-        switch (corType)
-        {
-            case CorElementType.Void:
-            case CorElementType.Boolean:
-            case CorElementType.Char:
-            case CorElementType.I1:
-            case CorElementType.U1:
-            case CorElementType.I2:
-            case CorElementType.U2:
-            case CorElementType.I4:
-            case CorElementType.U4:
-            case CorElementType.I8:
-            case CorElementType.U8:
-            case CorElementType.R4:
-            case CorElementType.R8:
-            case CorElementType.I:
-            case CorElementType.U:
-            case CorElementType.FnPtr:
-            case CorElementType.Ptr:
-                return ArgTypeInfo.ForPrimitive(corType, _target.PointerSize);
-
-            case CorElementType.Byref:
-                return ArgTypeInfo.ForPrimitive(CorElementType.Byref, _target.PointerSize);
-
-            case CorElementType.ValueType:
-                // GetSignatureCorElementType already collapses enums to their underlying
-                // primitive; anything still typed as ValueType is a real struct.
-                return ArgTypeInfo.FromTypeHandle(_target, typeHandle);
-
-            default:
-                return ArgTypeInfo.ForPrimitive(CorElementType.Class, _target.PointerSize);
-        }
+        return ArgTypeInfo.FromTypeHandle(_target, typeHandle);
     }
 
     /// <summary>

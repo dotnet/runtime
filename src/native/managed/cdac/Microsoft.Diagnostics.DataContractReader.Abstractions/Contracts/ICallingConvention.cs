@@ -37,9 +37,51 @@ public readonly record struct ArgSlot(
 /// One or more register/stack slots that together carry the argument's value.
 /// Always non-empty.
 /// </param>
+/// <param name="ValueTypeHandle">
+/// Identity of the value type whose storage occupies <see cref="Slots"/> as an
+/// <em>opaque, contiguous, undecomposed buffer</em>, or <see langword="null"/>
+/// when the slots do not describe such a buffer.
+/// <para>
+/// This is layout information about what the per-arch iterator chose to do, not
+/// GC information per se: the iterator surfaces the type only when it left the
+/// argument's storage in a single contiguous run that the iterator did <em>not</em>
+/// crack open into individually-typed <see cref="ArgSlot"/>s. Consumers that want
+/// to inspect the buffer's internals (e.g. the GC scanner walking its GC
+/// descriptor, a future debugger arg-formatter rendering the buffer's fields)
+/// can resolve the layout via <see cref="IRuntimeTypeSystem"/>.
+/// </para>
+/// <para>
+/// Populated when all of the following hold:
+/// <list type="bullet">
+///   <item><description>The argument is a value type passed <em>by value</em>
+///     (not <see cref="IsPassedByRef"/>).</description></item>
+///   <item><description>The per-arch iterator left the storage opaque — i.e.
+///     every entry in <see cref="Slots"/> has
+///     <see cref="ArgSlot.ElementType"/> == <see cref="CorElementType.ValueType"/>,
+///     and together they cover one contiguous byte range starting at
+///     <c>Slots[0].Offset</c>. Examples: Windows-AMD64 enregistered struct,
+///     ARM64 non-HFA struct in consecutive GPRs, any stack-passed struct.</description></item>
+/// </list>
+/// </para>
+/// <para>
+/// Both ordinary value types and ByRefLike types (ref-struct / Span-style) are
+/// surfaced here. Consumers select the appropriate field-enumeration strategy
+/// by querying <see cref="IRuntimeTypeSystem.IsByRefLike"/>: ordinary value types
+/// walk the CGCDesc series; ByRefLike types require a field-by-field walk to
+/// pick up managed byref fields that the CGCDesc series does not encode.
+/// </para>
+/// <para>
+/// <see langword="null"/> otherwise — i.e. for primitives, references, byrefs,
+/// arguments passed by implicit reference (<see cref="IsPassedByRef"/>), HFAs
+/// and other aggregates the iterator already decomposed into individually-typed
+/// slots (e.g. SystemV split struct: one slot per eightbyte with each slot's
+/// <see cref="ArgSlot.ElementType"/> reflecting that eightbyte's classification).
+/// </para>
+/// </param>
 public readonly record struct ArgLayout(
     bool IsPassedByRef,
-    IReadOnlyList<ArgSlot> Slots);
+    IReadOnlyList<ArgSlot> Slots,
+    TypeHandle? ValueTypeHandle = null);
 
 /// <summary>
 /// Describes the layout of all arguments at a call site, as imposed by the

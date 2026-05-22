@@ -1069,6 +1069,7 @@ CDAC_TYPE_FIELD(TransitionBlock, T_INT32, OffsetOfFloatArgumentRegisters, -(int)
 #else
 CDAC_TYPE_FIELD(TransitionBlock, T_INT32, OffsetOfFloatArgumentRegisters, -(int)sizeof(FloatArgumentRegisters))
 #endif
+#endif // CALLDESCR_FPARGREGS
 CDAC_TYPE_END(TransitionBlock)
 
 #ifdef DEBUGGING_SUPPORTED

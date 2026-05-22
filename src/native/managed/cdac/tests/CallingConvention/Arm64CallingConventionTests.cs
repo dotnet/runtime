@@ -599,4 +599,58 @@ public class Arm64CallingConventionTests
     }
 
 #pragma warning restore xUnit1004
+
+    // ----- ValueTypeHandle population for by-value value-type args -----
+    //
+    // On ARM64, non-HFA value-type args of size <= 16 bytes go through the GP
+    // path as 1 or 2 ValueType-typed slots; > 16 bytes are passed by reference.
+    // HFAs go through the FP path and the iterator emits per-FP-reg slots with
+    // ElementType R4/R8 -- those are already GC-classified (no refs) and should
+    // NOT carry a ValueTypeHandle.
+
+    [Fact]
+    public void ValueTypeByValue_NonHFA_EnregisteredInTwoGPRegs_PopulatesValueTypeHandle()
+    {
+        // 16-byte struct (two longs) -> X0 + X1 contiguously, two ValueType slots.
+        ulong expectedMtAddress = 0;
+        var (target, mdh) = CallingConventionTestHelpers.CreateTargetWithMethod(
+            Case, hasThis: false,
+            (rts, sig) =>
+            {
+                MockMethodTable mt = MockDescriptors.CallingConvention.AddValueTypeMethodTable(
+                    rts, "TwoLongs16", structSize: 16,
+                    fields: [new(0, CorElementType.I8), new(8, CorElementType.I8)]);
+                expectedMtAddress = mt.Address;
+                sig.Return(CorElementType.Void).ParamValueType(new TargetPointer(mt.Address));
+            });
+
+        CallSiteLayout layout = target.Contracts.CallingConvention.ComputeCallSiteLayout(mdh);
+        Assert.Single(layout.Arguments);
+        ArgLayout arg = layout.Arguments[0];
+        Assert.False(arg.IsPassedByRef);
+        Assert.NotNull(arg.ValueTypeHandle);
+        Assert.Equal(expectedMtAddress, (ulong)arg.ValueTypeHandle.Value.Address);
+    }
+
+    [Fact]
+    public void ValueTypeByValue_HFA_DoesNotPopulateValueTypeHandle()
+    {
+        // 4-double HFA -> V0-V3 with per-slot ElementType R8. HFAs cannot carry
+        // managed refs (they're pure FP), so ValueTypeHandle must be null.
+        // Pins the "all slots ValueType" discriminator in ComputeValueTypeHandle.
+        var (target, mdh) = CallingConventionTestHelpers.CreateTargetWithMethod(
+            Case, hasThis: false,
+            (rts, sig) =>
+            {
+                MockMethodTable hfa = AddHFA(rts, CorElementType.R8, 4, "HFA_4D_Handle");
+                sig.Return(CorElementType.Void).ParamValueType(new TargetPointer(hfa.Address));
+            });
+
+        CallSiteLayout layout = target.Contracts.CallingConvention.ComputeCallSiteLayout(mdh);
+        Assert.Single(layout.Arguments);
+        ArgLayout arg = layout.Arguments[0];
+        Assert.False(arg.IsPassedByRef);
+        Assert.Equal(4, arg.Slots.Count);
+        Assert.Null(arg.ValueTypeHandle);
+    }
 }

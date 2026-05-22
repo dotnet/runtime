@@ -185,6 +185,12 @@ public interface IRuntimeTypeSystem : IContract
     CorElementType GetSignatureCorElementType(TypeHandle typeHandle) => throw new NotImplementedException();
     bool IsValueType(TypeHandle typeHandle) => throw new NotImplementedException();
 
+    // True if the type is a "ByRefLike" / ref struct (e.g. Span<T>, ReadOnlySpan<T>,
+    // TypedReference). ByRefLike types can have managed references *and* byref-typed
+    // fields embedded at arbitrary offsets, and require special handling in the GC
+    // scanner — the standard GCDesc walk only covers ordinary managed references.
+    bool IsByRefLike(TypeHandle typeHandle) => throw new NotImplementedException();
+
     // Internal element type of the type. Unlike GetSignatureCorElementType, this returns the underlying primitive
     // type for enums (e.g. I4 for an enum with int underlying type) and for PrimitiveValueType categories.
     // For arrays, reference types, and TypeDescs, behaves identically to GetSignatureCorElementType.
@@ -281,6 +287,27 @@ public interface IRuntimeTypeSystem : IContract
     TargetPointer GetFieldDescByName(TypeHandle typeHandle, string fieldName) => throw new NotImplementedException();
     TargetPointer GetFieldDescStaticAddress(TargetPointer fieldDescPointer, bool unboxValueTypes = true) => throw new NotImplementedException();
     TargetPointer GetFieldDescThreadStaticAddress(TargetPointer fieldDescPointer, TargetPointer thread, bool unboxValueTypes = true) => throw new NotImplementedException();
+
+    /// <summary>
+    /// Enumerates the FieldDesc pointers for the instance (non-static) fields of
+    /// <paramref name="typeHandle"/>, in field-list order. Statics interleaved in
+    /// the underlying FieldDesc array are skipped.
+    /// </summary>
+    /// <remarks>
+    /// Returns an empty sequence for type handles that do not refer to a MethodTable,
+    /// or for types with no FieldDescList.
+    /// </remarks>
+    IEnumerable<TargetPointer> EnumerateInstanceFieldDescs(TypeHandle typeHandle) => throw new NotImplementedException();
+
+    /// <summary>
+    /// Resolves a field's declared type without triggering type loading. Mirrors
+    /// native <c>FieldDesc::LookupApproxFieldTypeHandle</c> (DAC variant): decodes
+    /// the field's metadata signature and returns the resulting <see cref="TypeHandle"/>.
+    /// Returns a default (null) TypeHandle when the field's type is not currently
+    /// resolvable (e.g., the enclosing module's metadata is unavailable, or the
+    /// referenced type is not loaded).
+    /// </summary>
+    TypeHandle LookupApproxFieldTypeHandle(TargetPointer fieldDescPointer) => throw new NotImplementedException();
     #endregion FieldDesc inspection APIs
     #region Other APIs
     void GetCoreLibFieldDescAndDef(string typeNamespace, string typeName, string fieldName, out TargetPointer fieldDescAddr, out FieldDefinition fieldDef) => throw new NotImplementedException();
