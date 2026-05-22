@@ -107,6 +107,52 @@ namespace System.Diagnostics
             _errorStreamReadMode = StreamReadMode.Undefined;
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Process"/> class from an existing process handle,
+        /// with optional standard I/O stream handles and start info.
+        /// </summary>
+        /// <param name="processHandle">A <see cref="SafeProcessHandle"/> representing the process.</param>
+        /// <param name="standardInput">An optional <see cref="SafeFileHandle"/> for the standard input stream of the process.</param>
+        /// <param name="standardOutput">An optional <see cref="SafeFileHandle"/> for the standard output stream of the process.</param>
+        /// <param name="standardError">An optional <see cref="SafeFileHandle"/> for the standard error stream of the process.</param>
+        /// <param name="startInfo">An optional <see cref="ProcessStartInfo"/> containing encoding information for the streams.</param>
+        public Process(SafeProcessHandle processHandle, SafeFileHandle? standardInput = null, SafeFileHandle? standardOutput = null, SafeFileHandle? standardError = null, ProcessStartInfo? startInfo = null)
+        {
+            ArgumentNullException.ThrowIfNull(processHandle);
+
+            GC.SuppressFinalize(this);
+            _machineName = ".";
+            _outputStreamReadMode = StreamReadMode.Undefined;
+            _errorStreamReadMode = StreamReadMode.Undefined;
+
+            SetProcessHandle(processHandle);
+            SetProcessId(processHandle.ProcessId);
+
+            if (startInfo is not null)
+            {
+                _startInfo = startInfo;
+            }
+
+            if (standardInput is not null)
+            {
+                _standardInput = new StreamWriter(OpenStream(standardInput, FileAccess.Write),
+                    startInfo?.StandardInputEncoding ?? GetStandardInputEncoding(), StreamBufferSize)
+                {
+                    AutoFlush = true
+                };
+            }
+            if (standardOutput is not null)
+            {
+                _standardOutput = new StreamReader(OpenStream(standardOutput, FileAccess.Read),
+                    startInfo?.StandardOutputEncoding ?? GetStandardOutputEncoding(), true, StreamBufferSize);
+            }
+            if (standardError is not null)
+            {
+                _standardError = new StreamReader(OpenStream(standardError, FileAccess.Read),
+                    startInfo?.StandardErrorEncoding ?? GetStandardOutputEncoding(), true, StreamBufferSize);
+            }
+        }
+
         private Process(string machineName, bool isRemoteMachine, int processId, ProcessInfo? processInfo)
         {
             GC.SuppressFinalize(this);
