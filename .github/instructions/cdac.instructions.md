@@ -18,7 +18,7 @@ Do not warn about changing the DacDbi COM interface; this interface is not publi
 
 ## Dump compatibility
 
-We do not care about supporting older dumps that may not have a particular datadescriptor.
+We do not care about supporting older dumps that may not have a particular data descriptor.
 
 ## Exception types
 
