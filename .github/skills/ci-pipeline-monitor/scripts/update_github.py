@@ -85,6 +85,8 @@ class IssueGenerator:
         else:
             print("GitHub Issue: NEW — creating new issue")
             gh_issue_command.append("create")
+            gh_issue_command.append("--label")
+            gh_issue_command.append("blocking-clean-ci-optional")
             creating_new_issue = True
 
         if fail["labels"]:
