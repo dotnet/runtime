@@ -17,7 +17,7 @@
 };
 // clang-format on
 
-static bool isValidSimdElemSize(unsigned elemSize)
+bool isValidSimdElemSize(unsigned elemSize)
 {
     // Valid SIMD configurations are i8x16, i16x8, i32x4, i64x2, f32x4, f64x2
     return (elemSize == 1) || (elemSize == 2) || (elemSize == 4) || (elemSize == 8);
