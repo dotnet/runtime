@@ -1995,6 +1995,12 @@ namespace System.Xml
             base.WriteRaw(data);
         }
 
+        internal override void WriteRaw(ReadOnlySpan<char> value)
+        {
+            _mixedContent = true;
+            base.WriteRaw(value);
+        }
+
         public override void WriteBase64(byte[] buffer, int index, int count)
         {
             _mixedContent = true;
