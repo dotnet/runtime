@@ -561,7 +561,7 @@ emit_sri_vector (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *cs
 		return FALSE;
 	}
 
-	g_assert (vector_size == 128);
+	g_assert (vector_size == SIZEOF_V128);
 
 	if (id == SN_get_IsHardwareAccelerated) {
 		interp_add_ins (td, MINT_LDC_I4_1);
@@ -771,10 +771,12 @@ emit_sri_vector_t (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *
 	MonoClass *vector_klass = cmethod->klass;
 
 	MonoTypeEnum atype;
-	int vector_size, arg_size, scalar_arg;
+	int vector_size = 0;
+	int arg_size, scalar_arg;
 	if (!get_common_simd_info (vector_klass, csignature, &atype, &vector_size, &arg_size, &scalar_arg)) {
 		if (id == SN_get_IsSupported) {
-			interp_add_ins (td, MINT_LDC_I4_0);
+			// we return without setting vector_size if atype is unsupported
+			interp_add_ins (td, vector_size == 0 ? MINT_LDC_I4_0 : MINT_LDC_I4_1);
 			goto opcode_added;
 		}
 		return FALSE;
@@ -822,10 +824,12 @@ emit_sn_vector_t (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *c
 		return FALSE;
 
 	MonoTypeEnum atype;
-	int vector_size, arg_size, scalar_arg;
+	int vector_size = 0;
+	int arg_size, scalar_arg;
 	if (!get_common_simd_info (vector_klass, csignature, &atype, &vector_size, &arg_size, &scalar_arg)) {
 		if (id == SN_get_IsSupported) {
-			interp_add_ins (td, MINT_LDC_I4_0);
+			// we return without setting vector_size if atype is unsupported
+			interp_add_ins (td, vector_size == 0 ? MINT_LDC_I4_0 : MINT_LDC_I4_1);
 			goto opcode_added;
 		}
 		return FALSE;
