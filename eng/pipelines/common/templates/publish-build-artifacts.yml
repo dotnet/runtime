@@ -11,12 +11,12 @@ parameters:
 
 steps:
   - ${{ if parameters.isOfficialBuild }}:
-    - task: 1ES.PublishBuildArtifacts@1
+    - task: 1ES.PublishPipelineArtifact@1
       displayName: ${{ parameters.displayName }}
       inputs: ${{ parameters.inputs }}
       condition: ${{ parameters.condition }}
   - ${{ else }}:
-    - task: PublishBuildArtifacts@1
+    - task: PublishPipelineArtifact@1
       displayName: ${{ parameters.displayName }}
       inputs: ${{ parameters.inputs }}
       condition: ${{ parameters.condition }}
