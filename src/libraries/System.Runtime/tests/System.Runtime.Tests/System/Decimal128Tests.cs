@@ -24,39 +24,39 @@ namespace System.Tests
             var customFormat2 = new NumberFormatInfo();
             customFormat2.NumberDecimalSeparator = ".";
 
-            yield return new object[] { "-123", defaultStyle, null, new Decimal128(-123, 0) };
-            yield return new object[] { "0", defaultStyle, null, new Decimal128(0, 0) };
-            yield return new object[] { "123", defaultStyle, null, new Decimal128(123, 0) };
-            yield return new object[] { "  123  ", defaultStyle, null, new Decimal128(123, 0) };
-            yield return new object[] { (567.89).ToString(), defaultStyle, null, new Decimal128(56789, -2) };
-            yield return new object[] { (-567.89).ToString(), defaultStyle, null, new Decimal128(-56789, -2) };
-            yield return new object[] { "0.666666666666666666666666666666666650000000000000000000000000000000000000000000000000", defaultStyle, invariantFormat, new Decimal128(Int128.Parse(new string('6', 34)), -34) };
-            
-            yield return new object[] { "0." + new string('0', 6176) + "1", defaultStyle, invariantFormat, new Decimal128(0, 0) };
-            yield return new object[] { "-0." + new string('0', 6176) + "1", defaultStyle, invariantFormat, new Decimal128(0, 0) };
-            yield return new object[] { "0." + new string('0', 6175) + "1", defaultStyle, invariantFormat, new Decimal128(1, -6176) };
-            yield return new object[] { "-0." + new string('0', 6175) + "1", defaultStyle, invariantFormat, new Decimal128(-1, -6176) };
+            yield return new object[] { "-123", defaultStyle, null, Decimal128.Parse("-123") };
+            yield return new object[] { "0", defaultStyle, null, Decimal128.Parse("0") };
+            yield return new object[] { "123", defaultStyle, null, Decimal128.Parse("123") };
+            yield return new object[] { "  123  ", defaultStyle, null, Decimal128.Parse("123") };
+            yield return new object[] { (567.89).ToString(), defaultStyle, null, Decimal128.Parse("567.89") };
+            yield return new object[] { (-567.89).ToString(), defaultStyle, null, Decimal128.Parse("-567.89") };
+            yield return new object[] { "0.666666666666666666666666666666666650000000000000000000000000000000000000000000000000", defaultStyle, invariantFormat, Decimal128.Parse("0.66666666666666666666666666666666665") };
 
-            yield return new object[] { "0." + new string('0', 6174) + "12345", defaultStyle, invariantFormat, new Decimal128(12, -6176) };
-            yield return new object[] { "-0." + new string('0', 6174) + "12345", defaultStyle, invariantFormat, new Decimal128(-12, -6176) };
-            yield return new object[] { "0." + new string('0', 6174) + "12662", defaultStyle, invariantFormat, new Decimal128(13, -6176) };
-            yield return new object[] { "-0." + new string('0', 6174) + "12662", defaultStyle, invariantFormat, new Decimal128(-13, -6176) };
+            yield return new object[] { "0." + new string('0', 6176) + "1", defaultStyle, invariantFormat, Decimal128.Parse("0") };
+            yield return new object[] { "-0." + new string('0', 6176) + "1", defaultStyle, invariantFormat, Decimal128.Parse("0") };
+            yield return new object[] { "0." + new string('0', 6175) + "1", defaultStyle, invariantFormat, Decimal128.Parse("1e-6176") };
+            yield return new object[] { "-0." + new string('0', 6175) + "1", defaultStyle, invariantFormat, Decimal128.Parse("-1e-6176") };
 
-            yield return new object[] { emptyFormat.NumberDecimalSeparator + "234", defaultStyle, null, new Decimal128(234, -3) };
-            yield return new object[] { "234" + emptyFormat.NumberDecimalSeparator, defaultStyle, null, new Decimal128(234, 0) };
-            yield return new object[] { "7" + new string('0', 6144) + emptyFormat.NumberDecimalSeparator, defaultStyle, null, new Decimal128(7, 6144) };
-            yield return new object[] { "07" + new string('0', 6144) + emptyFormat.NumberDecimalSeparator, defaultStyle, null, new Decimal128(7, 6144) };
+            yield return new object[] { "0." + new string('0', 6174) + "12345", defaultStyle, invariantFormat, Decimal128.Parse("1.2345e-6175") };
+            yield return new object[] { "-0." + new string('0', 6174) + "12345", defaultStyle, invariantFormat, Decimal128.Parse("-1.2345e-6175") };
+            yield return new object[] { "0." + new string('0', 6174) + "12662", defaultStyle, invariantFormat, Decimal128.Parse("1.2662e-6175") };
+            yield return new object[] { "-0." + new string('0', 6174) + "12662", defaultStyle, invariantFormat, Decimal128.Parse("-1.2662e-6175") };
 
-            yield return new object[] { (123.1).ToString(), NumberStyles.AllowDecimalPoint, null, new Decimal128(1231, -1) };
-            yield return new object[] { 1000.ToString("N0"), NumberStyles.AllowThousands, null, new Decimal128(1000, 0) };
+            yield return new object[] { emptyFormat.NumberDecimalSeparator + "234", defaultStyle, null, Decimal128.Parse("2.34e-1") };
+            yield return new object[] { "234" + emptyFormat.NumberDecimalSeparator, defaultStyle, null, Decimal128.Parse("2.34e2") };
+            yield return new object[] { "7" + new string('0', 6144) + emptyFormat.NumberDecimalSeparator, defaultStyle, null, Decimal128.Parse("7e6144") };
+            yield return new object[] { "07" + new string('0', 6144) + emptyFormat.NumberDecimalSeparator, defaultStyle, null, Decimal128.Parse("7e6144") };
 
-            yield return new object[] { "123", NumberStyles.Any, emptyFormat, new Decimal128(123, 0) };
-            yield return new object[] { (123.567).ToString(), NumberStyles.Any, emptyFormat, new Decimal128(123567, -3) };
-            yield return new object[] { "123", NumberStyles.Float, emptyFormat, new Decimal128(123, 0) };
-            yield return new object[] { "$1000", NumberStyles.Currency, customFormat1, new Decimal128(1, 3) };
-            yield return new object[] { "123.123", NumberStyles.Float, customFormat2, new Decimal128(123123, -3) };
-            yield return new object[] { "(123)", NumberStyles.AllowParentheses, customFormat2, new Decimal128(-123, 0) };
-            
+            yield return new object[] { (123.1).ToString(), NumberStyles.AllowDecimalPoint, null, Decimal128.Parse("1.231e2") };
+            yield return new object[] { 1000.ToString("N0"), NumberStyles.AllowThousands, null, Decimal128.Parse("1e3") };
+
+            yield return new object[] { "123", NumberStyles.Any, emptyFormat, Decimal128.Parse("123") };
+            yield return new object[] { (123.567).ToString(), NumberStyles.Any, emptyFormat, Decimal128.Parse("1.23567e2") };
+            yield return new object[] { "123", NumberStyles.Float, emptyFormat, Decimal128.Parse("123") };
+            yield return new object[] { "$1000", NumberStyles.Currency, customFormat1, Decimal128.Parse("1e3") };
+            yield return new object[] { "123.123", NumberStyles.Float, customFormat2, Decimal128.Parse("1.23123e2") };
+            yield return new object[] { "(123)", NumberStyles.AllowParentheses, customFormat2, Decimal128.Parse("-123") };
+
             yield return new object[] { "NaN", NumberStyles.Any, invariantFormat, Decimal128.NaN };
             yield return new object[] { "+NaN", NumberStyles.Any, invariantFormat, Decimal128.NaN };
             yield return new object[] { "Infinity", NumberStyles.Any, invariantFormat, Decimal128.PositiveInfinity };
@@ -191,12 +191,12 @@ namespace System.Tests
                 yield return new object[] { inputs[0], 0, ((string)inputs[0]).Length, inputs[1], inputs[2], inputs[3] };
             }
 
-            yield return new object[] { "-123", 1, 3, NumberStyles.Number, null, new Decimal128(123, 0) };
-            yield return new object[] { "-123", 0, 3, NumberStyles.Number, null, new Decimal128(-12, 0) };
-            yield return new object[] { 1000.ToString("N0"), 0, 4, NumberStyles.AllowThousands, null, new Decimal128(100, 0) };
-            yield return new object[] { 1000.ToString("N0"), 2, 3, NumberStyles.AllowThousands, null, new Decimal128(0, 0) };
-            yield return new object[] { "(123)", 1, 3, NumberStyles.AllowParentheses, new NumberFormatInfo() { NumberDecimalSeparator = "." }, new Decimal128(123, 0) };
-            yield return new object[] { "1234567890123456789012345.678456", 1, 4, NumberStyles.Number, new NumberFormatInfo() { NumberDecimalSeparator = "." }, new Decimal128(2345, 0) };
+            yield return new object[] { "-123", 1, 3, NumberStyles.Number, null, Decimal128.Parse("123") };
+            yield return new object[] { "-123", 0, 3, NumberStyles.Number, null, Decimal128.Parse("-12") };
+            yield return new object[] { 1000.ToString("N0"), 0, 4, NumberStyles.AllowThousands, null, Decimal128.Parse("100") };
+            yield return new object[] { 1000.ToString("N0"), 2, 3, NumberStyles.AllowThousands, null, Decimal128.Parse("0") };
+            yield return new object[] { "(123)", 1, 3, NumberStyles.AllowParentheses, new NumberFormatInfo() { NumberDecimalSeparator = "." }, Decimal128.Parse("123") };
+            yield return new object[] { "1234567890123456789012345.678456", 1, 4, NumberStyles.Number, new NumberFormatInfo() { NumberDecimalSeparator = "." }, Decimal128.Parse("2345") };
         }
 
         [Theory]
@@ -240,23 +240,16 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void Midpoint_Rounding()
-        {
-            var number = new Decimal128(Int128.Parse("12345688888888881234568888888888885"), 0);
-            Assert.Equal(new Decimal128(Int128.Parse("1234568888888888123456888888888888"), 1), number);
-        }
-
-        [Fact]
         public static void Rounding()
         {
-            var number = new Decimal128(Int128.Parse("12345677777777771234567777777777778"), 0);
-            Assert.Equal(new Decimal128(Int128.Parse("1234567777777777123456777777777778"), 1), number);
+            var number = Decimal128.Parse("12345678901234567890123456789012348");
+            Assert.Equal(Decimal128.Parse("12345678901234567890123456789012350"), number);
 
-            number = new Decimal128(Int128.Parse("12345677777777771234567777777777771"), 0);
-            Assert.Equal(new Decimal128(Int128.Parse("1234567777777777123456777777777777"), 1), number);
+            number = Decimal128.Parse("12345678901234567890123456789012343");
+            Assert.Equal(Decimal128.Parse("12345678901234567890123456789012340"), number);
 
-            number = new Decimal128(Int128.Parse("12345677777777771234567777777777771"), -6177);
-            Assert.Equal(new Decimal128(Int128.Parse("1234567777777777123456777777777777"), -6176), number);
+            number = Decimal128.Parse("12345678901234567890123456789012345");
+            Assert.Equal(Decimal128.Parse("12345678901234567890123456789012340"), number);
         }
 
         [Fact]
@@ -287,47 +280,34 @@ namespace System.Tests
 
         public static IEnumerable<object[]> CompareTo_Other_ReturnsExpected_TestData()
         {
-            yield return new object[] { new Decimal128(-1, 1), new Decimal128(-10, 0), 0 };
-            yield return new object[] { new Decimal128(-2, 1), new Decimal128(-3, 1), 1 };
-            yield return new object[] { new Decimal128(3, 1), new Decimal128(2, 1), 1 };
-            yield return new object[] { new Decimal128(1, 6144), new Decimal128(10, 6143), 0 };
-            yield return new object[] { new Decimal128(Int128.Parse(new string('9', 33)), 6111), new Decimal128(Int128.Parse(new string('9', 33) + "0"), 6110), 0 };
-            yield return new object[] { Decimal128.Parse(new string('9', 33) + new string('0', 6111)), new Decimal128(Int128.Parse(new string('9', 32) + "8"), 6110), 1 };
-            yield return new object[] { Decimal128.Parse(new string('9', 25) + new string('0', 6111)), new Decimal128(Int128.Parse(new string('9', 24) + "8"), 6110), 1 };
-            yield return new object[] { new Decimal128(1, 1), new Decimal128(-1, 0), 1 };
-            yield return new object[] { new Decimal128(10, 0), new Decimal128(-1, 1), 1 };
-            yield return new object[] { new Decimal128(10, 0), Decimal128.NaN, 1 };
-            yield return new object[] { new Decimal128(10, 0), Decimal128.NegativeInfinity, 1 };
-            yield return new object[] { new Decimal128(10, 0), Decimal128.NegativeZero, 1 };
-            yield return new object[] { Decimal128.PositiveInfinity, new Decimal128(10, 20), 1 };
-            yield return new object[] { Decimal128.PositiveInfinity, new Decimal128(10, 7500), 0 };
+            yield return new object[] { Decimal128.Parse("-1e1"), Decimal128.Parse("-1e1"), 0 };
+            yield return new object[] { Decimal128.Parse("-2e1"), Decimal128.Parse("-3e1"), 1 };
+            yield return new object[] { Decimal128.Parse("3e1"), Decimal128.Parse("2e1"), 1 };
+            yield return new object[] { Decimal128.Parse("1e6144"), Decimal128.Parse("1e6144"), 0 };
+            yield return new object[] { Decimal128.Parse(new string('9', 33) + "e6111"), Decimal128.Parse(new string('9', 33) + "0e6110"), 0 };
+            yield return new object[] { Decimal128.Parse(new string('9', 33) + new string('0', 6111)), Decimal128.Parse(new string('9', 32) + "8e6110"), 1 };
+            yield return new object[] { Decimal128.Parse(new string('9', 25) + new string('0', 6111)), Decimal128.Parse(new string('9', 24) + "8e6110"), 1 };
+            yield return new object[] { Decimal128.Parse("1e1"), Decimal128.Parse("-1e0"), 1 };
+            yield return new object[] { Decimal128.Parse("1e1"), Decimal128.Parse("-1e1"), 1 };
+            yield return new object[] { Decimal128.Parse("1e1"), Decimal128.NaN, 1 };
+            yield return new object[] { Decimal128.Parse("1e1"), Decimal128.NegativeInfinity, 1 };
+            yield return new object[] { Decimal128.Parse("1e1"), Decimal128.NegativeZero, 1 };
+            yield return new object[] { Decimal128.PositiveInfinity, Decimal128.Parse("1e1"), 1 };
+            yield return new object[] { Decimal128.PositiveInfinity, Decimal128.Parse("1e7000"), 0 };
             yield return new object[] { Decimal128.PositiveInfinity, Decimal128.NegativeInfinity, 1 };
             yield return new object[] { Decimal128.PositiveInfinity, Decimal128.PositiveInfinity, 0 };
             yield return new object[] { Decimal128.PositiveInfinity, Decimal128.NegativeZero, 1 };
             yield return new object[] { Decimal128.NegativeInfinity, Decimal128.NegativeInfinity, 0 };
             yield return new object[] { Decimal128.NaN, Decimal128.NaN, 0 };
             yield return new object[] { Decimal128.NegativeZero, Decimal128.NegativeInfinity, 1 };
-            yield return new object[] { Decimal128.NegativeZero, new Decimal128(0, 20), 0 };
+            yield return new object[] { Decimal128.NegativeZero, Decimal128.Parse("0e1"), 0 };
             yield return new object[] { Decimal128.NegativeZero, Decimal128.NaN, 1 };
             for (int i = 1; i < 30; i++)
             {
-                var d1 = new Decimal128(1, i);
-                var d2 = new Decimal128(Int128.Parse("1" + new string('0', i)), 0);
+                var d1 = Decimal128.Parse("1e" + i);
+                var d2 = Decimal128.Parse("1" + new string('0', i));
                 yield return new object[] { d1, d2, 0 };
             }
-        }
-
-        [Fact]
-        public static void CompareToTest()
-        {
-            var d1 = new Decimal128(-1, 1);
-            var d2 = new Decimal128(-10, 0);
-            Assert.Equal(0, d1.CompareTo(d2));
-
-            d1 = new Decimal128(1, 1);
-            d2 = new Decimal128(-1, 0);
-            Assert.Equal(1, d1.CompareTo(d2));
-            Assert.Equal(-1, d2.CompareTo(d1));
         }
 
         [Theory]
@@ -342,9 +322,9 @@ namespace System.Tests
             yield return new object[] { Decimal128.Zero, Decimal128.NegativeZero };
             yield return new object[] { Decimal128.Zero, Decimal128.Zero };
             yield return new object[] { Decimal128.NaN, Decimal128.NaN };
-            yield return new object[] { new Decimal128(0, 20), new Decimal128(0, 18) };
-            yield return new object[] { new Decimal128(1, 7), new Decimal128(1, 7) };
-            yield return new object[] { new Decimal128(1, 7), new Decimal128(10, 6) };
+            yield return new object[] { Decimal128.Parse("0e20"), Decimal128.Parse("0e18") };
+            yield return new object[] { Decimal128.Parse("1e7"), Decimal128.Parse("1e7") };
+            yield return new object[] { Decimal128.Parse("1e7"), Decimal128.Parse("10e6") };
             yield return new object[] { Decimal128.PositiveInfinity, Decimal128.PositiveInfinity };
             yield return new object[] { Decimal128.NegativeInfinity, Decimal128.NegativeInfinity };
         }
@@ -352,30 +332,30 @@ namespace System.Tests
         [Fact]
         public static void CompareToZero()
         {
-            var zero = new Decimal128(0, 1);
-            Assert.Equal(zero, new Decimal128(0, 20));
-            Assert.Equal(zero, new Decimal128(1, -6177));
-            Assert.Equal(zero, new Decimal128(234, -10000));
-            Assert.Equal(zero, new Decimal128(-1, -6177));
-            Assert.Equal(zero, new Decimal128(-234, -10000));
+            var zero = Decimal128.Parse("0e1");
+            Assert.Equal(zero, Decimal128.Parse("0e20"));
+            Assert.Equal(zero, Decimal128.Parse("1e-6177"));
+            Assert.Equal(zero, Decimal128.Parse("234e-10000"));
+            Assert.Equal(zero, Decimal128.Parse("-1e-6177"));
+            Assert.Equal(zero, Decimal128.Parse("-234e-10000"));
         }
         public static IEnumerable<object[]> ToString_TestData()
         {
             foreach (NumberFormatInfo defaultFormat in new[] { null, NumberFormatInfo.CurrentInfo })
             {
-                yield return new object[] { new Decimal128(Int128.MinValue, 1), "G", defaultFormat, "-1701411834604692317316873037158841000000" };
-                yield return new object[] { new Decimal128(Int128.MaxValue, 1), "G", defaultFormat, "1701411834604692317316873037158841000000" };
-                yield return new object[] { new Decimal128(3, 6144), "G", defaultFormat, "3" + new string('0', 6144) };
-                yield return new object[] { new Decimal128(-3, 6144), "G", defaultFormat, "-3" + new string('0', 6144) };
-                yield return new object[] { new Decimal128(-4567, 0), "G", defaultFormat, "-4567" };
-                yield return new object[] { new Decimal128(-4567891, -3), "G", defaultFormat, "-4567.891" };
-                yield return new object[] { new Decimal128(0, 0), "G", defaultFormat, "0" };
-                yield return new object[] { new Decimal128(4567, 0), "G", defaultFormat, "4567" };
-                yield return new object[] { new Decimal128(4567891, -3), "G", defaultFormat, "4567.891" };
+                yield return new object[] { Decimal128.Parse($"{Int128.MinValue}"), "G", defaultFormat, "-170141183460469231731687303715884100000" };
+                yield return new object[] { Decimal128.Parse($"{Int128.MaxValue}"), "G", defaultFormat, "170141183460469231731687303715884100000" };
+                yield return new object[] { Decimal128.Parse("3e6144"), "G", defaultFormat, "3" + new string('0', 6144) };
+                yield return new object[] { Decimal128.Parse("-3e6144"), "G", defaultFormat, "-3" + new string('0', 6144) };
+                yield return new object[] { Decimal128.Parse("-4567"), "G", defaultFormat, "-4567" };
+                yield return new object[] { Decimal128.Parse("-4567.891"), "G", defaultFormat, "-4567.891" };
+                yield return new object[] { Decimal128.Parse("0"), "G", defaultFormat, "0" };
+                yield return new object[] { Decimal128.Parse("4567"), "G", defaultFormat, "4567" };
+                yield return new object[] { Decimal128.Parse("4567.891"), "G", defaultFormat, "4567.891" };
 
-                yield return new object[] { new Decimal128(2468, 0), "N", defaultFormat, "2,468.00" };
+                yield return new object[] { Decimal128.Parse("2468"), "N", defaultFormat, "2,468.00" };
 
-                yield return new object[] { new Decimal128(2467, 0), "[#-##-#]", defaultFormat, "[2-46-7]" };
+                yield return new object[] { Decimal128.Parse("2467"), "[#-##-#]", defaultFormat, "[2-46-7]" };
 
             }
         }
