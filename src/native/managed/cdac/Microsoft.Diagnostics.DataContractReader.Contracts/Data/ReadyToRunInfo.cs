@@ -17,10 +17,10 @@ internal sealed partial class ReadyToRunInfo : IData<ReadyToRunInfo>
     [Field] public TargetPointer ExceptionInfoSection { get; }
     [Field] public TargetPointer LoadedImageBase { get; }
     [Field] public TargetPointer Composite { get; }
+    [Field] public uint NumImportSections { get; }
 
     public TargetPointer RuntimeFunctions { get; private set; }
     public TargetPointer HotColdMap { get; private set; }
-    public uint NumImportSections { get; private set; }
     public TargetPointer ImportSections { get; private set; }
     public TargetPointer EntryPointToMethodDescMap { get; private set; }
 
@@ -37,7 +37,6 @@ internal sealed partial class ReadyToRunInfo : IData<ReadyToRunInfo>
             ? target.ReadPointerField(address, type, nameof(HotColdMap))
             : TargetPointer.Null;
 
-        NumImportSections = target.Read<uint>(address + (ulong)type.Fields[nameof(NumImportSections)].Offset);
         ImportSections = NumImportSections > 0
             ? target.ReadPointer(address + (ulong)type.Fields[nameof(ImportSections)].Offset)
             : TargetPointer.Null;

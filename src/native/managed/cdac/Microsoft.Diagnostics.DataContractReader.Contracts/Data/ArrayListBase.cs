@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
@@ -16,21 +17,24 @@ internal sealed partial class ArrayListBase : IData<ArrayListBase>
     [FieldAddress]
     public TargetPointer FirstBlock { get; }
 
-    public List<ArrayListBlock> Blocks { get; } = [];
-    public List<TargetPointer> Elements { get; } = [];
+    public IReadOnlyList<ArrayListBlock> Blocks { get; private set; } = [];
+    public IReadOnlyList<TargetPointer> Elements { get; private set; } = [];
 
+    [MemberNotNull(nameof(Blocks), nameof(Elements))]
     partial void OnInit(Target target, TargetPointer address)
     {
+        List<ArrayListBlock> blocks = [];
         TargetPointer next = FirstBlock;
         while (next != TargetPointer.Null)
         {
             ArrayListBlock block = target.ProcessedData.GetOrAdd<ArrayListBlock>(next);
-            Blocks.Add(block);
+            blocks.Add(block);
             next = block.Next;
         }
 
+        List<TargetPointer> elements = [];
         uint elementsFound = 0;
-        foreach (ArrayListBlock block in Blocks)
+        foreach (ArrayListBlock block in blocks)
         {
             foreach (TargetPointer element in block.Elements)
             {
@@ -39,10 +43,13 @@ internal sealed partial class ArrayListBase : IData<ArrayListBase>
                     break;
                 }
 
-                Elements.Add(element);
+                elements.Add(element);
                 elementsFound++;
             }
         }
+
+        Blocks = blocks;
+        Elements = elements;
     }
 }
 
@@ -55,13 +62,17 @@ internal sealed partial class ArrayListBlock : IData<ArrayListBlock>
     [FieldAddress]
     public TargetPointer ArrayStart { get; }
 
-    public List<TargetPointer> Elements { get; } = [];
+    public IReadOnlyList<TargetPointer> Elements { get; private set; } = [];
 
+    [MemberNotNull(nameof(Elements))]
     partial void OnInit(Target target, TargetPointer address)
     {
+        List<TargetPointer> elements = new((int)Size);
         for (ulong i = 0; i < Size; i++)
         {
-            Elements.Add(target.ReadPointer(ArrayStart + (i * (ulong)target.PointerSize)));
+            elements.Add(target.ReadPointer(ArrayStart + (i * (ulong)target.PointerSize)));
         }
+
+        Elements = elements;
     }
 }

@@ -610,6 +610,42 @@ keeps the per-`Create` cost predictable, the descriptor surface
 visible at the property level, and the consumer in control of what
 gets materialized.
 
+### Data exposed should not be modifiable
+
+IData properties should not expose mutable collections or types that
+allow external callers to change the snapshot. The only legitimate
+mutation path is through `Write{Name}` methods for write-back fields.
+
+For collection-typed properties populated in `OnInit`, expose them as
+`IReadOnlyList<T>` (or another read-only interface) with
+`{ get; private set; }` and assign a `List<T>` built inside `OnInit`.
+This prevents callers from accidentally mutating the cached snapshot.
+
+Bad:
+
+```csharp
+public List<TargetPointer> Elements { get; } = [];
+
+partial void OnInit(Target target, TargetPointer address)
+{
+    Elements.Add(...);
+}
+```
+
+Good:
+
+```csharp
+public IReadOnlyList<TargetPointer> Elements { get; private set; } = [];
+
+[MemberNotNull(nameof(Elements))]
+partial void OnInit(Target target, TargetPointer address)
+{
+    List<TargetPointer> elements = [];
+    elements.Add(...);
+    Elements = elements;
+}
+```
+
 ### Avoid algorithm logic in IData classes
 
 The constructor (and `OnInit`) should be limited to reads from the
