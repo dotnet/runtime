@@ -54,7 +54,7 @@ public class Program
     bool forceUpload;
     BufferState currentState;
 
-    Program()
+    public Program()
     {
         this.forceUpload = false;
         this.currentState = new BufferState();
