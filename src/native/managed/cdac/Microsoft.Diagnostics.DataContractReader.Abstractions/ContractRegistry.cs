@@ -124,6 +124,9 @@ public abstract class ContractRegistry
     /// Gets an instance of the Debugger contract for the target.
     /// </summary>
     public virtual IDebugger Debugger => GetContract<IDebugger>();
+    /// <summary>
+    /// Gets an instance of the CallingConvention contract for the target.
+    /// </summary>
     public virtual ICallingConvention CallingConvention => GetContract<ICallingConvention>();
 
     /// <summary>
