@@ -110,9 +110,9 @@ namespace Internal.Runtime.TypeLoader
                     ? _declaringType.GetHashCode()
                     : VersionResilientHashCode.GenericInstanceHashCode(_declaringType.GetHashCode(), _genericArgs);
                 int hashCode = _handle.GetHashCode() ^ declaringTypeHashCode;
-                if (_isAsyncVariant)
-                    hashCode ^= unchecked((int)0x9e3779b9);
-                return hashCode;
+                return _isAsyncVariant
+                    ? VersionResilientHashCode.CombineTwoValuesIntoHash(hashCode, 1)
+                    : hashCode;
             }
         }
 
