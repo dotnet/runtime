@@ -755,7 +755,7 @@ emit_sri_vector_t (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *
 	const char *cmethod_name = strip_explicit_isimd_prefix (cmethod->name);
 	bool explicitly_implemented = cmethod_name != cmethod->name;
 
-	int id = lookup_intrins (sri_vector_t_methods, sizeof (sri_vector_t_methods), cmethod->name);
+	int id = lookup_intrins (sri_vector_t_methods, sizeof (sri_vector_t_methods), cmethod_name);
 	if (id == -1) {
 		if (explicitly_implemented) {
 			return emit_sri_vector (td, cmethod, csignature);

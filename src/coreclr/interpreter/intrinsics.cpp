@@ -74,6 +74,9 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
         if (!strcmp(className, "Vector") && !strcmp(methodName, "get_IsHardwareAccelerated"))
             return NI_IsSupported_False;
 
+        if (!strcmp(className, "Vector`1") && !strcmp(methodName, "get_IsSupported"))
+            return NI_IsSupported_Type;
+
         // Fall back to managed implementation for everything else.
         return NI_Illegal;
     }
