@@ -2166,6 +2166,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             if (gcHandle.Target is not HeapWalk walk)
                 return HResults.E_INVALIDARG;
             legacyHandle = walk.LegacyHandle;
+            ((IEnum<COR_HEAPOBJECT>)walk).Dispose();
             gcHandle.Free();
         }
         catch (System.Exception ex)
