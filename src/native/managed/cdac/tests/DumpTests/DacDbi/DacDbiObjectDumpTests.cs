@@ -99,6 +99,44 @@ public class DacDbiObjectDumpTests : DumpTestBase
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
+    public unsafe void IsValidObject_HandleObjects_AreValid(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        DacDbiImpl dbi = CreateDacDbi();
+        IGC gc = Target.Contracts.GC;
+
+        int validCount = 0;
+        foreach (HandleData handleData in gc.GetHandles([HandleType.Strong]))
+        {
+            TargetPointer objectAddress = Target.ReadPointer(handleData.Handle);
+            if (objectAddress == TargetPointer.Null)
+                continue;
+
+            Interop.BOOL result;
+            int hr = dbi.IsValidObject(objectAddress.Value, &result);
+            Assert.Equal(System.HResults.S_OK, hr);
+            Assert.Equal(Interop.BOOL.TRUE, result);
+            validCount++;
+        }
+
+        Assert.True(validCount > 0, "Expected at least one valid object from strong handles.");
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public unsafe void IsValidObject_InvalidAddress_ReturnsFalse(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        DacDbiImpl dbi = CreateDacDbi();
+
+        Interop.BOOL result;
+        int hr = dbi.IsValidObject(0x12345678, &result);
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(Interop.BOOL.FALSE, result);
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
     public unsafe void GetArrayLayout_String_HasExpectedLayout(TestConfiguration config)
     {
         InitializeDumpTest(config);

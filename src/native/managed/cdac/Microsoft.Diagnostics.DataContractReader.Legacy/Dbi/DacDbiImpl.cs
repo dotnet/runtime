@@ -2348,12 +2348,12 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 #if DEBUG
         if (_legacy is not null)
         {
-            Interop.BOOL* pResultLocal = stackalloc Interop.BOOL[1];
-            int hrLocal = _legacy.IsValidObject(obj, pResultLocal);
+            Interop.BOOL resultLocal;
+            int hrLocal = _legacy.IsValidObject(obj, &resultLocal);
             Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK)
             {
-                Debug.Assert(*pResult == *pResultLocal, $"cDAC: {*pResult}, DAC: {*pResultLocal}");
+                Debug.Assert(*pResult == resultLocal, $"cDAC: {*pResult}, DAC: {resultLocal}");
             }
         }
 #endif
