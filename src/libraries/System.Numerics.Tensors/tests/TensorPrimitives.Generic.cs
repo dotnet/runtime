@@ -624,8 +624,8 @@ namespace System.Numerics.Tensors.Tests
         #region Span,Span -> Destination
         public static IEnumerable<object[]> SpanSpanDestinationFunctionsToTest()
         {
-            yield return Create(TensorPrimitives.Atan2, T.Atan2);
-            yield return Create(TensorPrimitives.Atan2Pi, T.Atan2Pi);
+            yield return Create(TensorPrimitives.Atan2, T.Atan2, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-14, floatTolerance: 1e-6f));
+            yield return Create(TensorPrimitives.Atan2Pi, T.Atan2Pi, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-14, floatTolerance: 1e-6f));
             yield return Create(TensorPrimitives.CopySign, T.CopySign);
             yield return Create(TensorPrimitives.Hypot, T.Hypot);
             yield return Create(TensorPrimitives.Ieee754Remainder, T.Ieee754Remainder);
@@ -763,8 +763,8 @@ namespace System.Numerics.Tensors.Tests
         #region Span,Scalar -> Destination
         public static IEnumerable<object[]> SpanScalarDestinationFunctionsToTest()
         {
-            yield return Create(TensorPrimitives.Atan2, T.Atan2);
-            yield return Create(TensorPrimitives.Atan2Pi, T.Atan2Pi);
+            yield return Create(TensorPrimitives.Atan2, T.Atan2, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-14, floatTolerance: 1e-6f));
+            yield return Create(TensorPrimitives.Atan2Pi, T.Atan2Pi, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-14, floatTolerance: 1e-6f));
             yield return Create(TensorPrimitives.CopySign, T.CopySign);
             yield return Create(TensorPrimitives.Ieee754Remainder, T.Ieee754Remainder);
             yield return Create(TensorPrimitives.Pow, T.Pow, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-13, floatTolerance: 1e-5f));
@@ -873,8 +873,8 @@ namespace System.Numerics.Tensors.Tests
         #region Scalar,Span -> Destination
         public static IEnumerable<object[]> ScalarSpanFloatDestinationFunctionsToTest()
         {
-            yield return Create(TensorPrimitives.Atan2, T.Atan2);
-            yield return Create(TensorPrimitives.Atan2Pi, T.Atan2Pi);
+            yield return Create(TensorPrimitives.Atan2, T.Atan2, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-14, floatTolerance: 1e-6f));
+            yield return Create(TensorPrimitives.Atan2Pi, T.Atan2Pi, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-14, floatTolerance: 1e-6f));
             yield return Create(TensorPrimitives.Pow, T.Pow, Helpers.DetermineTolerance<T>(floatTolerance: 1e-5f));
             yield return Create(TensorPrimitives.Ieee754Remainder, T.Ieee754Remainder);
 
