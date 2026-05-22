@@ -126,10 +126,12 @@ endif()
 
 if (CLR_CMAKE_HOST_ARCH_WASM)
   set(PLATFORM_SOURCES
-  arch/${PAL_ARCH_SOURCES_DIR}/stubs.cpp
+  arch/${PAL_ARCH_SOURCES_DIR}/wasm-stubs.cpp
   )
   if(CLR_CMAKE_TARGET_WASI)
-    list(APPEND PLATFORM_SOURCES arch/${PAL_ARCH_SOURCES_DIR}/mmap-wasi.c)
+    list(APPEND PLATFORM_SOURCES
+      arch/${PAL_ARCH_SOURCES_DIR}/wasi-stubs.cpp
+      arch/${PAL_ARCH_SOURCES_DIR}/mmap-wasi.c)
   endif()
 endif()
 

@@ -12,7 +12,7 @@
 
 // These are declared in upstream musl but hidden on WASI behind
 // __wasilibc_unmodified_upstream. Provide declarations here;
-// link-time stubs are in pal/src/arch/wasm/stubs.cpp.
+// link-time stubs are in pal/src/arch/wasm/{wasm-stubs,wasi-stubs}.cpp.
 #ifdef __cplusplus
 extern "C" {
 #endif

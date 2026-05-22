@@ -71,10 +71,18 @@ duplicating the include-directory glue in every subdirectory that needs it.
 
 Header declarations alone are not enough — when the PAL references
 `pthread_setschedparam` (declared in the shim) the linker still needs a
-definition. Trivial stubs (return -1, no-op, etc.) live in
-`pal/src/arch/wasm/stubs.cpp`. Heavier shims like the
-`posix_memalign`-backed arena allocator that replaces `mmap` for anonymous
-mappings live next to them in `mmap-wasi.c`.
+definition. Trivial stubs live in two files in `pal/src/arch/wasm/`:
+
+- `wasm-stubs.cpp` — stubs shared by all WASM targets (browser-wasm and
+  WASI), including `DBG_DebugBreak`, the unwinder (`unw_*`) stubs, and
+  `pthread_setschedparam`.
+- `wasi-stubs.cpp` — stubs only needed on WASI, where browser-wasm gets
+  real implementations from Emscripten (e.g., `shm_open`, `RaiseException`,
+  `pthread_getschedparam`).
+
+Heavier shims like the `posix_memalign`-backed arena allocator that
+replaces `mmap` for anonymous mappings live next to them in
+`mmap-wasi.c`.
 
 ## When to remove a shim
 
