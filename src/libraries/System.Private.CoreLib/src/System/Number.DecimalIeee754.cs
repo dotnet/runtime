@@ -587,7 +587,7 @@ namespace System
 
                 if (number.HasNonZeroTail
                     || int.IsOddInteger(number.Digits[digitsRemain - 1] - '0')
-                    || number.Digits.Slice(index).ContainsAnyExcept((byte)'0'))
+                    || number.Digits.Slice(index, number.DigitsCount - index).ContainsAnyExcept((byte)'0'))
                 {
                     roundDown = false;
                 }

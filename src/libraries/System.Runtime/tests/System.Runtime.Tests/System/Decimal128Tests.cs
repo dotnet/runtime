@@ -302,6 +302,12 @@ namespace System.Tests
             yield return new object[] { Decimal128.NegativeZero, Decimal128.NegativeInfinity, 1 };
             yield return new object[] { Decimal128.NegativeZero, Decimal128.Parse("0e1"), 0 };
             yield return new object[] { Decimal128.NegativeZero, Decimal128.NaN, 1 };
+            yield return new object[] { Decimal128.Epsilon, Decimal128.Parse("1e-6176"), 0 };
+            yield return new object[] { Decimal128.Parse("4e-6177"), Decimal128.Zero, 0 };
+            yield return new object[] { Decimal128.Parse("5e-6177"), Decimal128.Zero, 0 };
+            yield return new object[] { Decimal128.Parse("5.00001e-6177"), Decimal128.Epsilon, 0 };
+            yield return new object[] { Decimal128.Parse("5." + new string('0', 300) + "1e-6177"), Decimal128.Epsilon, 0 };
+            yield return new object[] { Decimal128.Parse("6e-6177"), Decimal128.Parse("1e-6176"), 0 };
             for (int i = 1; i < 30; i++)
             {
                 var d1 = Decimal128.Parse("1e" + i);

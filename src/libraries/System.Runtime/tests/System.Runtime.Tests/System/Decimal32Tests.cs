@@ -299,8 +299,11 @@ namespace System.Tests
             yield return new object[] { Decimal32.NegativeZero, Decimal32.NegativeInfinity, 1 };
             yield return new object[] { Decimal32.NegativeZero, Decimal32.Parse("0e20"), 0 };
             yield return new object[] { Decimal32.NegativeZero, Decimal32.NaN, 1 };
+            yield return new object[] { Decimal32.Epsilon, Decimal32.Parse("1e-101"), 0 };
             yield return new object[] { Decimal32.Parse("4e-102"), Decimal32.Zero, 0 };
             yield return new object[] { Decimal32.Parse("5e-102"), Decimal32.Zero, 0 };
+            yield return new object[] { Decimal32.Parse("5.00001e-102"), Decimal32.Epsilon, 0 };
+            yield return new object[] { Decimal32.Parse("5." + new string('0', 300) + "1e-102"), Decimal32.Epsilon, 0 };
             yield return new object[] { Decimal32.Parse("6e-102"), Decimal32.Parse("1e-101"), 0 };
             for (int i = 1; i < 7; i++)
             {
@@ -340,24 +343,6 @@ namespace System.Tests
             yield return new object[] { Decimal32.Parse("1e7"), Decimal32.Parse("10e6") };
             yield return new object[] { Decimal32.PositiveInfinity, Decimal32.PositiveInfinity };
             yield return new object[] { Decimal32.NegativeInfinity, Decimal32.NegativeInfinity };
-        }
-
-
-        [Theory]
-        [MemberData(nameof(Epsilon_TestData))]
-        public static void Epsilon(string value, Decimal32 d, Decimal32 expected)
-        {
-            Decimal32 parsed = Decimal32.Parse(value, CultureInfo.InvariantCulture);
-            Assert.Equal(expected, parsed);
-            Assert.Equal(expected, d);
-        }
-
-        public static IEnumerable<object[]> Epsilon_TestData()
-        {
-            yield return new object[] { "0." + new string('0', 100) + "1", Decimal32.Parse("1e-101"), Decimal32.Epsilon };
-            yield return new object[] { "0." + new string('0', 101) + "51", Decimal32.Parse("51e-103"), Decimal32.Epsilon };
-            yield return new object[] { "0." + new string('0', 101) + "5", Decimal32.Parse("5e-102"), Decimal32.Zero };
-            yield return new object[] { "0." + new string('0', 101) + "4", Decimal32.Parse("4e-102"), Decimal32.Zero };
         }
 
         public static IEnumerable<object[]> ToString_TestData()

@@ -301,6 +301,12 @@ namespace System.Tests
             yield return new object[] { Decimal64.NegativeZero, Decimal64.NegativeInfinity, 1 };
             yield return new object[] { Decimal64.NegativeZero, Decimal64.Parse("0e20"), 0 };
             yield return new object[] { Decimal64.NegativeZero, Decimal64.NaN, 1 };
+            yield return new object[] { Decimal64.Epsilon, Decimal64.Parse("1e-398"), 0 };
+            yield return new object[] { Decimal64.Parse("4e-399"), Decimal64.Zero, 0 };
+            yield return new object[] { Decimal64.Parse("5e-399"), Decimal64.Zero, 0 };
+            yield return new object[] { Decimal64.Parse("5.00001e-399"), Decimal64.Epsilon, 0 };
+            yield return new object[] { Decimal64.Parse("5." + new string('0', 300) + "1e-399"), Decimal64.Epsilon, 0 };
+            yield return new object[] { Decimal64.Parse("6e-399"), Decimal64.Parse("1e-398"), 0 };
             for (int i = 1; i < 16; i++)
             {
                 var d1 = Decimal64.Parse("1e" + i);
