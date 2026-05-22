@@ -9075,7 +9075,6 @@ public:
 
     // Used for respective assertion propagations.
     AssertionIndex optAssertionIsSubrange(GenTree* tree, IntegralRange range, ASSERT_VALARG_TP assertions);
-    bool           optAssertionIsSubtype(GenTree* tree, GenTree* methodTableArg, ASSERT_VALARG_TP assertions);
     bool           optAssertionVNIsSubtype(ValueNum             vn,
                                            CORINFO_CLASS_HANDLE castTo,
                                            ASSERT_VALARG_TP     assertions,

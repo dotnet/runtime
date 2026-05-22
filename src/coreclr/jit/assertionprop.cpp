@@ -2387,58 +2387,6 @@ AssertionIndex Compiler::optAssertionIsSubrange(GenTree* tree, IntegralRange ran
 }
 
 //------------------------------------------------------------------------
-// optAssertionIsSubtype: see if a tree is known to be castable to a class.
-//
-// Determines whether the object value behind "tree" is known to be a
-// subtype of the class indicated by "methodTableArg", using the live
-// assertion set, VN-level type info (e.g. VNF_JitNew exact-type), and
-// assertions that reach via PHI definitions.
-//
-// Arguments:
-//   tree           - the object being cast (usually the second arg of an
-//                    isinst/castclass helper)
-//   methodTableArg - the helper's first arg, expected to be a class handle
-//                    (constant int) identifying the target type
-//   assertions     - set of live assertions at the call site
-//
-// Return Value:
-//   True if the cast can be proven to succeed.
-//
-bool Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTableArg, ASSERT_VALARG_TP assertions)
-{
-    ValueNum objVN = optConservativeNormalVN(tree);
-    if (objVN == ValueNumStore::NoVN)
-    {
-        return false;
-    }
-
-    // Resolve the compile-time class handle from the method-table arg.
-    //
-    CORINFO_CLASS_HANDLE castTo = gtGetHelperArgClassHandle(methodTableArg);
-    if (castTo == NO_CLASS_HANDLE)
-    {
-        // Fall back to VN-based resolution (covers cases where the helper-arg
-        // recognizer can't find the handle but the VN encodes a type handle).
-        ValueNum castToVN = optConservativeNormalVN(methodTableArg);
-        if (vnStore->IsVNTypeHandle(castToVN))
-        {
-            ssize_t handle = 0;
-            if (vnStore->EmbeddedHandleMapLookup(vnStore->ConstantValue<ssize_t>(castToVN), &handle) && (handle != 0))
-            {
-                castTo = reinterpret_cast<CORINFO_CLASS_HANDLE>(handle);
-            }
-        }
-    }
-
-    if (castTo == NO_CLASS_HANDLE)
-    {
-        return false;
-    }
-
-    return optAssertionVNIsSubtype(objVN, castTo, assertions);
-}
-
-//------------------------------------------------------------------------
 // optAssertionVNIsSubtype: see if a VN is known to be a subtype of castTo
 //    using the given assertion set, VN-level type info, and assertions that
 //    reach via PHI definitions.
@@ -2533,12 +2481,10 @@ bool Compiler::optAssertionVNIsSubtype(ValueNum             vn,
     //    optVisitReachingAssertions yields per-edge assertion sets so each
     //    reaching VN is evaluated against the assertions that hold on its edge.
     //
-    auto visitor = [this, castTo, budget](ValueNum reachingVN, ASSERT_TP reachingAssertions) {
+    return optVisitReachingAssertions(vn, [this, castTo, budget](ValueNum reachingVN, ASSERT_TP reachingAssertions) {
         return optAssertionVNIsSubtype(reachingVN, castTo, reachingAssertions, budget - 1) ? AssertVisit::Continue
                                                                                            : AssertVisit::Abort;
-    };
-
-    return optVisitReachingAssertions(vn, visitor) == AssertVisit::Continue;
+    }) == AssertVisit::Continue;
 }
 
 //------------------------------------------------------------------------------
@@ -5465,8 +5411,13 @@ GenTree* Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCal
             CallArg* objCallArg    = call->gtArgs.GetArgByIndex(1);
             GenTree* castToArg     = castToCallArg->GetNode();
             GenTree* objArg        = objCallArg->GetNode();
+            ValueNum objVN         = optConservativeNormalVN(objArg);
+            ValueNum castToVN      = optConservativeNormalVN(castToArg);
 
-            if (optAssertionIsSubtype(objArg, castToArg, assertions))
+            ssize_t handle = 0;
+            if (vnStore->IsVNTypeHandle(castToVN) &&
+                vnStore->EmbeddedHandleMapLookup(vnStore->ConstantValue<ssize_t>(castToVN), &handle) &&
+                optAssertionVNIsSubtype(objVN, reinterpret_cast<CORINFO_CLASS_HANDLE>(handle), assertions))
             {
                 JITDUMP("\nDid VN based subtype prop in " FMT_BB ":\n", compCurBB->bbNum);
                 DISPTREE(call);
