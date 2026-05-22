@@ -1143,9 +1143,28 @@ IEnumerable<(HeapSegment Segment, TargetPointer Address)> WalkSegmentList(Target
 
 GetPotentialNextObjectAddress
 
-Depends on `IThread.GetThreadStoreData`, `IThread.GetThreadData`,
-`IGC.GetGlobalAllocationContext`, `IGC.GetGCIdentifiers`, `IGC.GetGCHeaps`, and
-`IGC.GetHeapData` to enumerate active allocation contexts.
+Computes the next candidate object address when walking a Gen0/Ephemeral segment.
+Live allocation contexts represent reserved-but-not-yet-allocated ranges inside such
+segments; the bump pointer (`Pointer`) is the next free slot, and everything from
+`Pointer` up to `Limit` is uninitialized memory that does not contain valid objects.
+When the naive `current + size` lands exactly on an alloc context's `Pointer`, the
+walk must skip past `Limit` (plus the minimum object size used by the GC to terminate
+the gap) to resume scanning real objects.
+
+The pseudo-code in `GetAllocContexts` below shows how each dependency contributes
+to building the union of all active allocation contexts:
+
+* `IThread.GetThreadStoreData` / `IThread.GetThreadData` — every managed thread owns
+  a per-thread alloc context embedded in its `Thread` object; we walk the thread
+  store linked list to collect them.
+* `IGC.GetGlobalAllocationContext` — the runtime also keeps a single shared
+  (non-thread-local) alloc context (e.g. for code that allocates without a managed
+  thread); read it from the `g_global_alloc_context` global.
+* `IGC.GetGCIdentifiers` — tells us whether the GC is Workstation or Server, which
+  determines whether there is one heap or many.
+* `IGC.GetGCHeaps` / `IGC.GetHeapData` — Server GC has one heap per logical heap;
+  each heap exposes its own generation 0 alloc context via the generation table.
+  Workstation GC has a single implicit heap reached via the parameterless overload.
 
 ```csharp
 TargetPointer IGC.GetPotentialNextObjectAddress(
@@ -1155,9 +1174,16 @@ TargetPointer IGC.GetPotentialNextObjectAddress(
 {
     TargetPointer next = new TargetPointer(currentAddress.Value + currentObjectSize);
 
+    // Alloc contexts only matter for segments that the allocator bumps into,
+    // i.e. Gen0 / Ephemeral. LOH/POH/older generations never have a live
+    // alloc context carved out of them.
     if (segment.Generation is not (GCSegmentClassification.Gen0 or GCSegmentClassification.Ephemeral))
         return next;
 
+    // When the GC closes an alloc context it pads the unused tail with a free
+    // object whose minimum size is `AlignForSmallObject(3 * pointer_size)`.
+    // To resume the walk we need to step over both the unused range AND that
+    // sentinel free object.
     ulong minObjSize = AlignForSmallObject((ulong)_target.PointerSize * 3);
     foreach (AllocContext context in GetAllocContexts())
     {
@@ -1165,6 +1191,57 @@ TargetPointer IGC.GetPotentialNextObjectAddress(
             return new TargetPointer(context.Limit.Value + minObjSize);
     }
     return next;
+}
+
+// Collects every active allocation context in the process: per-thread,
+// the global (non-thread-local) one, and the per-heap Gen0 contexts.
+List<AllocContext> GetAllocContexts()
+{
+    List<AllocContext> contexts = new();
+
+    // 1) Per-thread alloc contexts.
+    //    Walk the thread store linked list and pull `alloc_context` out of
+    //    each Thread object.
+    IThread thread = _target.Contracts.Thread;
+    ThreadStoreData store = thread.GetThreadStoreData();          // head + count
+    TargetPointer current = store.FirstThread;
+    int safety = store.ThreadCount;                               // bound the walk
+    while (current != TargetPointer.Null && safety-- > 0)
+    {
+        ThreadData td = thread.GetThreadData(current);            // per-thread fields
+        if (td.AllocContextPointer != TargetPointer.Null)
+            contexts.Add(new AllocContext(td.AllocContextPointer, td.AllocContextLimit));
+        current = td.NextThread;
+    }
+
+    // 2) The single global (non-thread-local) alloc context, read from the
+    //    `g_global_alloc_context` global pointer.
+    IGC gc = _target.Contracts.GC;
+    gc.GetGlobalAllocationContext(out TargetPointer gAllocPtr, out TargetPointer gAllocLimit);
+    if (gAllocPtr != TargetPointer.Null)
+        contexts.Add(new AllocContext(gAllocPtr, gAllocLimit));
+
+    // 3) Per-heap Gen0 alloc contexts.
+    //    Workstation GC: one implicit heap (parameterless GetHeapData).
+    //    Server GC:      one heap per address returned by GetGCHeaps().
+    //    Generation 0's `allocation_context` field on the heap's generation
+    //    table is the active bump pointer for that heap.
+    string[] gcIdentifiers = gc.GetGCIdentifiers();
+    IEnumerable<GCHeapData> heaps = gcIdentifiers.Contains(GCIdentifiers.Workstation)
+        ? new[] { gc.GetHeapData() }
+        : gc.GetGCHeaps().Select(h => gc.GetHeapData(h));
+    foreach (GCHeapData heap in heaps)
+    {
+        if (heap.GenerationTable.Count > 0)
+        {
+            TargetPointer ptr   = heap.GenerationTable[0].AllocationContextPointer;
+            TargetPointer limit = heap.GenerationTable[0].AllocationContextLimit;
+            if (ptr != TargetPointer.Null)
+                contexts.Add(new AllocContext(ptr, limit));
+        }
+    }
+
+    return contexts;
 }
 ```
 
