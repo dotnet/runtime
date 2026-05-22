@@ -918,7 +918,7 @@ HRESULT CordbAsyncStackWalk::PopulateFrame()
         // Skip continuations with null DiagnosticIP. These are infrastructure
         // continuations (e.g. ValueTaskContinuation) that have no user code
         // associated with them and cannot be represented as a debug frame.
-        if (diagnosticIP == NULL)
+        if (diagnosticIP == 0)
         {
             m_continuationAddress = nextContinuation;
             continue;
