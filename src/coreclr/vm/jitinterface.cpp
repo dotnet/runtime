@@ -8864,14 +8864,14 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         isGenericVirtual = true;
     }
 
-    if ((isArray || isGenericVirtual) && pDevirtMD->IsInstantiatingStub())
-    {
-        info->instParamLookup.constLookup.handle = (CORINFO_GENERIC_HANDLE)pDevirtMD;
-        info->instParamLookup.constLookup.accessType = IAT_VALUE;
-    }
-
     if (isArray || isGenericVirtual)
     {
+        if (pDevirtMD->IsInstantiatingStub())
+        {
+            info->instParamLookup.constLookup.handle = (CORINFO_GENERIC_HANDLE)pDevirtMD;
+            info->instParamLookup.constLookup.accessType = IAT_VALUE;
+        }
+
         info->tokenLookupContext = MAKE_METHODCONTEXT((CORINFO_METHOD_HANDLE) pDevirtMD);
         pDevirtMD = pDevirtMD->IsInstantiatingStub() ? pDevirtMD->GetWrappedMethodDesc() : pDevirtMD;
     }
