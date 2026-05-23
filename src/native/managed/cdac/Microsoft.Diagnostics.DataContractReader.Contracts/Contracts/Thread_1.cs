@@ -331,8 +331,7 @@ internal readonly struct Thread_1 : IThread
             return bytes;
         }
 
-        // The data target does not implement GetThreadContext. Fall back to deriving
-        // a context from the explicit Frame chain stored in the Thread object.
+        // Fall back to deriving a context from the explicit Frame chain stored in the Thread object.
         return GetContextFromFrames(threadPointer);
     }
 
