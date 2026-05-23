@@ -408,8 +408,7 @@ byte[] IThread.GetContext(TargetPointer threadPointer, ThreadContextSource conte
     if (target.TryGetThreadContext(osId, contextFlags, bytes))
         return bytes;
 
-    // GetThreadContext is not implemented on this data target. Derive a context
-    // from the explicit Frame chain stored in the Thread (sufficient for managed
+    // Derive a context from the explicit Frame chain stored in the Thread (sufficient for managed
     // debugging stack walks). Walk the Frame chain and pick the first
     // frame that yields a usable context:
     //   * If it is an InterpreterFrame, fill the context from the top
