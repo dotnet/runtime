@@ -230,7 +230,14 @@ bool IntegralRange::Contains(int64_t value) const
 
             // If the local's conservative VN identifies it as the result of a CAST
             // to a small type, the value stored is bounded by that type's range.
-            if (compiler->vnStore != nullptr)
+            //
+            // This refinement is only sound when the local's storage is fully
+            // normalized to the cast's destination type. For "normalize on load"
+            // small-type locals the store writes only the low bits, leaving the
+            // upper bits stale; tightening the range here would let downstream
+            // optimizations (e.g. fgOptimizeCast) drop a required sign/zero
+            // extending load and read those stale bits.
+            if ((compiler->vnStore != nullptr) && (!varTypeIsSmall(varDsc->TypeGet()) || varDsc->lvNormalizeOnStore()))
             {
                 ValueNum  vn = compiler->vnStore->VNConservativeNormalValue(node->gtVNPair);
                 VNFuncApp funcApp;
