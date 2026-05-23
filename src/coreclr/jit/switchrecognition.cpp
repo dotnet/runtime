@@ -429,8 +429,11 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock,
     bool continousRange = testsCount == (maxValue - minValue + 1);
     if (doesntFitTable || continousRange)
     {
-        switchValue =
-            gtNewOperNode(GT_SUB, switchValue->TypeGet(), switchValue, gtNewIconNode(minValue, switchValue->TypeGet()));
+        if (minValue != 0)
+        {
+            switchValue = gtNewOperNode(GT_SUB, switchValue->TypeGet(), switchValue,
+                                        gtNewIconNode(minValue, switchValue->TypeGet()));
+        }
     }
     else
     {
