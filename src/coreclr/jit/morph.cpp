@@ -7429,7 +7429,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
                 // cheaper uint16 FastMod sequence. This requires the divisor to
                 // be a non-zero constant in uint16 range and the dividend's
                 // static IntegralRange to already fit in uint16.
-                if (op2->IsCnsIntOrI())
+                if (!opts.MinOpts() && op2->IsCnsIntOrI())
                 {
                     ssize_t modDivisor = op2->AsIntCon()->IconValue();
                     if ((modDivisor > 0) && FitsIn<uint16_t>(modDivisor) &&
