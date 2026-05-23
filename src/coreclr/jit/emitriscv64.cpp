@@ -2882,18 +2882,6 @@ static unsigned UpperNBitsOfWordSignExtend(ssize_t word)
     return UpperNBitsOfWord<MaskSize>(word + kSignExtend);
 }
 
-static unsigned UpperWordOfDoubleWord(ssize_t immediate)
-{
-    return static_cast<unsigned>(immediate >> 32);
-}
-
-static unsigned LowerWordOfDoubleWord(ssize_t immediate)
-{
-    static constexpr size_t kWordMask = WordMask(32);
-
-    return static_cast<unsigned>(immediate & kWordMask);
-}
-
 template <uint8_t UpperMaskSize, uint8_t LowerMaskSize>
 static ssize_t DoubleWordSignExtend(ssize_t doubleWord)
 {
@@ -2901,20 +2889,6 @@ static ssize_t DoubleWordSignExtend(ssize_t doubleWord)
     static constexpr size_t kUpperSignExtend = static_cast<size_t>(1) << (63 - UpperMaskSize);
 
     return doubleWord + (kLowerSignExtend | kUpperSignExtend);
-}
-
-template <uint8_t UpperMaskSize>
-static ssize_t UpperWordOfDoubleWordSingleSignExtend(ssize_t doubleWord)
-{
-    static constexpr size_t kUpperSignExtend = static_cast<size_t>(1) << (31 - UpperMaskSize);
-
-    return UpperWordOfDoubleWord(doubleWord + kUpperSignExtend);
-}
-
-template <uint8_t UpperMaskSize, uint8_t LowerMaskSize>
-static ssize_t UpperWordOfDoubleWordDoubleSignExtend(ssize_t doubleWord)
-{
-    return UpperWordOfDoubleWord(DoubleWordSignExtend<UpperMaskSize, LowerMaskSize>(doubleWord));
 }
 
 /*static*/ unsigned emitter::TrimSignedToImm12(ssize_t imm12)
@@ -5690,7 +5664,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
 
             regNumber baseReg = id->idReg2();
-            if (baseReg != REG_SP || baseReg != REG_FP)
+            if ((baseReg != REG_SP) && (baseReg != REG_FP))
                 result.insLatency += PERFSCORE_LATENCY_1C; // assume non-stack load/stores are more likely to cache-miss
 
             result.insThroughput += immediateBuildingCost;

@@ -116,6 +116,28 @@ namespace System.Text.Json.Serialization.Metadata
         public byte[]? CustomTypeDiscriminatorPropertyNameUtf8 { get; }
         public JsonEncodedText? CustomTypeDiscriminatorPropertyNameJsonEncoded { get; }
 
+        /// <summary>
+        /// Resolves a classifier-returned <see cref="Type"/> to its <see cref="JsonTypeInfo"/> using the registered derived types.
+        /// </summary>
+        public bool TryResolveDerivedJsonTypeInfo(Type resolvedType, [NotNullWhen(true)] out JsonTypeInfo? jsonTypeInfo)
+        {
+            if (_typeToDiscriminatorId.TryGetValue(resolvedType, out DerivedJsonTypeInfo? result) && result is not null)
+            {
+                jsonTypeInfo = result.JsonTypeInfo;
+                return true;
+            }
+
+            if (IgnoreUnrecognizedTypeDiscriminators)
+            {
+                jsonTypeInfo = null;
+                return false;
+            }
+
+            ThrowHelper.ThrowNotSupportedException_RuntimeTypeNotSupported(BaseType, resolvedType);
+            jsonTypeInfo = null;
+            return false;
+        }
+
         public bool TryGetDerivedJsonTypeInfo(Type runtimeType, [NotNullWhen(true)] out JsonTypeInfo? jsonTypeInfo, out object? typeDiscriminator)
         {
             Debug.Assert(BaseType.IsAssignableFrom(runtimeType));

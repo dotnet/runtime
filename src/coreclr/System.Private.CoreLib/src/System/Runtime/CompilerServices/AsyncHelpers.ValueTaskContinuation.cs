@@ -12,9 +12,6 @@ namespace System.Runtime.CompilerServices
     {
         private sealed unsafe class ValueTaskContinuation : Continuation
         {
-            // Currently all continuations are expected to capture and restore
-            // ExecutionContext, even though we do not actually need it here.
-            public ExecutionContext? ExecutionContext;
             internal object? Source;
             internal short Token;
             internal delegate*<object, Action<object?>, object?, short, ValueTaskSourceOnCompletedFlags, void> OnCompletedValueTaskSource;
@@ -23,11 +20,6 @@ namespace System.Runtime.CompilerServices
             public ValueTaskContinuation()
             {
                 ResumeInfo = (ResumeInfo*)Unsafe.AsPointer(in ValueTaskContinuationResume.ResumeInfo);
-
-                EncodeFieldOffsetInFlags(
-                    ref Unsafe.As<ExecutionContext?, byte>(ref ExecutionContext),
-                    ContinuationFlags.ExecutionContextIndexFirstBit,
-                    ContinuationFlags.ExecutionContextIndexNumBits);
             }
 
             public void GetResult(ref byte returnValue)
@@ -113,7 +105,14 @@ namespace System.Runtime.CompilerServices
                 {
                     var vtsCont = (ValueTaskContinuation)cont;
                     vtsCont.Next = null;
-                    vtsCont.ExecutionContext = null;
+
+                    const ContinuationFlags continueFlags =
+                        ContinuationFlags.ContinueOnCapturedSynchronizationContext |
+                        ContinuationFlags.ContinueOnThreadPool |
+                        ContinuationFlags.ContinueOnCapturedTaskScheduler;
+
+                    Debug.Assert((vtsCont.Flags & continueFlags) == 0);
+
                     t_runtimeAsyncAwaitState.CachedValueTaskContinuation = vtsCont;
 
                     vtsCont.GetResult(ref result);

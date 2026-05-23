@@ -13,6 +13,40 @@ namespace System.Runtime.Intrinsics
 {
     internal static class Scalar<T>
     {
+        public static bool IsFloatingPoint
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => (typeof(T) == typeof(double))
+                || (typeof(T) == typeof(float));
+        }
+
+        public static bool IsSupported
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => (typeof(T) == typeof(byte))
+                || (typeof(T) == typeof(double))
+                || (typeof(T) == typeof(short))
+                || (typeof(T) == typeof(int))
+                || (typeof(T) == typeof(long))
+                || (typeof(T) == typeof(nint))
+                || (typeof(T) == typeof(sbyte))
+                || (typeof(T) == typeof(float))
+                || (typeof(T) == typeof(ushort))
+                || (typeof(T) == typeof(uint))
+                || (typeof(T) == typeof(ulong))
+                || (typeof(T) == typeof(nuint));
+        }
+
+        public static bool IsUnsigned
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => (typeof(T) == typeof(byte))
+                || (typeof(T) == typeof(ushort))
+                || (typeof(T) == typeof(uint))
+                || (typeof(T) == typeof(ulong))
+                || (typeof(T) == typeof(nuint));
+        }
+
         public static T AllBitsSet
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -528,7 +562,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T CopySign(T value, T sign)
         {
-            // byte, ushort, uint, and ulong should have already been handled
+            // byte, ushort, uint, ulong, and nuint should have already been handled
             // avoid Math.Abs for integers since it throws for MinValue
             if (typeof(T) == typeof(double))
             {
@@ -1072,6 +1106,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T MaxMagnitude(T left, T right)
         {
+            // byte, ushort, uint, ulong, and nuint should have already been handled
             if (typeof(T) == typeof(double))
             {
                 return (T)(object)double.MaxMagnitude((double)(object)left, (double)(object)right);
@@ -1205,6 +1240,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T MinMagnitude(T left, T right)
         {
+            // byte, ushort, uint, ulong, and nuint should have already been handled
             if (typeof(T) == typeof(double))
             {
                 return (T)(object)double.MinMagnitude((double)(object)left, (double)(object)right);
@@ -1338,58 +1374,17 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T MultiplyAddEstimate(T left, T right, T addend)
         {
-            if (typeof(T) == typeof(byte))
-            {
-                return (T)(object)(byte)((((byte)(object)left * (byte)(object)right)) + (byte)(object)addend);
-            }
-            else if (typeof(T) == typeof(double))
+            if (typeof(T) == typeof(double))
             {
                 return (T)(object)double.MultiplyAddEstimate((double)(object)left, (double)(object)right, (double)(object)addend);
-            }
-            else if (typeof(T) == typeof(short))
-            {
-                return (T)(object)(short)((((short)(object)left * (short)(object)right)) + (short)(object)addend);
-            }
-            else if (typeof(T) == typeof(int))
-            {
-                return (T)(object)(int)((((int)(object)left * (int)(object)right)) + (int)(object)addend);
-            }
-            else if (typeof(T) == typeof(long))
-            {
-                return (T)(object)(long)((((long)(object)left * (long)(object)right)) + (long)(object)addend);
-            }
-            else if (typeof(T) == typeof(nint))
-            {
-                return (T)(object)(nint)((((nint)(object)left * (nint)(object)right)) + (nint)(object)addend);
-            }
-            else if (typeof(T) == typeof(nuint))
-            {
-                return (T)(object)(nuint)((((nuint)(object)left * (nuint)(object)right)) + (nuint)(object)addend);
-            }
-            else if (typeof(T) == typeof(sbyte))
-            {
-                return (T)(object)(sbyte)((((sbyte)(object)left * (sbyte)(object)right)) + (sbyte)(object)addend);
             }
             else if (typeof(T) == typeof(float))
             {
                 return (T)(object)float.MultiplyAddEstimate((float)(object)left, (float)(object)right, (float)(object)addend);
             }
-            else if (typeof(T) == typeof(ushort))
-            {
-                return (T)(object)(ushort)((((ushort)(object)left * (ushort)(object)right)) + (ushort)(object)addend);
-            }
-            else if (typeof(T) == typeof(uint))
-            {
-                return (T)(object)(uint)((((uint)(object)left * (uint)(object)right)) + (uint)(object)addend);
-            }
-            else if (typeof(T) == typeof(ulong))
-            {
-                return (T)(object)(ulong)((((ulong)(object)left * (ulong)(object)right)) + (ulong)(object)addend);
-            }
             else
             {
-                ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
-                return default!;
+                return Add(Multiply(left, right), addend);
             }
         }
 
