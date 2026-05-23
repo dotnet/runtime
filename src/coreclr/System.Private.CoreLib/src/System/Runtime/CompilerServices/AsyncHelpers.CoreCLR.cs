@@ -411,7 +411,7 @@ namespace System.Runtime.CompilerServices
 
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
-        private static unsafe void TransparentAwaitValueTaskOfT<T>(ValueTask<T> valueTask)
+        private static unsafe T TransparentAwaitValueTaskOfT<T>(ValueTask<T> valueTask)
         {
             ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
             Continuation? sentinelContinuation = state.SentinelContinuation ??= new Continuation();
@@ -434,11 +434,12 @@ namespace System.Runtime.CompilerServices
 
             state.CaptureContexts();
             AsyncSuspend(vtsCont);
+            return default!;
         }
 
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
-        private static unsafe void AwaitValueTaskSourceOfT<T>(object source, short token)
+        private static unsafe T AwaitValueTaskSourceOfT<T>(object source, short token)
         {
             ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
             Continuation? sentinelContinuation = state.SentinelContinuation ??= new Continuation();
@@ -465,6 +466,7 @@ namespace System.Runtime.CompilerServices
 
             state.CaptureContexts();
             AsyncSuspend(vtsCont);
+            return default!;
         }
 
         /// <summary>

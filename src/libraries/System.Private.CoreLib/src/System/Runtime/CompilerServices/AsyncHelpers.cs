@@ -109,12 +109,12 @@ namespace System.Runtime.CompilerServices
                 if (task._obj is Task<T> t)
                 {
                     TailAwait();
-                    Await(t);
+                    return Await(t);
                 }
                 else
                 {
                     TailAwait();
-                    AwaitValueTaskSourceOfT<T>(task._obj!, task._token);
+                    return AwaitValueTaskSourceOfT<T>(task._obj!, task._token);
                 }
             }
 
@@ -137,11 +137,13 @@ namespace System.Runtime.CompilerServices
                 {
                     TailAwait();
                     Await(t);
+                    return;
                 }
                 else
                 {
                     TailAwait();
                     AwaitValueTaskSource(task._obj!, task._token);
+                    return;
                 }
             }
 

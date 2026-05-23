@@ -500,7 +500,7 @@ void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pTaskReturningVariant, MetaSig
     //    if (!vt.IsCompleted)
     //    {
     //        TailAwait();
-    //        AsyncHelpers.TransparentAwaitValueTask(vt);
+    //        return AsyncHelpers.TransparentAwaitValueTask(vt);
     //    }
 
     //    return vt.Result/vt.ThrowIfCompletedUnsuccessfully();
@@ -583,6 +583,7 @@ void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pTaskReturningVariant, MetaSig
         pCode->EmitLDLOC(valueTaskLocal);
         pCode->EmitCALL(METHOD__ASYNC_HELPERS__TAIL_AWAIT, 0, 0);
         pCode->EmitCALL(transparentAwaitValueTaskToken, 1, 0);
+        pCode->EmitRET();
 
         // Yes, just get the result
         pCode->EmitLabel(valueTaskCompletedLabel);
