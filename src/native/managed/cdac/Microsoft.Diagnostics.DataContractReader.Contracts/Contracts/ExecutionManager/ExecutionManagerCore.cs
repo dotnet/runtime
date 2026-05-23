@@ -402,6 +402,25 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         return info.RelativeOffset;
     }
 
+    uint IExecutionManager.GetStackParameterSize(CodeBlockHandle codeInfoHandle)
+    {
+        IExecutionManager eman = this;
+
+        if (eman.IsFunclet(codeInfoHandle))
+            return 0;
+
+        if (_target.Contracts.RuntimeInfo.GetTargetArchitecture() is not RuntimeInfoArchitecture.X86)
+            return 0;
+
+        eman.GetGCInfo(codeInfoHandle, out TargetPointer gcInfoAddress, out uint gcInfoVersion);
+        if (gcInfoAddress == TargetPointer.Null)
+            throw new InvalidOperationException($"GC info not available for {codeInfoHandle.Address}");
+
+        uint relOffset = (uint)eman.GetRelativeOffset(codeInfoHandle).Value;
+        StackWalkHelpers.X86.GCInfo gcInfo = new(_target, gcInfoAddress, gcInfoVersion, relOffset);
+        return gcInfo.Header.VarArgs ? 0u : gcInfo.Header.ArgCount;
+    }
+
     TargetPointer IExecutionManager.FindReadyToRunModule(TargetPointer address)
     {
         // Use the range section map to find the RangeSection containing the address.
