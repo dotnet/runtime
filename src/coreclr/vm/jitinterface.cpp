@@ -8864,7 +8864,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         isGenericVirtual = true;
     }
 
-    if (!info->instParamLookup.lookupKind.needsRuntimeLookup && (isArray || isGenericVirtual) && pDevirtMD->IsInstantiatingStub())
+    if ((isArray || isGenericVirtual) && pDevirtMD->IsInstantiatingStub())
     {
         info->instParamLookup.constLookup.handle = (CORINFO_GENERIC_HANDLE)pDevirtMD;
         info->instParamLookup.constLookup.accessType = IAT_VALUE;
