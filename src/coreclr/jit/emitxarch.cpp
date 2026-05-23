@@ -669,6 +669,18 @@ bool emitter::IsThreeOperandAVXInstruction(instruction ins) const
     return (flags & INS_Flags_Is3OperandInstructionMask) != 0;
 }
 
+// Returns true if the AVX insstruction has op1/op2 being commutative
+bool emitter::IsAvxCommutative(instruction ins) const
+{
+    if (!UseVEXEncoding())
+    {
+        return false;
+    }
+
+    insFlags flags = CodeGenInterface::instInfo[ins];
+    return (flags & INS_Flags_IsCommutative) != 0;
+}
+
 //------------------------------------------------------------------------
 // HasRegularWideForm: Many x86/x64 instructions follow a regular encoding scheme where the
 // byte-sized version of an instruction has the lowest bit of the opcode cleared
@@ -10024,6 +10036,16 @@ void emitter::emitIns_SIMD_R_R_R(
 {
     if (UseSimdEncoding())
     {
+        if (IsAvxCommutative(ins) && (instOptions == INS_OPTS_NONE))
+        {
+            if (!IsExtendedReg(op1Reg) && IsExtendedReg(op2Reg))
+            {
+                // We have a VEX encoded commutative instruction in which
+                // case we want to try to put the non-extended register as
+                // op2 since this allows the 2-byte VEX prefix to be used.
+                std::swap(op1Reg, op2Reg);
+            }
+        }
         emitIns_R_R_R(ins, attr, targetReg, op1Reg, op2Reg, instOptions);
     }
     else

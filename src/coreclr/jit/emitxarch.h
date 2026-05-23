@@ -765,6 +765,7 @@ void SetContainsCallNeedingVzeroupper(bool value)
 bool        IsDstDstSrcAVXInstruction(instruction ins) const;
 bool        IsDstSrcSrcAVXInstruction(instruction ins) const;
 bool        IsThreeOperandAVXInstruction(instruction ins) const;
+bool        IsAvxCommutative(instruction ins) const;
 static bool HasRegularWideForm(instruction ins);
 static bool HasRegularWideImmediateForm(instruction ins);
 static bool DoesWriteZeroFlag(instruction ins);
