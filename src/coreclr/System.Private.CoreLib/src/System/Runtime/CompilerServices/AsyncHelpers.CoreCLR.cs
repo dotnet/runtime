@@ -740,7 +740,7 @@ namespace System.Runtime.CompilerServices
                     {
                         Debug.Assert(headContinuation == taskCont);
                         ITaskCompletionAction completionAction = this;
-                        if ((headContinuation.Flags & ContinuationFlags.AllContinuationFlags) != 0)
+                        if ((taskCont.Flags & ContinuationFlags.AllContinuationFlags) != 0)
                         {
                             // Not a transparent task await. This means
                             // AsyncHelpers.Await(Task) call. We optimize this

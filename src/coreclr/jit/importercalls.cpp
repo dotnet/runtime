@@ -6985,24 +6985,24 @@ void Compiler::impSetupAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned pref
 
     if (compIsForInlining())
     {
-        if (!m_nextAwaitIsTail)
+        //if (!m_nextAwaitIsTail)
         {
             compInlineResult->NoteFatal(InlineObservation::CALLEE_AWAIT);
             return;
         }
 
-        GenTreeCall* inlCall = impInlineInfo->iciCall;
-        JITDUMP("Call [%06u] is to call with a tail async call [%06u]\n", dspTreeID(inlCall),
-                dspTreeID(call));
+        //GenTreeCall* inlCall = impInlineInfo->iciCall;
+        //JITDUMP("Call [%06u] is to call with a tail async call [%06u]\n", dspTreeID(inlCall),
+        //        dspTreeID(call));
 
-        assert(inlCall->IsAsync());
+        //assert(inlCall->IsAsync());
 
-        asyncInfo.ContinuationContextHandling = inlCall->GetAsyncInfo().ContinuationContextHandling;
-        // Validate that below code won't override the handling
-        assert((prefixFlags & PREFIX_IS_TASK_AWAIT) == 0);
-        m_nextAwaitIsTail = false;
+        //asyncInfo.ContinuationContextHandling = inlCall->GetAsyncInfo().ContinuationContextHandling;
+        //// Validate that below code won't override the handling
+        //assert((prefixFlags & PREFIX_IS_TASK_AWAIT) == 0);
+        //m_nextAwaitIsTail = false;
 
-        asyncInfo.IsTailAwait = inlCall->GetAsyncInfo().IsTailAwait;
+        //asyncInfo.IsTailAwait = inlCall->GetAsyncInfo().IsTailAwait;
     }
 
     unsigned newSourceTypes = ICorDebugInfo::ASYNC;
