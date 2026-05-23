@@ -1371,7 +1371,9 @@ namespace Internal.JitInterface
 
         UNKNOWN_ILNUM       = -4, // Unknown variable
 
-        MAX_ILNUM           = -4  // Sentinel value. This should be set to the largest magnitude value in the enum
+        CALL_RETURN_ILNUM   = -5, // The return value of a call
+
+        MAX_ILNUM           = -5  // Sentinel value. This should be set to the largest magnitude value in the enum
                                   // so that the compression routines know the enum's range.
     };
 
