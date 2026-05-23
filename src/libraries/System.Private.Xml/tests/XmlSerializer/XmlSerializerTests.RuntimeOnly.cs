@@ -862,6 +862,81 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
+    public static void Xml_XmlSchema()
+    {
+        var expectedXml = WithXmlHeader("<xsd:schema xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" elementFormDefault=\"qualified\" targetNamespace=\"http://example.com/my-schema\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <xsd:element name=\"MyElement\" type=\"xsd:string\" />\r\n  <xsd:group name=\"MyGroup\">\r\n    <xsd:sequence>\r\n      <xsd:element name=\"Item1\" />\r\n      <xsd:element name=\"Item2\" />\r\n    </xsd:sequence>\r\n  </xsd:group>\r\n</xsd:schema>");
+
+        XmlSchema schema = new XmlSchema
+        {
+            TargetNamespace = "http://example.com/my-schema",
+            ElementFormDefault = XmlSchemaForm.Qualified
+        };
+        schema.Items.Add(new XmlSchemaElement
+        {
+            Name = "MyElement",
+            SchemaTypeName = new XmlQualifiedName("string", "http://www.w3.org/2001/XMLSchema")
+        });
+        schema.Items.Add(new XmlSchemaGroup
+        {
+            Name = "MyGroup",
+            Particle = new XmlSchemaSequence
+            {
+                Items = { new XmlSchemaElement { Name = "Item1" }, new XmlSchemaElement { Name = "Item2" } }
+            }
+        });
+        schema.Namespaces.Add("xsd", "http://www.w3.org/2001/XMLSchema");
+        schema.Namespaces.Add("xsi", "http://www.w3.org/2001/XMLSchema-instance");
+
+        var actual = SerializeAndDeserialize(schema, expectedXml, () => new XmlSerializer(typeof(XmlSchema)));
+
+        Assert.Equal(schema.TargetNamespace, actual.TargetNamespace);
+        Assert.Equal(schema.ElementFormDefault, actual.ElementFormDefault);
+        Assert.Equal(schema.Items.Count, actual.Items.Count);
+    }
+
+    [Fact]
+    public static void XmlSchemaObject_RoundTrip()
+    {
+        // Verify that XmlSchemaObject-derived types can be deserialized with the reflection-based
+        // serializer. Previously a NotImplementedException was thrown during deserialization.
+        var element = new XmlSchemaElement
+        {
+            Name = "TestElement",
+            SchemaTypeName = new XmlQualifiedName("string", "http://www.w3.org/2001/XMLSchema")
+        };
+        var serializer = new XmlSerializer(typeof(XmlSchemaElement));
+        using var ms = new MemoryStream();
+        serializer.Serialize(ms, element);
+        ms.Position = 0;
+
+        var result = (XmlSchemaElement?)serializer.Deserialize(ms);
+        Assert.NotNull(result);
+        Assert.Equal("TestElement", result.Name);
+        Assert.Equal(new XmlQualifiedName("string", "http://www.w3.org/2001/XMLSchema"), result.SchemaTypeName);
+    }
+
+    [Fact]
+    public static void XmlSchemaObject_RoundTrip_WithConstraintInReadOnlyCollection()
+    {
+        // Verify that items in read-only collection properties (like XmlSchemaElement.Constraints)
+        // are correctly round-tripped using the reflection-based serializer.
+        var element = new XmlSchemaElement { Name = "TestElement" };
+        element.Constraints.Add(new XmlSchemaKey { Name = "PrimaryKey" });
+
+        var serializer = new XmlSerializer(typeof(XmlSchemaElement));
+        using var ms = new MemoryStream();
+        serializer.Serialize(ms, element);
+        ms.Position = 0;
+
+        var result = (XmlSchemaElement?)serializer.Deserialize(ms);
+        Assert.NotNull(result);
+        Assert.Equal("TestElement", result.Name);
+        Assert.Equal(1, result.Constraints.Count);
+        var key = Assert.IsType<XmlSchemaKey>(result.Constraints[0]);
+        Assert.Equal("PrimaryKey", key.Name);
+    }
+
+    [Fact]
     public static void Xml_XmlElementAsRoot()
     {
         XmlDocument xDoc = new XmlDocument();
