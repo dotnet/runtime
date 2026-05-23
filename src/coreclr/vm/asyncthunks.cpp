@@ -488,7 +488,7 @@ void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pTaskReturningVariant, MetaSig
     //    if (!task.IsCompleted)
     //    {
     //        TailAwait();
-    //        AsyncHelpers.TransparentAwait(task);
+    //        return AsyncHelpers.TransparentAwait(task);
     //    }
     //    return AsyncHelpers.CompletedTaskResult(task);
     // }
@@ -582,7 +582,7 @@ void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pTaskReturningVariant, MetaSig
         // No, tail await to TransparentAwaitValueTask
         pCode->EmitLDLOC(valueTaskLocal);
         pCode->EmitCALL(METHOD__ASYNC_HELPERS__TAIL_AWAIT, 0, 0);
-        pCode->EmitCALL(transparentAwaitValueTaskToken, 1, 0);
+        pCode->EmitCALL(transparentAwaitValueTaskToken, 1, msig.IsReturnTypeVoid() ? 0 : 1);
         pCode->EmitRET();
 
         // Yes, just get the result
@@ -638,7 +638,8 @@ void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pTaskReturningVariant, MetaSig
         // No, so tail await to TransparentAwait
         pCode->EmitLDLOC(taskLocal);
         pCode->EmitCALL(METHOD__ASYNC_HELPERS__TAIL_AWAIT, 0, 0);
-        pCode->EmitCALL(transparentAwaitToken, 1, 0);
+        pCode->EmitCALL(transparentAwaitToken, 1, msig.IsReturnTypeVoid() ? 0 : 1);
+        pCode->EmitRET();
 
         // Yes, so just get the result
         pCode->EmitLabel(pGetResultLabel);

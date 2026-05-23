@@ -385,6 +385,7 @@ namespace Internal.IL.Stubs
                 codestream.EmitLdLoc(taskLocal);
                 codestream.Emit(ILOpcode.call, emitter.NewToken(context.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "TailAwait"u8, null)));
                 codestream.Emit(ILOpcode.call, emitter.NewToken(transparentAwaitMethod));
+                codestream.Emit(ILOpcode.ret);
 
                 codestream.EmitLabel(getResultLabel);
                 codestream.EmitLdLoc(taskLocal);
