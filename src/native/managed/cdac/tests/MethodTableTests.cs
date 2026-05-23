@@ -35,6 +35,7 @@ public class MethodTableTests
         [
             (nameof(Constants.Globals.FreeObjectMethodTable), rtsBuilder.FreeObjectMethodTableGlobalAddress),
             (nameof(Constants.Globals.ContinuationMethodTable), rtsBuilder.ContinuationMethodTableGlobalAddress),
+            (nameof(Constants.Globals.ContinuationSingletonEEClass), rtsBuilder.ContinuationSingletonEEClassGlobalAddress),
             (nameof(Constants.Globals.ObjectMethodTable), rtsBuilder.ObjectMethodTableGlobalAddress),
             (nameof(Constants.Globals.MethodDescAlignment), rtsBuilder.MethodDescAlignment),
             (nameof(Constants.Globals.ArrayBaseSize), rtsBuilder.ArrayBaseSize),
@@ -302,7 +303,7 @@ public class MethodTableTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void IsContinuationReturnsTrueForContinuationType(MockTarget.Architecture arch)
+    public void IsContinuationWithoutMetadata_ReturnsTrueForContinuationType(MockTarget.Architecture arch)
     {
         TargetPointer continuationInstanceMethodTablePtr = default;
         TestPlaceholderTarget target = CreateTarget(
@@ -310,22 +311,19 @@ public class MethodTableTests
             rtsBuilder =>
             {
                 TargetTestHelpers targetTestHelpers = rtsBuilder.Builder.TargetTestHelpers;
-                TargetPointer systemObjectMethodTablePtr = rtsBuilder.SystemObjectMethodTable.Address;
                 MockMethodTable continuationBaseMethodTable = rtsBuilder.ContinuationMethodTable;
 
-                MockEEClass continuationInstanceEEClass = rtsBuilder.AddEEClass("ContinuationInstance");
                 MockMethodTable continuationInstanceMethodTable = rtsBuilder.AddMethodTable("ContinuationInstance");
                 continuationInstanceMethodTable.BaseSize = targetTestHelpers.ObjectBaseSize;
                 continuationInstanceMethodTable.ParentMethodTable = continuationBaseMethodTable.Address;
                 continuationInstanceMethodTable.NumVirtuals = 3;
                 continuationInstanceMethodTablePtr = continuationInstanceMethodTable.Address;
-                continuationInstanceEEClass.MethodTable = continuationInstanceMethodTable.Address;
-                continuationInstanceMethodTable.EEClassOrCanonMT = continuationInstanceEEClass.Address;
+                continuationInstanceMethodTable.EEClassOrCanonMT = rtsBuilder.ContinuationEEClass.Address;
             });
 
         IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
         Contracts.TypeHandle continuationTypeHandle = contract.GetTypeHandle(continuationInstanceMethodTablePtr);
-        Assert.True(contract.IsContinuation(continuationTypeHandle));
+        Assert.True(contract.IsContinuationWithoutMetadata(continuationTypeHandle));
         Assert.False(contract.IsFreeObjectMethodTable(continuationTypeHandle));
         Assert.False(contract.IsString(continuationTypeHandle));
     }
@@ -434,21 +432,7 @@ public class MethodTableTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void IsContinuationReturnsFalseForRegularType(MockTarget.Architecture arch)
-    {
-        TargetPointer systemObjectMethodTablePtr = default;
-        TestPlaceholderTarget target = CreateTarget(
-            arch,
-            rtsBuilder => systemObjectMethodTablePtr = rtsBuilder.SystemObjectMethodTable.Address);
-
-        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
-        Contracts.TypeHandle objectTypeHandle = contract.GetTypeHandle(systemObjectMethodTablePtr);
-        Assert.False(contract.IsContinuation(objectTypeHandle));
-    }
-
-    [Theory]
-    [ClassData(typeof(MockTarget.StdArch))]
-    public void IsContinuationReturnsFalseWhenGlobalIsNull(MockTarget.Architecture arch)
+    public void IsContinuationWithoutMetadata_ReturnsFalseWhenGlobalIsNull(MockTarget.Architecture arch)
     {
         TargetPointer systemObjectMethodTablePtr = default;
         TargetPointer childMethodTablePtr = default;
@@ -472,10 +456,36 @@ public class MethodTableTests
 
         IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
         Contracts.TypeHandle objectTypeHandle = contract.GetTypeHandle(systemObjectMethodTablePtr);
-        Assert.False(contract.IsContinuation(objectTypeHandle));
+        Assert.False(contract.IsContinuationWithoutMetadata(objectTypeHandle));
 
         Contracts.TypeHandle childTypeHandle = contract.GetTypeHandle(childMethodTablePtr);
-        Assert.False(contract.IsContinuation(childTypeHandle));
+        Assert.False(contract.IsContinuationWithoutMetadata(childTypeHandle));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void IsContinuationWithoutMetadata_ReturnsFalseWhenSingletonEEClassGlobalIsNull(MockTarget.Architecture arch)
+    {
+        TargetPointer continuationInstanceMethodTablePtr = default;
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            rtsBuilder =>
+            {
+                TargetTestHelpers targetTestHelpers = rtsBuilder.Builder.TargetTestHelpers;
+                MockMethodTable continuationBaseMethodTable = rtsBuilder.ContinuationMethodTable;
+                rtsBuilder.SetContinuationSingletonEEClass(0);
+
+                MockMethodTable continuationInstanceMethodTable = rtsBuilder.AddMethodTable("ContinuationInstance");
+                continuationInstanceMethodTable.BaseSize = targetTestHelpers.ObjectBaseSize;
+                continuationInstanceMethodTable.ParentMethodTable = continuationBaseMethodTable.Address;
+                continuationInstanceMethodTable.NumVirtuals = 3;
+                continuationInstanceMethodTablePtr = continuationInstanceMethodTable.Address;
+                continuationInstanceMethodTable.EEClassOrCanonMT = rtsBuilder.ContinuationEEClass.Address;
+            });
+
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+        TypeHandle continuationTypeHandle = contract.GetTypeHandle(continuationInstanceMethodTablePtr);
+        Assert.False(contract.IsContinuationWithoutMetadata(continuationTypeHandle));
     }
 
     [Theory]
@@ -488,7 +498,6 @@ public class MethodTableTests
             rtsBuilder =>
             {
                 TargetTestHelpers targetTestHelpers = rtsBuilder.Builder.TargetTestHelpers;
-                TargetPointer systemObjectMethodTablePtr = rtsBuilder.SystemObjectMethodTable.Address;
                 MockMethodTable continuationBaseMethodTable = rtsBuilder.ContinuationMethodTable;
 
                 MockEEClass sharedEEClass = rtsBuilder.AddEEClass("SubContinuation");
@@ -510,7 +519,124 @@ public class MethodTableTests
         IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
         Contracts.TypeHandle continuationTypeHandle = contract.GetTypeHandle(continuationInstanceMethodTablePtr);
         Assert.Equal(continuationInstanceMethodTablePtr.Value, continuationTypeHandle.Address.Value);
-        Assert.True(contract.IsContinuation(continuationTypeHandle));
+        Assert.False(contract.IsContinuationWithoutMetadata(continuationTypeHandle));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void IsContinuationWithoutMetadata_ReturnsTrueForSingletonEEClass(MockTarget.Architecture arch)
+    {
+        TargetPointer continuationInstanceMethodTablePtr = default;
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            rtsBuilder =>
+            {
+                TargetTestHelpers targetTestHelpers = rtsBuilder.Builder.TargetTestHelpers;
+                MockMethodTable continuationBaseMethodTable = rtsBuilder.ContinuationMethodTable;
+
+                // Create a continuation subtype that shares the singleton EEClass
+                MockMethodTable continuationInstanceMethodTable = rtsBuilder.AddMethodTable("ContinuationInstance");
+                continuationInstanceMethodTable.BaseSize = targetTestHelpers.ObjectBaseSize;
+                continuationInstanceMethodTable.ParentMethodTable = continuationBaseMethodTable.Address;
+                continuationInstanceMethodTable.NumVirtuals = 3;
+                continuationInstanceMethodTablePtr = continuationInstanceMethodTable.Address;
+                // Point directly to the singleton continuation EEClass
+                continuationInstanceMethodTable.EEClassOrCanonMT = rtsBuilder.ContinuationEEClass.Address;
+            });
+
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+        TypeHandle continuationTypeHandle = contract.GetTypeHandle(continuationInstanceMethodTablePtr);
+        Assert.True(contract.IsContinuationWithoutMetadata(continuationTypeHandle));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void IsContinuationWithoutMetadata_ReturnsFalseForOwnEEClass(MockTarget.Architecture arch)
+    {
+        TargetPointer continuationInstanceMethodTablePtr = default;
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            rtsBuilder =>
+            {
+                TargetTestHelpers targetTestHelpers = rtsBuilder.Builder.TargetTestHelpers;
+                MockMethodTable continuationBaseMethodTable = rtsBuilder.ContinuationMethodTable;
+
+                // Create a continuation subtype with its own EEClass (has metadata)
+                MockEEClass continuationInstanceEEClass = rtsBuilder.AddEEClass("ContinuationWithMetadata");
+                MockMethodTable continuationInstanceMethodTable = rtsBuilder.AddMethodTable("ContinuationWithMetadata");
+                continuationInstanceMethodTable.BaseSize = targetTestHelpers.ObjectBaseSize;
+                continuationInstanceMethodTable.ParentMethodTable = continuationBaseMethodTable.Address;
+                continuationInstanceMethodTable.NumVirtuals = 3;
+                continuationInstanceMethodTablePtr = continuationInstanceMethodTable.Address;
+                continuationInstanceEEClass.MethodTable = continuationInstanceMethodTable.Address;
+                continuationInstanceMethodTable.EEClassOrCanonMT = continuationInstanceEEClass.Address;
+            });
+
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+        TypeHandle continuationTypeHandle = contract.GetTypeHandle(continuationInstanceMethodTablePtr);
+        Assert.False(contract.IsContinuationWithoutMetadata(continuationTypeHandle));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void IsContinuationWithoutMetadata_ReturnsFalseForRegularType(MockTarget.Architecture arch)
+    {
+        TargetPointer systemObjectMethodTablePtr = default;
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            rtsBuilder => systemObjectMethodTablePtr = rtsBuilder.SystemObjectMethodTable.Address);
+
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+        TypeHandle objectTypeHandle = contract.GetTypeHandle(systemObjectMethodTablePtr);
+        Assert.False(contract.IsContinuationWithoutMetadata(objectTypeHandle));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void IsCanonicalMethodTable_ReturnsTrueForCanonicalAndFalseForNonCanonical(MockTarget.Architecture arch)
+    {
+        TargetPointer canonicalMethodTablePtr = default;
+        TargetPointer nonCanonicalMethodTablePtr = default;
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            rtsBuilder =>
+            {
+                TargetTestHelpers targetTestHelpers = rtsBuilder.Builder.TargetTestHelpers;
+
+                const uint gtd_mtflags = 0x00000030; // GenericsMask_TypicalInst
+                MockEEClass eeClass = rtsBuilder.AddEEClass("GenericDefinition");
+                MockMethodTable canonMT = rtsBuilder.AddMethodTable("GenericDefinition");
+                canonMT.MTFlags = gtd_mtflags;
+                canonMT.BaseSize = targetTestHelpers.ObjectBaseSize;
+                canonMT.ParentMethodTable = rtsBuilder.SystemObjectMethodTable.Address;
+                canonMT.NumVirtuals = 3;
+                eeClass.MethodTable = canonMT.Address;
+                canonMT.EEClassOrCanonMT = eeClass.Address;
+                canonicalMethodTablePtr = canonMT.Address;
+
+                const uint ginst_mtflags = 0x00000010; // GenericsMask_GenericInst
+                MockMethodTable nonCanonMT = rtsBuilder.AddMethodTable("GenericInstance");
+                nonCanonMT.MTFlags = ginst_mtflags;
+                nonCanonMT.BaseSize = targetTestHelpers.ObjectBaseSize;
+                nonCanonMT.ParentMethodTable = canonMT.Address;
+                nonCanonMT.NumVirtuals = 3;
+                nonCanonMT.EEClassOrCanonMT = canonMT.Address | 1;
+                nonCanonicalMethodTablePtr = nonCanonMT.Address;
+            });
+
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+
+        TypeHandle canonTh = contract.GetTypeHandle(canonicalMethodTablePtr);
+        Assert.True(contract.IsCanonicalMethodTable(canonTh));
+
+        TypeHandle nonCanonTh = contract.GetTypeHandle(nonCanonicalMethodTablePtr);
+        Assert.False(contract.IsCanonicalMethodTable(nonCanonTh));
+
+        // Both canonical and non-canonical MTs should resolve to the same EEClass
+        TargetPointer canonClass = contract.GetClassPointer(canonTh);
+        TargetPointer nonCanonClass = contract.GetClassPointer(nonCanonTh);
+        Assert.NotEqual(TargetPointer.Null, canonClass);
+        Assert.Equal(canonClass, nonCanonClass);
     }
 
     [Theory]

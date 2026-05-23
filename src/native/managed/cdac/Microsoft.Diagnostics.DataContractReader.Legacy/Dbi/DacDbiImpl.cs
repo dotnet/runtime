@@ -728,8 +728,30 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
-    public int GetThreadHandle(ulong vmThread, nint pRetVal)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetThreadHandle(vmThread, pRetVal) : HResults.E_NOTIMPL;
+    public int GetThreadHandle(ulong vmThread, void** pRetVal)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            Contracts.ThreadData threadData = _target.Contracts.Thread.GetThreadData(new TargetPointer(vmThread));
+            *pRetVal = (void*)threadData.ThreadHandle.Value;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            void* retValLocal = null;
+            int hrLocal = _legacy.GetThreadHandle(vmThread, &retValLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pRetVal == retValLocal, $"cDAC: {(nuint)(*pRetVal):x}, DAC: {(nuint)retValLocal:x}");
+        }
+#endif
+        return hr;
+    }
 
     public int GetThreadObject(ulong vmThread, ulong* pRetVal)
     {
@@ -761,7 +783,38 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int GetThreadAllocInfo(ulong vmThread, DacDbiThreadAllocInfo* pThreadAllocInfo)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetThreadAllocInfo(vmThread, pThreadAllocInfo) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            TargetPointer threadPtr = new TargetPointer(vmThread);
+            Contracts.ThreadData threadData = _target.Contracts.Thread.GetThreadData(threadPtr);
+            _target.Contracts.Thread.GetThreadAllocContext(threadPtr, out long allocBytes, out long allocBytesLoh);
+
+            ulong limit = threadData.AllocContextLimit.Value;
+            ulong pointer = threadData.AllocContextPointer.Value;
+            pThreadAllocInfo->allocBytesSOH = (ulong)allocBytes - (limit - pointer);
+            pThreadAllocInfo->allocBytesUOH = (ulong)allocBytesLoh;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            DacDbiThreadAllocInfo allocInfoLocal = default;
+            int hrLocal = _legacy.GetThreadAllocInfo(vmThread, &allocInfoLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(pThreadAllocInfo->allocBytesSOH == allocInfoLocal.allocBytesSOH, $"cDAC: {pThreadAllocInfo->allocBytesSOH}, DAC: {allocInfoLocal.allocBytesSOH}");
+                Debug.Assert(pThreadAllocInfo->allocBytesUOH == allocInfoLocal.allocBytesUOH, $"cDAC: {pThreadAllocInfo->allocBytesUOH}, DAC: {allocInfoLocal.allocBytesUOH}");
+            }
+        }
+#endif
+        return hr;
+    }
 
     public int SetDebugState(ulong vmThread, int debugState)
     {
@@ -1149,7 +1202,36 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.UnwindStackWalkFrame(pSFIHandle, pResult) : HResults.E_NOTIMPL;
 
     public int CheckContext(ulong vmThread, nint pContext)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.CheckContext(vmThread, pContext) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            IPlatformAgnosticContext ctx = IPlatformAgnosticContext.GetContextForPlatform(_target);
+            ctx.FillFromBuffer(new Span<byte>((void*)pContext, (int)ctx.Size));
+
+            if ((ctx.RawContextFlags & ctx.ContextControlFlags) != 0)
+            {
+                _target.Contracts.Thread.GetStackLimitData(new TargetPointer(vmThread), out TargetPointer stackBase, out TargetPointer stackLimit, out _);
+                TargetPointer sp = ctx.StackPointer;
+                if (sp < stackLimit || stackBase <= sp)
+                {
+                    hr = CorDbgHResults.CORDBG_E_NON_MATCHING_CONTEXT;
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            int hrLocal = _legacy.CheckContext(vmThread, pContext);
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+        return hr;
+    }
 
     public int GetStackWalkCurrentFrameInfo(nuint pSFIHandle, nint pFrameData, int* pRetVal)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetStackWalkCurrentFrameInfo(pSFIHandle, pFrameData, pRetVal) : HResults.E_NOTIMPL;
@@ -2315,7 +2397,54 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     };
 
     public int IsValidObject(ulong obj, Interop.BOOL* pResult)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.IsValidObject(obj, pResult) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        Interop.BOOL isValid = Interop.BOOL.FALSE;
+
+        if (obj != 0 && obj != ulong.MaxValue)
+        {
+            try
+            {
+                IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+                TargetPointer mt = _target.Contracts.Object.GetMethodTableAddress(new TargetPointer(obj));
+                TypeHandle th = rts.GetTypeHandle(mt);
+                TargetPointer canonMT = rts.GetCanonicalMethodTable(th);
+
+                if (mt == canonMT)
+                {
+                    isValid = Interop.BOOL.TRUE;
+                }
+                else if (!rts.IsCanonicalMethodTable(th) || rts.IsContinuationWithoutMetadata(th))
+                {
+                    TargetPointer cls = rts.GetClassPointer(th);
+                    TypeHandle canonTh = rts.GetTypeHandle(canonMT);
+                    TargetPointer canonCls = rts.GetClassPointer(canonTh);
+                    if (canonCls == cls)
+                        isValid = Interop.BOOL.TRUE;
+                }
+            }
+            catch (System.Exception)
+            {
+                isValid = Interop.BOOL.FALSE;
+            }
+        }
+        *pResult = isValid;
+
+#if DEBUG
+        if (_legacy is not null)
+        {
+            Interop.BOOL resultLocal;
+            int hrLocal = _legacy.IsValidObject(obj, &resultLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(*pResult == resultLocal, $"cDAC: {*pResult}, DAC: {resultLocal}");
+            }
+        }
+#endif
+
+        return hr;
+    }
 
     public int CreateRefWalk(nuint* pHandle, Interop.BOOL walkStacks, Interop.BOOL walkFQ, uint handleWalkMask)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.CreateRefWalk(pHandle, walkStacks, walkFQ, handleWalkMask) : HResults.E_NOTIMPL;
@@ -3123,7 +3252,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     // parent (continuation base) type handle instead.
     private static TypeHandle UpCastTypeIfNeeded(IRuntimeTypeSystem rts, TypeHandle typeHandle)
     {
-        if (rts.IsContinuation(typeHandle))
+        if (rts.IsContinuationWithoutMetadata(typeHandle))
         {
             TargetPointer parentMT = rts.GetParentMethodTable(typeHandle);
             if (parentMT != TargetPointer.Null)

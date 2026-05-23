@@ -953,13 +953,8 @@ LinearScan::LinearScan(Compiler* theCompiler)
     availableIntRegs &= ~RBM_FPBASE.GetIntRegSet();
 #endif // ETW_EBP_FRAMED
 
-#ifdef TARGET_AMD64
     availableFloatRegs  = RBM_ALLFLOAT.GetFloatRegSet();
     availableDoubleRegs = RBM_ALLDOUBLE.GetFloatRegSet();
-#else
-    availableFloatRegs  = RBM_ALLFLOAT.GetFloatRegSet();
-    availableDoubleRegs = RBM_ALLDOUBLE.GetFloatRegSet();
-#endif
 
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     availableMaskRegs = RBM_ALLMASK.GetPredicateRegSet();

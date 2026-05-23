@@ -644,6 +644,10 @@ protected:
     void genAmd64EmitterUnitTestsCTEST();
 #endif
 
+#if defined(TARGET_WASM)
+    void genWasmEmitterUnitTestsSimd();
+#endif
+
 #endif // defined(DEBUG)
 
 #ifdef TARGET_ARM64
