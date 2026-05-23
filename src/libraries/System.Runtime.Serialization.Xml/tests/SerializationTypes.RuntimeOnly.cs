@@ -2385,6 +2385,47 @@ namespace SerializationTypes
             return obj;
         }
     }
+
+    // XmlSerializer test types: derived class overriding virtual [XmlText] property from base.
+    public class CustomerWithGroupIdRef
+    {
+        [XmlElement("GROUP_IDREF")]
+        public GroupIdRef? GroupIdRef { get; set; }
+    }
+
+    public abstract class GroupIdRefBase<TConcrete> where TConcrete : GroupIdRefBase<TConcrete>
+    {
+        public GroupIdRefBase() { Value = null!; }
+
+        public GroupIdRefBase(string value, string? type)
+        {
+            Type = type;
+            Value = value;
+        }
+
+        [XmlAttribute("type")]
+        public virtual string? Type { get; set; }
+
+        [XmlText]
+        public virtual string Value { get; set; }
+    }
+
+    public class GroupIdRef : GroupIdRefBase<GroupIdRef>
+    {
+        public GroupIdRef() { Value = null!; }
+
+        public GroupIdRef(string value, string? type)
+        {
+            Type = type;
+            Value = value;
+        }
+
+        [XmlAttribute("type")]
+        public override string? Type { get; set; }
+
+        [XmlText]
+        public override string Value { get; set; }
+    }
 }
 
 namespace DuplicateTypeNamesTest.ns1

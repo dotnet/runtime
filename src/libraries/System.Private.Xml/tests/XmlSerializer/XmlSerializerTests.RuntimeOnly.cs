@@ -3742,6 +3742,21 @@ public static partial class XmlSerializerTests
         Assert.Equal(value.Number, actual.Number);
     }
 
+    [Fact]
+    public static void Xml_DerivedTypeOverridingVirtualXmlTextProperty_CanSerialize()
+    {
+        // Regression test: XmlSerializer must not throw when a derived class re-declares
+        // [XmlText] on a virtual property override of a base class that also has [XmlText].
+        var value = new CustomerWithGroupIdRef
+        {
+            GroupIdRef = new GroupIdRef("RefValue", "SomeType")
+        };
+        CustomerWithGroupIdRef actual = SerializeAndDeserialize(value,
+            "<?xml version=\"1.0\"?><CustomerWithGroupIdRef xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><GROUP_IDREF type=\"SomeType\">RefValue</GROUP_IDREF></CustomerWithGroupIdRef>");
+        Assert.Equal("RefValue", actual.GroupIdRef?.Value);
+        Assert.Equal("SomeType", actual.GroupIdRef?.Type);
+    }
+
     [Theory]
     [InlineData(@"<TypeWithXmlElementMemberAndSibling xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><Description><p>text</p></Description><Name>Test</Name></TypeWithXmlElementMemberAndSibling>", "Test", true, "p", "text")]
     [InlineData(@"<TypeWithXmlElementMemberAndSibling xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><Description /><Name>Test</Name></TypeWithXmlElementMemberAndSibling>", "Test", false, null, null)]
