@@ -433,7 +433,8 @@ namespace System.Runtime.CompilerServices
             Continuation? sentinelContinuation = state.SentinelContinuation ??= new Continuation();
 
             Continuation nextCont;
-            if (valueTask._obj is Task t)
+            object? obj = valueTask._obj;
+            if (obj is Task t)
             {
                 TaskContinuation? taskCont = state.CachedTaskContinuation;
                 if (taskCont != null)
@@ -461,8 +462,8 @@ namespace System.Runtime.CompilerServices
                     vtsCont = new ValueTaskSourceContinuation();
                 }
 
-                Debug.Assert(valueTask._obj is IValueTaskSource);
-                vtsCont.Initialize(Unsafe.BitCast<object, IValueTaskSource>(valueTask._obj), valueTask._token);
+                Debug.Assert(obj is IValueTaskSource);
+                vtsCont.Initialize(Unsafe.As<object, IValueTaskSource>(ref obj), valueTask._token);
                 state.StackState->ValueTaskSourceContinuation = vtsCont;
                 nextCont = vtsCont;
             }
@@ -518,7 +519,8 @@ namespace System.Runtime.CompilerServices
             Continuation? sentinelContinuation = state.SentinelContinuation ??= new Continuation();
 
             Continuation nextCont;
-            if (valueTask._obj is Task<T> t)
+            object? obj = valueTask._obj;
+            if (obj is Task<T> t)
             {
                 TaskContinuation? taskCont = state.CachedTaskContinuation;
                 if (taskCont != null)
@@ -546,12 +548,13 @@ namespace System.Runtime.CompilerServices
                     vtsCont = new ValueTaskSourceContinuation();
                 }
 
-                Debug.Assert(valueTask._obj is IValueTaskSource<T>);
-                vtsCont.Initialize<T>(Unsafe.BitCast<object, IValueTaskSource<T>>(valueTask._obj), valueTask._token);
+                Debug.Assert(obj is IValueTaskSource<T>);
+                vtsCont.Initialize<T>(Unsafe.As<object, IValueTaskSource<T>>(ref obj), valueTask._token);
                 state.StackState->ValueTaskSourceContinuation = vtsCont;
                 nextCont = vtsCont;
             }
 
+            sentinelContinuation.Next = nextCont;
             state.CaptureContexts();
             AsyncSuspend(nextCont);
             return default!;
