@@ -8971,6 +8971,21 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     const char* note = "inexact or not final";
 #endif
 
+    // Array interface devirt can return a nonvirtual generic method of the non-generic SZArrayHelper class.
+    //
+    if (!dvInfo.instParamLookup.lookupKind.needsRuntimeLookup && dvInfo.instParamLookup.constLookup.handle != nullptr)
+    {
+        // If we don't know the array type exactly we may have the wrong interface type here.
+        // Bail out.
+        //
+        const bool isArrayInterfaceDevirt = (objClassAttribs & CORINFO_FLG_ARRAY) != 0;
+        if (isArrayInterfaceDevirt && !isExact)
+        {
+            JITDUMP("Array interface devirt: array type is inexact, sorry.\n");
+            return;
+        }
+    }
+
     // If we failed to get a method handle, we can't directly devirtualize.
     //
     // This can happen with AOT, if the devirtualization crosses
