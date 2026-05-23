@@ -73,9 +73,9 @@ namespace
         }
         CONTRACTL_END;
 
-    // The reference tracking system must be initialized.
-    if (!g_ReferenceTrackerInitialized)
-        COMPlusThrow(kInvalidOperationException, W("InvalidOperation_ObjectiveCMarshalNotInitialized"));
+        // The reference tracking system must be initialized.
+        if (!g_ReferenceTrackerInitialized)
+            COMPlusThrow(kInvalidOperationException, W("InvalidOperation_ObjectiveCMarshalNotInitialized"));
 
         void* taggedMemoryLocal;
 
