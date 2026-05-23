@@ -2683,10 +2683,13 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 				} else if (!strcmp (tm, "get_IsSupported")) {
 					g_assert (mono_class_is_ginst (target_method->klass));
 
-					MonoType *element_type = mono_class_get_context (target_method->klass)->class_inst->type_argv [0];
-					if (MONO_TYPE_IS_VECTOR_PRIMITIVE (element_type)) {
+					// Apart from filtering out non-primitive types this also filters out shared generic instance types like: T_BYTE which cannot be intrinsified
+					MonoType *etype = mono_class_get_context (target_method->klass)->class_inst->type_argv [0];
+
+					if (MONO_TYPE_IS_VECTOR_PRIMITIVE (etype)) {
 						*op = MINT_LDC_I4_1;
-					} else {
+					} else if (mini_type_get_underlying_type (etype)->type == MONO_TYPE_OBJECT) {
+						// Happens often in gshared code
 						*op = MINT_LDC_I4_0;
 					}
 				}
@@ -2730,10 +2733,13 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			if (!strcmp (tm, "get_IsSupported")) {
 				g_assert (mono_class_is_ginst (target_method->klass));
 
-				MonoType *element_type = mono_class_get_context (target_method->klass)->class_inst->type_argv [0];
-				if (MONO_TYPE_IS_VECTOR_PRIMITIVE (element_type)) {
+				// Apart from filtering out non-primitive types this also filters out shared generic instance types like: T_BYTE which cannot be intrinsified
+				MonoType *etype = mono_class_get_context (target_method->klass)->class_inst->type_argv [0];
+
+				if (MONO_TYPE_IS_VECTOR_PRIMITIVE (etype)) {
 					*op = MINT_LDC_I4_1;
-				} else {
+				} else if (mini_type_get_underlying_type (etype)->type == MONO_TYPE_OBJECT) {
+					// Happens often in gshared code
 					*op = MINT_LDC_I4_0;
 				}
 			}

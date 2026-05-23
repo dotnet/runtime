@@ -2439,16 +2439,24 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 		if (!strcmp (cmethod_name, "get_IsSupported")) {
 			if (mono_class_is_ginst (cmethod->klass)) {
-				MonoType *element_type = mono_class_get_context (cmethod->klass)->class_inst->type_argv [0];
-				if (MONO_TYPE_IS_VECTOR_PRIMITIVE (element_type)) {
+				// Apart from filtering out non-primitive types this also filters out shared generic instance types like: T_BYTE which cannot be intrinsified
+				MonoType *etype = mono_class_get_context (cmethod->klass)->class_inst->type_argv [0];
+
+				if (MONO_TYPE_IS_VECTOR_PRIMITIVE (etype)) {
 					EMIT_NEW_ICONST (cfg, ins, 1);
 					ins->type = STACK_I4;
 					return ins;
+				} else if (mini_type_get_underlying_type (etype)->type == MONO_TYPE_OBJECT) {
+					// Happens often in gshared code
+					EMIT_NEW_ICONST (cfg, ins, 0);
+					ins->type = STACK_I4;
+					return ins;
 				}
+			} else {
+				EMIT_NEW_ICONST (cfg, ins, 0);
+				ins->type = STACK_I4;
+				return ins;
 			}
-			EMIT_NEW_ICONST (cfg, ins, 0);
-			ins->type = STACK_I4;
-			return ins;
 		}
 	}
 
