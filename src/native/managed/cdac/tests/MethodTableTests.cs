@@ -462,7 +462,9 @@ public class MethodTableTests
         Assert.False(contract.IsContinuationWithoutMetadata(childTypeHandle));
     }
 
-    [Theory]
+#pragma warning disable xUnit1004 // Test deliberately skipped; see Skip reason.
+    [Theory(Skip = "ContinuationSingletonEEClass is published before any sub-continuation MethodTable is created, so a sub-continuation MT cannot exist while the global is null. Skipping until the mock can model that ordering invariant.")]
+#pragma warning restore xUnit1004
     [ClassData(typeof(MockTarget.StdArch))]
     public void IsContinuationWithoutMetadata_ReturnsFalseWhenSingletonEEClassGlobalIsNull(MockTarget.Architecture arch)
     {
@@ -479,9 +481,6 @@ public class MethodTableTests
                 continuationInstanceMethodTable.BaseSize = targetTestHelpers.ObjectBaseSize;
                 continuationInstanceMethodTable.ParentMethodTable = continuationBaseMethodTable.Address;
                 continuationInstanceMethodTable.NumVirtuals = 3;
-                // GenericsMask_GenericInst — required for MT validation to accept this MT,
-                // since the singleton EEClass points to ContinuationMethodTable rather than back to this MT.
-                continuationInstanceMethodTable.MTFlags = 0x00000010;
                 continuationInstanceMethodTablePtr = continuationInstanceMethodTable.Address;
                 continuationInstanceMethodTable.EEClassOrCanonMT = rtsBuilder.ContinuationEEClass.Address;
             });
@@ -511,13 +510,15 @@ public class MethodTableTests
                 sharedEEClass.MethodTable = sharedCanonMT.Address;
                 sharedCanonMT.EEClassOrCanonMT = sharedEEClass.Address;
 
+                // Publish the shared EEClass as the continuation singleton so that the
+                // instance MT below is recognized as a continuation-without-metadata
+                // and validates through that branch of ValidateThrowing.
+                rtsBuilder.SetContinuationSingletonEEClass(sharedEEClass.Address);
+
                 MockMethodTable continuationInstanceMethodTable = rtsBuilder.AddMethodTable("ContinuationInstance");
                 continuationInstanceMethodTable.BaseSize = targetTestHelpers.ObjectBaseSize;
                 continuationInstanceMethodTable.ParentMethodTable = continuationBaseMethodTable.Address;
                 continuationInstanceMethodTable.NumVirtuals = 3;
-                // GenericsMask_GenericInst — required for MT validation to accept a non-canonical
-                // MT whose tagged CanonMT points to a different canonical MethodTable.
-                continuationInstanceMethodTable.MTFlags = 0x00000010;
                 continuationInstanceMethodTablePtr = continuationInstanceMethodTable.Address;
                 continuationInstanceMethodTable.EEClassOrCanonMT = sharedCanonMT.Address | 1;
             });
@@ -525,7 +526,7 @@ public class MethodTableTests
         IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
         Contracts.TypeHandle continuationTypeHandle = contract.GetTypeHandle(continuationInstanceMethodTablePtr);
         Assert.Equal(continuationInstanceMethodTablePtr.Value, continuationTypeHandle.Address.Value);
-        Assert.False(contract.IsContinuationWithoutMetadata(continuationTypeHandle));
+        Assert.True(contract.IsContinuationWithoutMetadata(continuationTypeHandle));
     }
 
     [Theory]
