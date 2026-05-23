@@ -106,16 +106,8 @@ namespace System.Runtime.CompilerServices
         {
             if (!task.IsCompleted)
             {
-                if (task._obj is Task<T> t)
-                {
-                    TailAwait();
-                    return Await(t);
-                }
-                else
-                {
-                    TailAwait();
-                    return AwaitValueTaskSourceOfT<T>(task._obj!, task._token);
-                }
+                TailAwait();
+                return AwaitValueTaskOfT(task);
             }
 
             return task.Result;
@@ -133,18 +125,9 @@ namespace System.Runtime.CompilerServices
         {
             if (!task.IsCompleted)
             {
-                if (task._obj is Task t)
-                {
-                    TailAwait();
-                    Await(t);
-                    return;
-                }
-                else
-                {
-                    TailAwait();
-                    AwaitValueTaskSource(task._obj!, task._token);
-                    return;
-                }
+                TailAwait();
+                AwaitValueTask(task);
+                return;
             }
 
             task.ThrowIfCompletedUnsuccessfully();
@@ -179,13 +162,15 @@ namespace System.Runtime.CompilerServices
         [StackTraceHidden]
         public static void Await(ConfiguredValueTaskAwaitable configuredAwaitable)
         {
-            ConfiguredValueTaskAwaitable.ConfiguredValueTaskAwaiter awaiter = configuredAwaitable.GetAwaiter();
-            if (!awaiter.IsCompleted)
+            ValueTask task = configuredAwaitable._value;
+            if (!task.IsCompleted)
             {
-                UnsafeAwaitAwaiter(awaiter);
+                TailAwait();
+                AwaitValueTask(task);
+                return;
             }
 
-            awaiter.GetResult();
+            task.ThrowIfCompletedUnsuccessfully();
         }
 
         /// <summary>
@@ -219,13 +204,14 @@ namespace System.Runtime.CompilerServices
         [StackTraceHidden]
         public static T Await<T>(ConfiguredValueTaskAwaitable<T> configuredAwaitable)
         {
-            ConfiguredValueTaskAwaitable<T>.ConfiguredValueTaskAwaiter awaiter = configuredAwaitable.GetAwaiter();
-            if (!awaiter.IsCompleted)
+            ValueTask<T> task = configuredAwaitable._value;
+            if (!task.IsCompleted)
             {
-                UnsafeAwaitAwaiter(awaiter);
+                TailAwait();
+                return AwaitValueTaskOfT(task);
             }
 
-            return awaiter.GetResult();
+            return task.Result;
         }
 #else
         public static void UnsafeAwaitAwaiter<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion { throw new PlatformNotSupportedException("Runtime Async is not supported on this platform."); }

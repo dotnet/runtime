@@ -380,7 +380,7 @@ namespace System.Runtime.CompilerServices
 
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
-        private static unsafe void AwaitValueTaskSource(object source, short token)
+        private static unsafe void AwaitValueTask(ValueTask valueTask)
         {
             ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
             Continuation? sentinelContinuation = state.SentinelContinuation ??= new Continuation();
@@ -395,12 +395,19 @@ namespace System.Runtime.CompilerServices
                 vtsCont = new ValueTaskContinuation();
             }
 
-            Debug.Assert(source != null);
-            vtsCont.Initialize(source, token);
+            Debug.Assert(valueTask._obj != null);
+            vtsCont.Initialize(valueTask._obj, valueTask._token);
 
-            // We only need to capture flags.
-            // If needed, VTS will use the scheduling context captured in the "state".
-            CaptureContinuationContextFlags(ref vtsCont.Flags, state.CurrentThread!);
+            if (valueTask._continueOnCapturedContext)
+            {
+                // We only need to capture flags.
+                // If needed, VTS will use the scheduling context captured in the "state".
+                CaptureContinuationContextFlags(ref vtsCont.Flags, state.CurrentThread!);
+            }
+            else
+            {
+                vtsCont.Flags |= ContinuationFlags.ContinueOnThreadPool;
+            }
 
             sentinelContinuation.Next = vtsCont;
             state.StackState->ValueTaskContinuation = vtsCont;
@@ -439,7 +446,7 @@ namespace System.Runtime.CompilerServices
 
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
-        private static unsafe T AwaitValueTaskSourceOfT<T>(object source, short token)
+        private static unsafe T AwaitValueTaskOfT<T>(ValueTask<T> valueTask)
         {
             ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
             Continuation? sentinelContinuation = state.SentinelContinuation ??= new Continuation();
@@ -454,12 +461,19 @@ namespace System.Runtime.CompilerServices
                 vtsCont = new ValueTaskContinuation();
             }
 
-            Debug.Assert(source != null);
-            vtsCont.Initialize<T>(source, token);
+            Debug.Assert(valueTask._obj != null);
+            vtsCont.Initialize<T>(valueTask._obj, valueTask._token);
 
-            // We only need to capture flags.
-            // If needed, VTS will use the scheduling context captured in the "state".
-            CaptureContinuationContextFlags(ref vtsCont.Flags, state.CurrentThread!);
+            if (valueTask._continueOnCapturedContext)
+            {
+                // We only need to capture flags.
+                // If needed, VTS will use the scheduling context captured in the "state".
+                CaptureContinuationContextFlags(ref vtsCont.Flags, state.CurrentThread!);
+            }
+            else
+            {
+                vtsCont.Flags |= ContinuationFlags.ContinueOnThreadPool;
+            }
 
             sentinelContinuation.Next = vtsCont;
             state.StackState->ValueTaskContinuation = vtsCont;
