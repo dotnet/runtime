@@ -190,7 +190,7 @@ enum insFlags : uint64_t
 
     // The instruction is commutative for op1/op2 and so can have
     // these operands swapped if it will result in a smaller encoding.
-    INS_Flags_IsCommutative = 1ULL << 28,
+    INS_Flags_IsAvxCommutative = 1ULL << 28,
 
     // w and s bits
     INS_FLAGS_Has_Wbit = 1ULL << 29,

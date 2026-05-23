@@ -254,6 +254,8 @@ bool hasRex2Prefix(code_t code)
 #endif
 }
 
+static bool IsExtendedReg(regNumber reg);
+static bool IsExtendedReg(regNumber reg, emitAttr attr);
 bool IsExtendedGPReg(regNumber reg) const;
 
 //------------------------------------------------------------------------
