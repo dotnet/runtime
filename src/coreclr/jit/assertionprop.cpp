@@ -4976,7 +4976,7 @@ bool Compiler::optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions)
         return true;
     }
 
-    if (!optCanPropNonNull || BitVecOps::MayBeUninit(assertions))
+    if (!optCanPropNonNull || (optLocalAssertionProp && BitVecOps::MayBeUninit(assertions)))
     {
         return false;
     }
