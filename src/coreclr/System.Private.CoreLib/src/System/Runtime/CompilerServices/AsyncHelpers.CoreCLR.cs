@@ -23,6 +23,8 @@ namespace System.Runtime.CompilerServices
         ContinueOnCapturedSynchronizationContext = 1 << 1,
         ContinueOnCapturedTaskScheduler = 1 << 2,
 
+        AllContinuationFlags = ContinueOnThreadPool | ContinueOnCapturedSynchronizationContext | ContinueOnCapturedTaskScheduler,
+
         // The flags encode where in the continuation various members are stored.
         // If the encoded index is 0, it means no such member is present.
         // Otherwise the exact offset of the member is computed as
@@ -597,14 +599,6 @@ namespace System.Runtime.CompilerServices
                 Continuation headContinuation = sentinelContinuation.Next!;
                 sentinelContinuation.Next = null;
 
-                // Head continuation should be the result of async call to AwaitAwaiter or UnsafeAwaitAwaiter.
-                // These never have special continuation context handling.
-                // Except for the scenario with ValueTaskContinuation that wraps ValueTaskSource
-                // which can capture continuation context flags.
-                const ContinuationFlags continueFlags =
-                    ContinuationFlags.ContinueOnCapturedSynchronizationContext |
-                    ContinuationFlags.ContinueOnThreadPool |
-                    ContinuationFlags.ContinueOnCapturedTaskScheduler;
 
                 SetContinuationState(headContinuation);
 
@@ -612,13 +606,17 @@ namespace System.Runtime.CompilerServices
                 {
                     if (stackState->CriticalNotifier is { } critNotifier)
                     {
-                        Debug.Assert((headContinuation.Flags & continueFlags) == 0);
+                        // Result of async call to AwaitAwaiter or UnsafeAwaitAwaiter.
+                        // These never have special continuation context handling.
+                        Debug.Assert((headContinuation.Flags & ContinuationFlags.AllContinuationFlags) == 0);
                         critNotifier.UnsafeOnCompleted(GetContinuationAction());
                     }
                     else if (stackState->TaskContinuation is { } taskCont)
                     {
                         Debug.Assert(headContinuation == taskCont);
-                        Debug.Assert((headContinuation.Flags & continueFlags) == 0);
+                        // Similarly for transparent awwaits we do not expect
+                        // any continuation flags.
+                        Debug.Assert((headContinuation.Flags & ContinuationFlags.AllContinuationFlags) == 0);
                         // Runtime async callable wrapper for task returning
                         // method. This implements the context transparent
                         // forwarding and makes these wrappers minimal cost.
@@ -635,7 +633,7 @@ namespace System.Runtime.CompilerServices
                         Debug.Assert(source != null);
                         if (source is Task t)
                         {
-                            Debug.Assert((headContinuation.Flags & continueFlags) == 0);
+                            Debug.Assert((headContinuation.Flags & ContinuationFlags.AllContinuationFlags) == 0);
                             if (!t.TryAddCompletionAction(this))
                             {
                                 ThreadPool.UnsafeQueueUserWorkItemInternal(this, preferLocal: true);
@@ -658,7 +656,7 @@ namespace System.Runtime.CompilerServices
                             // the direct AsyncHelpers.Await(ValueTask/ValueTask<T>) path.
                             // In either case, that can only happen in nontransparent/user code.
                             Continuation contWithContinueFlags = valueTaskSourceCont;
-                            while ((contWithContinueFlags.Flags & continueFlags) == 0 && contWithContinueFlags.Next != null)
+                            while ((contWithContinueFlags.Flags & ContinuationFlags.AllContinuationFlags) == 0 && contWithContinueFlags.Next != null)
                             {
                                 contWithContinueFlags = contWithContinueFlags.Next;
                             }
@@ -676,7 +674,7 @@ namespace System.Runtime.CompilerServices
                             }
 
                             // Clear continuation flags, so that continuation runs transparently
-                            contWithContinueFlags.Flags &= ~continueFlags;
+                            contWithContinueFlags.Flags &= ~ContinuationFlags.AllContinuationFlags;
 
                             valueTaskSourceCont.OnCompletedValueTaskSource(
                                 source,
@@ -688,7 +686,7 @@ namespace System.Runtime.CompilerServices
                     }
                     else
                     {
-                        Debug.Assert((headContinuation.Flags & continueFlags) == 0);
+                        Debug.Assert((headContinuation.Flags & ContinuationFlags.AllContinuationFlags) == 0);
                         Debug.Assert(stackState->Notifier != null);
                         stackState->Notifier!.OnCompleted(GetContinuationAction());
                     }

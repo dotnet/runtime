@@ -68,6 +68,9 @@ namespace System.Runtime.CompilerServices
                 {
                     var taskCont = (TaskContinuation)cont;
                     taskCont.Next = null;
+
+                    Debug.Assert((taskCont.Flags & ContinuationFlags.AllContinuationFlags) == 0);
+
                     t_runtimeAsyncAwaitState.CachedTaskContinuation = taskCont;
 
                     taskCont.GetResult(ref result);
