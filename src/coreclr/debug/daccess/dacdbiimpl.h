@@ -273,8 +273,9 @@ public:
     // Get information about a field added with Edit And Continue.
     HRESULT STDMETHODCALLTYPE GetEnCHangingFieldInfo(const EnCHangingFieldInfo * pEnCFieldInfo, OUT FieldData * pFieldData, OUT BOOL * pfStatic);
 
-    // EnumerateTypeHandleParams gets the necessary data for a type handle, i.e. its type parameters, e.g. "String" and "List<int>" from the type handle for "Dict<String,List<int>
-
+    // EnumerateTypeHandleParams gets the necessary data for a type handle, i.e. its type
+    // parameters, e.g. "String" and "List<int>" from the type handle for
+    // "Dict<String,List<int>>".
     HRESULT STDMETHODCALLTYPE EnumerateTypeHandleParams(VMPTR_TypeHandle vmTypeHandle, FP_TYPEPARAM_CALLBACK fpCallback, CALLBACK_DATA pUserData);
 
     // DacDbi API: GetSimpleType

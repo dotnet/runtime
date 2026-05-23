@@ -1886,6 +1886,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 throw new ArgumentException("MethodDesc cannot be null", nameof(vmMethodDesc));
             if (pcGenericClassTypeParams == null)
                 throw new ArgumentNullException(nameof(pcGenericClassTypeParams));
+            *pcGenericClassTypeParams = 0;
             if (fpCallback == null)
                 throw new ArgumentNullException(nameof(fpCallback));
 
