@@ -991,9 +991,9 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
 
         bool isRMW = !m_compiler->canUseVexEncoding();
 
-        if (!isRMW && !treeNode->OperIs(GT_DIV))
+        if (!isRMW && !treeNode->OperIs(GT_DIV, GT_SUB))
         {
-            assert(treeNode->OperIs(GT_ADD, GT_SUB, GT_MUL));
+            assert(treeNode->OperIs(GT_ADD, GT_MUL));
 
             if (!emitter::IsExtendedReg(op1reg) && emitter::IsExtendedReg(op2reg))
             {
