@@ -10,6 +10,7 @@
   <ItemGroup Condition="'$(TargetsLinuxGlibc)' == 'true'">
     <InstallerProjectReference Include="installers/dotnet-runtime-deps/dotnet-runtime-deps-debian.proj" />
     <InstallerProjectReference Include="installers/dotnet-runtime-deps/dotnet-runtime-deps-azl.3.proj" />
+    <InstallerProjectReference Include="installers/dotnet-runtime-deps/dotnet-runtime-deps-azl.4.proj" />
     <InstallerProjectReference Include="installers/dotnet-runtime-deps/dotnet-runtime-deps-opensuse.15.proj" />
     <InstallerProjectReference Include="installers/dotnet-runtime-deps/dotnet-runtime-deps-sles.15.proj" />
   </ItemGroup>
