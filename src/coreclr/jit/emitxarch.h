@@ -256,7 +256,7 @@ bool hasRex2Prefix(code_t code)
 
 static bool IsExtendedReg(regNumber reg);
 static bool IsExtendedReg(regNumber reg, emitAttr attr);
-bool IsExtendedGPReg(regNumber reg) const;
+bool        IsExtendedGPReg(regNumber reg) const;
 
 //------------------------------------------------------------------------
 // HasKMaskRegisterDest: Temporary check to identify instructions that can
