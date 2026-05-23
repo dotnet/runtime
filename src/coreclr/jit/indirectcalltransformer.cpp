@@ -978,6 +978,10 @@ private:
             Compiler::DevirtualizedCallInfo dcInfo;
             dcInfo.tokenLookupContext = exactContext;
 
+            CORINFO_SIG_INFO derivedSig;
+            m_compiler->info.compCompHnd->getMethodSig(methodHnd, &derivedSig);
+            dcInfo.pMethSig = &derivedSig;
+
             // only for class-based GDV in R2R
             dcInfo.pResolvedToken = (clsHnd != NO_CLASS_HANDLE) ? &inlineInfo->guardedMethodResolvedToken : nullptr;
             dcInfo.pUnboxedResolvedToken =

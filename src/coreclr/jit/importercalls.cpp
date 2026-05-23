@@ -8963,6 +8963,9 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     CORINFO_CONTEXT_HANDLE  exactContext          = dvInfo.tokenLookupContext;
     CORINFO_RESOLVED_TOKEN* pDerivedResolvedToken = &dvInfo.resolvedTokenDevirtualizedMethod;
 
+    CORINFO_SIG_INFO derivedSig;
+    info.compCompHnd->getMethodSig(derivedMethod, &derivedSig);
+
     unsigned derivedMethodAttribs = 0;
     bool     derivedMethodIsFinal = false;
     bool     canDevirtualize      = false;
@@ -8970,6 +8973,21 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 #if defined(DEBUG)
     const char* note = "inexact or not final";
 #endif
+
+    // Array interface devirt can return a nonvirtual generic method of the non-generic SZArrayHelper class.
+    //
+    if (derivedSig.hasTypeArg())
+    {
+        // If we don't know the array type exactly we may have the wrong interface type here.
+        // Bail out.
+        //
+        const bool isArrayInterfaceDevirt = (objClassAttribs & CORINFO_FLG_ARRAY) != 0;
+        if (isArrayInterfaceDevirt && !isExact)
+        {
+            JITDUMP("Array interface devirt: array type is inexact, sorry.\n");
+            return;
+        }
+    }
 
     // If we failed to get a method handle, we can't directly devirtualize.
     //
@@ -9050,6 +9068,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     dcInfo.pInstParamLookup      = &dvInfo.instParamLookup;
     dcInfo.pResolvedToken        = pDerivedResolvedToken;
     dcInfo.pUnboxedResolvedToken = &dvInfo.resolvedTokenDevirtualizedUnboxedMethod;
+    dcInfo.pMethSig              = &derivedSig;
     dcInfo.objIsNonNull          = objIsNonNull;
     dcInfo.hadImplicitNullCheck  = true;
     dcInfo.isDelegateCall        = false;
@@ -9325,10 +9344,7 @@ void Compiler::impTransformDevirtualizedCall(GenTreeCall*            call,
     }
     else
     {
-        CORINFO_SIG_INFO derivedSig;
-        info.compCompHnd->getMethodSig(derivedMethod, &derivedSig);
-
-        if (derivedSig.hasTypeArg())
+        if (dcInfo->pMethSig->hasTypeArg())
         {
             if (((SIZE_T)dcInfo->tokenLookupContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD)
             {

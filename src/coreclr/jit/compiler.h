@@ -4966,6 +4966,7 @@ public:
         CORINFO_RESOLVED_TOKEN* pResolvedToken;          // Resolved token for the target method, used by R2R.
         CORINFO_RESOLVED_TOKEN* pUnboxedResolvedToken;   // Resolved token for the unboxed entry, used by R2R.
         CORINFO_LOOKUP*         pInstParamLookup;        // All the information needed for the instantiation parameter lookup.
+        CORINFO_SIG_INFO*       pMethSig;                // The devirted method signature.
         bool                    objIsNonNull;            // True if the receiver is known non-null.
         bool                    hadImplicitNullCheck;    // True if the original call's null check was implicit.
         bool                    isDelegateCall;          // True when transforming a delegate invoke into a direct call.
