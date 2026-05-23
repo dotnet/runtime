@@ -669,7 +669,7 @@ bool emitter::IsThreeOperandAVXInstruction(instruction ins) const
     return (flags & INS_Flags_Is3OperandInstructionMask) != 0;
 }
 
-// Returns true if the AVX insstruction has op1/op2 being commutative
+// Returns true if the AVX instruction has op1/op2 being commutative
 bool emitter::IsAvxCommutative(instruction ins) const
 {
     if (!UseVEXEncoding())
