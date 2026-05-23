@@ -96,10 +96,18 @@ void Lowering::LowerPEPCall(GenTreeCall* call)
     DISPTREE(call);
 
     JITDUMP("Rewrite PEP call's control expression to indirect through the new local variable\n");
+
     // Rewrite the call's control expression to have an additional load from the PEP local
+    // This must happen just before the call.
+    //
     GenTree* controlExpr = call->gtControlExpr;
-    GenTree* target      = Ind(controlExpr);
-    BlockRange().InsertAfter(controlExpr, target);
+    assert(controlExpr->OperIs(GT_LCL_VAR));
+
+    BlockRange().Remove(controlExpr);
+    BlockRange().InsertBefore(call, controlExpr);
+    GenTree* target = Ind(controlExpr);
+    BlockRange().InsertBefore(call, target);
+
     call->gtControlExpr = target;
 
     JITDUMP("Finished lowering PEP call\n");

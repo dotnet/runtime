@@ -384,7 +384,35 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             MethodWithGCInfo otherNode = (MethodWithGCInfo)other;
+            MethodDesc methodLayoutAnchor = GetMethodLayoutAnchor(_method, out int methodLayoutRank);
+            MethodDesc otherLayoutAnchor = GetMethodLayoutAnchor(otherNode._method, out int otherLayoutRank);
+
+            int result = comparer.Compare(methodLayoutAnchor, otherLayoutAnchor);
+            if (result != 0)
+            {
+                return result;
+            }
+
+            result = methodLayoutRank.CompareTo(otherLayoutRank);
+            if (result != 0)
+            {
+                return result;
+            }
+
             return comparer.Compare(_method, otherNode._method);
+
+            static MethodDesc GetMethodLayoutAnchor(MethodDesc method, out int layoutRank)
+            {
+                if (method is AsyncResumptionStub resumptionStub)
+                {
+                    Debug.Assert(resumptionStub.TargetMethod is not AsyncResumptionStub);
+                    layoutRank = 1;
+                    return resumptionStub.TargetMethod;
+                }
+
+                layoutRank = 0;
+                return method;
+            }
         }
 
         public void InitializeInliningInfo(MethodDesc[] inlinedMethods, NodeFactory factory)
