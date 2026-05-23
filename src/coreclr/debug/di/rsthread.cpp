@@ -2183,7 +2183,7 @@ HRESULT CordbThread::InterceptCurrentException(ICorDebugFrame * pFrame)
             GetProcess()->InitIPCEvent(&event, DB_IPCE_INTERCEPT_EXCEPTION, true, VMPTR_AppDomain::NullPtr());
 
             event.InterceptException.vmThreadToken = m_vmThreadToken;
-            event.InterceptException.frameToken  = pRealFrame->GetFramePointer();
+            event.InterceptException.frameToken  = PTR_TO_CORDB_ADDRESS(pRealFrame->GetFramePointer().GetSPValue());
 
             hr = GetProcess()->m_cordb->SendIPCEvent(GetProcess(), &event, sizeof(DebuggerIPCEvent));
 

@@ -6991,7 +6991,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 break;
 
             case CEE_ARGLIST:
-
+            {
                 if (!info.compIsVarArgs)
                 {
                     BADCODE("arglist in non-vararg method");
@@ -7002,9 +7002,19 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // The ARGLIST cookie is a hidden 'last' parameter, we have already
                 // adjusted the arg count cos this is like fetching the last param.
                 assertImp(numArgs > 0);
-                op1 = gtNewLclVarAddrNode(lvaVarargsHandleArg, TYP_BYREF);
+                clsHnd = impGetRuntimeArgumentHandle();
+
+                unsigned argListTmp = lvaGrabTemp(false DEBUGARG("arglist tmp"));
+                lvaSetStruct(argListTmp, clsHnd, false);
+
+                op1 = gtNewLclVarAddrNode(lvaVarargsHandleArg, TYP_I_IMPL);
+                impAppendTree(gtNewStoreLclFldNode(argListTmp, TYP_I_IMPL, 0, op1), CHECK_SPILL_ALL, impCurStmtDI);
+
+                op1      = gtNewLclVarNode(argListTmp, TYP_STRUCT);
+                tiRetVal = makeTypeInfo(clsHnd);
                 impPushOnStack(op1, tiRetVal);
                 break;
+            }
 
             case CEE_ENDFINALLY:
 

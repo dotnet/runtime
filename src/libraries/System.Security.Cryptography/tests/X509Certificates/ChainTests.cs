@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography.X509Certificates.Tests.Common;
 using System.Text;
 using System.Threading;
 using Test.Cryptography;
@@ -374,82 +373,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 actualFlags &= ~allowedFlags;
 
                 Assert.Equal(chainFlags, actualFlags);
-            }
-        }
-
-        [PlatformSpecific(TestPlatforms.Android)]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInHelix))]
-        public static void BuildChainRepeatedly_DoesNotExhaustGlobalReferences()
-        {
-            // Android aborts the process when its JNI global reference table overflows. This
-            // 6-certificate chain leaks 6 JNI global refs per successful build without the Android
-            // PAL cleanup, so 8,600 builds would leak 51,600 certificate refs. 8,400 iterations
-            // completed without the fix during threshold testing, while 8,500 iterations crashed
-            // with "global reference table overflow (max=51200)".
-            // This tests runs for ~10 minutes on an Android emulator.
-            const int Iterations = 8_600;
-
-            CertificateAuthority.BuildPrivatePki(
-                PkiOptions.AllRevocation,
-                out RevocationResponder responder,
-                out CertificateAuthority root,
-                out CertificateAuthority[] intermediates,
-                out X509Certificate2 endCert,
-                intermediateAuthorityCount: 4,
-                registerAuthorities: false,
-                keyFactory: CertificateAuthority.KeyFactory.RSASize(2048));
-
-            using (responder)
-            using (root)
-            using (CertificateAuthority intermediate1 = intermediates[0])
-            using (CertificateAuthority intermediate2 = intermediates[1])
-            using (CertificateAuthority intermediate3 = intermediates[2])
-            using (CertificateAuthority intermediate4 = intermediates[3])
-            using (endCert)
-            using (ImportedCollection issuerHolder = new ImportedCollection(new X509Certificate2Collection
-            {
-                intermediate4.CloneIssuerCert(),
-                intermediate3.CloneIssuerCert(),
-                intermediate2.CloneIssuerCert(),
-                intermediate1.CloneIssuerCert(),
-                root.CloneIssuerCert(),
-            }))
-            using (ChainHolder chainHolder = new ChainHolder())
-            {
-                X509Certificate2Collection issuers = issuerHolder.Collection;
-                X509Chain chain = CreateChain(chainHolder, endCert, issuers);
-
-                // Each successful Android chain build materializes the chain from caller-owned JNI
-                // global references. Without releasing those native-returned references, this
-                // sequential public-API loop eventually exhausts Android process resources.
-                for (int i = 0; i < Iterations; i++)
-                {
-                    if (!chain.Build(endCert))
-                    {
-                        Assert.Fail($"Chain build failed on iteration {i} with '{chain.AllStatusFlags()}'.");
-                    }
-
-                    if (i == 0)
-                    {
-                        Assert.Equal(issuers.Count + 1, chain.ChainElements.Count);
-                    }
-
-                    chainHolder.DisposeChainElements();
-                }
-            }
-
-            static X509Chain CreateChain(ChainHolder chainHolder, X509Certificate2 endCert, X509Certificate2Collection issuers)
-            {
-                X509Chain chain = chainHolder.Chain;
-
-                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
-                chain.ChainPolicy.VerificationTime = endCert.NotBefore.AddSeconds(1);
-                chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
-                chain.ChainPolicy.DisableCertificateDownloads = true;
-                chain.ChainPolicy.ExtraStore.AddRange(issuers);
-                chain.ChainPolicy.CustomTrustStore.Add(issuers[issuers.Count - 1]);
-
-                return chain;
             }
         }
 

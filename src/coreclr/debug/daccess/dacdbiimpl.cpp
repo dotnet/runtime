@@ -4495,9 +4495,12 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetThreadHandle(VMPTR_Thread vmTh
     HRESULT hr = S_OK;
     EX_TRY
     {
-
+#ifdef TARGET_WINDOWS
         Thread * pThread = vmThread.GetDacPtr();
         *pRetVal = pThread->GetThreadHandle();
+#else
+        *pRetVal = NULL;
+#endif // TARGET_WINDOWS
     }
     EX_CATCH_HRESULT(hr);
     return hr;
@@ -7045,19 +7048,19 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetTypeIDForType(VMPTR_TypeHandle
     return S_OK;
 }
 
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetObjectFields(COR_TYPEID id, ULONG32 celt, COR_FIELD *layout, ULONG32 *pceltFetched)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetObjectFields(UINT64 id, ULONG32 celt, COR_FIELD *layout, ULONG32 *pceltFetched)
 {
     if (pceltFetched == NULL)
         return E_POINTER;
 
-    if (id.token1 == 0)
+    if (id == 0)
         return CORDBG_E_CLASS_NOT_LOADED;
 
     DD_ENTER_MAY_THROW;
 
     HRESULT hr = S_OK;
 
-    TypeHandle typeHandle = TypeHandle::FromPtr(TO_TADDR(id.token1));
+    TypeHandle typeHandle = TypeHandle::FromPtr(TO_TADDR(id));
 
     if (typeHandle.IsTypeDesc())
         return E_INVALIDARG;
@@ -7113,7 +7116,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetObjectFields(COR_TYPEID id, UL
         else
         {
             // Note that pointer types are handled in this path.
-            // IntPtr's MethodTable is set for all pointer types and is expected.
+            // UIntPtr's MethodTable is set for all pointer types and is expected.
             PTR_MethodTable mt = fieldHandle.GetMethodTable();
             corField->fieldType = mt->GetInternalCorElementType();
             corField->id.token1 = (ULONG64)mt.GetAddr();

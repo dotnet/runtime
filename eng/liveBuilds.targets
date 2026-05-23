@@ -245,6 +245,9 @@
         $(LibrariesSharedFrameworkDir)*.a;
         $(LibrariesSharedFrameworkDir)*.dat;
         "
+        Exclude="$(LibrariesSharedFrameworkDir)libminipal.a;
+                 $(LibrariesSharedFrameworkDir)libSystem.IO.Compression.Native.a;
+                 $(LibrariesSharedFrameworkDir)libz.a"
         IsNative="true" />
 
       <!-- Runtime tests for Helix are built without the host subset, so browser host files are excluded from the runtime tests build -->
