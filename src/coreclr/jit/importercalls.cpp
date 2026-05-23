@@ -6992,8 +6992,7 @@ void Compiler::impSetupAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned pref
         }
 
         GenTreeCall* inlCall = impInlineInfo->iciCall;
-        JITDUMP("Call [%06u] is to call with a tail async call [%06u]\n", dspTreeID(inlCall),
-                dspTreeID(call));
+        JITDUMP("Call [%06u] is to call with a tail async call [%06u]\n", dspTreeID(inlCall), dspTreeID(call));
 
         assert(inlCall->IsAsync());
 
