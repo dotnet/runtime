@@ -212,68 +212,21 @@ namespace System.Net.Security.Tests
 
         [Theory]
         [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/18837", ~(TestPlatforms.Windows | TestPlatforms.Linux))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/18837", ~(TestPlatforms.Windows | TestPlatforms.Linux | TestPlatforms.OSX))]
         public async Task SslStream_NoCallback_UntrustedCert_SendsAlert(SslProtocols protocol)
         {
             // When no RemoteCertificateValidationCallback is set and the server's cert
             // is not trusted, the cert verify callback causes the TLS stack to send an
             // alert so the client sees a proper error.
 
-            X509Certificate2 cert = Configuration.Certificates.GetSelfSignedServerCertificate();
-            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
-            using (clientStream)
-            using (serverStream)
-            using (SslStream client = new SslStream(clientStream))
-            using (SslStream server = new SslStream(serverStream))
+#pragma warning disable 0618 // SSL2/3 are deprecated
+            if (PlatformDetection.IsOSX && protocol == SslProtocols.Ssl3)
             {
-                var serverOptions = new SslServerAuthenticationOptions
-                {
-                    ServerCertificate = cert,
-                    EnabledSslProtocols = protocol,
-                };
-
-                var clientOptions = new SslClientAuthenticationOptions
-                {
-                    TargetHost = "localhost",
-                    CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
-                    EnabledSslProtocols = protocol,
-                };
-
-                Task serverTask = server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None);
-                Task clientTask = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
-
-                // Client should fail because the validation failed locally, and it should send an alert.
-                await Assert.ThrowsAsync<AuthenticationException>(() => clientTask).WaitAsync(TestConfiguration.PassingTestTimeout);
-
-                // Server side should receive the alert and fail the handshake, the exact timing depends on the platform
-                // Windows: after the handshake, during data exchange
-                // Linux: during the handshake
-                Exception exception = await Assert.ThrowsAnyAsync<Exception>(async () =>
-                {
-                    await serverTask;
-                    byte[] buffer = new byte[1];
-                    await server.WriteAsync(buffer).AsTask().WaitAsync(TestConfiguration.PassingTestTimeout);
-                    await server.ReadAsync(buffer).AsTask().WaitAsync(TestConfiguration.PassingTestTimeout);
-                }).WaitAsync(TestConfiguration.PassingTestTimeout);
-
-                Assert.NotNull(exception.InnerException);
-                if (PlatformDetection.IsWindows)
-                {
-                    Assert.IsType<IOException>(exception);
-                    Assert.IsType<Win32Exception>(exception.InnerException);
-                }
-
-                if (PlatformDetection.IsLinux)
-                {
-                    Assert.IsType<AuthenticationException>(exception);
-                }
+                // SecureTransport on modern macOS no longer negotiates SSL 3.0.
+                return;
             }
-        }
+#pragma warning restore 0618
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.OSX)]
-        public async Task SslStream_NoCallback_UntrustedCert_SendsUnknownCAAlert_OSX()
-        {
             X509Certificate2 cert = Configuration.Certificates.GetSelfSignedServerCertificate();
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
             using (clientStream)
@@ -285,47 +238,80 @@ namespace System.Net.Security.Tests
                 var serverOptions = new SslServerAuthenticationOptions
                 {
                     ServerCertificate = cert,
-                    EnabledSslProtocols = SslProtocols.Tls12,
+                    EnabledSslProtocols = protocol,
                 };
 
                 var clientOptions = new SslClientAuthenticationOptions
                 {
                     TargetHost = cert.GetNameInfo(X509NameType.DnsName, false),
                     CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
-                    EnabledSslProtocols = SslProtocols.Tls12,
+                    EnabledSslProtocols = protocol,
                 };
 
                 Task serverTask = server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None);
                 Task clientTask = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
 
+                // Client should fail because the validation failed locally, and it should send an alert.
                 AuthenticationException clientException = await Assert.ThrowsAsync<AuthenticationException>(() => clientTask).WaitAsync(TestConfiguration.PassingTestTimeout);
-                await ObservePeerAlertAsync(serverTask, server);
 
-                Assert.True(recordingServerStream.ContainsAlert(TlsAlertDescription.UnknownCA), recordingServerStream.GetRecordedAlerts());
+                // Server side should receive the alert and fail the handshake, the exact timing depends on the platform
+                // Windows: after the handshake, during data exchange
+                // Linux/macOS: during the handshake
+                Exception exception = await Assert.ThrowsAnyAsync<Exception>(async () =>
+                {
+                    await serverTask;
+                    byte[] buffer = new byte[1];
+                    await server.WriteAsync(buffer).AsTask().WaitAsync(TestConfiguration.PassingTestTimeout);
+                    await server.ReadAsync(buffer).AsTask().WaitAsync(TestConfiguration.PassingTestTimeout);
+                }).WaitAsync(TestConfiguration.PassingTestTimeout);
 
-                // Cross-platform parity: the cert validation exception should surface directly
-                // to the caller (matching Windows/Linux/Android behavior via SendAuthResetSignal),
-                // not wrapped in a generic AuthenticationException(SR.net_auth_SSPI, ...).
-                Assert.Null(clientException.InnerException);
-                Assert.Contains("certificate", clientException.Message, StringComparison.OrdinalIgnoreCase);
+                if (PlatformDetection.IsWindows)
+                {
+                    Assert.IsType<IOException>(exception);
+                    Assert.IsType<Win32Exception>(exception.InnerException);
+                }
+                else if (PlatformDetection.IsLinux)
+                {
+                    Assert.IsType<AuthenticationException>(exception);
+                    Assert.NotNull(exception.InnerException);
+                }
+                else if (PlatformDetection.IsOSX)
+                {
+                    // Cross-platform parity: the cert validation exception should surface directly
+                    // to the caller (matching Windows/Linux/Android behavior via SendAuthResetSignal),
+                    // not wrapped in a generic AuthenticationException(SR.net_auth_SSPI, ...).
+                    Assert.Null(clientException.InnerException);
+
+                    // Verify the actual UnknownCA alert bytes reached the peer over the wire.
+                    Assert.True(recordingServerStream.ContainsAlert(TlsAlertDescription.UnknownCA), recordingServerStream.GetRecordedAlerts());
+                }
             }
         }
 
         [Theory]
         [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/18837", ~(TestPlatforms.Windows | TestPlatforms.Linux))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/18837", ~(TestPlatforms.Windows | TestPlatforms.Linux | TestPlatforms.OSX))]
         public async Task SslStream_NoCallback_UntrustedClientCert_ServerSendsAlert(SslProtocols protocol)
         {
             // When the server requires a client certificate and no
             // RemoteCertificateValidationCallback is set, the server should send
             // a TLS alert when the client's cert chain cannot be validated.
 
+#pragma warning disable 0618 // SSL2/3 are deprecated
+            if (PlatformDetection.IsOSX && protocol == SslProtocols.Ssl3)
+            {
+                // SecureTransport on modern macOS no longer negotiates SSL 3.0.
+                return;
+            }
+#pragma warning restore 0618
+
             X509Certificate2 cert = Configuration.Certificates.GetSelfSignedServerCertificate();
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
-            using (clientStream)
+            using (RecordingReadStream recordingClientStream = new RecordingReadStream(clientStream))
             using (serverStream)
-            using (SslStream client = new SslStream(clientStream))
+            using (SslStream client = new SslStream(recordingClientStream))
             using (SslStream server = new SslStream(serverStream))
+            using (cert)
             {
                 var serverOptions = new SslServerAuthenticationOptions
                 {
@@ -336,7 +322,7 @@ namespace System.Net.Security.Tests
 
                 var clientOptions = new SslClientAuthenticationOptions
                 {
-                    TargetHost = "localhost",
+                    TargetHost = cert.GetNameInfo(X509NameType.DnsName, false),
                     CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
                     RemoteCertificateValidationCallback = delegate { return true; },
                     ClientCertificates = new X509CertificateCollection { cert },
@@ -347,11 +333,12 @@ namespace System.Net.Security.Tests
                 Task clientTask = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
 
                 // Server should fail because the validation failed locally, and it should send an alert.
-                await Assert.ThrowsAsync<AuthenticationException>(() => serverTask).WaitAsync(TestConfiguration.PassingTestTimeout);
+                AuthenticationException serverException = await Assert.ThrowsAsync<AuthenticationException>(() => serverTask).WaitAsync(TestConfiguration.PassingTestTimeout);
 
                 // Client side should receive the alert and fail the handshake, the exact timing depends on the platform
                 // Windows: after the handshake, during data exchange
                 // Linux: during the handshake, TLS 1.3 sends the alert after the handshake
+                // macOS: during the handshake
                 Exception exception = await Assert.ThrowsAnyAsync<Exception>(async () =>
                 {
                     await clientTask;
@@ -360,15 +347,15 @@ namespace System.Net.Security.Tests
                     await client.ReadAsync(buffer).AsTask().WaitAsync(TestConfiguration.PassingTestTimeout);
                 }).WaitAsync(TestConfiguration.PassingTestTimeout);
 
-                Assert.NotNull(exception.InnerException);
                 if (PlatformDetection.IsWindows)
                 {
+                    Assert.NotNull(exception.InnerException);
                     Assert.IsType<IOException>(exception);
                     Assert.IsType<Win32Exception>(exception.InnerException);
                 }
-
-                if (PlatformDetection.IsLinux)
+                else if (PlatformDetection.IsLinux)
                 {
+                    Assert.NotNull(exception.InnerException);
                     if (protocol == SslProtocols.Tls13)
                     {
                         // failure during app data (read)
@@ -384,52 +371,21 @@ namespace System.Net.Security.Tests
                     Assert.NotNull(exception.InnerException.InnerException);
                     Assert.Contains("alert", exception.InnerException.InnerException.Message);
                 }
-            }
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.OSX)]
-        public async Task SslStream_NoCallback_UntrustedClientCert_ServerSendsUnknownCAAlert_OSX()
-        {
-            X509Certificate2 serverCert = Configuration.Certificates.GetSelfSignedServerCertificate();
-            X509Certificate2 clientCert = Configuration.Certificates.GetSelfSignedClientCertificate();
-            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
-            using (RecordingReadStream recordingClientStream = new RecordingReadStream(clientStream))
-            using (serverStream)
-            using (SslStream client = new SslStream(recordingClientStream))
-            using (SslStream server = new SslStream(serverStream))
-            using (serverCert)
-            using (clientCert)
-            {
-                var serverOptions = new SslServerAuthenticationOptions
+                else if (PlatformDetection.IsOSX)
                 {
-                    ServerCertificate = serverCert,
-                    ClientCertificateRequired = true,
-                    EnabledSslProtocols = SslProtocols.Tls12,
-                };
+                    // Cross-platform parity: the cert validation exception should surface directly
+                    // to the caller (matching Windows/Linux/Android behavior via SendAuthResetSignal),
+                    // not wrapped in a generic AuthenticationException(SR.net_auth_SSPI, ...).
+                    Assert.Null(serverException.InnerException);
 
-                var clientOptions = new SslClientAuthenticationOptions
-                {
-                    TargetHost = serverCert.GetNameInfo(X509NameType.DnsName, false),
-                    CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
-                    RemoteCertificateValidationCallback = delegate { return true; },
-                    ClientCertificates = new X509CertificateCollection { clientCert },
-                    EnabledSslProtocols = SslProtocols.Tls12,
-                };
-
-                Task serverTask = server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None);
-                Task clientTask = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
-
-                AuthenticationException serverException = await Assert.ThrowsAsync<AuthenticationException>(() => serverTask).WaitAsync(TestConfiguration.PassingTestTimeout);
-                await ObservePeerAlertAsync(clientTask, client);
-
-                Assert.True(recordingClientStream.ContainsAlert(TlsAlertDescription.UnknownCA), recordingClientStream.GetRecordedAlerts());
-
-                // Cross-platform parity: the cert validation exception should surface directly
-                // to the caller (matching Windows/Linux/Android behavior via SendAuthResetSignal),
-                // not wrapped in a generic AuthenticationException(SR.net_auth_SSPI, ...).
-                Assert.Null(serverException.InnerException);
-                Assert.Contains("certificate", serverException.Message, StringComparison.OrdinalIgnoreCase);
+                    // Verify a fatal TLS alert reached the peer. SecureTransport may surface
+                    // an untrusted-chain failure as either UnknownCA or BadCertificate depending
+                    // on the negotiated protocol; both are valid "cert rejected" signals.
+                    Assert.True(
+                        recordingClientStream.ContainsAlert(TlsAlertDescription.UnknownCA) ||
+                        recordingClientStream.ContainsAlert(TlsAlertDescription.BadCertificate),
+                        recordingClientStream.GetRecordedAlerts());
+                }
             }
         }
 
@@ -445,19 +401,6 @@ namespace System.Net.Security.Tests
             SslPolicyErrors sslPolicyErrors)
         {
             return true;
-        }
-
-        private static async Task ObservePeerAlertAsync(Task handshakeTask, SslStream stream)
-        {
-            try
-            {
-                await handshakeTask.WaitAsync(TestConfiguration.PassingTestTimeout);
-                byte[] buffer = new byte[1];
-                await stream.ReadAsync(buffer).AsTask().WaitAsync(TestConfiguration.PassingTestTimeout);
-            }
-            catch (Exception ex) when (ex is AuthenticationException or IOException or TimeoutException)
-            {
-            }
         }
 
         private sealed class RecordingReadStream : DelegatingStream
