@@ -12287,8 +12287,12 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
                 const GenTreeIntCon* cns         = tree->AsIntCon();
                 const GenTreeFlags   handleFlags = tree->GetIconHandleFlag();
                 tree->gtVNPair.SetBoth(vnStore->VNForHandle(cns->IconValue(), handleFlags));
-                if (handleFlags == GTF_ICON_CLASS_HDL)
+                if ((handleFlags == GTF_ICON_CLASS_HDL) && (cns->gtCompileTimeHandle != 0))
                 {
+                    // Skip registration when gtCompileTimeHandle is unknown (e.g., the node was created by
+                    // BashToConst+gtFlags|=GTF_ICON_CLASS_HDL in optConstantAssertionProp). Overwriting an
+                    // existing valid mapping with 0 would poison the map for any constant assertion-based
+                    // re-flagging that happens to share the same iconValue as a real embedded handle node.
                     vnStore->AddToEmbeddedHandleMap(cns->IconValue(), cns->gtCompileTimeHandle);
                 }
             }
@@ -14430,9 +14434,11 @@ bool Compiler::fgValueNumberSpecialIntrinsic(GenTreeCall* call)
             ValueNum clsVN     = typeHandleFuncApp.m_args[0];
             ssize_t  clsHandle = 0;
 
-            // NOTE: EmbeddedHandleMapLookup may return 0 for non-0 embedded handle
-            if (!vnStore->EmbeddedHandleMapLookup(vnStore->ConstantValue<ssize_t>(clsVN), &clsHandle) &&
-                (clsHandle != 0))
+            // EmbeddedHandleMapLookup may return false (no entry) or true with a 0 handle when the
+            // backing iconNode was produced by BashToConst (i.e., it has no compile-time handle).
+            // Either way, we cannot resolve the runtime type, so bail.
+            if (!vnStore->EmbeddedHandleMapLookup(vnStore->ConstantValue<ssize_t>(clsVN), &clsHandle) ||
+                (clsHandle == 0))
             {
                 break;
             }
