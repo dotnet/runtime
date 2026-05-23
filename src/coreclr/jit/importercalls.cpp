@@ -8963,9 +8963,6 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     CORINFO_CONTEXT_HANDLE  exactContext          = dvInfo.tokenLookupContext;
     CORINFO_RESOLVED_TOKEN* pDerivedResolvedToken = &dvInfo.resolvedTokenDevirtualizedMethod;
 
-    CORINFO_SIG_INFO derivedSig;
-    info.compCompHnd->getMethodSig(derivedMethod, &derivedSig);
-
     unsigned derivedMethodAttribs = 0;
     bool     derivedMethodIsFinal = false;
     bool     canDevirtualize      = false;
@@ -8974,20 +8971,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     const char* note = "inexact or not final";
 #endif
 
-    // Array interface devirt can return a nonvirtual generic method of the non-generic SZArrayHelper class.
-    //
-    if (derivedSig.hasTypeArg())
-    {
-        // If we don't know the array type exactly we may have the wrong interface type here.
-        // Bail out.
-        //
-        const bool isArrayInterfaceDevirt = (objClassAttribs & CORINFO_FLG_ARRAY) != 0;
-        if (isArrayInterfaceDevirt && !isExact)
-        {
-            JITDUMP("Array interface devirt: array type is inexact, sorry.\n");
-            return;
-        }
-    }
+    CORINFO_SIG_INFO derivedSig;
 
     // If we failed to get a method handle, we can't directly devirtualize.
     //
@@ -9003,6 +8987,23 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         // Fetch method attributes to see if method is marked final.
         derivedMethodAttribs = info.compCompHnd->getMethodAttribs(derivedMethod);
         derivedMethodIsFinal = ((derivedMethodAttribs & CORINFO_FLG_FINAL) != 0);
+
+        info.compCompHnd->getMethodSig(derivedMethod, &derivedSig);
+
+        // Array interface devirt can return a nonvirtual generic method of the non-generic SZArrayHelper class.
+        //
+        if (derivedSig.hasTypeArg())
+        {
+            // If we don't know the array type exactly we may have the wrong interface type here.
+            // Bail out.
+            //
+            const bool isArrayInterfaceDevirt = (objClassAttribs & CORINFO_FLG_ARRAY) != 0;
+            if (isArrayInterfaceDevirt && !isExact)
+            {
+                JITDUMP("Array interface devirt: array type is inexact, sorry.\n");
+                return;
+            }
+        }
 
 #if defined(DEBUG)
         if (isExact)
