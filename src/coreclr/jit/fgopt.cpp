@@ -5457,48 +5457,48 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
         }
     };
 
-    ArrayStack<BasicBlock*> retOrThrowBlocks(getAllocator(CMK_ArrayStack));
-
-    // Visit each block
+    // Tail merge predecessors
     //
     for (BasicBlock* const block : Blocks())
     {
         iterateTailMerge(block);
-        if (block->isEmpty())
-        {
-            continue;
-        }
+    }
 
-        if (block->KindIs(BBJ_THROW))
+    // Deduplicate RETURN blocks
+    //
+    do
+    {
+        predInfo.Reset();
+        for (BasicBlock* const block : Blocks())
         {
-            retOrThrowBlocks.Push(block);
-        }
-        else if (block->KindIs(BBJ_RETURN) && (block != genReturnBB))
-        {
-            // Avoid splitting a return away from a possible tail call
-            //
-            if (!block->hasSingleStmt())
+            if (block->isEmpty())
             {
-                Statement* const lastStmt = block->lastStmt();
-                Statement* const prevStmt = lastStmt->GetPrevStmt();
-                GenTree* const   prevTree = prevStmt->GetRootNode();
-                if (prevTree->IsCall() && prevTree->AsCall()->CanTailCall())
-                {
-                    continue;
-                }
+                continue;
             }
 
-            retOrThrowBlocks.Push(block);
+            if (block->KindIs(BBJ_THROW))
+            {
+                predInfo.Push(PredInfo(block, block->lastStmt()));
+            }
+            else if (block->KindIs(BBJ_RETURN) && (block != genReturnBB))
+            {
+                // Avoid splitting a return away from a possible tail call
+                //
+                if (!block->hasSingleStmt())
+                {
+                    Statement* const lastStmt = block->lastStmt();
+                    Statement* const prevStmt = lastStmt->GetPrevStmt();
+                    GenTree* const   prevTree = prevStmt->GetRootNode();
+                    if (prevTree->IsCall() && prevTree->AsCall()->CanTailCall())
+                    {
+                        continue;
+                    }
+                }
+
+                predInfo.Push(PredInfo(block, block->lastStmt()));
+            }
         }
-    }
-
-    predInfo.Reset();
-    for (BasicBlock* const block : retOrThrowBlocks.BottomUpOrder())
-    {
-        predInfo.Push(PredInfo(block, block->lastStmt()));
-    }
-
-    tailMergePreds(nullptr);
+    } while (tailMergePreds(nullptr));
 
     // Work through any retries
     //
