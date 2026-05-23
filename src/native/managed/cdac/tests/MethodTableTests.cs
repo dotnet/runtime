@@ -479,6 +479,9 @@ public class MethodTableTests
                 continuationInstanceMethodTable.BaseSize = targetTestHelpers.ObjectBaseSize;
                 continuationInstanceMethodTable.ParentMethodTable = continuationBaseMethodTable.Address;
                 continuationInstanceMethodTable.NumVirtuals = 3;
+                // GenericsMask_GenericInst — required for MT validation to accept this MT,
+                // since the singleton EEClass points to ContinuationMethodTable rather than back to this MT.
+                continuationInstanceMethodTable.MTFlags = 0x00000010;
                 continuationInstanceMethodTablePtr = continuationInstanceMethodTable.Address;
                 continuationInstanceMethodTable.EEClassOrCanonMT = rtsBuilder.ContinuationEEClass.Address;
             });
@@ -512,6 +515,9 @@ public class MethodTableTests
                 continuationInstanceMethodTable.BaseSize = targetTestHelpers.ObjectBaseSize;
                 continuationInstanceMethodTable.ParentMethodTable = continuationBaseMethodTable.Address;
                 continuationInstanceMethodTable.NumVirtuals = 3;
+                // GenericsMask_GenericInst — required for MT validation to accept a non-canonical
+                // MT whose tagged CanonMT points to a different canonical MethodTable.
+                continuationInstanceMethodTable.MTFlags = 0x00000010;
                 continuationInstanceMethodTablePtr = continuationInstanceMethodTable.Address;
                 continuationInstanceMethodTable.EEClassOrCanonMT = sharedCanonMT.Address | 1;
             });
