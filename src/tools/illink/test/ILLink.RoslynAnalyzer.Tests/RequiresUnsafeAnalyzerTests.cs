@@ -218,7 +218,9 @@ namespace System.Diagnostics.CodeAnalysis
 
             await VerifyRequiresUnsafeAnalyzer(source,
                 // /0/Test0.cs(6,12): warning IL3061: 'RequiresUnsafeAttribute' cannot be placed directly on static constructor 'C.C()'.
-                VerifyCS.Diagnostic(DiagnosticId.RequiresUnsafeOnStaticConstructor).WithSpan(6, 12, 6, 13).WithArguments("C..cctor()")
+                VerifyCS.Diagnostic(DiagnosticId.RequiresUnsafeOnStaticConstructor).WithSpan(6, 12, 6, 13).WithArguments("C..cctor()"),
+                // Why is this an compiler error?
+                DiagnosticResult.CompilerError("CS9367").WithSpan(5, 6, 5, 20)
             );
         }
 

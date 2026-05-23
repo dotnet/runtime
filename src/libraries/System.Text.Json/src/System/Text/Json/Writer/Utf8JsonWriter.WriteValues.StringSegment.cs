@@ -61,14 +61,14 @@ namespace System.Text.Json
             }
         }
 
-        private unsafe void WriteStringSegmentWithLeftover(scoped ReadOnlySpan<char> value, bool isFinalSegment)
+        private void WriteStringSegmentWithLeftover(scoped ReadOnlySpan<char> value, bool isFinalSegment)
         {
             Debug.Assert(HasPartialStringData);
             Debug.Assert(_enclosingContainer == EnclosingContainerType.Utf16StringSequence);
 
             scoped ReadOnlySpan<char> partialStringDataBuffer = PartialUtf16StringData;
 
-            Span<char> combinedBuffer = stackalloc char[2];
+            Span<char> combinedBuffer = ['\0', '\0'];
             combinedBuffer = combinedBuffer.Slice(0, ConcatInto(partialStringDataBuffer, value, combinedBuffer));
 
             switch (Rune.DecodeFromUtf16(combinedBuffer, out _, out int charsConsumed))
@@ -229,14 +229,14 @@ namespace System.Text.Json
             }
         }
 
-        private unsafe void WriteStringSegmentWithLeftover(scoped ReadOnlySpan<byte> utf8Value, bool isFinalSegment)
+        private void WriteStringSegmentWithLeftover(scoped ReadOnlySpan<byte> utf8Value, bool isFinalSegment)
         {
             Debug.Assert(HasPartialStringData);
             Debug.Assert(_enclosingContainer == EnclosingContainerType.Utf8StringSequence);
 
             scoped ReadOnlySpan<byte> partialStringDataBuffer = PartialUtf8StringData;
 
-            Span<byte> combinedBuffer = stackalloc byte[4];
+            Span<byte> combinedBuffer = [0, 0, 0, 0];
             combinedBuffer = combinedBuffer.Slice(0, ConcatInto(partialStringDataBuffer, utf8Value, combinedBuffer));
 
             switch (Rune.DecodeFromUtf8(combinedBuffer, out _, out int bytesConsumed))
@@ -396,14 +396,14 @@ namespace System.Text.Json
             }
         }
 
-        private unsafe void WriteBase64StringSegmentWithLeftover(scoped ReadOnlySpan<byte> bytes, bool isFinalSegment)
+        private void WriteBase64StringSegmentWithLeftover(scoped ReadOnlySpan<byte> bytes, bool isFinalSegment)
         {
             Debug.Assert(HasPartialStringData);
             Debug.Assert(_enclosingContainer == EnclosingContainerType.Base64StringSequence);
 
             scoped ReadOnlySpan<byte> partialStringDataBuffer = PartialBase64StringData;
 
-            Span<byte> combinedBuffer = stackalloc byte[3];
+            Span<byte> combinedBuffer = [0, 0, 0];
             combinedBuffer = combinedBuffer.Slice(0, ConcatInto(partialStringDataBuffer, bytes, combinedBuffer));
             if (combinedBuffer.Length is 3)
             {
