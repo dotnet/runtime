@@ -18,6 +18,7 @@ Known issues when debugging and testing public signed assemblies on .NET Framewo
 - You will not be able to load the assembly in a partially trusted AppDomain
 - You will not be able to pre-compile ASP.NET applications
 - You may not be able to load the assembly if the `app.config` file specifies `<configuration>`/`<runtime>`/`<NetFx40_LegacySecurityPolicy enabled="true" />`
+- NGEN allows compiling delay-signed assemblies if strong name verification is skipped (e.g. `sn -Vr *`), but it doesn't allow public signed assemblies.
 
 The `corflags.exe` tool that ships with the .NET Framework SDK can show whether a binary is delay-signed or strong-named. For a delay-signed assembly it may show:
 
