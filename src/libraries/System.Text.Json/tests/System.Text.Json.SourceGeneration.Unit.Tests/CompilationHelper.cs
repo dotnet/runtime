@@ -200,6 +200,14 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 {
                     public CompilerFeatureRequiredAttribute(string featureName) { }
                 }
+
+                internal interface IUnion
+                {
+                    object Value { get; }
+                }
+
+                [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, AllowMultiple = false, Inherited = false)]
+                internal sealed class UnionAttribute : Attribute { }
             }
             """;
 #endif

@@ -2771,30 +2771,26 @@ public:
     //
     // #KindsOfElementTypes
     // GetInternalCorElementType() retrieves the internal representation of the type. It's not always
-    // appropriate to use this. For example, we treat enums as their underlying type or some structs are
-    // optimized to be ints. To get the signature type or the verifier type (same as signature except for
-    // enums are normalized to the primitive type that underlies them), use the APIs in Typehandle.h
+    // appropriate to use this. It treats enums as their underlying type. To get the signature
+    // type, use the APIs in Typehandle.h.
     //
     //   * code:TypeHandle.GetSignatureCorElementType()
-    //   * code:TypeHandle.GetVerifierCorElementType()
     //   * code:TypeHandle.GetInternalCorElementType()
     CorElementType GetInternalCorElementType();
-    void SetInternalCorElementType(CorElementType _NormType);
-
-    // See code:TypeHandle::GetVerifierCorElementType for description
-    CorElementType GetVerifierCorElementType();
+    void SetInternalCorElementType(CorElementType elemType, bool isTruePrimitive = false);
 
     // See code:TypeHandle::GetSignatureCorElementType for description
     CorElementType GetSignatureCorElementType();
 
-    // A true primitive is one who's GetVerifierCorElementType() ==
+    // A true primitive is one whose GetInternalCorElementType() ==
     //      ELEMENT_TYPE_I,
     //      ELEMENT_TYPE_I4,
-    //      ELEMENT_TYPE_TYPEDBYREF etc.
-    // Note that GetIntenalCorElementType might return these same values for some additional
-    // types such as Enums and some structs.
-    BOOL IsTruePrimitive();
-    void SetIsTruePrimitive();
+    //      ELEMENT_TYPE_R8, etc.
+    //  Note that IsTruePrimitive returns false for enum types.
+    bool IsTruePrimitive();
+
+    // Like IsTruePrimitive but also returns true for enum types.
+    bool IsPrimitive();
 
     // Is this delegate? Returns false for System.Delegate and System.MulticastDelegate.
     inline BOOL IsDelegate()
@@ -3795,8 +3791,8 @@ private:
         enum_flag_Category_ValueType        = 0x00040000, // [cDAC] [RuntimeTypeSystem]: Contract depends on this value
         enum_flag_Category_ValueType_Mask   = 0x000C0000,
         enum_flag_Category_Nullable         = 0x00050000, // sub-category of ValueType. [cDAC] [RuntimeTypeSystem]: Contract depends on this value
-        enum_flag_Category_PrimitiveValueType=0x00060000, // sub-category of ValueType, Enum or primitive value type. [cDAC] [RuntimeTypeSystem]: Contract depends on this value
-        enum_flag_Category_TruePrimitive    = 0x00070000, // sub-category of ValueType, Primitive (ELEMENT_TYPE_I, etc.). [cDAC] [RuntimeTypeSystem]: Contract depends on this value
+        enum_flag_Category_Primitive        = 0x00060000, // sub-category of ValueType; used for enum types. [cDAC] [RuntimeTypeSystem]: Contract depends on this value
+        enum_flag_Category_TruePrimitive    = 0x00070000, // sub-category of ValueType. (Int32, etc.). [cDAC] [RuntimeTypeSystem]: Contract depends on this value
 
         enum_flag_Category_Array            = 0x00080000, // [cDAC] [RuntimeTypeSystem]: Contract depends on this value
         enum_flag_Category_Array_Mask       = 0x000C0000, // [cDAC] [RuntimeTypeSystem]: Contract depends on this value

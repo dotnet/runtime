@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Moq;
 using Xunit;
@@ -462,4 +463,98 @@ public unsafe class DacDbiImplTests
         Assert.Equal(0u, targetBuffer.cbSize);
         Assert.Equal(SymbolFormat.None, symbolFormat);
     }
+
+    public static IEnumerable<object[]> TargetArchitectures()
+    {
+        string[] architectures = ["x64", "arm64", "arm", "x86", "loongarch64", "riscv64"];
+        foreach (object[] stdArch in new MockTarget.StdArch())
+        {
+            foreach (string archName in architectures)
+            {
+                yield return [stdArch[0], archName];
+            }
+        }
+    }
+
+    public static IEnumerable<object[]> TargetArchitectures_SpRange()
+    {
+        foreach (object[] archData in TargetArchitectures())
+        {
+            yield return [archData[0], archData[1], (ulong)0x6000, System.HResults.S_OK];
+            yield return [archData[0], archData[1], (ulong)0x2000, CorDbgHResults.CORDBG_E_NON_MATCHING_CONTEXT];
+            yield return [archData[0], archData[1], (ulong)0x8000, CorDbgHResults.CORDBG_E_NON_MATCHING_CONTEXT];
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(TargetArchitectures_SpRange))]
+    public void CheckContext_WithControlFlag_ValidatesSpRange(MockTarget.Architecture arch, string targetArch, ulong sp, int expectedHr)
+    {
+        const ulong ThreadAddr = 0x1000;
+        var (dacDbi, target) = CreateCheckContextDacDbi(arch, targetArch, ThreadAddr, stackBase: 0x8000, stackLimit: 0x4000);
+
+        IPlatformAgnosticContext ctx = IPlatformAgnosticContext.GetContextForPlatform(target);
+        ctx.RawContextFlags = ctx.ContextControlFlags;
+        ctx.StackPointer = new TargetPointer(sp);
+        byte[] bytes = ctx.GetBytes();
+
+        fixed (byte* pCtx = bytes)
+        {
+            int hr = dacDbi.CheckContext(ThreadAddr, (nint)pCtx);
+            Assert.Equal(expectedHr, hr);
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(TargetArchitectures))]
+    public void CheckContext_NoControlFlag_SkipsSpCheck(MockTarget.Architecture arch, string targetArch)
+    {
+        const ulong ThreadAddr = 0x1000;
+        var mockThread = new Mock<IThread>();
+
+        var target = new TestPlaceholderTarget.Builder(arch)
+            .AddGlobalStrings((Constants.Globals.Architecture, targetArch))
+            .AddContract<IRuntimeInfo>(version: "c1")
+            .AddMockContract(mockThread)
+            .Build();
+        var dacDbi = new DacDbiImpl(target, legacyObj: null);
+
+        IPlatformAgnosticContext ctx = IPlatformAgnosticContext.GetContextForPlatform(target);
+        ctx.RawContextFlags = 0;
+        ctx.StackPointer = new TargetPointer(0x2000);
+        byte[] bytes = ctx.GetBytes();
+
+        fixed (byte* pCtx = bytes)
+        {
+            int hr = dacDbi.CheckContext(ThreadAddr, (nint)pCtx);
+            Assert.Equal(System.HResults.S_OK, hr);
+        }
+
+        mockThread.Verify(
+            t => t.GetStackLimitData(It.IsAny<TargetPointer>(), out It.Ref<TargetPointer>.IsAny, out It.Ref<TargetPointer>.IsAny, out It.Ref<TargetPointer>.IsAny),
+            Times.Never);
+    }
+
+    private static (DacDbiImpl DacDbi, Target Target) CreateCheckContextDacDbi(MockTarget.Architecture arch, string targetArch, ulong threadAddr, ulong stackBase, ulong stackLimit)
+    {
+        var mockThread = new Mock<IThread>();
+        mockThread
+            .Setup(t => t.GetStackLimitData(new TargetPointer(threadAddr), out It.Ref<TargetPointer>.IsAny, out It.Ref<TargetPointer>.IsAny, out It.Ref<TargetPointer>.IsAny))
+            .Callback(new GetStackLimitDataCallback((TargetPointer _, out TargetPointer sb, out TargetPointer sl, out TargetPointer fa) =>
+            {
+                sb = new TargetPointer(stackBase);
+                sl = new TargetPointer(stackLimit);
+                fa = TargetPointer.Null;
+            }));
+
+        var target = new TestPlaceholderTarget.Builder(arch)
+            .AddGlobalStrings((Constants.Globals.Architecture, targetArch))
+            .AddContract<IRuntimeInfo>(version: "c1")
+            .AddMockContract(mockThread)
+            .Build();
+
+        return (new DacDbiImpl(target, legacyObj: null), target);
+    }
+
+    private delegate void GetStackLimitDataCallback(TargetPointer threadPointer, out TargetPointer stackBase, out TargetPointer stackLimit, out TargetPointer frameAddress);
 }

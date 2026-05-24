@@ -1806,11 +1806,15 @@ void CodeGen::genCodeForShift(GenTree* tree)
 void CodeGen::genCodeForBitCast(GenTreeOp* tree)
 {
     assert(tree->OperIs(GT_BITCAST));
-    genConsumeOperands(tree);
 
     if (tree->gtGetOp1()->isContained())
     {
-        NYI_WASM("Contained bitcast operands");
+        assert(tree->gtGetOp1()->OperIs(GT_LCL_VAR));
+        genCodeForLclVar(tree->gtGetOp1()->AsLclVar());
+    }
+    else
+    {
+        genConsumeOperands(tree);
     }
 
     var_types toType   = tree->TypeGet();
@@ -2663,9 +2667,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         // RhpCheckedAssignRef
         HELPER_SIG(CORINFO_HELP_CHECKED_ASSIGN_REF, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I,
                    CORINFO_WASM_TYPE_I);
-        // RhpByRefAssignRef
-        HELPER_SIG(CORINFO_HELP_ASSIGN_BYREF, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I,
-                   CORINFO_WASM_TYPE_I);
+        // RhpByRefAssignRef: Not implemented on Wasm, omitted
         // RhBulkMoveWithWriteBarrier
         HELPER_SIG(CORINFO_HELP_BULK_WRITEBARRIER, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I,
                    CORINFO_WASM_TYPE_I, CORINFO_WASM_TYPE_I);
@@ -3221,13 +3223,12 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
             emit->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(destReg));
             emit->emitIns_I(INS_I_const, EA_PTRSIZE, destOffset);
             emit->emitIns(INS_I_add);
+            // Do an I_load here instead of I_const + I_add because we're using the (Object **, Object *) write barrier,
+            //  not the (Object **, Object **) BYREF write barrier used on other architectures.
             emit->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(srcReg));
-            emit->emitIns_I(INS_I_const, EA_PTRSIZE, srcOffset);
-            emit->emitIns(INS_I_add);
-            // NOTE: This helper's signature omits SP/PEP so all we need on the stack is dst and src.
-            // TODO-WASM-CQ: add a version of CORINFO_HELP_ASSIGN_BYREF that returns the updated dest/src
-            // pointers as a multi-value tuple and use it here.
-            genEmitHelperCall(CORINFO_HELP_ASSIGN_BYREF, 0, EA_PTRSIZE);
+            emit->emitIns_I(INS_I_load, EA_PTRSIZE, srcOffset);
+            // NOTE: This helper's signature omits SP/PEP so all we need on the stack is dst and ref.
+            genEmitHelperCall(CORINFO_HELP_CHECKED_ASSIGN_REF, 0, EA_PTRSIZE);
             gcPtrCount--;
         }
         ++i;
@@ -3444,6 +3445,238 @@ void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock)
     unsigned const depth = findTargetDepth(tgtBlock) + wasmExtraControlFlowDepth;
     GetEmitter()->emitIns_J(instr, EA_4BYTE, depth, tgtBlock);
 }
+
+#if defined(DEBUG)
+
+//------------------------------------------------------------------------
+// genWasmEmitterUnitTestsSimd: Exercise the packed SIMD instruction emit
+//   functions added for Wasm (v128.const, extract/replace lane, shuffle,
+//   load/store lane, and plain-opcode SIMD instructions).
+//
+//   This is a temporary debug-only test that verifies the encoding paths
+//   do not assert or crash. Each instruction is emitted with valid stack
+//   operands so the resulting bytecode is semantically valid Wasm.
+//
+void CodeGen::genWasmEmitterUnitTestsSimd()
+{
+    emitter* emit = GetEmitter();
+
+    // Helper macros to push typed constants, ensuring valid stack state.
+    // clang-format off
+#define PUSH_V128(bytes) emit->emitIns_V128Imm(INS_v128_const, (bytes))
+#define PUSH_I32(val)    emit->emitIns_I(INS_i32_const, EA_4BYTE, (val))
+#define PUSH_I64(val)    emit->emitIns_I(INS_i64_const, EA_8BYTE, (val))
+#define PUSH_F32(val)    emit->emitIns_I(INS_f32_const, EA_4BYTE, (val))
+#define PUSH_F64(val)    emit->emitIns_I(INS_f64_const, EA_8BYTE, (val))
+#define DROP             emit->emitIns(INS_drop)
+
+    // Unary v128 -> result: push operand, emit instruction, drop result
+#define TEST_UNARY_V128(bytes, ins) \
+    PUSH_V128(bytes);               \
+    emit->emitIns(ins);             \
+    DROP
+
+    // Binary v128 x v128 -> v128: push two operands, emit instruction, drop result
+#define TEST_BINARY_V128(bytes, ins) \
+    PUSH_V128(bytes);                \
+    PUSH_V128(bytes);                \
+    emit->emitIns(ins);                  \
+    DROP
+
+    // Extract lane: v128 -> scalar (i32/i64/f32/f64), then drop
+#define TEST_EXTRACT_LANE(bytes, ins, attr, lane) \
+    PUSH_V128(bytes);                             \
+    emit->emitIns_Lane(ins, attr, lane);              \
+    DROP
+
+    // Replace lane: [v128, scalar] -> v128, then drop
+#define TEST_REPLACE_LANE_I32(bytes, ins, attr, lane) \
+    PUSH_V128(bytes);                                 \
+    PUSH_I32(42);                                     \
+    emit->emitIns_Lane(ins, attr, lane);                  \
+    DROP
+
+#define TEST_REPLACE_LANE_I64(bytes, ins, attr, lane) \
+    PUSH_V128(bytes);                                 \
+    PUSH_I64(42);                                     \
+    emit->emitIns_Lane(ins, attr, lane);                  \
+    DROP
+
+#define TEST_REPLACE_LANE_F32(bytes, ins, attr, lane) \
+    PUSH_V128(bytes);                                 \
+    PUSH_F32(0);                                      \
+    emit->emitIns_Lane(ins, attr, lane);                  \
+    DROP
+
+#define TEST_REPLACE_LANE_F64(bytes, ins, attr, lane) \
+    PUSH_V128(bytes);                                 \
+    PUSH_F64(0);                                      \
+    emit->emitIns_Lane(ins, attr, lane);                  \
+    DROP
+
+    // Load lane: [i32_addr, v128] -> v128, then drop
+#define TEST_LOAD_LANE(bytes, ins, attr, offset, lane) \
+    PUSH_I32(0);                                       \
+    PUSH_V128(bytes);                                  \
+    emit->emitIns_MemargLane(ins, attr, offset, lane); \
+    DROP
+
+    // Store lane: [i32_addr, v128] -> void
+#define TEST_STORE_LANE(bytes, ins, attr, offset, lane) \
+    PUSH_I32(0);                                        \
+    PUSH_V128(bytes);                                   \
+    emit->emitIns_MemargLane(ins, attr, offset, lane)
+
+    // Shuffle: [v128, v128] -> v128, then drop
+#define TEST_SHUFFLE(bytes, shuffleBytes) \
+    PUSH_V128(bytes);                     \
+    PUSH_V128(bytes);                     \
+    emit->emitIns_V128Imm(INS_i8x16_shuffle, shuffleBytes); \
+    DROP
+    // clang-format on
+
+    // --- IF_V128: v128.const with 16 raw bytes ---
+    const uint8_t v128Bytes[16] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+                                   0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F};
+    PUSH_V128(v128Bytes);
+    DROP;
+
+    // All-zeros and all-ones constants
+    const uint8_t v128Zeros[16] = {0};
+    PUSH_V128(v128Zeros);
+    DROP;
+
+    const uint8_t v128Ones[16] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+                                  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+    PUSH_V128(v128Ones);
+    DROP;
+
+    // --- IF_LANE: extract/replace lane instructions ---
+    // i8x16 lanes (0..15)
+    TEST_EXTRACT_LANE(v128Ones, INS_i8x16_extract_lane_s, EA_1BYTE, 0);
+    TEST_EXTRACT_LANE(v128Ones, INS_i8x16_extract_lane_u, EA_1BYTE, 15);
+    TEST_REPLACE_LANE_I32(v128Ones, INS_i8x16_replace_lane, EA_1BYTE, 7);
+
+    // i16x8 lanes (0..7)
+    TEST_EXTRACT_LANE(v128Ones, INS_i16x8_extract_lane_s, EA_2BYTE, 0);
+    TEST_EXTRACT_LANE(v128Ones, INS_i16x8_extract_lane_u, EA_2BYTE, 7);
+    TEST_REPLACE_LANE_I32(v128Ones, INS_i16x8_replace_lane, EA_2BYTE, 3);
+
+    // i32x4 lanes (0..3)
+    TEST_EXTRACT_LANE(v128Ones, INS_i32x4_extract_lane, EA_4BYTE, 0);
+    TEST_REPLACE_LANE_I32(v128Ones, INS_i32x4_replace_lane, EA_4BYTE, 3);
+
+    // i64x2 lanes (0..1)
+    TEST_EXTRACT_LANE(v128Ones, INS_i64x2_extract_lane, EA_8BYTE, 0);
+    TEST_REPLACE_LANE_I64(v128Ones, INS_i64x2_replace_lane, EA_8BYTE, 1);
+
+    // f32x4 lanes (0..3)
+    TEST_EXTRACT_LANE(v128Ones, INS_f32x4_extract_lane, EA_4BYTE, 3);
+    TEST_REPLACE_LANE_F32(v128Ones, INS_f32x4_replace_lane, EA_4BYTE, 0);
+
+    // f64x2 lanes (0..1)
+    TEST_EXTRACT_LANE(v128Ones, INS_f64x2_extract_lane, EA_8BYTE, 0);
+    TEST_REPLACE_LANE_F64(v128Ones, INS_f64x2_replace_lane, EA_8BYTE, 1);
+
+    // --- IF_MEMARG_LANE: load/store lane with memarg ---
+    TEST_LOAD_LANE(v128Ones, INS_v128_load8_lane, EA_1BYTE, 0, 5);
+    TEST_LOAD_LANE(v128Ones, INS_v128_load16_lane, EA_2BYTE, 16, 3);
+    TEST_LOAD_LANE(v128Ones, INS_v128_load32_lane, EA_4BYTE, 64, 2);
+    TEST_LOAD_LANE(v128Ones, INS_v128_load64_lane, EA_8BYTE, 128, 1);
+    TEST_STORE_LANE(v128Ones, INS_v128_store8_lane, EA_1BYTE, 0, 0);
+    TEST_STORE_LANE(v128Ones, INS_v128_store16_lane, EA_2BYTE, 8, 7);
+    TEST_STORE_LANE(v128Ones, INS_v128_store32_lane, EA_4BYTE, 32, 1);
+    TEST_STORE_LANE(v128Ones, INS_v128_store64_lane, EA_8BYTE, 256, 0);
+
+    // --- IF_V128: i8x16.shuffle with 16 lane-index bytes ---
+    // Identity shuffle
+    const uint8_t identityShuffle[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+    TEST_SHUFFLE(v128Bytes, identityShuffle);
+
+    // Reverse bytes
+    const uint8_t reverseShuffle[16] = {15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0};
+    TEST_SHUFFLE(v128Bytes, reverseShuffle);
+
+    // Cross-operand shuffle (indices 16..31 refer to the second operand)
+    const uint8_t crossShuffle[16] = {0, 17, 2, 19, 4, 21, 6, 23, 8, 25, 10, 27, 12, 29, 14, 31};
+    TEST_SHUFFLE(v128Bytes, crossShuffle);
+
+    // --- IF_OPCODE: plain opcode SIMD instructions (representative sample) ---
+    // Splat operations: push scalar, splat to v128, drop
+    PUSH_I32(1);
+    emit->emitIns(INS_i8x16_splat);
+    DROP;
+
+    PUSH_I32(2);
+    emit->emitIns(INS_i16x8_splat);
+    DROP;
+
+    PUSH_I32(3);
+    emit->emitIns(INS_i32x4_splat);
+    DROP;
+
+    PUSH_I64(4);
+    emit->emitIns(INS_i64x2_splat);
+    DROP;
+
+    PUSH_F32(0);
+    emit->emitIns(INS_f32x4_splat);
+    DROP;
+
+    PUSH_F64(0);
+    emit->emitIns(INS_f64x2_splat);
+    DROP;
+
+    // Swizzle: [v128, v128] -> v128
+    TEST_BINARY_V128(v128Ones, INS_i8x16_swizzle);
+
+    // A few comparisons: [v128, v128] -> v128
+    TEST_BINARY_V128(v128Ones, INS_i8x16_eq);
+    TEST_BINARY_V128(v128Ones, INS_i32x4_ne);
+    TEST_BINARY_V128(v128Ones, INS_f64x2_lt);
+
+    // A few arithmetic ops
+    TEST_BINARY_V128(v128Ones, INS_i8x16_add);
+    TEST_BINARY_V128(v128Ones, INS_i32x4_mul);
+    TEST_UNARY_V128(v128Ones, INS_f32x4_sqrt);
+    TEST_UNARY_V128(v128Ones, INS_f64x2_neg);
+
+    // Bitwise ops
+    TEST_UNARY_V128(v128Ones, INS_v128_not);
+    TEST_BINARY_V128(v128Ones, INS_v128_and);
+    TEST_BINARY_V128(v128Ones, INS_v128_or);
+    TEST_BINARY_V128(v128Ones, INS_v128_xor);
+    TEST_BINARY_V128(v128Ones, INS_v128_andnot);
+
+    // Bitmask / any_true / all_true: v128 -> i32
+    TEST_UNARY_V128(v128Ones, INS_v128_any_true);
+    TEST_UNARY_V128(v128Ones, INS_i8x16_all_true);
+    TEST_UNARY_V128(v128Ones, INS_i32x4_bitmask);
+
+    // Conversion operations: v128 -> v128
+    TEST_UNARY_V128(v128Ones, INS_f32x4_convert_s_i32x4);
+    TEST_UNARY_V128(v128Ones, INS_f64x2_convert_low_u_i32x4);
+    TEST_UNARY_V128(v128Ones, INS_i32x4_trunc_sat_s_f32x4);
+
+#undef PUSH_V128
+#undef PUSH_I32
+#undef PUSH_I64
+#undef PUSH_F32
+#undef PUSH_F64
+#undef DROP
+#undef TEST_UNARY_V128
+#undef TEST_BINARY_V128
+#undef TEST_EXTRACT_LANE
+#undef TEST_REPLACE_LANE_I32
+#undef TEST_REPLACE_LANE_I64
+#undef TEST_REPLACE_LANE_F32
+#undef TEST_REPLACE_LANE_F64
+#undef TEST_LOAD_LANE
+#undef TEST_STORE_LANE
+#undef TEST_SHUFFLE
+}
+
+#endif // defined(DEBUG)
 
 void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize, unsigned prologSize, unsigned epilogSize DEBUGARG(void* code))
 {
