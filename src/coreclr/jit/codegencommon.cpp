@@ -2322,7 +2322,8 @@ void CodeGen::genEmitMachineCode()
     trackedStackPtrsContig = false;
 #else
     // We try to allocate GC pointers contiguously on the stack except for some special cases.
-    trackedStackPtrsContig = !m_compiler->opts.compDbgEnC && (m_compiler->lvaAsyncExecutionContextVar == BAD_VAR_NUM) &&
+    trackedStackPtrsContig = !m_compiler->opts.compDbgEnC && (m_compiler->lvaAsyncThreadObjectVar == BAD_VAR_NUM) &&
+                             (m_compiler->lvaAsyncExecutionContextVar == BAD_VAR_NUM) &&
                              (m_compiler->lvaAsyncSynchronizationContextVar == BAD_VAR_NUM);
 
 #ifdef TARGET_ARM
