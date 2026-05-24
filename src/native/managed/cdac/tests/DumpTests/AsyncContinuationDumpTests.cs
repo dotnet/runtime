@@ -38,14 +38,15 @@ public class AsyncContinuationDumpTests : DumpTestBase
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
 
         // The ContinuationMethodTable global points to the Continuation base class itself.
-        // IsContinuation checks if a type's parent is the Continuation base class,
+        // IsContinuationWithoutMetadata checks if a type's parent is the Continuation base class
+        // and its EEClass matches the singleton continuation EEClass,
         // so the base class itself is NOT considered a continuation (its parent is Object).
         TargetPointer continuationMTGlobal = Target.ReadGlobalPointer("ContinuationMethodTable");
         TargetPointer continuationMT = Target.ReadPointer(continuationMTGlobal);
         Assert.NotEqual(TargetPointer.Null, continuationMT);
 
         TypeHandle handle = rts.GetTypeHandle(continuationMT);
-        Assert.False(rts.IsContinuation(handle));
+        Assert.False(rts.IsContinuationWithoutMetadata(handle));
     }
 
     [ConditionalTheory]
@@ -59,7 +60,7 @@ public class AsyncContinuationDumpTests : DumpTestBase
         TargetPointer objectMTGlobal = Target.ReadGlobalPointer("ObjectMethodTable");
         TargetPointer objectMT = Target.ReadPointer(objectMTGlobal);
         TypeHandle objectHandle = rts.GetTypeHandle(objectMT);
-        Assert.False(rts.IsContinuation(objectHandle));
+        Assert.False(rts.IsContinuationWithoutMetadata(objectHandle));
     }
 
     [ConditionalTheory]
@@ -88,21 +89,17 @@ public class AsyncContinuationDumpTests : DumpTestBase
         System.Reflection.Metadata.MetadataReader? md = ecmaMetadata.GetMetadata(coreLibModule);
         Assert.NotNull(md);
 
-        TargetPointer fieldDescList = rts.GetFieldDescList(asyncDispatcherInfoHandle);
         ushort numStaticFields = rts.GetNumStaticFields(asyncDispatcherInfoHandle);
         ushort numThreadStaticFields = rts.GetNumThreadStaticFields(asyncDispatcherInfoHandle);
         ushort numInstanceFields = rts.GetNumInstanceFields(asyncDispatcherInfoHandle);
 
-        // FieldDescList has instance fields first, then static fields.
-        // Thread-static fields are among the static fields.
+        // FieldDescList yields introduced instance fields followed by static fields.
+        // Thread-static fields are the tail subset of the statics; filter via IsFieldDescThreadStatic.
         uint tCurrentOffset = 0;
         bool foundField = false;
-        int totalFields = numInstanceFields + numStaticFields;
-        uint fieldDescSize = Target.GetTypeInfo(DataType.FieldDesc).Size!.Value;
 
-        for (int i = numInstanceFields; i < totalFields; i++)
+        foreach (TargetPointer fieldDesc in rts.GetFieldDescList(asyncDispatcherInfoHandle))
         {
-            TargetPointer fieldDesc = fieldDescList + (ulong)(i * (int)fieldDescSize);
             if (!rts.IsFieldDescThreadStatic(fieldDesc))
                 continue;
 
@@ -162,6 +159,6 @@ public class AsyncContinuationDumpTests : DumpTestBase
         TargetPointer objMT = Target.Contracts.Object.GetMethodTableAddress(
             new TargetPointer(continuationAddress));
         TypeHandle handle = rts.GetTypeHandle(objMT);
-        Assert.True(rts.IsContinuation(handle));
+        Assert.True(rts.IsContinuationWithoutMetadata(handle));
     }
 }

@@ -106,7 +106,7 @@
       <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' != 'true'">-trait category=no-workload</_XUnitTraitArg>
       <_XUnitTraitArg Condition="'$(WasmFingerprintAssets)' == 'false'">-trait category=no-fingerprinting</_XUnitTraitArg>
       <_XUnitTraitArg Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true'">-trait category=bundler-friendly</_XUnitTraitArg>
-      <_XUnitTraitArg Condition="'$(RuntimeFlavor)' == 'CoreCLR'">-notrait category=native -notrait category=mono -notrait category=workload</_XUnitTraitArg>
+      <_XUnitTraitArg Condition="'$(RuntimeFlavor)' == 'CoreCLR'">-notrait category=native-mono -notrait category=mono -notrait category=workload</_XUnitTraitArg>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(ContinuousIntegrationBuild)' != 'true'">
@@ -160,6 +160,17 @@
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT' and '$(RuntimeFlavor)' == 'CoreCLR'" Include="export WASM_APP_BUILDER_TASKS_ASSEMBLY_PATH=$(WasmAppBuilderDir)WasmAppBuilder.dll" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT' and '$(RuntimeFlavor)' == 'CoreCLR'" Include="set WASM_APP_BUILDER_TASKS_ASSEMBLY_PATH=$(WasmAppBuilderDir)WasmAppBuilder.dll" />
+
+      <!-- CoreCLR WBT: BrowserWasmApp.CoreCLR.targets adds -I include paths for
+           <minipal/...> and <callhelpers.hpp> when compiling ManagedToNativeGenerator
+           output. On Helix, MINIPAL_INCLUDE_DIR / CORECLR_VM_WASM_INCLUDE_DIR are
+           provided by sendtohelix-browser.targets via HelixPreCommand. For local
+           runs, point at the in-repo dirs so the same import paths resolve. -->
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT' and '$(RuntimeFlavor)' == 'CoreCLR'" Include="export MINIPAL_INCLUDE_DIR=$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'native', 'minipal'))" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT' and '$(RuntimeFlavor)' == 'CoreCLR'" Include="set MINIPAL_INCLUDE_DIR=$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'native', 'minipal'))" />
+
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT' and '$(RuntimeFlavor)' == 'CoreCLR'" Include="export CORECLR_VM_WASM_INCLUDE_DIR=$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'coreclr', 'vm', 'wasm'))" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT' and '$(RuntimeFlavor)' == 'CoreCLR'" Include="set CORECLR_VM_WASM_INCLUDE_DIR=$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'coreclr', 'vm', 'wasm'))" />
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(_LocalEmsdkPathForTests)' != ''" Include="export EMSDK_PATH=$(_LocalEmsdkPathForTests)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(_LocalEmsdkPathForTests)' != ''" Include="set EMSDK_PATH=$(_LocalEmsdkPathForTests)" />

@@ -3340,6 +3340,7 @@ struct GenTreeIntConCommon : public GenTree
     inline ssize_t IconValue() const;
     inline void    SetIconValue(ssize_t val);
     inline INT64   IntegralValue() const;
+    UINT64         UnsignedIntegralValue() const;
     inline void    SetIntegralValue(int64_t value);
 
     template <typename T>
@@ -3539,7 +3540,7 @@ inline INT64 GenTreeIntConCommon::IntegralValue() const
 #ifdef TARGET_64BIT
     return LngValue();
 #else
-    return OperIs(GT_CNS_LNG) ? LngValue() : (INT64)IconValue();
+    return OperIs(GT_CNS_LNG) ? LngValue() : static_cast<INT64>(IconValue());
 #endif // TARGET_64BIT
 }
 
@@ -5156,7 +5157,7 @@ struct GenTreeCall final : public GenTree
 {
     CallArgs gtArgs;
 
-#ifdef DEBUG
+#if defined(DEBUG) || defined(TARGET_WASM)
     // Used to register callsites with the EE
     CORINFO_SIG_INFO* callSig;
 #endif
@@ -8133,7 +8134,7 @@ public:
 
     bool IsOnHeapAndContainsReferences()
     {
-        return ContainsReferences() && !Addr()->OperIs(GT_LCL_ADDR);
+        return ContainsReferences() && !Addr()->OperIs(GT_LCL_ADDR) && ((gtFlags & GTF_IND_TGT_NOT_HEAP) == 0);
     }
 
     bool IsZeroingGcPointersOnHeap()
@@ -10476,7 +10477,7 @@ inline bool GenTree::IsIntegralConstUnsignedPow2() const
 {
     if (IsIntegralConst())
     {
-        return isPow2((UINT64)AsIntConCommon()->IntegralValue());
+        return isPow2(AsIntConCommon()->UnsignedIntegralValue());
     }
 
     return false;
@@ -10494,9 +10495,7 @@ inline bool GenTree::IsIntegralConstAbsPow2() const
 {
     if (IsIntegralConst())
     {
-        INT64  svalue = AsIntConCommon()->IntegralValue();
-        size_t value  = (svalue == SSIZE_T_MIN) ? static_cast<size_t>(svalue) : static_cast<size_t>(abs(svalue));
-        return isPow2(value);
+        return isAbsPow2(AsIntConCommon()->IntegralValue());
     }
 
     return false;

@@ -476,9 +476,7 @@ enum class DoNotEnregisterReason
 #if !defined(TARGET_64BIT)
     LongParamField, // It is a decomposed field of a long parameter.
 #endif
-#ifdef JIT32_GCENCODER
     PinningRef,
-#endif
     LclAddrNode, // the local is accessed with LCL_ADDR_VAR/FLD.
     CastTakesAddr,
     StoreBlkSrc,           // the local is used as STORE_BLK source.
@@ -513,6 +511,9 @@ enum class AddressExposedReason
 
 class LclVarDsc
 {
+    template <typename TLiveness>
+    friend class Liveness;
+
 public:
     // note this only packs because var_types is a typedef of unsigned char
     var_types lvType : 5; // TYP_INT/LONG/FLOAT/DOUBLE/REF
@@ -542,12 +543,11 @@ private:
     bool m_addrExposed : 1; // The address of this variable is "exposed" -- passed as an argument, stored in a
                             // global location, etc.
                             // We cannot reason reliably about the value of the variable.
+    unsigned char lvLiveInOutOfHandler : 1; // The variable is live in or out of an exception handler.
 public:
     unsigned char lvDoNotEnregister : 1; // Do not enregister this variable.
     unsigned char lvFieldAccessed   : 1; // The var is a struct local, and a field of the variable is accessed.  Affects
                                          // struct promotion.
-    unsigned char lvLiveInOutOfHndlr : 1; // The variable is live in or out of an exception handler, and therefore must
-                                          // be on the stack (at least at those boundaries.)
 
     unsigned char lvInSsa       : 1; // The variable is in SSA form (set by SsaBuilder)
     unsigned char lvIsCSE       : 1; // Indicates if this LclVar is a CSE variable.
@@ -1157,6 +1157,12 @@ public:
         return IsEnregisterableType();
     }
 
+    bool IsLiveInOutOfHandler() const
+    {
+        assert(lvTracked);
+        return lvLiveInOutOfHandler != 0;
+    }
+
     //-----------------------------------------------------------------------------
     //  IsAlwaysAliveInMemory: Determines if this variable's value is always
     //     up-to-date on stack. This is possible if this is an EH-var or
@@ -1164,7 +1170,7 @@ public:
     //
     bool IsAlwaysAliveInMemory() const
     {
-        return lvLiveInOutOfHndlr || lvSpillAtSingleDef;
+        return IsLiveInOutOfHandler() || lvSpillAtSingleDef;
     }
 
     bool CanBeReplacedWithItsField(Compiler* comp) const;
@@ -3874,6 +3880,8 @@ public:
     bool gtGetIndNodeCost(GenTreeIndir* node, int* pCostEx, int* pCostSz);
     bool gtGetAddrNodeCost(GenTree* addr, var_types type, bool isVolatile, int* pCostEx, int* pCostSz);
 
+    bool IsEHVarARegCandidate(LclVarDsc* varDsc);
+
     // Returns true iff the secondNode can be swapped with firstNode.
     bool gtCanSwapOrder(GenTree* firstNode, GenTree* secondNode);
 
@@ -3942,6 +3950,25 @@ public:
     GenTree* gtFoldExpr(GenTree* tree);
     GenTree* gtFoldExprConst(GenTree* tree);
     GenTree* gtFoldDistributiveArithmetic(GenTree* tree);
+
+    GenTree* gtFoldExprUnary(GenTreeUnOp* tree);
+    GenTree* gtFoldExprUnaryConst(GenTreeUnOp* tree);
+    GenTree* gtFoldExprUnaryConstInt(GenTreeUnOp* tree, GenTreeIntCon* intCon);
+    GenTree* gtFoldExprUnaryConstLng(GenTreeUnOp* tree, GenTreeIntConCommon* intConCommon);
+    GenTree* gtFoldExprUnaryConstDbl(GenTreeUnOp* tree, GenTreeDblCon* dblCon);
+
+    GenTree* gtFoldExprBinary(GenTreeOp* tree);
+    GenTree* gtFoldExprBinaryConst(GenTreeOp* tree);
+    GenTree* gtFoldExprBinaryConstInt(GenTreeOp* tree, GenTreeIntCon* intCon1, GenTreeIntCon* intCon2);
+    GenTree* gtFoldExprBinaryConstLng(GenTreeOp* tree, GenTreeIntConCommon* intConCommon1, GenTreeIntConCommon* intConCommon2);
+    GenTree* gtFoldExprBinaryConstDbl(GenTreeOp* tree, GenTreeDblCon* dblCon1, GenTreeDblCon* dblCon2);
+
+    GenTree* gtBashTreeToConstInt(GenTree* tree, int32_t iconVal, FieldSeq* fieldSeq = nullptr);
+    GenTree* gtBashTreeToConstLng(GenTree* tree, int64_t lconVal, FieldSeq* fieldSeq = nullptr);
+    GenTree* gtBashTreeToConstDbl(GenTree* tree, double dconVal);
+
+    GenTree* gtFoldExprForOverflow(GenTree* tree);
+
     GenTree* gtFoldIndirConst(GenTreeIndir* indir);
     GenTree* gtFoldExprSpecial(GenTree* tree);
     GenTree* gtFoldExprSpecialFloating(GenTree* tree);
@@ -3965,7 +3992,6 @@ public:
         BR_REMOVE_BUT_NOT_NARROW,              // remove effects, return original source tree
         BR_DONT_REMOVE,                        // check if removal is possible, return copy source tree
         BR_DONT_REMOVE_WANT_TYPE_HANDLE,       // check if removal is possible, return type handle tree
-        BR_MAKE_LOCAL_COPY                     // revise box to copy to temp local and return local's address
     };
 
     GenTree* gtTryRemoveBoxUpstreamEffects(GenTree* tree, BoxRemovalOptions options = BR_REMOVE_AND_NARROW);
@@ -3999,9 +4025,7 @@ public:
     void gtDispLeaf(GenTree* tree, IndentStack* indentStack);
     void gtDispLocal(GenTreeLclVarCommon* tree, IndentStack* indentStack);
     void gtDispNodeName(GenTree* tree);
-#if FEATURE_MULTIREG_RET
     unsigned gtDispMultiRegCount(GenTree* tree);
-#endif
     void gtDispRegVal(GenTree* tree);
     void gtDispVN(GenTree* tree);
     void gtDispCommonEndLine(GenTree* tree);
@@ -4188,10 +4212,10 @@ public:
     bool lvaVarAddrExposed(unsigned varNum) const;
     void lvaSetVarAddrExposed(unsigned varNum DEBUGARG(AddressExposedReason reason));
     void lvaSetHiddenBufferStructArg(unsigned varNum);
-    void lvaSetVarLiveInOutOfHandler(unsigned varNum);
     bool lvaVarDoNotEnregister(unsigned varNum);
 
     void lvSetMinOptsDoNotEnreg();
+    void lvSetVarsDoNotEnreg();
 
     bool lvaEnregEHVars;
     bool lvaEnregMultiRegVars;
@@ -7126,6 +7150,8 @@ private:
     GenTree* fgOptimizeCast(GenTreeCast* cast);
     GenTree* fgOptimizeCastOnStore(GenTree* store);
     GenTree* fgOptimizeBitCast(GenTreeUnOp* bitCast);
+    GenTree* fgOptimizeRelationalComparison(GenTreeOp* cmp);
+    GenTree* fgOptimizeRelationalComparisonWithCasts(GenTreeOp* cmp);
     GenTree* fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp);
     GenTree* fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp);
     GenTree* fgOptimizeRelationalComparisonWithFullRangeConst(GenTreeOp* cmp);
@@ -7137,7 +7163,6 @@ private:
     GenTree* fgOptimizeHWIntrinsicAssociative(GenTreeHWIntrinsic* node);
 #endif // FEATURE_HW_INTRINSICS
     GenTree* fgOptimizeCommutativeArithmetic(GenTreeOp* tree);
-    GenTree* fgOptimizeRelationalComparisonWithCasts(GenTreeOp* cmp);
     GenTree* fgOptimizeAddition(GenTreeOp* add);
     GenTree* fgOptimizeMultiply(GenTreeOp* mul);
     GenTree* fgOptimizeBitwiseAnd(GenTreeOp* andOp);
@@ -7495,6 +7520,8 @@ public:
 
     bool optCanonicalizeExits(FlowGraphNaturalLoop* loop);
     bool optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit);
+
+    bool optCanonicalizeBackedges(FlowGraphNaturalLoop* loop);
 
     template <typename TFunc>
     bool optLoopComplexityExceeds(FlowGraphNaturalLoop* loop, unsigned limit, TFunc getTreeComplexity);
@@ -8195,13 +8222,10 @@ public:
         O2K_CONST_INT,
         O2K_CONST_DOUBLE,
 
-        O2K_CHECKED_BOUND_ADD_CNS, // "checkedBndVN + cns" where op2.vn holds the "checkedBndVN"
-                                   // and op2.iconVal holds the "cns".
-                                   // "Checked bound" alone doesn't mean anything,
-                                   // nor it implies that it's never negative.
+        O2K_VN_ADD_CNS, // op2 represents an arbitrary VN (op2.GetVN()) plus a constant (op2.GetCns()).
         O2K_ZEROOBJ,
         O2K_SUBRANGE,
-        O2K_CONST_VEC
+        O2K_CONST_VEC,
     };
 
     struct AssertionDsc
@@ -8260,7 +8284,7 @@ public:
         private:
             INDEBUG(const Compiler* m_compiler);
             optOp2Kind m_kind;
-            bool       m_checkedBoundIsNeverNegative; // only meaningful for O2K_CHECKED_BOUND_ADD_CNS kind
+            bool       m_isVNNeverNegative; // only meaningful for O2K_VN_ADD_CNS kind
             union
             {
                 uint16_t m_encodedIconFlags; // encoded icon gtFlags; only meaningful for O2K_CONST_INT.
@@ -8347,35 +8371,26 @@ public:
             ValueNum GetVN() const
             {
                 assert(!m_compiler->optLocalAssertionProp);
-                assert(KindIs(O2K_CONST_INT, O2K_CONST_DOUBLE, O2K_ZEROOBJ, O2K_CONST_VEC));
+                assert(KindIs(O2K_CONST_INT, O2K_CONST_DOUBLE, O2K_ZEROOBJ, O2K_CONST_VEC, O2K_VN_ADD_CNS));
                 assert(m_vn != ValueNumStore::NoVN);
                 return m_vn;
             }
 
-            // For "checkedBndVN + cns" form, return the "cns" part.
-            int GetCheckedBoundConstant() const
+            // For "vn + cns" form, return the "cns" part.
+            int GetCns() const
             {
                 assert(!m_compiler->optLocalAssertionProp);
-                assert(KindIs(O2K_CHECKED_BOUND_ADD_CNS));
+                assert(KindIs(O2K_VN_ADD_CNS));
                 assert(FitsIn<int>(m_icon.m_iconVal));
                 return (int)m_icon.m_iconVal;
             }
 
-            // For "checkedBndVN + cns" form, return the "checkedBndVN" part.
-            // We intentionally don't allow to use it via GetVN() to avoid confusion.
-            ValueNum GetCheckedBound() const
+            // For "vn + cns" form, true iff the JIT has proven the "vn" part to be non-negative.
+            bool IsVNNeverNegative() const
             {
                 assert(!m_compiler->optLocalAssertionProp);
-                assert(KindIs(O2K_CHECKED_BOUND_ADD_CNS));
-                assert(m_vn != ValueNumStore::NoVN);
-                return m_vn;
-            }
-
-            bool IsCheckedBoundNeverNegative() const
-            {
-                assert(!m_compiler->optLocalAssertionProp);
-                assert(KindIs(O2K_CHECKED_BOUND_ADD_CNS));
-                return m_checkedBoundIsNeverNegative;
+                assert(KindIs(O2K_VN_ADD_CNS));
+                return m_isVNNeverNegative;
             }
 
             optOp2Kind GetKind() const
@@ -8502,10 +8517,10 @@ public:
 
         bool IsBoundsCheckNoThrow() const
         {
-            // O1K_VN (idx) u< O2K_VN (len) where len is never negative.
+            // O1K_VN (idx) u< O2K_VN_ADD_CNS (len) where len is never negative.
             // Effectively, it's "idx >= 0 && idx < len"
-            return GetOp1().KindIs(O1K_VN) && KindIs(OAK_LT_UN) && GetOp2().KindIs(O2K_CHECKED_BOUND_ADD_CNS) &&
-                   (GetOp2().GetCheckedBoundConstant() == 0) && GetOp2().IsCheckedBoundNeverNegative();
+            return GetOp1().KindIs(O1K_VN) && KindIs(OAK_LT_UN) && GetOp2().KindIs(O2K_VN_ADD_CNS) &&
+                   (GetOp2().GetCns() == 0) && GetOp2().IsVNNeverNegative();
         }
 
         // Convert VNFunc to optAssertionKind
@@ -8687,10 +8702,9 @@ public:
                 case O2K_ZEROOBJ:
                     return true;
 
-                case O2K_CHECKED_BOUND_ADD_CNS:
-                    return GetOp2().GetCheckedBound() == that.GetOp2().GetCheckedBound() &&
-                           GetOp2().GetCheckedBoundConstant() == that.GetOp2().GetCheckedBoundConstant() &&
-                           GetOp2().IsCheckedBoundNeverNegative() == that.GetOp2().IsCheckedBoundNeverNegative();
+                case O2K_VN_ADD_CNS:
+                    return GetOp2().GetVN() == that.GetOp2().GetVN() && GetOp2().GetCns() == that.GetOp2().GetCns() &&
+                           GetOp2().IsVNNeverNegative() == that.GetOp2().IsVNNeverNegative();
 
                 case O2K_LCLVAR_COPY:
                     return GetOp2().GetLclNum() == that.GetOp2().GetLclNum();
@@ -8913,12 +8927,13 @@ public:
             dsc.m_assertionKind = OAK_LT_UN;
             dsc.m_op1.m_kind    = O1K_VN;
             dsc.m_op1.m_vn      = idxVN;
-            dsc.m_op2.m_kind    = O2K_CHECKED_BOUND_ADD_CNS;
+            dsc.m_op2.m_kind    = O2K_VN_ADD_CNS;
             dsc.m_op2.m_vn      = lenVN;
 
-            // Normally, "Checked bound" doesn't mean it's never negative, but in this particular case we know it is.
-            dsc.m_op2.m_checkedBoundIsNeverNegative = true;
-            dsc.m_op2.m_icon.m_iconVal              = 0;
+            // Normally, the VN of an O2K_VN_ADD_CNS assertion isn't proven non-negative, but
+            // in this particular case we know it is (it's a length).
+            dsc.m_op2.m_isVNNeverNegative = true;
+            dsc.m_op2.m_icon.m_iconVal    = 0;
             return dsc;
         }
 
@@ -8933,7 +8948,7 @@ public:
             dsc.m_assertionKind        = FromVNFunc(relop);
             dsc.m_op1.m_kind           = O1K_VN;
             dsc.m_op1.m_vn             = op1VN;
-            dsc.m_op2.m_kind           = O2K_CHECKED_BOUND_ADD_CNS;
+            dsc.m_op2.m_kind           = O2K_VN_ADD_CNS;
             dsc.m_op2.m_vn             = checkedBndVN;
             dsc.m_op2.m_icon.m_iconVal = cns;
             return dsc;
@@ -8955,6 +8970,26 @@ public:
             dsc.m_op2.m_kind           = O2K_CONST_INT;
             dsc.m_op2.m_vn             = cnsVN;
             dsc.m_op2.m_icon.m_iconVal = cns;
+            return dsc;
+        }
+
+        // Create "op1VN <relop> op2VN" assertion where both operands are arbitrary value numbers
+        // (used by global assertion prop for VN-to-VN signed comparisons of int32 and smaller).
+        static AssertionDsc CreateRelopVN(const Compiler* comp, VNFunc relop, ValueNum op1VN, ValueNum op2VN)
+        {
+            assert(!comp->optLocalAssertionProp);
+            assert(op1VN != ValueNumStore::NoVN);
+            assert(op2VN != ValueNumStore::NoVN);
+            assert(op1VN != op2VN);
+
+            AssertionDsc dsc              = CreateEmptyAssertion(comp);
+            dsc.m_assertionKind           = FromVNFunc(relop);
+            dsc.m_op1.m_kind              = O1K_VN;
+            dsc.m_op1.m_vn                = op1VN;
+            dsc.m_op2.m_kind              = O2K_VN_ADD_CNS;
+            dsc.m_op2.m_vn                = op2VN;
+            dsc.m_op2.m_icon.m_iconVal    = 0; // TODO-CQ: consider decomposing VN to VN* + CNS if beneficial.
+            dsc.m_op2.m_isVNNeverNegative = false;
             return dsc;
         }
     };
@@ -9026,7 +9061,7 @@ public:
     AssertionIndex optFindComplementary(AssertionIndex assertionIndex);
     void           optMapComplementary(AssertionIndex assertionIndex, AssertionIndex index);
 
-    ValueNum optConservativeNormalVN(GenTree* tree);
+    ValueNum optConservativeNormalVN(const GenTree* tree);
 
     ssize_t optCastConstantSmall(ssize_t iconVal, var_types smallType);
 
@@ -9041,9 +9076,9 @@ public:
 
     // Used for respective assertion propagations.
     AssertionIndex optAssertionIsSubrange(GenTree* tree, IntegralRange range, ASSERT_VALARG_TP assertions);
-    AssertionIndex optAssertionIsSubtype(GenTree* tree, GenTree* methodTableArg, ASSERT_VALARG_TP assertions);
-    bool           optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions, int budget = 10);
-    bool           optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions);
+    bool optAssertionVNIsSubtype(ValueNum objVN, ValueNum castToVN, ASSERT_VALARG_TP assertions, int budget = 10);
+    bool optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions, int budget = 10);
+    bool optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions);
 
     AssertionIndex optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP assertions, GenTree* op1, GenTree* op2);
     AssertionIndex optLocalAssertionIsEqualOrNotEqual(
@@ -9084,6 +9119,7 @@ public:
     GenTree* optNonNullAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCall* call);
     bool     optNonNullAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* indir);
     bool     optWriteBarrierAssertionProp_StoreInd(ASSERT_VALARG_TP assertions, GenTreeStoreInd* indir);
+    bool     optWriteBarrierAssertionProp_StoreBlk(ASSERT_VALARG_TP assertions, GenTreeBlk* store);
 
     enum class AssertVisit
     {
@@ -9780,6 +9816,7 @@ public:
     void unwindSaveRegPair(regNumber reg1, regNumber reg2, int offset);           // stp reg1, reg2, [sp, #offset]
     void unwindSaveRegPairPreindexed(regNumber reg1, regNumber reg2, int offset); // stp reg1, reg2, [sp, #offset]!
     void unwindSaveNext();                                                        // unwind code: save_next
+    void unwindPacSignLR();                                                       // unwind code: pac_sign_lr
     void unwindReturn(regNumber reg);                                             // ret lr
 #endif                                                                            // defined(TARGET_ARM64)
 
@@ -11116,6 +11153,13 @@ public:
                    jitFlags->IsSet(JitFlags::JIT_FLAG_REVERSE_PINVOKE);
         }
 
+        // true if the JIT should use helpers for interface dispatch
+        // instead of virtual stub dispatch
+        bool ShouldUseDispatchHelpers()
+        {
+            return jitFlags->IsSet(JitFlags::JIT_FLAG_USE_DISPATCH_HELPERS);
+        }
+
         // true if we should use insert the REVERSE_PINVOKE_{ENTER,EXIT} helpers in the method
         // prolog/epilog
         bool IsReversePInvoke()
@@ -11980,9 +12024,7 @@ public:
         unsigned m_depField;
         unsigned m_noRegVars;
         unsigned m_wasmGcVisibility;
-#ifdef JIT32_GCENCODER
         unsigned m_PinningRef;
-#endif // JIT32_GCENCODER
 #if !defined(TARGET_64BIT)
         unsigned m_longParamField;
 #endif // !TARGET_64BIT

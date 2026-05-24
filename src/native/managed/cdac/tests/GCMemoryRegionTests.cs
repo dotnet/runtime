@@ -61,7 +61,7 @@ public class GCMemoryRegionTests
     {
         var result = new Dictionary<string, Target.FieldInfo>();
         foreach (var (name, offset, type) in fields)
-            result[name] = new Target.FieldInfo { Offset = offset, Type = type };
+            result[name] = new Target.FieldInfo { Offset = offset, TypeName = type.ToString() };
         return result;
     }
 
