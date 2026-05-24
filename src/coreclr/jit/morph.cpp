@@ -8786,8 +8786,7 @@ GenTree* Compiler::fgOptimizeRelationalComparison(GenTreeOp* cmp)
     // Canonicalize
     // '(A & pow2) == pow2' -> '(A & pow2) != 0'
     // '(A & pow2) != pow2' -> '(A & pow2) == 0'
-    if (cmp->OperIs(GT_EQ, GT_NE) && cmp->gtGetOp1()->OperIs(GT_AND) &&
-        cmp->gtGetOp1()->gtGetOp2()->IsIntegralConst() && cmp->gtGetOp2()->IsIntegralConstUnsignedPow2())
+    if (cmp->OperIs(GT_EQ, GT_NE) && cmp->gtGetOp1()->OperIs(GT_AND) && cmp->gtGetOp2()->IsIntegralConstUnsignedPow2())
     {
         if (GenTree::Compare(cmp->gtGetOp1()->gtGetOp2(), cmp->gtGetOp2()))
         {
