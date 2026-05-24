@@ -27466,7 +27466,6 @@ GenTree* Compiler::gtNewSimdConcatNode(var_types type,
     assert(varTypeIsArithmetic(simdBaseType));
 
     uint32_t elementCount = getSIMDVectorLength(simdSize, simdBaseType);
-    uint32_t lowerCount   = (elementCount + 1) / 2;
 
 #if defined(TARGET_ARM64)
     if (simdSize == 8)
@@ -27494,105 +27493,37 @@ GenTree* Compiler::gtNewSimdConcatNode(var_types type,
 
     if (elementCount == 1)
     {
-        GenTree* result    = op1;
+        GenTree* result = op1;
+
+        if (!gtTreeHasSideEffects(op2, GTF_ALL_EFFECT))
+        {
+            return result;
+        }
+
+        if (!gtTreeHasSideEffects(result, GTF_ALL_EFFECT))
+        {
+            return gtWrapWithSideEffects(result, op2, GTF_ALL_EFFECT);
+        }
+
         GenTree* resultDup = fgMakeMultiUse(&result);
         return gtNewOperNode(GT_COMMA, type, result, gtWrapWithSideEffects(resultDup, op2, GTF_ALL_EFFECT));
     }
 
 #if defined(TARGET_XARCH)
     if (simdSize == 16)
-#elif defined(TARGET_ARM64)
-    if (simdSize == 8)
-#else
-#error Unsupported platform
-#endif // !TARGET_XARCH && !TARGET_ARM64
     {
-#if defined(TARGET_XARCH)
-        if ((simdBaseType == TYP_INT) || (simdBaseType == TYP_UINT) || (simdBaseType == TYP_FLOAT))
-        {
-            // return Sse.Shuffle(op1.AsSingle(), op2.AsSingle(), immediate).As<T>();
+        // return Sse.Shuffle(op1.AsSingle(), op2.AsSingle(), immediate).As<T>();
 
-            uint32_t leftStart  = leftUpper ? elementCount - lowerCount : 0;
-            uint32_t rightStart = rightUpper ? elementCount - lowerCount : 0;
-            unsigned immediate  = 0;
+        uint32_t leftStart  = leftUpper ? 2 : 0;
+        uint32_t rightStart = rightUpper ? 2 : 0;
+        unsigned immediate  = leftStart | ((leftStart + 1) << 2) | (rightStart << 4) | ((rightStart + 1) << 6);
 
-            for (uint32_t index = 0; index < elementCount; index++)
-            {
-                uint32_t shuffleIndex = (index < lowerCount) ? leftStart + index : rightStart + index - lowerCount;
-                immediate |= shuffleIndex << (index * 2);
-            }
-
-            return gtNewSimdHWIntrinsicNode(type, op1, op2, gtNewIconNode(immediate), NI_X86Base_Shuffle, TYP_FLOAT,
-                                            simdSize);
-        }
-#endif // TARGET_XARCH
-
-        // var tmp = op1.ToVectorUnsafe().WithUpper(op2);
-        // return Shuffle(tmp, indices).GetLower();
-
-        unsigned       wideSimdSize = simdSize * 2;
-        var_types      wideType     = getSIMDTypeForSize(wideSimdSize);
-        GenTreeVecCon* shuffle      = gtNewVconNode(wideType);
-        uint32_t       wideCount    = getSIMDVectorLength(wideSimdSize, simdBaseType);
-        uint32_t       leftStart    = leftUpper ? elementCount - lowerCount : 0;
-        uint32_t       rightStart   = rightUpper ? elementCount - lowerCount : 0;
-
-        for (uint32_t index = 0; index < wideCount; index++)
-        {
-            uint32_t shuffleIndex = 0;
-
-            if (index < elementCount)
-            {
-                shuffleIndex =
-                    (index < lowerCount) ? leftStart + index : elementCount + rightStart + index - lowerCount;
-            }
-
-            switch (simdBaseType)
-            {
-                case TYP_BYTE:
-                case TYP_UBYTE:
-                    shuffle->gtSimdVal.u8[index] = static_cast<uint8_t>(shuffleIndex);
-                    break;
-
-                case TYP_SHORT:
-                case TYP_USHORT:
-                    shuffle->gtSimdVal.u16[index] = static_cast<uint16_t>(shuffleIndex);
-                    break;
-
-                case TYP_INT:
-                case TYP_UINT:
-                case TYP_FLOAT:
-                    shuffle->gtSimdVal.u32[index] = shuffleIndex;
-                    break;
-
-                case TYP_LONG:
-                case TYP_ULONG:
-                case TYP_DOUBLE:
-                    shuffle->gtSimdVal.u64[index] = shuffleIndex;
-                    break;
-
-                default:
-                    unreached();
-            }
-        }
-
-        assert(IsValidForShuffle(shuffle, wideSimdSize, simdBaseType, nullptr, false));
-
-#if defined(TARGET_XARCH)
-        GenTree* result =
-            gtNewSimdHWIntrinsicNode(wideType, op1, NI_Vector128_ToVector256Unsafe, simdBaseType, simdSize);
-#elif defined(TARGET_ARM64)
-        GenTree* result =
-            gtNewSimdHWIntrinsicNode(wideType, op1, NI_Vector64_ToVector128Unsafe, simdBaseType, simdSize);
-#else
+        return gtNewSimdHWIntrinsicNode(type, op1, op2, gtNewIconNode(immediate), NI_X86Base_Shuffle, TYP_FLOAT,
+                                        simdSize);
+    }
+#elif !defined(TARGET_ARM64)
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
-
-        result = gtNewSimdWithUpperNode(wideType, result, op2, simdBaseType, wideSimdSize);
-        result = gtNewSimdShuffleNode(wideType, result, shuffle, simdBaseType, wideSimdSize, false);
-
-        return gtNewSimdGetLowerNode(type, result, simdBaseType, wideSimdSize);
-    }
 
     var_types halfType = getSIMDTypeForSize(simdSize / 2);
     GenTree*  upper;
@@ -27660,7 +27591,18 @@ GenTree* Compiler::gtNewSimdZipNode(
 
     if (simdCount == 1)
     {
-        GenTree* result    = op1;
+        GenTree* result = op1;
+
+        if (!gtTreeHasSideEffects(op2, GTF_ALL_EFFECT))
+        {
+            return result;
+        }
+
+        if (!gtTreeHasSideEffects(result, GTF_ALL_EFFECT))
+        {
+            return gtWrapWithSideEffects(result, op2, GTF_ALL_EFFECT);
+        }
+
         GenTree* resultDup = fgMakeMultiUse(&result);
         return gtNewOperNode(GT_COMMA, type, result, gtWrapWithSideEffects(resultDup, op2, GTF_ALL_EFFECT));
     }
@@ -27805,7 +27747,18 @@ GenTree* Compiler::gtNewSimdUnzipNode(
             return gtWrapWithSideEffects(result, op1, GTF_ALL_EFFECT);
         }
 
-        GenTree* result    = op1;
+        GenTree* result = op1;
+
+        if (!gtTreeHasSideEffects(op2, GTF_ALL_EFFECT))
+        {
+            return result;
+        }
+
+        if (!gtTreeHasSideEffects(result, GTF_ALL_EFFECT))
+        {
+            return gtWrapWithSideEffects(result, op2, GTF_ALL_EFFECT);
+        }
+
         GenTree* resultDup = fgMakeMultiUse(&result);
         return gtNewOperNode(GT_COMMA, type, result, gtWrapWithSideEffects(resultDup, op2, GTF_ALL_EFFECT));
     }

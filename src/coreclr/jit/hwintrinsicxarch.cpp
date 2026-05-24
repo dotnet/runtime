@@ -4255,17 +4255,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-            if (simdSize == 16)
-            {
-                bool supportsX86BaseShuffle =
-                    (simdBaseType == TYP_INT) || (simdBaseType == TYP_UINT) || (simdBaseType == TYP_FLOAT);
-
-                if (!supportsX86BaseShuffle && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-                {
-                    break;
-                }
-            }
-
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
