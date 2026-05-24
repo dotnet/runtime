@@ -27421,28 +27421,6 @@ GenTree* Compiler::gtNewSimdCreateAlternatingSequenceNode(
         return vecCon;
     }
 
-#if defined(TARGET_XARCH)
-    if (varTypeIsInt(simdBaseType) && compOpportunisticallyDependsOn(InstructionSet_AVX2))
-    {
-        // var pattern = Vector128.CreateScalarUnsafe(op1).WithElement(1, op2);
-        // return Broadcast(pattern.AsInt64()).As<T>();
-
-        GenTree* pattern = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, simdBaseType, 16);
-        pattern          = gtNewSimdWithElementNode(TYP_SIMD16, pattern, gtNewIconNode(1), op2, simdBaseType, 16);
-
-        if (simdSize == 64)
-        {
-            return gtNewSimdHWIntrinsicNode(type, pattern, NI_AVX512_BroadcastPairScalarToVector512, simdBaseType,
-                                            simdSize);
-        }
-
-        var_types      broadcastBaseType = (simdBaseType == TYP_INT) ? TYP_LONG : TYP_ULONG;
-        NamedIntrinsic broadcast =
-            (simdSize == 16) ? NI_AVX2_BroadcastScalarToVector128 : NI_AVX2_BroadcastScalarToVector256;
-        return gtNewSimdHWIntrinsicNode(type, pattern, broadcast, broadcastBaseType, simdSize);
-    }
-#endif // TARGET_XARCH
-
     GenTree* even = gtNewSimdCreateBroadcastNode(type, op1, simdBaseType, simdSize);
     GenTree* odd  = gtNewSimdCreateBroadcastNode(type, op2, simdBaseType, simdSize);
 
@@ -27511,28 +27489,6 @@ GenTree* Compiler::gtNewSimdConcatNode(var_types type,
             return gtNewSimdHWIntrinsicNode(type, result, gtNewIconNode(1), op2, gtNewIconNode(rightUpper ? 1 : 0),
                                             NI_AdvSimd_Arm64_InsertSelectedScalar, concatBaseType, simdSize);
         }
-    }
-
-    if (simdSize == 16)
-    {
-        // var result = op1.AsUInt64();
-        // if (leftUpper)
-        // {
-        //     result = result.WithElement(0, result.GetElement(1));
-        // }
-        // return result.WithElement(1, op2.AsUInt64().GetElement(rightUpper ? 1 : 0)).As<T>();
-
-        GenTree* result = op1;
-
-        if (leftUpper)
-        {
-            GenTree* resultDup = fgMakeMultiUse(&result);
-            result             = gtNewSimdHWIntrinsicNode(type, result, gtNewIconNode(0), resultDup, gtNewIconNode(1),
-                                                          NI_AdvSimd_Arm64_InsertSelectedScalar, TYP_ULONG, simdSize);
-        }
-
-        return gtNewSimdHWIntrinsicNode(type, result, gtNewIconNode(1), op2, gtNewIconNode(rightUpper ? 1 : 0),
-                                        NI_AdvSimd_Arm64_InsertSelectedScalar, TYP_ULONG, simdSize);
     }
 #endif // TARGET_ARM64
 
@@ -27638,15 +27594,30 @@ GenTree* Compiler::gtNewSimdConcatNode(var_types type,
         return gtNewSimdGetLowerNode(type, result, simdBaseType, wideSimdSize);
     }
 
-    // var lower = leftUpper ? op1.GetUpper() : op1.GetLower();
-    // var upper = rightUpper ? op2.GetUpper() : op2.GetLower();
-    // return lower.ToVectorUnsafe().WithUpper(upper);
-
     var_types halfType = getSIMDTypeForSize(simdSize / 2);
-    GenTree*  lower    = leftUpper ? gtNewSimdGetUpperNode(halfType, op1, simdBaseType, simdSize)
-                                   : gtNewSimdGetLowerNode(halfType, op1, simdBaseType, simdSize);
-    GenTree*  upper    = rightUpper ? gtNewSimdGetUpperNode(halfType, op2, simdBaseType, simdSize)
-                                    : gtNewSimdGetLowerNode(halfType, op2, simdBaseType, simdSize);
+    GenTree*  upper;
+
+    if (!leftUpper)
+    {
+        // return op1.WithUpper(rightUpper ? op2.GetUpper() : op2.GetLower());
+
+        upper = rightUpper ? gtNewSimdGetUpperNode(halfType, op2, simdBaseType, simdSize)
+                           : gtNewSimdGetLowerNode(halfType, op2, simdBaseType, simdSize);
+        return gtNewSimdWithUpperNode(type, op1, upper, simdBaseType, simdSize);
+    }
+
+    GenTree* lower = gtNewSimdGetUpperNode(halfType, op1, simdBaseType, simdSize);
+
+    if (rightUpper)
+    {
+        // return op2.WithLower(op1.GetUpper());
+
+        return gtNewSimdWithLowerNode(type, op2, lower, simdBaseType, simdSize);
+    }
+
+    // return op1.GetUpper().ToVectorUnsafe().WithUpper(op2.GetLower());
+
+    upper = gtNewSimdGetLowerNode(halfType, op2, simdBaseType, simdSize);
 
 #if defined(TARGET_XARCH)
     GenTree* result =
@@ -27977,37 +27948,6 @@ GenTree* Compiler::gtNewSimdUnzipNode(
         }
 
         return gtNewSimdHWIntrinsicNode(type, op1, shuffle, op2, intrinsic, simdBaseType, simdSize);
-    }
-
-    if ((simdSize == 32) && ((simdBaseType == TYP_INT) || (simdBaseType == TYP_UINT)) &&
-        compOpportunisticallyDependsOn(InstructionSet_AVX2))
-    {
-        // var left = Shuffle(op1, indices);
-        // var right = Shuffle(op2, indices);
-        // return left.GetLower().ToVector256Unsafe().WithUpper(right.GetLower());
-
-        GenTreeVecCon* shuffle = gtNewVconNode(type);
-        uint32_t       start   = odd ? 1 : 0;
-
-        for (uint32_t index = 0; index < simdCount; index++)
-        {
-            shuffle->gtSimdVal.u32[index] = start + (2 * (index % (simdCount / 2)));
-        }
-
-        assert(IsValidForShuffle(shuffle, simdSize, simdBaseType, nullptr, false));
-
-        GenTree* leftShuffle  = shuffle;
-        GenTree* rightShuffle = gtCloneExpr(shuffle);
-        GenTree* left         = gtNewSimdShuffleNode(type, op1, leftShuffle, simdBaseType, simdSize, false);
-        GenTree* right        = gtNewSimdShuffleNode(type, op2, rightShuffle, simdBaseType, simdSize, false);
-
-        var_types halfType = getSIMDTypeForSize(simdSize / 2);
-        GenTree*  lower    = gtNewSimdGetLowerNode(halfType, left, simdBaseType, simdSize);
-        GenTree*  upper    = gtNewSimdGetLowerNode(halfType, right, simdBaseType, simdSize);
-
-        GenTree* result =
-            gtNewSimdHWIntrinsicNode(type, lower, NI_Vector128_ToVector256Unsafe, simdBaseType, simdSize / 2);
-        return gtNewSimdWithUpperNode(type, result, upper, simdBaseType, simdSize);
     }
 
     // var lower = Unzip(op1.GetLower(), op1.GetUpper());
