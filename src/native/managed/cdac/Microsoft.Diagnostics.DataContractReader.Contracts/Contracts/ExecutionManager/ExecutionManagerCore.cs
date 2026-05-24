@@ -418,7 +418,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
 
         uint relOffset = (uint)eman.GetRelativeOffset(codeInfoHandle).Value;
         StackWalkHelpers.X86.GCInfo gcInfo = new(_target, gcInfoAddress, gcInfoVersion, relOffset);
-        return gcInfo.Header.VarArgs ? 0u : gcInfo.Header.ArgCount;
+        return gcInfo.Header.VarArgs ? 0u : gcInfo.Header.ArgCount * (uint)_target.PointerSize;
     }
 
     TargetPointer IExecutionManager.FindReadyToRunModule(TargetPointer address)
