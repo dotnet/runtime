@@ -371,19 +371,17 @@ bool Compiler::optExtractTestIncr(BasicBlock* cond, GenTree** ppTest, GenTree** 
 
     // Walk backward from the test statement looking for a candidate IV increment
     // of the form 'v = v op c'. Skip any intervening statements that are not IV
-    // updates. The AnalyzeIteration caller enforces (via VisitDefs) that the
-    // picked IV has no extraneous defs in the loop, and MatchLimit rejects the
-    // candidate if the test does not actually use the picked iterVar -- so it
-    // is safe to pick the first IV-shaped update we find, even if there are
-    // intervening unrelated stores.
+    // updates.
     //
     Statement* incrStmt  = nullptr;
+    unsigned   iterVar   = BAD_VAR_NUM;
     Statement* firstStmt = cond->firstStmt();
     if (testStmt != firstStmt)
     {
         for (Statement* s = testStmt->GetPrevStmt();; s = s->GetPrevStmt())
         {
-            if (optIsLoopIncrTree(s->GetRootNode()) != BAD_VAR_NUM)
+            iterVar = optIsLoopIncrTree(s->GetRootNode());
+            if (iterVar != BAD_VAR_NUM)
             {
                 incrStmt = s;
                 break;
@@ -401,6 +399,23 @@ bool Compiler::optExtractTestIncr(BasicBlock* cond, GenTree** ppTest, GenTree** 
     }
 
     assert(testStmt != incrStmt);
+
+    // Statements strictly between the increment and the test execute with the
+    // iterator already advanced, before the exit test runs. To preserve the
+    // AnalyzeIteration invariant that no loop-body IR observes the post-increment
+    // value, reject the candidate if any such statement references iterVar.
+    //
+    for (Statement* s = incrStmt->GetNextStmt(); s != testStmt; s = s->GetNextStmt())
+    {
+        assert(s != nullptr);
+        for (GenTreeLclVarCommon* lcl : s->LocalsTreeList())
+        {
+            if (lcl->GetLclNum() == iterVar)
+            {
+                return false;
+            }
+        }
+    }
 
     *ppTest = testStmt->GetRootNode();
     *ppIncr = incrStmt->GetRootNode();

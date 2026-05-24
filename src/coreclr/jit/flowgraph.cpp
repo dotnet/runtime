@@ -5566,19 +5566,30 @@ GenTreeLclVarCommon* FlowGraphNaturalLoop::FindDef(unsigned lclNum)
 // the loop.
 //
 // Parameters:
-//   info - [out] Loop information
+//   info                 - [out] Loop information
+//   allowMissingBaseCase - If true, succeed even when we cannot prove that the
+//                          loop invariant holds on entry, provided the limit
+//                          form is one we know how to materialize at runtime.
+//                          The caller is then responsible for emitting a
+//                          runtime zero-trip guard when
+//                          info->NeedsZeroTripGuard is set on return.
+//                          Defaults to false; existing callers retain the
+//                          stronger guarantees described below.
 //
 // Returns:
 //   True if the structure was analyzed and we can make guarantees about it;
 //   otherwise false.
 //
 // Remarks:
-//   On a true return, the function guarantees that the loop invariant is true
-//   and maintained at all points within the loop, except possibly right after
-//   the update of the iterator variable (NaturalLoopIterInfo::IterTree). The
-//   function guarantees that the test (NaturalLoopIterInfo::TestTree) occurs
-//   immediately after the update, so no IR in the loop is executed without the
-//   loop invariant being true, except for the test.
+//   On a true return with allowMissingBaseCase == false (or with the flag set
+//   but info->NeedsZeroTripGuard == false), the function guarantees that the
+//   loop invariant is true and maintained at all points within the loop,
+//   except possibly right after the update of the iterator variable
+//   (NaturalLoopIterInfo::IterTree). optExtractTestIncr permits the IV update
+//   to be separated from the loop test by other statements, but it rejects
+//   any candidate where an intervening statement references the iterator
+//   variable, so no IR in the loop is executed observing the post-update
+//   value of the iterator except the test itself.
 //
 //   The loop invariant is defined as the expression obtained by
 //   [info->IterVar] [info->TestOper()] [info->Limit()]. Note that
@@ -5598,6 +5609,15 @@ GenTreeLclVarCommon* FlowGraphNaturalLoop::FindDef(unsigned lclNum)
 //
 //   In some cases we also know the initial value on entry to the loop; see
 //   ::HasConstInit and ::ConstInitValue.
+//
+//   When allowMissingBaseCase is true and the function would otherwise fail
+//   because the loop is not provably entered (no suitable preheader BBJ_COND
+//   guard and no constant init/limit pair that proves base case), the function
+//   may instead succeed with info->NeedsZeroTripGuard set. In that mode the
+//   above invariant only holds conditionally: it is the caller's obligation
+//   to insert a runtime test equivalent to [IterVar TestOper() Limit] on the
+//   path that reaches the analyzed loop body. Loop cloning uses this to emit
+//   the guard as an extra cloning condition on the fast-path version.
 //
 bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info, bool allowMissingBaseCase)
 {
