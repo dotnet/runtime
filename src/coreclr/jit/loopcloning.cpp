@@ -1227,6 +1227,25 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
         return false;
     }
 
+    // If the loop limit is an array length, compute the underlying ArrIndex
+    // and queue the deref check once up front. Both the optional zero-trip
+    // guard below and the regular limit conditions further down reuse this
+    // single ArrIndex to avoid duplicating the deref entry and allocation.
+    //
+    ArrIndex* limitArrIndex = nullptr;
+    if (iterInfo->HasArrayLengthLimit)
+    {
+        limitArrIndex = new (getAllocator(CMK_LoopClone)) ArrIndex(getAllocator(CMK_LoopClone));
+        if (!iterInfo->ArrLenLimit(this, limitArrIndex))
+        {
+            JITDUMP("> ArrLen not matching\n");
+            return false;
+        }
+
+        LC_Array array(LC_Array::Jagged, limitArrIndex, LC_Array::None);
+        context->EnsureArrayDerefs(loop->GetIndex())->Push(array);
+    }
+
     // If AnalyzeIteration could not prove the loop body executes at least once,
     // emit an explicit runtime zero-trip guard as one of the cloning conditions.
     // The fast path is then only entered when "init TestOper limit" holds.
@@ -1280,17 +1299,8 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
         }
         else if (iterInfo->HasArrayLengthLimit)
         {
-            ArrIndex* index = new (getAllocator(CMK_LoopClone)) ArrIndex(getAllocator(CMK_LoopClone));
-            if (!iterInfo->ArrLenLimit(this, index))
-            {
-                JITDUMP("> NeedsZeroTripGuard: ArrLen not matching\n");
-                return false;
-            }
-            limitIdent = LC_Ident::CreateArrAccess(LC_Array(LC_Array::Jagged, index, LC_Array::ArrLen));
-
-            // The array must be dereferenceable before evaluating the guard.
-            LC_Array array(LC_Array::Jagged, index, LC_Array::None);
-            context->EnsureArrayDerefs(loop->GetIndex())->Push(array);
+            assert(limitArrIndex != nullptr);
+            limitIdent = LC_Ident::CreateArrAccess(LC_Array(LC_Array::Jagged, limitArrIndex, LC_Array::ArrLen));
         }
         else
         {
@@ -1390,17 +1400,8 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
     }
     else if (iterInfo->HasArrayLengthLimit)
     {
-        ArrIndex* index = new (getAllocator(CMK_LoopClone)) ArrIndex(getAllocator(CMK_LoopClone));
-        if (!iterInfo->ArrLenLimit(this, index))
-        {
-            JITDUMP("> ArrLen not matching\n");
-            return false;
-        }
-        ident = LC_Ident::CreateArrAccess(LC_Array(LC_Array::Jagged, index, LC_Array::ArrLen));
-
-        // Ensure that this array must be dereference-able, before executing the actual condition.
-        LC_Array array(LC_Array::Jagged, index, LC_Array::None);
-        context->EnsureArrayDerefs(loop->GetIndex())->Push(array);
+        assert(limitArrIndex != nullptr);
+        ident = LC_Ident::CreateArrAccess(LC_Array(LC_Array::Jagged, limitArrIndex, LC_Array::ArrLen));
     }
     else
     {
