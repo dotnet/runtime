@@ -10942,8 +10942,7 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithCasts(GenTreeOp* cmp)
 {
     assert(cmp->OperIsCmpCompare());
     assert(cmp->gtGetOp1()->OperIs(GT_CAST) || cmp->gtGetOp2()->OperIs(GT_CAST));
-    assert(genActualType(cmp->gtGetOp1()) == genActualType(cmp->gtGetOp2()) ||
-           (cmp->OperIs(GT_EQ, GT_NE) && varTypeIsI(cmp->gtGetOp1()) && varTypeIsI(cmp->gtGetOp2())));
+    assert(genActualType(cmp->gtGetOp1()) == genActualType(cmp->gtGetOp2()));
 
     GenTree* op1 = cmp->gtGetOp1();
     GenTree* op2 = cmp->gtGetOp2();
