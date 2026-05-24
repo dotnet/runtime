@@ -1390,7 +1390,7 @@ namespace System.Runtime.Intrinsics
         {
             Unsafe.SkipInit(out Vector64<T> result);
 
-            if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
+            if (Scalar<T>.IsFloatingPoint)
             {
                 for (int index = 0; index < Vector64<T>.Count; index++)
                 {
@@ -1631,17 +1631,7 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="Vector.Reverse{T}(Vector{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<T> Reverse<T>(Vector64<T> vector)
-        {
-            Unsafe.SkipInit(out Vector64<T> result);
-
-            for (int index = 0; index < Vector64<T>.Count; index++)
-            {
-                result.SetElementUnsafe(index, vector.GetElementUnsafe(Vector64<T>.Count - 1 - index));
-            }
-
-            return result;
-        }
+        public static Vector64<T> Reverse<T>(Vector64<T> vector) => ShuffleFallback(vector, CreateSequence(Vector64<T>.Count - 1, -1));
 
         internal static Vector64<T> DegreesToRadians<T>(Vector64<T> degrees)
             where T : ITrigonometricFunctions<T>

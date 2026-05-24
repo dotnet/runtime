@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -1582,7 +1583,7 @@ namespace System.Runtime.Intrinsics
         {
             Unsafe.SkipInit(out Vector128<T> result);
 
-            if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
+            if (Scalar<T>.IsFloatingPoint)
             {
                 for (int index = 0; index < Vector128<T>.Count; index++)
                 {
