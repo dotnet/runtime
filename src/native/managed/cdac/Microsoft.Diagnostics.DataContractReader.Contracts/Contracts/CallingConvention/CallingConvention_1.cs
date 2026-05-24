@@ -25,7 +25,7 @@ internal sealed class CallingConvention_1 : ICallingConvention
         _target = target;
     }
 
-    public IEnumerable<CallerStackGCRef> EnumerateCallerStackRefs(MethodDescHandle methodDesc)
+    public IEnumerable<ArgumentLocation> EnumerateArguments(MethodDescHandle methodDesc)
     {
         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
         IRuntimeInfo runtimeInfo = _target.Contracts.RuntimeInfo;
@@ -34,10 +34,6 @@ internal sealed class CallingConvention_1 : ICallingConvention
 
         if (methodSig.Header.CallingConvention is SignatureCallingConvention.VarArgs)
         {
-            // TODO: VarArgs support - need to read VASigCookie from target memory
-            // to get the actual argument types at the call site. The ArgIterator
-            // supports this via IsVarArg/GetVASigCookieOffset but we need the
-            // cookie data to know the variable argument types.
             throw new NotImplementedException("VarArgs support not implemented");
         }
 
@@ -53,7 +49,6 @@ internal sealed class CallingConvention_1 : ICallingConvention
         {
         }
 
-        // Build ITypeHandle[] for parameters
         ITypeHandle[] parameterTypes = new ITypeHandle[methodSig.ParameterTypes.Length];
         for (int i = 0; i < parameterTypes.Length; i++)
         {
@@ -85,41 +80,41 @@ internal sealed class CallingConvention_1 : ICallingConvention
             extraObjectFirstArg: false,
             isWindows: isWindows);
 
-        // Report "this" pointer
         if (hasThis)
         {
             TargetPointer methodTablePtr = rts.GetMethodTable(methodDesc);
             TypeHandle owningType = rts.GetTypeHandle(methodTablePtr);
-            bool isValueTypeThis = rts.IsValueType(owningType);
+            bool isValueTypeThis = rts.IsValueType(owningType) && !rts.IsUnboxingStub(methodDesc);
 
-            yield return new CallerStackGCRef
+            yield return new ArgumentLocation
             {
                 Offset = transitionBlock.ThisOffset,
-                IsInterior = isValueTypeThis,
+                ElementType = isValueTypeThis ? CdacCorElementType.ValueType : CdacCorElementType.Class,
+                TypeHandle = owningType,
                 IsThis = true,
+                IsValueTypeThis = isValueTypeThis,
             };
         }
 
-        // Report generic instantiation arg
         if (argit.HasParamType)
         {
-            yield return new CallerStackGCRef
+            yield return new ArgumentLocation
             {
                 Offset = argit.GetParamTypeArgOffset(),
+                ElementType = CdacCorElementType.I,
                 IsParamType = true,
             };
         }
 
-        // Report async continuation arg (it's a GC reference)
         if (argit.HasAsyncContinuation)
         {
-            yield return new CallerStackGCRef
+            yield return new ArgumentLocation
             {
                 Offset = argit.GetAsyncContinuationArgOffset(),
+                ElementType = CdacCorElementType.Object,
             };
         }
 
-        // Iterate arguments
         int argIndex = 0;
         int argOffset;
         while ((argOffset = argit.GetNextOffset()) != TransitionBlock.InvalidOffset)
@@ -132,51 +127,16 @@ internal sealed class CallingConvention_1 : ICallingConvention
                 if (argOffset == TransitionBlock.StructInRegsOffset)
                     throw new NotImplementedException("SystemV AMD64 struct-in-registers is not yet supported by the cDAC.");
 
-                switch (elemType)
+                bool passedByRef = elemType == CdacCorElementType.ValueType
+                    && transitionBlock.IsArgPassedByRef(parameterTypes[argIndex]);
+
+                yield return new ArgumentLocation
                 {
-                    case CdacCorElementType.Class:
-                    case CdacCorElementType.String:
-                    case CdacCorElementType.Object:
-                    case CdacCorElementType.Array:
-                    case CdacCorElementType.SzArray:
-                        yield return new CallerStackGCRef
-                        {
-                            Offset = argOffset,
-                        };
-                        break;
-
-                    case CdacCorElementType.Byref:
-                        yield return new CallerStackGCRef
-                        {
-                            Offset = argOffset,
-                            IsInterior = true,
-                        };
-                        break;
-
-                    case CdacCorElementType.ValueType:
-                        if (transitionBlock.IsArgPassedByRef(parameterTypes[argIndex]))
-                        {
-                            yield return new CallerStackGCRef
-                            {
-                                Offset = argOffset,
-                                IsInterior = true,
-                            };
-                        }
-                        else
-                        {
-                            // Walk embedded GC references in the struct using GCDesc.
-                            // GCDesc series offsets are relative to the start of the boxed object
-                            // (MethodTable pointer). For an unboxed value type on the stack,
-                            // subtract one pointer size to get the field offset within the struct.
-                            // See native ReportPointersFromValueType in siginfo.cpp.
-                            foreach (CallerStackGCRef gcRef in EnumerateValueTypeGCRefs(
-                                rts, methodSig.ParameterTypes[argIndex], argOffset))
-                            {
-                                yield return gcRef;
-                            }
-                        }
-                        break;
-                }
+                    Offset = argOffset,
+                    ElementType = elemType,
+                    TypeHandle = methodSig.ParameterTypes[argIndex],
+                    IsPassedByRef = passedByRef,
+                };
             }
             argIndex++;
         }
@@ -242,37 +202,5 @@ internal sealed class CallingConvention_1 : ICallingConvention
         bool isApplePlatform = os == RuntimeInfoOperatingSystem.Apple;
 
         return TransitionBlock.FromTarget(targetArch, isWindows, isApplePlatform, isArmel: false);
-    }
-
-    /// <summary>
-    /// Enumerate GC references within an unboxed value type using CGCDesc series.
-    /// This is the cDAC equivalent of the native ReportPointersFromValueType (siginfo.cpp).
-    /// GCDesc series offsets are relative to the MethodTable pointer in the boxed layout.
-    /// For unboxed value types, we subtract one pointer size to get the field offset.
-    /// </summary>
-    internal IEnumerable<CallerStackGCRef> EnumerateValueTypeGCRefs(
-        IRuntimeTypeSystem rts, TypeHandle typeHandle, int argOffset)
-    {
-        if (!rts.ContainsGCPointers(typeHandle))
-            yield break;
-
-        int pointerSize = _target.PointerSize;
-
-        foreach ((uint seriesOffset, uint seriesSize) in rts.GetGCDescSeries(typeHandle))
-        {
-            // Convert from boxed object offset to unboxed value type offset.
-            // GCDesc offset includes the MethodTable pointer; subtract it for unboxed layout.
-            int fieldOffset = (int)seriesOffset - pointerSize;
-            int runBytes = (int)seriesSize;
-
-            // Each pointer-sized slot in the run is an object reference
-            for (int off = 0; off < runBytes; off += pointerSize)
-            {
-                yield return new CallerStackGCRef
-                {
-                    Offset = argOffset + fieldOffset + off,
-                };
-            }
-        }
     }
 }
