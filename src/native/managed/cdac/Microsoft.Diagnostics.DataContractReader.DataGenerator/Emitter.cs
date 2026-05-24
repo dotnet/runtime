@@ -78,11 +78,8 @@ internal static class Emitter
             sb.AppendLine();
         }
 
-        if (model.ImplementsIData)
-        {
-            EmitConstructor(sb, model, needsDescriptor, hasWritableFields);
-            EmitCreate(sb, model);
-        }
+        EmitConstructor(sb, model, needsDescriptor, hasWritableFields);
+        EmitCreate(sb, model);
 
         EmitWriteBackMethods(sb, model);
 

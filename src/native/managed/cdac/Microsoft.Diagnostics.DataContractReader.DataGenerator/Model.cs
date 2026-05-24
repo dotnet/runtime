@@ -72,5 +72,4 @@ internal sealed record CdacTypeModel(
     bool IsPartial,
     EquatableArray<string> Names,
     bool HasTypeHandle,
-    bool ImplementsIData,
     EquatableArray<MemberModel> Members) : IEquatable<CdacTypeModel>;

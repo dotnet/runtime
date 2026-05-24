@@ -39,9 +39,6 @@ internal static class Parser
                 .ToList());
         bool hasTypeHandle = GetNamedBool(cdacAttr, "HasTypeHandle");
 
-        bool implementsIData = classSymbol.AllInterfaces.Any(i =>
-            i.OriginalDefinition.ToDisplayString() == "Microsoft.Diagnostics.DataContractReader.Data.IData<TSelf>");
-
         List<MemberModel> members = new();
         foreach (ISymbol member in classSymbol.GetMembers())
         {
@@ -88,7 +85,6 @@ internal static class Parser
             IsPartial: isPartial,
             Names: names,
             HasTypeHandle: hasTypeHandle,
-            ImplementsIData: implementsIData,
             Members: EquatableArray<MemberModel>.FromEnumerable(members));
     }
     private static bool GetNamedBool(AttributeData attr, string name)
