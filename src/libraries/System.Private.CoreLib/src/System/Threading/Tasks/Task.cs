@@ -3627,6 +3627,16 @@ namespace System.Threading.Tasks
                     LogFinishCompletionNotification();
                     return;
 
+                // Runtime async continuation is very cheap to check for since
+                // it is sealed. Its semantics cannot be described by
+                // ITaskCompletionAction because it should be inlined when
+                // there is only one, but run in parallel when there are
+                // multiple.
+                case RuntimeAsyncTaskContinuation tc:
+                    tc.Execute();
+                    LogFinishCompletionNotification();
+                    return;
+
                 // Handle the single Action case.
                 case Action action:
                     AwaitTaskContinuation.RunOrScheduleAction(action, canInlineContinuations);
@@ -3706,6 +3716,10 @@ namespace System.Threading.Tasks
                                     AwaitTaskContinuation.RunOrScheduleAction(action, allowInlining: false);
                                     break;
 
+                                case RuntimeAsyncTaskContinuation tc:
+                                    ThreadPool.UnsafeQueueUserWorkItemInternal(tc, preferLocal: true);
+                                    break;
+
                                 default:
                                     Debug.Assert(currentContinuation is TaskContinuation);
                                     ((TaskContinuation)currentContinuation).Run(this, canInlineContinuationTask: false);
@@ -3737,6 +3751,10 @@ namespace System.Threading.Tasks
 
                     case Action action:
                         AwaitTaskContinuation.RunOrScheduleAction(action, canInlineContinuations);
+                        break;
+
+                    case RuntimeAsyncTaskContinuation tc:
+                        tc.Execute();
                         break;
 
                     case TaskContinuation tc:
@@ -4765,7 +4783,7 @@ namespace System.Threading.Tasks
 
         // Record a continuation task or action.
         // Return true if and only if we successfully queued a continuation.
-        private bool AddTaskContinuation(object tc, bool addBeforeOthers)
+        internal bool AddTaskContinuation(object tc, bool addBeforeOthers)
         {
             Debug.Assert(tc != null);
 
