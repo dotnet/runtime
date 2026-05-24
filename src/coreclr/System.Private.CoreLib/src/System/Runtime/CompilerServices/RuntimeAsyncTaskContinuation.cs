@@ -48,7 +48,7 @@ namespace System.Runtime.CompilerServices
             if ((Flags & ContinuationFlags.ContinueOnThreadPool) != 0)
             {
                 Flags &= ~ContinuationFlags.ContinueOnThreadPool;
-                SynchronizationContext? ctx = Thread.CurrentThreadAssumedInitialized._synchronizationContext;
+                SynchronizationContext? ctx = Thread.CurrentThread._synchronizationContext;
                 if (ctx == null || ctx.GetType() == typeof(SynchronizationContext))
                 {
                     TaskScheduler? sched = TaskScheduler.InternalCurrent;
@@ -71,7 +71,7 @@ namespace System.Runtime.CompilerServices
                 Debug.Assert(continuationContext is SynchronizationContext { });
                 SynchronizationContext continuationSyncCtx = (SynchronizationContext)continuationContext;
 
-                if (canInline && continuationSyncCtx == Thread.CurrentThreadAssumedInitialized._synchronizationContext)
+                if (canInline && continuationSyncCtx == Thread.CurrentThread._synchronizationContext)
                 {
                     return false;
                 }
