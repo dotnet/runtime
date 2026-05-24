@@ -475,12 +475,14 @@ public class MethodTableTests
                 MockMethodTable continuationBaseMethodTable = rtsBuilder.ContinuationMethodTable;
                 rtsBuilder.SetContinuationSingletonEEClass(0);
 
+                MockEEClass continuationInstanceEEClass = rtsBuilder.AddEEClass("ContinuationWithMetadata");
                 MockMethodTable continuationInstanceMethodTable = rtsBuilder.AddMethodTable("ContinuationInstance");
                 continuationInstanceMethodTable.BaseSize = targetTestHelpers.ObjectBaseSize;
                 continuationInstanceMethodTable.ParentMethodTable = continuationBaseMethodTable.Address;
                 continuationInstanceMethodTable.NumVirtuals = 3;
                 continuationInstanceMethodTablePtr = continuationInstanceMethodTable.Address;
-                continuationInstanceMethodTable.EEClassOrCanonMT = rtsBuilder.ContinuationEEClass.Address;
+                continuationInstanceEEClass.MethodTable = continuationInstanceMethodTable.Address;
+                continuationInstanceMethodTable.EEClassOrCanonMT = continuationInstanceEEClass.Address;
             });
 
         IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
@@ -512,6 +514,7 @@ public class MethodTableTests
                 continuationInstanceMethodTable.BaseSize = targetTestHelpers.ObjectBaseSize;
                 continuationInstanceMethodTable.ParentMethodTable = continuationBaseMethodTable.Address;
                 continuationInstanceMethodTable.NumVirtuals = 3;
+                continuationInstanceMethodTable.MTFlags = (uint)MethodTableFlags_1.WFLAGS_LOW.GenericsMask_TypicalInstantiation;
                 continuationInstanceMethodTablePtr = continuationInstanceMethodTable.Address;
                 continuationInstanceMethodTable.EEClassOrCanonMT = sharedCanonMT.Address | 1;
             });
