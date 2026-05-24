@@ -93,4 +93,15 @@
 
   <Import Project="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\LibraryImportGenerator\Microsoft.Interop.LibraryImportGenerator.props" />
 
+  <!-- PlatformDocAnalyzer: Enforce documentation conventions for platform-specific libraries -->
+  <ItemGroup Condition="'$(IsSourceProject)' == 'true' and '$(MSBuildProjectExtension)' == '.csproj'">
+    <ProjectReference Include="$(RepositoryEngineeringDir)analyzers\PlatformDocAnalyzer\PlatformDocAnalyzer.csproj"
+                      ReferenceOutputAssembly="false"
+                      OutputItemType="Analyzer"
+                      SetConfiguration="Configuration=$(LibrariesConfiguration)" />
+  </ItemGroup>
+
+  <Import Project="$(RepositoryEngineeringDir)analyzers\PlatformDocAnalyzer\PlatformDocAnalyzer.props"
+          Condition="'$(IsSourceProject)' == 'true'" />
+
 </Project>

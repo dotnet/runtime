@@ -2386,24 +2386,58 @@ AssertionIndex Compiler::optAssertionIsSubrange(GenTree* tree, IntegralRange ran
     return NO_ASSERTION_INDEX;
 }
 
-/**********************************************************************************
- *
- * Given a "tree" that is usually arg1 of a isinst/cast kind of GT_CALL (a class
- * handle), and "methodTableArg" which is a const int (a class handle), then search
- * if there is an assertion in "assertions", that asserts the equality of the two
- * class handles and then returns the index of the assertion. If one such assertion
- * could not be found, then it returns NO_ASSERTION_INDEX.
- *
- */
-AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTableArg, ASSERT_VALARG_TP assertions)
+//------------------------------------------------------------------------
+// optAssertionVNIsSubtype: see if a VN is known to be a subtype of castTo
+//    using the given assertion set, VN-level type info, and assertions that
+//    reach via PHI definitions.
+//
+// Arguments:
+//   objVN      - VN to check
+//   castToVN   - VN representing the type handle being cast to.
+//   assertions - set of live assertions
+//   budget     - limits the depth of recursion when chasing assertions across
+//                phi-def reaching VNs.
+//
+// Return Value:
+//   True if the VN is known to be a subtype of castTo.
+//
+bool Compiler::optAssertionVNIsSubtype(ValueNum objVN, ValueNum castToVN, ASSERT_VALARG_TP assertions, int budget)
 {
+    if ((budget <= 0) || (objVN == ValueNumStore::NoVN))
+    {
+        return false;
+    }
+
+    bool isExact;
+    bool isNonNull;
+
+    CORINFO_CLASS_HANDLE castTo;
+    if (!vnStore->IsVNTypeHandle(castToVN, &castTo))
+    {
+        return false;
+    }
+    assert(castTo != NO_CLASS_HANDLE);
+
+    // First, try the VN's version of gtGetClassHandle over the vn itself, e.g. vn being
+    // Jit_NewObj(MyClass) while we're trying to prove "Jit_NewObj(MyClass) is MyClass".
+    CORINFO_CLASS_HANDLE castFromVN = vnStore->GetObjectType(objVN, &isExact, &isNonNull);
+    if ((castFromVN != NO_CLASS_HANDLE) &&
+        (info.compCompHnd->compareTypesForCast(castFromVN, castTo) == TypeCompareState::Must))
+    {
+        return true;
+    }
+
+    // Now look through assertions directly on the VN.
+    // We're looking for "vn is (exactly/subtype) cls" assertions that can help us prove the cast.
     BitVecOps::Iter iter(apTraits, assertions);
     unsigned        bvIndex = 0;
     while (iter.NextElem(&bvIndex))
     {
         AssertionIndex const index        = GetAssertionIndex(bvIndex);
         const AssertionDsc&  curAssertion = optGetAssertion(index);
-        if (!curAssertion.KindIs(OAK_EQUAL) || !curAssertion.GetOp1().KindIs(O1K_SUBTYPE, O1K_EXACT_TYPE))
+
+        if (!curAssertion.KindIs(OAK_EQUAL) || !curAssertion.GetOp1().KindIs(O1K_SUBTYPE, O1K_EXACT_TYPE) ||
+            (curAssertion.GetOp1().GetVN() != objVN))
         {
             // TODO-CQ: We might benefit from OAK_NOT_EQUAL assertion as well, e.g.:
             // if (obj is not MyClass) // obj is known to be never of MyClass class
@@ -2414,27 +2448,28 @@ AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTab
             continue;
         }
 
-        if ((curAssertion.GetOp1().GetVN() != vnStore->VNConservativeNormalValue(tree->gtVNPair) ||
-             !curAssertion.GetOp2().KindIs(O2K_CONST_INT)))
+        // Extract CORINFO_CLASS_HANDLE from curAssertion.GetOp2()
+        CORINFO_CLASS_HANDLE cls;
+        if (!vnStore->IsVNTypeHandle(curAssertion.GetOp2().GetVN(), &cls))
         {
             continue;
         }
 
-        ssize_t      methodTableVal = 0;
-        GenTreeFlags iconFlags      = GTF_EMPTY;
-        if (!optIsTreeKnownIntValue(!optLocalAssertionProp, methodTableArg, &methodTableVal, &iconFlags))
+        // Now we have "objVN is (exactly/subtype) cls" assertion.
+        // We want to see if this implies "objVN is (exactly/subtype) castTo".
+        if (info.compCompHnd->compareTypesForCast(cls, castTo) == TypeCompareState::Must)
         {
-            continue;
-        }
-
-        if (curAssertion.GetOp2().GetIntConstant() == methodTableVal)
-        {
-            // TODO-CQ: if they don't match, we might still be able to prove that the result is foldable via
-            // compareTypesForCast.
-            return index;
+            // The assertion implies the cast is always successful.
+            return true;
         }
     }
-    return NO_ASSERTION_INDEX;
+
+    // For PHI-defs, walk reaching assertions/VNs and recursively check.
+    return optVisitReachingAssertions(objVN,
+                                      [this, castToVN, budget](ValueNum reachingVN, ASSERT_TP reachingAssertions) {
+        return optAssertionVNIsSubtype(reachingVN, castToVN, reachingAssertions, budget - 1) ? AssertVisit::Continue
+                                                                                             : AssertVisit::Abort;
+    }) == AssertVisit::Continue;
 }
 
 //------------------------------------------------------------------------------
@@ -5361,11 +5396,12 @@ GenTree* Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCal
             CallArg* objCallArg    = call->gtArgs.GetArgByIndex(1);
             GenTree* castToArg     = castToCallArg->GetNode();
             GenTree* objArg        = objCallArg->GetNode();
+            ValueNum objVN         = optConservativeNormalVN(objArg);
+            ValueNum castToVN      = optConservativeNormalVN(castToArg);
 
-            const unsigned index = optAssertionIsSubtype(objArg, castToArg, assertions);
-            if (index != NO_ASSERTION_INDEX)
+            if (optAssertionVNIsSubtype(objVN, castToVN, assertions))
             {
-                JITDUMP("\nDid VN based subtype prop for index #%02u in " FMT_BB ":\n", index, compCurBB->bbNum);
+                JITDUMP("\nDid VN based subtype prop in " FMT_BB ":\n", compCurBB->bbNum);
                 DISPTREE(call);
 
                 // if castObjArg is not simple, we replace the arg with a temp assignment and

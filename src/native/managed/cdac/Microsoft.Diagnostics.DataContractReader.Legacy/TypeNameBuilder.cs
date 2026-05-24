@@ -284,7 +284,7 @@ public struct TypeNameBuilder
                 Contracts.ModuleHandle moduleHandle = tnb.Target.Contracts.Loader.GetModuleHandleFromModulePtr(typeSystemContract.GetModule(typeHandle));
                 if (MetadataTokens.EntityHandle((int)typeDefToken).IsNil)
                 {
-                    if (typeSystemContract.IsContinuation(typeHandle))
+                    if (typeSystemContract.IsContinuationWithoutMetadata(typeHandle))
                     {
                         AppendContinuationName(ref tnb, typeSystemContract, typeHandle);
                     }
