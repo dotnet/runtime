@@ -1989,6 +1989,12 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return IsWrapperStub(methodDesc);
     }
 
+    public bool IsUnboxingStub(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+        return methodDesc.IsUnboxingStub;
+    }
+
     private sealed class NonValidatedMethodTableQueries : MethodValidation.IMethodTableQueries
     {
         private readonly RuntimeTypeSystem_1 _rts;
