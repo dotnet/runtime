@@ -7054,7 +7054,7 @@ void Compiler::impSetupAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned pref
 }
 
 //------------------------------------------------------------------------
-// impAddAsyncArgsToInlinedCall:
+// impInheritAsyncContextsFromInliner:
 //   Inherit async args from inlining call as part of a new async call.
 //
 // Arguments:
@@ -7098,9 +7098,9 @@ void Compiler::impInheritAsyncContextsFromInliner(GenTreeCall* call)
 }
 
 //------------------------------------------------------------------------
-// impInsertAsyncContinuationForLdvirtftnCall:
-//   Insert the async continuation argument for a call the EE asked to be
-//   performed via ldvirtftn.
+// impInsertAsyncArgsForLdvirtftnCall:
+//   Insert async arguments for a call the EE asked to be performed via
+//   ldvirtftn.
 //
 // Arguments:
 //    call - The call
