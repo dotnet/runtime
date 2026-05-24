@@ -16,6 +16,8 @@ using MockRTS = MockDescriptors.RuntimeTypeSystem;
 
 public class MethodTableTests
 {
+    private const uint GenericInstMethodTableFlags = 0x00000010; // GenericsMask_GenericInst
+
     internal static Dictionary<DataType, Target.TypeInfo> CreateContractTypes(MockRTS rtsBuilder)
         => new Dictionary<DataType, Target.TypeInfo>
         {
@@ -192,9 +194,8 @@ public class MethodTableTests
                 genericDefinitionEEClass.MethodTable = genericDefinitionMethodTable.Address;
                 genericDefinitionMethodTable.EEClassOrCanonMT = genericDefinitionEEClass.Address;
 
-                const uint ginst_mtflags = 0x00000010; // TODO: GenericsMask_GenericInst
                 MockMethodTable genericInstanceMethodTable = rtsBuilder.AddMethodTable("MethodTable GenericInstance");
-                genericInstanceMethodTable.MTFlags = ginst_mtflags;
+                genericInstanceMethodTable.MTFlags = GenericInstMethodTableFlags;
                 genericInstanceMethodTable.BaseSize = targetTestHelpers.ObjectBaseSize;
                 genericInstanceMethodTable.ParentMethodTable = genericDefinitionMethodTablePtr;
                 genericInstanceMethodTable.NumVirtuals = numVirtuals;
@@ -474,10 +475,9 @@ public class MethodTableTests
                 TargetTestHelpers targetTestHelpers = rtsBuilder.Builder.TargetTestHelpers;
                 MockMethodTable continuationBaseMethodTable = rtsBuilder.ContinuationMethodTable;
                 rtsBuilder.SetContinuationSingletonEEClass(0);
-                const uint genericInstMtFlags = 0x00000010; // GenericsMask_GenericInst
 
                 MockMethodTable continuationInstanceMethodTable = rtsBuilder.AddMethodTable("ContinuationInstance");
-                continuationInstanceMethodTable.MTFlags = genericInstMtFlags;
+                continuationInstanceMethodTable.MTFlags = GenericInstMethodTableFlags;
                 continuationInstanceMethodTable.BaseSize = targetTestHelpers.ObjectBaseSize;
                 continuationInstanceMethodTable.ParentMethodTable = continuationBaseMethodTable.Address;
                 continuationInstanceMethodTable.NumVirtuals = 3;
@@ -501,7 +501,6 @@ public class MethodTableTests
             {
                 TargetTestHelpers targetTestHelpers = rtsBuilder.Builder.TargetTestHelpers;
                 MockMethodTable continuationBaseMethodTable = rtsBuilder.ContinuationMethodTable;
-                const uint genericInstMtFlags = 0x00000010; // GenericsMask_GenericInst
 
                 MockEEClass sharedEEClass = rtsBuilder.AddEEClass("SubContinuation");
                 MockMethodTable sharedCanonMT = rtsBuilder.AddMethodTable("SubContinuationCanon");
@@ -512,7 +511,7 @@ public class MethodTableTests
                 sharedCanonMT.EEClassOrCanonMT = sharedEEClass.Address;
 
                 MockMethodTable continuationInstanceMethodTable = rtsBuilder.AddMethodTable("ContinuationInstance");
-                continuationInstanceMethodTable.MTFlags = genericInstMtFlags;
+                continuationInstanceMethodTable.MTFlags = GenericInstMethodTableFlags;
                 continuationInstanceMethodTable.BaseSize = targetTestHelpers.ObjectBaseSize;
                 continuationInstanceMethodTable.ParentMethodTable = continuationBaseMethodTable.Address;
                 continuationInstanceMethodTable.NumVirtuals = 3;
@@ -618,9 +617,8 @@ public class MethodTableTests
                 canonMT.EEClassOrCanonMT = eeClass.Address;
                 canonicalMethodTablePtr = canonMT.Address;
 
-                const uint ginst_mtflags = 0x00000010; // GenericsMask_GenericInst
                 MockMethodTable nonCanonMT = rtsBuilder.AddMethodTable("GenericInstance");
-                nonCanonMT.MTFlags = ginst_mtflags;
+                nonCanonMT.MTFlags = GenericInstMethodTableFlags;
                 nonCanonMT.BaseSize = targetTestHelpers.ObjectBaseSize;
                 nonCanonMT.ParentMethodTable = canonMT.Address;
                 nonCanonMT.NumVirtuals = 3;
