@@ -400,6 +400,17 @@ bool Compiler::optExtractTestIncr(BasicBlock* cond, GenTree** ppTest, GenTree** 
 
     assert(testStmt != incrStmt);
 
+    // The intervening-statement read check below operates on the iterator
+    // local directly, so it would not be meaningful for an address-exposed
+    // iterator (indirect references would be invisible). AnalyzeIteration
+    // ultimately rejects address-exposed IVs anyway, so bail here and let it
+    // try the next candidate.
+    //
+    if (lvaGetDesc(iterVar)->IsAddressExposed())
+    {
+        return false;
+    }
+
     // Statements strictly between the increment and the test execute with the
     // iterator already advanced, before the exit test runs. To preserve the
     // AnalyzeIteration invariant that no loop-body IR observes the post-increment
