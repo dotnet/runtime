@@ -28,7 +28,6 @@ public class Async2ValueTaskSource
             // - in optimized (as in JitOptimizeAwait=1, which is the default) case
             //   we do not distinguish "false" config vs. having default/no scheduling context,
             //   and "None" is passed in either case.
-            System.Console.WriteLine(sUseContext.trace);
             Assert.True("UseSchedulingContext" == sUseContext.trace || "None" == sUseContext.trace);
             AwaitConfigTrue(sUseContext).GetAwaiter().GetResult();
             // Either value is ok. See comment above.
