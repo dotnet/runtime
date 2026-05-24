@@ -474,15 +474,15 @@ public class MethodTableTests
                 TargetTestHelpers targetTestHelpers = rtsBuilder.Builder.TargetTestHelpers;
                 MockMethodTable continuationBaseMethodTable = rtsBuilder.ContinuationMethodTable;
                 rtsBuilder.SetContinuationSingletonEEClass(0);
+                const uint genericInstMtFlags = 0x00000010; // GenericsMask_GenericInst
 
-                MockEEClass continuationInstanceEEClass = rtsBuilder.AddEEClass("ContinuationWithMetadata");
                 MockMethodTable continuationInstanceMethodTable = rtsBuilder.AddMethodTable("ContinuationInstance");
+                continuationInstanceMethodTable.MTFlags = genericInstMtFlags;
                 continuationInstanceMethodTable.BaseSize = targetTestHelpers.ObjectBaseSize;
                 continuationInstanceMethodTable.ParentMethodTable = continuationBaseMethodTable.Address;
                 continuationInstanceMethodTable.NumVirtuals = 3;
                 continuationInstanceMethodTablePtr = continuationInstanceMethodTable.Address;
-                continuationInstanceEEClass.MethodTable = continuationInstanceMethodTable.Address;
-                continuationInstanceMethodTable.EEClassOrCanonMT = continuationInstanceEEClass.Address;
+                continuationInstanceMethodTable.EEClassOrCanonMT = rtsBuilder.ContinuationEEClass.Address;
             });
 
         IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
@@ -501,6 +501,7 @@ public class MethodTableTests
             {
                 TargetTestHelpers targetTestHelpers = rtsBuilder.Builder.TargetTestHelpers;
                 MockMethodTable continuationBaseMethodTable = rtsBuilder.ContinuationMethodTable;
+                const uint genericInstMtFlags = 0x00000010; // GenericsMask_GenericInst
 
                 MockEEClass sharedEEClass = rtsBuilder.AddEEClass("SubContinuation");
                 MockMethodTable sharedCanonMT = rtsBuilder.AddMethodTable("SubContinuationCanon");
@@ -511,10 +512,10 @@ public class MethodTableTests
                 sharedCanonMT.EEClassOrCanonMT = sharedEEClass.Address;
 
                 MockMethodTable continuationInstanceMethodTable = rtsBuilder.AddMethodTable("ContinuationInstance");
+                continuationInstanceMethodTable.MTFlags = genericInstMtFlags;
                 continuationInstanceMethodTable.BaseSize = targetTestHelpers.ObjectBaseSize;
                 continuationInstanceMethodTable.ParentMethodTable = continuationBaseMethodTable.Address;
                 continuationInstanceMethodTable.NumVirtuals = 3;
-                continuationInstanceMethodTable.MTFlags = (uint)MethodTableFlags_1.WFLAGS_LOW.GenericsMask_TypicalInstantiation;
                 continuationInstanceMethodTablePtr = continuationInstanceMethodTable.Address;
                 continuationInstanceMethodTable.EEClassOrCanonMT = sharedCanonMT.Address | 1;
             });
