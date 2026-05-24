@@ -15116,15 +15116,15 @@ GenTree* Compiler::gtFoldExprBinary(GenTreeOp* tree)
             // Too heavy for tier0, so only do when opts are enabled
             return gtFoldExprSpecial(tree);
         }
-        else if (tree->OperIs(GT_AND, GT_OR, GT_XOR, GT_ADD, GT_SUB))
-        {
-            return gtFoldDistributiveArithmetic(tree);
-        }
     }
     else if (tree->OperIsCompare())
     {
         // comparisons of two local variables can sometimes be folded
         return gtFoldExprCompare(tree);
+    }
+    else if (tree->OperIs(GT_AND, GT_OR, GT_XOR, GT_ADD, GT_SUB))
+    {
+        return gtFoldDistributiveArithmetic(tree);
     }
 
     return tree;
@@ -18404,13 +18404,8 @@ GenTree* Compiler::gtFoldExprForOverflow(GenTree* tree)
 GenTree* Compiler::gtFoldDistributiveArithmetic(GenTree* tree)
 {
     assert(tree->OperIs(GT_AND, GT_OR, GT_XOR, GT_ADD, GT_SUB));
-    
-    if (opts.OptimizationDisabled())
-    {
-        return tree;
-    }
 
-    if (tree->gtOverflowEx() || !varTypeIsIntegralOrI(tree))
+    if (opts.OptimizationDisabled() || tree->gtOverflowEx() || !varTypeIsIntegralOrI(tree))
     {
         return tree;
     }
@@ -18419,9 +18414,6 @@ GenTree* Compiler::gtFoldDistributiveArithmetic(GenTree* tree)
     {
         return tree;
     }
-
-    GenTree* op1 = tree->gtGetOp1();
-    GenTree* op2 = tree->gtGetOp2();
 
     auto isLeftDistributive = [](genTreeOps op1, genTreeOps op2) {
         // op1 is left distributive over op2 iff:
@@ -18442,21 +18434,27 @@ GenTree* Compiler::gtFoldDistributiveArithmetic(GenTree* tree)
         }
     };
 
+    GenTree* op1 = tree->gtGetOp1();
+    GenTree* op2 = tree->gtGetOp2();
+
     if ((op1->OperGet() == op2->OperGet()) && isLeftDistributive(op1->OperGet(), tree->OperGet()))
     {
         if (op1->gtGetOp1()->OperIsAnyLocal() && op2->gtGetOp1()->OperIsAnyLocal())
         {
             if (GenTree::Compare(op1->gtGetOp1(), op2->gtGetOp1()))
             {
-                tree->AsOp()->gtOp1 = op1->gtGetOp1();
-                tree->AsOp()->gtOp2 =
+                GenTree* newOp1 = op1->gtGetOp1();
+                GenTree* newOp2 =
                     gtFoldExpr(gtNewOperNode(tree->OperGet(), tree->TypeGet(), op1->gtGetOp2(), op2->gtGetOp2()));
-                tree->SetOper(op1->OperGet(), GenTree::PRESERVE_VN);
+                GenTree* result = gtNewOperNode(op1->OperGet(), tree->TypeGet(), newOp1, newOp2);
+                result->SetVNsFromNode(tree);
 
                 if (fgGlobalMorph)
                 {
-                    fgMorphTreeDone(tree->gtGetOp2());
+                    fgMorphTreeDone(result);
                 }
+
+                return result;
             }
         }
     }
