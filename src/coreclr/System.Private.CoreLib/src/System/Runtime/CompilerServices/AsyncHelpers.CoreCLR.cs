@@ -744,6 +744,7 @@ namespace System.Runtime.CompilerServices
                         // method. This implements the context transparent
                         // forwarding and makes these wrappers minimal cost.
                         Debug.Assert(taskCont.Task != null);
+                        taskCont.RuntimeAsyncTask = this;
                         if (!taskCont.Task.AddTaskContinuation(taskCont, addBeforeOthers: false))
                         {
                             ThreadPool.UnsafeQueueUserWorkItemInternal(taskCont, preferLocal: true);
