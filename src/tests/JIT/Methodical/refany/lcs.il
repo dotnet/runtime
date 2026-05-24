@@ -212,7 +212,7 @@
 		ldarg.1
 		refanytype
 		call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle )
-		ceq		
+		ceq
 
 		ldarg.2
 		refanytype
