@@ -2895,6 +2895,8 @@ void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMas
     }
     else
     {
+        emitCurIG->igFlags &= ~IGF_EXTEND;
+
         // This is not an EXTEND group.
         assert((emitCurIG->igFlags & IGF_EXTEND) == 0);
 
