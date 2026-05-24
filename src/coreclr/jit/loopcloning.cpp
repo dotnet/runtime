@@ -1232,20 +1232,31 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
     // The fast path is then only entered when "init TestOper limit" holds.
     if (iterInfo->NeedsZeroTripGuard)
     {
-        // For the first cut we only handle const init (the only init form
-        // AnalyzeIteration currently extracts).
-        if (!iterInfo->HasConstInit)
+        LC_Ident initIdent;
+        if (iterInfo->HasConstInit)
         {
-            JITDUMP("> NeedsZeroTripGuard but init is not constant\n");
-            return false;
+            if (iterInfo->ConstInitValue < 0)
+            {
+                JITDUMP("> NeedsZeroTripGuard: init %d is invalid\n", iterInfo->ConstInitValue);
+                return false;
+            }
+            initIdent = LC_Ident::CreateConst(static_cast<unsigned>(iterInfo->ConstInitValue));
         }
-        if (iterInfo->ConstInitValue < 0)
+        else
         {
-            JITDUMP("> NeedsZeroTripGuard: init %d is invalid\n", iterInfo->ConstInitValue);
-            return false;
+            // Init is unknown statically; use the IV local as it stands at the
+            // preheader (the analysis already verified the local is not
+            // address-exposed and has no extraneous defs inside the loop, so
+            // reading it in the preheader gives the entry value).
+            const unsigned initLcl = iterInfo->IterVar;
+            if (!genActualTypeIsInt(lvaGetDesc(initLcl)))
+            {
+                JITDUMP("> NeedsZeroTripGuard: iter var V%02u not compatible with TYP_INT\n", initLcl);
+                return false;
+            }
+            initIdent = LC_Ident::CreateVar(initLcl);
         }
 
-        LC_Ident initIdent = LC_Ident::CreateConst(static_cast<unsigned>(iterInfo->ConstInitValue));
         LC_Ident limitIdent;
         if (iterInfo->HasConstLimit)
         {
