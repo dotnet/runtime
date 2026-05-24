@@ -1339,14 +1339,20 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-            if (!impStackTop(0).val->OperIsConst())
-            {
-                break;
-            }
+            bool multiplierIsConst = impStackTop(0).val->OperIsConst();
+            bool initialIsConst    = impStackTop(1).val->OperIsConst();
+            bool canGenerate = multiplierIsConst && (!varTypeIsLong(simdBaseType) || initialIsConst || (simdSize == 8));
 
-            if (varTypeIsLong(simdBaseType) && !impStackTop(1).val->OperIsConst() && (simdSize != 8))
+            if (!canGenerate)
             {
-                // TODO-ARM64-CQ: We should support long/ulong multiplication.
+                if (opts.OptimizationEnabled())
+                {
+                    op2 = impPopStack().val;
+                    op1 = impPopStack().val;
+
+                    retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseType, simdSize);
+                    retNode->AsHWIntrinsic()->SetMethodHandle(this, method R2RARG(*entryPoint));
+                }
                 break;
             }
 

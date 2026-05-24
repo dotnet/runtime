@@ -1457,7 +1457,9 @@ namespace System.Runtime.Intrinsics
         {
             if (Vector64<T>.Count == 1)
             {
-                return left;
+                Vector64<uint> lower = left.AsUInt32();
+                Vector64<uint> upper = right.AsUInt32();
+                return Create(lower.GetElementUnsafe(0), upper.GetElementUnsafe(0)).As<uint, T>();
             }
 
             Unsafe.SkipInit(out Vector64<T> result);
@@ -1478,7 +1480,9 @@ namespace System.Runtime.Intrinsics
         {
             if (Vector64<T>.Count == 1)
             {
-                return left;
+                Vector64<uint> lower = left.AsUInt32();
+                Vector64<uint> upper = right.AsUInt32();
+                return Create(lower.GetElementUnsafe(1), upper.GetElementUnsafe(0)).As<uint, T>();
             }
 
             Unsafe.SkipInit(out Vector64<T> result);
@@ -1499,7 +1503,9 @@ namespace System.Runtime.Intrinsics
         {
             if (Vector64<T>.Count == 1)
             {
-                return left;
+                Vector64<uint> lower = left.AsUInt32();
+                Vector64<uint> upper = right.AsUInt32();
+                return Create(lower.GetElementUnsafe(1), upper.GetElementUnsafe(1)).As<uint, T>();
             }
 
             Unsafe.SkipInit(out Vector64<T> result);
@@ -1520,7 +1526,9 @@ namespace System.Runtime.Intrinsics
         {
             if (Vector64<T>.Count == 1)
             {
-                return left;
+                Vector64<uint> lower = left.AsUInt32();
+                Vector64<uint> upper = right.AsUInt32();
+                return Create(lower.GetElementUnsafe(0), upper.GetElementUnsafe(1)).As<uint, T>();
             }
 
             Unsafe.SkipInit(out Vector64<T> result);

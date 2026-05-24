@@ -2264,15 +2264,22 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-            if (!impStackTop(0).val->OperIsConst())
-            {
-                break;
-            }
+            bool multiplierIsConst = impStackTop(0).val->OperIsConst();
+            bool initialIsConst    = impStackTop(1).val->OperIsConst();
+            bool canGenerate =
+                multiplierIsConst && (initialIsConst || (simdSize != 32) || !varTypeIsIntegral(simdBaseType) ||
+                                      compOpportunisticallyDependsOn(InstructionSet_AVX2));
 
-            if (!impStackTop(1).val->OperIsConst() && (simdSize == 32) && varTypeIsIntegral(simdBaseType) &&
-                !compOpportunisticallyDependsOn(InstructionSet_AVX2))
+            if (!canGenerate)
             {
-                // We can't deal with TYP_SIMD32 for integral types if the compiler doesn't support AVX2
+                if (opts.OptimizationEnabled())
+                {
+                    op2 = impPopStack().val;
+                    op1 = impPopStack().val;
+
+                    retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseType, simdSize);
+                    retNode->AsHWIntrinsic()->SetMethodHandle(this, method R2RARG(*entryPoint));
+                }
                 break;
             }
 

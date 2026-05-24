@@ -1779,16 +1779,16 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<T> ZipLower<T>(Vector512<T> left, Vector512<T> right) => Create(
-            Vector256.ZipLower(left._lower, right._lower),
-            Vector256.ZipUpper(left._lower, right._lower)
+            Vector256.ZipLower(left.GetLower(), right.GetLower()),
+            Vector256.ZipUpper(left.GetLower(), right.GetLower())
         );
 
         /// <inheritdoc cref="Vector.ZipUpper{T}(Vector{T}, Vector{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<T> ZipUpper<T>(Vector512<T> left, Vector512<T> right) => Create(
-            Vector256.ZipLower(left._upper, right._upper),
-            Vector256.ZipUpper(left._upper, right._upper)
+            Vector256.ZipLower(left.GetUpper(), right.GetUpper()),
+            Vector256.ZipUpper(left.GetUpper(), right.GetUpper())
         );
 
         /// <inheritdoc cref="Vector.Zip{T}(Vector{T}, Vector{T})" />
@@ -1864,8 +1864,8 @@ namespace System.Runtime.Intrinsics
                 return (UnzipEven(left, right), UnzipOdd(left, right));
             }
 
-            (Vector256<T> even0, Vector256<T> odd0) = Vector256.Unzip(left._lower, left._upper);
-            (Vector256<T> even1, Vector256<T> odd1) = Vector256.Unzip(right._lower, right._upper);
+            (Vector256<T> even0, Vector256<T> odd0) = Vector256.Unzip(left.GetLower(), left.GetUpper());
+            (Vector256<T> even1, Vector256<T> odd1) = Vector256.Unzip(right.GetLower(), right.GetUpper());
 
             return (Create(even0, even1), Create(odd0, odd1));
         }
@@ -1874,8 +1874,8 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<T> Reverse<T>(Vector512<T> vector) => Create(
-            Vector256.Reverse(vector._upper),
-            Vector256.Reverse(vector._lower)
+            Vector256.Reverse(vector.GetUpper()),
+            Vector256.Reverse(vector.GetLower())
         );
 
         /// <inheritdoc cref="Vector256.DegreesToRadians(Vector256{double})" />
