@@ -21,20 +21,27 @@ namespace System.Runtime.CompilerServices
 
         void IThreadPoolWorkItem.Execute()
         {
-            Execute();
+            Execute(canInline: true);
         }
 
-        internal void Execute()
+        internal void Execute(bool canInline)
         {
             Debug.Assert(RuntimeAsyncTask != null);
 
-            if (((Flags & ContinuationFlags.AllContinuationFlags) == 0) || !QueueIfNecessary())
+            if (((Flags & ContinuationFlags.AllContinuationFlags) == 0) || !QueueIfNecessary(canInline))
             {
-                RuntimeAsyncTask!.ExecuteDirectly(null);
+                if (canInline)
+                {
+                    RuntimeAsyncTask.ExecuteDirectly(null);
+                }
+                else
+                {
+                    ThreadPool.UnsafeQueueUserWorkItemInternal(RuntimeAsyncTask, preferLocal: true);
+                }
             }
         }
 
-        private bool QueueIfNecessary()
+        private bool QueueIfNecessary(bool canInline)
         {
             Debug.Assert(RuntimeAsyncTask != null);
 
@@ -64,7 +71,7 @@ namespace System.Runtime.CompilerServices
                 Debug.Assert(continuationContext is SynchronizationContext { });
                 SynchronizationContext continuationSyncCtx = (SynchronizationContext)continuationContext;
 
-                if (continuationSyncCtx == Thread.CurrentThreadAssumedInitialized._synchronizationContext)
+                if (canInline && continuationSyncCtx == Thread.CurrentThreadAssumedInitialized._synchronizationContext)
                 {
                     return false;
                 }
@@ -90,7 +97,7 @@ namespace System.Runtime.CompilerServices
 
                 // TODO: We do not need TaskSchedulerAwaitTaskContinuation here, just need to refactor its Run method...
                 var taskSchedCont = new TaskSchedulerAwaitTaskContinuation(sched, (Action)RuntimeAsyncTask.m_action!, flowExecutionContext: false);
-                taskSchedCont.Run(Task.CompletedTask, canInlineContinuationTask: true);
+                taskSchedCont.Run(Task.CompletedTask, canInlineContinuationTask: canInline);
 
                 return true;
             }

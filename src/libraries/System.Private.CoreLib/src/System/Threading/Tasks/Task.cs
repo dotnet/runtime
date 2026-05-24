@@ -3633,7 +3633,7 @@ namespace System.Threading.Tasks
                 // there is only one, but run in parallel when there are
                 // multiple.
                 case RuntimeAsyncTaskContinuation tc:
-                    tc.Execute();
+                    tc.Execute(canInline: canInlineContinuations);
                     LogFinishCompletionNotification();
                     return;
 
@@ -3750,7 +3750,7 @@ namespace System.Threading.Tasks
                         break;
 
                     case RuntimeAsyncTaskContinuation tc:
-                        tc.Execute();
+                        tc.Execute(canInlineContinuations);
                         break;
 
                     case Action action:

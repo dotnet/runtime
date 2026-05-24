@@ -747,7 +747,7 @@ namespace System.Runtime.CompilerServices
                         taskCont.RuntimeAsyncTask = this;
                         if (!taskCont.Task.AddTaskContinuation(taskCont, addBeforeOthers: false))
                         {
-                            ThreadPool.UnsafeQueueUserWorkItemInternal(taskCont, preferLocal: true);
+                            taskCont.Execute(canInline: false);
                         }
                     }
                     else if (stackState->ValueTaskSourceContinuation is { } valueTaskSourceCont)
