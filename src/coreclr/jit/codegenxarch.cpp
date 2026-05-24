@@ -8548,7 +8548,7 @@ void CodeGen::genCreateAndStoreGCInfoX64(unsigned codeSize, unsigned prologSize 
         //  -return address
         //  -saved RBP
         //  -saved bool for synchronized methods
-        //  -async contexts for async methods
+        //  -thread/async contexts for async methods
 
         // slots for ret address + FP + EnC callee-saves
         int preservedAreaSize = (2 + genCountBits(RBM_ENC_CALLEE_SAVED)) * REGSIZE_BYTES;
@@ -8561,6 +8561,13 @@ void CodeGen::genCreateAndStoreGCInfoX64(unsigned codeSize, unsigned prologSize 
 
             // Verify that MonAcquired bool is at the bottom of the frame header
             assert(m_compiler->lvaGetCallerSPRelativeOffset(m_compiler->lvaMonAcquired) == -preservedAreaSize);
+        }
+
+        if (m_compiler->lvaAsyncThreadObjectVar != BAD_VAR_NUM)
+        {
+            preservedAreaSize += TARGET_POINTER_SIZE;
+
+            assert(m_compiler->lvaGetCallerSPRelativeOffset(m_compiler->lvaAsyncThreadObjectVar) == -preservedAreaSize);
         }
 
         if (m_compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM)
