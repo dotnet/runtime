@@ -405,15 +405,27 @@ bool Compiler::optExtractTestIncr(BasicBlock* cond, GenTree** ppTest, GenTree** 
     // AnalyzeIteration invariant that no loop-body IR observes the post-increment
     // value, reject the candidate if any such statement references iterVar.
     //
+    // Note: depending on the phase that calls us, locals may not be threaded
+    // (NodeThreading::AllLocals is not guaranteed). Walk each statement's tree
+    // explicitly to find local references rather than using LocalsTreeList().
+    //
     for (Statement* s = incrStmt->GetNextStmt(); s != testStmt; s = s->GetNextStmt())
     {
         assert(s != nullptr);
-        for (GenTreeLclVarCommon* lcl : s->LocalsTreeList())
-        {
-            if (lcl->GetLclNum() == iterVar)
+        GenTree* root    = s->GetRootNode();
+        unsigned target  = iterVar;
+        auto     visitor = [](GenTree** use, fgWalkData* data) -> fgWalkResult {
+            GenTree* node = *use;
+            if (node->OperIsAnyLocal() &&
+                (node->AsLclVarCommon()->GetLclNum() == *static_cast<unsigned*>(data->pCallbackData)))
             {
-                return false;
+                return WALK_ABORT;
             }
+            return WALK_CONTINUE;
+        };
+        if (fgWalkTreePre(&root, visitor, &target, /* lclVarsOnly */ false) == WALK_ABORT)
+        {
+            return false;
         }
     }
 
