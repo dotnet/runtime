@@ -403,13 +403,14 @@ bool Compiler::optExtractTestIncr(BasicBlock* cond, GenTree** ppTest, GenTree** 
     // Statements strictly between the increment and the test execute with the
     // iterator already advanced, before the exit test runs. To preserve the
     // AnalyzeIteration invariant that no loop-body IR observes the post-increment
-    // value, reject the candidate if any such statement reads or writes iterVar.
+    // value, reject the candidate if any such statement reads iterVar. (We do
+    // not need to check for stores: AnalyzeIteration's VisitDefs already
+    // rejects any def of iterVar in the loop other than the picked increment.)
     //
     for (Statement* s = incrStmt->GetNextStmt(); s != testStmt; s = s->GetNextStmt())
     {
         assert(s != nullptr);
-        GenTree* root = s->GetRootNode();
-        if (gtTreeHasLocalRead(root, iterVar) || gtTreeHasLocalStore(root, iterVar))
+        if (gtTreeHasLocalRead(s->GetRootNode(), iterVar))
         {
             return false;
         }
