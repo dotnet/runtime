@@ -4782,8 +4782,8 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         [Fact]
         public void LaneOperationsInt64CountOneTest()
         {
-            Vector64<long> left = Vector64.Create(10L);
-            Vector64<long> right = Vector64.Create(20L);
+            Vector64<long> left = Vector64.Create(0x1111111122222222UL).AsInt64();
+            Vector64<long> right = Vector64.Create(0x3333333344444444UL).AsInt64();
 
             AssertVectorEqual(left, Vector64.ZipLower(left, right));
             AssertVectorEqual(left, Vector64.ZipUpper(left, right));
@@ -4799,17 +4799,20 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             AssertVectorEqual(left, even);
             AssertVectorEqual(Vector64<long>.Zero, odd);
 
-            AssertVectorEqual(left, Vector64.ConcatLowerLower(left, right));
-            AssertVectorEqual(left, Vector64.ConcatUpperLower(left, right));
-            AssertVectorEqual(left, Vector64.ConcatUpperUpper(left, right));
-            AssertVectorEqual(left, Vector64.ConcatLowerUpper(left, right));
+            Vector64<uint> leftParts = left.AsUInt32();
+            Vector64<uint> rightParts = right.AsUInt32();
+
+            AssertVectorEqual(Vector64.Create(leftParts.GetElement(0), rightParts.GetElement(0)).AsInt64(), Vector64.ConcatLowerLower(left, right));
+            AssertVectorEqual(Vector64.Create(leftParts.GetElement(1), rightParts.GetElement(0)).AsInt64(), Vector64.ConcatUpperLower(left, right));
+            AssertVectorEqual(Vector64.Create(leftParts.GetElement(1), rightParts.GetElement(1)).AsInt64(), Vector64.ConcatUpperUpper(left, right));
+            AssertVectorEqual(Vector64.Create(leftParts.GetElement(0), rightParts.GetElement(1)).AsInt64(), Vector64.ConcatLowerUpper(left, right));
         }
 
         [Fact]
         public void LaneOperationsDoubleCountOneTest()
         {
-            Vector64<double> left = Vector64.Create(10.0);
-            Vector64<double> right = Vector64.Create(20.0);
+            Vector64<double> left = Vector64.Create(0x1111111122222222UL).AsDouble();
+            Vector64<double> right = Vector64.Create(0x3333333344444444UL).AsDouble();
 
             AssertVectorEqual(left, Vector64.ZipLower(left, right));
             AssertVectorEqual(left, Vector64.ZipUpper(left, right));
@@ -4825,10 +4828,13 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             AssertVectorEqual(left, even);
             AssertVectorEqual(Vector64<double>.Zero, odd);
 
-            AssertVectorEqual(left, Vector64.ConcatLowerLower(left, right));
-            AssertVectorEqual(left, Vector64.ConcatUpperLower(left, right));
-            AssertVectorEqual(left, Vector64.ConcatUpperUpper(left, right));
-            AssertVectorEqual(left, Vector64.ConcatLowerUpper(left, right));
+            Vector64<uint> leftParts = left.AsUInt32();
+            Vector64<uint> rightParts = right.AsUInt32();
+
+            AssertVectorEqual(Vector64.Create(leftParts.GetElement(0), rightParts.GetElement(0)).AsDouble(), Vector64.ConcatLowerLower(left, right));
+            AssertVectorEqual(Vector64.Create(leftParts.GetElement(1), rightParts.GetElement(0)).AsDouble(), Vector64.ConcatUpperLower(left, right));
+            AssertVectorEqual(Vector64.Create(leftParts.GetElement(1), rightParts.GetElement(1)).AsDouble(), Vector64.ConcatUpperUpper(left, right));
+            AssertVectorEqual(Vector64.Create(leftParts.GetElement(0), rightParts.GetElement(1)).AsDouble(), Vector64.ConcatLowerUpper(left, right));
         }
 
         private static Vector64<int> CreateVector64(Func<int, int> elementSelector)
