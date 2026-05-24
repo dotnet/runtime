@@ -85,19 +85,16 @@ class IssueGenerator:
         else:
             print("GitHub Issue: NEW — creating new issue")
             gh_issue_command.append("create")
-            gh_issue_command.append("--label")
-            gh_issue_command.append("blocking-clean-ci-optional")
             creating_new_issue = True
 
-        if fail["labels"]:
-            if creating_new_issue:
-                for label in fail["labels"].split(','):
-                    stripped_label = label.strip()
-                    if stripped_label and (stripped_label != "blocking-clean-ci-optional"):
-                        gh_issue_command.append('--label')
-                        gh_issue_command.append(stripped_label)
-
         # Title / Labels / Milestone for issue filing
+        if fail["labels"] and creating_new_issue:
+            label_set = set([l.strip().lower() for l in fail["labels"].split(',')])
+            label_set.add("blocking-clean-ci-optional")
+            for label in sorted(label_set):
+                gh_issue_command.append('--label')
+                gh_issue_command.append(label)
+
         test_name = fail["test_name"]
         if creating_new_issue:
             gh_issue_command.append('--title')
