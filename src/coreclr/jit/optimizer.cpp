@@ -356,8 +356,9 @@ bool Compiler::optExtractTestIncr(BasicBlock* cond, GenTree** ppTest, GenTree** 
     assert(ppTest != nullptr);
     assert(ppIncr != nullptr);
 
-    // Check if last two statements in the loop body are the increment of the iterator
-    // and the loop termination test.
+    // The loop termination test is expected to be the last statement of the exiting
+    // block. The increment of the iterator is expected somewhere earlier in the
+    // same block; we scan backward from the test to find an IV-shaped update.
     noway_assert(cond->firstStmt() != nullptr);
     Statement* testStmt = cond->lastStmt();
     noway_assert(testStmt != nullptr && testStmt->GetNextStmt() == nullptr);
@@ -368,19 +369,33 @@ bool Compiler::optExtractTestIncr(BasicBlock* cond, GenTree** ppTest, GenTree** 
         testStmt = newTestStmt;
     }
 
-    // Check if we have the incr stmt before the test stmt, if we don't,
-    // check if incr is part of the loop "header".
-    Statement* incrStmt = testStmt->GetPrevStmt();
-
-    // If we've added profile instrumentation, we may need to skip past a BB counter update.
+    // Walk backward from the test statement looking for a candidate IV increment
+    // of the form 'v = v op c'. Skip any intervening statements that are not IV
+    // updates. The AnalyzeIteration caller enforces (via VisitDefs) that the
+    // picked IV has no extraneous defs in the loop, and MatchLimit rejects the
+    // candidate if the test does not actually use the picked iterVar -- so it
+    // is safe to pick the first IV-shaped update we find, even if there are
+    // intervening unrelated stores.
     //
-    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR) && (incrStmt != nullptr) &&
-        incrStmt->GetRootNode()->IsBlockProfileUpdate())
+    Statement* incrStmt  = nullptr;
+    Statement* firstStmt = cond->firstStmt();
+    if (testStmt != firstStmt)
     {
-        incrStmt = incrStmt->GetPrevStmt();
+        for (Statement* s = testStmt->GetPrevStmt();; s = s->GetPrevStmt())
+        {
+            if (optIsLoopIncrTree(s->GetRootNode()) != BAD_VAR_NUM)
+            {
+                incrStmt = s;
+                break;
+            }
+            if (s == firstStmt)
+            {
+                break;
+            }
+        }
     }
 
-    if (incrStmt == nullptr || (optIsLoopIncrTree(incrStmt->GetRootNode()) == BAD_VAR_NUM))
+    if (incrStmt == nullptr)
     {
         return false;
     }
