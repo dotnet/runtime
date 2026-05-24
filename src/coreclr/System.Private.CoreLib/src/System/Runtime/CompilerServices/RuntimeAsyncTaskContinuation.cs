@@ -28,7 +28,7 @@ namespace System.Runtime.CompilerServices
         {
             Debug.Assert(RuntimeAsyncTask != null);
 
-            if (!QueueIfNecessary())
+            if (((Flags & ContinuationFlags.AllContinuationFlags) == 0) || !QueueIfNecessary())
             {
                 RuntimeAsyncTask!.ExecuteDirectly(null);
             }

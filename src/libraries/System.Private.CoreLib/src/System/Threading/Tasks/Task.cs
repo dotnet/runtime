@@ -3712,12 +3712,12 @@ namespace System.Threading.Tasks
                                     AwaitTaskContinuation.RunOrScheduleAction(stateMachineBox, allowInlining: false);
                                     break;
 
-                                case Action action:
-                                    AwaitTaskContinuation.RunOrScheduleAction(action, allowInlining: false);
-                                    break;
-
                                 case RuntimeAsyncTaskContinuation tc:
                                     ThreadPool.UnsafeQueueUserWorkItemInternal(tc, preferLocal: true);
+                                    break;
+
+                                case Action action:
+                                    AwaitTaskContinuation.RunOrScheduleAction(action, allowInlining: false);
                                     break;
 
                                 default:
@@ -3749,12 +3749,12 @@ namespace System.Threading.Tasks
                         AwaitTaskContinuation.RunOrScheduleAction(stateMachineBox, canInlineContinuations);
                         break;
 
-                    case Action action:
-                        AwaitTaskContinuation.RunOrScheduleAction(action, canInlineContinuations);
-                        break;
-
                     case RuntimeAsyncTaskContinuation tc:
                         tc.Execute();
+                        break;
+
+                    case Action action:
+                        AwaitTaskContinuation.RunOrScheduleAction(action, canInlineContinuations);
                         break;
 
                     case TaskContinuation tc:
