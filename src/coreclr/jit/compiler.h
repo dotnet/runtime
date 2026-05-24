@@ -1991,6 +1991,12 @@ struct NaturalLoopIterInfo
     // length of an invariant array.
     bool HasArrayLengthLimit : 1;
 
+    // Whether the consumer must emit its own runtime zero-trip guard for this
+    // loop (i.e. the analysis could not prove statically that the loop body
+    // executes at least once, and no preheader BBJ_COND guards entry).
+    // Only set when AnalyzeIteration is called with allowMissingBaseCase=true.
+    bool NeedsZeroTripGuard : 1;
+
     NaturalLoopIterInfo()
         : ExitedOnTrue(false)
         , HasConstInit(false)
@@ -1998,6 +2004,7 @@ struct NaturalLoopIterInfo
         , HasSimdLimit(false)
         , HasInvariantLocalLimit(false)
         , HasArrayLengthLimit(false)
+        , NeedsZeroTripGuard(false)
     {
     }
 
@@ -2191,7 +2198,7 @@ public:
     BasicBlock* GetLexicallyTopMostBlock();
     BasicBlock* GetLexicallyBottomMostBlock();
 
-    bool AnalyzeIteration(NaturalLoopIterInfo* info);
+    bool AnalyzeIteration(NaturalLoopIterInfo* info, bool allowMissingBaseCase = false);
 
     bool HasDef(unsigned lclNum);
 

@@ -5599,7 +5599,7 @@ GenTreeLclVarCommon* FlowGraphNaturalLoop::FindDef(unsigned lclNum)
 //   In some cases we also know the initial value on entry to the loop; see
 //   ::HasConstInit and ::ConstInitValue.
 //
-bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info)
+bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info, bool allowMissingBaseCase)
 {
     JITDUMP("Analyzing iteration for " FMT_LP " with header " FMT_BB "\n", m_index, m_header->bbNum);
 
@@ -5700,8 +5700,22 @@ bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info)
 
     if (!CheckLoopConditionBaseCase(preheader, info))
     {
-        JITDUMP("  Loop condition may not be true on the first iteration\n");
-        return false;
+        // If the caller can emit its own runtime guard for the case where the
+        // loop body might not execute on the first iteration, allow the loop
+        // through provided we have enough symbolic info about init and limit
+        // to express the guard.
+        if (allowMissingBaseCase && info->HasConstInit &&
+            (info->HasConstLimit || info->HasInvariantLocalLimit || info->HasArrayLengthLimit))
+        {
+            JITDUMP("  Loop condition may not be true on the first iteration; deferring to caller "
+                    "(NeedsZeroTripGuard)\n");
+            info->NeedsZeroTripGuard = true;
+        }
+        else
+        {
+            JITDUMP("  Loop condition may not be true on the first iteration\n");
+            return false;
+        }
     }
 
 #ifdef DEBUG

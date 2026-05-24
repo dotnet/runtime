@@ -1227,6 +1227,74 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
         return false;
     }
 
+    // If AnalyzeIteration could not prove the loop body executes at least once,
+    // emit an explicit runtime zero-trip guard as one of the cloning conditions.
+    // The fast path is then only entered when "init TestOper limit" holds.
+    if (iterInfo->NeedsZeroTripGuard)
+    {
+        // For the first cut we only handle const init (the only init form
+        // AnalyzeIteration currently extracts).
+        if (!iterInfo->HasConstInit)
+        {
+            JITDUMP("> NeedsZeroTripGuard but init is not constant\n");
+            return false;
+        }
+        if (iterInfo->ConstInitValue < 0)
+        {
+            JITDUMP("> NeedsZeroTripGuard: init %d is invalid\n", iterInfo->ConstInitValue);
+            return false;
+        }
+
+        LC_Ident initIdent = LC_Ident::CreateConst(static_cast<unsigned>(iterInfo->ConstInitValue));
+        LC_Ident limitIdent;
+        if (iterInfo->HasConstLimit)
+        {
+            int limit = iterInfo->ConstLimit();
+            if (limit < 0)
+            {
+                JITDUMP("> NeedsZeroTripGuard: limit %d is invalid\n", limit);
+                return false;
+            }
+            limitIdent = LC_Ident::CreateConst(static_cast<unsigned>(limit));
+        }
+        else if (iterInfo->HasInvariantLocalLimit)
+        {
+            const unsigned limitLcl = iterInfo->VarLimit();
+            if (!genActualTypeIsInt(lvaGetDesc(limitLcl)))
+            {
+                JITDUMP("> NeedsZeroTripGuard: limit var V%02u not compatible with TYP_INT\n", limitLcl);
+                return false;
+            }
+            limitIdent = LC_Ident::CreateVar(limitLcl);
+        }
+        else if (iterInfo->HasArrayLengthLimit)
+        {
+            ArrIndex* index = new (getAllocator(CMK_LoopClone)) ArrIndex(getAllocator(CMK_LoopClone));
+            if (!iterInfo->ArrLenLimit(this, index))
+            {
+                JITDUMP("> NeedsZeroTripGuard: ArrLen not matching\n");
+                return false;
+            }
+            limitIdent = LC_Ident::CreateArrAccess(LC_Array(LC_Array::Jagged, index, LC_Array::ArrLen));
+
+            // The array must be dereferenceable before evaluating the guard.
+            LC_Array array(LC_Array::Jagged, index, LC_Array::None);
+            context->EnsureArrayDerefs(loop->GetIndex())->Push(array);
+        }
+        else
+        {
+            JITDUMP("> NeedsZeroTripGuard: undetected limit\n");
+            return false;
+        }
+
+        // TestOper() returns the stays-in-loop relop in IV-on-lhs form, already
+        // adjusted for IsReversed and ExitedOnTrue.
+        LC_Condition zeroTrip(iterInfo->TestOper(), LC_Expr(initIdent), LC_Expr(limitIdent),
+                              iterInfo->TestTree->IsUnsigned());
+        context->EnsureConditions(loop->GetIndex())->Push(zeroTrip);
+        JITDUMP("Added zero-trip guard cloning condition\n");
+    }
+
     LC_Ident ident;
     // Init conditions
     if (iterInfo->HasConstInit)
@@ -2993,7 +3061,7 @@ bool Compiler::optObtainLoopCloningOpts(LoopCloneContext* context)
     {
         JITDUMP("Considering loop " FMT_LP " to clone for optimizations.\n", loop->GetIndex());
         NaturalLoopIterInfo iterInfo;
-        if (loop->AnalyzeIteration(&iterInfo))
+        if (loop->AnalyzeIteration(&iterInfo, /* allowMissingBaseCase */ true))
         {
             context->SetLoopIterInfo(loop->GetIndex(), new (this, CMK_LoopClone) NaturalLoopIterInfo(iterInfo));
         }
