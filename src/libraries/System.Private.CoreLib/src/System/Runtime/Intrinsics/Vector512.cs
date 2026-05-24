@@ -1693,29 +1693,24 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<T> CreateGeometricSequence<T>(T initial, [ConstantExpected] T multiplier)
         {
-            Unsafe.SkipInit(out Vector512<T> result);
+            T upperInitial = initial;
 
             if (Scalar<T>.IsFloatingPoint)
             {
-                for (int index = 0; index < Vector512<T>.Count; index++)
-                {
-                    T power = Scalar<T>.Pow(multiplier, Scalar<T>.Convert(index));
-                    T value = Scalar<T>.Multiply(initial, power);
-                    result.SetElementUnsafe(index, value);
-                }
-
-                return result;
+                upperInitial = Scalar<T>.Multiply(initial, Scalar<T>.Pow(multiplier, Scalar<T>.Convert(Vector256<T>.Count)));
             }
-
-            result.SetElementUnsafe(0, initial);
-
-            for (int index = 1; index < Vector512<T>.Count; index++)
+            else
             {
-                initial = Scalar<T>.Multiply(initial, multiplier);
-                result.SetElementUnsafe(index, initial);
+                for (int index = 0; index < Vector256<T>.Count; index++)
+                {
+                    upperInitial = Scalar<T>.Multiply(upperInitial, multiplier);
+                }
             }
 
-            return result;
+            return Create(
+                Vector256.CreateGeometricSequence(initial, multiplier),
+                Vector256.CreateGeometricSequence(upperInitial, multiplier)
+            );
         }
 
         /// <summary>Creates a new <see cref="Vector512{T}" /> instance whose elements alternate between two specified values.</summary>
