@@ -99,7 +99,6 @@ namespace System.Net.Security
         [Flags]
         public enum ProcessingOptions
         {
-            All = 0,
             ServerName = 0x1,
             ApplicationProtocol = 0x2,
             Versions = 0x4,
@@ -224,7 +223,7 @@ namespace System.Net.Security
         // It is OK to call it again if more data becomes available.
         // It is also possible to limit what information is processed.
         // If callback delegate is provided, it will be called on ALL extensions.
-        public static bool TryGetFrameInfo(ReadOnlySpan<byte> frame, ref TlsFrameInfo info, ProcessingOptions options = ProcessingOptions.All, HelloExtensionCallback? callback = null)
+        public static bool TryGetFrameInfo(ReadOnlySpan<byte> frame, ref TlsFrameInfo info, ProcessingOptions options = ProcessingOptions.ServerName, HelloExtensionCallback? callback = null)
         {
             const int HandshakeTypeOffset = 5;
             if (frame.Length < HeaderSize)
@@ -515,8 +514,7 @@ namespace System.Net.Security
 
                 ReadOnlySpan<byte> extensionData = extensions.Slice(0, extensionLength);
 
-                if (extensionType == ExtensionType.ServerName && (options == ProcessingOptions.All ||
-                   (options & ProcessingOptions.ServerName) == ProcessingOptions.ServerName))
+                if (extensionType == ExtensionType.ServerName && (options & ProcessingOptions.ServerName) != 0)
                 {
                     if (!TryGetSniFromServerNameList(extensionData, out string? sni))
                     {
@@ -525,8 +523,7 @@ namespace System.Net.Security
 
                     info.TargetName = sni!;
                 }
-                else if (extensionType == ExtensionType.SupportedVersions && (options == ProcessingOptions.All ||
-                          (options & ProcessingOptions.Versions) == ProcessingOptions.Versions))
+                else if (extensionType == ExtensionType.SupportedVersions && (options & ProcessingOptions.Versions) != 0)
                 {
                     if (!TryGetSupportedVersionsFromExtension(extensionData, out SslProtocols versions))
                     {
@@ -535,8 +532,8 @@ namespace System.Net.Security
 
                     info.SupportedVersions |= versions;
                 }
-                else if (extensionType == ExtensionType.ApplicationProtocols && (options == ProcessingOptions.All ||
-                          (options.HasFlag(ProcessingOptions.ApplicationProtocol) || options.HasFlag(ProcessingOptions.RawApplicationProtocol))))
+                else if (extensionType == ExtensionType.ApplicationProtocols &&
+                          (options & (ProcessingOptions.ApplicationProtocol | ProcessingOptions.RawApplicationProtocol)) != 0)
                 {
                     if (!TryGetApplicationProtocolsFromExtension(extensionData, out ApplicationProtocolInfo alpn))
                     {

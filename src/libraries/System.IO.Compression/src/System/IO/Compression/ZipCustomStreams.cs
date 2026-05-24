@@ -262,6 +262,10 @@ namespace System.IO.Compression
 
         public SubReadStream(Stream superStream, long startPosition, long maxLength)
         {
+            if (startPosition > long.MaxValue - maxLength)
+            {
+                throw new InvalidDataException(SR.LocalFileHeaderCorrupt);
+            }
             _startInSuperStream = startPosition;
             _positionInSuperStream = startPosition;
             _endInSuperStream = startPosition + maxLength;

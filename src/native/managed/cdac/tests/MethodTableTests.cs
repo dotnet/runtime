@@ -35,6 +35,7 @@ public class MethodTableTests
         [
             (nameof(Constants.Globals.FreeObjectMethodTable), rtsBuilder.FreeObjectMethodTableGlobalAddress),
             (nameof(Constants.Globals.ContinuationMethodTable), rtsBuilder.ContinuationMethodTableGlobalAddress),
+            (nameof(Constants.Globals.ObjectMethodTable), rtsBuilder.ObjectMethodTableGlobalAddress),
             (nameof(Constants.Globals.MethodDescAlignment), rtsBuilder.MethodDescAlignment),
             (nameof(Constants.Globals.ArrayBaseSize), rtsBuilder.ArrayBaseSize),
         ];
@@ -76,6 +77,7 @@ public class MethodTableTests
         Contracts.TypeHandle handle = contract.GetTypeHandle(freeObjectMethodTableAddress);
         Assert.NotEqual(TargetPointer.Null, handle.Address);
         Assert.True(contract.IsFreeObjectMethodTable(handle));
+        Assert.False(contract.IsObject(handle));
     }
 
     [Theory]
@@ -91,6 +93,7 @@ public class MethodTableTests
         Contracts.TypeHandle systemObjectTypeHandle = contract.GetTypeHandle(systemObjectMethodTablePtr);
         Assert.Equal(systemObjectMethodTablePtr.Value, systemObjectTypeHandle.Address.Value);
         Assert.False(contract.IsFreeObjectMethodTable(systemObjectTypeHandle));
+        Assert.True(contract.IsObject(systemObjectTypeHandle));
     }
 
     [Theory]
@@ -571,7 +574,7 @@ public class MethodTableTests
     {
         TargetPointer valueTypeMTPtr = default;
         TargetPointer nullableMTPtr = default;
-        TargetPointer primitiveValueTypeMTPtr = default;
+        TargetPointer enumMTPtr = default;
         TargetPointer truePrimitiveMTPtr = default;
 
         TestPlaceholderTarget target = CreateTarget(
@@ -600,15 +603,15 @@ public class MethodTableTests
                 nullableMT.EEClassOrCanonMT = nullableEEClass.Address;
                 nullableMTPtr = nullableMT.Address;
 
-                MockEEClass pvtEEClass = rtsBuilder.AddEEClass("PrimitiveValueTypeEEClass");
-                MockMethodTable pvtMT = rtsBuilder.AddMethodTable("PrimitiveValueType");
-                pvtMT.MTFlags = (uint)MethodTableFlags_1.WFLAGS_HIGH.Category_PrimitiveValueType;
-                pvtMT.BaseSize = rtsBuilder.Builder.TargetTestHelpers.ObjectBaseSize;
-                pvtMT.ParentMethodTable = systemObjectMethodTablePtr;
-                pvtMT.NumVirtuals = 3;
-                pvtEEClass.MethodTable = pvtMT.Address;
-                pvtMT.EEClassOrCanonMT = pvtEEClass.Address;
-                primitiveValueTypeMTPtr = pvtMT.Address;
+                MockEEClass enumEEClass = rtsBuilder.AddEEClass("EnumEEClass");
+                MockMethodTable enumMT = rtsBuilder.AddMethodTable("Enum");
+                enumMT.MTFlags = (uint)MethodTableFlags_1.WFLAGS_HIGH.Category_Primitive;
+                enumMT.BaseSize = rtsBuilder.Builder.TargetTestHelpers.ObjectBaseSize;
+                enumMT.ParentMethodTable = systemObjectMethodTablePtr;
+                enumMT.NumVirtuals = 3;
+                enumEEClass.MethodTable = enumMT.Address;
+                enumMT.EEClassOrCanonMT = enumEEClass.Address;
+                enumMTPtr = enumMT.Address;
 
                 MockEEClass tpEEClass = rtsBuilder.AddEEClass("TruePrimitiveEEClass");
                 MockMethodTable tpMT = rtsBuilder.AddMethodTable("TruePrimitive");
@@ -625,7 +628,7 @@ public class MethodTableTests
 
         Assert.True(contract.IsValueType(contract.GetTypeHandle(valueTypeMTPtr)));
         Assert.True(contract.IsValueType(contract.GetTypeHandle(nullableMTPtr)));
-        Assert.True(contract.IsValueType(contract.GetTypeHandle(primitiveValueTypeMTPtr)));
+        Assert.True(contract.IsValueType(contract.GetTypeHandle(enumMTPtr)));
         Assert.True(contract.IsValueType(contract.GetTypeHandle(truePrimitiveMTPtr)));
     }
 

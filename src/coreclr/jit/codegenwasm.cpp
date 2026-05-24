@@ -185,11 +185,8 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         assert(m_compiler->lvaWasmFunctionIndex != BAD_VAR_NUM);
 
         // fp[0] == functionIndex
-        //
-        // TODO-WASM: Save the actual function index. For now we save a fixed constant
-        //
         GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
-        GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 0xBBBB);
+        GetEmitter()->emitFuncletAddressConstant(0 /* funcletId for main method */);
         GetEmitter()->emitIns_S(ins_Store(TYP_I_IMPL), EA_PTRSIZE, m_compiler->lvaWasmFunctionIndex, 0);
     }
 }
@@ -251,7 +248,7 @@ void CodeGen::genHomeRegisterParamsOutsideProlog()
             return;
         }
 
-        if (varDsc->lvOnFrame && (!varDsc->lvIsInReg() || varDsc->lvLiveInOutOfHndlr))
+        if (varDsc->lvOnFrame && (!varDsc->lvIsInReg() || varDsc->IsLiveInOutOfHandler()))
         {
             LclVarDsc* paramVarDsc = m_compiler->lvaGetDesc(paramLclNum);
             var_types  storeType   = genParamStackType(paramVarDsc, segment);
@@ -397,10 +394,8 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
         GetEmitter()->emitIns(INS_I_sub);
         GetEmitter()->emitIns_I(INS_local_set, EA_PTRSIZE, GetStackPointerRegIndex());
 
-        // TODO-WASM: Save the funclet index. For now we save a fixed constant
-        //
         GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetStackPointerRegIndex());
-        GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 0xAAAA);
+        GetEmitter()->emitFuncletAddressConstant((cnsval_ssize_t)funcletIndex);
         GetEmitter()->emitIns_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE, 0);
     }
 }
@@ -2668,9 +2663,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         // RhpCheckedAssignRef
         HELPER_SIG(CORINFO_HELP_CHECKED_ASSIGN_REF, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I,
                    CORINFO_WASM_TYPE_I);
-        // RhpByRefAssignRef
-        HELPER_SIG(CORINFO_HELP_ASSIGN_BYREF, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I,
-                   CORINFO_WASM_TYPE_I);
+        // RhpByRefAssignRef: Not implemented on Wasm, omitted
         // RhBulkMoveWithWriteBarrier
         HELPER_SIG(CORINFO_HELP_BULK_WRITEBARRIER, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I,
                    CORINFO_WASM_TYPE_I, CORINFO_WASM_TYPE_I);
@@ -3226,13 +3219,12 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
             emit->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(destReg));
             emit->emitIns_I(INS_I_const, EA_PTRSIZE, destOffset);
             emit->emitIns(INS_I_add);
+            // Do an I_load here instead of I_const + I_add because we're using the (Object **, Object *) write barrier,
+            //  not the (Object **, Object **) BYREF write barrier used on other architectures.
             emit->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(srcReg));
-            emit->emitIns_I(INS_I_const, EA_PTRSIZE, srcOffset);
-            emit->emitIns(INS_I_add);
-            // NOTE: This helper's signature omits SP/PEP so all we need on the stack is dst and src.
-            // TODO-WASM-CQ: add a version of CORINFO_HELP_ASSIGN_BYREF that returns the updated dest/src
-            // pointers as a multi-value tuple and use it here.
-            genEmitHelperCall(CORINFO_HELP_ASSIGN_BYREF, 0, EA_PTRSIZE);
+            emit->emitIns_I(INS_I_load, EA_PTRSIZE, srcOffset);
+            // NOTE: This helper's signature omits SP/PEP so all we need on the stack is dst and ref.
+            genEmitHelperCall(CORINFO_HELP_CHECKED_ASSIGN_REF, 0, EA_PTRSIZE);
             gcPtrCount--;
         }
         ++i;
@@ -3283,7 +3275,37 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* blkOp)
 void CodeGen::genCallFinally(BasicBlock* block)
 {
     assert(block->KindIs(BBJ_CALLFINALLY));
-    NYI_WASM("genCallFinally");
+    BasicBlock* const finallyTarget = block->GetTarget();
+    EHblkDsc* const   ehDsc         = m_compiler->ehGetBlockHndDsc(finallyTarget);
+    assert(ehDsc->ebdHandlerType == EH_HANDLER_FINALLY);
+    assert(ehDsc->ebdHndBeg == finallyTarget);
+    unsigned const funcletIndex = ehDsc->ebdFuncIndex;
+
+    assert((funcletIndex >= 1) && (funcletIndex < m_compiler->compFuncCount()));
+
+    EmitCallParams params;
+    params.callType = EmitCallType::EC_INDIR_R;
+
+    // A finally takes SP and FP as arguments, and returns nothing.
+    //
+    CorInfoWasmType             ptrType = (TARGET_POINTER_SIZE == 4) ? CORINFO_WASM_TYPE_I32 : CORINFO_WASM_TYPE_I64;
+    ArrayStack<CorInfoWasmType> typeStack(m_compiler->getAllocator(CMK_Codegen));
+    typeStack.Push(CORINFO_WASM_TYPE_VOID);
+    typeStack.Push(ptrType);
+    typeStack.Push(ptrType);
+
+    params.wasmSignature = m_compiler->info.compCompHnd->getWasmTypeSymbol(typeStack.Data(), typeStack.Height());
+
+    GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetStackPointerRegIndex());
+    GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
+    GetEmitter()->emitFuncletAddressConstant(funcletIndex);
+
+    genEmitCallWithCurrentGC(params);
+
+    if (block->HasFlag(BBF_RETLESS_CALL))
+    {
+        GetEmitter()->emitIns(INS_unreachable);
+    }
 }
 
 //------------------------------------------------------------------------

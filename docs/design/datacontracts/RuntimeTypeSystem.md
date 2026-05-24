@@ -51,6 +51,8 @@ partial interface IRuntimeTypeSystem : IContract
 
     // True if the MethodTable is the sentinel value associated with unallocated space in the managed heap
     public virtual bool IsFreeObjectMethodTable(TypeHandle typeHandle);
+    // True if the MethodTable is the System.Object MethodTable (g_pObjectClass)
+    public virtual bool IsObject(TypeHandle typeHandle);
     public virtual bool IsString(TypeHandle typeHandle);
     // True if the type is a GC-collectable object reference.
     public virtual bool IsObjRef(TypeHandle typeHandle);
@@ -267,8 +269,8 @@ bool IsFieldDescThreadStatic(TargetPointer fieldDescPointer);
 bool IsFieldDescStatic(TargetPointer fieldDescPointer);
 uint GetFieldDescType(TargetPointer fieldDescPointer);
 uint GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition fieldDef);
-TargetPointer GetFieldDescStaticAddress(TargetPointer fieldDescPointer);
-TargetPointer GetFieldDescThreadStaticAddress(TargetPointer fieldDescPointer, TargetPointer thread);
+TargetPointer GetFieldDescStaticAddress(TargetPointer fieldDescPointer, bool unboxValueTypes = true);
+TargetPointer GetFieldDescThreadStaticAddress(TargetPointer fieldDescPointer, TargetPointer thread, bool unboxValueTypes = true);
 ```
 
 ### Other APIs
@@ -310,7 +312,7 @@ internal partial struct RuntimeTypeSystem_1
         Category_Array = 0x00080000,
         Category_ValueType = 0x00040000,
         Category_Nullable = 0x00050000,
-        Category_PrimitiveValueType = 0x00060000,
+        Category_Primitive = 0x00060000,
         Category_TruePrimitive = 0x00070000,
         Category_Interface = 0x000C0000,
         Collectible = 0x00200000,
@@ -448,7 +450,8 @@ The contract depends on the following globals
 | Global name | Meaning |
 | --- | --- |
 | `ContinuationMethodTable` | A pointer to the address of the base `Continuation` `MethodTable`, or null if no continuations have been created
-| `FreeObjectMethodTablePointer` | A pointer to the address of a `MethodTable` used by the GC to indicate reclaimed memory
+| `FreeObjectMethodTable` | A pointer to the address of a `MethodTable` used by the GC to indicate reclaimed memory
+| `ObjectMethodTable` | A pointer to the address of the `System.Object` `MethodTable` (`g_pObjectClass`)
 | `StaticsPointerMask` | For masking out a bit of DynamicStaticsInfo pointer fields
 | `ArrayBaseSize` | The base size of an array object; used to compute multidimensional array rank from `MethodTable::BaseSize`
 
@@ -521,6 +524,7 @@ Contracts used:
     private readonly Dictionary<TargetPointer, MethodTable_1> _methodTables;
 
     internal TargetPointer FreeObjectMethodTablePointer {get; }
+    internal TargetPointer ObjectMethodTablePointer {get; }
     internal TargetPointer ContinuationMethodTablePointer {get; }
 
     public TypeHandle GetTypeHandle(TargetPointer typeHandlePointer)
@@ -580,6 +584,8 @@ Contracts used:
     }
 
     public bool IsFreeObjectMethodTable(TypeHandle TypeHandle) => FreeObjectMethodTablePointer == TypeHandle.Address;
+
+    public bool IsObject(TypeHandle TypeHandle) => ObjectMethodTablePointer != TargetPointer.Null && ObjectMethodTablePointer == TypeHandle.Address;
 
     public bool IsString(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[TypeHandle.Address].Flags.IsString;
 
@@ -831,7 +837,7 @@ Contracts used:
                     return CorElementType.SzArray;
                 case WFLAGS_HIGH.Category_ValueType:
                 case WFLAGS_HIGH.Category_Nullable:
-                case WFLAGS_HIGH.Category_PrimitiveValueType:
+                case WFLAGS_HIGH.Category_Primitive:
                     return CorElementType.ValueType;
                 case WFLAGS_HIGH.Category_TruePrimitive:
                     return (CorElementType)GetClassData(typeHandle).InternalCorElementType;
@@ -866,20 +872,16 @@ Contracts used:
         // if typedesc: check for CorElementType.ValueType
     }
 
-    // Enums have Category_PrimitiveValueType in their MethodTable flags and their
+    // Enums have Category_Primitive in their MethodTable flags and their
     // InternalCorElementType is a primitive type (I1, U1, I2, U2, I4, U4, I8, U8),
-    // not ValueType. Regular primitive value types (IntPtr/UIntPtr) have Category_TruePrimitive.
+    // not ValueType. Regular primitive value types (Int32, etc.) have Category_TruePrimitive.
     public bool IsEnum(TypeHandle typeHandle)
     {
         if (!typeHandle.IsMethodTable())
             return false;
 
-        CorElementType sigType = GetSignatureCorElementType(typeHandle);
-        if (sigType != CorElementType.ValueType)
-            return false;
-
-        CorElementType internalType = (CorElementType)GetClassData(typeHandle).InternalCorElementType;
-        return internalType != CorElementType.ValueType;
+        MethodTable methodTable = _methodTables[typeHandle.Address];
+        return methodTable.Flags.GetFlag(WFLAGS_HIGH.Category_Mask) == WFLAGS_HIGH.Category_Primitive;
     }
 
     // return true if the TypeHandle represents an array, and set the rank to either 0 (if the type is not an array), or the rank number if it is.
@@ -2046,17 +2048,20 @@ uint GetFieldDescOffset(TargetPointer fieldDescPointer)
     return DWord2 & (uint)FieldDescFlags2.OffsetMask;
 }
 
-TargetPointer GetFieldDescStaticAddress(TargetPointer fieldDescPointer)
+TargetPointer GetFieldDescStaticAddress(TargetPointer fieldDescPointer, bool unboxValueTypes = true)
 {
     // Resolves the base pointer (GC or non-GC statics) for the enclosing type,
     // then applies the field's metadata-based offset within that region.
     // Uses GetGCStaticsBasePointer / GetNonGCStaticsBasePointer depending on the field's CorElementType.
+    // When unboxValueTypes is true (default), value-type statics are dereferenced to the unboxed
+    // payload inside the boxed object. Pass false to obtain the address of the boxed reference itself.
 }
 
-TargetPointer GetFieldDescThreadStaticAddress(TargetPointer fieldDescPointer, TargetPointer thread)
+TargetPointer GetFieldDescThreadStaticAddress(TargetPointer fieldDescPointer, TargetPointer thread, bool unboxValueTypes = true)
 {
     // Like GetFieldDescStaticAddress, but resolves thread-local base pointers instead.
     // Uses GetGCThreadStaticsBasePointer / GetNonGCThreadStaticsBasePointer.
+    // The unboxValueTypes parameter behaves the same as in GetFieldDescStaticAddress.
 }
 ```
 
