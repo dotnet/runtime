@@ -191,8 +191,7 @@ namespace System.Net
 
         private void SslSetConnection(SafeSslHandle sslContext)
         {
-            // native Read/Write callbacks have completed).
-            GCHandle<SafeDeleteSslContext> handle = new GCHandle<SafeDeleteSslContext>(this);
+            var handle = new GCHandle<SafeDeleteSslContext>(this);
             sslContext.SetConnectionGCHandle(handle);
 
             Interop.AppleCrypto.SslSetConnection(sslContext, GCHandle<SafeDeleteSslContext>.ToIntPtr(handle));
