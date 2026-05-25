@@ -92,8 +92,20 @@ namespace Microsoft.Win32.SafeHandles
             }
 
             ProcessWaitState.Holder waitStateHolder = new(processId);
-            SafeProcessHandle processHandle = new SafeProcessHandle(waitStateHolder);
-            processHandle._pidfd = pidfd;
+            SafeProcessHandle processHandle;
+            try
+            {
+                processHandle = new SafeProcessHandle(waitStateHolder);
+                processHandle._pidfd = pidfd;
+            }
+            catch
+            {
+                if (pidfd >= 0)
+                {
+                    Interop.Sys.Close(pidfd);
+                }
+                throw;
+            }
             return processHandle;
         }
 
@@ -389,8 +401,20 @@ namespace Microsoft.Win32.SafeHandles
                 throw ProcessUtils.CreateExceptionForErrorStartingProcess(new Interop.ErrorInfo(errno).GetErrorMessage(), errno, resolvedFilename, cwd);
             }
 
-            SafeProcessHandle processHandle = new SafeProcessHandle(waitStateHolder!);
-            processHandle._pidfd = pidfd;
+            SafeProcessHandle processHandle;
+            try
+            {
+                processHandle = new SafeProcessHandle(waitStateHolder!);
+                processHandle._pidfd = pidfd;
+            }
+            catch
+            {
+                if (pidfd >= 0)
+                {
+                    Interop.Sys.Close(pidfd);
+                }
+                throw;
+            }
             return processHandle;
         }
     }
