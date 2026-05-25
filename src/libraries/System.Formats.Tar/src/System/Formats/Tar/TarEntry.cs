@@ -379,6 +379,13 @@ namespace System.Formats.Tar
                 // LinkName is an absolute path, or path relative to the fileDestinationPath directory.
                 // We don't check if the LinkName is empty. In that case, creation of the link will fail because link targets can't be empty.
                 string linkName = ArchivingUtils.SanitizeEntryFilePath(LinkName, preserveDriveRoot: true);
+                // On Windows, reject rooted-but-not-fully-qualified symlink targets (e.g., "\Windows\win.ini").
+                // Unlike files, symlink targets are resolved at access time, not extraction time,
+                // so Path.GetFullPath here cannot reliably predict what drive the OS will resolve them against.
+                if (OperatingSystem.IsWindows() && Path.IsPathRooted(linkName) && !Path.IsPathFullyQualified(linkName))
+                {
+                    throw new IOException(SR.Format(SR.TarExtractingResultsLinkOutside, linkName, destinationDirectoryPath));
+                }
                 string? linkDestination = GetFullDestinationPath(
                                             destinationDirectoryPath,
                                             Path.IsPathFullyQualified(linkName) ? linkName : Path.Join(Path.GetDirectoryName(fileDestinationPath), linkName));

@@ -27,6 +27,7 @@ public unsafe class LoaderTests
             [DataType.Module] = TargetTestHelpers.CreateTypeInfo(loader.ModuleLayout),
             [DataType.Assembly] = TargetTestHelpers.CreateTypeInfo(loader.AssemblyLayout),
             [DataType.EEConfig] = TargetTestHelpers.CreateTypeInfo(loader.EEConfigLayout),
+            [DataType.CGrowableSymbolStream] = TargetTestHelpers.CreateTypeInfo(loader.CGrowableSymbolStreamLayout),
         };
 
     private static ILoader CreateLoaderContract(MockTarget.Architecture arch, Action<MockLoaderBuilder> configure)
@@ -1020,5 +1021,66 @@ public unsafe class LoaderTests
         Assert.Equal(HResults.S_OK, hr);
         Assert.Equal(expectedAllowJITOpts, allowJITOpts);
         Assert.Equal(expectedEnableEnC, enableEnC);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void TryGetSymbolStream_NoStream(MockTarget.Architecture arch)
+    {
+        TargetPointer moduleAddr = TargetPointer.Null;
+        ILoader contract = CreateLoaderContract(arch, loader =>
+        {
+            // Module with no GrowableSymbolStream (left as null pointer).
+            moduleAddr = loader.AddModule().Address;
+        });
+
+        Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
+        bool result = contract.TryGetSymbolStream(handle, out TargetPointer buffer, out uint size);
+        Assert.False(result);
+        Assert.Equal(TargetPointer.Null, buffer);
+        Assert.Equal(0u, size);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void TryGetSymbolStream_WithSymbols(MockTarget.Architecture arch)
+    {
+        byte[] symbolBytes = [1, 2, 3, 4, 5, 6, 7, 8];
+        TargetPointer moduleAddr = TargetPointer.Null;
+        TargetPointer expectedBuffer = TargetPointer.Null;
+        ILoader contract = CreateLoaderContract(arch, loader =>
+        {
+            MockLoaderModule module = loader.AddModule();
+            MockCGrowableSymbolStream stream = loader.AddInMemorySymbolStream(module, symbolBytes);
+            moduleAddr = module.Address;
+            expectedBuffer = new TargetPointer(stream.Buffer);
+        });
+
+        Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
+        bool result = contract.TryGetSymbolStream(handle, out TargetPointer buffer, out uint size);
+        Assert.True(result);
+        Assert.Equal(expectedBuffer, buffer);
+        Assert.Equal((uint)symbolBytes.Length, size);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void TryGetSymbolStream_EmptyStream(MockTarget.Architecture arch)
+    {
+        TargetPointer moduleAddr = TargetPointer.Null;
+        ILoader contract = CreateLoaderContract(arch, loader =>
+        {
+            MockLoaderModule module = loader.AddModule();
+            // Stream object is present but has no bytes.
+            loader.AddInMemorySymbolStream(module, symbols: null);
+            moduleAddr = module.Address;
+        });
+
+        Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
+        bool result = contract.TryGetSymbolStream(handle, out TargetPointer buffer, out uint size);
+        // The stream pointer is non-null so the API returns true even though the buffer is empty.
+        Assert.True(result);
+        Assert.Equal(TargetPointer.Null, buffer);
+        Assert.Equal(0u, size);
     }
 }

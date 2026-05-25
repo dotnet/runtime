@@ -188,7 +188,7 @@ EXTERN_C void ReversePInvokeBadTransition();
 extern "C" FCDECL3(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref, CheckedWriteBarrierKinds kind);
 #else
 // Regular checked write barrier.
-extern "C" FCDECL2(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref);
+extern "C" FCDECL2_RAW(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref);
 
 #ifdef TARGET_ARM64
 #define RhpCheckedAssignRef RhpCheckedAssignRefArm64
@@ -202,12 +202,11 @@ extern "C" FCDECL2(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref);
 
 #endif // FEATURE_USE_ASM_GC_WRITE_BARRIERS && defined(FEATURE_COUNT_GC_WRITE_BARRIERS)
 
-extern "C" FCDECL2(VOID, RhpCheckedAssignRef, Object **dst, Object *ref);
-extern "C" FCDECL2(VOID, RhpByRefAssignRef, Object **dst, Object *ref);
-extern "C" FCDECL2(VOID, RhpAssignRef, Object **dst, Object *ref);
+extern "C" FCDECL2_RAW(VOID, RhpCheckedAssignRef, Object **dst, Object *ref);
+extern "C" FCDECL2_RAW(VOID, RhpByRefAssignRef, Object **dst, Object **ref);
+extern "C" FCDECL2_RAW(VOID, RhpAssignRef, Object **dst, Object *ref);
 
-extern "C" FCDECL2(VOID, JIT_WriteBarrier, Object **dst, Object *ref);
-extern "C" FCDECL2(VOID, JIT_WriteBarrierEnsureNonHeapTarget, Object **dst, Object *ref);
+extern "C" FCDECL2_RAW(VOID, JIT_WriteBarrier, Object **dst, Object *ref);
 
 EXTERN_C FCDECL2_VV(INT64, JIT_LMul, INT64 val1, INT64 val2);
 
@@ -968,7 +967,7 @@ public:
     void SetDebugInfo(PTR_BYTE pDebugInfo) override;
 
     LPVOID GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig) override;
-    
+
     virtual CORINFO_METHOD_HANDLE getAsyncResumptionStub(void** entryPoint) override final;
 };
 #endif // FEATURE_INTERPRETER

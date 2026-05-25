@@ -388,7 +388,7 @@ internal class GcScanner
 
         try
         {
-            requiresInstArg = rts.RequiresInstArg(mdh);
+            requiresInstArg = rts.GetGenericContextLoc(mdh) == GenericContextLoc.InstArg;
             isAsync = rts.IsAsyncMethod(mdh);
         }
         catch

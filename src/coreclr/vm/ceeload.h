@@ -351,6 +351,13 @@ struct VASigCookie
     Instantiation   methodInst;
 };
 
+template<>
+struct cdac_data<VASigCookie>
+{
+    static constexpr size_t SignaturePointer = offsetof(VASigCookie, signature) + offsetof(Signature, m_pSig);
+    static constexpr size_t SignatureLength = offsetof(VASigCookie, signature) + offsetof(Signature, m_cbSig);
+};
+
 //
 // VASigCookies are allocated in VASigCookieBlocks to amortize
 // allocation cost and allow proper bookkeeping.
