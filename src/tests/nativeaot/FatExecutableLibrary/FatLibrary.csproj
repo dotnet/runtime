@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <CLRTestKind>BuildAndRun</CLRTestKind>
+    <CLRTestPriority>0</CLRTestPriority>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <BuildAsStandalone>false</BuildAsStandalone>
+    <!-- Unable to compile a project with the Library output type for apple mobile devices -->
+    <CLRTestTargetUnsupported Condition="'$(TargetsAppleMobile)' == 'true'">true</CLRTestTargetUnsupported>
+    <!-- Unable to build a library project with native dependencies for android mobile devices:
+         https://github.com/dotnet/runtime/issues/121210 -->
+    <CLRTestTargetUnsupported Condition="'$(TargetsAndroid)' == 'true'">true</CLRTestTargetUnsupported>
+    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <SkipInferOutputType>true</SkipInferOutputType>
+    <FatExecutable>true</FatExecutable>
+    <!-- warning CS2008: No source files specified -->
+    <NoWarn>$(NoWarn);CS2008</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <CLRTestBatchPreCommands><![CDATA[
+$(CLRTestBatchPreCommands)
+copy /y native\ValidatorExe.exe native\FatLibrary.exe
+]]></CLRTestBatchPreCommands>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="HelloExe\HelloExe.csproj" IncludeInFatExe="true" />
+    <ProjectReference Include="ValidatorExe\ValidatorExe.csproj" IncludeInFatExe="true" />
+  </ItemGroup>
+</Project>

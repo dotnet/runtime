@@ -376,4 +376,9 @@ The .NET Foundation licenses this file to you under the MIT license.
       <DsymUtilOptions>$(DsymUtilOptions) --minimize</DsymUtilOptions>
     </PropertyGroup>
   </Target>
+
+  <Target Name="CreateShimExes"
+          Condition="'$(FatExecutable)' == 'true'">
+    <Error Text="FatExecutable is currently only supported when targeting Windows." />
+  </Target>
 </Project>

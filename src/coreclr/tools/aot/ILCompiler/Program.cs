@@ -239,9 +239,23 @@ namespace ILCompiler
                     compilationRoots.Add(new RuntimeConfigurationRootProvider(settingsBlobName, runtimeOptions));
                     compilationRoots.Add(new RuntimeConfigurationRootProvider(knobsBlobName, runtimeKnobs));
                     compilationRoots.Add(new ExpectedIsaFeaturesRootProvider(instructionSetSupport));
-                    if (SplitExeInitialization)
+
+                    string[] fatExeModules = Get(_command.FatExeLibrary);
+                    if (fatExeModules.Length > 0)
                     {
-                        compilationRoots.Add(new MainMethodRootProvider(entrypointModule, CreateInitializerList(typeSystemContext), generateLibraryAndModuleInitializers: false));
+                        foreach (string specifier in fatExeModules)
+                        {
+                            string[] asmAndEntrypointName = specifier.Split('=');
+                            if (asmAndEntrypointName.Length != 2)
+                                throw new CommandLineException($"Format '{specifier}' not recognized for --fatexe. Expected 'assemblyName=MainEntryPointName'.");
+
+                            EcmaModule module = typeSystemContext.GetModuleForSimpleName(asmAndEntrypointName[0]);
+                            compilationRoots.Add(new MainMethodRootProvider(module, null, generateLibraryAndModuleInitializers: false, asmAndEntrypointName[1]));
+                        }
+                    }
+                    else if (SplitExeInitialization)
+                    {
+                        compilationRoots.Add(new MainMethodRootProvider(entrypointModule, null, generateLibraryAndModuleInitializers: false));
                     }
                 }
                 else if (entrypointModule != null)
