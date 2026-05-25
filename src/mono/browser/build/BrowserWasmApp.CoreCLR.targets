@@ -555,7 +555,6 @@
 
       <!-- ES6 module output -->
       <_EmccLinkStepArgs Include="-s EXPORT_ES6=1" />
-      <_EmccLinkStepArgs Include="-lexports.js" />
 
       <!-- Memory configuration -->
       <_EmccLinkStepArgs Include="-s INITIAL_MEMORY=$(WasmInitialHeapSize)" />
@@ -597,6 +596,10 @@
 
       <!-- Extra user flags -->
       <_EmccLinkStepArgs Include="$(EmccExtraLDFlags)" />
+
+      <!-- protect __stack_pointer -->
+      <_EmccLinkStepArgs Include="-lexports.js" />
+      <_EmccLinkStepArgs Include="-Wl,--export=__stack_pointer" />
 
       <!-- Linker error limit -->
       <_EmccLinkStepArgs Include="-Wl,--error-limit=0" />
