@@ -65,6 +65,7 @@ namespace System.Net.ServerSentEvents
         private int _lastSearchedForNewline;
         /// <summary>Set when eof has been reached in the stream.</summary>
         private bool _eof;
+        private const int MaxLineLength = 64 * 1024 * 1024;
 
         /// <summary>Rented buffer containing buffered data for the next event.</summary>
         private byte[]? _dataBuffer;
@@ -304,7 +305,12 @@ namespace System.Net.ServerSentEvents
                 }
                 else if (_lineLength == _lineBuffer.Length)
                 {
-                    GrowBuffer(ref _lineBuffer, _lineBuffer.Length * 2);
+                    int newLength = _lineBuffer.Length * 2;
+                    if (newLength > MaxLineLength)
+                    {
+                        throw new InvalidDataException(SR.InvalidDataException_LineExceededMaxLength);
+                    }
+                    GrowBuffer(ref _lineBuffer, newLength);
                 }
             }
         }
