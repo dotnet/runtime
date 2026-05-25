@@ -388,8 +388,8 @@ namespace System.Diagnostics.Tests
         [InlineData(int.MinValue)]
         public void TestWaitForExitInt_Validation(int milliseconds)
         {
-            CreateDefaultProcess();
-            Assert.Throws<ArgumentOutOfRangeException>("milliseconds", () => _process.WaitForExit(milliseconds));
+            using Process process = CreateDefaultProcess();
+            Assert.Throws<ArgumentOutOfRangeException>("milliseconds", () => process.WaitForExit(milliseconds));
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
