@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Threading.Tasks;
 
 string executableExtension = OperatingSystem.IsWindows() ? ".exe" : "";
 string helloExePath = Path.Combine(AppContext.BaseDirectory, $"HelloExe{executableExtension}");
@@ -21,9 +22,11 @@ if (helloExe is null)
     return 1;
 }
 
+Task<string> outputTask = helloExe.StandardOutput.ReadToEndAsync();
+Task<string> errorTask = helloExe.StandardError.ReadToEndAsync();
 helloExe.WaitForExit();
-string output = helloExe.StandardOutput.ReadToEnd().Trim();
-string error = helloExe.StandardError.ReadToEnd().Trim();
+string output = (await outputTask).Trim();
+string error = (await errorTask).Trim();
 if (helloExe.ExitCode != 0 || output != "Hello from HelloExe")
 {
     Console.Error.WriteLine($"Unexpected HelloExe result. Exit code: {helloExe.ExitCode}; output: '{output}'; error: '{error}'");
