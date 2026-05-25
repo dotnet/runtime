@@ -10136,18 +10136,7 @@ void Lowering::ContainCheckBitCast(GenTreeUnOp* node)
 }
 
 //------------------------------------------------------------------------
-// LowerBlockStoreAsGcBulkCopyCall: Lower a struct-copy block store as a
-//   CORINFO_HELP_BULK_WRITEBARRIER helper call.
-//
-//   This is the fallback for non-volatile struct copies whose layout has
-//   GC pointers and whose destination is on the GC heap, used whenever
-//   TryDecomposeBlockStoreAsIndirs declined to handle the copy (e.g. MinOpts,
-//   cold blocks, or layouts with too many GC pointers to decompose
-//   efficiently). Volatile copies are NOT routed here - they always take the
-//   decomposition path so per-slot STOREIND nodes preserve GTF_IND_VOLATILE.
-//   The bulk helper itself performs plain (non-volatile) loads/stores
-//   internally, so reaching it with a volatile block would silently drop
-//   volatile semantics.
+// LowerBlockStoreAsGcBulkCopyCall: Lower a block store node as a CORINFO_HELP_BULK_WRITEBARRIER call
 //
 // Arguments:
 //    blk - The block store node to lower
@@ -10155,10 +10144,9 @@ void Lowering::ContainCheckBitCast(GenTreeUnOp* node)
 void Lowering::LowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blk)
 {
     assert(blk->OperIs(GT_STORE_BLK));
-    assert(!blk->OperIsInitBlkOp());
     assert(blk->GetLayout()->HasGCPtr());
+    assert(!blk->OperIsInitBlkOp());
     assert(!blk->IsAddressNotOnHeap(m_compiler));
-    // See header comment: volatile copies must not reach here.
     assert(!blk->IsVolatile());
     assert(!blk->Data()->OperIs(GT_IND) || !blk->Data()->AsIndir()->IsVolatile());
 
@@ -12153,6 +12141,8 @@ void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
         return;
     }
 
+    // For struct copies (containing GC slots) we might want to split the big store into a sequence
+    // of smaller stores.
     if (TryDecomposeBlockStoreAsIndirs(blkNode))
     {
         return;
