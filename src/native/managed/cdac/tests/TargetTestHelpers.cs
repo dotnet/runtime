@@ -147,17 +147,6 @@ internal unsafe class TargetTestHelpers
         };
     }
 
-    internal int SizeOfTypeInfo(Target.TypeInfo info)
-    {
-        int size = 0;
-        foreach (var (_, field) in info.Fields)
-        {
-            size = Math.Max(size, field.Offset + SizeOfPrimitive(field.Type));
-        }
-
-        return size;
-    }
-
     #endregion Mock memory initialization
 
     private static int AlignUp(int offset, int align)
@@ -215,7 +204,7 @@ internal unsafe class TargetTestHelpers
             };
             fieldInfos[name] = new Target.FieldInfo {
                 Offset = offset,
-                Type = type,
+                TypeName = type.ToString(),
             };
             offset += size;
         }
@@ -245,7 +234,6 @@ internal unsafe class TargetTestHelpers
             fields[field.Name] = new Target.FieldInfo
             {
                 Offset = field.Offset,
-                Type = DataType.Unknown,
             };
         }
 

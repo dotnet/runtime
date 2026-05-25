@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Text.Json.Serialization.Converters;
 
 namespace System.Text.Json.Serialization.Metadata
 {
@@ -60,6 +61,41 @@ namespace System.Text.Json.Serialization.Metadata
             ArgumentNullException.ThrowIfNull(objectInfo);
 
             return CreateCore(options, objectInfo);
+        }
+
+        /// <summary>
+        /// Creates metadata for a union type.
+        /// </summary>
+        /// <param name="options">The <see cref="JsonSerializerOptions"/> to initialize the metadata with.</param>
+        /// <param name="unionInfo">Provides serialization metadata about a union type and its cases.</param>
+        /// <typeparam name="T">The type of the union.</typeparam>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="options"/> or <paramref name="unionInfo"/> is null.</exception>
+        /// <returns>A <see cref="JsonTypeInfo{T}"/> instance representing the union type.</returns>
+        /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
+        public static JsonTypeInfo<T> CreateUnionInfo<T>(JsonSerializerOptions options, JsonUnionInfoValues<T> unionInfo) where T : notnull
+        {
+            ArgumentNullException.ThrowIfNull(options);
+            ArgumentNullException.ThrowIfNull(unionInfo);
+            ArgumentNullException.ThrowIfNull(unionInfo.UnionCases);
+
+            JsonConverter<T> converter = new JsonUnionConverter<T>();
+            var typeInfo = new JsonTypeInfo<T>(converter, options)
+            {
+                UnionConstructor = unionInfo.UnionConstructor,
+                UnionDeconstructor = unionInfo.UnionDeconstructor,
+                TypeClassifier = unionInfo.TypeClassifier,
+            };
+
+            foreach (JsonUnionCaseInfo caseInfo in unionInfo.UnionCases)
+            {
+                typeInfo.UnionCases.Add(caseInfo);
+            }
+
+            typeInfo.TypeClassifierFactory = unionInfo.TypeClassifierFactory;
+            typeInfo.TypeClassifierResolutionPending = true;
+
+            typeInfo.IsCustomized = false;
+            return typeInfo;
         }
 
         /// <summary>

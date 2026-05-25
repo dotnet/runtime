@@ -121,6 +121,7 @@ namespace System.DirectoryServices.Protocols.Tests
 #endif
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/127070", TestRuntimes.Mono)]
     [ConditionalClass(typeof(DirectoryServicesTestHelpers), nameof(DirectoryServicesTestHelpers.IsWindowsOrLibLdapIsInstalled))]
     public sealed partial class DirectoryServicesProtocolsTests_Local : DirectoryServicesProtocolsTests<DirectoryServicesProtocolsTests_Local.LocalCapabilities>
     {

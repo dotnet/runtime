@@ -29,7 +29,7 @@ public class GCMemoryRegionTests
             .AddTypes(types)
             .AddGlobals(globals)
             .AddGlobalStrings(globalStrings)
-            .AddContract<IGC>(version: 1)
+            .AddContract<IGC>(version: "c1")
             .Build();
         return target.Contracts.GC;
     }
@@ -61,7 +61,7 @@ public class GCMemoryRegionTests
     {
         var result = new Dictionary<string, Target.FieldInfo>();
         foreach (var (name, offset, type) in fields)
-            result[name] = new Target.FieldInfo { Offset = offset, Type = type };
+            result[name] = new Target.FieldInfo { Offset = offset, TypeName = type.ToString() };
         return result;
     }
 

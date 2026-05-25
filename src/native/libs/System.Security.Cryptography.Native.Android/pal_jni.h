@@ -95,15 +95,6 @@ extern jmethodID g_SSLParametersGetProtocols;
 extern jmethodID g_SSLParametersSetApplicationProtocols;
 extern jmethodID g_SSLParametersSetServerNames;
 
-// com/android/org/conscrypt/OpenSSLEngineImpl
-extern jclass    g_ConscryptOpenSSLEngineImplClass;
-extern jfieldID  g_ConscryptOpenSSLEngineImplSslParametersField;
-extern jfieldID  g_ConscryptOpenSSLEngineImplHandshakeSessionField;
-
-// com/android/org/conscrypt/SSLParametersImpl
-extern jclass    g_ConscryptSSLParametersImplClass;
-extern jmethodID g_ConscryptSSLParametersImplSetUseSni;
-
 // javax/net/ssl/SSLContext
 extern jclass    g_sslCtxClass;
 extern jmethodID g_sslCtxGetDefaultMethod;
@@ -150,14 +141,14 @@ extern jmethodID g_CertPathBuilderBuild;
 extern jclass    g_CertPathValidatorClass;
 extern jmethodID g_CertPathValidatorGetInstance;
 extern jmethodID g_CertPathValidatorValidate;
-extern jmethodID g_CertPathValidatorGetRevocationChecker; // only in API level 24+
+extern jmethodID g_CertPathValidatorGetRevocationChecker;
 
 // java/security/cert/CertPathValidatorException
 extern jclass    g_CertPathValidatorExceptionClass;
 extern jmethodID g_CertPathValidatorExceptionGetIndex;
 extern jmethodID g_CertPathValidatorExceptionGetReason;
 
-// java/security/cert/CertPathValidatorException$BasicReason - only in API level 24+
+// java/security/cert/CertPathValidatorException$BasicReason
 extern jclass    g_CertPathExceptionBasicReasonClass;
 
 // java/security/cert/CertStore
@@ -182,14 +173,14 @@ extern jclass    g_PKIXCertPathBuilderResultClass;
 extern jmethodID g_PKIXCertPathBuilderResultGetCertPath;
 extern jmethodID g_PKIXCertPathBuilderResultGetTrustAnchor;
 
-// java/security/cert/PKIXReason - only in API level 24+
+// java/security/cert/PKIXReason
 extern jclass    g_PKIXReasonClass;
 
-// java/security/cert/PKIXRevocationChecker - only in API level 24+
+// java/security/cert/PKIXRevocationChecker
 extern jclass    g_PKIXRevocationCheckerClass;
 extern jmethodID g_PKIXRevocationCheckerSetOptions;
 
-// java/security/cert/PKIXRevocationChecker$Option - only in API level 24+
+// java/security/cert/PKIXRevocationChecker$Option
 extern jclass    g_PKIXRevocationCheckerOptionClass;
 extern jfieldID  g_PKIXRevocationCheckerOptionOnlyEndEntity;
 
@@ -488,7 +479,6 @@ extern jmethodID g_SSLSessionGetProtocol;
 extern jclass    g_SSLEngineResult;
 extern jmethodID g_SSLEngineResultGetStatus;
 extern jmethodID g_SSLEngineResultGetHandshakeStatus;
-extern bool      g_SSLEngineResultStatusLegacyOrder;
 extern jmethodID g_SSLEngineResultBytesConsumed;
 
 // javax/crypto/KeyAgreement

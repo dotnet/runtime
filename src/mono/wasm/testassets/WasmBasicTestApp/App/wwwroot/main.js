@@ -117,12 +117,50 @@ switch (testCase) {
             .withInterpreterPgo(true);
         break;
     case "DownloadThenInit":
+        let dtConfigLoadedCalled = false;
+        dotnet.withModuleConfig({
+            onConfigLoaded: () => {
+                dtConfigLoadedCalled = true;
+                testOutput("onConfigLoaded called");
+            }
+        });
         const originalFetch = globalThis.fetch;
         globalThis.fetch = (url, fetchArgs) => {
             testOutput("fetching " + url);
             return originalFetch(url, fetchArgs);
         };
         await dotnet.download();
+        if (dtConfigLoadedCalled) {
+            testOutput("onConfigLoaded was called during download");
+        }
+        testOutput("download finished");
+        break;
+    case "DownloadThenInitHttpCacheOnly":
+        let loadBootResourceCalled = false;
+        let hcConfigLoadedCalled = false;
+        dotnet.withResourceLoader((type, name, defaultUri, integrity, behavior) => {
+            testOutput("loadBootResource " + type + " " + name);
+            loadBootResourceCalled = true;
+            return defaultUri;
+        });
+        dotnet.withModuleConfig({
+            onConfigLoaded: () => {
+                hcConfigLoadedCalled = true;
+                testOutput("onConfigLoaded called");
+            }
+        });
+        const originalFetch3 = globalThis.fetch;
+        globalThis.fetch = (url, fetchArgs) => {
+            testOutput("fetching " + url);
+            return originalFetch3(url, fetchArgs);
+        };
+        await dotnet.download(true);
+        if (loadBootResourceCalled) {
+            testOutput("loadBootResource was called");
+        }
+        if (hcConfigLoadedCalled) {
+            testOutput("onConfigLoaded was called during download");
+        }
         testOutput("download finished");
         break;
     case "MaxParallelDownloads":
@@ -197,7 +235,7 @@ switch (testCase) {
         break;
 }
 
-const { setModuleImports, Module, getAssemblyExports, getConfig, INTERNAL } = await dotnet.create();
+const { setModuleImports, Module, getAssemblyExports, getConfig, INTERNAL, invokeLibraryInitializers } = await dotnet.create();
 const config = getConfig();
 const exports = await getAssemblyExports(config.mainAssemblyName);
 const assemblyExtension = Object.keys(config.resources.coreAssembly)[0].endsWith('.wasm') ? ".wasm" : ".dll";
@@ -242,6 +280,11 @@ try {
         case "LibraryInitializerTest":
             exit(0);
             break;
+        case "InvokeLibraryInitializersTest":
+            await invokeLibraryInitializers("customHook", []);
+            testOutput(`customHookCalled=${globalThis.__customHookCalled === true}`);
+            exit(0);
+            break;
         case "ZipArchiveInteropTest":
             exports.ZipArchiveInteropTest.Run();
             exit(0);
@@ -283,6 +326,10 @@ try {
             exit(0);
             break;
         case "DownloadThenInit":
+        case "DownloadThenInitHttpCacheOnly":
+            testOutput("create finished");
+            exit(0);
+            break;
         case "MaxParallelDownloads":
             exit(0);
             break;

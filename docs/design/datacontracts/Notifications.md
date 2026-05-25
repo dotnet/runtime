@@ -1,6 +1,6 @@
 # Contract Notifications
 
-This contract is for debugger notifications.
+This contract is for decoding debugger notifications raised by the runtime.
 
 ## APIs of contract
 
@@ -13,6 +13,9 @@ void SetGcNotification(int condemnedGeneration);
 // Returns false if the notification type is unknown. Pattern match on the result to access notification-specific fields.
 bool TryParseNotification(ReadOnlySpan<TargetPointer> exceptionInformation, out NotificationData? notification);
 ```
+
+Management of the JIT code-notification allowlist is a separate contract, see
+[CodeNotifications](CodeNotifications.md).
 
 ## Version 1
 

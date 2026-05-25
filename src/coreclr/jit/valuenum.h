@@ -1133,8 +1133,23 @@ public:
     // Returns true iff the VN represents a Type handle constant.
     bool IsVNTypeHandle(ValueNum vn);
 
+    // Returns true iff the VN represents a Type handle constant. If so,
+    // *pCls is set to the resolved compile-time class handle (looked up
+    // through the embedded-handle map so AOT/R2R-encoded handles are
+    // mapped back). On failure *pCls is set to NO_CLASS_HANDLE.
+    bool IsVNTypeHandle(ValueNum vn, CORINFO_CLASS_HANDLE* pCls);
+
     // Returns true iff the VN represents a relop
     bool IsVNRelop(ValueNum vn, VNFuncApp* pFuncApp = nullptr);
+
+    // Map this VNFunc back to a gen tree op (relops only). Returns GT_NONE for
+    // any non-relop VNFunc. `isUnsigned` is set to true for VNF_*_UN variants.
+    //
+    // Note: VNF_*_UN is also used to represent unordered floating-point relops
+    // (see `GetVNFuncForNode`). Callers that propagate `isUnsigned` into a
+    // GTF_UNSIGNED flag must ensure the operands are integral; this helper
+    // cannot distinguish the two cases from a VNFunc alone.
+    genTreeOps VNRelopToGenTreeOp(VNFunc vnf, bool* isUnsigned);
 
     enum class VN_RELATION_KIND
     {
