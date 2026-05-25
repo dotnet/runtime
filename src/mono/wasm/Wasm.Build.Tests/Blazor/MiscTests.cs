@@ -31,7 +31,7 @@ public class MiscTests : BlazorWasmTestBase
     [InlineData(Configuration.Release, true)]
     [InlineData(Configuration.Release, false)]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/103566")]
-    [TestCategory("native")]
+    [TestCategory("native-mono")]
     public void NativeBuild_WithDeployOnBuild_UsedByVS(Configuration config, bool nativeRelink)
     {
         string extraProperties = config == Configuration.Debug
@@ -59,7 +59,7 @@ public class MiscTests : BlazorWasmTestBase
 
     [Theory]
     [InlineData(Configuration.Release)]
-    [TestCategory("native")]
+    [TestCategory("native-mono")]
     public void DefaultTemplate_AOT_InProjectFile(Configuration config)
     {
         string extraProperties = config == Configuration.Debug
@@ -80,7 +80,7 @@ public class MiscTests : BlazorWasmTestBase
     }
 
     [Fact]
-    [TestCategory("native")]
+    [TestCategory("native-mono")]
     public void BugRegression_60479_WithRazorClassLib()
     {
         Configuration config = Configuration.Release;

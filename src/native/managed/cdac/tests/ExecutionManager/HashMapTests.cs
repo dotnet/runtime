@@ -28,15 +28,14 @@ public class HashMapTests
         MockTarget.Architecture arch,
         Action<MockHashMapBuilder> configure)
     {
-        MockMemorySpace.Builder builder = new(new TargetTestHelpers(arch));
-        MockHashMapBuilder hashMap = new(builder);
+        TestPlaceholderTarget.Builder builder = new(arch);
+        MockHashMapBuilder hashMap = new(builder.MemoryBuilder);
         configure(hashMap);
 
-        return new TestPlaceholderTarget(
-            builder.TargetTestHelpers.Arch,
-            builder.GetMemoryContext().ReadFromTarget,
-            CreateContractTypes(hashMap),
-            CreateContractGlobals(hashMap));
+        return builder
+            .AddTypes(CreateContractTypes(hashMap))
+            .AddGlobals(CreateContractGlobals(hashMap))
+            .Build();
     }
 
     [Theory]

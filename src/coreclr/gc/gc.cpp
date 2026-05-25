@@ -1775,11 +1775,7 @@ ptrdiff_t ComputeMaxStructAlignPadLarge (int requiredAlignment)
 #endif // FEATURE_STRUCTALIGN
 
 //CLR_SIZE  is the max amount of bytes from gen0 that is set to 0 in one chunk
-#ifdef SERVER_GC
 #define CLR_SIZE ((size_t)(8*1024+32))
-#else //SERVER_GC
-#define CLR_SIZE ((size_t)(8*1024+32))
-#endif //SERVER_GC
 
 #define END_SPACE_AFTER_GC (loh_size_threshold + MAX_STRUCTALIGN)
 // When we fit into the free list we need an extra of a min obj
@@ -2619,6 +2615,8 @@ size_t gc_heap::eph_gen_starts_size = 0;
 heap_segment* gc_heap::segment_standby_list;
 #endif //USE_REGIONS
 bool          gc_heap::use_large_pages_p = 0;
+bool          gc_heap::large_pages_emulation_mode_p = 0;
+bool          gc_heap::never_decommit_p = 0;
 #ifdef HEAP_BALANCE_INSTRUMENTATION
 size_t        gc_heap::last_gc_end_time_us = 0;
 #endif //HEAP_BALANCE_INSTRUMENTATION

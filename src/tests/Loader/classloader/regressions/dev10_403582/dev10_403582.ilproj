@@ -1,10 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-    <!-- Needed for NativeAotIncompatible -->
+    <!-- Needed for NativeAotIncompatible, IlasmRoundTripIncompatible -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <CLRTestPriority>1</CLRTestPriority>
     <!-- Testing various TypeLoadExceptions -->
     <NativeAotIncompatible>true</NativeAotIncompatible>
+    <!-- ildasm crashes on genmeth.dll. See https://github.com/dotnet/runtime/issues/127576 -->
+    <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).il" />

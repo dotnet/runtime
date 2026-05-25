@@ -576,20 +576,14 @@ const char* toString(CorInfoType cit)
             return "float";
         case CORINFO_TYPE_DOUBLE:
             return "double";
-        case CORINFO_TYPE_STRING:
-            return "string";
+        case CORINFO_TYPE_CLASS:
+            return "class";
         case CORINFO_TYPE_PTR:
             return "ptr";
         case CORINFO_TYPE_BYREF:
             return "byref";
         case CORINFO_TYPE_VALUECLASS:
             return "valueclass";
-        case CORINFO_TYPE_CLASS:
-            return "class";
-        case CORINFO_TYPE_REFANY:
-            return "refany";
-        case CORINFO_TYPE_VAR:
-            return "var";
         default:
             return "UNKNOWN";
     }
@@ -641,9 +635,7 @@ unsigned int toCorInfoSize(CorInfoType cit)
         case CORINFO_TYPE_CLASS:
             return (int)SpmiTargetPointerSize();
 
-        case CORINFO_TYPE_STRING:
         case CORINFO_TYPE_VALUECLASS:
-        case CORINFO_TYPE_REFANY:
         case CORINFO_TYPE_UNDEF:
         case CORINFO_TYPE_VOID:
         default:
@@ -1251,6 +1243,8 @@ const char* CorJitFlagToString(CORJIT_FLAGS::CorJitFlag flag)
 
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_ASYNC:
         return "CORJIT_FLAG_ASYNC";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_USE_DISPATCH_HELPERS:
+        return "CORJIT_FLAG_USE_DISPATCH_HELPERS";
 
     default:
         return "<unknown>";
@@ -4490,11 +4484,12 @@ void MethodContext::recGetAsyncInfo(const CORINFO_ASYNC_INFO* pAsyncInfo)
     value.continuationStateFldHnd = CastHandle(pAsyncInfo->continuationStateFldHnd);
     value.continuationFlagsFldHnd = CastHandle(pAsyncInfo->continuationFlagsFldHnd);
     value.captureExecutionContextMethHnd = CastHandle(pAsyncInfo->captureExecutionContextMethHnd);
-    value.restoreExecutionContextMethHnd = CastHandle(pAsyncInfo->restoreExecutionContextMethHnd);
     value.captureContinuationContextMethHnd = CastHandle(pAsyncInfo->captureContinuationContextMethHnd);
     value.captureContextsMethHnd = CastHandle(pAsyncInfo->captureContextsMethHnd);
     value.restoreContextsMethHnd = CastHandle(pAsyncInfo->restoreContextsMethHnd);
     value.restoreContextsOnSuspensionMethHnd = CastHandle(pAsyncInfo->restoreContextsOnSuspensionMethHnd);
+    value.finishSuspensionNoContinuationContextMethHnd = CastHandle(pAsyncInfo->finishSuspensionNoContinuationContextMethHnd);
+    value.finishSuspensionWithContinuationContextMethHnd = CastHandle(pAsyncInfo->finishSuspensionWithContinuationContextMethHnd);
 
     GetAsyncInfo->Add(0, value);
     DEBUG_REC(dmpGetAsyncInfo(0, value));
@@ -4515,11 +4510,12 @@ void MethodContext::repGetAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut)
     pAsyncInfoOut->continuationStateFldHnd = (CORINFO_FIELD_HANDLE)value.continuationStateFldHnd;
     pAsyncInfoOut->continuationFlagsFldHnd = (CORINFO_FIELD_HANDLE)value.continuationFlagsFldHnd;
     pAsyncInfoOut->captureExecutionContextMethHnd = (CORINFO_METHOD_HANDLE)value.captureExecutionContextMethHnd;
-    pAsyncInfoOut->restoreExecutionContextMethHnd = (CORINFO_METHOD_HANDLE)value.restoreExecutionContextMethHnd;
     pAsyncInfoOut->captureContinuationContextMethHnd = (CORINFO_METHOD_HANDLE)value.captureContinuationContextMethHnd;
     pAsyncInfoOut->captureContextsMethHnd = (CORINFO_METHOD_HANDLE)value.captureContextsMethHnd;
     pAsyncInfoOut->restoreContextsMethHnd = (CORINFO_METHOD_HANDLE)value.restoreContextsMethHnd;
     pAsyncInfoOut->restoreContextsOnSuspensionMethHnd = (CORINFO_METHOD_HANDLE)value.restoreContextsOnSuspensionMethHnd;
+    pAsyncInfoOut->finishSuspensionNoContinuationContextMethHnd = (CORINFO_METHOD_HANDLE)value.finishSuspensionNoContinuationContextMethHnd;
+    pAsyncInfoOut->finishSuspensionWithContinuationContextMethHnd = (CORINFO_METHOD_HANDLE)value.finishSuspensionWithContinuationContextMethHnd;
     DEBUG_REP(dmpGetAsyncInfo(0, value));
 }
 

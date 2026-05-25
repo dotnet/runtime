@@ -48,7 +48,7 @@ bool RhConfig::Environment::TryGetIntegerValue(const char* name, uint64_t* value
     TCHAR variableName[64];
     GetEnvironmentConfigName(name, variableName, ARRAY_SIZE(variableName));
 
-    TCHAR buffer[CONFIG_VAL_MAXLEN + 1]; // hex digits plus a nul terminator.
+    TCHAR buffer[CONFIG_VAL_MAXLEN + 1]; // Max textual integer value plus a nul terminator.
     const uint32_t cchBuffer = ARRAY_SIZE(buffer);
     uint32_t cchResult = PalGetEnvironmentVariable(variableName, buffer, cchBuffer);
     if (cchResult == 0 || cchResult >= cchBuffer)
@@ -56,7 +56,14 @@ bool RhConfig::Environment::TryGetIntegerValue(const char* name, uint64_t* value
 
     // Environment variable was set. Convert it to an integer.
     uint64_t uiResult = 0;
-    for (uint32_t i = 0; i < cchResult; i++)
+    uint32_t startIndex = 0;
+    if (!decimal && cchResult >= 2 && buffer[0] == '0' && (buffer[1] == 'x' || buffer[1] == 'X'))
+    {
+        startIndex = 2;
+        if (startIndex == cchResult)
+            return false; // parse error - hex prefix without any digits
+    }
+    for (uint32_t i = startIndex; i < cchResult; i++)
     {
         TCHAR ch = buffer[i];
 

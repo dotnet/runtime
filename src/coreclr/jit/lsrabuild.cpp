@@ -1071,6 +1071,14 @@ regMaskTP LinearScan::getKillSetForNode(GenTree* tree)
             break;
 #endif // FEATURE_HW_INTRINSICS
 
+        case GT_PATCHPOINT:
+            killMask = m_compiler->compHelperCallKillSet(CORINFO_HELP_PATCHPOINT);
+            break;
+
+        case GT_PATCHPOINT_FORCED:
+            killMask = m_compiler->compHelperCallKillSet(CORINFO_HELP_PATCHPOINT_FORCED);
+            break;
+
         default:
             // for all other 'tree->OperGet()' kinds, leave 'killMask' = RBM_NONE
             break;
@@ -4367,11 +4375,7 @@ int LinearScan::BuildReturn(GenTree* tree)
                         break;
                     case TYP_DOUBLE:
                         // We ONLY want the valid double register in the RBM_DOUBLERET mask.
-#ifdef TARGET_AMD64
                         useCandidates = (RBM_DOUBLERET & RBM_ALLDOUBLE).GetFloatRegSet();
-#else
-                    useCandidates = (RBM_DOUBLERET & RBM_ALLDOUBLE).GetFloatRegSet();
-#endif // TARGET_AMD64
                         break;
                     case TYP_LONG:
                         useCandidates = RBM_LNGRET.GetIntRegSet();

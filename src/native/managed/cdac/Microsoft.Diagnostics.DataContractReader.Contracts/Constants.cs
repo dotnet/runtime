@@ -32,6 +32,7 @@ public static class Constants
         public const string RecommendedReaderVersion = nameof(RecommendedReaderVersion);
 
         public const string ContinuationMethodTable = nameof(ContinuationMethodTable);
+        public const string ContinuationSingletonEEClass = nameof(ContinuationSingletonEEClass);
         public const string ExceptionMethodTable = nameof(ExceptionMethodTable);
         public const string FreeObjectMethodTable = nameof(FreeObjectMethodTable);
         public const string ObjectMethodTable = nameof(ObjectMethodTable);
@@ -47,6 +48,8 @@ public static class Constants
         public const string DispatchThisPtrMask = nameof(DispatchThisPtrMask);
         public const string ComWrappersVtablePtrs = nameof(ComWrappersVtablePtrs);
         public const string GcNotificationFlags = nameof(GcNotificationFlags);
+        public const string JITNotificationTable = nameof(JITNotificationTable);
+        public const string JITNotificationTableSize = nameof(JITNotificationTableSize);
         public const string GlobalAllocContext = nameof(GlobalAllocContext);
 
         public const string StressLogEnabled = nameof(StressLogEnabled);
@@ -83,6 +86,7 @@ public static class Constants
         public const string ExecutionManagerCodeRangeMapAddress = nameof(ExecutionManagerCodeRangeMapAddress);
         public const string EEJitManagerAddress = nameof(EEJitManagerAddress);
         public const string StubCodeBlockLast = nameof(StubCodeBlockLast);
+
         public const string DefaultADID = nameof(DefaultADID);
         public const string StaticsPointerMask = nameof(StaticsPointerMask);
         public const string PtrArrayOffsetToDataArray = nameof(PtrArrayOffsetToDataArray);

@@ -19,19 +19,21 @@ internal class TestPlaceholderTarget : Target
 {
     private ContractRegistry _contractRegistry;
     private readonly Target.IDataCache _dataCache;
-    private readonly Dictionary<DataType, Target.TypeInfo> _typeInfoCache;
+    private readonly Dictionary<string, Target.TypeInfo> _typeInfoCache;
     private readonly (string Name, ulong Value)[] _globals;
     private readonly (string Name, string Value)[] _globalStrings;
 
     internal delegate int ReadFromTargetDelegate(ulong address, Span<byte> buffer);
     internal delegate int WriteToTargetDelegate(ulong address, Span<byte> buffer);
+    internal delegate TargetPointer AllocateMemoryDelegate(uint size);
 
     private readonly ReadFromTargetDelegate _dataReader;
     private readonly WriteToTargetDelegate? _dataWriter;
+    private readonly AllocateMemoryDelegate? _allocateMemory;
     private static readonly UTF8Encoding strictUTF8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
     private static readonly UTF8Encoding looseUTF8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false);
 
-    public TestPlaceholderTarget(MockTarget.Architecture arch, ReadFromTargetDelegate reader, Dictionary<DataType, Target.TypeInfo> types = null, (string Name, ulong Value)[] globals = null, (string Name, string Value)[] globalStrings = null, WriteToTargetDelegate? writer = null)
+    public TestPlaceholderTarget(MockTarget.Architecture arch, ReadFromTargetDelegate reader, Dictionary<string, Target.TypeInfo> types = null, (string Name, ulong Value)[] globals = null, (string Name, string Value)[] globalStrings = null, WriteToTargetDelegate? writer = null, AllocateMemoryDelegate? allocateMemory = null)
     {
         IsLittleEndian = arch.IsLittleEndian;
         PointerSize = arch.Is64Bit ? 8 : 4;
@@ -40,6 +42,7 @@ internal class TestPlaceholderTarget : Target
         _typeInfoCache = types ?? [];
         _dataReader = reader;
         _dataWriter = writer;
+        _allocateMemory = allocateMemory;
         _globals = globals ?? [];
         _globalStrings = globalStrings ?? [];
     }
@@ -74,12 +77,13 @@ internal class TestPlaceholderTarget : Target
     {
         private readonly MockTarget.Architecture _arch;
         private readonly MockMemorySpace.Builder _memBuilder;
-        private readonly Dictionary<DataType, Target.TypeInfo> _types = new();
+        private readonly Dictionary<string, Target.TypeInfo> _types = new();
         private readonly List<(string Name, ulong Value)> _globals = new();
         private readonly List<(string Name, string Value)> _globalStrings = new();
         private readonly List<Action<TestContractRegistry>> _contractSetups = new();
         private Action<ContractRegistry> _registrations = CoreCLRContracts.Register;
         private ReadFromTargetDelegate? _readerOverride;
+        private AllocateMemoryDelegate? _allocateMemory;
 
         public Builder(MockTarget.Architecture arch)
         {
@@ -90,6 +94,13 @@ internal class TestPlaceholderTarget : Target
         internal MockMemorySpace.Builder MemoryBuilder => _memBuilder;
 
         public Builder AddTypes(Dictionary<DataType, Target.TypeInfo> types)
+        {
+            foreach (var kvp in types)
+                _types[kvp.Key.ToString()] = kvp.Value;
+            return this;
+        }
+
+        public Builder AddTypes(Dictionary<string, Target.TypeInfo> types)
         {
             foreach (var kvp in types)
                 _types[kvp.Key] = kvp.Value;
@@ -111,6 +122,12 @@ internal class TestPlaceholderTarget : Target
         public Builder UseReader(ReadFromTargetDelegate reader)
         {
             _readerOverride = reader;
+            return this;
+        }
+
+        public Builder UseAllocateMemory(AllocateMemoryDelegate allocateMemory)
+        {
+            _allocateMemory = allocateMemory;
             return this;
         }
 
@@ -147,7 +164,8 @@ internal class TestPlaceholderTarget : Target
                 _types,
                 _globals.ToArray(),
                 _globalStrings.ToArray(),
-                memoryContext.WriteToTarget);
+                memoryContext.WriteToTarget,
+                _allocateMemory);
 
             var registry = new TestContractRegistry();
             registry.SetTarget(target);
@@ -217,6 +235,14 @@ internal class TestPlaceholderTarget : Target
             throw new NotImplementedException();
         if (_dataWriter(address, buffer) < 0)
             throw new InvalidOperationException($"Failed to write {buffer.Length} bytes at 0x{address:x8}.");
+    }
+
+    public override TargetPointer AllocateMemory(uint size)
+    {
+        if (_allocateMemory is null)
+            return base.AllocateMemory(size); // throws NotImplementedException
+
+        return _allocateMemory(size);
     }
 
     public override string ReadUtf8String(ulong address, bool strict = false)
@@ -350,6 +376,22 @@ internal class TestPlaceholderTarget : Target
         WriteBuffer(address, buffer);
     }
 
+    public override void WritePointer(ulong address, TargetPointer value)
+    {
+        if (PointerSize == 8)
+            Write<ulong>(address, value.Value);
+        else
+            Write<uint>(address, checked((uint)value.Value));
+    }
+
+    public override void WriteNUInt(ulong address, TargetNUInt value)
+    {
+        if (PointerSize == 8)
+            Write<ulong>(address, value.Value);
+        else
+            Write<uint>(address, checked((uint)value.Value));
+    }
+
     #region subclass reader helpers
 
     /// <summary>
@@ -464,9 +506,9 @@ internal class TestPlaceholderTarget : Target
 
     public override TargetPointer ReadPointerFromSpan(ReadOnlySpan<byte> bytes) => throw new NotImplementedException();
 
-    public override Target.TypeInfo GetTypeInfo(DataType dataType)
+    public override Target.TypeInfo GetTypeInfo(string typeName)
     {
-        if (_typeInfoCache.TryGetValue(dataType, out var info))
+        if (_typeInfoCache.TryGetValue(typeName, out var info))
             return info;
 
         throw new NotImplementedException();

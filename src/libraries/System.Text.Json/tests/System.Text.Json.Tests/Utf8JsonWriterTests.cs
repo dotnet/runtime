@@ -3590,7 +3590,7 @@ namespace System.Text.Json.Tests
             }
         }
 
-        // NOTE: WritingTooLargeProperty test is constrained to run on Windows and MacOSX because it causes
+        // NOTE: WritingHugeBase64Bytes test is constrained to run on Windows and MacOSX because it causes
         //       problems on Linux due to the way deferred memory allocation works. On Linux, the allocation can
         //       succeed even if there is not enough memory but then the test may get killed by the OOM killer at the
         //       time the memory is accessed which triggers the full memory allocation.
@@ -8269,6 +8269,85 @@ namespace System.Text.Json.Tests
             string longValue = new string('a', 170_000_000);
             
             Assert.Throws<ArgumentException>(() => writer.WriteStringValue(longValue.AsSpan()));
+        }
+
+        // NOTE: WriteExtremelyLargeEscapedStringValue_Minimized test is constrained to run on Windows and MacOSX because it causes
+        //       problems on Linux due to the way deferred memory allocation works. On Linux, the allocation can
+        //       succeed even if there is not enough memory but then the test may get killed by the OOM killer at the
+        //       time the memory is accessed which triggers the full memory allocation.
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
+        [OuterLoop]
+        public static void WriteExtremelyLargeEscapedStringValue_Minimized()
+        {
+            const char InputCharacter = '\u007F';
+            const int EscapedCharacterByteLength = 6;
+
+            try
+            {
+                char[] value = new char[MaxUnescapedTokenSize];
+                value.AsSpan().Fill(InputCharacter);
+
+                int expectedByteLength = 2 + MaxUnescapedTokenSize * EscapedCharacterByteLength;
+                var output = new ArrayBufferWriter<byte>(expectedByteLength);
+                using var writer = new Utf8JsonWriter(output);
+                writer.WriteStringValue(value.AsSpan());
+                writer.Flush();
+
+                ReadOnlySpan<byte> written = output.WrittenSpan;
+                Assert.Equal(expectedByteLength, written.Length);
+                Assert.Equal((byte)'"', written[0]);
+                Assert.Equal((byte)'"', written[^1]);
+            }
+            catch (OutOfMemoryException)
+            {
+                throw new SkipTestException("Out of memory allocating large objects");
+            }
+        }
+
+        // NOTE: WriteExtremelyLargeEscapedStringValue_Indented test is constrained to run on Windows and MacOSX because it causes
+        //       problems on Linux due to the way deferred memory allocation works. On Linux, the allocation can
+        //       succeed even if there is not enough memory but then the test may get killed by the OOM killer at the
+        //       time the memory is accessed which triggers the full memory allocation.
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
+        [OuterLoop]
+        public static void WriteExtremelyLargeEscapedStringValue_Indented()
+        {
+            const char InputCharacter = '\u007F';
+            const int EscapedCharacterByteLength = 6;
+            const int IndentSize = 127;
+            const string NewLine = "\n";
+
+            try
+            {
+                char[] value = new char[MaxUnescapedTokenSize];
+                value.AsSpan().Fill(InputCharacter);
+
+                int escapedStrByteLength = 2 + MaxUnescapedTokenSize * EscapedCharacterByteLength;
+                int expectedByteLength = 1 + NewLine.Length + IndentSize + escapedStrByteLength + NewLine.Length + 1;
+
+                var options = new JsonWriterOptions { Indented = true, IndentSize = IndentSize, NewLine = NewLine };
+                var output = new ArrayBufferWriter<byte>(expectedByteLength);
+                using var writer = new Utf8JsonWriter(output, options);
+                writer.WriteStartArray();
+                writer.WriteStringValue(value.AsSpan());
+                writer.WriteEndArray();
+                writer.Flush();
+
+                // Layout: [ \n <IndentSize spaces> "escapedStr" \n ]
+                ReadOnlySpan<byte> written = output.WrittenSpan;
+                Assert.Equal(expectedByteLength, written.Length);
+                Assert.Equal((byte)'[', written[0]);
+                Assert.Equal((byte)']', written[^1]);
+                int stringStart = 1 + NewLine.Length + IndentSize;
+                Assert.Equal((byte)'"', written[stringStart]);
+                Assert.Equal((byte)'"', written[stringStart + escapedStrByteLength - 1]);
+            }
+            catch (OutOfMemoryException)
+            {
+                throw new SkipTestException("Out of memory allocating large objects");
+            }
         }
 
         [Fact]

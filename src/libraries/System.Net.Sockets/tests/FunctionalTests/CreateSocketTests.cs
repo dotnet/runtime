@@ -706,6 +706,19 @@ namespace System.Net.Sockets.Tests
             close(ptr[1]);
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)] // Windows has no API to query the blocking state of a socket and assumes true.
+        public void Ctor_SafeHandle_BlockingMatchesHandle(bool blocking)
+        {
+            using var orig = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            orig.Blocking = blocking;
+
+            using var copy = new Socket(orig.SafeHandle);
+            Assert.Equal(blocking, copy.Blocking);
+        }
+
         private static void AssertEqualOrSameException<T>(Func<T> expected, Func<T> actual)
         {
             T r1 = default, r2 = default;
