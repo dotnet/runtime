@@ -1017,7 +1017,8 @@ void AsyncTransformation::Transform(BasicBlock*               block,
 
     CallDefinitionInfo callDefInfo = CanonicalizeCallDefinition(block, call, &analyses);
 
-    const AsyncState* reusedState = FindReusableSuspension(block, call, callDefInfo, layoutBuilder, resumeReachable, mutatedSinceResumption);
+    const AsyncState* reusedState =
+        FindReusableSuspension(block, call, callDefInfo, layoutBuilder, resumeReachable, mutatedSinceResumption);
 
     if (reusedState != nullptr)
     {
@@ -1757,7 +1758,12 @@ CallDefinitionInfo AsyncTransformation::CanonicalizeCallDefinition(BasicBlock*  
 // Returns:
 //   Reusable existing state, or nullptr if no such state.
 //
-const AsyncState* AsyncTransformation::FindReusableSuspension(BasicBlock* block, GenTreeCall* call, const CallDefinitionInfo& defInfo, ContinuationLayoutBuilder* layoutBuilder, bool resumeReachable, VARSET_VALARG_TP mutatedSinceResumption)
+const AsyncState* AsyncTransformation::FindReusableSuspension(BasicBlock*                block,
+                                                              GenTreeCall*               call,
+                                                              const CallDefinitionInfo&  defInfo,
+                                                              ContinuationLayoutBuilder* layoutBuilder,
+                                                              bool                       resumeReachable,
+                                                              VARSET_VALARG_TP           mutatedSinceResumption)
 {
     if (m_compiler->opts.OptimizationDisabled())
     {
@@ -1803,11 +1809,12 @@ const AsyncState* AsyncTransformation::FindReusableSuspension(BasicBlock* block,
             }
 
             assert(state.ResumptionBB->KindIs(BBJ_ALWAYS));
-            BasicBlock* resumptionJoin = state.ResumptionBB->GetUniqueSucc(); 
+            BasicBlock* resumptionJoin = state.ResumptionBB->GetUniqueSucc();
 
             // This existing async state resumes at a sibling join block. We
             // can reuse that resumption if it has the same state as us.
-            if ((resumptionJoin == pred) && IsReusableSuspension(&state, block, call, defInfo, layoutBuilder, resumeReachable, mutatedSinceResumption))
+            if ((resumptionJoin == pred) && IsReusableSuspension(&state, block, call, defInfo, layoutBuilder,
+                                                                 resumeReachable, mutatedSinceResumption))
             {
                 return &state;
             }
@@ -1833,11 +1840,19 @@ const AsyncState* AsyncTransformation::FindReusableSuspension(BasicBlock* block,
 // Returns:
 //   True if the suspension is reusable.
 //
-bool AsyncTransformation::IsReusableSuspension(const AsyncState* state, BasicBlock* block, GenTreeCall* call, const CallDefinitionInfo& defInfo, ContinuationLayoutBuilder* layoutBuilder, bool resumeReachable, VARSET_VALARG_TP mutatedSinceResumption)
+bool AsyncTransformation::IsReusableSuspension(const AsyncState*          state,
+                                               BasicBlock*                block,
+                                               GenTreeCall*               call,
+                                               const CallDefinitionInfo&  defInfo,
+                                               ContinuationLayoutBuilder* layoutBuilder,
+                                               bool                       resumeReachable,
+                                               VARSET_VALARG_TP           mutatedSinceResumption)
 {
     GenTreeCall* predAsyncCall = state->Call;
 
-    JITDUMP("  Sibling to the join is resumption for async call [%06u]; checking for possible tail merging of suspension points\n", Compiler::dspTreeID(predAsyncCall));
+    JITDUMP(
+        "  Sibling to the join is resumption for async call [%06u]; checking for possible tail merging of suspension points\n",
+        Compiler::dspTreeID(predAsyncCall));
 
     if (!BasicBlock::sameEHRegion(block, state->CallBlock))
     {
@@ -1852,41 +1867,48 @@ bool AsyncTransformation::IsReusableSuspension(const AsyncState* state, BasicBlo
         return false;
     }
 
-    if ((defInfo.DefinitionNode != nullptr) && !GenTreeLclVarCommon::EqualsLocal(defInfo.DefinitionNode, state->CallDefInfo.DefinitionNode))
+    if ((defInfo.DefinitionNode != nullptr) &&
+        !GenTreeLclVarCommon::EqualsLocal(defInfo.DefinitionNode, state->CallDefInfo.DefinitionNode))
     {
-        JITDUMP("    No; disagreement on return value destination ([%06u] does not equal [%06u])\n", Compiler::dspTreeID(defInfo.DefinitionNode), Compiler::dspTreeID(state->CallDefInfo.DefinitionNode));
+        JITDUMP("    No; disagreement on return value destination ([%06u] does not equal [%06u])\n",
+                Compiler::dspTreeID(defInfo.DefinitionNode), Compiler::dspTreeID(state->CallDefInfo.DefinitionNode));
         return false;
     }
 
     if (call->gtReturnType != predAsyncCall->AsCall()->gtReturnType)
     {
-        JITDUMP("    No; disagreement on return type (%s vs %s)\n", varTypeName(call->gtReturnType), varTypeName(predAsyncCall->AsCall()->gtReturnType));
+        JITDUMP("    No; disagreement on return type (%s vs %s)\n", varTypeName(call->gtReturnType),
+                varTypeName(predAsyncCall->AsCall()->gtReturnType));
         return false;
     }
 
     if (call->gtReturnType == TYP_STRUCT)
     {
-        ClassLayout* thisLayout = m_compiler->typGetObjLayout(call->gtRetClsHnd);
+        ClassLayout* thisLayout  = m_compiler->typGetObjLayout(call->gtRetClsHnd);
         ClassLayout* otherLayout = m_compiler->typGetObjLayout(predAsyncCall->AsCall()->gtRetClsHnd);
         if (!ClassLayout::AreCompatible(thisLayout, otherLayout))
         {
-            JITDUMP("    No; disagreement on return type (%s vs %s)\n", thisLayout->GetClassName(), otherLayout->GetClassName());
+            JITDUMP("    No; disagreement on return type (%s vs %s)\n", thisLayout->GetClassName(),
+                    otherLayout->GetClassName());
             return false;
         }
     }
 
-    const AsyncCallInfo& asyncInfoThis = call->GetAsyncInfo();
+    const AsyncCallInfo& asyncInfoThis  = call->GetAsyncInfo();
     const AsyncCallInfo& asyncInfoOther = predAsyncCall->AsCall()->GetAsyncInfo();
 
     if (asyncInfoThis.ContinuationContextHandling != asyncInfoOther.ContinuationContextHandling)
     {
-        JITDUMP("    No; disagreement on continuation context handling (%u vs %u)\n", asyncInfoThis.ContinuationContextHandling, asyncInfoOther.ContinuationContextHandling);
+        JITDUMP("    No; disagreement on continuation context handling (%u vs %u)\n",
+                asyncInfoThis.ContinuationContextHandling, asyncInfoOther.ContinuationContextHandling);
         return false;
     }
 
     if (asyncInfoThis.NeedsToSaveAndRestoreExecutionContext() != asyncInfoOther.NeedsToSaveAndRestoreExecutionContext())
     {
-        JITDUMP("    No; disagreement on whether execution context needs to be saved and restored (%s vs %s)\n", asyncInfoThis.NeedsToSaveAndRestoreExecutionContext() ? "yes" : "no", asyncInfoOther.NeedsToSaveAndRestoreExecutionContext() ? "yes" : "no");
+        JITDUMP("    No; disagreement on whether execution context needs to be saved and restored (%s vs %s)\n",
+                asyncInfoThis.NeedsToSaveAndRestoreExecutionContext() ? "yes" : "no",
+                asyncInfoOther.NeedsToSaveAndRestoreExecutionContext() ? "yes" : "no");
         return false;
     }
 
@@ -1895,7 +1917,8 @@ bool AsyncTransformation::IsReusableSuspension(const AsyncState* state, BasicBlo
         // Not being resume reachable means we can skip checking for a
         // reusable continuation. We do not want to give up that
         // optimization.
-        JITDUMP("    No; disagreement on resume reachability (%s vs %s)\n", state->ResumeReachable ? "yes" : "no", resumeReachable ? "yes" : "no");
+        JITDUMP("    No; disagreement on resume reachability (%s vs %s)\n", state->ResumeReachable ? "yes" : "no",
+                resumeReachable ? "yes" : "no");
         return false;
     }
 
@@ -1909,18 +1932,22 @@ bool AsyncTransformation::IsReusableSuspension(const AsyncState* state, BasicBlo
         for (unsigned lclNum : layoutBuilder->Locals())
         {
             LclVarDsc* dsc = m_compiler->lvaGetDesc(lclNum);
-            if (GetLocalSaveSet(dsc, mutatedSinceResumption) != GetLocalSaveSet(dsc, state->MutatedSincePreviousResumption))
+            if (GetLocalSaveSet(dsc, mutatedSinceResumption) !=
+                GetLocalSaveSet(dsc, state->MutatedSincePreviousResumption))
             {
-                JITDUMP("    No; disagreement on save set for V%02u (%d vs %d)\n", lclNum, (unsigned)GetLocalSaveSet(dsc, mutatedSinceResumption), (unsigned)GetLocalSaveSet(dsc, state->MutatedSincePreviousResumption));
+                JITDUMP("    No; disagreement on save set for V%02u (%d vs %d)\n", lclNum,
+                        (unsigned)GetLocalSaveSet(dsc, mutatedSinceResumption),
+                        (unsigned)GetLocalSaveSet(dsc, state->MutatedSincePreviousResumption));
                 return false;
             }
         }
     }
 
-    static const WellKnownArg validateArgs[] = { WellKnownArg::AsyncExecutionContext, WellKnownArg::AsyncSynchronizationContext };
+    static const WellKnownArg validateArgs[] = {WellKnownArg::AsyncExecutionContext,
+                                                WellKnownArg::AsyncSynchronizationContext};
     for (WellKnownArg arg : validateArgs)
     {
-        CallArg* thisArg = call->gtArgs.FindWellKnownArg(arg);
+        CallArg* thisArg  = call->gtArgs.FindWellKnownArg(arg);
         CallArg* otherArg = predAsyncCall->gtArgs.FindWellKnownArg(arg);
 
         if ((thisArg == nullptr) != (otherArg == nullptr))
@@ -1939,12 +1966,16 @@ bool AsyncTransformation::IsReusableSuspension(const AsyncState* state, BasicBlo
 
             if (!GenTree::Compare(thisArg->GetNode(), otherArg->GetNode()))
             {
-                JITDUMP("    No; disagreement on value of %s argument ([%06u] vs [%06u])\n", getWellKnownArgName(arg), Compiler::dspTreeID(thisArg->GetNode()), Compiler::dspTreeID(otherArg->GetNode()));
+                JITDUMP("    No; disagreement on value of %s argument ([%06u] vs [%06u])\n", getWellKnownArgName(arg),
+                        Compiler::dspTreeID(thisArg->GetNode()), Compiler::dspTreeID(otherArg->GetNode()));
                 return false;
             }
         }
     }
 
+    // At this point we expect both suspensions to agree on the live locals
+    // since they both join at the same point. So we only need to assert that
+    // the layouts match.
     assert(ContinuationLayoutBuilder::Equals(*layoutBuilder, *state->Layout));
     return true;
 }
@@ -1959,7 +1990,8 @@ bool AsyncTransformation::IsReusableSuspension(const AsyncState* state, BasicBlo
 //
 void AsyncTransformation::HandleReusedSuspension(BasicBlock* callBlock, GenTreeCall* call)
 {
-    static const WellKnownArg argsToRemove[] = { WellKnownArg::AsyncExecutionContext, WellKnownArg::AsyncSynchronizationContext };
+    static const WellKnownArg argsToRemove[] = {WellKnownArg::AsyncExecutionContext,
+                                                WellKnownArg::AsyncSynchronizationContext};
     for (WellKnownArg wka : argsToRemove)
     {
         CallArg* arg = call->gtArgs.FindWellKnownArg(wka);
