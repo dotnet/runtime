@@ -278,7 +278,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => SafeProcessHandle.Open(processId));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void Open_NonExistentProcessId_ThrowsWin32Exception()
         {
             // Use an unlikely process ID that should not exist.
