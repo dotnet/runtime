@@ -429,12 +429,12 @@ int main(int argc, char** argv)
       <_FatExecutableShimLinkerArg Include="--sysroot=&quot;$(SysRoot)&quot;" Condition="'$(SysRoot)' != '' and '$(_IsApplePlatform)' != 'true'" />
       <_FatExecutableShimLinkerArg Include="-isysroot &quot;$(SysRoot)&quot;" Condition="'$(SysRoot)' != '' and '$(_IsApplePlatform)' == 'true'" />
       <_FatExecutableShimLinkerArg Include="-g" Condition="$(NativeDebugSymbols) == 'true'" />
-      <_FatExecutableShimLinkerArg Include="-Wl,-rpath,$ORIGIN" Condition="'$(_IsApplePlatform)' != 'true'" />
+      <_FatExecutableShimLinkerArg Include="-Wl,-rpath,'$ORIGIN'" Condition="'$(_IsApplePlatform)' != 'true'" />
       <_FatExecutableShimLinkerArg Include="-Wl,-rpath,@executable_path" Condition="'$(_IsApplePlatform)' == 'true'" />
       <_FatExecutableShimLinkerArg Include="-Wl,--build-id=sha1" Condition="'$(_IsApplePlatform)' != 'true'" />
       <_FatExecutableShimLinkerArg Include="-Wl,-z,relro" Condition="'$(_IsApplePlatform)' != 'true'" />
       <_FatExecutableShimLinkerArg Include="-Wl,-z,now" Condition="'$(_IsApplePlatform)' != 'true'" />
-      <_FatExecutableShimLinkerArg Include="-Wl,-z,stack-size=$(IlcDefaultStackSize)" Condition="'$(IlcDefaultStackSize)' != ''" />
+      <_FatExecutableShimLinkerArg Include="-Wl,-z,stack-size=$(IlcDefaultStackSize)" Condition="'$(IlcDefaultStackSize)' != '' and '$(_IsApplePlatform)' != 'true'" />
     </ItemGroup>
 
     <MakeDir Directories="$(NativeIntermediateOutputPath);$(NativeOutputPath)" />

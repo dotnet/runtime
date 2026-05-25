@@ -183,7 +183,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <_FatExecutableReferencePath Include="@(ReferencePath)"
                                    Condition="'%(ReferencePath.ReferenceSourceTarget)' == 'ProjectReference' and '%(ReferencePath.IncludeInFatExe)' == 'true'">
         <AssemblyName>%(ReferencePath.Filename)</AssemblyName>
-        <SanitizedAssemblyName>$([System.Text.RegularExpressions.Regex]::Replace('%(ReferencePath.Filename)', '[^A-Za-z0-9_]', '_'))</SanitizedAssemblyName>
+        <SanitizedAssemblyName>_$([System.Text.RegularExpressions.Regex]::Replace('%(ReferencePath.Filename)', '[^A-Za-z0-9_]', '_'))</SanitizedAssemblyName>
         <AssemblyNameHash>$([MSBuild]::StableStringHash('%(ReferencePath.Filename)', 'Sha256'))</AssemblyNameHash>
         <TargetName>%(ReferencePath.Filename)</TargetName>
       </_FatExecutableReferencePath>

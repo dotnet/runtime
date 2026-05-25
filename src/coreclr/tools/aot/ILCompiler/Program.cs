@@ -246,8 +246,11 @@ namespace ILCompiler
                         foreach (string specifier in fatExeModules)
                         {
                             int separatorIndex = specifier.IndexOf('=');
-                            if (separatorIndex <= 0 || separatorIndex != specifier.LastIndexOf('=') || separatorIndex == specifier.Length - 1)
-                                throw new CommandLineException($"Invalid format for --fatexe: '{specifier}'. Expected exactly one '=' separating assemblyName from MainEntryPointName.");
+                            if (separatorIndex < 0)
+                                throw new CommandLineException($"Invalid format for --fatexe: '{specifier}'. Missing '=' separator between assemblyName and MainEntryPointName.");
+
+                            if (separatorIndex == 0 || separatorIndex != specifier.LastIndexOf('=') || separatorIndex == specifier.Length - 1)
+                                throw new CommandLineException($"Invalid format for --fatexe: '{specifier}'. Expected exactly one '=' with non-empty assemblyName and MainEntryPointName.");
 
                             EcmaModule module = typeSystemContext.GetModuleForSimpleName(specifier.Substring(0, separatorIndex));
                             compilationRoots.Add(new MainMethodRootProvider(module, null, generateLibraryAndModuleInitializers: false, specifier.Substring(separatorIndex + 1)));
