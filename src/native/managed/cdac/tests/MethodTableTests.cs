@@ -476,7 +476,6 @@ public class MethodTableTests
 
                 MockEEClass sharedEEClass = rtsBuilder.AddEEClass("SubContinuation");
                 MockMethodTable sharedCanonMT = rtsBuilder.AddMethodTable("SubContinuationCanon");
-
                 sharedCanonMT.BaseSize = targetTestHelpers.ObjectBaseSize;
                 sharedCanonMT.ParentMethodTable = continuationBaseMethodTable.Address;
                 sharedCanonMT.NumVirtuals = 3;
@@ -495,7 +494,7 @@ public class MethodTableTests
         IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
         Contracts.TypeHandle continuationTypeHandle = contract.GetTypeHandle(continuationInstanceMethodTablePtr);
         Assert.Equal(continuationInstanceMethodTablePtr.Value, continuationTypeHandle.Address.Value);
-        Assert.False(contract.IsContinuationWithoutMetadata(continuationTypeHandle));
+        Assert.True(contract.IsContinuationWithoutMetadata(continuationTypeHandle));
     }
 
     [Theory]
