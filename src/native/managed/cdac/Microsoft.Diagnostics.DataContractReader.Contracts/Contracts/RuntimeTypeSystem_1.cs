@@ -73,21 +73,23 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     private readonly struct TypeKey : IEquatable<TypeKey>
     {
-        public TypeKey(TypeHandle typeHandle, CorElementType elementType, int rank, ImmutableArray<TypeHandle> typeArgs)
+        public TypeKey(TypeHandle typeHandle, CorElementType elementType, int rank, ImmutableArray<TypeHandle> typeArgs, byte callConv = 0)
         {
             TypeHandle = typeHandle;
             ElementType = elementType;
             Rank = rank;
             TypeArgs = typeArgs;
+            CallConv = callConv;
         }
         public TypeHandle TypeHandle { get; }
         public CorElementType ElementType { get; }
         public int Rank { get; }
         public ImmutableArray<TypeHandle> TypeArgs { get; }
+        public byte CallConv { get; }
 
         public bool Equals(TypeKey other)
         {
-            if (ElementType != other.ElementType || Rank != other.Rank || TypeArgs.Length != other.TypeArgs.Length)
+            if (ElementType != other.ElementType || Rank != other.Rank || CallConv != other.CallConv || TypeArgs.Length != other.TypeArgs.Length)
                 return false;
             for (int i = 0; i < TypeArgs.Length; i++)
             {
@@ -101,7 +103,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
         public override int GetHashCode()
         {
-            int hash = HashCode.Combine(TypeHandle.GetHashCode(), (int)ElementType, Rank);
+            int hash = HashCode.Combine(TypeHandle.GetHashCode(), (int)ElementType, Rank, (int)CallConv);
             foreach (TypeHandle th in TypeArgs)
             {
                 hash = HashCode.Combine(hash, th.GetHashCode());
@@ -1038,6 +1040,22 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     }
 
+    private bool FnPtrMatch(TypeHandle candidate, ImmutableArray<TypeHandle> retAndArgTypes, byte callConv)
+    {
+        if (!IsFunctionPointer(candidate, out ReadOnlySpan<TypeHandle> candidateRetAndArgs, out byte candidateCallConv))
+            return false;
+        if (candidateCallConv != callConv)
+            return false;
+        if (candidateRetAndArgs.Length != retAndArgTypes.Length)
+            return false;
+        for (int i = 0; i < candidateRetAndArgs.Length; i++)
+        {
+            if (candidateRetAndArgs[i].Address != retAndArgTypes[i].Address)
+                return false;
+        }
+        return true;
+    }
+
     private bool IsLoaded(TypeHandle typeHandle)
     {
         if (typeHandle.Address == TargetPointer.Null)
@@ -1053,14 +1071,19 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return (auxData.Flags & (uint)MethodTableAuxiliaryFlags.IsNotFullyLoaded) == 0; // IsUnloaded
     }
 
-    TypeHandle IRuntimeTypeSystem.GetConstructedType(TypeHandle typeHandle, CorElementType corElementType, int rank, ImmutableArray<TypeHandle> typeArguments)
+    TypeHandle IRuntimeTypeSystem.GetConstructedType(TypeHandle typeHandle, CorElementType corElementType, int rank, ImmutableArray<TypeHandle> typeArguments, byte callConv)
     {
-        if (typeHandle.Address == TargetPointer.Null)
+        if (typeHandle.Address == TargetPointer.Null && corElementType != CorElementType.FnPtr)
             return new TypeHandle(TargetPointer.Null);
-        if (_typeHandles.TryGetValue(new TypeKey(typeHandle, corElementType, rank, typeArguments), out TypeHandle existing))
+        if (_typeHandles.TryGetValue(new TypeKey(typeHandle, corElementType, rank, typeArguments, callConv), out TypeHandle existing))
             return existing;
         ILoader loaderContract = _target.Contracts.Loader;
-        TargetPointer loaderModule = GetLoaderModule(typeHandle);
+        TargetPointer loaderModule;
+        if (corElementType == CorElementType.FnPtr)
+            loaderModule = FindFnPtrLoaderModule(typeArguments);
+        else
+            loaderModule = GetLoaderModule(typeHandle);
+
         ModuleHandle moduleHandle = loaderContract.GetModuleHandleFromModulePtr(loaderModule);
         TypeHandle potentialMatch;
         foreach (TargetPointer ptr in loaderContract.GetAvailableTypeParams(moduleHandle))
@@ -1074,6 +1097,14 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
                     return potentialMatch;
                 }
             }
+            else if (corElementType == CorElementType.FnPtr)
+            {
+                if (FnPtrMatch(potentialMatch, typeArguments, callConv) && IsLoaded(potentialMatch))
+                {
+                    _ = _typeHandles.TryAdd(new TypeKey(typeHandle, corElementType, rank, typeArguments, callConv), potentialMatch);
+                    return potentialMatch;
+                }
+            }
             else if (ArrayPtrMatch(typeHandle, corElementType, rank, potentialMatch) && IsLoaded(potentialMatch))
             {
                 _ = _typeHandles.TryAdd(new TypeKey(typeHandle, corElementType, rank, typeArguments), potentialMatch);
@@ -1081,6 +1112,54 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             }
         }
         return new TypeHandle(TargetPointer.Null);
+    }
+
+    // Mirrors the native algorithm
+    // ClassLoader::ComputeLoaderModuleForFunctionPointer: the loader module is the collectible
+    // ret/arg type's loader module with the largest LoaderAllocator creation number, or CoreLib's
+    // loader module if none of the ret/arg types are collectible.
+    private TargetPointer FindFnPtrLoaderModule(ImmutableArray<TypeHandle> retAndArgTypes)
+    {
+        ILoader loaderContract = _target.Contracts.Loader;
+
+        TargetPointer loaderModulePtr = TargetPointer.Null;
+        ulong latestFoundNumber = 0;
+        bool anyCollectible = false;
+
+        foreach (TypeHandle arg in retAndArgTypes)
+        {
+            if (arg.Address == TargetPointer.Null)
+                continue;
+
+            TargetPointer argModulePtr = GetLoaderModule(arg);
+            if (argModulePtr == TargetPointer.Null)
+                continue;
+
+            ModuleHandle argModuleHandle = loaderContract.GetModuleHandleFromModulePtr(argModulePtr);
+            TargetPointer argLoaderAllocator = loaderContract.GetLoaderAllocator(argModuleHandle);
+            if (argLoaderAllocator == TargetPointer.Null)
+                continue;
+
+            Data.LoaderAllocator loaderAllocator = _target.ProcessedData.GetOrAdd<Data.LoaderAllocator>(argLoaderAllocator);
+            if (!loaderAllocator.IsCollectible)
+                continue;
+
+            if (!anyCollectible || loaderAllocator.CreationNumber > latestFoundNumber)
+            {
+                anyCollectible = true;
+                latestFoundNumber = loaderAllocator.CreationNumber;
+                loaderModulePtr = argModulePtr;
+            }
+        }
+
+        if (!anyCollectible)
+        {
+            TargetPointer systemAssembly = loaderContract.GetSystemAssembly();
+            ModuleHandle coreLibModuleHandle = loaderContract.GetModuleHandleFromAssemblyPtr(systemAssembly);
+            loaderModulePtr = loaderContract.GetModule(coreLibModuleHandle);
+        }
+
+        return loaderModulePtr;
     }
 
     TypeHandle IRuntimeTypeSystem.GetPrimitiveType(CorElementType typeCode)

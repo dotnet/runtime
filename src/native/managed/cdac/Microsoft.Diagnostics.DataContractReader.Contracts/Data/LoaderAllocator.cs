@@ -29,6 +29,9 @@ internal sealed class LoaderAllocator : IData<LoaderAllocator>
         VirtualCallStubManager = target.ReadPointerField(address, type, nameof(VirtualCallStubManager));
 
         ObjectHandle = target.ReadDataField<ObjectHandle>(address, type, nameof(ObjectHandle));
+
+        IsCollectible = target.ReadField<byte>(address, type, nameof(IsCollectible)) != 0;
+        CreationNumber = target.ReadField<ulong>(address, type, nameof(CreationNumber));
     }
 
     public uint ReferenceCount { get; init; }
@@ -42,6 +45,8 @@ internal sealed class LoaderAllocator : IData<LoaderAllocator>
     public TargetPointer? DynamicHelpersStubHeap { get; init; }
     public TargetPointer VirtualCallStubManager { get; init; }
     public ObjectHandle ObjectHandle { get; init; }
+    public bool IsCollectible { get; init; }
+    public ulong CreationNumber { get; init; }
 
     public bool IsAlive => ReferenceCount != 0;
 }
