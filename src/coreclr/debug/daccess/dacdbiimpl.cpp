@@ -3522,20 +3522,21 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateStackFramesFromException
 
         INT32 dacStackFramesLength = stackFramesData.cElements;
 
+        AppDomain* pDomain = AppDomain::GetCurrentDomain();
+        _ASSERTE(pDomain != NULL);
+
+        VMPTR_AppDomain vmAppDomain = VMPTR_AppDomain::NullPtr();
+        vmAppDomain.SetHostPtr(pDomain);
+
         for (INT32 index = 0; index < dacStackFramesLength; ++index)
         {
             DebugStackTrace::Element const& currentElement = stackFramesData.pElements[index];
-
-            AppDomain* pDomain = AppDomain::GetCurrentDomain();
-            _ASSERTE(pDomain != NULL);
 
             Module* pModule = currentElement.pFunc->GetModule();
             Assembly* pAssembly = pModule->GetAssembly();
             _ASSERTE(pAssembly != NULL);
 
-            VMPTR_AppDomain vmAppDomain = VMPTR_AppDomain::NullPtr();
             VMPTR_Assembly vmAssembly = VMPTR_Assembly::NullPtr();
-            vmAppDomain.SetHostPtr(pDomain);
             vmAssembly.SetHostPtr(pAssembly);
 
             BOOL isLastForeignExceptionFrame = (currentElement.flags & STEF_LAST_FRAME_FROM_FOREIGN_STACK_TRACE) != 0;
