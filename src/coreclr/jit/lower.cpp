@@ -10244,6 +10244,82 @@ void Lowering::LowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blk)
     wrapWithNullcheck(data);
 }
 
+#ifndef TARGET_WASM
+//------------------------------------------------------------------------
+// LowerCopyBlockStore: Shared lowering of a struct-copy
+//
+// Arguments:
+//    blkNode - The block store node to lower. Must be a copy (non-InitBlk).
+//
+void Lowering::LowerCopyBlockStore(GenTreeBlk* blkNode)
+{
+    assert(blkNode->OperIs(GT_STORE_BLK));
+    assert(!blkNode->OperIsInitBlkOp());
+
+    GenTree*       src     = blkNode->Data();
+    GenTree*       dstAddr = blkNode->Addr();
+    const unsigned size    = blkNode->Size();
+
+    assert(src->OperIs(GT_IND, GT_LCL_VAR, GT_LCL_FLD));
+    src->SetContained();
+
+    if (src->OperIs(GT_LCL_VAR))
+    {
+        // TODO-1stClassStructs: for now we can't work with STORE_BLOCK source in register.
+        const unsigned srcLclNum = src->AsLclVar()->GetLclNum();
+        m_compiler->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(DoNotEnregisterReason::StoreBlkSrc));
+    }
+
+    ClassLayout* layout    = blkNode->GetLayout();
+    bool         doCpObj   = layout->HasGCPtr();
+    const bool   isNotHeap = blkNode->IsAddressNotOnHeap(m_compiler);
+
+    // x86/x64 has a SIMD-aware Memcpy unroll threshold; SIMD is only usable
+    // when we are not going through the per-slot write-barrier path.
+    const bool     canUseSimd  = !doCpObj || isNotHeap;
+    const unsigned unrollLimit = m_compiler->getUnrollThreshold(Compiler::UnrollKind::Memcpy, canUseSimd);
+
+#ifndef JIT32_GCENCODER
+    if (doCpObj && isNotHeap)
+    {
+        // No write barriers are needed if the destination is known to be outside of the GC heap.
+        // If the layout contains a byref, then we know it must live on the stack.
+        doCpObj = false;
+        if (size <= unrollLimit)
+        {
+            // If the size is small enough to unroll then we need to mark the block as non-interruptible
+            // to actually allow unrolling. The generated code does not report GC references loaded in the
+            // temporary register(s) used for copying. This is not supported for the JIT32_GCENCODER.
+            blkNode->gtBlkOpGcUnsafe = true;
+        }
+    }
+#endif
+
+    if (doCpObj)
+    {
+        // Per-slot decomposition was already attempted by LowerBlockStoreCommon,
+        // so reaching here means the destination is on-heap and we fall back to
+        // the bulk write-barrier helper.
+        LowerBlockStoreAsGcBulkCopyCall(blkNode);
+        return;
+    }
+
+    if (size <= unrollLimit)
+    {
+        blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
+        if (src->OperIs(GT_IND))
+        {
+            ContainBlockStoreAddress(blkNode, size, src->AsIndir()->Addr(), src->AsIndir());
+        }
+        ContainBlockStoreAddress(blkNode, size, dstAddr, nullptr);
+        return;
+    }
+
+    // Use memcpy
+    LowerBlockStoreAsHelperCall(blkNode);
+}
+#endif // !TARGET_WASM
+
 //------------------------------------------------------------------------
 // LowerBlockStoreAsHelperCall: Lower a block store node as a memset/memcpy call
 //

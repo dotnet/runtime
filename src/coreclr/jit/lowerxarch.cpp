@@ -464,69 +464,8 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
     }
     else
     {
-        assert(src->OperIs(GT_IND, GT_LCL_VAR, GT_LCL_FLD));
-        src->SetContained();
-
-        if (src->OperIs(GT_LCL_VAR))
-        {
-            // TODO-1stClassStructs: for now we can't work with STORE_BLOCK source in register.
-            const unsigned srcLclNum = src->AsLclVar()->GetLclNum();
-            m_compiler->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(DoNotEnregisterReason::StoreBlkSrc));
-        }
-
-        ClassLayout* layout               = blkNode->GetLayout();
-        bool         doCpObj              = layout->HasGCPtr();
-        bool         isNotHeap            = blkNode->IsAddressNotOnHeap(m_compiler);
-        bool         canUseSimd           = !doCpObj || isNotHeap;
-        unsigned     copyBlockUnrollLimit = m_compiler->getUnrollThreshold(Compiler::UnrollKind::Memcpy, canUseSimd);
-
-#ifndef JIT32_GCENCODER
-        if (doCpObj && isNotHeap)
-        {
-            // No write barriers are needed if the destination is known to be outside of the GC heap.
-            doCpObj = false;
-            if (size <= copyBlockUnrollLimit)
-            {
-                // If the size is small enough to unroll then we need to mark the block as non-interruptible
-                // to actually allow unrolling. The generated code does not report GC references loaded in the
-                // temporary register(s) used for copying. This is not supported for the JIT32_GCENCODER.
-                blkNode->gtBlkOpGcUnsafe = true;
-            }
-        }
-#endif
-
-        if (doCpObj)
-        {
-            // Per-slot decomposition was already attempted by LowerBlockStoreCommon,
-            // so reaching here means the destination is on-heap and we fall back to
-            // the bulk write-barrier helper.
-            LowerBlockStoreAsGcBulkCopyCall(blkNode);
-            return;
-        }
-        else if (blkNode->OperIs(GT_STORE_BLK) &&
-                 (size <= m_compiler->getUnrollThreshold(Compiler::UnrollKind::Memcpy, canUseSimd)))
-        {
-            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
-
-            if (src->OperIs(GT_IND))
-            {
-                ContainBlockStoreAddress(blkNode, size, src->AsIndir()->Addr(), src->AsIndir());
-            }
-
-            ContainBlockStoreAddress(blkNode, size, dstAddr, nullptr);
-        }
-        else
-        {
-            assert(blkNode->OperIs(GT_STORE_BLK));
-
-#ifdef TARGET_AMD64
-            LowerBlockStoreAsHelperCall(blkNode);
-            return;
-#else
-            // TODO-X86-CQ: Investigate whether a helper call would be beneficial on x86
-            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindRepInstr;
-#endif
-        }
+        LowerCopyBlockStore(blkNode);
+        return;
     }
 
     assert(blkNode->gtBlkOpKind != GenTreeBlk::BlkOpKindInvalid);

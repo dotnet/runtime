@@ -545,59 +545,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
     }
     else
     {
-        assert(src->OperIs(GT_IND, GT_LCL_VAR, GT_LCL_FLD));
-        src->SetContained();
-
-        if (src->OperIs(GT_LCL_VAR))
-        {
-            // TODO-1stClassStructs: for now we can't work with STORE_BLOCK source in register.
-            const unsigned srcLclNum = src->AsLclVar()->GetLclNum();
-            m_compiler->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(DoNotEnregisterReason::BlockOp));
-        }
-
-        ClassLayout* layout               = blkNode->GetLayout();
-        bool         doCpObj              = layout->HasGCPtr();
-        unsigned     copyBlockUnrollLimit = m_compiler->getUnrollThreshold(Compiler::UnrollKind::Memcpy);
-
-        if (doCpObj && blkNode->IsAddressNotOnHeap(m_compiler))
-        {
-            // No write barriers are needed on the stack.
-            // If the layout contains a byref, then we know it must live on the stack.
-            doCpObj = false;
-            if (size <= copyBlockUnrollLimit)
-            {
-                // If the size is small enough to unroll then we need to mark the block as non-interruptible
-                // to actually allow unrolling. The generated code does not report GC references loaded in the
-                // temporary register(s) used for copying.
-                blkNode->gtBlkOpGcUnsafe = true;
-            }
-        }
-
-        // CopyObj or CopyBlk
-        if (doCpObj)
-        {
-            // Per-slot decomposition was already attempted by LowerBlockStoreCommon,
-            // so reaching here means the destination is on-heap and we fall back to
-            // the bulk write-barrier helper.
-            LowerBlockStoreAsGcBulkCopyCall(blkNode);
-            return;
-        }
-        else if (blkNode->OperIs(GT_STORE_BLK) && (size <= copyBlockUnrollLimit))
-        {
-            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
-
-            if (src->OperIs(GT_IND))
-            {
-                ContainBlockStoreAddress(blkNode, size, src->AsIndir()->Addr(), src->AsIndir());
-            }
-
-            ContainBlockStoreAddress(blkNode, size, dstAddr, nullptr);
-        }
-        else
-        {
-            assert(blkNode->OperIs(GT_STORE_BLK));
-            LowerBlockStoreAsHelperCall(blkNode);
-        }
+        LowerCopyBlockStore(blkNode);
     }
 }
 
