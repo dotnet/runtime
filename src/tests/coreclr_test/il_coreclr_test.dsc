@@ -72,7 +72,7 @@ const ilCompile = Rules.rule<IlCompileAttrs, IlCompileResolved, Rules.Toolchain,
         return {
             kind: "IlCompileResult",
             binary: binaryFile,
-            defaultInfo: Rules.defaultInfo({ files: [binaryFile] }),
+            defaultInfo: Rules.defaultInfo({ files: [produced[0]] }),
         };
     },
 });

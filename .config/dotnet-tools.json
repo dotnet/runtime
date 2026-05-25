@@ -27,7 +27,7 @@
       ]
     },
     "agtest.bxl.tool": {
-      "version": "0.2.0-ci.9.9e337b3",
+      "version": "0.2.0-ci.12.e00e62f",
       "commands": [
         "bxl"
       ]

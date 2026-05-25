@@ -46,7 +46,7 @@ const write_file = Rules.rule<WriteFileAttrs, WriteFileAttrs, Rules.Toolchain, W
         return {
             kind: "WriteFileResult",
             out: bound,
-            defaultInfo: Rules.defaultInfo({ files: [Rules.getFile(bound)] }),
+            defaultInfo: Rules.defaultInfo({ files: [bound] }),
         };
     },
 });
@@ -68,6 +68,22 @@ const generatorGlobalConfig = write_file({
         "build_property.TargetOS = linux",
         "build_property.TargetArchitecture = x64",
         "build_property.RuntimeFlavor = CoreCLR",
+    ],
+});
+
+const coreclrRuntimeConfig = write_file({
+    name: "coreclr_runtimeconfig",
+    out: "coreclr.runtimeconfig.json",
+    content: [
+        "{",
+        "  \"runtimeOptions\": {",
+        "    \"tfm\": \"net11.0\",",
+        "    \"framework\": {",
+        "      \"name\": \"Microsoft.NETCore.App\",",
+        "      \"version\": \"11.0.0-preview.5.26264.105\"",
+        "    }",
+        "  }",
+        "}",
     ],
 });
 
@@ -207,6 +223,7 @@ export function coreclr_test(args: CoreClrTestArguments): CoreClrTestResult {
     const csInfo = CSharp.csharp_binary({
         name: args.name,
         toolchain: Common.csharpToolchain,
+        tfm: "net11.0",
         srcs: args.srcs,
         refs: Defs.CORECLR_TEST_COMMON_DEPS,
         externalPackages: Defs.EXTERNAL_PACKAGES,
@@ -218,6 +235,7 @@ export function coreclr_test(args: CoreClrTestArguments): CoreClrTestResult {
         useSharedCompilation: true,
         analyzers: referenceXunitWrapperGenerator ? [Rules.sourceArtifact(Common.xunitWrapperGenerator.binary)] : undefined,
         analyzerConfigs: analyzerConfigs,
+        runtimeConfig: coreclrRuntimeConfig.out,
     });
 
     const runtimeFiles = [

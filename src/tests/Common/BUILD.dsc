@@ -7,7 +7,7 @@ import * as Defs from "Defs";
 const sdkVersion = "11.0.100-preview.5.26227.104";
 
 @@public
-export const csharpToolchain = CSharp.csharpToolchainFromContents({
+export const csharpToolchain = CSharp.csharpToolchain({
     name: "dotnet-sdk",
     contents: importFrom("DotNetSdk").extracted,
     compilerPath: `sdk/${sdkVersion}/Roslyn/bincore/csc.dll`,
@@ -17,6 +17,7 @@ export const csharpToolchain = CSharp.csharpToolchainFromContents({
 export const testLibrary = CSharp.csharp_library({
     name: "TestLibrary",
     toolchain: csharpToolchain,
+    tfm: "net11.0",
     useSharedCompilation: true,
     srcs: [
         "CoreCLRTestLibrary/AssertExtensions.cs",
@@ -53,6 +54,7 @@ export const testLibrary = CSharp.csharp_library({
 export const xunitWrapperLibrary = CSharp.csharp_library({
     name: "XUnitWrapperLibrary",
     toolchain: csharpToolchain,
+    tfm: "net11.0",
     useSharedCompilation: true,
     srcs: [
         "XUnitWrapperLibrary/Help.cs",
@@ -72,6 +74,7 @@ export const xunitWrapperLibrary = CSharp.csharp_library({
 export const xunitWrapperGenerator = CSharp.csharp_library({
     name: "XUnitWrapperGenerator",
     toolchain: csharpToolchain,
+    tfm: "net11.0",
     useSharedCompilation: true,
     srcs: [
         "XUnitWrapperGenerator/CodeBuilder.cs",
