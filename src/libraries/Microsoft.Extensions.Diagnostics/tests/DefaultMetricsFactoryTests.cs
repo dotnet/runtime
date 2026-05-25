@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
@@ -104,6 +105,24 @@ namespace Microsoft.Extensions.Diagnostics.Metrics.Tests
         }
 
         [Fact]
+        public void Create_RestoresScope_WhenMeterCreationThrows()
+        {
+            ServiceCollection services = new ServiceCollection();
+            services.AddMetrics();
+            var sp = services.BuildServiceProvider();
+            using IMeterFactory meterFactory = sp.GetRequiredService<IMeterFactory>();
+
+            MeterOptions options = new MeterOptions("name")
+            {
+                Tags = new ThrowingTagsEnumerable()
+            };
+
+            Assert.Null(options.Scope);
+            Assert.Throws<InvalidOperationException>(() => meterFactory.Create(options));
+            Assert.Null(options.Scope);
+        }
+
+        [Fact]
         public void MeterDisposeTest()
         {
             ServiceCollection services = new ServiceCollection();
@@ -180,6 +199,28 @@ namespace Microsoft.Extensions.Diagnostics.Metrics.Tests
                 }
 
                 _meterList.Clear();
+            }
+        }
+
+        private sealed class ThrowingTagsEnumerable : IEnumerable<KeyValuePair<string, object?>>
+        {
+            public IEnumerator<KeyValuePair<string, object?>> GetEnumerator() => new ThrowingTagsEnumerator();
+
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+            private sealed class ThrowingTagsEnumerator : IEnumerator<KeyValuePair<string, object?>>
+            {
+                public KeyValuePair<string, object?> Current => default;
+
+                object IEnumerator.Current => Current;
+
+                public bool MoveNext() => throw new InvalidOperationException("Test exception.");
+
+                public void Dispose()
+                {
+                }
+
+                public void Reset() => throw new NotSupportedException();
             }
         }
     }

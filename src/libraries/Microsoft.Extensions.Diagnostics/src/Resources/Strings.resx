@@ -120,7 +120,13 @@
   <data name="InvalidScope" xml:space="preserve">
     <value>The meter factory does not allow a custom scope value when creating a meter.</value>
   </data>
+  <data name="InvalidActivitySourceScope" xml:space="preserve">
+    <value>The activity source factory does not allow a custom scope value when creating an activity source.</value>
+  </data>
   <data name="MoreThanOneWildcard" xml:space="preserve">
     <value>Only one wildcard character is allowed in category name.</value>
+  </data>
+  <data name="MoreThanOneWildcardActivitySourceName" xml:space="preserve">
+    <value>Only one wildcard character is allowed in activity source name.</value>
   </data>
 </root>
