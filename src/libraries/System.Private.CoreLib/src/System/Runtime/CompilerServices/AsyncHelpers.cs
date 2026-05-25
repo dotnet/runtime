@@ -62,7 +62,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="task">The task to await.</param>
         [Intrinsic]
         [BypassReadyToRun]
-        [MethodImpl(MethodImplOptions.Async | MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.Async)]
         [StackTraceHidden]
         public static T Await<T>(Task<T> task)
         {
@@ -82,7 +82,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="task">The value task to await.</param>
         [Intrinsic]
         [BypassReadyToRun]
-        [MethodImpl(MethodImplOptions.Async | MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.Async)]
         [StackTraceHidden]
         public static void Await(Task task)
         {
@@ -103,7 +103,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="task">The value task to await.</param>
         [Intrinsic]
         [BypassReadyToRun]
-        [MethodImpl(MethodImplOptions.Async | MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.Async)]
         [StackTraceHidden]
         public static T Await<T>(ValueTask<T> task)
         {
@@ -142,7 +142,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="task">The task to await.</param>
         [Intrinsic]
         [BypassReadyToRun]
-        [MethodImpl(MethodImplOptions.Async | MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.Async)]
         [StackTraceHidden]
         public static void Await(ValueTask task)
         {
@@ -183,7 +183,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="configuredAwaitable">The configured awaitable to await.</param>
         [Intrinsic]
         [BypassReadyToRun]
-        [MethodImpl(MethodImplOptions.Async | MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.Async)]
         [StackTraceHidden]
         public static void Await(ConfiguredTaskAwaitable configuredAwaitable)
         {
@@ -225,7 +225,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="configuredAwaitable">The configured value task awaitable to await.</param>
         [Intrinsic]
         [BypassReadyToRun]
-        [MethodImpl(MethodImplOptions.Async | MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.Async)]
         [StackTraceHidden]
         public static void Await(ConfiguredValueTaskAwaitable configuredAwaitable)
         {
@@ -268,7 +268,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="configuredAwaitable">The configured awaitable to await.</param>
         [Intrinsic]
         [BypassReadyToRun]
-        [MethodImpl(MethodImplOptions.Async | MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.Async)]
         [StackTraceHidden]
         public static T Await<T>(ConfiguredTaskAwaitable<T> configuredAwaitable)
         {
@@ -293,7 +293,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="configuredAwaitable">The configured awaitable to await.</param>
         [Intrinsic]
         [BypassReadyToRun]
-        [MethodImpl(MethodImplOptions.Async | MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.Async)]
         [StackTraceHidden]
         public static T Await<T>(ConfiguredValueTaskAwaitable<T> configuredAwaitable)
         {
