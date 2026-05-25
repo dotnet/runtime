@@ -2244,10 +2244,10 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
                 //
                 if (!IsTrackedType(parent->TypeGet()))
                 {
-                    // Loading a non-GC value cannot reveal the local's ref identity.
+                    // Loading a non-GC value cannot reveal the local's ref identity,
+                    // but it is a real read of the storage, so not a trivial use.
                     //
                     canLclVarEscapeViaParentStack = false;
-                    isTrivialUse                  = true;
                     break;
                 }
 
@@ -2260,7 +2260,6 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
                     if (!layout->HasGCPtr())
                     {
                         canLclVarEscapeViaParentStack = false;
-                        isTrivialUse                  = true;
                         break;
                     }
                 }
