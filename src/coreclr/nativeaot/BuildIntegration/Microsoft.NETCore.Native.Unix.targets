@@ -17,6 +17,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <CppCompilerAndLinkerAlternative />
     <CppCompilerAndLinkerAlternative Condition="'$(CppCompilerAndLinker)' == '' and '$(_IsApplePlatform)' != 'true'">gcc</CppCompilerAndLinkerAlternative>
     <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">clang</CppCompilerAndLinker>
+    <CppCompiler Condition="'$(CppCompiler)' == ''">$(CppCompilerAndLinker)</CppCompiler>
     <CppLinker>$(CppCompilerAndLinker)</CppLinker>
     <CppLibCreator>ar</CppLibCreator>
     <_SymbolPrefix Condition="'$(_IsApplePlatform)' == 'true'">_</_SymbolPrefix>
@@ -313,6 +314,7 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <PropertyGroup Condition="'$(CppCompilerAndLinkerAlternative)' != '' and '$(_WhereLinker)' != '0' and '$(_WhereLinkerAlt)' == '0' and '$(NativeLib)' != 'Static'">
       <CppCompilerAndLinker>$(CppCompilerAndLinkerAlternative)</CppCompilerAndLinker>
+      <CppCompiler>$(CppCompilerAndLinker)</CppCompiler>
       <CppLinker>$(CppCompilerAndLinker)</CppLinker>
       <_WhereLinker>0</_WhereLinker>
     </PropertyGroup>
@@ -384,7 +386,7 @@ The .NET Foundation licenses this file to you under the MIT license.
           Outputs="@(_FatExecutableShim);@(_FatExecutableShimSymbol)">
 
     <MakeDir Directories="$(NativeIntermediateOutputPath);$(NativeOutputPath)" />
-    <Exec Command="&quot;$(CppLinker)&quot; @&quot;%(_FatExecutableReferencePath.ShimCompileRspFile)&quot;" />
+    <Exec Command="&quot;$(CppCompiler)&quot; @&quot;%(_FatExecutableReferencePath.ShimCompileRspFile)&quot;" />
     <Exec Command="&quot;$(CppLinker)&quot; @&quot;%(_FatExecutableReferencePath.ShimLinkRspFile)&quot;" />
     <Exec Condition="'$(StripSymbols)' == 'true' and '$(NativeDebugSymbols)' == 'true' and '$(_IsApplePlatform)' != 'true'"
           Command="&quot;$(ObjCopyName)&quot; --only-keep-debug &quot;%(_FatExecutableReferencePath.ShimBinary)&quot; &quot;%(_FatExecutableReferencePath.ShimBinary)$(NativeSymbolExt)&quot;" />

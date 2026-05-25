@@ -255,7 +255,7 @@ namespace ILCompiler
                     }
                     else if (SplitExeInitialization)
                     {
-                        compilationRoots.Add(new MainMethodRootProvider(entrypointModule, null, generateLibraryAndModuleInitializers: false));
+                        compilationRoots.Add(new MainMethodRootProvider(entrypointModule, CreateInitializerList(typeSystemContext), generateLibraryAndModuleInitializers: false));
                     }
                 }
                 else if (entrypointModule != null)

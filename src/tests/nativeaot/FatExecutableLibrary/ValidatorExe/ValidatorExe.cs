@@ -10,6 +10,7 @@ string helloExePath = Path.Combine(AppContext.BaseDirectory, $"HelloExe{executab
 
 using Process? helloExe = Process.Start(new ProcessStartInfo(helloExePath)
 {
+    RedirectStandardError = true,
     RedirectStandardOutput = true,
     UseShellExecute = false,
 });
@@ -22,9 +23,10 @@ if (helloExe is null)
 
 helloExe.WaitForExit();
 string output = helloExe.StandardOutput.ReadToEnd().Trim();
+string error = helloExe.StandardError.ReadToEnd().Trim();
 if (helloExe.ExitCode != 0 || output != "Hello from HelloExe")
 {
-    Console.Error.WriteLine($"Unexpected HelloExe result. Exit code: {helloExe.ExitCode}; output: '{output}'");
+    Console.Error.WriteLine($"Unexpected HelloExe result. Exit code: {helloExe.ExitCode}; output: '{output}'; error: '{error}'");
     return 1;
 }
 
