@@ -152,6 +152,7 @@ namespace System.Diagnostics.Tests
 
                     using Process process = new(
                         safeProcessHandle,
+                        new ProcessStartInfo(),
                         standardOutput: outputReadHandle,
                         standardError: errorReadHandle);
 
@@ -169,6 +170,32 @@ namespace System.Diagnostics.Tests
                 {
                     Interop.Kernel32.CloseHandle(processInfo.hThread);
                 }
+            }
+        }
+
+        [Fact]
+        public void ProcessConstructor_NonAsyncOutputHandle_ThrowsArgumentException()
+        {
+            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle);
+            using (readHandle)
+            using (writeHandle)
+            {
+                using SafeProcessHandle processHandle = new(Process.GetCurrentProcess().Handle, ownsHandle: false);
+                ArgumentException ex = Assert.Throws<ArgumentException>("standardOutput",
+                    () => new Process(processHandle, new ProcessStartInfo(), standardOutput: readHandle));
+            }
+        }
+
+        [Fact]
+        public void ProcessConstructor_NonAsyncErrorHandle_ThrowsArgumentException()
+        {
+            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle);
+            using (readHandle)
+            using (writeHandle)
+            {
+                using SafeProcessHandle processHandle = new(Process.GetCurrentProcess().Handle, ownsHandle: false);
+                ArgumentException ex = Assert.Throws<ArgumentException>("standardError",
+                    () => new Process(processHandle, new ProcessStartInfo(), standardError: readHandle));
             }
         }
 
@@ -236,6 +263,24 @@ namespace System.Diagnostics.Tests
             }
 
             return processInfo;
+        }
+
+        private static unsafe string GetSafeFileHandleId(SafeFileHandle handle)
+        {
+            const int MaxPath = 32_767;
+            char[] buffer = new char[MaxPath];
+            uint result;
+            fixed (char* ptr = buffer)
+            {
+                result = Interop.Kernel32.GetFinalPathNameByHandle(handle, ptr, (uint)MaxPath, Interop.Kernel32.FILE_NAME_NORMALIZED);
+            }
+
+            if (result == 0)
+            {
+                throw new Win32Exception();
+            }
+
+            return new string(buffer, 0, (int)result);
         }
 
     }

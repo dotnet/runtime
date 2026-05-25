@@ -109,16 +109,25 @@ namespace System.Diagnostics
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Process"/> class from an existing process handle,
-        /// with optional standard I/O stream handles and start info.
+        /// with optional standard I/O stream handles.
         /// </summary>
         /// <param name="processHandle">A <see cref="SafeProcessHandle"/> representing the process.</param>
-        /// <param name="standardInput">An optional <see cref="SafeFileHandle"/> for the standard input stream of the process. The handle must support write access.</param>
-        /// <param name="standardOutput">An optional <see cref="SafeFileHandle"/> for the standard output stream of the process. The handle must support read access.</param>
-        /// <param name="standardError">An optional <see cref="SafeFileHandle"/> for the standard error stream of the process. The handle must support read access.</param>
-        /// <param name="startInfo">An optional <see cref="ProcessStartInfo"/> containing encoding information for the streams.</param>
-        public Process(SafeProcessHandle processHandle, SafeFileHandle? standardInput = null, SafeFileHandle? standardOutput = null, SafeFileHandle? standardError = null, ProcessStartInfo? startInfo = null)
+        /// <param name="startInfo">A <see cref="ProcessStartInfo"/> containing encoding information for the streams.</param>
+        /// <param name="standardInput">An optional <see cref="SafeFileHandle"/> for the standard input stream of the process.
+        /// The handle must support write access. The caller transfers ownership of this handle to the <see cref="Process"/> instance;
+        /// it will be disposed when the <see cref="Process"/> is disposed.</param>
+        /// <param name="standardOutput">An optional <see cref="SafeFileHandle"/> for the standard output stream of the process.
+        /// The handle must support read access and must be opened for asynchronous I/O on Windows.
+        /// The caller transfers ownership of this handle to the <see cref="Process"/> instance;
+        /// it will be disposed when the <see cref="Process"/> is disposed.</param>
+        /// <param name="standardError">An optional <see cref="SafeFileHandle"/> for the standard error stream of the process.
+        /// The handle must support read access and must be opened for asynchronous I/O on Windows.
+        /// The caller transfers ownership of this handle to the <see cref="Process"/> instance;
+        /// it will be disposed when the <see cref="Process"/> is disposed.</param>
+        public Process(SafeProcessHandle processHandle, ProcessStartInfo startInfo, SafeFileHandle? standardInput = null, SafeFileHandle? standardOutput = null, SafeFileHandle? standardError = null)
         {
             ArgumentNullException.ThrowIfNull(processHandle);
+            ArgumentNullException.ThrowIfNull(startInfo);
 
             GC.SuppressFinalize(this);
             _machineName = ".";
@@ -132,7 +141,7 @@ namespace System.Diagnostics
             if (standardInput is not null)
             {
                 _standardInput = new StreamWriter(OpenStream(standardInput, FileAccess.Write),
-                    startInfo?.StandardInputEncoding ?? GetStandardInputEncoding(), StreamBufferSize)
+                    startInfo.StandardInputEncoding ?? GetStandardInputEncoding(), StreamBufferSize)
                 {
                     AutoFlush = true
                 };
@@ -145,7 +154,7 @@ namespace System.Diagnostics
                 }
 
                 _standardOutput = new StreamReader(OpenStream(standardOutput, FileAccess.Read),
-                    startInfo?.StandardOutputEncoding ?? GetStandardOutputEncoding(), true, StreamBufferSize);
+                    startInfo.StandardOutputEncoding ?? GetStandardOutputEncoding(), true, StreamBufferSize);
             }
             if (standardError is not null)
             {
@@ -155,7 +164,7 @@ namespace System.Diagnostics
                 }
 
                 _standardError = new StreamReader(OpenStream(standardError, FileAccess.Read),
-                    startInfo?.StandardErrorEncoding ?? GetStandardOutputEncoding(), true, StreamBufferSize);
+                    startInfo.StandardErrorEncoding ?? GetStandardOutputEncoding(), true, StreamBufferSize);
             }
         }
 
