@@ -150,7 +150,7 @@ namespace System.Diagnostics
         public string ToHexString() { throw null; }
         public override string ToString() { throw null; }
     }
-    public sealed class ActivitySource : IDisposable
+    public class ActivitySource : IDisposable
     {
         public ActivitySource(string name) { throw null; }
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
@@ -159,6 +159,7 @@ namespace System.Diagnostics
         public ActivitySource(ActivitySourceOptions options) { throw null; }
         public string Name { get { throw null; } }
         public string? Version { get { throw null; } }
+        public object? Scope { get { throw null; } }
         public string? TelemetrySchemaUrl { get; }
         public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? Tags { get { throw null; } }
         public bool HasListeners() { throw null; }
@@ -171,6 +172,7 @@ namespace System.Diagnostics
         public System.Diagnostics.Activity? StartActivity(System.Diagnostics.ActivityKind kind, System.Diagnostics.ActivityContext parentContext = default, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags = null, System.Collections.Generic.IEnumerable<System.Diagnostics.ActivityLink>? links = null, DateTimeOffset startTime = default, [System.Runtime.CompilerServices.CallerMemberName] string name = "") { throw null; }
         public static void AddActivityListener(System.Diagnostics.ActivityListener listener) { throw null; }
         public void Dispose() { throw null; }
+        protected virtual void Dispose(bool disposing) { throw null; }
     }
     public class ActivitySourceOptions
     {
@@ -178,7 +180,16 @@ namespace System.Diagnostics
         public string Name { get { throw null; } set { } }
         public string? Version { get { throw null; } set { } }
         public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? Tags { get { throw null; } set { } }
+        public object? Scope { get { throw null; } set { } }
         public string? TelemetrySchemaUrl { get { throw null; } set { } }
+    }
+    public interface IActivitySourceFactory : System.IDisposable
+    {
+        public System.Diagnostics.ActivitySource Create(System.Diagnostics.ActivitySourceOptions options);
+    }
+    public static class ActivitySourceFactoryExtensions
+    {
+        public static System.Diagnostics.ActivitySource Create(this System.Diagnostics.IActivitySourceFactory activitySourceFactory, string name, string? version = null, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags = null) { throw null; }
     }
     [System.FlagsAttribute]
     public enum ActivityTraceFlags
@@ -299,6 +310,7 @@ namespace System.Diagnostics
         public System.Func<System.Diagnostics.ActivitySource, bool>? ShouldListenTo { get { throw null; } set { } }
         public System.Diagnostics.SampleActivity<string>? SampleUsingParentId { get { throw null; } set { } }
         public System.Diagnostics.SampleActivity<ActivityContext>? Sample { get { throw null; } set { } }
+        public void RefreshSources() { throw null; }
         public void Dispose() { throw null; }
     }
     public abstract class DistributedContextPropagator

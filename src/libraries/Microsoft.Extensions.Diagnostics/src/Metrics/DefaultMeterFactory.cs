@@ -52,8 +52,15 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
 
                 object? scope = options.Scope;
                 options.Scope = this;
-                FactoryMeter m = new FactoryMeter(options);
-                options.Scope = scope;
+                FactoryMeter m;
+                try
+                {
+                    m = new FactoryMeter(options);
+                }
+                finally
+                {
+                    options.Scope = scope;
+                }
 
                 meterList.Add(m);
                 return m;
