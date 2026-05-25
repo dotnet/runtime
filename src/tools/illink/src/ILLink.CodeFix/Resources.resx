@@ -138,4 +138,10 @@
   <data name="UnsafeMethodMissingRequiresUnsafeCodeFixTitle" xml:space="preserve">
     <value>Add RequiresUnsafe attribute to method with pointer types</value>
   </data>
+  <data name="UnsafeV2MigrationRemoveUnsafeFromTypeCodeFixTitle" xml:space="preserve">
+    <value>Remove 'unsafe' modifier from type declaration</value>
+  </data>
+  <data name="UnsafeV2MigrationRewriteMemberCodeFixTitle" xml:space="preserve">
+    <value>Migrate 'unsafe' member to unsafe-v2 semantics</value>
+  </data>
 </root>

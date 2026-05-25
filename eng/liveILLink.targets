@@ -11,7 +11,8 @@
         '$(PublishTrimmed)' == 'true' Or
         '$(IsTrimmable)' == 'true' Or '$(EnableTrimAnalyzer)' == 'true' Or
         '$(EnableSingleFileAnalyzer)' == 'true' Or
-        '$(EnableUnsafeAnalyzer)' == 'true')">true</_RequiresLiveILLink>
+        '$(EnableUnsafeAnalyzer)' == 'true' Or
+        '$(EnableUnsafeV2MigrationAnalyzer)' == 'true')">true</_RequiresLiveILLink>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(_RequiresLiveILLink)' == 'true'">
