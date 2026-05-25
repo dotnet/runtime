@@ -380,7 +380,38 @@ namespace System.Runtime.CompilerServices
 
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
-        private static unsafe void TransparentAwaitValueTaskOfT<T>(ValueTask<T?> valueTask)
+        private static unsafe void AwaitValueTaskSource(object source, short token)
+        {
+            ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
+            Continuation? sentinelContinuation = state.SentinelContinuation ??= new Continuation();
+
+            ValueTaskContinuation? vtsCont = state.CachedValueTaskContinuation;
+            if (vtsCont != null)
+            {
+                state.CachedValueTaskContinuation = null;
+            }
+            else
+            {
+                vtsCont = new ValueTaskContinuation();
+            }
+
+            Debug.Assert(source != null);
+            vtsCont.Initialize(source, token);
+
+            // We only need to capture flags.
+            // If needed, VTS will use the scheduling context captured in the "state".
+            CaptureContinuationContextFlags(ref vtsCont.Flags, state.CurrentThread!);
+
+            sentinelContinuation.Next = vtsCont;
+            state.StackState->ValueTaskContinuation = vtsCont;
+
+            state.CaptureContexts();
+            AsyncSuspend(vtsCont);
+        }
+
+        [BypassReadyToRun]
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
+        private static unsafe void TransparentAwaitValueTaskOfT<T>(ValueTask<T> valueTask)
         {
             ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
             Continuation? sentinelContinuation = state.SentinelContinuation ??= new Continuation();
@@ -397,6 +428,37 @@ namespace System.Runtime.CompilerServices
 
             Debug.Assert(valueTask._obj != null);
             vtsCont.Initialize<T>(valueTask._obj, valueTask._token);
+
+            sentinelContinuation.Next = vtsCont;
+            state.StackState->ValueTaskContinuation = vtsCont;
+
+            state.CaptureContexts();
+            AsyncSuspend(vtsCont);
+        }
+
+        [BypassReadyToRun]
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
+        private static unsafe void AwaitValueTaskSourceOfT<T>(object source, short token)
+        {
+            ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
+            Continuation? sentinelContinuation = state.SentinelContinuation ??= new Continuation();
+
+            ValueTaskContinuation? vtsCont = state.CachedValueTaskContinuation;
+            if (vtsCont != null)
+            {
+                state.CachedValueTaskContinuation = null;
+            }
+            else
+            {
+                vtsCont = new ValueTaskContinuation();
+            }
+
+            Debug.Assert(source != null);
+            vtsCont.Initialize<T>(source, token);
+
+            // We only need to capture flags.
+            // If needed, VTS will use the scheduling context captured in the "state".
+            CaptureContinuationContextFlags(ref vtsCont.Flags, state.CurrentThread!);
 
             sentinelContinuation.Next = vtsCont;
             state.StackState->ValueTaskContinuation = vtsCont;
@@ -493,12 +555,12 @@ namespace System.Runtime.CompilerServices
 
                 // Head continuation should be the result of async call to AwaitAwaiter or UnsafeAwaitAwaiter.
                 // These never have special continuation context handling.
+                // Except for the scenario with ValueTaskContinuation that wraps ValueTaskSource
+                // which can capture continuation context flags.
                 const ContinuationFlags continueFlags =
                     ContinuationFlags.ContinueOnCapturedSynchronizationContext |
                     ContinuationFlags.ContinueOnThreadPool |
                     ContinuationFlags.ContinueOnCapturedTaskScheduler;
-
-                Debug.Assert((headContinuation.Flags & continueFlags) == 0);
 
                 SetContinuationState(headContinuation);
 
@@ -506,10 +568,12 @@ namespace System.Runtime.CompilerServices
                 {
                     if (stackState->CriticalNotifier is { } critNotifier)
                     {
+                        Debug.Assert((headContinuation.Flags & continueFlags) == 0);
                         critNotifier.UnsafeOnCompleted(GetContinuationAction());
                     }
                     else if (stackState->TaskNotifier is { } taskNotifier)
                     {
+                        Debug.Assert((headContinuation.Flags & continueFlags) == 0);
                         // Runtime async callable wrapper for task returning
                         // method. This implements the context transparent
                         // forwarding and makes these wrappers minimal cost.
@@ -525,6 +589,7 @@ namespace System.Runtime.CompilerServices
                         Debug.Assert(source != null);
                         if (source is Task t)
                         {
+                            Debug.Assert((headContinuation.Flags & continueFlags) == 0);
                             if (!t.TryAddCompletionAction(this))
                             {
                                 ThreadPool.UnsafeQueueUserWorkItemInternal(this, preferLocal: true);
@@ -541,17 +606,18 @@ namespace System.Runtime.CompilerServices
                             // the continuation chain builds from the innermost frame out and at the time when the
                             // notifier is created we do not know yet if the caller wants to continue on a context.
 
-                            // Skip to a nontransparent/user continuation. Such continuaton must exist.
+                            // Skip to a nontransparent/user continuation. Such continuation must exist.
                             // Since we see a VTS notifier, something was directly or indirectly
-                            // awaiting an async thunk for a ValueTask-returning method.
-                            // That can only happen in nontransparent/user code.
-                            Continuation nextUserContinuation = valueTaskSourceCont.Next!;
-                            while ((nextUserContinuation.Flags & continueFlags) == 0 && nextUserContinuation.Next != null)
+                            // awaiting either an async thunk for a ValueTask-returning method or
+                            // the direct AsyncHelpers.Await(ValueTask/ValueTask<T>) path.
+                            // In either case, that can only happen in nontransparent/user code.
+                            Continuation contWithContinueFlags = valueTaskSourceCont;
+                            while ((contWithContinueFlags.Flags & continueFlags) == 0 && contWithContinueFlags.Next != null)
                             {
-                                nextUserContinuation = nextUserContinuation.Next;
+                                contWithContinueFlags = contWithContinueFlags.Next;
                             }
 
-                            ContinuationFlags continuationFlags = nextUserContinuation.Flags;
+                            ContinuationFlags continuationFlags = contWithContinueFlags.Flags;
                             const ContinuationFlags continueOnContextFlags =
                                 ContinuationFlags.ContinueOnCapturedSynchronizationContext |
                                 ContinuationFlags.ContinueOnCapturedTaskScheduler;
@@ -564,7 +630,7 @@ namespace System.Runtime.CompilerServices
                             }
 
                             // Clear continuation flags, so that continuation runs transparently
-                            nextUserContinuation.Flags &= ~continueFlags;
+                            contWithContinueFlags.Flags &= ~continueFlags;
 
                             valueTaskSourceCont.OnCompletedValueTaskSource(
                                 source,
@@ -576,6 +642,7 @@ namespace System.Runtime.CompilerServices
                     }
                     else
                     {
+                        Debug.Assert((headContinuation.Flags & continueFlags) == 0);
                         Debug.Assert(stackState->Notifier != null);
                         stackState->Notifier!.OnCompleted(GetContinuationAction());
                     }
@@ -1065,23 +1132,23 @@ namespace System.Runtime.CompilerServices
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void CaptureContexts(out ExecutionContext? execCtx, out SynchronizationContext? syncCtx)
+        private static void CaptureContexts(out Thread thread, out ExecutionContext? execCtx, out SynchronizationContext? syncCtx)
         {
-            Thread thread = Thread.CurrentThreadAssumedInitialized;
+            Thread curThread = Thread.CurrentThreadAssumedInitialized;
+            thread = curThread;
             // Here we get the execution context for synchronous restoring,
             // not for flowing across suspension to potentially another thread.
             // Therefore we do not need to worry about IsFlowSuppressed
-            execCtx = thread._executionContext;
-            syncCtx = thread._synchronizationContext;
+            execCtx = curThread._executionContext;
+            syncCtx = curThread._synchronizationContext;
         }
 
-        // Restore contexts onto current Thread. If "resumed" then this is not the first starting call for the async method.
+        // Restore contexts onto thread. If "resumed" then this is not the first starting call for the async method.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void RestoreContexts(bool resumed, ExecutionContext? previousExecCtx, SynchronizationContext? previousSyncCtx)
+        private static void RestoreContexts(bool resumed, Thread thread, ExecutionContext? previousExecCtx, SynchronizationContext? previousSyncCtx)
         {
             if (!resumed)
             {
-                Thread thread = Thread.CurrentThreadAssumedInitialized;
                 if (previousSyncCtx != thread._synchronizationContext)
                 {
                     thread._synchronizationContext = previousSyncCtx;
@@ -1117,7 +1184,7 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        private static void CaptureContinuationContext(ref object continuationContext, ref ContinuationFlags flags)
+        private static void CaptureContinuationContext(ref object? continuationContext, ref ContinuationFlags flags)
         {
             SynchronizationContext? syncCtx = Thread.CurrentThreadAssumedInitialized._synchronizationContext;
             if (syncCtx != null && syncCtx.GetType() != typeof(SynchronizationContext))
@@ -1132,6 +1199,26 @@ namespace System.Runtime.CompilerServices
             {
                 flags |= ContinuationFlags.ContinueOnCapturedTaskScheduler;
                 continuationContext = sched;
+                return;
+            }
+
+            flags |= ContinuationFlags.ContinueOnThreadPool;
+        }
+
+        // Same as above, but only captures flags
+        private static void CaptureContinuationContextFlags(ref ContinuationFlags flags, Thread currentThread)
+        {
+            SynchronizationContext? syncCtx = currentThread._synchronizationContext;
+            if (syncCtx != null && syncCtx.GetType() != typeof(SynchronizationContext))
+            {
+                flags |= ContinuationFlags.ContinueOnCapturedSynchronizationContext;
+                return;
+            }
+
+            TaskScheduler? sched = TaskScheduler.InternalCurrent;
+            if (sched != null && sched != TaskScheduler.Default)
+            {
+                flags |= ContinuationFlags.ContinueOnCapturedTaskScheduler;
                 return;
             }
 
