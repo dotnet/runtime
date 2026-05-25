@@ -1507,8 +1507,6 @@ void
 ep_rt_mono_sample_profiler_enabled (EventPipeEvent *sampling_event)
 {
 	desired_sample_interval_ms = ((double)ep_sample_profiler_get_sampling_rate ()) / 1000000.0;
-	EP_ASSERT (desired_sample_interval_ms >= 0.0);
-	EP_ASSERT (desired_sample_interval_ms < 1000.0);
 
 	current_sampling_event = sampling_event;
 	current_sampling_thread = ep_rt_thread_get_handle ();

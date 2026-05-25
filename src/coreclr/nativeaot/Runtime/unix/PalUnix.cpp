@@ -28,6 +28,7 @@
 #include "RhConfig.h"
 
 #include <unistd.h>
+#include <minipal/cpucount.h>
 #include <sched.h>
 #include <sys/mman.h>
 #include <sys/types.h>
@@ -456,10 +457,10 @@ void InitializeCurrentProcessCpuCount()
     {
 #if HAVE_SCHED_GETAFFINITY
 
-        int configuredCpuCount = sysconf(_SC_NPROCESSORS_CONF);
+        int configuredCpuCount = minipal_get_cpu_max_possible_count();
         if (configuredCpuCount == -1)
         {
-            // In the unlikely event that sysconf(_SC_NPROCESSORS_CONF) fails, just assume a reasonable default maximum number of CPUs to avoid failing.
+            // In the unlikely event that minipal_get_cpu_max_possible_count() fails, just assume a reasonable default maximum number of CPUs to avoid failing.
             configuredCpuCount = CPU_SETSIZE;
         }
 
