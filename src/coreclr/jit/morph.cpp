@@ -7425,20 +7425,32 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
 #endif
             {
 #if defined(TARGET_64BIT)
-                // Skip this transform when lowering will be able to apply the
-                // cheaper uint16 FastMod sequence. This requires the divisor to
-                // be a non-zero constant in uint16 range and the dividend's
-                // static IntegralRange to already fit in uint16.
+                // Skip the SUB-MUL-DIV rewrite below when lowering may apply
+                // the cheaper uint16 FastMod sequence. That requires a non-zero
+                // constant uint16 divisor AND a dividend provable as uint16.
+                // The dividend's range may be provable statically here, or only
+                // later via assertion/VN information from the range check phase;
+                // defer to that phase by leaving the node as MOD and setting
+                // OMF_HAS_UMOD_BY_CONST_UINT16_CANDIDATE when we can't decide yet.
                 if (!opts.MinOpts() && op2->IsCnsIntOrI())
                 {
                     ssize_t modDivisor = op2->AsIntCon()->IconValue();
-                    if ((modDivisor > 0) && FitsIn<uint16_t>(modDivisor) &&
-                        IntegralRange::ForType(TYP_USHORT).Contains(IntegralRange::ForNode(op1, this)))
+                    if ((modDivisor > 0) && FitsIn<uint16_t>(modDivisor))
                     {
-                        if (tree->OperIs(GT_MOD))
+                        if (IntegralRange::ForType(TYP_USHORT).Contains(IntegralRange::ForNode(op1, this)))
                         {
-                            tree->SetOper(GT_UMOD);
+                            if (tree->OperIs(GT_MOD))
+                            {
+                                tree->SetOper(GT_UMOD);
+                            }
+                            break;
                         }
+
+                        // Defer to the range check phase: leave the MOD/UMOD
+                        // node intact so that VN- and assertion-based range
+                        // analysis can decide whether the dividend fits in
+                        // uint16.
+                        setMethodHasUModByConstUInt16Candidate();
                         break;
                     }
                 }
@@ -7449,6 +7461,16 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
                 op1  = tree->AsOp()->gtOp1;
                 op2  = tree->AsOp()->gtOp2;
             }
+#if defined(TARGET_64BIT) && !defined(TARGET_ARM64)
+            else if (!opts.MinOpts() && tree->OperIs(GT_MOD, GT_UMOD) && !op2->IsIntegralConst() &&
+                     ((typ == TYP_INT) || (typ == TYP_LONG)))
+            {
+                // The divisor may fold to a uint16 constant later (e.g. a
+                // span length that is computed from an RVA static). Let the
+                // range check phase re-examine such nodes after VN/CSE.
+                setMethodHasUModByConstUInt16Candidate();
+            }
+#endif // TARGET_64BIT && !TARGET_ARM64
             break;
 
         USE_HELPER_FOR_ARITH:

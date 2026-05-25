@@ -8189,8 +8189,8 @@ bool Lowering::TryLowerConstIntUDivOrUMod(GenTreeOp* divMod)
         // The dividend is first truncated to TYP_INT (safe because we know it fits in
         // uint16), and the final value (always in [0, divisor)) is widened back to the
         // mod's result type. The dividend's range may have been recovered either
-        // statically by IntegralRange::ForNode at this point, or earlier by assertion
-        // propagation (which leaves GTF_UMOD_UINT16_OPERANDS for us).
+        // statically by IntegralRange::ForNode at this point, or earlier by the range
+        // check phase (which leaves GTF_UMOD_UINT16_OPERANDS for us).
         if (!isDiv && FitsIn<uint16_t>(divisorValue) &&
             (((divMod->gtFlags & GTF_UMOD_UINT16_OPERANDS) != 0) ||
              IntegralRange::ForType(TYP_USHORT).Contains(IntegralRange::ForNode(dividend, m_compiler))))
@@ -8211,7 +8211,7 @@ bool Lowering::TryLowerConstIntUDivOrUMod(GenTreeOp* divMod)
             BlockRange().InsertBefore(divMod, multiplier, mul1, castUp);
 
             // Reuse the existing constant divisor as a TYP_LONG operand for the second multiply.
-            divisor->BashToConst(static_cast<int64_t>(divisorValue));
+            divisor->BashToConst(static_cast<int64_t>(divisorValue), TYP_LONG);
 
             GenTree* mul2 = m_compiler->gtNewOperNode(GT_MUL, TYP_LONG, castUp, divisor);
             mul2->SetUnsigned();

@@ -773,6 +773,12 @@ public:
     // and assertion prop phases are completed.
     bool OptimizeRangeChecks();
 
+    // Walks the IR looking for "uint16 % const-uint16" patterns and tags eligible
+    // GT_UMOD nodes with GTF_UMOD_UINT16_OPERANDS so lowering can emit a cheaper
+    // FastMod sequence. GT_MOD nodes whose dividend is non-negative and whose
+    // divisor is a positive uint16 constant are converted to GT_UMOD.
+    bool TryMarkUModUInt16Operands();
+
     bool TryGetRange(BasicBlock* block, GenTree* expr, Range* pRange);
 
     // Cheaper version of TryGetRange that is based only on incoming assertions.
