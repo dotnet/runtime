@@ -39,11 +39,6 @@ partial interface IRuntimeTypeSystem : IContract
     // A canonical method table is either the MethodTable itself, or in the case of a generic instantiation, it is the
     // MethodTable of the prototypical instance.
     public virtual TargetPointer GetCanonicalMethodTable(TypeHandle typeHandle);
-    // Returns the EEClass pointer for this MethodTable. For non-canonical MTs, follows the tagged pointer
-    // to the canonical MT and returns its EEClass.
-    public virtual TargetPointer GetClassPointer(TypeHandle typeHandle);
-    // True if this MethodTable is the canonical MethodTable (i.e., EEClassOrCanonMT points directly to the EEClass)
-    public virtual bool IsCanonicalMethodTable(TypeHandle typeHandle);
     public virtual TargetPointer GetParentMethodTable(TypeHandle typeHandle);
 
     public virtual TargetPointer GetMethodDescForSlot(TypeHandle typeHandle, ushort slot);
@@ -66,7 +61,7 @@ partial interface IRuntimeTypeSystem : IContract
     // True if the type requires 8-byte alignment on platforms that don't 8-byte align by default (FEATURE_64BIT_ALIGNMENT)
     public virtual bool RequiresAlign8(TypeHandle typeHandle);
     // True if the MethodTable represents a continuation type used by the async continuation feature
-    public virtual bool IsContinuationWithoutMetadata(TypeHandle typeHandle);
+    public virtual bool IsContinuation(TypeHandle typeHandle);
     // Returns the GC pointer runs for the method table as (offset, size) pairs. Each
     // run starts Offset bytes from the object pointer (`this`), where offset 0
     // is the method table pointer, and includes Size bytes of contiguous pointers
@@ -456,7 +451,6 @@ The contract depends on the following globals
 | Global name | Meaning |
 | --- | --- |
 | `ContinuationMethodTable` | A pointer to the address of the base `Continuation` `MethodTable`, or null if no continuations have been created
-| `ContinuationSingletonEEClass` | A pointer to the address of the singleton `EEClass` shared by continuation subtypes that have no metadata of their own
 | `FreeObjectMethodTable` | A pointer to the address of a `MethodTable` used by the GC to indicate reclaimed memory
 | `ObjectMethodTable` | A pointer to the address of the `System.Object` `MethodTable` (`g_pObjectClass`)
 | `StaticsPointerMask` | For masking out a bit of DynamicStaticsInfo pointer fields
@@ -533,7 +527,6 @@ Contracts used:
     internal TargetPointer FreeObjectMethodTablePointer {get; }
     internal TargetPointer ObjectMethodTablePointer {get; }
     internal TargetPointer ContinuationMethodTablePointer {get; }
-    private TargetPointer _continuationSingletonEEClassPointer;
 
     public TypeHandle GetTypeHandle(TargetPointer typeHandlePointer)
     {
@@ -577,12 +570,12 @@ Contracts used:
 
     public uint GetComponentSize(TypeHandle TypeHandle) =>!typeHandle.IsMethodTable() ? (uint)0 :  GetComponentSize(_methodTables[TypeHandle.Address]);
 
-    public TargetPointer GetClassPointer(TypeHandle TypeHandle)
+    private TargetPointer GetClassPointer(TypeHandle TypeHandle)
     {
-        // Returns TargetPointer.Null if not a MethodTable.
-        // If EEClassOrCanonMT points directly to an EEClass, returns that pointer.
-        // If EEClassOrCanonMT is a tagged pointer to a canonical MethodTable, follows
-        // the canonical MT and returns its EEClass pointer.
+        ... // if the MethodTable stores a pointer to the EEClass, return it
+            // otherwise the MethodTable stores a pointer to the canonical MethodTable
+            // in that case, return the canonical MethodTable's EEClass.
+            // Canonical MethodTables always store an EEClass pointer.
     }
 
     private Data.EEClass GetClassData(TypeHandle TypeHandle)
@@ -603,14 +596,9 @@ Contracts used:
 
     public bool RequiresAlign8(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.RequiresAlign8;
 
-    public bool IsCanonicalMethodTable(TypeHandle typeHandle)
-        => typeHandle.IsMethodTable() && _methodTables[typeHandle.Address].IsCanonMT;
-
-    public bool IsContinuationWithoutMetadata(TypeHandle typeHandle) => typeHandle.IsMethodTable()
+    public bool IsContinuation(TypeHandle typeHandle) => typeHandle.IsMethodTable()
         && ContinuationMethodTablePointer != TargetPointer.Null
-        && _methodTables[typeHandle.Address].ParentMethodTable == ContinuationMethodTablePointer
-        && _continuationSingletonEEClassPointer != TargetPointer.Null
-        && GetClassPointer(typeHandle) == _continuationSingletonEEClassPointer;
+        && _methodTables[typeHandle.Address].ParentMethodTable == ContinuationMethodTablePointer;
 
     IEnumerable<(uint Offset, uint Size)> GetGCDescSeries(TypeHandle typeHandle, uint numComponents = 0)
     {

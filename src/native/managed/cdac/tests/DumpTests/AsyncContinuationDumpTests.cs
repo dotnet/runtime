@@ -38,15 +38,14 @@ public class AsyncContinuationDumpTests : DumpTestBase
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
 
         // The ContinuationMethodTable global points to the Continuation base class itself.
-        // IsContinuationWithoutMetadata checks if a type's parent is the Continuation base class
-        // and its EEClass matches the singleton continuation EEClass,
+        // IsContinuation checks if a type's parent is the Continuation base class,
         // so the base class itself is NOT considered a continuation (its parent is Object).
         TargetPointer continuationMTGlobal = Target.ReadGlobalPointer("ContinuationMethodTable");
         TargetPointer continuationMT = Target.ReadPointer(continuationMTGlobal);
         Assert.NotEqual(TargetPointer.Null, continuationMT);
 
         TypeHandle handle = rts.GetTypeHandle(continuationMT);
-        Assert.False(rts.IsContinuationWithoutMetadata(handle));
+        Assert.False(rts.IsContinuation(handle));
     }
 
     [ConditionalTheory]
@@ -60,7 +59,7 @@ public class AsyncContinuationDumpTests : DumpTestBase
         TargetPointer objectMTGlobal = Target.ReadGlobalPointer("ObjectMethodTable");
         TargetPointer objectMT = Target.ReadPointer(objectMTGlobal);
         TypeHandle objectHandle = rts.GetTypeHandle(objectMT);
-        Assert.False(rts.IsContinuationWithoutMetadata(objectHandle));
+        Assert.False(rts.IsContinuation(objectHandle));
     }
 
     [ConditionalTheory]
@@ -159,6 +158,6 @@ public class AsyncContinuationDumpTests : DumpTestBase
         TargetPointer objMT = Target.Contracts.Object.GetMethodTableAddress(
             new TargetPointer(continuationAddress));
         TypeHandle handle = rts.GetTypeHandle(objMT);
-        Assert.True(rts.IsContinuationWithoutMetadata(handle));
+        Assert.True(rts.IsContinuation(handle));
     }
 }

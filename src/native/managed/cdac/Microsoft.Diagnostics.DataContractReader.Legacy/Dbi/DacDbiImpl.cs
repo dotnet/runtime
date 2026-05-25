@@ -2397,54 +2397,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     };
 
     public int IsValidObject(ulong obj, Interop.BOOL* pResult)
-    {
-        int hr = HResults.S_OK;
-        Interop.BOOL isValid = Interop.BOOL.FALSE;
-
-        if (obj != 0 && obj != ulong.MaxValue)
-        {
-            try
-            {
-                IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-                TargetPointer mt = _target.Contracts.Object.GetMethodTableAddress(new TargetPointer(obj));
-                TypeHandle th = rts.GetTypeHandle(mt);
-                TargetPointer canonMT = rts.GetCanonicalMethodTable(th);
-
-                if (mt == canonMT)
-                {
-                    isValid = Interop.BOOL.TRUE;
-                }
-                else if (!rts.IsCanonicalMethodTable(th) || rts.IsContinuationWithoutMetadata(th))
-                {
-                    TargetPointer cls = rts.GetClassPointer(th);
-                    TypeHandle canonTh = rts.GetTypeHandle(canonMT);
-                    TargetPointer canonCls = rts.GetClassPointer(canonTh);
-                    if (canonCls == cls)
-                        isValid = Interop.BOOL.TRUE;
-                }
-            }
-            catch (System.Exception)
-            {
-                isValid = Interop.BOOL.FALSE;
-            }
-        }
-        *pResult = isValid;
-
-#if DEBUG
-        if (_legacy is not null)
-        {
-            Interop.BOOL resultLocal;
-            int hrLocal = _legacy.IsValidObject(obj, &resultLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-            {
-                Debug.Assert(*pResult == resultLocal, $"cDAC: {*pResult}, DAC: {resultLocal}");
-            }
-        }
-#endif
-
-        return hr;
-    }
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.IsValidObject(obj, pResult) : HResults.E_NOTIMPL;
 
     public int CreateRefWalk(nuint* pHandle, Interop.BOOL walkStacks, Interop.BOOL walkFQ, uint handleWalkMask)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.CreateRefWalk(pHandle, walkStacks, walkFQ, handleWalkMask) : HResults.E_NOTIMPL;
@@ -3252,7 +3205,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     // parent (continuation base) type handle instead.
     private static TypeHandle UpCastTypeIfNeeded(IRuntimeTypeSystem rts, TypeHandle typeHandle)
     {
-        if (rts.IsContinuationWithoutMetadata(typeHandle))
+        if (rts.IsContinuation(typeHandle))
         {
             TargetPointer parentMT = rts.GetParentMethodTable(typeHandle);
             if (parentMT != TargetPointer.Null)
