@@ -359,16 +359,16 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         bool         doCpObj              = layout->HasGCPtr();
         unsigned     copyBlockUnrollLimit = m_compiler->getUnrollThreshold(Compiler::UnrollKind::Memcpy);
 
-        if (doCpObj && (size <= copyBlockUnrollLimit))
+        if (doCpObj && blkNode->IsAddressNotOnHeap(m_compiler))
         {
             // No write barriers are needed on the stack.
             // If the layout contains a byref, then we know it must live on the stack.
-            if (blkNode->IsAddressNotOnHeap(m_compiler))
+            doCpObj = false;
+            if (size <= copyBlockUnrollLimit)
             {
                 // If the size is small enough to unroll then we need to mark the block as non-interruptible
                 // to actually allow unrolling. The generated code does not report GC references loaded in the
                 // temporary register(s) used for copying.
-                doCpObj                  = false;
                 blkNode->gtBlkOpGcUnsafe = true;
             }
         }
