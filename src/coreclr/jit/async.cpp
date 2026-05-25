@@ -1025,6 +1025,7 @@ void AsyncTransformation::Transform(BasicBlock*               block,
         CreateCheckAndSuspendAfterCall(block, call, callDefInfo, reusedState->SuspensionBB, remainder);
 
         HandleReusedSuspension(block, call);
+        m_compiler->Metrics.SuspensionPointsMerged++;
     }
     else
     {
