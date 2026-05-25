@@ -327,21 +327,21 @@
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
       <Sha>6af4bc0beb5fd7bc49a4a986a04ff6f6e4b83ab1</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.Net.Compilers.Toolset" Version="5.7.0-1.26257.113">
+    <Dependency Name="Microsoft.Net.Compilers.Toolset" Version="5.8.0-1.26266.103">
       <Uri>https://github.com/dotnet/dotnet</Uri>
-      <Sha>0eae08ed2f094f44e0151e4815e7cdd1a334fcdf</Sha>
+      <Sha>3a62cc842c76761d4742f1d103892f19fd06dd3a</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis" Version="5.7.0-1.26257.113">
+    <Dependency Name="Microsoft.CodeAnalysis" Version="5.8.0-1.26266.103">
       <Uri>https://github.com/dotnet/dotnet</Uri>
-      <Sha>0eae08ed2f094f44e0151e4815e7cdd1a334fcdf</Sha>
+      <Sha>3a62cc842c76761d4742f1d103892f19fd06dd3a</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.CSharp" Version="5.7.0-1.26257.113">
+    <Dependency Name="Microsoft.CodeAnalysis.CSharp" Version="5.8.0-1.26266.103">
       <Uri>https://github.com/dotnet/dotnet</Uri>
-      <Sha>0eae08ed2f094f44e0151e4815e7cdd1a334fcdf</Sha>
+      <Sha>3a62cc842c76761d4742f1d103892f19fd06dd3a</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.Analyzers" Version="5.7.0-1.26257.113">
+    <Dependency Name="Microsoft.CodeAnalysis.Analyzers" Version="5.8.0-1.26266.103">
       <Uri>https://github.com/dotnet/dotnet</Uri>
-      <Sha>0eae08ed2f094f44e0151e4815e7cdd1a334fcdf</Sha>
+      <Sha>3a62cc842c76761d4742f1d103892f19fd06dd3a</Sha>
     </Dependency>
     <Dependency Name="Microsoft.CodeAnalysis.NetAnalyzers" Version="11.0.100-preview.5.26257.113">
       <Uri>https://github.com/dotnet/dotnet</Uri>
