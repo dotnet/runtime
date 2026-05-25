@@ -8317,7 +8317,19 @@ DONE_MORPHING_CHILDREN:
             if (opts.OptimizationEnabled() && !tree->OperMayThrow(this))
             {
                 JITDUMP("\nNULLCHECK on [%06u] will always succeed\n", dspTreeID(op1));
-                if ((op1->gtFlags & GTF_SIDE_EFFECT) != 0)
+
+                // If op1 is a helper call with no observable side effects (e.g., an
+                // allocator helper without GTF_CALL_M_ALLOC_SIDE_EFFECTS that the JIT
+                // models as non-throwing, like NEWSFAST), we can drop the entire
+                // NULLCHECK and the call. This matches the IR shape produced by stack
+                // allocation, allowing downstream VN/CSE to treat the surrounding code
+                // as if no allocator call were present. We rely on HasSideEffects's
+                // helper-properties model rather than the cached GTF_SIDE_EFFECT bit,
+                // which is conservative for calls.
+                const bool op1HasSideEffects =
+                    op1->IsCall() ? op1->AsCall()->HasSideEffects(this) : ((op1->gtFlags & GTF_SIDE_EFFECT) != 0);
+
+                if (op1HasSideEffects)
                 {
                     tree = gtUnusedValNode(op1);
                     tree->SetMorphed(this, /* doChildren */ true);
