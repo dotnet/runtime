@@ -15,7 +15,7 @@ public class Async2ParallelContinuations
 
         // We expect multiple runtime async continuations to be invoked in parallel; one is invoked synchronously,
         // the other is invoked on the thread pool.
-        ThreadLocal<int> tl = new();
+        using ThreadLocal<int> tl = new();
         var o = new Async2ParallelContinuations();
         Task<int> t1 = o.AwaitVirtualTaskThenReturnThreadLocal(tcs, tl);
         Task<int> t2 = o.AwaitVirtualTaskThenReturnThreadLocal(tcs, tl);

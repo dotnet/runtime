@@ -7075,7 +7075,8 @@ void Compiler::impInheritAsyncContextsFromInliner(GenTreeCall* call)
     GenTreeCall* inlCall = impInlineInfo->iciCall;
     CallArg*     execArg = inlCall->gtArgs.FindWellKnownArg(WellKnownArg::AsyncExecutionContext);
     CallArg*     syncArg = inlCall->gtArgs.FindWellKnownArg(WellKnownArg::AsyncSynchronizationContext);
-    if ((execArg == nullptr) && (syncArg == nullptr))
+    assert((execArg == nullptr) == (syncArg == nullptr));
+    if ((execArg == nullptr) || (syncArg == nullptr))
     {
         // Caller also has no async contexts handling
         return;
