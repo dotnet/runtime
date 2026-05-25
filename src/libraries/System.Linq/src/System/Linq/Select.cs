@@ -44,6 +44,11 @@ namespace System.Linq
 
             if (source is IList<TSource> ilist)
             {
+                if (ilist.Count == 0)
+                {
+                    return [];
+                }
+
                 if (IsSizeOptimized)
                 {
                     return new SizeOptIListSelectIterator<TSource, TResult>(ilist, selector);
@@ -51,11 +56,6 @@ namespace System.Linq
 
                 if (source is TSource[] array)
                 {
-                    if (array.Length == 0)
-                    {
-                        return [];
-                    }
-
                     return new ArraySelectIterator<TSource, TResult>(array, selector);
                 }
 
