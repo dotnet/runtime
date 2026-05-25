@@ -376,4 +376,68 @@ The .NET Foundation licenses this file to you under the MIT license.
       <DsymUtilOptions>$(DsymUtilOptions) --minimize</DsymUtilOptions>
     </PropertyGroup>
   </Target>
+
+  <Target Name="CreateShimExes"
+          Condition="'$(FatExecutable)' == 'true'"
+          DependsOnTargets="LinkNative;WriteFatExecutableShimRspFiles"
+          Inputs="$(NativeBinary);@(_FatExecutableReferencePath->'%(ShimSource)');@(_FatExecutableReferencePath->'%(ShimCompileRspFile)');@(_FatExecutableReferencePath->'%(ShimLinkRspFile)')"
+          Outputs="@(_FatExecutableShim);@(_FatExecutableShimSymbol)">
+
+    <MakeDir Directories="$(NativeIntermediateOutputPath);$(NativeOutputPath)" />
+    <Exec Command="&quot;$(CppLinker)&quot; @&quot;%(_FatExecutableReferencePath.ShimCompileRspFile)&quot;" />
+    <Exec Command="&quot;$(CppLinker)&quot; @&quot;%(_FatExecutableReferencePath.ShimLinkRspFile)&quot;" />
+    <Exec Condition="'$(StripSymbols)' == 'true' and '$(NativeDebugSymbols)' == 'true' and '$(_IsApplePlatform)' != 'true'"
+          Command="&quot;$(ObjCopyName)&quot; --only-keep-debug &quot;%(_FatExecutableReferencePath.ShimBinary)&quot; &quot;%(_FatExecutableReferencePath.ShimBinary)$(NativeSymbolExt)&quot;" />
+    <Exec Condition="'$(StripSymbols)' == 'true' and '$(_IsApplePlatform)' != 'true'"
+          Command="&quot;$(ObjCopyName)&quot; --strip-debug --strip-unneeded &quot;%(_FatExecutableReferencePath.ShimBinary)&quot;" />
+    <Exec Condition="'$(StripSymbols)' == 'true' and '$(NativeDebugSymbols)' == 'true' and '$(_IsApplePlatform)' != 'true'"
+          Command="&quot;$(ObjCopyName)&quot; --add-gnu-debuglink=&quot;%(_FatExecutableReferencePath.ShimBinary)$(NativeSymbolExt)&quot; &quot;%(_FatExecutableReferencePath.ShimBinary)&quot;" />
+    <Exec Condition="'$(StripSymbols)' == 'true' and '$(_IsApplePlatform)' == 'true'"
+          IgnoreStandardErrorWarningFormat="true"
+          Command="
+            dsymutil $(DsymUtilOptions) &quot;%(_FatExecutableReferencePath.ShimBinary)&quot; &amp;&amp;
+            strip -no_code_signature_warning -x &quot;%(_FatExecutableReferencePath.ShimBinary)&quot;" />
+  </Target>
+
+  <Target Name="WriteFatExecutableShimRspFiles"
+          Condition="'$(FatExecutable)' == 'true'"
+          DependsOnTargets="LinkNative">
+
+    <ItemGroup>
+      <_FatExecutableReferencePath>
+        <ShimSourceCode><![CDATA[extern int %(_FatExecutableReferencePath.EntryPointSymbol)(int, char**);
+
+int main(int argc, char** argv)
+{
+    return %(_FatExecutableReferencePath.EntryPointSymbol)(argc, argv);
+}
+]]></ShimSourceCode>
+      </_FatExecutableReferencePath>
+    </ItemGroup>
+
+    <ItemGroup>
+      <_FatExecutableShimCompilerArg Include="-c" />
+      <_FatExecutableShimCompilerArg Include="-g" Condition="$(NativeDebugSymbols) == 'true'" />
+      <_FatExecutableShimCompilerArg Include="--target=$(TargetTriple)" Condition="'$(TargetTriple)' != ''" />
+      <_FatExecutableShimCompilerArg Include="--sysroot=&quot;$(SysRoot)&quot;" Condition="'$(SysRoot)' != '' and '$(_IsApplePlatform)' != 'true'" />
+      <_FatExecutableShimCompilerArg Include="-isysroot &quot;$(SysRoot)&quot;" Condition="'$(SysRoot)' != '' and '$(_IsApplePlatform)' == 'true'" />
+
+      <_FatExecutableShimLinkerArg Include="-fuse-ld=$(LinkerFlavor)" Condition="'$(LinkerFlavor)' != ''" />
+      <_FatExecutableShimLinkerArg Include="--target=$(TargetTriple)" Condition="'$(TargetTriple)' != ''" />
+      <_FatExecutableShimLinkerArg Include="--sysroot=&quot;$(SysRoot)&quot;" Condition="'$(SysRoot)' != '' and '$(_IsApplePlatform)' != 'true'" />
+      <_FatExecutableShimLinkerArg Include="-isysroot &quot;$(SysRoot)&quot;" Condition="'$(SysRoot)' != '' and '$(_IsApplePlatform)' == 'true'" />
+      <_FatExecutableShimLinkerArg Include="-g" Condition="$(NativeDebugSymbols) == 'true'" />
+      <_FatExecutableShimLinkerArg Include="-Wl,-rpath,$ORIGIN" Condition="'$(_IsApplePlatform)' != 'true'" />
+      <_FatExecutableShimLinkerArg Include="-Wl,-rpath,@executable_path" Condition="'$(_IsApplePlatform)' == 'true'" />
+      <_FatExecutableShimLinkerArg Include="-Wl,--build-id=sha1" Condition="'$(_IsApplePlatform)' != 'true'" />
+      <_FatExecutableShimLinkerArg Include="-Wl,-z,relro" Condition="'$(_IsApplePlatform)' != 'true'" />
+      <_FatExecutableShimLinkerArg Include="-Wl,-z,now" Condition="'$(_IsApplePlatform)' != 'true'" />
+      <_FatExecutableShimLinkerArg Include="-Wl,-z,stack-size=$(IlcDefaultStackSize)" Condition="'$(IlcDefaultStackSize)' != ''" />
+    </ItemGroup>
+
+    <MakeDir Directories="$(NativeIntermediateOutputPath);$(NativeOutputPath)" />
+    <WriteLinesToFile File="%(_FatExecutableReferencePath.ShimSource)" Lines="$([MSBuild]::Escape('%(_FatExecutableReferencePath.ShimSourceCode)'))" Overwrite="true" Encoding="utf-8" WriteOnlyWhenDifferent="true" />
+    <WriteLinesToFile File="%(_FatExecutableReferencePath.ShimCompileRspFile)" Lines="@(_FatExecutableShimCompilerArg);&quot;%(_FatExecutableReferencePath.ShimSource)&quot;;-o;&quot;%(_FatExecutableReferencePath.ShimObject)&quot;" Overwrite="true" Encoding="utf-8" WriteOnlyWhenDifferent="true" />
+    <WriteLinesToFile File="%(_FatExecutableReferencePath.ShimLinkRspFile)" Lines="&quot;%(_FatExecutableReferencePath.ShimObject)&quot;;&quot;$(NativeBinary)&quot;;-o;&quot;%(_FatExecutableReferencePath.ShimBinary)&quot;;@(_FatExecutableShimLinkerArg)" Overwrite="true" Encoding="utf-8" WriteOnlyWhenDifferent="true" />
+  </Target>
 </Project>

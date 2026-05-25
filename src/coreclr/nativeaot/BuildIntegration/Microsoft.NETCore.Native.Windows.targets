@@ -15,6 +15,7 @@ The .NET Foundation licenses this file to you under the MIT license.
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <CppLinker>link</CppLinker>
+    <CppCompiler>cl</CppCompiler>
     <CppLibCreator>lib</CppLibCreator>
     <ObjectSuffix>.obj</ObjectSuffix>
     <LibrarySuffix>.lib</LibrarySuffix>
@@ -136,10 +137,70 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <PropertyGroup Condition="'$(_VCVarsAllFound)' == '0'">
       <_CppToolsDirectory>$(_FindVCVarsallOutput.Split(`#`)[0])</_CppToolsDirectory>
+      <CppCompiler>$(_CppToolsDirectory)cl.exe</CppCompiler>
       <CppLinker>$(_CppToolsDirectory)link.exe</CppLinker>
       <CppLibCreator>$(_CppToolsDirectory)lib.exe</CppLibCreator>
     </PropertyGroup>
 
     <Error Condition="'$(_VCVarsAllFound)' == '1'" Text="Platform linker not found. Ensure you have all the required prerequisites documented at https://aka.ms/nativeaot-prerequisites, in particular the Desktop Development for C++ workload in Visual Studio. For ARM64 development also install C++ ARM64 build tools." />
+  </Target>
+
+  <Target Name="CreateShimExes"
+          Condition="'$(FatExecutable)' == 'true'"
+          DependsOnTargets="LinkNative;WriteFatExecutableShimRspFiles"
+          Inputs="$(NativeImportLibrary);@(_FatExecutableReferencePath->'%(ShimSource)');@(_FatExecutableReferencePath->'%(ShimCompileRspFile)');@(_FatExecutableReferencePath->'%(ShimLinkRspFile)')"
+          Outputs="@(_FatExecutableShim);@(_FatExecutableShimSymbol)">
+
+    <MakeDir Directories="$(NativeIntermediateOutputPath);$(NativeOutputPath)" />
+    <Exec Command="&quot;$(CppCompiler)&quot; @&quot;%(_FatExecutableReferencePath.ShimCompileRspFile)&quot;" />
+    <Exec Command="&quot;$(CppLinker)&quot; @&quot;%(_FatExecutableReferencePath.ShimLinkRspFile)&quot;" />
+  </Target>
+
+  <Target Name="WriteFatExecutableShimRspFiles"
+          Condition="'$(FatExecutable)' == 'true'"
+          DependsOnTargets="LinkNative">
+
+    <ItemGroup>
+      <_FatExecutableReferencePath>
+        <ShimSourceCode><![CDATA[__declspec(dllimport) int %(_FatExecutableReferencePath.EntryPointSymbol)(int, unsigned short**);
+
+int wmain(int argc, unsigned short** argv)
+{
+    return %(_FatExecutableReferencePath.EntryPointSymbol)(argc, argv);
+}
+]]></ShimSourceCode>
+        <ShimPdbLinkerArg Condition="'$(NativeDebugSymbols)' == 'true'">/PDB:"%(_FatExecutableReferencePath.ShimSymbol)"</ShimPdbLinkerArg>
+      </_FatExecutableReferencePath>
+    </ItemGroup>
+
+    <ItemGroup>
+      <_FatExecutableShimCompilerArg Include="/nologo" />
+      <_FatExecutableShimCompilerArg Include="/c" />
+      <_FatExecutableShimCompilerArg Include="/MT" />
+      <_FatExecutableShimCompilerArg Condition="'$(NativeDebugSymbols)' == 'true'" Include="/Z7" />
+      <_FatExecutableShimCompilerArg Condition="'$(ControlFlowGuard)' == 'Guard'" Include="/guard:cf" />
+
+      <_FatExecutableShimLinkerArg Include="/NOLOGO" />
+      <_FatExecutableShimLinkerArg Include="/MANIFEST:NO" />
+      <_FatExecutableShimLinkerArg Include="/ENTRY:wmainCRTStartup" />
+      <_FatExecutableShimLinkerArg Include="/STACK:$(IlcDefaultStackSize)" />
+      <_FatExecutableShimLinkerArg Include="/INCREMENTAL:NO" />
+      <_FatExecutableShimLinkerArg Condition="'$(NativeDebugSymbols)' == 'true'" Include="/DEBUG" />
+      <_FatExecutableShimLinkerArg Include="/NODEFAULTLIB:libucrt.lib" />
+      <_FatExecutableShimLinkerArg Include="/DEFAULTLIB:ucrt.lib" />
+      <_FatExecutableShimLinkerArg Condition="'$(Configuration)' != 'Debug'" Include="/OPT:REF" />
+      <_FatExecutableShimLinkerArg Condition="'$(Configuration)' != 'Debug'" Include="/OPT:ICF" />
+      <_FatExecutableShimLinkerArg Condition="'$(ControlFlowGuard)' == 'Guard'" Include="/guard:cf" />
+      <_FatExecutableShimLinkerArg Condition="'$(_targetArchitecture)' == 'x86'" Include="/safeseh" />
+      <_FatExecutableShimLinkerArg Condition="'$(CETCompat)' != 'false' and '$(_targetArchitecture)' == 'x64'" Include="/CETCOMPAT" />
+      <_FatExecutableShimLinkerArg Condition="'$(CETCompat)' == 'false' and '$(_targetArchitecture)' == 'x64'" Include="/CETCOMPAT:NO" />
+      <_FatExecutableShimLinkerArg Condition="'$(CETCompat)' != 'false' and '$(_targetArchitecture)' == 'x64' and '$(ControlFlowGuard)' == 'Guard'" Include="/guard:ehcont" />
+      <_FatExecutableShimLinkerArg Include="@(AdditionalNativeLibraryDirectories->'/LIBPATH:&quot;%(Identity)&quot;')" />
+    </ItemGroup>
+
+    <MakeDir Directories="$(NativeIntermediateOutputPath);$(NativeOutputPath)" />
+    <WriteLinesToFile File="%(_FatExecutableReferencePath.ShimSource)" Lines="$([MSBuild]::Escape('%(_FatExecutableReferencePath.ShimSourceCode)'))" Overwrite="true" Encoding="utf-8" WriteOnlyWhenDifferent="true" />
+    <WriteLinesToFile File="%(_FatExecutableReferencePath.ShimCompileRspFile)" Lines="@(_FatExecutableShimCompilerArg);&quot;%(_FatExecutableReferencePath.ShimSource)&quot;;/Fo&quot;%(_FatExecutableReferencePath.ShimObject)&quot;" Overwrite="true" Encoding="utf-8" WriteOnlyWhenDifferent="true" />
+    <WriteLinesToFile File="%(_FatExecutableReferencePath.ShimLinkRspFile)" Lines="&quot;%(_FatExecutableReferencePath.ShimObject)&quot;;&quot;$(NativeImportLibrary)&quot;;/OUT:&quot;%(_FatExecutableReferencePath.ShimBinary)&quot;;/SUBSYSTEM:%(_FatExecutableReferencePath.ShimLinkerSubsystem);%(_FatExecutableReferencePath.ShimPdbLinkerArg);@(_FatExecutableShimLinkerArg)" Overwrite="true" Encoding="utf-8" WriteOnlyWhenDifferent="true" />
   </Target>
 </Project>
