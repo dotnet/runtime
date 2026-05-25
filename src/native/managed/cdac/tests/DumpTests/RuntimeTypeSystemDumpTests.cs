@@ -49,6 +49,7 @@ public class RuntimeTypeSystemDumpTests : DumpTestBase
 
         TypeHandle handle = rts.GetTypeHandle(objectMT);
         Assert.False(rts.IsFreeObjectMethodTable(handle));
+        Assert.True(rts.IsObject(handle));
     }
 
     [ConditionalTheory]
@@ -65,6 +66,7 @@ public class RuntimeTypeSystemDumpTests : DumpTestBase
 
         TypeHandle handle = rts.GetTypeHandle(freeObjMT);
         Assert.True(rts.IsFreeObjectMethodTable(handle));
+        Assert.False(rts.IsObject(handle));
     }
 
     [ConditionalTheory]
@@ -81,6 +83,7 @@ public class RuntimeTypeSystemDumpTests : DumpTestBase
 
         TypeHandle handle = rts.GetTypeHandle(stringMT);
         Assert.True(rts.IsString(handle));
+        Assert.False(rts.IsObject(handle));
     }
 
     [ConditionalTheory]
@@ -226,6 +229,32 @@ public class RuntimeTypeSystemDumpTests : DumpTestBase
         // which is Class for System.String (not CorElementType.String)
         CorElementType corType = rts.GetSignatureCorElementType(handle);
         Assert.Equal(CorElementType.Class, corType);
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void RuntimeTypeSystem_IsObjRef_AreConsistent(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
+        ILoader loader = Target.Contracts.Loader;
+
+        TargetPointer objectMT = Target.ReadPointer(Target.ReadGlobalPointer("ObjectMethodTable"));
+        TargetPointer stringMT = Target.ReadPointer(Target.ReadGlobalPointer("StringMethodTable"));
+        TargetPointer objectArrayMT = Target.ReadPointer(Target.ReadGlobalPointer("ObjectArrayMethodTable"));
+
+        TypeHandle objectHandle = rts.GetTypeHandle(objectMT);
+        TypeHandle stringHandle = rts.GetTypeHandle(stringMT);
+        TypeHandle objectArrayHandle = rts.GetTypeHandle(objectArrayMT);
+
+        TargetPointer systemAssembly = loader.GetSystemAssembly();
+        ModuleHandle coreLibModule = loader.GetModuleHandleFromAssemblyPtr(systemAssembly);
+        TypeHandle intPtrHandle = rts.GetTypeByNameAndModule("IntPtr", "System", coreLibModule);
+
+        Assert.True(rts.IsObjRef(objectHandle));
+        Assert.True(rts.IsObjRef(stringHandle));
+        Assert.True(rts.IsObjRef(objectArrayHandle));
+        Assert.False(rts.IsObjRef(intPtrHandle));
     }
 
     [ConditionalTheory]

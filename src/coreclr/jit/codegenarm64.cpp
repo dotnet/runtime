@@ -251,6 +251,11 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
         }
     }
 
+    if (JitConfig.JitPacEnabled() != 0)
+    {
+        GetEmitter()->emitPacInEpilog();
+    }
+
     // For OSR, we must also adjust the SP to remove the Tier0 frame.
     //
     if (m_compiler->opts.IsOSR())
@@ -487,9 +492,10 @@ void CodeGen::genPrologSaveRegPair(regNumber reg1,
 
         if ((spOffset == 0) && (spDelta >= -512))
         {
-            // We can use pre-indexed addressing.
+            // We can use pre-indexed addressing when the stack adjustment fits in the instruction.
             // stp REG, REG + 1, [SP, #spDelta]!
             // 64-bit STP offset range: -512 to 504, multiple of 8.
+            assert(reg1 != REG_LR);
             GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, reg1, reg2, REG_SPBASE, spDelta, INS_OPTS_PRE_INDEX);
             m_compiler->unwindSaveRegPairPreindexed(reg1, reg2, spDelta);
 
@@ -511,6 +517,8 @@ void CodeGen::genPrologSaveRegPair(regNumber reg1,
         // 64-bit STP offset range: -512 to 504, multiple of 8.
         assert(spOffset <= 504);
         assert((spOffset % 8) == 0);
+        assert(reg1 != REG_LR);
+
         GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, reg1, reg2, REG_SPBASE, spOffset);
 
         if (TargetOS::IsUnix && m_compiler->generateCFIUnwindCodes())
@@ -622,6 +630,7 @@ void CodeGen::genRestoreRegPair(regNumber reg1,
     assert((spDelta % 16) == 0);                                  // SP changes must be 16-byte aligned
     assert(genIsValidFloatReg(reg1) == genIsValidFloatReg(reg2)); // registers must be both general-purpose, or both
                                                                   // FP/SIMD
+    assert(reg1 != REG_LR);
 
     if (spDelta != 0)
     {
@@ -1384,6 +1393,11 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 
     m_compiler->unwindBegProlog();
 
+    if (JitConfig.JitPacEnabled() != 0)
+    {
+        GetEmitter()->emitPacInProlog();
+    }
+
     regMaskTP maskSaveRegsFloat = genFuncletInfo.fiSaveRegs & RBM_ALLFLOAT;
     regMaskTP maskSaveRegsInt   = genFuncletInfo.fiSaveRegs & ~maskSaveRegsFloat;
 
@@ -1669,6 +1683,11 @@ void CodeGen::genFuncletEpilog(BasicBlock* /* block */)
         }
     }
 
+    if (JitConfig.JitPacEnabled() != 0)
+    {
+        GetEmitter()->emitPacInEpilog();
+    }
+
     inst_RV(INS_ret, REG_LR, TYP_I_IMPL);
     m_compiler->unwindReturn(REG_LR);
 
@@ -1714,6 +1733,11 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
         // the saved registers because this is part of the EnC header.
         // Note that OSR methods reuse the monitor bool created by tier 0.
         saveRegsSize += m_compiler->lvaLclStackHomeSize(m_compiler->lvaMonAcquired);
+    }
+
+    if ((m_compiler->lvaAsyncThreadObjectVar != BAD_VAR_NUM) && !m_compiler->opts.IsOSR())
+    {
+        saveRegsSize += m_compiler->lvaLclStackHomeSize(m_compiler->lvaAsyncThreadObjectVar);
     }
 
     if ((m_compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM) && !m_compiler->opts.IsOSR())
@@ -1957,10 +1981,12 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
             GetEmitter()->emitIns_R_R_I_I(INS_bfm, EA_PTRSIZE, addrReg, REG_ZR, 0, 5);
             // addrReg points at the beginning of a cache line.
 
+            BasicBlock* loopHead = genCreateTempLabel();
+            genDefineInlineTempLabel(loopHead);
             GetEmitter()->emitIns_R(INS_dczva, EA_PTRSIZE, addrReg);
             GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, addrReg, addrReg, 64);
             GetEmitter()->emitIns_R_R(INS_cmp, EA_PTRSIZE, addrReg, endAddrReg);
-            GetEmitter()->emitIns_J(INS_blo, NULL, -4);
+            GetEmitter()->emitIns_ShortJ(INS_blo, loopHead);
 
             addrReg      = endAddrReg;
             bytesToWrite = 64;
@@ -1979,12 +2005,14 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
 
             instGen_Set_Reg_To_Imm(EA_PTRSIZE, countReg, bytesToWrite - 64);
 
+            BasicBlock* loopHead = genCreateTempLabel();
+            genDefineInlineTempLabel(loopHead);
             GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_16BYTE, zeroSimdReg, zeroSimdReg, addrReg, 32);
             GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_16BYTE, zeroSimdReg, zeroSimdReg, addrReg, 64,
                                           INS_OPTS_PRE_INDEX);
 
             GetEmitter()->emitIns_R_R_I(INS_subs, EA_PTRSIZE, countReg, countReg, 64);
-            GetEmitter()->emitIns_J(INS_bge, NULL, -4);
+            GetEmitter()->emitIns_ShortJ(INS_bge, loopHead);
 
             bytesToWrite %= 64;
         }
@@ -3816,7 +3844,7 @@ void CodeGen::genAsyncResumeInfo(GenTreeVal* treeNode)
 //
 void CodeGen::genFtnEntry(GenTree* treeNode)
 {
-    GetEmitter()->emitIns_R_L(INS_adr, EA_PTRSIZE, GetEmitter()->emitPrologIG, treeNode->GetRegNum());
+    GetEmitter()->emitIns_R_L(INS_adr, EA_PTRSIZE, GetEmitter()->emitGetFirstPrologIG(), treeNode->GetRegNum());
     genProduceReg(treeNode);
 }
 
@@ -5675,6 +5703,20 @@ void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
     genRestoreRegPair(REG_FP, REG_LR, REG_FP, 0, 0, false, REG_IP1, nullptr,
                       /* reportUnwindData */ false);
 
+    if (JitConfig.JitPacEnabled() != 0)
+    {
+        // Tier0 signed LR with the Tier0 caller SP before allocating its frame.
+        // Recreate that SP from the current Tier0 body SP so we can authenticate
+        // LR before the OSR prolog later re-signs it with the OSR SP.
+        // TODO-PAC: Avoid authenticating and re-signing so the signing SP will point to the start of the frame. It may
+        // require adding a phantom pac_sign_lr unwind code.
+        genInstrWithConstant(INS_add, EA_PTRSIZE, REG_IP0, REG_SPBASE, patchpointInfo->TotalFrameSize(), REG_IP0,
+                             /* inUnwindRegion */ false);
+        GetEmitter()->emitIns_Mov(INS_mov, EA_PTRSIZE, REG_IP1, REG_LR, /* canSkip */ false);
+        GetEmitter()->emitIns(TargetOS::IsWindows ? INS_autib1716 : INS_autia1716);
+        GetEmitter()->emitIns_Mov(INS_mov, EA_PTRSIZE, REG_LR, REG_IP1, /* canSkip */ false);
+    }
+
     // Emit phantom unwind data for the tier0 frame.
     m_compiler->unwindAllocStack(patchpointInfo->TotalFrameSize());
     // Emit nops to make the prolog 1:1 in unwind codes to instructions. This
@@ -5914,13 +5956,12 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         instGen_Set_Reg_To_Imm(EA_PTRSIZE, rOffset, -(ssize_t)pageSize);
         instGen_Set_Reg_To_Imm(EA_PTRSIZE, rLimit, -(ssize_t)frameSize);
 
-        // There's a "virtual" label here. But we can't create a label in the prolog, so we use the magic
-        // `emitIns_J` with a negative `instrCount` to branch back a specific number of instructions.
-
+        BasicBlock* loopHead = genCreateTempLabel();
+        genDefineInlineTempLabel(loopHead);
         GetEmitter()->emitIns_R_R_R(INS_ldr, EA_4BYTE, REG_ZR, REG_SPBASE, rOffset);
         GetEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, rOffset, rOffset, pageSize);
         GetEmitter()->emitIns_R_R(INS_cmp, EA_PTRSIZE, rLimit, rOffset); // If equal, we need to probe again
-        GetEmitter()->emitIns_J(INS_bls, NULL, -4);
+        GetEmitter()->emitIns_ShortJ(INS_bls, loopHead);
 
         *pInitRegZeroed = false; // The initReg does not contain zero
 

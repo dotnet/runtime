@@ -14,17 +14,22 @@ internal sealed class GCHeapSVR : IData<GCHeapSVR>, IGCHeap
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.GCHeap);
 
-        MarkArray = target.ReadPointerField(address, type, nameof(MarkArray));
-        NextSweepObj = target.ReadPointerField(address, type, nameof(NextSweepObj));
-        BackgroundMinSavedAddr = target.ReadPointerField(address, type, nameof(BackgroundMinSavedAddr));
-        BackgroundMaxSavedAddr = target.ReadPointerField(address, type, nameof(BackgroundMaxSavedAddr));
+        // Fields only exist in background GC builds
+        if (type.Fields.ContainsKey(nameof(MarkArray)))
+            MarkArray = target.ReadPointerField(address, type, nameof(MarkArray));
+        if (type.Fields.ContainsKey(nameof(NextSweepObj)))
+            NextSweepObj = target.ReadPointerField(address, type, nameof(NextSweepObj));
+        if (type.Fields.ContainsKey(nameof(BackgroundMinSavedAddr)))
+            BackgroundMinSavedAddr = target.ReadPointerField(address, type, nameof(BackgroundMinSavedAddr));
+        if (type.Fields.ContainsKey(nameof(BackgroundMaxSavedAddr)))
+            BackgroundMaxSavedAddr = target.ReadPointerField(address, type, nameof(BackgroundMaxSavedAddr));
         AllocAllocated = target.ReadPointerField(address, type, nameof(AllocAllocated));
         EphemeralHeapSegment = target.ReadPointerField(address, type, nameof(EphemeralHeapSegment));
         CardTable = target.ReadPointerField(address, type, nameof(CardTable));
         FinalizeQueue = target.ReadPointerField(address, type, nameof(FinalizeQueue));
         GenerationTable = address + (ulong)type.Fields[nameof(GenerationTable)].Offset;
 
-        // Fields only exist segment GC builds
+        // Fields only exist in segment GC builds with background GC
         if (type.Fields.ContainsKey(nameof(SavedSweepEphemeralSeg)))
             SavedSweepEphemeralSeg = target.ReadPointerField(address, type, nameof(SavedSweepEphemeralSeg));
         if (type.Fields.ContainsKey(nameof(SavedSweepEphemeralStart)))
@@ -49,10 +54,10 @@ internal sealed class GCHeapSVR : IData<GCHeapSVR>, IGCHeap
             FreeRegions = address + (ulong)type.Fields[nameof(FreeRegions)].Offset;
     }
 
-    public TargetPointer MarkArray { get; }
-    public TargetPointer NextSweepObj { get; }
-    public TargetPointer BackgroundMinSavedAddr { get; }
-    public TargetPointer BackgroundMaxSavedAddr { get; }
+    public TargetPointer? MarkArray { get; }
+    public TargetPointer? NextSweepObj { get; }
+    public TargetPointer? BackgroundMinSavedAddr { get; }
+    public TargetPointer? BackgroundMaxSavedAddr { get; }
     public TargetPointer AllocAllocated { get; }
     public TargetPointer EphemeralHeapSegment { get; }
     public TargetPointer CardTable { get; }

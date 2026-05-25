@@ -8,9 +8,11 @@
     CDAC_DUMP_ROOT pointing to that platform's dump subdirectory. This gives each
     platform independent exit code tracking and test result reporting.
 
-    The dumps are sent as per-work-item payloads (one platform per work item) to
-    avoid exceeding the 2 GB MemoryStream/ZipArchive limit that occurs when all
-    platforms' dumps are zipped into a single payload.
+    The dumps are pre-zipped per platform with the MSBuild ZipDirectory task and
+    sent as a <PayloadArchive>. This avoids the Helix SDK's <PayloadDirectory>
+    code path which builds the zip in a MemoryStream and so caps the payload at
+    int.MaxValue (~2 GB). ZipDirectory writes the archive directly to a
+    FileStream, so per-platform dump payloads can grow well past that limit.
 
     The test DLLs are sent as a correlation payload (shared across work items).
 
@@ -84,12 +86,18 @@
     Create one Helix work item per source platform. Target batching (Outputs)
     iterates once per _SourcePlatform. Each work item gets its own dump payload
     (per-platform subdirectory) and uses shared test DLLs from the correlation payload.
+
+    The per-platform dump directory is pre-zipped to a <PayloadArchive> instead of
+    using <PayloadDirectory>. The Helix SDK's directory payload zips through a
+    MemoryStream (capped at ~2 GB); ZipDirectory + PayloadArchive streams to a
+    FileStream and has no such limit.
   -->
   <Target Name="_CreateHelixWorkItems"
           Outputs="%(_SourcePlatform.Identity)"
           BeforeTargets="CoreTest">
     <PropertyGroup>
       <_HelixCommandFile>$(DumpPayloadBase)/%(_SourcePlatform.Identity)/HelixCommand.txt</_HelixCommandFile>
+      <_DumpPayloadArchive>$(DumpPayloadBase)/%(_SourcePlatform.Identity).zip</_DumpPayloadArchive>
     </PropertyGroup>
 
     <ItemGroup>
@@ -108,9 +116,20 @@
 
     <WriteLinesToFile File="$(_HelixCommandFile)" Lines="@(_HelixCommandLines)" Overwrite="true" />
 
+    <!--
+      Pre-zip the per-platform dump directory so the Helix SDK can stream it
+      from disk via ArchivePayload instead of zipping it in-memory.
+      CompressionLevel=Fastest keeps build time low; dumps don't compress well anyway.
+    -->
+    <ZipDirectory
+        SourceDirectory="$(DumpPayloadBase)/%(_SourcePlatform.Identity)"
+        DestinationFile="$(_DumpPayloadArchive)"
+        Overwrite="true"
+        CompressionLevel="Fastest" />
+
     <ItemGroup>
       <HelixWorkItem Include="CdacXPlatDumpTests_host_$(TargetOS)_$(TargetArchitecture)_dumps_%(_SourcePlatform.Identity)">
-        <PayloadDirectory>$(DumpPayloadBase)/%(_SourcePlatform.Identity)</PayloadDirectory>
+        <PayloadArchive>$(_DumpPayloadArchive)</PayloadArchive>
         <Command>$([System.IO.File]::ReadAllText('$(_HelixCommandFile)'))</Command>
         <Timeout>$(WorkItemTimeout)</Timeout>
       </HelixWorkItem>

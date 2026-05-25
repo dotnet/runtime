@@ -116,6 +116,7 @@ static const Entry s_cryptoAppleNative[] =
     DllImportEntry(AppleCryptoNative_StoreEnumerateUserDisallowed)
     DllImportEntry(AppleCryptoNative_StoreEnumerateMachineDisallowed)
     DllImportEntry(AppleCryptoNative_X25519DeriveRawSecretAgreement)
+    DllImportEntry(AppleCryptoNative_X25519DeriveRawSecretAgreementWithBytes)
     DllImportEntry(AppleCryptoNative_X25519ExportPrivateKey)
     DllImportEntry(AppleCryptoNative_X25519ExportPublicKey)
     DllImportEntry(AppleCryptoNative_X25519ImportPrivateKey)
