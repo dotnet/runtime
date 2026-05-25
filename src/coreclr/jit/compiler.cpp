@@ -4588,9 +4588,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         lvaRefCountState       = RCS_INVALID;
         fgLocalVarLivenessDone = false;
 
-        // Decide the kind of code we want to generate
-        fgSetOptions();
-
         fgExpandQmarkNodes(/*early*/ false);
 
 #ifdef DEBUG
@@ -4674,6 +4671,12 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 #ifdef DEBUG
     fgDebugCheckLinks();
 #endif
+
+    // Decide the kind of code we want to generate. Done here, after the second
+    // round of empty-EH removal above, so that EH eliminated post-morph doesn't
+    // force fully-interruptible codegen / a frame pointer.
+    //
+    fgSetOptions();
 
     // Morph multi-dimensional array operations.
     // (Consider deferring all array operation morphing, including single-dimensional array ops,
