@@ -173,29 +173,20 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
-        public void ProcessConstructor_NonAsyncOutputHandle_ThrowsArgumentException()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void ProcessConstructor_NonAsyncHandle_ThrowsArgumentException(bool stdOut)
         {
             SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle);
             using (readHandle)
             using (writeHandle)
             {
                 using SafeProcessHandle processHandle = new(Process.GetCurrentProcess().Handle, ownsHandle: false);
-                ArgumentException ex = Assert.Throws<ArgumentException>("standardOutput",
-                    () => new Process(processHandle, new ProcessStartInfo(), standardOutput: readHandle));
-            }
-        }
-
-        [Fact]
-        public void ProcessConstructor_NonAsyncErrorHandle_ThrowsArgumentException()
-        {
-            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle);
-            using (readHandle)
-            using (writeHandle)
-            {
-                using SafeProcessHandle processHandle = new(Process.GetCurrentProcess().Handle, ownsHandle: false);
-                ArgumentException ex = Assert.Throws<ArgumentException>("standardError",
-                    () => new Process(processHandle, new ProcessStartInfo(), standardError: readHandle));
+                Assert.Throws<ArgumentException>(stdOut ? "standardOutput" : "standardError",
+                    () => new Process(processHandle, new ProcessStartInfo(),
+                    standardOutput: stdOut ? readHandle : null,
+                    standardError: stdOut ? null : readHandle));
             }
         }
 
@@ -282,6 +273,5 @@ namespace System.Diagnostics.Tests
 
             return new string(buffer, 0, (int)result);
         }
-
     }
 }

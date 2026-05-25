@@ -129,6 +129,11 @@ namespace System.Diagnostics
             ArgumentNullException.ThrowIfNull(processHandle);
             ArgumentNullException.ThrowIfNull(startInfo);
 
+            if (processHandle.IsInvalid)
+            {
+                throw new ArgumentException(SR.Arg_InvalidHandle, nameof(processHandle));
+            }
+
             GC.SuppressFinalize(this);
             _machineName = ".";
             _outputStreamReadMode = StreamReadMode.Undefined;
