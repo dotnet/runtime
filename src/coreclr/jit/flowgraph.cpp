@@ -5633,7 +5633,8 @@ bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info, bool allo
 
     GenTree* test = nullptr;
 
-    info->IterVar = BAD_VAR_NUM;
+    info->IterVar            = BAD_VAR_NUM;
+    info->NeedsZeroTripGuard = false;
 
     for (FlowEdge* exitEdge : ExitEdges())
     {

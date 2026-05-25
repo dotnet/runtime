@@ -370,8 +370,20 @@ bool Compiler::optExtractTestIncr(BasicBlock* cond, GenTree** ppTest, GenTree** 
     }
 
     // Walk backward from the test statement looking for a candidate IV increment
-    // of the form 'v = v op c'. Skip any intervening statements that are not IV
-    // updates.
+    // of the form 'v = v op c'. For each such candidate, verify it is suitable:
+    //   - the iterator local is not address-exposed (our intervening-read check
+    //     would not see indirect accesses, and AnalyzeIteration rejects
+    //     address-exposed IVs anyway);
+    //   - the test actually reads the iterator (otherwise this is an unrelated
+    //     update that happens to be IV-shaped);
+    //   - no statement strictly between the candidate and the test reads the
+    //     iterator. Such statements would execute with the post-increment value,
+    //     violating the AnalyzeIteration invariant that no loop body IR observes
+    //     the post-increment value except the test. Stores are not checked here:
+    //     AnalyzeIteration's VisitDefs already rejects any def of iterVar in the
+    //     loop other than the picked increment.
+    // On any rejection, continue scanning backward; only fail when no candidate
+    // in the block satisfies all checks.
     //
     Statement* incrStmt  = nullptr;
     unsigned   iterVar   = BAD_VAR_NUM;
@@ -380,12 +392,31 @@ bool Compiler::optExtractTestIncr(BasicBlock* cond, GenTree** ppTest, GenTree** 
     {
         for (Statement* s = testStmt->GetPrevStmt();; s = s->GetPrevStmt())
         {
-            iterVar = optIsLoopIncrTree(s->GetRootNode());
-            if (iterVar != BAD_VAR_NUM)
+            unsigned candVar = optIsLoopIncrTree(s->GetRootNode());
+            if (candVar != BAD_VAR_NUM)
             {
-                incrStmt = s;
-                break;
+                if (!lvaGetDesc(candVar)->IsAddressExposed() && gtTreeHasLocalRead(testStmt->GetRootNode(), candVar))
+                {
+                    bool intermediateUse = false;
+                    for (Statement* t = s->GetNextStmt(); t != testStmt; t = t->GetNextStmt())
+                    {
+                        assert(t != nullptr);
+                        if (gtTreeHasLocalRead(t->GetRootNode(), candVar))
+                        {
+                            intermediateUse = true;
+                            break;
+                        }
+                    }
+
+                    if (!intermediateUse)
+                    {
+                        incrStmt = s;
+                        iterVar  = candVar;
+                        break;
+                    }
+                }
             }
+
             if (s == firstStmt)
             {
                 break;
@@ -399,33 +430,7 @@ bool Compiler::optExtractTestIncr(BasicBlock* cond, GenTree** ppTest, GenTree** 
     }
 
     assert(testStmt != incrStmt);
-
-    // The intervening-statement read check below operates on the iterator
-    // local directly, so it would not be meaningful for an address-exposed
-    // iterator (indirect references would be invisible). AnalyzeIteration
-    // ultimately rejects address-exposed IVs anyway, so bail here and let it
-    // try the next candidate.
-    //
-    if (lvaGetDesc(iterVar)->IsAddressExposed())
-    {
-        return false;
-    }
-
-    // Statements strictly between the increment and the test execute with the
-    // iterator already advanced, before the exit test runs. To preserve the
-    // AnalyzeIteration invariant that no loop-body IR observes the post-increment
-    // value, reject the candidate if any such statement reads iterVar. (We do
-    // not need to check for stores: AnalyzeIteration's VisitDefs already
-    // rejects any def of iterVar in the loop other than the picked increment.)
-    //
-    for (Statement* s = incrStmt->GetNextStmt(); s != testStmt; s = s->GetNextStmt())
-    {
-        assert(s != nullptr);
-        if (gtTreeHasLocalRead(s->GetRootNode(), iterVar))
-        {
-            return false;
-        }
-    }
+    assert(iterVar != BAD_VAR_NUM);
 
     *ppTest = testStmt->GetRootNode();
     *ppIncr = incrStmt->GetRootNode();
