@@ -6444,8 +6444,7 @@ void InterpCompiler::UpdateLocalIntervalMaps()
         int32_t varIndex = suspendData->returnValueVarStackOffset;
         if (varIndex != -1)
         {
-            assert(!m_pVars[varIndex].global);
-            if (m_pVars[varIndex].liveStart == m_pVars[varIndex].liveEnd)
+            if (!m_pVars[varIndex].global && m_pVars[varIndex].liveStart == m_pVars[varIndex].liveEnd)
             {
                 // The return result of the async call is not used by the method, so the allocated
                 // stack offset will be immediately reused by any vars that become live. Keep the
