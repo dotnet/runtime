@@ -481,15 +481,15 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         unsigned     copyBlockUnrollLimit = m_compiler->getUnrollThreshold(Compiler::UnrollKind::Memcpy, canUseSimd);
 
 #ifndef JIT32_GCENCODER
-        if (doCpObj && (size <= copyBlockUnrollLimit))
+        if (doCpObj && isNotHeap)
         {
             // No write barriers are needed if the destination is known to be outside of the GC heap.
-            if (isNotHeap)
+            doCpObj = false;
+            if (size <= copyBlockUnrollLimit)
             {
                 // If the size is small enough to unroll then we need to mark the block as non-interruptible
                 // to actually allow unrolling. The generated code does not report GC references loaded in the
                 // temporary register(s) used for copying. This is not supported for the JIT32_GCENCODER.
-                doCpObj                  = false;
                 blkNode->gtBlkOpGcUnsafe = true;
             }
         }
@@ -497,56 +497,11 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 
         if (doCpObj)
         {
-            // Try to use bulk copy helper
-            if (TryLowerBlockStoreAsGcBulkCopyCall(blkNode))
-            {
-                return;
-            }
-
-            assert(dstAddr->TypeIs(TYP_BYREF, TYP_I_IMPL));
-
-            // If we have a long enough sequence of slots that do not require write barriers then
-            // we can use REP MOVSD/Q instead of a sequence of MOVSD/Q instructions. According to the
-            // Intel Manual, the sweet spot for small structs is between 4 to 12 slots of size where
-            // the entire operation takes 20 cycles and encodes in 5 bytes (loading RCX and REP MOVSD/Q).
-            unsigned nonGCSlots = 0;
-
-            if (blkNode->IsAddressNotOnHeap(m_compiler))
-            {
-                // If the destination is on the stack then no write barriers are needed.
-                nonGCSlots = layout->GetSlotCount();
-            }
-            else
-            {
-                // Otherwise a write barrier is needed for every GC pointer in the layout
-                // so we need to check if there's a long enough sequence of non-GC slots.
-                unsigned slots = layout->GetSlotCount();
-                for (unsigned i = 0; i < slots; i++)
-                {
-                    if (layout->IsGCPtr(i))
-                    {
-                        nonGCSlots = 0;
-                    }
-                    else
-                    {
-                        nonGCSlots++;
-
-                        if (nonGCSlots >= CPOBJ_NONGC_SLOTS_LIMIT)
-                        {
-                            break;
-                        }
-                    }
-                }
-            }
-
-            if (nonGCSlots >= CPOBJ_NONGC_SLOTS_LIMIT)
-            {
-                blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindCpObjRepInstr;
-            }
-            else
-            {
-                blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindCpObjUnroll;
-            }
+            // Per-slot decomposition was already attempted by LowerBlockStoreCommon,
+            // so reaching here means the destination is on-heap and we fall back to
+            // the bulk write-barrier helper.
+            LowerBlockStoreAsGcBulkCopyCall(blkNode);
+            return;
         }
         else if (blkNode->OperIs(GT_STORE_BLK) &&
                  (size <= m_compiler->getUnrollThreshold(Compiler::UnrollKind::Memcpy, canUseSimd)))

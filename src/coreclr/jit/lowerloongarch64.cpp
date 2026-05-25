@@ -376,14 +376,11 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         // CopyObj or CopyBlk
         if (doCpObj)
         {
-            // Try to use bulk copy helper
-            if (TryLowerBlockStoreAsGcBulkCopyCall(blkNode))
-            {
-                return;
-            }
-
-            assert(dstAddr->TypeIs(TYP_BYREF, TYP_I_IMPL));
-            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindCpObjUnroll;
+            // Per-slot decomposition was already attempted by LowerBlockStoreCommon,
+            // so reaching here means the destination is on-heap and we fall back to
+            // the bulk write-barrier helper.
+            LowerBlockStoreAsGcBulkCopyCall(blkNode);
+            return;
         }
         else if (blkNode->OperIs(GT_STORE_BLK) && (size <= copyBlockUnrollLimit))
         {
