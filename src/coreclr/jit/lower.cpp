@@ -12152,12 +12152,12 @@ void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
     }
     else
     {
- #ifdef TARGET_WASM
+#ifdef TARGET_WASM
         // TODO: unify with the shared logic in LowerCopyBlockStore
-         LowerBlockStore(blkNode);
- #else
-         LowerCopyBlockStore(blkNode);
- #endif
+        LowerBlockStore(blkNode);
+#else
+        LowerCopyBlockStore(blkNode);
+#endif
     }
 
     LowerStoreIndirCoalescing(blkNode);
@@ -12198,8 +12198,8 @@ bool Lowering::TryDecomposeBlockStoreAsIndirs(GenTreeBlk* blkNode)
         }
 
         // We assume that the bulk helper is also a better option for Tier0/cold blocks.
-        if ((layout->GetGCPtrCount() > 1) && (!m_compiler->opts.OptimizationEnabled() ||
-            ((m_block != nullptr) && (m_block->isRunRarely()))))
+        if ((layout->GetGCPtrCount() > 1) &&
+            (!m_compiler->opts.OptimizationEnabled() || ((m_block != nullptr) && (m_block->isRunRarely()))))
         {
             return false;
         }
@@ -12214,10 +12214,10 @@ bool Lowering::TryDecomposeBlockStoreAsIndirs(GenTreeBlk* blkNode)
     assert(found && (dstAddrUse.User() == blkNode));
     const var_types dstAddrType   = genActualType(blkNode->Addr());
     const unsigned  dstAddrLclNum = dstAddrUse.ReplaceWithLclVar(m_compiler);
-    unsigned  srcAddrLclNum = BAD_VAR_NUM;
-    var_types srcAddrType   = TYP_UNDEF;
-    unsigned  srcLclNum     = BAD_VAR_NUM;
-    unsigned  srcLclOffs    = 0;
+    unsigned        srcAddrLclNum = BAD_VAR_NUM;
+    var_types       srcAddrType   = TYP_UNDEF;
+    unsigned        srcLclNum     = BAD_VAR_NUM;
+    unsigned        srcLclOffs    = 0;
 
     if (src->OperIs(GT_IND))
     {
@@ -12239,7 +12239,8 @@ bool Lowering::TryDecomposeBlockStoreAsIndirs(GenTreeBlk* blkNode)
         GenTree* addr = m_compiler->gtNewLclvNode(lclNum, lclType);
         if (offset != 0)
         {
-            addr = m_compiler->gtNewOperNode(GT_ADD, lclType, addr, m_compiler->gtNewIconNode(static_cast<ssize_t>(offset), TYP_I_IMPL));
+            addr = m_compiler->gtNewOperNode(GT_ADD, lclType, addr,
+                                             m_compiler->gtNewIconNode(static_cast<ssize_t>(offset), TYP_I_IMPL));
         }
         return addr;
     };
