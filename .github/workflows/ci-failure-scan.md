@@ -358,14 +358,9 @@ Scope rule (mandatory): condition must be AS NARROW AS the observed failure scop
 
 In the PR `Reasoning` section, list the exact set of failing legs (definition + queue + stress mode) that justifies the chosen condition.
 
-### Template: Sanitization
-
-When pasting log excerpts into issue/PR bodies, strip:
-
-- JWTs, bearer tokens, `ApplicationGatewayAffinity*=`.
-- Per-user paths (`/home/<user>/`, `C:\Users\<user>\`).
-- Machine names from Helix agent strings.
-- Anything that uniquely identifies a contributor's environment.
+Sanitize every log excerpt in issue and PR bodies using
+`.github/workflows/shared/create-kbe.instructions.md` section
+`<a id="sanitization"></a>` / `## Sanitization`.
 
 ## Environment constraints
 
