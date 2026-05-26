@@ -793,7 +793,11 @@ namespace ILCompiler.Dataflow
 
                     case ILOpcode.ret:
                         {
-                            if (!methodIL.OwningMethod.IsAsync)
+                            if (!methodIL.OwningMethod.IsAsync
+#if !ILTRIM
+                            && !methodIL.OwningMethod.IsAsyncVersion()
+#endif
+                            )
                             {
                                 bool ilHasReturnValue = !methodIL.OwningMethod.Signature.ReturnType.IsVoid;
                                 if (currentStack.Count != (ilHasReturnValue ? 1 : 0))

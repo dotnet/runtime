@@ -183,5 +183,7 @@ namespace ILCompiler
         /// but use async calling convention.
         /// </summary>
         public static bool IsAsyncCall(this MethodDesc method) => method.IsAsyncVariant() || method.IsReturnDroppingAsyncThunk() || (method.IsAsync && !method.Signature.ReturnsTaskOrValueTask());
+
+        public static bool IsAsyncVersion(this MethodDesc method) => method.IsAsyncVariant() && method.IsAsyncThunk();
     }
 }

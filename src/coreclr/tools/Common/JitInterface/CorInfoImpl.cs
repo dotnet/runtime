@@ -319,8 +319,6 @@ namespace Internal.JitInterface
             return null;
         }
 
-        private bool IsAsyncVersion(MethodDesc method) => method.IsAsyncVariant() && method.IsAsyncThunk();
-
         private sealed class AsyncVersionMethodIL : MethodIL
         {
             private readonly MethodDesc _variant;
@@ -346,7 +344,7 @@ namespace Internal.JitInterface
 
         private MethodIL GetMethodILWithPotentialAsyncVersion(MethodDesc method)
         {
-            if (IsAsyncVersion(method))
+            if (method.IsAsyncVersion())
             {
                 MethodDesc targetMethod = method.GetTargetOfAsyncVariant();
 
@@ -889,7 +887,7 @@ namespace Internal.JitInterface
             }
 
 #if !READYTORUN
-            if (IsAsyncVersion(method))
+            if (method.IsAsyncVersion())
             {
                 // This is an async version and the IL belongs to the sync version.
                 methodInfo->options |= CorInfoOptions.CORINFO_ASYNC_VERSION;
@@ -3596,18 +3594,10 @@ namespace Internal.JitInterface
 
             MethodDesc result = runtimeDeterminedResult.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
-            if (runtimeDeterminedResult.IsSharedByGenericInstantiations)
+            if (result.RequiresInstArg())
             {
                 // Runtime lookup is needed
                 ComputeLookup(ref Unsafe.NullRef<CORINFO_RESOLVED_TOKEN>(), runtimeDeterminedResult, ReadyToRunHelperId.MethodDictionary, caller, ref instArg);
-            }
-            else
-            {
-                if (result.RequiresInstArg())
-                {
-                    instArg.lookupKind.needsRuntimeLookup = false;
-                    instArg.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.MethodGenericDictionary(runtimeDeterminedResult));
-                }
             }
 
             return ObjectToHandle(result);

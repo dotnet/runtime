@@ -79,8 +79,6 @@ namespace Internal.IL
         }
         private ExceptionRegion[] _exceptionRegions;
 
-        private static bool IsAsyncVersion(MethodDesc method) => method.IsAsyncVariant() && method.IsAsyncThunk();
-
         private sealed class AsyncVersionMethodIL : MethodIL
         {
             private readonly MethodDesc _variant;
@@ -106,7 +104,7 @@ namespace Internal.IL
 
         private MethodIL GetMethodILWithPotentialAsyncVersion(MethodDesc method)
         {
-            if (IsAsyncVersion(method))
+            if (method.IsAsyncVersion())
             {
                 MethodDesc targetMethod = method.GetTargetOfAsyncVariant();
 
@@ -518,7 +516,7 @@ namespace Internal.IL
                 // Don't get async variant of Delegate.Invoke method; the pointed to method is not an async variant either.
                 allowAsyncVariant = allowAsyncVariant && !method.OwningType.IsDelegate;
 
-                if (allowAsyncVariant && (IsAsyncVersion(_canonMethod) ? MatchTailCallAwait(method) : MatchTaskAwaitPattern()))
+                if (allowAsyncVariant && (_canonMethod.IsAsyncVersion() ? MatchTailCallAwait(method) : MatchTaskAwaitPattern()))
                 {
                     MethodDesc asyncVariantMethod = _factory.TypeSystemContext.GetAsyncVariantMethod(method);
                     MethodDesc asyncVariantRuntimeDeterminedMethod = _factory.TypeSystemContext.GetAsyncVariantMethod(runtimeDeterminedMethod);
@@ -1831,7 +1829,7 @@ namespace Internal.IL
 
         private void ImportReturn()
         {
-            if (_wrappingAwaitReported || !IsAsyncVersion(_canonMethod) || _prevMatchedAwaitTailCallRetPostOffset == _currentOffset)
+            if (_wrappingAwaitReported || !_canonMethod.IsAsyncVersion() || _prevMatchedAwaitTailCallRetPostOffset == _currentOffset)
             {
                 return;
             }
@@ -1871,7 +1869,7 @@ namespace Internal.IL
 
             const string reason = "Wrapped Task return";
 
-            if (runtimeDeterminedResult.IsSharedByGenericInstantiations)
+            if (runtimeDeterminedResult.IsRuntimeDeterminedExactMethod)
             {
                 _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.MethodDictionary, runtimeDeterminedResult), reason);
                 _dependencies.Add(_factory.CanonicalEntrypoint(targetMethod), reason);
