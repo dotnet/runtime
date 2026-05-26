@@ -13,7 +13,7 @@ Use this skill for requests like:
 
 - `/create-kbe <PR URL>`
 - `/create-kbe <PR URL> dryrun`
-- `create KBEs for PR 128438`
+- `create KBEs for PR <number>`
 
 This skill is **PR-targeted** and **local-account-aware**. It complements the
 scheduled CI failure scan workflow but does not try to reproduce the workflow's
@@ -43,9 +43,9 @@ Interpret `dryrun` case-insensitively. The source repository is always
 
 Examples:
 
-- `/create-kbe 128438`
-- `/create-kbe https://github.com/dotnet/runtime/pull/128438`
-- `/create-kbe https://github.com/dotnet/runtime/pull/128438 dryrun`
+- `/create-kbe 123456`
+- `/create-kbe https://github.com/dotnet/runtime/pull/123456`
+- `/create-kbe https://github.com/dotnet/runtime/pull/123456 dryrun`
 
 ## Step 1: Resolve identities and require explicit permission for non-owned PRs
 
@@ -320,50 +320,3 @@ For every unhandled failure, provide:
 - why it was not handled,
 - what evidence or follow-up would be needed to handle it.
 
-## Step 7: Validation expectations for PR 128438
-
-When validating this skill against PR 128438 in dry-run mode:
-
-- use the Build Analysis check payload for the `runtime` build unknowns,
-- also analyze the failed `runtime-android` pipeline even though Build Analysis
-  excluded it,
-- expect four draft issue files or very similar equivalents,
-- compare them against
-  `C:\Users\vitkaras\.copilot\session-state\f729bfe0-2c87-471d-ba76-aef0c40c4b67\files\128438-kbe-drafts`.
-
-For this validation PR, the useful draft set includes:
-
-1. an Android `System.Security.Cryptography.Tests` timeout draft,
-2. an Android `System.Security.Cryptography.Csp.Tests` discovery-failure draft,
-3. a `maccatalyst-arm64 ... / Build product` draft,
-4. an `osx x64 ... / Send tests to Helix` DNS failure draft.
-
-For items 3 and 4, it is acceptable for the skill to keep the draft body
-explicitly marked as human-review-needed if the exact evidence is weaker than a
-fully file-ready KBE.
-
-For PR 128438 specifically, prefer draft bodies and signatures close to the
-reference templates:
-
-- **Android crypto timeout:** mention Android + MonoRunner timeout in the title
-  or short description, and use a two-line `ErrorMessage` array built from the
-  assembly name and the timeout line.
-- **Android crypto Csp discovery failure:** prefer the discovery-time
-  `TestRsa16384` / `ConditionalTestDiscoverer` / `ImportExport..cctor()` shape
-  over a broader native app-crash bucket if both are visible.
-- **macCatalyst build product:** it is acceptable to keep this as a placeholder
-  draft that explicitly says the exact compile-time line still needs to be
-  copied before filing.
-- **Helix DNS failure:** prefer a compact array-style signature around
-  `Send tests to Helix`, `helix.dot.net:443`, and `HttpRequestException`
-  instead of one long literal exception string.
-
-Also keep the **dry-run file structure** close to the reference templates:
-
-- omit the `Pull request:` line from the draft body unless it adds essential
-  context,
-- prefer `**Failure details:**` over `## Error Details`,
-- include the reviewer-oriented sections `Affected legs`, `Console Log`,
-  `First build in window`, and `Recommended action`,
-- avoid adding a separate `Caveat:` field when the same information fits better
-  into `Console Log` or `Recommended action`.
