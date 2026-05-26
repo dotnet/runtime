@@ -325,7 +325,7 @@ namespace Internal.IL.Stubs
                 codestream.Emit(ILOpcode.call, emitter.NewToken(isCompletedMethod));
                 codestream.Emit(ILOpcode.brtrue, valueTaskCompletedLabel);
 
-                // No, tail await to TransparentSuspendForValueTask
+                // No, tail await to TransparentAwaitValueTask
                 codestream.EmitLdLoc(valueTaskLocal);
                 codestream.Emit(ILOpcode.call, emitter.NewToken(context.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "TailAwait"u8, null)));
                 codestream.Emit(ILOpcode.call, emitter.NewToken(transparentAwaitValueTaskMethod));
@@ -352,7 +352,7 @@ namespace Internal.IL.Stubs
                         .GetKnownMethod("CompletedTask"u8, null);
                     transparentAwaitMethod = context.SystemModule
                         .GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8)
-                        .GetKnownMethod("TransparentSuspendForTask"u8, null);
+                        .GetKnownMethod("TransparentAwait"u8, null);
                 }
                 else
                 {
@@ -364,7 +364,7 @@ namespace Internal.IL.Stubs
                         .GetKnownMethod("CompletedTaskResult"u8, null);
                     MethodDesc transparentAwaitMethodOpen = context.SystemModule
                         .GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8)
-                        .GetKnownMethod("TransparentSuspendForTaskOfT"u8, null);
+                        .GetKnownMethod("TransparentAwaitOfT"u8, null);
 
                     completedTaskResultMethod = completedTaskResultMethodOpen.MakeInstantiatedMethod(new Instantiation(logicalReturnType));
                     transparentAwaitMethod = transparentAwaitMethodOpen.MakeInstantiatedMethod(new Instantiation(logicalReturnType));
