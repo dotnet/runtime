@@ -9077,11 +9077,18 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     dcInfo.objClassIsExact       = isExact;
     dcInfo.objClassIsFinal       = objClassIsFinal;
     dcInfo.ilOffset              = ilOffset;
-    impTransformDevirtualizedCall(call, &derivedMethod, &derivedMethodAttribs, &dcInfo, compCurBB, pContextHandle,
-                                  pExactContextHandle COMMA_INDEBUG(baseMethod));
+    impTransformDevirtualizedCall(call, &derivedMethod, &derivedMethodAttribs, &dcInfo, compCurBB,
+                                  pContextHandle COMMA_INDEBUG(baseMethod));
 
     *method      = derivedMethod;
     *methodFlags = derivedMethodAttribs;
+
+    // Update exact context handle.
+    //
+    if (pExactContextHandle != nullptr)
+    {
+        *pExactContextHandle = exactContext;
+    }
 }
 
 //------------------------------------------------------------------------
@@ -9095,15 +9102,13 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 //     dcInfo - [IN] resolved target information for the call
 //     block - [IN] block that will contain the transformed call
 //     pContextHandle - [OUT] context handle for the transformed call
-//     pExactContextHandle - [OUT] exact context handle for the transformed call
 //
 void Compiler::impTransformDevirtualizedCall(GenTreeCall*            call,
                                              CORINFO_METHOD_HANDLE*  method,
                                              unsigned*               methodFlags,
                                              DevirtualizedCallInfo*  dcInfo,
                                              BasicBlock*             block,
-                                             CORINFO_CONTEXT_HANDLE* pContextHandle,
-                                             CORINFO_CONTEXT_HANDLE* pExactContextHandle
+                                             CORINFO_CONTEXT_HANDLE* pContextHandle
 #if defined(DEBUG)
                                              ,
                                              CORINFO_METHOD_HANDLE baseMethod
@@ -9380,13 +9385,6 @@ void Compiler::impTransformDevirtualizedCall(GenTreeCall*            call,
     // Update context handle
     //
     *pContextHandle = MAKE_METHODCONTEXT(derivedMethod);
-
-    // Update exact context handle.
-    //
-    if (pExactContextHandle != nullptr)
-    {
-        *pExactContextHandle = dcInfo->tokenLookupContext;
-    }
 
     // We might have created a new recursive tail call candidate.
     //

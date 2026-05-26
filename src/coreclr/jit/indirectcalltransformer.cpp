@@ -996,9 +996,8 @@ private:
             dcInfo.ilOffset             = inlineInfo->ilOffset;
             dcInfo.pInstParamLookup     = &inlineInfo->guardedMethodInstParamLookup;
 
-            m_compiler->impTransformDevirtualizedCall(call, &methodHnd, &derivedMethodAttribs, &dcInfo, block, &context,
-                                                      &exactContext COMMA_INDEBUG(inlineInfo->originalMethodHandle));
-            context = exactContext;
+            m_compiler->impTransformDevirtualizedCall(call, &methodHnd, &derivedMethodAttribs, &dcInfo, block,
+                                                      &context COMMA_INDEBUG(inlineInfo->originalMethodHandle));
 
             // We know this call can devirtualize or we would not have set up GDV here.
             // So above code should succeed in devirtualizing.
@@ -1039,7 +1038,7 @@ private:
                 //
                 GenTreeRetExpr* oldRetExpr       = inlineInfo->retExpr;
                 inlineInfo->clsHandle            = m_compiler->info.compCompHnd->getMethodClass(methodHnd);
-                inlineInfo->exactContextHandle   = context;
+                inlineInfo->exactContextHandle   = exactContext;
                 inlineInfo->preexistingSpillTemp = m_returnTemp;
                 call->SetSingleInlineCandidateInfo(inlineInfo);
 

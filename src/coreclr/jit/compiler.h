@@ -4982,8 +4982,7 @@ public:
                                        unsigned*               methodFlags,
                                        DevirtualizedCallInfo*  dcInfo,
                                        BasicBlock*             block,
-                                       CORINFO_CONTEXT_HANDLE* contextHandle,
-                                       CORINFO_CONTEXT_HANDLE* exactContextHandle
+                                       CORINFO_CONTEXT_HANDLE* contextHandle
 #if defined(DEBUG)
                                      , CORINFO_METHOD_HANDLE   baseMethod
 #endif // defined(DEBUG)
