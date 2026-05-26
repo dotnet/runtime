@@ -639,6 +639,36 @@ namespace System.Runtime.CompilerServices
         /// <param name="task">Task whose completion we are awaiting.</param>
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
+        private static unsafe void TransparentAwaitOfT<T>(Task<T> task)
+        {
+            ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
+            Continuation? sentinelContinuation = state.SentinelContinuation ??= new Continuation();
+
+            TaskContinuation? taskCont = state.CachedTaskContinuation;
+            if (taskCont != null)
+            {
+                state.CachedTaskContinuation = null;
+            }
+            else
+            {
+                taskCont = new TaskContinuation();
+            }
+
+            taskCont.Initialize<T>(task);
+
+            sentinelContinuation.Next = taskCont;
+            state.StackState->TaskContinuation = taskCont;
+
+            state.CaptureContexts();
+            AsyncSuspend(taskCont);
+        }
+
+        /// <summary>
+        /// Used by internal thunks that implement awaiting on Task.
+        /// </summary>
+        /// <param name="task">Task whose completion we are awaiting.</param>
+        [BypassReadyToRun]
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
         private static unsafe T TransparentAwaitOfT<T>(Task<T> task)
         {
             ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
@@ -1289,23 +1319,23 @@ namespace System.Runtime.CompilerServices
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void CaptureContexts(out ExecutionContext? execCtx, out SynchronizationContext? syncCtx)
+        private static void CaptureContexts(out Thread thread, out ExecutionContext? execCtx, out SynchronizationContext? syncCtx)
         {
-            Thread thread = Thread.CurrentThreadAssumedInitialized;
+            Thread curThread = Thread.CurrentThreadAssumedInitialized;
+            thread = curThread;
             // Here we get the execution context for synchronous restoring,
             // not for flowing across suspension to potentially another thread.
             // Therefore we do not need to worry about IsFlowSuppressed
-            execCtx = thread._executionContext;
-            syncCtx = thread._synchronizationContext;
+            execCtx = curThread._executionContext;
+            syncCtx = curThread._synchronizationContext;
         }
 
-        // Restore contexts onto current Thread. If "resumed" then this is not the first starting call for the async method.
+        // Restore contexts onto thread. If "resumed" then this is not the first starting call for the async method.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void RestoreContexts(bool resumed, ExecutionContext? previousExecCtx, SynchronizationContext? previousSyncCtx)
+        private static void RestoreContexts(bool resumed, Thread thread, ExecutionContext? previousExecCtx, SynchronizationContext? previousSyncCtx)
         {
             if (!resumed)
             {
-                Thread thread = Thread.CurrentThreadAssumedInitialized;
                 if (previousSyncCtx != thread._synchronizationContext)
                 {
                     thread._synchronizationContext = previousSyncCtx;
