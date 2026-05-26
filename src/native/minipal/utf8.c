@@ -1652,8 +1652,10 @@ static size_t GetBytes(UTF8Encoding* self, CHAR16_T* chars, size_t charCount, un
                 ch = *(int*)pSrc;
                 int chc = *(int*)(pSrc + 2);
 #if BIGENDIAN
-
-                if (((ch | chc) & (int)0x80FF80FF) != 0) goto LongCodeWithMask;
+                if (self->treatAsLE){
+                    if (((ch | chc) & (int)0x80FF80FF) != 0) goto LongCodeWithMask;
+                }
+                else
 #else
                 if (((ch | chc) & (int)0xFF80FF80) != 0) goto LongCodeWithMask;
 #endif
