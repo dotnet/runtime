@@ -7424,7 +7424,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
             else if (tree->OperIs(GT_MOD) && op2->IsIntegralConst() && !op2->IsIntegralConstAbsPow2())
 #endif
             {
-#if defined(TARGET_64BIT)
+#ifdef TARGET_64BIT
                 // If the divisor is a positive uint16 constant and the dividend
                 // is statically provable as uint16, lower can emit a cheaper
                 // FastMod sequence specialized for 16-bit operands. Convert MOD

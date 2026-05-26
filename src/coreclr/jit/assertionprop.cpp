@@ -536,14 +536,17 @@ bool IntegralRange::Contains(int64_t value) const
                                       ? IntegralRange{SymbolicIntegerValue::Zero, SymbolicIntegerValue::UIntMax}
                                       : IntegralRange{SymbolicIntegerValue::IntMin, SymbolicIntegerValue::IntMax};
 
-        // Refine using the operand's known range: when the operand fits entirely
-        // inside what the cast can represent, the cast preserves the value, so we
-        // can tighten the output range to the operand's range. This handles cases
-        // like CAST(int <- ulong) of a value already known to be in uint16 range.
-        IntegralRange operandRange = ForNode(cast->CastOp(), compiler);
-        if (typeRange.Contains(operandRange))
+        if (!compiler->opts.MinOpts())
         {
-            return operandRange;
+            // Refine using the operand's known range: when the operand fits entirely
+            // inside what the cast can represent, the cast preserves the value, so we
+            // can tighten the output range to the operand's range. This handles cases
+            // like CAST(int <- ulong) of a value already known to be in uint16 range.
+            IntegralRange operandRange = ForNode(cast->CastOp(), compiler);
+            if (typeRange.Contains(operandRange))
+            {
+                return operandRange;
+            }
         }
 
         return typeRange;

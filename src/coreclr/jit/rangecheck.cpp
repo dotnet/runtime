@@ -2423,7 +2423,6 @@ bool RangeCheck::OptimizeRangeChecks()
 //
 bool RangeCheck::TryMarkUModUInt16Operands()
 {
-#ifdef TARGET_64BIT
     bool madeChanges = false;
 
     for (BasicBlock* const block : m_compiler->Blocks())
@@ -2494,7 +2493,4 @@ bool RangeCheck::TryMarkUModUInt16Operands()
     }
 
     return madeChanges;
-#else
-    return false;
-#endif // TARGET_64BIT
 }
