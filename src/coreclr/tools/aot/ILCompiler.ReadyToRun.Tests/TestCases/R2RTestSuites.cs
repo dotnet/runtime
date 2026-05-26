@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using ILCompiler.ReadyToRun.Tests.TestCasesRunner;
 using ILCompiler.Reflection.ReadyToRun;
@@ -54,6 +55,41 @@ public class R2RTestSuites
             Assert.True(R2RAssert.HasCrossModuleInlinedMethod(reader, "TestGetValue", "GetValue", out diag), diag);
             Assert.True(R2RAssert.HasCrossModuleInlinedMethod(reader, "TestGetString", "GetString", out diag), diag);
             Assert.True(R2RAssert.HasCrossModuleInliningInfo(reader, out diag), diag);
+        }
+    }
+
+    [Fact]
+    public void WasmWebcilModule()
+    {
+        var wasmWebcilModule = new CompiledAssembly
+        {
+            AssemblyName = nameof(WasmWebcilModule),
+            SourceResourceNames = ["Webcil/WasmWebcilModule.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(WasmWebcilModule),
+            [
+                new(nameof(WasmWebcilModule), [new CrossgenAssembly(wasmWebcilModule)])
+                {
+                    OutputFileExtension = ".wasm",
+                    AdditionalArgs =
+                    {
+                        "--targetarch",
+                        "wasm",
+                        "--targetos",
+                        "browser",
+                    },
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            var webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
+            Assert.True(webcilReader.IsWasmWrapped);
+            Assert.True(R2RAssert.GetAllMethods(reader).Exists(method =>
+                method.SignatureString.Contains("AddIntegers", StringComparison.Ordinal)));
         }
     }
 
