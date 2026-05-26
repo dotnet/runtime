@@ -3460,7 +3460,9 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize, unsigned prologSize, un
         maxVirtualIP = max(maxVirtualIP, func->endVirtualIP);
     }
 
-    codeSize   = maxVirtualIP;
+    // Runtime wants us to report twice the actual Virtual IP range as code size.
+    //
+    codeSize   = 2 * maxVirtualIP;
     prologSize = 1;
 
     // Follow the code pattern of the x86 gc info encoder (genCreateAndStoreGCInfoJIT32).
