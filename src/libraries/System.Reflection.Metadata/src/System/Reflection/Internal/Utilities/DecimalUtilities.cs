@@ -5,10 +5,10 @@ namespace System.Reflection.Internal
 {
     internal static class DecimalUtilities
     {
-        public static unsafe int GetScale(this decimal value)
+        public static int GetScale(this decimal value)
         {
 #if NET
-            Span<int> bits = stackalloc int[4];
+            Span<int> bits = [0, 0, 0, 0];
             decimal.GetBits(value, bits);
             return unchecked((byte)(bits[3] >> 16));
 #else
@@ -16,10 +16,10 @@ namespace System.Reflection.Internal
 #endif
         }
 
-        public static unsafe void GetBits(this decimal value, out bool isNegative, out byte scale, out uint low, out uint mid, out uint high)
+        public static void GetBits(this decimal value, out bool isNegative, out byte scale, out uint low, out uint mid, out uint high)
         {
 #if NET
-            Span<int> bits = stackalloc int[4];
+            Span<int> bits = [0, 0, 0, 0];
             decimal.GetBits(value, bits);
 #else
             int[] bits = decimal.GetBits(value);
