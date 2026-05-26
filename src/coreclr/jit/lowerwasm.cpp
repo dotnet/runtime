@@ -342,9 +342,6 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         // CopyObj or CopyBlk
         if (doCpObj)
         {
-            // Per-slot decomposition was already attempted by LowerBlockStoreCommon,
-            // so reaching here means the destination is on-heap and we fall back to
-            // the bulk write-barrier helper.
             LowerBlockStoreAsGcBulkCopyCall(blkNode);
             return;
         }
