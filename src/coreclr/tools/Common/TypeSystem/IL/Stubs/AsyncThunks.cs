@@ -292,25 +292,25 @@ namespace Internal.IL.Stubs
                 TypeDesc valueTaskType = taskReturningMethodReturnType;
                 MethodDesc isCompletedMethod;
                 MethodDesc completionResultMethod;
-                MethodDesc transparentSuspendForValueTaskMethod;
+                MethodDesc transparentAwaitValueTaskMethod;
 
                 if (!taskReturningMethodReturnType.HasInstantiation)
                 {
                     // ValueTask (non-generic)
                     isCompletedMethod = valueTaskType.GetKnownMethod("get_IsCompleted"u8, null);
                     completionResultMethod = valueTaskType.GetKnownMethod("ThrowIfCompletedUnsuccessfully"u8, null);
-                    transparentSuspendForValueTaskMethod =
+                    transparentAwaitValueTaskMethod =
                         context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8)
-                        .GetKnownMethod("TransparentSuspendForValueTask"u8, null);
+                        .GetKnownMethod("TransparentAwaitValueTask"u8, null);
                 }
                 else
                 {
                     // ValueTask<T> (generic)
                     isCompletedMethod = valueTaskType.GetKnownMethod("get_IsCompleted"u8, null);
                     completionResultMethod = valueTaskType.GetKnownMethod("get_Result"u8, null);
-                    transparentSuspendForValueTaskMethod =
+                    transparentAwaitValueTaskMethod =
                         context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8)
-                        .GetKnownMethod("TransparentSuspendForValueTaskOfT"u8, null)
+                        .GetKnownMethod("TransparentAwaitValueTaskOfT"u8, null)
                         .MakeInstantiatedMethod(valueTaskType.Instantiation[0]);
                 }
 

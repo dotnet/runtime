@@ -7006,7 +7006,8 @@ void Compiler::impSetupAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned pref
         assert((prefixFlags & PREFIX_IS_TASK_AWAIT) == 0);
 		
 		m_nextAwaitIsTail = false;
-		asyncInfo.IsTailAwait = inlCall->GetAsyncInfo().IsTailAwait;
+		asyncInfo.IsTailAwait = inlCall->GetAsyncInfo().IsTailAwait && (m_nextAwaitIsTail || (call->gtReturnType == info.compRetType));
+    }
     else
     {
         if (opts.OptimizationEnabled() && ((prefixFlags & PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT) != 0))

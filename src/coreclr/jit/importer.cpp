@@ -11736,7 +11736,7 @@ void Compiler::impWrapTopOfStackInAwait()
         JITDUMP("Inheriting continuation handling %d from caller [%06u]\n",
                 (unsigned)inlCall->GetAsyncInfo().ContinuationContextHandling, dspTreeID(inlCall));
         asyncInfo->ContinuationContextHandling = inlCall->GetAsyncInfo().ContinuationContextHandling;
-        impAddAsyncArgsToInlinedCall(awaitCall);
+        impInheritAsyncContextsFromInliner(awaitCall);
     }
 
     awaitCall->SetIsAsync(asyncInfo);
