@@ -96,8 +96,6 @@ static RtlGrowFunctionTableFnPtr pRtlGrowFunctionTable;
 static RtlDeleteGrowableFunctionTableFnPtr pRtlDeleteGrowableFunctionTable;
 
 static bool s_publishingActive;              // Publishing to ETW is turned on
-static Crst* s_pUnwindInfoTablePublishLock;  // Protects main table, OS registration, and lazy init
-static Crst* s_pUnwindInfoTablePendingLock;  // Protects pending buffer only
 
 /****************************************************************************/
 // initialize the entry points for new win8 unwind info publishing functions.
@@ -135,9 +133,10 @@ bool InitUnwindFtns()
 
 /****************************************************************************/
 UnwindInfoTable::UnwindInfoTable(ULONG_PTR rangeStart, ULONG_PTR rangeEnd)
+    : m_publishLock(CrstUnwindInfoTablePublishLock)
+    , m_pendingLock(CrstUnwindInfoTablePendingLock)
 {
     STANDARD_VM_CONTRACT;
-    _ASSERTE(s_pUnwindInfoTablePublishLock->OwnedByCurrentThread());
     _ASSERTE((rangeEnd - rangeStart) <= 0x7FFFFFFF);
 
     // We can choose the average method size estimate dynamically based on past experience
@@ -176,7 +175,8 @@ UnwindInfoTable::~UnwindInfoTable()
 /*****************************************************************************/
 void UnwindInfoTable::Register()
 {
-    _ASSERTE(s_pUnwindInfoTablePublishLock->OwnedByCurrentThread());
+    // Caller either holds m_publishLock, or has just constructed this object
+    // and has not yet exposed it to other threads.
 
     NTSTATUS ret = pRtlAddGrowableFunctionTable(&hHandle, pTable, cTableCurCount, cTableMaxCount, iRangeStart, iRangeEnd);
     if (ret != STATUS_SUCCESS)
@@ -205,7 +205,7 @@ void UnwindInfoTable::UnRegister()
 
 /*****************************************************************************/
 // Add 'data' entries to the pending buffer for later publication to the OS.
-// When the buffer is full, entries are flushed under s_pUnwindInfoTablePublishLock.
+// When the buffer is full, entries are flushed under m_publishLock.
 //
 void UnwindInfoTable::AddToUnwindInfoTable(PT_RUNTIME_FUNCTION data, int count)
 {
@@ -221,7 +221,7 @@ void UnwindInfoTable::AddToUnwindInfoTable(PT_RUNTIME_FUNCTION data, int count)
     for (int i = 0; i < count; )
     {
         {
-            CrstHolder pendingLock(s_pUnwindInfoTablePendingLock);
+            CrstHolder pendingLock(&m_pendingLock);
             while (i < count && cPendingCount < cPendingMaxCount)
             {
                 _ASSERTE(data[i].BeginAddress <= RUNTIME_FUNCTION__EndAddress(&data[i], iRangeStart));
@@ -254,13 +254,13 @@ void UnwindInfoTable::FlushPendingEntries()
     // Free the old table outside the lock
     NewArrayHolder<T_RUNTIME_FUNCTION> oldPTable;
 
-    CrstHolder publishLock(s_pUnwindInfoTablePublishLock);
+    CrstHolder publishLock(&m_publishLock);
 
     if (hHandle == NULL)
     {
         // If hHandle is null, it means Register() failed. Skip flushing to avoid calling
         // RtlGrowFunctionTable with a null handle.
-        CrstHolder pendingLock(s_pUnwindInfoTablePendingLock);
+        CrstHolder pendingLock(&m_pendingLock);
         cPendingCount = 0;
         return;
     }
@@ -270,7 +270,7 @@ void UnwindInfoTable::FlushPendingEntries()
     T_RUNTIME_FUNCTION localPending[cPendingMaxCount];
     ULONG localPendingCount;
     {
-        CrstHolder pendingLock(s_pUnwindInfoTablePendingLock);
+        CrstHolder pendingLock(&m_pendingLock);
         localPendingCount = cPendingCount;
         memcpy(localPending, pendingTable, cPendingCount * sizeof(T_RUNTIME_FUNCTION));
         cPendingCount = 0;
@@ -406,7 +406,7 @@ void UnwindInfoTable::FlushPendingEntries()
     // We don't need to check the pending buffer because the method should have already been published
     // before it can be removed.
     {
-        CrstHolder publishLock(s_pUnwindInfoTablePublishLock);
+        CrstHolder publishLock(&unwindInfo->m_publishLock);
         for (ULONG i = 0; i < unwindInfo->cTableCurCount; i++)
         {
             if (unwindInfo->pTable[i].BeginAddress <= relativeEntryPoint &&
@@ -442,16 +442,24 @@ void UnwindInfoTable::FlushPendingEntries()
     UnwindInfoTable* unwindInfo = VolatileLoad(&pRS->_pUnwindInfoTable);
     if (unwindInfo == NULL)
     {
-        CrstHolder publishLock(s_pUnwindInfoTablePublishLock);
-        if (pRS->_pUnwindInfoTable == NULL)
+        // Create a candidate table for this RangeSection and try to install it via CAS.
+        // Any losing thread (if any) deletes its candidate table. This avoids
+        // a process-wide lock on the cold path.
+        NewHolder<UnwindInfoTable> candidate(
+            new UnwindInfoTable(pRS->_range.RangeStart(), pRS->_range.RangeEndOpen()));
+        candidate->Register();
+
+        UnwindInfoTable* installed = InterlockedCompareExchangeT(
+            &pRS->_pUnwindInfoTable, candidate.GetValue(), (UnwindInfoTable*)NULL);
+        if (installed == NULL)
         {
-            unwindInfo = new UnwindInfoTable(pRS->_range.RangeStart(), pRS->_range.RangeEndOpen());
-            unwindInfo->Register();
-            VolatileStore(&pRS->_pUnwindInfoTable, unwindInfo);
+            unwindInfo = candidate.Extract();
         }
         else
         {
-            unwindInfo = pRS->_pUnwindInfoTable;
+            // Our candidate will be destroyed by the NewHolder,
+            // which also tears down the OS registration via ~UnwindInfoTable.
+            unwindInfo = installed;
         }
     }
 
@@ -506,9 +514,6 @@ void UnwindInfoTable::FlushPendingEntries()
     if (!InitUnwindFtns())
         return;
 
-    // Create the locks
-    s_pUnwindInfoTablePublishLock = new Crst(CrstUnwindInfoTablePublishLock);
-    s_pUnwindInfoTablePendingLock = new Crst(CrstUnwindInfoTablePendingLock);
     s_publishingActive = true;
 }
 
