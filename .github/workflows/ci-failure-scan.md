@@ -253,7 +253,7 @@ Exactly one of Branch A / B fires per signature. Branch C is an additive refinem
 
 Stable means >= 2 occurrences in the ~10-build window, OR a build break that fails all legs of the current build (block-everyone severity that warrants filing on first sight). Emit one `create_issue` using exactly the shared new-KBE template from `.github/workflows/shared/create-kbe.instructions.md` section `<a id="new-kbe-template"></a>` / `## New-KBE template`, including whichever of `<a id="literal-kbe-template"></a>` / `### KBE issue body - literal substring match`, `<a id="regex-kbe-template"></a>` / `### KBE issue body - regex match`, or `<a id="kbe-array-form"></a>` / `### KBE multi-line array form` fits the signature. Apply both `Known Build Error` and `blocking-clean-ci` labels so the org project auto-add rule picks it up; do NOT try to mutate the project from this workflow.
 
-If Step 4.3 found a tracker, cross-link as `Tracking: dotnet/runtime#<tracker>` in the KBE body. Test-disable PR is deferred to the next run.
+If the shared KBE lookup flow recorded `linked-tracker #<tracker>`, cross-link it as `Tracking: dotnet/runtime#<tracker>` in the KBE body. Test-disable PR is deferred to the next run.
 
 **Branch B — Existing KBE; no test-disable PR; test-disable is welcome (Step 4.7 clean).**
 
