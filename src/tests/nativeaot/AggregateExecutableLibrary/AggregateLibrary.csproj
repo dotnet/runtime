@@ -24,7 +24,7 @@
     <ProjectReference Include="ValidatorExe\ValidatorExe.csproj" IncludeInAggregateExecutable="true" />
   </ItemGroup>
 
-  <Target Name="UseValidatorExecutableForNativeAotRun" BeforeTargets="GenerateBatchExecutionScript;GenerateBashExecutionScript">
+  <Target Name="OverrideTestEntryPointToValidator" BeforeTargets="GenerateBatchExecutionScript;GenerateBashExecutionScript">
     <PropertyGroup>
       <InputAssemblyName>ValidatorExe.dll</InputAssemblyName>
     </PropertyGroup>
