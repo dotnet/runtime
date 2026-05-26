@@ -328,7 +328,8 @@ namespace Internal.IL.Stubs
                 // No, tail await to TransparentSuspendForValueTask
                 codestream.EmitLdLoc(valueTaskLocal);
                 codestream.Emit(ILOpcode.call, emitter.NewToken(context.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "TailAwait"u8, null)));
-                codestream.Emit(ILOpcode.call, emitter.NewToken(transparentSuspendForValueTaskMethod));
+                codestream.Emit(ILOpcode.call, emitter.NewToken(transparentAwaitValueTaskMethod));
+                codestream.Emit(ILOpcode.ret);
 
                 // Yes, just get the result
                 codestream.EmitLabel(valueTaskCompletedLabel);
@@ -382,7 +383,9 @@ namespace Internal.IL.Stubs
                 codestream.Emit(ILOpcode.brtrue, getResultLabel);
 
                 codestream.EmitLdLoc(taskLocal);
+                codestream.Emit(ILOpcode.call, emitter.NewToken(context.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "TailAwait"u8, null)));
                 codestream.Emit(ILOpcode.call, emitter.NewToken(transparentAwaitMethod));
+                codestream.Emit(ILOpcode.ret);
 
                 codestream.EmitLabel(getResultLabel);
                 codestream.EmitLdLoc(taskLocal);

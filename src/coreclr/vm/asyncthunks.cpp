@@ -487,8 +487,8 @@ void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pTaskReturningVariant, MetaSig
     //    Task task = other(arg);
     //    if (!task.IsCompleted)
     //    {
-    //        // Magic function which will suspend the current run of async methods
-    //        AsyncHelpers.TransparentSuspendForTask(task);
+    //        TailAwait();
+    //        return AsyncHelpers.TransparentAwait(task);
     //    }
     //    return AsyncHelpers.CompletedTaskResult(task);
     // }
@@ -500,7 +500,7 @@ void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pTaskReturningVariant, MetaSig
     //    if (!vt.IsCompleted)
     //    {
     //        TailAwait();
-    //        AsyncHelpers.TransparentSuspendForValueTask(vt);
+    //        return AsyncHelpers.TransparentAwaitValueTask(vt);
     //    }
 
     //    return vt.Result/vt.ThrowIfCompletedUnsuccessfully();
@@ -582,7 +582,8 @@ void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pTaskReturningVariant, MetaSig
         // No, tail await to TransparentSuspendForValueTask
         pCode->EmitLDLOC(valueTaskLocal);
         pCode->EmitCALL(METHOD__ASYNC_HELPERS__TAIL_AWAIT, 0, 0);
-        pCode->EmitCALL(transparentSuspendForValueTaskToken, 1, 0);
+        pCode->EmitCALL(transparentAwaitValueTaskToken, 1, msig.IsReturnTypeVoid() ? 0 : 1);
+        pCode->EmitRET();
 
         // Yes, just get the result
         pCode->EmitLabel(valueTaskCompletedLabel);
@@ -634,9 +635,11 @@ void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pTaskReturningVariant, MetaSig
         pCode->EmitCALL(METHOD__TASK__GET_ISCOMPLETED, 1, 1);
         pCode->EmitBRTRUE(pGetResultLabel);
 
-        // No, so suspend until task completes
+        // No, so tail await to TransparentAwait
         pCode->EmitLDLOC(taskLocal);
-        pCode->EmitCALL(transparentSuspendForTaskToken, 1, 0);
+        pCode->EmitCALL(METHOD__ASYNC_HELPERS__TAIL_AWAIT, 0, 0);
+        pCode->EmitCALL(transparentAwaitToken, 1, msig.IsReturnTypeVoid() ? 0 : 1);
+        pCode->EmitRET();
 
         // Yes, so just get the result
         pCode->EmitLabel(pGetResultLabel);

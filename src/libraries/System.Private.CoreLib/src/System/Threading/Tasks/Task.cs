@@ -3627,6 +3627,18 @@ namespace System.Threading.Tasks
                     LogFinishCompletionNotification();
                     return;
 
+#if !MONO
+                // Runtime async continuation is very cheap to check for since
+                // it is sealed. Its semantics cannot be described by
+                // ITaskCompletionAction because it should be inlined when
+                // there is only one, but run in parallel when there are
+                // multiple.
+                case RuntimeAsyncTaskContinuation tc:
+                    tc.Execute(canInline: canInlineContinuations);
+                    LogFinishCompletionNotification();
+                    return;
+#endif
+
                 // Handle the single Action case.
                 case Action action:
                     AwaitTaskContinuation.RunOrScheduleAction(action, canInlineContinuations);
@@ -3702,6 +3714,12 @@ namespace System.Threading.Tasks
                                     AwaitTaskContinuation.RunOrScheduleAction(stateMachineBox, allowInlining: false);
                                     break;
 
+#if !MONO
+                                case RuntimeAsyncTaskContinuation tc:
+                                    tc.Execute(canInline: false);
+                                    break;
+#endif
+
                                 case Action action:
                                     AwaitTaskContinuation.RunOrScheduleAction(action, allowInlining: false);
                                     break;
@@ -3734,6 +3752,12 @@ namespace System.Threading.Tasks
                     case IAsyncStateMachineBox stateMachineBox:
                         AwaitTaskContinuation.RunOrScheduleAction(stateMachineBox, canInlineContinuations);
                         break;
+
+#if !MONO
+                    case RuntimeAsyncTaskContinuation tc:
+                        tc.Execute(canInlineContinuations);
+                        break;
+#endif
 
                     case Action action:
                         AwaitTaskContinuation.RunOrScheduleAction(action, canInlineContinuations);
@@ -4765,7 +4789,7 @@ namespace System.Threading.Tasks
 
         // Record a continuation task or action.
         // Return true if and only if we successfully queued a continuation.
-        private bool AddTaskContinuation(object tc, bool addBeforeOthers)
+        internal bool AddTaskContinuation(object tc, bool addBeforeOthers)
         {
             Debug.Assert(tc != null);
 

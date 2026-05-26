@@ -942,7 +942,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
     if (asyncContinuation != nullptr)
     {
-        impAddAsyncArgsToInlinedCall(call->AsCall());
+        impInheritAsyncContextsFromInliner(call->AsCall());
     }
 
     //-------------------------------------------------------------------------
@@ -6985,7 +6985,7 @@ void Compiler::impSetupAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned pref
 
     if (compIsForInlining())
     {
-        if (!compIsAsyncVersion())
+        if (!m_nextAwaitIsTail && !compIsAsyncVersion())
         {
             compInlineResult->NoteFatal(InlineObservation::CALLEE_AWAIT);
             return;
@@ -6994,18 +6994,19 @@ void Compiler::impSetupAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned pref
         // For async versions of synchronous methods all async calls are in
         // tail position. Inlining is simple for these cases: we can just
         // inherit all context handling from the inlining call.
-        assert((prefixFlags & PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT) != 0);
+		assert(!compIsAsyncVersion() || ((prefixFlags & PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT) != 0));
 
         GenTreeCall* inlCall = impInlineInfo->iciCall;
-        JITDUMP("Call [%06u] is to an async version with a tail async call [%06u]\n", dspTreeID(inlCall),
-                dspTreeID(call));
+        JITDUMP("Call [%06u] is to function with a tail async call [%06u]\n", dspTreeID(inlCall), dspTreeID(call));
 
         assert(inlCall->IsAsync());
 
         asyncInfo.ContinuationContextHandling = inlCall->GetAsyncInfo().ContinuationContextHandling;
         // Validate that below code won't override the handling
         assert((prefixFlags & PREFIX_IS_TASK_AWAIT) == 0);
-    }
+		
+		m_nextAwaitIsTail = false;
+		asyncInfo.IsTailAwait = inlCall->GetAsyncInfo().IsTailAwait;
     else
     {
         if (opts.OptimizationEnabled() && ((prefixFlags & PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT) != 0))
@@ -7065,32 +7066,29 @@ void Compiler::impSetupAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned pref
 }
 
 //------------------------------------------------------------------------
-// impAddAsyncArgsToInlinedCall:
+// impInheritAsyncContextsFromInliner:
 //   Inherit async args from inlining call as part of a new async call.
 //
 // Arguments:
 //   call - The async call
 //
 // Remarks:
-//   Currently the only case where we allow inlining of async calls is when we
-//   are inlining an async version of a sync method into an async method. In
-//   that case inlining is simplified as we can just inherit everything from
-//   the inlining call since the only possible async calls are in tail
-//   position.
+//   Currently we only allow inlining of async calls when all awaits are tail
+//   awaits. In that case inlining is simplified as we can just inherit
+//   everything from the inlining call.
 //
-void Compiler::impAddAsyncArgsToInlinedCall(GenTreeCall* call)
+void Compiler::impInheritAsyncContextsFromInliner(GenTreeCall* call)
 {
     if (!compIsForInlining())
     {
         return;
     }
 
-    assert((info.compMethodInfo->options & CORINFO_ASYNC_SAVE_CONTEXTS) == 0);
-
     GenTreeCall* inlCall = impInlineInfo->iciCall;
     CallArg*     execArg = inlCall->gtArgs.FindWellKnownArg(WellKnownArg::AsyncExecutionContext);
     CallArg*     syncArg = inlCall->gtArgs.FindWellKnownArg(WellKnownArg::AsyncSynchronizationContext);
-    if ((execArg == nullptr) && (syncArg == nullptr))
+    assert((execArg == nullptr) == (syncArg == nullptr));
+    if ((execArg == nullptr) || (syncArg == nullptr))
     {
         // Caller also has no async contexts handling
         return;
@@ -7114,8 +7112,8 @@ void Compiler::impAddAsyncArgsToInlinedCall(GenTreeCall* call)
 
 //------------------------------------------------------------------------
 // impInsertAsyncArgsForLdvirtftnCall:
-//   Insert the async continuation argument for a call the EE asked to be
-//   performed via ldvirtftn.
+//   Insert async arguments for a call the EE asked to be performed via
+//   ldvirtftn.
 //
 // Arguments:
 //    call - The call
@@ -7139,7 +7137,7 @@ void Compiler::impInsertAsyncArgsForLdvirtftnCall(GenTreeCall* call)
                                                   .WellKnown(WellKnownArg::AsyncContinuation));
     }
 
-    impAddAsyncArgsToInlinedCall(call);
+    impInheritAsyncContextsFromInliner(call);
 }
 
 //------------------------------------------------------------------------
