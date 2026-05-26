@@ -901,15 +901,10 @@ namespace System.Net.ServerSentEvents.Tests
         }
 
         [Theory]
-        [MemberData(nameof(NewlineTrickleAsyncData))]
-        public async Task Parse_LongLineCap_Throws(string newline, bool trickle, bool useAsync)
+        [MemberData(nameof(NewlineAsyncData))]
+        public async Task Parse_LongLineCap_Throws(string newline, bool useAsync)
         {
-
-            string exampleResponse =
-                $"data: shortline{newline}{newline}" +
-                new string('X', 100 * 1000 * 1000) + $"{newline}{newline}";
-
-            using Stream stream = GetStream(exampleResponse, trickle);
+            using Stream stream = new InfiniteLineStream($"data: shortline{newline}{newline}data: ");
 
             if (useAsync)
             {
@@ -940,6 +935,11 @@ namespace System.Net.ServerSentEvents.Tests
             from trickle in new[] { false, true }
             from async in new[] { false, true }
             select new object[] { newline, trickle, async };
+
+        public static IEnumerable<object[]> NewlineAsyncData() =>
+            from newline in new[] { "\r", "\n", "\r\n" }
+            from async in new[] { false, true }
+            select new object[] { newline, async };
 
         private static Stream GetStream(string data, bool trickle) =>
             GetStream(Encoding.UTF8.GetBytes(data), trickle);
@@ -1005,6 +1005,38 @@ namespace System.Net.ServerSentEvents.Tests
                 return await base.ReadAsync(buffer.Slice(0, Math.Min(buffer.Length, 1)), cancellationToken);
             }
 #endif
+        }
+
+        private sealed class InfiniteLineStream : Stream
+        {
+            private int _position = 0;
+            private byte[] _initialPattern;
+            private byte[] _repeatingPattern = Encoding.UTF8.GetBytes(new string('y', 64 * 1024));
+            public InfiniteLineStream(string initialData)
+            {
+                _initialPattern = Encoding.UTF8.GetBytes(initialData);
+            }
+            public override bool CanRead => true;
+            public override bool CanSeek => false;
+            public override bool CanWrite => false;
+            public override long Length => throw new NotSupportedException();
+            public override long Position { get => _position; set => _position = checked((int)value); }
+            public override void Flush() {}
+            public override int Read(byte[] buffer, int offset, int count) {
+                Span<byte> src = _position < _initialPattern.Length ? _initialPattern.AsSpan().Slice(_position) : _repeatingPattern;
+                Span<byte> dst = buffer.AsSpan().Slice(offset, count);
+
+                int bytesCnt = Math.Min(src.Length, dst.Length);
+                src = src.Slice(0, bytesCnt);
+
+                src.CopyTo(dst);
+
+                _position += bytesCnt;
+                return bytesCnt;
+            }
+            public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+            public override void SetLength(long value) => throw new NotSupportedException();
+            public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
         }
 
         [JsonSerializable(typeof(Book))]
