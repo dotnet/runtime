@@ -1991,10 +1991,13 @@ struct NaturalLoopIterInfo
     // length of an invariant array.
     bool HasArrayLengthLimit : 1;
 
-    // Whether the consumer must emit its own runtime zero-trip guard for this
-    // loop (i.e. the analysis could not prove statically that the loop body
-    // executes at least once, and no preheader BBJ_COND guards entry).
-    // Only set when AnalyzeIteration is called with allowMissingBaseCase=true.
+    // Whether the consumer must emit its own runtime entry guard for this loop.
+    // Set when AnalyzeIteration could not prove statically that the loop
+    // condition [IterVar TestOper Limit] holds on entry (so the analysis
+    // invariants only hold conditionally). The consumer must insert a runtime
+    // test equivalent to that condition on the path that reaches the analyzed
+    // loop body. Only set when AnalyzeIteration is called with
+    // allowMissingBaseCase=true.
     bool NeedsZeroTripGuard : 1;
 
     NaturalLoopIterInfo()

@@ -1246,8 +1246,8 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
         context->EnsureArrayDerefs(loop->GetIndex())->Push(array);
     }
 
-    // If AnalyzeIteration could not prove the loop body executes at least once,
-    // emit an explicit runtime zero-trip guard as one of the cloning conditions.
+    // If AnalyzeIteration could not prove the loop condition holds on entry,
+    // emit an explicit runtime entry guard as one of the cloning conditions.
     // The fast path is then only entered when "init TestOper limit" holds.
     if (iterInfo->NeedsZeroTripGuard)
     {

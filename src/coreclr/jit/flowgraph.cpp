@@ -5568,10 +5568,11 @@ GenTreeLclVarCommon* FlowGraphNaturalLoop::FindDef(unsigned lclNum)
 // Parameters:
 //   info                 - [out] Loop information
 //   allowMissingBaseCase - If true, succeed even when we cannot prove that the
-//                          loop invariant holds on entry, provided the limit
-//                          form is one we know how to materialize at runtime.
-//                          The caller is then responsible for emitting a
-//                          runtime zero-trip guard when
+//                          loop condition [IterVar TestOper Limit] holds on
+//                          entry, provided the limit form is one we know how
+//                          to materialize at runtime. The caller is then
+//                          responsible for emitting a runtime entry guard
+//                          equivalent to that condition when
 //                          info->NeedsZeroTripGuard is set on return.
 //                          Defaults to false; existing callers retain the
 //                          stronger guarantees described below.
@@ -5611,13 +5612,16 @@ GenTreeLclVarCommon* FlowGraphNaturalLoop::FindDef(unsigned lclNum)
 //   ::HasConstInit and ::ConstInitValue.
 //
 //   When allowMissingBaseCase is true and the function would otherwise fail
-//   because the loop is not provably entered (no suitable preheader BBJ_COND
-//   guard and no constant init/limit pair that proves base case), the function
-//   may instead succeed with info->NeedsZeroTripGuard set. In that mode the
-//   above invariant only holds conditionally: it is the caller's obligation
-//   to insert a runtime test equivalent to [IterVar TestOper() Limit] on the
+//   because the loop condition [IterVar TestOper Limit] cannot be proven to
+//   hold on entry (no suitable preheader BBJ_COND guard and no constant
+//   init/limit pair that proves the base case), the function may instead
+//   succeed with info->NeedsZeroTripGuard set. In that mode the above
+//   invariant only holds conditionally: it is the caller's obligation to
+//   insert a runtime test equivalent to [IterVar TestOper() Limit] on the
 //   path that reaches the analyzed loop body. Loop cloning uses this to emit
-//   the guard as an extra cloning condition on the fast-path version.
+//   the guard as an extra cloning condition on the fast-path version. Note
+//   that this includes do/while-style loops that are guaranteed to execute
+//   at least once but whose loop condition may be false on entry.
 //
 bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info, bool allowMissingBaseCase)
 {
