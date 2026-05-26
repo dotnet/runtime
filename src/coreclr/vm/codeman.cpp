@@ -97,6 +97,23 @@ static RtlDeleteGrowableFunctionTableFnPtr pRtlDeleteGrowableFunctionTable;
 
 static bool s_publishingActive;              // Publishing to ETW is turned on
 
+namespace
+{
+    // RAII helper used by UnwindInfoTable::FlushPendingEntries
+    class FlushGateHolder
+    {
+        UnwindInfoTable* m_pTable;
+    public:
+        explicit FlushGateHolder(UnwindInfoTable* pTable) : m_pTable(pTable) {}
+        ~FlushGateHolder() { m_pTable->ReleaseFlushGate(); }
+
+        FlushGateHolder(const FlushGateHolder&) = delete;
+        FlushGateHolder& operator=(const FlushGateHolder&) = delete;
+        FlushGateHolder(FlushGateHolder&&) = delete;
+        FlushGateHolder& operator=(FlushGateHolder&&) = delete;
+    };
+}
+
 /****************************************************************************/
 // initialize the entry points for new win8 unwind info publishing functions.
 // return true if the initialize is successful (the functions exist)
@@ -155,6 +172,7 @@ UnwindInfoTable::UnwindInfoTable(ULONG_PTR rangeStart, ULONG_PTR rangeEnd)
     hHandle = NULL;
     pTable = new T_RUNTIME_FUNCTION[cTableMaxCount];
     cPendingCount = 0;
+    m_flushInProgress = 0;
 }
 
 /****************************************************************************/
@@ -241,13 +259,13 @@ void UnwindInfoTable::AddToUnwindInfoTable(PT_RUNTIME_FUNCTION data, int count)
     }
 }
 
-/*****************************************************************************/
-void UnwindInfoTable::FlushPendingEntries()
+void UnwindInfoTable::FlushPendingEntriesUnderGate()
 {
     CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
+        PRECONDITION(m_flushInProgress != 0);
     }
     CONTRACTL_END;
 
@@ -378,6 +396,46 @@ void UnwindInfoTable::FlushPendingEntries()
     cDeletedEntries = 0;
 
     Register();
+}
+
+/*****************************************************************************/
+void UnwindInfoTable::FlushPendingEntries()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+    }
+    CONTRACTL_END;
+
+    // This thread attempts to become the sole flusher for this table by taking
+    // the flush gate. If it wins, publish the pending entries, then release the gate,
+    // re-check if more entries arrived and loop if so.
+    while (true)
+    {
+        // Gate: only one thread flushes at a time.
+        if (InterlockedCompareExchange(&m_flushInProgress, 1, 0) != 0)
+        {
+            return;
+        }
+
+        // Scope the gate holder so m_flushInProgress is reset when the scope exits.
+        {
+            FlushGateHolder gateHolder(this);
+            FlushPendingEntriesUnderGate();
+        }
+
+        // Re-check pending table under m_pendingLock.
+        // We only stop the retry loop if we see no more pending entries.
+        // If producer threads enqueued after we determined we should break the loop,
+        // at least one will surely be able to set m_flushInProgress to 1 and publish its entry.
+        bool needRetry;
+        {
+            CrstHolder pendingLock(&m_pendingLock);
+            needRetry = (cPendingCount != 0);
+        }
+        if (!needRetry) return;
+    }
 }
 
 /*****************************************************************************/
