@@ -3452,7 +3452,7 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize, unsigned prologSize, un
         GcInfoEncoder(m_compiler->info.compCompHnd, m_compiler->info.compMethodInfo, allowZeroAlloc, NOMEM);
     assert(gcInfoEncoder != nullptr);
 
-    // Encode the max Virtual IP as the code size, and use 1 for the prolog size.
+    // Find the max Virtual IP.
     //
     unsigned maxVirtualIP = 0;
     for (FuncInfoDsc* const func : m_compiler->Funcs())
@@ -3461,6 +3461,7 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize, unsigned prologSize, un
     }
 
     // Runtime wants us to report twice the actual Virtual IP range as code size.
+    // Use 1 as the prolog size.
     //
     codeSize   = 2 * maxVirtualIP;
     prologSize = 1;

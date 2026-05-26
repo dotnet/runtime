@@ -14462,6 +14462,12 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
 
 void Compiler::fgSetOptions()
 {
+#if defined(TARGET_WASM)
+    // Wasm requires GC polls, and only supports partially interruptible GC reporting.
+    optMethodFlags |= OMF_NEEDS_GCPOLLS;
+    assert(!GetInterruptible());
+#else
+
 #ifdef DEBUG
     /* Should we force fully interruptible code ? */
     if (JitConfig.JitFullyInt() || compStressCompile(STRESS_GENERIC_VARN, 30))
@@ -14471,11 +14477,6 @@ void Compiler::fgSetOptions()
     }
 #endif
 
-#if defined(TARGET_WASM)
-    // Wasm requires GC polls, and only supports partially interruptible GC reporting.
-    optMethodFlags |= OMF_NEEDS_GCPOLLS;
-    assert(!GetInterruptible());
-#else
     if (opts.compDbgCode)
     {
         assert(!codeGen->isGCTypeFixed());
