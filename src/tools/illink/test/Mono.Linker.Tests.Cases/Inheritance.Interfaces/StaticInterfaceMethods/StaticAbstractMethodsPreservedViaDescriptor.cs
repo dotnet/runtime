@@ -56,7 +56,7 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods
             public static void Method() { }
 
             // This method is preserved by the XML descriptor, making it reflection-visible.
-            // Its DeclaringType(PreservedViaDescriptorOnly) is therefore also reflection-visible
+            // Its DeclaringType (PreservedViaDescriptorOnly) is therefore also reflection-visible
             // and could be passed to MakeGenericMethod for a method constrained on IStaticAbstract.
             [Kept]
             [ExpectedWarning("IL2026", nameof(MethodBase.GetCurrentMethod))]

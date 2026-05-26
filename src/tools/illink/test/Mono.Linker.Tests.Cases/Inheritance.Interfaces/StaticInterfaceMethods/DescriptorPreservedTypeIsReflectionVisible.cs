@@ -11,8 +11,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods
 {
     /// <summary>
     /// Tests that a type preserved via XML descriptor is fully treated as reflection-visible:
-    /// - Its static abstract interface implementations are preserved(variant casting)
-    /// - Its explicit-layout fields are preserved(MarkImplicitlyUsedFields)
+    /// - Its static abstract interface implementations are preserved (variant casting)
+    /// - Its explicit-layout fields are preserved (MarkImplicitlyUsedFields)
     /// These are all consequences of the type being obtainable via
     /// MethodBase.GetCurrentMethod().DeclaringType on a descriptor-preserved method.
     /// </summary>
