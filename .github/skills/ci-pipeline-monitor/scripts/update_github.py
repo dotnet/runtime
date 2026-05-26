@@ -88,10 +88,17 @@ class IssueGenerator:
             creating_new_issue = True
 
         # Title / Labels / Milestone for issue filing
-        if fail["labels"] and creating_new_issue:
-            label_set = set([l.strip().lower() for l in fail["labels"].split(',')])
+        if creating_new_issue:
+            if fail["labels"]:
+                # TODO: Find a way to make a case-insensitive set so we can avoid normalizing the labels to lowercase
+                label_set = set([l.strip().lower() for l in fail["labels"].split(',')])
+            else:
+                label_set = set()
             label_set.add("blocking-clean-ci-optional")
+
             for label in sorted(label_set):
+                if len(label) == 0:
+                    continue
                 gh_issue_command.append('--label')
                 gh_issue_command.append(label)
 
