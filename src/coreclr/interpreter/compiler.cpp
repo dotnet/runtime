@@ -883,7 +883,12 @@ int32_t InterpCompiler::GetLiveStartOffset(int32_t var)
     else
     {
         assert(m_pVars[var].liveStart != NULL);
-        return m_pVars[var].liveStart->nativeOffset;
+        // The value of the var is not valid at the start of the instruction that sets it.
+        // We don't set it as the start of the next instruction because a live range needs
+        // to have start != end, which wouldn't be the case if the var is always dead. Ignoring
+        // the live range for such a var could be problematic if this var is the return of a call,
+        // with its address being passed directly to the a jit-ed method.
+        return m_pVars[var].liveStart->nativeOffset + GetInsLength(m_pVars[var].liveStart) - 1;
     }
 }
 
