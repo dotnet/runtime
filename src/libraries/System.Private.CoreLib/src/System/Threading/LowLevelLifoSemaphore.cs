@@ -319,16 +319,15 @@ namespace System.Threading
 
             if (blocker != null)
             {
-                if (OperatingSystem.IsWindows())
-                {
-                    // Disable the priority boost that Windows would normally apply
-                    // when this thread is unblocked. The semaphore is used to park workers.
-                    // A transient priority boost on wake provides no benefit here and can
-                    // result in woken thread preempting already working threads.
-                    // GetCurrentThread() returns a pseudo-handle (-2) that is valid
-                    // only on the calling thread and does not need to be closed.
-                    Interop.Kernel32.SetThreadPriorityBoost(Interop.Kernel32.GetCurrentThread(), bDisablePriorityBoost: true);
-                }
+#if TARGET_WINDOWS
+                // Disable the priority boost that Windows would normally apply
+                // when this thread is unblocked. The semaphore is used to park workers.
+                // A transient priority boost on wake provides no benefit here and can
+                // result in woken thread preempting already working threads.
+                // GetCurrentThread() returns a pseudo-handle (-2) that is valid
+                // only on the calling thread and does not need to be closed.
+                Interop.Kernel32.SetThreadPriorityBoost(Interop.Kernel32.GetCurrentThread(), bDisablePriorityBoost: true);
+#endif
 
                 try
                 {
@@ -349,11 +348,10 @@ namespace System.Threading
                 }
                 finally
                 {
-                    if (OperatingSystem.IsWindows())
-                    {
-                        // restore the default.
-                        Interop.Kernel32.SetThreadPriorityBoost(Interop.Kernel32.GetCurrentThread(), bDisablePriorityBoost: false);
-                    }
+#if TARGET_WINDOWS
+                            // restore the default.
+                            Interop.Kernel32.SetThreadPriorityBoost(Interop.Kernel32.GetCurrentThread(), bDisablePriorityBoost: false);
+#endif
                 }
             }
 
