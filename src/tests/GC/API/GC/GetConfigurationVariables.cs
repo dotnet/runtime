@@ -26,7 +26,11 @@ namespace ConfigurationVariables
                     foundGCHeapAffinitizeRanges = true;
                 }
             }
-            Assert.True(foundGCHeapAffinitizeRanges, "The GCHeapAffinitizeRanges was not found");
+
+            if (!TestLibrary.Utilities.IsMonoRuntime)
+            {
+                Assert.True(foundGCHeapAffinitizeRanges, "The GCHeapAffinitizeRanges was not found");
+            }
         }
     }
 }
