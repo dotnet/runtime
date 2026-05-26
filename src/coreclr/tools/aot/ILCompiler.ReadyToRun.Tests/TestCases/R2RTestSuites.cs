@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using ILCompiler.ReadyToRun.Tests.TestCasesRunner;
 using ILCompiler.Reflection.ReadyToRun;
@@ -79,6 +78,7 @@ public class R2RTestSuites
                         "wasm",
                         "--targetos",
                         "browser",
+                        "--compile-no-methods",
                     },
                     Validate = Validate,
                 },
@@ -86,10 +86,14 @@ public class R2RTestSuites
 
         static void Validate(ReadyToRunReader reader)
         {
+            Assert.Equal(WasmMachine.Wasm32, reader.Machine);
             var webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
+            Assert.Equal(WasmMachine.Wasm32, webcilReader.Machine);
             Assert.True(webcilReader.IsWasmWrapped);
-            Assert.True(R2RAssert.GetAllMethods(reader).Exists(method =>
-                method.SignatureString.Contains("AddIntegers", StringComparison.Ordinal)));
+
+            var metadataReader = reader.GetGlobalMetadata().MetadataReader;
+            Assert.Contains(metadataReader.MethodDefinitions, methodHandle =>
+                metadataReader.GetString(metadataReader.GetMethodDefinition(methodHandle).Name) == "AddIntegers");
         }
     }
 
