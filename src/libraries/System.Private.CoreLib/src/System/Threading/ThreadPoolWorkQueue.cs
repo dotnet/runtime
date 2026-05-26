@@ -656,11 +656,14 @@ namespace System.Threading
         internal static void TransferAllLocalWorkItemsToHighPriorityGlobalQueue()
         {
             // If there's no local queue, there's nothing to transfer.
-            if (ThreadPoolWorkQueueThreadLocals.threadLocals is not ThreadPoolWorkQueueThreadLocals tl)
+            if (ThreadPoolWorkQueueThreadLocals.threadLocals is ThreadPoolWorkQueueThreadLocals tl)
             {
-                return;
+                TransferAllLocalWorkItemsToHighPriorityGlobalQueue(tl);
             }
+        }
 
+        internal static void TransferAllLocalWorkItemsToHighPriorityGlobalQueue(ThreadPoolWorkQueueThreadLocals tl)
+        {
             // Pop each work item off the local queue and push it onto the global. This is a
             // bounded loop as no other thread is allowed to push into this thread's queue.
             ThreadPoolWorkQueue queue = ThreadPool.s_workQueue;
@@ -845,7 +848,7 @@ namespace System.Threading
         public enum DispatchResult
         {
             Spurious = 0,   // the thread was invited, but there was no work in the queue.
-            Regular  = 1,   // this thread did as much work as was available or its quantum expired.
+            Regular = 1,   // this thread did as much work as was available or its quantum expired.
             ShouldStop = 2, // this thread stopped working early.
         }
 
@@ -978,7 +981,7 @@ namespace System.Threading
                     // This thread is being parked and may remain inactive for a while. Transfer any thread-local work items
                     // to ensure that they would not be heavily delayed. Tell the caller that this thread was requested to stop
                     // processing work items.
-                    tl.TransferLocalWork();
+                    ThreadPoolWorkQueue.TransferAllLocalWorkItemsToHighPriorityGlobalQueue(tl);
                     tl.isProcessingHighPriorityWorkItems = false;
                     if (s_assignableWorkItemQueueCount > 0)
                     {
@@ -1098,20 +1101,13 @@ namespace System.Threading
             threadLocalCompletionCountNode = ThreadPool.GetOrCreateThreadLocalCompletionCountNode();
         }
 
-        public void TransferLocalWork()
-        {
-            while (workStealingQueue.LocalPop() is object cb)
-            {
-                workQueue.Enqueue(cb, forceGlobal: true);
-            }
-        }
 
         ~ThreadPoolWorkQueueThreadLocals()
         {
             // Transfer any pending workitems into the global queue so that they will be executed by another thread
             if (null != workStealingQueue)
             {
-                TransferLocalWork();
+                ThreadPoolWorkQueue.TransferAllLocalWorkItemsToHighPriorityGlobalQueue(this);
                 ThreadPoolWorkQueue.WorkStealingQueueList.Remove(workStealingQueue);
             }
         }
@@ -1149,7 +1145,8 @@ namespace System.Threading
         private void EnsureWorkerScheduled()
         {
             // Only one worker is requested at a time to mitigate Thundering Herd problem.
-            if (Interlocked.Exchange(ref _hasOutstandingThreadRequest, 1) == 0)
+            if (_hasOutstandingThreadRequest == 0 &&
+                Interlocked.Exchange(ref _hasOutstandingThreadRequest, 1) == 0)
             {
                 // Currently where this type is used, queued work is expected to be processed
                 // at high priority. The implementation could be modified to support different
