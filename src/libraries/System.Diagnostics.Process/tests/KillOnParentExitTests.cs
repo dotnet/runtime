@@ -147,8 +147,6 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/107992")]
         public void KillEntireProcessTree_KillsGrandchild_WhenIntermediateChildHasKillOnParentExit()
         {
             // Mimics the scenario: Process A -> Process B (KillOnParentExit) -> Process C
