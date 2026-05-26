@@ -3618,15 +3618,6 @@ namespace System.Threading.Tasks
 
             switch (continuationObject)
             {
-                // Handle the single IAsyncStateMachineBox case.  This could be handled as part of the ITaskCompletionAction
-                // but we want to ensure that inlining is properly handled in the face of schedulers, so its behavior
-                // needs to be customized ala raw Actions.  This is also the most important case, as it represents the
-                // most common form of continuation, so we check it first.
-                case IAsyncStateMachineBox stateMachineBox:
-                    AwaitTaskContinuation.RunOrScheduleAction(stateMachineBox, canInlineContinuations);
-                    LogFinishCompletionNotification();
-                    return;
-
 #if !MONO
                 // Runtime async continuation is very cheap to check for since
                 // it is sealed. Its semantics cannot be described by
@@ -3638,6 +3629,15 @@ namespace System.Threading.Tasks
                     LogFinishCompletionNotification();
                     return;
 #endif
+
+                // Handle the single IAsyncStateMachineBox case.  This could be handled as part of the ITaskCompletionAction
+                // but we want to ensure that inlining is properly handled in the face of schedulers, so its behavior
+                // needs to be customized ala raw Actions.  This is also one of the most important cases, as it represents the
+                // most common form of continuation, so we check it early.
+                case IAsyncStateMachineBox stateMachineBox:
+                    AwaitTaskContinuation.RunOrScheduleAction(stateMachineBox, canInlineContinuations);
+                    LogFinishCompletionNotification();
+                    return;
 
                 // Handle the single Action case.
                 case Action action:
@@ -3710,15 +3710,15 @@ namespace System.Threading.Tasks
                                 log.RunningContinuationList(Id, i, currentContinuation);
                             switch (currentContinuation)
                             {
-                                case IAsyncStateMachineBox stateMachineBox:
-                                    AwaitTaskContinuation.RunOrScheduleAction(stateMachineBox, allowInlining: false);
-                                    break;
-
 #if !MONO
                                 case RuntimeAsyncTaskContinuation tc:
                                     tc.Execute(canInline: false);
                                     break;
 #endif
+
+                                case IAsyncStateMachineBox stateMachineBox:
+                                    AwaitTaskContinuation.RunOrScheduleAction(stateMachineBox, allowInlining: false);
+                                    break;
 
                                 case Action action:
                                     AwaitTaskContinuation.RunOrScheduleAction(action, allowInlining: false);
@@ -3749,15 +3749,15 @@ namespace System.Threading.Tasks
 
                 switch (currentContinuation)
                 {
-                    case IAsyncStateMachineBox stateMachineBox:
-                        AwaitTaskContinuation.RunOrScheduleAction(stateMachineBox, canInlineContinuations);
-                        break;
-
 #if !MONO
                     case RuntimeAsyncTaskContinuation tc:
                         tc.Execute(canInlineContinuations);
                         break;
 #endif
+
+                    case IAsyncStateMachineBox stateMachineBox:
+                        AwaitTaskContinuation.RunOrScheduleAction(stateMachineBox, canInlineContinuations);
+                        break;
 
                     case Action action:
                         AwaitTaskContinuation.RunOrScheduleAction(action, canInlineContinuations);
