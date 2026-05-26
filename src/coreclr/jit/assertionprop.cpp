@@ -4991,7 +4991,15 @@ bool Compiler::optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions)
     if (!optLocalAssertionProp)
     {
         ValueNum vn = vnStore->VNConservativeNormalValue(op->gtVNPair);
-        return optAssertionVNIsNonNull(vn, assertions);
+        // Substitute an empty bitset for uninit so the iter inside
+        // optAssertionVNIsNonNull is safe. Semantically "no known assertions" and
+        // "uninit" produce the same answer; this also avoids a host-dependent
+        // codegen divergence where short-rep treats empty == uninit while long-rep
+        // does not. See https://github.com/dotnet/runtime/issues/128602.
+        ASSERT_TP safeAssertions = BitVecOps::MayBeUninit(assertions)
+            ? BitVecOps::MakeEmpty(apTraits)
+            : assertions;
+        return optAssertionVNIsNonNull(vn, safeAssertions);
     }
     else
     {
@@ -5904,6 +5912,12 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
 ASSERT_VALRET_TP Compiler::optGetEdgeAssertions(const BasicBlock* block, const BasicBlock* blockPred) const
 {
     assert(block != nullptr);
+    // Blocks added after optInitAssertionDataflowFlags have no valid
+    // bbAssertionOut / bbJtrueAssertionOut slot. Treat them as carrying no assertions.
+    if (blockPred->bbNum > optDataflowBBNumMax)
+    {
+        return BitVecOps::MakeEmpty(apTraits);
+    }
     if (blockPred->KindIs(BBJ_COND))
     {
         if (blockPred->TrueTargetIs(block))
@@ -6207,6 +6221,9 @@ ASSERT_TP* Compiler::optComputeAssertionGen()
 ASSERT_TP* Compiler::optInitAssertionDataflowFlags()
 {
     ASSERT_TP* jumpDestOut = fgAllocateTypeForEachBlk<ASSERT_TP>();
+    // Capture the bbNum bound so optGetEdgeAssertions can detect blocks added
+    // after init (whose bbAssertionOut / bbJtrueAssertionOut slots are uninitialized).
+    optDataflowBBNumMax = fgBBNumMax;
 
     // The local assertion gen phase may have created unreachable blocks.
     // They will never be visited in the dataflow propagation phase, so they need to

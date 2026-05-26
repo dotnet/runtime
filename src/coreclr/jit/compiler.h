@@ -9037,6 +9037,11 @@ public:
     }
     ASSERT_TP* bbJtrueAssertionOut;
 
+    // fgBBNumMax captured when bbJtrueAssertionOut / bbAssertionOut storage was allocated.
+    // Blocks with bbNum greater than this were added after dataflow init and have no valid
+    // entry — optGetEdgeAssertions must treat them as having no incoming assertions.
+    unsigned   optDataflowBBNumMax = 0;
+
     // Assertion prop helpers.
     ASSERT_TP&          GetAssertionDep(unsigned lclNum, bool mustExist = false);
     const AssertionDsc& optGetAssertion(AssertionIndex assertIndex) const;
