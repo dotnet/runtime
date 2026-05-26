@@ -261,9 +261,9 @@ namespace System.IO.Compression
         /// <exception cref="InvalidDataException">The data is in an invalid format.</exception>
         /// <exception cref="ObjectDisposedException">The stream is disposed.</exception>
         /// <exception cref="IOException">Failed to decompress data from the underlying stream.</exception>
-        public override unsafe int ReadByte()
+        public override int ReadByte()
         {
-            Span<byte> singleByte = stackalloc byte[1];
+            Span<byte> singleByte = [0];
             int bytesRead = Read(singleByte);
             return bytesRead > 0 ? singleByte[0] : -1;
         }

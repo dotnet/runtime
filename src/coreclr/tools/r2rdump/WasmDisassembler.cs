@@ -20,13 +20,21 @@ namespace R2RDump
         private int _offset;
         private readonly int _baseOffset;
         private readonly int _endOffset;
+        private readonly Func<int, string> _rvaToName;
 
-        public WasmDisassembler(ImmutableArray<byte> code, int offset, int length)
+        /// <summary>
+        /// Tracks whether the previous instruction was a global.get of the imageBase global (index 1).
+        /// When true, the next i32.const or memory load offset should be treated as an RVA.
+        /// </summary>
+        private bool _prevWasImageBaseGet;
+
+        public WasmDisassembler(ImmutableArray<byte> code, int offset, int length, Func<int, string> rvaToName = null)
         {
             _code = code;
             _baseOffset = offset;
             _offset = offset;
             _endOffset = offset + length;
+            _rvaToName = rvaToName;
         }
 
         /// <summary>
@@ -40,23 +48,37 @@ namespace R2RDump
             while (_offset < _endOffset)
             {
                 int instrOffset = _offset - _baseOffset;
-                string instr = DecodeInstruction(ref indent, out int postAdjust);
+                string instr = DecodeInstruction(ref indent, out int postAdjust, out bool isImageBaseGet, out int rva);
+
+                string annotation = null;
+                if (rva >= 0 && _prevWasImageBaseGet && _rvaToName is not null)
+                {
+                    annotation = _rvaToName(rva);
+                }
+                _prevWasImageBaseGet = isImageBaseGet;
 
                 sb.Append($"    {instrOffset:X4}: ");
                 if (indent > 0)
                 {
                     sb.Append(' ', indent * 2);
                 }
-                sb.AppendLine(instr);
+                sb.Append(instr);
+                if (annotation is not null)
+                {
+                    sb.Append($" // {annotation}");
+                }
+                sb.AppendLine();
                 indent += postAdjust;
             }
 
             return sb.ToString();
         }
 
-        private string DecodeInstruction(ref int indent, out int postAdjust)
+        private string DecodeInstruction(ref int indent, out int postAdjust, out bool isImageBaseGet, out int rva)
         {
             postAdjust = 0;
+            isImageBaseGet = false;
+            rva = -1;
             byte opcode = ReadByte();
 
             switch (opcode)
@@ -185,7 +207,12 @@ namespace R2RDump
                 case 0x20: return $"local.get {ReadU32()}";
                 case 0x21: return $"local.set {ReadU32()}";
                 case 0x22: return $"local.tee {ReadU32()}";
-                case 0x23: return $"global.get {ReadU32()}";
+                case 0x23:
+                {
+                    uint globalIdx = ReadU32();
+                    isImageBaseGet = globalIdx == 1;
+                    return $"global.get {globalIdx}";
+                }
                 case 0x24: return $"global.set {ReadU32()}";
 
                 // Table instructions
@@ -193,7 +220,13 @@ namespace R2RDump
                 case 0x26: return $"table.set {ReadU32()}";
 
                 // Memory instructions
-                case 0x28: return $"i32.load {ReadMemArg()}";
+                case 0x28:
+                {
+                    string memArg = ReadMemArg(out uint offset);
+                    if (offset != 0)
+                        rva = (int)offset;
+                    return $"i32.load {memArg}";
+                }
                 case 0x29: return $"i64.load {ReadMemArg()}";
                 case 0x2A: return $"f32.load {ReadMemArg()}";
                 case 0x2B: return $"f64.load {ReadMemArg()}";
@@ -228,7 +261,13 @@ namespace R2RDump
                 }
 
                 // Numeric instructions - constants
-                case 0x41: return $"i32.const {ReadI32()}";
+                case 0x41:
+                {
+                    int val = ReadI32();
+                    if (val >= 0)
+                        rva = val;
+                    return $"i32.const {val}";
+                }
                 case 0x42: return $"i64.const {ReadI64()}";
                 case 0x43: return $"f32.const {ReadF32()}";
                 case 0x44: return $"f64.const {ReadF64()}";
@@ -940,6 +979,11 @@ namespace R2RDump
 
         private string ReadMemArg()
         {
+            return ReadMemArg(out _);
+        }
+
+        private string ReadMemArg(out uint offset)
+        {
             uint align = ReadU32();
             // Bit 6 indicates multi-memory (memory index follows)
             uint memIdx = 0;
@@ -948,7 +992,7 @@ namespace R2RDump
                 align &= ~0x40u;
                 memIdx = ReadU32();
             }
-            uint offset = ReadU32();
+            offset = ReadU32();
             if (memIdx != 0)
                 return $"align={1u << (int)align} offset={offset} mem={memIdx}";
             if (offset != 0)

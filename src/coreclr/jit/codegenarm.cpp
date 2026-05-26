@@ -2491,6 +2491,10 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
         {
             saveSizeWithPSP += TARGET_POINTER_SIZE;
         }
+        if (m_compiler->lvaAsyncThreadObjectVar != BAD_VAR_NUM)
+        {
+            saveSizeWithPSP += TARGET_POINTER_SIZE;
+        }
         if (m_compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM)
         {
             saveSizeWithPSP += TARGET_POINTER_SIZE;
@@ -2659,9 +2663,11 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
     }
     else
     {
+        BasicBlock* loopHead = genCreateTempLabel();
+        genDefineInlineTempLabel(loopHead);
         GetEmitter()->emitIns_R_I(INS_stm, EA_PTRSIZE, rAddr, stmImm); // zero stack slots
         GetEmitter()->emitIns_R_I(INS_sub, EA_PTRSIZE, rCnt, 1, INS_FLAGS_SET);
-        GetEmitter()->emitIns_J(INS_bhi, NULL, -3);
+        GetEmitter()->emitIns_ShortJ(INS_bhi, loopHead);
         uCntBytes %= REGSIZE_BYTES * 2;
     }
 
