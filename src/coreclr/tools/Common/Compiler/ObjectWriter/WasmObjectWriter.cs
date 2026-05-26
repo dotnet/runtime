@@ -10,6 +10,7 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using ILCompiler.DependencyAnalysis;
+using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.DependencyAnalysisFramework;
 using ILCompiler.ObjectWriter.WasmInstructions;
@@ -119,11 +120,99 @@ namespace ILCompiler.ObjectWriter
                 flags |= WasmLowering.LoweringFlags.IsUnmanagedCallersOnly;
             }
             WriteSignatureIndexForFunction(node.Signature, flags, node);
-
             _uniqueSymbols.Add(node.GetMangledName(_nodeFactory.NameMangler), _methodCount);
             _methodCount++;
+
+            if (node is MethodWithGCInfo methodNode)
+            {
+                RecordFunclets(methodNode);
+            }
         }
 
+        private void RecordFunclets(MethodWithGCInfo methodWithGCInfo)
+        {
+            if (methodWithGCInfo.FrameInfos.Length <= 1)
+            {
+                return;
+            }
+
+            string mangledNodeName = methodWithGCInfo.GetMangledName(_nodeFactory.NameMangler);
+
+            FrameInfo[] frameInfos = methodWithGCInfo.FrameInfos;
+
+            WasmValueType pointerType = _nodeFactory.Target.PointerSize == 8 ? WasmValueType.I64 : WasmValueType.I32;
+
+            FuncletKind[] funcletKinds = GetFuncletKinds(methodWithGCInfo.EHInfo);
+            Debug.Assert(funcletKinds.Length == frameInfos.Length - 1);
+
+            for (int i = 1; i < frameInfos.Length; i++)
+            {
+                 WasmFuncType funcletSignature = GetFuncletType(funcletKinds[i - 1], pointerType);
+                _uniqueSymbols.Add($"{mangledNodeName}_funclet_{i}", _methodCount);
+                _methodCount++;
+                RegisterStubIndexAndSignature(funcletSignature);
+            }
+        }
+
+
+        enum FuncletKind : byte
+        {
+            CatchOrFilterHandler,
+            Filter,
+            Finally,
+            Fault
+        }
+
+        private static FuncletKind[] GetFuncletKinds(ObjectNode.ObjectData ehInfo)
+        {
+            // EH Clause structure contains 6 uint sized fields 
+            const int ClauseSize = 6 * sizeof(uint);
+            const int FlagsFieldOffset = 0 * sizeof(uint);
+
+            if (ehInfo?.Data is not { Length: > 0 } data)
+                return Array.Empty<FuncletKind>();
+
+            int clauseCount = data.Length / ClauseSize;
+            ArrayBuilder<FuncletKind> funcletKinds = new ArrayBuilder<FuncletKind>(clauseCount);
+            for (int i = 0; i < clauseCount; i++)
+            {
+                int baseOffset = i * ClauseSize;
+                CORINFO_EH_CLAUSE_FLAGS flags = (CORINFO_EH_CLAUSE_FLAGS)BinaryPrimitives.ReadUInt32LittleEndian(
+                    data.AsSpan(baseOffset + FlagsFieldOffset));
+
+                if (flags.HasFlag(CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_FINALLY))
+                {
+                    funcletKinds.Add(FuncletKind.Finally);
+                }
+                else if (flags.HasFlag(CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_FAULT))
+                {
+                    funcletKinds.Add(FuncletKind.Fault);
+                }
+                else if (flags.HasFlag(CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_FILTER))
+                {
+                    // Filters always inspire two funclets: a filter funclet and a catch-like handler funclet
+                    funcletKinds.Add(FuncletKind.Filter);
+                    funcletKinds.Add(FuncletKind.CatchOrFilterHandler);
+                }
+                else
+                {
+                    funcletKinds.Add(FuncletKind.CatchOrFilterHandler);
+                }
+            }
+
+            return funcletKinds.ToArray();
+        }
+
+        private WasmFuncType GetFuncletType(FuncletKind funcletKind, WasmValueType pointerType)
+        {
+            return funcletKind switch
+            {
+                FuncletKind.CatchOrFilterHandler or FuncletKind.Filter => new WasmFuncType(
+                    new([pointerType, pointerType, pointerType]), new([])), // (FP, SP, EXN) -> void
+                _ => new WasmFuncType(new([pointerType, pointerType]), new([])), // (FP, SP) -> void
+            };
+        }
+ 
         private void WriteSignatureIndexForFunction(MethodSignature managedSignature, WasmLowering.LoweringFlags flags, ISymbolNode node)
         {
             SectionWriter writer = GetOrCreateSection(WasmObjectNodeSection.FunctionSection);
@@ -333,17 +422,17 @@ namespace ILCompiler.ObjectWriter
         // This effectively recreates the logic of RecordMethodBody/RecordMethodDeclaration, but for manually inserted stubs that are not
         // represented by nodes in the dependency graph.
         // TODO-Wasm: for maintability, we should try and push some of this into the dependency graph when we do more stub generation.
-        private void RegisterStubIndexAndSignature(WasmFunctionBody body)
+        private void RegisterStubIndexAndSignature(WasmFuncType signature)
         {
-            Utf8String signatureKey = body.Signature.GetMangledName(_nodeFactory.NameMangler);
+            Utf8String signatureKey = signature.GetMangledName(_nodeFactory.NameMangler);
             if (!_uniqueSignatures.TryGetValue(signatureKey, out int signatureIndex))
             {
                 signatureIndex = _uniqueSignatures.Count;
                 _uniqueSignatures.Add(signatureKey, signatureIndex);
 
                 SectionWriter typeSectionWriter = GetOrCreateSection(ObjectNodeSection.WasmTypeSection);
-                byte[] encodedSignature = new byte[body.Signature.EncodeSize()];
-                body.Signature.Encode(encodedSignature);
+                byte[] encodedSignature = new byte[signature.EncodeSize()];
+                signature.Encode(encodedSignature);
                 typeSectionWriter.EmitData(encodedSignature);
             }
 
@@ -363,7 +452,7 @@ namespace ILCompiler.ObjectWriter
             _uniqueSymbols.Add(name.ToString(), _methodCount);
             _methodCount++;
 
-            RegisterStubIndexAndSignature(body);
+            RegisterStubIndexAndSignature(body.Signature);
 
         }
         private long ResolveSymbolRVA(WebcilSection[] sections, SymbolDefinition definition)
