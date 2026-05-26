@@ -12153,9 +12153,7 @@ void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
     else
     {
  #ifdef TARGET_WASM
-         // WASM codegen expects non-native STORE_BLK forms to follow the GC-aware
-         // cpobj-style path. Keep copy-lowering on the wasm-specific block-store
-         // path so we do not produce invalid blkOpKind/layout combinations here.
+        // TODO: unify with the shared logic in LowerCopyBlockStore
          LowerBlockStore(blkNode);
  #else
          LowerCopyBlockStore(blkNode);
@@ -12190,7 +12188,7 @@ bool Lowering::TryDecomposeBlockStoreAsIndirs(GenTreeBlk* blkNode)
     assert(src->OperIs(GT_IND, GT_LCL_VAR, GT_LCL_FLD));
 
     // Always decompose for volatile blocks as the bulk helper doesn't support those.
-    if (blkNode->IsVolatile() || (src->OperIs(GT_IND) && src->AsIndir()->IsVolatile()))
+    if (!(blkNode->IsVolatile() || (src->OperIs(GT_IND) && src->AsIndir()->IsVolatile())))
     {
         // More than 3 GC pointers, use the bulk copy helper.
         // TODO-CQ: find a better heuristic here.
