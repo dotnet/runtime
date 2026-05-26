@@ -543,7 +543,7 @@ void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pTaskReturningVariant, MetaSig
 
             MethodDesc* pMDValueTaskIsCompleted = CoreLibBinder::GetMethod(METHOD__VALUETASK__GET_ISCOMPLETED);
             MethodDesc* pMDCompletionResult = CoreLibBinder::GetMethod(METHOD__VALUETASK__THROW_IF_COMPLETED_UNSUCCESSFULLY);
-            MethodDesc* pMDTransparentAwaitValueTask = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__TRANSPARENT_SUSPEND_FOR_VALUE_TASK);
+            MethodDesc* pMDTransparentAwaitValueTask = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__TRANSPARENT_AWAIT_VALUE_TASK);
 
             isCompletedToken = pCode->GetToken(pMDValueTaskIsCompleted);
             completionResultToken = pCode->GetToken(pMDCompletionResult);
@@ -556,7 +556,7 @@ void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pTaskReturningVariant, MetaSig
 
             MethodDesc* pMDValueTaskIsCompleted = CoreLibBinder::GetMethod(METHOD__VALUETASK_1__GET_ISCOMPLETED);
             MethodDesc* pMDCompletionResult = CoreLibBinder::GetMethod(METHOD__VALUETASK_1__GET_RESULT);
-            MethodDesc* pMDTransparentAwaitValueTask = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__TRANSPARENT_SUSPEND_FOR_VALUE_TASK_OF_T);
+            MethodDesc* pMDTransparentAwaitValueTask = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__TRANSPARENT_AWAIT_VALUE_TASK_OF_T);
 
             pMDValueTaskIsCompleted = FindOrCreateAssociatedMethodDesc(pMDValueTaskIsCompleted, pMTValueTask, FALSE, Instantiation(), FALSE);
             pMDCompletionResult = FindOrCreateAssociatedMethodDesc(pMDCompletionResult, pMTValueTask, FALSE, Instantiation(), FALSE);
@@ -603,7 +603,7 @@ void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pTaskReturningVariant, MetaSig
             pMTTask = CoreLibBinder::GetClass(CLASS__TASK);
 
             MethodDesc* pMDCompletedTask = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__COMPLETED_TASK);
-            MethodDesc* pMDTransparentAwaitTask = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__TRANSPARENT_SUSPEND_FOR_TASK);
+            MethodDesc* pMDTransparentAwaitTask = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__TRANSPARENT_AWAIT);
 
             completedTaskResultToken = pCode->GetToken(pMDCompletedTask);
             transparentAwaitToken = pCode->GetToken(pMDTransparentAwaitTask);
@@ -614,7 +614,7 @@ void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pTaskReturningVariant, MetaSig
             pMTTask = ClassLoader::LoadGenericInstantiationThrowing(pMTTaskOpen->GetModule(), pMTTaskOpen->GetCl(), Instantiation(&thLogicalRetType, 1)).GetMethodTable();
 
             MethodDesc* pMDCompletedTaskResult = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__COMPLETED_TASK_RESULT);
-            MethodDesc* pMDTransparentAwaitTask = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__TRANSPARENT_SUSPEND_FOR_TASK_OF_T);
+            MethodDesc* pMDTransparentAwaitTask = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__TRANSPARENT_AWAIT_OF_T);
 
             pMDCompletedTaskResult = FindOrCreateAssociatedMethodDesc(pMDCompletedTaskResult, pMDCompletedTaskResult->GetMethodTable(), FALSE, Instantiation(&thLogicalRetType, 1), FALSE);
             pMDTransparentAwaitTask = FindOrCreateAssociatedMethodDesc(pMDTransparentAwaitTask, pMDTransparentAwaitTask->GetMethodTable(), FALSE, Instantiation(&thLogicalRetType, 1), FALSE);
