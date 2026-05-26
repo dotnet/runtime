@@ -146,18 +146,19 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void KillEntireProcessTree_KillsGrandchild_WhenIntermediateChildHasKillOnParentExit()
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void KillEntireProcessTree_KillsGrandchild_WhenIntermediateChildHasKillOnParentExit(bool enabled)
         {
             // Mimics the scenario: Process A -> Process B (KillOnParentExit) -> Process C
-            // Killing A with entireProcessTree:true should kill C even though
-            // the job object on B causes B to die immediately (before tree traversal finds C).
+            // Killing A with entireProcessTree:true should kill C regardless of KillOnParentExit setting.
             RemoteInvokeOptions parentOptions = new() { CheckExitCode = false };
             parentOptions.StartInfo.RedirectStandardOutput = true;
             parentOptions.StartInfo.RedirectStandardInput = true;
 
             using RemoteInvokeHandle parentHandle = RemoteExecutor.Invoke(
-                () =>
+                (enabledStr) =>
                 {
                     // This is "Process A". Start "Process B" with KillOnParentExit.
                     // Process B will start "Process C" and report C's PID.
@@ -172,7 +173,7 @@ namespace System.Diagnostics.Tests
                         Thread.Sleep(Timeout.Infinite);
                         return RemoteExecutor.SuccessExitCode;
                     });
-                    child.StartInfo.KillOnParentExit = true;
+                    child.StartInfo.KillOnParentExit = bool.Parse(enabledStr);
                     child.StartInfo.RedirectStandardOutput = true;
                     child.Start();
 
@@ -183,6 +184,7 @@ namespace System.Diagnostics.Tests
                     // Block until killed
                     Thread.Sleep(Timeout.Infinite);
                 },
+                enabled.ToString(),
                 parentOptions);
 
             int grandChildPid = int.Parse(parentHandle.Process.StandardOutput.ReadLine());
