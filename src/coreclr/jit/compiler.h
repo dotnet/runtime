@@ -1778,6 +1778,8 @@ struct FuncInfoDsc
     bool needsUnwindableFrame;
     emitLocation* startLoc;
     emitLocation* endLoc;
+    unsigned startVirtualIP;
+    unsigned endVirtualIP;
 
     void ensureUnwindableFrame(Compiler* comp);
 #endif // defined(TARGET_WASM)
