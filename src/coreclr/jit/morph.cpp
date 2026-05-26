@@ -7452,6 +7452,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
             }
 #if defined(TARGET_64BIT) && !defined(TARGET_ARM64)
             else if (!opts.MinOpts() && tree->OperIs(GT_MOD, GT_UMOD) && !op2->IsIntegralConst() &&
+                     ((typ == TYP_INT) || (typ == TYP_LONG)) &&
                      IntegralRange::ForType(TYP_USHORT).Contains(IntegralRange::ForNode(op1, this)))
             {
                 // The dividend structurally fits in uint16 but the divisor
