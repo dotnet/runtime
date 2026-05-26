@@ -220,11 +220,11 @@ namespace System.Net.Sockets.Tests
             Assert.Equal(SocketError.Success, saea.SocketError);
             Assert.True(client.Blocking);
 
-            // On Apple and Android platforms, TFO (connectx/sendto) may complete the connect+send
-            // in a single syscall, so the socket can end up blocking even on the async path.
-            // On Linux, async connect always leaves the socket non-blocking when
-            // buffer > 0 because SendToAsync is pending.
-            if (!completedAsync || PlatformDetection.IsApplePlatform || PlatformDetection.IsAndroid)
+            // On Apple platforms, connectx may complete connect+send atomically,
+            // allowing the socket to be restored to blocking even on the async path.
+            // On other Unix platforms (Linux, Android), completedAsync means either
+            // connect or the follow-up send pended, leaving the socket non-blocking.
+            if (!completedAsync || PlatformDetection.IsApplePlatform)
             {
                 Assert.False(IsSocketNonBlocking(client));
             }
