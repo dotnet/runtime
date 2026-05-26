@@ -268,6 +268,84 @@ public unsafe class DacDbiImplTests
         return new DacDbiImpl(target, legacyObj: null);
     }
 
+    private static (DacDbiImpl DacDbi, TestPlaceholderTarget Target) CreateDacDbiWithExceptionMT(
+        MockTarget.Architecture arch,
+        TargetPointer exceptionMT,
+        Mock<IObject> mockObject,
+        Mock<IRuntimeTypeSystem> mockRts)
+    {
+        var builder = new TestPlaceholderTarget.Builder(arch);
+        var allocator = builder.MemoryBuilder.CreateAllocator(0x0030_0000, 0x0030_1000);
+        var globalFragment = allocator.Allocate((ulong)(arch.Is64Bit ? 8 : 4), "ExceptionMethodTable");
+        new TargetTestHelpers(arch).WritePointer(globalFragment.Data, exceptionMT.Value);
+        builder.AddGlobals((Constants.Globals.ExceptionMethodTable, globalFragment.Address));
+        builder.AddMockContract(mockObject);
+        builder.AddMockContract(mockRts);
+        var target = builder.Build();
+        var dacDbi = new DacDbiImpl(target, legacyObj: null);
+        return (dacDbi, target);
+    }
+
+    public static IEnumerable<object[]> IsExceptionObjectData()
+    {
+        foreach (var arch in new MockTarget.StdArch())
+        {
+            // Exact exception type
+            yield return new object[] { arch[0], 0, true };
+            // Derived exception type
+            yield return new object[] { arch[0], 1, true };
+            // Deeply derived exception type
+            yield return new object[] { arch[0], 2, true };
+            // Non-exception type (no parent)
+            yield return new object[] { arch[0], 0, false };
+            // Non-exception type (with parent)
+            yield return new object[] { arch[0], 1, false };
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(IsExceptionObjectData))]
+    public void IsExceptionObject(MockTarget.Architecture arch, int inheritanceDepth, bool isException)
+    {
+        TargetPointer exceptionMT = new(0x1000);
+        TargetPointer objectAddr = new(0x5000);
+
+        var intermediateMTs = new TargetPointer[inheritanceDepth];
+        for (int i = 0; i < inheritanceDepth; i++)
+            intermediateMTs[i] = new TargetPointer((ulong)(0x2000 + i * 0x1000));
+
+        TargetPointer objectMT = inheritanceDepth == 0 && isException
+            ? exceptionMT
+            : intermediateMTs.Length > 0 ? intermediateMTs[0] : new TargetPointer(0x2000);
+
+        var mockObject = new Mock<IObject>();
+        mockObject.Setup(o => o.GetMethodTableAddress(objectAddr)).Returns(objectMT);
+
+        var mockRts = new Mock<IRuntimeTypeSystem>();
+        if (intermediateMTs.Length == 0 && !isException)
+        {
+            mockRts.Setup(r => r.GetTypeHandle(objectMT)).Returns(new TypeHandle(objectMT));
+            mockRts.Setup(r => r.GetParentMethodTable(new TypeHandle(objectMT))).Returns(TargetPointer.Null);
+        }
+        for (int i = 0; i < intermediateMTs.Length; i++)
+        {
+            TargetPointer current = intermediateMTs[i];
+            TargetPointer parent = i + 1 < intermediateMTs.Length
+                ? intermediateMTs[i + 1]
+                : isException ? exceptionMT : TargetPointer.Null;
+
+            mockRts.Setup(r => r.GetTypeHandle(current)).Returns(new TypeHandle(current));
+            mockRts.Setup(r => r.GetParentMethodTable(new TypeHandle(current))).Returns(parent);
+        }
+
+        var (dacDbi, _) = CreateDacDbiWithExceptionMT(arch, exceptionMT, mockObject, mockRts);
+
+        Interop.BOOL result;
+        int hr = dacDbi.IsExceptionObject(objectAddr.Value, &result);
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(isException ? Interop.BOOL.TRUE : Interop.BOOL.FALSE, result);
+    }
+
     [UnmanagedCallersOnly]
     private static unsafe void CollectAssemblyCallback(ulong value, nint pUserData)
     {
