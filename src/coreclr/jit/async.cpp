@@ -1801,12 +1801,14 @@ const AsyncState* AsyncTransformation::FindReusableSuspension(BasicBlock*       
         }
 
         int limit = 128;
-        for (const AsyncState& state : m_states)
+        for (size_t i = m_states.size(); i != 0; i--)
         {
             if (limit-- == 0)
             {
                 break;
             }
+
+            const AsyncState& state = m_states[i - 1];
 
             assert(state.ResumptionBB->KindIs(BBJ_ALWAYS));
             BasicBlock* resumptionJoin = state.ResumptionBB->GetUniqueSucc();
