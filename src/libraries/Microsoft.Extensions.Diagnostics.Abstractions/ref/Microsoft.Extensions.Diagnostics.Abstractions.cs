@@ -84,9 +84,9 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
         public string Name { get; }
         public System.Diagnostics.SampleActivity<string>? SampleUsingParentId { get; }
         public System.Diagnostics.SampleActivity<System.Diagnostics.ActivityContext>? Sample { get; }
-        public void ActivityStarted(System.Diagnostics.Activity activity);
-        public void ActivityStopped(System.Diagnostics.Activity activity);
-        public void ActivityExceptionRecorded(System.Diagnostics.Activity activity, System.Exception exception, ref System.Diagnostics.TagList tags);
+        public System.Action<System.Diagnostics.Activity>? ActivityStarted { get; }
+        public System.Action<System.Diagnostics.Activity>? ActivityStopped { get; }
+        public System.Diagnostics.ExceptionRecorder? ActivityExceptionRecorded { get; }
     }
     public class TracingRule
     {

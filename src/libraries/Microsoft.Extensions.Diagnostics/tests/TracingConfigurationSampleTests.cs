@@ -5,6 +5,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
@@ -123,6 +124,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
             Assert.Equal("false", mergedConfiguration["EnabledTracing:SourceC"]);
         }
 
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
         private static Type GetActivityListenerConfigurationFactoryType()
             => typeof(TracingServiceExtensions).Assembly.GetType("Microsoft.Extensions.Diagnostics.Tracing.ActivityListenerConfigurationFactory", throwOnError: true)!;
 
@@ -375,6 +377,113 @@ namespace Microsoft.Extensions.Diagnostics.Tests
             }
         }
 
+        [Fact]
+        public void DisabledActivityName_FiltersNotifications_EvenWhenAnotherListenerCreatesActivity()
+        {
+            using var externalListener = new ActivityListener
+            {
+                ShouldListenTo = source => source.Name == "Demo.NotificationFilter",
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+                SampleUsingParentId = (ref ActivityCreationOptions<string> _) => ActivitySamplingResult.AllDataAndRecorded,
+            };
+            ActivitySource.AddActivityListener(externalListener);
+
+            var recording = new RecordingActivityListener();
+            using var serviceProvider = new ServiceCollection()
+                .AddTracing(builder => builder.AddListener(recording))
+                .Services
+                .Configure<TracingOptions>(options =>
+                {
+                    options.Rules.Add(new TracingRule("Demo.NotificationFilter", activityName: null, listenerName: null, scopes: ActivitySourceScope.Global | ActivitySourceScope.Local, enabled: true));
+                    options.Rules.Add(new TracingRule("Demo.NotificationFilter", activityName: "BlockedOperation", listenerName: null, scopes: ActivitySourceScope.Global | ActivitySourceScope.Local, enabled: false));
+                })
+                .BuildServiceProvider();
+
+            serviceProvider.GetRequiredService<IStartupValidator>().Validate();
+
+            using var source = new ActivitySource("Demo.NotificationFilter");
+
+            using (var allowed = source.StartActivity("AllowedOperation"))
+            {
+                Assert.NotNull(allowed);
+            }
+            using (var blocked = source.StartActivity("BlockedOperation"))
+            {
+                Assert.NotNull(blocked);
+            }
+
+            Assert.Equal(new[] { "AllowedOperation" }, recording.StartedNames);
+            Assert.Equal(new[] { "AllowedOperation" }, recording.StoppedNames);
+        }
+
+        [Fact]
+        public void EnabledActivityName_NotifiesListener_EvenWhenSourceDefaultDisabled()
+        {
+            var recording = new RecordingActivityListener();
+            using var serviceProvider = new ServiceCollection()
+                .AddTracing(builder => builder.AddListener(recording))
+                .Services
+                .Configure<TracingOptions>(options =>
+                {
+                    options.Rules.Add(new TracingRule("Demo.OptIn", activityName: null, listenerName: null, scopes: ActivitySourceScope.Global | ActivitySourceScope.Local, enabled: false));
+                    options.Rules.Add(new TracingRule("Demo.OptIn", activityName: "OptedInOperation", listenerName: null, scopes: ActivitySourceScope.Global | ActivitySourceScope.Local, enabled: true));
+                })
+                .BuildServiceProvider();
+
+            serviceProvider.GetRequiredService<IStartupValidator>().Validate();
+
+            using var source = new ActivitySource("Demo.OptIn");
+
+            using (var optedIn = source.StartActivity("OptedInOperation"))
+            {
+                Assert.NotNull(optedIn);
+            }
+
+            Assert.Equal(new[] { "OptedInOperation" }, recording.StartedNames);
+            Assert.Equal(new[] { "OptedInOperation" }, recording.StoppedNames);
+        }
+
+        private sealed class RecordingActivityListener : IActivityListener
+        {
+            private readonly object _lock = new();
+            private readonly List<string> _started = new();
+            private readonly List<string> _stopped = new();
+
+            public RecordingActivityListener()
+            {
+                ActivityStarted = activity =>
+                {
+                    lock (_lock) { _started.Add(activity.OperationName); }
+                };
+                ActivityStopped = activity =>
+                {
+                    lock (_lock) { _stopped.Add(activity.OperationName); }
+                };
+            }
+
+            public string Name => nameof(RecordingActivityListener);
+
+            public SampleActivity<string>? SampleUsingParentId => static (ref ActivityCreationOptions<string> options) => ActivitySamplingResult.AllDataAndRecorded;
+
+            public SampleActivity<ActivityContext>? Sample => static (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllDataAndRecorded;
+
+            public Action<Activity>? ActivityStarted { get; }
+
+            public Action<Activity>? ActivityStopped { get; }
+
+            public ExceptionRecorder? ActivityExceptionRecorded => null;
+
+            public IReadOnlyList<string> StartedNames
+            {
+                get { lock (_lock) { return _started.ToArray(); } }
+            }
+
+            public IReadOnlyList<string> StoppedNames
+            {
+                get { lock (_lock) { return _stopped.ToArray(); } }
+            }
+        }
+
         public sealed class SampleActivityListener : IActivityListener
         {
             public string Name => SampleListenerName;
@@ -383,17 +492,11 @@ namespace Microsoft.Extensions.Diagnostics.Tests
 
             public SampleActivity<ActivityContext>? Sample => static (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllDataAndRecorded;
 
-            public void ActivityStarted(Activity activity)
-            {
-            }
+            public Action<Activity>? ActivityStarted => null;
 
-            public void ActivityStopped(Activity activity)
-            {
-            }
+            public Action<Activity>? ActivityStopped => null;
 
-            public void ActivityExceptionRecorded(Activity activity, Exception exception, ref TagList tags)
-            {
-            }
+            public ExceptionRecorder? ActivityExceptionRecorded => null;
         }
 
         private sealed class BlockingNameActivityListener : IActivityListener
@@ -422,6 +525,12 @@ namespace Microsoft.Extensions.Diagnostics.Tests
 
             public SampleActivity<ActivityContext>? Sample => static (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllDataAndRecorded;
 
+            public Action<Activity>? ActivityStarted => null;
+
+            public Action<Activity>? ActivityStopped => null;
+
+            public ExceptionRecorder? ActivityExceptionRecorded => null;
+
             public void BlockCurrentThreadNameReads()
             {
                 Volatile.Write(ref _blockedThreadId, Environment.CurrentManagedThreadId);
@@ -431,18 +540,6 @@ namespace Microsoft.Extensions.Diagnostics.Tests
             public bool WaitForNameRead(TimeSpan timeout) => _nameReadStarted.Wait(timeout);
 
             public void ReleaseNameRead() => _allowNameRead.Set();
-
-            public void ActivityStarted(Activity activity)
-            {
-            }
-
-            public void ActivityStopped(Activity activity)
-            {
-            }
-
-            public void ActivityExceptionRecorded(Activity activity, Exception exception, ref TagList tags)
-            {
-            }
         }
 
         private sealed class ThrowingTagsEnumerable : IEnumerable<KeyValuePair<string, object?>>

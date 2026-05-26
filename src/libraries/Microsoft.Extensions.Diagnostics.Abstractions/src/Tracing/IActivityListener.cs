@@ -35,23 +35,30 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
         SampleActivity<ActivityContext>? Sample { get; }
 
         /// <summary>
-        /// Called when an activity starts.
+        /// Gets the callback invoked when an activity starts.
         /// </summary>
-        /// <param name="activity">The started activity.</param>
-        void ActivityStarted(Activity activity);
+        /// <value>
+        /// The callback to invoke when an activity starts.
+        /// If <see langword="null"/>, this listener does not receive activity start notifications.
+        /// </value>
+        Action<Activity>? ActivityStarted { get; }
 
         /// <summary>
-        /// Called when an activity stops.
+        /// Gets the callback invoked when an activity stops.
         /// </summary>
-        /// <param name="activity">The stopped activity.</param>
-        void ActivityStopped(Activity activity);
+        /// <value>
+        /// The callback to invoke when an activity stops.
+        /// If <see langword="null"/>, this listener does not receive activity stop notifications.
+        /// </value>
+        Action<Activity>? ActivityStopped { get; }
 
         /// <summary>
-        /// Called when an exception is added to an activity.
+        /// Gets the callback invoked when an exception is recorded on an activity.
         /// </summary>
-        /// <param name="activity">The activity receiving the exception.</param>
-        /// <param name="exception">The exception being recorded.</param>
-        /// <param name="tags">Tags associated with the exception.</param>
-        void ActivityExceptionRecorded(Activity activity, Exception exception, ref TagList tags);
+        /// <value>
+        /// The callback to invoke when an exception is recorded on an activity.
+        /// If <see langword="null"/>, this listener does not receive exception notifications.
+        /// </value>
+        ExceptionRecorder? ActivityExceptionRecorded { get; }
     }
 }
