@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Platform-specific test with explicit Main -->
+    <!-- Needed for CLRTestTargetUnsupported, UnloadabilityIncompatible -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+    <DisableProjectBuild>true</DisableProjectBuild>
+
+    <TargetFrameworks>WindowsVariant;UnixVariant</TargetFrameworks>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)' == 'WindowsVariant' or '$(TargetFramework)' == 'UnixVariant'">
+    <TargetFrameworkIdentifier>$(NetCoreAppCurrentIdentifier)</TargetFrameworkIdentifier>
+    <TargetFrameworkVersion>v$(NetCoreAppCurrentVersion)</TargetFrameworkVersion>
+    <TargetFrameworkMoniker>$(NetCoreAppCurrentTargetFrameworkMoniker)</TargetFrameworkMoniker>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)' == 'WindowsVariant'">
+    <DefineConstants>$(DefineConstants);WINDOWS</DefineConstants>
+    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)' == 'UnixVariant'">
+    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' == 'true'">true</CLRTestTargetUnsupported>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="WindowsEventLog.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'UnixVariant'">
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+</Project>
