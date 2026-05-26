@@ -77,9 +77,9 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>
-        /// Awaits the specified <see cref="ValueTask"/> and throws any exception produced by the operation.
+        /// Awaits the specified <see cref="Task"/> and throws any exception produced by the operation.
         /// </summary>
-        /// <param name="task">The value task to await.</param>
+        /// <param name="task">The task to await.</param>
         [Intrinsic]
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.Async)]
@@ -137,9 +137,9 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>
-        /// Awaits the specified <see cref="Task"/> and throws any exception produced by the task.
+        /// Awaits the specified <see cref="ValueTask"/> and throws any exception produced by the operation.
         /// </summary>
-        /// <param name="task">The task to await.</param>
+        /// <param name="task">The value task to await.</param>
         [Intrinsic]
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.Async)]
