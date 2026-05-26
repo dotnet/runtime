@@ -295,6 +295,77 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
         {
             oper = gtNewCastNodeL(TYP_INT, oper, /* fromUnsigned */ false, TYP_INT);
             oper->gtFlags |= (tree->gtFlags & (GTF_OVERFLOW | GTF_EXCEPT));
+
+            // For non-overflow casts of float/double -> smallType, clamp the intermediate
+            // int value to [smallMin, smallMax] so that the truncating CAST(smallType <- int)
+            // produces saturating results, consistent with the saturating float/double -> int
+            // behavior introduced in .NET 9 (https://learn.microsoft.com/dotnet/core/compatibility/jit/9.0/fp-to-integer).
+            // Overflow-checked casts must NOT be clamped here: the outer CAST_OVF(smallType <- int)
+            // is responsible for throwing OverflowException when the value is out of range.
+            if (!tree->gtOverflow())
+            {
+                ssize_t smallMin;
+                ssize_t smallMax;
+                switch (dstType)
+                {
+                    case TYP_BYTE:
+                        smallMin = INT8_MIN;
+                        smallMax = INT8_MAX;
+                        break;
+                    case TYP_UBYTE:
+                        smallMin = 0;
+                        smallMax = UINT8_MAX;
+                        break;
+                    case TYP_SHORT:
+                        smallMin = INT16_MIN;
+                        smallMax = INT16_MAX;
+                        break;
+                    case TYP_USHORT:
+                        smallMin = 0;
+                        smallMax = UINT16_MAX;
+                        break;
+                    default:
+                        unreached();
+                }
+
+                // Store the saturating R -> int result in a temp so we can reference it
+                // multiple times without re-evaluating the cast.
+                unsigned tLcl = lvaGrabTemp(true DEBUGARG("R->smallType saturating clamp"));
+                lvaTable[tLcl].lvType = TYP_INT;
+                GenTree* storeT       = gtNewTempStore(tLcl, oper);
+
+                // gtMask = -(t > smallMax) : 0 if t <= smallMax, -1 if t > smallMax.
+                // ltMask = -(t < smallMin) : 0 if t >= smallMin, -1 if t < smallMin.
+                // Compares produce 0/1 TYP_INT, so GT_NEG yields a 0/-1 mask.
+                auto newGtMask = [&]() -> GenTree* {
+                    return gtNewOperNode(GT_NEG, TYP_INT,
+                                         gtNewOperNode(GT_GT, TYP_INT, gtNewLclvNode(tLcl, TYP_INT),
+                                                       gtNewIconNode(smallMax)));
+                };
+                auto newLtMask = [&]() -> GenTree* {
+                    return gtNewOperNode(GT_NEG, TYP_INT,
+                                         gtNewOperNode(GT_LT, TYP_INT, gtNewLclvNode(tLcl, TYP_INT),
+                                                       gtNewIconNode(smallMin)));
+                };
+
+                // anyOvf  = gtMask | ltMask (-1 if t is out of range, 0 otherwise)
+                // inRange = ~anyOvf         (-1 if t is in range, 0 otherwise)
+                GenTree* anyOvf  = gtNewOperNode(GT_OR, TYP_INT, newGtMask(), newLtMask());
+                GenTree* inRange = gtNewOperNode(GT_NOT, TYP_INT, anyOvf);
+
+                // result = (gtMask & smallMax) | (inRange & t) [| (ltMask & smallMin)]
+                GenTree* maxPart  = gtNewOperNode(GT_AND, TYP_INT, newGtMask(), gtNewIconNode(smallMax));
+                GenTree* keepPart = gtNewOperNode(GT_AND, TYP_INT, inRange, gtNewLclvNode(tLcl, TYP_INT));
+                GenTree* result   = gtNewOperNode(GT_OR, TYP_INT, maxPart, keepPart);
+                if (smallMin != 0)
+                {
+                    GenTree* minPart = gtNewOperNode(GT_AND, TYP_INT, newLtMask(), gtNewIconNode(smallMin));
+                    result           = gtNewOperNode(GT_OR, TYP_INT, result, minPart);
+                }
+
+                oper = gtNewOperNode(GT_COMMA, TYP_INT, storeT, result);
+            }
+
             tree->AsCast()->CastOp() = oper;
             // We must not mistreat the original cast, which was from a floating point type,
             // as from an unsigned type, since we now have a TYP_INT node for the source and
