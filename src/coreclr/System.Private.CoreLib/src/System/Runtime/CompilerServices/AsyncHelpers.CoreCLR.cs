@@ -639,36 +639,6 @@ namespace System.Runtime.CompilerServices
         /// <param name="task">Task whose completion we are awaiting.</param>
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
-        private static unsafe void TransparentAwaitOfT<T>(Task<T> task)
-        {
-            ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
-            Continuation? sentinelContinuation = state.SentinelContinuation ??= new Continuation();
-
-            TaskContinuation? taskCont = state.CachedTaskContinuation;
-            if (taskCont != null)
-            {
-                state.CachedTaskContinuation = null;
-            }
-            else
-            {
-                taskCont = new TaskContinuation();
-            }
-
-            taskCont.Initialize<T>(task);
-
-            sentinelContinuation.Next = taskCont;
-            state.StackState->TaskContinuation = taskCont;
-
-            state.CaptureContexts();
-            AsyncSuspend(taskCont);
-        }
-
-        /// <summary>
-        /// Used by internal thunks that implement awaiting on Task.
-        /// </summary>
-        /// <param name="task">Task whose completion we are awaiting.</param>
-        [BypassReadyToRun]
-        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
         private static unsafe T TransparentAwaitOfT<T>(Task<T> task)
         {
             ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
