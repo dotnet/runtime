@@ -129,7 +129,7 @@ class IssueGenerator:
         #  perform this check, the database often wants us to generate multiple issues for a given build ID.
         # TODO: Investigate why we can't use stamp filtering on new issues more deeply, it seems like it should work.
         if not creating_new_issue and (len(unstamped_affected) == 0):
-            affected_build_list = ", ".join([ap["build_id"] for ap in affected])
+            affected_build_list = ", ".join([str(ap["build_id"]) for ap in affected])
             print(f"All affected builds ({affected_build_list}) have stamps; skipping.")
             return
 
