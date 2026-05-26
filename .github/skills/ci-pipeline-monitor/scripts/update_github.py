@@ -122,10 +122,15 @@ class IssueGenerator:
         ))
 
         # Filter affected list to build IDs that don't have stamp files
-        affected = [ap for ap in affected if not os.path.exists(self.get_stamp_path(ap))]
+        unstamped_affected = [ap for ap in affected if not os.path.exists(self.get_stamp_path(ap))]
 
-        if len(affected) == 0:
-            print("All affected builds have stamps; skipping.")
+        # If the database tells us to add a comment instead of creating a new issue, ensure we don't generate redundant
+        #  comments for builds that we've already generated a comment for before. When creating new issues we can't
+        #  perform this check, the database often wants us to generate multiple issues for a given build ID.
+        # TODO: Investigate why we can't use stamp filtering on new issues more deeply, it seems like it should work.
+        if not creating_new_issue and (len(unstamped_affected) == 0):
+            affected_build_list = ", ".join([ap["build_id"] for ap in affected])
+            print(f"All affected builds ({affected_build_list}) have stamps; skipping.")
             return
 
         out.append(f"**Failed in ({len(affected)}):**")
