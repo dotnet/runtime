@@ -103,7 +103,7 @@ The .NET Foundation licenses this file to you under the MIT license.
   <PropertyGroup Condition="'$(IlcCompileDependsOn)'=='' and '$(NativeCompilationDuringPublish)' != 'false'">
     <IlcCompileDependsOn Condition="'$(BuildingFrameworkLibrary)' != 'true'">Compile;ComputeIlcCompileInputs</IlcCompileDependsOn>
     <IlcCompileDependsOn Condition="'$(IlcMultiModule)' == 'true' and '$(BuildingFrameworkLibrary)' != 'true'">$(IlcCompileDependsOn);BuildFrameworkLib</IlcCompileDependsOn>
-    <IlcCompileDependsOn Condition="'$(FatExecutable)' == 'true'">$(IlcCompileDependsOn);ComputeFatExecutableInputs</IlcCompileDependsOn>
+    <IlcCompileDependsOn>$(IlcCompileDependsOn);ComputeAggregateExecutableInputs</IlcCompileDependsOn>
     <IlcCompileDependsOn>$(IlcCompileDependsOn);SetupOSSpecificProps</IlcCompileDependsOn>
   </PropertyGroup>
 
@@ -172,42 +172,43 @@ The .NET Foundation licenses this file to you under the MIT license.
     </ItemGroup>
   </Target>
 
-  <Target Name="ComputeFatExecutableInputs"
-          Condition="'$(FatExecutable)' == 'true'"
+  <Target Name="ComputeAggregateExecutableInputs"
           DependsOnTargets="ResolveReferences">
 
-    <Error Condition="'$(OutputType)' != 'Library'" Text="FatExecutable requires OutputType=Library." />
-    <Error Condition="'$(NativeLib)' != 'Shared'" Text="FatExecutable requires NativeLib=Shared." />
-
     <ItemGroup>
-      <_FatExecutableReferencePath Include="@(ReferencePath)"
-                                   Condition="'%(ReferencePath.ReferenceSourceTarget)' == 'ProjectReference' and '%(ReferencePath.IncludeInFatExe)' == 'true'">
+      <_AggregateExecutableReferencePath Include="@(ReferencePath)"
+                                   Condition="'%(ReferencePath.ReferenceSourceTarget)' == 'ProjectReference' and '%(ReferencePath.IncludeInAggregateExecutable)' == 'true'">
         <AssemblyName>%(ReferencePath.Filename)</AssemblyName>
-        <SanitizedAssemblyName>__FatExeShim_$([System.Text.RegularExpressions.Regex]::Replace('%(ReferencePath.Filename)', '[^A-Za-z0-9_]', '_'))</SanitizedAssemblyName>
+        <SanitizedAssemblyName>__AggregateExeShim_$([System.Text.RegularExpressions.Regex]::Replace('%(ReferencePath.Filename)', '[^A-Za-z0-9_]', '_'))</SanitizedAssemblyName>
         <AssemblyNameHash>$([MSBuild]::StableStringHash('%(ReferencePath.Filename)', 'Sha256'))</AssemblyNameHash>
         <TargetName>%(ReferencePath.Filename)</TargetName>
-      </_FatExecutableReferencePath>
-      <_FatExecutableReferencePath>
-        <EntryPointSymbol>_FatExeMain_%(SanitizedAssemblyName)_%(AssemblyNameHash)</EntryPointSymbol>
-        <ShimLinkerSubsystem Condition="'%(_FatExecutableReferencePath.LinkerSubsystem)' != ''">%(_FatExecutableReferencePath.LinkerSubsystem)</ShimLinkerSubsystem>
-        <ShimLinkerSubsystem Condition="'%(_FatExecutableReferencePath.LinkerSubsystem)' == '' and '$(LinkerSubsystem)' != ''">$(LinkerSubsystem)</ShimLinkerSubsystem>
-        <ShimLinkerSubsystem Condition="'%(_FatExecutableReferencePath.LinkerSubsystem)' == '' and '$(LinkerSubsystem)' == ''">CONSOLE</ShimLinkerSubsystem>
-        <ShimSource>$(NativeIntermediateOutputPath)%(AssemblyName).fatexe.c</ShimSource>
-        <ShimObject>$(NativeIntermediateOutputPath)%(AssemblyName).fatexe$(NativeObjectExt)</ShimObject>
-        <ShimCompileRspFile>$(NativeIntermediateOutputPath)%(AssemblyName).fatexe.cl.rsp</ShimCompileRspFile>
-        <ShimLinkRspFile>$(NativeIntermediateOutputPath)%(AssemblyName).fatexe.link.rsp</ShimLinkRspFile>
+      </_AggregateExecutableReferencePath>
+      <_AggregateExecutableReferencePath>
+        <EntryPointSymbol>_AggregateExeMain_%(SanitizedAssemblyName)_%(AssemblyNameHash)</EntryPointSymbol>
+        <ShimLinkerSubsystem Condition="'%(_AggregateExecutableReferencePath.LinkerSubsystem)' != ''">%(_AggregateExecutableReferencePath.LinkerSubsystem)</ShimLinkerSubsystem>
+        <ShimLinkerSubsystem Condition="'%(_AggregateExecutableReferencePath.LinkerSubsystem)' == '' and '$(LinkerSubsystem)' != ''">$(LinkerSubsystem)</ShimLinkerSubsystem>
+        <ShimLinkerSubsystem Condition="'%(_AggregateExecutableReferencePath.LinkerSubsystem)' == '' and '$(LinkerSubsystem)' == ''">CONSOLE</ShimLinkerSubsystem>
+        <ShimSource>$(NativeIntermediateOutputPath)%(AssemblyName).aggregateexe.c</ShimSource>
+        <ShimObject>$(NativeIntermediateOutputPath)%(AssemblyName).aggregateexe$(NativeObjectExt)</ShimObject>
+        <ShimCompileRspFile>$(NativeIntermediateOutputPath)%(AssemblyName).aggregateexe.cl.rsp</ShimCompileRspFile>
+        <ShimLinkRspFile>$(NativeIntermediateOutputPath)%(AssemblyName).aggregateexe.link.rsp</ShimLinkRspFile>
         <ShimBinary>$(NativeOutputPath)%(TargetName)$(NativeExecutableExt)</ShimBinary>
         <ShimSymbol>$(NativeOutputPath)%(TargetName)$(NativeSymbolExt)</ShimSymbol>
-      </_FatExecutableReferencePath>
-      <_FatExecutableShim Include="%(_FatExecutableReferencePath.ShimBinary)">
-        <RelativePath>%(_FatExecutableReferencePath.TargetName)$(NativeExecutableExt)</RelativePath>
-      </_FatExecutableShim>
-      <_FatExecutableShimSymbol Include="%(_FatExecutableReferencePath.ShimSymbol)" Condition="'$(NativeDebugSymbols)' == 'true'">
-        <RelativePath>%(_FatExecutableReferencePath.TargetName)$(NativeSymbolExt)</RelativePath>
-      </_FatExecutableShimSymbol>
+      </_AggregateExecutableReferencePath>
+      <_AggregateExecutableShim Include="%(_AggregateExecutableReferencePath.ShimBinary)">
+        <RelativePath>%(_AggregateExecutableReferencePath.TargetName)$(NativeExecutableExt)</RelativePath>
+      </_AggregateExecutableShim>
+      <_AggregateExecutableShimSymbol Include="%(_AggregateExecutableReferencePath.ShimSymbol)" Condition="'$(NativeDebugSymbols)' == 'true'">
+        <RelativePath>%(_AggregateExecutableReferencePath.TargetName)$(NativeSymbolExt)</RelativePath>
+      </_AggregateExecutableShimSymbol>
     </ItemGroup>
 
-    <Error Condition="'@(_FatExecutableReferencePath)' == ''" Text="FatExecutable requires at least one ProjectReference with IncludeInFatExe=true." />
+    <PropertyGroup>
+      <AggregateExecutable Condition="'$(NativeLib)' == 'Shared' and '@(_AggregateExecutableReferencePath)' != ''">true</AggregateExecutable>
+    </PropertyGroup>
+
+    <Error Condition="'@(_AggregateExecutableReferencePath)' != '' and '$(OutputType)' != 'Library'" Text="IncludeInAggregateExecutable requires OutputType=Library." />
+    <Error Condition="'@(_AggregateExecutableReferencePath)' != '' and '$(NativeLib)' != 'Shared'" Text="IncludeInAggregateExecutable requires NativeLib=Shared." />
   </Target>
 
   <!--
@@ -328,8 +329,8 @@ The .NET Foundation licenses this file to you under the MIT license.
 
       <!-- Export the managed entry point if building a native library in custom main mode -->
       <IlcArg Condition="'$(NativeLib)' == 'Shared' and '$(CustomNativeMain)' == 'true'" Include="--export-dynamic-symbol:__managed__Main" />
-      <IlcArg Condition="'$(FatExecutable)' == 'true'" Include="@(_FatExecutableReferencePath->'--fatexe:%(AssemblyName)=%(EntryPointSymbol)')" />
-      <IlcArg Condition="'$(FatExecutable)' == 'true'" Include="@(_FatExecutableReferencePath->'--export-dynamic-symbol:%(EntryPointSymbol)')" />
+      <IlcArg Condition="'@(_AggregateExecutableReferencePath)' != ''" Include="@(_AggregateExecutableReferencePath->'--aggregateexe:%(AssemblyName)=%(EntryPointSymbol)')" />
+      <IlcArg Condition="'@(_AggregateExecutableReferencePath)' != ''" Include="@(_AggregateExecutableReferencePath->'--export-dynamic-symbol:%(EntryPointSymbol)')" />
 
       <IlcArg Condition="'$(_InstrumentReachability)' == 'true'" Include="--reachabilityinstrument" />
       <IlcArg Condition="'$(_InstrumentReachability)' == 'true'" Include="--feature:Internal.Runtime.CompilerHelpers.ReachabilityInstrumentationSupport=true" />

@@ -12,30 +12,21 @@
     <CLRTestTargetUnsupported Condition="'$(TargetsAndroid)' == 'true'">true</CLRTestTargetUnsupported>
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <CLRTestIsHosted>false</CLRTestIsHosted>
-    <CLRTestRunFile Condition="'$(TargetsWindows)' == 'true'">native\FatLibrary.exe</CLRTestRunFile>
-    <CLRTestRunFile Condition="'$(TargetsWindows)' != 'true'">./native/FatLibrary</CLRTestRunFile>
+    <CLRTestRunFile Condition="'$(TargetsWindows)' == 'true'">native\ValidatorExe.exe</CLRTestRunFile>
+    <CLRTestRunFile Condition="'$(TargetsWindows)' != 'true'">./native/ValidatorExe</CLRTestRunFile>
     <SkipInferOutputType>true</SkipInferOutputType>
-    <FatExecutable>true</FatExecutable>
     <!-- warning CS2008: No source files specified -->
     <NoWarn>$(NoWarn);CS2008</NoWarn>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <CLRTestBatchPreCommands><![CDATA[
-$(CLRTestBatchPreCommands)
-copy /y native\ValidatorExe.exe native\FatLibrary.exe
-set ExePath=
-]]></CLRTestBatchPreCommands>
-
-    <CLRTestBashPreCommands><![CDATA[
-$(CLRTestBashPreCommands)
-cp native/ValidatorExe native/FatLibrary
-ExePath=
-]]></CLRTestBashPreCommands>
-  </PropertyGroup>
-
   <ItemGroup>
-    <ProjectReference Include="HelloExe\HelloExe.csproj" IncludeInFatExe="true" />
-    <ProjectReference Include="ValidatorExe\ValidatorExe.csproj" IncludeInFatExe="true" />
+    <ProjectReference Include="HelloExe\HelloExe.csproj" IncludeInAggregateExecutable="true" />
+    <ProjectReference Include="ValidatorExe\ValidatorExe.csproj" IncludeInAggregateExecutable="true" />
   </ItemGroup>
+
+  <Target Name="UseValidatorExecutableForNativeAotRun" BeforeTargets="GenerateBatchExecutionScript;GenerateBashExecutionScript">
+    <PropertyGroup>
+      <InputAssemblyName>ValidatorExe.dll</InputAssemblyName>
+    </PropertyGroup>
+  </Target>
 </Project>
