@@ -308,12 +308,12 @@ mono_llvm_replace_uses_of (LLVMValueRef var, LLVMValueRef v)
 }
 
 LLVMValueRef
-mono_llvm_create_constant_data_array (const uint8_t *data, int len)
+mono_llvm_create_constant_data_array (LLVMContextRef ctx, const uint8_t *data, int len)
 {
 #if LLVM_API_VERSION >= 1600
-	return wrap(ConstantDataArray::get (*unwrap(LLVMGetGlobalContext ()), ArrayRef(data, len)));
+	return wrap(ConstantDataArray::get (*unwrap(ctx), ArrayRef(data, len)));
 #else
-	return wrap(ConstantDataArray::get (*unwrap(LLVMGetGlobalContext ()), makeArrayRef(data, len)));
+	return wrap(ConstantDataArray::get (*unwrap(ctx), makeArrayRef(data, len)));
 #endif
 }
 
@@ -514,7 +514,7 @@ mono_llvm_add_param_attr_with_type (LLVMValueRef param, AttrKind kind, LLVMTypeR
 
 	switch (kind) {
 	case LLVM_ATTR_STRUCT_RET:
-		func->addParamAttr (n, Attribute::getWithStructRetType (*unwrap (LLVMGetGlobalContext ()), unwrap (type)));
+		func->addParamAttr (n, Attribute::getWithStructRetType (func->getContext (), unwrap (type)));
 		break;
 	default:
 		g_assert_not_reached ();
@@ -526,7 +526,7 @@ mono_llvm_add_param_byval_attr (LLVMValueRef param, LLVMTypeRef type)
 {
 	Function *func = unwrap<Argument> (param)->getParent ();
 	int n = unwrap<Argument> (param)->getArgNo ();
-	func->addParamAttr (n, Attribute::getWithByValType (*unwrap (LLVMGetGlobalContext ()), unwrap (type)));
+	func->addParamAttr (n, Attribute::getWithByValType (func->getContext (), unwrap (type)));
 }
 
 void
@@ -542,7 +542,7 @@ mono_llvm_add_instr_attr_with_type (LLVMValueRef val, int index, AttrKind kind, 
 
 	switch (kind) {
 	case LLVM_ATTR_STRUCT_RET:
-		attr = Attribute::getWithStructRetType (*unwrap (LLVMGetGlobalContext ()), unwrap (type));
+		attr = Attribute::getWithStructRetType (unwrap<CallBase> (val)->getContext (), unwrap (type));
 		unwrap<CallBase> (val)->addParamAttr (index - 1, attr);
 		break;
 	default:
@@ -553,7 +553,7 @@ mono_llvm_add_instr_attr_with_type (LLVMValueRef val, int index, AttrKind kind, 
 void
 mono_llvm_add_instr_byval_attr (LLVMValueRef val, int index, LLVMTypeRef type)
 {
-	unwrap<CallBase> (val)->addParamAttr (index - 1, Attribute::getWithByValType (*unwrap (LLVMGetGlobalContext ()), unwrap (type)));
+	unwrap<CallBase> (val)->addParamAttr (index - 1, Attribute::getWithByValType (unwrap<CallBase> (val)->getContext (), unwrap (type)));
 }
 
 void*
@@ -603,7 +603,7 @@ mono_llvm_di_create_file (void *di_builder, const char *dir, const char *file)
 void*
 mono_llvm_di_create_location (void *di_builder, void *scope, int row, int column)
 {
-	return DILocation::get (*unwrap(LLVMGetGlobalContext ()), row, column, (Metadata*)scope);
+	return DILocation::get (cast<MDNode>((Metadata*)scope)->getContext (), row, column, (Metadata*)scope);
 }
 
 void
@@ -631,7 +631,7 @@ mono_llvm_di_builder_finalize (void *di_builder)
 LLVMValueRef
 mono_llvm_get_or_insert_gc_safepoint_poll (LLVMModuleRef module)
 {
-	llvm::FunctionCallee callee = unwrap(module)->getOrInsertFunction("gc.safepoint_poll", FunctionType::get(unwrap(LLVMVoidType()), false));
+	llvm::FunctionCallee callee = unwrap(module)->getOrInsertFunction("gc.safepoint_poll", FunctionType::get(Type::getVoidTy(unwrap(module)->getContext()), false));
 	return wrap (dyn_cast<llvm::Function> (callee.getCallee ()));
 }
 
@@ -725,7 +725,7 @@ mono_llvm_register_intrinsic (LLVMModuleRef module, IntrinsicId id, LLVMTypeRef 
 			outs () << id << "\n";
 			g_assert_not_reached ();
 		}
-		auto type = Intrinsic::getType (*unwrap(LLVMGetGlobalContext ()), intrins_id);
+		auto type = Intrinsic::getType (unwrap (module)->getContext (), intrins_id);
 		*out_type = wrap (type);
 		return wrap (f);
 	} else {
@@ -749,7 +749,7 @@ mono_llvm_register_overloaded_intrinsic (LLVMModuleRef module, IntrinsicId id, L
 	for (int i = 0; i < ntypes; ++i)
 		arr [i] = unwrap (types [i]);
 	auto f = Intrinsic::getDeclaration (unwrap (module), intrins_id, { arr, (size_t)ntypes });
-	auto type = Intrinsic::getType (*unwrap(LLVMGetGlobalContext ()), intrins_id, { arr, (size_t)ntypes });
+	auto type = Intrinsic::getType (unwrap (module)->getContext (), intrins_id, { arr, (size_t)ntypes });
 	*out_type = wrap (type);
 	return wrap (f);
 }
@@ -784,8 +784,8 @@ mono_llvm_inline_asm (LLVMBuilderRef builder, LLVMTypeRef type,
 }
 
 LLVMTypeRef
-mono_llvm_get_ptr_type (void)
+mono_llvm_get_ptr_type (LLVMContextRef ctx)
 {
-	PointerType *t = PointerType::get (*unwrap (LLVMGetGlobalContext ()), 0);
+	PointerType *t = PointerType::get (*unwrap (ctx), 0);
 	return wrap (t);
 }
