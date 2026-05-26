@@ -8134,7 +8134,7 @@ public:
 
     bool IsOnHeapAndContainsReferences()
     {
-        return ContainsReferences() && !Addr()->OperIs(GT_LCL_ADDR);
+        return ContainsReferences() && !Addr()->OperIs(GT_LCL_ADDR) && ((gtFlags & GTF_IND_TGT_NOT_HEAP) == 0);
     }
 
     bool IsZeroingGcPointersOnHeap()

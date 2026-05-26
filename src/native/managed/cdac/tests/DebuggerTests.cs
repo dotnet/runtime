@@ -65,7 +65,7 @@ public class DebuggerTests
 
         TargetTestHelpers.LayoutResult debuggerLayout = GetDebuggerLayout(helpers);
         TargetTestHelpers.LayoutResult debuggerRcThreadLayout = GetDebuggerRCThreadLayout(helpers);
-        builder.AddTypes(new()
+        builder.AddTypes(new Dictionary<DataType, Target.TypeInfo>
         {
             [DataType.Debugger] = new Target.TypeInfo() { Fields = debuggerLayout.Fields, Size = debuggerLayout.Stride },
             [DataType.DebuggerRCThread] = new Target.TypeInfo() { Fields = debuggerRcThreadLayout.Fields, Size = debuggerRcThreadLayout.Stride },

@@ -69,6 +69,45 @@ struct MachineInfo;
 #define WriteProcessMemory DONT_USE_WRITEPROCESS_MEMORY
 
 
+//-----------------------------------------------------------------------------
+// CallbackAccumulator<T>
+//
+// Helper for FP_*_CALLBACK consumers on the DI side that need to collect a
+// list of values produced by the DAC and surface a single HRESULT. The
+// callback can call Push() without worrying about exceptions - the first
+// failure is captured in hrError and subsequent pushes are short-circuited.
+// After the enumeration call returns, the caller should check both the DAC's
+// returned HRESULT and acc.hrError, then consume acc.items.
+//-----------------------------------------------------------------------------
+template <typename T>
+struct CallbackAccumulator
+{
+    CQuickArrayList<T> items;
+    HRESULT            hrError;
+
+    CallbackAccumulator() : hrError(S_OK) { }
+
+    void Push(const T& item)
+    {
+        if (FAILED(hrError))
+            return;
+        HRESULT hr = S_OK;
+        EX_TRY
+        {
+            items.Push(item);
+        }
+        EX_CATCH_HRESULT(hr);
+        if (FAILED(hr))
+            hrError = hr;
+    }
+
+    static CallbackAccumulator* From(CALLBACK_DATA pUserData)
+    {
+        return reinterpret_cast<CallbackAccumulator*>(pUserData);
+    }
+};
+
+
 /* ------------------------------------------------------------------------- *
  * Forward class declarations
  * ------------------------------------------------------------------------- */
@@ -716,6 +755,10 @@ public:
         // to count this lock in m_cTotalDbgApiLocks, which is asserted to be 0 on entry
         // to public APIs.  Example of such a lock: LL_SHIM_PROCESS_DISPOSE_LOCK
         cLockNonDbgApi  = 0x00000004,
+
+        // Skip the leak assert in the destructor. Use for static-lifetime locks
+        // whose owning shutdown path is not guaranteed to run.
+        cLockAllowLeak  = 0x00000008,
     };
 
     // To prevent deadlocks, we order all locks.
@@ -1632,11 +1675,6 @@ typedef CordbEnumerator<COR_SEGMENT,
                         COR_SEGMENT,
                         ICorDebugHeapSegmentEnum, IID_ICorDebugHeapSegmentEnum,
                         IdentityConvert<COR_SEGMENT> > CordbHeapSegmentEnumerator;
-
-typedef CordbEnumerator<COR_MEMORY_RANGE,
-                        COR_MEMORY_RANGE,
-                        ICorDebugMemoryRangeEnum, IID_ICorDebugMemoryRangeEnum,
-                        IdentityConvert<COR_MEMORY_RANGE> > CordbMemoryRangeEnumerator;
 
 typedef CordbEnumerator<CorDebugExceptionObjectStackFrame,
                         CorDebugExceptionObjectStackFrame,
@@ -2919,7 +2957,6 @@ class CordbProcess :
     public ICorDebugProcess5,
     public ICorDebugProcess7,
     public ICorDebugProcess8,
-    public ICorDebugProcess11,
     public ICorDebugProcess12,
     public IDacDbiInterface::IAllocator,
     public IDacDbiInterface::IMetaDataLookup,
@@ -3132,11 +3169,6 @@ public:
     // ICorDebugProcess10 (To be removed in .NET 6, in a separate cleanup PR)
     //-----------------------------------------------------------
     COM_METHOD EnableGCNotificationEvents(BOOL fEnable);
-
-    //-----------------------------------------------------------
-    // ICorDebugProcess11
-    //-----------------------------------------------------------
-    COM_METHOD EnumerateLoaderHeapMemoryRegions(ICorDebugMemoryRangeEnum **ppRanges);
 
     //-----------------------------------------------------------
     // ICorDebugProcess12
@@ -4298,7 +4330,7 @@ private:
     BOOL IsFileMetaDataValid();
 
     // Helper to copy metadata buffer from the Target to the host.
-    void CopyRemoteMetaData(TargetBuffer buffer, CoTaskMemHolder<VOID> * pLocalBuffer);
+    void CopyRemoteMetaData(TargetBuffer buffer, VOID** pLocalBuffer);
 
 
     CordbAssembly * ResolveAssemblyInternal(mdToken tkAssemblyRef);
@@ -6041,7 +6073,7 @@ public:
     //-----------------------------------------------------------
 
     // callback used to enumerate the internal frames on a thread
-    static void GetActiveInternalFramesCallback(const DebuggerIPCE_STRData * pFrameData,
+    static void GetActiveInternalFramesCallback(const Debugger_STRData * pFrameData,
                                                 void *                 pUserData);
 
     CorDebugUserState GetUserState();
@@ -6527,7 +6559,7 @@ public:
     CordbInternalFrame(CordbThread *          pThread,
                        FramePointer           fp,
                        CordbAppDomain *       pCurrentAppDomain,
-                       const DebuggerIPCE_STRData * pData);
+                       const Debugger_STRData * pData);
 
     CordbInternalFrame(CordbThread *             pThread,
                        FramePointer              fp,
@@ -6752,11 +6784,11 @@ typedef std::function<HRESULT(DWORD index, ICorDebugValue** ppValue)> ValueGette
 class CordbValueEnum : public CordbBase, public ICorDebugValueEnum
 {
 public:
-    CordbValueEnum(CordbProcess* pProcess, 
-                   UINT maxCount, 
+    CordbValueEnum(CordbProcess* pProcess,
+                   UINT maxCount,
                    ValueGetter valueGetter,
                    NeuterList* pNeuterList);
-    
+
     virtual ~CordbValueEnum();
     virtual void Neuter();
 
@@ -6808,7 +6840,7 @@ public:
     CordbMiscFrame();
 
     // new-style constructor
-    CordbMiscFrame(DebuggerIPCE_JITFuncData * pJITFuncData);
+    CordbMiscFrame(Debugger_JITFuncData * pJITFuncData);
 
     SIZE_T             parentIP;
     FramePointer       fpParentOrSelf;

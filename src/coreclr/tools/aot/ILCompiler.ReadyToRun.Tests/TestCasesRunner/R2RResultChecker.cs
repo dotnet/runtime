@@ -335,6 +335,64 @@ internal static class R2RAssert
     }
 
     /// <summary>
+    /// Returns true if every [ASYNC] method with a ResumptionStubEntryPoint fixup is followed
+    /// immediately in emitted code by its [RESUME] stub.
+    /// </summary>
+    public static bool AsyncMethodsWithResumptionStubsAreAdjacent(ReadyToRunReader reader, out string diagnostic)
+    {
+        var methodsByRva = GetAllMethods(reader)
+            .Select(method => (Method: method, EntryPointRva: GetEntryPointRva(method)))
+            .Where(entry => entry.EntryPointRva >= 0)
+            .OrderBy(entry => entry.EntryPointRva)
+            .ToList();
+
+        var failures = new List<string>();
+        int checkedMethodCount = 0;
+        for (int i = 0; i < methodsByRva.Count; i++)
+        {
+            ReadyToRunMethod method = methodsByRva[i].Method;
+            if (!HasSignaturePrefix(method, "[ASYNC]") ||
+                !HasFixupKind(method, ReadyToRunFixupKind.ResumptionStubEntryPoint))
+            {
+                continue;
+            }
+
+            checkedMethodCount++;
+            if (i + 1 == methodsByRva.Count)
+            {
+                failures.Add($"'{method.SignatureString}' at RVA 0x{methodsByRva[i].EntryPointRva:X} is the final method.");
+                continue;
+            }
+
+            ReadyToRunMethod nextMethod = methodsByRva[i + 1].Method;
+            if (!HasSignaturePrefix(nextMethod, "[RESUME]") ||
+                StripAsyncMethodPrefix(nextMethod.SignatureString) != StripAsyncMethodPrefix(method.SignatureString))
+            {
+                failures.Add(
+                    $"'{method.SignatureString}' at RVA 0x{methodsByRva[i].EntryPointRva:X} " +
+                    $"is followed by '{nextMethod.SignatureString}' at RVA 0x{methodsByRva[i + 1].EntryPointRva:X}.");
+            }
+        }
+
+        if (checkedMethodCount == 0)
+        {
+            diagnostic = "No [ASYNC] methods with ResumptionStubEntryPoint fixups were found.";
+            return false;
+        }
+
+        if (failures.Count != 0)
+        {
+            diagnostic =
+                $"Expected each [ASYNC] method with a ResumptionStubEntryPoint fixup to be followed by its [RESUME] stub, " +
+                $"but found {failures.Count} mismatch(es):\n  {string.Join("\n  ", failures)}";
+            return false;
+        }
+
+        diagnostic = $"Found {checkedMethodCount} [ASYNC] method(s), each followed by its [RESUME] stub.";
+        return true;
+    }
+
+    /// <summary>
     /// Returns true if the R2R image contains at least one ContinuationLayout fixup.
     /// </summary>
     public static bool HasContinuationLayout(ReadyToRunReader reader, out string diagnostic)
@@ -439,6 +497,47 @@ internal static class R2RAssert
             : $"Expected fixup kind '{kind}' not found. " +
               $"Present kinds: [{string.Join(", ", presentKinds)}]";
         return found;
+    }
+
+    private static bool HasFixupKind(ReadyToRunMethod method, ReadyToRunFixupKind kind)
+    {
+        if (method.Fixups is null)
+            return false;
+
+        foreach (var cell in method.Fixups)
+        {
+            if (cell.Signature is not null && cell.Signature.FixupKind == kind)
+                return true;
+        }
+
+        return false;
+    }
+
+    private static bool HasSignaturePrefix(ReadyToRunMethod method, string prefix)
+        => method.SignaturePrefixes is not null && method.SignaturePrefixes.Contains(prefix);
+
+    private static int GetEntryPointRva(ReadyToRunMethod method)
+    {
+        foreach (RuntimeFunction runtimeFunction in method.RuntimeFunctions)
+        {
+            if (runtimeFunction.Id == method.EntryPointRuntimeFunctionId)
+                return runtimeFunction.StartAddress;
+        }
+
+        return -1;
+    }
+
+    private static string StripAsyncMethodPrefix(string signature)
+    {
+        const string AsyncPrefix = "[ASYNC] ";
+        const string ResumePrefix = "[RESUME] ";
+        if (signature.StartsWith(AsyncPrefix, StringComparison.Ordinal))
+            return signature.Substring(AsyncPrefix.Length);
+
+        if (signature.StartsWith(ResumePrefix, StringComparison.Ordinal))
+            return signature.Substring(ResumePrefix.Length);
+
+        return signature;
     }
 
     /// <summary>

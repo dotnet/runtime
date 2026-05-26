@@ -33,61 +33,74 @@ namespace System.Security.Cryptography
         [MemberNotNullWhen(true, nameof(s_algHandle))]
         internal static new bool IsSupported => s_algHandle is not null;
 
-        protected override unsafe void DeriveRawSecretAgreementCore(X25519DiffieHellman otherParty, Span<byte> destination)
+        protected override void DeriveRawSecretAgreementCore(X25519DiffieHellman otherParty, Span<byte> destination)
         {
             Debug.Assert(destination.Length == SecretAgreementSizeInBytes);
             ThrowIfPrivateNeeded();
-            int written;
 
             if (otherParty is X25519DiffieHellmanImplementation x25519impl)
             {
-                using (SafeBCryptSecretHandle secret = Interop.BCrypt.BCryptSecretAgreement(_key, x25519impl._key))
-                {
-                    Interop.BCrypt.BCryptDeriveKey(
-                        secret,
-                        BCryptNative.KeyDerivationFunction.Raw,
-                        in Unsafe.NullRef<Interop.BCrypt.BCryptBufferDesc>(),
-                        destination,
-                        out written);
-                }
+                DeriveRawSecretAgreementWithKey(x25519impl._key, destination);
             }
             else
             {
-                Span<byte> publicKeyBytes = stackalloc byte[PublicKeySizeInBytes];
-                otherParty.ExportPublicKey(publicKeyBytes);
-
-                using (X25519DiffieHellmanImplementation otherPartyImplementation = ImportPublicKeyImpl(publicKeyBytes))
-                using (SafeBCryptSecretHandle secret = Interop.BCrypt.BCryptSecretAgreement(_key, otherPartyImplementation._key))
+                unsafe
                 {
-                    Interop.BCrypt.BCryptDeriveKey(
-                        secret,
-                        BCryptNative.KeyDerivationFunction.Raw,
-                        in Unsafe.NullRef<Interop.BCrypt.BCryptBufferDesc>(),
-                        destination,
-                        out written);
+                    Span<byte> publicKeyBytes = stackalloc byte[PublicKeySizeInBytes];
+                    otherParty.ExportPublicKey(publicKeyBytes);
+                    DeriveRawSecretAgreementWithKey(publicKeyBytes, destination);
                 }
             }
+        }
 
-            if (written != SecretAgreementSizeInBytes)
-            {
-                destination.Clear();
-                Debug.Fail($"Unexpected number of bytes written: {written}.");
-                throw new CryptographicException();
-            }
+        protected override void DeriveRawSecretAgreementCore(ReadOnlySpan<byte> otherPartyPublicKey, Span<byte> destination)
+        {
+            Debug.Assert(otherPartyPublicKey.Length == PublicKeySizeInBytes);
+            Debug.Assert(destination.Length == SecretAgreementSizeInBytes);
+            ThrowIfPrivateNeeded();
+            DeriveRawSecretAgreementWithKey(otherPartyPublicKey, destination);
+        }
 
-            // CNG with BCRYPT_NO_KEY_VALIDATION permits low-order public keys, which produce
-            // an all-zero shared secret. Other platforms reject these at
-            // derive time per RFC 7748 6.1.
-            // We still need BCRYPT_NO_KEY_VALIDATION though because there are small subgroup keys that work, which do
-            // not produce all zero shared secrets.
-            if (CryptographicOperations.FixedTimeEquals(destination, 0))
+        private void DeriveRawSecretAgreementWithKey(ReadOnlySpan<byte> otherPartyPublicKey, Span<byte> destination)
+        {
+            using (SafeBCryptKeyHandle otherPartyKey = ImportPublicKey(otherPartyPublicKey, out _))
             {
-                throw new CryptographicException();
+                DeriveRawSecretAgreementWithKey(otherPartyKey, destination);
             }
-            else
+        }
+
+        private void DeriveRawSecretAgreementWithKey(SafeBCryptKeyHandle otherPartyKey, Span<byte> destination)
+        {
+            using (SafeBCryptSecretHandle secret = Interop.BCrypt.BCryptSecretAgreement(_key, otherPartyKey))
             {
-                // BCryptDeriveKey exports with the wrong endianness.
-                destination.Reverse();
+                Interop.BCrypt.BCryptDeriveKey(
+                    secret,
+                    BCryptNative.KeyDerivationFunction.Raw,
+                    in Unsafe.NullRef<Interop.BCrypt.BCryptBufferDesc>(),
+                    destination,
+                    out int written);
+
+                if (written != SecretAgreementSizeInBytes)
+                {
+                    destination.Clear();
+                    Debug.Fail($"Unexpected number of bytes written: {written}.");
+                    throw new CryptographicException();
+                }
+
+                // CNG with BCRYPT_NO_KEY_VALIDATION permits low-order public keys, which produce
+                // an all-zero shared secret. Other platforms reject these at
+                // derive time per RFC 7748 6.1.
+                // We still need BCRYPT_NO_KEY_VALIDATION though because there are small subgroup keys that work, which do
+                // not produce all zero shared secrets.
+                if (CryptographicOperations.FixedTimeEquals(destination, 0))
+                {
+                    throw new CryptographicException();
+                }
+                else
+                {
+                    // BCryptDeriveKey exports with the wrong endianness.
+                    destination.Reverse();
+                }
             }
         }
 
@@ -150,12 +163,9 @@ namespace System.Security.Cryptography
             return new X25519DiffieHellmanImplementation(key, hasPrivate: true, privatePreservation: preservation);
         }
 
-        internal static unsafe X25519DiffieHellmanImplementation ImportPublicKeyImpl(ReadOnlySpan<byte> source)
+        internal static X25519DiffieHellmanImplementation ImportPublicKeyImpl(ReadOnlySpan<byte> source)
         {
-            Span<byte> reducedPublicKey = stackalloc byte[PublicKeySizeInBytes];
-            bool requiredReduction = X25519WindowsHelpers.ReducePublicKey(source, reducedPublicKey);
-
-            SafeBCryptKeyHandle key = ImportKey(false, reducedPublicKey, out _);
+            SafeBCryptKeyHandle key = ImportPublicKey(source, out bool requiredReduction);
 
             Debug.Assert(!key.IsInvalid);
             return new X25519DiffieHellmanImplementation(
@@ -163,6 +173,20 @@ namespace System.Security.Cryptography
                 hasPrivate: false,
                 privatePreservation: 0,
                 requiredReduction ? source.ToArray() : null);
+        }
+
+        private static SafeBCryptKeyHandle ImportPublicKey(ReadOnlySpan<byte> source, out bool requiredReduction)
+        {
+            scoped Span<byte> reducedPublicKey;
+
+            unsafe
+            {
+                reducedPublicKey = stackalloc byte[PublicKeySizeInBytes];
+            }
+
+            requiredReduction = X25519WindowsHelpers.ReducePublicKey(source, reducedPublicKey);
+
+            return ImportKey(false, reducedPublicKey, out _);
         }
 
         private void ExportKey(bool privateKey, Span<byte> destination)

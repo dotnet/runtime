@@ -94,8 +94,10 @@
     <Compile Include="..\Common\RequiredKeywordTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\RequiredKeywordTests.cs" />
     <Compile Include="..\Common\SampleTestData.OrderPayload.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\SampleTestData.OrderPayload.cs" />
     <Compile Include="..\Common\SerializerTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\SerializerTests.cs" />
+    <Compile Include="..\Common\StructuralJsonTypeClassifierTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\StructuralJsonTypeClassifierTests.cs" />
     <Compile Include="..\Common\Utf8MemoryStream.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\Utf8MemoryStream.cs" />
     <Compile Include="..\Common\UnmappedMemberHandlingTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\UnmappedMemberHandlingTests.cs" />
+    <Compile Include="..\Common\UnionTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\UnionTests.cs" />
     <Compile Include="..\Common\TestClasses\TestClasses.ConcurrentCollections.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\TestClasses\TestClasses.ConcurrentCollections.cs" />
     <Compile Include="..\Common\TestClasses\TestClasses.Constructor.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\TestClasses\TestClasses.Constructor.cs" />
     <Compile Include="..\Common\TestClasses\TestClasses.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\TestClasses\TestClasses.cs" />
@@ -225,6 +227,9 @@
     <Compile Include="Serialization\OptionsTests.cs" />
     <Compile Include="Serialization\PolymorphicTests.cs" />
     <Compile Include="Serialization\PolymorphicTests.CustomTypeHierarchies.cs" />
+    <Compile Include="Serialization\PolymorphicTests.TypeClassifier.cs" />
+    <Compile Include="Serialization\StructuralJsonTypeClassifierTests.cs" />
+    <Compile Include="Serialization\UnionTests.cs" />
     <Compile Include="Serialization\PropertyNameTests.cs" />
     <Compile Include="Serialization\PropertyOrderTests.cs" />
     <Compile Include="Serialization\PropertyVisibilityTests.cs" />
@@ -274,8 +279,10 @@
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicDependencyAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\SetsRequiredMembersAttribute.cs" Link="System.Private.CoreLib\System\Diagnostics\CodeAnalysis\SetsRequiredMembersAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CompilerFeatureRequiredAttribute.cs" Link="System.Private.CoreLib\System\Runtime\CompilerServices\CompilerFeatureRequiredAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IUnion.cs" Link="System.Private.CoreLib\System\Runtime\CompilerServices\IUnion.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\RequiredMemberAttribute.cs" Link="System.Private.CoreLib\System\Runtime\CompilerServices\RequiredMemberAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\UnionAttribute.cs" Link="System.Private.CoreLib\System\Runtime\CompilerServices\UnionAttribute.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">

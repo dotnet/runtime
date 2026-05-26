@@ -921,7 +921,7 @@ public:
 
 #ifdef FEATURE_INTERPRETER
 public:
-    InterpThreadContext *m_pInterpThreadContext;
+    PTR_InterpThreadContext m_pInterpThreadContext;
     InterpThreadContext* GetInterpThreadContext();
     InterpThreadContext* GetOrCreateInterpThreadContext();
 #endif // FEATURE_INTERPRETER
@@ -3779,6 +3779,9 @@ struct cdac_data<Thread>
         "Thread::m_ExceptionState is of type ThreadExceptionState");
     static constexpr size_t ExceptionTracker = offsetof(Thread, m_ExceptionState) + offsetof(ThreadExceptionState, m_pCurrentTracker);
     static constexpr size_t DebuggerFilterContext = offsetof(Thread, m_debuggerFilterContext);
+#ifdef TARGET_WINDOWS
+    static constexpr size_t ThreadHandle = offsetof(Thread, m_ThreadHandle);
+#endif
 #ifndef TARGET_UNIX
     static constexpr size_t UEWatsonBucketTrackerBuckets = offsetof(Thread, m_ExceptionState) + offsetof(ThreadExceptionState, m_UEWatsonBucketTracker)
     + offsetof(EHWatsonBucketTracker, m_WatsonUnhandledInfo.m_pUnhandledBuckets);
