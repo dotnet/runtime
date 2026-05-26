@@ -29,4 +29,13 @@
       <InputAssemblyName>ValidatorExe.dll</InputAssemblyName>
     </PropertyGroup>
   </Target>
+
+  <Target Name="WriteHelixExtraExecutablesList" AfterTargets="NativeCompile" Condition="'$(TargetsWindows)' != 'true'">
+    <PropertyGroup>
+      <_HelloExeRelative>$(BuildProjectRelativeDir)native/HelloExe</_HelloExeRelative>
+      <_HelloExeRelative Condition="'$(BuildProjectRelativeDir)' == ''">$([System.IO.Path]::GetRelativePath('$(TestBinDir)', '$(TargetDir)native/HelloExe'))</_HelloExeRelative>
+    </PropertyGroup>
+
+    <WriteLinesToFile File="$(TargetDir)helix-extra-executables.list" Lines="$(_HelloExeRelative)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+  </Target>
 </Project>
