@@ -647,6 +647,11 @@ private:
     static const ULONG  cPendingMaxCount = 32;
     T_RUNTIME_FUNCTION  pendingTable[cPendingMaxCount];
     ULONG               cPendingCount;
+
+    // Per-table locks. Each UnwindInfoTable corresponds to one RangeSection, and
+    // independent RangeSections can publish/unpublish concurrently.
+    Crst                m_publishLock; // Protects the main table and OS registration.
+    Crst                m_pendingLock; // Protects the pending table only.
 #endif // defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
 };
 
