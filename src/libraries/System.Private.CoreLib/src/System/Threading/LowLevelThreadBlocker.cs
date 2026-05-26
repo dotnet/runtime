@@ -27,7 +27,9 @@ namespace System.Threading
     /// When OS provides a compare-and-wait API, such as futex, we use that.
     /// Otherwise we fallback to a heavier, but more portable condvar/mutex implementation.
     /// </summary>
+#pragma warning disable CA1852 // LowLevelThreadBlocker is derived from in some targets
     internal unsafe class LowLevelThreadBlocker : IDisposable
+#pragma warning restore CA1852
     {
         // We keep Event based implementation for comparison/reference/fallback purposes.
 #if USE_EVENT
