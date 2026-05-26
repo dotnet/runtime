@@ -2802,6 +2802,16 @@ HRESULT CordbObjectValue::GetCachedInterfaceTypes(
 #endif
 }
 
+#if defined(FEATURE_COMINTEROP)
+namespace
+{
+    void RcwInterfacePointerCallback(CORDB_ADDRESS itfPtr, CALLBACK_DATA pUserData)
+    {
+        CallbackAccumulator<CORDB_ADDRESS>::From(pUserData)->Push(itfPtr);
+    }
+}
+#endif // FEATURE_COMINTEROP
+
 HRESULT CordbObjectValue::GetCachedInterfacePointers(
                         BOOL bIInspectableOnly,
                         ULONG32 celt,
@@ -2825,25 +2835,29 @@ HRESULT CordbObjectValue::GetCachedInterfacePointers(
     HRESULT hr = S_OK;
     ULONG32 cItfs = 0;
 
-    // retrieve interface types
+    CallbackAccumulator<CORDB_ADDRESS> acc;
 
-    CORDB_ADDRESS objAddr = m_valueHome.GetAddress();
-
-    DacDbiArrayList<CORDB_ADDRESS> dacItfPtrs;
-    EX_TRY
+    // The RCW interface pointer cache only holds non-IInspectable interfaces, so when the caller
+    // asks for IInspectable-only pointers the result is always empty.
+    if (!bIInspectableOnly)
     {
-        IDacDbiInterface* pDAC = GetProcess()->GetDAC();
-        VMPTR_Object vmObj;
-        IfFailThrow(pDAC->GetObject(objAddr, &vmObj));
+        CORDB_ADDRESS objAddr = m_valueHome.GetAddress();
 
-        // retrieve type info from LS
-        IfFailThrow(pDAC->GetRcwCachedInterfacePointers(vmObj, bIInspectableOnly, &dacItfPtrs));
+        EX_TRY
+        {
+            IDacDbiInterface* pDAC = GetProcess()->GetDAC();
+            VMPTR_Object vmObj;
+            IfFailThrow(pDAC->GetObject(objAddr, &vmObj));
+
+            IfFailThrow(pDAC->EnumerateRcwCachedInterfacePointers(vmObj, &RcwInterfacePointerCallback, &acc));
+        }
+        EX_CATCH_HRESULT(hr);
+        IfFailRet(hr);
+        IfFailRet(acc.hrError);
     }
-    EX_CATCH_HRESULT(hr);
-    IfFailRet(hr);
 
     // synthesize CordbType instances
-    cItfs = (ULONG32)dacItfPtrs.Count();
+    cItfs = (ULONG32)acc.items.Size();
 
     if (pcEltFetched != NULL && ptrs == NULL)
     {
@@ -2859,7 +2873,7 @@ HRESULT CordbObjectValue::GetCachedInterfacePointers(
     if (ptrs != NULL && *pcEltFetched > 0)
     {
         for (ULONG32 i = 0; i < *pcEltFetched; ++i)
-            ptrs[i] = dacItfPtrs[i];
+            ptrs[i] = acc.items[i];
     }
 
     return (*pcEltFetched == celt ? S_OK : S_FALSE);

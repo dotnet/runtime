@@ -7857,72 +7857,25 @@ DONE_MORPHING_CHILDREN:
 
         case GT_EQ:
         case GT_NE:
-        {
-            fgPushConstantsRight(tree->AsOp());
-            assert(tree->OperIsCompare());
-
-            oper = tree->OperGet();
-            op1  = tree->gtGetOp1();
-            op2  = tree->gtGetOp2();
-
-            if (op2->IsIntegralConst())
-            {
-                tree = fgOptimizeEqualityComparisonWithConst(tree->AsOp());
-                assert(tree->OperIsCompare());
-
-                oper = tree->OperGet();
-                op1  = tree->gtGetOp1();
-                op2  = tree->gtGetOp2();
-            }
-            break;
-        }
-
         case GT_LT:
         case GT_LE:
         case GT_GE:
         case GT_GT:
         {
+            assert(tree->OperIsCmpCompare());
             fgPushConstantsRight(tree->AsOp());
-            assert(tree->OperIsCompare());
 
+            tree = fgOptimizeRelationalComparison(tree->AsOp());
+            if (!tree->OperIsBinary())
+            {
+                return tree;
+            }
+
+            typ  = tree->TypeGet();
             oper = tree->OperGet();
             op1  = tree->gtGetOp1();
             op2  = tree->gtGetOp2();
 
-            if (op1->OperIs(GT_CAST) || op2->OperIs(GT_CAST))
-            {
-                tree = fgOptimizeRelationalComparisonWithCasts(tree->AsOp());
-                oper = tree->OperGet();
-                op1  = tree->gtGetOp1();
-                op2  = tree->gtGetOp2();
-            }
-
-            if (op2->IsIntegralConst())
-            {
-                tree = fgOptimizeRelationalComparisonWithConst(tree->AsOp());
-                oper = tree->OperGet();
-                op1  = tree->gtGetOp1();
-                op2  = tree->gtGetOp2();
-            }
-
-            if (opts.OptimizationEnabled() && fgGlobalMorph)
-            {
-                // Normalize unsigned comparisons to signed if both operands a known to be never negative.
-                if (tree->IsUnsigned() && varTypeIsIntegral(op1) && op1->IsNeverNegative(this) &&
-                    op2->IsNeverNegative(this))
-                {
-                    tree->ClearUnsigned();
-                }
-
-                if (op2->IsIntegralConst() || op1->IsIntegralConst())
-                {
-                    tree = fgOptimizeRelationalComparisonWithFullRangeConst(tree->AsOp());
-                    if (tree->OperIs(GT_CNS_INT))
-                    {
-                        return tree;
-                    }
-                }
-            }
             break;
         }
 
@@ -8172,16 +8125,6 @@ DONE_MORPHING_CHILDREN:
             if (opts.OptimizationDisabled())
             {
                 break;
-            }
-
-            // Remove double negation/not.
-            if (op1->OperIs(oper))
-            {
-                JITDUMP("Remove double negation/not\n")
-                GenTree* op1op1 = op1->gtGetOp1();
-                DEBUG_DESTROY_NODE(tree);
-                DEBUG_DESTROY_NODE(op1);
-                return op1op1;
             }
 
             // Distribute negation over simple multiplication/division expressions
@@ -8828,10 +8771,65 @@ GenTree* Compiler::fgOptimizeBitCast(GenTreeUnOp* bitCast)
 }
 
 //------------------------------------------------------------------------
+// fgOptimizeRelationalComparison: Optimizes the GT_EQ/GT_NE/GT_LT/GT_LE/GT_GE/GT_GT tree
+//
+// Arguments:
+//    cmp - The compare tree
+//
+// Return Value:
+//    The optimized tree that can have any shape.
+//
+GenTree* Compiler::fgOptimizeRelationalComparison(GenTreeOp* cmp)
+{
+    assert(cmp->OperIsCmpCompare());
+
+    GenTree* tree = cmp;
+
+    // TODO-CQ: Should be called for all comparisons
+    if (tree->OperIs(GT_LT, GT_LE, GT_GE, GT_GT) &&
+        (tree->gtGetOp1()->OperIs(GT_CAST) || tree->gtGetOp2()->OperIs(GT_CAST)))
+    {
+        tree = fgOptimizeRelationalComparisonWithCasts(tree->AsOp());
+    }
+
+    if (tree->OperIs(GT_LT, GT_LE, GT_GE, GT_GT))
+    {
+        if (tree->gtGetOp2()->IsIntegralConst())
+        {
+            tree = fgOptimizeRelationalComparisonWithConst(tree->AsOp())->AsOp();
+        }
+    }
+    else if (tree->OperIs(GT_EQ, GT_NE))
+    {
+        if (tree->gtGetOp2()->IsIntegralConst())
+        {
+            tree = fgOptimizeEqualityComparisonWithConst(tree->AsOp());
+        }
+    }
+
+    if (opts.OptimizationEnabled() && fgGlobalMorph && tree->OperIs(GT_LT, GT_LE, GT_GE, GT_GT))
+    {
+        // Normalize unsigned comparisons to signed if both operands a known to be never negative.
+        if (tree->IsUnsigned() && varTypeIsIntegral(tree->gtGetOp1()) && tree->gtGetOp1()->IsNeverNegative(this) &&
+            tree->gtGetOp2()->IsNeverNegative(this))
+        {
+            tree->ClearUnsigned();
+        }
+
+        if (tree->gtGetOp1()->IsIntegralConst() || tree->gtGetOp2()->IsIntegralConst())
+        {
+            tree = fgOptimizeRelationalComparisonWithFullRangeConst(tree->AsOp());
+        }
+    }
+
+    return tree;
+}
+
+//------------------------------------------------------------------------
 // fgOptimizeEqualityComparisonWithConst: optimizes various EQ/NE(OP, CONST) patterns.
 //
 // Arguments:
-//    cmp - The GT_NE/GT_EQ tree the second operand of which is an integral constant
+//    cmp - The GT_EQ/GT_NE tree the second operand of which is an integral constant
 //
 // Return Value:
 //    The optimized tree, "cmp" in case no optimizations were done.
@@ -9120,7 +9118,7 @@ SKIP:
 // them into zero/one.
 //
 // Arguments:
-//   cmp - the GT_LT/GT_GT tree to morph.
+//   cmp - the GT_LT/GT_LE/GT_GE/GT_GT tree to morph.
 //
 // Return Value:
 //   1. The unmodified "cmp" tree.
@@ -9131,6 +9129,8 @@ SKIP:
 //
 GenTree* Compiler::fgOptimizeRelationalComparisonWithFullRangeConst(GenTreeOp* cmp)
 {
+    assert(cmp->OperIsCmpCompare());
+
     if (gtTreeHasSideEffects(cmp, GTF_SIDE_EFFECT))
     {
         return cmp;
@@ -9245,7 +9245,7 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithFullRangeConst(GenTreeOp* c
 // them, if possible, into comparisons against zero.
 //
 // Arguments:
-//   cmp - the GT_LE/GT_LT/GT_GE/GT_GT tree to morph.
+//   cmp - the GT_LT/GT_LE/GT_GE/GT_GT tree to morph.
 //
 // Return Value:
 //   The "cmp" tree, possibly with a modified oper.
@@ -9257,7 +9257,7 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithFullRangeConst(GenTreeOp* c
 //
 GenTree* Compiler::fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp)
 {
-    assert(cmp->OperIs(GT_LE, GT_LT, GT_GE, GT_GT));
+    assert(cmp->OperIs(GT_LT, GT_LE, GT_GE, GT_GT));
     assert(cmp->gtGetOp2()->IsIntegralConst());
 
     GenTree*             op1 = cmp->gtGetOp1();
@@ -10933,7 +10933,7 @@ GenTree* Compiler::fgOptimizeBitwiseAnd(GenTreeOp* andOp)
 //   These patterns quite often show up along with index checks
 //
 // Arguments:
-//   cmp - the GT_LE/GT_LT/GT_GE/GT_GT tree to morph.
+//   cmp - the GT_EQ/GT_NE/GT_LT/GT_LE/GT_GE/GT_GT tree to morph.
 //
 // Return Value:
 //   Returns the same tree where operands might have narrower types
@@ -10943,15 +10943,12 @@ GenTree* Compiler::fgOptimizeBitwiseAnd(GenTreeOp* andOp)
 //
 GenTree* Compiler::fgOptimizeRelationalComparisonWithCasts(GenTreeOp* cmp)
 {
-    assert(cmp->OperIs(GT_LE, GT_LT, GT_GE, GT_GT));
+    assert(cmp->OperIsCmpCompare());
+    assert(cmp->gtGetOp1()->OperIs(GT_CAST) || cmp->gtGetOp2()->OperIs(GT_CAST));
+    assert(genActualType(cmp->gtGetOp1()) == genActualType(cmp->gtGetOp2()));
 
     GenTree* op1 = cmp->gtGetOp1();
     GenTree* op2 = cmp->gtGetOp2();
-
-    // Caller is expected to call this function only if we have at least one CAST node
-    assert(op1->OperIs(GT_CAST) || op2->OperIs(GT_CAST));
-
-    assert(genActualType(op1) == genActualType(op2));
 
     if (!op1->TypeIs(TYP_LONG))
     {
@@ -15406,7 +15403,6 @@ PhaseStatus Compiler::fgRetypeImplicitByRefArgs()
                 // Propagate address-taken-ness and do-not-enregister-ness.
                 newVarDsc->SetAddressExposed(varDsc->IsAddressExposed() DEBUGARG(varDsc->GetAddrExposedReason()));
                 newVarDsc->lvDoNotEnregister       = varDsc->lvDoNotEnregister;
-                newVarDsc->lvLiveInOutOfHndlr      = varDsc->lvLiveInOutOfHndlr;
                 newVarDsc->lvSingleDef             = varDsc->lvSingleDef;
                 newVarDsc->lvSingleDefRegCandidate = varDsc->lvSingleDefRegCandidate;
                 newVarDsc->lvSpillAtSingleDef      = varDsc->lvSpillAtSingleDef;

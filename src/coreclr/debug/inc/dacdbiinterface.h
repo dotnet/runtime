@@ -1205,12 +1205,12 @@ public:
                          const DT_CONTEXT * pContext) = 0;
 
     //
-    // Fill in the DebuggerIPCE_STRData structure with information about the current frame
+    // Fill in the Debugger_STRData structure with information about the current frame
     // where the stackwalker is stopped at.
     //
     // Arguments:
     //    pSFIHandle - the handle to the stackwalker
-    //    pFrameData - the DebuggerIPCE_STRData to be filled out;
+    //    pFrameData - the Debugger_STRData to be filled out;
     //                 it can be NULL if you just want to know the frame type
     //    pRetVal - [out] The type of the current frame.
     //
@@ -1218,7 +1218,7 @@ public:
     //    S_OK on success; otherwise, an appropriate failure HRESULT.
     //
 
-    virtual HRESULT STDMETHODCALLTYPE GetStackWalkCurrentFrameInfo(StackWalkHandle pSFIHandle, OPTIONAL DebuggerIPCE_STRData * pFrameData, OUT FrameType * pRetVal) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetStackWalkCurrentFrameInfo(StackWalkHandle pSFIHandle, OPTIONAL Debugger_STRData * pFrameData, OUT FrameType * pRetVal) = 0;
 
     //
     // Get the number of internal frames on the specified thread.
@@ -1245,7 +1245,7 @@ public:
 
     //
     // Enumerate the internal frames on the specified thread and invoke the provided callback on each of
-    // them.  Information about the internal frame is stored in the DebuggerIPCE_STRData.
+    // them.  Information about the internal frame is stored in the Debugger_STRData.
     //
     // Arguments:
     //    vmThread - the thread to be walked fpCallback - callback function invoked on each internal frame
@@ -1257,7 +1257,7 @@ public:
     //    to find out more about internal frames.
     //
 
-    typedef void (*FP_INTERNAL_FRAME_ENUMERATION_CALLBACK)(const DebuggerIPCE_STRData * pFrameData, CALLBACK_DATA pUserData);
+    typedef void (*FP_INTERNAL_FRAME_ENUMERATION_CALLBACK)(const Debugger_STRData * pFrameData, CALLBACK_DATA pUserData);
 
     virtual HRESULT STDMETHODCALLTYPE EnumerateInternalFrames(VMPTR_Thread vmThread, FP_INTERNAL_FRAME_ENUMERATION_CALLBACK fpCallback, CALLBACK_DATA pUserData) = 0;
 
@@ -1549,12 +1549,9 @@ public:
     //             vmTypeHandle - type handle for the type
     //     output: pTypeInfo    - holds information needed to build the corresponding CordbType
     //
-    virtual HRESULT STDMETHODCALLTYPE TypeHandleToExpandedTypeInfo(AreValueTypesBoxed boxed, VMPTR_TypeHandle vmTypeHandle, DebuggerIPCE_ExpandedTypeData * pTypeInfo) = 0;
+    virtual HRESULT STDMETHODCALLTYPE TypeHandleToExpandedTypeInfo(AreValueTypesBoxed boxed, CORDB_ADDRESS vmTypeHandle, DebuggerIPCE_ExpandedTypeData * pTypeInfo) = 0;
 
     virtual HRESULT STDMETHODCALLTYPE GetObjectExpandedTypeInfo(AreValueTypesBoxed boxed, CORDB_ADDRESS addr, OUT DebuggerIPCE_ExpandedTypeData * pTypeInfo) = 0;
-
-
-    virtual HRESULT STDMETHODCALLTYPE GetObjectExpandedTypeInfoFromID(AreValueTypesBoxed boxed, COR_TYPEID id, OUT DebuggerIPCE_ExpandedTypeData * pTypeInfo) = 0;
 
 
     // Get type handle for a TypeDef token, if one exists. For generics this returns the open type.
@@ -1712,10 +1709,13 @@ public:
     // Check whether the argument is a runtime callable wrapper.
     virtual HRESULT STDMETHODCALLTYPE IsRcw(VMPTR_Object vmObject, OUT BOOL * pResult) = 0;
 
-    // retrieves the list of interfaces pointers implemented by vmObject, as it is known at
-    // the time of the call (the list may change as new interface types become available
-    // in the runtime)
-    virtual HRESULT STDMETHODCALLTYPE GetRcwCachedInterfacePointers(VMPTR_Object vmObject, BOOL bIInspectableOnly, OUT DacDbiArrayList<CORDB_ADDRESS> * pDacItfPtrs) = 0;
+    // Callback invoked for each cached interface pointer held by an RCW.
+    typedef void (*FP_RCW_INTERFACE_CALLBACK)(CORDB_ADDRESS itfPtr, CALLBACK_DATA pUserData);
+
+    // Enumerates the interface pointers cached by the RCW associated with vmObject, as known at
+    // the time of the call (the list may change as new interface types become available in the
+    // runtime). If vmObject is not an RCW the enumeration is empty. The callback must not throw.
+    virtual HRESULT STDMETHODCALLTYPE EnumerateRcwCachedInterfacePointers(VMPTR_Object vmObject, FP_RCW_INTERFACE_CALLBACK fpCallback, CALLBACK_DATA pUserData) = 0;
 
     // ----------------------------------------------------------------------------
     // functions to get information about reference/handle referents for ICDValue
@@ -1984,7 +1984,23 @@ public:
                      OUT COR_HEAPOBJECT * objects,
                      OUT ULONG * pFetched) = 0;
 
-    virtual HRESULT STDMETHODCALLTYPE GetHeapSegments(OUT DacDbiArrayList<COR_SEGMENT> * pSegments) = 0;
+    // Callback invoked for each GC heap segment.
+    //
+    // Arguments:
+    //    rangeStart - start address of the segment (inclusive).
+    //    rangeEnd   - end address of the segment (exclusive).
+    //    generation - CorDebugGenerationTypes value identifying the generation/kind of the segment.
+    //    heap       - index of the heap the segment belongs to (0 for workstation GC).
+    //    pUserData  - user data passed to EnumerateHeapSegments.
+    typedef void (*FP_HEAPSEGMENT_CALLBACK)(CORDB_ADDRESS rangeStart, CORDB_ADDRESS rangeEnd, int generation, ULONG heap, CALLBACK_DATA pUserData);
+
+    // Enumerate the GC heap segments.
+    //
+    // The callback is invoked once per segment and must not throw. To accumulate segments, callers
+    // typically stash a buffer (and any failure flag) in pUserData. The walker runs to completion
+    // regardless of any per-segment failure the callback decides to record; the caller surfaces the
+    // recorded failure after EnumerateHeapSegments returns.
+    virtual HRESULT STDMETHODCALLTYPE EnumerateHeapSegments(FP_HEAPSEGMENT_CALLBACK fpCallback, CALLBACK_DATA pUserData) = 0;
 
     virtual HRESULT STDMETHODCALLTYPE IsValidObject(CORDB_ADDRESS obj, OUT BOOL * pResult) = 0;
 
@@ -2022,7 +2038,7 @@ public:
 
     virtual HRESULT STDMETHODCALLTYPE GetTypeIDForType(VMPTR_TypeHandle vmTypeHandle, COR_TYPEID *pId) = 0;
 
-    virtual HRESULT STDMETHODCALLTYPE GetObjectFields(COR_TYPEID id, ULONG32 celt, OUT COR_FIELD * layout, OUT ULONG32 * pceltFetched) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetObjectFields(UINT64 id, ULONG32 celt, OUT COR_FIELD * layout, OUT ULONG32 * pceltFetched) = 0;
 
     virtual HRESULT STDMETHODCALLTYPE GetTypeLayout(CORDB_ADDRESS id, COR_TYPE_LAYOUT * pLayout) = 0;
 

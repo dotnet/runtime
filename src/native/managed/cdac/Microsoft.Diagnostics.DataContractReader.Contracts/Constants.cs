@@ -32,6 +32,7 @@ public static class Constants
         public const string RecommendedReaderVersion = nameof(RecommendedReaderVersion);
 
         public const string ContinuationMethodTable = nameof(ContinuationMethodTable);
+        public const string ContinuationSingletonEEClass = nameof(ContinuationSingletonEEClass);
         public const string ExceptionMethodTable = nameof(ExceptionMethodTable);
         public const string FreeObjectMethodTable = nameof(FreeObjectMethodTable);
         public const string ObjectMethodTable = nameof(ObjectMethodTable);

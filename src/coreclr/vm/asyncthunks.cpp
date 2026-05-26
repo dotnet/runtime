@@ -487,7 +487,7 @@ void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pTaskReturningVariant, MetaSig
     //    Task task = other(arg);
     //    if (!task.IsCompleted)
     //    {
-    //        // Magic function which will suspend the current run of async methods
+    //        TailAwait();
     //        AsyncHelpers.TransparentAwait(task);
     //    }
     //    return AsyncHelpers.CompletedTaskResult(task);
@@ -499,10 +499,8 @@ void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pTaskReturningVariant, MetaSig
     //    ValueTask vt = other(arg);
     //    if (!vt.IsCompleted)
     //    {
-    //        taskOrNotifier = vt.AsTaskOrNotifier()
-
-    //        // Magic function which will suspend the current run of async methods
-    //        AsyncHelpers.TransparentAwait(taskOrNotifier);
+    //        TailAwait();
+    //        AsyncHelpers.TransparentAwaitValueTask(vt);
     //    }
 
     //    return vt.Result/vt.ThrowIfCompletedUnsuccessfully();
@@ -538,18 +536,18 @@ void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pTaskReturningVariant, MetaSig
         MethodTable* pMTValueTask;
         int isCompletedToken;
         int completionResultToken;
-        int asTaskOrNotifierToken;
+        int transparentAwaitValueTaskToken;
         if (msig.IsReturnTypeVoid())
         {
             pMTValueTask = CoreLibBinder::GetClass(CLASS__VALUETASK);
 
             MethodDesc* pMDValueTaskIsCompleted = CoreLibBinder::GetMethod(METHOD__VALUETASK__GET_ISCOMPLETED);
             MethodDesc* pMDCompletionResult = CoreLibBinder::GetMethod(METHOD__VALUETASK__THROW_IF_COMPLETED_UNSUCCESSFULLY);
-            MethodDesc* pMDAsTaskOrNotifier = CoreLibBinder::GetMethod(METHOD__VALUETASK__AS_TASK_OR_NOTIFIER);
+            MethodDesc* pMDTransparentAwaitValueTask = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__TRANSPARENT_AWAIT_VALUE_TASK);
 
             isCompletedToken = pCode->GetToken(pMDValueTaskIsCompleted);
             completionResultToken = pCode->GetToken(pMDCompletionResult);
-            asTaskOrNotifierToken = pCode->GetToken(pMDAsTaskOrNotifier);
+            transparentAwaitValueTaskToken = pCode->GetToken(pMDTransparentAwaitValueTask);
         }
         else
         {
@@ -558,15 +556,15 @@ void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pTaskReturningVariant, MetaSig
 
             MethodDesc* pMDValueTaskIsCompleted = CoreLibBinder::GetMethod(METHOD__VALUETASK_1__GET_ISCOMPLETED);
             MethodDesc* pMDCompletionResult = CoreLibBinder::GetMethod(METHOD__VALUETASK_1__GET_RESULT);
-            MethodDesc* pMDAsTaskOrNotifier = CoreLibBinder::GetMethod(METHOD__VALUETASK_1__AS_TASK_OR_NOTIFIER);
+            MethodDesc* pMDTransparentAwaitValueTask = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__TRANSPARENT_AWAIT_VALUE_TASK_OF_T);
 
             pMDValueTaskIsCompleted = FindOrCreateAssociatedMethodDesc(pMDValueTaskIsCompleted, pMTValueTask, FALSE, Instantiation(), FALSE);
             pMDCompletionResult = FindOrCreateAssociatedMethodDesc(pMDCompletionResult, pMTValueTask, FALSE, Instantiation(), FALSE);
-            pMDAsTaskOrNotifier = FindOrCreateAssociatedMethodDesc(pMDAsTaskOrNotifier, pMTValueTask, FALSE, Instantiation(), FALSE);
+            pMDTransparentAwaitValueTask = FindOrCreateAssociatedMethodDesc(pMDTransparentAwaitValueTask, pMDTransparentAwaitValueTask->GetMethodTable(), FALSE, Instantiation(&thLogicalRetType, 1), FALSE);
 
             isCompletedToken = GetTokenForGenericTypeMethodCallWithAsyncReturnType(pCode, pMDValueTaskIsCompleted);
             completionResultToken = GetTokenForGenericTypeMethodCallWithAsyncReturnType(pCode, pMDCompletionResult);
-            asTaskOrNotifierToken = GetTokenForGenericTypeMethodCallWithAsyncReturnType(pCode, pMDAsTaskOrNotifier);
+            transparentAwaitValueTaskToken = GetTokenForGenericMethodCallWithAsyncReturnType(pCode, pMDTransparentAwaitValueTask);
         }
 
         LocalDesc valueTaskLocalDesc(pMTValueTask);
@@ -576,13 +574,17 @@ void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pTaskReturningVariant, MetaSig
         // Store value task returned by call to actual user func
         pCode->EmitSTLOC(valueTaskLocal);
         pCode->EmitLDLOCA(valueTaskLocal);
+
+        // Was it already completed?
         pCode->EmitCALL(isCompletedToken, 1, 1);
         pCode->EmitBRTRUE(valueTaskCompletedLabel);
 
-        pCode->EmitLDLOCA(valueTaskLocal);
-        pCode->EmitCALL(asTaskOrNotifierToken, 1, 1);
-        pCode->EmitCALL(METHOD__ASYNC_HELPERS__TRANSPARENT_AWAIT, 1, 0);
+        // No, tail await to TransparentAwaitValueTask
+        pCode->EmitLDLOC(valueTaskLocal);
+        pCode->EmitCALL(METHOD__ASYNC_HELPERS__TAIL_AWAIT, 0, 0);
+        pCode->EmitCALL(transparentAwaitValueTaskToken, 1, 0);
 
+        // Yes, just get the result
         pCode->EmitLabel(valueTaskCompletedLabel);
         pCode->EmitLDLOCA(valueTaskLocal);
         pCode->EmitCALL(completionResultToken, 1, msig.IsReturnTypeVoid() ? 0 : 1);
@@ -593,12 +595,17 @@ void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pTaskReturningVariant, MetaSig
         MethodTable* pMTTask;
 
         int completedTaskResultToken;
+        int transparentAwaitToken;
+
         if (msig.IsReturnTypeVoid())
         {
             pMTTask = CoreLibBinder::GetClass(CLASS__TASK);
 
             MethodDesc* pMDCompletedTask = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__COMPLETED_TASK);
+            MethodDesc* pMDTransparentAwait = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__TRANSPARENT_AWAIT);
+
             completedTaskResultToken = pCode->GetToken(pMDCompletedTask);
+            transparentAwaitToken = pCode->GetToken(pMDTransparentAwait);
         }
         else
         {
@@ -606,24 +613,33 @@ void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pTaskReturningVariant, MetaSig
             pMTTask = ClassLoader::LoadGenericInstantiationThrowing(pMTTaskOpen->GetModule(), pMTTaskOpen->GetCl(), Instantiation(&thLogicalRetType, 1)).GetMethodTable();
 
             MethodDesc* pMDCompletedTaskResult = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__COMPLETED_TASK_RESULT);
+            MethodDesc* pMDTransparentAwait = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__TRANSPARENT_AWAIT_OF_T);
+
             pMDCompletedTaskResult = FindOrCreateAssociatedMethodDesc(pMDCompletedTaskResult, pMDCompletedTaskResult->GetMethodTable(), FALSE, Instantiation(&thLogicalRetType, 1), FALSE);
+            pMDTransparentAwait = FindOrCreateAssociatedMethodDesc(pMDTransparentAwait, pMDTransparentAwait->GetMethodTable(), FALSE, Instantiation(&thLogicalRetType, 1), FALSE);
+
             completedTaskResultToken = GetTokenForGenericMethodCallWithAsyncReturnType(pCode, pMDCompletedTaskResult);
+            transparentAwaitToken = GetTokenForGenericMethodCallWithAsyncReturnType(pCode, pMDTransparentAwait);
         }
 
         LocalDesc taskLocalDesc(pMTTask);
         DWORD taskLocal = pCode->NewLocal(taskLocalDesc);
         ILCodeLabel* pGetResultLabel = pCode->NewCodeLabel();
 
-        // Store task returned by actual user func or by ValueTask.AsTask
+        // Store task returned by actual user func
         pCode->EmitSTLOC(taskLocal);
 
+        // Did it already complete?
         pCode->EmitLDLOC(taskLocal);
         pCode->EmitCALL(METHOD__TASK__GET_ISCOMPLETED, 1, 1);
         pCode->EmitBRTRUE(pGetResultLabel);
 
+        // No, so tail await to TransparentAwait
         pCode->EmitLDLOC(taskLocal);
-        pCode->EmitCALL(METHOD__ASYNC_HELPERS__TRANSPARENT_AWAIT, 1, 0);
+        pCode->EmitCALL(METHOD__ASYNC_HELPERS__TAIL_AWAIT, 0, 0);
+        pCode->EmitCALL(transparentAwaitToken, 1, 0);
 
+        // Yes, so just get the result
         pCode->EmitLabel(pGetResultLabel);
         pCode->EmitLDLOC(taskLocal);
         pCode->EmitCALL(completedTaskResultToken, 1, msig.IsReturnTypeVoid() ? 0 : 1);

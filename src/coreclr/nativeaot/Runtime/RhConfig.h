@@ -20,7 +20,7 @@
 
 class RhConfig
 {
-#define CONFIG_VAL_MAXLEN 16              //64 bit uint in hex
+#define CONFIG_VAL_MAXLEN 18              // "0x" prefix + 64-bit uint in hex
 public:
     struct Config
     {

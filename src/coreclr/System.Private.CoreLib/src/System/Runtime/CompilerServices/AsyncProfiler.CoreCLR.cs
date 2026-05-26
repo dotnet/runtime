@@ -123,11 +123,12 @@ namespace System.Runtime.CompilerServices
         /// through the wrapper at index (ContinuationIndex &amp; COUNT_MASK), then increments the index.
         ///
         /// This creates a rotating pattern of unique return addresses on the native callstack. An OS
-        /// CPU profiler (e.g., ETW, perf) captures these native IPs in its stack samples. The async
-        /// profiler emits the wrapper IP table in the metadata event, so a post-processing tool can
-        /// identify which wrapper IPs appear in a native callstack and correlate them with the
-        /// async resume callstack events emitted at the same logical point. This bridges the gap
-        /// between synchronous native stack samples and the asynchronous continuation chain.
+        /// CPU profiler (e.g., ETW, perf) captures these native IPs in its stack samples. A post-processing
+        /// tool uses the wrapper name template and count (defined by the async profiler contract) to
+        /// format method names, resolve them via symbol data (rundown events), and correlate
+        /// native stack IPs with the async resume callstack events emitted at the same logical point.
+        /// This bridges the gap between synchronous native stack samples and the asynchronous
+        /// continuation chain.
         ///
         /// Every COUNT (32) continuations, a ResetAsyncContinuationWrapperIndex event is emitted
         /// so the tool knows the index has wrapped around and can correctly map subsequent samples.
@@ -138,6 +139,20 @@ namespace System.Runtime.CompilerServices
         [StackTraceHidden]
         internal static partial class ContinuationWrapper
         {
+            /// <summary>
+            /// Name template for the continuation wrapper methods, defined by contract.
+            /// External tools format this template with the wrapper index (0..COUNT-1) to produce
+            /// method names for identifying wrapper frames in stacks.
+            /// Must match the actual method names below (e.g., Continuation_Wrapper_0, Continuation_Wrapper_1, ...).
+            /// </summary>
+            public const string NameTemplate = "Continuation_Wrapper_{0}";
+
+            /// <summary>
+            /// Number of distinct wrapper methods. The wrapper index rotates modulo this value.
+            /// </summary>
+            public const byte COUNT = 32;
+            public const byte COUNT_MASK = COUNT - 1;
+
             public static void InitInfo(ref Info info)
             {
                 info.ContinuationTable = ref Unsafe.As<ContinuationWrapperTable, nint>(ref s_continuationWrappers);
@@ -152,16 +167,6 @@ namespace System.Runtime.CompilerServices
                 {
                     return ((delegate*<Continuation, ref byte, Continuation?>)(dispatcher))(curContinuation, ref resultLoc);
                 }
-            }
-
-            public static long[] GetContinuationWrapperIPs()
-            {
-                long[] ips = new long[COUNT];
-                for (int i = 0; i < COUNT; i++)
-                {
-                    ips[i] = Unsafe.Add(ref Unsafe.As<ContinuationWrapperTable, nint>(ref s_continuationWrappers), i);
-                }
-                return ips;
             }
 
             [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
@@ -450,6 +455,8 @@ namespace System.Runtime.CompilerServices
                     return false;
                 }
 
+                Span<byte> callstackSpan = buffer.AsSpan(index);
+
                 ulong currentNativeIP = 0;
                 ulong previousNativeIP = state.LastNativeIP;
 
@@ -458,7 +465,6 @@ namespace System.Runtime.CompilerServices
                     currentNativeIP = (ulong)state.Continuation.ResumeInfo->DiagnosticIP;
                 }
 
-                Span<byte> callstackSpan = buffer.AsSpan(index);
                 int callstackSpanIndex = 0;
 
                 // First frame (Count == 0) is written as absolute; subsequent frames
@@ -473,7 +479,8 @@ namespace System.Runtime.CompilerServices
                     callstackSpanIndex += Serializer.WriteCompressedInt64(callstackSpan.Slice(callstackSpanIndex, Serializer.MaxCompressedInt64Size), (long)(currentNativeIP - previousNativeIP));
                 }
 
-                callstackSpanIndex += Serializer.WriteCompressedInt32(callstackSpan.Slice(callstackSpanIndex, Serializer.MaxCompressedInt32Size), state.Continuation.State);
+                // Handrolled continuations (like ValueTaskContinuation) are indicated with a null DiagnosticIP. For these we always write 0 as the state since the state number is not meaningful.
+                callstackSpanIndex += Serializer.WriteCompressedInt32(callstackSpan.Slice(callstackSpanIndex, Serializer.MaxCompressedInt32Size), currentNativeIP == 0 ? 0 : state.Continuation.State);
                 state.Count++;
 
                 state.Continuation = state.Continuation.Next;
@@ -487,7 +494,7 @@ namespace System.Runtime.CompilerServices
                     }
 
                     callstackSpanIndex += Serializer.WriteCompressedInt64(callstackSpan.Slice(callstackSpanIndex, Serializer.MaxCompressedInt64Size), (long)(currentNativeIP - previousNativeIP));
-                    callstackSpanIndex += Serializer.WriteCompressedInt32(callstackSpan.Slice(callstackSpanIndex, Serializer.MaxCompressedInt32Size), state.Continuation.State);
+                    callstackSpanIndex += Serializer.WriteCompressedInt32(callstackSpan.Slice(callstackSpanIndex, Serializer.MaxCompressedInt32Size), currentNativeIP == 0 ? 0 : state.Continuation.State);
 
                     state.Count++;
                     state.Continuation = state.Continuation.Next;

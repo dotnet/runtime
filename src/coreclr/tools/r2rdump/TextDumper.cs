@@ -316,8 +316,17 @@ namespace R2RDump
             }
 
             _writer.WriteLine();
-            var disasm = new WasmDisassembler(info.Image, info.InstructionOffset, info.InstructionLength);
+            var disasm = new WasmDisassembler(info.Image, info.InstructionOffset, info.InstructionLength, TryGetImportName);
             _writer.Write(disasm.Disassemble());
+        }
+
+        private string TryGetImportName(int rva)
+        {
+            if (_r2r.ImportSignatures.TryGetValue(rva, out ReadyToRunSignature signature))
+            {
+                return signature.ToString(_model.SignatureFormattingOptions);
+            }
+            return null;
         }
 
         private static IEnumerable<string> FormatValTypes(IReadOnlyList<byte> types)

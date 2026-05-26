@@ -2713,6 +2713,7 @@ void CodeGen::genCodeForSetcc(GenTreeCC* setcc)
  * Possible values for JitEmitUnitTestsSections:
  * Amd64: all, sse2
  * Arm64: all, general, advsimd, sve
+ * Wasm:  all, simd
  */
 
 #if defined(DEBUG)
@@ -2737,7 +2738,14 @@ void CodeGen::genEmitterUnitTests()
 
     // Jump over the generated tests as they are not intended to be run.
     BasicBlock* skipLabel = genCreateTempLabel();
+#ifndef TARGET_WASM
     inst_JMP(EJ_jmp, skipLabel);
+#else
+    // On Wasm, we skip over the generated emitter test code by nesting it in a block where the
+    // first instruction branches to the end of the block.
+    GetEmitter()->emitIns_BlockTy(INS_block);
+    GetEmitter()->emitIns_J(INS_br, EA_4BYTE, 0, nullptr);
+#endif
 
     // Add NOPs at the start and end for easier script parsing.
     instGen(INS_nop);
@@ -2761,6 +2769,14 @@ void CodeGen::genEmitterUnitTests()
     {
         genAmd64EmitterUnitTestsCCMP();
     }
+    if (unitTestSectionAll || (strstr(unitTestSection, "cfcmov") != nullptr))
+    {
+        genAmd64EmitterUnitTestsCFCMOV();
+    }
+    if (unitTestSectionAll || (strstr(unitTestSection, "ctest") != nullptr))
+    {
+        genAmd64EmitterUnitTestsCTEST();
+    }
 
 #elif defined(TARGET_ARM64)
     if (unitTestSectionAll || (strstr(unitTestSection, "general") != nullptr))
@@ -2779,6 +2795,13 @@ void CodeGen::genEmitterUnitTests()
     {
         genArm64EmitterUnitTestsPac();
     }
+
+#elif defined(TARGET_WASM)
+    if (unitTestSectionAll || (strstr(unitTestSection, "simd") != nullptr))
+    {
+        genWasmEmitterUnitTestsSimd();
+    }
+    instGen(INS_end);
 #endif
 
     genDefineTempLabel(skipLabel);
