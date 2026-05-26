@@ -256,7 +256,7 @@ jobs:
       testGroup: innerloop
       nameSuffix: AllSubsets_CoreCLR_RuntimeTests
       buildArgs: -s clr+libs -c $(_BuildConfig)
-      timeoutInMinutes: 420
+      timeoutInMinutes: 360
       # extra steps, run tests
       extraVariablesTemplates:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
