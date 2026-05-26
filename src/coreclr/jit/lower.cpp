@@ -10232,7 +10232,6 @@ void Lowering::LowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blk)
     wrapWithNullcheck(data);
 }
 
-#ifndef TARGET_WASM
 //------------------------------------------------------------------------
 // LowerCopyBlockStore: Shared lowering of a struct-copy
 //
@@ -10243,6 +10242,9 @@ void Lowering::LowerCopyBlockStore(GenTreeBlk* blkNode)
 {
     assert(blkNode->OperIs(GT_STORE_BLK));
     assert(!blkNode->OperIsInitBlkOp());
+
+    // For struct copies (containing GC slots) we might want to split the big store into a sequence
+    // of smaller stores.
 
     GenTree*       src     = blkNode->Data();
     GenTree*       dstAddr = blkNode->Addr();
@@ -10285,10 +10287,13 @@ void Lowering::LowerCopyBlockStore(GenTreeBlk* blkNode)
 
     if (doCpObj)
     {
-        // Per-slot decomposition was already attempted by LowerBlockStoreCommon,
-        // so reaching here means the destination is on-heap and we fall back to
-        // the bulk write-barrier helper.
-        LowerBlockStoreAsGcBulkCopyCall(blkNode);
+        // Try to decompose this STORE_BLK into a sequence of independent indirections.
+        // It is faster than the bulk copy for structs with just a few GC slots.
+        if (!TryDecomposeBlockStoreAsIndirs(blkNode))
+        {
+            // Otherwise, use the bulk copy.
+            LowerBlockStoreAsGcBulkCopyCall(blkNode);
+        }
         return;
     }
 
@@ -10306,7 +10311,6 @@ void Lowering::LowerCopyBlockStore(GenTreeBlk* blkNode)
     // Use memcpy
     LowerBlockStoreAsHelperCall(blkNode);
 }
-#endif // !TARGET_WASM
 
 //------------------------------------------------------------------------
 // LowerBlockStoreAsHelperCall: Lower a block store node as a memset/memcpy call
@@ -12141,29 +12145,22 @@ void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
         return;
     }
 
-    // For struct copies (containing GC slots) we might want to split the big store into a sequence
-    // of smaller stores.
-    if (TryDecomposeBlockStoreAsIndirs(blkNode))
+    if (blkNode->OperIsInitBlkOp())
     {
-        return;
+        // TODO: clean up LowerBlockStore (renamed to LowerInitBlock)
+        LowerBlockStore(blkNode);
+    }
+    else
+    {
+        LowerCopyBlockStore(blkNode);
     }
 
-    LowerBlockStore(blkNode);
     LowerStoreIndirCoalescing(blkNode);
 }
 
 //------------------------------------------------------------------------
 // TryDecomposeBlockStoreAsIndirs: try to lower a struct copy GT_STORE_BLK
-//   that has GC pointers as a sequence of independent indirections instead
-//   of going through the per-slot CpObj path.
-//
-//   Each GC slot becomes a STOREIND<TYP_REF/TYP_BYREF>, which lowers
-//   naturally through the standard per-store write-barrier path
-//   (CORINFO_HELP_ASSIGN_REF / CORINFO_HELP_CHECKED_ASSIGN_REF). Each
-//   contiguous run of non-GC slots becomes either a single
-//   STOREIND<TYP_I_IMPL> (when the run is exactly one pointer slot) or a
-//   single GT_STORE_BLK with a non-GC layout (when the run is wider), so
-//   the existing block-copy lowering can use SIMD as appropriate.
+//   that has GC pointers as a sequence of independent indirections.
 //
 // Arguments:
 //   blkNode - the GT_STORE_BLK to potentially decompose.
@@ -12171,105 +12168,39 @@ void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
 // Return value:
 //   true if the node was decomposed (and bashed to a NOP), false otherwise.
 //
-// Notes:
-//   The bulk-write-barrier path (CORINFO_HELP_BULK_WRITEBARRIER) is
-//   intentionally preferred for layouts with many GC pointers, so we bail
-//   out under the same conditions TryLowerBlockStoreAsGcBulkCopyCall uses
-//   to take that path. The blkNode is bashed to a NOP (rather than
-//   removed) so that the LowerNode driver can continue from
-//   blkNode->gtNext.
-//
 bool Lowering::TryDecomposeBlockStoreAsIndirs(GenTreeBlk* blkNode)
 {
     assert(blkNode->OperIs(GT_STORE_BLK));
-
-    if (blkNode->OperIsInitBlkOp())
-    {
-        return false;
-    }
+    assert(!blkNode->OperIsInitBlkOp());
+    assert(blkNode->GetLayout()->HasGCPtr());
 
     ClassLayout* layout = blkNode->GetLayout();
-    if (!layout->HasGCPtr())
-    {
-        return false;
-    }
-
-    GenTree*   src       = blkNode->Data();
-    const bool isNotHeap = blkNode->IsAddressNotOnHeap(m_compiler);
-
-    // Volatile copies must not be routed through LowerBlockStoreAsGcBulkCopyCall:
-    // the bulk helper performs plain (non-volatile) loads/stores internally and
-    // would drop GTF_IND_VOLATILE. Per-slot decomposition preserves the volatile
-    // bit on each STOREIND and matches the prior behavior (the old bulk-helper
-    // path explicitly declined volatile copies and fell through to per-slot
-    // CpObj). The per-slot helper-call boundaries preserve JIT-level ordering.
-    const bool isVolatile = blkNode->IsVolatile() || (src->OperIs(GT_IND) && src->AsIndir()->IsVolatile());
-
-    if (isNotHeap)
-    {
-#ifndef JIT32_GCENCODER
-        // Off-heap copies need no write barriers. On targets with a full GC
-        // encoder, per-arch LowerBlockStore SIMD-unrolls these copies via
-        // gtBlkOpGcUnsafe, which is generally smaller and faster than the
-        // per-slot decomposition this method produces. Decline so the
-        // per-arch path takes over (and wraps with memory barriers when
-        // the copy is volatile).
-        return false;
-#endif
-        // On JIT32_GCENCODER targets we cannot use gtBlkOpGcUnsafe, and
-        // LowerBlockStoreAsGcBulkCopyCall cannot represent off-heap targets;
-        // decomposition into per-slot stores (no barriers, since
-        // GTF_IND_TGT_NOT_HEAP propagates to each STOREIND) is the only
-        // correct path, so bypass the opt-level / pointer-count guards.
-    }
-    else if (!isVolatile)
-    {
-        // On-heap copies fan each GC slot out into a write-barrier helper
-        // call, which can be a notable code-size hit. Skip this expansion in
-        // MinOpts (the bulk-write-barrier helper is used instead) and prefer
-        // the bulk helper once the GC pointer count crosses a threshold.
-        // Volatile copies always decompose, regardless of these guards.
-        if (!m_compiler->opts.OptimizationEnabled())
-        {
-            return false;
-        }
-
-        // In cold blocks the inline per-slot expansion is rarely worth its
-        // code size and register pressure; route through the single bulk
-        // helper call instead, regardless of GC pointer count.
-        if ((m_block != nullptr) && (m_block->isRunRarely()))
-        {
-            return false;
-        }
-
-        const unsigned bulkCopyThreshold = 4;
-        if (layout->GetGCPtrCount() >= bulkCopyThreshold)
-        {
-            return false;
-        }
-    }
+    GenTree*     src    = blkNode->Data();
 
     // Layouts containing GC pointers are required (by the runtime) to have a
-    // pointer-size-multiple total size, so per-slot iteration covers exactly
-    // GetSize() bytes. Defend against any future layout that breaks the
-    // invariant by bailing out to the bulk-helper path (which copies by
-    // byte-count and is safe regardless).
-    if (layout->GetSize() != (layout->GetSlotCount() * TARGET_POINTER_SIZE))
-    {
-        return false;
-    }
-
+    // pointer-size-multiple total size.
+    assert((layout->GetSize() == (layout->GetSlotCount() * TARGET_POINTER_SIZE)));
     assert(src->OperIs(GT_IND, GT_LCL_VAR, GT_LCL_FLD));
 
-    JITDUMP("Decomposing STORE_BLK [%06u] as individual indirections\n", m_compiler->dspTreeID(blkNode));
+    // Always decompose for volatile blocks as the bulk helper doesn't support those.
+    if (!blkNode->IsVolatile() || (src->OperIs(GT_IND) && src->AsIndir()->IsVolatile()))
+    {
+        // More than 3 GC pointers, use the bulk copy helper.
+        // TODO-CQ: find a better heuristic here.
+        if (layout->GetGCPtrCount() >= 4)
+        {
+            return false;
+        }
 
-    // Flags to propagate to each destination store. GTF_IND_VOLATILE is included
-    // in GTF_IND_COPYABLE_FLAGS so per-slot stores carry the volatile bit if the
-    // original copy was volatile. GTF_IND_TGT_HEAP / GTF_IND_TGT_NOT_HEAP let GC
-    // slots pick between unchecked and checked write-barrier helpers.
-    const GenTreeFlags dstIndFlags =
-        blkNode->gtFlags & (GTF_IND_COPYABLE_FLAGS | GTF_IND_TGT_HEAP | GTF_IND_TGT_NOT_HEAP);
-    const GenTreeFlags srcIndFlags = src->OperIs(GT_IND) ? (src->gtFlags & GTF_IND_COPYABLE_FLAGS) : GTF_EMPTY;
+        // We assume that the bulk helper is also a better option for Tier0/cold blocks.
+        if ((layout->GetGCPtrCount() > 1) && (!m_compiler->opts.OptimizationEnabled() ||
+            ((m_block != nullptr) && (m_block->isRunRarely()))))
+        {
+            return false;
+        }
+    }
+
+    JITDUMP("Decomposing STORE_BLK [%06u] as individual indirections\n", m_compiler->dspTreeID(blkNode));
 
     // Spill dstAddr (and srcAddr when src is an indirection) into temp locals so
     // we can compute offset-based addresses multiple times.
@@ -12278,11 +12209,11 @@ bool Lowering::TryDecomposeBlockStoreAsIndirs(GenTreeBlk* blkNode)
     assert(found && (dstAddrUse.User() == blkNode));
     const var_types dstAddrType   = genActualType(blkNode->Addr());
     const unsigned  dstAddrLclNum = dstAddrUse.ReplaceWithLclVar(m_compiler);
-
     unsigned  srcAddrLclNum = BAD_VAR_NUM;
     var_types srcAddrType   = TYP_UNDEF;
     unsigned  srcLclNum     = BAD_VAR_NUM;
     unsigned  srcLclOffs    = 0;
+
     if (src->OperIs(GT_IND))
     {
         GenTree* srcAddr = src->AsIndir()->Addr();
@@ -12303,24 +12234,22 @@ bool Lowering::TryDecomposeBlockStoreAsIndirs(GenTreeBlk* blkNode)
         GenTree* addr = m_compiler->gtNewLclvNode(lclNum, lclType);
         if (offset != 0)
         {
-            GenTree* offsetIcon = m_compiler->gtNewIconNode(static_cast<ssize_t>(offset), TYP_I_IMPL);
-            addr                = m_compiler->gtNewOperNode(GT_ADD, lclType, addr, offsetIcon);
+            addr = m_compiler->gtNewOperNode(GT_ADD, lclType, addr, m_compiler->gtNewIconNode(static_cast<ssize_t>(offset), TYP_I_IMPL));
         }
         return addr;
     };
 
-    // Emit a single load/store pair covering [offset, offset+size). When
-    // runLayout is non-null, this becomes a STORE_BLK<TYP_STRUCT>; otherwise
-    // it's a STOREIND<scalarType>. extraFlags is OR'd into both the load and
-    // the store (used for GTF_IND_ALLOW_NON_ATOMIC on non-GC slots).
-    auto emitStore = [&](unsigned offset, var_types scalarType, ClassLayout* runLayout, GenTreeFlags extraFlags) {
+    const GenTreeFlags dstIndFlags = blkNode->gtFlags & GTF_IND_FLAGS;
+    const GenTreeFlags srcIndFlags = src->OperIs(GT_IND) ? (src->gtFlags & GTF_IND_FLAGS) : GTF_EMPTY;
+
+    auto emitStore = [&](unsigned offset, var_types scalarType, ClassLayout* runLayout) {
         const var_types valType = (runLayout != nullptr) ? TYP_STRUCT : scalarType;
 
         GenTree* srcVal;
         if (src->OperIs(GT_IND))
         {
             srcVal = m_compiler->gtNewLoadValueNode(valType, runLayout, offsetAddr(srcAddrLclNum, srcAddrType, offset),
-                                                    srcIndFlags | extraFlags);
+                                                    srcIndFlags);
         }
         else
         {
@@ -12329,7 +12258,7 @@ bool Lowering::TryDecomposeBlockStoreAsIndirs(GenTreeBlk* blkNode)
 
         GenTree* store =
             m_compiler->gtNewStoreValueNode(valType, runLayout, offsetAddr(dstAddrLclNum, dstAddrType, offset), srcVal,
-                                            dstIndFlags | extraFlags);
+                                            dstIndFlags);
 
         LIR::Range range = LIR::SeqTree(m_compiler, store);
         GenTree*   first = range.FirstNode();
@@ -12346,7 +12275,7 @@ bool Lowering::TryDecomposeBlockStoreAsIndirs(GenTreeBlk* blkNode)
         {
             // One STOREIND<gctype> per GC slot. Lowers to ASSIGN_REF /
             // CHECKED_ASSIGN_REF via the normal write-barrier lowering.
-            emitStore(i * TARGET_POINTER_SIZE, layout->GetGCPtrType(i), nullptr, GTF_EMPTY);
+            emitStore(i * TARGET_POINTER_SIZE, layout->GetGCPtrType(i), nullptr);
             i++;
         }
         else
@@ -12365,7 +12294,7 @@ bool Lowering::TryDecomposeBlockStoreAsIndirs(GenTreeBlk* blkNode)
             ClassLayout*   runLayout =
                 (runSlots > 1) ? m_compiler->typGetBlkLayout(runSlots * TARGET_POINTER_SIZE) : nullptr;
 
-            emitStore(runStart * TARGET_POINTER_SIZE, TYP_I_IMPL, runLayout, GTF_IND_ALLOW_NON_ATOMIC);
+            emitStore(runStart * TARGET_POINTER_SIZE, TYP_I_IMPL, runLayout);
         }
     }
 

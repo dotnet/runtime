@@ -345,7 +345,8 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
     }
     else
     {
-        LowerCopyBlockStore(blkNode);
+        // TODO: clean up
+        unreached();
     }
 }
 

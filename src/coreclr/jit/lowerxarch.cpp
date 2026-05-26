@@ -464,8 +464,8 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
     }
     else
     {
-        LowerCopyBlockStore(blkNode);
-        return;
+        // TODO: clean up
+        unreached();
     }
 
     assert(blkNode->gtBlkOpKind != GenTreeBlk::BlkOpKindInvalid);
