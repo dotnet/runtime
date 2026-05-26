@@ -900,6 +900,33 @@ namespace System.Net.ServerSentEvents.Tests
             Assert.Equal(2, count);
         }
 
+        [Theory]
+        [MemberData(nameof(NewlineTrickleAsyncData))]
+        public async Task Parse_LongLineCap_Throws(string newline, bool trickle, bool useAsync)
+        {
+
+            string exampleResponse =
+                $"data: shortline{newline}{newline}" +
+                new string('X', 100 * 1000 * 1000) + $"{newline}{newline}";
+
+            using Stream stream = GetStream(exampleResponse, trickle);
+
+            if (useAsync)
+            {
+                var enumerator = SseParser.Create(stream).Enumerate().GetEnumerator();
+                enumerator.MoveNext();
+                Assert.Equal("shortline", enumerator.Current.Data);
+                Assert.Throws<InvalidDataException>(() => enumerator.MoveNext());
+            }
+            else
+            {
+                var enumerator = SseParser.Create(stream).EnumerateAsync().GetAsyncEnumerator();
+                await enumerator.MoveNextAsync();
+                Assert.Equal("shortline", enumerator.Current.Data);
+                await Assert.ThrowsAsync<InvalidDataException>(async () => await enumerator.MoveNextAsync());
+            }
+        }
+
         private static void AssertSseItemEqual<T>(SseItem<T> left, SseItem<T> right)
         {
             Assert.Equal(left.EventType, right.EventType);
