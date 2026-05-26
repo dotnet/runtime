@@ -170,18 +170,7 @@ namespace System.Numerics
         {
             [Intrinsic]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => (typeof(T) == typeof(byte)) ||
-                   (typeof(T) == typeof(double)) ||
-                   (typeof(T) == typeof(short)) ||
-                   (typeof(T) == typeof(int)) ||
-                   (typeof(T) == typeof(long)) ||
-                   (typeof(T) == typeof(nint)) ||
-                   (typeof(T) == typeof(nuint)) ||
-                   (typeof(T) == typeof(sbyte)) ||
-                   (typeof(T) == typeof(float)) ||
-                   (typeof(T) == typeof(ushort)) ||
-                   (typeof(T) == typeof(uint)) ||
-                   (typeof(T) == typeof(ulong));
+            get => Scalar<T>.IsSupported;
         }
 
         /// <summary>Gets a new <see cref="Vector{T}" /> with all elements initialized to one.</summary>

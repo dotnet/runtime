@@ -105,6 +105,9 @@ namespace System.Runtime.CompilerServices
                 {
                     var vtsCont = (ValueTaskContinuation)cont;
                     vtsCont.Next = null;
+
+                    Debug.Assert((vtsCont.Flags & ContinuationFlags.AllContinuationFlags) == 0);
+
                     t_runtimeAsyncAwaitState.CachedValueTaskContinuation = vtsCont;
 
                     vtsCont.GetResult(ref result);

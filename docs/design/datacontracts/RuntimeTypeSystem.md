@@ -39,6 +39,11 @@ partial interface IRuntimeTypeSystem : IContract
     // A canonical method table is either the MethodTable itself, or in the case of a generic instantiation, it is the
     // MethodTable of the prototypical instance.
     public virtual TargetPointer GetCanonicalMethodTable(TypeHandle typeHandle);
+    // Returns the EEClass pointer for this MethodTable. For non-canonical MTs, follows the tagged pointer
+    // to the canonical MT and returns its EEClass.
+    public virtual TargetPointer GetClassPointer(TypeHandle typeHandle);
+    // True if this MethodTable is the canonical MethodTable (i.e., EEClassOrCanonMT points directly to the EEClass)
+    public virtual bool IsCanonicalMethodTable(TypeHandle typeHandle);
     public virtual TargetPointer GetParentMethodTable(TypeHandle typeHandle);
 
     public virtual TargetPointer GetMethodDescForSlot(TypeHandle typeHandle, ushort slot);
@@ -61,7 +66,7 @@ partial interface IRuntimeTypeSystem : IContract
     // True if the type requires 8-byte alignment on platforms that don't 8-byte align by default (FEATURE_64BIT_ALIGNMENT)
     public virtual bool RequiresAlign8(TypeHandle typeHandle);
     // True if the MethodTable represents a continuation type used by the async continuation feature
-    public virtual bool IsContinuation(TypeHandle typeHandle);
+    public virtual bool IsContinuationWithoutMetadata(TypeHandle typeHandle);
     // Returns the GC pointer runs for the method table as (offset, size) pairs. Each
     // run starts Offset bytes from the object pointer (`this`), where offset 0
     // is the method table pointer, and includes Size bytes of contiguous pointers
@@ -82,7 +87,7 @@ partial interface IRuntimeTypeSystem : IContract
     public ushort GetNumThreadStaticFields(TypeHandle typeHandle);
     public TargetPointer GetGCThreadStaticsBasePointer(TypeHandle typeHandle, TargetPointer threadPtr);
     public TargetPointer GetNonGCThreadStaticsBasePointer(TypeHandle typeHandle, TargetPointer threadPtr);
-    public TargetPointer GetFieldDescList(TypeHandle typeHandle);
+    public IEnumerable<TargetPointer> GetFieldDescList(TypeHandle typeHandle);
     // True if the MethodTable represents a type tracked as an Objective-C reference type with a finalizer
     public bool IsTrackedReferenceWithFinalizer(TypeHandle typeHandle);
     public TargetPointer GetGCStaticsBasePointer(TypeHandle typeHandle);
@@ -117,6 +122,7 @@ partial interface IRuntimeTypeSystem : IContract
     bool IsGenericVariable(TypeHandle typeHandle, out TargetPointer module, out uint token);
     bool IsFunctionPointer(TypeHandle typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out byte callConv);
     bool IsPointer(TypeHandle typeHandle);
+    bool IsTypeDesc(TypeHandle typeHandle);
     TargetPointer GetLoaderModule(TypeHandle typeHandle);
 
     #endregion TypeHandle inspection APIs
@@ -312,7 +318,7 @@ internal partial struct RuntimeTypeSystem_1
         Category_Array = 0x00080000,
         Category_ValueType = 0x00040000,
         Category_Nullable = 0x00050000,
-        Category_PrimitiveValueType = 0x00060000,
+        Category_Primitive = 0x00060000,
         Category_TruePrimitive = 0x00070000,
         Category_Interface = 0x000C0000,
         Collectible = 0x00200000,
@@ -450,6 +456,7 @@ The contract depends on the following globals
 | Global name | Meaning |
 | --- | --- |
 | `ContinuationMethodTable` | A pointer to the address of the base `Continuation` `MethodTable`, or null if no continuations have been created
+| `ContinuationSingletonEEClass` | A pointer to the address of the singleton `EEClass` shared by continuation subtypes that have no metadata of their own
 | `FreeObjectMethodTable` | A pointer to the address of a `MethodTable` used by the GC to indicate reclaimed memory
 | `ObjectMethodTable` | A pointer to the address of the `System.Object` `MethodTable` (`g_pObjectClass`)
 | `StaticsPointerMask` | For masking out a bit of DynamicStaticsInfo pointer fields
@@ -526,6 +533,7 @@ Contracts used:
     internal TargetPointer FreeObjectMethodTablePointer {get; }
     internal TargetPointer ObjectMethodTablePointer {get; }
     internal TargetPointer ContinuationMethodTablePointer {get; }
+    private TargetPointer _continuationSingletonEEClassPointer;
 
     public TypeHandle GetTypeHandle(TargetPointer typeHandlePointer)
     {
@@ -569,12 +577,12 @@ Contracts used:
 
     public uint GetComponentSize(TypeHandle TypeHandle) =>!typeHandle.IsMethodTable() ? (uint)0 :  GetComponentSize(_methodTables[TypeHandle.Address]);
 
-    private TargetPointer GetClassPointer(TypeHandle TypeHandle)
+    public TargetPointer GetClassPointer(TypeHandle TypeHandle)
     {
-        ... // if the MethodTable stores a pointer to the EEClass, return it
-            // otherwise the MethodTable stores a pointer to the canonical MethodTable
-            // in that case, return the canonical MethodTable's EEClass.
-            // Canonical MethodTables always store an EEClass pointer.
+        // Returns TargetPointer.Null if not a MethodTable.
+        // If EEClassOrCanonMT points directly to an EEClass, returns that pointer.
+        // If EEClassOrCanonMT is a tagged pointer to a canonical MethodTable, follows
+        // the canonical MT and returns its EEClass pointer.
     }
 
     private Data.EEClass GetClassData(TypeHandle TypeHandle)
@@ -595,9 +603,14 @@ Contracts used:
 
     public bool RequiresAlign8(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.RequiresAlign8;
 
-    public bool IsContinuation(TypeHandle typeHandle) => typeHandle.IsMethodTable()
+    public bool IsCanonicalMethodTable(TypeHandle typeHandle)
+        => typeHandle.IsMethodTable() && _methodTables[typeHandle.Address].IsCanonMT;
+
+    public bool IsContinuationWithoutMetadata(TypeHandle typeHandle) => typeHandle.IsMethodTable()
         && ContinuationMethodTablePointer != TargetPointer.Null
-        && _methodTables[typeHandle.Address].ParentMethodTable == ContinuationMethodTablePointer;
+        && _methodTables[typeHandle.Address].ParentMethodTable == ContinuationMethodTablePointer
+        && _continuationSingletonEEClassPointer != TargetPointer.Null
+        && GetClassPointer(typeHandle) == _continuationSingletonEEClassPointer;
 
     IEnumerable<(uint Offset, uint Size)> GetGCDescSeries(TypeHandle typeHandle, uint numComponents = 0)
     {
@@ -682,7 +695,27 @@ Contracts used:
 
     public ushort GetNumThreadStaticFields(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (ushort)0 : GetClassData(typeHandle).NumThreadStaticFields;
 
-    public TargetPointer GetFieldDescList(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? TargetPointer.Null : GetClassData(typeHandle).FieldDescList;
+    public IEnumerable<TargetPointer> GetFieldDescList(TypeHandle typeHandle)
+    {
+        if (!typeHandle.IsMethodTable())
+            yield break;
+
+        TargetPointer fieldDescListPtr = GetClassData(typeHandle).FieldDescList;
+        uint fieldDescSize = _target.GetTypeInfo(DataType.FieldDesc).Size!.Value;
+
+        ushort numInstanceFields = GetNumInstanceFields(typeHandle);
+        TargetPointer parentMT = GetParentMethodTable(typeHandle);
+        if (parentMT != TargetPointer.Null)
+        {
+            TypeHandle parentHandle = GetTypeHandle(parentMT);
+            numInstanceFields -= GetNumInstanceFields(parentHandle);
+        }
+        int totalFields = numInstanceFields + GetNumStaticFields(typeHandle);
+        for (int i = 0; i < totalFields; i++)
+        {
+            yield return fieldDescListPtr + (ulong)i * fieldDescSize;
+        }
+    }
 
     public bool IsTrackedReferenceWithFinalizer(TypeHandle typeHandle) => typeHandle.IsMethodTable() && _methodTables[typeHandle.Address].Flags.IsTrackedReferenceWithFinalizer;
 
@@ -837,7 +870,7 @@ Contracts used:
                     return CorElementType.SzArray;
                 case WFLAGS_HIGH.Category_ValueType:
                 case WFLAGS_HIGH.Category_Nullable:
-                case WFLAGS_HIGH.Category_PrimitiveValueType:
+                case WFLAGS_HIGH.Category_Primitive:
                     return CorElementType.ValueType;
                 case WFLAGS_HIGH.Category_TruePrimitive:
                     return (CorElementType)GetClassData(typeHandle).InternalCorElementType;
@@ -872,20 +905,16 @@ Contracts used:
         // if typedesc: check for CorElementType.ValueType
     }
 
-    // Enums have Category_PrimitiveValueType in their MethodTable flags and their
+    // Enums have Category_Primitive in their MethodTable flags and their
     // InternalCorElementType is a primitive type (I1, U1, I2, U2, I4, U4, I8, U8),
-    // not ValueType. Regular primitive value types (IntPtr/UIntPtr) have Category_TruePrimitive.
+    // not ValueType. Regular primitive value types (Int32, etc.) have Category_TruePrimitive.
     public bool IsEnum(TypeHandle typeHandle)
     {
         if (!typeHandle.IsMethodTable())
             return false;
 
-        CorElementType sigType = GetSignatureCorElementType(typeHandle);
-        if (sigType != CorElementType.ValueType)
-            return false;
-
-        CorElementType internalType = (CorElementType)GetClassData(typeHandle).InternalCorElementType;
-        return internalType != CorElementType.ValueType;
+        MethodTable methodTable = _methodTables[typeHandle.Address];
+        return methodTable.Flags.GetFlag(WFLAGS_HIGH.Category_Mask) == WFLAGS_HIGH.Category_Primitive;
     }
 
     // return true if the TypeHandle represents an array, and set the rank to either 0 (if the type is not an array), or the rank number if it is.
@@ -1082,6 +1111,8 @@ Contracts used:
         CorElementType elemType = (CorElementType)(TypeAndFlags & 0xFF);
         return elemType == CorElementType.Ptr;
     }
+
+    public bool IsTypeDesc(TypeHandle typeHandle) => typeHandle.IsTypeDesc();
 
     public TargetPointer GetLoaderModule(TypeHandle typeHandle)
     {

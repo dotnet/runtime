@@ -356,8 +356,9 @@ bool Compiler::optExtractTestIncr(BasicBlock* cond, GenTree** ppTest, GenTree** 
     assert(ppTest != nullptr);
     assert(ppIncr != nullptr);
 
-    // Check if last two statements in the loop body are the increment of the iterator
-    // and the loop termination test.
+    // The loop termination test is expected to be the last statement of the exiting
+    // block. The increment of the iterator is expected somewhere earlier in the
+    // same block; we scan backward from the test to find an IV-shaped update.
     noway_assert(cond->firstStmt() != nullptr);
     Statement* testStmt = cond->lastStmt();
     noway_assert(testStmt != nullptr && testStmt->GetNextStmt() == nullptr);
@@ -368,24 +369,87 @@ bool Compiler::optExtractTestIncr(BasicBlock* cond, GenTree** ppTest, GenTree** 
         testStmt = newTestStmt;
     }
 
-    // Check if we have the incr stmt before the test stmt, if we don't,
-    // check if incr is part of the loop "header".
-    Statement* incrStmt = testStmt->GetPrevStmt();
-
-    // If we've added profile instrumentation, we may need to skip past a BB counter update.
+    // Walk backward from the test statement looking for a candidate IV increment
+    // of the form 'v = v op c'. For each such candidate, verify it is suitable:
+    //   - the iterator local is not address-exposed (our intervening-read check
+    //     would not see indirect accesses, and AnalyzeIteration rejects
+    //     address-exposed IVs anyway);
+    //   - the test actually reads the iterator (otherwise this is an unrelated
+    //     update that happens to be IV-shaped);
+    //   - no statement strictly between the candidate and the test reads the
+    //     iterator. Such statements would execute with the post-increment value,
+    //     violating the AnalyzeIteration invariant that no loop body IR observes
+    //     the post-increment value except the test. Stores are not checked here:
+    //     AnalyzeIteration's VisitDefs already rejects any def of iterVar in the
+    //     loop other than the picked increment. If the test block is in a try
+    //     region, treat any intervening statement that may throw as if it were
+    //     an intervening read, since an EH handler could observe the
+    //     post-increment value.
+    // On any rejection, continue scanning backward; only fail when no candidate
+    // in the block satisfies all checks. A budget bounds the combined work of
+    // the outer scan and the inner intervening-read scan to avoid pathological
+    // O(N^2) behavior in blocks with many IV-shaped statements.
     //
-    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR) && (incrStmt != nullptr) &&
-        incrStmt->GetRootNode()->IsBlockProfileUpdate())
+    Statement*   incrStmt  = nullptr;
+    unsigned     iterVar   = BAD_VAR_NUM;
+    Statement*   firstStmt = cond->firstStmt();
+    const bool   condInTry = cond->hasTryIndex();
+    unsigned int budget    = 100;
+    if (testStmt != firstStmt)
     {
-        incrStmt = incrStmt->GetPrevStmt();
+        for (Statement* s = testStmt->GetPrevStmt();; s = s->GetPrevStmt())
+        {
+            if (budget-- == 0)
+            {
+                JITDUMP("optExtractTestIncr: budget exhausted in " FMT_BB "\n", cond->bbNum);
+                return false;
+            }
+
+            unsigned candVar = optIsLoopIncrTree(s->GetRootNode());
+            if (candVar != BAD_VAR_NUM)
+            {
+                if (!lvaGetDesc(candVar)->IsAddressExposed() && gtTreeHasLocalRead(testStmt->GetRootNode(), candVar))
+                {
+                    bool intermediateUse = false;
+                    for (Statement* t = s->GetNextStmt(); t != testStmt; t = t->GetNextStmt())
+                    {
+                        assert(t != nullptr);
+                        if (budget-- == 0)
+                        {
+                            JITDUMP("optExtractTestIncr: budget exhausted in " FMT_BB "\n", cond->bbNum);
+                            return false;
+                        }
+                        GenTree* root = t->GetRootNode();
+                        if (gtTreeHasLocalRead(root, candVar) || (condInTry && ((root->gtFlags & GTF_EXCEPT) != 0)))
+                        {
+                            intermediateUse = true;
+                            break;
+                        }
+                    }
+
+                    if (!intermediateUse)
+                    {
+                        incrStmt = s;
+                        iterVar  = candVar;
+                        break;
+                    }
+                }
+            }
+
+            if (s == firstStmt)
+            {
+                break;
+            }
+        }
     }
 
-    if (incrStmt == nullptr || (optIsLoopIncrTree(incrStmt->GetRootNode()) == BAD_VAR_NUM))
+    if (incrStmt == nullptr)
     {
         return false;
     }
 
     assert(testStmt != incrStmt);
+    assert(iterVar != BAD_VAR_NUM);
 
     *ppTest = testStmt->GetRootNode();
     *ppIncr = incrStmt->GetRootNode();
