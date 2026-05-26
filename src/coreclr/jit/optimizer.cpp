@@ -381,17 +381,30 @@ bool Compiler::optExtractTestIncr(BasicBlock* cond, GenTree** ppTest, GenTree** 
     //     violating the AnalyzeIteration invariant that no loop body IR observes
     //     the post-increment value except the test. Stores are not checked here:
     //     AnalyzeIteration's VisitDefs already rejects any def of iterVar in the
-    //     loop other than the picked increment.
+    //     loop other than the picked increment. If the test block is in a try
+    //     region, treat any intervening statement that may throw as if it were
+    //     an intervening read, since an EH handler could observe the
+    //     post-increment value.
     // On any rejection, continue scanning backward; only fail when no candidate
-    // in the block satisfies all checks.
+    // in the block satisfies all checks. A budget bounds the combined work of
+    // the outer scan and the inner intervening-read scan to avoid pathological
+    // O(N^2) behavior in blocks with many IV-shaped statements.
     //
-    Statement* incrStmt  = nullptr;
-    unsigned   iterVar   = BAD_VAR_NUM;
-    Statement* firstStmt = cond->firstStmt();
+    Statement*   incrStmt  = nullptr;
+    unsigned     iterVar   = BAD_VAR_NUM;
+    Statement*   firstStmt = cond->firstStmt();
+    const bool   condInTry = cond->hasTryIndex();
+    unsigned int budget    = 100;
     if (testStmt != firstStmt)
     {
         for (Statement* s = testStmt->GetPrevStmt();; s = s->GetPrevStmt())
         {
+            if (budget-- == 0)
+            {
+                JITDUMP("optExtractTestIncr: budget exhausted in " FMT_BB "\n", cond->bbNum);
+                return false;
+            }
+
             unsigned candVar = optIsLoopIncrTree(s->GetRootNode());
             if (candVar != BAD_VAR_NUM)
             {
@@ -401,7 +414,13 @@ bool Compiler::optExtractTestIncr(BasicBlock* cond, GenTree** ppTest, GenTree** 
                     for (Statement* t = s->GetNextStmt(); t != testStmt; t = t->GetNextStmt())
                     {
                         assert(t != nullptr);
-                        if (gtTreeHasLocalRead(t->GetRootNode(), candVar))
+                        if (budget-- == 0)
+                        {
+                            JITDUMP("optExtractTestIncr: budget exhausted in " FMT_BB "\n", cond->bbNum);
+                            return false;
+                        }
+                        GenTree* root = t->GetRootNode();
+                        if (gtTreeHasLocalRead(root, candVar) || (condInTry && ((root->gtFlags & GTF_EXCEPT) != 0)))
                         {
                             intermediateUse = true;
                             break;
