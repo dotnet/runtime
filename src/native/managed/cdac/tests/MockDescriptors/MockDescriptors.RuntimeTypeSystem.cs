@@ -300,6 +300,8 @@ internal partial class MockDescriptors
     {
         internal const ulong TestFreeObjectMethodTableGlobalAddress = 0x00000000_7a0000a0;
         internal const ulong TestContinuationMethodTableGlobalAddress = 0x00000000_7a0000b0;
+        internal const ulong TestContinuationSingletonEEClassGlobalAddress = 0x00000000_7a0000b8;
+        internal const ulong TestObjectMethodTableGlobalAddress = 0x00000000_7a0000c0;
 
         private const ulong DefaultAllocationRangeStart = 0x00000000_4a000000;
         private const ulong DefaultAllocationRangeEnd = 0x00000000_4b000000;
@@ -326,6 +328,8 @@ internal partial class MockDescriptors
         internal ulong FreeObjectMethodTableAddress { get; private set; }
         internal ulong FreeObjectMethodTableGlobalAddress => TestFreeObjectMethodTableGlobalAddress;
         internal ulong ContinuationMethodTableGlobalAddress => TestContinuationMethodTableGlobalAddress;
+        internal ulong ContinuationSingletonEEClassGlobalAddress => TestContinuationSingletonEEClassGlobalAddress;
+        internal ulong ObjectMethodTableGlobalAddress => TestObjectMethodTableGlobalAddress;
         internal ulong MethodDescAlignment => GetMethodDescAlignment(Builder.TargetTestHelpers);
         internal ulong ArrayBaseSize => Builder.TargetTestHelpers.ArrayBaseBaseSize;
         // sizeof(ContinuationObject) = sizeof(MT*) + sizeof(Next*) + sizeof(Resume*) + sizeof(Flags) + sizeof(State)
@@ -358,6 +362,7 @@ internal partial class MockDescriptors
         {
             AddFreeObjectMethodTable();
             AddContinuationMethodTableGlobal();
+            AddObjectMethodTableGlobal();
         }
 
         private void AddDefaultTypes()
@@ -376,6 +381,13 @@ internal partial class MockDescriptors
         private void AddContinuationMethodTableGlobal()
         {
             AddPointerGlobal("Address of Continuation Method Table", TestContinuationMethodTableGlobalAddress, 0);
+            AddPointerGlobal("Address of Continuation Singleton EEClass", TestContinuationSingletonEEClassGlobalAddress, 0);
+        }
+
+        private void AddObjectMethodTableGlobal()
+        {
+            // Initialized to 0; patched to point to SystemObjectMethodTable in AddSystemObjectType.
+            AddPointerGlobal("Address of Object Method Table", TestObjectMethodTableGlobalAddress, 0);
         }
 
         private void AddSystemObjectType()
@@ -392,6 +404,10 @@ internal partial class MockDescriptors
             SystemObjectMethodTable.NumVirtuals = NumVirtuals;
             SystemObjectEEClass.MethodTable = SystemObjectMethodTable.Address;
             SystemObjectMethodTable.EEClassOrCanonMT = SystemObjectEEClass.Address;
+
+            // Patch the ObjectMethodTable global to point to System.Object's MethodTable.
+            Span<byte> globalAddrBytes = Builder.BorrowAddressRange(TestObjectMethodTableGlobalAddress, Builder.TargetTestHelpers.PointerSize);
+            Builder.TargetTestHelpers.WritePointer(globalAddrBytes, SystemObjectMethodTable.Address);
         }
 
         private void AddContinuationType()
@@ -405,6 +421,7 @@ internal partial class MockDescriptors
             ContinuationEEClass.MethodTable = ContinuationMethodTable.Address;
             ContinuationMethodTable.EEClassOrCanonMT = ContinuationEEClass.Address;
             SetContinuationMethodTable(ContinuationMethodTable.Address);
+            SetContinuationSingletonEEClass(ContinuationEEClass.Address);
         }
 
         private void AddPointerGlobal(string name, ulong address, ulong value)
@@ -424,6 +441,12 @@ internal partial class MockDescriptors
         {
             Span<byte> globalAddrBytes = Builder.BorrowAddressRange(TestContinuationMethodTableGlobalAddress, Builder.TargetTestHelpers.PointerSize);
             Builder.TargetTestHelpers.WritePointer(globalAddrBytes, continuationMethodTable);
+        }
+
+        internal void SetContinuationSingletonEEClass(ulong continuationSingletonEEClass)
+        {
+            Span<byte> globalAddrBytes = Builder.BorrowAddressRange(TestContinuationSingletonEEClassGlobalAddress, Builder.TargetTestHelpers.PointerSize);
+            Builder.TargetTestHelpers.WritePointer(globalAddrBytes, continuationSingletonEEClass);
         }
 
         internal MockEEClass AddEEClass(string name)
