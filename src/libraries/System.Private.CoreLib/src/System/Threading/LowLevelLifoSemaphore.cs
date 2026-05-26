@@ -25,7 +25,6 @@ namespace System.Threading
 
         private CacheLineSeparatedCounts _separated;
 
-        private readonly int _maximumSignalCount;
         private readonly short _maxSpinCount;
         private readonly short _threadWakeCooldownUsec;
         private readonly Action _onWait;
@@ -58,13 +57,9 @@ namespace System.Threading
         // the releasers are the hot threads that do the actual work (as opposed to threads who are parking/unparking).
         private int _pendingWake;
 
-        public LowLevelLifoSemaphore(int maximumSignalCount, Action onWait)
+        public LowLevelLifoSemaphore(Action onWait)
         {
-            Debug.Assert(maximumSignalCount > 0);
-            Debug.Assert(maximumSignalCount <= short.MaxValue);
-
             _separated = default;
-            _maximumSignalCount = maximumSignalCount;
             _onWait = onWait;
 
             _maxSpinCount = AppContextConfigHelper.GetInt16ComPlusOrDotNetConfig(
