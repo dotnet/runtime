@@ -1284,6 +1284,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Lock.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LockRecursionException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelLock.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Backoff.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelSpinWaiter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelMonitor.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelThreadBlocker.cs" />
@@ -2906,7 +2907,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolBoundHandle.Portable.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolBoundHandle.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolCallbackWrapper.cs" Condition="'$(FeatureNativeAot)' != 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Backoff.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' != 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PreAllocatedOverlapped.PlatformNotSupported.cs" />
