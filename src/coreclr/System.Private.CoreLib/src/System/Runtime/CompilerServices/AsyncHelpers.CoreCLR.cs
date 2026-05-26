@@ -432,7 +432,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="valueTask">ValueTask whose completion we are awaiting.</param>
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
-        private static unsafe void TransparentSuspendForValueTask(ValueTask valueTask)
+        private static unsafe void TransparentAwaitValueTask(ValueTask valueTask)
         {
             ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
             Continuation? sentinelContinuation = state.SentinelContinuation ??= new Continuation();
@@ -609,7 +609,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="task">Task whose completion we are awaiting.</param>
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
-        private static unsafe void TransparentSuspendForTask(Task task)
+        private static unsafe void TransparentAwait(Task task)
         {
             ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
             Continuation? sentinelContinuation = state.SentinelContinuation ??= new Continuation();
@@ -634,7 +634,7 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>
-        /// Used by internal thunks that implement awaiting on Task&lt;T&gt;.
+        /// Used by internal thunks that implement awaiting on Task.
         /// </summary>
         /// <param name="task">Task whose completion we are awaiting.</param>
         [BypassReadyToRun]
