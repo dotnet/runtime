@@ -427,10 +427,14 @@ int main(int argc, char** argv)
       <_AggregateExecutableShimCompilerAndLinkerArg Include="-Wl,-z,relro" Condition="'$(_IsApplePlatform)' != 'true'" />
       <_AggregateExecutableShimCompilerAndLinkerArg Include="-Wl,-z,now" Condition="'$(_IsApplePlatform)' != 'true'" />
       <_AggregateExecutableShimCompilerAndLinkerArg Include="-Wl,-z,stack-size=$(IlcDefaultStackSize)" Condition="'$(IlcDefaultStackSize)' != '' and '$(_IsApplePlatform)' != 'true'" />
+
+      <_AggregateExecutableShimNativeLibraryArg Include="-L&quot;$(NativeOutputPath)&quot;" Condition="'$(_IsApplePlatform)' != 'true'" />
+      <_AggregateExecutableShimNativeLibraryArg Include="-l:$(NativeBinaryPrefix)$(TargetName)$(NativeBinaryExt)" Condition="'$(_IsApplePlatform)' != 'true'" />
+      <_AggregateExecutableShimNativeLibraryArg Include="&quot;$(NativeBinary)&quot;" Condition="'$(_IsApplePlatform)' == 'true'" />
     </ItemGroup>
 
     <MakeDir Directories="$(NativeIntermediateOutputPath);$(NativeOutputPath)" />
     <WriteLinesToFile File="%(_AggregateExecutableReferencePath.ShimSource)" Lines="$([MSBuild]::Escape('%(_AggregateExecutableReferencePath.ShimSourceCode)'))" Overwrite="true" Encoding="utf-8" WriteOnlyWhenDifferent="true" />
-    <WriteLinesToFile File="%(_AggregateExecutableReferencePath.ShimCompileLinkRspFile)" Lines="@(_AggregateExecutableShimCompilerAndLinkerArg);&quot;%(_AggregateExecutableReferencePath.ShimSource)&quot;;&quot;$(NativeBinary)&quot;;-o;&quot;%(_AggregateExecutableReferencePath.ShimBinary)&quot;" Overwrite="true" Encoding="utf-8" WriteOnlyWhenDifferent="true" />
+    <WriteLinesToFile File="%(_AggregateExecutableReferencePath.ShimCompileLinkRspFile)" Lines="@(_AggregateExecutableShimCompilerAndLinkerArg);&quot;%(_AggregateExecutableReferencePath.ShimSource)&quot;;@(_AggregateExecutableShimNativeLibraryArg);-o;&quot;%(_AggregateExecutableReferencePath.ShimBinary)&quot;" Overwrite="true" Encoding="utf-8" WriteOnlyWhenDifferent="true" />
   </Target>
 </Project>
