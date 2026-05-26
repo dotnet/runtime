@@ -130,7 +130,7 @@ namespace System.Net.Sockets
             _handle.LastConnectFailed = false;
         }
 
-        internal SocketError ReplaceHandle()
+        internal unsafe SocketError ReplaceHandle()
         {
             // Collect values of trackable socket options marked by SafeSocketHandle.TrackSocketOption().
             // The content of optionValues is uninitialized after creation but GetTrackedSocketOptions should fill the tracked options

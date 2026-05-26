@@ -59,11 +59,31 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
+        public static void DeriveRawSecretAgreement_Allocated_NullOtherPartyPublicKey()
+        {
+            using X25519DiffieHellmanContract xdh = new();
+            AssertExtensions.Throws<ArgumentNullException>("otherPartyPublicKey", () =>
+                xdh.DeriveRawSecretAgreement((byte[])null));
+        }
+
+        [Fact]
         public static void DeriveRawSecretAgreement_Exact_NullOtherParty()
         {
             using X25519DiffieHellmanContract xdh = new();
             AssertExtensions.Throws<ArgumentNullException>("otherParty", () =>
-                xdh.DeriveRawSecretAgreement(null, new byte[X25519DiffieHellman.SecretAgreementSizeInBytes]));
+                xdh.DeriveRawSecretAgreement(
+                    (X25519DiffieHellman)null,
+                    new byte[X25519DiffieHellman.SecretAgreementSizeInBytes]));
+        }
+
+        [Theory]
+        [InlineData(X25519DiffieHellman.PublicKeySizeInBytes - 1)]
+        [InlineData(X25519DiffieHellman.PublicKeySizeInBytes + 1)]
+        public static void DeriveRawSecretAgreement_Allocated_WrongOtherPartyPublicKeyLength(int publicKeyLength)
+        {
+            using X25519DiffieHellmanContract xdh = new();
+            AssertExtensions.Throws<ArgumentException>("otherPartyPublicKey", () =>
+                xdh.DeriveRawSecretAgreement(new byte[publicKeyLength]));
         }
 
         [Fact]
@@ -79,6 +99,31 @@ namespace System.Security.Cryptography.Tests
                 xdh.DeriveRawSecretAgreement(other, new byte[X25519DiffieHellman.SecretAgreementSizeInBytes + 1]));
         }
 
+        [Theory]
+        [InlineData(X25519DiffieHellman.PublicKeySizeInBytes - 1)]
+        [InlineData(X25519DiffieHellman.PublicKeySizeInBytes + 1)]
+        public static void DeriveRawSecretAgreement_Exact_WrongOtherPartyPublicKeyLength(int publicKeyLength)
+        {
+            using X25519DiffieHellmanContract xdh = new();
+            AssertExtensions.Throws<ArgumentException>("otherPartyPublicKey", () =>
+                xdh.DeriveRawSecretAgreement(
+                    new byte[publicKeyLength],
+                    new byte[X25519DiffieHellman.SecretAgreementSizeInBytes]));
+        }
+
+        [Fact]
+        public static void DeriveRawSecretAgreement_Exact_WrongDestinationLength_WithOtherPartyPublicKey()
+        {
+            using X25519DiffieHellmanContract xdh = new();
+            byte[] publicKey = new byte[X25519DiffieHellman.PublicKeySizeInBytes];
+
+            AssertExtensions.Throws<ArgumentException>("destination", () =>
+                xdh.DeriveRawSecretAgreement(publicKey, new byte[X25519DiffieHellman.SecretAgreementSizeInBytes - 1]));
+
+            AssertExtensions.Throws<ArgumentException>("destination", () =>
+                xdh.DeriveRawSecretAgreement(publicKey, new byte[X25519DiffieHellman.SecretAgreementSizeInBytes + 1]));
+        }
+
         [Fact]
         public static void DeriveRawSecretAgreement_Allocated_Disposed()
         {
@@ -89,6 +134,15 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
+        public static void DeriveRawSecretAgreement_Allocated_Disposed_WithOtherPartyPublicKey()
+        {
+            X25519DiffieHellmanContract xdh = new();
+            xdh.Dispose();
+            Assert.Throws<ObjectDisposedException>(() =>
+                xdh.DeriveRawSecretAgreement(new byte[X25519DiffieHellman.PublicKeySizeInBytes]));
+        }
+
+        [Fact]
         public static void DeriveRawSecretAgreement_Exact_Disposed()
         {
             X25519DiffieHellmanContract xdh = new();
@@ -96,6 +150,17 @@ namespace System.Security.Cryptography.Tests
             using X25519DiffieHellmanContract other = new();
             Assert.Throws<ObjectDisposedException>(() =>
                 xdh.DeriveRawSecretAgreement(other, new byte[X25519DiffieHellman.SecretAgreementSizeInBytes]));
+        }
+
+        [Fact]
+        public static void DeriveRawSecretAgreement_Exact_Disposed_WithOtherPartyPublicKey()
+        {
+            X25519DiffieHellmanContract xdh = new();
+            xdh.Dispose();
+            Assert.Throws<ObjectDisposedException>(() =>
+                xdh.DeriveRawSecretAgreement(
+                    new byte[X25519DiffieHellman.PublicKeySizeInBytes],
+                    new byte[X25519DiffieHellman.SecretAgreementSizeInBytes]));
         }
 
         [Fact]
@@ -117,6 +182,25 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
+        public static void DeriveRawSecretAgreement_Allocated_Works_WithOtherPartyPublicKey()
+        {
+            byte[] publicKey = new byte[X25519DiffieHellman.PublicKeySizeInBytes];
+            publicKey.AsSpan().Fill(0x42);
+            using X25519DiffieHellmanContract xdh = new()
+            {
+                OnDeriveRawSecretAgreementCoreWithBytes = (ReadOnlySpan<byte> otherPartyPublicKey, Span<byte> destination) =>
+                {
+                    AssertExtensions.SequenceEqual(publicKey, otherPartyPublicKey);
+                    destination.Fill(0xAA);
+                }
+            };
+
+            byte[] agreement = xdh.DeriveRawSecretAgreement(publicKey);
+            Assert.Equal(X25519DiffieHellman.SecretAgreementSizeInBytes, agreement.Length);
+            AssertExtensions.FilledWith<byte>(0xAA, agreement);
+        }
+
+        [Fact]
         public static void DeriveRawSecretAgreement_Exact_Works()
         {
             byte[] buffer = new byte[X25519DiffieHellman.SecretAgreementSizeInBytes];
@@ -131,6 +215,24 @@ namespace System.Security.Cryptography.Tests
             };
 
             xdh.DeriveRawSecretAgreement(other, buffer);
+        }
+
+        [Fact]
+        public static void DeriveRawSecretAgreement_Exact_Works_WithOtherPartyPublicKey()
+        {
+            byte[] publicKey = new byte[X25519DiffieHellman.PublicKeySizeInBytes];
+            publicKey.AsSpan().Fill(0x42);
+            byte[] buffer = new byte[X25519DiffieHellman.SecretAgreementSizeInBytes];
+            using X25519DiffieHellmanContract xdh = new()
+            {
+                OnDeriveRawSecretAgreementCoreWithBytes = (ReadOnlySpan<byte> otherPartyPublicKey, Span<byte> destination) =>
+                {
+                    AssertExtensions.SequenceEqual(publicKey, otherPartyPublicKey);
+                    AssertExtensions.Same(buffer, destination);
+                }
+            };
+
+            xdh.DeriveRawSecretAgreement(publicKey, buffer);
         }
 
         [Fact]
@@ -822,12 +924,14 @@ namespace System.Security.Cryptography.Tests
     internal sealed class X25519DiffieHellmanContract : X25519DiffieHellman
     {
         internal DeriveRawSecretAgreementCoreCallback OnDeriveRawSecretAgreementCore { get; set; }
+        internal DeriveRawSecretAgreementCoreWithBytesCallback OnDeriveRawSecretAgreementCoreWithBytes { get; set; }
         internal ExportKeyCoreCallback OnExportPrivateKeyCore { get; set; }
         internal ExportKeyCoreCallback OnExportPublicKeyCore { get; set; }
         internal TryExportPkcs8PrivateKeyCoreCallback OnTryExportPkcs8PrivateKeyCore { get; set; }
         internal Action<bool> OnDispose { get; set; } = (bool disposing) => { };
 
         internal int DeriveRawSecretAgreementCoreCount { get; set; }
+        internal int DeriveRawSecretAgreementCoreWithBytesCount { get; set; }
         internal int ExportPrivateKeyCoreCount { get; set; }
         internal int ExportPublicKeyCoreCount { get; set; }
         internal int TryExportPkcs8PrivateKeyCoreCount { get; set; }
@@ -838,6 +942,12 @@ namespace System.Security.Cryptography.Tests
         {
             DeriveRawSecretAgreementCoreCount++;
             GetCallback(OnDeriveRawSecretAgreementCore)(otherParty, destination);
+        }
+
+        protected override void DeriveRawSecretAgreementCore(ReadOnlySpan<byte> otherPartyPublicKey, Span<byte> destination)
+        {
+            DeriveRawSecretAgreementCoreWithBytesCount++;
+            GetCallback(OnDeriveRawSecretAgreementCoreWithBytes)(otherPartyPublicKey, destination);
         }
 
         protected override void ExportPrivateKeyCore(Span<byte> destination)
@@ -871,6 +981,10 @@ namespace System.Security.Cryptography.Tests
             {
                 Assert.Fail($"Expected call to {nameof(DeriveRawSecretAgreementCore)}.");
             }
+            if (OnDeriveRawSecretAgreementCoreWithBytes is not null && DeriveRawSecretAgreementCoreWithBytesCount == 0)
+            {
+                Assert.Fail($"Expected call to {nameof(DeriveRawSecretAgreementCore)}.");
+            }
             if (OnExportPrivateKeyCore is not null && ExportPrivateKeyCoreCount == 0)
             {
                 Assert.Fail($"Expected call to {nameof(ExportPrivateKeyCore)}.");
@@ -886,6 +1000,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         internal delegate void DeriveRawSecretAgreementCoreCallback(X25519DiffieHellman otherParty, Span<byte> destination);
+        internal delegate void DeriveRawSecretAgreementCoreWithBytesCallback(ReadOnlySpan<byte> otherPartyPublicKey, Span<byte> destination);
         internal delegate void ExportKeyCoreCallback(Span<byte> destination);
         internal delegate bool TryExportPkcs8PrivateKeyCoreCallback(Span<byte> destination, out int bytesWritten);
 

@@ -116,14 +116,14 @@ namespace Internal.JitInterface
         public mdToken token;
 
         public CorInfoType retType { get { return (CorInfoType)_retType; } set { _retType = (byte)value; } }
-        private CorInfoCallConv getCallConv() { return (CorInfoCallConv)((callConv & CorInfoCallConv.CORINFO_CALLCONV_MASK)); }
+        internal CorInfoCallConv getCallConv() { return (CorInfoCallConv)((callConv & CorInfoCallConv.CORINFO_CALLCONV_MASK)); }
         private bool hasThis() { return ((callConv & CorInfoCallConv.CORINFO_CALLCONV_HASTHIS) != 0); }
         private bool hasExplicitThis() { return ((callConv & CorInfoCallConv.CORINFO_CALLCONV_EXPLICITTHIS) != 0); }
         private bool hasImplicitThis() { return ((callConv & (CorInfoCallConv.CORINFO_CALLCONV_HASTHIS | CorInfoCallConv.CORINFO_CALLCONV_EXPLICITTHIS)) == CorInfoCallConv.CORINFO_CALLCONV_HASTHIS); }
         private uint totalILArgs() { return (uint)(numArgs + (hasImplicitThis() ? 1 : 0)); }
         private bool isVarArg() { return ((getCallConv() == CorInfoCallConv.CORINFO_CALLCONV_VARARG) || (getCallConv() == CorInfoCallConv.CORINFO_CALLCONV_NATIVEVARARG)); }
         internal bool hasTypeArg() { return ((callConv & CorInfoCallConv.CORINFO_CALLCONV_PARAMTYPE) != 0); }
-        private bool isAsyncCall() { return ((callConv & CorInfoCallConv.CORINFO_CALLCONV_ASYNCCALL) != 0); }
+        internal bool isAsyncCall() { return ((callConv & CorInfoCallConv.CORINFO_CALLCONV_ASYNCCALL) != 0); }
     };
 
     //----------------------------------------------------------------------------
@@ -729,20 +729,11 @@ namespace Internal.JitInterface
         CORINFO_TYPE_NATIVEUINT = 0xd,
         CORINFO_TYPE_FLOAT = 0xe,
         CORINFO_TYPE_DOUBLE = 0xf,
-        CORINFO_TYPE_STRING = 0x10,         // Not used, should remove
-        CORINFO_TYPE_PTR = 0x11,
-        CORINFO_TYPE_BYREF = 0x12,
-        CORINFO_TYPE_VALUECLASS = 0x13,
-        CORINFO_TYPE_CLASS = 0x14,
-        CORINFO_TYPE_REFANY = 0x15,
+        CORINFO_TYPE_PTR = 0x10,
+        CORINFO_TYPE_BYREF = 0x11,
+        CORINFO_TYPE_VALUECLASS = 0x12,
+        CORINFO_TYPE_CLASS = 0x13,
 
-        // CORINFO_TYPE_VAR is for a generic type variable.
-        // Generic type variables only appear when the JIT is doing
-        // verification (not NOT compilation) of generic code
-        // for the EE, in which case we're running
-        // the JIT in "import only" mode.
-
-        CORINFO_TYPE_VAR = 0x16,
         CORINFO_TYPE_COUNT,                         // number of jit types
     }
 
@@ -971,8 +962,6 @@ namespace Internal.JitInterface
         public CORINFO_FIELD_STRUCT_* continuationFlagsFldHnd;
         // Method handle for AsyncHelpers.CaptureExecutionContext
         public CORINFO_METHOD_STRUCT_* captureExecutionContextMethHnd;
-        // Method handle for AsyncHelpers.RestoreExecutionContext
-        public CORINFO_METHOD_STRUCT_* restoreExecutionContextMethHnd;
         public CORINFO_METHOD_STRUCT_* captureContinuationContextMethHnd;
         public CORINFO_METHOD_STRUCT_* captureContextsMethHnd;
         public CORINFO_METHOD_STRUCT_* restoreContextsMethHnd;
@@ -1542,6 +1531,8 @@ namespace Internal.JitInterface
         // ARM only
         CORJIT_FLAG_RELATIVE_CODE_RELOCS    = 29, // JIT should generate PC-relative address computations instead of EE relocation records
         CORJIT_FLAG_SOFTFP_ABI              = 30, // Enable armel calling convention
+
+        CORJIT_FLAG_USE_DISPATCH_HELPERS    = 31, // The JIT should use helpers for interface dispatch instead of virtual stub dispatch
     }
 
     public struct CORJIT_FLAGS

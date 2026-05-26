@@ -352,7 +352,7 @@ namespace System.Security.Cryptography
         ///     so any valid value will always fit.
         ///   </para>
         /// </remarks>
-        protected virtual int DecryptKeyWrapPaddedCore(ReadOnlySpan<byte> source, Span<byte> destination)
+        protected virtual unsafe int DecryptKeyWrapPaddedCore(ReadOnlySpan<byte> source, Span<byte> destination)
         {
             ulong iv;
 
@@ -406,7 +406,7 @@ namespace System.Security.Cryptography
         ///     <see cref="GetKeyWrapPaddedLength"/> for the given input.
         ///   </para>
         /// </remarks>
-        protected virtual void EncryptKeyWrapPaddedCore(ReadOnlySpan<byte> source, Span<byte> destination)
+        protected virtual unsafe void EncryptKeyWrapPaddedCore(ReadOnlySpan<byte> source, Span<byte> destination)
         {
             Debug.Assert(destination.Length == GetKeyWrapPaddedLength(source.Length));
 
@@ -447,7 +447,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        private void Rfc3394Wrap(ulong iv, ReadOnlySpan<byte> source, Span<byte> destination)
+        private unsafe void Rfc3394Wrap(ulong iv, ReadOnlySpan<byte> source, Span<byte> destination)
         {
             Debug.Assert(source.Length % 8 == 0);
             Debug.Assert(source.Length >= 16);
@@ -481,7 +481,7 @@ namespace System.Security.Cryptography
             A.CopyTo(destination);
         }
 
-        private ulong Rfc3394Unwrap(ReadOnlySpan<byte> source, Span<byte> destination)
+        private unsafe ulong Rfc3394Unwrap(ReadOnlySpan<byte> source, Span<byte> destination)
         {
             Span<byte> B = stackalloc byte[16];
             Span<byte> A = B.Slice(0, 8);
