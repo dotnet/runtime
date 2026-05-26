@@ -92,6 +92,30 @@ internal static class R2RAssert
         return result;
     }
 
+    /// <summary>
+    /// Returns true if the image contains hot/cold split runtime functions and the raw cold
+    /// runtime function start RVAs carry exactly one ARM Thumb bit.
+    /// </summary>
+    public static bool HasExpectedArmHotColdRuntimeFunctionTargets(ReadyToRunReader reader, out string diagnostic)
+    {
+        if (reader.Machine != Machine.ArmThumb2)
+        {
+            diagnostic = $"Expected ARM Thumb2 image, but found {reader.Machine}.";
+            return false;
+        }
+
+        var failures = new List<string>();
+
+        bool result = true;
+        result &= RuntimeFunctionStartRVAsAreOdd(reader, failures);
+        result &= ColdRuntimeFunctionStartRVAsAreOdd(reader, failures);
+
+        diagnostic = result
+            ? "ARM hot/cold runtime function targets are encoded as expected."
+            : string.Join(Environment.NewLine, failures);
+        return result;
+    }
+
     private static bool SectionRVAIsEven(ReadyToRunReader reader, ReadyToRunSectionType sectionType, List<string> failures)
     {
         if (!reader.ReadyToRunHeader.Sections.TryGetValue(sectionType, out ReadyToRunSection section))
@@ -278,6 +302,74 @@ internal static class R2RAssert
         }
 
         return false;
+    }
+
+    private static bool ColdRuntimeFunctionStartRVAsAreOdd(ReadyToRunReader reader, List<string> failures)
+    {
+        if (!reader.ReadyToRunHeader.Sections.TryGetValue(ReadyToRunSectionType.RuntimeFunctions, out ReadyToRunSection runtimeFunctionsSection))
+        {
+            failures.Add("Expected RuntimeFunctions section not found.");
+            return false;
+        }
+
+        if (!reader.ReadyToRunHeader.Sections.TryGetValue(ReadyToRunSectionType.HotColdMap, out ReadyToRunSection hotColdMapSection))
+        {
+            failures.Add("Expected HotColdMap section not found.");
+            return false;
+        }
+
+        const int RuntimeFunctionSize = 2 * sizeof(int);
+        int runtimeFunctionCount = runtimeFunctionsSection.Size / RuntimeFunctionSize;
+        int hotColdMapCount = hotColdMapSection.Size / (2 * sizeof(int));
+        if (hotColdMapCount == 0)
+        {
+            failures.Add("Expected HotColdMap to contain at least one mapping.");
+            return false;
+        }
+
+        var mappings = new List<(int ColdIndex, int HotIndex)>(hotColdMapCount);
+        int hotColdMapOffset = reader.CompositeReader.GetOffset(hotColdMapSection.RelativeVirtualAddress);
+        for (int i = 0; i < hotColdMapCount; i++, hotColdMapOffset += 2 * sizeof(int))
+        {
+            int coldIndex = BinaryPrimitives.ReadInt32LittleEndian(reader.Image.AsSpan(hotColdMapOffset));
+            int hotIndex = BinaryPrimitives.ReadInt32LittleEndian(reader.Image.AsSpan(hotColdMapOffset + sizeof(int)));
+            mappings.Add((coldIndex, hotIndex));
+        }
+
+        bool result = true;
+        int entries = 0;
+        int runtimeFunctionsOffset = reader.CompositeReader.GetOffset(runtimeFunctionsSection.RelativeVirtualAddress);
+        for (int i = 0; i < mappings.Count; i++)
+        {
+            int coldIndex = mappings[i].ColdIndex;
+            int coldEndIndex = i + 1 < mappings.Count ? mappings[i + 1].ColdIndex : runtimeFunctionCount;
+            if (coldIndex < 0 || coldEndIndex > runtimeFunctionCount || coldIndex >= coldEndIndex)
+            {
+                failures.Add($"Invalid HotColdMap cold runtime function range [{coldIndex}, {coldEndIndex}) for {runtimeFunctionCount} runtime functions.");
+                result = false;
+                continue;
+            }
+
+            for (int runtimeFunctionIndex = coldIndex; runtimeFunctionIndex < coldEndIndex; runtimeFunctionIndex++)
+            {
+                int entryOffset = runtimeFunctionsOffset + runtimeFunctionIndex * RuntimeFunctionSize;
+                int startRva = BinaryPrimitives.ReadInt32LittleEndian(reader.Image.AsSpan(entryOffset));
+                entries++;
+                if ((startRva & 1) == 0)
+                {
+                    failures.Add($"Cold RuntimeFunctions[{runtimeFunctionIndex}] start RVA 0x{startRva:X8} should have the Thumb bit set.");
+                    result = false;
+                }
+            }
+        }
+
+        if (entries == 0)
+        {
+            failures.Add("Expected at least one cold runtime function entry.");
+            result = false;
+        }
+
+        return result;
     }
 
     private static bool RuntimeFunctionStartRVAsAreOdd(ReadyToRunReader reader, List<string> failures)
