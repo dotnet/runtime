@@ -63,7 +63,6 @@ namespace Microsoft.AspNetCore.Hosting.FunctionalTests
                 TargetFramework = $"net{version.Major}.{version.Minor}",
                 ApplicationType = ApplicationType.Portable,
                 PublishApplicationBeforeDeployment = true,
-                PreservePublishedApplicationForDebugging = true,
                 StatusMessagesEnabled = false
             };
             deploymentParameters.ApplicationPublisher = new ExistingOutputApplicationPublisher(applicationPath);
@@ -151,16 +150,22 @@ namespace Microsoft.AspNetCore.Hosting.FunctionalTests
 
         private sealed class ExistingOutputApplicationPublisher : ApplicationPublisher
         {
-            private readonly string _applicationPath;
-
             public ExistingOutputApplicationPublisher(string applicationPath)
                 : base(applicationPath)
             {
-                _applicationPath = applicationPath;
             }
 
             public override Task<PublishedApplication> Publish(DeploymentParameters deploymentParameters, ILogger logger)
-                => Task.FromResult(new PublishedApplication(_applicationPath, logger));
+                => Task.FromResult<PublishedApplication>(new BorrowedPublishedApplication(ApplicationPath, logger));
+
+            // Wraps a path that is borrowed (not owned) from the test output directory.
+            // Dispose is intentionally a no-op to prevent deleting AppContext.BaseDirectory.
+            private sealed class BorrowedPublishedApplication : PublishedApplication
+            {
+                public BorrowedPublishedApplication(string path, ILogger logger) : base(path, logger) { }
+
+                public override void Dispose() { }
+            }
         }
 
         [DllImport("libc", SetLastError = true)]
