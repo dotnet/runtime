@@ -309,6 +309,29 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void Open_ExitedProcess_BehaviorDependsOnPlatform()
+        {
+            using Process process = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
+            process.Start();
+            process.WaitForExit();
+
+            if (OperatingSystem.IsWindows())
+            {
+                // On Windows, the kernel process object persists as long as at least one handle is open.
+                // Since Process.WaitForExit() doesn't release the handle, OpenProcess succeeds and returns
+                // a valid handle to the terminated process.
+                using SafeProcessHandle handle = SafeProcessHandle.Open(process.Id);
+                Assert.False(handle.IsInvalid);
+            }
+            else
+            {
+                // On Unix, once the process has been waited for (reaped), it is removed from the process
+                // table and its PID may be reused. Open throws because the process no longer exists.
+                Assert.Throws<Win32Exception>(() => SafeProcessHandle.Open(process.Id));
+            }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void Open_ThenKill_TerminatesProcess()
         {
             using Process process = CreateProcess(static () =>

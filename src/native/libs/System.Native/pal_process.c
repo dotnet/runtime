@@ -40,7 +40,7 @@
 #else // HAVE_CLOSE_RANGE
 #include <sys/syscall.h>
 #endif // !defined(HAVE_CLOSE_RANGE)
-#if !defined(SYS_pidfd_open) && !defined(__NR_pidfd_open)
+#if !defined(__NR_pidfd_open)
 // pidfd_open was added in Linux 5.3. The syscall number is 434 for all
 // architectures using the generic syscall table (asm-generic/unistd.h),
 // which covers aarch64, riscv, s390x, ppc64le, and others. The exception
@@ -50,10 +50,7 @@
 # else
 #  define __NR_pidfd_open 434
 # endif
-#endif // !defined(SYS_pidfd_open) && !defined(__NR_pidfd_open)
-#if !defined(SYS_pidfd_open) && defined(__NR_pidfd_open)
-#define SYS_pidfd_open __NR_pidfd_open
-#endif
+#endif // !defined(__NR_pidfd_open)
 #endif // defined(__linux__)
 #if (HAVE_CLOSE_RANGE || defined(__NR_close_range)) && !defined(CLOSE_RANGE_CLOEXEC)
 #define CLOSE_RANGE_CLOEXEC (1U << 2)
@@ -350,7 +347,7 @@ static void RestrictHandleInheritance(int32_t* inheritedFds, int32_t inheritedFd
 static int32_t TryOpenPidfd(int32_t pid)
 {
 #if defined(__linux__)
-    int pidfd = (int)syscall(SYS_pidfd_open, pid, 0);
+    int pidfd = (int)syscall(__NR_pidfd_open, pid, 0);
     if (pidfd >= 0)
     {
         return pidfd;

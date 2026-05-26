@@ -66,6 +66,8 @@ namespace Microsoft.Win32.SafeHandles
         /// <remarks>
         /// <para>
         /// On Windows, this method uses OpenProcess with PROCESS_QUERY_LIMITED_INFORMATION, SYNCHRONIZE, and PROCESS_TERMINATE permissions.
+        /// If the process has already exited, the method may still succeed and return a valid handle representing the terminated process;
+        /// waiting on such a handle returns immediately.
         /// </para>
         /// <para>
         /// On Linux with pidfd support, this method uses the pidfd_open syscall.
@@ -73,6 +75,9 @@ namespace Microsoft.Win32.SafeHandles
         /// <para>
         /// On other Unix systems, this method uses kill(pid, 0) to verify the process exists and the caller has permission to signal it.
         /// If it's not a child process of the current process, the returned handle is prone to process ID reuse issues in this case.
+        /// </para>
+        /// <para>
+        /// On Unix, if the process has already exited and been removed from the process table, a <see cref="Win32Exception"/> is thrown.
         /// </para>
         /// </remarks>
         [UnsupportedOSPlatform("ios")]
