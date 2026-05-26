@@ -78,7 +78,6 @@ public class R2RTestSuites
                         "wasm",
                         "--targetos",
                         "browser",
-                        "--compile-no-methods",
                     },
                     Validate = Validate,
                 },
