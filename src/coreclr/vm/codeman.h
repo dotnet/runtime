@@ -630,6 +630,9 @@ private:
     void Register();
     UnwindInfoTable(ULONG_PTR rangeStart, ULONG_PTR rangeEnd);
 
+public:
+    void ReleaseFlushGate() { InterlockedExchange(&m_flushInProgress, 0); }
+
 private:
     void FlushPendingEntries();
 
@@ -652,6 +655,8 @@ private:
     // independent RangeSections can publish/unpublish concurrently.
     Crst                m_publishLock; // Protects the main table and OS registration.
     Crst                m_pendingLock; // Protects the pending table only.
+
+    Volatile<LONG>      m_flushInProgress;
 #endif // defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
 };
 
