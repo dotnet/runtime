@@ -847,7 +847,7 @@ namespace System.Net.Http
                 // exposed to user-provided HttpContent.SerializeToStream(Async) overrides, and the
                 // lifetime of the underlying pooled buffers is owned by HttpContent, not the user.
                 // All internal cleanup goes through ReturnAllPooledBuffers directly.
-                throw new InvalidOperationException();
+                throw new InvalidOperationException(SR.net_http_content_buffer_stream_disposed);
             }
 
             /// <summary>Should only be called once.</summary>
