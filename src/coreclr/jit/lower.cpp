@@ -10264,17 +10264,19 @@ void Lowering::LowerCopyBlockStore(GenTreeBlk* blkNode)
     bool         doCpObj   = layout->HasGCPtr();
     const bool   isNotHeap = blkNode->IsAddressNotOnHeap(m_compiler);
 
+#ifndef TARGET_WASM
     // x86/x64 has a SIMD-aware Memcpy unroll threshold; SIMD is only usable
     // when we are not going through the per-slot write-barrier path.
     const bool     canUseSimd  = !doCpObj || isNotHeap;
     const unsigned unrollLimit = m_compiler->getUnrollThreshold(Compiler::UnrollKind::Memcpy, canUseSimd);
+#endif
 
-#ifndef JIT32_GCENCODER
     if (doCpObj && isNotHeap)
     {
         // No write barriers are needed if the destination is known to be outside of the GC heap.
         // If the layout contains a byref, then we know it must live on the stack.
         doCpObj = false;
+#if !defined(JIT32_GCENCODER) && !defined(TARGET_WASM)
         if (size <= unrollLimit)
         {
             // If the size is small enough to unroll then we need to mark the block as non-interruptible
@@ -10282,8 +10284,8 @@ void Lowering::LowerCopyBlockStore(GenTreeBlk* blkNode)
             // temporary register(s) used for copying. This is not supported for the JIT32_GCENCODER.
             blkNode->gtBlkOpGcUnsafe = true;
         }
-    }
 #endif
+    }
 
     if (doCpObj)
     {
@@ -10297,6 +10299,19 @@ void Lowering::LowerCopyBlockStore(GenTreeBlk* blkNode)
         return;
     }
 
+#ifdef TARGET_WASM
+    // Use the wasm `memory.copy` instruction.
+    blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindNativeOpcode;
+    if (src->OperIs(GT_IND) && ((src->gtFlags & GTF_IND_NONFAULTING) == 0))
+    {
+        SetMultiplyUsed(src->AsIndir()->Addr() DEBUGARG("LowerCopyBlockStore source address (indirection)"));
+    }
+
+    if ((blkNode->gtFlags & GTF_IND_NONFAULTING) == 0)
+    {
+        SetMultiplyUsed(dstAddr DEBUGARG("LowerCopyBlockStore destination address"));
+    }
+#else
     if (size <= unrollLimit)
     {
         blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
@@ -10310,6 +10325,7 @@ void Lowering::LowerCopyBlockStore(GenTreeBlk* blkNode)
 
     // Use memcpy
     LowerBlockStoreAsHelperCall(blkNode);
+#endif // TARGET_WASM
 }
 
 //------------------------------------------------------------------------
@@ -12147,17 +12163,11 @@ void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
 
     if (blkNode->OperIsInitBlkOp())
     {
-        // TODO: clean up LowerBlockStore (renamed to LowerInitBlock)
         LowerBlockStore(blkNode);
     }
     else
     {
-#ifdef TARGET_WASM
-        // TODO: unify with the shared logic in LowerCopyBlockStore
-        LowerBlockStore(blkNode);
-#else
         LowerCopyBlockStore(blkNode);
-#endif
     }
 
     LowerStoreIndirCoalescing(blkNode);

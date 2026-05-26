@@ -455,8 +455,9 @@ private:
 #endif // TARGET_XARCH
 
 #ifdef TARGET_WASM
-    GenTree* LowerNeg(GenTreeOp* node);
-    void     LowerIndexAddr(GenTreeIndexAddr* indexAddr);
+    static void SetMultiplyUsed(GenTree* node DEBUGARG(const char* reason));
+    GenTree*    LowerNeg(GenTreeOp* node);
+    void        LowerIndexAddr(GenTreeIndexAddr* indexAddr);
 #endif
 
     bool TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* parent);
