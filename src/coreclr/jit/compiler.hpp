@@ -2101,7 +2101,8 @@ void GenTree::BashToConst(T value, var_types type /* = TYP_UNDEF */)
             }
 
             AsIntCon()->SetIconValue(static_cast<ssize_t>(value));
-            AsIntCon()->gtFieldSeq = nullptr;
+            AsIntCon()->gtFieldSeq          = nullptr;
+            AsIntCon()->gtCompileTimeHandle = 0;
             break;
 
 #if !defined(TARGET_64BIT)
