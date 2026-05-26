@@ -319,7 +319,7 @@ InterpInst* InterpCompiler::NewIns(int opcode, int dataLen)
     InterpInst *ins = (InterpInst*)getAllocator(IMK_Instruction).allocateZeroed<char>(insSize);
     ins->opcode = opcode;
     ins->ilOffset = m_currentILOffset;
-    if (m_isFirstInstForEmptyILStack)
+    if (m_isFirstInstForEmptyILStack && !InterpOpIsEmitNop(opcode))
     {
         // This is the first instruction we are emitting for this IL offset and the stack is empty, which
         // implies the IL stack is empty too.
@@ -1130,6 +1130,9 @@ int32_t *InterpCompiler::EmitBBCode(int32_t *ip, InterpBasicBlock *bb, TArray<Re
             ins->nativeOffset = (int32_t)(ip - m_pMethodCode);
             if (m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE))
             {
+                // FIXME We should avoid removing these instructions in the first place. I believe
+                // this only needs to be handled by emitting INTOP_DEBUG_SEQ_POINT for CEE_POP.
+                //
                 // Emit a debug sequence point so that eliminated IL instructions
                 // still occupy a bytecode slot. This ensures return addresses after
                 // calls land within the call's native offset range rather than on
@@ -1269,6 +1272,12 @@ void InterpCompiler::EmitCode()
         }
 
         m_compHnd->setVars(m_methodInfo->ftn, m_numILVars, eeVars);
+    }
+
+    if (m_ILToNativeMapSize == 0 && m_pILToNativeMap != NULL)
+    {
+        m_compHnd->freeArray(m_pILToNativeMap);
+        m_pILToNativeMap = NULL;
     }
     m_compHnd->setBoundaries(m_methodInfo->ftn, m_ILToNativeMapSize, m_pILToNativeMap);
     m_pILToNativeMap = NULL; // Ownership transferred to the VM
