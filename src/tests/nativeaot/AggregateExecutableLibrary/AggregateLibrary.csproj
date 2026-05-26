@@ -12,7 +12,7 @@
     <CLRTestTargetUnsupported Condition="'$(TargetsAndroid)' == 'true'">true</CLRTestTargetUnsupported>
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <CLRTestIsHosted>false</CLRTestIsHosted>
-    <CLRTestRunFile Condition="'$(TargetsWindows)' == 'true'">native\ValidatorExe.exe</CLRTestRunFile>
+    <CLRTestRunFile Condition="'$(TargetsWindows)' == 'true'">native/ValidatorExe.exe</CLRTestRunFile>
     <CLRTestRunFile Condition="'$(TargetsWindows)' != 'true'">./native/ValidatorExe</CLRTestRunFile>
     <SkipInferOutputType>true</SkipInferOutputType>
     <!-- warning CS2008: No source files specified -->

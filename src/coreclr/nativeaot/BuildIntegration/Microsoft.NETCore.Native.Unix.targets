@@ -382,10 +382,10 @@ The .NET Foundation licenses this file to you under the MIT license.
   <Target Name="CreateShimExes"
           Condition="'$(AggregateExecutable)' == 'true'"
           DependsOnTargets="LinkNative;WriteAggregateExecutableShimRspFiles"
-          Inputs="$(NativeBinary);@(_AggregateExecutableReferencePath->'%(ShimSource)');@(_AggregateExecutableReferencePath->'%(ShimLinkRspFile)')"
+          Inputs="$(NativeBinary);@(_AggregateExecutableReferencePath->'%(ShimSource)');@(_AggregateExecutableReferencePath->'%(ShimCompileLinkRspFile)')"
           Outputs="@(_AggregateExecutableShim);@(_AggregateExecutableShimSymbol)">
 
-    <Exec Command="&quot;$(CppCompiler)&quot; @&quot;%(_AggregateExecutableReferencePath.ShimLinkRspFile)&quot;" />
+    <Exec Command="&quot;$(CppCompiler)&quot; @&quot;%(_AggregateExecutableReferencePath.ShimCompileLinkRspFile)&quot;" />
     <Exec Condition="'$(StripSymbols)' == 'true' and '$(NativeDebugSymbols)' == 'true' and '$(_IsApplePlatform)' != 'true'"
           Command="&quot;$(ObjCopyName)&quot; --only-keep-debug &quot;%(_AggregateExecutableReferencePath.ShimBinary)&quot; &quot;%(_AggregateExecutableReferencePath.ShimBinary)$(NativeSymbolExt)&quot;" />
     <Exec Condition="'$(StripSymbols)' == 'true' and '$(_IsApplePlatform)' != 'true'"
@@ -431,6 +431,6 @@ int main(int argc, char** argv)
 
     <MakeDir Directories="$(NativeIntermediateOutputPath);$(NativeOutputPath)" />
     <WriteLinesToFile File="%(_AggregateExecutableReferencePath.ShimSource)" Lines="$([MSBuild]::Escape('%(_AggregateExecutableReferencePath.ShimSourceCode)'))" Overwrite="true" Encoding="utf-8" WriteOnlyWhenDifferent="true" />
-    <WriteLinesToFile File="%(_AggregateExecutableReferencePath.ShimLinkRspFile)" Lines="&quot;%(_AggregateExecutableReferencePath.ShimSource)&quot;;&quot;$(NativeBinary)&quot;;-o;&quot;%(_AggregateExecutableReferencePath.ShimBinary)&quot;;@(_AggregateExecutableShimLinkerArg)" Overwrite="true" Encoding="utf-8" WriteOnlyWhenDifferent="true" />
+    <WriteLinesToFile File="%(_AggregateExecutableReferencePath.ShimCompileLinkRspFile)" Lines="&quot;%(_AggregateExecutableReferencePath.ShimSource)&quot;;&quot;$(NativeBinary)&quot;;-o;&quot;%(_AggregateExecutableReferencePath.ShimBinary)&quot;;@(_AggregateExecutableShimLinkerArg)" Overwrite="true" Encoding="utf-8" WriteOnlyWhenDifferent="true" />
   </Target>
 </Project>
