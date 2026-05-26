@@ -405,11 +405,10 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
     uint IExecutionManager.GetStackParameterSize(CodeBlockHandle codeInfoHandle)
     {
         IExecutionManager eman = this;
-
-        if (eman.IsFunclet(codeInfoHandle))
+        if (_target.Contracts.RuntimeInfo.GetTargetArchitecture() is not RuntimeInfoArchitecture.X86)
             return 0;
 
-        if (_target.Contracts.RuntimeInfo.GetTargetArchitecture() is not RuntimeInfoArchitecture.X86)
+        if (eman.IsFunclet(codeInfoHandle))
             return 0;
 
         eman.GetGCInfo(codeInfoHandle, out TargetPointer gcInfoAddress, out uint gcInfoVersion);
