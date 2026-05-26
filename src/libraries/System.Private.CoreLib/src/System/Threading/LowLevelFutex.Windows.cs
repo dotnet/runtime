@@ -28,7 +28,7 @@ namespace System.Threading
                 return true;
             }
 
-            int lastError = Marshal.GetLastWin32Error();
+            int lastError = Marshal.GetLastPInvokeError();
             Debug.Assert(lastError == Interop.Errors.ERROR_TIMEOUT);
             if (lastError == Interop.Errors.ERROR_TIMEOUT)
             {

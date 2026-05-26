@@ -14,7 +14,7 @@ namespace System.Threading
     /// </summary>
     internal sealed class LowLevelLock : IDisposable
     {
-        private const uint SpinCount = 4;
+        private const uint SpinCount = 8;
 
         private const uint LockedMask = 1;
         private const uint WaiterCountIncrement = 2;

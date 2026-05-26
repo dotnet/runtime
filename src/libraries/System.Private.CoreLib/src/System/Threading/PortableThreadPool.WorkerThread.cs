@@ -105,14 +105,14 @@ namespace System.Threading
 
                 while (true)
                 {
-                    bool spuriousRequest = false;
+                    bool noSpin = false;
                     while (true)
                     {
-                        bool signaled = spuriousRequest ? semaphore.WaitNoSpin(timeoutMs) : semaphore.Wait(timeoutMs);
+                        bool signaled = noSpin ? semaphore.WaitNoSpin(timeoutMs) : semaphore.Wait(timeoutMs);
                         if (!signaled)
                             break;
 
-                        WorkerDoWork(threadPoolInstance, out spuriousRequest);
+                        WorkerDoWork(threadPoolInstance, out noSpin);
                     }
 
                     // We've timed out waiting on the semaphore. Time to exit.
@@ -124,13 +124,13 @@ namespace System.Threading
                 }
             }
 
-            private static void WorkerDoWork(PortableThreadPool threadPoolInstance, out bool spuriousRequest)
+            private static void WorkerDoWork(PortableThreadPool threadPoolInstance, out bool noSpin)
             {
                 do
                 {
-                    // We generally avoid spurious wakes as they are wasteful, so we nearly always should see a request.
-                    // However, we allow external wakes when thread goals change, which can result in "stolen" requests,
-                    // thus sometimes there is no active request and we need to check.
+                    // We generally avoid spurious wakes by requesting one thread at a time. We nearly always should see a request.
+                    // However, we allow external wakes when thread goals change, which can result in "stolen" requests.
+                    // Therefore we check for request before clearing it and dispatching workitems.
                     if (threadPoolInstance._separated._hasOutstandingThreadRequest != 0 &&
                         Interlocked.Exchange(ref threadPoolInstance._separated._hasOutstandingThreadRequest, 0) != 0)
                     {
@@ -139,22 +139,28 @@ namespace System.Threading
                         switch (ThreadPoolWorkQueue.Dispatch())
                         {
                             case ThreadPoolWorkQueue.DispatchResult.Spurious:
-                                spuriousRequest = true;
+                                // We were invited but found no work. This is counterproductive. We should park.
+                                noSpin = true;
                                 break;
 
                             case ThreadPoolWorkQueue.DispatchResult.ShouldStop:
-                                spuriousRequest = false;
-                                // We are above goal and this  worker is already removed in the counts.
+                                // We are above goal and this worker is already removed in the counts.
+                                // Chances to be invited back right away are low, so just park.
+                                noSpin = true;
                                 return;
 
                             default:
-                                spuriousRequest = false;
+                                // We did some work, but then there was nothing to do.
+                                // Spin a bit before parking in case we are invited back.
+                                noSpin = false;
                                 break;
                         }
                     }
                     else
                     {
-                        spuriousRequest = true;
+                        // Not a common case. This can happen when worker goal was increased and invited extra threads.
+                        // We will spin in case there is work for all and another request will soon follow.
+                        noSpin = false;
                     }
 
                     // We could not find more work in the queue and will try to stop being active.
