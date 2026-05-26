@@ -8261,7 +8261,7 @@ public:
             ValueNum GetVN() const
             {
                 assert(!m_compiler->optLocalAssertionProp);
-                // TODO-Cleanup: O1K_LCLVAR should be Local-AP only.
+                assert(KindIs(O1K_VN, O1K_EXACT_TYPE, O1K_SUBTYPE));
                 assert(m_vn != ValueNumStore::NoVN);
                 return m_vn;
             }
@@ -8436,6 +8436,11 @@ public:
                 assert(KindIs(O2K_CONST_INT));
                 return m_icon.m_fieldSeq;
             }
+
+            bool IsConstant() const
+            {
+                return KindIs(O2K_CONST_INT, O2K_CONST_DOUBLE, O2K_ZEROOBJ, O2K_CONST_VEC);
+            }
         };
 
     private:
@@ -8490,7 +8495,8 @@ public:
 
         bool CanPropLclVar() const
         {
-            return KindIs(OAK_EQUAL) && GetOp1().KindIs(O1K_LCLVAR);
+            // O1K_LCLVAR is local-AP only, for global-AP we use O1K_VN
+            return KindIs(OAK_EQUAL) && GetOp1().KindIs(O1K_LCLVAR, O1K_VN);
         }
 
         bool CanPropEqualOrNotEqual() const
@@ -8664,15 +8670,15 @@ public:
             {
                 return false;
             }
-            else if (GetOp1().KindIs(O1K_VN))
+            else if (GetOp1().KindIs(O1K_VN, O1K_EXACT_TYPE, O1K_SUBTYPE))
             {
                 assert(vnBased);
                 return (GetOp1().GetVN() == that.GetOp1().GetVN());
             }
             else
             {
-                return ((vnBased && (GetOp1().GetVN() == that.GetOp1().GetVN())) ||
-                        (!vnBased && (GetOp1().GetLclNum() == that.GetOp1().GetLclNum())));
+                assert(!vnBased);
+                return (GetOp1().GetLclNum() == that.GetOp1().GetLclNum());
             }
         }
 
@@ -8751,12 +8757,12 @@ public:
         {
             AssertionDsc dsc    = CreateEmptyAssertion(comp);
             dsc.m_assertionKind = equals ? OAK_EQUAL : OAK_NOT_EQUAL;
-            dsc.m_op1.m_kind    = O1K_LCLVAR;
 
             if (comp->optLocalAssertionProp)
             {
                 assert(lclNum != BAD_VAR_NUM);
 
+                dsc.m_op1.m_kind   = O1K_LCLVAR;
                 dsc.m_op1.m_lclNum = lclNum;
 
                 // We use ValueNumStore::VNForNull() as a hint of nullness. This allows us to avoid looking up the
@@ -8775,8 +8781,9 @@ public:
             {
                 assert(vn != ValueNumStore::NoVN);
                 assert(cnsVN != ValueNumStore::NoVN);
-                dsc.m_op1.m_vn = vn;
-                dsc.m_op2.m_vn = cnsVN;
+                dsc.m_op1.m_kind = O1K_VN;
+                dsc.m_op1.m_vn   = vn;
+                dsc.m_op2.m_vn   = cnsVN;
             }
 
             if constexpr (std::is_same_v<T, int> || std::is_same_v<T, ssize_t>)
