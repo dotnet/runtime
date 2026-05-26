@@ -1661,46 +1661,6 @@ static bool impIsTableDrivenHWIntrinsic(NamedIntrinsic intrinsicId, HWIntrinsicC
     return (category != HW_Category_Special) && !HWIntrinsicInfo::HasSpecialImport(intrinsicId);
 }
 
-//------------------------------------------------------------------------
-// isSupportedBaseType
-//
-// Arguments:
-//    intrinsicId - HW intrinsic id
-//    baseJitType - Base JIT type of the intrinsic.
-//
-// Return Value:
-//    returns true if the baseType is supported for given intrinsic.
-//
-static bool isSupportedBaseType(NamedIntrinsic intrinsic, CorInfoType baseJitType)
-{
-    if (baseJitType == CORINFO_TYPE_UNDEF)
-    {
-        return false;
-    }
-
-    var_types baseType = JitType2PreciseVarType(baseJitType);
-
-    // We don't actually check the intrinsic outside of the false case as we expect
-    // the exposed managed signatures are either generic and support all types
-    // or they are explicit and support the type indicated.
-
-    if (varTypeIsArithmetic(baseType))
-    {
-        return true;
-    }
-
-#ifdef DEBUG
-    CORINFO_InstructionSet isa = HWIntrinsicInfo::lookupIsa(intrinsic);
-#ifdef TARGET_XARCH
-    assert((isa == InstructionSet_Vector512) || (isa == InstructionSet_Vector256) || (isa == InstructionSet_Vector128));
-#endif // TARGET_XARCH
-#ifdef TARGET_ARM64
-    assert((isa == InstructionSet_Vector64) || (isa == InstructionSet_Vector128));
-#endif // TARGET_ARM64
-#endif // DEBUG
-    return false;
-}
-
 static bool isSupportedBaseType(NamedIntrinsic intrinsic, var_types baseType)
 {
     if (baseType == TYP_UNDEF)

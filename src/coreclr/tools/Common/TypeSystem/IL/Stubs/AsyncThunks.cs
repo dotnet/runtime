@@ -341,6 +341,7 @@ namespace Internal.IL.Stubs
                 // Task path
                 TypeDesc taskType = taskReturningMethodReturnType;
                 MethodDesc completedTaskResultMethod;
+                MethodDesc transparentAwaitMethod;
 
                 if (!taskReturningMethodReturnType.HasInstantiation)
                 {
@@ -348,6 +349,9 @@ namespace Internal.IL.Stubs
                     completedTaskResultMethod = context.SystemModule
                         .GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8)
                         .GetKnownMethod("CompletedTask"u8, null);
+                    transparentAwaitMethod = context.SystemModule
+                        .GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8)
+                        .GetKnownMethod("TransparentAwait"u8, null);
                 }
                 else
                 {
@@ -357,7 +361,12 @@ namespace Internal.IL.Stubs
                     MethodDesc completedTaskResultMethodOpen = context.SystemModule
                         .GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8)
                         .GetKnownMethod("CompletedTaskResult"u8, null);
+                    MethodDesc transparentAwaitMethodOpen = context.SystemModule
+                        .GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8)
+                        .GetKnownMethod("TransparentAwaitOfT"u8, null);
+
                     completedTaskResultMethod = completedTaskResultMethodOpen.MakeInstantiatedMethod(new Instantiation(logicalReturnType));
+                    transparentAwaitMethod = transparentAwaitMethodOpen.MakeInstantiatedMethod(new Instantiation(logicalReturnType));
                 }
 
                 ILLocalVariable taskLocal = emitter.NewLocal(taskType);
@@ -373,9 +382,8 @@ namespace Internal.IL.Stubs
                 codestream.Emit(ILOpcode.brtrue, getResultLabel);
 
                 codestream.EmitLdLoc(taskLocal);
-                codestream.Emit(ILOpcode.call, emitter.NewToken(
-                    context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8)
-                        .GetKnownMethod("TransparentAwait"u8, null)));
+                codestream.Emit(ILOpcode.call, emitter.NewToken(context.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "TailAwait"u8, null)));
+                codestream.Emit(ILOpcode.call, emitter.NewToken(transparentAwaitMethod));
 
                 codestream.EmitLabel(getResultLabel);
                 codestream.EmitLdLoc(taskLocal);

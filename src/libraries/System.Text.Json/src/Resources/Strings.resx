@@ -851,4 +851,40 @@
   <data name="PipeReaderCanceled" xml:space="preserve">
     <value>PipeReader.ReadAsync was canceled.</value>
   </data>
+  <data name="PolymorphicTypeClassifierReturnedNull" xml:space="preserve">
+    <value>The custom type classifier returned null, indicating it was unable to determine the target type for the JSON payload. Ensure the classifier handles all expected JSON shapes.</value>
+  </data>
+  <data name="TypeClassifierMustDeriveFromJsonTypeClassifierFactory" xml:space="preserve">
+    <value>The type classifier '{0}' specified for type '{1}' must derive from JsonTypeClassifierFactory.</value>
+  </data>
+  <data name="TypeClassifierNotSupported" xml:space="preserve">
+    <value>The type classifier '{0}' does not support type '{1}'.</value>
+  </data>
+  <data name="UnionAmbiguousJsonValueType" xml:space="preserve">
+    <value>JSON value type '{0}' is ambiguous for union type '{1}' because multiple case types can use this value type. Specify a custom type classifier to support deserialization.</value>
+  </data>
+  <data name="UnionCaseWithCustomConverterRequiresClassifier" xml:space="preserve">
+    <value>The union type '{0}' contains a case type that uses a custom JsonConverter. Specify a custom type classifier to support deserialization.</value>
+  </data>
+  <data name="UnionCannotCreateValue" xml:space="preserve">
+    <value>Cannot create values for union type '{0}'. Ensure the type has a public single-parameter constructor for each union case, or configure a constructor in its JSON contract.</value>
+  </data>
+  <data name="UnionCannotReadValue" xml:space="preserve">
+    <value>Cannot read values from union type '{0}'. Ensure the type has a public object Value property, or configure a deconstructor in its JSON contract.</value>
+  </data>
+  <data name="UnionCasesNotPopulated" xml:space="preserve">
+    <value>The union type '{0}' must specify at least one union case.</value>
+  </data>
+  <data name="UnionDoesNotAcceptNull" xml:space="preserve">
+    <value>The union type '{0}' does not support null values.</value>
+  </data>
+  <data name="UnionJsonTokenTypeNotSupported" xml:space="preserve">
+    <value>JSON token type '{0}' is not supported for union type '{1}'.</value>
+  </data>
+  <data name="UnionRuntimeTypeNotMatchedToCase" xml:space="preserve">
+    <value>The runtime type '{0}' is not supported by union type '{1}'.</value>
+  </data>
+  <data name="UnionTypeClassifierReturnedNull" xml:space="preserve">
+    <value>The custom type classifier for union type '{0}' returned null for JSON token type '{1}'.</value>
+  </data>
 </root>
