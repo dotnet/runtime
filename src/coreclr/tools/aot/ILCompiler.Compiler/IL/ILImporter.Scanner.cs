@@ -77,11 +77,56 @@ namespace Internal.IL
         }
         private ExceptionRegion[] _exceptionRegions;
 
+        private static bool IsAsyncVersion(MethodDesc method) => method.IsAsyncVariant() && method.IsAsyncThunk();
+
+        private sealed class AsyncVersionMethodIL : MethodIL
+        {
+            private readonly MethodDesc _variant;
+            private readonly MethodIL _ecmaIL;
+
+            public MethodIL WrappedIL => _ecmaIL;
+
+            public AsyncVersionMethodIL(MethodDesc variant, MethodIL ecmaIL)
+                => (_variant, _ecmaIL) = (variant, ecmaIL);
+
+            // This is the reason we need this class - the method that owns the IL is the variant.
+            public override MethodDesc OwningMethod => _variant;
+
+            // Everything else dispatches to MethodIL
+            public override MethodDebugInformation GetDebugInfo() => _ecmaIL.GetDebugInfo();
+            public override ILExceptionRegion[] GetExceptionRegions() => _ecmaIL.GetExceptionRegions();
+            public override byte[] GetILBytes() => _ecmaIL.GetILBytes();
+            public override LocalVariableDefinition[] GetLocals() => _ecmaIL.GetLocals();
+            public override object GetObject(int token, NotFoundBehavior notFoundBehavior = NotFoundBehavior.Throw) => _ecmaIL.GetObject(token, notFoundBehavior);
+            public override bool IsInitLocals => _ecmaIL.IsInitLocals;
+            public override int MaxStack => _ecmaIL.MaxStack;
+        }
+
+        private MethodIL GetMethodILWithPotentialAsyncVersion(MethodDesc method)
+        {
+            if (IsAsyncVersion(method))
+            {
+                MethodDesc targetMethod = method.GetTargetOfAsyncVariant();
+
+                MethodDesc methodDef = method.GetTypicalMethodDefinition();
+                MethodDesc targetMethodDef = targetMethod.GetTypicalMethodDefinition();
+                MethodIL methodIL = new AsyncVersionMethodIL(methodDef, _compilation.GetMethodIL(targetMethodDef));
+                if (method != methodDef)
+                {
+                    methodIL = new InstantiatedMethodIL(method, methodIL);
+                }
+
+                return methodIL;
+            }
+
+            return _compilation.GetMethodIL(method);
+        }
+
         public ILImporter(ILScanner compilation, MethodDesc method, MethodIL methodIL = null)
         {
             if (methodIL == null)
             {
-                methodIL = compilation.GetMethodIL(method);
+                methodIL = GetMethodILWithPotentialAsyncVersion(method);
             }
             else
             {
