@@ -464,6 +464,130 @@ struct MSLAYOUT AsyncLocalData
     ULONG ilVarNum;
 };
 
+
+// struct Debugger_FuncData:   Debugger_FuncData holds data
+// to describe a given function, its
+// class, and a little bit about the code for the function. This is used
+// in the stack trace result data to pass function information back that
+// may be needed. Its also used when getting data about a specific function.
+//
+struct MSLAYOUT Debugger_FuncData
+{
+    mdMethodDef funcMetadataToken;
+    VMPTR_Assembly vmAssembly;
+};
+
+// struct Debugger_JITFuncData:   Debugger_JITFuncData holds
+// a little bit about the JITted code for the function.
+//
+// void* nativeStartAddressPtr: Ptr to CORDB_ADDRESS, which is
+//          the address of the real start address of the native code.
+//          This field will be NULL only if the method hasn't been JITted
+//          yet (and thus no code is available).  Otherwise, it will be
+//          the address of a CORDB_ADDRESS in the remote memory.  This
+//          CORDB_ADDRESS may be NULL, in which case the code is unavailable
+//          or has been pitched (return CORDBG_E_CODE_NOT_AVAILABLE)
+//
+// SIZE_T nativeSize: Size of the native code.
+//
+// SIZE_T nativeOffset: Offset from the beginning of the function,
+//          in bytes.  This may be non-zero even when nativeStartAddressPtr
+//          is NULL
+// void * nativeCodeMethodDescToken: An opaque value to hand back to the left
+//          side when fetching the code.  In addition this token can act as the
+//          unique identity for the native code in the case where there are
+//          multiple blobs of native code per IL method (i.e. if the method is
+//          generic code of some kind)
+// BOOL isInstantiatedGeneric: Indicates if the method is
+//          generic code of some kind.
+// BOOL justAfterILThrow: indicates that code just threw a software exception and
+//          nativeOffset points to an instruction just after [call IL_Throw].
+//          This is being used to figure out a real offset of the exception origin.
+//          By subtracting STACKWALK_CONTROLPC_ADJUST_OFFSET from nativeOffset you can get
+//          an address somewhere inside [call IL_Throw] instruction.
+struct MSLAYOUT Debugger_JITFuncData
+{
+    CORDB_ADDRESS nativeStartAddressPtr;
+    ULONG64 nativeHotSize;
+
+    // If we have a cold region, need its size & the pointer to where starts.
+    CORDB_ADDRESS nativeStartAddressColdPtr;
+    ULONG64 nativeColdSize;
+
+    ULONG64 nativeOffset;
+    VMPTR_MethodDesc vmNativeCodeMethodDescToken;
+
+    BOOL fIsFilterFrame;
+    ULONG64 parentNativeOffset;
+    FramePointer fpParentOrSelf;
+
+    // indicates if the MethodDesc is a generic function or a method inside a generic class (or
+    // both!).
+    BOOL isInstantiatedGeneric;
+
+    BOOL justAfterILThrow;
+};
+
+
+//
+// Debugger_STRData holds data for each stack frame or chain.
+//
+#if defined(_MSC_VER)
+#pragma warning( push )
+#pragma warning( disable:4324 ) // the compiler pads a structure to comply with alignment requirements
+#endif                          // ARM context structures have a 16-byte alignment requirement
+struct MSLAYOUT Debugger_STRData
+{
+    FramePointer            fp;
+    // @dbgtodo  stackwalker/shim- Ideally we should be able to get rid of the DebuggerREGDISPLAY and just use the CONTEXT.
+    DT_CONTEXT *            ctx;
+    DebuggerREGDISPLAY *    rd;
+    VMPTR_AppDomain         vmCurrentAppDomainToken;
+
+
+    enum EType
+    {
+        cMethodFrame = 0,
+        cStubFrame,
+        cRuntimeNativeFrame
+    } eType;
+
+    union MSLAYOUT
+    {
+        // Data for a Method
+        struct MSLAYOUT
+        {
+            struct Debugger_FuncData funcData;
+            struct Debugger_JITFuncData jitFuncData;
+            CorDebugMappingResult mapping;
+            bool fVarArgs;
+            // Indicates whether the managed method has any metadata.
+            // Some dynamic methods such as IL stubs and LCG methods don't have any metadata.
+            // This is used only by the V3 stackwalker, not the V2 one, because we only
+            // expose dynamic methods as real stack frames in V3.
+            bool fNoMetadata;
+
+            CORDB_ADDRESS taAmbientESP;
+            GENERICS_TYPE_TOKEN exactGenericArgsToken;
+            DWORD dwExactGenericArgsTokenIndex;
+
+        } v;
+
+        // Data for an Stub Frame.
+        struct MSLAYOUT
+        {
+            mdMethodDef funcMetadataToken;
+            VMPTR_Assembly vmAssembly;
+            VMPTR_MethodDesc vmMethodDesc;
+            CorDebugInternalFrameType frameType;
+        } stubFrame;
+
+    };
+};
+#if defined(_MSC_VER)
+#pragma warning( pop )
+#endif
+
 //----------------------------------------------------------------------------------
 // declarations needed for getting native code regions
 //----------------------------------------------------------------------------------
@@ -482,9 +606,9 @@ public:
     // set all fields to default values (NULL, FALSE, or zero as appropriate)
     NativeCodeFunctionData();
 
-    // conversion constructor to convert from an instance of DebuggerIPCE_JITFUncData to an instance of
+    // conversion constructor to convert from an instance of Debugger_JITFuncData to an instance of
     // NativeCodeFunctionData.
-    NativeCodeFunctionData(DebuggerIPCE_JITFuncData * source);
+    NativeCodeFunctionData(Debugger_JITFuncData * source);
 
     // The hot region start address could be NULL in the following circumstances:
     // 1. We haven't yet tried to get the information
@@ -648,7 +772,12 @@ private:
 // NoValueTypeBoxing:
 //     TypeHandleToExpandedTypeInfo is also used to report type parameters,
 //      and in this case none of the types are considered boxed (
-enum AreValueTypesBoxed { NoValueTypeBoxing, OnlyPrimitivesUnboxed, AllBoxed };
+enum AreValueTypesBoxed
+{
+    NoValueTypeBoxing = 0,
+    OnlyPrimitivesUnboxed = 1,
+    AllBoxed = 2
+};
 
 // TypeRefData is used for resolving a type reference (see code:CordbModule::ResolveTypeRef and
 // code:DacDbiInterfaceImpl::ResolveTypeReference) to store relevant information about the type

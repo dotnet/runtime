@@ -12,4 +12,5 @@ public static class CorDbgHResults
     public const int CORDBG_E_CLASS_NOT_LOADED = unchecked((int)0x80131303);
     public const int CORDBG_E_TARGET_INCONSISTENT = unchecked((int)0x80131c36);
     public const int CORDBG_S_NOT_ALL_BITS_SET = unchecked((int)0x00131c13);
+    public const int CORDBG_E_NON_MATCHING_CONTEXT = unchecked((int)0x80131327);
 }

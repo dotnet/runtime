@@ -2322,7 +2322,8 @@ void CodeGen::genEmitMachineCode()
     trackedStackPtrsContig = false;
 #else
     // We try to allocate GC pointers contiguously on the stack except for some special cases.
-    trackedStackPtrsContig = !m_compiler->opts.compDbgEnC && (m_compiler->lvaAsyncExecutionContextVar == BAD_VAR_NUM) &&
+    trackedStackPtrsContig = !m_compiler->opts.compDbgEnC && (m_compiler->lvaAsyncThreadObjectVar == BAD_VAR_NUM) &&
+                             (m_compiler->lvaAsyncExecutionContextVar == BAD_VAR_NUM) &&
                              (m_compiler->lvaAsyncSynchronizationContextVar == BAD_VAR_NUM);
 
 #ifdef TARGET_ARM
@@ -5602,7 +5603,7 @@ void CodeGen::genFnProlog()
     // For OSR we may have a zero-length prolog. That's not supported
     // when the method must report a generics context,/ so add a nop if so.
     //
-    if (m_compiler->opts.IsOSR() && (GetEmitter()->emitGetPrologOffsetEstimate() == 0) &&
+    if (m_compiler->opts.IsOSR() && (GetEmitter()->emitGetCurrentCodeOffsetFrom(nullptr) == 0) &&
         (m_compiler->lvaReportParamTypeArg() || m_compiler->lvaKeepAliveAndReportThis()))
     {
         JITDUMP("OSR: prolog was zero length and has generic context to report: adding nop to pad prolog.\n");
@@ -6046,6 +6047,7 @@ void CodeGen::genGeneratePrologsAndEpilogs()
 
     GetEmitter()->emitStartPrologEpilogGeneration();
 
+    m_compiler->compCurBB = m_compiler->fgFirstBB; // Set the current BB for label creation.
     gcInfo.gcResetForBB();
     genFnProlog();
 
@@ -6072,6 +6074,8 @@ void CodeGen::genGeneratePrologsAndEpilogs()
     // Tell the emitter we're done with all prolog and epilog generation.
 
     GetEmitter()->emitFinishPrologEpilogGeneration();
+
+    m_compiler->compCurBB = nullptr;
 
 #ifdef DEBUG
     if (verbose)
