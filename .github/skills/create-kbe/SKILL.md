@@ -241,9 +241,9 @@ include both:
 Example:
 
 ```markdown
-[Open draft](file:///C:/Users/.../issue-draft.md)
+[Open draft](file:///<path>/issue-draft.md)
 
-`C:\Users\...\issue-draft.md`
+`<path>\issue-draft.md`
 ```
 
 ### Dry-run mode
