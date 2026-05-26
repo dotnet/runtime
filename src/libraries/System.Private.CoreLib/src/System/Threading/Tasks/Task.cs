@@ -3716,7 +3716,7 @@ namespace System.Threading.Tasks
 
 #if !MONO
                                 case RuntimeAsyncTaskContinuation tc:
-                                    ThreadPool.UnsafeQueueUserWorkItemInternal(tc, preferLocal: true);
+                                    tc.Execute(canInline: false);
                                     break;
 #endif
 
