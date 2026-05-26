@@ -65,7 +65,6 @@ namespace System.Net.ServerSentEvents
         private int _lastSearchedForNewline;
         /// <summary>Set when eof has been reached in the stream.</summary>
         private bool _eof;
-        private const int MaxLineLength = 64 * 1024 * 1024;
 
         /// <summary>Rented buffer containing buffered data for the next event.</summary>
         private byte[]? _dataBuffer;
@@ -74,7 +73,6 @@ namespace System.Net.ServerSentEvents
         /// <summary>Whether data has been appended to <see cref="_dataBuffer"/>.</summary>
         /// <remarks>This can be different than <see cref="_dataLength"/> != 0 if empty data was appended.</remarks>
         private bool _dataAppended;
-        private const int MaxDataLength = 64 * 1024 * 1024;
 
         /// <summary>The event type for the next event.</summary>
         private string? _eventType;
@@ -306,8 +304,12 @@ namespace System.Net.ServerSentEvents
                 }
                 else if (_lineLength == _lineBuffer.Length)
                 {
-                    int newLength = _lineBuffer.Length * 2;
-                    if (newLength > MaxLineLength)
+                    int newLength;
+                    try
+                    {
+                        newLength = checked(_lineBuffer.Length * 2);
+                    }
+                    catch (OverflowException)
                     {
                         throw new InvalidDataException(SR.InvalidDataException_LineExceededMaxLength);
                     }
@@ -397,8 +399,12 @@ namespace System.Net.ServerSentEvents
                 // We need to copy the data from the data buffer to the line buffer. Make sure there's enough room.
                 if (_dataBuffer is null || _dataLength + _lineLength + 1 > _dataBuffer.Length)
                 {
-                    int newLength = _dataLength + _lineLength + 1;
-                    if (newLength > MaxDataLength)
+                    int newLength;
+                    try
+                    {
+                        newLength = checked(_dataLength + _lineLength + 1);
+                    }
+                    catch (OverflowException)
                     {
                         throw new InvalidOperationException(SR.InvalidDataException_DataExceededMaxLength);
                     }
