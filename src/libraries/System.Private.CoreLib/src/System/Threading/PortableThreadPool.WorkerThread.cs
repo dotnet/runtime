@@ -41,7 +41,6 @@ namespace System.Threading
             /// </summary>
             private static readonly LowLevelLifoSemaphore s_semaphore =
                 new LowLevelLifoSemaphore(
-                    MaxPossibleThreadCount,
                     onWait: () =>
                     {
                         if (NativeRuntimeEventSource.Log.IsEnabled())
