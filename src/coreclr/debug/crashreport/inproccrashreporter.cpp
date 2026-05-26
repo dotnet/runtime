@@ -190,6 +190,20 @@ private:
     int m_count = 0;
 };
 
+struct FrameContext
+{
+    SignalSafeJsonWriter* jsonWriter;
+    SignalSafeConsoleWriter* consoleWriter;
+    InProcCrashReportModuleInfoCallback moduleInfoCallback;
+    ModuleTable* moduleTable;
+    SignalSafeFormatter* formatter;
+    uint32_t* currentThreadFrameCount;
+    uint32_t* currentThreadDroppedCount;
+    uint32_t frameLimitPerThread;
+    char* methodNameBuffer;
+    size_t methodNameBufferSize;
+};
+
 class ThreadEnumerationContext
 {
 public:
@@ -218,8 +232,8 @@ public:
 
     size_t ThreadCount() const { return m_threadCount; }
     bool SawCrashThread() const { return m_sawCrashThread; }
-    SignalSafeJsonWriter* JsonWriter() const { return m_jsonWriter; }
-    SignalSafeConsoleWriter* ConsoleWriter() const { return m_consoleWriter; }
+    SignalSafeJsonWriter* JsonWriter() const { return m_frameContext.jsonWriter; }
+    SignalSafeConsoleWriter* ConsoleWriter() const { return m_frameContext.consoleWriter; }
 
     void Init(
         SignalSafeJsonWriter* writer,
@@ -233,23 +247,25 @@ public:
         uint32_t frameLimitPerThread,
         void* signalContext)
     {
-        m_jsonWriter = writer;
-        m_consoleWriter = consoleWriter;
-        m_moduleInfoCallback = moduleInfoCallback;
-        m_moduleTable = moduleTable;
-        m_formatter = formatter;
-        m_methodNameScratch = methodNameScratch;
-        m_methodNameScratchSize = methodNameScratchSize;
+        m_frameContext.jsonWriter = writer;
+        m_frameContext.consoleWriter = consoleWriter;
+        m_frameContext.moduleInfoCallback = moduleInfoCallback;
+        m_frameContext.moduleTable = moduleTable;
+        m_frameContext.formatter = formatter;
+        m_frameContext.methodNameBuffer = methodNameScratch;
+        m_frameContext.methodNameBufferSize = methodNameScratchSize;
+        m_frameContext.currentThreadFrameCount = &m_currentThreadFrameCount;
+        m_frameContext.currentThreadDroppedCount = &m_currentThreadDroppedCount;
+        m_frameContext.frameLimitPerThread = frameLimitPerThread;
         m_signalContext = signalContext;
         m_threadCount = 0;
         m_crashingTid = crashingTid;
         m_currentThreadFrameCount = 0;
         m_currentThreadDroppedCount = 0;
-        m_frameLimitPerThread = frameLimitPerThread;
         m_sawCrashThread = false;
-        if (m_methodNameScratch != nullptr && m_methodNameScratchSize != 0)
+        if (methodNameScratch != nullptr && methodNameScratchSize != 0)
         {
-            m_methodNameScratch[0] = '\0';
+            methodNameScratch[0] = '\0';
         }
     }
 
@@ -301,19 +317,12 @@ private:
     void EndCurrentConsoleThreadBlock();
     void EndCurrentJsonThreadBlock();
 
-    SignalSafeJsonWriter* m_jsonWriter;
-    SignalSafeConsoleWriter* m_consoleWriter;
-    InProcCrashReportModuleInfoCallback m_moduleInfoCallback;
-    ModuleTable* m_moduleTable;
-    SignalSafeFormatter* m_formatter;
-    char* m_methodNameScratch;
-    size_t m_methodNameScratchSize;
+    FrameContext m_frameContext;
     void* m_signalContext;
     size_t m_threadCount;
     uint64_t m_crashingTid;
     uint32_t m_currentThreadFrameCount;
     uint32_t m_currentThreadDroppedCount;
-    uint32_t m_frameLimitPerThread;
     bool m_sawCrashThread;
 };
 
@@ -435,20 +444,6 @@ static InProcCrashReporter* s_reporter = nullptr;
 class CrashReportHelpers
 {
 public:
-    struct FrameContext
-    {
-        SignalSafeJsonWriter* jsonWriter;
-        SignalSafeConsoleWriter* consoleWriter;
-        InProcCrashReportModuleInfoCallback moduleInfoCallback;
-        ModuleTable* moduleTable;
-        SignalSafeFormatter* formatter;
-        uint32_t* currentThreadFrameCount;
-        uint32_t* currentThreadDroppedCount;
-        uint32_t frameLimitPerThread;
-        char* methodNameBuffer;
-        size_t methodNameBufferSize;
-    };
-
     static void GetVersionString(
         char* buffer,
         size_t bufferSize);
@@ -576,16 +571,7 @@ public:
         void* ctx);
 
     static void WriteFrameToReport(
-        SignalSafeJsonWriter* jsonWriter,
-        SignalSafeConsoleWriter* consoleWriter,
-        InProcCrashReportModuleInfoCallback moduleInfoCallback,
-        ModuleTable* moduleTable,
-        SignalSafeFormatter* formatter,
-        char* methodNameBuffer,
-        size_t methodNameBufferSize,
-        uint32_t* currentThreadFrameCount,
-        uint32_t* currentThreadDroppedCount,
-        uint32_t frameLimitPerThread,
+        FrameContext* frameContext,
         uint64_t ip,
         uint64_t stackPointer,
         const char* methodName,
@@ -1753,16 +1739,7 @@ CrashReportHelpers::WriteFrame(
     }
 
     WriteFrameToReport(
-        frameContext->jsonWriter,
-        frameContext->consoleWriter,
-        frameContext->moduleInfoCallback,
-        frameContext->moduleTable,
-        frameContext->formatter,
-        frameContext->methodNameBuffer,
-        frameContext->methodNameBufferSize,
-        frameContext->currentThreadFrameCount,
-        frameContext->currentThreadDroppedCount,
-        frameContext->frameLimitPerThread,
+        frameContext,
         ip,
         stackPointer,
         methodName,
@@ -1779,16 +1756,7 @@ CrashReportHelpers::WriteFrame(
 
 void
 CrashReportHelpers::WriteFrameToReport(
-    SignalSafeJsonWriter* jsonWriter,
-    SignalSafeConsoleWriter* consoleWriter,
-    InProcCrashReportModuleInfoCallback moduleInfoCallback,
-    ModuleTable* moduleTable,
-    SignalSafeFormatter* formatter,
-    char* methodNameBuffer,
-    size_t methodNameBufferSize,
-    uint32_t* currentThreadFrameCount,
-    uint32_t* currentThreadDroppedCount,
-    uint32_t frameLimitPerThread,
+    FrameContext* frameContext,
     uint64_t ip,
     uint64_t stackPointer,
     const char* methodName,
@@ -1802,6 +1770,21 @@ CrashReportHelpers::WriteFrameToReport(
     uint32_t token,
     uint32_t ilOffset)
 {
+    if (frameContext == nullptr)
+    {
+        return;
+    }
+
+    SignalSafeJsonWriter* jsonWriter = frameContext->jsonWriter;
+    SignalSafeConsoleWriter* consoleWriter = frameContext->consoleWriter;
+    InProcCrashReportModuleInfoCallback moduleInfoCallback = frameContext->moduleInfoCallback;
+    ModuleTable* moduleTable = frameContext->moduleTable;
+    SignalSafeFormatter* formatter = frameContext->formatter;
+    char* methodNameBuffer = frameContext->methodNameBuffer;
+    size_t methodNameBufferSize = frameContext->methodNameBufferSize;
+    uint32_t* currentThreadFrameCount = frameContext->currentThreadFrameCount;
+    uint32_t* currentThreadDroppedCount = frameContext->currentThreadDroppedCount;
+    uint32_t frameLimitPerThread = frameContext->frameLimitPerThread;
     uint32_t frameIndex = currentThreadFrameCount != nullptr
         ? *currentThreadFrameCount
         : 0;
@@ -1863,16 +1846,7 @@ ThreadEnumerationContext::OnFrame(
     uint32_t ilOffset)
 {
     CrashReportHelpers::WriteFrameToReport(
-        m_jsonWriter,
-        m_consoleWriter,
-        m_moduleInfoCallback,
-        m_moduleTable,
-        m_formatter,
-        m_methodNameScratch,
-        m_methodNameScratchSize,
-        &m_currentThreadFrameCount,
-        &m_currentThreadDroppedCount,
-        m_frameLimitPerThread,
+        &m_frameContext,
         ip,
         stackPointer,
         methodName,
@@ -1930,7 +1904,7 @@ ThreadEnumerationContext::EndCurrentConsoleThreadBlock()
         return;
     }
 
-    CrashReportHelpers::EndConsoleThreadBlock(m_consoleWriter,
+    CrashReportHelpers::EndConsoleThreadBlock(m_frameContext.consoleWriter,
         m_currentThreadFrameCount, m_currentThreadDroppedCount);
 }
 
@@ -1942,10 +1916,10 @@ ThreadEnumerationContext::EndCurrentJsonThreadBlock()
         return;
     }
 
-    CrashReportHelpers::EndJsonStackFrames(m_jsonWriter);
-    CrashReportHelpers::EndJsonThreadBlock(m_jsonWriter);
+    CrashReportHelpers::EndJsonStackFrames(m_frameContext.jsonWriter);
+    CrashReportHelpers::EndJsonThreadBlock(m_frameContext.jsonWriter);
 
-    (void)m_jsonWriter->Flush();
+    (void)m_frameContext.jsonWriter->Flush();
 }
 
 void
@@ -1969,28 +1943,28 @@ ThreadEnumerationContext::OnThread(
     m_currentThreadFrameCount = 0;
     m_currentThreadDroppedCount = 0;
 
-    CrashReportHelpers::BeginJsonThreadBlock(m_jsonWriter,
+    CrashReportHelpers::BeginJsonThreadBlock(m_frameContext.jsonWriter,
         osThreadId, /*isManagedThread*/ true, isCrashThread, exceptionType, exceptionHResult);
 
     if (isCrashThread)
     {
-        CrashReportHelpers::WriteRegistersToJson(m_jsonWriter, m_signalContext);
+        CrashReportHelpers::WriteRegistersToJson(m_frameContext.jsonWriter, m_signalContext);
     }
 
-    CrashReportHelpers::BeginJsonStackFrames(m_jsonWriter, isCrashThread, m_signalContext);
+    CrashReportHelpers::BeginJsonStackFrames(m_frameContext.jsonWriter, isCrashThread, m_signalContext);
 
-    if (m_consoleWriter != nullptr)
+    if (m_frameContext.consoleWriter != nullptr)
     {
-        CrashReportHelpers::BeginConsoleThreadBlock(m_consoleWriter, osThreadId, isCrashThread);
+        CrashReportHelpers::BeginConsoleThreadBlock(m_frameContext.consoleWriter, osThreadId, isCrashThread);
 
         if (exceptionType != nullptr && exceptionType[0] != '\0')
         {
-            m_consoleWriter->AppendStr("  managed exception: ");
-            m_consoleWriter->AppendStr(exceptionType);
-            m_consoleWriter->AppendStr(" (0x");
-            m_consoleWriter->AppendHex(static_cast<uint64_t>(exceptionHResult));
-            m_consoleWriter->AppendChar(')');
-            m_consoleWriter->EndLine();
+            m_frameContext.consoleWriter->AppendStr("  managed exception: ");
+            m_frameContext.consoleWriter->AppendStr(exceptionType);
+            m_frameContext.consoleWriter->AppendStr(" (0x");
+            m_frameContext.consoleWriter->AppendHex(static_cast<uint64_t>(exceptionHResult));
+            m_frameContext.consoleWriter->AppendChar(')');
+            m_frameContext.consoleWriter->EndLine();
         }
     }
 }
@@ -2050,7 +2024,7 @@ InProcCrashReporter::EmitSynthesizedCrashThread(
     uint32_t synthesizedDroppedCount = 0;
     if (walkStack && m_walkStackCallback != nullptr)
     {
-        CrashReportHelpers::FrameContext frameContext =
+        FrameContext frameContext =
         {
             &m_jsonWriter,
             &m_consoleWriter,

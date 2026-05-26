@@ -50,7 +50,7 @@ SignalSafeFormatter::FormatHex(
         value >>= 4;
     } while (value != 0 && reverseLength < MAX_HEX_DIGITS_UINT64);
 
-    if (bufferSize < HEX_PREFIX_LEN + reverseLength + NULL_TERMINATOR_LEN)
+    if (bufferSize < 2 + reverseLength + 1) // "0x" + digits + '\0'
     {
         buffer[0] = '\0';
         return;
@@ -59,7 +59,7 @@ SignalSafeFormatter::FormatHex(
     buffer[0] = '0';
     buffer[1] = 'x';
 
-    size_t index = HEX_PREFIX_LEN;
+    size_t index = 2; // Skip past "0x" prefix
     while (reverseLength > 0)
     {
         buffer[index++] = m_reverse[--reverseLength];
@@ -85,7 +85,7 @@ SignalSafeFormatter::FormatUnsignedDecimal(
         value /= 10;
     } while (value != 0 && reverseLength < sizeof(m_reverse));
 
-    if (bufferSize < reverseLength + NULL_TERMINATOR_LEN)
+    if (bufferSize < reverseLength + 1) // digits + '\0'
     {
         buffer[0] = '\0';
         return 0;
@@ -116,7 +116,7 @@ SignalSafeFormatter::FormatSignedDecimal(
         return FormatUnsignedDecimal(buffer, bufferSize, static_cast<uint64_t>(value));
     }
 
-    if (bufferSize < SIGN_LEN + NULL_TERMINATOR_LEN)
+    if (bufferSize < 1 + 1) // '-' + '\0' minimum
     {
         buffer[0] = '\0';
         return 0;

@@ -19,13 +19,10 @@ class SignalSafeFormatter
 public:
     static constexpr size_t MAX_HEX_DIGITS_UINT64 = 16;
     static constexpr size_t MAX_DECIMAL_DIGITS_UINT64 = 20;
-    static constexpr size_t HEX_PREFIX_LEN = 2;  // "0x"
-    static constexpr size_t SIGN_LEN = 1;        // '-' for signed decimals
-    static constexpr size_t NULL_TERMINATOR_LEN = 1;
 
-    static constexpr size_t MAX_HEX_BUFFER_SIZE = HEX_PREFIX_LEN + MAX_HEX_DIGITS_UINT64 + NULL_TERMINATOR_LEN;
-    static constexpr size_t MAX_UNSIGNED_DECIMAL_BUFFER_SIZE = MAX_DECIMAL_DIGITS_UINT64 + NULL_TERMINATOR_LEN;
-    static constexpr size_t MAX_SIGNED_DECIMAL_BUFFER_SIZE = SIGN_LEN + MAX_DECIMAL_DIGITS_UINT64 + NULL_TERMINATOR_LEN;
+    static constexpr size_t MAX_HEX_BUFFER_SIZE = 2 + MAX_HEX_DIGITS_UINT64 + 1; // "0x" + hex + '\0'
+    static constexpr size_t MAX_UNSIGNED_DECIMAL_BUFFER_SIZE = MAX_DECIMAL_DIGITS_UINT64 + 1; // digits + '\0'
+    static constexpr size_t MAX_SIGNED_DECIMAL_BUFFER_SIZE = 1 + MAX_DECIMAL_DIGITS_UINT64 + 1; // '-' + digits + '\0'
     static constexpr size_t MAX_GUID_BUFFER_SIZE = MINIPAL_GUID_BUFFER_LEN;
 
     SignalSafeFormatter() = default;

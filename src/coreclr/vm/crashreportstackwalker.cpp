@@ -40,11 +40,16 @@ struct CrashReportStackWalkerState
 
 static CrashReportStackWalkerState* s_crashReportStackWalkerState = nullptr;
 
+inline CrashReportStackWalkerState* GetStackWalkerState()
+{
+    return VolatileLoad(&s_crashReportStackWalkerState);
+}
+
 static
 bool
 EnsureCrashReportStackWalkerState()
 {
-    if (VolatileLoad(&s_crashReportStackWalkerState) != nullptr)
+    if (GetStackWalkerState() != nullptr)
     {
         return true;
     }
@@ -213,7 +218,7 @@ FrameCallbackAdapter(
     CONTRACTL_END;
 
     WalkContext* ctx = static_cast<WalkContext*>(pData);
-    CrashReportStackWalkerState* state = VolatileLoad(&s_crashReportStackWalkerState);
+    CrashReportStackWalkerState* state = GetStackWalkerState();
     if (ctx == nullptr || state == nullptr)
     {
         return SWA_CONTINUE;
@@ -324,7 +329,7 @@ CrashReportWalkThread(
     InProcCrashReportFrameCallback frameCallback,
     void* ctx)
 {
-    CrashReportStackWalkerState* state = VolatileLoad(&s_crashReportStackWalkerState);
+    CrashReportStackWalkerState* state = GetStackWalkerState();
     if (pThread == nullptr || frameCallback == nullptr || state == nullptr)
     {
         return;
@@ -520,7 +525,7 @@ CrashReportEnumerateThreads(
     InProcCrashReportFrameCallback frameCallback,
     void* ctx)
 {
-    CrashReportStackWalkerState* state = VolatileLoad(&s_crashReportStackWalkerState);
+    CrashReportStackWalkerState* state = GetStackWalkerState();
     if (state == nullptr)
     {
         return;

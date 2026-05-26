@@ -67,10 +67,9 @@ SignalSafeConsoleWriter::AppendSignedDecimal(int64_t v)
 void
 SignalSafeConsoleWriter::EndLine()
 {
-#if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
-    // Apple mobile platforms write the report to stderr; explicitly
-    // newline-terminate each logical line so log readers split entries the
-    // same way logcat would.
+    // On Android, __android_log_write in Flush() adds its own line discipline.
+    // For other platforms, we still need to add a newline.
+#if !defined(__ANDROID__)
     if (m_pos + 1 < sizeof(m_buffer))
     {
         m_buffer[m_pos++] = '\n';
@@ -80,7 +79,7 @@ SignalSafeConsoleWriter::EndLine()
         m_buffer[sizeof(m_buffer) - 2] = '\n';
         m_pos = sizeof(m_buffer) - 1;
     }
-#endif // TARGET_IOS || TARGET_TVOS || TARGET_MACCATALYST
+#endif // !__ANDROID__
     Flush();
 }
 
