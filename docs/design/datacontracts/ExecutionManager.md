@@ -206,7 +206,7 @@ Data descriptors used:
 | `ReadyToRunHeader` | `MinorVersion` | ReadyToRun minor version |
 | `ImageDataDirectory` | `VirtualAddress` | Virtual address of the image data directory |
 | `ImageDataDirectory` | `Size` | Size of the data |
-| `RuntimeFunction` | `BeginAddress` | Begin address of the function |
+| `RuntimeFunction` | `BeginAddress` | Begin address of the function. On ARM32, bit 0 (the Thumb bit) is set. |
 | `RuntimeFunction` | `EndAddress` | End address of the function. Only exists on some platforms |
 | `RuntimeFunction` | `UnwindData` | Pointer to the unwind info for the function |
 | `HashMap` | `Buckets` | Pointer to the buckets of a `HashMap` |
