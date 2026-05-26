@@ -31,10 +31,7 @@ private:
         Finished = 'F',
     };
 
-    static uint32_t ClampTimeoutSeconds(uint32_t timeoutSeconds);
-
     explicit CrashReportWatchdog(uint32_t timeoutSeconds);
-    ~CrashReportWatchdog();
 
     bool Initialize();
     bool InitializePipe();
@@ -52,12 +49,10 @@ private:
 
     uint32_t m_timeoutSeconds;
     int m_timeoutMs;
-    pthread_t m_thread;
     int m_pipe[2];
 
-    static LONG s_initializationStarted;
+    static pthread_mutex_t s_initializationMutex;
     static CrashReportWatchdog* s_instance;
-    static volatile sig_atomic_t s_writeFd;
 };
 
 class CrashReportWatchdogScope

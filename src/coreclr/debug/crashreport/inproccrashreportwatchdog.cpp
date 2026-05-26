@@ -18,38 +18,20 @@
 #include <minipal/log.h>
 #include <minipal/time.h>
 #include <minipal/thread.h>
+#include "volatile.h"
 
 static constexpr uint32_t CRASH_REPORT_WATCHDOG_SECONDS_TO_MILLISECONDS = 1000;
 static constexpr int CRASH_REPORT_WATCHDOG_SIGNAL_EXIT_CODE_OFFSET = 128;
 
-LONG CrashReportWatchdog::s_initializationStarted;
+pthread_mutex_t CrashReportWatchdog::s_initializationMutex = PTHREAD_MUTEX_INITIALIZER;
 CrashReportWatchdog* CrashReportWatchdog::s_instance;
-volatile sig_atomic_t CrashReportWatchdog::s_writeFd = -1;
-
-uint32_t
-CrashReportWatchdog::ClampTimeoutSeconds(uint32_t timeoutSeconds)
-{
-    uint32_t maxTimeoutSeconds = static_cast<uint32_t>(std::numeric_limits<int>::max() / CRASH_REPORT_WATCHDOG_SECONDS_TO_MILLISECONDS);
-    if (timeoutSeconds > maxTimeoutSeconds)
-    {
-        return maxTimeoutSeconds;
-    }
-
-    return timeoutSeconds;
-}
 
 CrashReportWatchdog::CrashReportWatchdog(uint32_t timeoutSeconds)
-    : m_timeoutSeconds(ClampTimeoutSeconds(timeoutSeconds)),
-      m_timeoutMs(static_cast<int>(m_timeoutSeconds * CRASH_REPORT_WATCHDOG_SECONDS_TO_MILLISECONDS)),
-      m_thread()
+    : m_timeoutSeconds(timeoutSeconds),
+      m_timeoutMs(static_cast<int>(m_timeoutSeconds * CRASH_REPORT_WATCHDOG_SECONDS_TO_MILLISECONDS))
 {
     m_pipe[0] = -1;
     m_pipe[1] = -1;
-}
-
-CrashReportWatchdog::~CrashReportWatchdog()
-{
-    ClosePipe();
 }
 
 bool
@@ -60,31 +42,41 @@ CrashReportWatchdog::TryInitialize(uint32_t timeoutSeconds)
         return false;
     }
 
-    if (InterlockedCompareExchange(&s_initializationStarted, 1, 0) != 0)
+    if (VolatileLoad(&s_instance) != nullptr)
     {
-        return s_writeFd != -1;
+        return true;
     }
 
-    // The watchdog is best-effort. The one-time flag prevents duplicate
-    // watchdog threads, but setup failures reset it so a later init can retry.
+    if (pthread_mutex_lock(&s_initializationMutex) != 0)
+    {
+        return false;
+    }
+
+    if (VolatileLoad(&s_instance) != nullptr)
+    {
+        (void)pthread_mutex_unlock(&s_initializationMutex);
+        return true;
+    }
+
     CrashReportWatchdog* watchdog = new (std::nothrow) CrashReportWatchdog(timeoutSeconds);
     if (watchdog == nullptr)
     {
-        InterlockedExchange(&s_initializationStarted, 0);
+        (void)pthread_mutex_unlock(&s_initializationMutex);
         return false;
     }
 
     if (!watchdog->Initialize())
     {
         delete watchdog;
-        InterlockedExchange(&s_initializationStarted, 0);
+        (void)pthread_mutex_unlock(&s_initializationMutex);
         return false;
     }
 
-    // Keep the watchdog alive for process lifetime; the detached thread and
-    // pipe remain available after initialization succeeds.
-    s_instance = watchdog;
-    s_writeFd = watchdog->m_pipe[1];
+    // Keep the watchdog object alive for process lifetime. The detached thread
+    // exits after report completion or aborts the process on timeout; closing
+    // its pipe during teardown would add a second failure mode on the crash path.
+    VolatileStore(&s_instance, watchdog);
+    (void)pthread_mutex_unlock(&s_initializationMutex);
     return true;
 }
 
@@ -109,7 +101,8 @@ CrashReportWatchdog::Initialize()
         return false;
     }
 
-    if (pthread_create(&m_thread, nullptr, ThreadEntry, this) != 0)
+    pthread_t thread;
+    if (pthread_create(&thread, nullptr, ThreadEntry, this) != 0)
     {
         (void)pthread_sigmask(SIG_SETMASK, &previousSignalSet, nullptr);
         ClosePipe();
@@ -118,7 +111,7 @@ CrashReportWatchdog::Initialize()
 
     (void)pthread_sigmask(SIG_SETMASK, &previousSignalSet, nullptr);
 
-    (void)pthread_detach(m_thread);
+    (void)pthread_detach(thread);
     return true;
 }
 
@@ -225,6 +218,9 @@ CrashReportWatchdog::ThreadLoop()
             "In-proc crash report watchdog did not receive a finish notification before the timeout; aborting process.\n");
         Abort();
     }
+
+    minipal_log_write_info(
+        "In-proc crash report watchdog received a finish notification; exiting watchdog thread.\n");
 }
 
 bool
@@ -303,22 +299,26 @@ void
 CrashReportWatchdog::WriteCommand(Command command)
 {
     int savedErrno = errno;
-    sig_atomic_t writeFd = s_writeFd;
-    if (writeFd != -1)
+    CrashReportWatchdog* watchdog = VolatileLoad(&s_instance);
+    int writeFd = watchdog != nullptr ? watchdog->m_pipe[1] : -1;
+    if (writeFd == -1)
     {
-        char commandValue = static_cast<char>(command);
-        while (true)
-        {
-            ssize_t writeResult = write(static_cast<int>(writeFd), &commandValue, sizeof(commandValue));
-            if (writeResult == sizeof(commandValue))
-            {
-                break;
-            }
+        errno = savedErrno;
+        return;
+    }
 
-            if (writeResult != -1 || errno != EINTR)
-            {
-                break;
-            }
+    char commandValue = static_cast<char>(command);
+    while (true)
+    {
+        ssize_t writeResult = write(writeFd, &commandValue, sizeof(commandValue));
+        if (writeResult == sizeof(commandValue))
+        {
+            break;
+        }
+
+        if (writeResult != -1 || errno != EINTR)
+        {
+            break;
         }
     }
 

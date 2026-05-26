@@ -9,6 +9,7 @@
 #include "method.hpp"
 #include "peassembly.h"
 #include <clrconfignocache.h>
+#include <limits>
 #include <minipal/guid.h>
 
 #ifdef FEATURE_INPROC_CRASHREPORT
@@ -24,7 +25,6 @@ struct WalkContext
 };
 
 static void BuildTypeName(LPUTF8 buffer, size_t bufferSize, LPCUTF8 namespaceName, LPCUTF8 className);
-static bool IsDecimalDigits(const char* value);
 // Parses configuration during CrashReportConfigure initialization. This is not
 // async-signal-safe and must not be called from the crash-reporting path.
 static DWORD GetCrashReportTimeoutSeconds();
@@ -448,25 +448,6 @@ CrashReportConfigure()
     InProcCrashReportInitialize(settings);
 }
 
-static bool
-IsDecimalDigits(const char* value)
-{
-    if (value == nullptr || value[0] == '\0')
-    {
-        return false;
-    }
-
-    for (const char* current = value; *current != '\0'; current++)
-    {
-        if (*current < '0' || *current > '9')
-        {
-            return false;
-        }
-    }
-
-    return true;
-}
-
 // Parses configuration during CrashReportConfigure initialization. This is not
 // async-signal-safe and must not be called from the crash-reporting path.
 static DWORD
@@ -475,6 +456,8 @@ GetCrashReportTimeoutSeconds()
     // Keep the default conservative: successful reports can be large, while 0
     // remains available to disable the watchdog for diagnostics.
     static constexpr DWORD DefaultTimeoutSeconds = 30;
+    static constexpr DWORD TimeoutSecondsToMilliseconds = 1000;
+    static constexpr DWORD MaxTimeoutSeconds = static_cast<DWORD>(std::numeric_limits<int>::max() / TimeoutSecondsToMilliseconds);
 
     CLRConfigNoCache timeoutCfg = CLRConfigNoCache::Get("CrashReportTimeoutSeconds", /*noprefix*/ false, &getenv);
     if (!timeoutCfg.IsSet())
@@ -484,9 +467,14 @@ GetCrashReportTimeoutSeconds()
 
     const char* timeoutString = timeoutCfg.AsString();
     DWORD timeoutSeconds;
-    if (!IsDecimalDigits(timeoutString) || !timeoutCfg.TryAsInteger(10, timeoutSeconds))
+    if (timeoutString[0] == '-' || !timeoutCfg.TryAsInteger(10, timeoutSeconds))
     {
         return DefaultTimeoutSeconds;
+    }
+
+    if (timeoutSeconds > MaxTimeoutSeconds)
+    {
+        return MaxTimeoutSeconds;
     }
 
     return timeoutSeconds;
