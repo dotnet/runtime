@@ -10,7 +10,7 @@ namespace System.Runtime.CompilerServices
     /// This attribute should not be used by developers in source code.
     /// </summary>
     [EditorBrowsable(EditorBrowsableState.Never)]
-    [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
+    [AttributeUsage(AttributeTargets.Class, Inherited = false)]
     public sealed class IsClosedTypeAttribute : Attribute
     {
         /// <summary>Initializes the attribute.</summary>
