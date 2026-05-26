@@ -106,12 +106,7 @@ namespace System.Runtime.CompilerServices
                     var vtsCont = (ValueTaskContinuation)cont;
                     vtsCont.Next = null;
 
-                    const ContinuationFlags continueFlags =
-                        ContinuationFlags.ContinueOnCapturedSynchronizationContext |
-                        ContinuationFlags.ContinueOnThreadPool |
-                        ContinuationFlags.ContinueOnCapturedTaskScheduler;
-
-                    Debug.Assert((vtsCont.Flags & continueFlags) == 0);
+                    Debug.Assert((vtsCont.Flags & ContinuationFlags.AllContinuationFlags) == 0);
 
                     t_runtimeAsyncAwaitState.CachedValueTaskContinuation = vtsCont;
 

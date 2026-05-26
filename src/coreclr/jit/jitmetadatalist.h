@@ -94,6 +94,7 @@ JITMETADATAMETRIC(MorphTrackedLocals,                    int,              0)
 JITMETADATAMETRIC(MorphLocals,                           int,              0)
 JITMETADATAMETRIC(EnumeratorGDVProvisionalNoEscape,      int,              0)
 JITMETADATAMETRIC(EnumeratorGDVCanCloneToEnsureNoEscape, int,              0)
+JITMETADATAMETRIC(SuspensionPointsMerged,                int,              0)
 
 #undef JITMETADATA
 #undef JITMETADATAINFO
