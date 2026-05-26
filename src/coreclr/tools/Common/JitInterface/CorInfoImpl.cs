@@ -883,7 +883,7 @@ namespace Internal.JitInterface
             // of async contexts. Regular user implemented runtime async methods
             // require this behavior, but thunks should be transparent and should not
             // come with this behavior.
-            if (method.IsAsyncVariant() && method.IsAsync)
+            if (method.RequiresSaveRestoreOfAsyncContexts())
             {
                 methodInfo->options |= CorInfoOptions.CORINFO_ASYNC_SAVE_CONTEXTS;
             }
@@ -3596,9 +3596,18 @@ namespace Internal.JitInterface
 
             MethodDesc result = runtimeDeterminedResult.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
-            if (result.RequiresInstArg())
+            if (runtimeDeterminedResult.IsSharedByGenericInstantiations)
             {
+                // Runtime lookup is needed
                 ComputeLookup(ref Unsafe.NullRef<CORINFO_RESOLVED_TOKEN>(), runtimeDeterminedResult, ReadyToRunHelperId.MethodDictionary, caller, ref instArg);
+            }
+            else
+            {
+                if (result.RequiresInstArg())
+                {
+                    instArg.lookupKind.needsRuntimeLookup = false;
+                    instArg.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.MethodGenericDictionary(runtimeDeterminedResult));
+                }
             }
 
             return ObjectToHandle(result);
