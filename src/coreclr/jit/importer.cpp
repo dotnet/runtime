@@ -9100,6 +9100,28 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                   (prefixFlags & PREFIX_CONSTRAINED) ? &constrainedResolvedToken : nullptr, flags,
                                   &callInfo);
 
+                    // TODO: crossgen2 cannot handle us removing this
+                    if (isAwait && IsReadyToRun() && (callInfo.kind == CORINFO_CALL))
+                    {
+                        assert(callInfo.sig.isAsyncCall());
+                        bool isSyncCallThunk;
+                        info.compCompHnd->getAsyncOtherVariant(callInfo.hMethod, &isSyncCallThunk);
+                        if (!isSyncCallThunk)
+                        {
+                            // The async variant that we got is a thunk. Switch
+                            // back to the non-async task-returning call. There
+                            // is no reason to go through the thunk.
+                            _impResolveToken(CORINFO_TOKENKIND_Method);
+                            prefixFlags &= ~(PREFIX_IS_TASK_AWAIT | PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT |
+                                             PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT);
+                            isAwait = false;
+
+                            eeGetCallInfo(&resolvedToken,
+                                          (prefixFlags & PREFIX_CONSTRAINED) ? &constrainedResolvedToken : nullptr,
+                                          flags, &callInfo);
+                        }
+                    }
+
                     if (isAwait)
                     {
                         // Only at this point can we actually know if this was valid in tail position.
