@@ -595,12 +595,17 @@ void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pTaskReturningVariant, MetaSig
         MethodTable* pMTTask;
 
         int completedTaskResultToken;
+        int transparentSuspendForTaskToken;
+
         if (msig.IsReturnTypeVoid())
         {
             pMTTask = CoreLibBinder::GetClass(CLASS__TASK);
 
             MethodDesc* pMDCompletedTask = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__COMPLETED_TASK);
+            MethodDesc* pMDTransparentSuspendForTask = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__TRANSPARENT_SUSPEND_FOR_TASK);
+
             completedTaskResultToken = pCode->GetToken(pMDCompletedTask);
+            transparentSuspendForTaskToken = pCode->GetToken(pMDTransparentSuspendForTask);
         }
         else
         {
@@ -608,24 +613,32 @@ void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pTaskReturningVariant, MetaSig
             pMTTask = ClassLoader::LoadGenericInstantiationThrowing(pMTTaskOpen->GetModule(), pMTTaskOpen->GetCl(), Instantiation(&thLogicalRetType, 1)).GetMethodTable();
 
             MethodDesc* pMDCompletedTaskResult = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__COMPLETED_TASK_RESULT);
+            MethodDesc* pMDTransparentSuspendForTask = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__TRANSPARENT_SUSPEND_FOR_TASK_OF_T);
+
             pMDCompletedTaskResult = FindOrCreateAssociatedMethodDesc(pMDCompletedTaskResult, pMDCompletedTaskResult->GetMethodTable(), FALSE, Instantiation(&thLogicalRetType, 1), FALSE);
+            pMDTransparentSuspendForTask = FindOrCreateAssociatedMethodDesc(pMDTransparentSuspendForTask, pMDTransparentSuspendForTask->GetMethodTable(), FALSE, Instantiation(&thLogicalRetType, 1), FALSE);
+
             completedTaskResultToken = GetTokenForGenericMethodCallWithAsyncReturnType(pCode, pMDCompletedTaskResult);
+            transparentSuspendForTaskToken = GetTokenForGenericMethodCallWithAsyncReturnType(pCode, pMDTransparentSuspendForTask);
         }
 
         LocalDesc taskLocalDesc(pMTTask);
         DWORD taskLocal = pCode->NewLocal(taskLocalDesc);
         ILCodeLabel* pGetResultLabel = pCode->NewCodeLabel();
 
-        // Store task returned by actual user func or by ValueTask.AsTask
+        // Store task returned by actual user func
         pCode->EmitSTLOC(taskLocal);
 
+        // Did it already complete?
         pCode->EmitLDLOC(taskLocal);
         pCode->EmitCALL(METHOD__TASK__GET_ISCOMPLETED, 1, 1);
         pCode->EmitBRTRUE(pGetResultLabel);
 
+        // No, so suspend until task completes
         pCode->EmitLDLOC(taskLocal);
-        pCode->EmitCALL(METHOD__ASYNC_HELPERS__TRANSPARENT_SUSPEND_FOR_TASK, 1, 0);
+        pCode->EmitCALL(transparentSuspendForTaskToken, 1, 0);
 
+        // Yes, so just get the result
         pCode->EmitLabel(pGetResultLabel);
         pCode->EmitLDLOC(taskLocal);
         pCode->EmitCALL(completedTaskResultToken, 1, msig.IsReturnTypeVoid() ? 0 : 1);
