@@ -10143,10 +10143,18 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             return;
                         }
 
-                        op1 = gtNewOperNode(GT_LCLHEAP, TYP_I_IMPL, op2);
-                        // We do not model stack overflow from localloc as an exception side effect.
-                        // Obviously, we don't want locallocs to be CSE'd.
-                        op1->gtFlags |= GTF_DONT_CSE;
+                        op1 = gtNewLclHeapNode(op2, opcodeOffs);
+
+                        // PGO value-profiling: optimize / instrument based on the most likely size.
+                        // Only profitable for zero-init (compInitMem) and when the popular size is
+                        // bigger than the variable-size loop's break-even (~32 bytes per benchmark).
+                        if (info.compInitMem && JitConfig.JitProfileValues() && !op2->IsIntegralConst())
+                        {
+                            op1 = impProfileValueGuardedTree(op1, &op1->AsOp()->gtOp1, opcodeOffs,
+                                                             /* minProfitable */ 32, /* maxProfitable */ INT_MAX,
+                                                             &Metrics.ValueProfiledLclHeap DEBUGARG(
+                                                                 "Profiled LCLHEAP Qmark"));
+                        }
 
                         // Request stack security for this method.
                         setNeedsGSSecurityCookie();

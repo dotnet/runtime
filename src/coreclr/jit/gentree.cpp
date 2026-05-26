@@ -2876,6 +2876,7 @@ AGAIN:
                     break;
 
                 // For the ones below no extra argument matters for comparison.
+                case GT_LCLHEAP:
                 case GT_BOX:
                 case GT_RUNTIMELOOKUP:
                 case GT_ARR_ADDR:
@@ -3449,6 +3450,7 @@ AGAIN:
                     break;
 
                 // For the ones below no extra argument matters for comparison.
+                case GT_LCLHEAP:
                 case GT_BOX:
                 case GT_ARR_ADDR:
                     break;
@@ -6937,6 +6939,37 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     costSz = 2 * 2;
                     break;
 
+                case GT_LCLHEAP:
+                {
+                    // GT_LCLHEAP is more expensive than a typical unary op (it adjusts
+                    // SP, may probe the stack, and -- under compInitMem -- zeros the
+                    // allocated range). Give it a high cost so phases like if-conversion
+                    // (which has a CostEx > 7 cutoff) won't speculatively evaluate it
+                    // unconditionally.
+                    //
+                    // For constant sizes the zero-init is unrolled by Lowering, so the
+                    // cost scales with the size; for non-constant sizes (or sizes that
+                    // would overflow our int cost) we use a fixed upper bound representing
+                    // the runtime loop.
+                    costEx = 36;
+                    costSz = 8;
+                    if (op1->IsCnsIntOrI() && info.compInitMem)
+                    {
+                        const ssize_t size = op1->AsIntCon()->IconValue();
+                        // Guard against pathological constant sizes: very large or
+                        // non-positive values would overflow the cost computation
+                        // and could underflow into a small/negative cost, defeating
+                        // the if-conversion block above.
+                        if ((size > 0) && (size <= INT_MAX))
+                        {
+                            const ssize_t alignedSize = (size + (STACK_ALIGN - 1)) & ~(ssize_t)(STACK_ALIGN - 1);
+                            costEx = 8 + (int)(alignedSize / REGSIZE_BYTES); // > 7 to block if-conversion
+                            costSz = 4 + (int)(alignedSize / REGSIZE_BYTES);
+                        }
+                    }
+                    break;
+                }
+
                 case GT_ARR_ADDR:
                     costEx = 0;
                     costSz = 0;
@@ -9049,6 +9082,16 @@ GenTreeQmark* Compiler::gtNewQmarkNode(var_types type, GenTree* cond, GenTreeCol
     return result;
 }
 
+GenTreeOpWithILOffset* Compiler::gtNewLclHeapNode(GenTree* size, IL_OFFSET ilOffset)
+{
+    assert(size != nullptr);
+    GenTreeOpWithILOffset* node =
+        new (this, GT_LCLHEAP) GenTreeOpWithILOffset(GT_LCLHEAP, TYP_I_IMPL, size, nullptr, ilOffset);
+    // Don't allow CSE to share locallocs.
+    node->gtFlags |= GTF_DONT_CSE;
+    return node;
+}
+
 GenTreeIntCon* Compiler::gtNewIconNode(ssize_t value, var_types type)
 {
     assert(genActualType(type) == type);
@@ -11147,6 +11190,11 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
                 copy = new (this, oper) GenTreeCopyOrReload(oper, tree->TypeGet(), tree->gtGetOp1());
             }
             break;
+
+            case GT_LCLHEAP:
+                copy = new (this, GT_LCLHEAP) GenTreeOpWithILOffset(GT_LCLHEAP, tree->TypeGet(), tree->gtGetOp1(),
+                                                                    nullptr, tree->AsOpWithILOffset()->GetILOffset());
+                break;
 
             case GT_SWIFT_ERROR_RET:
                 copy = new (this, oper) GenTreeOp(oper, tree->TypeGet(), tree->gtGetOp1(), tree->gtGetOp2());

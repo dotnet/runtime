@@ -3226,6 +3226,21 @@ public:
     GenTreeColon* gtNewColonNode(var_types type, GenTree* thenNode, GenTree* elseNode);
     GenTreeQmark* gtNewQmarkNode(var_types type, GenTree* cond, GenTreeColon* colon);
 
+    GenTreeOpWithILOffset* gtNewLclHeapNode(GenTree* size, IL_OFFSET ilOffset);
+
+    bool pickProfiledValue(IL_OFFSET ilOffset, uint32_t* pLikelihood, ssize_t* pValue);
+
+    //------------------------------------------------------------------------
+    // IsValueHistogramProbeCandidate: Determine if a node is a value-histogram
+    //   probe candidate, and report the IL offset and operand to profile.
+    //
+    // Centralized so the importer (impProfile*), the value-instrumentor visitor,
+    // schema-builder and probe-inserter all agree on which trees are value-probe
+    // candidates and where their profiled operand lives. To extend value
+    // profiling to a new node kind, add a case here.
+    //
+    bool IsValueHistogramProbeCandidate(GenTree* node, IL_OFFSET* ilOffset = nullptr, GenTree*** operandUseRef = nullptr);
+
     GenTree* gtNewLargeOperNode(genTreeOps oper,
                                 var_types  type = TYP_I_IMPL,
                                 GenTree*   op1  = nullptr,
@@ -5112,7 +5127,12 @@ protected:
 
     GenTree* impFixupStructReturnType(GenTree* op);
 
-    GenTree* impDuplicateWithProfiledArg(GenTreeCall* call, IL_OFFSET ilOffset);
+    GenTree* impProfileValueGuardedTree(GenTree*  node,
+                                        GenTree** operandRef,
+                                        IL_OFFSET ilOffset,
+                                        ssize_t   minProfitable,
+                                        ssize_t   maxProfitable,
+                                        int*      successMetric DEBUGARG(const char* tmpName));
 
     GenTree* impThrowIfNull(GenTreeCall* call);
 
