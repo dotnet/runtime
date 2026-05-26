@@ -793,10 +793,10 @@ def main():
     warn_str = f", {warnings} warnings" if warnings else ""
     print(f"Results: {passed}/{total} passed, {failures} failed{warn_str}")
     if failures:
-        print("❌ VALIDATION FAILED — fix issues before publishing report")
+        print("/!\\ VALIDATION FAILED — fix issues before publishing report /!\\")
         sys.exit(1)
     else:
-        print("✅ ALL CHECKS PASSED")
+        print("ALL CHECKS PASSED")
         sys.exit(0)
 
 
