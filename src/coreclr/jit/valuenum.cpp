@@ -12764,7 +12764,7 @@ bool Compiler::GetImmutableDataFromAddress(GenTree* address, int size, CompAlloc
             return false;
         }
         *ppValue = new (alloc) uint8_t[(size_t)size];
-        return info.compCompHnd->getStaticFieldContent(fld, *ppValue, size, (int)byteOffset, false);
+        return info.compCompHnd->getStaticFieldContent(fld, *ppValue, size, (int)byteOffset);
     }
 
     return false;
@@ -12846,11 +12846,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
         if ((fieldHandle != nullptr) && (size > 0) && (size <= maxElementSize) && ((size_t)byteOffset < INT_MAX))
         {
             uint8_t buffer[maxElementSize] = {0};
-            // Pass ignoreMovableObjects=false so we can fold ref-typed static readonly fields
-            // even when the referenced object lives on the regular (movable) heap. The JIT-side
-            // handle returned by the runtime keeps the object alive for the lifetime of the
-            // compiled code.
-            if (info.compCompHnd->getStaticFieldContent(fieldHandle, buffer, size, (int)byteOffset, false))
+            if (info.compCompHnd->getStaticFieldContent(fieldHandle, buffer, size, (int)byteOffset))
             {
                 applyFoldedVN(vnStore->VNForGenericCon(tree->TypeGet(), buffer));
                 return true;
