@@ -94,63 +94,35 @@ The .NET Foundation licenses this file to you under the MIT license.
       <LinkerArg Condition="'$(NativeLib)' == 'Shared'" Include="/DLL" />
       <LinkerArg Include="@(NativeLibrary->'&quot;%(Identity)&quot;')" />
       <LinkerArg Include="@(SdkNativeLibrary->'&quot;%(Identity)&quot;')" />
-      <LinkerArg Include="/NOLOGO /MANIFEST:NO">
-        <AggregateExecutableShimLink>true</AggregateExecutableShimLink>
-      </LinkerArg>
+      <LinkerArg Include="/NOLOGO /MANIFEST:NO" Shim="true" />
       <LinkerArg Condition="$(IlcMergeSections) != 'false'" Include="/MERGE:.managedcode=.text /MERGE:hydrated=.bss" />
-      <LinkerArg Condition="$(NativeDebugSymbols) == 'true'" Include="/DEBUG">
-        <AggregateExecutableShimLink>true</AggregateExecutableShimLink>
-      </LinkerArg>
+      <LinkerArg Condition="$(NativeDebugSymbols) == 'true'" Include="/DEBUG" Shim="true" />
       <!-- The runtime is not compatible with jump stubs inserted by incremental linking. -->
-      <LinkerArg Include="/INCREMENTAL:NO">
-        <AggregateExecutableShimLink>true</AggregateExecutableShimLink>
-      </LinkerArg>
+      <LinkerArg Include="/INCREMENTAL:NO" Shim="true" />
       <LinkerArg Condition="'$(NativeLib)' == '' and '$(LinkerSubsystem)' != ''" Include="/SUBSYSTEM:$(LinkerSubsystem)" />
       <LinkerArg Condition="'$(NativeLib)' == ''" Include="/ENTRY:$(EntryPointSymbol) /NOEXP /NOIMPLIB /STACK:$(IlcDefaultStackSize)" />
       <LinkerArg Include="/NATVIS:&quot;$(MSBuildThisFileDirectory)NativeAOT.natvis&quot;" />
-      <LinkerArg Condition="'$(ControlFlowGuard)' == 'Guard'" Include="/guard:cf">
-        <AggregateExecutableShimLink>true</AggregateExecutableShimLink>
-      </LinkerArg>
-      <LinkerArg Condition="'$(_targetArchitecture)' == 'x86'" Include="/safeseh">
-        <AggregateExecutableShimLink>true</AggregateExecutableShimLink>
-      </LinkerArg>
+      <LinkerArg Condition="'$(ControlFlowGuard)' == 'Guard'" Include="/guard:cf" Shim="true" />
+      <LinkerArg Condition="'$(_targetArchitecture)' == 'x86'" Include="/safeseh" Shim="true" />
       <!-- Do not warn if someone declares UnmanagedCallersOnly with an entrypoint of 'DllGetClassObject' and similar -->
       <LinkerArg Include="/IGNORE:4104" />
       <!-- Opt into CETCOMPAT by default. -->
-      <LinkerArg Condition="'$(CETCompat)' != 'false' and '$(_targetArchitecture)' == 'x64'" Include="/CETCOMPAT">
-        <AggregateExecutableShimLink>true</AggregateExecutableShimLink>
-      </LinkerArg>
+      <LinkerArg Condition="'$(CETCompat)' != 'false' and '$(_targetArchitecture)' == 'x64'" Include="/CETCOMPAT" Shim="true" />
       <!-- Allow user to opt out. -->
-      <LinkerArg Condition="'$(CETCompat)' == 'false' and '$(_targetArchitecture)' == 'x64'" Include="/CETCOMPAT:NO">
-        <AggregateExecutableShimLink>true</AggregateExecutableShimLink>
-      </LinkerArg>
+      <LinkerArg Condition="'$(CETCompat)' == 'false' and '$(_targetArchitecture)' == 'x64'" Include="/CETCOMPAT:NO" Shim="true" />
       <!-- Enable EHCONT if CET is not disabled and CFG is enabled. -->
-      <LinkerArg Condition="'$(CETCompat)' != 'false' and '$(_targetArchitecture)' == 'x64' and '$(ControlFlowGuard)' == 'Guard'" Include="/guard:ehcont">
-        <AggregateExecutableShimLink>true</AggregateExecutableShimLink>
-      </LinkerArg>
+      <LinkerArg Condition="'$(CETCompat)' != 'false' and '$(_targetArchitecture)' == 'x64' and '$(ControlFlowGuard)' == 'Guard'" Include="/guard:ehcont" Shim="true" />
     </ItemGroup>
 
     <ItemGroup Condition="!Exists('$(IlcSdkPath)debugucrt.txt')">
       <!-- Force ucrt to be dynamically linked for release runtime -->
-      <LinkerArg Include="/NODEFAULTLIB:libucrt.lib">
-        <AggregateExecutableShimLink>true</AggregateExecutableShimLink>
-      </LinkerArg>
-      <LinkerArg Include="/DEFAULTLIB:ucrt.lib">
-        <AggregateExecutableShimLink>true</AggregateExecutableShimLink>
-      </LinkerArg>
+      <LinkerArg Include="/NODEFAULTLIB:libucrt.lib" Shim="true" />
+      <LinkerArg Include="/DEFAULTLIB:ucrt.lib" Shim="true" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(Configuration)' != 'Debug'">
-      <LinkerArg Include="/OPT:REF">
-        <AggregateExecutableShimLink>true</AggregateExecutableShimLink>
-      </LinkerArg>
-      <LinkerArg Include="/OPT:ICF">
-        <AggregateExecutableShimLink>true</AggregateExecutableShimLink>
-      </LinkerArg>
-    </ItemGroup>
-
-    <ItemGroup>
-      <_CommonLinkerArg Include="@(LinkerArg)" Condition="'%(LinkerArg.AggregateExecutableShimLink)' == 'true'" />
+      <LinkerArg Include="/OPT:REF" Shim="true" />
+      <LinkerArg Include="/OPT:ICF" Shim="true" />
     </ItemGroup>
 
     <Exec Condition="'$(IlcUseEnvironmentalTools)' != 'true'" Command="&quot;$(MSBuildThisFileDirectory)findvcvarsall.bat&quot; $(_targetArchitecture)"
@@ -208,7 +180,7 @@ int wmain(int argc, unsigned short** argv)
       <_AggregateExecutableShimCompilerArg Condition="'$(NativeDebugSymbols)' == 'true'" Include="/Z7" />
       <_AggregateExecutableShimCompilerArg Condition="'$(ControlFlowGuard)' == 'Guard'" Include="/guard:cf" />
 
-      <_AggregateExecutableShimLinkerArg Include="@(_CommonLinkerArg)" />
+      <_AggregateExecutableShimLinkerArg Include="@(LinkerArg)" Condition="'%(LinkerArg.Shim)' == 'true'" />
       <_AggregateExecutableShimLinkerArg Include="/ENTRY:wmainCRTStartup" />
       <_AggregateExecutableShimLinkerArg Include="/STACK:$(IlcDefaultStackSize)" />
       <_AggregateExecutableShimLinkerArg Include="@(AdditionalNativeLibraryDirectories->'/LIBPATH:&quot;%(Identity)&quot;')" />
