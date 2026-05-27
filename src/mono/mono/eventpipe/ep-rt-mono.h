@@ -642,7 +642,7 @@ inline
 uint32_t
 ep_rt_config_value_get_sampling_rate (void)
 {
-	uint32_t value_uint32_t = 0;
+	uint32_t value_uint32_t = G_MAXUINT32;
 	gchar *value = g_getenv ("DOTNET_EventPipeThreadSamplingRate");
 	if (!value)
 		value = g_getenv ("COMPlus_EventPipeThreadSamplingRate");
@@ -1024,7 +1024,7 @@ ep_rt_queue_job (
 	// it's called from browser event loop
 	ds_job_cb cb = (ds_job_cb)job_func;
 
-	// invoke the callback inline for the fist time
+	// invoke the callback inline for the first time
 	gsize done = cb (params);
 
 	// see if it's done or needs to be scheduled again

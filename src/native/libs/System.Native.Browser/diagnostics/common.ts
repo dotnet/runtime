@@ -7,6 +7,7 @@ import { dotnetApi, dotnetLogger } from "./cross-module";
 export class DiagnosticConnectionBase {
     protected messagesToSend: Uint8Array[] = [];
     protected messagesReceived: Uint8Array[] = [];
+    private messagesReceivedHead = 0;
     constructor(public clientSocket: number) {
     }
 
@@ -16,21 +17,25 @@ export class DiagnosticConnectionBase {
     }
 
     poll(): number {
-        return this.messagesReceived.length;
+        return this.messagesReceived.length - this.messagesReceivedHead;
     }
 
     recv(buffer: VoidPtr, bytesToRead: number): number {
-        if (this.messagesReceived.length === 0) {
+        if (this.messagesReceivedHead >= this.messagesReceived.length) {
             return 0;
         }
-        const message = this.messagesReceived[0]!;
+        const message = this.messagesReceived[this.messagesReceivedHead]!;
         const bytesRead = Math.min(message.length, bytesToRead);
         const view = dotnetApi.localHeapViewU8();
         view.set(message.subarray(0, bytesRead), buffer as any >>> 0);
         if (bytesRead === message.length) {
-            this.messagesReceived.shift();
+            this.messagesReceivedHead++;
+            if (this.messagesReceivedHead > 128 && this.messagesReceivedHead >= (this.messagesReceived.length >>> 1)) {
+                this.messagesReceived = this.messagesReceived.slice(this.messagesReceivedHead);
+                this.messagesReceivedHead = 0;
+            }
         } else {
-            this.messagesReceived[0] = message.subarray(bytesRead);
+            this.messagesReceived[this.messagesReceivedHead] = message.subarray(bytesRead);
         }
         return bytesRead;
     }

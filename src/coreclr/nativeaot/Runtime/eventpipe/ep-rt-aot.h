@@ -521,7 +521,7 @@ ep_rt_config_value_get_sampling_rate (void)
         return static_cast<uint32_t>(value);
     }
 
-    return 0;
+    return UINT32_MAX;
 }
 
 /*
