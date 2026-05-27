@@ -2,12 +2,12 @@
   <PropertyGroup>
     <CLRTestPriority>0</CLRTestPriority>
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <CLRTestEnvironmentVariable Include="DOTNET_GCHeapAffinitizeRanges" Value="1" />
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="GetConfigurationVariables.cs" />
   </ItemGroup>
   <ItemGroup>
-    <CLRTestEnvironmentVariable Include="DOTNET_GCHeapAffinitizeRanges" Value="1" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
-
 </Project>
