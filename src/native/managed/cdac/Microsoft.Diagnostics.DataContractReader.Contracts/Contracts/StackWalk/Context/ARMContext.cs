@@ -29,6 +29,9 @@ internal struct ARMContext : IPlatformContext
     }
 
     public readonly uint Size => 0x1a0;
+
+    public readonly uint ContextControlFlags => (uint)ContextFlagsValues.CONTEXT_CONTROL;
+
     public readonly uint FullContextFlags => (uint)ContextFlagsValues.CONTEXT_FULL;
 
     public readonly uint AllContextFlags => (uint)ContextFlagsValues.CONTEXT_ALL;

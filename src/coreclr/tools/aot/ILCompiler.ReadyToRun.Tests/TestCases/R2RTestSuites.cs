@@ -58,6 +58,78 @@ public class R2RTestSuites
     }
 
     [Fact]
+    public void ArmThumbBitRelocationTargets()
+    {
+        var inlineableLib = new CompiledAssembly
+        {
+            AssemblyName = "InlineableLib",
+            SourceResourceNames = ["CrossModuleInlining/Dependencies/InlineableLib.cs"],
+        };
+        var exceptionHandling = new CompiledAssembly
+        {
+            AssemblyName = nameof(ArmThumbBitRelocationTargets),
+            SourceResourceNames = ["CrossModuleInlining/ExceptionHandling.cs"],
+            References = [inlineableLib],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(ArmThumbBitRelocationTargets),
+            [
+                new(nameof(ArmThumbBitRelocationTargets),
+                [
+                    new CrossgenAssembly(exceptionHandling),
+                    new CrossgenAssembly(inlineableLib) { Kind = Crossgen2InputKind.Reference },
+                ])
+                {
+                    Options = [Crossgen2Option.TargetArchArm],
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            string diag;
+            Assert.True(R2RAssert.HasExpectedArmThumbBitTargets(reader, out diag), diag);
+        }
+    }
+
+    [Fact]
+    public void ArmThumbBitHotColdRuntimeFunctions()
+    {
+        var hotColdSplitting = new CompiledAssembly
+        {
+            AssemblyName = nameof(ArmThumbBitHotColdRuntimeFunctions),
+            SourceResourceNames = ["ThumbBit/HotColdSplitting.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(ArmThumbBitHotColdRuntimeFunctions),
+            [
+                new(nameof(ArmThumbBitHotColdRuntimeFunctions), [new CrossgenAssembly(hotColdSplitting)])
+                {
+                    Options =
+                    [
+                        Crossgen2Option.TargetArchArm,
+                        Crossgen2Option.Optimize,
+                        Crossgen2Option.HotColdSplitting,
+                    ],
+                    AdditionalArgs =
+                    [
+                        "--codegenopt",
+                        "JitStressProcedureSplitting=1",
+                    ],
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            string diag;
+            Assert.True(R2RAssert.HasExpectedArmHotColdRuntimeFunctionTargets(reader, out diag), diag);
+        }
+    }
+
+    [Fact]
     public void TransitiveReferences()
     {
         var externalLib = new CompiledAssembly()
@@ -244,6 +316,7 @@ public class R2RTestSuites
             Assert.True(R2RAssert.HasContinuationLayout(reader, "CaptureObjectAcrossAwait", out diag), diag);
             Assert.True(R2RAssert.HasContinuationLayout(reader, "CaptureMultipleRefsAcrossAwait", out diag), diag);
             Assert.True(R2RAssert.HasResumptionStubFixup(reader, "CaptureObjectAcrossAwait", out diag), diag);
+            Assert.True(R2RAssert.AsyncMethodsWithResumptionStubsAreAdjacent(reader, out diag), diag);
         }
     }
 
@@ -358,6 +431,7 @@ public class R2RTestSuites
             Assert.True(R2RAssert.HasResumptionStubFixup(reader, ".MultipleAwaitsWithRefs(", out diag), diag);
             Assert.True(R2RAssert.HasFixupKindCountOnMethod(reader, ReadyToRunFixupKind.ResumptionStubEntryPoint, ".MultipleAwaits(", 1, out diag), diag);
             Assert.True(R2RAssert.HasFixupKindCountOnMethod(reader, ReadyToRunFixupKind.ResumptionStubEntryPoint, ".MultipleAwaitsWithRefs(", 1, out diag), diag);
+            Assert.True(R2RAssert.AsyncMethodsWithResumptionStubsAreAdjacent(reader, out diag), diag);
         }
     }
 

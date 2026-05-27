@@ -254,7 +254,9 @@ bool hasRex2Prefix(code_t code)
 #endif
 }
 
-bool IsExtendedGPReg(regNumber reg) const;
+static bool IsExtendedReg(regNumber reg);
+static bool IsExtendedReg(regNumber reg, emitAttr attr);
+bool        IsExtendedGPReg(regNumber reg) const;
 
 //------------------------------------------------------------------------
 // HasKMaskRegisterDest: Temporary check to identify instructions that can
@@ -765,6 +767,7 @@ void SetContainsCallNeedingVzeroupper(bool value)
 bool        IsDstDstSrcAVXInstruction(instruction ins) const;
 bool        IsDstSrcSrcAVXInstruction(instruction ins) const;
 bool        IsThreeOperandAVXInstruction(instruction ins) const;
+bool        IsAvxCommutative(instruction ins) const;
 static bool HasRegularWideForm(instruction ins);
 static bool HasRegularWideImmediateForm(instruction ins);
 static bool DoesWriteZeroFlag(instruction ins);
@@ -895,7 +898,7 @@ inline emitAttr emitDecodeScale(unsigned ensz) const
 /*                   Output target-independent instructions             */
 /************************************************************************/
 
-void emitIns_J(instruction ins, BasicBlock* dst, int instrCount = 0, bool isRemovableJmpCandidate = false);
+void emitIns_J(instruction ins, BasicBlock* dst, bool keepShort = false, bool isRemovableJmpCandidate = false);
 
 /************************************************************************/
 /*           The public entry points to output instructions             */

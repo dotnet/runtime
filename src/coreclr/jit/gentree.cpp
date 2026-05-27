@@ -10467,7 +10467,11 @@ bool GenTreeOp::UsesDivideByConstOptimized(Compiler* comp)
         if (isSignedDivide)
         {
             // If the divisor is the minimum representable integer value then the result is either 0 or 1
-            if ((divType == TYP_INT && divisorValue == INT_MIN) || (divType == TYP_LONG && divisorValue == INT64_MIN))
+            if ((divType == TYP_INT && divisorValue == INT_MIN)
+#if defined(TARGET_64BIT)
+                || (divType == TYP_LONG && divisorValue == INT64_MIN)
+#endif
+            )
             {
                 return true;
             }
@@ -19044,10 +19048,27 @@ bool Compiler::gtSplitTree(BasicBlock* block,
                     m_compiler->lvaGetDesc(lclNum)->lvIsMultiRegRet = true;
                 }
 
-                GenTree* store = m_compiler->gtNewTempStore(lclNum, *use);
-                stmt           = m_compiler->fgNewStmtFromTree(store, m_splitStmt->GetDebugInfo());
-                *use           = m_compiler->gtNewLclvNode(lclNum, genActualType(*use));
-                MadeChanges    = true;
+                GenTree* value = *use;
+                GenTree* store = m_compiler->gtNewTempStore(lclNum, value);
+
+                LclVarDsc* const lclDsc = m_compiler->lvaGetDesc(lclNum);
+                lclDsc->lvSingleDef     = 1;
+                JITDUMP("Marked V%02u as a single def temp\n", lclNum);
+
+                if (value->TypeIs(TYP_REF))
+                {
+                    bool                 isExact   = false;
+                    bool                 isNonNull = false;
+                    CORINFO_CLASS_HANDLE clsHnd    = m_compiler->gtGetClassHandle(value, &isExact, &isNonNull);
+                    if (clsHnd != NO_CLASS_HANDLE)
+                    {
+                        m_compiler->lvaSetClass(lclNum, clsHnd, isExact);
+                    }
+                }
+
+                stmt        = m_compiler->fgNewStmtFromTree(store, m_splitStmt->GetDebugInfo());
+                *use        = m_compiler->gtNewLclvNode(lclNum, genActualType(value));
+                MadeChanges = true;
             }
 
             if (stmt != nullptr)
@@ -30413,6 +30434,7 @@ ClassLayout* GenTreeHWIntrinsic::GetLayout(Compiler* compiler) const
 #ifdef TARGET_XARCH
         case NI_X86Base_DivRem:
             return compiler->typGetBlkLayout(genTypeSize(GetSimdBaseType()) * 2);
+        case NI_X86Base_X64_BigMul:
         case NI_X86Base_X64_DivRem:
             return compiler->typGetBlkLayout(16);
 #endif // TARGET_XARCH
@@ -32026,7 +32048,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
             }
             else if (isScalar)
             {
-                reverseCond ? NI_X86Base_CompareScalarNotLessThanOrEqual : NI_X86Base_CompareScalarGreaterThan;
+                id = reverseCond ? NI_X86Base_CompareScalarNotLessThanOrEqual : NI_X86Base_CompareScalarGreaterThan;
             }
             else
             {
@@ -33084,6 +33106,47 @@ ClassLayout* GenTreeLclVarCommon::GetLayout(Compiler* compiler) const
 
     assert(OperIs(GT_LCL_FLD, GT_STORE_LCL_FLD));
     return AsLclFld()->GetLayout();
+}
+
+//------------------------------------------------------------------------
+// EqualsLocal:
+//   Check if the locals information of two locals is equal.
+//
+// Arguments:
+//   lcl1 - The first local
+//   lcl2 - The second local
+//
+// Returns:
+//   True if equal.
+//
+// Remarks:
+//   For LCL_VAR, LCL_FLD and LCL_ADDR this is equivalent to GenTree::Compare.
+//   For STORE_LCL_VAR and STORE_LCL_FLD this only checks the local
+//   information; it does not check the data node for equality.
+//
+bool GenTreeLclVarCommon::EqualsLocal(GenTreeLclVarCommon* lcl1, GenTreeLclVarCommon* lcl2)
+{
+    if (lcl1->OperGet() != lcl2->OperGet())
+    {
+        return false;
+    }
+
+    if (lcl1->GetLclNum() != lcl2->GetLclNum())
+    {
+        return false;
+    }
+
+    if (lcl1->GetLclOffs() != lcl2->GetLclOffs())
+    {
+        return false;
+    }
+
+    if (lcl1->OperIs(GT_LCL_FLD, GT_STORE_LCL_FLD) && lcl1->AsLclFld()->GetLayout() != lcl2->AsLclFld()->GetLayout())
+    {
+        return false;
+    }
+
+    return true;
 }
 
 //------------------------------------------------------------------------

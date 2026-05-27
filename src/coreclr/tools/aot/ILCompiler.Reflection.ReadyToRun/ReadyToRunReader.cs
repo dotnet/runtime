@@ -1216,7 +1216,10 @@ namespace ILCompiler.Reflection.ReadyToRun
                             constrainedType: null,
                             instanceArgs: method.InstanceArgs,
                             signaturePrefixes: ["[RESUME]"],
-                            fixupOffset: null);
+                            fixupOffset: null)
+                        {
+                            RuntimeFunctionCount = 1,
+                        };
                         _instanceMethods.Add(new InstanceMethod(0, stubMethod));
                     }
                 }
@@ -1559,7 +1562,9 @@ namespace ILCompiler.Reflection.ReadyToRun
                 for (int i = 0; i < entryCount; i++)
                 {
                     int entryOffset = sectionOffset - startOffset;
-                    long section = ImageReader.ReadInt64(ref sectionOffset);
+                    long section = entrySize == 4
+                        ? ImageReader.ReadInt32(ref sectionOffset)
+                        : ImageReader.ReadInt64(ref sectionOffset);
                     uint sigRva = ImageReader.ReadUInt32(ref signatureOffset);
                     int sigOffset = GetOffset((int)sigRva);
                     ReadyToRunSignature signature = MetadataNameFormatter.FormatSignature(_assemblyResolver, this, sigOffset);

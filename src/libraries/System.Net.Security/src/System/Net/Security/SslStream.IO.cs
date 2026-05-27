@@ -457,14 +457,25 @@ namespace System.Net.Security
                         _sslAuthenticationOptions!.IsServer) // guard against malicious endpoints. We should not see ClientHello on client.
 #pragma warning restore CS0618
                     {
-                        TlsFrameHelper.ProcessingOptions options = NetEventSource.Log.IsEnabled() ?
-                                                                    TlsFrameHelper.ProcessingOptions.All :
-                                                                    TlsFrameHelper.ProcessingOptions.ServerName;
+                        TlsFrameHelper.ProcessingOptions options = TlsFrameHelper.ProcessingOptions.ServerName;
+
                         if (OperatingSystem.IsMacOS() && _sslAuthenticationOptions.IsServer)
                         {
                             // macOS cannot process ALPN on server at the moment.
                             // We fallback to our own process similar to SNI bellow.
+                            // This will allocate.
                             options |= TlsFrameHelper.ProcessingOptions.RawApplicationProtocol;
+                        }
+
+                        if (NetEventSource.Log.IsEnabled())
+                        {
+                            options |= TlsFrameHelper.ProcessingOptions.ApplicationProtocol | TlsFrameHelper.ProcessingOptions.Versions;
+                        }
+
+                        if (_sslAuthenticationOptions.ServerOptionDelegate != null)
+                        {
+                            // We need to process supported versions extension to pass it to user callback.
+                            options |= TlsFrameHelper.ProcessingOptions.Versions;
                         }
 
                         // Process SNI from Client Hello message

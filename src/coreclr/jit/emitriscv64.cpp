@@ -771,22 +771,6 @@ void emitter::emitIns_R_R_I(
             code |= (((imm >> 5) & 0x7f) << 25) | ((imm & 0x1f) << 7); // imm
             break;
 
-        case MajorOpcode::Branch:
-            assert(isGeneralRegister(reg1));
-            assert(isGeneralRegister(reg2));
-            assert(isValidSimm13(imm));
-            assert(!(imm & 3));
-            code |= reg1 << 15;
-            code |= reg2 << 20;
-            code |= ((imm >> 11) & 0x1) << 7;
-            code |= ((imm >> 1) & 0xf) << 8;
-            code |= ((imm >> 5) & 0x3f) << 25;
-            code |= ((imm >> 12) & 0x1) << 31;
-            // TODO-RISCV64: Move jump logic to emitIns_J
-            // TODO-RISC64-RVC: Remove this once all branches uses emitIns_J
-            id->idAddr()->iiaSetInstrCount(static_cast<int>(imm / sizeof(code_t)));
-            break;
-
         case MajorOpcode::System:
             assert(ins == INS_csrrs || ins == INS_csrrw || ins == INS_csrrc);
             assert(isGeneralRegisterOrR0(reg1));
@@ -1446,7 +1430,7 @@ void emitter::emitIns_R_R_Addr(instruction ins, emitAttr attr, regNumber regData
     }
 }
 
-void emitter::emitIns_J(instruction ins, BasicBlock* dst)
+void emitter::emitIns_J(instruction ins, BasicBlock* dst, bool keepShort)
 {
     assert(emitIsUncondJump(ins));
     regNumber linkReg = (ins == INS_jal) ? REG_RA : REG_ZERO;
@@ -2821,29 +2805,6 @@ unsigned emitter::emitOutput_JTypeInstr(BYTE* dst, instruction ins, regNumber rd
     return emitOutput_Instr(dst, insEncodeJTypeInstr(insCode, rd, imm21));
 }
 
-void emitter::emitOutputInstrJumpDistanceHelper(const insGroup* ig,
-                                                instrDescJmp*   jmp,
-                                                UNATIVE_OFFSET& dstOffs,
-                                                const BYTE*&    dstAddr) const
-{
-    if (jmp->idAddr()->iiaHasInstrCount())
-    {
-        assert(ig != nullptr);
-        int      instrCount = jmp->idAddr()->iiaGetInstrCount();
-        unsigned insNum     = emitFindInsNum(ig, jmp);
-        if (instrCount < 0)
-        {
-            // Backward branches using instruction count must be within the same instruction group.
-            assert(insNum + 1 >= static_cast<unsigned>(-instrCount));
-        }
-        dstOffs = ig->igOffs + emitFindOffset(ig, insNum + 1 + instrCount);
-        dstAddr = emitOffsetToPtr(dstOffs);
-        return;
-    }
-    dstOffs = jmp->idAddr()->iiaIGlabel->igOffs;
-    dstAddr = emitOffsetToPtr(dstOffs);
-}
-
 /*****************************************************************************
  *
  *  Calculates a current jump instruction distance
@@ -2857,9 +2818,8 @@ ssize_t emitter::emitOutputInstrJumpDistance(const BYTE* src, const insGroup* ig
 
     assert(!jmp->idAddr()->iiaIsJitDataOffset()); // not used by riscv64 impl
 
-    UNATIVE_OFFSET dstOffs{};
-    const BYTE*    dstAddr = nullptr;
-    emitOutputInstrJumpDistanceHelper(ig, jmp, dstOffs, dstAddr);
+    UNATIVE_OFFSET dstOffs = jmp->idAddr()->iiaIGlabel->igOffs;
+    const BYTE*    dstAddr = emitOffsetToPtr(dstOffs);
 
     ssize_t distVal = static_cast<ssize_t>(dstAddr - srcAddr);
 
@@ -2922,18 +2882,6 @@ static unsigned UpperNBitsOfWordSignExtend(ssize_t word)
     return UpperNBitsOfWord<MaskSize>(word + kSignExtend);
 }
 
-static unsigned UpperWordOfDoubleWord(ssize_t immediate)
-{
-    return static_cast<unsigned>(immediate >> 32);
-}
-
-static unsigned LowerWordOfDoubleWord(ssize_t immediate)
-{
-    static constexpr size_t kWordMask = WordMask(32);
-
-    return static_cast<unsigned>(immediate & kWordMask);
-}
-
 template <uint8_t UpperMaskSize, uint8_t LowerMaskSize>
 static ssize_t DoubleWordSignExtend(ssize_t doubleWord)
 {
@@ -2941,20 +2889,6 @@ static ssize_t DoubleWordSignExtend(ssize_t doubleWord)
     static constexpr size_t kUpperSignExtend = static_cast<size_t>(1) << (63 - UpperMaskSize);
 
     return doubleWord + (kLowerSignExtend | kUpperSignExtend);
-}
-
-template <uint8_t UpperMaskSize>
-static ssize_t UpperWordOfDoubleWordSingleSignExtend(ssize_t doubleWord)
-{
-    static constexpr size_t kUpperSignExtend = static_cast<size_t>(1) << (31 - UpperMaskSize);
-
-    return UpperWordOfDoubleWord(doubleWord + kUpperSignExtend);
-}
-
-template <uint8_t UpperMaskSize, uint8_t LowerMaskSize>
-static ssize_t UpperWordOfDoubleWordDoubleSignExtend(ssize_t doubleWord)
-{
-    return UpperWordOfDoubleWord(DoubleWordSignExtend<UpperMaskSize, LowerMaskSize>(doubleWord));
 }
 
 /*static*/ unsigned emitter::TrimSignedToImm12(ssize_t imm12)
@@ -3600,35 +3534,6 @@ bool emitter::emitDispBranchInstrType(unsigned opcode2, bool is_zero_reg, bool& 
     return true;
 }
 
-void emitter::emitDispBranchOffset(const instrDesc* id, const insGroup* ig, bool printOffsetPlaceholder) const
-{
-    if (printOffsetPlaceholder)
-    {
-        printf("pc+?? instructions");
-        return;
-    }
-
-    int instrCount = id->idAddr()->iiaGetInstrCount();
-    if (ig == nullptr)
-    {
-        printf("pc%+d instructions", instrCount);
-        return;
-    }
-    unsigned insNum = emitFindInsNum(ig, id);
-
-    if (ig->igInsCnt < insNum + 1 + instrCount)
-    {
-        // TODO-RISCV64-BUG: This should be a labeled offset but does not contain an iiaIGlabel
-        printf("pc%+d instructions", instrCount);
-        return;
-    }
-
-    UNATIVE_OFFSET srcOffs = ig->igOffs + emitFindOffset(ig, insNum + 1);
-    UNATIVE_OFFSET dstOffs = ig->igOffs + emitFindOffset(ig, insNum + 1 + instrCount);
-    ssize_t        relOffs = static_cast<ssize_t>(emitOffsetToPtr(dstOffs) - emitOffsetToPtr(srcOffs));
-    printf("pc%+d (%d instructions)", static_cast<int>(relOffs), instrCount);
-}
-
 void emitter::emitDispBranchLabel(const instrDesc* id) const
 {
     if (id->idIsBound())
@@ -3656,16 +3561,7 @@ bool emitter::emitDispBranch(unsigned         opcode2,
         printf("%s, ", RegNames[rs2]);
     }
     assert(id != nullptr);
-    if (id->idAddr()->iiaHasInstrCount())
-    {
-        // Branch is jumping to some non-labeled offset
-        emitDispBranchOffset(id, ig, printOffsetPlaceholder);
-    }
-    else
-    {
-        // Branch is jumping to the labeled offset
-        emitDispBranchLabel(id);
-    }
+    emitDispBranchLabel(id);
     printf("\n");
     return true;
 }
@@ -5768,7 +5664,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
 
             regNumber baseReg = id->idReg2();
-            if (baseReg != REG_SP || baseReg != REG_FP)
+            if ((baseReg != REG_SP) && (baseReg != REG_FP))
                 result.insLatency += PERFSCORE_LATENCY_1C; // assume non-stack load/stores are more likely to cache-miss
 
             result.insThroughput += immediateBuildingCost;

@@ -7175,6 +7175,30 @@ bool ValueNumStore::IsVNTypeHandle(ValueNum vn)
 }
 
 //------------------------------------------------------------------------
+// IsVNTypeHandle: check whether a VN represents a class type handle and,
+//    if so, recover the underlying compile-time class handle.
+//
+// Arguments:
+//    vn   - the VN to inspect
+//    pCls - [out] compile-time class handle
+//
+// Return Value:
+//    True if vn is a constant class-handle VN and its compile-time class
+//    handle was found in the embedded-handle map; false otherwise.
+//
+bool ValueNumStore::IsVNTypeHandle(ValueNum vn, CORINFO_CLASS_HANDLE* pCls)
+{
+    ssize_t handle = 0;
+    if (IsVNTypeHandle(vn) && EmbeddedHandleMapLookup(ConstantValue<ssize_t>(vn), &handle) && (handle != 0))
+    {
+        *pCls = reinterpret_cast<CORINFO_CLASS_HANDLE>(handle);
+        return true;
+    }
+    *pCls = NO_CLASS_HANDLE;
+    return false;
+}
+
+//------------------------------------------------------------------------
 // SwapRelop: return VNFunc for swapped relop
 //
 // Arguments:
@@ -12263,8 +12287,12 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
                 const GenTreeIntCon* cns         = tree->AsIntCon();
                 const GenTreeFlags   handleFlags = tree->GetIconHandleFlag();
                 tree->gtVNPair.SetBoth(vnStore->VNForHandle(cns->IconValue(), handleFlags));
-                if (handleFlags == GTF_ICON_CLASS_HDL)
+                if ((handleFlags == GTF_ICON_CLASS_HDL) && (cns->gtCompileTimeHandle != 0))
                 {
+                    // Skip registration when gtCompileTimeHandle is unknown (e.g., the node was created by
+                    // BashToConst+gtFlags|=GTF_ICON_CLASS_HDL in optConstantAssertionProp). Overwriting an
+                    // existing valid mapping with 0 would poison the map for any constant assertion-based
+                    // re-flagging that happens to share the same iconValue as a real embedded handle node.
                     vnStore->AddToEmbeddedHandleMap(cns->IconValue(), cns->gtCompileTimeHandle);
                 }
             }
@@ -14406,9 +14434,11 @@ bool Compiler::fgValueNumberSpecialIntrinsic(GenTreeCall* call)
             ValueNum clsVN     = typeHandleFuncApp.m_args[0];
             ssize_t  clsHandle = 0;
 
-            // NOTE: EmbeddedHandleMapLookup may return 0 for non-0 embedded handle
-            if (!vnStore->EmbeddedHandleMapLookup(vnStore->ConstantValue<ssize_t>(clsVN), &clsHandle) &&
-                (clsHandle != 0))
+            // EmbeddedHandleMapLookup may return false (no entry) or true with a 0 handle when the
+            // backing iconNode was produced by BashToConst (i.e., it has no compile-time handle).
+            // Either way, we cannot resolve the runtime type, so bail.
+            if (!vnStore->EmbeddedHandleMapLookup(vnStore->ConstantValue<ssize_t>(clsVN), &clsHandle) ||
+                (clsHandle == 0))
             {
                 break;
             }
@@ -15849,17 +15879,15 @@ CORINFO_CLASS_HANDLE ValueNumStore::GetObjectType(ValueNum vn, bool* pIsExact, b
     const VNFunc func = funcApp.m_func;
     if ((func == VNF_CastClass) || (func == VNF_IsInstanceOf) || (func == VNF_JitNew))
     {
-        ssize_t  clsHandle = 0;
-        ValueNum clsVN     = funcApp.m_args[0];
+        ValueNum clsVN = funcApp.m_args[0];
 
-        // NOTE: EmbeddedHandleMapLookup may return 0 for non-0 embedded handle
-        if (IsVNTypeHandle(clsVN) && EmbeddedHandleMapLookup(ConstantValue<ssize_t>(clsVN), &clsHandle) &&
-            (clsHandle != 0))
+        CORINFO_CLASS_HANDLE clsHandle;
+        if (IsVNTypeHandle(clsVN, &clsHandle))
         {
             // JitNew returns an exact and non-null obj, castclass and isinst do not have this guarantee.
             *pIsNonNull = func == VNF_JitNew;
             *pIsExact   = func == VNF_JitNew;
-            return (CORINFO_CLASS_HANDLE)clsHandle;
+            return clsHandle;
         }
     }
 
