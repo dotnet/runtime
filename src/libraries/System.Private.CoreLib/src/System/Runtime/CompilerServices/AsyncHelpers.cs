@@ -188,14 +188,13 @@ namespace System.Runtime.CompilerServices
         public static void Await(ConfiguredTaskAwaitable configuredAwaitable)
         {
             ConfiguredTaskAwaitable.ConfiguredTaskAwaiter awaiter = configuredAwaitable.GetAwaiter();
-            if ((awaiter.m_options & (ConfigureAwaitOptions.ForceYielding | ConfigureAwaitOptions.SuppressThrowing)) != 0)
             {
                 TailAwait();
                 AwaitTaskWithRareOptions(awaiter);
                 return;
             }
 
-            if (!awaiter.m_task.IsCompleted)
+            if (!awaiter.IsCompleted)
             {
                 TailAwait();
                 AwaitTask(awaiter.m_task, awaiter.m_options);
