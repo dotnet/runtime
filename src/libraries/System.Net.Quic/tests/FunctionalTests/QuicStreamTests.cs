@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using TestUtilities;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -75,6 +76,7 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task MultipleReadsAndWrites()
         {
+            using var _ = new TestEventListener(_output, TestEventListener.NetworkingEvents);
             using CancellationTokenSource cts = new CancellationTokenSource();
             cts.CancelAfter(PassingTestTimeout);
             const int sendCount = 5;
@@ -88,7 +90,7 @@ namespace System.Net.Quic.Tests
             }
 
             await RunClientServer(
-                iterations: 100,
+                iterations: 10_000,
                 serverFunction: async connection =>
                 {
                     await using QuicStream stream = await connection.AcceptInboundStreamAsync(cts.Token);
@@ -102,6 +104,7 @@ namespace System.Net.Quic.Tests
                     {
                         await stream.WriteAsync(s_data);
                     }
+                    await Task.Delay(100);
                     await stream.WriteAsync(Memory<byte>.Empty, completeWrites: true, cts.Token);
                 },
                 clientFunction: async connection =>
@@ -116,9 +119,10 @@ namespace System.Net.Quic.Tests
 
                     byte[] buffer = new byte[expectedBytesCount];
                     int bytesRead = await ReadAll(stream, buffer);
+                    await stream.DisposeAsync();
                     Assert.Equal(expectedBytesCount, bytesRead);
                     Assert.Equal(expected, buffer);
-                }
+                }, millisecondsTimeout: PassingTestTimeoutMilliseconds * 100
             );
         }
 
