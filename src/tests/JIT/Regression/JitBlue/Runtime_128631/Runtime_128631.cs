@@ -17,7 +17,7 @@ public class Impl : IFoo<string>, IFoo<byte[]>
     [MethodImpl(MethodImplOptions.NoInlining)] object IFoo<string>.Get() => "STRING_VALUE";
     [MethodImpl(MethodImplOptions.NoInlining)] object IFoo<byte[]>.Get() => new byte[] { 1, 2, 3 };
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
     public object Dispatch(string tag)
     {
         if (tag == "bytes")  return ((IFoo<byte[]>)this).Get();
