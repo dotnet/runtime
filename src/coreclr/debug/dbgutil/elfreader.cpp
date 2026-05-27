@@ -391,21 +391,18 @@ ElfReader::EnumerateLinkMapEntries(Elf_Dyn* dynamicAddr)
 
     // Add the DSO link_map entries.
     //
-    // Guard against a malformed or cyclic link_map chain: real processes have at
-    // most a few hundred shared libraries, so this cap is well above realistic
-    // while still bounding wall time if l_next forms a cycle or points at
-    // garbage in a corrupted target process.
-    constexpr int LinkMapMaxEntries = 8192;
-    int linkMapCount = 0;
-    for (struct link_map* linkMapAddr = debugEntry.r_map; linkMapAddr != nullptr;)
+    // Guard against a malformed or cyclic link_map chain (which would otherwise
+    // spin createdump forever on a corrupted target) using Floyd's cycle
+    // detection: a "slow" pointer walks the chain doing the real work, while a
+    // "fast" pointer advances two l_next hops per iteration. If fast ever
+    // catches slow, the chain is cyclic and we abort.
+    struct link_map* slow = debugEntry.r_map;
+    struct link_map* fast = debugEntry.r_map;
+    while (slow != nullptr)
     {
-        if (++linkMapCount > LinkMapMaxEntries) {
-            Trace("ERROR: EnumerateLinkMapEntries exceeded %d entries; aborting (possible cyclic or corrupt link_map)\n", LinkMapMaxEntries);
-            return false;
-        }
         struct link_map map;
-        if (!ReadMemory(linkMapAddr, &map, sizeof(map))) {
-            Trace("ERROR: ReadMemory(%p, %" PRIx ") link_map FAILED\n", linkMapAddr, sizeof(map));
+        if (!ReadMemory(slow, &map, sizeof(map))) {
+            Trace("ERROR: ReadMemory(%p, %" PRIx ") link_map FAILED\n", slow, sizeof(map));
             return false;
         }
         // Read the module's name and make sure the memory is added to the core dump
@@ -425,12 +422,31 @@ ElfReader::EnumerateLinkMapEntries(Elf_Dyn* dynamicAddr)
                 moduleName.append(1, ch);
             }
         }
-        Trace("\nDSO: link_map entry %p l_ld %p l_addr (Ehdr) %p l_name %p %s\n", linkMapAddr, map.l_ld, map.l_addr, map.l_name, moduleName.c_str());
+        Trace("\nDSO: link_map entry %p l_ld %p l_addr (Ehdr) %p l_name %p %s\n", slow, map.l_ld, map.l_addr, map.l_name, moduleName.c_str());
 
         // Call the derived class for each module
         VisitModule(map.l_addr, moduleName);
 
-        linkMapAddr = map.l_next;
+        slow = map.l_next;
+
+        // Advance fast by up to two l_next hops. Each hop is bounded by the
+        // existing ReadMemory failure path, so a corrupted l_next that points
+        // into unreadable memory still terminates the loop.
+        for (int hop = 0; hop < 2 && fast != nullptr; hop++)
+        {
+            struct link_map fastMap;
+            if (!ReadMemory(fast, &fastMap, sizeof(fastMap))) {
+                Trace("ERROR: ReadMemory(%p, %" PRIx ") link_map (cycle detection) FAILED\n", fast, sizeof(fastMap));
+                return false;
+            }
+            fast = fastMap.l_next;
+        }
+
+        if (slow != nullptr && slow == fast)
+        {
+            Trace("ERROR: EnumerateLinkMapEntries detected cycle in link_map chain; aborting\n");
+            return false;
+        }
     }
 
     return true;
