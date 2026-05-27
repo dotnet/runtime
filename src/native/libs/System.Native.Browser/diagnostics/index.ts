@@ -29,7 +29,7 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
             ? (namePtr: CharPtr, start: number) => {
                 try {
                     globalThis.performance.measure(Module.UTF8ToString(namePtr), { start: start });
-                } catch (e) {
+                } catch {
                     // Ignore
                 }
             }
