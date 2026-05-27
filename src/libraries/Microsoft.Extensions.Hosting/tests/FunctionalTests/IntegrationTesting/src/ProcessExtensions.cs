@@ -86,7 +86,10 @@ namespace Microsoft.Extensions.Internal
                 using (Process process = Process.GetProcessById(processId))
                 {
                     process.Kill();
-                    process.WaitForExit((int)timeout.TotalMilliseconds);
+                    if (!process.WaitForExit((int)timeout.TotalMilliseconds))
+                    {
+                        throw new TimeoutException($"Process {processId} did not exit within the allotted timeout of {timeout}.");
+                    }
                 }
             }
             catch (ArgumentException)
