@@ -3543,14 +3543,10 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCa
             {
                 BADCODE("AsyncSuspend should only be used in async methods");
             }
-            if (m_methodInfo->args.retType != CORINFO_TYPE_VOID)
-            {
-                BADCODE("AsyncSuspend can only be used in async methods with void return type with today's implementation, it would need to emit the correct INTOP_RET* instruction..");
-            }
             AddIns(INTOP_SET_CONTINUATION);
             m_pLastNewIns->SetSVar(m_pStackPointer[-1].var);
             m_pStackPointer--;
-            AddIns(INTOP_RET_VOID);
+            AddIns(INTOP_RET_EXISTING_CONTINUATION);
             return true;
         case NI_System_Runtime_CompilerServices_AsyncHelpers_TailAwait:
             if ((m_methodInfo->options & CORINFO_ASYNC_SAVE_CONTEXTS) != 0)
