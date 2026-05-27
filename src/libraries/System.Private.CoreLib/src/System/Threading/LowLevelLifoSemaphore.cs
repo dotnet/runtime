@@ -184,7 +184,7 @@ namespace System.Threading
                 if (!HasWaitersToWake(countsBeforeUpdate))
                     break;
 
-                // CAS collision, but still have waters to wake, try again.
+                // CAS collision, but still have waiters to wake, try again.
                 Backoff.Exponential(collisionCount++);
                 counts = _separated._counts;
             }
@@ -344,8 +344,8 @@ namespace System.Threading
                 finally
                 {
 #if TARGET_WINDOWS
-                            // restore the default.
-                            Interop.Kernel32.SetThreadPriorityBoost(Interop.Kernel32.GetCurrentThread(), bDisablePriorityBoost: false);
+                    // restore the default.
+                    Interop.Kernel32.SetThreadPriorityBoost(Interop.Kernel32.GetCurrentThread(), bDisablePriorityBoost: false);
 #endif
                 }
             }
