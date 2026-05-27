@@ -239,7 +239,7 @@ internal static class Emitter
         => member.ReadKind switch
         {
             FieldReadKind.Primitive   => $"target.ReadField<{typeArg}>({baseVar}, {typeVar}, {nameVar})",
-            FieldReadKind.Bool        => $"target.ReadField<byte>({baseVar}, {typeVar}, {nameVar}) != 0",
+            FieldReadKind.Bool        => $"target.ReadField<{member.BoolUnderlyingType ?? "byte"}>({baseVar}, {typeVar}, {nameVar}) != 0",
             FieldReadKind.Pointer     => $"target.ReadPointerField({baseVar}, {typeVar}, {nameVar})",
             FieldReadKind.NUInt       => $"target.ReadNUIntField({baseVar}, {typeVar}, {nameVar})",
             FieldReadKind.CodePointer => $"target.ReadCodePointerField({baseVar}, {typeVar}, {nameVar})",

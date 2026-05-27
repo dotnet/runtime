@@ -95,6 +95,13 @@ public sealed class FieldAttribute : Attribute
     /// (<c>uint</c>, <c>int</c>, ..., <c>bool</c>).
     /// </summary>
     public bool Writable { get; set; }
+
+    /// <summary>
+    /// For <c>bool</c> properties: specifies the underlying type in the data
+    /// descriptor when the runtime stores a boolean as a wider integer type
+    /// (e.g., <c>int32</c>).
+    /// </summary>
+    public Type UnderlyingBoolType { get; set; } = typeof(byte);
 }
 
 /// <summary>

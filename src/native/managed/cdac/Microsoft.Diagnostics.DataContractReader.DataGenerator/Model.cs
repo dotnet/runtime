@@ -59,6 +59,7 @@ internal sealed record MemberModel(
     int? RawOffset,
     bool LittleEndian,
     bool HasSetter,
+    string? BoolUnderlyingType,
     EquatableArray<string> Names) : IEquatable<MemberModel>;
 
 /// <summary>

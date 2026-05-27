@@ -29,7 +29,7 @@ internal sealed partial class GCHeapSVR : IData<GCHeapSVR>, IGCHeap
 
     [Field] public TargetPointer InternalRootArray { get; }
     [Field] public TargetNUInt InternalRootArrayIndex { get; }
-    [Field] public bool HeapAnalyzeSuccess { get; }
+    [Field(UnderlyingBoolType = typeof(int))] public bool HeapAnalyzeSuccess { get; }
 
     [FieldAddress] public TargetPointer InterestingData { get; }
     [FieldAddress] public TargetPointer CompactReasons { get; }

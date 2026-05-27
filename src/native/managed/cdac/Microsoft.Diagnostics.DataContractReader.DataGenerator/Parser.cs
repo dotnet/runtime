@@ -121,6 +121,19 @@ internal static class Parser
         return null;
     }
 
+    private static string? GetUnderlyingBoolType(AttributeData attr, string name)
+    {
+        foreach (KeyValuePair<string, TypedConstant> kv in attr.NamedArguments)
+        {
+            if (kv.Key == name && kv.Value.Value is INamedTypeSymbol typeSymbol)
+            {
+                // Use MinimallyQualified to get C# keywords (int, byte, etc.) instead of System.Int32
+                return typeSymbol.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
+            }
+        }
+        return null;
+    }
+
     /// <summary>
     /// Build the priority-ordered candidate names for a member: explicit
     /// positional names first, with the C# property name appended as the
@@ -204,6 +217,7 @@ internal static class Parser
                 RawOffset: offset,
                 LittleEndian: littleEndian,
                 HasSetter: false,
+                BoolUnderlyingType: null,
                 Names: EquatableArray<string>.FromEnumerable(new[] { prop.Name }));
             return true;
         }
@@ -218,6 +232,7 @@ internal static class Parser
             bool usePropertyName = !fieldAttr.NamedArguments.Any(kv => kv.Key == "UsePropertyName" && kv.Value.Value is false);
 
             bool isPointer = GetNamedBool(fieldAttr, "Pointer");
+            string? boolUnderlyingType = GetUnderlyingBoolType(fieldAttr, "UnderlyingBoolType");
             (FieldReadKind readKind, string? dataTypeArg, bool isNullable) = ClassifyFieldRead(prop, isPointer);
             string fqnType = prop.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
 
@@ -237,6 +252,7 @@ internal static class Parser
                 RawOffset: null,
                 LittleEndian: false,
                 HasSetter: GetNamedBool(fieldAttr, "Writable"),
+                BoolUnderlyingType: boolUnderlyingType,
                 Names: ComputeFieldNames(prop.Name, rawNames, usePropertyName));
             return true;
         }
@@ -259,6 +275,7 @@ internal static class Parser
                 RawOffset: null,
                 LittleEndian: false,
                 HasSetter: false,
+                BoolUnderlyingType: null,
                 Names: ComputeFieldNames(prop.Name, rawNames, usePropertyName));
             return true;
         }
@@ -277,6 +294,7 @@ internal static class Parser
                 RawOffset: null,
                 LittleEndian: false,
                 HasSetter: false,
+                BoolUnderlyingType: null,
                 Names: EquatableArray<string>.FromEnumerable(new[] { prop.Name }));
             return true;
         }
@@ -317,9 +335,10 @@ internal static class Parser
             IsOptional: false,
             IsNullable: false,
             RawOffset: null,
-                LittleEndian: false,
-                HasSetter: false,
-                Names: EquatableArray<string>.FromEnumerable(new[] { fieldName }));
+            LittleEndian: false,
+            HasSetter: false,
+            BoolUnderlyingType: null,
+            Names: EquatableArray<string>.FromEnumerable(new[] { fieldName }));
         return true;
     }
 
