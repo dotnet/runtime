@@ -121,7 +121,7 @@ internal sealed partial class TestStaticAddr : IData<TestStaticAddr>
 internal sealed partial class TestStaticRef : IData<TestStaticRef>
 {
     [StaticReference("s_cache")]
-    public static partial TargetPointer Cache(Target target);
+    public static partial TargetPointer? Cache(Target target);
 }
 
 // ---- Managed-to-Native migration types ----

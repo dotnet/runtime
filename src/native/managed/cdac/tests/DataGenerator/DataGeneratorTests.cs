@@ -407,7 +407,7 @@ public class DataGeneratorTests
             .AddGlobal("TestStaticRef.s_cache", slotAddr)
             .Allocate(slotAddr, 8, (0, U64(objAddr)));
 
-        TargetPointer result = TestStaticRef.Cache(target);
+        TargetPointer? result = TestStaticRef.Cache(target);
 
         Assert.Equal((TargetPointer)objAddr, result);
     }
@@ -418,9 +418,9 @@ public class DataGeneratorTests
         var target = new TestTarget()
             .AddNativeType("TestStaticRef", size: 0);
 
-        TargetPointer result = TestStaticRef.Cache(target);
+        TargetPointer? result = TestStaticRef.Cache(target);
 
-        Assert.Equal(TargetPointer.Null, result);
+        Assert.Null(result);
     }
 
 }

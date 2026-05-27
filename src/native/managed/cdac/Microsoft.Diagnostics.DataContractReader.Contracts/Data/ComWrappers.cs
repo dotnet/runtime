@@ -7,8 +7,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed partial class ComWrappers : IData<ComWrappers>
 {
     [StaticReference("s_allManagedObjectWrapperTable")]
-    public static partial TargetPointer AllManagedObjectWrapperTable(Target target);
+    public static partial TargetPointer? AllManagedObjectWrapperTable(Target target);
 
     [StaticReference("s_nativeObjectWrapperTable")]
-    public static partial TargetPointer NativeObjectWrapperTable(Target target);
+    public static partial TargetPointer? NativeObjectWrapperTable(Target target);
 }

@@ -340,11 +340,11 @@ internal static class Emitter
 
     private static void EmitStaticReferenceMethod(StringBuilder sb, MemberModel member)
     {
-        sb.AppendLine($"    public static partial {TargetPointer} {member.Name}({Target} target)");
+        sb.AppendLine($"    public static partial {TargetPointer}? {member.Name}({Target} target)");
         sb.AppendLine("    {");
         sb.AppendLine($"        if (TypeNameResolver.TryGetStaticFieldAddress(target, _typeNames, \"{member.DescriptorOrFieldName}\", out {TargetPointer} address))");
         sb.AppendLine($"            return target.ReadPointer(address);");
-        sb.AppendLine($"        return {TargetPointer}.Null;");
+        sb.AppendLine($"        return null;");
         sb.AppendLine("    }");
         sb.AppendLine();
     }
