@@ -27,7 +27,7 @@ for %%z in ("%BATCH_DIR%\*.zip") do (
         echo ========================= BEGIN !suiteName! =============================
 
         mkdir "!suiteDir!" >nul 2>nul
-        tar -xf "%%~fz" -C "!suiteDir!"
+        "%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive -LiteralPath '%%~fz' -DestinationPath '!suiteDir!' -Force"
         if !errorlevel! neq 0 (
             echo ERROR: Failed to extract %%~fz
             set "suiteExitCode=1"
