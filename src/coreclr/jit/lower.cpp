@@ -12229,7 +12229,7 @@ bool Lowering::TryDecomposeBlockStoreAsIndirs(GenTreeBlk* blkNode)
 
     if (src->OperIs(GT_IND))
     {
-        LIR::Use srcAddrUse(BlockRange(), &src->AsIndir()->Addr(), blkNode);
+        LIR::Use srcAddrUse(BlockRange(), &src->AsIndir()->Addr(), src);
         srcAddrType   = src->AsIndir()->Addr()->TypeGet();
         srcAddrLclNum = srcAddrUse.ReplaceWithLclVar(m_compiler);
     }
