@@ -10,8 +10,10 @@ elseif(CLR_CMAKE_HOST_UNIX)
         # -O2 optimization generates faster/smaller code on Android
         add_compile_options($<$<CONFIG:Release>:-O2>)
     elseif (CLR_CMAKE_TARGET_BROWSER)
-        # -O2 disables metadce optimization and protects __stack_pointer
-        add_compile_options($<$<CONFIG:Release>:-O2>)
+        # -O2 prevents emscripten metadce from stripping user-requested global exports
+        # Must override CMAKE_*_FLAGS_RELEASE because those propagate to the link line
+        set(CMAKE_C_FLAGS_RELEASE "-O2 -DNDEBUG")
+        set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
     else()
         add_compile_options($<$<CONFIG:Release>:-O3>)
     endif()
