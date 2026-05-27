@@ -111,6 +111,38 @@ namespace System.Net.Security
         }
 
         /// <summary>
+        /// Returns the local certificate sent to the peer, or <c>null</c> if no
+        /// local certificate was negotiated. For a server session this is the
+        /// server certificate; for a client session this is the client
+        /// certificate selected during handshake (which may be <c>null</c> if
+        /// the server did not request a client certificate or the client did
+        /// not supply one).
+        /// </summary>
+        public X509Certificate2? LocalCertificate
+        {
+            get
+            {
+                ThrowIfDisposed();
+                if (_context.IsServer)
+                {
+                    return _context.Options.CertificateContext?.TargetCertificate;
+                }
+
+                if (_securityContext == null || _securityContext.IsInvalid)
+                {
+                    return null;
+                }
+
+                if (!CertificateValidationPal.IsLocalCertificateUsed(_credentialsHandle, _securityContext))
+                {
+                    return null;
+                }
+
+                return _context.Options.CertificateContext?.TargetCertificate;
+            }
+        }
+
+        /// <summary>
         /// Returns a <see cref="ChannelBinding"/> for the requested
         /// <paramref name="kind"/> derived from the current TLS session, or
         /// <c>null</c> if the binding is unavailable (e.g. handshake not yet
@@ -372,6 +404,69 @@ namespace System.Net.Security
                 default:
                     throw new IOException(SR.net_io_decrypt, SslStreamPal.GetException(status));
             }
+        }
+
+        // ── Renegotiation / Post-handshake auth ──────────────────────────
+
+        /// <summary>
+        /// Server-side: requests a client certificate from the peer after the
+        /// initial handshake has completed. On TLS 1.3 this issues a
+        /// post-handshake authentication CertificateRequest; on TLS 1.2 it
+        /// initiates a renegotiation.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The generated handshake bytes are staged into the pending-output
+        /// buffer (drained into <paramref name="ciphertext"/>). The caller
+        /// must then continue normal <see cref="Decrypt"/> / <see cref="Encrypt"/>
+        /// operations; OpenSSL processes the peer's response transparently
+        /// inside subsequent <c>SSL_read</c> calls. Once the peer's
+        /// certificate has been received, it becomes observable via
+        /// <see cref="GetRemoteCertificate"/>.
+        /// </para>
+        /// </remarks>
+        public TlsOperationStatus RequestClientCertificate(Span<byte> ciphertext, out int produced)
+        {
+            ThrowIfDisposed();
+            produced = 0;
+
+            if (!_context.IsServer)
+            {
+                throw new InvalidOperationException("RequestClientCertificate can only be invoked on a server session.");
+            }
+
+            if (!_isHandshakeComplete || _securityContext == null || _securityContext.IsInvalid)
+            {
+                throw new InvalidOperationException("Handshake has not yet completed.");
+            }
+
+            if (_pendingLength == 0)
+            {
+                ProtocolToken token = SslStreamPal.Renegotiate(
+                    ref _credentialsHandle,
+                    ref _securityContext!,
+                    _context.Options);
+                try
+                {
+                    if (token.Failed)
+                    {
+                        throw new AuthenticationException(SR.net_auth_SSPI, token.GetException());
+                    }
+
+                    if (token.Size > 0)
+                    {
+                        Debug.Assert(token.Payload != null);
+                        AppendPending(new ReadOnlySpan<byte>(token.Payload, 0, token.Size));
+                    }
+                }
+                finally
+                {
+                    token.ReleasePayload();
+                }
+            }
+
+            produced = DrainTo(ciphertext);
+            return _pendingLength > 0 ? TlsOperationStatus.WantWrite : TlsOperationStatus.Complete;
         }
 
         // ── Shutdown ──────────────────────────────────────────────────────
