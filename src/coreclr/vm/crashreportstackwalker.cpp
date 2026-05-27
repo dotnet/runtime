@@ -91,7 +91,7 @@ GetCrashReportFrameLimitPerThread()
 static void BuildTypeName(LPUTF8 buffer, size_t bufferSize, LPCUTF8 namespaceName, LPCUTF8 className);
 // Parses configuration during CrashReportConfigure initialization. This is not
 // async-signal-safe and must not be called from the crash-reporting path.
-static DWORD GetCrashReportTimeoutSeconds();
+static int GetCrashReportTimeoutSeconds();
 
 static
 void
@@ -635,14 +635,19 @@ CrashReportConfigure()
 
 // Parses configuration during CrashReportConfigure initialization. This is not
 // async-signal-safe and must not be called from the crash-reporting path.
-static DWORD
+// DOTNET_CrashReportTimeoutSeconds is a seconds-based watchdog knob: unset,
+// unparseable, or negative values use the default; 0 disables the watchdog; and
+// positive values are capped so conversion to poll's int millisecond timeout
+// cannot overflow. Use CLRConfigNoCache so Android-hosted apps can set DOTNET_*
+// values after PAL initialization but before crash-report configuration.
+static int
 GetCrashReportTimeoutSeconds()
 {
     // Keep the default conservative: successful reports can be large, while 0
     // remains available to disable the watchdog for diagnostics.
-    static constexpr DWORD DefaultTimeoutSeconds = 30;
-    static constexpr DWORD TimeoutSecondsToMilliseconds = 1000;
-    static constexpr DWORD MaxTimeoutSeconds = static_cast<DWORD>(std::numeric_limits<int>::max() / TimeoutSecondsToMilliseconds);
+    static constexpr int DefaultTimeoutSeconds = 30;
+    static constexpr int TimeoutSecondsToMilliseconds = 1000;
+    static constexpr int MaxTimeoutSeconds = std::numeric_limits<int>::max() / TimeoutSecondsToMilliseconds;
 
     CLRConfigNoCache timeoutCfg = CLRConfigNoCache::Get("CrashReportTimeoutSeconds", /*noprefix*/ false, &getenv);
     if (!timeoutCfg.IsSet())
@@ -651,18 +656,23 @@ GetCrashReportTimeoutSeconds()
     }
 
     const char* timeoutString = timeoutCfg.AsString();
+    while (*timeoutString == ' ' || (*timeoutString >= '\t' && *timeoutString <= '\r'))
+    {
+        timeoutString++;
+    }
+
     DWORD timeoutSeconds;
     if (timeoutString[0] == '-' || !timeoutCfg.TryAsInteger(10, timeoutSeconds))
     {
         return DefaultTimeoutSeconds;
     }
 
-    if (timeoutSeconds > MaxTimeoutSeconds)
+    if (timeoutSeconds > static_cast<DWORD>(MaxTimeoutSeconds))
     {
         return MaxTimeoutSeconds;
     }
 
-    return timeoutSeconds;
+    return static_cast<int>(timeoutSeconds);
 }
 
 #endif // FEATURE_INPROC_CRASHREPORT

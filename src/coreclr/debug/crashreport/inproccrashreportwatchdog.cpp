@@ -18,15 +18,14 @@
 #include <minipal/log.h>
 #include <minipal/time.h>
 #include <minipal/thread.h>
-#include "volatile.h"
 
-static constexpr uint32_t CRASH_REPORT_WATCHDOG_SECONDS_TO_MILLISECONDS = 1000;
+static constexpr int CRASH_REPORT_WATCHDOG_SECONDS_TO_MILLISECONDS = 1000;
 static constexpr int CRASH_REPORT_WATCHDOG_SIGNAL_EXIT_CODE_OFFSET = 128;
 
 pthread_mutex_t CrashReportWatchdog::s_initializationMutex = PTHREAD_MUTEX_INITIALIZER;
 CrashReportWatchdog* CrashReportWatchdog::s_instance;
 
-CrashReportWatchdog::CrashReportWatchdog(uint32_t timeoutSeconds)
+CrashReportWatchdog::CrashReportWatchdog(int timeoutSeconds)
     : m_timeoutSeconds(timeoutSeconds),
       m_timeoutMs(static_cast<int>(m_timeoutSeconds * CRASH_REPORT_WATCHDOG_SECONDS_TO_MILLISECONDS))
 {
@@ -35,14 +34,14 @@ CrashReportWatchdog::CrashReportWatchdog(uint32_t timeoutSeconds)
 }
 
 bool
-CrashReportWatchdog::TryInitialize(uint32_t timeoutSeconds)
+CrashReportWatchdog::TryInitialize(int timeoutSeconds)
 {
-    if (timeoutSeconds == 0)
+    if (timeoutSeconds <= 0)
     {
         return false;
     }
 
-    if (VolatileLoad(&s_instance) != nullptr)
+    if (GetInstance() != nullptr)
     {
         return true;
     }
@@ -52,7 +51,7 @@ CrashReportWatchdog::TryInitialize(uint32_t timeoutSeconds)
         return false;
     }
 
-    if (VolatileLoad(&s_instance) != nullptr)
+    if (GetInstance() != nullptr)
     {
         (void)pthread_mutex_unlock(&s_initializationMutex);
         return true;
@@ -209,8 +208,8 @@ CrashReportWatchdog::ThreadLoop()
     }
 
     minipal_log_print_info(
-        "In-proc crash report watchdog started monitoring with a %lu second timeout.\n",
-        static_cast<unsigned long>(m_timeoutSeconds));
+        "In-proc crash report watchdog started monitoring with a %d second timeout.\n",
+        m_timeoutSeconds);
 
     if (!WaitForCommand(Command::Finished, m_timeoutMs))
     {
@@ -296,11 +295,22 @@ CrashReportWatchdog::WaitForCommand(Command expectedCommand, int timeoutMs)
 // async-signal-safe and preserve errno so watchdog notification does not
 // perturb the failing thread's crash-reporting state.
 void
+CrashReportWatchdog::StartCrashReport()
+{
+    WriteCommand(Command::Started);
+}
+
+void
+CrashReportWatchdog::StopCrashReport()
+{
+    WriteCommand(Command::Finished);
+}
+
+void
 CrashReportWatchdog::WriteCommand(Command command)
 {
     int savedErrno = errno;
-    CrashReportWatchdog* watchdog = VolatileLoad(&s_instance);
-    int writeFd = watchdog != nullptr ? watchdog->m_pipe[1] : -1;
+    int writeFd = m_pipe[1];
     if (writeFd == -1)
     {
         errno = savedErrno;
@@ -366,10 +376,18 @@ CrashReportWatchdog::Abort()
 
 CrashReportWatchdogScope::CrashReportWatchdogScope()
 {
-    CrashReportWatchdog::WriteCommand(CrashReportWatchdog::Command::Started);
+    CrashReportWatchdog* watchdog = CrashReportWatchdog::GetInstance();
+    if (watchdog != nullptr)
+    {
+        watchdog->StartCrashReport();
+    }
 }
 
 CrashReportWatchdogScope::~CrashReportWatchdogScope()
 {
-    CrashReportWatchdog::WriteCommand(CrashReportWatchdog::Command::Finished);
+    CrashReportWatchdog* watchdog = CrashReportWatchdog::GetInstance();
+    if (watchdog != nullptr)
+    {
+        watchdog->StopCrashReport();
+    }
 }

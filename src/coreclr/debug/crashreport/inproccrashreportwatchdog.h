@@ -6,6 +6,7 @@
 #pragma once
 
 #include "pal.h"
+#include "volatile.h"
 
 #include <pthread.h>
 #include <stdint.h>
@@ -18,11 +19,17 @@ class CrashReportWatchdog
 public:
     // Attempts to initialize the watchdog during normal runtime startup. This is
     // not async-signal-safe and must not be called from the crash-reporting path.
-    static bool TryInitialize(uint32_t timeoutSeconds);
+    static bool TryInitialize(int timeoutSeconds);
+
+    static CrashReportWatchdog* GetInstance()
+    {
+        return VolatileLoad(&s_instance);
+    }
+
+    void StartCrashReport();
+    void StopCrashReport();
 
 private:
-    friend class CrashReportWatchdogScope;
-
     static constexpr int CRASH_REPORT_WATCHDOG_INFINITE_TIMEOUT_MS = -1;
 
     enum class Command : char
@@ -31,7 +38,7 @@ private:
         Finished = 'F',
     };
 
-    explicit CrashReportWatchdog(uint32_t timeoutSeconds);
+    explicit CrashReportWatchdog(int timeoutSeconds);
 
     bool Initialize();
     bool InitializePipe();
@@ -43,11 +50,11 @@ private:
 
     void ThreadLoop();
     bool WaitForCommand(Command expectedCommand, int timeoutMs = CRASH_REPORT_WATCHDOG_INFINITE_TIMEOUT_MS);
-    static void WriteCommand(Command command);
+    void WriteCommand(Command command);
     static int GetRemainingTimeoutMs(int64_t deadlineMs);
     static void Abort();
 
-    uint32_t m_timeoutSeconds;
+    int m_timeoutSeconds;
     int m_timeoutMs;
     int m_pipe[2];
 
