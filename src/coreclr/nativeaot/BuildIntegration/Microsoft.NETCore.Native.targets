@@ -103,8 +103,7 @@ The .NET Foundation licenses this file to you under the MIT license.
   <PropertyGroup Condition="'$(IlcCompileDependsOn)'=='' and '$(NativeCompilationDuringPublish)' != 'false'">
     <IlcCompileDependsOn Condition="'$(BuildingFrameworkLibrary)' != 'true'">Compile;ComputeIlcCompileInputs</IlcCompileDependsOn>
     <IlcCompileDependsOn Condition="'$(IlcMultiModule)' == 'true' and '$(BuildingFrameworkLibrary)' != 'true'">$(IlcCompileDependsOn);BuildFrameworkLib</IlcCompileDependsOn>
-    <IlcCompileDependsOn>$(IlcCompileDependsOn);ComputeAggregateExecutableInputs</IlcCompileDependsOn>
-    <IlcCompileDependsOn>$(IlcCompileDependsOn);SetupOSSpecificProps</IlcCompileDependsOn>
+    <IlcCompileDependsOn>$(IlcCompileDependsOn);ComputeAggregateExecutableInputs;SetupOSSpecificProps</IlcCompileDependsOn>
   </PropertyGroup>
 
   <ItemGroup Condition="$(IlcSystemModule) == ''">
@@ -181,7 +180,6 @@ The .NET Foundation licenses this file to you under the MIT license.
         <AssemblyName>%(ReferencePath.Filename)</AssemblyName>
         <SanitizedAssemblyName>__AggregateExeShim_$([System.Text.RegularExpressions.Regex]::Replace('%(ReferencePath.Filename)', '[^A-Za-z0-9_]', '_'))</SanitizedAssemblyName>
         <AssemblyNameHash>$([MSBuild]::StableStringHash('%(ReferencePath.Filename)', 'Sha256'))</AssemblyNameHash>
-        <TargetName>%(ReferencePath.Filename)</TargetName>
       </_AggregateExecutableReferencePath>
       <_AggregateExecutableReferencePath>
         <EntryPointSymbol>_AggregateExeMain_%(SanitizedAssemblyName)_%(AssemblyNameHash)</EntryPointSymbol>
@@ -193,19 +191,19 @@ The .NET Foundation licenses this file to you under the MIT license.
         <ShimCompileRspFile>$(NativeIntermediateOutputPath)%(AssemblyName).aggregateexe.cl.rsp</ShimCompileRspFile>
         <ShimLinkRspFile>$(NativeIntermediateOutputPath)%(AssemblyName).aggregateexe.link.rsp</ShimLinkRspFile>
         <ShimCompileLinkRspFile>$(NativeIntermediateOutputPath)%(AssemblyName).aggregateexe.rsp</ShimCompileLinkRspFile>
-        <ShimBinary>$(NativeOutputPath)%(TargetName)$(NativeExecutableExt)</ShimBinary>
-        <ShimSymbol>$(NativeOutputPath)%(TargetName)$(NativeSymbolExt)</ShimSymbol>
+        <ShimBinary>$(NativeOutputPath)%(AssemblyName)$(NativeExecutableExt)</ShimBinary>
+        <ShimSymbol>$(NativeOutputPath)%(AssemblyName)$(NativeSymbolExt)</ShimSymbol>
       </_AggregateExecutableReferencePath>
       <_AggregateExecutableShim Include="%(_AggregateExecutableReferencePath.ShimBinary)">
-        <RelativePath>%(_AggregateExecutableReferencePath.TargetName)$(NativeExecutableExt)</RelativePath>
+        <RelativePath>%(_AggregateExecutableReferencePath.AssemblyName)$(NativeExecutableExt)</RelativePath>
       </_AggregateExecutableShim>
       <_AggregateExecutableShimSymbol Include="%(_AggregateExecutableReferencePath.ShimSymbol)" Condition="'$(NativeDebugSymbols)' == 'true'">
-        <RelativePath>%(_AggregateExecutableReferencePath.TargetName)$(NativeSymbolExt)</RelativePath>
+        <RelativePath>%(_AggregateExecutableReferencePath.AssemblyName)$(NativeSymbolExt)</RelativePath>
       </_AggregateExecutableShimSymbol>
     </ItemGroup>
 
     <PropertyGroup>
-      <AggregateExecutable Condition="'$(NativeLib)' == 'Shared' and '@(_AggregateExecutableReferencePath)' != ''">true</AggregateExecutable>
+      <_AggregateExecutable Condition="'$(NativeLib)' == 'Shared' and '@(_AggregateExecutableReferencePath)' != ''">true</_AggregateExecutable>
     </PropertyGroup>
 
     <Error Condition="'@(_AggregateExecutableReferencePath)' != '' and '$(OutputType)' != 'Library'" Text="IncludeInAggregateExecutable requires OutputType=Library." />

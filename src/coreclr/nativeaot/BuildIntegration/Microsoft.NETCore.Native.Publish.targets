@@ -41,21 +41,21 @@
         <RelativePath>$(NativeBinaryPrefix)$(TargetName)$(NativeBinaryExt)</RelativePath>
         <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       </ResolvedFileToPublish>
-      <ResolvedFileToPublish Include="@(_AggregateExecutableShim)" Condition="'$(AggregateExecutable)' == 'true'">
+      <ResolvedFileToPublish Include="@(_AggregateExecutableShim)" Condition="'$(_AggregateExecutable)' == 'true'">
         <RelativePath>%(_AggregateExecutableShim.RelativePath)</RelativePath>
         <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       </ResolvedFileToPublish>
       <ResolvedFileToPublish Include="@(_AggregateExecutableShimSymbol)"
-                             Condition="'$(AggregateExecutable)' == 'true' and '$(CopyOutputSymbolsToPublishDirectory)' == 'true' and '$(NativeSymbolExt)' != '.dSYM' and Exists('%(_AggregateExecutableShimSymbol.Identity)')">
+                             Condition="'$(_AggregateExecutable)' == 'true' and '$(CopyOutputSymbolsToPublishDirectory)' == 'true' and '$(NativeSymbolExt)' != '.dSYM' and Exists('%(_AggregateExecutableShimSymbol.Identity)')">
         <RelativePath>%(_AggregateExecutableShimSymbol.RelativePath)</RelativePath>
         <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       </ResolvedFileToPublish>
       <_AggregateExecutableShimSymbolRecursivePath Include="%(_AggregateExecutableReferencePath.ShimSymbol)/**/*"
-                                             Condition="'$(AggregateExecutable)' == 'true' and '$(CopyOutputSymbolsToPublishDirectory)' == 'true' and '$(NativeSymbolExt)' == '.dSYM' and Exists('%(_AggregateExecutableReferencePath.ShimSymbol)')">
-        <RelativePath>%(_AggregateExecutableReferencePath.TargetName)$(NativeSymbolExt)/%(RecursiveDir)%(Filename)%(Extension)</RelativePath>
+                                             Condition="'$(_AggregateExecutable)' == 'true' and '$(CopyOutputSymbolsToPublishDirectory)' == 'true' and '$(NativeSymbolExt)' == '.dSYM' and Exists('%(_AggregateExecutableReferencePath.ShimSymbol)')">
+        <RelativePath>%(_AggregateExecutableReferencePath.AssemblyName)$(NativeSymbolExt)/%(RecursiveDir)%(Filename)%(Extension)</RelativePath>
       </_AggregateExecutableShimSymbolRecursivePath>
       <ResolvedFileToPublish Include="@(_AggregateExecutableShimSymbolRecursivePath)"
-                             Condition="'$(AggregateExecutable)' == 'true' and '$(CopyOutputSymbolsToPublishDirectory)' == 'true'">
+                             Condition="'$(_AggregateExecutable)' == 'true' and '$(CopyOutputSymbolsToPublishDirectory)' == 'true'">
         <RelativePath>%(_AggregateExecutableShimSymbolRecursivePath.RelativePath)</RelativePath>
         <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       </ResolvedFileToPublish>
