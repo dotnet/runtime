@@ -12631,7 +12631,6 @@ void Compiler::fgValueNumberSsaVarDef(GenTreeLclVarCommon* lcl)
 //    tree where only one of the constants is expected to have a field sequence.
 //
 // Arguments:
-//    vnStore    - ValueNumStore object
 //    tree       - tree node to inspect
 //    byteOffset - [Out] resulting byte offset
 //    pFseq      - [Out] field sequence
@@ -12639,14 +12638,10 @@ void Compiler::fgValueNumberSsaVarDef(GenTreeLclVarCommon* lcl)
 // Return Value:
 //    true if the given tree is a static field address
 //
-/* static */
-bool Compiler::fgGetStaticFieldSeqAndAddress(ValueNumStore* vnStore,
-                                             GenTree*       tree,
-                                             ssize_t*       byteOffset,
-                                             FieldSeq**     pFseq)
+bool Compiler::fgGetStaticFieldSeqAndAddress(GenTree* tree, ssize_t* byteOffset, FieldSeq** pFseq)
 {
     VNFuncApp funcApp;
-    if (vnStore->GetVNFunc(tree->gtVNPair.GetLiberal(), &funcApp) && (funcApp.m_func == VNF_PtrToStatic))
+    if (vnStore->GetVNFunc(optConservativeNormalVN(tree), &funcApp) && (funcApp.m_func == VNF_PtrToStatic))
     {
         FieldSeq* fseq = vnStore->FieldSeqVNToFieldSeq(funcApp.m_args[1]);
         // TODO-Cleanup: We may see null field seqs here due to how the base of
@@ -12675,25 +12670,22 @@ bool Compiler::fgGetStaticFieldSeqAndAddress(ValueNumStore* vnStore,
     }
 
     // Accumulate final offset
-    ssize_t val = 0;
+    target_ssize_t val = 0;
     while (tree->OperIs(GT_ADD))
     {
-        GenTree* op1   = tree->gtGetOp1();
-        GenTree* op2   = tree->gtGetOp2();
-        ValueNum op1vn = op1->gtVNPair.GetLiberal();
-        ValueNum op2vn = op2->gtVNPair.GetLiberal();
+        ValueNum op1vn = optConservativeNormalVN(tree->gtGetOp1());
+        ValueNum op2vn = optConservativeNormalVN(tree->gtGetOp2());
 
-        if (op1->gtVNPair.BothEqual() && vnStore->IsVNConstant(op1vn) && !vnStore->IsVNHandle(op1vn) &&
-            varTypeIsIntegral(vnStore->TypeOfVN(op1vn)))
+        if (vnStore->IsVNConstant(op1vn) && !vnStore->IsVNHandle(op1vn) && varTypeIsIntegral(vnStore->TypeOfVN(op1vn)))
         {
-            val += vnStore->CoercedConstantValue<ssize_t>(op1vn);
-            tree = op2;
+            val += vnStore->CoercedConstantValue<target_ssize_t>(op1vn);
+            tree = tree->gtGetOp2();
         }
-        else if (op2->gtVNPair.BothEqual() && vnStore->IsVNConstant(op2vn) && !vnStore->IsVNHandle(op2vn) &&
+        else if (vnStore->IsVNConstant(op2vn) && !vnStore->IsVNHandle(op2vn) &&
                  varTypeIsIntegral(vnStore->TypeOfVN(op2vn)))
         {
-            val += vnStore->CoercedConstantValue<ssize_t>(op2vn);
-            tree = op1;
+            val += vnStore->CoercedConstantValue<target_ssize_t>(op2vn);
+            tree = tree->gtGetOp1();
         }
         else
         {
@@ -12702,9 +12694,19 @@ bool Compiler::fgGetStaticFieldSeqAndAddress(ValueNumStore* vnStore,
         }
     }
 
-    // Base address is expected to be static field's address
-    ValueNum treeVN = tree->gtVNPair.GetLiberal();
-    if (tree->gtVNPair.BothEqual() && vnStore->IsVNConstant(treeVN))
+    // Base address is expected to be a static field's address. Peel any further constant
+    // offsets encoded in its VN that the tree walk above couldn't see (e.g. VNF_ADD chains
+    // hidden inside a LCL_VAR or a CSE temp).
+    ValueNum treeVN = optConservativeNormalVN(tree);
+    if (treeVN == ValueNumStore::NoVN)
+    {
+        return false;
+    }
+    target_ssize_t peeled = 0;
+    vnStore->PeelOffsets(&treeVN, &peeled);
+    val += peeled;
+
+    if (vnStore->IsVNConstant(treeVN))
     {
         FieldSeq* fldSeq = vnStore->GetFieldSeqFromAddress(treeVN);
         if (fldSeq != nullptr)
@@ -12754,7 +12756,7 @@ bool Compiler::GetImmutableDataFromAddress(GenTree* address, int size, CompAlloc
     }
 
     // See if 'src' is some static read-only field (including RVA)
-    if (fgGetStaticFieldSeqAndAddress(vnStore, address, &byteOffset, &fieldSeq) && ((size_t)byteOffset <= INT32_MAX))
+    if (fgGetStaticFieldSeqAndAddress(address, &byteOffset, &fieldSeq) && ((size_t)byteOffset <= INT32_MAX))
     {
         CORINFO_FIELD_HANDLE fld = fieldSeq->GetFieldHandle();
         if (fld == nullptr)
@@ -12762,7 +12764,7 @@ bool Compiler::GetImmutableDataFromAddress(GenTree* address, int size, CompAlloc
             return false;
         }
         *ppValue = new (alloc) uint8_t[(size_t)size];
-        return info.compCompHnd->getStaticFieldContent(fld, *ppValue, size, (int)byteOffset);
+        return info.compCompHnd->getStaticFieldContent(fld, *ppValue, size, (int)byteOffset, false);
     }
 
     return false;
@@ -12817,10 +12819,14 @@ bool Compiler::GetObjectHandleAndOffset(GenTree* tree, ssize_t* byteOffset, CORI
 //
 bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
 {
-    if (!tree->gtVNPair.BothEqual())
-    {
-        return false;
-    }
+    // Helper that overwrites the IND's VN with the folded constant while preserving
+    // the exception set from the address (e.g. ClassInitGenericExc from a static-base
+    // helper call). Without this, removing the BothEqual gate could silently drop
+    // exceptions encoded only in the liberal VN.
+    auto applyFoldedVN = [&](ValueNum cnsVN) {
+        ValueNumPair excs = vnStore->VNPExceptionSet(tree->gtGetOp1()->gtVNPair);
+        tree->gtVNPair    = vnStore->VNPWithExc(ValueNumPair(cnsVN, cnsVN), excs);
+    };
 
     // First, let's check if we can detect RVA[const_index] pattern to fold, e.g.:
     //
@@ -12834,17 +12840,19 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
     int                   size           = (int)genTypeSize(tree->TypeGet());
     const int             maxElementSize = sizeof(simd_t);
 
-    if (!tree->TypeIs(TYP_BYREF, TYP_STRUCT) &&
-        fgGetStaticFieldSeqAndAddress(vnStore, tree->gtGetOp1(), &byteOffset, &fieldSeq))
+    if (!tree->TypeIs(TYP_BYREF, TYP_STRUCT) && fgGetStaticFieldSeqAndAddress(tree->gtGetOp1(), &byteOffset, &fieldSeq))
     {
         CORINFO_FIELD_HANDLE fieldHandle = fieldSeq->GetFieldHandle();
         if ((fieldHandle != nullptr) && (size > 0) && (size <= maxElementSize) && ((size_t)byteOffset < INT_MAX))
         {
             uint8_t buffer[maxElementSize] = {0};
-            if (info.compCompHnd->getStaticFieldContent(fieldHandle, buffer, size, (int)byteOffset))
+            // Pass ignoreMovableObjects=false so we can fold ref-typed static readonly fields
+            // even when the referenced object lives on the regular (movable) heap. The JIT-side
+            // handle returned by the runtime keeps the object alive for the lifetime of the
+            // compiled code.
+            if (info.compCompHnd->getStaticFieldContent(fieldHandle, buffer, size, (int)byteOffset, false))
             {
-                ValueNum vn = vnStore->VNForGenericCon(tree->TypeGet(), buffer);
-                tree->gtVNPair.SetBoth(vn);
+                applyFoldedVN(vnStore->VNForGenericCon(tree->TypeGet(), buffer));
                 return true;
             }
         }
@@ -12874,7 +12882,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
                     if (pEmbedClsHnd == nullptr)
                     {
                         // getObjectContent doesn't support reading handles for AOT (NativeAOT) yet
-                        tree->gtVNPair.SetBoth(vnStore->VNForHandle((ssize_t)embedClsHnd, GTF_ICON_CLASS_HDL));
+                        applyFoldedVN(vnStore->VNForHandle((ssize_t)embedClsHnd, GTF_ICON_CLASS_HDL));
                         return true;
                     }
                 }
@@ -12882,7 +12890,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
                 {
                     ValueNum vn = vnStore->VNForGenericCon(tree->TypeGet(), buffer);
                     assert(!vnStore->IsVNObjHandle(vn));
-                    tree->gtVNPair.SetBoth(vn);
+                    applyFoldedVN(vn);
                     return true;
                 }
             }
@@ -13131,9 +13139,9 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
                 if (!returnsTypeHandle)
                 {
-                    // TYP_REF check to improve TP since we mostly target invariant loads of
-                    // frozen objects here
-                    if (addr->TypeIs(TYP_REF) && fgValueNumberConstLoad(tree->AsIndir()))
+                    // TYP_REF or icon-handle check to improve TP — we mostly target invariant
+                    // loads of frozen objects and static-readonly fields here.
+                    if ((addr->TypeIs(TYP_REF) || addr->IsIconHandle()) && fgValueNumberConstLoad(tree->AsIndir()))
                     {
                         // VN is assigned inside fgValueNumberConstLoad
                     }
