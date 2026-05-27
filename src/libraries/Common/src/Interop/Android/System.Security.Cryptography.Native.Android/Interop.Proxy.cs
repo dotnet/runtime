@@ -10,8 +10,9 @@ internal static partial class Interop
     {
         internal enum AndroidProxyType
         {
-            Http = 0,
-            Socks = 1,
+            Direct = 0,
+            Http = 1,
+            Socks = 2,
         }
 
         [StructLayout(LayoutKind.Sequential)]

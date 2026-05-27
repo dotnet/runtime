@@ -53,15 +53,32 @@ namespace System.Net.Http
                 for (int i = 0; i < count; i++)
                 {
                     Interop.AndroidCrypto.AndroidProxyInfo entry = proxies[i];
+                    Interop.AndroidCrypto.AndroidProxyType type = (Interop.AndroidCrypto.AndroidProxyType)entry.Type;
+
+                    if (type == Interop.AndroidCrypto.AndroidProxyType.Direct)
+                    {
+                        // Java's Proxy.NO_PROXY is represented as Proxy.Type.DIRECT.
+                        // Preserve ProxySelector ordering by treating DIRECT as the
+                        // selected result rather than skipping to a later fallback proxy.
+                        return null;
+                    }
 
                     // SOCKS is a transport-level proxy protocol (RFC 1928 for SOCKS5).
                     // Unlike HTTP CONNECT, SOCKS tunnels arbitrary TCP at the socket
                     // layer. SocketsHttpHandler accepts "socks5://" via
                     // HttpUtilities.IsSupportedProxyScheme. Android's
                     // java.net.Proxy.Type.SOCKS maps to SOCKS5 on modern Android.
-                    string scheme = entry.Type == (int)Interop.AndroidCrypto.AndroidProxyType.Socks
-                        ? "socks5"
-                        : "http";
+                    string? scheme = type switch
+                    {
+                        Interop.AndroidCrypto.AndroidProxyType.Http => "http",
+                        Interop.AndroidCrypto.AndroidProxyType.Socks => "socks5",
+                        _ => null,
+                    };
+
+                    if (scheme is null)
+                    {
+                        continue;
+                    }
 
                     // The native PAL allocates the host as NUL-terminated UTF-16
                     // (Marshal.PtrToStringUni is a zero-conversion copy).

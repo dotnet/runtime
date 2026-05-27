@@ -9,8 +9,9 @@
 
 typedef enum
 {
-    ANDROID_PROXY_TYPE_HTTP  = 0,
-    ANDROID_PROXY_TYPE_SOCKS = 1,
+    ANDROID_PROXY_TYPE_DIRECT = 0,
+    ANDROID_PROXY_TYPE_HTTP   = 1,
+    ANDROID_PROXY_TYPE_SOCKS  = 2,
 } AndroidProxyType;
 
 typedef struct
@@ -25,10 +26,11 @@ typedef struct
 // Resolves the system proxy chain for the destination URL by querying
 // java.net.ProxySelector.getDefault().select(URI.create(url)).
 //
-// On success returns 0. *outCount is the number of HTTP/SOCKS entries
-// (DIRECT entries are skipped). *outProxies is an array of
-// AndroidProxyInfo allocated via malloc; the caller must release it
-// via AndroidCryptoNative_FreeProxyResult.
+// On success returns 0. *outCount is the number of DIRECT/HTTP/SOCKS
+// entries. *outProxies is an array of AndroidProxyInfo allocated via
+// malloc; the caller must release it via AndroidCryptoNative_FreeProxyResult.
+// DIRECT entries represent Java's Proxy.NO_PROXY / Proxy.Type.DIRECT and have
+// NULL host and port 0.
 //
 // Any JNI exception (malformed URI, SecurityException, ...) is treated
 // as "no proxy" and the function returns success with outCount == 0.
