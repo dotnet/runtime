@@ -109,6 +109,23 @@ namespace
         FlushGateHolder(FlushGateHolder&&) = delete;
         FlushGateHolder& operator=(FlushGateHolder&&) = delete;
     };
+
+    int __cdecl CompareByBeginAddress(const void* a, const void* b)
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            FORBID_FAULT;
+        }
+        CONTRACTL_END;
+
+        DWORD aBegin = ((const T_RUNTIME_FUNCTION*)a)->BeginAddress;
+        DWORD bBegin = ((const T_RUNTIME_FUNCTION*)b)->BeginAddress;
+        if (aBegin < bBegin) return -1;
+        if (aBegin > bBegin) return 1;
+        return 0;
+    }
 }
 
 /****************************************************************************/
@@ -296,20 +313,8 @@ void UnwindInfoTable::FlushPendingEntriesUnderGate()
         return;
 
     // Sort the pending entries by BeginAddress.
-    // Use a simple insertion sort since cPendingMaxCount is small (32).
-    static_assert(cPendingMaxCount == 32,
-        "cPendingMaxCount was updated and might be too large for insertion sort, consider using a better algorithm");
-    for (ULONG i = 1; i < localPendingCount; i++)
-    {
-        T_RUNTIME_FUNCTION key = localPending[i];
-        ULONG j = i;
-        while (j > 0 && localPending[j - 1].BeginAddress > key.BeginAddress)
-        {
-            localPending[j] = localPending[j - 1];
-            j--;
-        }
-        localPending[j] = key;
-    }
+    qsort(localPending, localPendingCount, sizeof(T_RUNTIME_FUNCTION),
+          CompareByBeginAddress);
 
     // Fast path: if all pending entries can be appended in order with room to spare,
     // we can just append and call RtlGrowFunctionTable.
@@ -462,10 +467,25 @@ void UnwindInfoTable::FlushPendingEntries()
     // before it can be removed.
     {
         CrstHolder publishLock(&unwindInfo->m_publishLock);
-        for (ULONG i = 0; i < unwindInfo->cTableCurCount; i++)
+
+        // pTable is kept sorted by BeginAddress. Soft-deleted entries keep their BeginAddress
+        // intact, so the array remains sorted across removes. Binary search for the largest index
+        // with BeginAddress <= relativeEntryPoint, then check against EndAddress.
+        ULONG lo = 0;
+        ULONG hi = unwindInfo->cTableCurCount;
+        while (lo < hi)
         {
-            if (unwindInfo->pTable[i].BeginAddress <= relativeEntryPoint &&
-                relativeEntryPoint < RUNTIME_FUNCTION__EndAddress(&unwindInfo->pTable[i], unwindInfo->iRangeStart))
+            ULONG mid = lo + (hi - lo) / 2;
+            if (unwindInfo->pTable[mid].BeginAddress <= relativeEntryPoint)
+                lo = mid + 1;
+            else
+                hi = mid;
+        }
+
+        if (lo > 0)
+        {
+            ULONG i = lo - 1;
+            if (relativeEntryPoint < RUNTIME_FUNCTION__EndAddress(&unwindInfo->pTable[i], unwindInfo->iRangeStart))
             {
                 if (unwindInfo->pTable[i].UnwindData != 0)
                     unwindInfo->cDeletedEntries++;

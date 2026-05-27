@@ -648,7 +648,7 @@ private:
     // Pending buffer for out-of-order entries that haven't been published to the OS yet.
     // These entries are accumulated and batch-merged into pTable to amortize the cost of
     // RtlDeleteGrowableFunctionTable + RtlAddGrowableFunctionTable.
-    static const ULONG  cPendingMaxCount = 32;
+    static const ULONG  cPendingMaxCount = 128;
     T_RUNTIME_FUNCTION  pendingTable[cPendingMaxCount];
     ULONG               cPendingCount;
 
