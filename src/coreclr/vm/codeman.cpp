@@ -94,6 +94,9 @@ static RtlDeleteGrowableFunctionTableFnPtr pRtlDeleteGrowableFunctionTable;
 
 static bool s_publishingActive;              // Publishing to ETW is turned on
 
+// Lock protecting initialization of UnwindInfoTables.
+static CrstStatic s_unwindInfoInitLock;
+
 namespace
 {
     // RAII helper used by UnwindInfoTable::FlushPendingEntries
@@ -275,7 +278,7 @@ void UnwindInfoTable::AddToUnwindInfoTable(PT_RUNTIME_FUNCTION data, int count)
                     data[i].BeginAddress, cPendingCount);
                 i++;
             }
-            currentSeq = ++m_pendingSeq;
+            currentSeq = m_pendingSeq = m_pendingSeq + 1;
         }
         // Flush any pending entries if we run out of space, or when we are at the end
         // of the batch so the OS can unwind this method immediately.
@@ -495,9 +498,8 @@ void UnwindInfoTable::FlushPendingEntries(LONG waitForSeq)
     STRESS_LOG3(LF_JIT, LL_INFO100, "RemoveFromUnwindInfoTable Removing %p BaseAddress %p rel %x\n",
         entryPoint, baseAddress, relativeEntryPoint);
 
-    // Check the main (published) table under the publish lock.
-    // If it wasn't found there, check the pending buffer.
-    // Most removes hit in the published table so this avoids taking the pending lock unnecessarily.
+    // AddToUnwindInfoTable guarantees entries are published before returning,
+    // so the entry must be in the published table by the time we get here.
     {
         CrstHolder publishLock(&unwindInfo->m_publishLock);
 
@@ -527,22 +529,6 @@ void UnwindInfoTable::FlushPendingEntries(LONG waitForSeq)
                 return;
             }
         }
-
-        // Check the pending buffer while still holding publishLock so the
-        // flusher cannot drain entries out from under us between the two searches.
-        {
-            CrstHolder pendingLock(&unwindInfo->m_pendingLock);
-            for (ULONG i = 0; i < unwindInfo->cPendingCount; i++)
-            {
-                if (unwindInfo->pendingTable[i].BeginAddress <= relativeEntryPoint &&
-                    relativeEntryPoint < RUNTIME_FUNCTION__EndAddress(&unwindInfo->pendingTable[i], unwindInfo->iRangeStart))
-                {
-                    unwindInfo->pendingTable[i] = unwindInfo->pendingTable[--unwindInfo->cPendingCount];
-                    STRESS_LOG1(LF_JIT, LL_INFO100, "RemoveFromUnwindInfoTable Removed pending entry 0x%x\n", i);
-                    return;
-                }
-            }
-        }
     }
 
     STRESS_LOG2(LF_JIT, LL_WARNING, "RemoveFromUnwindInfoTable COULD NOT FIND %p BaseAddress %p\n",
@@ -566,28 +552,17 @@ void UnwindInfoTable::FlushPendingEntries(LONG waitForSeq)
     UnwindInfoTable* unwindInfo = VolatileLoad(&pRS->_pUnwindInfoTable);
     if (unwindInfo == NULL)
     {
-        // Create a candidate table for this RangeSection and try to install it via CAS.
-        // Any losing thread (if any) deletes its candidate table. This avoids
-        // a process-wide lock on the cold path.
-        NewHolder<UnwindInfoTable> candidate(
-            new UnwindInfoTable(pRS->_range.RangeStart(), pRS->_range.RangeEndOpen()));
-        candidate->Register();
-        if (candidate->hHandle == NULL)
+        CrstHolder lock(&s_unwindInfoInitLock);
+        unwindInfo = VolatileLoad(&pRS->_pUnwindInfoTable);
+        if (unwindInfo == NULL)
         {
-            candidate->m_registrationFailed = true;
-        }
-
-        UnwindInfoTable* installed = InterlockedCompareExchangeT(
-            &pRS->_pUnwindInfoTable, candidate.GetValue(), (UnwindInfoTable*)NULL);
-        if (installed == NULL)
-        {
-            unwindInfo = candidate.Extract();
-        }
-        else
-        {
-            // Our candidate will be destroyed by the NewHolder,
-            // which also tears down the OS registration via ~UnwindInfoTable.
-            unwindInfo = installed;
+            unwindInfo = new UnwindInfoTable(pRS->_range.RangeStart(), pRS->_range.RangeEndOpen());
+            unwindInfo->Register();
+            if (unwindInfo->hHandle == NULL)
+            {
+                unwindInfo->m_registrationFailed = true;
+            }
+            VolatileStore(&pRS->_pUnwindInfoTable, unwindInfo);
         }
     }
 
@@ -642,6 +617,7 @@ void UnwindInfoTable::FlushPendingEntries(LONG waitForSeq)
     if (!InitUnwindFtns())
         return;
 
+    s_unwindInfoInitLock.Init(CrstUnwindInfoTableInitLock);
     s_publishingActive = true;
 }
 

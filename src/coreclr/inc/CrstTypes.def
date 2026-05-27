@@ -388,8 +388,12 @@ Crst SingleUseLock
     AcquiredBefore LoaderHeap UniqueStack DebuggerJitInfo
 End
 
+Crst UnwindInfoTableInitLock
+    AcquiredBefore UnwindInfoTablePublishLock
+End
+
 Crst UnwindInfoTablePublishLock
-    AcquiredAfter SingleUseLock
+    AcquiredAfter SingleUseLock UnwindInfoTableInitLock
     AcquiredBefore UnwindInfoTablePendingLock
 End
 
