@@ -2563,13 +2563,21 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
 
         case NI_X86Base_BitScanForward:
         case NI_X86Base_BitScanReverse:
+        {
+            GenTree*    op1 = node->Op(1);
+            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, TYP_INT, m_compiler);
+
+            genHWIntrinsic_R_RM(node, ins, EA_4BYTE, targetReg, op1, instOptions);
+            break;
+        }
+
         case NI_X86Base_X64_BitScanForward:
         case NI_X86Base_X64_BitScanReverse:
         {
             GenTree*    op1 = node->Op(1);
-            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, targetType, m_compiler);
+            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, TYP_LONG, m_compiler);
 
-            genHWIntrinsic_R_RM(node, ins, emitTypeSize(targetType), targetReg, op1, instOptions);
+            genHWIntrinsic_R_RM(node, ins, EA_8BYTE, targetReg, op1, instOptions);
             break;
         }
 
@@ -2815,9 +2823,14 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
         }
 
         case NI_X86Base_PopCount:
+        {
+            genXCNTIntrinsic(node, INS_popcnt, EA_4BYTE);
+            break;
+        }
+
         case NI_X86Base_X64_PopCount:
         {
-            genXCNTIntrinsic(node, INS_popcnt);
+            genXCNTIntrinsic(node, INS_popcnt, EA_8BYTE);
             break;
         }
 
@@ -2854,10 +2867,23 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
 
     var_types baseType   = node->GetSimdBaseType();
     var_types targetType = node->TypeGet();
+    GenTree*  op1        = node->Op(1);
     emitAttr  attr       = EA_UNKNOWN;
 
     if (baseType == TYP_UNKNOWN)
     {
+        assert(HWIntrinsicInfo::lookupCategory(intrinsicId) == HW_Category_Scalar);
+
+        if (HWIntrinsicInfo::BaseTypeFromFirstArg(intrinsicId))
+        {
+            assert(op1 != nullptr);
+            targetType = genActualType(op1->TypeGet());
+        }
+        else
+        {
+            assert(!HWIntrinsicInfo::BaseTypeFromFirstArg(intrinsicId));
+        }
+
         baseType = targetType;
         attr     = emitTypeSize(targetType);
     }
@@ -2868,7 +2894,6 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
 
     instruction ins       = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, m_compiler);
     size_t      numArgs   = node->GetOperandCount();
-    GenTree*    op1       = node->Op(1);
     regNumber   op1Reg    = REG_NA;
     regNumber   targetReg = node->GetRegNum();
     emitter*    emit      = GetEmitter();
@@ -3037,11 +3062,17 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
 
         case NI_AVX2_LeadingZeroCount:
         case NI_AVX2_TrailingZeroCount:
+        {
+            assert(targetType == TYP_INT);
+            genXCNTIntrinsic(node, ins, attr);
+            break;
+        }
+
         case NI_AVX2_X64_LeadingZeroCount:
         case NI_AVX2_X64_TrailingZeroCount:
         {
-            assert((targetType == TYP_INT) || (targetType == TYP_LONG));
-            genXCNTIntrinsic(node, ins);
+            assert(targetType == TYP_LONG);
+            genXCNTIntrinsic(node, ins, attr);
             break;
         }
 
@@ -4036,8 +4067,9 @@ void CodeGen::genPermuteVar2x(GenTreeHWIntrinsic* node, insOpts instOptions)
 // Arguments:
 //    node - The hardware intrinsic node
 //    ins  - The instruction being generated
+//    attr - The emit attribute
 //
-void CodeGen::genXCNTIntrinsic(GenTreeHWIntrinsic* node, instruction ins)
+void CodeGen::genXCNTIntrinsic(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr)
 {
     // LZCNT/TZCNT/POPCNT have a false dependency on the target register on Intel Sandy Bridge, Haswell, and Skylake
     // (POPCNT only) processors, so insert a `XOR target, target` to break the dependency via XOR triggering register
@@ -4072,7 +4104,7 @@ void CodeGen::genXCNTIntrinsic(GenTreeHWIntrinsic* node, instruction ins)
     {
         GetEmitter()->emitIns_R_R(INS_xor, EA_4BYTE, targetReg, targetReg);
     }
-    genHWIntrinsic_R_RM(node, ins, emitTypeSize(node->TypeGet()), targetReg, op1, INS_OPTS_NONE);
+    genHWIntrinsic_R_RM(node, ins, attr, targetReg, op1, INS_OPTS_NONE);
 }
 
 //------------------------------------------------------------------------

@@ -993,7 +993,7 @@ protected:
     void genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
     void genFmaIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
     void genPermuteVar2x(GenTreeHWIntrinsic* node, insOpts instOptions);
-    void genXCNTIntrinsic(GenTreeHWIntrinsic* node, instruction ins);
+    void genXCNTIntrinsic(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr);
     void genX86SerializeIntrinsic(GenTreeHWIntrinsic* node);
 
     template <typename HWIntrinsicSwitchCaseBody>

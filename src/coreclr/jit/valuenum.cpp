@@ -8255,7 +8255,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
             case NI_AVX2_LeadingZeroCount:
 #endif
             {
-                assert(!varTypeIsSmall(type) && !varTypeIsLong(type));
+                assert(varTypeIsInt(type));
 
                 int32_t  value  = GetConstantInt32(arg0VN);
                 uint32_t result = BitOperations::LeadingZeroCount(static_cast<uint32_t>(value));
@@ -8276,12 +8276,12 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
 #else
             case NI_AVX2_X64_LeadingZeroCount:
             {
-                assert(varTypeIsLong(type));
+                assert(varTypeIsInt(type));
 
                 int64_t  value  = GetConstantInt64(arg0VN);
                 uint32_t result = BitOperations::LeadingZeroCount(static_cast<uint64_t>(value));
 
-                return VNForLongCon(static_cast<int64_t>(result));
+                return VNForIntCon(static_cast<int32_t>(result));
             }
 #endif
 
@@ -8335,7 +8335,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
 
             case NI_AVX2_TrailingZeroCount:
             {
-                assert(!varTypeIsSmall(type) && !varTypeIsLong(type));
+                assert(varTypeIsInt(type));
 
                 int32_t  value  = GetConstantInt32(arg0VN);
                 uint32_t result = BitOperations::TrailingZeroCount(static_cast<uint32_t>(value));
@@ -8345,17 +8345,17 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
 
             case NI_AVX2_X64_TrailingZeroCount:
             {
-                assert(varTypeIsLong(type));
+                assert(varTypeIsInt(type));
 
                 int64_t  value  = GetConstantInt64(arg0VN);
                 uint32_t result = BitOperations::TrailingZeroCount(static_cast<uint64_t>(value));
 
-                return VNForLongCon(static_cast<int64_t>(result));
+                return VNForIntCon(static_cast<int32_t>(result));
             }
 
             case NI_X86Base_PopCount:
             {
-                assert(!varTypeIsSmall(type) && !varTypeIsLong(type));
+                assert(varTypeIsInt(type));
 
                 int32_t  value  = GetConstantInt32(arg0VN);
                 uint32_t result = BitOperations::PopCount(static_cast<uint32_t>(value));
@@ -8365,17 +8365,17 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
 
             case NI_X86Base_X64_PopCount:
             {
-                assert(varTypeIsLong(type));
+                assert(varTypeIsInt(type));
 
                 int64_t  value  = GetConstantInt64(arg0VN);
                 uint32_t result = BitOperations::PopCount(static_cast<uint64_t>(value));
 
-                return VNForLongCon(static_cast<int64_t>(result));
+                return VNForIntCon(static_cast<int32_t>(result));
             }
 
             case NI_X86Base_BitScanForward:
             {
-                assert(!varTypeIsSmall(type) && !varTypeIsLong(type));
+                assert(varTypeIsInt(type));
                 int32_t value = GetConstantInt32(arg0VN);
 
                 if (value == 0)
@@ -8390,7 +8390,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
 
             case NI_X86Base_X64_BitScanForward:
             {
-                assert(varTypeIsLong(type));
+                assert(varTypeIsInt(type));
                 int64_t value = GetConstantInt64(arg0VN);
 
                 if (value == 0)
@@ -8400,12 +8400,12 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
                 }
 
                 uint32_t result = BitOperations::BitScanForward(static_cast<uint64_t>(value));
-                return VNForLongCon(static_cast<int64_t>(result));
+                return VNForIntCon(static_cast<int32_t>(result));
             }
 
             case NI_X86Base_BitScanReverse:
             {
-                assert(!varTypeIsSmall(type) && !varTypeIsLong(type));
+                assert(varTypeIsInt(type));
                 int32_t value = GetConstantInt32(arg0VN);
 
                 if (value == 0)
@@ -8420,7 +8420,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
 
             case NI_X86Base_X64_BitScanReverse:
             {
-                assert(varTypeIsLong(type));
+                assert(varTypeIsInt(type));
                 int64_t value = GetConstantInt64(arg0VN);
 
                 if (value == 0)
@@ -8430,7 +8430,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
                 }
 
                 uint32_t result = BitOperations::BitScanReverse(static_cast<uint64_t>(value));
-                return VNForLongCon(static_cast<int64_t>(result));
+                return VNForIntCon(static_cast<int32_t>(result));
             }
 
             case NI_Vector128_ToVector256:
