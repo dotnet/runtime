@@ -315,6 +315,9 @@ set __MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!
 set __MsbuildBinLog=/bl:!__BuildBinLog!
 set __Logging='!__MsbuildLog!' '!__MsbuildWrn!' '!__MsbuildErr!' '!__MsbuildBinLog!'
 
+REM Workaround for https://github.com/dotnet/arcade/issues/16898 - remove once Arcade is fixed.
+if defined __ArcadeScriptArgs if /i %__ArcadeScriptArgs% == "-ci" if not defined NUGET_PACKAGES set "NUGET_PACKAGES=%__RepoRootDir%\.packages\"
+
 set BuildCommand=powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -Command "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
   %__RepoRootDir%\src\tests\build.proj -warnAsError:0 /t:TestBuild /nodeReuse:false^
   /p:RestoreDefaultOptimizationDataPackage=false /p:PortableBuild=true^

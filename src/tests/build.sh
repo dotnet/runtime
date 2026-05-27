@@ -117,6 +117,11 @@ build_Tests()
     buildArgs+=("/p:NUMBER_OF_PROCESSORS=${__NumProc}")
     buildArgs+=("${__UnprocessedBuildArgs[@]}")
 
+    # Workaround for https://github.com/dotnet/arcade/issues/16898 - remove once Arcade is fixed.
+    if [[ "$__ArcadeScriptArgs" == "--ci" && -z "${NUGET_PACKAGES:-}" ]]; then
+        export NUGET_PACKAGES="$__RepoRootDir/.packages/"
+    fi
+
     # Disable warnAsError - https://github.com/dotnet/runtime/issues/11077
     nextCommand="\"$__RepoRootDir/eng/common/msbuild.sh\" $__ArcadeScriptArgs --warnAsError false ${buildArgs[@]}"
     echo "Building tests via $nextCommand"
