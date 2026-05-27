@@ -134,11 +134,9 @@ IGCHandleStore* GCHandleManager::GetGlobalHandleStore()
 
 IGCHandleStore* GCHandleManager::CreateHandleStore()
 {
-    // Dead path. The last caller in CoreCLR was removed by dotnet/coreclr#23588
-    // (April 2019) when non-default AppDomains were retired. The vtable slot is
-    // preserved for GC_INTERFACE_MAJOR_VERSION 5 ABI compatibility with
-    // external standalone GC implementations.
-    assert(!"CreateHandleStore is not in use; no callers since dotnet/coreclr#23588");
+    // Dead path. The vtable slot is preserved for GC_INTERFACE_MAJOR_VERSION 5
+    // ABI compatibility with external standalone GC implementations.
+    assert(!"CreateHandleStore is not in use");
     return nullptr;
 }
 
