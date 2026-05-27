@@ -361,7 +361,7 @@
     <ComputeBatchTimeout Condition="'$(BatchLibraryHelixWorkItems)' == 'true' and '$(EnableDefaultBuildHelixWorkItems)' == 'true'"
                          GroupedItems="@(_BatchGroupedItem)"
                          BatchIds="@(_UniqueBatchId)"
-                         ItemPrefix="$(WorkItemPrefix)"
+                         ItemPrefix="$(WorkItemPrefix)Desktop-"
                          BatchOutputDir="$(IntermediateOutputPath)helix-batches/">
       <Output TaskParameter="TimedItems" ItemName="_BatchTimedItem" />
     </ComputeBatchTimeout>
