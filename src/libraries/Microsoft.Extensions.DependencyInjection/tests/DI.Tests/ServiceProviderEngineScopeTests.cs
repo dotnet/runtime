@@ -52,9 +52,28 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             services.AddScoped<AnotherScopedService>();
 
             var provider = new ServiceProvider(services, ServiceProviderOptions.Default);
-            var scope = new ServiceProviderEngineScope(provider, isRootScope: false);
+            Assert.Equal(2, provider.ResolvedServicesCapacity);
 
+            var scope = new ServiceProviderEngineScope(provider, isRootScope: false);
+#if NET
             Assert.Equal(new Dictionary<ServiceCacheKey, object?>(2).EnsureCapacity(0), scope.ResolvedServices.EnsureCapacity(0));
+#endif
+        }
+
+        [Fact]
+        public void ScopeResolvedServicesCapacityIsClampedAt36()
+        {
+            var services = new ServiceCollection();
+            for (int i = 0; i < 50; i++)
+                services.AddScoped<ScopedService>();
+
+            var provider = new ServiceProvider(services, ServiceProviderOptions.Default);
+            Assert.Equal(36, provider.ResolvedServicesCapacity);
+
+            var scope = new ServiceProviderEngineScope(provider, isRootScope: false);
+#if NET
+            Assert.Equal(new Dictionary<ServiceCacheKey, object?>(36).EnsureCapacity(0), scope.ResolvedServices.EnsureCapacity(0));
+#endif
         }
 
         [Fact]
@@ -64,8 +83,10 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             services.AddScoped<ScopedService>();
 
             var provider = new ServiceProvider(services, ServiceProviderOptions.Default);
-
+            Assert.Equal(0, provider.Root.ResolvedServices.Count);
+#if NET
             Assert.Equal(new Dictionary<ServiceCacheKey, object?>().EnsureCapacity(0), provider.Root.ResolvedServices.EnsureCapacity(0));
+#endif
         }
 
         [Fact]

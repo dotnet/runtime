@@ -111,7 +111,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 }
             }
 
-            return scopedServices;
+            return Math.Min(scopedServices, 36);
         }
 
         /// <summary>
