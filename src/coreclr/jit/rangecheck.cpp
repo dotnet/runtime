@@ -906,6 +906,7 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
                 break;
             }
 
+#if defined(FEATURE_HW_INTRINSICS)
 #if defined(TARGET_XARCH)
             case VNF_HWI_AVX2_LeadingZeroCount:
             case VNF_HWI_AVX2_TrailingZeroCount:
@@ -916,6 +917,7 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
 #elif defined(TARGET_ARM64)
             case VNF_HWI_ArmBase_LeadingZeroCount:
             case VNF_HWI_ArmBase_Arm64_LeadingZeroCount:
+#endif
 #endif
             case VNF_LeadingZeroCount:
             case VNF_TrailingZeroCount:
