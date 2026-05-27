@@ -164,7 +164,6 @@ namespace System.Runtime.CompilerServices
 #endif
 
         [Intrinsic]
-        [RequiresUnsafe]
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [RequiresDynamicCode("AOT must recognize usages of the method to preserve reflection info and generate stubs")]

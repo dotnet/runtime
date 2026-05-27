@@ -782,7 +782,7 @@ struct FrozenDelegateKey {
     FrozenDelegateKey(MethodDesc* method, MethodTable* type) : method(method), type(type) {}
 };
 
-class EMPTY_BASES_DECL DelegateSHashTraits : public DefaultSHashTraits< KeyValuePair<FrozenDelegateKey,DelegateObject*> >
+class EMPTY_BASES DelegateSHashTraits : public DefaultSHashTraits< KeyValuePair<FrozenDelegateKey,DelegateObject*> >
 {
 public:
     // explicitly declare local typedefs for these traits types, otherwise
