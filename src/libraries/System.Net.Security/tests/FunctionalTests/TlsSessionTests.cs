@@ -96,6 +96,63 @@ namespace System.Net.Security.Tests
             Assert.Throws<InvalidOperationException>(() => session.Decrypt(buf, buf, out _, out _));
         }
 
+        [Fact]
+        public async Task ServerSession_Shutdown_DeliversCloseNotifyToSslStreamClient()
+        {
+            using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
+            string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
+
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+            using (clientStream)
+            using (serverStream)
+            using (SslStream clientSsl = new SslStream(clientStream, leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate))
+            {
+                using TlsContext ctx = TlsContext.Create(new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = serverCert,
+                    EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                    ClientCertificateRequired = false,
+                });
+                using TlsSession session = TlsSession.Create(ctx);
+
+                Task clientHandshake = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+                {
+                    TargetHost = serverName,
+                    EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                    RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
+                });
+                Task serverHandshake = DriveServerHandshakeAsync(session, serverStream);
+                await Task.WhenAll(clientHandshake, serverHandshake).WaitAsync(TimeSpan.FromSeconds(30));
+
+                byte[] scratch = ArrayPool<byte>.Shared.Rent(CipherBufSize);
+                try
+                {
+                    TlsOperationStatus status;
+                    do
+                    {
+                        status = session.Shutdown(scratch, out int produced);
+                        if (produced > 0)
+                        {
+                            await serverStream.WriteAsync(scratch.AsMemory(0, produced));
+                            await serverStream.FlushAsync();
+                        }
+                    }
+                    while (status == TlsOperationStatus.WantWrite);
+
+                    Assert.Equal(TlsOperationStatus.Closed, status);
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(scratch);
+                }
+
+                // Client should observe EOF (close_notify) on the next read.
+                byte[] buf = new byte[16];
+                int n = await clientSsl.ReadAsync(buf).AsTask().WaitAsync(TimeSpan.FromSeconds(30));
+                Assert.Equal(0, n);
+            }
+        }
+
         // ── Helpers ────────────────────────────────────────────────────────
 
         private static async Task DriveServerHandshakeAsync(TlsSession session, Stream transport)

@@ -42,6 +42,9 @@ namespace System.Net.Security
         public TlsOperationStatus DrainPendingOutput(Span<byte> ciphertext, out int produced) =>
             throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
 
+        public TlsOperationStatus Shutdown(Span<byte> ciphertext, out int produced) =>
+            throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
+
         public X509Certificate2? GetRemoteCertificate() =>
             throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
 

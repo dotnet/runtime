@@ -718,6 +718,7 @@ namespace System.Net.Security
         public System.Net.Security.TlsOperationStatus ProcessHandshake(System.ReadOnlySpan<byte> input, System.Span<byte> output, out int consumed, out int produced) { throw null; }
         public System.Net.Security.TlsOperationStatus Encrypt(System.ReadOnlySpan<byte> plaintext, System.Span<byte> ciphertext, out int consumed, out int produced) { throw null; }
         public System.Net.Security.TlsOperationStatus Decrypt(System.ReadOnlySpan<byte> ciphertext, System.Span<byte> plaintext, out int consumed, out int produced) { throw null; }
+        public System.Net.Security.TlsOperationStatus Shutdown(System.Span<byte> ciphertext, out int produced) { throw null; }
         public System.Net.Security.TlsOperationStatus DrainPendingOutput(System.Span<byte> ciphertext, out int produced) { throw null; }
         public System.Security.Cryptography.X509Certificates.X509Certificate2? GetRemoteCertificate() { throw null; }
         public void Dispose() { }

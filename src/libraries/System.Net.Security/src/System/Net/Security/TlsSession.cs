@@ -357,6 +357,85 @@ namespace System.Net.Security
             }
         }
 
+        // ── Shutdown ──────────────────────────────────────────────────────
+
+        private bool _shutdownSent;
+
+        /// <summary>
+        /// Initiates a TLS close_notify shutdown and stages the resulting alert
+        /// record into the pending-output buffer (drained into <paramref name="ciphertext"/>).
+        /// Subsequent calls drain any remaining shutdown output.
+        /// </summary>
+        /// <remarks>
+        /// Returns <see cref="TlsOperationStatus.WantWrite"/> if the caller must
+        /// drain more output before the shutdown record is fully written;
+        /// otherwise <see cref="TlsOperationStatus.Closed"/> once all bytes have
+        /// been handed to the caller.
+        /// </remarks>
+        public TlsOperationStatus Shutdown(Span<byte> ciphertext, out int produced)
+        {
+            ThrowIfDisposed();
+            produced = 0;
+
+            if (_securityContext == null || _securityContext.IsInvalid)
+            {
+                return TlsOperationStatus.Closed;
+            }
+
+            if (!_shutdownSent)
+            {
+                _shutdownSent = true;
+
+                SecurityStatusPal status = SslStreamPal.ApplyShutdownToken(_securityContext);
+                if (status.ErrorCode != SecurityStatusPalErrorCode.OK)
+                {
+                    throw new IOException(SR.net_io_encrypt, SslStreamPal.GetException(status));
+                }
+
+                // Drive one step to extract the close_notify bytes the PAL queued
+                // into the underlying BIO. Input is empty; we only care about
+                // any output the PAL produces.
+                ProtocolToken token = default;
+                token.RentBuffer = true;
+                try
+                {
+                    if (_context.IsServer)
+                    {
+                        token = SslStreamPal.AcceptSecurityContext(
+                            ref _credentialsHandle,
+                            ref _securityContext,
+                            ReadOnlySpan<byte>.Empty,
+                            out _,
+                            _context.Options);
+                    }
+                    else
+                    {
+                        string hostName = TargetHostNameHelper.NormalizeHostName(_context.Options.TargetHost);
+                        token = SslStreamPal.InitializeSecurityContext(
+                            ref _credentialsHandle,
+                            ref _securityContext,
+                            hostName,
+                            ReadOnlySpan<byte>.Empty,
+                            out _,
+                            _context.Options);
+                    }
+
+                    if (token.Size > 0)
+                    {
+                        Debug.Assert(token.Payload != null);
+                        AppendPending(new ReadOnlySpan<byte>(token.Payload, 0, token.Size));
+                    }
+                }
+                finally
+                {
+                    token.ReleasePayload();
+                }
+            }
+
+            produced = DrainTo(ciphertext);
+            return _pendingLength > 0 ? TlsOperationStatus.WantWrite : TlsOperationStatus.Closed;
+        }
+
         // ── Pending output ────────────────────────────────────────────────
 
         public TlsOperationStatus DrainPendingOutput(Span<byte> ciphertext, out int produced)
