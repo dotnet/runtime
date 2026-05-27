@@ -11,11 +11,14 @@ parameters:
   shouldContinueOnError: false
   osSubgroup: ''
 
-  # sccache NuGet package version
+  # sccache version.  On linux/freebsd we use the linux-musl-x64 NuGet
+  # package; on macOS we download the matching tag from the mozilla/sccache
+  # GitHub release.  Keep the version in sync across platforms so all
+  # jobs cache against the same compiler-launcher behavior.
   sccacheVersion: '0.15.0'
 
 steps:
-  - ${{ if and(eq(parameters.osGroup, 'linux'), or(eq(parameters.osSubgroup, ''), eq(parameters.osSubgroup, '_musl')), eq(parameters.archType, 'x64')) }}:
+  - ${{ if or(and(eq(parameters.osGroup, 'linux'), or(eq(parameters.osSubgroup, ''), eq(parameters.osSubgroup, '_musl')), eq(parameters.archType, 'x64')), and(eq(parameters.osGroup, 'osx'), eq(parameters.archType, 'arm64'))) }}:
     # Set up the Azure Pipeline Cache for sccache's local cache directory.
     # Use a rolling key so each build can update the cache; restoreKeys
     # falls back to the most recent saved entry.
@@ -26,6 +29,10 @@ steps:
     # flags are controlled by RuntimeConfiguration (-rc), which is
     # constant per leg regardless of buildConfig.  Omitting it lets PR
     # builds warm-start from rolling-build caches saved in the main scope.
+    #
+    # osGroup/osSubgroup/archType keep each platform's cache isolated so
+    # Mac jobs don't poison the Linux entries (different compiler, different
+    # cache contents).
     - task: Cache@2
       displayName: Sccache cache
       continueOnError: true
@@ -35,15 +42,57 @@ steps:
         restoreKeys: |
           sccache | ${{ parameters.osGroup }}${{ parameters.osSubgroup }} | ${{ parameters.archType }} | ${{ parameters.nameSuffix }}
 
-    # Download the sccache NuGet package and configure the environment.
+    # Download sccache and configure the environment.
+    #
+    # On linux/freebsd we use the linux-musl-x64 NuGet package (the same
+    # x64 binary works for arm64 cross-compile on x64 hosts).
+    #
+    # On macOS we download the official tarball from the mozilla/sccache
+    # GitHub release matching the host CPU (sccache itself must match the
+    # agent's CPU; archType describes the target output and is captured in
+    # the cache key above).  A pinned sha256 guards against tarball
+    # tampering and surfaces transient GitHub-side issues.
     - script: |
+        set -euo pipefail
         sccacheVersion="${{ parameters.sccacheVersion }}"
+        osGroup="${{ parameters.osGroup }}"
         sccacheDir="$(Build.SourcesDirectory)/.packages/sccache/${sccacheVersion}/tools"
-        "$(Build.SourcesDirectory)/eng/common/dotnet.sh" package download "sccache@${sccacheVersion}" -o "$(Build.SourcesDirectory)/.packages" -v quiet
+
+        if [[ "$osGroup" == "osx" ]]; then
+            case "$(uname -m)" in
+                arm64)
+                    hostTriple="aarch64-apple-darwin"
+                    sccacheSha256="430ef7b5f54256d3ed5bfe77e8b0afc51aa209aeebe4f95b69c3a52ce3acc6e9"
+                    ;;
+                x86_64)
+                    hostTriple="x86_64-apple-darwin"
+                    sccacheSha256="f8da93e0689122268f720ddb48c8357f3da18be8c88aff23a8e75a7a219367db"
+                    ;;
+                *)
+                    echo "Unsupported macOS host arch: $(uname -m)" >&2
+                    exit 1
+                    ;;
+            esac
+            mkdir -p "$sccacheDir"
+            tarballName="sccache-v${sccacheVersion}-${hostTriple}.tar.gz"
+            tarballPath="$(Agent.TempDirectory)/${tarballName}"
+            url="https://github.com/mozilla/sccache/releases/download/v${sccacheVersion}/${tarballName}"
+            curl -fsSL -o "$tarballPath" "$url"
+            echo "${sccacheSha256}  ${tarballPath}" | shasum -a 256 -c -
+            # Tarball layout: sccache-v${ver}-${triple}/{sccache,README,LICENSE}.
+            # Strip the top directory and extract just the binary so it
+            # lands directly in $sccacheDir, matching the NuGet layout.
+            tar -xzf "$tarballPath" -C "$sccacheDir" --strip-components=1 \
+                "sccache-v${sccacheVersion}-${hostTriple}/sccache"
+            rm -f "$tarballPath"
+        else
+            "$(Build.SourcesDirectory)/eng/common/dotnet.sh" package download "sccache@${sccacheVersion}" -o "$(Build.SourcesDirectory)/.packages" -v quiet
+        fi
+
         chmod +x "$sccacheDir/sccache"
         echo "##vso[task.prependpath]$sccacheDir"
         echo "##vso[task.setvariable variable=SCCACHE_DIR]$(Pipeline.Workspace)/.sccache"
-        echo "##vso[task.setvariable variable=SCCACHE_CACHE_SIZE]3584M"
+        echo "##vso[task.setvariable variable=SCCACHE_CACHE_SIZE]5120M"
         echo "##vso[task.setvariable variable=SCCACHE_IDLE_TIMEOUT]0"
         echo "##vso[task.setvariable variable=USE_SCCACHE]true"
       displayName: Download and configure sccache
