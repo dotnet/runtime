@@ -528,6 +528,7 @@ extern jmethodID g_Proxy_address;     // Proxy.address() -> SocketAddress
 
 // java/net/Proxy$Type
 extern jclass    g_ProxyType;
+extern jfieldID  g_ProxyType_DIRECT;
 extern jfieldID  g_ProxyType_HTTP;
 extern jfieldID  g_ProxyType_SOCKS;
 

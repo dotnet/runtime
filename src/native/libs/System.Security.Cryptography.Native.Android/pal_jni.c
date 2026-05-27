@@ -516,6 +516,7 @@ jmethodID g_Proxy_address;
 
 // java/net/Proxy$Type
 jclass    g_ProxyType;
+jfieldID  g_ProxyType_DIRECT;
 jfieldID  g_ProxyType_HTTP;
 jfieldID  g_ProxyType_SOCKS;
 
@@ -1158,9 +1159,10 @@ jint AndroidCryptoNative_InitLibraryOnLoad (JavaVM *vm, void *reserved)
     g_ProxyType_method  = GetMethod(env, false, g_Proxy, "type",    "()Ljava/net/Proxy$Type;");
     g_Proxy_address     = GetMethod(env, false, g_Proxy, "address", "()Ljava/net/SocketAddress;");
 
-    g_ProxyType       = GetClassGRef(env, "java/net/Proxy$Type");
-    g_ProxyType_HTTP  = GetField(env, true, g_ProxyType, "HTTP",  "Ljava/net/Proxy$Type;");
-    g_ProxyType_SOCKS = GetField(env, true, g_ProxyType, "SOCKS", "Ljava/net/Proxy$Type;");
+    g_ProxyType        = GetClassGRef(env, "java/net/Proxy$Type");
+    g_ProxyType_DIRECT = GetField(env, true, g_ProxyType, "DIRECT", "Ljava/net/Proxy$Type;");
+    g_ProxyType_HTTP   = GetField(env, true, g_ProxyType, "HTTP",   "Ljava/net/Proxy$Type;");
+    g_ProxyType_SOCKS  = GetField(env, true, g_ProxyType, "SOCKS",  "Ljava/net/Proxy$Type;");
 
     g_InetSocketAddress               = GetClassGRef(env, "java/net/InetSocketAddress");
     g_InetSocketAddress_getHostString = GetMethod(env, false, g_InetSocketAddress, "getHostString", "()Ljava/lang/String;");

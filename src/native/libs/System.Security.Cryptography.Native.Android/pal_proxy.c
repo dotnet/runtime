@@ -26,7 +26,7 @@ PALEXPORT int32_t AndroidCryptoNative_GetProxyForUrl(const char* urlUtf8,
     // All transient outer-scope local refs go here. RELEASE_LOCALS(loc, env) at the
     // cleanup label releases them exactly once on every path.
     INIT_LOCALS(loc, jurl, juri, jselector, jlist,
-                     jproxyTypeHttp, jproxyTypeSocks);
+                     jproxyTypeDirect, jproxyTypeHttp, jproxyTypeSocks);
 
     loc[jurl] = make_java_string(env, urlUtf8); // aborts on OOM
 
@@ -47,8 +47,9 @@ PALEXPORT int32_t AndroidCryptoNative_GetProxyForUrl(const char* urlUtf8,
         goto cleanup;
 
     // Resolve the Proxy.Type enum constants for IsSameObject comparisons.
-    loc[jproxyTypeHttp]  = (*env)->GetStaticObjectField(env, g_ProxyType, g_ProxyType_HTTP);
-    loc[jproxyTypeSocks] = (*env)->GetStaticObjectField(env, g_ProxyType, g_ProxyType_SOCKS);
+    loc[jproxyTypeDirect] = (*env)->GetStaticObjectField(env, g_ProxyType, g_ProxyType_DIRECT);
+    loc[jproxyTypeHttp]   = (*env)->GetStaticObjectField(env, g_ProxyType, g_ProxyType_HTTP);
+    loc[jproxyTypeSocks]  = (*env)->GetStaticObjectField(env, g_ProxyType, g_ProxyType_SOCKS);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     jint n = (*env)->CallIntMethod(env, loc[jlist], g_CollectionSize);
@@ -83,7 +84,17 @@ PALEXPORT int32_t AndroidCryptoNative_GetProxyForUrl(const char* urlUtf8,
         }
 
         int32_t type;
-        if ((*env)->IsSameObject(env, iter[jtype], loc[jproxyTypeHttp]))
+        if ((*env)->IsSameObject(env, iter[jtype], loc[jproxyTypeDirect]))
+        {
+            result[written].type = ANDROID_PROXY_TYPE_DIRECT;
+            result[written].host = NULL;
+            result[written].port = 0;
+            written++;
+
+            RELEASE_LOCALS(iter, env);
+            continue;
+        }
+        else if ((*env)->IsSameObject(env, iter[jtype], loc[jproxyTypeHttp]))
         {
             type = ANDROID_PROXY_TYPE_HTTP;
         }
@@ -98,7 +109,7 @@ PALEXPORT int32_t AndroidCryptoNative_GetProxyForUrl(const char* urlUtf8,
         }
         else
         {
-            // DIRECT or unknown — no result entry.
+            // Unknown proxy type: no result entry.
             RELEASE_LOCALS(iter, env);
             continue;
         }
@@ -149,8 +160,8 @@ cleanup:
     }
     else if (result != NULL)
     {
-        // Either an error path or no proxy entries survived filtering (DIRECT-only,
-        // unknown types, etc). Free anything we may have partially populated so that
+        // Either an error path or no proxy entries survived filtering (unknown types,
+        // invalid addresses, etc). Free anything we may have partially populated so that
         // callers can rely on outProxies == NULL whenever outCount == 0.
         for (int32_t i = 0; i < written; i++)
             free(result[i].host);
