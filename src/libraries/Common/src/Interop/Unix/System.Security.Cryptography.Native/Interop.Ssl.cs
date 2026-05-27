@@ -451,6 +451,10 @@ namespace Microsoft.Win32.SafeHandles
             handle._authOptionsHandle = new WeakGCHandle<SslAuthenticationOptions>(options);
             Interop.Ssl.SslSetData(handle, WeakGCHandle<SslAuthenticationOptions>.ToIntPtr(handle._authOptionsHandle));
 
+            // CertVerifyCallback needs the SafeSslHandle to stash a
+            // CertificateValidationException; expose it via the options.
+            options.SafeSslHandle = handle;
+
             // SslSetBio will transfer ownership of the BIO handles to the SSL context
             try
             {

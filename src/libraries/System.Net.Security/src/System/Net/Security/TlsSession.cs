@@ -49,6 +49,7 @@ namespace System.Net.Security
         private bool _isHandshakeComplete;
         private bool _disposed;
         private SslConnectionInfo _connectionInfo;
+        private X509Certificate2? _remoteCertificate;
 
         private TlsSession(TlsContext context)
         {
@@ -65,7 +66,15 @@ namespace System.Net.Security
                     "TlsSession is currently implemented only on Linux/FreeBSD (OpenSSL).");
             }
 
-            return new TlsSession(context);
+            TlsSession session = new TlsSession(context);
+
+            // Provide a default cert validation hook so OpenSSL's CertVerifyCallback
+            // can drive the user RemoteCertificateValidationCallback even for a
+            // standalone TlsSession. If SslStream wraps this session (wedge mode),
+            // it sets its own validator first and we leave it untouched.
+            context.Options.RemoteCertificateValidator ??= session.VerifyRemoteCertificate;
+
+            return session;
         }
 
         // ── State ─────────────────────────────────────────────────────────
@@ -688,6 +697,30 @@ namespace System.Net.Security
         {
             ThrowIfDisposed();
             return SslStreamPal.DecryptMessage(_securityContext!, buffer, out offset, out count);
+        }
+
+        // Invoked by OpenSSL's CertVerifyCallback (via SslAuthenticationOptions.RemoteCertificateValidator)
+        // when this TlsSession owns the validation flow.
+        internal bool VerifyRemoteCertificate(
+            X509Certificate2? certificate,
+            X509Chain? chain,
+            SslCertificateTrust? trust,
+            ref ProtocolToken alertToken,
+            out SslPolicyErrors sslPolicyErrors,
+            out X509ChainStatusFlags chainStatus)
+        {
+            return SslStream.VerifyRemoteCertificateCore(
+                this,
+                _context.Options,
+                _securityContext,
+                ref _remoteCertificate,
+                ref _connectionInfo,
+                certificate,
+                chain,
+                trust,
+                ref alertToken,
+                out sslPolicyErrors,
+                out chainStatus);
         }
 
         public void Dispose()

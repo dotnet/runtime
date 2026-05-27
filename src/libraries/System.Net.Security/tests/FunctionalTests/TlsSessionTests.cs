@@ -155,6 +155,56 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        public async Task ServerSession_MutualAuth_InitialHandshake_InvokesValidator()
+        {
+            using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
+            using X509Certificate2 clientCert = TestCertificates.GetClientCertificate();
+            string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
+
+            int validatorCalls = 0;
+            X509Certificate2? observedClientCert = null;
+
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+            using (clientStream)
+            using (serverStream)
+            using (SslStream clientSsl = new SslStream(clientStream, leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate))
+            {
+                using TlsContext ctx = TlsContext.Create(new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = serverCert,
+                    EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                    ClientCertificateRequired = true,
+                    RemoteCertificateValidationCallback = (s, c, ch, e) =>
+                    {
+                        validatorCalls++;
+                        observedClientCert = c as X509Certificate2;
+                        return true;
+                    },
+                });
+                using TlsSession session = TlsSession.Create(ctx);
+
+                Task clientHandshake = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+                {
+                    TargetHost = serverName,
+                    EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                    ClientCertificates = new X509CertificateCollection { clientCert },
+                    RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
+                });
+                Task serverHandshake = DriveServerHandshakeAsync(session, serverStream);
+                await Task.WhenAll(clientHandshake, serverHandshake).WaitAsync(TimeSpan.FromSeconds(30));
+
+                Assert.True(session.IsHandshakeComplete);
+                Assert.Equal(1, validatorCalls);
+                Assert.NotNull(observedClientCert);
+                Assert.Equal(clientCert.Thumbprint, observedClientCert!.Thumbprint);
+
+                using X509Certificate2? remote = session.GetRemoteCertificate();
+                Assert.NotNull(remote);
+                Assert.Equal(clientCert.Thumbprint, remote!.Thumbprint);
+            }
+        }
+
+        [Fact]
         public async Task ServerSession_ChannelBinding_MatchesSslStreamClient()
         {
             using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();

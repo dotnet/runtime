@@ -874,7 +874,8 @@ internal static partial class Interop
                     .TryGetTarget(out SslAuthenticationOptions? options);
                 Debug.Assert(options != null, "Expected to get SslAuthenticationOptions from GCHandle");
 
-                sslHandle = (SafeSslHandle)options!.SslStream!._securityContext!;
+                sslHandle = options!.SafeSslHandle as SafeSslHandle;
+                Debug.Assert(sslHandle is not null, "Expected SslAuthenticationOptions.SafeSslHandle to be set by SafeSslHandle.Create");
 
                 // We need to note the number of certs in ExtraStore that were
                 // provided (by the user), we will add more from the received peer
@@ -888,7 +889,9 @@ internal static partial class Interop
                 try
                 {
                     ProtocolToken alertToken = default;
-                    if (options.SslStream!.VerifyRemoteCertificate(certificate, chain, options.CertificateContext?.Trust, ref alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus))
+                    SslAuthenticationOptions.VerifyRemoteCertificateCallback? validator = options.RemoteCertificateValidator;
+                    Debug.Assert(validator is not null, "Expected SslAuthenticationOptions.RemoteCertificateValidator to be set by SslStream or TlsSession");
+                    if (validator!(certificate, chain, options.CertificateContext?.Trust, ref alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus))
                     {
                         Ssl.X509StoreCtxSetError(storeCtx, (int)Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_OK);
                         return 1;
