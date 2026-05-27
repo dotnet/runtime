@@ -16,7 +16,7 @@
     <BuildHelixWorkItemsDependsOn>BuildHelixCommand;StageDependenciesForHelix</BuildHelixWorkItemsDependsOn>
     <EnableDefaultBuildHelixWorkItems>true</EnableDefaultBuildHelixWorkItems>
     <HelixDependenciesStagingPath>$([MSBuild]::NormalizeDirectory($(ArtifactsObjDir), 'helix-staging'))</HelixDependenciesStagingPath>
-    <BatchLibraryHelixWorkItems Condition="'$(BatchLibraryHelixWorkItems)' == ''">false</BatchLibraryHelixWorkItems>
+    <BatchLibraryHelixWorkItems Condition="'$(BatchLibraryHelixWorkItems)' == ''">true</BatchLibraryHelixWorkItems>
     <TargetWorkItemDurationMinutes Condition="'$(TargetWorkItemDurationMinutes)' == ''">12</TargetWorkItemDurationMinutes>
     <MaxTestsPerWorkItem Condition="'$(MaxTestsPerWorkItem)' == ''">20</MaxTestsPerWorkItem>
   </PropertyGroup>
