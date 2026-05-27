@@ -177,7 +177,7 @@
         // Exit label
     .endm
 
-// void JIT_ByRefWriteBarrier
+// void RhpByRefAssignRef
 // On entry:
 //   t8  : the source address (points to object reference to write)
 //   t6  : the destination address (object reference written here)
@@ -203,7 +203,7 @@ LEAF_ENTRY RhpByRefAssignRef, _TEXT
 
 LEAF_END RhpByRefAssignRef, _TEXT
 
-// JIT_CheckedWriteBarrier(Object** dst, Object* src)
+// RhpCheckedAssignRef(Object** dst, Object* src)
 //
 // Write barrier for writes to objects that may reside
 // on the managed heap.
@@ -233,7 +233,7 @@ LOCAL_LABEL(NotInHeap):
 
 LEAF_END RhpCheckedAssignRef, _TEXT
 
-// JIT_WriteBarrier(Object** dst, Object* src)
+// RhpAssignRef(Object** dst, Object* src)
 //
 // Write barrier for writes to objects that are known to
 // reside on the managed heap.

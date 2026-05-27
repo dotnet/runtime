@@ -38,6 +38,9 @@ public struct X86Context : IPlatformContext
     }
 
     public readonly uint Size => 0x2cc;
+
+    public readonly uint ContextControlFlags => (uint)ContextFlagsValues.CONTEXT_CONTROL;
+
     public readonly uint FullContextFlags => (uint)ContextFlagsValues.CONTEXT_FULL;
 
     public readonly uint AllContextFlags => (uint)ContextFlagsValues.CONTEXT_ALL;
@@ -59,6 +62,8 @@ public struct X86Context : IPlatformContext
         readonly get => new(Ebp);
         set => Ebp = (uint)value.Value;
     }
+
+    public uint RawContextFlags { readonly get => ContextFlags; set => ContextFlags = value; }
 
     public void Unwind(Target target)
     {

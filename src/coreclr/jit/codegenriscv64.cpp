@@ -822,14 +822,15 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
                 GetEmitter()->emitIns_R_R_R(INS_add, EA_PTRSIZE, rEndAddr, rEndAddr, rAddr);
             }
 
-            // TODO-RISCV64-RVC: Remove hardcoded branch offset here
+            BasicBlock* loopHead = genCreateTempLabel();
+            genDefineInlineTempLabel(loopHead);
             GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, padding);
             GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, padding + REGSIZE_BYTES);
             GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, padding + 2 * REGSIZE_BYTES);
             GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, padding + 3 * REGSIZE_BYTES);
 
             GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rAddr, rAddr, 4 * REGSIZE_BYTES);
-            GetEmitter()->emitIns_R_R_I(INS_bltu, EA_PTRSIZE, rAddr, rEndAddr, -5 << 2);
+            GetEmitter()->emitIns_J_cond_la(INS_bltu, loopHead, rAddr, rEndAddr);
 
             uLclBytes -= uLoopBytes;
             uAddrCurr = 0;
@@ -2323,7 +2324,7 @@ void CodeGen::genAsyncResumeInfo(GenTreeVal* treeNode)
 //
 void CodeGen::genFtnEntry(GenTree* treeNode)
 {
-    GetEmitter()->emitIns_R_L(INS_lea, EA_PTRSIZE, GetEmitter()->emitPrologIG, treeNode->GetRegNum());
+    GetEmitter()->emitIns_R_L(INS_lea, EA_PTRSIZE, GetEmitter()->emitGetFirstPrologIG(), treeNode->GetRegNum());
     genProduceReg(treeNode);
 }
 
