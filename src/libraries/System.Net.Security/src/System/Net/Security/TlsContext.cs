@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+
 namespace System.Net.Security
 {
     /// <summary>
@@ -17,10 +19,12 @@ namespace System.Net.Security
     public sealed class TlsContext : IDisposable
     {
         private readonly SslAuthenticationOptions _options;
+        private readonly bool _ownsOptions;
 
-        private TlsContext(SslAuthenticationOptions options)
+        private TlsContext(SslAuthenticationOptions options, bool ownsOptions)
         {
             _options = options;
+            _ownsOptions = ownsOptions;
         }
 
         internal SslAuthenticationOptions Options => _options;
@@ -32,7 +36,7 @@ namespace System.Net.Security
             ArgumentNullException.ThrowIfNull(options);
             SslAuthenticationOptions bag = new SslAuthenticationOptions();
             bag.UpdateOptions(options);
-            return new TlsContext(bag);
+            return new TlsContext(bag, ownsOptions: true);
         }
 
         public static TlsContext Create(SslClientAuthenticationOptions options)
@@ -40,9 +44,24 @@ namespace System.Net.Security
             ArgumentNullException.ThrowIfNull(options);
             SslAuthenticationOptions bag = new SslAuthenticationOptions();
             bag.UpdateOptions(options);
-            return new TlsContext(bag);
+            return new TlsContext(bag, ownsOptions: true);
         }
 
-        public void Dispose() => _options.Dispose();
+        // Used by SslStream's TlsSession wedge: share the existing options bag so
+        // SNI / client-cert selection results made by SslStream are visible to the
+        // TlsSession-driven PAL calls, and to avoid double Dispose on the bag.
+        internal static TlsContext WrapShared(SslAuthenticationOptions sharedOptions)
+        {
+            Debug.Assert(sharedOptions != null);
+            return new TlsContext(sharedOptions, ownsOptions: false);
+        }
+
+        public void Dispose()
+        {
+            if (_ownsOptions)
+            {
+                _options.Dispose();
+            }
+        }
     }
 }

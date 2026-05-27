@@ -693,6 +693,7 @@ namespace System.Net.Security
         WantRead = 1,
         WantWrite = 2,
         Closed = 3,
+        WantCredentials = 4,
     }
     public sealed partial class TlsContext : System.IDisposable
     {

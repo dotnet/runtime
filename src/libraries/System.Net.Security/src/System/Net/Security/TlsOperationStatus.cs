@@ -26,5 +26,12 @@ namespace System.Net.Security
         /// The transport is gone or <c>close_notify</c> was received. Dispose the session.
         /// </summary>
         Closed = 3,
+
+        /// <summary>
+        /// The session requires a client certificate (or a new selection) before it can
+        /// proceed. The caller should update <see cref="TlsContext"/> options as needed
+        /// and call <see cref="TlsSession.ProcessHandshake"/> again with empty input.
+        /// </summary>
+        WantCredentials = 4,
     }
 }

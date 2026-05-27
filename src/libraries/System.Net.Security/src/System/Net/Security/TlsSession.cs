@@ -171,6 +171,7 @@ namespace System.Net.Security
                 }
 
                 bool done = token.Status.ErrorCode == SecurityStatusPalErrorCode.OK;
+                bool needsCredentials = token.Status.ErrorCode == SecurityStatusPalErrorCode.CredentialsNeeded;
 
                 if (done)
                 {
@@ -190,6 +191,11 @@ namespace System.Net.Security
                 if (done)
                 {
                     return TlsOperationStatus.Complete;
+                }
+
+                if (needsCredentials)
+                {
+                    return TlsOperationStatus.WantCredentials;
                 }
 
                 // We made progress but still need more peer data.
@@ -339,9 +345,12 @@ namespace System.Net.Security
                     return TlsOperationStatus.Closed;
 
                 case SecurityStatusPalErrorCode.Renegotiate:
-                    // Out of scope for the PoC.
-                    throw new NotSupportedException(
-                        "Renegotiation surfaced from Decrypt is not yet supported by TlsSession.");
+                    // OpenSSL handles renegotiation transparently inside SSL_read/SSL_write.
+                    // The PAL has already consumed the frame; surface no plaintext and ask
+                    // the caller for more input. Any handshake bytes OpenSSL needs to send
+                    // out will surface on the next Encrypt/Decrypt call.
+                    consumed = frameSize;
+                    return TlsOperationStatus.WantRead;
 
                 default:
                     throw new IOException(SR.net_io_decrypt, SslStreamPal.GetException(status));
@@ -430,6 +439,65 @@ namespace System.Net.Security
         }
 
         private void ThrowIfDisposed() => ObjectDisposedException.ThrowIf(_disposed, this);
+
+        // ── Internal surface for the SslStream wedge (Linux/FreeBSD only) ─
+
+        // Direct accessors used by SslStream to mirror state into its own fields after
+        // each handshake step. Both handles are owned by this TlsSession; SslStream
+        // observes them via the mirror but does not dispose them.
+        internal SafeDeleteSslContext? SecurityContext => _securityContext;
+        internal SafeFreeCredentials? CredentialsHandle => _credentialsHandle;
+
+        // SslStream's GenerateToken replacement. Drives one ASC/ISC step via PAL and
+        // updates internal handshake-complete state. Returns the raw PAL token so the
+        // caller can preserve existing ProtocolToken-based plumbing (alerts, error
+        // mapping, NetEventSource).
+        internal ProtocolToken HandshakeStepForSslStream(ReadOnlySpan<byte> input, out int consumed)
+        {
+            ThrowIfDisposed();
+
+            ProtocolToken token;
+            if (_context.IsServer)
+            {
+                token = SslStreamPal.AcceptSecurityContext(
+                    ref _credentialsHandle,
+                    ref _securityContext,
+                    input,
+                    out consumed,
+                    _context.Options);
+            }
+            else
+            {
+                string hostName = TargetHostNameHelper.NormalizeHostName(_context.Options.TargetHost);
+                token = SslStreamPal.InitializeSecurityContext(
+                    ref _credentialsHandle,
+                    ref _securityContext,
+                    hostName,
+                    input,
+                    out consumed,
+                    _context.Options);
+            }
+
+            if (token.Status.ErrorCode == SecurityStatusPalErrorCode.OK)
+            {
+                _isHandshakeComplete = true;
+                SslStreamPal.QueryContextConnectionInfo(_securityContext!, ref _connectionInfo);
+            }
+
+            return token;
+        }
+
+        internal ProtocolToken EncryptForSslStream(ReadOnlyMemory<byte> buffer, int headerSize, int trailerSize)
+        {
+            ThrowIfDisposed();
+            return SslStreamPal.EncryptMessage(_securityContext!, buffer, headerSize, trailerSize);
+        }
+
+        internal SecurityStatusPal DecryptForSslStream(Span<byte> buffer, out int offset, out int count)
+        {
+            ThrowIfDisposed();
+            return SslStreamPal.DecryptMessage(_securityContext!, buffer, out offset, out count);
+        }
 
         public void Dispose()
         {

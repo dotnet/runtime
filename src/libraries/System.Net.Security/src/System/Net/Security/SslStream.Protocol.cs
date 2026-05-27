@@ -786,6 +786,15 @@ namespace System.Net.Security
         //
         internal ProtocolToken NextMessage(ReadOnlySpan<byte> incomingBuffer, out int consumed)
         {
+            if (TryNextMessageViaTlsSession(incomingBuffer, out ProtocolToken wedged, out consumed))
+            {
+                if (NetEventSource.Log.IsEnabled() && wedged.Failed)
+                {
+                    NetEventSource.Error(this, $"Authentication failed. Status: {wedged.Status}, Exception message: {wedged.GetException()!.Message}");
+                }
+                return wedged;
+            }
+
             ProtocolToken token = GenerateToken(incomingBuffer, out consumed);
             if (NetEventSource.Log.IsEnabled())
             {
@@ -797,6 +806,10 @@ namespace System.Net.Security
 
             return token;
         }
+
+        private partial bool TryNextMessageViaTlsSession(ReadOnlySpan<byte> incomingBuffer, out ProtocolToken token, out int consumed);
+        private partial bool TryEncryptViaTlsSession(ReadOnlyMemory<byte> buffer, out ProtocolToken token);
+        private partial bool TryDecryptViaTlsSession(Span<byte> buffer, out SecurityStatusPal status, out int outputOffset, out int outputCount);
 
         /*++
             GenerateToken - Called after each successive state
@@ -972,6 +985,11 @@ namespace System.Net.Security
 
         internal ProtocolToken Encrypt(ReadOnlyMemory<byte> buffer)
         {
+            if (TryEncryptViaTlsSession(buffer, out ProtocolToken wedged))
+            {
+                return wedged;
+            }
+
             if (NetEventSource.Log.IsEnabled()) NetEventSource.DumpBuffer(this, buffer.Span);
 
             ProtocolToken token = SslStreamPal.EncryptMessage(
@@ -990,6 +1008,11 @@ namespace System.Net.Security
 
         internal SecurityStatusPal Decrypt(Span<byte> buffer, out int outputOffset, out int outputCount)
         {
+            if (TryDecryptViaTlsSession(buffer, out SecurityStatusPal wedgedStatus, out outputOffset, out outputCount))
+            {
+                return wedgedStatus;
+            }
+
             SecurityStatusPal status = SslStreamPal.DecryptMessage(_securityContext!, buffer, out outputOffset, out outputCount);
             if (NetEventSource.Log.IsEnabled() && status.ErrorCode == SecurityStatusPalErrorCode.OK)
             {
