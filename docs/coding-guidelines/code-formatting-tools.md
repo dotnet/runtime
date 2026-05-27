@@ -80,6 +80,10 @@ In the options view, go to `Text Editor > C/C++ > Code Style > Formatting > Gene
 
 Git provides a number of hooks to enable running scripts before commit, push, pull, etc. This section describes adding a pre-commit hook to automatically format code before committing to make formatting seamless even when your development environment doesn't support "format-on-save" or similar functionality with the formatting tools this repository uses.
 
+### Git Hooks
+
+Git provides a number of hooks to enable running scripts before commit, push, pull, etc. This section describes adding a pre-commit hook to automatically format code before committing to make formatting seamless even when your development environment doesn't support "format-on-save" or similar functionality with the formatting tools this repository uses.
+
 #### Auto-format before committing
 
 To enable auto-formatting before committing, you can create a `.git/hooks/pre-commit` file in your local `dotnet/runtime` clone and add a call to the script located at `eng/formatting/format.sh` to auto-format your code before committing. Since Git for Windows also installs Git Bash, this script will work for both Windows and non-Windows platforms.
@@ -88,6 +92,8 @@ The following code block can be used as the contents of the `pre-commit` file to
 
 ```sh
 #!/bin/sh
-./eng/formatting/format.sh
 
+./eng/formatting/format.sh
 ```
+
+Make sure the file is executable (`chmod +x .git/hooks/pre-commit`). If `git config core.hooksPath` points elsewhere, set it with `git config core.hooksPath .git/hooks`.
