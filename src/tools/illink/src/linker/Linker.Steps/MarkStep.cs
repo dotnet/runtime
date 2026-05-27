@@ -514,7 +514,6 @@ namespace Mono.Linker.Steps
             {
                 marked = true;
                 MarkFieldVisibleToReflection(field, DependencyInfo.AlreadyMarked, origin);
-                MarkTypeVisibleToReflection(field.DeclaringType, new DependencyInfo(DependencyKind.DeclaringType, field), origin);
             }
 
             return marked;
@@ -2057,6 +2056,12 @@ namespace Mono.Linker.Steps
             MarkField(field, reason, origin);
             if (Context.Resolve(field) is FieldDefinition fieldDefinition)
             {
+                Annotations.MarkReflectionUsed(fieldDefinition);
+
+                // A reflection-visible field's DeclaringType is also accessible
+                // (e.g., via FieldInfo.DeclaringType). Mark it as reflection-visible.
+                MarkTypeVisibleToReflection(fieldDefinition.DeclaringType, new DependencyInfo(DependencyKind.DeclaringType, fieldDefinition), origin);
+
                 // On a reflectable field, perform generic data flow for the field's type
                 // This is a compensation for the DI issue described in https://github.com/dotnet/runtime/issues/81358
                 var fieldOrigin = new MessageOrigin(fieldDefinition);
