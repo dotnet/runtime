@@ -53,6 +53,7 @@ class DiagnosticConnectionWS extends DiagnosticConnectionBase implements IDiagno
         try {
             this.ws!.send(message as any);
         } catch {
+            dotnetLogger.warn("Diagnostic server WebSocket connection failed unexpectedly.");
             return -1;
         }
 

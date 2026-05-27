@@ -26,7 +26,13 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
     }
     const ds_rt_browser_performance_measure =
         globalThis.performance && typeof globalThis.performance.measure === "function"
-            ? (namePtr: CharPtr, start: number) => globalThis.performance.measure(Module.UTF8ToString(namePtr), { start: start })
+            ? (namePtr: CharPtr, start: number) => {
+                try {
+                    globalThis.performance.measure(Module.UTF8ToString(namePtr), { start: start });
+                } catch (e) {
+                    // Ignore
+                }
+            }
             : () => { };
 
     internals[InternalExchangeIndex.DiagnosticsExportsTable] = diagnosticsExportsToTable({

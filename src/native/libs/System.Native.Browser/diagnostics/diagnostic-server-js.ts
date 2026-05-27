@@ -57,6 +57,7 @@ class DiagnosticSession extends DiagnosticConnectionBase implements IDiagnosticC
     async connectNewClient() {
         if (startupJsClient) {
             this.diagClient = startupJsClient;
+            startupJsClient = undefined;
         } else {
             this.diagClient = await nextJsClient.promise;
         }

@@ -92,6 +92,7 @@ export function connectDSRouter(url: string): void {
 export function initializeDS() {
     const loaderConfig = dotnetApi.getConfig();
     const diagnosticPorts = "DOTNET_DiagnosticPorts";
+    loaderConfig.environmentVariables ??= {};
     if (!loaderConfig.environmentVariables![diagnosticPorts]) {
         loaderConfig.environmentVariables![diagnosticPorts] = "js://ready";
     }
