@@ -958,16 +958,9 @@ namespace System.Net.Http
 
         private async ValueTask ReadHeadersAsync(long headersLength, CancellationToken cancellationToken)
         {
-            // TODO: this header budget is sent as SETTINGS_MAX_HEADER_LIST_SIZE, so it should not use frame payload but rather 32 bytes + uncompressed size per entry.
-            // https://tools.ietf.org/html/draft-ietf-quic-http-24#section-4.1.1
-            if (headersLength > _headerBudgetRemaining)
-            {
-                _stream.Abort(QuicAbortDirection.Read, (long)Http3ErrorCode.ExcessiveLoad);
-                throw new HttpRequestException(HttpRequestError.ConfigurationLimitExceeded, SR.Format(SR.net_http_response_headers_exceeded_length, _connection.Pool.Settings.MaxResponseHeadersByteLength));
-            }
-
-            _headerBudgetRemaining -= (int)headersLength;
-
+            // The header budget is tracked per-header in OnHeader against the uncompressed name+value size,
+            // matching how SETTINGS_MAX_HEADER_LIST_SIZE is defined and how HTTP/2 tracks it.
+            // https://www.rfc-editor.org/rfc/rfc9114#section-4.2.2
             while (headersLength != 0)
             {
                 if (_recvBuffer.ActiveLength == 0)
@@ -1042,6 +1035,9 @@ namespace System.Net.Http
         /// <remarks>One of <paramref name="staticValue"/> or <paramref name="literalValue"/> will be set.</remarks>
         private void OnHeader(int? staticIndex, HeaderDescriptor descriptor, string? staticValue, ReadOnlySpan<byte> literalValue)
         {
+            int valueLength = staticValue is not null ? staticValue.Length : literalValue.Length;
+            AdjustHeaderBudget(descriptor.Name.Length + valueLength);
+
             if (descriptor.Name[0] == ':')
             {
                 if (!descriptor.Equals(KnownHeaders.PseudoStatus))
@@ -1158,6 +1154,16 @@ namespace System.Net.Http
                         Debug.Fail($"Unexpected {nameof(Http3RequestStream)}.{nameof(_headerState)} '{_headerState}'.");
                         break;
                 }
+            }
+        }
+
+        private void AdjustHeaderBudget(int amount)
+        {
+            _headerBudgetRemaining -= amount;
+            if (_headerBudgetRemaining < 0)
+            {
+                _stream.Abort(QuicAbortDirection.Read, (long)Http3ErrorCode.ExcessiveLoad);
+                throw new HttpRequestException(HttpRequestError.ConfigurationLimitExceeded, SR.Format(SR.net_http_response_headers_exceeded_length, _connection.Pool.Settings.MaxResponseHeadersByteLength));
             }
         }
 
