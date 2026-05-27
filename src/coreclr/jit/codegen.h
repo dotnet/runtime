@@ -1284,7 +1284,6 @@ protected:
     void genCodeForJumpCompare(GenTreeOpCC* tree);
     void genCompareImmAndJump(
         GenCondition::Code cond, regNumber reg, ssize_t compareImm, emitAttr size, BasicBlock* target);
-    void genCodeForBfi(GenTreeBfm* tree);
     void genCodeForBfiz(GenTreeOp* tree);
     void genCodeForBfx(GenTreeBfm* tree);
 #endif // TARGET_ARM64

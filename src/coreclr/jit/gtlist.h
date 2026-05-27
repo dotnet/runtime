@@ -224,7 +224,6 @@ GTNODE(OR_NOT          , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
 GTNODE(XOR_NOT          , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
 
 #ifdef TARGET_ARM64
-GTNODE(BFI              , GenTreeBfm         ,0,0,GTK_BINOP|GTK_EXOP|DBK_NOTHIR) // Bitfield Insert.
 GTNODE(BFIZ             , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR) // Bitfield Insert in Zero.
 GTNODE(BFX              , GenTreeBfm         ,0,0,GTK_UNOP|GTK_EXOP|DBK_NOTHIR) // Bitfield Extract.
 #endif

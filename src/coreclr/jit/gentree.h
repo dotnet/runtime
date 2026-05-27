@@ -6127,9 +6127,8 @@ struct GenTreeBfm : public GenTreeOp
         , gtOffset(offset)
         , gtWidth(width)
     {
-        assert((oper == GT_BFI) || (oper == GT_BFX));
-        assert((oper != GT_BFX) || (src == nullptr));
-        assert((oper != GT_BFI) || (src != nullptr));
+        assert(oper == GT_BFX);
+        assert(src == nullptr);
     }
 
     unsigned GetOffset() const

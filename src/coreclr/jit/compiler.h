@@ -3227,7 +3227,6 @@ public:
     GenTreeQmark* gtNewQmarkNode(var_types type, GenTree* cond, GenTreeColon* colon);
 
 #if defined(TARGET_ARM64)
-    GenTreeBfm* gtNewBfiNode(var_types type, GenTree* base, GenTree* src, unsigned offset, unsigned width);
     GenTreeBfm* gtNewBfxNode(var_types type, GenTree* base, unsigned offset, unsigned width);
 #endif
 

@@ -6029,36 +6029,6 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
 }
 
 //------------------------------------------------------------------------
-// genCodeForBfi: Generates the code sequence for a GenTree node that
-// represents a bitfield insert.
-//
-// Arguments:
-//    tree - the bitfield insert.
-//
-void CodeGen::genCodeForBfi(GenTreeBfm* tree)
-{
-    assert(tree->OperIs(GT_BFI));
-
-    emitAttr size    = emitActualTypeSize(tree);
-    unsigned regBits = emitter::getBitWidth(size);
-
-    GenTree* base = tree->gtGetOp1();
-    GenTree* src  = tree->gtGetOp2();
-
-    genConsumeOperands(tree);
-
-    unsigned offset = tree->GetOffset();
-    unsigned width  = tree->GetWidth();
-
-    assert(width >= 1 && width <= regBits);
-    assert(offset < regBits && (offset + width) <= regBits);
-
-    GetEmitter()->emitIns_R_R_I_I(INS_bfi, size, base->GetRegNum(), src->GetRegNum(), (int)offset, (int)width);
-
-    genProduceReg(tree);
-}
-
-//------------------------------------------------------------------------
 // genCodeForBfiz: Generates the code sequence for a GenTree node that
 // represents a bitfield insert in zero with sign/zero extension.
 //

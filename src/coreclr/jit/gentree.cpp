@@ -9060,13 +9060,6 @@ GenTreeQmark* Compiler::gtNewQmarkNode(var_types type, GenTree* cond, GenTreeCol
 }
 
 #if defined(TARGET_ARM64)
-GenTreeBfm* Compiler::gtNewBfiNode(var_types type, GenTree* base, GenTree* src, unsigned offset, unsigned width)
-{
-    GenTreeBfm* result = new (this, GT_BFI) GenTreeBfm(GT_BFI, type, base, src, offset, width);
-    result->gtFlags |= (base->gtFlags | src->gtFlags) & (GTF_ALL_EFFECT);
-    return result;
-}
-
 GenTreeBfm* Compiler::gtNewBfxNode(var_types type, GenTree* base, unsigned offset, unsigned width)
 {
     GenTreeBfm* result = new (this, GT_BFX) GenTreeBfm(GT_BFX, type, base, nullptr, offset, width);

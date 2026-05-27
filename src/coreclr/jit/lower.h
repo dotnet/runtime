@@ -97,29 +97,6 @@ private:
     bool      TryContainingCselOp(GenTreeHWIntrinsic* parentNode, GenTreeHWIntrinsic* childNode);
 #endif
 #if defined(TARGET_ARM64)
-    bool TryLowerOrToBFI(GenTreeOp* tree, GenTree** next);
-
-    enum class BfiPatternKind
-    {
-        FromLshAndMask,
-        FromBfiz
-    };
-
-    struct BfiPattern
-    {
-        BfiPatternKind kind;
-        GenTree*       base;
-        GenTree*       value;
-        GenTree*       shiftAnd;
-        GenTree*       shiftAndConst;
-        GenTree*       shiftConst;
-        GenTree*       shiftNode;
-        GenTree*       castNode;
-        uint64_t       lowMask;
-        uint64_t       offset;
-        uint64_t       width;
-    };
-    bool TryMatchOrToBfiPattern(GenTreeOp* orTree, BfiPattern* result);
     bool TryLowerOrToBFX(GenTreeOp* tree, GenTree** next);
 #endif
 #ifdef TARGET_RISCV64
