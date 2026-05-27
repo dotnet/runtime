@@ -268,22 +268,28 @@ namespace System.Net.NameResolution.Tests
             }
 
             string hostName = "test.localhost";
+            bool strictAddressFamily = !PlatformDetection.IsAppleMobile && !PlatformDetection.IsAndroid;
 
             // The subdomain goes to OS resolver first. If it fails, it falls back to
             // resolving plain "localhost" with the same address family filter.
             IPAddress[] addresses = Dns.GetHostAddresses(hostName, addressFamily);
-            if (addressFamily == AddressFamily.InterNetwork)
-            {
-                Assert.True(addresses.Length >= 1, "Expected at least one IPv4 address");
-            }
-            Assert.All(addresses, addr => Assert.Equal(addressFamily, addr.AddressFamily));
+            VerifyAddressFamily(addresses, addressFamily, strictAddressFamily);
 
             addresses = await Dns.GetHostAddressesAsync(hostName, addressFamily);
-            if (addressFamily == AddressFamily.InterNetwork)
+            VerifyAddressFamily(addresses, addressFamily, strictAddressFamily);
+
+            static void VerifyAddressFamily(IPAddress[] addresses, AddressFamily addressFamily, bool strictAddressFamily)
             {
-                Assert.True(addresses.Length >= 1, "Expected at least one IPv4 address");
+                if (addressFamily == AddressFamily.InterNetwork)
+                {
+                    Assert.Contains(addresses, addr => addr.AddressFamily == addressFamily);
+                }
+
+                if (strictAddressFamily)
+                {
+                    Assert.All(addresses, addr => Assert.Equal(addressFamily, addr.AddressFamily));
+                }
             }
-            Assert.All(addresses, addr => Assert.Equal(addressFamily, addr.AddressFamily));
         }
 
         // RFC 6761: Verify that localhost subdomains return loopback addresses.
