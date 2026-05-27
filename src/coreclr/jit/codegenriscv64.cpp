@@ -822,14 +822,15 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
                 GetEmitter()->emitIns_R_R_R(INS_add, EA_PTRSIZE, rEndAddr, rEndAddr, rAddr);
             }
 
-            // TODO-RISCV64-RVC: Remove hardcoded branch offset here
+            BasicBlock* loopHead = genCreateTempLabel();
+            genDefineInlineTempLabel(loopHead);
             GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, padding);
             GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, padding + REGSIZE_BYTES);
             GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, padding + 2 * REGSIZE_BYTES);
             GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, padding + 3 * REGSIZE_BYTES);
 
             GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rAddr, rAddr, 4 * REGSIZE_BYTES);
-            GetEmitter()->emitIns_R_R_I(INS_bltu, EA_PTRSIZE, rAddr, rEndAddr, -5 << 2);
+            GetEmitter()->emitIns_J_cond_la(INS_bltu, loopHead, rAddr, rEndAddr);
 
             uLclBytes -= uLoopBytes;
             uAddrCurr = 0;
@@ -2313,6 +2314,36 @@ void CodeGen::genAsyncResumeInfo(GenTreeVal* treeNode)
     GetEmitter()->emitIns_R_C(INS_addi, attr, treeNode->GetRegNum(), REG_NA,
                               genEmitAsyncResumeInfo((unsigned)treeNode->gtVal1));
     genProduceReg(treeNode);
+}
+
+//------------------------------------------------------------------------
+// genFtnEntry: emits address of the current function being compiled
+//
+// Parameters:
+//   treeNode - the GT_FTN_ENTRY node
+//
+void CodeGen::genFtnEntry(GenTree* treeNode)
+{
+    GetEmitter()->emitIns_R_L(INS_lea, EA_PTRSIZE, GetEmitter()->emitGetFirstPrologIG(), treeNode->GetRegNum());
+    genProduceReg(treeNode);
+}
+
+//------------------------------------------------------------------------
+// genNonLocalJmp: Emit jump to the specified address.
+//
+// Parameters:
+//   tree - the GT_NONLOCAL_JMP node
+//
+void CodeGen::genNonLocalJmp(GenTreeUnOp* tree)
+{
+    // Non-local jumps cannot handle the case where this function has been
+    // hijacked, since the VM may not restore the original LR at the right
+    // location in the new frame.
+    SetHasTailCalls(true);
+
+    genConsumeOperands(tree->AsOp());
+    // jalr with rd=x0 is an indirect jump (no link)
+    GetEmitter()->emitIns_R_R_I(INS_jalr, EA_PTRSIZE, REG_R0, tree->gtGetOp1()->GetRegNum(), 0);
 }
 
 //------------------------------------------------------------------------
@@ -4207,8 +4238,28 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             emit->emitIns_R_L(INS_ld, EA_PTRSIZE, genPendingCallLabel, targetReg);
             break;
 
+        case GT_RETURN_SUSPEND:
+            genReturnSuspend(treeNode->AsUnOp());
+            break;
+
+        case GT_ASYNC_CONTINUATION:
+            genCodeForAsyncContinuation(treeNode);
+            break;
+
         case GT_ASYNC_RESUME_INFO:
             genAsyncResumeInfo(treeNode->AsVal());
+            break;
+
+        case GT_RECORD_ASYNC_RESUME:
+            genRecordAsyncResume(treeNode->AsVal());
+            break;
+
+        case GT_FTN_ENTRY:
+            genFtnEntry(treeNode);
+            break;
+
+        case GT_NONLOCAL_JMP:
+            genNonLocalJmp(treeNode->AsUnOp());
             break;
 
         case GT_STORE_BLK:
@@ -4227,16 +4278,9 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             // Do nothing; this node is a marker for debug info.
             break;
 
-        case GT_RECORD_ASYNC_RESUME:
-            genRecordAsyncResume(treeNode->AsVal());
-            break;
-
-        case GT_ASYNC_CONTINUATION:
-            genCodeForAsyncContinuation(treeNode);
-            break;
-
-        case GT_RETURN_SUSPEND:
-            genReturnSuspend(treeNode->AsUnOp());
+        case GT_PATCHPOINT:
+        case GT_PATCHPOINT_FORCED:
+            genPatchpoint(treeNode->AsOp());
             break;
 
         case GT_SH1ADD:

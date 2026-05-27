@@ -197,7 +197,6 @@ namespace System
         }
 #elif !NATIVEAOT
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         internal static unsafe void Setup(char** pNames, char** pValues, int count, Exception* pException)
         {
             try

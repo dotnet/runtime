@@ -170,6 +170,7 @@ namespace System.Diagnostics
         protected void OnExited() { }
         public (byte[] StandardOutput, byte[] StandardError) ReadAllBytes(System.TimeSpan? timeout = default(System.TimeSpan?)) { throw null; }
         public System.Threading.Tasks.Task<(byte[] StandardOutput, byte[] StandardError)> ReadAllBytesAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public System.Collections.Generic.IEnumerable<System.Diagnostics.ProcessOutputLine> ReadAllLines(System.TimeSpan? timeout = default(System.TimeSpan?)) { throw null; }
         public System.Collections.Generic.IAsyncEnumerable<System.Diagnostics.ProcessOutputLine> ReadAllLinesAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public (string StandardOutput, string StandardError) ReadAllText(System.TimeSpan? timeout = default(System.TimeSpan?)) { throw null; }
         public System.Threading.Tasks.Task<(string StandardOutput, string StandardError)> ReadAllTextAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
@@ -284,6 +285,7 @@ namespace System.Diagnostics
         public ProcessOutputLine(string content, bool standardError) { throw null; }
         public string Content { get { throw null; } }
         public bool StandardError { get { throw null; } }
+        public override string ToString() { throw null; }
     }
     public enum ProcessPriorityClass
     {
@@ -318,6 +320,8 @@ namespace System.Diagnostics
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string FileName { get { throw null; } set { } }
         public System.Collections.Generic.IList<System.Runtime.InteropServices.SafeHandle>? InheritedHandles { get { throw null; } set { } }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("linux")]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public bool KillOnParentExit { get { throw null; } set { } }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]

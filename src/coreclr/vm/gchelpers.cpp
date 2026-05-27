@@ -1575,21 +1575,6 @@ HCIMPLEND_RAW
 
 #endif // FEATURE_USE_ASM_GC_WRITE_BARRIERS
 
-extern "C" HCIMPL2_RAW(VOID, JIT_WriteBarrierEnsureNonHeapTarget, Object **dst, Object *ref)
-{
-    // Must use static contract here, because if an AV occurs, a normal EH
-    // unwind will not occur, and destructors will not run.
-    STATIC_CONTRACT_MODE_COOPERATIVE;
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-
-    assert(!GCHeapUtilities::GetGCHeap()->IsHeapPointer((void*)dst));
-
-    // not a release store because NonHeap.
-    *dst = ref;
-}
-HCIMPLEND_RAW
-
 // This function sets the card table with the granularity of 1 byte, to avoid ghost updates
 //    that could occur if multiple threads were trying to set different bits in the same card.
 

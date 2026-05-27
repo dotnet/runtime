@@ -159,7 +159,7 @@ namespace System.Text.Json.Serialization
                 }
 
                 // Dispatch to any polymorphic converters: should always be entered regardless of ObjectState progress
-                if ((state.Current.MetadataPropertyNames & MetadataPropertyName.Type) != 0 &&
+                if (((state.Current.MetadataPropertyNames & MetadataPropertyName.Type) != 0 || state.PolymorphicResolvedType is not null) &&
                     state.Current.PolymorphicSerializationState != PolymorphicSerializationState.PolymorphicReEntryStarted &&
                     ResolvePolymorphicConverter(jsonTypeInfo, ref state) is JsonConverter polymorphicConverter)
                 {

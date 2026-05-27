@@ -108,7 +108,7 @@ namespace System.Reflection.PortableExecutable
         internal bool Is32Bit => Machine != Machine.Amd64 && Machine != Machine.IA64 && Machine != Machine.Arm64 && Machine != Machine.LoongArch64 && Machine != Machine.RiscV64;
 
         internal int ComputeSizeOfPEHeaders(int sectionCount) =>
-            PEBuilder.DosHeaderSize +
+            PEBuilder.DosHeader.Length +
             PEHeaders.PESignatureSize +
             CoffHeader.Size +
             PEHeader.Size(Is32Bit) +

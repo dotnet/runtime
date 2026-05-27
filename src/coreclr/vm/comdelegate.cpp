@@ -2681,7 +2681,7 @@ static bool IsLocationAssignable(TypeHandle fromHandle, TypeHandle toHandle, boo
     else
     {
         // they are not compatible yet enums can go into each other if their underlying element type is the same
-        if (toHandle.GetVerifierCorElementType() == fromHandle.GetVerifierCorElementType()
+        if (toHandle.GetInternalCorElementType() == fromHandle.GetInternalCorElementType()
             && (toHandle.IsEnum() || fromHandle.IsEnum()))
             return true;
 

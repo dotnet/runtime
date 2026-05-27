@@ -204,6 +204,7 @@ int g_rgCrstLevelMap[] =
     3,          // CrstPgoData
     0,          // CrstPinnedByrefValidation
     15,         // CrstPinnedHeapHandleTable
+    7,          // CrstPregeneratedStringThunks
     0,          // CrstProfilerGCRefDataFreeList
     14,         // CrstProfilingAPIStatus
     3,          // CrstRCWCache
@@ -313,6 +314,7 @@ LPCSTR g_rgCrstNameMap[] =
     "CrstPgoData",
     "CrstPinnedByrefValidation",
     "CrstPinnedHeapHandleTable",
+    "CrstPregeneratedStringThunks",
     "CrstProfilerGCRefDataFreeList",
     "CrstProfilingAPIStatus",
     "CrstRCWCache",

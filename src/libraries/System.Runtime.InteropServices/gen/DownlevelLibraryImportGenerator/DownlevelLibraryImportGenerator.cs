@@ -320,6 +320,35 @@ namespace Microsoft.Interop
             string stubTargetName,
             string stubMethodName)
         {
+            var dllImportArgs = new List<AttributeArgumentSyntax>
+            {
+                AttributeArgument(LiteralExpression(
+                    SyntaxKind.StringLiteralExpression,
+                    Literal(libraryImportData.ModuleName))),
+                AttributeArgument(
+                    NameEquals(nameof(DllImportAttribute.EntryPoint)),
+                    null,
+                    LiteralExpression(
+                        SyntaxKind.StringLiteralExpression,
+                        Literal(libraryImportData.EntryPoint ?? stubMethodName))),
+                AttributeArgument(
+                    NameEquals(nameof(DllImportAttribute.ExactSpelling)),
+                    null,
+                    LiteralExpression(SyntaxKind.TrueLiteralExpression))
+            };
+
+            // When StringMarshalling.Utf16 is specified, forward CharSet = Unicode to the inner
+            // DllImport. This ensures that any types forwarded to the runtime marshaller (e.g.
+            // char parameters) use the correct encoding instead of defaulting to Ansi.
+            if (libraryImportData.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshalling)
+                && libraryImportData.StringMarshalling == StringMarshalling.Utf16)
+            {
+                dllImportArgs.Add(AttributeArgument(
+                    NameEquals(nameof(DllImportAttribute.CharSet)),
+                    null,
+                    CreateEnumExpressionSyntax(CharSet.Unicode)));
+            }
+
             (ParameterListSyntax parameterList, TypeSyntax returnType, AttributeListSyntax returnTypeAttributes) = stubGenerator.GenerateTargetMethodSignatureData();
             LocalFunctionStatementSyntax localDllImport = LocalFunctionStatement(returnType, stubTargetName)
                 .AddModifiers(
@@ -333,23 +362,7 @@ namespace Microsoft.Interop
                                 Attribute(
                                     NameSyntaxes.DllImportAttribute,
                                     AttributeArgumentList(
-                                        SeparatedList(
-                                            [
-                                                AttributeArgument(LiteralExpression(
-                                                        SyntaxKind.StringLiteralExpression,
-                                                        Literal(libraryImportData.ModuleName))),
-                                                AttributeArgument(
-                                                    NameEquals(nameof(DllImportAttribute.EntryPoint)),
-                                                    null,
-                                                    LiteralExpression(
-                                                        SyntaxKind.StringLiteralExpression,
-                                                        Literal(libraryImportData.EntryPoint ?? stubMethodName))),
-                                                AttributeArgument(
-                                                    NameEquals(nameof(DllImportAttribute.ExactSpelling)),
-                                                    null,
-                                                    LiteralExpression(SyntaxKind.TrueLiteralExpression))
-                                            ]
-                                            )))))))
+                                        SeparatedList(dllImportArgs)))))))
                 .WithParameterList(parameterList);
             if (returnTypeAttributes is not null)
             {
@@ -379,10 +392,7 @@ namespace Microsoft.Interop
             {
                 Debug.Assert(target.StringMarshalling == StringMarshalling.Utf16);
                 NameEqualsSyntax name = NameEquals(nameof(DllImportAttribute.CharSet));
-                ExpressionSyntax value = MemberAccessExpression(
-                    SyntaxKind.SimpleMemberAccessExpression,
-                    AliasQualifiedName("global", IdentifierName(typeof(CharSet).FullName)),
-                    IdentifierName(nameof(CharSet.Unicode)));
+                ExpressionSyntax value = CreateEnumExpressionSyntax(CharSet.Unicode);
                 newAttributeArgs.Add(AttributeArgument(name, null, value));
             }
 
@@ -412,6 +422,14 @@ namespace Microsoft.Interop
                     SyntaxKind.StringLiteralExpression,
                     Literal(str));
             }
+        }
+
+        private static MemberAccessExpressionSyntax CreateEnumExpressionSyntax<T>(T value) where T : Enum
+        {
+            return MemberAccessExpression(
+                SyntaxKind.SimpleMemberAccessExpression,
+                AliasQualifiedName("global", IdentifierName(typeof(T).FullName)),
+                IdentifierName(value.ToString()));
         }
 
     }

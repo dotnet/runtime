@@ -48,8 +48,6 @@ namespace ILCompiler.DependencyAnalysis
         {
             _target = context.Target;
 
-            InitialInterfaceDispatchStub = new AddressTakenExternFunctionSymbolNode(new Utf8String("RhpInitialDynamicInterfaceDispatch"u8));
-
             _context = context;
             _compilationModuleGroup = compilationModuleGroup;
             _vtableSliceProvider = vtableSliceProvider;
@@ -105,11 +103,6 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public NameMangler NameMangler
-        {
-            get;
-        }
-
-        public ISymbolNode InitialInterfaceDispatchStub
         {
             get;
         }
@@ -578,6 +571,16 @@ namespace ILCompiler.DependencyAnalysis
             _fieldsWithMetadata = new NodeCache<FieldDesc, FieldMetadataNode>(field =>
             {
                 return new FieldMetadataNode(field);
+            });
+
+            _propertiesWithMetadata = new NodeCache<PropertyPseudoDesc, PropertyMetadataNode>(property =>
+            {
+                return new PropertyMetadataNode(property);
+            });
+
+            _eventsWithMetadata = new NodeCache<EventPseudoDesc, EventMetadataNode>(@event =>
+            {
+                return new EventMetadataNode(@event);
             });
 
             _modulesWithMetadata = new NodeCache<ModuleDesc, ModuleMetadataNode>(module =>
@@ -1467,6 +1470,26 @@ namespace ILCompiler.DependencyAnalysis
             return _fieldsWithMetadata.GetOrAdd(field);
         }
 
+        private NodeCache<PropertyPseudoDesc, PropertyMetadataNode> _propertiesWithMetadata;
+
+        internal PropertyMetadataNode PropertyMetadata(PropertyPseudoDesc property)
+        {
+            // These are only meaningful for UsageBasedMetadataManager. We should not have them
+            // in the dependency graph otherwise.
+            Debug.Assert(MetadataManager is UsageBasedMetadataManager);
+            return _propertiesWithMetadata.GetOrAdd(property);
+        }
+
+        private NodeCache<EventPseudoDesc, EventMetadataNode> _eventsWithMetadata;
+
+        internal EventMetadataNode EventMetadata(EventPseudoDesc @event)
+        {
+            // These are only meaningful for UsageBasedMetadataManager. We should not have them
+            // in the dependency graph otherwise.
+            Debug.Assert(MetadataManager is UsageBasedMetadataManager);
+            return _eventsWithMetadata.GetOrAdd(@event);
+        }
+
         private NodeCache<ModuleDesc, ModuleMetadataNode> _modulesWithMetadata;
 
         internal ModuleMetadataNode ModuleMetadata(ModuleDesc module)
@@ -1633,8 +1656,6 @@ namespace ILCompiler.DependencyAnalysis
 
         internal ModuleInitializerListNode ModuleInitializerList = new ModuleInitializerListNode();
 
-        public InterfaceDispatchCellSectionNode InterfaceDispatchCellSection = new InterfaceDispatchCellSectionNode();
-
         public ReadyToRunHeaderNode ReadyToRunHeader;
 
         public Dictionary<ISymbolNode, (Utf8String Name, bool Hidden)> NodeAliases = new Dictionary<ISymbolNode, (Utf8String, bool)>();
@@ -1655,7 +1676,6 @@ namespace ILCompiler.DependencyAnalysis
             graph.AddRoot(EagerCctorTable, "EagerCctorTable is always generated");
             graph.AddRoot(TypeManagerIndirection, "TypeManagerIndirection is always generated");
             graph.AddRoot(FrozenSegmentRegion, "FrozenSegmentRegion is always generated");
-            graph.AddRoot(InterfaceDispatchCellSection, "Interface dispatch cell section is always generated");
             graph.AddRoot(ModuleInitializerList, "Module initializer list is always generated");
 
             if (_inlinedThreadStatics.IsComputed())
