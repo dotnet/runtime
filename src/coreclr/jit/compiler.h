@@ -7020,10 +7020,6 @@ private:
     TempInfo fgMakeTemp(GenTree* value);
     GenTree* fgMakeMultiUse(GenTree** ppTree);
 
-    //                  Recognize a bitwise rotation pattern and convert into a GT_ROL or a GT_ROR node.
-    GenTree* fgRecognizeAndMorphBitwiseRotation(GenTree* tree);
-    bool fgOperIsBitwiseRotationRoot(genTreeOps oper);
-
 #if !defined(TARGET_64BIT)
     //                  Recognize and morph a long multiplication with 32 bit operands.
     GenTreeOp* fgRecognizeAndMorphLongMul(GenTreeOp* mul);
