@@ -908,17 +908,17 @@ namespace System.Net.ServerSentEvents.Tests
 
             if (useAsync)
             {
-                var enumerator = SseParser.Create(stream).Enumerate().GetEnumerator();
-                enumerator.MoveNext();
-                Assert.Equal("shortline", enumerator.Current.Data);
-                Assert.Throws<InvalidDataException>(() => enumerator.MoveNext());
-            }
-            else
-            {
                 var enumerator = SseParser.Create(stream).EnumerateAsync().GetAsyncEnumerator();
                 await enumerator.MoveNextAsync();
                 Assert.Equal("shortline", enumerator.Current.Data);
                 await Assert.ThrowsAsync<InvalidDataException>(async () => await enumerator.MoveNextAsync());
+            }
+            else
+            {
+                var enumerator = SseParser.Create(stream).Enumerate().GetEnumerator();
+                enumerator.MoveNext();
+                Assert.Equal("shortline", enumerator.Current.Data);
+                Assert.Throws<InvalidDataException>(() => enumerator.MoveNext());
             }
         }
 
