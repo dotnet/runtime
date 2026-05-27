@@ -3638,23 +3638,23 @@ BOOL Module::FixupNativeEntry(READYTORUN_IMPORT_SECTION* pSection, SIZE_T fixupI
 static LPCWSTR s_pCommandLine = NULL;
 
 #ifdef TARGET_UNIX
-static LPWSTR s_pExeName = NULL;
+static LPWSTR s_pExePath = NULL;
 
-static LPWSTR GetExeName()
+static LPWSTR GetExePath()
 {
-    LPWSTR pExeName = s_pExeName;
+    LPWSTR pExePath = s_pExePath;
 
-    if (pExeName == nullptr)
+    if (pExePath == nullptr)
     {
-        char* exeName = minipal_getexepath();
-        size_t exeNameLen = minipal_get_length_utf8_to_utf16(exeName, strlen(exeName), 0);
-        pExeName = new WCHAR[exeNameLen + 1];
-        minipal_convert_utf8_to_utf16(exeName, strlen(exeName), (CHAR16_T*)pExeName, exeNameLen + 1, 0);
-        free(exeName);
-        s_pExeName = pExeName;
+        char* exePath = minipal_getexepath();
+        size_t exePathLen = minipal_get_length_utf8_to_utf16(exePath, strlen(exePath), 0);
+        pExePath = new WCHAR[exePathLen + 1];
+        minipal_convert_utf8_to_utf16(exePath, strlen(exePath), (CHAR16_T*)pExePath, exePathLen + 1, 0);
+        free(exePath);
+        s_pExePath = pExePath;
     }
 
-    return pExeName;
+    return pExePath;
 }
 #endif // TARGET_UNIX
 
@@ -3677,7 +3677,7 @@ LPCWSTR GetCommandLineForDiagnostics()
         // Use the result from GetCommandLineW() instead
         pCmdLine = GetCommandLineW();
 #else
-        pCmdLine = GetExeName();
+        pCmdLine = GetExePath();
 #endif // HOST_WINDOWS
     }
 
@@ -3728,7 +3728,7 @@ void SaveManagedCommandLine(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR *argv)
 #else
     // On UNIX, the PAL doesn't have the command line arguments, so we must build the command line.
     // exePath contains the full path to the executable.
-    LPCWSTR exePath = GetExeName();
+    LPCWSTR exePath = GetExePath();
     SIZE_T  commandLineLen = (u16_strlen(exePath) + 1);
 
     // We will append pwzAssemblyPath to the 'corerun' exePath
