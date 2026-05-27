@@ -660,6 +660,11 @@ private:
     Crst                m_pendingLock; // Protects the pending table only.
 
     Volatile<LONG>      m_flushInProgress;
+
+    // Whether initial OS registration failed, used to return early in AddToUnwindInfoTable.
+    // We cannot just check if hHandle is null because it's temporarily set to NULL
+    // during the flusher's merge path.
+    bool                m_registrationFailed;
 #endif // defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
 };
 

@@ -190,6 +190,7 @@ UnwindInfoTable::UnwindInfoTable(ULONG_PTR rangeStart, ULONG_PTR rangeEnd)
     pTable = new T_RUNTIME_FUNCTION[cTableMaxCount];
     cPendingCount = 0;
     m_flushInProgress = 0;
+    m_registrationFailed = false;
 }
 
 /****************************************************************************/
@@ -252,6 +253,9 @@ void UnwindInfoTable::AddToUnwindInfoTable(PT_RUNTIME_FUNCTION data, int count)
     CONTRACTL_END;
 
     _ASSERTE(s_publishingActive);
+
+    if (m_registrationFailed)
+        return;
 
     for (int i = 0; i < count; )
     {
@@ -466,8 +470,8 @@ void UnwindInfoTable::FlushPendingEntries()
         entryPoint, baseAddress, relativeEntryPoint);
 
     // Check the main (published) table under the publish lock.
-    // We don't need to check the pending buffer because the method should have already been published
-    // before it can be removed.
+    // If it wasn't found there, check the pending buffer.
+    // Most removes hit in the published table so this avoids taking the pending lock unnecessarily.
     {
         CrstHolder publishLock(&unwindInfo->m_publishLock);
 
@@ -495,6 +499,22 @@ void UnwindInfoTable::FlushPendingEntries()
                 unwindInfo->pTable[i].UnwindData = 0;        // Mark the entry for deletion
                 STRESS_LOG1(LF_JIT, LL_INFO100, "RemoveFromUnwindInfoTable Removed entry 0x%x\n", i);
                 return;
+            }
+        }
+
+        // Check the pending buffer while still holding publishLock so the
+        // flusher cannot drain entries out from under us between the two searches.
+        {
+            CrstHolder pendingLock(&unwindInfo->m_pendingLock);
+            for (ULONG i = 0; i < unwindInfo->cPendingCount; i++)
+            {
+                if (unwindInfo->pendingTable[i].BeginAddress <= relativeEntryPoint &&
+                    relativeEntryPoint < RUNTIME_FUNCTION__EndAddress(&unwindInfo->pendingTable[i], unwindInfo->iRangeStart))
+                {
+                    unwindInfo->pendingTable[i] = unwindInfo->pendingTable[--unwindInfo->cPendingCount];
+                    STRESS_LOG1(LF_JIT, LL_INFO100, "RemoveFromUnwindInfoTable Removed pending entry 0x%x\n", i);
+                    return;
+                }
             }
         }
     }
@@ -526,6 +546,10 @@ void UnwindInfoTable::FlushPendingEntries()
         NewHolder<UnwindInfoTable> candidate(
             new UnwindInfoTable(pRS->_range.RangeStart(), pRS->_range.RangeEndOpen()));
         candidate->Register();
+        if (candidate->hHandle == NULL)
+        {
+            candidate->m_registrationFailed = true;
+        }
 
         UnwindInfoTable* installed = InterlockedCompareExchangeT(
             &pRS->_pUnwindInfoTable, candidate.GetValue(), (UnwindInfoTable*)NULL);
