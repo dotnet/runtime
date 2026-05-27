@@ -28,10 +28,17 @@
        so its publish layout picks them up and the WebCIL R2R test has a wasm JIT available.
        Use an explicit BeforeTargets call (rather than a sibling ProjectReference) to guarantee
        ordering vs. crossgen2_inbuild, which would otherwise build in parallel and publish before
-       these JITs land in the CoreCLR artifacts directory. -->
+       these JITs land in the CoreCLR artifacts directory.
+
+       When in a cross build (CrossHostArch is set), crossgen2_inbuild publishes JITs from
+       $(CoreCLRArtifactsPath)/$(CrossHostArch)/, so we must build the cross-host components by
+       mirroring the cross-tool stanza in eng/Subsets.props: BuildSubdirectory + HostArchitecture
+       + CrossBuild=false + -DCLR_CROSS_COMPONENTS_BUILD=1. -->
   <PropertyGroup>
+    <_BuildJitsCrossArch Condition="'$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)' or '$(HostOS)' != '$(TargetOS)' or '$(EnableNativeSanitizers)' != ''">true</_BuildJitsCrossArch>
     <_BuildJitsProperties>ClrAllJitsSubset=true;ClrWasmJitSubset=true;Configuration=$(CoreCLRConfiguration)</_BuildJitsProperties>
     <_BuildJitsProperties Condition="!$([MSBuild]::IsOsPlatform(Windows))">$(_BuildJitsProperties);Ninja=true</_BuildJitsProperties>
+    <_BuildJitsProperties Condition="'$(_BuildJitsCrossArch)' == 'true'">$(_BuildJitsProperties);HostArchitecture=$(BuildArchitecture);HostCrossOS=$(HostOS);CrossBuild=false;BuildSubdirectory=$(BuildArchitecture);CMakeArgs=$(CMakeArgs) -DCLR_CROSS_COMPONENTS_BUILD=1;PgoInstrument=false;NoPgoOptimize=true</_BuildJitsProperties>
   </PropertyGroup>
 
   <Target Name="BuildAllJitsForReadyToRunTests"
