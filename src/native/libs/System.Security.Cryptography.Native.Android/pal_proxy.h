@@ -32,10 +32,13 @@ typedef struct
 // DIRECT entries represent Java's Proxy.NO_PROXY / Proxy.Type.DIRECT and have
 // NULL host and port 0.
 //
-// Any JNI exception (malformed URI, SecurityException, ...) is treated
-// as "no proxy" and the function returns success with outCount == 0.
+// JNI exceptions while constructing the URI or resolving the proxy list are
+// treated as "no proxy" and the function returns success with outCount == 0.
+// JNI exceptions while reading an individual proxy entry are cleared and that
+// entry is skipped; previously read entries may still be returned.
 //
-// On allocation failure returns -1.
+// On result-array allocation failure returns -1. Host-string allocation uses
+// xmalloc via AllocateString and aborts on allocation failure.
 PALEXPORT int32_t AndroidCryptoNative_GetProxyForUrl(const char* urlUtf8,
                                                      int32_t*    outCount,
                                                      AndroidProxyInfo** outProxies);

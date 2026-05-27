@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.Net.Http.Tests
 {
-    public class SystemProxyInfoTest
+    public partial class SystemProxyInfoTest
     {
         // This will clean specific environmental variables
         // to be sure they do not interfere with the test.

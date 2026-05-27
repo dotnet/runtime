@@ -32,17 +32,20 @@ PALEXPORT int32_t AndroidCryptoNative_GetProxyForUrl(const char* urlUtf8,
 
     // URI.create(url) — IllegalArgumentException for malformed input.
     loc[juri] = (*env)->CallStaticObjectMethod(env, g_URI, g_URI_create, loc[jurl]);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    if (TryClearJNIExceptions(env))
+        goto cleanup;
 
     // ProxySelector.getDefault() — VM-wide singleton; may throw SecurityException.
     loc[jselector] = (*env)->CallStaticObjectMethod(env, g_ProxySelector, g_ProxySelector_getDefault);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    if (TryClearJNIExceptions(env))
+        goto cleanup;
     if (loc[jselector] == NULL)
         goto cleanup;
 
     // ProxySelector.select(uri)
     loc[jlist] = (*env)->CallObjectMethod(env, loc[jselector], g_ProxySelector_select, loc[juri]);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    if (TryClearJNIExceptions(env))
+        goto cleanup;
     if (loc[jlist] == NULL)
         goto cleanup;
 
@@ -50,10 +53,12 @@ PALEXPORT int32_t AndroidCryptoNative_GetProxyForUrl(const char* urlUtf8,
     loc[jproxyTypeDirect] = (*env)->GetStaticObjectField(env, g_ProxyType, g_ProxyType_DIRECT);
     loc[jproxyTypeHttp]   = (*env)->GetStaticObjectField(env, g_ProxyType, g_ProxyType_HTTP);
     loc[jproxyTypeSocks]  = (*env)->GetStaticObjectField(env, g_ProxyType, g_ProxyType_SOCKS);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    if (TryClearJNIExceptions(env))
+        goto cleanup;
 
     jint n = (*env)->CallIntMethod(env, loc[jlist], g_CollectionSize);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    if (TryClearJNIExceptions(env))
+        goto cleanup;
     if (n <= 0)
         goto cleanup;
 
@@ -70,14 +75,14 @@ PALEXPORT int32_t AndroidCryptoNative_GetProxyForUrl(const char* urlUtf8,
         INIT_LOCALS(iter, jproxy, jtype, jaddr, jhost);
 
         iter[jproxy] = (*env)->CallObjectMethod(env, loc[jlist], g_ListGet, i);
-        if (CheckJNIExceptions(env) || iter[jproxy] == NULL)
+        if (TryClearJNIExceptions(env) || iter[jproxy] == NULL)
         {
             RELEASE_LOCALS(iter, env);
             continue;
         }
 
         iter[jtype] = (*env)->CallObjectMethod(env, iter[jproxy], g_ProxyType_method);
-        if (CheckJNIExceptions(env) || iter[jtype] == NULL)
+        if (TryClearJNIExceptions(env) || iter[jtype] == NULL)
         {
             RELEASE_LOCALS(iter, env);
             continue;
@@ -115,7 +120,7 @@ PALEXPORT int32_t AndroidCryptoNative_GetProxyForUrl(const char* urlUtf8,
         }
 
         iter[jaddr] = (*env)->CallObjectMethod(env, iter[jproxy], g_Proxy_address);
-        if (CheckJNIExceptions(env)
+        if (TryClearJNIExceptions(env)
             || iter[jaddr] == NULL
             || !(*env)->IsInstanceOf(env, iter[jaddr], g_InetSocketAddress))
         {
@@ -124,14 +129,14 @@ PALEXPORT int32_t AndroidCryptoNative_GetProxyForUrl(const char* urlUtf8,
         }
 
         iter[jhost] = (*env)->CallObjectMethod(env, iter[jaddr], g_InetSocketAddress_getHostString);
-        if (CheckJNIExceptions(env) || iter[jhost] == NULL)
+        if (TryClearJNIExceptions(env) || iter[jhost] == NULL)
         {
             RELEASE_LOCALS(iter, env);
             continue;
         }
 
         jint port = (*env)->CallIntMethod(env, iter[jaddr], g_InetSocketAddress_getPort);
-        if (CheckJNIExceptions(env))
+        if (TryClearJNIExceptions(env))
         {
             RELEASE_LOCALS(iter, env);
             continue;
