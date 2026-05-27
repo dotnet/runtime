@@ -290,7 +290,7 @@ namespace System.Diagnostics
         /// <returns>A <see cref="FileVersionInfo" /> containing information about the file. If the file did not contain version information, the <see cref="FileVersionInfo" /> contains only the name of the file requested.</returns>
         /// <remarks>
         ///     <note type="caution">
-        ///         Use this with only trusted files. Malformed or malicious files can cause unexpected behavior.
+        ///         Use this only with trusted files. Malformed or malicious files can cause unexpected behavior.
         ///     </note>
         /// </remarks>
         /// <exception cref="FileNotFoundException"><paramref name="fileName"/> does not exist or cannot be accessed.</exception>
