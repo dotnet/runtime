@@ -1778,6 +1778,8 @@ struct FuncInfoDsc
     bool needsUnwindableFrame;
     emitLocation* startLoc;
     emitLocation* endLoc;
+    unsigned startVirtualIP;
+    unsigned endVirtualIP;
 
     void ensureUnwindableFrame(Compiler* comp);
 #endif // defined(TARGET_WASM)
@@ -1991,6 +1993,15 @@ struct NaturalLoopIterInfo
     // length of an invariant array.
     bool HasArrayLengthLimit : 1;
 
+    // Whether the consumer must emit its own runtime entry guard for this loop.
+    // Set when AnalyzeIteration could not prove statically that the loop
+    // condition [IterVar TestOper Limit] holds on entry (so the analysis
+    // invariants only hold conditionally). The consumer must insert a runtime
+    // test equivalent to that condition on the path that reaches the analyzed
+    // loop body. Only set when AnalyzeIteration is called with
+    // allowMissingBaseCase=true.
+    bool NeedsZeroTripGuard : 1;
+
     NaturalLoopIterInfo()
         : ExitedOnTrue(false)
         , HasConstInit(false)
@@ -1998,6 +2009,7 @@ struct NaturalLoopIterInfo
         , HasSimdLimit(false)
         , HasInvariantLocalLimit(false)
         , HasArrayLengthLimit(false)
+        , NeedsZeroTripGuard(false)
     {
     }
 
@@ -2191,7 +2203,7 @@ public:
     BasicBlock* GetLexicallyTopMostBlock();
     BasicBlock* GetLexicallyBottomMostBlock();
 
-    bool AnalyzeIteration(NaturalLoopIterInfo* info);
+    bool AnalyzeIteration(NaturalLoopIterInfo* info, bool allowMissingBaseCase = false);
 
     bool HasDef(unsigned lclNum);
 
@@ -5104,7 +5116,8 @@ protected:
 
     void impSetupAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned prefixFlags, const DebugInfo& callDI);
 
-    void impInsertAsyncContinuationForLdvirtftnCall(GenTreeCall* call);
+    void impInsertAsyncArgsForLdvirtftnCall(GenTreeCall* call);
+    void impInheritAsyncContextsFromInliner(GenTreeCall* call);
 
     CORINFO_CLASS_HANDLE impGetSpecialIntrinsicExactReturnType(GenTreeCall* call);
 

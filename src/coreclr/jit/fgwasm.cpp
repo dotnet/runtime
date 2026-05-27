@@ -2585,6 +2585,16 @@ PhaseStatus Compiler::fgWasmVirtualIP()
 
     for (FuncInfoDsc* const func : Funcs())
     {
+        func->startVirtualIP = virtualIP;
+
+        if (func->IsMethod())
+        {
+            // We use Virtual IP as length, and need a value to represent
+            // the prolog, so bump by 1 before we get to any EH or GC point.
+            //
+            virtualIP += 1;
+        }
+
         for (BasicBlock* const block : func->Blocks(this))
         {
             EHblkDsc* const hndDsc = ehGetBlockHndDsc(block);
@@ -2687,6 +2697,13 @@ PhaseStatus Compiler::fgWasmVirtualIP()
                 virtualIP++;
             }
         }
+
+        if (func->IsMethod())
+        {
+            virtualIP += 1;
+        }
+
+        func->endVirtualIP = virtualIP;
     }
 
 #ifdef DEBUG
@@ -2711,6 +2728,22 @@ PhaseStatus Compiler::fgWasmVirtualIP()
 
             JITDUMP(" Handler [%04u..%04u)\n", clauses[clauseIndex].clause.HandlerOffset,
                     clauses[clauseIndex].clause.HandlerLength);
+        }
+
+        // Verify that funclet Virtual IP ranges are disjoint.
+        //
+        for (FuncInfoDsc* const func1 : Funcs())
+        {
+            for (FuncInfoDsc* const func2 : Funcs())
+            {
+                if (func1 == func2)
+                {
+                    break;
+                }
+
+                assert((func1->endVirtualIP <= func2->startVirtualIP) ||
+                       (func2->endVirtualIP <= func1->startVirtualIP));
+            }
         }
     }
 #endif // DEBUG

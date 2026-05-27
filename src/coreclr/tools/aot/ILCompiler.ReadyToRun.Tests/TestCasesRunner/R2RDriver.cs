@@ -32,6 +32,7 @@ internal enum Crossgen2Option
     InputBubble,
     HotColdSplitting,
     Optimize,
+    TargetArchArm,
 }
 
 internal static class Crossgen2OptionsExtensions
@@ -57,6 +58,7 @@ internal static class Crossgen2OptionsExtensions
         Crossgen2Option.InputBubble => $"--input-bubble",
         Crossgen2Option.HotColdSplitting => $"--hot-cold-splitting",
         Crossgen2Option.Optimize => $"--optimize",
+        Crossgen2Option.TargetArchArm => $"--targetarch:arm",
         _ => throw new ArgumentOutOfRangeException(nameof(kind)),
     };
 }
