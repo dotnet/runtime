@@ -11,9 +11,7 @@ elseif(CLR_CMAKE_HOST_UNIX)
         add_compile_options($<$<CONFIG:Release>:-O2>)
     elseif (CLR_CMAKE_TARGET_BROWSER)
         # -O2 prevents emscripten metadce from stripping user-requested global exports
-        # Must override CMAKE_*_FLAGS_RELEASE because those propagate to the link line
-        set(CMAKE_C_FLAGS_RELEASE "-O2 -DNDEBUG")
-        set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
+        add_link_options($<$<CONFIG:Release>:-O2>)
     else()
         add_compile_options($<$<CONFIG:Release>:-O3>)
     endif()
