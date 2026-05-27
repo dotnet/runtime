@@ -190,6 +190,9 @@ UnwindInfoTable::UnwindInfoTable(ULONG_PTR rangeStart, ULONG_PTR rangeEnd)
     pTable = new T_RUNTIME_FUNCTION[cTableMaxCount];
     cPendingCount = 0;
     m_flushInProgress = 0;
+    m_pendingSeq = 0;
+    m_publishedSeq = 0;
+    m_flushCompleteEvent.CreateManualEvent(FALSE);
     m_registrationFailed = false;
 }
 
@@ -206,6 +209,7 @@ UnwindInfoTable::~UnwindInfoTable()
     // It would be cleaner if we could take the lock (we did not have to be GC_NOTRIGGER)
     UnRegister();
     delete[] pTable;
+    m_flushCompleteEvent.CloseEvent();
 }
 
 /*****************************************************************************/
@@ -259,6 +263,7 @@ void UnwindInfoTable::AddToUnwindInfoTable(PT_RUNTIME_FUNCTION data, int count)
 
     for (int i = 0; i < count; )
     {
+        LONG currentSeq;
         {
             CrstHolder pendingLock(&m_pendingLock);
             while (i < count && cPendingCount < cPendingMaxCount)
@@ -273,14 +278,15 @@ void UnwindInfoTable::AddToUnwindInfoTable(PT_RUNTIME_FUNCTION data, int count)
                     data[i].BeginAddress, cPendingCount);
                 i++;
             }
+            currentSeq = ++m_pendingSeq;
         }
         // Flush any pending entries if we run out of space, or when we are at the end
         // of the batch so the OS can unwind this method immediately.
-        FlushPendingEntries();
+        FlushPendingEntries(currentSeq);
     }
 }
 
-void UnwindInfoTable::FlushPendingEntriesUnderGate()
+LONG UnwindInfoTable::FlushPendingEntriesUnderGate()
 {
     CONTRACTL
     {
@@ -301,23 +307,25 @@ void UnwindInfoTable::FlushPendingEntriesUnderGate()
         // RtlGrowFunctionTable with a null handle.
         CrstHolder pendingLock(&m_pendingLock);
         cPendingCount = 0;
-        return;
+        return m_pendingSeq;
     }
 
     // Grab the pending entries under the pending lock, then release it so
     // other threads can keep accumulating new entries while we publish.
     T_RUNTIME_FUNCTION localPending[cPendingMaxCount];
     ULONG localPendingCount;
+    LONG drainedSeq;
     {
         CrstHolder pendingLock(&m_pendingLock);
         localPendingCount = cPendingCount;
         memcpy(localPending, pendingTable, cPendingCount * sizeof(T_RUNTIME_FUNCTION));
         cPendingCount = 0;
+        drainedSeq = m_pendingSeq;
         INDEBUG( memset(pendingTable, 0xcc, sizeof(pendingTable)); )
     }
 
     if (localPendingCount == 0)
-        return;
+        return drainedSeq;
 
     // Sort the pending entries by BeginAddress.
     qsort(localPending, localPendingCount, sizeof(T_RUNTIME_FUNCTION),
@@ -334,7 +342,7 @@ void UnwindInfoTable::FlushPendingEntriesUnderGate()
 
         STRESS_LOG5(LF_JIT, LL_INFO1000, "FlushPendingEntries Handle: %p [%p, %p] APPENDED 0x%x entries, now 0x%x\n",
             hHandle, iRangeStart, iRangeEnd, localPendingCount, cTableCurCount);
-        return;
+        return drainedSeq;
     }
 
     // Merge main table and pending entries.
@@ -405,10 +413,12 @@ void UnwindInfoTable::FlushPendingEntriesUnderGate()
     cDeletedEntries = 0;
 
     Register();
+
+    return drainedSeq;
 }
 
 /*****************************************************************************/
-void UnwindInfoTable::FlushPendingEntries()
+void UnwindInfoTable::FlushPendingEntries(LONG waitForSeq)
 {
     CONTRACTL
     {
@@ -418,21 +428,40 @@ void UnwindInfoTable::FlushPendingEntries()
     CONTRACTL_END;
 
     // This thread attempts to become the sole flusher for this table by taking
-    // the flush gate. If it wins, publish the pending entries, then release the gate,
+    // the flush gate. If it wins, publish the pending entries, signal waiters,
     // re-check if more entries arrived and loop if so.
+    // If it loses, it waits until its sequence has been published.
     while (true)
     {
         // Gate: only one thread flushes at a time.
         if (InterlockedCompareExchange(&m_flushInProgress, 1, 0) != 0)
         {
+            // Another thread is flushing. Wait until our entries are published.
+            while (m_publishedSeq < waitForSeq)
+            {
+                m_flushCompleteEvent.Wait(INFINITE, FALSE);
+            }
             return;
         }
 
+        // Reset the event so waiters that arrive during our flush
+        // will block until we signal completion.
+        m_flushCompleteEvent.Reset();
+
+        LONG drainedSeq;
         // Scope the gate holder so m_flushInProgress is reset when the scope exits.
         {
             FlushGateHolder gateHolder(this);
-            FlushPendingEntriesUnderGate();
+            drainedSeq = FlushPendingEntriesUnderGate();
+
+            // Update published sequence while still holding the gate.
+            // This ensures no new flusher can start (and Reset the event)
+            // between our update and Set below.
+            m_publishedSeq = drainedSeq;
+            m_flushCompleteEvent.Set();
         }
+
+        _ASSERTE(drainedSeq >= waitForSeq);
 
         // Re-check pending table under m_pendingLock.
         // We only stop the retry loop if we see no more pending entries.
