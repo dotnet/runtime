@@ -356,8 +356,9 @@ bool Compiler::optExtractTestIncr(BasicBlock* cond, GenTree** ppTest, GenTree** 
     assert(ppTest != nullptr);
     assert(ppIncr != nullptr);
 
-    // Check if last two statements in the loop body are the increment of the iterator
-    // and the loop termination test.
+    // The loop termination test is expected to be the last statement of the exiting
+    // block. The increment of the iterator is expected somewhere earlier in the
+    // same block; we scan backward from the test to find an IV-shaped update.
     noway_assert(cond->firstStmt() != nullptr);
     Statement* testStmt = cond->lastStmt();
     noway_assert(testStmt != nullptr && testStmt->GetNextStmt() == nullptr);
@@ -368,24 +369,87 @@ bool Compiler::optExtractTestIncr(BasicBlock* cond, GenTree** ppTest, GenTree** 
         testStmt = newTestStmt;
     }
 
-    // Check if we have the incr stmt before the test stmt, if we don't,
-    // check if incr is part of the loop "header".
-    Statement* incrStmt = testStmt->GetPrevStmt();
-
-    // If we've added profile instrumentation, we may need to skip past a BB counter update.
+    // Walk backward from the test statement looking for a candidate IV increment
+    // of the form 'v = v op c'. For each such candidate, verify it is suitable:
+    //   - the iterator local is not address-exposed (our intervening-read check
+    //     would not see indirect accesses, and AnalyzeIteration rejects
+    //     address-exposed IVs anyway);
+    //   - the test actually reads the iterator (otherwise this is an unrelated
+    //     update that happens to be IV-shaped);
+    //   - no statement strictly between the candidate and the test reads the
+    //     iterator. Such statements would execute with the post-increment value,
+    //     violating the AnalyzeIteration invariant that no loop body IR observes
+    //     the post-increment value except the test. Stores are not checked here:
+    //     AnalyzeIteration's VisitDefs already rejects any def of iterVar in the
+    //     loop other than the picked increment. If the test block is in a try
+    //     region, treat any intervening statement that may throw as if it were
+    //     an intervening read, since an EH handler could observe the
+    //     post-increment value.
+    // On any rejection, continue scanning backward; only fail when no candidate
+    // in the block satisfies all checks. A budget bounds the combined work of
+    // the outer scan and the inner intervening-read scan to avoid pathological
+    // O(N^2) behavior in blocks with many IV-shaped statements.
     //
-    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR) && (incrStmt != nullptr) &&
-        incrStmt->GetRootNode()->IsBlockProfileUpdate())
+    Statement*   incrStmt  = nullptr;
+    unsigned     iterVar   = BAD_VAR_NUM;
+    Statement*   firstStmt = cond->firstStmt();
+    const bool   condInTry = cond->hasTryIndex();
+    unsigned int budget    = 100;
+    if (testStmt != firstStmt)
     {
-        incrStmt = incrStmt->GetPrevStmt();
+        for (Statement* s = testStmt->GetPrevStmt();; s = s->GetPrevStmt())
+        {
+            if (budget-- == 0)
+            {
+                JITDUMP("optExtractTestIncr: budget exhausted in " FMT_BB "\n", cond->bbNum);
+                return false;
+            }
+
+            unsigned candVar = optIsLoopIncrTree(s->GetRootNode());
+            if (candVar != BAD_VAR_NUM)
+            {
+                if (!lvaGetDesc(candVar)->IsAddressExposed() && gtTreeHasLocalRead(testStmt->GetRootNode(), candVar))
+                {
+                    bool intermediateUse = false;
+                    for (Statement* t = s->GetNextStmt(); t != testStmt; t = t->GetNextStmt())
+                    {
+                        assert(t != nullptr);
+                        if (budget-- == 0)
+                        {
+                            JITDUMP("optExtractTestIncr: budget exhausted in " FMT_BB "\n", cond->bbNum);
+                            return false;
+                        }
+                        GenTree* root = t->GetRootNode();
+                        if (gtTreeHasLocalRead(root, candVar) || (condInTry && ((root->gtFlags & GTF_EXCEPT) != 0)))
+                        {
+                            intermediateUse = true;
+                            break;
+                        }
+                    }
+
+                    if (!intermediateUse)
+                    {
+                        incrStmt = s;
+                        iterVar  = candVar;
+                        break;
+                    }
+                }
+            }
+
+            if (s == firstStmt)
+            {
+                break;
+            }
+        }
     }
 
-    if (incrStmt == nullptr || (optIsLoopIncrTree(incrStmt->GetRootNode()) == BAD_VAR_NUM))
+    if (incrStmt == nullptr)
     {
         return false;
     }
 
     assert(testStmt != incrStmt);
+    assert(iterVar != BAD_VAR_NUM);
 
     *ppTest = testStmt->GetRootNode();
     *ppIncr = incrStmt->GetRootNode();
@@ -2380,6 +2444,17 @@ bool Compiler::optCanonicalizeLoops()
         changed |= optCreatePreheader(loop);
     }
 
+    // After preheader creation, canonicalize backedges so that every loop has
+    // at most one backedge. Running this before exit canonicalization avoids
+    // operating on stale BackEdges lists that exit canonicalization can
+    // invalidate (e.g., when an inner-loop exit is also an outer-loop
+    // backedge).
+    //
+    for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
+    {
+        changed |= optCanonicalizeBackedges(loop);
+    }
+
     // At this point we've created preheaders. That means we are working with
     // stale loop and DFS data. However, we can do exit canonicalization even
     // on the stale data; this relies on the fact that exiting blocks do not
@@ -2817,6 +2892,112 @@ bool Compiler::optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit)
 
     JITDUMP("Created new exit " FMT_BB " to replace " FMT_BB " exit for " FMT_LP "\n", newExit->bbNum, exit->bbNum,
             loop->GetIndex());
+    return true;
+}
+
+//-----------------------------------------------------------------------------
+// optCanonicalizeBackedges: If a loop has more than one backedge, redirect all
+// backedge sources through a single new "latch" block that branches to the
+// loop header.
+//
+// Parameters:
+//   loop - The loop
+//
+// Returns:
+//   True if a new latch block was created.
+//
+bool Compiler::optCanonicalizeBackedges(FlowGraphNaturalLoop* loop)
+{
+    if (loop->BackEdges().size() <= 1)
+    {
+        return false;
+    }
+
+    BasicBlock* const header = loop->GetHeader();
+
+    // Determine the EH region for the latch. Mirror the logic in
+    // optCreatePreheader: if every backedge source is within the header's
+    // try region, the latch can live in the same try region as the header;
+    // otherwise it must live in the header's true enclosing try region (which
+    // is only legal when the header itself is a try-region entry, since that
+    // is the only way the original out-of-region backedges could be legal).
+    //
+    unsigned latchEHRegion        = EHblkDsc::NO_ENCLOSING_INDEX;
+    bool     inSameRegionAsHeader = true;
+    if (header->hasTryIndex())
+    {
+        latchEHRegion = header->getTryIndex();
+        for (FlowEdge* const backEdge : loop->BackEdges())
+        {
+            BasicBlock* const source = backEdge->getSourceBlock();
+            if (!bbInTryRegions(latchEHRegion, source))
+            {
+                latchEHRegion        = ehTrueEnclosingTryIndex(latchEHRegion);
+                inSameRegionAsHeader = false;
+                break;
+            }
+        }
+    }
+
+    if (!inSameRegionAsHeader && !bbIsTryBeg(header))
+    {
+        // The original out-of-region backedges can only have been legal if the
+        // header was a try-region entry. If it is not, something is unusual;
+        // skip canonicalization rather than risk introducing illegal edges.
+        //
+        JITDUMP("Skip backedge canonicalization for " FMT_LP ": header " FMT_BB
+                " is not a try entry but has backedge sources outside its try region\n",
+                loop->GetIndex(), header->bbNum);
+        return false;
+    }
+
+    // Snapshot the backedge sources before any redirection mutates the
+    // predecessor lists.
+    //
+    ArrayStack<BasicBlock*> sources(getAllocator(CMK_LoopOpt));
+    for (FlowEdge* const backEdge : loop->BackEdges())
+    {
+        sources.Push(backEdge->getSourceBlock());
+    }
+
+    // Create the latch in the appropriate EH region. For the same-region case,
+    // fgNewBBinRegion will place the latch within the header's region (after
+    // the region's entry block, if the header is the entry). For the
+    // enclosing-region case, place the latch physically before the header and
+    // let fgSetEHRegionForNewPreheaderOrExit recognize that the header is a
+    // try-region entry and assign the latch to the enclosing region.
+    //
+    BasicBlock* latch;
+    if (inSameRegionAsHeader)
+    {
+        latch = fgNewBBinRegion(BBJ_ALWAYS, header);
+    }
+    else
+    {
+        latch = fgNewBBbefore(BBJ_ALWAYS, header, /* extendRegion */ false);
+        fgSetEHRegionForNewPreheaderOrExit(latch);
+    }
+    latch->SetFlags(BBF_INTERNAL);
+    latch->bbCodeOffs = header->bbCodeOffs;
+
+    FlowEdge* const newEdge = fgAddRefPred(header, latch);
+    latch->SetTargetEdge(newEdge);
+
+    JITDUMP("Created new latch " FMT_BB " for " FMT_LP " in %s EH region to merge %u backedges\n", latch->bbNum,
+            loop->GetIndex(), inSameRegionAsHeader ? "header's" : "header's enclosing", (unsigned)sources.Height());
+
+    // Redirect each backedge through the new latch.
+    //
+    for (int i = 0; i < sources.Height(); i++)
+    {
+        BasicBlock* const source = sources.Bottom(i);
+        JITDUMP("  Backedge " FMT_BB " -> " FMT_BB " becomes " FMT_BB " -> " FMT_BB "\n", source->bbNum, header->bbNum,
+                source->bbNum, latch->bbNum);
+        fgReplaceJumpTarget(source, header, latch);
+    }
+
+    optSetWeightForPreheaderOrExit(loop, latch);
+
     return true;
 }
 
@@ -5664,7 +5845,7 @@ void Compiler::optRemoveRedundantZeroInits()
                         }
 
                         if (!removedExplicitZeroInit && isEntire &&
-                            (!hasImplicitControlFlow || (lclDsc->lvTracked && !lclDsc->lvLiveInOutOfHndlr)))
+                            (!hasImplicitControlFlow || (lclDsc->lvTracked && !lclDsc->IsLiveInOutOfHandler())))
                         {
                             // If compMethodRequiresPInvokeFrame() returns true, lower may later
                             // insert a call to CORINFO_HELP_INIT_PINVOKE_FRAME but that is not a gc-safe point.

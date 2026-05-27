@@ -97,6 +97,30 @@ public unsafe class ThreadTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
+    public void GetThreadData_MapsStateFlags(MockTarget.Architecture arch)
+    {
+        const uint id = 1;
+        const ulong osId = 1234;
+        const uint state = (uint)(ThreadState.WaitSleepJoin | ThreadState.Background);
+        MockThread? thread = null;
+
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            threadBuilder =>
+            {
+                thread = threadBuilder.AddThread(id, osId);
+                thread.State = state;
+            });
+
+        IThread contract = target.Contracts.Thread;
+        ThreadData data = contract.GetThreadData(new TargetPointer(thread!.Address));
+        Assert.True(data.State.HasFlag(ThreadState.Background));
+        Assert.True(data.State.HasFlag(ThreadState.WaitSleepJoin));
+        Assert.False(data.State.HasFlag(ThreadState.Stopped));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
     public void IterateThreads(MockTarget.Architecture arch)
     {
         const uint expectedCount = 10;
@@ -269,5 +293,139 @@ public unsafe class ThreadTests
         IThread contract = target.Contracts.Thread;
         TargetPointer thrownObjectHandle = contract.GetCurrentExceptionHandle(new TargetPointer(thread!.Address));
         Assert.Equal(TargetPointer.Null, thrownObjectHandle);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetThreadData_LastThrownObjectHandle_ActiveException(MockTarget.Architecture arch)
+    {
+        // When an active exception is being dispatched (ExInfo has a non-null ThrownObject),
+        // GetThreadData should return a pseudo-handle to the ExInfo's ThrownObject field
+        // instead of the (potentially stale) m_LastThrownObjectHandle.
+        MockThread? thread = null;
+        MockExceptionInfo? exceptionInfo = null;
+        TargetPointer activeException = new(0xBEEF_0001);
+
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            threadBuilder =>
+            {
+                thread = threadBuilder.AddThread(1, 1234);
+                exceptionInfo = threadBuilder.GetExceptionInfo(thread);
+                exceptionInfo!.ThrownObject = (ulong)activeException;
+                // Set a stale handle to verify it is NOT returned
+                thread.LastThrownObject = 0xDEAD_0001;
+            });
+
+        IThread contract = target.Contracts.Thread;
+        ThreadData data = contract.GetThreadData(new TargetPointer(thread!.Address));
+        // Should return the pseudo-handle (address of ThrownObject field), not the stale handle
+        Assert.NotEqual(TargetPointer.Null, data.LastThrownObjectHandle);
+        Assert.NotEqual(new TargetPointer(0xDEAD_0001), data.LastThrownObjectHandle);
+        // Dereferencing the pseudo-handle should yield the active exception object
+        Assert.Equal(activeException, target.ReadPointer(data.LastThrownObjectHandle));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetThreadData_LastThrownObjectHandle_NoActiveException(MockTarget.Architecture arch)
+    {
+        // When no active exception is being dispatched (ExInfo ThrownObject is null),
+        // GetThreadData should fall back to m_LastThrownObjectHandle.
+        MockThread? thread = null;
+        MockExceptionInfo? exceptionInfo = null;
+        TargetPointer lastThrownHandle = new(0xCAFE_0001);
+
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            threadBuilder =>
+            {
+                thread = threadBuilder.AddThread(1, 1234);
+                exceptionInfo = threadBuilder.GetExceptionInfo(thread);
+                exceptionInfo!.ThrownObject = 0;
+                thread.LastThrownObject = (ulong)lastThrownHandle;
+            });
+
+        IThread contract = target.Contracts.Thread;
+        ThreadData data = contract.GetThreadData(new TargetPointer(thread!.Address));
+        Assert.Equal(lastThrownHandle, data.LastThrownObjectHandle);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetThreadData_ThreadHandle(MockTarget.Architecture arch)
+    {
+        const ulong threadHandle = 0xABCD_1234;
+        MockThread? thread = null;
+
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            threadBuilder =>
+            {
+                thread = threadBuilder.AddThread(1, 1234);
+                thread.ThreadHandle = threadHandle;
+            });
+
+        IThread contract = target.Contracts.Thread;
+        ThreadData data = contract.GetThreadData(new TargetPointer(thread!.Address));
+        Assert.Equal(new TargetPointer(threadHandle), data.ThreadHandle);
+    }
+
+    public static IEnumerable<object[]> SetDebuggerControlledThreadStateData()
+    {
+        foreach (var arch in new MockTarget.StdArch())
+        {
+            yield return [arch[0], DebuggerControlledThreadState.None, DebuggerControlledThreadState.UserSuspend];
+            yield return [arch[0], DebuggerControlledThreadState.UserSuspend, DebuggerControlledThreadState.UserSuspend];
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(SetDebuggerControlledThreadStateData))]
+    public void SetDebuggerControlledThreadState(MockTarget.Architecture arch, DebuggerControlledThreadState initialState, DebuggerControlledThreadState expectedState)
+    {
+        MockThread? thread = null;
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            threadBuilder =>
+            {
+                thread = threadBuilder.AddThread(1, 1234);
+                thread.DebuggerControlledThreadState = (uint)initialState;
+            });
+        IThread contract = target.Contracts.Thread;
+        TargetPointer threadPtr = new(thread!.Address);
+
+        contract.SetDebuggerControlledThreadState(threadPtr, DebuggerControlledThreadState.UserSuspend);
+
+        Assert.Equal((uint)expectedState, thread.DebuggerControlledThreadState);
+    }
+
+    public static IEnumerable<object[]> ResetDebuggerControlledThreadStateData()
+    {
+        foreach (var arch in new MockTarget.StdArch())
+        {
+            yield return [arch[0], DebuggerControlledThreadState.UserSuspend, DebuggerControlledThreadState.None];
+            yield return [arch[0], DebuggerControlledThreadState.None, DebuggerControlledThreadState.None];
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(ResetDebuggerControlledThreadStateData))]
+    public void ResetDebuggerControlledThreadState(MockTarget.Architecture arch, DebuggerControlledThreadState initialState, DebuggerControlledThreadState expectedState)
+    {
+        MockThread? thread = null;
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            threadBuilder =>
+            {
+                thread = threadBuilder.AddThread(1, 1234);
+                thread.DebuggerControlledThreadState = (uint)initialState;
+            });
+        IThread contract = target.Contracts.Thread;
+        TargetPointer threadPtr = new(thread!.Address);
+
+        contract.ResetDebuggerControlledThreadState(threadPtr, DebuggerControlledThreadState.UserSuspend);
+
+        Assert.Equal((uint)expectedState, thread.DebuggerControlledThreadState);
     }
 }

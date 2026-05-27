@@ -185,6 +185,7 @@ struct JitInterfaceCallbacks
     JITINTERFACE_HRESULT (* getPgoInstrumentationResults)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema** pSchema, uint32_t* pCountSchemaItems, uint8_t** pInstrumentationData, ICorJitInfo::PgoSource* pPgoSource, bool* pDynamicPgo);
     JITINTERFACE_HRESULT (* allocPgoInstrumentationBySchema)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema* pSchema, uint32_t countSchemaItems, uint8_t** pInstrumentationData);
     void (* recordCallSite)(void * thisHandle, CorInfoExceptionClass** ppException, uint32_t instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_HANDLE methodHandle);
+    void (* recordWasmManagedCallSig)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_SIG_INFO* callSig);
     void (* recordRelocation)(void * thisHandle, CorInfoExceptionClass** ppException, void* location, void* locationRW, void* target, CorInfoReloc fRelocType, int32_t addlDelta);
     CorInfoReloc (* getRelocTypeHint)(void * thisHandle, CorInfoExceptionClass** ppException, void* target);
     uint32_t (* getExpectedTargetArchitecture)(void * thisHandle, CorInfoExceptionClass** ppException);
@@ -1907,6 +1908,14 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     _callbacks->recordCallSite(_thisHandle, &pException, instrOffset, callSig, methodHandle);
+    if (pException != nullptr) throw pException;
+}
+
+    virtual void recordWasmManagedCallSig(
+          CORINFO_SIG_INFO* callSig)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    _callbacks->recordWasmManagedCallSig(_thisHandle, &pException, callSig);
     if (pException != nullptr) throw pException;
 }
 

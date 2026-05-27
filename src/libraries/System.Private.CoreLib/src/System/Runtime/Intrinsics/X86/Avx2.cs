@@ -425,7 +425,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPBROADCASTB xmm1 {k1}{z}, m8</para>
         ///   <para>The above native signature does not directly correspond to the managed signature.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<byte> BroadcastScalarToVector128(byte* source) => BroadcastScalarToVector128(source);
 
         /// <summary>
@@ -434,7 +433,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPBROADCASTB xmm1 {k1}{z}, m8</para>
         ///   <para>The above native signature does not directly correspond to the managed signature.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<sbyte> BroadcastScalarToVector128(sbyte* source) => BroadcastScalarToVector128(source);
 
         /// <summary>
@@ -443,7 +441,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPBROADCASTW xmm1 {k1}{z}, m16</para>
         ///   <para>The above native signature does not directly correspond to the managed signature.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<short> BroadcastScalarToVector128(short* source) => BroadcastScalarToVector128(source);
 
         /// <summary>
@@ -452,7 +449,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPBROADCASTW xmm1 {k1}{z}, m16</para>
         ///   <para>The above native signature does not directly correspond to the managed signature.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<ushort> BroadcastScalarToVector128(ushort* source) => BroadcastScalarToVector128(source);
 
         /// <summary>
@@ -461,7 +457,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPBROADCASTD xmm1 {k1}{z}, m32</para>
         ///   <para>The above native signature does not directly correspond to the managed signature.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<int> BroadcastScalarToVector128(int* source) => BroadcastScalarToVector128(source);
 
         /// <summary>
@@ -470,7 +465,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPBROADCASTD xmm1 {k1}{z}, m32</para>
         ///   <para>The above native signature does not directly correspond to the managed signature.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<uint> BroadcastScalarToVector128(uint* source) => BroadcastScalarToVector128(source);
 
         /// <summary>
@@ -479,7 +473,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPBROADCASTQ xmm1 {k1}{z}, m64</para>
         ///   <para>The above native signature does not directly correspond to the managed signature.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<long> BroadcastScalarToVector128(long* source) => BroadcastScalarToVector128(source);
 
         /// <summary>
@@ -488,7 +481,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPBROADCASTQ xmm1 {k1}{z}, m64</para>
         ///   <para>The above native signature does not directly correspond to the managed signature.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<ulong> BroadcastScalarToVector128(ulong* source) => BroadcastScalarToVector128(source);
 
         /// <summary>
@@ -558,7 +550,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPBROADCASTB ymm1 {k1}{z}, m8</para>
         ///   <para>The above native signature does not directly correspond to the managed signature.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<byte> BroadcastScalarToVector256(byte* source) => BroadcastScalarToVector256(source);
 
         /// <summary>
@@ -567,7 +558,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPBROADCASTB ymm1 {k1}{z}, m8</para>
         ///   <para>The above native signature does not directly correspond to the managed signature.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<sbyte> BroadcastScalarToVector256(sbyte* source) => BroadcastScalarToVector256(source);
 
         /// <summary>
@@ -576,7 +566,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPBROADCASTW ymm1 {k1}{z}, m16</para>
         ///   <para>The above native signature does not directly correspond to the managed signature.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<short> BroadcastScalarToVector256(short* source) => BroadcastScalarToVector256(source);
 
         /// <summary>
@@ -585,7 +574,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPBROADCASTW ymm1 {k1}{z}, m16</para>
         ///   <para>The above native signature does not directly correspond to the managed signature.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<ushort> BroadcastScalarToVector256(ushort* source) => BroadcastScalarToVector256(source);
 
         /// <summary>
@@ -594,7 +582,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPBROADCASTD ymm1 {k1}{z}, m32</para>
         ///   <para>The above native signature does not directly correspond to the managed signature.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<int> BroadcastScalarToVector256(int* source) => BroadcastScalarToVector256(source);
 
         /// <summary>
@@ -603,7 +590,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPBROADCASTD ymm1 {k1}{z}, m32</para>
         ///   <para>The above native signature does not directly correspond to the managed signature.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<uint> BroadcastScalarToVector256(uint* source) => BroadcastScalarToVector256(source);
 
         /// <summary>
@@ -612,7 +598,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPBROADCASTQ ymm1 {k1}{z}, m64</para>
         ///   <para>The above native signature does not directly correspond to the managed signature.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<long> BroadcastScalarToVector256(long* source) => BroadcastScalarToVector256(source);
 
         /// <summary>
@@ -621,7 +606,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPBROADCASTQ ymm1 {k1}{z}, m64</para>
         ///   <para>The above native signature does not directly correspond to the managed signature.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<ulong> BroadcastScalarToVector256(ulong* source) => BroadcastScalarToVector256(source);
 
         /// <summary>
@@ -630,7 +614,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VBROADCASTI32x4 ymm1 {k1}{z}, m128</para>
         ///   <para>The above native signature does not directly correspond to the managed signature.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<sbyte> BroadcastVector128ToVector256(sbyte* address) => BroadcastVector128ToVector256(address);
 
         /// <summary>
@@ -639,7 +622,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VBROADCASTI32x4 ymm1 {k1}{z}, m128</para>
         ///   <para>The above native signature does not directly correspond to the managed signature.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<byte> BroadcastVector128ToVector256(byte* address) => BroadcastVector128ToVector256(address);
 
         /// <summary>
@@ -648,7 +630,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VBROADCASTI32x4 ymm1 {k1}{z}, m128</para>
         ///   <para>The above native signature does not directly correspond to the managed signature.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<short> BroadcastVector128ToVector256(short* address) => BroadcastVector128ToVector256(address);
 
         /// <summary>
@@ -657,7 +638,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VBROADCASTI32x4 ymm1 {k1}{z}, m128</para>
         ///   <para>The above native signature does not directly correspond to the managed signature.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<ushort> BroadcastVector128ToVector256(ushort* address) => BroadcastVector128ToVector256(address);
 
         /// <summary>
@@ -666,7 +646,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VBROADCASTI32x4 ymm1 {k1}{z}, m128</para>
         ///   <para>The above native signature does not directly correspond to the managed signature.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<int> BroadcastVector128ToVector256(int* address) => BroadcastVector128ToVector256(address);
 
         /// <summary>
@@ -675,7 +654,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VBROADCASTI32x4 ymm1 {k1}{z}, m128</para>
         ///   <para>The above native signature does not directly correspond to the managed signature.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<uint> BroadcastVector128ToVector256(uint* address) => BroadcastVector128ToVector256(address);
 
         /// <summary>
@@ -684,7 +662,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VBROADCASTI64x2 ymm1 {k1}{z}, m128</para>
         ///   <para>The above native signature does not directly correspond to the managed signature.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<long> BroadcastVector128ToVector256(long* address) => BroadcastVector128ToVector256(address);
 
         /// <summary>
@@ -693,7 +670,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VBROADCASTI64x2 ymm1 {k1}{z}, m128</para>
         ///   <para>The above native signature does not directly correspond to the managed signature.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<ulong> BroadcastVector128ToVector256(ulong* address) => BroadcastVector128ToVector256(address);
 
         /// <summary>
@@ -847,7 +823,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPMOVSXBW ymm1 {k1}{z}, m128</para>
         ///   <para>The native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<short> ConvertToVector256Int16(sbyte* address) => ConvertToVector256Int16(address);
 
         /// <summary>
@@ -855,7 +830,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPMOVZXBW ymm1 {k1}{z}, m128</para>
         ///   <para>The native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<short> ConvertToVector256Int16(byte* address) => ConvertToVector256Int16(address);
 
         /// <summary>
@@ -863,7 +837,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPMOVSXBD ymm1 {k1}{z}, m64</para>
         ///   <para>The native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<int> ConvertToVector256Int32(sbyte* address) => ConvertToVector256Int32(address);
 
         /// <summary>
@@ -871,7 +844,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPMOVZXBD ymm1 {k1}{z}, m64</para>
         ///   <para>The native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<int> ConvertToVector256Int32(byte* address) => ConvertToVector256Int32(address);
 
         /// <summary>
@@ -879,7 +851,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPMOVSXWD ymm1 {k1}{z}, m128</para>
         ///   <para>The native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<int> ConvertToVector256Int32(short* address) => ConvertToVector256Int32(address);
 
         /// <summary>
@@ -887,7 +858,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPMOVZXWD ymm1 {k1}{z}, m128</para>
         ///   <para>The native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<int> ConvertToVector256Int32(ushort* address) => ConvertToVector256Int32(address);
 
         /// <summary>
@@ -895,7 +865,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPMOVSXBQ ymm1 {k1}{z}, m32</para>
         ///   <para>The native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<long> ConvertToVector256Int64(sbyte* address) => ConvertToVector256Int64(address);
 
         /// <summary>
@@ -903,7 +872,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPMOVZXBQ ymm1 {k1}{z}, m32</para>
         ///   <para>The native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<long> ConvertToVector256Int64(byte* address) => ConvertToVector256Int64(address);
 
         /// <summary>
@@ -911,7 +879,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPMOVSXWQ ymm1 {k1}{z}, m64</para>
         ///   <para>The native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<long> ConvertToVector256Int64(short* address) => ConvertToVector256Int64(address);
 
         /// <summary>
@@ -919,7 +886,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPMOVZXWQ ymm1 {k1}{z}, m64</para>
         ///   <para>The native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<long> ConvertToVector256Int64(ushort* address) => ConvertToVector256Int64(address);
 
         /// <summary>
@@ -927,7 +893,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPMOVSXDQ ymm1 {k1}{z}, m128</para>
         ///   <para>The native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<long> ConvertToVector256Int64(int* address) => ConvertToVector256Int64(address);
 
         /// <summary>
@@ -935,7 +900,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPMOVZXDQ ymm1 {k1}{z}, m128</para>
         ///   <para>The native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<long> ConvertToVector256Int64(uint* address) => ConvertToVector256Int64(address);
 
         /// <summary>
@@ -992,7 +956,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPGATHERDD xmm1, vm32x, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<int> GatherVector128(int* baseAddress, Vector128<int> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale)
         {
             return scale switch
@@ -1010,7 +973,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPGATHERDD xmm1, vm32x, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<uint> GatherVector128(uint* baseAddress, Vector128<int> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale)
         {
             return scale switch
@@ -1028,7 +990,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPGATHERDQ xmm1, vm32x, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<long> GatherVector128(long* baseAddress, Vector128<int> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale)
         {
             return scale switch
@@ -1046,7 +1007,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPGATHERDQ xmm1, vm32x, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<ulong> GatherVector128(ulong* baseAddress, Vector128<int> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale)
         {
             return scale switch
@@ -1064,7 +1024,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VGATHERDPS xmm1, vm32x, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<float> GatherVector128(float* baseAddress, Vector128<int> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale)
         {
             return scale switch
@@ -1082,7 +1041,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VGATHERDPD xmm1, vm32x, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<double> GatherVector128(double* baseAddress, Vector128<int> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale)
         {
             return scale switch
@@ -1100,7 +1058,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPGATHERQD xmm1, vm64x, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<int> GatherVector128(int* baseAddress, Vector128<long> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale)
         {
             return scale switch
@@ -1118,7 +1075,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPGATHERQD xmm1, vm64x, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<uint> GatherVector128(uint* baseAddress, Vector128<long> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale)
         {
             return scale switch
@@ -1136,7 +1092,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPGATHERQQ xmm1, vm64x, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<long> GatherVector128(long* baseAddress, Vector128<long> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale)
         {
             return scale switch
@@ -1154,7 +1109,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPGATHERQQ xmm1, vm64x, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<ulong> GatherVector128(ulong* baseAddress, Vector128<long> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale)
         {
             return scale switch
@@ -1172,7 +1126,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VGATHERQPS xmm1, vm64x, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<float> GatherVector128(float* baseAddress, Vector128<long> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale)
         {
             return scale switch
@@ -1190,7 +1143,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VGATHERQPD xmm1, vm64x, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<double> GatherVector128(double* baseAddress, Vector128<long> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale)
         {
             return scale switch
@@ -1208,7 +1160,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPGATHERDD ymm1, vm32y, ymm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<int> GatherVector256(int* baseAddress, Vector256<int> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale)
         {
             return scale switch
@@ -1226,7 +1177,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPGATHERDD ymm1, vm32y, ymm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<uint> GatherVector256(uint* baseAddress, Vector256<int> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale)
         {
             return scale switch
@@ -1244,7 +1194,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPGATHERDQ ymm1, vm32y, ymm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<long> GatherVector256(long* baseAddress, Vector128<int> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale)
         {
             return scale switch
@@ -1262,7 +1211,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPGATHERDQ ymm1, vm32y, ymm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<ulong> GatherVector256(ulong* baseAddress, Vector128<int> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale)
         {
             return scale switch
@@ -1280,7 +1228,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VGATHERDPS ymm1, vm32y, ymm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<float> GatherVector256(float* baseAddress, Vector256<int> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale)
         {
             return scale switch
@@ -1298,7 +1245,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VGATHERDPD ymm1, vm32y, ymm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<double> GatherVector256(double* baseAddress, Vector128<int> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale)
         {
             return scale switch
@@ -1316,7 +1262,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPGATHERQD xmm1, vm64y, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<int> GatherVector128(int* baseAddress, Vector256<long> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale)
         {
             return scale switch
@@ -1334,7 +1279,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPGATHERQD xmm1, vm64y, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<uint> GatherVector128(uint* baseAddress, Vector256<long> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale)
         {
             return scale switch
@@ -1352,7 +1296,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPGATHERQQ ymm1, vm64y, ymm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<long> GatherVector256(long* baseAddress, Vector256<long> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale)
         {
             return scale switch
@@ -1370,7 +1313,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPGATHERQQ ymm1, vm64y, ymm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<ulong> GatherVector256(ulong* baseAddress, Vector256<long> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale)
         {
             return scale switch
@@ -1388,7 +1330,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VGATHERQPS xmm1, vm64y, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<float> GatherVector128(float* baseAddress, Vector256<long> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale)
         {
             return scale switch
@@ -1406,7 +1347,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VGATHERQPD ymm1, vm64y, ymm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<double> GatherVector256(double* baseAddress, Vector256<long> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale)
         {
             return scale switch
@@ -1424,7 +1364,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPGATHERDD xmm1, vm32x, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<int> GatherMaskVector128(Vector128<int> source, int* baseAddress, Vector128<int> index, Vector128<int> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale)
         {
             return scale switch
@@ -1442,7 +1381,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPGATHERDD xmm1, vm32x, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<uint> GatherMaskVector128(Vector128<uint> source, uint* baseAddress, Vector128<int> index, Vector128<uint> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale)
         {
             return scale switch
@@ -1460,7 +1398,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPGATHERDQ xmm1, vm32x, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<long> GatherMaskVector128(Vector128<long> source, long* baseAddress, Vector128<int> index, Vector128<long> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale)
         {
             return scale switch
@@ -1478,7 +1415,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPGATHERDQ xmm1, vm32x, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<ulong> GatherMaskVector128(Vector128<ulong> source, ulong* baseAddress, Vector128<int> index, Vector128<ulong> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale)
         {
             return scale switch
@@ -1496,7 +1432,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VGATHERDPS xmm1, vm32x, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<float> GatherMaskVector128(Vector128<float> source, float* baseAddress, Vector128<int> index, Vector128<float> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale)
         {
             return scale switch
@@ -1514,7 +1449,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VGATHERDPD xmm1, vm32x, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<double> GatherMaskVector128(Vector128<double> source, double* baseAddress, Vector128<int> index, Vector128<double> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale)
         {
             return scale switch
@@ -1532,7 +1466,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPGATHERQD xmm1, vm64x, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<int> GatherMaskVector128(Vector128<int> source, int* baseAddress, Vector128<long> index, Vector128<int> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale)
         {
             return scale switch
@@ -1550,7 +1483,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPGATHERQD xmm1, vm64x, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<uint> GatherMaskVector128(Vector128<uint> source, uint* baseAddress, Vector128<long> index, Vector128<uint> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale)
         {
             return scale switch
@@ -1568,7 +1500,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPGATHERQQ xmm1, vm64x, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<long> GatherMaskVector128(Vector128<long> source, long* baseAddress, Vector128<long> index, Vector128<long> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale)
         {
             return scale switch
@@ -1586,7 +1517,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPGATHERQQ xmm1, vm64x, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<ulong> GatherMaskVector128(Vector128<ulong> source, ulong* baseAddress, Vector128<long> index, Vector128<ulong> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale)
         {
             return scale switch
@@ -1604,7 +1534,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VGATHERQPS xmm1, vm64x, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<float> GatherMaskVector128(Vector128<float> source, float* baseAddress, Vector128<long> index, Vector128<float> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale)
         {
             return scale switch
@@ -1622,7 +1551,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VGATHERQPD xmm1, vm64x, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<double> GatherMaskVector128(Vector128<double> source, double* baseAddress, Vector128<long> index, Vector128<double> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale)
         {
             return scale switch
@@ -1640,7 +1568,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPGATHERDD ymm1, vm32y, ymm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<int> GatherMaskVector256(Vector256<int> source, int* baseAddress, Vector256<int> index, Vector256<int> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale)
         {
             return scale switch
@@ -1658,7 +1585,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPGATHERDD ymm1, vm32y, ymm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<uint> GatherMaskVector256(Vector256<uint> source, uint* baseAddress, Vector256<int> index, Vector256<uint> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale)
         {
             return scale switch
@@ -1676,7 +1602,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPGATHERDQ ymm1, vm32y, ymm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<long> GatherMaskVector256(Vector256<long> source, long* baseAddress, Vector128<int> index, Vector256<long> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale)
         {
             return scale switch
@@ -1694,7 +1619,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPGATHERDQ ymm1, vm32y, ymm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<ulong> GatherMaskVector256(Vector256<ulong> source, ulong* baseAddress, Vector128<int> index, Vector256<ulong> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale)
         {
             return scale switch
@@ -1712,7 +1636,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPGATHERDPS ymm1, vm32y, ymm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<float> GatherMaskVector256(Vector256<float> source, float* baseAddress, Vector256<int> index, Vector256<float> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale)
         {
             return scale switch
@@ -1730,7 +1653,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPGATHERDPD ymm1, vm32y, ymm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<double> GatherMaskVector256(Vector256<double> source, double* baseAddress, Vector128<int> index, Vector256<double> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale)
         {
             return scale switch
@@ -1748,7 +1670,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPGATHERQD xmm1, vm32y, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<int> GatherMaskVector128(Vector128<int> source, int* baseAddress, Vector256<long> index, Vector128<int> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale)
         {
             return scale switch
@@ -1766,7 +1687,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPGATHERQD xmm1, vm32y, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<uint> GatherMaskVector128(Vector128<uint> source, uint* baseAddress, Vector256<long> index, Vector128<uint> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale)
         {
             return scale switch
@@ -1784,7 +1704,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPGATHERQQ ymm1, vm32y, ymm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<long> GatherMaskVector256(Vector256<long> source, long* baseAddress, Vector256<long> index, Vector256<long> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale)
         {
             return scale switch
@@ -1802,7 +1721,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPGATHERQQ ymm1, vm32y, ymm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<ulong> GatherMaskVector256(Vector256<ulong> source, ulong* baseAddress, Vector256<long> index, Vector256<ulong> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale)
         {
             return scale switch
@@ -1820,7 +1738,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VGATHERQPS xmm1, vm32y, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<float> GatherMaskVector128(Vector128<float> source, float* baseAddress, Vector256<long> index, Vector128<float> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale)
         {
             return scale switch
@@ -1838,7 +1755,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VGATHERQPD ymm1, vm32y, ymm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<double> GatherMaskVector256(Vector256<double> source, double* baseAddress, Vector256<long> index, Vector256<double> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale)
         {
             return scale switch
@@ -1938,168 +1854,144 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>__m256i _mm256_stream_load_si256 (__m256i const* mem_addr)</para>
         ///   <para>  VMOVNTDQA ymm1, m256</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<sbyte> LoadAlignedVector256NonTemporal(sbyte* address) => LoadAlignedVector256NonTemporal(address);
 
         /// <summary>
         ///   <para>__m256i _mm256_stream_load_si256 (__m256i const* mem_addr)</para>
         ///   <para>  VMOVNTDQA ymm1, m256</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<byte> LoadAlignedVector256NonTemporal(byte* address) => LoadAlignedVector256NonTemporal(address);
 
         /// <summary>
         ///   <para>__m256i _mm256_stream_load_si256 (__m256i const* mem_addr)</para>
         ///   <para>  VMOVNTDQA ymm1, m256</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<short> LoadAlignedVector256NonTemporal(short* address) => LoadAlignedVector256NonTemporal(address);
 
         /// <summary>
         ///   <para>__m256i _mm256_stream_load_si256 (__m256i const* mem_addr)</para>
         ///   <para>  VMOVNTDQA ymm1, m256</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<ushort> LoadAlignedVector256NonTemporal(ushort* address) => LoadAlignedVector256NonTemporal(address);
 
         /// <summary>
         ///   <para>__m256i _mm256_stream_load_si256 (__m256i const* mem_addr)</para>
         ///   <para>  VMOVNTDQA ymm1, m256</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<int> LoadAlignedVector256NonTemporal(int* address) => LoadAlignedVector256NonTemporal(address);
 
         /// <summary>
         ///   <para>__m256i _mm256_stream_load_si256 (__m256i const* mem_addr)</para>
         ///   <para>  VMOVNTDQA ymm1, m256</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<uint> LoadAlignedVector256NonTemporal(uint* address) => LoadAlignedVector256NonTemporal(address);
 
         /// <summary>
         ///   <para>__m256i _mm256_stream_load_si256 (__m256i const* mem_addr)</para>
         ///   <para>  VMOVNTDQA ymm1, m256</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<long> LoadAlignedVector256NonTemporal(long* address) => LoadAlignedVector256NonTemporal(address);
 
         /// <summary>
         ///   <para>__m256i _mm256_stream_load_si256 (__m256i const* mem_addr)</para>
         ///   <para>  VMOVNTDQA ymm1, m256</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<ulong> LoadAlignedVector256NonTemporal(ulong* address) => LoadAlignedVector256NonTemporal(address);
 
         /// <summary>
         ///   <para>__m128i _mm_maskload_epi32 (int const* mem_addr, __m128i mask)</para>
         ///   <para>  VPMASKMOVD xmm1, xmm2, m128</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<int> MaskLoad(int* address, Vector128<int> mask) => MaskLoad(address, mask);
 
         /// <summary>
         ///   <para>__m128i _mm_maskload_epi32 (int const* mem_addr, __m128i mask)</para>
         ///   <para>  VPMASKMOVD xmm1, xmm2, m128</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<uint> MaskLoad(uint* address, Vector128<uint> mask) => MaskLoad(address, mask);
 
         /// <summary>
         ///   <para>__m128i _mm_maskload_epi64 (__int64 const* mem_addr, __m128i mask)</para>
         ///   <para>  VPMASKMOVQ xmm1, xmm2, m128</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<long> MaskLoad(long* address, Vector128<long> mask) => MaskLoad(address, mask);
 
         /// <summary>
         ///   <para>__m128i _mm_maskload_epi64 (__int64 const* mem_addr, __m128i mask)</para>
         ///   <para>  VPMASKMOVQ xmm1, xmm2, m128</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector128<ulong> MaskLoad(ulong* address, Vector128<ulong> mask) => MaskLoad(address, mask);
 
         /// <summary>
         ///   <para>__m256i _mm256_maskload_epi32 (int const* mem_addr, __m256i mask)</para>
         ///   <para>  VPMASKMOVD ymm1, ymm2, m256</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<int> MaskLoad(int* address, Vector256<int> mask) => MaskLoad(address, mask);
 
         /// <summary>
         ///   <para>__m256i _mm256_maskload_epi32 (int const* mem_addr, __m256i mask)</para>
         ///   <para>  VPMASKMOVD ymm1, ymm2, m256</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<uint> MaskLoad(uint* address, Vector256<uint> mask) => MaskLoad(address, mask);
 
         /// <summary>
         ///   <para>__m256i _mm256_maskload_epi64 (__int64 const* mem_addr, __m256i mask)</para>
         ///   <para>  VPMASKMOVQ ymm1, ymm2, m256</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<long> MaskLoad(long* address, Vector256<long> mask) => MaskLoad(address, mask);
 
         /// <summary>
         ///   <para>__m256i _mm256_maskload_epi64 (__int64 const* mem_addr, __m256i mask)</para>
         ///   <para>  VPMASKMOVQ ymm1, ymm2, m256</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe Vector256<ulong> MaskLoad(ulong* address, Vector256<ulong> mask) => MaskLoad(address, mask);
 
         /// <summary>
         ///   <para>void _mm_maskstore_epi32 (int* mem_addr, __m128i mask, __m128i a)</para>
         ///   <para>  VPMASKMOVD m128, xmm1, xmm2</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void MaskStore(int* address, Vector128<int> mask, Vector128<int> source) => MaskStore(address, mask, source);
 
         /// <summary>
         ///   <para>void _mm_maskstore_epi32 (int* mem_addr, __m128i mask, __m128i a)</para>
         ///   <para>  VPMASKMOVD m128, xmm1, xmm2</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void MaskStore(uint* address, Vector128<uint> mask, Vector128<uint> source) => MaskStore(address, mask, source);
 
         /// <summary>
         ///   <para>void _mm_maskstore_epi64 (__int64* mem_addr, __m128i mask, __m128i a)</para>
         ///   <para>  VPMASKMOVQ m128, xmm1, xmm2</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void MaskStore(long* address, Vector128<long> mask, Vector128<long> source) => MaskStore(address, mask, source);
 
         /// <summary>
         ///   <para>void _mm_maskstore_epi64 (__int64* mem_addr, __m128i mask, __m128i a)</para>
         ///   <para>  VPMASKMOVQ m128, xmm1, xmm2</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void MaskStore(ulong* address, Vector128<ulong> mask, Vector128<ulong> source) => MaskStore(address, mask, source);
 
         /// <summary>
         ///   <para>void _mm256_maskstore_epi32 (int* mem_addr, __m256i mask, __m256i a)</para>
         ///   <para>  VPMASKMOVD m256, ymm1, ymm2</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void MaskStore(int* address, Vector256<int> mask, Vector256<int> source) => MaskStore(address, mask, source);
 
         /// <summary>
         ///   <para>void _mm256_maskstore_epi32 (int* mem_addr, __m256i mask, __m256i a)</para>
         ///   <para>  VPMASKMOVD m256, ymm1, ymm2</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void MaskStore(uint* address, Vector256<uint> mask, Vector256<uint> source) => MaskStore(address, mask, source);
 
         /// <summary>
         ///   <para>void _mm256_maskstore_epi64 (__int64* mem_addr, __m256i mask, __m256i a)</para>
         ///   <para>  VPMASKMOVQ m256, ymm1, ymm2</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void MaskStore(long* address, Vector256<long> mask, Vector256<long> source) => MaskStore(address, mask, source);
 
         /// <summary>
         ///   <para>void _mm256_maskstore_epi64 (__int64* mem_addr, __m256i mask, __m256i a)</para>
         ///   <para>  VPMASKMOVQ m256, ymm1, ymm2</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe void MaskStore(ulong* address, Vector256<ulong> mask, Vector256<ulong> source) => MaskStore(address, mask, source);
 
         /// <summary>

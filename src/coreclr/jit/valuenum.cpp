@@ -2564,8 +2564,10 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
             }
 
             // Case 4: ARR_LENGTH(new T[(long)size]) -> size
+            //         ARR_LENGTH(String.FastAllocateString(pMT, (long)size)) -> size
             VNFuncApp newArrFuncApp;
-            if (GetVNFunc(arg0VN, &newArrFuncApp) && (newArrFuncApp.m_func == VNF_JitNewArr))
+            if (GetVNFunc(arg0VN, &newArrFuncApp) &&
+                ((newArrFuncApp.m_func == VNF_JitNewArr) || (newArrFuncApp.m_func == VNF_StrFastAllocate)))
             {
                 ValueNum actualSizeVN = VNIgnoreIntToLongCast(newArrFuncApp.m_args[1]);
                 if (TypeOfVN(actualSizeVN) == TYP_INT)
@@ -7170,6 +7172,30 @@ bool ValueNumStore::IsVNObjHandle(ValueNum vn)
 bool ValueNumStore::IsVNTypeHandle(ValueNum vn)
 {
     return IsVNHandle(vn, GTF_ICON_CLASS_HDL);
+}
+
+//------------------------------------------------------------------------
+// IsVNTypeHandle: check whether a VN represents a class type handle and,
+//    if so, recover the underlying compile-time class handle.
+//
+// Arguments:
+//    vn   - the VN to inspect
+//    pCls - [out] compile-time class handle
+//
+// Return Value:
+//    True if vn is a constant class-handle VN and its compile-time class
+//    handle was found in the embedded-handle map; false otherwise.
+//
+bool ValueNumStore::IsVNTypeHandle(ValueNum vn, CORINFO_CLASS_HANDLE* pCls)
+{
+    ssize_t handle = 0;
+    if (IsVNTypeHandle(vn) && EmbeddedHandleMapLookup(ConstantValue<ssize_t>(vn), &handle) && (handle != 0))
+    {
+        *pCls = reinterpret_cast<CORINFO_CLASS_HANDLE>(handle);
+        return true;
+    }
+    *pCls = NO_CLASS_HANDLE;
+    return false;
 }
 
 //------------------------------------------------------------------------
@@ -12261,8 +12287,12 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
                 const GenTreeIntCon* cns         = tree->AsIntCon();
                 const GenTreeFlags   handleFlags = tree->GetIconHandleFlag();
                 tree->gtVNPair.SetBoth(vnStore->VNForHandle(cns->IconValue(), handleFlags));
-                if (handleFlags == GTF_ICON_CLASS_HDL)
+                if ((handleFlags == GTF_ICON_CLASS_HDL) && (cns->gtCompileTimeHandle != 0))
                 {
+                    // Skip registration when gtCompileTimeHandle is unknown (e.g., the node was created by
+                    // BashToConst+gtFlags|=GTF_ICON_CLASS_HDL in optConstantAssertionProp). Overwriting an
+                    // existing valid mapping with 0 would poison the map for any constant assertion-based
+                    // re-flagging that happens to share the same iconValue as a real embedded handle node.
                     vnStore->AddToEmbeddedHandleMap(cns->IconValue(), cns->gtCompileTimeHandle);
                 }
             }
@@ -14344,6 +14374,41 @@ bool Compiler::fgValueNumberSpecialIntrinsic(GenTreeCall* call)
 
     switch (lookupNamedIntrinsic(call->gtCallMethHnd))
     {
+        case NI_System_String_FastAllocateString:
+        {
+            assert(call->gtArgs.CountUserArgs() == 2);
+
+            GenTree* methodTableArg = call->gtArgs.GetUserArgByIndex(0)->GetNode();
+            GenTree* lengthArg      = call->gtArgs.GetUserArgByIndex(1)->GetNode();
+
+            // Unpack the exception sets of the arguments, as we will need to include them in the result.
+            ValueNumPair methodTableVNP;
+            ValueNumPair methodTableExc;
+            ValueNumPair lengthVNP;
+            ValueNumPair lengthExc;
+            vnStore->VNPUnpackExc(methodTableArg->gtVNPair, &methodTableVNP, &methodTableExc);
+            vnStore->VNPUnpackExc(lengthArg->gtVNPair, &lengthVNP, &lengthExc);
+
+            // Union the exception sets of the arguments with the potential exceptions of the intrinsic itself.
+            // NOTE: if the length is known to be within [0..CORINFO_String_MaxLength] we can skip it.
+            ValueNumPair overflowVnp =
+                vnStore->VNPExcSetSingleton(vnStore->VNPairForFunc(TYP_REF, VNF_NewStringOverflowExc, lengthVNP));
+            ValueNumPair vnpExc =
+                vnStore->VNPExcSetUnion(vnStore->VNPExcSetUnion(methodTableExc, lengthExc), overflowVnp);
+
+            // Lastly, we need to generate a unique VN for this intrinsic, as it always returns a new string instance.
+            ValueNumPair uniqueVNP;
+            uniqueVNP.SetBoth(vnStore->VNForExpr(compCurBB, call->TypeGet()));
+
+            // Now we can compute the VN for the call itself.
+            ValueNumPair vnp =
+                vnStore->VNPairForFunc(call->TypeGet(), VNF_StrFastAllocate, methodTableVNP, lengthVNP, uniqueVNP);
+            call->gtVNPair = vnStore->VNPWithExc(vnp, vnpExc);
+
+            fgMutateGcHeap(call DEBUGARG("NI_System_String_FastAllocateString"));
+            return true;
+        }
+
         case NI_System_Type_GetTypeFromHandle:
         {
             // Optimize Type.GetTypeFromHandle(TypeHandleToRuntimeTypeHandle(clsHandle)) to a frozen handle.
@@ -14369,9 +14434,11 @@ bool Compiler::fgValueNumberSpecialIntrinsic(GenTreeCall* call)
             ValueNum clsVN     = typeHandleFuncApp.m_args[0];
             ssize_t  clsHandle = 0;
 
-            // NOTE: EmbeddedHandleMapLookup may return 0 for non-0 embedded handle
-            if (!vnStore->EmbeddedHandleMapLookup(vnStore->ConstantValue<ssize_t>(clsVN), &clsHandle) &&
-                (clsHandle != 0))
+            // EmbeddedHandleMapLookup may return false (no entry) or true with a 0 handle when the
+            // backing iconNode was produced by BashToConst (i.e., it has no compile-time handle).
+            // Either way, we cannot resolve the runtime type, so bail.
+            if (!vnStore->EmbeddedHandleMapLookup(vnStore->ConstantValue<ssize_t>(clsVN), &clsHandle) ||
+                (clsHandle == 0))
             {
                 break;
             }
@@ -15812,17 +15879,15 @@ CORINFO_CLASS_HANDLE ValueNumStore::GetObjectType(ValueNum vn, bool* pIsExact, b
     const VNFunc func = funcApp.m_func;
     if ((func == VNF_CastClass) || (func == VNF_IsInstanceOf) || (func == VNF_JitNew))
     {
-        ssize_t  clsHandle = 0;
-        ValueNum clsVN     = funcApp.m_args[0];
+        ValueNum clsVN = funcApp.m_args[0];
 
-        // NOTE: EmbeddedHandleMapLookup may return 0 for non-0 embedded handle
-        if (IsVNTypeHandle(clsVN) && EmbeddedHandleMapLookup(ConstantValue<ssize_t>(clsVN), &clsHandle) &&
-            (clsHandle != 0))
+        CORINFO_CLASS_HANDLE clsHandle;
+        if (IsVNTypeHandle(clsVN, &clsHandle))
         {
             // JitNew returns an exact and non-null obj, castclass and isinst do not have this guarantee.
             *pIsNonNull = func == VNF_JitNew;
             *pIsExact   = func == VNF_JitNew;
-            return (CORINFO_CLASS_HANDLE)clsHandle;
+            return clsHandle;
         }
     }
 

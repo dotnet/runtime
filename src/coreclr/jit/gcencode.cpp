@@ -4091,7 +4091,12 @@ void GCInfo::gcMakeRegPtrTable(
 {
     GCENCODER_WITH_LOGGING(gcInfoEncoderWithLog, gcInfoEncoder);
 
+    // TODO-WASM: Enable tracked GC slots for precise GC
+#ifdef TARGET_WASM
+    const bool noTrackedGCSlots = true;
+#else
     const bool noTrackedGCSlots = m_compiler->opts.MinOpts();
+#endif
 
     if (mode == MAKE_REG_PTR_MODE_ASSIGN_SLOTS)
     {
@@ -4646,6 +4651,7 @@ void GCInfo::gcInfoRecordGCRegStateChange(GcInfoEncoder* gcInfoEncoder,
                                           regMaskSmall   byRefMask,
                                           regMaskSmall*  pPtrRegs)
 {
+#if HAS_FIXED_REGISTER_SET
     // Precondition: byRefMask is a subset of regMask.
     assert((byRefMask & ~regMask) == 0);
 
@@ -4703,6 +4709,7 @@ void GCInfo::gcInfoRecordGCRegStateChange(GcInfoEncoder* gcInfoEncoder,
         // Turn the bit we've just generated off and continue.
         regMask ^= tmpMask; // EAX,ECX,EDX,EBX,---,EBP,ESI,EDI
     }
+#endif // HAS_FIXED_REGISTER_SET
 }
 
 /**************************************************************************

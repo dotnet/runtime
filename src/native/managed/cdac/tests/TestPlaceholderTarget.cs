@@ -19,7 +19,7 @@ internal class TestPlaceholderTarget : Target
 {
     private ContractRegistry _contractRegistry;
     private readonly Target.IDataCache _dataCache;
-    private readonly Dictionary<DataType, Target.TypeInfo> _typeInfoCache;
+    private readonly Dictionary<string, Target.TypeInfo> _typeInfoCache;
     private readonly (string Name, ulong Value)[] _globals;
     private readonly (string Name, string Value)[] _globalStrings;
 
@@ -33,7 +33,7 @@ internal class TestPlaceholderTarget : Target
     private static readonly UTF8Encoding strictUTF8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
     private static readonly UTF8Encoding looseUTF8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false);
 
-    public TestPlaceholderTarget(MockTarget.Architecture arch, ReadFromTargetDelegate reader, Dictionary<DataType, Target.TypeInfo> types = null, (string Name, ulong Value)[] globals = null, (string Name, string Value)[] globalStrings = null, WriteToTargetDelegate? writer = null, AllocateMemoryDelegate? allocateMemory = null)
+    public TestPlaceholderTarget(MockTarget.Architecture arch, ReadFromTargetDelegate reader, Dictionary<string, Target.TypeInfo> types = null, (string Name, ulong Value)[] globals = null, (string Name, string Value)[] globalStrings = null, WriteToTargetDelegate? writer = null, AllocateMemoryDelegate? allocateMemory = null)
     {
         IsLittleEndian = arch.IsLittleEndian;
         PointerSize = arch.Is64Bit ? 8 : 4;
@@ -77,7 +77,7 @@ internal class TestPlaceholderTarget : Target
     {
         private readonly MockTarget.Architecture _arch;
         private readonly MockMemorySpace.Builder _memBuilder;
-        private readonly Dictionary<DataType, Target.TypeInfo> _types = new();
+        private readonly Dictionary<string, Target.TypeInfo> _types = new();
         private readonly List<(string Name, ulong Value)> _globals = new();
         private readonly List<(string Name, string Value)> _globalStrings = new();
         private readonly List<Action<TestContractRegistry>> _contractSetups = new();
@@ -94,6 +94,13 @@ internal class TestPlaceholderTarget : Target
         internal MockMemorySpace.Builder MemoryBuilder => _memBuilder;
 
         public Builder AddTypes(Dictionary<DataType, Target.TypeInfo> types)
+        {
+            foreach (var kvp in types)
+                _types[kvp.Key.ToString()] = kvp.Value;
+            return this;
+        }
+
+        public Builder AddTypes(Dictionary<string, Target.TypeInfo> types)
         {
             foreach (var kvp in types)
                 _types[kvp.Key] = kvp.Value;
@@ -499,9 +506,9 @@ internal class TestPlaceholderTarget : Target
 
     public override TargetPointer ReadPointerFromSpan(ReadOnlySpan<byte> bytes) => throw new NotImplementedException();
 
-    public override Target.TypeInfo GetTypeInfo(DataType dataType)
+    public override Target.TypeInfo GetTypeInfo(string typeName)
     {
-        if (_typeInfoCache.TryGetValue(dataType, out var info))
+        if (_typeInfoCache.TryGetValue(typeName, out var info))
             return info;
 
         throw new NotImplementedException();

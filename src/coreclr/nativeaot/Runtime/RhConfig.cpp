@@ -48,7 +48,7 @@ bool RhConfig::Environment::TryGetIntegerValue(const char* name, uint64_t* value
     TCHAR variableName[64];
     GetEnvironmentConfigName(name, variableName, ARRAY_SIZE(variableName));
 
-    TCHAR buffer[CONFIG_VAL_MAXLEN + 1]; // hex digits plus a nul terminator.
+    TCHAR buffer[CONFIG_VAL_MAXLEN + 1]; // Max textual integer value plus a nul terminator.
     const uint32_t cchBuffer = ARRAY_SIZE(buffer);
     uint32_t cchResult = PalGetEnvironmentVariable(variableName, buffer, cchBuffer);
     if (cchResult == 0 || cchResult >= cchBuffer)

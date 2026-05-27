@@ -814,10 +814,11 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
             // These are the built in service types that aren't part of the list of service descriptors
             // If you update these make sure to also update the code in ServiceProvider.ctor
-            return serviceType == typeof(IServiceProvider) ||
-                   serviceType == typeof(IServiceScopeFactory) ||
-                   serviceType == typeof(IServiceProviderIsService) ||
-                   serviceType == typeof(IServiceProviderIsKeyedService);
+            return serviceIdentifier.ServiceKey is null &&
+                   (serviceType == typeof(IServiceProvider) ||
+                    serviceType == typeof(IServiceScopeFactory) ||
+                    serviceType == typeof(IServiceProviderIsService) ||
+                    serviceType == typeof(IServiceProviderIsKeyedService));
         }
 
         private struct ServiceDescriptorCacheItem
