@@ -152,6 +152,26 @@
         <target state="translated">Tür için serileştirme meta verileri oluşturulmadı.</target>
         <note />
       </trans-unit>
+      <trans-unit id="UnionCaseTypesNotClassifiableMessageFormat">
+        <source>Union type '{0}': {1}. Set JsonUnionAttribute.TypeClassifier to provide a custom classifier that can disambiguate.</source>
+        <target state="translated">Birleşim türü '{0}': {1}. Belirsizliği giderebilen özel bir sınıflandırıcı sağlamak için JsonUnionAttribute.TypeClassifier öğesini ayarlayın.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnionCaseTypesNotClassifiableTitle">
+        <source>Union case types cannot be unambiguously classified by JSON value type.</source>
+        <target state="translated">Birleşim durum türleri JSON değer türüne göre belirsiz biçimde sınıflandırılamaz.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnionTypeShapeNotSupportedMessageFormat">
+        <source>Union type '{0}' does not match the C# union shape convention: it must declare at least one public single-parameter case constructor and a public instance property named 'Value' with type 'object'.</source>
+        <target state="translated">'{0}' birleşim türü C# birleşim şekli kuralıyla eşleşmiyor: En az bir ortak tek parametreli durum oluşturucusu ve türü 'object' olan 'Value' adlı bir ortak örnek özelliği bildirmelidir.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnionTypeShapeNotSupportedTitle">
+        <source>Union type shape is not a valid C# union.</source>
+        <target state="translated">Birleşim türü şekli geçerli bir C# birleşimi değil.</target>
+        <note />
+      </trans-unit>
     </body>
   </file>
 </xliff>

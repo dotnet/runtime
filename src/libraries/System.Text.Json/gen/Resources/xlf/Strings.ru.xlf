@@ -152,6 +152,26 @@
         <target state="translated">Метаданные сериализации для типа не сформированы.</target>
         <note />
       </trans-unit>
+      <trans-unit id="UnionCaseTypesNotClassifiableMessageFormat">
+        <source>Union type '{0}': {1}. Set JsonUnionAttribute.TypeClassifier to provide a custom classifier that can disambiguate.</source>
+        <target state="translated">Тип объединения "{0}": {1}. Задайте JsonUnionAttribute.TypeClassifier, чтобы указать пользовательский классификатор для устранения неоднозначности.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnionCaseTypesNotClassifiableTitle">
+        <source>Union case types cannot be unambiguously classified by JSON value type.</source>
+        <target state="translated">Типы вариантов объединения невозможно однозначно классифицировать по типу значения JSON.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnionTypeShapeNotSupportedMessageFormat">
+        <source>Union type '{0}' does not match the C# union shape convention: it must declare at least one public single-parameter case constructor and a public instance property named 'Value' with type 'object'.</source>
+        <target state="translated">Тип объединения "{0}" не соответствует соглашению о структуре объединения C#: он должен объявлять как минимум один общедоступный конструктор варианта с одним параметром и общедоступное свойство экземпляра с именем "Value" и типом "object".</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnionTypeShapeNotSupportedTitle">
+        <source>Union type shape is not a valid C# union.</source>
+        <target state="translated">Структура типа объединения не является допустимым объединением C#.</target>
+        <note />
+      </trans-unit>
     </body>
   </file>
 </xliff>

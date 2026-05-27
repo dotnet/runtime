@@ -152,6 +152,26 @@
         <target state="translated">未生成类型的序列化元数据。</target>
         <note />
       </trans-unit>
+      <trans-unit id="UnionCaseTypesNotClassifiableMessageFormat">
+        <source>Union type '{0}': {1}. Set JsonUnionAttribute.TypeClassifier to provide a custom classifier that can disambiguate.</source>
+        <target state="translated">联合类型“{0}”: {1}。设置 JsonUnionAttribute.TypeClassifier 以提供可消除歧义的自定义分类器。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnionCaseTypesNotClassifiableTitle">
+        <source>Union case types cannot be unambiguously classified by JSON value type.</source>
+        <target state="translated">联合事例类型无法通过 JSON 值类型进行明确分类。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnionTypeShapeNotSupportedMessageFormat">
+        <source>Union type '{0}' does not match the C# union shape convention: it must declare at least one public single-parameter case constructor and a public instance property named 'Value' with type 'object'.</source>
+        <target state="translated">联合类型“{0}”不符合 C# 联合形状约定: 必须声明至少一个公共单参数事例构造函数和一个名为 "Value" 且类型为 "object" 的公共实例属性。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnionTypeShapeNotSupportedTitle">
+        <source>Union type shape is not a valid C# union.</source>
+        <target state="translated">联合类型形状不是有效的 C# 联合。</target>
+        <note />
+      </trans-unit>
     </body>
   </file>
 </xliff>
