@@ -14,20 +14,6 @@ namespace System.Net.Security
             consumed = 0;
             return false;
         }
-
-        private partial bool TryEncryptViaTlsSession(ReadOnlyMemory<byte> buffer, out ProtocolToken token)
-        {
-            token = default;
-            return false;
-        }
-
-        private partial bool TryDecryptViaTlsSession(Span<byte> buffer, out SecurityStatusPal status, out int outputOffset, out int outputCount)
-        {
-            status = default;
-            outputOffset = 0;
-            outputCount = 0;
-            return false;
-        }
 #pragma warning restore CA1822
     }
 }

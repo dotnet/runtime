@@ -687,18 +687,6 @@ namespace System.Net.Security
             return token;
         }
 
-        internal ProtocolToken EncryptForSslStream(ReadOnlyMemory<byte> buffer, int headerSize, int trailerSize)
-        {
-            ThrowIfDisposed();
-            return SslStreamPal.EncryptMessage(_securityContext!, buffer, headerSize, trailerSize);
-        }
-
-        internal SecurityStatusPal DecryptForSslStream(Span<byte> buffer, out int offset, out int count)
-        {
-            ThrowIfDisposed();
-            return SslStreamPal.DecryptMessage(_securityContext!, buffer, out offset, out count);
-        }
-
         // Invoked by OpenSSL's CertVerifyCallback (via SslAuthenticationOptions.RemoteCertificateValidator)
         // when this TlsSession owns the validation flow.
         internal bool VerifyRemoteCertificate(

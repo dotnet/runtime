@@ -77,48 +77,5 @@ namespace System.Net.Security
 
             return true;
         }
-
-        private partial bool TryEncryptViaTlsSession(ReadOnlyMemory<byte> buffer, out ProtocolToken token)
-        {
-            if (_tlsSession is null)
-            {
-                token = default;
-                return false;
-            }
-
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.DumpBuffer(this, buffer.Span);
-            }
-
-            token = _tlsSession.EncryptForSslStream(buffer, _headerSize, _trailerSize);
-
-            if (token.Status.ErrorCode != SecurityStatusPalErrorCode.OK && NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Error(this, $"ERROR {token.Status}");
-            }
-
-            return true;
-        }
-
-        private partial bool TryDecryptViaTlsSession(Span<byte> buffer, out SecurityStatusPal status, out int outputOffset, out int outputCount)
-        {
-            if (_tlsSession is null)
-            {
-                status = default;
-                outputOffset = 0;
-                outputCount = 0;
-                return false;
-            }
-
-            status = _tlsSession.DecryptForSslStream(buffer, out outputOffset, out outputCount);
-
-            if (NetEventSource.Log.IsEnabled() && status.ErrorCode == SecurityStatusPalErrorCode.OK)
-            {
-                NetEventSource.DumpBuffer(this, buffer.Slice(outputOffset, outputCount));
-            }
-
-            return true;
-        }
     }
 }
