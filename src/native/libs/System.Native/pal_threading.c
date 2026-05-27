@@ -26,6 +26,7 @@
 #if defined(TARGET_LINUX)
 #include <linux/futex.h>      /* Definition of FUTEX_* constants */
 #include <sys/syscall.h>      /* Definition of SYS_* constants */
+#include <unistd.h>           /* Declaration of syscall */
 #endif
 
 #include <pthread.h>
