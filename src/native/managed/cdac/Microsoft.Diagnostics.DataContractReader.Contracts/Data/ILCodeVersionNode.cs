@@ -16,10 +16,12 @@ internal sealed class ILCodeVersionNode : IData<ILCodeVersionNode>
         Next = target.ReadPointerField(address, type, nameof(Next));
         RejitState = target.ReadField<uint>(address, type, nameof(RejitState));
         ILAddress = target.ReadPointerField(address, type, nameof(ILAddress));
+        Deoptimized = target.ReadField<uint>(address, type, nameof(Deoptimized)) != 0;
     }
 
     public TargetNUInt VersionId { get; init; }
     public TargetPointer Next { get; init; }
     public uint RejitState { get; init; }
     public TargetPointer ILAddress { get; init; }
+    public bool Deoptimized { get; init; }
 }
