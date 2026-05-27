@@ -7744,6 +7744,12 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
         // because we won't be able to use ldar/star
         return false;
     }
+
+    // TODO-SVE: Create an addressable node containing an index scaled by VL or PL
+    if (parent->TypeIs(TYP_MASK, TYP_SIMD))
+    {
+        return false;
+    }
 #endif
 
     GenTree* base   = nullptr;
