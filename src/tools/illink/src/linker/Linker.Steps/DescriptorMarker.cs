@@ -154,6 +154,13 @@ namespace Mono.Linker.Steps
             if (!required)
                 return;
 
+            // We don't explicitly mark the type as reflection-visible here. The type
+            // becomes reflection-visible through its members: preserve="all"/"methods"/
+            // "fields" flows through ApplyPreserveInfo → MarkMethodsVisibleToReflection/
+            // MarkFieldsVisibleToReflection, and explicit <method>/<field> children flow
+            // through ProcessMethod/ProcessField → pending reflection-visible marking.
+            // Both paths cascade to the declaring type via MarkMethodVisibleToReflection/
+            // MarkFieldVisibleToReflection.
             _context.Annotations.Mark(type, new DependencyInfo(DependencyKind.XmlDescriptor, _xmlDocumentLocation), GetMessageOriginForPosition(nav));
 
             if (type.IsNested)
