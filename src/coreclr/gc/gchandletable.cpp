@@ -17,12 +17,21 @@ IGCHandleManager* CreateGCHandleManager()
 
 void GCHandleStore::Uproot()
 {
-    Ref_RemoveHandleTableBucket(&_underlyingBucket);
+    // Dead path. The last caller in CoreCLR was removed by dotnet/coreclr#23588
+    // (April 2019) when non-default AppDomains were retired. The vtable slot is
+    // preserved for GC_INTERFACE_MAJOR_VERSION 5 ABI compatibility with
+    // external standalone GC implementations.
+    assert(!"Uproot is not in use; no callers since dotnet/coreclr#23588");
 }
 
 bool GCHandleStore::ContainsHandle(OBJECTHANDLE handle)
 {
-    return _underlyingBucket.Contains(handle);
+    // Dead path. The last caller in CoreCLR was removed by dotnet/coreclr#23588
+    // (April 2019) when non-default AppDomains were retired. The vtable slot is
+    // preserved for GC_INTERFACE_MAJOR_VERSION 5 ABI compatibility with
+    // external standalone GC implementations.
+    assert(!"ContainsHandle is not in use; no callers since dotnet/coreclr#23588");
+    return false;
 }
 
 // this is the number of handles we allocate in a handle table before we switch to the next table.
@@ -129,25 +138,12 @@ IGCHandleStore* GCHandleManager::GetGlobalHandleStore()
 
 IGCHandleStore* GCHandleManager::CreateHandleStore()
 {
-#ifndef FEATURE_NATIVEAOT
-    GCHandleStore* store = new (nothrow) GCHandleStore();
-    if (store == nullptr)
-    {
-        return nullptr;
-    }
-
-    bool success = ::Ref_InitializeHandleTableBucket(&store->_underlyingBucket);
-    if (!success)
-    {
-        delete store;
-        return nullptr;
-    }
-
-    return store;
-#else
-    assert(!"CreateHandleStore is not implemented when FEATURE_NATIVEAOT is defined!");
+    // Dead path. The last caller in CoreCLR was removed by dotnet/coreclr#23588
+    // (April 2019) when non-default AppDomains were retired. The vtable slot is
+    // preserved for GC_INTERFACE_MAJOR_VERSION 5 ABI compatibility with
+    // external standalone GC implementations.
+    assert(!"CreateHandleStore is not in use; no callers since dotnet/coreclr#23588");
     return nullptr;
-#endif
 }
 
 void GCHandleManager::DestroyHandleStore(IGCHandleStore* store)
