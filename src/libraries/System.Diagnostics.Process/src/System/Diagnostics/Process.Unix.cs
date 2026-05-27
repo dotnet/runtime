@@ -100,7 +100,7 @@ namespace System.Diagnostics
             // This is necessary because killing a parent process may cause children with
             // PR_SET_PDEATHSIG (KillOnParentExit) to be killed by the kernel immediately,
             // making it impossible to discover their descendants afterward.
-            List<Process> stoppedProcesses = new List<Process>();
+            List<Process> stoppedProcesses = [];
             StopTree(ref exceptions, stoppedProcesses);
 
             // Now kill all stopped processes.
@@ -109,11 +109,11 @@ namespace System.Diagnostics
                 int killResult = Interop.Sys.Kill(process._processId, Interop.Sys.GetPlatformSignalNumber(PosixSignal.SIGKILL));
                 if (killResult != 0)
                 {
-                    Interop.Error error = Interop.Sys.GetLastError();
+                    Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
                     // Ignore 'process no longer exists' error.
-                    if (error != Interop.Error.ESRCH)
+                    if (errorInfo.Error != Interop.Error.ESRCH)
                     {
-                        (exceptions ??= new List<Exception>()).Add(new Win32Exception());
+                        (exceptions ??= new List<Exception>()).Add(new Win32Exception(errorInfo.RawErrno));
                     }
                 }
 
@@ -142,11 +142,11 @@ namespace System.Diagnostics
             int stopResult = Interop.Sys.Kill(_processId, Interop.Sys.GetPlatformSIGSTOP());
             if (stopResult != 0)
             {
-                Interop.Error error = Interop.Sys.GetLastError();
+                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
                 // Ignore 'process no longer exists' error.
-                if (error != Interop.Error.ESRCH)
+                if (errorInfo.Error != Interop.Error.ESRCH)
                 {
-                    (exceptions ??= new List<Exception>()).Add(new Win32Exception());
+                    (exceptions ??= new List<Exception>()).Add(new Win32Exception(errorInfo.RawErrno));
                 }
                 return;
             }
