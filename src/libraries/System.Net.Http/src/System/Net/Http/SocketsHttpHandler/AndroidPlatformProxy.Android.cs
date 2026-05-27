@@ -52,43 +52,10 @@ namespace System.Net.Http
                 // connect error rather than an automatic retry.
                 for (int i = 0; i < count; i++)
                 {
-                    Interop.AndroidCrypto.AndroidProxyInfo entry = proxies[i];
-                    Interop.AndroidCrypto.AndroidProxyType type = (Interop.AndroidCrypto.AndroidProxyType)entry.Type;
-
-                    if (type == Interop.AndroidCrypto.AndroidProxyType.Direct)
+                    if (TryCreateProxyUri(proxies[i], out Uri? proxyUri))
                     {
-                        // Java's Proxy.NO_PROXY is represented as Proxy.Type.DIRECT.
-                        // Preserve ProxySelector ordering by treating DIRECT as the
-                        // selected result rather than skipping to a later fallback proxy.
-                        return null;
+                        return proxyUri;
                     }
-
-                    // SOCKS is a transport-level proxy protocol (RFC 1928 for SOCKS5).
-                    // Unlike HTTP CONNECT, SOCKS tunnels arbitrary TCP at the socket
-                    // layer. SocketsHttpHandler accepts "socks5://" via
-                    // HttpUtilities.IsSupportedProxyScheme. Android's
-                    // java.net.Proxy.Type.SOCKS maps to SOCKS5 on modern Android.
-                    string? scheme = type switch
-                    {
-                        Interop.AndroidCrypto.AndroidProxyType.Http => "http",
-                        Interop.AndroidCrypto.AndroidProxyType.Socks => "socks5",
-                        _ => null,
-                    };
-
-                    if (scheme is null)
-                    {
-                        continue;
-                    }
-
-                    // The native PAL allocates the host as NUL-terminated UTF-16
-                    // (Marshal.PtrToStringUni is a zero-conversion copy).
-                    string? host = Marshal.PtrToStringUni(entry.Host);
-                    if (string.IsNullOrEmpty(host))
-                    {
-                        continue;
-                    }
-
-                    return new UriBuilder(scheme, host, entry.Port).Uri;
                 }
 
                 return null;
@@ -97,6 +64,50 @@ namespace System.Net.Http
             {
                 Interop.AndroidCrypto.FreeProxyResult(proxies, count);
             }
+        }
+
+        internal static bool TryCreateProxyUri(Interop.AndroidCrypto.AndroidProxyInfo entry, out Uri? proxyUri)
+        {
+            proxyUri = null;
+
+            Interop.AndroidCrypto.AndroidProxyType type = (Interop.AndroidCrypto.AndroidProxyType)entry.Type;
+
+            if (type == Interop.AndroidCrypto.AndroidProxyType.Direct)
+            {
+                // Java's Proxy.NO_PROXY is represented as Proxy.Type.DIRECT.
+                // Preserve ProxySelector ordering by treating DIRECT as the
+                // selected result rather than skipping to a later fallback proxy.
+                return true;
+            }
+
+            // SOCKS is a transport-level proxy protocol (RFC 1928 for SOCKS5).
+            // Unlike HTTP CONNECT, SOCKS tunnels arbitrary TCP at the socket
+            // layer. SocketsHttpHandler accepts "socks5://" via
+            // HttpUtilities.IsSupportedProxyScheme. Android's
+            // java.net.Proxy.Type.SOCKS maps to SOCKS5 on modern Android.
+            string? scheme = type switch
+            {
+                Interop.AndroidCrypto.AndroidProxyType.Http => "http",
+                Interop.AndroidCrypto.AndroidProxyType.Socks => "socks5",
+                _ => null,
+            };
+
+            if (scheme is null)
+            {
+                return false;
+            }
+
+            // The native PAL allocates the host as NUL-terminated UTF-16
+            // (Marshal.PtrToStringUni is a zero-conversion copy).
+            string? host = Marshal.PtrToStringUni(entry.Host);
+            if (string.IsNullOrEmpty(host))
+            {
+                return false;
+            }
+
+            proxyUri = new UriBuilder(scheme, host, entry.Port).Uri;
+
+            return true;
         }
 
         // SocketsHttpHandler's pattern is: call IsBypassed first; if it returns false,
