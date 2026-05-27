@@ -635,6 +635,7 @@ public:
 
 private:
     void FlushPendingEntries();
+    void FlushPendingEntriesUnderGate();
 
     PVOID               hHandle;          // OS handle for a published RUNTIME_FUNCTION table
     ULONG_PTR           iRangeStart;      // Start of memory described by this table
