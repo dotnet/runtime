@@ -46,7 +46,7 @@ namespace System.Net.Security.Tests
                     RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
                 });
 
-                Task serverHandshake = DriveServerHandshakeAsync(session, serverStream);
+                Task serverHandshake = DriveHandshakeAsync(session, serverStream);
 
                 await Task.WhenAll(clientHandshake, serverHandshake).WaitAsync(TimeSpan.FromSeconds(30));
 
@@ -122,7 +122,7 @@ namespace System.Net.Security.Tests
                     EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
                     RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
                 });
-                Task serverHandshake = DriveServerHandshakeAsync(session, serverStream);
+                Task serverHandshake = DriveHandshakeAsync(session, serverStream);
                 await Task.WhenAll(clientHandshake, serverHandshake).WaitAsync(TimeSpan.FromSeconds(30));
 
                 byte[] scratch = ArrayPool<byte>.Shared.Rent(CipherBufSize);
@@ -190,7 +190,7 @@ namespace System.Net.Security.Tests
                     ClientCertificates = new X509CertificateCollection { clientCert },
                     RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
                 });
-                Task serverHandshake = DriveServerHandshakeAsync(session, serverStream);
+                Task serverHandshake = DriveHandshakeAsync(session, serverStream);
                 await Task.WhenAll(clientHandshake, serverHandshake).WaitAsync(TimeSpan.FromSeconds(30));
 
                 Assert.True(session.IsHandshakeComplete);
@@ -229,7 +229,7 @@ namespace System.Net.Security.Tests
                     EnabledSslProtocols = SslProtocols.Tls12,
                     RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
                 });
-                Task serverHandshake = DriveServerHandshakeAsync(session, serverStream);
+                Task serverHandshake = DriveHandshakeAsync(session, serverStream);
                 await Task.WhenAll(clientHandshake, serverHandshake).WaitAsync(TimeSpan.FromSeconds(30));
 
                 using ChannelBinding? serverBinding = session.GetChannelBinding(ChannelBindingKind.Unique);
@@ -248,9 +248,185 @@ namespace System.Net.Security.Tests
             }
         }
 
+        // Pinned to TLS 1.2: a pure in-memory two-session loop currently can't
+        // handle the TLS 1.3 post-handshake NewSessionTicket records that OpenSSL
+        // emits after the server consumes the client Finished. With SslStream on
+        // one side the data-path handles those records transparently; the
+        // standalone TlsSession surface does not yet (same scope as PHA).
+        [Fact]
+        public void TwoSessions_HandshakeAndPingPong_InMemory_Succeeds()
+        {
+            using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
+            string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
+
+            using TlsContext serverCtx = TlsContext.Create(new SslServerAuthenticationOptions
+            {
+                ServerCertificate = serverCert,
+                EnabledSslProtocols = SslProtocols.Tls12,
+                ClientCertificateRequired = false,
+            });
+            using TlsContext clientCtx = TlsContext.Create(new SslClientAuthenticationOptions
+            {
+                TargetHost = serverName,
+                EnabledSslProtocols = SslProtocols.Tls12,
+                RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
+            });
+
+            using TlsSession server = TlsSession.Create(serverCtx);
+            using TlsSession client = TlsSession.Create(clientCtx);
+
+            byte[] cToS = new byte[CipherBufSize]; int cToSLen = 0;
+            byte[] sToC = new byte[CipherBufSize]; int sToCLen = 0;
+
+            for (int round = 0; round < 32 && (!client.IsHandshakeComplete || !server.IsHandshakeComplete); round++)
+            {
+                StepHandshakeInMemory(client, sToC, ref sToCLen, cToS, ref cToSLen);
+                StepHandshakeInMemory(server, cToS, ref cToSLen, sToC, ref sToCLen);
+            }
+
+            Assert.True(client.IsHandshakeComplete);
+            Assert.True(server.IsHandshakeComplete);
+            Assert.Equal(client.NegotiatedProtocol, server.NegotiatedProtocol);
+            Assert.Equal(SslProtocols.Tls12, client.NegotiatedProtocol);
+
+            byte[] ping = "PING from client"u8.ToArray();
+            byte[] pong = "PONG from server"u8.ToArray();
+
+            Assert.Equal(ping, RoundtripRecord(client, server, ping));
+            Assert.Equal(pong, RoundtripRecord(server, client, pong));
+        }
+
+        [Fact]
+        public async Task ClientSession_AgainstSslStreamServer_HandshakeAndPingPong_Succeeds()
+        {
+            using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
+            string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
+
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+            using (clientStream)
+            using (serverStream)
+            using (SslStream serverSsl = new SslStream(serverStream, leaveInnerStreamOpen: false))
+            {
+                using TlsContext ctx = TlsContext.Create(new SslClientAuthenticationOptions
+                {
+                    TargetHost = serverName,
+                    EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                    RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
+                });
+                using TlsSession session = TlsSession.Create(ctx);
+
+                Task serverHandshake = serverSsl.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = serverCert,
+                    EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                    ClientCertificateRequired = false,
+                });
+                Task clientHandshake = DriveHandshakeAsync(session, clientStream);
+
+                await Task.WhenAll(clientHandshake, serverHandshake).WaitAsync(TimeSpan.FromSeconds(30));
+
+                Assert.True(session.IsHandshakeComplete);
+                Assert.True(serverSsl.IsAuthenticated);
+                Assert.True(session.NegotiatedProtocol is SslProtocols.Tls12 or SslProtocols.Tls13);
+
+                byte[] ping = "PING"u8.ToArray();
+                byte[] pong = "PONG"u8.ToArray();
+
+                await WritePlaintextAsync(session, clientStream, ping);
+                byte[] gotByServer = new byte[ping.Length];
+                int n = 0;
+                while (n < gotByServer.Length)
+                {
+                    int r = await serverSsl.ReadAsync(gotByServer.AsMemory(n));
+                    Assert.True(r > 0);
+                    n += r;
+                }
+                Assert.Equal(ping, gotByServer);
+
+                Task serverWrite = serverSsl.WriteAsync(pong).AsTask();
+                byte[] gotByClient = await ReadOnePlaintextRecordAsync(session, clientStream, expectedLength: pong.Length);
+                await serverWrite;
+                Assert.Equal(pong, gotByClient);
+            }
+        }
+
         // ── Helpers ────────────────────────────────────────────────────────
 
-        private static async Task DriveServerHandshakeAsync(TlsSession session, Stream transport)
+        private static void StepHandshakeInMemory(
+            TlsSession session, byte[] input, ref int inputLen, byte[] output, ref int outputLen)
+        {
+            if (session.IsHandshakeComplete)
+            {
+                return;
+            }
+
+            TlsOperationStatus status = session.ProcessHandshake(
+                input.AsSpan(0, inputLen),
+                output.AsSpan(outputLen),
+                out int consumed,
+                out int produced);
+
+            if (consumed > 0)
+            {
+                if (consumed < inputLen)
+                {
+                    Buffer.BlockCopy(input, consumed, input, 0, inputLen - consumed);
+                }
+                inputLen -= consumed;
+            }
+            outputLen += produced;
+
+            while (session.HasPendingOutput)
+            {
+                session.DrainPendingOutput(output.AsSpan(outputLen), out int n);
+                outputLen += n;
+            }
+
+            Assert.NotEqual(TlsOperationStatus.Closed, status);
+        }
+
+        private static byte[] RoundtripRecord(TlsSession sender, TlsSession receiver, byte[] plaintext)
+        {
+            byte[] ct = new byte[CipherBufSize];
+            int ctLen = 0;
+            int sent = 0;
+            while (sent < plaintext.Length)
+            {
+                sender.Encrypt(
+                    plaintext.AsSpan(sent),
+                    ct.AsSpan(ctLen),
+                    out int consumed,
+                    out int produced);
+                sent += consumed;
+                ctLen += produced;
+                while (sender.HasPendingOutput)
+                {
+                    sender.DrainPendingOutput(ct.AsSpan(ctLen), out int n);
+                    ctLen += n;
+                }
+            }
+
+            byte[] pt = new byte[CipherBufSize];
+            int ptLen = 0;
+            int ctOff = 0;
+            while (ctOff < ctLen)
+            {
+                receiver.Decrypt(
+                    ct.AsSpan(ctOff, ctLen - ctOff),
+                    pt.AsSpan(ptLen),
+                    out int consumed,
+                    out int produced);
+                if (consumed == 0 && produced == 0)
+                {
+                    break;
+                }
+                ctOff += consumed;
+                ptLen += produced;
+            }
+            return pt.AsSpan(0, ptLen).ToArray();
+        }
+
+        private static async Task DriveHandshakeAsync(TlsSession session, Stream transport)
         {
             byte[] netIn = ArrayPool<byte>.Shared.Rent(CipherBufSize);
             byte[] netOut = ArrayPool<byte>.Shared.Rent(CipherBufSize);
