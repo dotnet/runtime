@@ -7,6 +7,8 @@
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <DisableProjectBuild>true</DisableProjectBuild>
 
+    <!-- Clear the inherited single-target setting so SDK cross-targeting dispatches alias inner builds -->
+    <TargetFramework></TargetFramework>
     <TargetFrameworks>WindowsVariant;UnixVariant</TargetFrameworks>
   </PropertyGroup>
 
