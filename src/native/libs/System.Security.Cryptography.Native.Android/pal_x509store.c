@@ -370,24 +370,14 @@ ARGS_NON_NULL_ALL static int32_t EnumerateTrustedCertificates(
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     while (hasNext)
     {
-        bool abortEnumeration = false;
         jobject cert = NULL;
         jstring alias = (*env)->CallObjectMethod(env, aliases, g_EnumerationNextElement);
-        if (CheckJNIExceptions(env))
-        {
-            abortEnumeration = true;
-            goto loop_cleanup;
-        }
+        ON_EXCEPTION_PRINT_AND_GOTO(loop_cleanup);
 
         if (filter == NULL || filter(env, alias))
         {
             cert = (*env)->CallObjectMethod(env, store, g_KeyStoreGetCertificate, alias);
-            if (CheckJNIExceptions(env))
-            {
-                abortEnumeration = true;
-                goto loop_cleanup;
-            }
-
+            ON_EXCEPTION_PRINT_AND_GOTO(loop_cleanup);
             if (cert != NULL)
             {
                 cb(AddGRef(env, cert), context);
@@ -395,16 +385,8 @@ ARGS_NON_NULL_ALL static int32_t EnumerateTrustedCertificates(
         }
 
     loop_cleanup:
-        if (cert != NULL)
-        {
-            (*env)->DeleteLocalRef(env, cert);
-        }
-        (*env)->DeleteLocalRef(env, alias);
-        if (abortEnumeration)
-        {
-            goto cleanup;
-        }
-
+        ReleaseLRef(env, cert);
+        ReleaseLRef(env, alias);
         hasNext = (*env)->CallBooleanMethod(env, aliases, g_EnumerationHasMoreElements);
         ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     }
