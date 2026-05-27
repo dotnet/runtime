@@ -12219,8 +12219,8 @@ bool Lowering::TryDecomposeBlockStoreAsIndirs(GenTreeBlk* blkNode)
 
     // Spill dstAddr (and srcAddr when src is an indirection) into temp locals so
     // we can compute offset-based addresses multiple times.
-    LIR::Use dstAddrUse(BlockRange(), &blkNode->Addr(), blkNode);
-    const var_types dstAddrType   = blkNode->Addr();
+    LIR::Use        dstAddrUse(BlockRange(), &blkNode->Addr(), blkNode);
+    const var_types dstAddrType   = blkNode->Addr()->TypeGet();
     const unsigned  dstAddrLclNum = dstAddrUse.ReplaceWithLclVar(m_compiler);
     unsigned        srcAddrLclNum = BAD_VAR_NUM;
     var_types       srcAddrType   = TYP_UNDEF;
@@ -12229,11 +12229,8 @@ bool Lowering::TryDecomposeBlockStoreAsIndirs(GenTreeBlk* blkNode)
 
     if (src->OperIs(GT_IND))
     {
-        GenTree* srcAddr = src->AsIndir()->Addr();
-        LIR::Use srcAddrUse;
-        found = BlockRange().TryGetUse(srcAddr, &srcAddrUse);
-        assert(found && (srcAddrUse.User() == src));
-        srcAddrType   = genActualType(srcAddr);
+        LIR::Use srcAddrUse(BlockRange(), &src->AsIndir()->Addr(), blkNode);
+        srcAddrType   = src->AsIndir()->Addr()->TypeGet();
         srcAddrLclNum = srcAddrUse.ReplaceWithLclVar(m_compiler);
     }
     else
