@@ -165,12 +165,10 @@ The .NET Foundation licenses this file to you under the MIT license.
         <ShimSourceCode><![CDATA[#if defined(_M_IX86)
 #define AGGREGATE_EXE_SHIM_STRINGIFY(s) #s
 #define AGGREGATE_EXE_SHIM_ALTNAME(_method) AGGREGATE_EXE_SHIM_STRINGIFY(/alternatename:_##_method=_method)
-#define AGGREGATE_EXE_SHIM_CALLCONV __cdecl
 #define AGGREGATE_EXE_SHIM_ENTRYPOINT(_name) \
     __pragma(comment(linker, AGGREGATE_EXE_SHIM_ALTNAME(_name))) \
-    extern int AGGREGATE_EXE_SHIM_CALLCONV _name(int, unsigned short**);
+    extern int __cdecl _name(int, unsigned short**);
 #else
-#define AGGREGATE_EXE_SHIM_CALLCONV
 #define AGGREGATE_EXE_SHIM_ENTRYPOINT(_name) extern int _name(int, unsigned short**);
 #endif
 
