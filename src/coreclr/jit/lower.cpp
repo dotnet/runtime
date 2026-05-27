@@ -12481,9 +12481,9 @@ bool Lowering::TryLowerOrToBFX(GenTreeOp* tree, GenTree** next)
         return false;
     }
 
-    uint64_t  width    = (uint64_t)BitOperations::PopCount(mask);
-    uint64_t  offset   = (uint64_t)shiftVal;
-    uint64_t  bitWidth = genTypeSize(ty) * BITS_PER_BYTE;
+    uint64_t width    = (uint64_t)BitOperations::PopCount(mask);
+    uint64_t offset   = (uint64_t)shiftVal;
+    uint64_t bitWidth = genTypeSize(ty) * BITS_PER_BYTE;
     if ((width > bitWidth) || (offset >= bitWidth) || ((offset + width) > bitWidth))
     {
         return false;
