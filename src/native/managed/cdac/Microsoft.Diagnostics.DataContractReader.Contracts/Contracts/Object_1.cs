@@ -107,8 +107,10 @@ internal readonly struct Object_1 : IObject
 
     public ulong GetObjectSize(TargetPointer address)
     {
-        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
         TargetPointer mt = GetMethodTableAddress(address);
+        if (mt == TargetPointer.Null)
+            throw new ArgumentException("Address represents a set-free object");
+        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
         TypeHandle th = rts.GetTypeHandle(mt);
         ulong size = rts.GetBaseSize(th);
         uint componentSize = rts.GetComponentSize(th);

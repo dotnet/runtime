@@ -2261,6 +2261,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
     public int GetObjectContents(ulong obj, DacDbiTargetBuffer* pRetVal)
     {
+        *pRetVal = default;
         int hr = HResults.S_OK;
         try
         {

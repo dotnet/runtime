@@ -366,4 +366,42 @@ public unsafe class ObjectTests
         ulong expectedSize = targetTestHelpers.ArrayBaseBaseSize + numComponents * componentSize;
         Assert.Equal(expectedSize, size);
     }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetObjectSize_StringObject(MockTarget.Architecture arch)
+    {
+        TargetPointer TestStringAddress = default;
+        string testString = "hello";
+        ushort componentSize = sizeof(char);
+
+        IObject contract = CreateObjectContract(
+            arch,
+            objectBuilder =>
+            {
+                TargetTestHelpers helpers = objectBuilder.Builder.TargetTestHelpers;
+                uint flags = (uint)MethodTableFlags_1.WFLAGS_HIGH.HasComponentSize | componentSize;
+                uint baseSize = helpers.StringBaseSize;
+
+                MockEEClass eeClass = objectBuilder.RTSBuilder.AddEEClass("TestString");
+                MockMethodTable mt = objectBuilder.RTSBuilder.AddMethodTable("TestString");
+                mt.MTFlags = flags;
+                mt.BaseSize = baseSize;
+                eeClass.MethodTable = mt.Address;
+                mt.EEClassOrCanonMT = eeClass.Address;
+
+                MockMemorySpace.HeapFragment fragment = objectBuilder.ManagedObjectAllocator.Allocate(
+                    (uint)objectBuilder.StringLayout.Size + (uint)(testString.Length * sizeof(char)), "TestString");
+                MockStringObjectData strObj = objectBuilder.StringLayout.Create(fragment.Data.AsMemory(), fragment.Address);
+                strObj.MethodTable = mt.Address;
+                strObj.StringLength = (uint)testString.Length;
+                TestStringAddress = fragment.Address;
+            });
+
+        ulong size = contract.GetObjectSize(TestStringAddress);
+
+        TargetTestHelpers targetTestHelpers = new(arch);
+        ulong expectedSize = targetTestHelpers.StringBaseSize + (ulong)testString.Length * componentSize;
+        Assert.Equal(expectedSize, size);
+    }
 }
