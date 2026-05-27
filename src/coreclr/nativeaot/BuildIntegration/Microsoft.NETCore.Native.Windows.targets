@@ -162,11 +162,15 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <ItemGroup>
       <_AggregateExecutableReferencePath>
-        <ShimSourceCode><![CDATA[__declspec(dllimport) int %(_AggregateExecutableReferencePath.EntryPointSymbol)(int, unsigned short**);
+        <ShimEntryPointSymbol>%(_AggregateExecutableReferencePath.EntryPointSymbol)</ShimEntryPointSymbol>
+        <ShimEntryPointSymbol Condition="'$(_targetArchitecture)' == 'x86'">$([System.String]::Copy('%(_AggregateExecutableReferencePath.EntryPointSymbol)').Substring(1))</ShimEntryPointSymbol>
+      </_AggregateExecutableReferencePath>
+      <_AggregateExecutableReferencePath>
+        <ShimSourceCode><![CDATA[__declspec(dllimport) int %(_AggregateExecutableReferencePath.ShimEntryPointSymbol)(int, unsigned short**);
 
 int wmain(int argc, unsigned short** argv)
 {
-    return %(_AggregateExecutableReferencePath.EntryPointSymbol)(argc, argv);
+    return %(_AggregateExecutableReferencePath.ShimEntryPointSymbol)(argc, argv);
 }
 ]]></ShimSourceCode>
         <ShimPdbLinkerArg Condition="'$(NativeDebugSymbols)' == 'true'">/PDB:"%(_AggregateExecutableReferencePath.ShimSymbol)"</ShimPdbLinkerArg>
