@@ -225,6 +225,9 @@
   <data name="CryptoConfigNotSupported" xml:space="preserve">
     <value>Accessing a hash algorithm by manipulating the HashName property is not supported on this platform. Instead, you must instantiate one of the supplied subtypes (such as HMACSHA1.)</value>
   </data>
+  <data name="Cryptography_AndroidX509ChainContextInitializationFailed" xml:space="preserve">
+    <value>The Android X.509 certificate chain could not be initialized. See logcat for details.</value>
+  </data>
   <data name="Cryptography_AlgKdfRequiresChars" xml:space="preserve">
     <value>The KDF for algorithm '{0}' requires a char-based password input.</value>
   </data>
