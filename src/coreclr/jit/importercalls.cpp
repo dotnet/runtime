@@ -415,7 +415,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
                 if (call->AsCall()->IsAsync())
                 {
-                    impInsertAsyncContinuationForLdvirtftnCall(call->AsCall());
+                    impInsertAsyncArgsForLdvirtftnCall(call->AsCall());
                 }
 
                 GenTree* thisPtr = impPopStack().val;
@@ -938,6 +938,11 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                                                           .WellKnown(WellKnownArg::VarArgsCookie));
             }
         }
+    }
+
+    if (asyncContinuation != nullptr)
+    {
+        impInheritAsyncContextsFromInliner(call->AsCall());
     }
 
     //-------------------------------------------------------------------------
@@ -6976,13 +6981,28 @@ void Compiler::impCheckForPInvokeCall(
 //
 void Compiler::impSetupAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned prefixFlags, const DebugInfo& callDI)
 {
+    AsyncCallInfo asyncInfo;
+
     if (compIsForInlining())
     {
-        compInlineResult->NoteFatal(InlineObservation::CALLEE_AWAIT);
-        return;
-    }
+        if (!m_nextAwaitIsTail)
+        {
+            compInlineResult->NoteFatal(InlineObservation::CALLEE_AWAIT);
+            return;
+        }
 
-    AsyncCallInfo asyncInfo;
+        GenTreeCall* inlCall = impInlineInfo->iciCall;
+        JITDUMP("Call [%06u] is to call with a tail async call [%06u]\n", dspTreeID(inlCall), dspTreeID(call));
+
+        assert(inlCall->IsAsync());
+
+        asyncInfo.ContinuationContextHandling = inlCall->GetAsyncInfo().ContinuationContextHandling;
+        // Validate that below code won't override the handling
+        assert((prefixFlags & PREFIX_IS_TASK_AWAIT) == 0);
+        m_nextAwaitIsTail = false;
+
+        asyncInfo.IsTailAwait = inlCall->GetAsyncInfo().IsTailAwait;
+    }
 
     unsigned newSourceTypes = ICorDebugInfo::ASYNC;
     newSourceTypes |= (unsigned)callDI.GetLocation().GetSourceTypes() & ~ICorDebugInfo::CALL_INSTRUCTION;
@@ -7003,11 +7023,6 @@ void Compiler::impSetupAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned pref
             asyncInfo.ContinuationContextHandling = ContinuationContextHandling::ContinueOnThreadPool;
             JITDUMP("  Continuation continues on thread pool\n");
         }
-    }
-    else if (opcode == CEE_CALLI)
-    {
-        // Used for unboxing/instantiating stubs
-        JITDUMP("Call is an async calli\n");
     }
     else
     {
@@ -7039,9 +7054,54 @@ void Compiler::impSetupAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned pref
 }
 
 //------------------------------------------------------------------------
-// impInsertAsyncContinuationForLdvirtftnCall:
-//   Insert the async continuation argument for a call the EE asked to be
-//   performed via ldvirtftn.
+// impInheritAsyncContextsFromInliner:
+//   Inherit async args from inlining call as part of a new async call.
+//
+// Arguments:
+//   call - The async call
+//
+// Remarks:
+//   Currently we only allow inlining of async calls when all awaits are tail
+//   awaits. In that case inlining is simplified as we can just inherit
+//   everything from the inlining call.
+//
+void Compiler::impInheritAsyncContextsFromInliner(GenTreeCall* call)
+{
+    if (!compIsForInlining())
+    {
+        return;
+    }
+
+    GenTreeCall* inlCall = impInlineInfo->iciCall;
+    CallArg*     execArg = inlCall->gtArgs.FindWellKnownArg(WellKnownArg::AsyncExecutionContext);
+    CallArg*     syncArg = inlCall->gtArgs.FindWellKnownArg(WellKnownArg::AsyncSynchronizationContext);
+    assert((execArg == nullptr) == (syncArg == nullptr));
+    if ((execArg == nullptr) || (syncArg == nullptr))
+    {
+        // Caller also has no async contexts handling
+        return;
+    }
+
+    // We are inlining an async call that does not save contexts into a call
+    // that does. We currently allow this only in cases where the tail of the
+    // inlinee can run in the caller's context, and hence we propagate the
+    // caller's context here. It means we do not need to worry about switching
+    // into the caller's context when the inlinee is returning to the caller
+    // after the await.
+    assert(execArg->GetNode()->OperIs(GT_LCL_VAR) && syncArg->GetNode()->OperIs(GT_LCL_VAR));
+    JITDUMP("Inheriting contexts [%06u] and [%06u] from caller node\n", dspTreeID(execArg->GetNode()),
+            dspTreeID(syncArg->GetNode()));
+
+    GenTree* execNode = gtCloneExpr(execArg->GetNode());
+    GenTree* syncNode = gtCloneExpr(syncArg->GetNode());
+    call->gtArgs.PushFront(this, NewCallArg::Primitive(syncNode).WellKnown(WellKnownArg::AsyncSynchronizationContext));
+    call->gtArgs.PushFront(this, NewCallArg::Primitive(execNode).WellKnown(WellKnownArg::AsyncExecutionContext));
+}
+
+//------------------------------------------------------------------------
+// impInsertAsyncArgsForLdvirtftnCall:
+//   Insert async arguments for a call the EE asked to be performed via
+//   ldvirtftn.
 //
 // Arguments:
 //    call - The call
@@ -7050,7 +7110,7 @@ void Compiler::impSetupAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned pref
 //   Should be called before the 'this' arg is inserted, but after other IL args
 //   have been inserted.
 //
-void Compiler::impInsertAsyncContinuationForLdvirtftnCall(GenTreeCall* call)
+void Compiler::impInsertAsyncArgsForLdvirtftnCall(GenTreeCall* call)
 {
     assert(call->AsCall()->IsAsync());
 
@@ -7064,6 +7124,8 @@ void Compiler::impInsertAsyncContinuationForLdvirtftnCall(GenTreeCall* call)
         call->AsCall()->gtArgs.PushBack(this, NewCallArg::Primitive(gtNewNull(), TYP_REF)
                                                   .WellKnown(WellKnownArg::AsyncContinuation));
     }
+
+    impInheritAsyncContextsFromInliner(call);
 }
 
 //------------------------------------------------------------------------

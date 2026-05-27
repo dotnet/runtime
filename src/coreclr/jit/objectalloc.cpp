@@ -1983,7 +1983,6 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
 
     bool       keepChecking                  = true;
     bool       canLclVarEscapeViaParentStack = true;
-    bool       isCopy                        = true;
     bool       edgeAddedForLcl               = false;
     bool       isTrivialUse                  = false;
     bool const isEnumeratorLocal             = lclDsc->lvIsEnumerator;
@@ -1999,11 +1998,9 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
             break;
         }
 
-        GenTree* tree    = parentStack->Top(parentIndex - 1);
-        GenTree* parent  = parentStack->Top(parentIndex);
-        bool     wasCopy = isCopy;
+        GenTree* tree   = parentStack->Top(parentIndex - 1);
+        GenTree* parent = parentStack->Top(parentIndex);
 
-        isCopy                        = false;
         canLclVarEscapeViaParentStack = true;
         keepChecking                  = false;
         isTrivialUse                  = false;
@@ -2038,14 +2035,6 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
                 AddConnGraphEdgeIndex(dstIndex, lclIndex);
                 edgeAddedForLcl               = true;
                 canLclVarEscapeViaParentStack = false;
-
-                // If the source of this store is an enumerator local,
-                // then the dest also becomes an enumerator local.
-                //
-                if (isCopy)
-                {
-                    CheckForEnumeratorUse(lclNum, dstLclNum);
-                }
 
                 // Note that we modelled this store in the connection graph
                 //
@@ -2117,7 +2106,6 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
                 break;
 
             case GT_BOX:
-                isCopy = wasCopy;
                 ++parentIndex;
                 keepChecking = true;
                 break;
