@@ -634,8 +634,8 @@ public:
     void ReleaseFlushGate() { InterlockedExchange(&m_flushInProgress, 0); }
 
 private:
-    void FlushPendingEntries();
-    void FlushPendingEntriesUnderGate();
+    void FlushPendingEntries(LONG waitForSeq);
+    LONG FlushPendingEntriesUnderGate();
 
     PVOID               hHandle;          // OS handle for a published RUNTIME_FUNCTION table
     ULONG_PTR           iRangeStart;      // Start of memory described by this table
@@ -658,6 +658,12 @@ private:
     Crst                m_pendingLock; // Protects the pending table only.
 
     Volatile<LONG>      m_flushInProgress;
+
+    // Sequence counters used to ensure callers wait until their entries are
+    // published to the OS before returning
+    Volatile<LONG>      m_pendingSeq;
+    Volatile<LONG>      m_publishedSeq;
+    CLREvent            m_flushCompleteEvent;
 
     // Whether initial OS registration failed, used to return early in AddToUnwindInfoTable.
     // We cannot just check if hHandle is null because it's temporarily set to NULL
