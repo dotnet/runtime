@@ -273,6 +273,7 @@ EnumerateCertificates(JNIEnv* env, jobject /*KeyStore*/ store, EnumCertificatesC
     //     }
     // }
     jboolean hasNext = (*env)->CallBooleanMethod(env, aliases, g_EnumerationHasMoreElements);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     while (hasNext)
     {
         INIT_LOCALS(loc, alias, entry, cert, publicKey, privateKey);
@@ -311,6 +312,7 @@ EnumerateCertificates(JNIEnv* env, jobject /*KeyStore*/ store, EnumCertificatesC
         RELEASE_LOCALS(loc, env);
 
         hasNext = (*env)->CallBooleanMethod(env, aliases, g_EnumerationHasMoreElements);
+        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     }
 
     ret = SUCCESS;
@@ -365,6 +367,7 @@ ARGS_NON_NULL_ALL static int32_t EnumerateTrustedCertificates(
     //     }
     // }
     jboolean hasNext = (*env)->CallBooleanMethod(env, aliases, g_EnumerationHasMoreElements);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     while (hasNext)
     {
         jstring alias = (*env)->CallObjectMethod(env, aliases, g_EnumerationNextElement);
@@ -373,17 +376,24 @@ ARGS_NON_NULL_ALL static int32_t EnumerateTrustedCertificates(
         if (filter == NULL || filter(env, alias))
         {
             jobject cert = (*env)->CallObjectMethod(env, store, g_KeyStoreGetCertificate, alias);
-            if (cert != NULL && !CheckJNIExceptions(env))
+            if (cert != NULL)
             {
-                cert = ToGRef(env, cert);
-                cb(cert, context);
+                if (CheckJNIExceptions(env))
+                {
+                    (*env)->DeleteLocalRef(env, cert);
+                }
+                else
+                {
+                    cert = ToGRef(env, cert);
+                    cb(cert, context);
+                }
             }
         }
 
-        hasNext = (*env)->CallBooleanMethod(env, aliases, g_EnumerationHasMoreElements);
-
     loop_cleanup:
         (*env)->DeleteLocalRef(env, alias);
+        hasNext = (*env)->CallBooleanMethod(env, aliases, g_EnumerationHasMoreElements);
+        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     }
 
     ret = SUCCESS;
@@ -431,8 +441,11 @@ jobject /*KeyStore*/ AndroidCryptoNative_X509StoreOpenDefault(void)
     (*env)->CallVoidMethod(env, store, g_KeyStoreLoad, NULL, NULL);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     ret = ToGRef(env, store);
+    // ToGRef deletes the input local reference.
+    store = NULL;
 
 cleanup:
+    ReleaseLRef(env, store);
     (*env)->DeleteLocalRef(env, storeType);
     return ret;
 }
@@ -449,6 +462,7 @@ int32_t AndroidCryptoNative_X509StoreRemoveCertificate(jobject /*KeyStore*/ stor
     if (!ContainsMatchingCertificateForAlias(env, store, cert, alias))
     {
         // Certificate is not in store - nothing to do
+        (*env)->DeleteLocalRef(env, alias);
         return SUCCESS;
     }
 
