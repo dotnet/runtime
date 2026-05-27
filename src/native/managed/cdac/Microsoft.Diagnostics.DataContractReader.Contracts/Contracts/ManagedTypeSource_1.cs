@@ -16,6 +16,7 @@ internal sealed class ManagedTypeSource_1 : IManagedTypeSource
     private readonly Dictionary<string, Target.TypeInfo> _typeInfoCache = new();
     private readonly Dictionary<string, TypeHandle> _typeHandleCache = new();
     private readonly Dictionary<(string Fqn, string FieldName), TargetPointer> _fieldDescCache = new();
+    private bool _inSearch;
 
     public ManagedTypeSource_1(Target target)
     {
@@ -42,11 +43,28 @@ internal sealed class ManagedTypeSource_1 : IManagedTypeSource
         if (_typeInfoCache.TryGetValue(fullyQualifiedName, out info))
             return true;
 
-        if (!TryBuildTypeInfo(fullyQualifiedName, out info))
+        // Re-entrancy guard: if we're already searching for a type and we recurse
+        // (e.g., LayoutPair -> ManagedTypeSource -> IData -> LayoutPair), short-circuit
+        // to break the cycle. The outer search will continue and may succeed.
+        if (_inSearch)
+        {
+            info = default;
             return false;
+        }
 
-        _typeInfoCache[fullyQualifiedName] = info;
-        return true;
+        _inSearch = true;
+        try
+        {
+            if (!TryBuildTypeInfo(fullyQualifiedName, out info))
+                return false;
+
+            _typeInfoCache[fullyQualifiedName] = info;
+            return true;
+        }
+        finally
+        {
+            _inSearch = false;
+        }
     }
 
     public TypeHandle GetTypeHandle(string fullyQualifiedName)
