@@ -30,7 +30,7 @@ for zipFile in "$BATCH_DIR"/*.zip; do
     echo "========================= BEGIN $suiteName ============================="
 
     mkdir -p "$suiteDir"
-    unzip -q -o "$zipFile" -d "$suiteDir"
+    python3 -c "import zipfile,sys; zipfile.ZipFile(sys.argv[1]).extractall(sys.argv[2])" "$zipFile" "$suiteDir"
     unzipExitCode=$?
     if [[ $unzipExitCode -ne 0 ]]; then
         echo "ERROR: Failed to extract $zipFile (exit code: $unzipExitCode)"
