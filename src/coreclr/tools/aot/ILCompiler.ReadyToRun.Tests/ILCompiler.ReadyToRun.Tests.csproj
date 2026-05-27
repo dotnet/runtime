@@ -24,6 +24,24 @@
     <ProjectReference Include="../crossgen2/crossgen2_inbuild.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
+  <!-- Build the full set of JITs (including the WASM JIT) before crossgen2_inbuild publishes,
+       so its publish layout picks them up and the WebCIL R2R test has a wasm JIT available.
+       Use an explicit BeforeTargets call (rather than a sibling ProjectReference) to guarantee
+       ordering vs. crossgen2_inbuild, which would otherwise build in parallel and publish before
+       these JITs land in the CoreCLR artifacts directory. -->
+  <PropertyGroup>
+    <_BuildJitsProperties>ClrAllJitsSubset=true;ClrWasmJitSubset=true;Configuration=$(CoreCLRConfiguration)</_BuildJitsProperties>
+    <_BuildJitsProperties Condition="!$([MSBuild]::IsOsPlatform(Windows))">$(_BuildJitsProperties);Ninja=true</_BuildJitsProperties>
+  </PropertyGroup>
+
+  <Target Name="BuildAllJitsForReadyToRunTests"
+          BeforeTargets="ResolveProjectReferences"
+          Condition="'$(DesignTimeBuild)' != 'true'">
+    <MSBuild Projects="$(CoreClrProjectRoot)runtime.proj"
+             Targets="Build"
+             Properties="$(_BuildJitsProperties)" />
+  </Target>
+
   <!-- Test case source files are embedded as resources so we can compile them with Roslyn at test time.
        Exclude subdirectory sources from compilation since they are compiled in-memory by R2RTestCaseCompiler. -->
   <ItemGroup>
