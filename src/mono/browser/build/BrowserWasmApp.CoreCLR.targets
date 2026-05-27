@@ -597,8 +597,9 @@
       <!-- Extra user flags -->
       <_EmccLinkStepArgs Include="$(EmccExtraLDFlags)" />
 
-      <!-- protect __stack_pointer -->
+      <!-- -lexports.js to set MINIFY_WASM_EXPORT_NAMES=0 -->
       <_EmccLinkStepArgs Include="-lexports.js" />
+      <!-- Ensure the __stack_pointer global is exported -->
       <_EmccLinkStepArgs Include="-Wl,--export=__stack_pointer" />
 
       <!-- Linker error limit -->
