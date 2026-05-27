@@ -4,6 +4,9 @@
 import type { VoidPtr } from "../../Common/JavaScript/types/emscripten";
 import { dotnetApi, dotnetLogger } from "./cross-module";
 
+// Minimum number of consumed entries before compacting the receive queue
+const RECV_QUEUE_COMPACT_THRESHOLD = 128;
+
 export class DiagnosticConnectionBase {
     protected messagesToSend: Uint8Array[] = [];
     protected messagesReceived: Uint8Array[] = [];
@@ -30,7 +33,8 @@ export class DiagnosticConnectionBase {
         view.set(message.subarray(0, bytesRead), buffer as any >>> 0);
         if (bytesRead === message.length) {
             this.messagesReceivedHead++;
-            if (this.messagesReceivedHead > 128 && this.messagesReceivedHead >= (this.messagesReceived.length >>> 1)) {
+            // Compact when enough dead slots accumulate (>128) and they represent ≥50% of the array
+            if (this.messagesReceivedHead > RECV_QUEUE_COMPACT_THRESHOLD && this.messagesReceivedHead >= (this.messagesReceived.length >>> 1)) {
                 this.messagesReceived = this.messagesReceived.slice(this.messagesReceivedHead);
                 this.messagesReceivedHead = 0;
             }

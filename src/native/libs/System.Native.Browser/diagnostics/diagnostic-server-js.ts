@@ -150,6 +150,9 @@ export function setupJsClient(client: IDiagnosticClient, startup?: boolean) {
         throw new Error("Runtime is not running");
     }
     if (startup) {
+        if (startupJsClient) {
+            throw new Error("startup diagnostic client already registered");
+        }
         startupJsClient = client;
     } else {
         if (nextJsClient.isDone) {

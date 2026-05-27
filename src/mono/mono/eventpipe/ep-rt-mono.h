@@ -642,7 +642,7 @@ inline
 uint32_t
 ep_rt_config_value_get_sampling_rate (void)
 {
-	uint32_t value_uint32_t = G_MAXUINT32;
+	uint32_t value_uint32_t = 0;
 	gchar *value = g_getenv ("DOTNET_EventPipeThreadSamplingRate");
 	if (!value)
 		value = g_getenv ("COMPlus_EventPipeThreadSamplingRate");

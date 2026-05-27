@@ -1498,10 +1498,8 @@ ep_init (void)
 #endif // PERFTRACING_DISABLE_THREADS
 
 	// Allow overriding the sampling rate via DOTNET_EventPipeThreadSamplingRate (in milliseconds).
-	// UINT32_MAX is the sentinel for "unset" (use default). 0 means maximum frequency
-	// (sample at every opportunity — 0 nanosecond interval).
 	uint32_t configured_rate_ms = ep_rt_config_value_get_sampling_rate ();
-	if (configured_rate_ms != UINT32_MAX)
+	if (configured_rate_ms > 0)
 		ep_sample_profiler_set_sampling_rate ((uint64_t)configured_rate_ms * 1000000);
 	else
 		ep_sample_profiler_set_sampling_rate (default_profiler_sample_rate_in_nanoseconds);
