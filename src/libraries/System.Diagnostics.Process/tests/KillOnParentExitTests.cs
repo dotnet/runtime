@@ -201,7 +201,7 @@ namespace System.Diagnostics.Tests
             }
             finally
             {
-                try { grandchild.Kill(); } catch { }
+                grandchild.Kill();
             }
         }
 

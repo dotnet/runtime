@@ -101,25 +101,34 @@ namespace System.Diagnostics
             // PR_SET_PDEATHSIG (KillOnParentExit) to be killed by the kernel immediately,
             // making it impossible to discover their descendants afterward.
             List<Process> stoppedProcesses = [];
-            StopTree(ref exceptions, stoppedProcesses);
-
-            // Now kill all stopped processes.
-            foreach (Process process in stoppedProcesses)
+            try
             {
-                int killResult = Interop.Sys.Kill(process._processId, Interop.Sys.GetPlatformSignalNumber(PosixSignal.SIGKILL));
-                if (killResult != 0)
+                StopTree(ref exceptions, stoppedProcesses);
+            }
+            catch (Exception ex)
+            {
+                (exceptions ??= new List<Exception>()).Add(ex);
+            }
+            finally
+            {
+                // Kill all stopped processes even if StopTree threw partway through.
+                foreach (Process process in stoppedProcesses)
                 {
-                    Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                    // Ignore 'process no longer exists' error.
-                    if (errorInfo.Error != Interop.Error.ESRCH)
+                    int killResult = Interop.Sys.Kill(process._processId, Interop.Sys.GetPlatformSignalNumber(PosixSignal.SIGKILL));
+                    if (killResult != 0)
                     {
-                        (exceptions ??= new List<Exception>()).Add(new Win32Exception(errorInfo.RawErrno));
+                        Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                        // Ignore 'process no longer exists' error.
+                        if (errorInfo.Error != Interop.Error.ESRCH)
+                        {
+                            (exceptions ??= new List<Exception>()).Add(new Win32Exception(errorInfo.RawErrno));
+                        }
                     }
-                }
 
-                if (process != this)
-                {
-                    process.Dispose();
+                    if (process != this)
+                    {
+                        process.Dispose();
+                    }
                 }
             }
         }
@@ -129,12 +138,17 @@ namespace System.Diagnostics
         /// Stopping (SIGSTOP) before enumerating children ensures we can discover the entire tree
         /// before any kill signals cause cascading terminations.
         /// </summary>
-        private void StopTree(ref List<Exception>? exceptions, List<Process> stoppedProcesses)
+        /// <returns>
+        /// <see langword="true"/> if the process was successfully stopped and added to
+        /// <paramref name="stoppedProcesses"/>; <see langword="false"/> if the process had already
+        /// exited or could not be stopped, in which case the caller is responsible for disposing it.
+        /// </returns>
+        private bool StopTree(ref List<Exception>? exceptions, List<Process> stoppedProcesses)
         {
             // If the process has exited, we can no longer determine its children.
             if (GetHasExited(refresh: false))
             {
-                return;
+                return false;
             }
 
             // Stop the process, so it won't start additional children.
@@ -148,7 +162,7 @@ namespace System.Diagnostics
                 {
                     (exceptions ??= new List<Exception>()).Add(new Win32Exception(errorInfo.RawErrno));
                 }
-                return;
+                return false;
             }
 
             stoppedProcesses.Add(this);
@@ -156,8 +170,13 @@ namespace System.Diagnostics
             List<Process> children = GetChildProcesses();
             foreach (Process childProcess in children)
             {
-                childProcess.StopTree(ref exceptions, stoppedProcesses);
+                if (!childProcess.StopTree(ref exceptions, stoppedProcesses))
+                {
+                    childProcess.Dispose();
+                }
             }
+
+            return true;
         }
 
         /// <summary>Discards any information about the associated process.</summary>
