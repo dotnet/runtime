@@ -20,6 +20,7 @@ namespace System.Net.Http
         private const int PropagatorStateInjectedByDiagnosticsHandler = 2;
         private const int MessageDisposed = 4;
         private const int AuthDisabled = 8;
+        private const int ExperimentalDoNotPartitionConnectionPoolBySni = 16;
 
         // Track whether the message has been sent.
         // The message shouldn't be sent again if this field is equal to MessageAlreadySent.
@@ -170,7 +171,7 @@ namespace System.Net.Http
             return sb.ToString();
         }
 
-        internal bool MarkAsSent() => Interlocked.CompareExchange(ref _sendStatus, MessageAlreadySent, MessageNotYetSent) == MessageNotYetSent;
+        internal bool MarkAsSent() => (Interlocked.Or(ref _sendStatus, MessageAlreadySent) & MessageAlreadySent) == 0;
 
         internal bool WasSentByHttpClient() => (_sendStatus & MessageAlreadySent) != 0;
 
@@ -181,6 +182,8 @@ namespace System.Net.Http
         internal void DisableAuth() => _sendStatus |= AuthDisabled;
 
         internal bool IsAuthDisabled() => (_sendStatus & AuthDisabled) != 0;
+
+        internal bool DoNotPartitionConnectionPoolBySni() => (_sendStatus & ExperimentalDoNotPartitionConnectionPoolBySni) != 0;
 
         private bool Disposed
         {
