@@ -32,6 +32,15 @@ namespace System.ComponentModel.DataAnnotations
         public string ThisKey { get { throw null; } }
         public System.Collections.Generic.IEnumerable<string> ThisKeyMembers { get { throw null; } }
     }
+    public abstract partial class AsyncValidationAttribute : System.ComponentModel.DataAnnotations.ValidationAttribute
+    {
+        protected AsyncValidationAttribute() { }
+        protected AsyncValidationAttribute(System.Func<string> errorMessageAccessor) { }
+        protected AsyncValidationAttribute(string errorMessage) { }
+        public System.Threading.Tasks.Task<System.ComponentModel.DataAnnotations.ValidationResult?> GetValidationResultAsync(object? value, System.ComponentModel.DataAnnotations.ValidationContext validationContext, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        protected abstract override System.ComponentModel.DataAnnotations.ValidationResult? IsValid(object? value, System.ComponentModel.DataAnnotations.ValidationContext validationContext);
+        protected abstract System.Threading.Tasks.Task<System.ComponentModel.DataAnnotations.ValidationResult?> IsValidAsync(object? value, System.ComponentModel.DataAnnotations.ValidationContext validationContext, System.Threading.CancellationToken cancellationToken);
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property, AllowMultiple=false)]
     public partial class Base64StringAttribute : System.ComponentModel.DataAnnotations.ValidationAttribute
     {
@@ -195,15 +204,6 @@ namespace System.ComponentModel.DataAnnotations
         public string? PresentationLayer { get { throw null; } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
-    }
-    public abstract partial class AsyncValidationAttribute : System.ComponentModel.DataAnnotations.ValidationAttribute
-    {
-        protected AsyncValidationAttribute() { }
-        protected AsyncValidationAttribute(System.Func<string> errorMessageAccessor) { }
-        protected AsyncValidationAttribute(string errorMessage) { }
-        public System.Threading.Tasks.Task<System.ComponentModel.DataAnnotations.ValidationResult?> GetValidationResultAsync(object? value, System.ComponentModel.DataAnnotations.ValidationContext validationContext, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        protected abstract override System.ComponentModel.DataAnnotations.ValidationResult? IsValid(object? value, System.ComponentModel.DataAnnotations.ValidationContext validationContext);
-        protected abstract System.Threading.Tasks.Task<System.ComponentModel.DataAnnotations.ValidationResult?> IsValidAsync(object? value, System.ComponentModel.DataAnnotations.ValidationContext validationContext, System.Threading.CancellationToken cancellationToken);
     }
     public partial interface IAsyncValidatableObject : System.ComponentModel.DataAnnotations.IValidatableObject
     {

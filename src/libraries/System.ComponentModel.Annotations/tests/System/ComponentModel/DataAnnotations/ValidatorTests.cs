@@ -1605,12 +1605,52 @@ namespace System.ComponentModel.DataAnnotations.Tests
             }
         }
 
+        [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Parameter, AllowMultiple = true)]
+        public class AsyncConcurrencyProbeAttribute : AsyncValidationAttribute
+        {
+            public static int ConcurrentCount;
+            public static TaskCompletionSource<bool> AllRunningGate = new();
+            public static int ExpectedCount;
+
+            public static void Reset(int expectedCount)
+            {
+                ConcurrentCount = 0;
+                AllRunningGate = new TaskCompletionSource<bool>();
+                ExpectedCount = expectedCount;
+            }
+
+            protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
+                => throw new InvalidOperationException("Use async validation");
+
+            protected override async Task<ValidationResult?> IsValidAsync(
+                object? value, ValidationContext validationContext, CancellationToken cancellationToken)
+            {
+                int current = Interlocked.Increment(ref ConcurrentCount);
+                if (current >= ExpectedCount)
+                    AllRunningGate.TrySetResult(true);
+
+                await AllRunningGate.Task.WaitAsync(TimeSpan.FromSeconds(5), cancellationToken);
+                Interlocked.Decrement(ref ConcurrentCount);
+
+                return ValidationResult.Success;
+            }
+        }
+
         public class HasMultipleAsyncProperties
         {
             [AsyncDelayedSucceeds]
             public string Prop1 { get; set; } = "value";
 
             [AsyncDelayedSucceeds]
+            public string Prop2 { get; set; } = "value";
+        }
+
+        public class HasMultipleConcurrencyProbeProperties
+        {
+            [AsyncConcurrencyProbe]
+            public string Prop1 { get; set; } = "value";
+
+            [AsyncConcurrencyProbe]
             public string Prop2 { get; set; } = "value";
         }
 
@@ -2635,16 +2675,11 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [Fact]
         public static async Task TryValidateObjectAsync_MultipleAsyncProperties_RunInParallel()
         {
-            var obj = new HasMultipleAsyncProperties();
+            AsyncConcurrencyProbeAttribute.Reset(expectedCount: 2);
+            var obj = new HasMultipleConcurrencyProbeProperties();
             var ctx = new ValidationContext(obj);
             var results = new List<ValidationResult>();
-            var sw = System.Diagnostics.Stopwatch.StartNew();
             Assert.True(await Validator.TryValidateObjectAsync(obj, ctx, results, true));
-            sw.Stop();
-
-            // If parallel: ~100ms. If sequential: ~200ms (2 properties × 100ms each).
-            Assert.True(sw.ElapsedMilliseconds < 180,
-                $"Properties should validate in parallel. Elapsed: {sw.ElapsedMilliseconds}ms");
             Assert.Empty(results);
         }
 
@@ -2661,16 +2696,12 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [Fact]
         public static async Task TryValidateValueAsync_MultipleAsyncAttrs_RunInParallel()
         {
+            AsyncConcurrencyProbeAttribute.Reset(expectedCount: 2);
             var ctx = new ValidationContext(new object()) { MemberName = "TestProp" };
             var results = new List<ValidationResult>();
-            var attrs = new ValidationAttribute[] { new AsyncDelayedSucceedsAttribute(), new AsyncDelayedSucceedsAttribute() };
-            var sw = System.Diagnostics.Stopwatch.StartNew();
+            var attrs = new ValidationAttribute[] { new AsyncConcurrencyProbeAttribute(), new AsyncConcurrencyProbeAttribute() };
             Assert.True(await Validator.TryValidateValueAsync("Valid Value", ctx, results, attrs));
-            sw.Stop();
-
-            // If parallel: ~100ms. If sequential: ~200ms.
-            Assert.True(sw.ElapsedMilliseconds < 180,
-                $"Async attributes should validate in parallel. Elapsed: {sw.ElapsedMilliseconds}ms");
+            Assert.Empty(results);
         }
 
         [Fact]

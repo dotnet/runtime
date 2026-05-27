@@ -744,6 +744,14 @@ namespace System.ComponentModel.DataAnnotations
                         if (breakOnFirstError)
                         {
                             linkedCts.Cancel();
+
+                            // Observe remaining tasks to prevent UnobservedTaskException
+                            foreach (Task<List<ValidationError>> remaining in tasks)
+                            {
+                                try { await remaining.ConfigureAwait(false); }
+                                catch { }
+                            }
+
                             break;
                         }
                     }
@@ -868,6 +876,14 @@ namespace System.ComponentModel.DataAnnotations
                         if (breakOnFirstError)
                         {
                             linkedCts.Cancel();
+
+                            // Observe remaining tasks to prevent UnobservedTaskException
+                            foreach (var remaining in tasks)
+                            {
+                                try { await remaining.ConfigureAwait(false); }
+                                catch { }
+                            }
+
                             break;
                         }
                     }
