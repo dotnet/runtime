@@ -5,9 +5,9 @@ namespace Microsoft.Diagnostics.DataContractReader.DataGenerator;
 
 /// <summary>
 /// Source for the <c>TypeNameResolver</c> helper emitted into each consuming
-/// assembly via <c>RegisterPostInitializationOutput</c>. Resolves TypeHandle,
-/// static field addresses, and thread-static field addresses across a cascade
-/// of candidate type names.
+/// assembly via <c>RegisterSourceOutput</c> (gated by CompilationProvider to
+/// avoid duplicate symbols). Resolves TypeHandle, static field addresses, and
+/// thread-static field addresses across a cascade of candidate type names.
 /// </summary>
 internal static class TypeNameResolverSource
 {
