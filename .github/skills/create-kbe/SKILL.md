@@ -235,16 +235,8 @@ understanding the draft.
 When linking to a draft file in a user-facing message or confirmation question,
 include both:
 
-- a Markdown link using a `file:///` URI when possible, and
+- a clickable local-file link when the UI supports one, and
 - the plain absolute path.
-
-Example:
-
-```markdown
-[Open draft](file:///<path>/issue-draft.md)
-
-`<path>\issue-draft.md`
-```
 
 ### Dry-run mode
 
@@ -319,4 +311,3 @@ For every unhandled failure, provide:
 - failing leg / build context,
 - why it was not handled,
 - what evidence or follow-up would be needed to handle it.
-
