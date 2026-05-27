@@ -30,7 +30,7 @@ public class MethodDescTests
                 Size = methodDescBuilder.AsyncMethodDataSize,
                 Fields = new Dictionary<string, Target.FieldInfo>
                 {
-                    [nameof(Data.AsyncMethodData.Flags)] = new Target.FieldInfo { Offset = 0, Type = DataType.Unknown },
+                    [nameof(Data.AsyncMethodData.Flags)] = new Target.FieldInfo { Offset = 0 },
                 },
             },
             [DataType.ArrayMethodDesc] = new Target.TypeInfo { Size = methodDescBuilder.ArrayMethodDescSize },

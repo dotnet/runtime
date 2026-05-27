@@ -287,6 +287,7 @@ namespace System.Diagnostics.Tests
             RemoteExecutor.IsSupported;
 
         [ConditionalTheory(typeof(ProcessTests), nameof(IsNotNanoServerAndRemoteExecutorSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/126936", TestPlatforms.Windows)]
         [InlineData(true)]
         [InlineData(false)]
         public void StartDetached_GrandchildSurvivesSignalingParent(bool enable)
@@ -379,6 +380,23 @@ namespace System.Diagnostics.Tests
         {
             CreateDefaultProcess();
             Assert.Throws<ArgumentOutOfRangeException>("timeout", () => _process.WaitForExit(TimeSpan.FromMilliseconds(milliseconds)));
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(-2)]
+        [InlineData(-10)]
+        [InlineData(int.MinValue)]
+        public void TestWaitForExitInt_Validation(int milliseconds)
+        {
+            Process process = CreateDefaultProcess();
+            try
+            {
+                Assert.Throws<ArgumentOutOfRangeException>("milliseconds", () => process.WaitForExit(milliseconds));
+            }
+            finally
+            {
+                process.Kill();
+            }
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]

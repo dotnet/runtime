@@ -19,8 +19,8 @@ public sealed class ExecutionManager_2 : IExecutionManager
 
     public CodeBlockHandle? GetCodeBlockHandle(TargetCodePointer ip) => _executionManagerCore.GetCodeBlockHandle(ip);
     public TargetPointer GetMethodDesc(CodeBlockHandle codeInfoHandle) => _executionManagerCore.GetMethodDesc(codeInfoHandle);
-    public TargetCodePointer GetStartAddress(CodeBlockHandle codeInfoHandle) => _executionManagerCore.GetStartAddress(codeInfoHandle);
-    public TargetCodePointer GetFuncletStartAddress(CodeBlockHandle codeInfoHandle) => _executionManagerCore.GetFuncletStartAddress(codeInfoHandle);
+    public TargetPointer GetStartAddress(CodeBlockHandle codeInfoHandle) => _executionManagerCore.GetStartAddress(codeInfoHandle);
+    public TargetPointer GetFuncletStartAddress(CodeBlockHandle codeInfoHandle) => _executionManagerCore.GetFuncletStartAddress(codeInfoHandle);
     public void GetMethodRegionInfo(CodeBlockHandle codeInfoHandle, out uint hotSize, out TargetPointer coldStart, out uint coldSize) => _executionManagerCore.GetMethodRegionInfo(codeInfoHandle, out hotSize, out coldStart, out coldSize);
     public TargetPointer NonVirtualEntry2MethodDesc(TargetCodePointer entrypoint) => _executionManagerCore.NonVirtualEntry2MethodDesc(entrypoint);
     public bool IsFunclet(CodeBlockHandle codeInfoHandle) => _executionManagerCore.IsFunclet(codeInfoHandle);
@@ -30,6 +30,7 @@ public sealed class ExecutionManager_2 : IExecutionManager
     public TargetPointer GetDebugInfo(CodeBlockHandle codeInfoHandle, out bool hasFlagByte) => _executionManagerCore.GetDebugInfo(codeInfoHandle, out hasFlagByte);
     public void GetGCInfo(CodeBlockHandle codeInfoHandle, out TargetPointer gcInfo, out uint gcVersion) => _executionManagerCore.GetGCInfo(codeInfoHandle, out gcInfo, out gcVersion);
     public TargetNUInt GetRelativeOffset(CodeBlockHandle codeInfoHandle) => _executionManagerCore.GetRelativeOffset(codeInfoHandle);
+    public uint GetStackParameterSize(CodeBlockHandle codeInfoHandle) => _executionManagerCore.GetStackParameterSize(codeInfoHandle);
     public List<ExceptionClauseInfo> GetExceptionClauses(CodeBlockHandle codeInfoHandle) => _executionManagerCore.GetExceptionClauses(codeInfoHandle);
     public JitManagerInfo GetEEJitManagerInfo() => _executionManagerCore.GetEEJitManagerInfo();
     public IEnumerable<ICodeHeapInfo> GetCodeHeapInfos() => _executionManagerCore.GetCodeHeapInfos();

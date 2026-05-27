@@ -147,7 +147,8 @@ internal readonly struct Thread_1 : IThread
             thread.CurrentCustomDebuggerNotification.Handle,
             thread.LastThrownObjectIsUnhandled != 0,
             hasUnhandledException,
-            thread.LinkNext);
+            thread.LinkNext,
+            thread.ThreadHandle);
     }
 
     void IThread.GetThreadAllocContext(TargetPointer threadPointer, out long allocBytes, out long allocBytesLoh)
@@ -325,11 +326,48 @@ internal readonly struct Thread_1 : IThread
             return bytes;
         }
 
-        if (!_target.TryGetThreadContext(thread.OSId.Value, contextFlags, buffer))
+        if (_target.TryGetThreadContext(thread.OSId.Value, contextFlags, buffer))
         {
-            throw new InvalidOperationException($"GetThreadContext failed for thread {thread.OSId.Value}");
+            return bytes;
         }
 
-        return bytes;
+        // Fall back to deriving a context from the explicit Frame chain stored in the Thread object.
+        return GetContextFromFrames(threadPointer);
+    }
+
+    private byte[] GetContextFromFrames(TargetPointer threadPointer)
+    {
+        IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(_target);
+
+        ThreadData threadData = ((IThread)this).GetThreadData(threadPointer);
+        FrameIterator iterator = new FrameIterator(_target, threadData);
+        while (iterator.IsValid())
+        {
+            // For InterpreterFrame, fill the context from the top InterpMethodContextFrame
+            // (matches native InterpreterFrame::SetContextToInterpMethodContextFrame).
+            if (iterator.GetCurrentFrameType() == FrameType.InterpreterFrame)
+            {
+                context.Clear();
+                iterator.UpdateContextFromCurrentFrame(context);
+                return context.GetBytes();
+            }
+
+            // For other frames, look for the first (deepest) frame that yields a context
+            // with both SP and PC set (e.g. RedirectedThreadFrame, InlinedCallFrame,
+            // DynamicHelperFrame).
+            context.Clear();
+            iterator.UpdateContextFromCurrentFrame(context);
+            if (context.StackPointer.Value != 0 && context.InstructionPointer.Value != 0)
+            {
+                context.RawContextFlags = context.FullContextFlags;
+                return context.GetBytes();
+            }
+
+            iterator.Next();
+        }
+
+        // The thread is not running managed code: return a zeroed context.
+        context.Clear();
+        return context.GetBytes();
     }
 }

@@ -46,6 +46,9 @@ CDAC_TYPE_FIELD(Thread, T_POINTER, CachedStackLimit, cdac_data<Thread>::CachedSt
 CDAC_TYPE_FIELD(Thread, T_POINTER, ExceptionTracker, cdac_data<Thread>::ExceptionTracker)
 CDAC_TYPE_FIELD(Thread, T_UINT32, DebuggerControlledThreadState, cdac_data<Thread>::DebuggerControlledThreadState)
 CDAC_TYPE_FIELD(Thread, T_POINTER, DebuggerFilterContext, cdac_data<Thread>::DebuggerFilterContext)
+#ifdef TARGET_WINDOWS
+CDAC_TYPE_FIELD(Thread, T_POINTER, ThreadHandle, cdac_data<Thread>::ThreadHandle)
+#endif // TARGET_WINDOWS
 CDAC_TYPE_FIELD(Thread, TYPE(ObjectHandle), ExposedObject, cdac_data<Thread>::ExposedObject)
 CDAC_TYPE_FIELD(Thread, TYPE(ObjectHandle), LastThrownObject, cdac_data<Thread>::LastThrownObject)
 CDAC_TYPE_FIELD(Thread, T_UINT32, LastThrownObjectIsUnhandled, cdac_data<Thread>::LastThrownObjectIsUnhandled)
@@ -416,6 +419,13 @@ CDAC_TYPE_FIELD(ArrayListBlock, T_POINTER, Next, cdac_data<ArrayListBase>::Next)
 CDAC_TYPE_FIELD(ArrayListBlock, T_UINT32, Size, cdac_data<ArrayListBase>::Size)
 CDAC_TYPE_FIELD(ArrayListBlock, T_POINTER, ArrayStart, cdac_data<ArrayListBase>::ArrayStart)
 CDAC_TYPE_END(ArrayListBlock)
+
+CDAC_TYPE_BEGIN(VASigCookie)
+CDAC_TYPE_INDETERMINATE(VASigCookie)
+CDAC_TYPE_FIELD(VASigCookie, T_UINT32, SizeOfArgs, offsetof(VASigCookie, sizeOfArgs))
+CDAC_TYPE_FIELD(VASigCookie, T_POINTER, SignaturePointer, cdac_data<VASigCookie>::SignaturePointer)
+CDAC_TYPE_FIELD(VASigCookie, T_UINT32, SignatureLength, cdac_data<VASigCookie>::SignatureLength)
+CDAC_TYPE_END(VASigCookie)
 
 // RuntimeTypeSystem
 
@@ -1060,6 +1070,8 @@ CDAC_TYPE_BEGIN(DebuggerEval)
 CDAC_TYPE_SIZE(sizeof(DebuggerEval))
 CDAC_TYPE_FIELD(DebuggerEval, EXTERN_TYPE(Context), TargetContext, offsetof(DebuggerEval, m_context))
 CDAC_TYPE_FIELD(DebuggerEval, T_BOOL, EvalUsesHijack, offsetof(DebuggerEval, m_evalUsesHijack))
+CDAC_TYPE_FIELD(DebuggerEval, T_UINT32, MethodToken, offsetof(DebuggerEval, m_methodToken))
+CDAC_TYPE_FIELD(DebuggerEval, T_POINTER, AssemblyPtr, offsetof(DebuggerEval, m_pAssembly))
 CDAC_TYPE_END(DebuggerEval)
 #endif // DEBUGGING_SUPPORTED
 
@@ -1529,6 +1541,7 @@ CDAC_GLOBAL(FieldOffsetDynamicRVA, T_UINT32, FIELD_OFFSET_DYNAMIC_RVA)
 CDAC_GLOBAL_POINTER(ClrNotificationArguments, &::g_clrNotificationArguments)
 CDAC_GLOBAL_POINTER(ArrayBoundsZero, cdac_data<ArrayBase>::ArrayBoundsZero)
 CDAC_GLOBAL_POINTER(ContinuationMethodTable, &::g_pContinuationClassIfSubTypeCreated)
+CDAC_GLOBAL_POINTER(ContinuationSingletonEEClass, &::g_singletonContinuationEEClass)
 CDAC_GLOBAL_POINTER(ExceptionMethodTable, &::g_pExceptionClass)
 CDAC_GLOBAL_POINTER(FreeObjectMethodTable, &::g_pFreeObjectMethodTable)
 CDAC_GLOBAL_POINTER(ObjectMethodTable, &::g_pObjectClass)
