@@ -221,6 +221,7 @@ endif(CLR_CMAKE_HOST_OS STREQUAL emscripten)
 
 if(CLR_CMAKE_TARGET_OS STREQUAL wasi)
     set(CLR_CMAKE_HOST_WASI 1)
+    set(CLR_CMAKE_HOST_UNIX 1)
 endif(CLR_CMAKE_TARGET_OS STREQUAL wasi)
 
 #--------------------------------------------
@@ -432,6 +433,7 @@ if(CLR_CMAKE_TARGET_OS STREQUAL emscripten OR CLR_CMAKE_TARGET_OS STREQUAL brows
 endif(CLR_CMAKE_TARGET_OS STREQUAL emscripten OR CLR_CMAKE_TARGET_OS STREQUAL browser)
 
 if(CLR_CMAKE_TARGET_OS STREQUAL wasi)
+    set(CLR_CMAKE_TARGET_UNIX 1)
     set(CLR_CMAKE_TARGET_WASI 1)
 endif(CLR_CMAKE_TARGET_OS STREQUAL wasi)
 
@@ -517,7 +519,7 @@ else()
             add_compile_options(-msimd128)
         endif()
         if(CLR_CMAKE_TARGET_WASI)
-            add_compile_options(-fexceptions)
+            add_compile_options(-fwasm-exceptions)
         endif()
     endif()
 endif()

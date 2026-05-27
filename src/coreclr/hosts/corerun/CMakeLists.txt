@@ -6,7 +6,7 @@ set(CORERUN_IN_BROWSER 0)
 
 if(CLR_CMAKE_HOST_WIN32)
     add_definitions(-DFX_VER_INTERNALNAME_STR=corerun.exe)
-else()
+elseif(NOT CLR_CMAKE_TARGET_WASM)
     include(configure.cmake)
 endif()
 
@@ -36,9 +36,13 @@ if(CLR_CMAKE_HOST_WIN32)
         target_link_options(corerun PRIVATE "/CETCOMPAT")
     endif()
 else()
-    target_link_libraries(corerun PRIVATE ${CMAKE_DL_LIBS})
-    # Required to expose symbols for global symbol discovery
-    target_link_libraries(corerun PRIVATE -rdynamic)
+    if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
+        target_link_libraries(corerun PRIVATE ${CMAKE_DL_LIBS})
+        # Required to expose symbols for global symbol discovery
+        target_link_libraries(corerun PRIVATE -rdynamic)
+    elseif(CLR_CMAKE_TARGET_WASI)
+        target_link_libraries(corerun PRIVATE -ldl)
+    endif()
 
     # Android implements pthread natively.
     # WASM, linking against pthreads indicates Node.js workers are
@@ -114,6 +118,17 @@ else()
                     -sNODERAWFS=1
                     -lnodefs.js)
             endif()
+        elseif (CLR_CMAKE_TARGET_WASI)
+            target_link_options(corerun PRIVATE
+                -fwasm-exceptions
+                -Wl,-z,stack-size=8388608
+                -Wl,--initial-memory=52428800
+                -L$ENV{WASI_SDK_PATH}/share/wasi-sysroot/lib/wasm32-wasip2)
+            target_link_libraries(corerun PRIVATE
+                -lwasi-emulated-process-clocks
+                -lwasi-emulated-signal
+                -lwasi-emulated-getpid
+                -lunwind)
         endif()
 
         if (CORERUN_IN_BROWSER)

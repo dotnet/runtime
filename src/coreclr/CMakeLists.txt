@@ -30,8 +30,26 @@ if(CORECLR_SET_RPATH)
     set(MACOSX_RPATH ON)
 endif(CORECLR_SET_RPATH)
 
-if(CLR_CMAKE_HOST_MACCATALYST OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS OR CLR_CMAKE_HOST_BROWSER OR CLR_CMAKE_HOST_ANDROID)
+if(CLR_CMAKE_HOST_MACCATALYST OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS OR CLR_CMAKE_HOST_BROWSER OR CLR_CMAKE_HOST_WASI OR CLR_CMAKE_HOST_ANDROID)
   set(FEATURE_STANDALONE_GC 0)
+endif()
+
+if(CLR_CMAKE_TARGET_WASI)
+  add_compile_definitions(_WASI_EMULATED_SIGNAL)
+  add_compile_definitions(_WASI_EMULATED_PROCESS_CLOCKS)
+  add_compile_definitions(_WASI_EMULATED_MMAN)
+  add_compile_definitions(_WASI_EMULATED_GETPID)
+  # WASI doesn't define these fcntl constants — provide them as no-ops
+  add_compile_definitions(F_DUPFD_CLOEXEC=1030)
+  add_compile_definitions(O_CLOEXEC=0)
+  # WASI sysroot is missing entire POSIX subsystems (signal, ucontext, parts
+  # of pthread, sys/wait, sys/vfs, sys/resource, dlfcn, link, pwd). The shim
+  # headers under pal/src/include/pal/wasi/ use #include_next to layer the
+  # missing declarations and link-time stubs on top of the WASI sysroot
+  # headers. They must be visible BEFORE SYSTEM at the CoreCLR scope because
+  # minipal, debug, hosts and other non-PAL targets also include the affected
+  # headers. See pal/src/include/pal/wasi/README.md for the design rationale.
+  include_directories(BEFORE SYSTEM ${CMAKE_CURRENT_SOURCE_DIR}/pal/src/include/pal/wasi)
 endif()
 
 OPTION(CLR_CMAKE_ENABLE_CODE_COVERAGE "Enable code coverage" OFF)
@@ -119,7 +137,7 @@ endif()
 #----------------------------------------------------
 # Build the test watchdog alongside the CLR
 #----------------------------------------------------
-if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS AND NOT CLR_CMAKE_TARGET_BROWSER)
+if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS AND NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
   add_subdirectory("${CLR_SRC_NATIVE_DIR}/watchdog" test-watchdog)
 endif()
 
@@ -149,7 +167,7 @@ endif()
 include_directories("pal/prebuilt/inc")
 include_directories(${CLR_ARTIFACTS_OBJ_DIR})
 
-if (NOT CLR_CMAKE_TARGET_BROWSER OR CLR_CROSS_COMPONENTS_BUILD)
+if ((NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI) OR CLR_CROSS_COMPONENTS_BUILD)
   add_subdirectory(tools/aot/jitinterface)
 endif ()
 

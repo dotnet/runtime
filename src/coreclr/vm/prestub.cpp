@@ -806,7 +806,7 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
 
 #ifdef FEATURE_EVENT_TRACE
         PCODE pNativeCodeStartAddress = pCode;
-#ifdef FEATURE_INTERPRETER
+#if defined(FEATURE_INTERPRETER) && !defined(FEATURE_PORTABLE_ENTRYPOINTS)
         if (isInterpreterCode)
         {
             // If this is interpreter code, get the native code start address from the
@@ -820,7 +820,7 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
             pNativeCodeStartAddress = PINSTRToPCODE(dac_cast<TADDR>(interpreterCode));
         }
-#endif // FEATURE_INTERPRETER
+#endif // FEATURE_INTERPRETER && !FEATURE_PORTABLE_ENTRYPOINTS
         ETW::MethodLog::MethodJitted(this,
             &namespaceOrClassName,
             &methodName,

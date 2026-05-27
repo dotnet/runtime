@@ -133,7 +133,16 @@ FileCleanupRoutine(
 
     if (!fShutdown && -1 != pLocalData->unix_fd)
     {
-        close(pLocalData->unix_fd);
+#ifdef TARGET_WASI
+        // On WASI we never dup()'d the fd (dup is not available in the WASI
+        // sysroot). init_std_handle stores fileno(stdin/stdout/stderr)
+        // directly, so closing here would close the process's real stdio.
+        // Other file handles get a real fd from open() and are safe to close.
+        if (pLocalData->unix_fd > STDERR_FILENO)
+#endif // TARGET_WASI
+        {
+            close(pLocalData->unix_fd);
+        }
     }
 
     pLocalDataLock->ReleaseLock(pThread, FALSE);
@@ -289,7 +298,15 @@ CorUnix::InternalCanonicalizeRealPath(LPCSTR lpUnixPath, PathCharString& lpBuffe
         goto LExit;
     }
 
-#if REALPATH_SUPPORTS_NONEXISTENT_FILES
+#ifdef TARGET_WASI
+    // On WASI, realpath cannot resolve virtual preopen paths (e.g. "/app/foo")
+    // since they don't exist on a real filesystem. Use the path directly.
+    if (!lpBuffer.Set(lpUnixPath, strlen(lpUnixPath)))
+    {
+        palError = ERROR_NOT_ENOUGH_MEMORY;
+        goto LExit;
+    }
+#elif REALPATH_SUPPORTS_NONEXISTENT_FILES
     RealPathHelper(lpUnixPath, lpBuffer);
 #else   // !REALPATH_SUPPORTS_NONEXISTENT_FILES
 
@@ -330,6 +347,13 @@ CorUnix::InternalCanonicalizeRealPath(LPCSTR lpUnixPath, PathCharString& lpBuffe
         lpBuffer.Append(lpExistingPath, strlen(lpExistingPath));
         return NO_ERROR;
     }
+#ifdef TARGET_WASI
+    // On WASI, realpath cannot resolve virtual preopen paths (e.g. "/app/foo")
+    // since they don't exist on a real filesystem. Use the path directly.
+    lpBuffer.Clear();
+    lpBuffer.Append(lpExistingPath, strlen(lpExistingPath));
+    return NO_ERROR;
+#else // !TARGET_WASI
     else
     {
         bool fSetFilename = true;
@@ -382,6 +406,7 @@ CorUnix::InternalCanonicalizeRealPath(LPCSTR lpUnixPath, PathCharString& lpBuffe
         // incase someone else adds another if clause below us.
         goto LExit;
     }
+#endif // TARGET_WASI
 
 #endif // REALPATH_SUPPORTS_NONEXISTENT_FILES
 LExit:
@@ -625,6 +650,8 @@ CorUnix::InternalCreateFile(
             palError = ERROR_INTERNAL_ERROR;
             goto done;
         }
+#elif defined(TARGET_WASI)
+        // WASI: no uncached I/O support; silently ignore
 #else
 #error Insufficient support for uncached I/O on this platform
 #endif
@@ -2419,7 +2446,15 @@ static HANDLE init_std_handle(HANDLE * pStd, FILE *stream)
 
     /* duplicate the FILE *, so that we can fclose() in FILECloseHandle without
        closing the original */
+#ifdef TARGET_WASI
+    // WASI: fcntl F_DUPFD_CLOEXEC is not implemented at runtime.
+    // Reuse the fd directly — fd ownership is safe on WASI because there
+    // is no fork/exec, stdio fds are never closed by the PAL, and only
+    // one handle references each standard stream.
+    new_fd = fileno(stream);
+#else
     new_fd = fcntl(fileno(stream), F_DUPFD_CLOEXEC, 0); // dup, but with CLOEXEC
+#endif
     if(-1 == new_fd)
     {
         ERROR("dup() failed; errno is %d (%s)\n", errno, strerror(errno));

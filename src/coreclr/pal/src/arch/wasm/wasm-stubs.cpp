@@ -1,9 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+//
+// PAL stubs shared by all WASM targets (browser-wasm and WASI).
+// WASI-only stubs live in wasi-stubs.cpp.
 
 #include "pal/dbgmsg.h"
 #include "pal/signal.hpp"
+#ifdef __EMSCRIPTEN__
 #include <emscripten/emscripten.h>
+#endif
 
 SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do this first
 
@@ -18,6 +23,7 @@ DBG_DebugBreak()
 {
 #ifdef _DEBUG
     DBG_PrintInterpreterStack();
+#ifdef __EMSCRIPTEN__
     double start = emscripten_get_now();
     emscripten_debugger();
     double end = emscripten_get_now();
@@ -28,8 +34,15 @@ DBG_DebugBreak()
         // to match other platforms and fail fast
         emscripten_throw_string("Debugger not attached");
     }
+#else
+    abort();
+#endif // __EMSCRIPTEN__
 #else // _DEBUG
+#ifdef __EMSCRIPTEN__
     emscripten_throw_string("Debug break called in release build.");
+#else
+    abort();
+#endif // __EMSCRIPTEN__
 #endif // _DEBUG
 }
 

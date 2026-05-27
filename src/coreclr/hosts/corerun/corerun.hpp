@@ -387,7 +387,12 @@ public:
 #endif
 
 // CMake generated
+#ifndef TARGET_WASM
 #include <config.h>
+#else
+#define HAVE_GETAUXVAL 0
+#define HAVE_DIRENT_D_TYPE 1
+#endif
 #include <minipal/getexepath.h>
 
 #if __GNUC__ >= 4

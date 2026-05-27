@@ -78,6 +78,10 @@
 #include "entrypoints.h"
 #endif // TARGET_BROWSER
 
+#ifdef TARGET_WASI
+#include "wasm/entrypoints.h"
+#endif // TARGET_WASI
+
 #ifdef FEATURE_INTERPRETER
 #include "interpexec.h"
 #endif // FEATURE_INTERPRETER
@@ -540,6 +544,10 @@ static const Entry s_QCall[] =
     DllImportEntry(SystemJS_ScheduleTimer)
     DllImportEntry(SystemJS_ScheduleBackgroundJob)
 #endif // TARGET_BROWSER
+#ifdef TARGET_WASI
+    DllImportEntry(WasiFinalizerScheduler_Register)
+    DllImportEntry(SystemJS_ExecuteFinalizationCallback)
+#endif // TARGET_WASI
 };
 
 const void* QCallResolveDllImport(const char* name)

@@ -361,4 +361,6 @@ bool CatchHardwareExceptionHolder::IsEnabled()
     return pThread ? pThread->IsHardwareExceptionsEnabled() : false;
 }
 
+#ifndef TARGET_WASI
 #include "seh-unwind.cpp"
+#endif
