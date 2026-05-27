@@ -61,8 +61,7 @@ namespace
 {
     void* TaggedMemoryForObjectHelper(
         _In_ QCall::ObjectHandleOnStack obj,
-        _Out_ size_t* memInSizeT,
-        _Out_opt_ OBJECTHANDLE* instHandle)
+        _Out_ size_t* memInSizeT)
     {
         CONTRACTL
         {
@@ -84,29 +83,15 @@ namespace
         {
             GCX_COOP();
 
-            struct
-            {
-                OBJECTREF objRef;
-            } gc;
-            gc.objRef = NULL;
-            GCPROTECT_BEGIN(gc);
-
-            gc.objRef = obj.Get();
-
             // The object's type must be marked appropriately and with a finalizer.
-            if (!gc.objRef->GetMethodTable()->IsTrackedReferenceWithFinalizer())
+            if (!obj.Get()->GetMethodTable()->IsTrackedReferenceWithFinalizer())
                 COMPlusThrow(kInvalidOperationException, W("InvalidOperation_ObjectiveCTypeNoFinalizer"));
 
             // Initialize the syncblock for this instance.
-            SyncBlock* syncBlock = gc.objRef->GetSyncBlock();
+            SyncBlock* syncBlock = obj.Get()->GetSyncBlock();
             InteropSyncBlockInfo* interopInfo = syncBlock->GetInteropInfo();
-            taggedMemoryLocal = interopInfo->AllocTaggedMemory(memInSizeT);
+            taggedMemoryLocal = interopInfo->EnsureTaggedMemoryAllocated(memInSizeT);
             _ASSERTE(taggedMemoryLocal != NULL);
-
-            if (instHandle != NULL)
-                *instHandle = GetAppDomain()->CreateTypedHandle(gc.objRef, HNDTYPE_REFCOUNTED);
-
-            GCPROTECT_END();
         }
 
         return taggedMemoryLocal;
@@ -128,7 +113,13 @@ extern "C" void* QCALLTYPE ObjCMarshal_CreateReferenceTrackingHandle(
 
     BEGIN_QCALL;
 
-    taggedMemoryLocal = TaggedMemoryForObjectHelper(obj, &memInSizeTLocal, &instHandle);
+    taggedMemoryLocal = TaggedMemoryForObjectHelper(obj, &memInSizeTLocal);
+
+    {
+        GCX_COOP();
+        instHandle = GetAppDomain()->CreateTypedHandle(obj.Get(), HNDTYPE_REFCOUNTED);
+    }
+
     END_QCALL;
 
     *memInSizeT = (int)memInSizeTLocal;
@@ -150,7 +141,8 @@ extern "C" void QCALLTYPE ObjCMarshal_GetOrCreateTaggedMemory(
 
     BEGIN_QCALL;
 
-    taggedMemoryLocal = TaggedMemoryForObjectHelper(obj, &memInSizeTLocal, NULL);
+    taggedMemoryLocal = TaggedMemoryForObjectHelper(obj, &memInSizeTLocal);
+
     END_QCALL;
 
     *memInSizeT = (int)memInSizeTLocal;
