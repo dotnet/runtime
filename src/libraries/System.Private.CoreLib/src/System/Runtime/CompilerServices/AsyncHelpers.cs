@@ -181,13 +181,13 @@ namespace System.Runtime.CompilerServices
         /// Awaits the specified configured task awaitable without capturing the execution context and throws any exception produced by the operation.
         /// </summary>
         /// <param name="configuredAwaitable">The configured awaitable to await.</param>
-        [Intrinsic]
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.Async)]
         [StackTraceHidden]
         public static void Await(ConfiguredTaskAwaitable configuredAwaitable)
         {
             ConfiguredTaskAwaitable.ConfiguredTaskAwaiter awaiter = configuredAwaitable.GetAwaiter();
+            if ((awaiter.m_options & ConfigureAwaitOptions.SuppressThrowing) != 0)
             {
                 TailAwait();
                 AwaitTaskWithRareOptions(awaiter);
