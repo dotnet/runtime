@@ -409,7 +409,7 @@ public unsafe partial interface IDacDbiInterface
     int IsThreadMarkedDead(ulong vmThread, Interop.BOOL* pResult);
 
     [PreserveSig]
-    int GetThreadHandle(ulong vmThread, nint pRetVal);
+    int GetThreadHandle(ulong vmThread, void** pRetVal);
 
     [PreserveSig]
     int GetThreadObject(ulong vmThread, ulong* pRetVal);
@@ -661,7 +661,7 @@ public unsafe partial interface IDacDbiInterface
     int GetTypeIDForType(ulong vmTypeHandle, COR_TYPEID* pId);
 
     [PreserveSig]
-    int GetObjectFields(nint id, uint celt, COR_FIELD* layout, uint* pceltFetched);
+    int GetObjectFields(ulong id, uint celt, COR_FIELD* layout, uint* pceltFetched);
 
     [PreserveSig]
     int GetTypeLayout(ulong id, COR_TYPE_LAYOUT* pLayout);

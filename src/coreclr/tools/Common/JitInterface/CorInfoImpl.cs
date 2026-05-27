@@ -4329,9 +4329,9 @@ namespace Internal.JitInterface
                     break;
             }
 
+            RelocType relocType = GetRelocType(fRelocType);
             relocDelta += addlDelta;
 
-            RelocType relocType = GetRelocType(fRelocType);
             // relocDelta is stored as the value
             Relocation.WriteValue(relocType, location, relocDelta);
 

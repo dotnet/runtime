@@ -599,7 +599,7 @@ BOOL TypeHandle::IsBoxedAndCanCastTo(TypeHandle type, TypeHandlePairList *pPairL
     CONTRACTL_END
 
 
-    CorElementType fromParamCorType = GetVerifierCorElementType();
+    CorElementType fromParamCorType = GetInternalCorElementType();
 
     if (CorTypeInfo::IsObjRef(fromParamCorType))
     {
@@ -1211,24 +1211,6 @@ CorElementType TypeHandle::GetSignatureCorElementType() const
         return AsMethodTable()->GetSignatureCorElementType();
     }
 }
-
-// As its name suggests, this returns the type used by the IL verifier. The basic difference between this
-// type and the type in the meta-data is that enumerations have been normalized to their underlieing
-// primitive type. see code:MethodTable#KindsOfElementTypes for more
-CorElementType TypeHandle::GetVerifierCorElementType() const
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (IsTypeDesc())
-    {
-        return AsTypeDesc()->GetInternalCorElementType();
-    }
-    else
-    {
-        return AsMethodTable()->GetVerifierCorElementType();
-    }
-}
-
 
 #ifdef DACCESS_COMPILE
 
