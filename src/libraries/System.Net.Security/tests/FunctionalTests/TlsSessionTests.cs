@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Collections.Generic;
 using System.IO;
 using System.Net.Sockets;
 using System.Net.Test.Common;
@@ -690,6 +691,135 @@ namespace System.Net.Security.Tests
                 ptLen += produced;
             }
             return pt.AsSpan(0, ptLen).ToArray();
+        }
+
+        [Fact]
+        public async Task ServerSession_ApplicationProtocols_NegotiatesAlpn()
+        {
+            using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
+            string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
+
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+            using (clientStream)
+            using (serverStream)
+            using (SslStream clientSsl = new SslStream(clientStream, leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate))
+            {
+                using TlsContext ctx = TlsContext.Create(new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = serverCert,
+                    EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                    ApplicationProtocols = new List<SslApplicationProtocol> { SslApplicationProtocol.Http2, SslApplicationProtocol.Http11 },
+                });
+                using TlsSession session = TlsSession.Create(ctx);
+
+                Task clientHandshake = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+                {
+                    TargetHost = serverName,
+                    EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                    RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
+                    ApplicationProtocols = new List<SslApplicationProtocol> { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 },
+                });
+                Task serverHandshake = DriveHandshakeAsync(session, serverStream);
+                await Task.WhenAll(clientHandshake, serverHandshake).WaitAsync(TimeSpan.FromSeconds(30));
+
+                Assert.True(session.IsHandshakeComplete);
+                Assert.Equal(SslApplicationProtocol.Http2, session.NegotiatedApplicationProtocol);
+                Assert.Equal(SslApplicationProtocol.Http2, clientSsl.NegotiatedApplicationProtocol);
+            }
+        }
+
+        [Fact]
+        public async Task ServerSession_ServerCertificateSelectionCallback_InvokedWithSni()
+        {
+            using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
+            string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
+
+            string? observedSni = null;
+            int callbackCount = 0;
+
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+            using (clientStream)
+            using (serverStream)
+            using (SslStream clientSsl = new SslStream(clientStream, leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate))
+            {
+                using TlsContext ctx = TlsContext.Create(new SslServerAuthenticationOptions
+                {
+                    ServerCertificateSelectionCallback = (sender, hostName) =>
+                    {
+                        callbackCount++;
+                        observedSni = hostName;
+                        Assert.IsType<TlsSession>(sender);
+                        return serverCert;
+                    },
+                    EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                });
+                using TlsSession session = TlsSession.Create(ctx);
+
+                Task clientHandshake = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+                {
+                    TargetHost = serverName,
+                    EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                    RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
+                });
+                Task serverHandshake = DriveHandshakeAsync(session, serverStream);
+                await Task.WhenAll(clientHandshake, serverHandshake).WaitAsync(TimeSpan.FromSeconds(30));
+
+                Assert.True(session.IsHandshakeComplete);
+                Assert.Equal(1, callbackCount);
+                Assert.Equal(serverName, observedSni);
+            }
+        }
+
+        [Fact]
+        public async Task ServerSession_RequestRenegotiation_Tls12_ProducesHelloRequest()
+        {
+            using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
+            string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
+
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+            using (clientStream)
+            using (serverStream)
+            using (SslStream clientSsl = new SslStream(clientStream, leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate))
+            {
+                using TlsContext ctx = TlsContext.Create(new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = serverCert,
+                    EnabledSslProtocols = SslProtocols.Tls12,
+                    AllowRenegotiation = true,
+                });
+                using TlsSession session = TlsSession.Create(ctx);
+
+                Task clientHandshake = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+                {
+                    TargetHost = serverName,
+                    EnabledSslProtocols = SslProtocols.Tls12,
+                    RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
+                    AllowRenegotiation = true,
+                });
+                Task serverHandshake = DriveHandshakeAsync(session, serverStream);
+                await Task.WhenAll(clientHandshake, serverHandshake).WaitAsync(TimeSpan.FromSeconds(30));
+
+                Assert.True(session.IsHandshakeComplete);
+                Assert.Equal(SslProtocols.Tls12, session.NegotiatedProtocol);
+
+                // Server requests renegotiation. We only verify that the API runs
+                // and produces a HelloRequest byte stream; driving the full
+                // renegotiation back through SslStream is intentionally out of
+                // scope here since SslStream's client-side reneg path needs the
+                // server to also pump the post-handshake read loop, which the
+                // standalone TlsSession leaves to the caller.
+                byte[] reneg = ArrayPool<byte>.Shared.Rent(CipherBufSize);
+                try
+                {
+                    TlsOperationStatus status = session.RequestRenegotiation(reneg, out int produced);
+                    Assert.NotEqual(TlsOperationStatus.Closed, status);
+                    Assert.True(produced > 0, "RequestRenegotiation should emit a HelloRequest.");
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(reneg);
+                }
+            }
         }
 
         private static async Task DriveHandshakeAsync(TlsSession session, Stream transport)

@@ -39,6 +39,16 @@ namespace System.Net.Security
             return new TlsContext(bag, ownsOptions: true);
         }
 
+        /// <summary>
+        /// Creates a client-side TLS context.
+        /// </summary>
+        /// <remarks>
+        /// <see cref="SslClientAuthenticationOptions.RemoteCertificateValidationCallback"/>
+        /// must be a synchronous delegate. No async certificate validation
+        /// callback variant is supported by <see cref="TlsSession"/> in the
+        /// current PoC; the callback runs inline on the thread that drives
+        /// <see cref="TlsSession.ProcessHandshake"/>.
+        /// </remarks>
         public static TlsContext Create(SslClientAuthenticationOptions options)
         {
             ArgumentNullException.ThrowIfNull(options);

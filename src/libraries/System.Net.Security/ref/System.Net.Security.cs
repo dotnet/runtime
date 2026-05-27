@@ -724,6 +724,7 @@ namespace System.Net.Security
         public System.Security.Cryptography.X509Certificates.X509Certificate2? LocalCertificate { get { throw null; } }
         public System.Security.Authentication.ExtendedProtection.ChannelBinding? GetChannelBinding(System.Security.Authentication.ExtendedProtection.ChannelBindingKind kind) { throw null; }
         public System.Net.Security.TlsOperationStatus RequestClientCertificate(System.Span<byte> ciphertext, out int produced) { throw null; }
+        public System.Net.Security.TlsOperationStatus RequestRenegotiation(System.Span<byte> ciphertext, out int produced) { throw null; }
         public void Dispose() { }
     }
 }

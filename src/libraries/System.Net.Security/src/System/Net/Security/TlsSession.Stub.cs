@@ -58,6 +58,9 @@ namespace System.Net.Security
         public TlsOperationStatus RequestClientCertificate(Span<byte> ciphertext, out int produced) =>
             throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
 
+        public TlsOperationStatus RequestRenegotiation(Span<byte> ciphertext, out int produced) =>
+            throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
+
         public void Dispose() { }
     }
 }

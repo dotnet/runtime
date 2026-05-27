@@ -197,6 +197,32 @@ namespace System.Net.Security
             {
                 if (_context.IsServer)
                 {
+                    // On the very first server-side call, inspect the incoming
+                    // ClientHello to surface SNI (TargetHost) and, if the caller
+                    // supplied a ServerCertificateSelectionCallback, resolve the
+                    // server certificate from it before AllocateSslHandle runs.
+                    if (_securityContext is null)
+                    {
+                        bool needsCertResolution =
+                            _context.Options.CertificateContext is null &&
+                            _context.Options.ServerCertSelectionDelegate is not null;
+
+                        if (input.Length == 0)
+                        {
+                            // Defer first PAL call until we have data: empty input would
+                            // otherwise reach AllocateSslHandle and assert when cert
+                            // resolution still owes a CertificateContext.
+                            return TlsOperationStatus.WantRead;
+                        }
+
+                        if (needsCertResolution && !ResolveServerCertificateFromClientHello(input))
+                        {
+                            // Need more bytes to parse the ClientHello (and run the
+                            // ServerCertificateSelectionCallback).
+                            return TlsOperationStatus.WantRead;
+                        }
+                    }
+
                     token = SslStreamPal.AcceptSecurityContext(
                         ref _credentialsHandle,
                         ref _securityContext,
@@ -416,6 +442,22 @@ namespace System.Net.Security
         }
 
         // ── Renegotiation / Post-handshake auth ──────────────────────────
+
+        /// <summary>
+        /// Server-side: initiates a TLS renegotiation. On TLS 1.2 this issues
+        /// a HelloRequest; on TLS 1.3 this issues a post-handshake
+        /// CertificateRequest (same primitive as <see cref="RequestClientCertificate"/>,
+        /// because OpenSSL exposes only the combined operation).
+        /// </summary>
+        /// <remarks>
+        /// The generated handshake bytes are staged into the pending-output
+        /// buffer (drained into <paramref name="ciphertext"/>). The caller must
+        /// then continue normal <see cref="Decrypt"/> / <see cref="Encrypt"/>
+        /// operations; OpenSSL processes the peer's response transparently
+        /// inside subsequent <c>SSL_read</c> calls.
+        /// </remarks>
+        public TlsOperationStatus RequestRenegotiation(Span<byte> ciphertext, out int produced)
+            => RequestClientCertificate(ciphertext, out produced);
 
         /// <summary>
         /// Server-side: requests a client certificate from the peer after the
@@ -639,6 +681,52 @@ namespace System.Net.Security
         }
 
         private void ThrowIfDisposed() => ObjectDisposedException.ThrowIf(_disposed, this);
+
+        // Server-side SNI + certificate selection. Parses the ClientHello to
+        // extract the server_name extension (SNI) and, if a
+        // ServerCertificateSelectionCallback was supplied and no static
+        // CertificateContext has been resolved yet, invokes the callback to
+        // pick the cert. Mirrors the path SslStream takes in
+        // ReceiveBlobAsync/AcquireServerCredentials.
+        private bool ResolveServerCertificateFromClientHello(ReadOnlySpan<byte> input)
+        {
+            TlsFrameHelper.TlsFrameInfo frameInfo = default;
+            if (!TlsFrameHelper.TryGetFrameInfo(input, ref frameInfo))
+            {
+                return false;
+            }
+
+            if (frameInfo.HandshakeType != TlsHandshakeType.ClientHello)
+            {
+                return true;
+            }
+
+            if (!string.IsNullOrEmpty(frameInfo.TargetName))
+            {
+                _context.Options.TargetHost = frameInfo.TargetName;
+            }
+
+            ServerCertificateSelectionCallback? selector = _context.Options.ServerCertSelectionDelegate;
+            if (selector is null || _context.Options.CertificateContext is not null)
+            {
+                return true;
+            }
+
+            X509Certificate? selected = selector(this, _context.Options.TargetHost);
+            if (selected is null)
+            {
+                throw new AuthenticationException(SR.net_ssl_io_no_server_cert);
+            }
+
+            X509Certificate2? withKey = SslStream.FindCertificateWithPrivateKey(this, isServer: true, selected);
+            if (withKey is null)
+            {
+                throw new AuthenticationException(SR.net_ssl_io_no_server_cert);
+            }
+
+            _context.Options.SetCertificateContextFromCert(withKey);
+            return true;
+        }
 
         // ── Internal surface for the SslStream wedge (Linux/FreeBSD only) ─
 
