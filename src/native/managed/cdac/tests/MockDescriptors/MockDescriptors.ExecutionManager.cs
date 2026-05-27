@@ -340,6 +340,46 @@ internal sealed class MockRealCodeHeader : TypedView
     }
 }
 
+internal sealed class MockInterpreterRealCodeHeader : TypedView
+{
+    private const string MethodDescFieldName = "MethodDesc";
+    private const string DebugInfoFieldName = "DebugInfo";
+    private const string GCInfoFieldName = "GCInfo";
+    private const string JitEHInfoFieldName = "JitEHInfo";
+
+    public static Layout<MockInterpreterRealCodeHeader> CreateLayout(MockTarget.Architecture architecture)
+        => new SequentialLayoutBuilder("InterpreterRealCodeHeader", architecture)
+            .AddPointerField(MethodDescFieldName)
+            .AddPointerField(DebugInfoFieldName)
+            .AddPointerField(GCInfoFieldName)
+            .AddPointerField(JitEHInfoFieldName)
+            .Build<MockInterpreterRealCodeHeader>();
+
+    public ulong MethodDesc
+    {
+        get => ReadPointerField(MethodDescFieldName);
+        set => WritePointerField(MethodDescFieldName, value);
+    }
+
+    public ulong DebugInfo
+    {
+        get => ReadPointerField(DebugInfoFieldName);
+        set => WritePointerField(DebugInfoFieldName, value);
+    }
+
+    public ulong GCInfo
+    {
+        get => ReadPointerField(GCInfoFieldName);
+        set => WritePointerField(GCInfoFieldName, value);
+    }
+
+    public ulong JitEHInfo
+    {
+        get => ReadPointerField(JitEHInfoFieldName);
+        set => WritePointerField(JitEHInfoFieldName, value);
+    }
+}
+
 internal sealed class MockReadyToRunInfo : TypedView
 {
     private const string ReadyToRunHeaderFieldName = "ReadyToRunHeader";
@@ -502,6 +542,7 @@ internal sealed class MockExecutionManagerBuilder
 {
     private const uint CodeHeapRangeSectionFlag = 0x02;
     private const uint RangeListRangeSectionFlag = 0x04;
+    private const uint InterpreterRangeSectionFlag = 0x0A; // CodeHeap | Interpreter
     private const string EEJitManagerGlobalName = "EEJitManagerGlobalPointer";
     private const int RangeSectionMapBitsPerLevel = 8;
 
@@ -558,6 +599,7 @@ internal sealed class MockExecutionManagerBuilder
     internal Layout<MockLoaderCodeHeap> LoaderCodeHeapLayout { get; }
     internal Layout<MockHostCodeHeap> HostCodeHeapLayout { get; }
     internal Layout<MockRealCodeHeader> RealCodeHeaderLayout { get; }
+    internal Layout<MockInterpreterRealCodeHeader> InterpreterRealCodeHeaderLayout { get; }
     internal Layout<MockReadyToRunInfo> ReadyToRunInfoLayout { get; }
     internal Layout<MockEEJitManager> EEJitManagerLayout { get; }
     internal Layout<MockLoaderModule> ModuleLayout { get; }
@@ -614,6 +656,7 @@ internal sealed class MockExecutionManagerBuilder
         LoaderCodeHeapLayout = MockLoaderCodeHeap.CreateLayout(architecture);
         HostCodeHeapLayout = MockHostCodeHeap.CreateLayout(architecture);
         RealCodeHeaderLayout = MockRealCodeHeader.CreateLayout(architecture);
+        InterpreterRealCodeHeaderLayout = MockInterpreterRealCodeHeader.CreateLayout(architecture);
         ReadyToRunInfoLayout = MockReadyToRunInfo.CreateLayout(architecture, hashMapStride);
         EEJitManagerLayout = MockEEJitManager.CreateLayout(architecture);
         ModuleLayout = MockLoaderModule.CreateLayout(architecture);
@@ -688,6 +731,17 @@ internal sealed class MockExecutionManagerBuilder
         rangeSection.RangeEndOpen = jittedCodeRange.RangeEnd;
         rangeSection.Flags = RangeListRangeSectionFlag;
         rangeSection.RangeList = rangeList.Address;
+        rangeSection.JitManager = jitManagerAddress;
+        return rangeSection;
+    }
+
+    public MockRangeSection AddInterpreterRangeSection(JittedCodeRange jittedCodeRange, ulong jitManagerAddress, ulong codeHeapListNodeAddress)
+    {
+        MockRangeSection rangeSection = AllocateAndCreate(RangeSectionLayout, "InterpreterRangeSection", _rangeSectionMapAllocator);
+        rangeSection.RangeBegin = jittedCodeRange.RangeStart;
+        rangeSection.RangeEndOpen = jittedCodeRange.RangeEnd;
+        rangeSection.Flags = InterpreterRangeSectionFlag;
+        rangeSection.HeapList = codeHeapListNodeAddress;
         rangeSection.JitManager = jitManagerAddress;
         return rangeSection;
     }
@@ -767,6 +821,20 @@ internal sealed class MockExecutionManagerBuilder
         codeHeader.GCInfo = 0;
         codeHeader.NumUnwindInfos = 0;
         codeHeader.UnwindInfos = 0;
+
+        return jittedMethod;
+    }
+
+    public MockJittedMethod AddInterpretedMethod(JittedCodeRange jittedCodeRange, uint codeSize, ulong methodDescAddress)
+    {
+        MockJittedMethod jittedMethod = AllocateJittedMethod(jittedCodeRange, codeSize, "Interpreter Method Header & Code");
+        MockInterpreterRealCodeHeader codeHeader = AllocateAndCreate(InterpreterRealCodeHeaderLayout, "InterpreterRealCodeHeader");
+        jittedMethod.CodeHeader = codeHeader.Address;
+
+        codeHeader.MethodDesc = methodDescAddress;
+        codeHeader.DebugInfo = 0;
+        codeHeader.GCInfo = 0;
+        codeHeader.JitEHInfo = 0;
 
         return jittedMethod;
     }

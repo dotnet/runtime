@@ -190,6 +190,7 @@ internal sealed class MockThread : TypedView
     private const string LinkNextFieldName = "LinkNext";
     private const string ExceptionTrackerFieldName = "ExceptionTracker";
     private const string ThreadLocalDataPtrFieldName = "ThreadLocalDataPtr";
+    private const string ThreadHandleFieldName = "ThreadHandle";
     private const string UEWatsonBucketTrackerBucketsFieldName = "UEWatsonBucketTrackerBuckets";
     private const string DebuggerFilterContextFieldName = "DebuggerFilterContext";
 
@@ -212,6 +213,7 @@ internal sealed class MockThread : TypedView
             .AddPointerField(LinkNextFieldName)
             .AddPointerField(ExceptionTrackerFieldName)
             .AddPointerField(ThreadLocalDataPtrFieldName)
+            .AddPointerField(ThreadHandleFieldName)
             .AddPointerField(UEWatsonBucketTrackerBucketsFieldName)
             .AddPointerField(DebuggerFilterContextFieldName);
 
@@ -286,6 +288,16 @@ internal sealed class MockThread : TypedView
 
     public ulong FrameAddress => GetFieldAddress(FrameFieldName);
 
+    /// <summary>
+    /// The value of the Thread's m_pFrame field - the address of the topmost explicit
+    /// Frame on this thread's frame chain (or the FRAME_TOP terminator for an empty chain).
+    /// </summary>
+    public ulong Frame
+    {
+        get => ReadPointerField(FrameFieldName);
+        set => WritePointerField(FrameFieldName, value);
+    }
+
     public uint DebuggerControlledThreadState
     {
         get => ReadUInt32Field(DebuggerControlledThreadStateFieldName);
@@ -296,6 +308,12 @@ internal sealed class MockThread : TypedView
     {
         get => ReadPointerField(LastThrownObjectFieldName);
         set => WritePointerField(LastThrownObjectFieldName, value);
+    }
+
+    public ulong ThreadHandle
+    {
+        get => ReadPointerField(ThreadHandleFieldName);
+        set => WritePointerField(ThreadHandleFieldName, value);
     }
 }
 

@@ -151,6 +151,11 @@ namespace System.Formats.Tar
             // The 'size' header field only fits 12 bytes, so the data section length that surpases that limit needs to be retrieved
             if (TarHelpers.TryGetStringAsBaseTenLong(ExtendedAttributes, PaxEaSize, out long size))
             {
+                if (size < 0)
+                {
+                    throw new InvalidDataException(SR.Format(SR.TarSizeFieldNegative));
+                }
+
                 _size = size;
             }
 

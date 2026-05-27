@@ -3353,6 +3353,14 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             // mrs
             emitter->emitIns_R(INS_mrs_tpid0, attr, REG_R1);
 
+            // We remove x0 here since the linker relaxation
+            // sequence will rewrite the instructions we are emitting here with
+            // instructions that may clobber these registers.
+            // (This is more important for the emitter, but we match it here
+            // for symmetry and to avoid confusion about the state of the
+            // registers.)
+            gcInfo.gcMarkRegSetNpt(RBM_R0);
+
             // adrp
             // ldr
             // add
@@ -3439,6 +3447,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                 regNumber tmpReg = internalRegisters.GetSingle(call);
                 instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, tmpReg, (ssize_t)params.addr);
                 params.callType = EC_INDIR_R;
+                params.addr     = nullptr;
                 params.ireg     = tmpReg;
                 genEmitCallWithCurrentGC(params);
             }
@@ -3823,7 +3832,7 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned            codeSize,
         //  -saved off FP
         //  -all callee-preserved registers in case of varargs
         //  -saved bool for synchronized methods
-        //  -async contexts for async methods
+        //  -thread/async contexts for async methods
 
         int preservedAreaSize = (2 + genCountBits((uint64_t)RBM_ENC_CALLEE_SAVED)) * REGSIZE_BYTES;
 
@@ -3841,6 +3850,13 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned            codeSize,
 
             // Verify that MonAcquired bool is at the bottom of the frame header
             assert(m_compiler->lvaGetCallerSPRelativeOffset(m_compiler->lvaMonAcquired) == -preservedAreaSize);
+        }
+
+        if (m_compiler->lvaAsyncThreadObjectVar != BAD_VAR_NUM)
+        {
+            preservedAreaSize += TARGET_POINTER_SIZE;
+
+            assert(m_compiler->lvaGetCallerSPRelativeOffset(m_compiler->lvaAsyncThreadObjectVar) == -preservedAreaSize);
         }
 
         if (m_compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM)
@@ -4475,6 +4491,13 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
         printf("\n");
     }
 #endif // DEBUG
+
+#if defined(TARGET_ARM64)
+    if (JitConfig.JitPacEnabled() != 0)
+    {
+        GetEmitter()->emitPacInProlog();
+    }
+#endif // TARGET_ARM64
 
     // The frameType number is arbitrary, is defined below, and corresponds to one of the frame styles we
     // generate based on various sizes.

@@ -189,7 +189,7 @@ INVALIDGCVALUE  EQU 0xCCCCCCCD
         ;; Exit label
     MEND
 
-;; void JIT_ByRefWriteBarrier
+;; void RhpByRefAssignRef
 ;; On entry:
 ;;   x13 : the source address (points to object reference to write)
 ;;   x14 : the destination address (object reference written here)
@@ -215,7 +215,7 @@ INVALIDGCVALUE  EQU 0xCCCCCCCD
     LEAF_END RhpByRefAssignRefArm64
 
 
-;; JIT_CheckedWriteBarrier(Object** dst, Object* src)
+;; RhpCheckedAssignRef(Object** dst, Object* src)
 ;;
 ;; Write barrier for writes to objects that may reside
 ;; on the managed heap.
@@ -244,7 +244,7 @@ NotInHeap
 
     LEAF_END RhpCheckedAssignRefArm64
 
-;; JIT_WriteBarrier(Object** dst, Object* src)
+;; RhpAssignRef(Object** dst, Object* src)
 ;;
 ;; Write barrier for writes to objects that are known to
 ;; reside on the managed heap.

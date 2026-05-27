@@ -3868,9 +3868,7 @@ bool ILNativeArrayMarshaler::CanMarshalViaPinning()
 
     TypeHandle elementTypeHandle = m_pargs->na.m_pArrayMT->GetArrayElementTypeHandle();
 
-    return elementTypeHandle.IsBlittable()
-        && (elementTypeHandle.GetMethodTable()->IsValueType()
-            || elementTypeHandle.GetMethodTable()->IsTruePrimitive());
+    return elementTypeHandle.IsBlittable() && elementTypeHandle.GetMethodTable()->IsValueType();
 }
 
 void ILNativeArrayMarshaler::EmitMarshalViaPinning(ILCodeStream* pslILEmit)

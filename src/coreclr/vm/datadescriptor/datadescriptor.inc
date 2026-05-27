@@ -46,6 +46,9 @@ CDAC_TYPE_FIELD(Thread, T_POINTER, CachedStackLimit, cdac_data<Thread>::CachedSt
 CDAC_TYPE_FIELD(Thread, T_POINTER, ExceptionTracker, cdac_data<Thread>::ExceptionTracker)
 CDAC_TYPE_FIELD(Thread, T_UINT32, DebuggerControlledThreadState, cdac_data<Thread>::DebuggerControlledThreadState)
 CDAC_TYPE_FIELD(Thread, T_POINTER, DebuggerFilterContext, cdac_data<Thread>::DebuggerFilterContext)
+#ifdef TARGET_WINDOWS
+CDAC_TYPE_FIELD(Thread, T_POINTER, ThreadHandle, cdac_data<Thread>::ThreadHandle)
+#endif // TARGET_WINDOWS
 CDAC_TYPE_FIELD(Thread, TYPE(ObjectHandle), ExposedObject, cdac_data<Thread>::ExposedObject)
 CDAC_TYPE_FIELD(Thread, TYPE(ObjectHandle), LastThrownObject, cdac_data<Thread>::LastThrownObject)
 CDAC_TYPE_FIELD(Thread, T_UINT32, LastThrownObjectIsUnhandled, cdac_data<Thread>::LastThrownObjectIsUnhandled)
@@ -416,6 +419,13 @@ CDAC_TYPE_FIELD(ArrayListBlock, T_POINTER, Next, cdac_data<ArrayListBase>::Next)
 CDAC_TYPE_FIELD(ArrayListBlock, T_UINT32, Size, cdac_data<ArrayListBase>::Size)
 CDAC_TYPE_FIELD(ArrayListBlock, T_POINTER, ArrayStart, cdac_data<ArrayListBase>::ArrayStart)
 CDAC_TYPE_END(ArrayListBlock)
+
+CDAC_TYPE_BEGIN(VASigCookie)
+CDAC_TYPE_INDETERMINATE(VASigCookie)
+CDAC_TYPE_FIELD(VASigCookie, T_UINT32, SizeOfArgs, offsetof(VASigCookie, sizeOfArgs))
+CDAC_TYPE_FIELD(VASigCookie, T_POINTER, SignaturePointer, cdac_data<VASigCookie>::SignaturePointer)
+CDAC_TYPE_FIELD(VASigCookie, T_UINT32, SignatureLength, cdac_data<VASigCookie>::SignatureLength)
+CDAC_TYPE_END(VASigCookie)
 
 // RuntimeTypeSystem
 
@@ -853,6 +863,43 @@ CDAC_TYPE_FIELD(RealCodeHeader, T_UINT32, NumUnwindInfos, offsetof(RealCodeHeade
 CDAC_TYPE_FIELD(RealCodeHeader, TYPE(RuntimeFunction), UnwindInfos, offsetof(RealCodeHeader, unwindInfos))
 CDAC_TYPE_END(RealCodeHeader)
 
+#ifdef FEATURE_INTERPRETER
+CDAC_TYPE_BEGIN(InterpreterRealCodeHeader)
+CDAC_TYPE_INDETERMINATE(InterpreterRealCodeHeader)
+CDAC_TYPE_FIELD(InterpreterRealCodeHeader, T_POINTER, MethodDesc, offsetof(InterpreterRealCodeHeader, phdrMDesc))
+CDAC_TYPE_FIELD(InterpreterRealCodeHeader, T_POINTER, DebugInfo, offsetof(InterpreterRealCodeHeader, phdrDebugInfo))
+CDAC_TYPE_FIELD(InterpreterRealCodeHeader, T_POINTER, GCInfo, offsetof(InterpreterRealCodeHeader, phdrJitGCInfo))
+CDAC_TYPE_FIELD(InterpreterRealCodeHeader, T_POINTER, JitEHInfo, offsetof(InterpreterRealCodeHeader, phdrJitEHInfo))
+CDAC_TYPE_END(InterpreterRealCodeHeader)
+
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
+CDAC_TYPE_BEGIN(InterpreterPrecodeData)
+CDAC_TYPE_INDETERMINATE(InterpreterPrecodeData)
+CDAC_TYPE_FIELD(InterpreterPrecodeData, T_POINTER, ByteCodeAddr, offsetof(::InterpreterPrecodeData, ByteCodeAddr))
+CDAC_TYPE_FIELD(InterpreterPrecodeData, T_UINT8, Type, offsetof(::InterpreterPrecodeData, Type))
+CDAC_TYPE_END(InterpreterPrecodeData)
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
+
+CDAC_TYPE_BEGIN(InterpByteCodeStart)
+CDAC_TYPE_INDETERMINATE(InterpByteCodeStart)
+CDAC_TYPE_FIELD(InterpByteCodeStart, T_POINTER, Method, offsetof(InterpByteCodeStart, Method))
+CDAC_TYPE_END(InterpByteCodeStart)
+
+CDAC_TYPE_BEGIN(InterpMethod)
+CDAC_TYPE_INDETERMINATE(InterpMethod)
+CDAC_TYPE_FIELD(InterpMethod, T_POINTER, MethodDesc, offsetof(InterpMethod, methodHnd))
+CDAC_TYPE_END(InterpMethod)
+
+CDAC_TYPE_BEGIN(InterpMethodContextFrame)
+CDAC_TYPE_INDETERMINATE(InterpMethodContextFrame)
+CDAC_TYPE_FIELD(InterpMethodContextFrame, T_POINTER, StartIp, offsetof(InterpMethodContextFrame, startIp))
+CDAC_TYPE_FIELD(InterpMethodContextFrame, T_POINTER, ParentPtr, offsetof(InterpMethodContextFrame, pParent))
+CDAC_TYPE_FIELD(InterpMethodContextFrame, T_POINTER, Ip, offsetof(InterpMethodContextFrame, ip))
+CDAC_TYPE_FIELD(InterpMethodContextFrame, T_POINTER, NextPtr, offsetof(InterpMethodContextFrame, pNext))
+CDAC_TYPE_FIELD(InterpMethodContextFrame, T_POINTER, Stack, offsetof(InterpMethodContextFrame, pStack))
+CDAC_TYPE_END(InterpMethodContextFrame)
+#endif // FEATURE_INTERPRETER
+
 CDAC_TYPE_BEGIN(EEExceptionClause)
 CDAC_TYPE_SIZE(sizeof(EE_ILEXCEPTION_CLAUSE))
 CDAC_TYPE_FIELD(EEExceptionClause, T_UINT32, Flags, offsetof(EE_ILEXCEPTION_CLAUSE, Flags))
@@ -986,6 +1033,14 @@ CDAC_TYPE_FIELD(FramedMethodFrame, T_POINTER, TransitionBlockPtr, cdac_data<Fram
 CDAC_TYPE_FIELD(FramedMethodFrame, T_POINTER, MethodDescPtr, cdac_data<FramedMethodFrame>::MethodDescPtr)
 CDAC_TYPE_END(FramedMethodFrame)
 
+#ifdef FEATURE_INTERPRETER
+CDAC_TYPE_BEGIN(InterpreterFrame)
+CDAC_TYPE_INDETERMINATE(InterpreterFrame)
+CDAC_TYPE_FIELD(InterpreterFrame, T_POINTER, TopInterpMethodContextFrame, cdac_data<InterpreterFrame>::TopInterpMethodContextFrame)
+CDAC_TYPE_FIELD(InterpreterFrame, T_BOOL, IsFaulting, cdac_data<InterpreterFrame>::IsFaulting)
+CDAC_TYPE_END(InterpreterFrame)
+#endif // FEATURE_INTERPRETER
+
 CDAC_TYPE_BEGIN(TransitionBlock)
 CDAC_TYPE_SIZE(sizeof(TransitionBlock))
 CDAC_TYPE_FIELD(TransitionBlock, T_POINTER, ReturnAddress, offsetof(TransitionBlock, m_ReturnAddress))
@@ -1015,6 +1070,8 @@ CDAC_TYPE_BEGIN(DebuggerEval)
 CDAC_TYPE_SIZE(sizeof(DebuggerEval))
 CDAC_TYPE_FIELD(DebuggerEval, EXTERN_TYPE(Context), TargetContext, offsetof(DebuggerEval, m_context))
 CDAC_TYPE_FIELD(DebuggerEval, T_BOOL, EvalUsesHijack, offsetof(DebuggerEval, m_evalUsesHijack))
+CDAC_TYPE_FIELD(DebuggerEval, T_UINT32, MethodToken, offsetof(DebuggerEval, m_methodToken))
+CDAC_TYPE_FIELD(DebuggerEval, T_POINTER, AssemblyPtr, offsetof(DebuggerEval, m_pAssembly))
 CDAC_TYPE_END(DebuggerEval)
 #endif // DEBUGGING_SUPPORTED
 
@@ -1484,6 +1541,7 @@ CDAC_GLOBAL(FieldOffsetDynamicRVA, T_UINT32, FIELD_OFFSET_DYNAMIC_RVA)
 CDAC_GLOBAL_POINTER(ClrNotificationArguments, &::g_clrNotificationArguments)
 CDAC_GLOBAL_POINTER(ArrayBoundsZero, cdac_data<ArrayBase>::ArrayBoundsZero)
 CDAC_GLOBAL_POINTER(ContinuationMethodTable, &::g_pContinuationClassIfSubTypeCreated)
+CDAC_GLOBAL_POINTER(ContinuationSingletonEEClass, &::g_singletonContinuationEEClass)
 CDAC_GLOBAL_POINTER(ExceptionMethodTable, &::g_pExceptionClass)
 CDAC_GLOBAL_POINTER(FreeObjectMethodTable, &::g_pFreeObjectMethodTable)
 CDAC_GLOBAL_POINTER(ObjectMethodTable, &::g_pObjectClass)
