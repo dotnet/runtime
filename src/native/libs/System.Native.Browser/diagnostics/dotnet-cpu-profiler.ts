@@ -23,7 +23,7 @@ export function collectCpuSamples(options?: DiagnosticCommandOptions, startup?: 
         // stop tracing after period of monitoring
         Module.safeSetTimeout(() => {
             session.sendCommand(commandStopTracing(session.sessionId));
-        }, 1000 * (options?.durationSeconds ?? 10));
+        }, 1000 * (options?.durationSeconds ?? 60));
     }
 
     setupJsClient({

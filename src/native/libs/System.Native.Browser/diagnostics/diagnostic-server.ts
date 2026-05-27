@@ -93,7 +93,7 @@ export function initializeDS() {
     const loaderConfig = dotnetApi.getConfig();
     const diagnosticPorts = "DOTNET_DiagnosticPorts";
     loaderConfig.environmentVariables ??= {};
-    if (!loaderConfig.environmentVariables![diagnosticPorts]) {
+    if (loaderConfig.environmentVariables![diagnosticPorts] === undefined) {
         loaderConfig.environmentVariables![diagnosticPorts] = "js://ready";
     }
     initializeJsClient();
