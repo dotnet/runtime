@@ -389,9 +389,20 @@ ElfReader::EnumerateLinkMapEntries(Elf_Dyn* dynamicAddr)
         return false;
     }
 
-    // Add the DSO link_map entries
+    // Add the DSO link_map entries.
+    //
+    // Guard against a malformed or cyclic link_map chain: real processes have at
+    // most a few hundred shared libraries, so this cap is well above realistic
+    // while still bounding wall time if l_next forms a cycle or points at
+    // garbage in a corrupted target process.
+    constexpr int LinkMapMaxEntries = 8192;
+    int linkMapCount = 0;
     for (struct link_map* linkMapAddr = debugEntry.r_map; linkMapAddr != nullptr;)
     {
+        if (++linkMapCount > LinkMapMaxEntries) {
+            Trace("ERROR: EnumerateLinkMapEntries exceeded %d entries; aborting (possible cyclic or corrupt link_map)\n", LinkMapMaxEntries);
+            return false;
+        }
         struct link_map map;
         if (!ReadMemory(linkMapAddr, &map, sizeof(map))) {
             Trace("ERROR: ReadMemory(%p, %" PRIx ") link_map FAILED\n", linkMapAddr, sizeof(map));
