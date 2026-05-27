@@ -3,11 +3,13 @@
 
 using System.Buffers;
 using System.IO;
+using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -248,13 +250,23 @@ namespace System.Net.Security.Tests
             }
         }
 
-        // Pinned to TLS 1.2: a pure in-memory two-session loop currently can't
-        // handle the TLS 1.3 post-handshake NewSessionTicket records that OpenSSL
-        // emits after the server consumes the client Finished. With SslStream on
-        // one side the data-path handles those records transparently; the
-        // standalone TlsSession surface does not yet (same scope as PHA).
-        [Fact]
-        public void TwoSessions_HandshakeAndPingPong_InMemory_Succeeds()
+        // Pure in-memory TlsSession <-> TlsSession exchange. The test runs both
+        // TLS 1.2 and TLS 1.3 to exercise the post-handshake record path.
+        //
+        // TLS 1.3 note: after the server consumes the client Finished, OpenSSL
+        // emits one or more NewSessionTicket records on the server->client side.
+        // The client MUST process those (via Decrypt) before its first Encrypt
+        // call -- otherwise OpenSSL on the client side has not yet finalized
+        // its write-key transition from client_handshake_traffic_secret to
+        // client_application_traffic_secret, and the server (which has already
+        // transitioned its read key) rejects the resulting ciphertext as
+        // "decryption failed or bad record mac". In real network deployments
+        // the client's receive pump consumes these bytes naturally; in this
+        // synchronous in-memory loop we drain them explicitly below.
+        [Theory]
+        [InlineData(SslProtocols.Tls12)]
+        [InlineData(SslProtocols.Tls13)]
+        public void TwoSessions_HandshakeAndPingPong_InMemory_Succeeds(SslProtocols protocols)
         {
             using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
             string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
@@ -262,13 +274,13 @@ namespace System.Net.Security.Tests
             using TlsContext serverCtx = TlsContext.Create(new SslServerAuthenticationOptions
             {
                 ServerCertificate = serverCert,
-                EnabledSslProtocols = SslProtocols.Tls12,
+                EnabledSslProtocols = protocols,
                 ClientCertificateRequired = false,
             });
             using TlsContext clientCtx = TlsContext.Create(new SslClientAuthenticationOptions
             {
                 TargetHost = serverName,
-                EnabledSslProtocols = SslProtocols.Tls12,
+                EnabledSslProtocols = protocols,
                 RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
             });
 
@@ -287,13 +299,267 @@ namespace System.Net.Security.Tests
             Assert.True(client.IsHandshakeComplete);
             Assert.True(server.IsHandshakeComplete);
             Assert.Equal(client.NegotiatedProtocol, server.NegotiatedProtocol);
-            Assert.Equal(SslProtocols.Tls12, client.NegotiatedProtocol);
+            Assert.Equal(protocols, client.NegotiatedProtocol);
+
+            // Drain any leftover server->client post-handshake bytes (TLS 1.3 NST)
+            // through the client before exchanging app data. See comment above.
+            DrainAppDataInto(client, sToC, ref sToCLen);
 
             byte[] ping = "PING from client"u8.ToArray();
             byte[] pong = "PONG from server"u8.ToArray();
 
             Assert.Equal(ping, RoundtripRecord(client, server, ping));
             Assert.Equal(pong, RoundtripRecord(server, client, pong));
+        }
+
+        private static void DrainAppDataInto(TlsSession session, byte[] cipher, ref int cipherLen)
+        {
+            byte[] scratch = new byte[CipherBufSize];
+            while (cipherLen > 0)
+            {
+                session.Decrypt(
+                    cipher.AsSpan(0, cipherLen), scratch, out int consumed, out _);
+                if (consumed == 0)
+                {
+                    break;
+                }
+                if (consumed < cipherLen)
+                {
+                    Buffer.BlockCopy(cipher, consumed, cipher, 0, cipherLen - consumed);
+                }
+                cipherLen -= consumed;
+            }
+        }
+
+        // TlsSession driven against a real non-blocking Socket (Socket.Blocking=false).
+        // The peer is a plain SslStream over a NetworkStream. This exercises the
+        // "give me raw socket bytes, I don't care about your I/O model" contract:
+        // TlsSession sees only Send/Receive returning WouldBlock and never blocks
+        // on I/O itself.
+        [Fact]
+        public async Task ServerSession_OnNonBlockingSocket_AgainstSslStreamClient_Succeeds()
+        {
+            using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
+            string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
+
+            (Socket clientSocket, Socket serverSocket) = await CreateLoopbackSocketPairAsync();
+            serverSocket.Blocking = false;
+
+            using (clientSocket)
+            using (serverSocket)
+            using (NetworkStream clientNetStream = new NetworkStream(clientSocket, ownsSocket: false))
+            using (SslStream clientSsl = new SslStream(clientNetStream, leaveInnerStreamOpen: true, TestHelper.AllowAnyServerCertificate))
+            {
+                using TlsContext ctx = TlsContext.Create(new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = serverCert,
+                    EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                    ClientCertificateRequired = false,
+                });
+                using TlsSession session = TlsSession.Create(ctx);
+
+                Task clientHandshake = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+                {
+                    TargetHost = serverName,
+                    EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                    RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
+                });
+
+                Task serverHandshake = Task.Run(() => DriveHandshakeNonBlocking(session, serverSocket));
+
+                await Task.WhenAll(clientHandshake, serverHandshake).WaitAsync(TimeSpan.FromSeconds(30));
+
+                Assert.True(session.IsHandshakeComplete);
+                Assert.True(clientSsl.IsAuthenticated);
+
+                byte[] ping = "PING over non-blocking socket"u8.ToArray();
+                byte[] pong = "PONG over non-blocking socket"u8.ToArray();
+
+                Task clientWrite = clientSsl.WriteAsync(ping).AsTask();
+                byte[] got = await Task.Run(() => ReadOnePlaintextNonBlocking(session, serverSocket, ping.Length))
+                                       .WaitAsync(TimeSpan.FromSeconds(30));
+                await clientWrite;
+                Assert.Equal(ping, got);
+
+                await Task.Run(() => WritePlaintextNonBlocking(session, serverSocket, pong))
+                          .WaitAsync(TimeSpan.FromSeconds(30));
+                byte[] back = new byte[pong.Length];
+                int n = 0;
+                while (n < back.Length)
+                {
+                    int r = await clientSsl.ReadAsync(back.AsMemory(n));
+                    Assert.True(r > 0);
+                    n += r;
+                }
+                Assert.Equal(pong, back);
+            }
+        }
+
+        private static async Task<(Socket Client, Socket Server)> CreateLoopbackSocketPairAsync()
+        {
+            using Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            listener.Bind(new System.Net.IPEndPoint(System.Net.IPAddress.Loopback, 0));
+            listener.Listen(1);
+
+            Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            Task<Socket> acceptTask = listener.AcceptAsync();
+            await client.ConnectAsync(listener.LocalEndPoint!);
+            Socket server = await acceptTask;
+            client.NoDelay = true;
+            server.NoDelay = true;
+            return (client, server);
+        }
+
+        private static void DriveHandshakeNonBlocking(TlsSession session, Socket socket)
+        {
+            byte[] netIn = new byte[CipherBufSize];
+            byte[] netOut = new byte[CipherBufSize];
+            int inUsed = 0;
+
+            while (!session.IsHandshakeComplete)
+            {
+                TlsOperationStatus status = session.ProcessHandshake(
+                    netIn.AsSpan(0, inUsed), netOut, out int consumed, out int produced);
+
+                if (consumed > 0)
+                {
+                    if (consumed < inUsed)
+                    {
+                        Buffer.BlockCopy(netIn, consumed, netIn, 0, inUsed - consumed);
+                    }
+                    inUsed -= consumed;
+                }
+
+                if (produced > 0)
+                {
+                    NonBlockingSendAll(socket, netOut, 0, produced);
+                }
+
+                switch (status)
+                {
+                    case TlsOperationStatus.Complete:
+                        continue;
+                    case TlsOperationStatus.WantWrite:
+                        DrainPending(session, socket, netOut);
+                        continue;
+                    case TlsOperationStatus.WantRead:
+                        inUsed += NonBlockingReceiveSome(socket, netIn, inUsed);
+                        continue;
+                    case TlsOperationStatus.Closed:
+                        throw new IOException("Peer closed connection during handshake.");
+                }
+            }
+        }
+
+        private static byte[] ReadOnePlaintextNonBlocking(TlsSession session, Socket socket, int expectedLength)
+        {
+            byte[] netIn = new byte[CipherBufSize];
+            byte[] plain = new byte[CipherBufSize];
+            int inUsed = 0;
+
+            while (true)
+            {
+                TlsOperationStatus status = session.Decrypt(
+                    netIn.AsSpan(0, inUsed), plain, out int consumed, out int produced);
+
+                if (consumed > 0)
+                {
+                    if (consumed < inUsed)
+                    {
+                        Buffer.BlockCopy(netIn, consumed, netIn, 0, inUsed - consumed);
+                    }
+                    inUsed -= consumed;
+                }
+
+                if (produced > 0)
+                {
+                    Assert.Equal(expectedLength, produced);
+                    return plain.AsSpan(0, produced).ToArray();
+                }
+
+                switch (status)
+                {
+                    case TlsOperationStatus.Complete:
+                        continue;
+                    case TlsOperationStatus.WantRead:
+                        inUsed += NonBlockingReceiveSome(socket, netIn, inUsed);
+                        continue;
+                    case TlsOperationStatus.WantWrite:
+                        DrainPending(session, socket, new byte[CipherBufSize]);
+                        continue;
+                    case TlsOperationStatus.Closed:
+                        throw new IOException("Connection closed while reading plaintext.");
+                }
+            }
+        }
+
+        private static void WritePlaintextNonBlocking(TlsSession session, Socket socket, ReadOnlySpan<byte> data)
+        {
+            byte[] outBuf = new byte[CipherBufSize];
+            int sent = 0;
+            while (sent < data.Length)
+            {
+                TlsOperationStatus status = session.Encrypt(
+                    data.Slice(sent), outBuf, out int consumed, out int produced);
+                sent += consumed;
+                if (produced > 0)
+                {
+                    NonBlockingSendAll(socket, outBuf, 0, produced);
+                }
+                if (status == TlsOperationStatus.WantWrite)
+                {
+                    DrainPending(session, socket, outBuf);
+                }
+            }
+        }
+
+        private static void DrainPending(TlsSession session, Socket socket, byte[] scratch)
+        {
+            while (session.HasPendingOutput)
+            {
+                session.DrainPendingOutput(scratch, out int n);
+                if (n > 0)
+                {
+                    NonBlockingSendAll(socket, scratch, 0, n);
+                }
+            }
+        }
+
+        private static void NonBlockingSendAll(Socket socket, byte[] buffer, int offset, int count)
+        {
+            while (count > 0)
+            {
+                try
+                {
+                    int n = socket.Send(buffer, offset, count, SocketFlags.None);
+                    offset += n;
+                    count -= n;
+                }
+                catch (SocketException ex) when (ex.SocketErrorCode == SocketError.WouldBlock)
+                {
+                    socket.Poll(-1, SelectMode.SelectWrite);
+                }
+            }
+        }
+
+        private static int NonBlockingReceiveSome(Socket socket, byte[] buffer, int offset)
+        {
+            while (true)
+            {
+                try
+                {
+                    int n = socket.Receive(buffer, offset, buffer.Length - offset, SocketFlags.None);
+                    if (n == 0)
+                    {
+                        throw new IOException("Unexpected EOF.");
+                    }
+                    return n;
+                }
+                catch (SocketException ex) when (ex.SocketErrorCode == SocketError.WouldBlock)
+                {
+                    socket.Poll(-1, SelectMode.SelectRead);
+                }
+            }
         }
 
         [Fact]
