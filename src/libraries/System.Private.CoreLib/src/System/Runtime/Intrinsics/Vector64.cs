@@ -113,11 +113,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<T> Abs<T>(Vector64<T> vector)
         {
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong))
-             || (typeof(T) == typeof(nuint)))
+            if (Scalar<T>.IsUnsigned)
             {
                 return vector;
             }
@@ -379,20 +375,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector64<T> Ceiling<T>(Vector64<T> vector)
         {
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(short))
-             || (typeof(T) == typeof(int))
-             || (typeof(T) == typeof(long))
-             || (typeof(T) == typeof(nint))
-             || (typeof(T) == typeof(nuint))
-             || (typeof(T) == typeof(sbyte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong)))
-            {
-                return vector;
-            }
-            else
+            if (Scalar<T>.IsFloatingPoint)
             {
                 Unsafe.SkipInit(out Vector64<T> result);
 
@@ -403,6 +386,11 @@ namespace System.Runtime.Intrinsics
                 }
 
                 return result;
+            }
+            else
+            {
+                ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
+                return vector;
             }
         }
 
@@ -675,11 +663,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<T> CopySign<T>(Vector64<T> value, Vector64<T> sign)
         {
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong))
-             || (typeof(T) == typeof(nuint)))
+            if (Scalar<T>.IsUnsigned)
             {
                 return value;
             }
@@ -1592,20 +1576,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector64<T> Floor<T>(Vector64<T> vector)
         {
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(short))
-             || (typeof(T) == typeof(int))
-             || (typeof(T) == typeof(long))
-             || (typeof(T) == typeof(nint))
-             || (typeof(T) == typeof(nuint))
-             || (typeof(T) == typeof(sbyte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong)))
-            {
-                return vector;
-            }
-            else
+            if (Scalar<T>.IsFloatingPoint)
             {
                 Unsafe.SkipInit(out Vector64<T> result);
 
@@ -1616,6 +1587,11 @@ namespace System.Runtime.Intrinsics
                 }
 
                 return result;
+            }
+            else
+            {
+                ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
+                return vector;
             }
         }
 
@@ -1987,11 +1963,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<T> IsNegative<T>(Vector64<T> vector)
         {
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong))
-             || (typeof(T) == typeof(nuint)))
+            if (Scalar<T>.IsUnsigned)
             {
                 return Vector64<T>.Zero;
             }
@@ -2062,11 +2034,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<T> IsPositive<T>(Vector64<T> vector)
         {
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong))
-             || (typeof(T) == typeof(nuint)))
+            if (Scalar<T>.IsUnsigned)
             {
                 return Vector64<T>.AllBitsSet;
             }
@@ -3052,20 +3020,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector64<T> Round<T>(Vector64<T> vector)
         {
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(short))
-             || (typeof(T) == typeof(int))
-             || (typeof(T) == typeof(long))
-             || (typeof(T) == typeof(nint))
-             || (typeof(T) == typeof(nuint))
-             || (typeof(T) == typeof(sbyte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong)))
-            {
-                return vector;
-            }
-            else
+            if (Scalar<T>.IsFloatingPoint)
             {
                 Unsafe.SkipInit(out Vector64<T> result);
 
@@ -3076,6 +3031,11 @@ namespace System.Runtime.Intrinsics
                 }
 
                 return result;
+            }
+            else
+            {
+                ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
+                return vector;
             }
         }
 
@@ -3336,362 +3296,131 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static Vector64<ulong> ShiftRightLogical(Vector64<ulong> vector, int shiftCount) => vector >>> shiftCount;
 
-#if !MONO
-        // These fallback methods only exist so that ShuffleNative has the same behaviour when called directly or via
+        private static Vector64<T> ShuffleFallback<T, TIndex>(Vector64<T> vector, Vector64<TIndex> indices)
+            where TIndex : IBinaryInteger<TIndex>
+        {
+            Debug.Assert(Vector64<T>.Count == Vector64<TIndex>.Count);
+            Vector64<T> result = Vector64<T>.Zero;
+
+            for (int index = 0; index < Vector64<T>.Count; index++)
+            {
+                int selectedIndex = int.CreateSaturating(indices.GetElementUnsafe(index));
+
+                if ((uint)selectedIndex < (uint)Vector64<T>.Count)
+                {
+                    T selectedValue = vector.GetElementUnsafe(selectedIndex);
+                    result.SetElementUnsafe(index, selectedValue);
+                }
+            }
+            return result;
+        }
+
+        // This method only exists so that ShuffleNative has the same behaviour when called directly or via
         // reflection - reflecting into internal runtime methods is not supported, so we don't worry about others
         // reflecting into these. TODO: figure out if this can be solved in a nicer way.
 
         [Intrinsic]
-        internal static Vector64<byte> ShuffleNativeFallback(Vector64<byte> vector, Vector64<byte> indices)
+        private static Vector64<T> ShuffleNativeFallback<T, TIndex>(Vector64<T> vector, Vector64<TIndex> indices)
+            where TIndex : IBinaryInteger<TIndex>
         {
-            return Shuffle(vector, indices);
-        }
-
-        [Intrinsic]
-        internal static Vector64<sbyte> ShuffleNativeFallback(Vector64<sbyte> vector, Vector64<sbyte> indices)
-        {
-            return Shuffle(vector, indices);
-        }
-
-        [Intrinsic]
-        internal static Vector64<short> ShuffleNativeFallback(Vector64<short> vector, Vector64<short> indices)
-        {
-            return Shuffle(vector, indices);
-        }
-
-        [Intrinsic]
-        internal static Vector64<ushort> ShuffleNativeFallback(Vector64<ushort> vector, Vector64<ushort> indices)
-        {
-            return Shuffle(vector, indices);
-        }
-
-        [Intrinsic]
-        internal static Vector64<int> ShuffleNativeFallback(Vector64<int> vector, Vector64<int> indices)
-        {
-            return Shuffle(vector, indices);
-        }
-
-        [Intrinsic]
-        internal static Vector64<uint> ShuffleNativeFallback(Vector64<uint> vector, Vector64<uint> indices)
-        {
-            return Shuffle(vector, indices);
-        }
-
-        [Intrinsic]
-        internal static Vector64<float> ShuffleNativeFallback(Vector64<float> vector, Vector64<int> indices)
-        {
-            return Shuffle(vector, indices);
-        }
-#endif
-
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
-        [Intrinsic]
-        public static Vector64<byte> Shuffle(Vector64<byte> vector, Vector64<byte> indices)
-        {
-            Unsafe.SkipInit(out Vector64<byte> result);
-
-            for (int index = 0; index < Vector64<byte>.Count; index++)
-            {
-                byte selectedIndex = indices.GetElementUnsafe(index);
-                byte selectedValue = 0;
-
-                if (selectedIndex < Vector64<byte>.Count)
-                {
-                    selectedValue = vector.GetElementUnsafe(selectedIndex);
-                }
-                result.SetElementUnsafe(index, selectedValue);
-            }
-
-            return result;
+            return ShuffleFallback(vector, indices);
         }
 
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
         /// <param name="vector">The input vector from which values are selected.</param>
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
+        public static Vector64<byte> Shuffle(Vector64<byte> vector, Vector64<byte> indices) => ShuffleFallback(vector, indices);
+
+        /// <inheritdoc cref="Shuffle(Vector64{byte}, Vector64{byte})" />
+        [Intrinsic]
+        public static Vector64<short> Shuffle(Vector64<short> vector, Vector64<short> indices) => ShuffleFallback(vector, indices);
+
+        /// <inheritdoc cref="Shuffle(Vector64{byte}, Vector64{byte})" />
+        [Intrinsic]
+        public static Vector64<int> Shuffle(Vector64<int> vector, Vector64<int> indices) => ShuffleFallback(vector, indices);
+
+        /// <inheritdoc cref="Shuffle(Vector64{byte}, Vector64{byte})" />
+        [Intrinsic]
+        public static Vector64<nint> Shuffle(Vector64<nint> vector, Vector64<nint> indices) => ShuffleFallback(vector, indices);
+
+        /// <inheritdoc cref="Shuffle(Vector64{byte}, Vector64{byte})" />
         [Intrinsic]
         [CLSCompliant(false)]
-        public static Vector64<sbyte> Shuffle(Vector64<sbyte> vector, Vector64<sbyte> indices)
-        {
-            Unsafe.SkipInit(out Vector64<sbyte> result);
+        public static Vector64<sbyte> Shuffle(Vector64<sbyte> vector, Vector64<sbyte> indices) => ShuffleFallback(vector, indices);
 
-            for (int index = 0; index < Vector64<sbyte>.Count; index++)
-            {
-                byte selectedIndex = (byte)indices.GetElementUnsafe(index);
-                sbyte selectedValue = 0;
-
-                if (selectedIndex < Vector64<sbyte>.Count)
-                {
-                    selectedValue = vector.GetElementUnsafe(selectedIndex);
-                }
-                result.SetElementUnsafe(index, selectedValue);
-            }
-
-            return result;
-        }
-
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.
-        /// Behavior is platform-dependent for out-of-range indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
-        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 7].</remarks>
-#if !MONO
+        /// <inheritdoc cref="Shuffle(Vector64{byte}, Vector64{byte})" />
         [Intrinsic]
-#else
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
-        public static Vector64<byte> ShuffleNative(Vector64<byte> vector, Vector64<byte> indices)
-        {
-#if !MONO
-            return ShuffleNativeFallback(vector, indices);
-#else
-            return Shuffle(vector, indices);
-#endif
-        }
+        public static Vector64<float> Shuffle(Vector64<float> vector, Vector64<int> indices) => ShuffleFallback(vector, indices);
 
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.
-        /// Behavior is platform-dependent for out-of-range indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
-        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 7].</remarks>
-#if !MONO
-        [Intrinsic]
-#else
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
-        [CLSCompliant(false)]
-        public static Vector64<sbyte> ShuffleNative(Vector64<sbyte> vector, Vector64<sbyte> indices)
-        {
-#if !MONO
-            return ShuffleNativeFallback(vector, indices);
-#else
-            return Shuffle(vector, indices);
-#endif
-        }
-
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
-        [Intrinsic]
-        public static Vector64<short> Shuffle(Vector64<short> vector, Vector64<short> indices)
-        {
-            Unsafe.SkipInit(out Vector64<short> result);
-
-            for (int index = 0; index < Vector64<short>.Count; index++)
-            {
-                ushort selectedIndex = (ushort)indices.GetElementUnsafe(index);
-                short selectedValue = 0;
-
-                if (selectedIndex < Vector64<short>.Count)
-                {
-                    selectedValue = vector.GetElementUnsafe(selectedIndex);
-                }
-                result.SetElementUnsafe(index, selectedValue);
-            }
-
-            return result;
-        }
-
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        /// <inheritdoc cref="Shuffle(Vector64{byte}, Vector64{byte})" />
         [Intrinsic]
         [CLSCompliant(false)]
-        public static Vector64<ushort> Shuffle(Vector64<ushort> vector, Vector64<ushort> indices)
-        {
-            Unsafe.SkipInit(out Vector64<ushort> result);
+        public static Vector64<ushort> Shuffle(Vector64<ushort> vector, Vector64<ushort> indices) => ShuffleFallback(vector, indices);
 
-            for (int index = 0; index < Vector64<ushort>.Count; index++)
-            {
-                ushort selectedIndex = indices.GetElementUnsafe(index);
-                ushort selectedValue = 0;
-
-                if (selectedIndex < Vector64<ushort>.Count)
-                {
-                    selectedValue = vector.GetElementUnsafe(selectedIndex);
-                }
-                result.SetElementUnsafe(index, selectedValue);
-            }
-
-            return result;
-        }
-
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
-        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 3].</remarks>
-#if !MONO
-        [Intrinsic]
-#else
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
-        public static Vector64<short> ShuffleNative(Vector64<short> vector, Vector64<short> indices)
-        {
-#if !MONO
-            return ShuffleNativeFallback(vector, indices);
-#else
-            return Shuffle(vector, indices);
-#endif
-        }
-
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
-        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 3].</remarks>
-#if !MONO
-        [Intrinsic]
-#else
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
-        [CLSCompliant(false)]
-        public static Vector64<ushort> ShuffleNative(Vector64<ushort> vector, Vector64<ushort> indices)
-        {
-#if !MONO
-            return ShuffleNativeFallback(vector, indices);
-#else
-            return Shuffle(vector, indices);
-#endif
-        }
-
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
-        [Intrinsic]
-        public static Vector64<int> Shuffle(Vector64<int> vector, Vector64<int> indices)
-        {
-            Unsafe.SkipInit(out Vector64<int> result);
-
-            for (int index = 0; index < Vector64<int>.Count; index++)
-            {
-                uint selectedIndex = (uint)indices.GetElementUnsafe(index);
-                int selectedValue = 0;
-
-                if (selectedIndex < Vector64<int>.Count)
-                {
-                    selectedValue = vector.GetElementUnsafe((int)selectedIndex);
-                }
-                result.SetElementUnsafe(index, selectedValue);
-            }
-
-            return result;
-        }
-
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        /// <inheritdoc cref="Shuffle(Vector64{byte}, Vector64{byte})" />
         [Intrinsic]
         [CLSCompliant(false)]
-        public static Vector64<uint> Shuffle(Vector64<uint> vector, Vector64<uint> indices)
-        {
-            Unsafe.SkipInit(out Vector64<uint> result);
+        public static Vector64<uint> Shuffle(Vector64<uint> vector, Vector64<uint> indices) => ShuffleFallback(vector, indices);
 
-            for (int index = 0; index < Vector64<uint>.Count; index++)
-            {
-                uint selectedIndex = indices.GetElementUnsafe(index);
-                uint selectedValue = 0;
-
-                if (selectedIndex < Vector64<uint>.Count)
-                {
-                    selectedValue = vector.GetElementUnsafe((int)selectedIndex);
-                }
-                result.SetElementUnsafe(index, selectedValue);
-            }
-
-            return result;
-        }
-
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        /// <inheritdoc cref="Shuffle(Vector64{byte}, Vector64{byte})" />
         [Intrinsic]
-        public static Vector64<float> Shuffle(Vector64<float> vector, Vector64<int> indices)
-        {
-            Unsafe.SkipInit(out Vector64<float> result);
-
-            for (int index = 0; index < Vector64<float>.Count; index++)
-            {
-                uint selectedIndex = (uint)indices.GetElementUnsafe(index);
-                float selectedValue = 0;
-
-                if (selectedIndex < Vector64<float>.Count)
-                {
-                    selectedValue = vector.GetElementUnsafe((int)selectedIndex);
-                }
-                result.SetElementUnsafe(index, selectedValue);
-            }
-
-            return result;
-        }
-
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
-        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 1].</remarks>
-#if !MONO
-        [Intrinsic]
-#else
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
-        public static Vector64<int> ShuffleNative(Vector64<int> vector, Vector64<int> indices)
-        {
-#if !MONO
-            return ShuffleNativeFallback(vector, indices);
-#else
-            return Shuffle(vector, indices);
-#endif
-        }
-
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
-        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 1].</remarks>
-#if !MONO
-        [Intrinsic]
-#else
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
         [CLSCompliant(false)]
-        public static Vector64<uint> ShuffleNative(Vector64<uint> vector, Vector64<uint> indices)
-        {
-#if !MONO
-            return ShuffleNativeFallback(vector, indices);
-#else
-            return Shuffle(vector, indices);
-#endif
-        }
+        public static Vector64<nuint> Shuffle(Vector64<nuint> vector, Vector64<nuint> indices) => ShuffleFallback(vector, indices);
 
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
         /// <param name="vector">The input vector from which values are selected.</param>
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
-        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 1].</remarks>
-#if !MONO
+        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, Count - 1].</remarks>
         [Intrinsic]
-#else
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
-        public static Vector64<float> ShuffleNative(Vector64<float> vector, Vector64<int> indices)
-        {
-#if !MONO
-            return ShuffleNativeFallback(vector, indices);
-#else
-            return Shuffle(vector, indices);
-#endif
-        }
+        public static Vector64<byte> ShuffleNative(Vector64<byte> vector, Vector64<byte> indices) => ShuffleNativeFallback(vector, indices);
+
+        /// <inheritdoc cref="ShuffleNative(Vector64{byte}, Vector64{byte})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<short> ShuffleNative(Vector64<short> vector, Vector64<short> indices) => ShuffleNativeFallback(vector, indices);
+
+        /// <inheritdoc cref="ShuffleNative(Vector64{byte}, Vector64{byte})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<int> ShuffleNative(Vector64<int> vector, Vector64<int> indices) => ShuffleNativeFallback(vector, indices);
+
+        /// <inheritdoc cref="ShuffleNative(Vector64{byte}, Vector64{byte})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<nint> ShuffleNative(Vector64<nint> vector, Vector64<nint> indices) => ShuffleNativeFallback(vector, indices);
+
+        /// <inheritdoc cref="ShuffleNative(Vector64{byte}, Vector64{byte})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static Vector64<sbyte> ShuffleNative(Vector64<sbyte> vector, Vector64<sbyte> indices) => ShuffleNativeFallback(vector, indices);
+
+        /// <inheritdoc cref="ShuffleNative(Vector64{byte}, Vector64{byte})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<float> ShuffleNative(Vector64<float> vector, Vector64<int> indices) => ShuffleNativeFallback(vector, indices);
+
+        /// <inheritdoc cref="ShuffleNative(Vector64{byte}, Vector64{byte})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static Vector64<ushort> ShuffleNative(Vector64<ushort> vector, Vector64<ushort> indices) => ShuffleNativeFallback(vector, indices);
+
+        /// <inheritdoc cref="ShuffleNative(Vector64{byte}, Vector64{byte})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static Vector64<uint> ShuffleNative(Vector64<uint> vector, Vector64<uint> indices) => ShuffleNativeFallback(vector, indices);
+
+        /// <inheritdoc cref="ShuffleNative(Vector64{byte}, Vector64{byte})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static Vector64<nuint> ShuffleNative(Vector64<nuint> vector, Vector64<nuint> indices) => ShuffleNativeFallback(vector, indices);
 
         internal static Vector64<T> Asin<T>(Vector64<T> vector)
             where T : ITrigonometricFunctions<T>
@@ -4001,20 +3730,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector64<T> Truncate<T>(Vector64<T> vector)
         {
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(short))
-             || (typeof(T) == typeof(int))
-             || (typeof(T) == typeof(long))
-             || (typeof(T) == typeof(nint))
-             || (typeof(T) == typeof(nuint))
-             || (typeof(T) == typeof(sbyte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong)))
-            {
-                return vector;
-            }
-            else
+            if (Scalar<T>.IsFloatingPoint)
             {
                 Unsafe.SkipInit(out Vector64<T> result);
 
@@ -4025,6 +3741,11 @@ namespace System.Runtime.Intrinsics
                 }
 
                 return result;
+            }
+            else
+            {
+                ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
+                return vector;
             }
         }
 

@@ -10787,7 +10787,8 @@ void Lowering::LowerStoreCoalescing(GenTree* node)
             return;
         }
 
-        if ((currData.offset == prevData.offset) && (currData.targetType == prevData.targetType))
+        if ((currData.offset == prevData.offset) && (currData.accessSize >= prevData.accessSize) &&
+            (currData.targetType == prevData.targetType))
         {
             if (m_compiler->gtTreeHasSideEffects(prevData.value, GTF_GLOB_EFFECT) ||
                 m_compiler->gtTreeHasSideEffects(currData.value, GTF_GLOB_EFFECT))

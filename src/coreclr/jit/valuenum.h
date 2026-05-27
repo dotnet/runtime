@@ -1133,6 +1133,12 @@ public:
     // Returns true iff the VN represents a Type handle constant.
     bool IsVNTypeHandle(ValueNum vn);
 
+    // Returns true iff the VN represents a Type handle constant. If so,
+    // *pCls is set to the resolved compile-time class handle (looked up
+    // through the embedded-handle map so AOT/R2R-encoded handles are
+    // mapped back). On failure *pCls is set to NO_CLASS_HANDLE.
+    bool IsVNTypeHandle(ValueNum vn, CORINFO_CLASS_HANDLE* pCls);
+
     // Returns true iff the VN represents a relop
     bool IsVNRelop(ValueNum vn, VNFuncApp* pFuncApp = nullptr);
 
