@@ -23,7 +23,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         public ServiceProviderEngineScope(ServiceProvider provider, bool isRootScope)
         {
-            ResolvedServices = new Dictionary<ServiceCacheKey, object?>();
+            ResolvedServices = new Dictionary<ServiceCacheKey, object?>(isRootScope ? 0 : provider.ResolvedServicesCapacity);
             RootProvider = provider;
             IsRootScope = isRootScope;
         }

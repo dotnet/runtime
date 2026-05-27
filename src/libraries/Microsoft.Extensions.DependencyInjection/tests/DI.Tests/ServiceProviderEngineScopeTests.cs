@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
 using Xunit;
@@ -39,6 +40,32 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             {
                 Assert.Contains(serviceProviderInterface, engineScopeInterfaces);
             }
+        }
+
+        [Fact]
+        public void ScopeResolvedServicesIsPreSizedToScopedRegistrations()
+        {
+            var services = new ServiceCollection();
+            services.AddSingleton<IFakeService, FakeService>();
+            services.AddTransient<AnotherService>();
+            services.AddScoped<ScopedService>();
+            services.AddScoped<AnotherScopedService>();
+
+            var provider = new ServiceProvider(services, ServiceProviderOptions.Default);
+            var scope = new ServiceProviderEngineScope(provider, isRootScope: false);
+
+            Assert.Equal(new Dictionary<ServiceCacheKey, object?>(2).EnsureCapacity(0), scope.ResolvedServices.EnsureCapacity(0));
+        }
+
+        [Fact]
+        public void RootScopeResolvedServicesUsesDefaultCapacity()
+        {
+            var services = new ServiceCollection();
+            services.AddScoped<ScopedService>();
+
+            var provider = new ServiceProvider(services, ServiceProviderOptions.Default);
+
+            Assert.Equal(new Dictionary<ServiceCacheKey, object?>().EnsureCapacity(0), provider.Root.ResolvedServices.EnsureCapacity(0));
         }
 
         [Fact]
@@ -172,6 +199,18 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     Dispose();
                 }
             }
+        }
+
+        private sealed class ScopedService
+        {
+        }
+
+        private sealed class AnotherScopedService
+        {
+        }
+
+        private sealed class AnotherService
+        {
         }
     }
 }
