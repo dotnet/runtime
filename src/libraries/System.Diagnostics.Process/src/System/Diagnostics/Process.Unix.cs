@@ -96,8 +96,42 @@ namespace System.Diagnostics
 
         private void KillTree(ref List<Exception>? exceptions)
         {
+            // First, stop and collect the entire process tree before killing any process.
+            // This is necessary because killing a parent process may cause children with
+            // PR_SET_PDEATHSIG (KillOnParentExit) to be killed by the kernel immediately,
+            // making it impossible to discover their descendants afterward.
+            List<Process> stoppedProcesses = new List<Process>();
+            StopTree(ref exceptions, stoppedProcesses);
+
+            // Now kill all stopped processes.
+            foreach (Process process in stoppedProcesses)
+            {
+                int killResult = Interop.Sys.Kill(process._processId, Interop.Sys.GetPlatformSignalNumber(PosixSignal.SIGKILL));
+                if (killResult != 0)
+                {
+                    Interop.Error error = Interop.Sys.GetLastError();
+                    // Ignore 'process no longer exists' error.
+                    if (error != Interop.Error.ESRCH)
+                    {
+                        (exceptions ??= new List<Exception>()).Add(new Win32Exception());
+                    }
+                }
+
+                if (process != this)
+                {
+                    process.Dispose();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Recursively stops all processes in the tree (depth-first) and collects them into a flat list.
+        /// Stopping (SIGSTOP) before enumerating children ensures we can discover the entire tree
+        /// before any kill signals cause cascading terminations.
+        /// </summary>
+        private void StopTree(ref List<Exception>? exceptions, List<Process> stoppedProcesses)
+        {
             // If the process has exited, we can no longer determine its children.
-            // If we know the process has exited, stop already.
             if (GetHasExited(refresh: false))
             {
                 return;
@@ -117,23 +151,12 @@ namespace System.Diagnostics
                 return;
             }
 
+            stoppedProcesses.Add(this);
+
             List<Process> children = GetChildProcesses();
-
-            int killResult = Interop.Sys.Kill(_processId, Interop.Sys.GetPlatformSignalNumber(PosixSignal.SIGKILL));
-            if (killResult != 0)
-            {
-                Interop.Error error = Interop.Sys.GetLastError();
-                // Ignore 'process no longer exists' error.
-                if (error != Interop.Error.ESRCH)
-                {
-                    (exceptions ??= new List<Exception>()).Add(new Win32Exception());
-                }
-            }
-
             foreach (Process childProcess in children)
             {
-                childProcess.KillTree(ref exceptions);
-                childProcess.Dispose();
+                childProcess.StopTree(ref exceptions, stoppedProcesses);
             }
         }
 
