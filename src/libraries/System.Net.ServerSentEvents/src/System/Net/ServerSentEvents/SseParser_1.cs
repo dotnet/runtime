@@ -315,10 +315,7 @@ namespace System.Net.ServerSentEvents
                     {
                         throw new InvalidDataException(SR.InvalidDataException_SseExceededMaxLength);
                     }
-                    if (newLength > MaxBufferSize)
-                    {
-                        throw new InvalidDataException(SR.InvalidDataException_SseExceededMaxLength);
-                    }
+
                     GrowBuffer(ref _lineBuffer, newLength);
                 }
             }
@@ -412,6 +409,7 @@ namespace System.Net.ServerSentEvents
                 {
                     throw new InvalidDataException(SR.InvalidDataException_SseExceededMaxLength);
                 }
+
                 if (_dataBuffer is null || newLength > _dataBuffer.Length)
                 {
                     GrowBuffer(ref _dataBuffer, newLength);
