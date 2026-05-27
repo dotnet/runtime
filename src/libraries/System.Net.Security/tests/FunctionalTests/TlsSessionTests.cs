@@ -5,6 +5,7 @@ using System.Buffers;
 using System.IO;
 using System.Net.Test.Common;
 using System.Security.Authentication;
+using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
@@ -150,6 +151,50 @@ namespace System.Net.Security.Tests
                 byte[] buf = new byte[16];
                 int n = await clientSsl.ReadAsync(buf).AsTask().WaitAsync(TimeSpan.FromSeconds(30));
                 Assert.Equal(0, n);
+            }
+        }
+
+        [Fact]
+        public async Task ServerSession_ChannelBinding_MatchesSslStreamClient()
+        {
+            using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
+            string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
+
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+            using (clientStream)
+            using (serverStream)
+            using (SslStream clientSsl = new SslStream(clientStream, leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate))
+            {
+                using TlsContext ctx = TlsContext.Create(new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = serverCert,
+                    EnabledSslProtocols = SslProtocols.Tls12,
+                    ClientCertificateRequired = false,
+                });
+                using TlsSession session = TlsSession.Create(ctx);
+
+                Task clientHandshake = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+                {
+                    TargetHost = serverName,
+                    EnabledSslProtocols = SslProtocols.Tls12,
+                    RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
+                });
+                Task serverHandshake = DriveServerHandshakeAsync(session, serverStream);
+                await Task.WhenAll(clientHandshake, serverHandshake).WaitAsync(TimeSpan.FromSeconds(30));
+
+                using ChannelBinding? serverBinding = session.GetChannelBinding(ChannelBindingKind.Unique);
+                using ChannelBinding? clientBinding = clientSsl.TransportContext?.GetChannelBinding(ChannelBindingKind.Unique);
+
+                Assert.NotNull(serverBinding);
+                Assert.NotNull(clientBinding);
+                Assert.False(serverBinding!.IsInvalid);
+                Assert.Equal(clientBinding!.Size, serverBinding.Size);
+
+                byte[] s = new byte[serverBinding.Size];
+                byte[] c = new byte[clientBinding.Size];
+                System.Runtime.InteropServices.Marshal.Copy(serverBinding.DangerousGetHandle(), s, 0, s.Length);
+                System.Runtime.InteropServices.Marshal.Copy(clientBinding.DangerousGetHandle(), c, 0, c.Length);
+                Assert.Equal(c, s);
             }
         }
 

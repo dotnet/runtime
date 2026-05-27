@@ -5,6 +5,7 @@ using System.Buffers;
 using System.Diagnostics;
 using System.IO;
 using System.Security.Authentication;
+using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography.X509Certificates;
 
 namespace System.Net.Security
@@ -107,6 +108,22 @@ namespace System.Net.Security
                 return null;
             }
             return CertificateValidationPal.GetRemoteCertificate(_securityContext);
+        }
+
+        /// <summary>
+        /// Returns a <see cref="ChannelBinding"/> for the requested
+        /// <paramref name="kind"/> derived from the current TLS session, or
+        /// <c>null</c> if the binding is unavailable (e.g. handshake not yet
+        /// complete, or unsupported binding kind).
+        /// </summary>
+        public ChannelBinding? GetChannelBinding(ChannelBindingKind kind)
+        {
+            ThrowIfDisposed();
+            if (_securityContext == null || _securityContext.IsInvalid)
+            {
+                return null;
+            }
+            return SslStreamPal.QueryContextChannelBinding(_securityContext, kind);
         }
 
         // ── Handshake ─────────────────────────────────────────────────────
