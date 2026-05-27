@@ -489,10 +489,10 @@ void UnwindInfoTable::FlushPendingEntries()
         if (lo > 0)
         {
             ULONG i = lo - 1;
-            if (relativeEntryPoint < RUNTIME_FUNCTION__EndAddress(&unwindInfo->pTable[i], unwindInfo->iRangeStart))
+            if (unwindInfo->pTable[i].UnwindData != 0 &&
+                relativeEntryPoint < RUNTIME_FUNCTION__EndAddress(&unwindInfo->pTable[i], unwindInfo->iRangeStart))
             {
-                if (unwindInfo->pTable[i].UnwindData != 0)
-                    unwindInfo->cDeletedEntries++;
+                unwindInfo->cDeletedEntries++;
                 unwindInfo->pTable[i].UnwindData = 0;        // Mark the entry for deletion
                 STRESS_LOG1(LF_JIT, LL_INFO100, "RemoveFromUnwindInfoTable Removed entry 0x%x\n", i);
                 return;
