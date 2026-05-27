@@ -1202,10 +1202,11 @@ void WrapICorJitInfo::getAsyncInfo(
 
 CORINFO_METHOD_HANDLE WrapICorJitInfo::getAwaitReturnCall(
           CORINFO_METHOD_HANDLE callerHandle,
+          CORINFO_CONTEXT_HANDLE callerContext,
           CORINFO_LOOKUP* instArg)
 {
     API_ENTER(getAwaitReturnCall);
-    CORINFO_METHOD_HANDLE temp = wrapHnd->getAwaitReturnCall(callerHandle, instArg);
+    CORINFO_METHOD_HANDLE temp = wrapHnd->getAwaitReturnCall(callerHandle, callerContext, instArg);
     API_LEAVE(getAwaitReturnCall);
     return temp;
 }

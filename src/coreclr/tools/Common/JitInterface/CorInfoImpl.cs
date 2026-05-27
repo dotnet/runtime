@@ -1302,21 +1302,7 @@ namespace Internal.JitInterface
 
             if (context != null && method.IsSharedByGenericInstantiations)
             {
-                TypeSystemEntity ctx = entityFromContext(context);
-                if (ctx is MethodDesc methodFromCtx && context != contextFromMethodBeingCompiled())
-                {
-                    Debug.Assert(method.GetTypicalMethodDefinition() == methodFromCtx.GetTypicalMethodDefinition());
-                    method = methodFromCtx;
-                }
-                else if (ctx is InstantiatedType instantiatedCtxType)
-                {
-                    MethodDesc instantiatedMethod = _compilation.TypeSystemContext.GetMethodForInstantiatedType(method.GetTypicalMethodDefinition(), instantiatedCtxType);
-                    if (method.HasInstantiation)
-                    {
-                        instantiatedMethod = _compilation.TypeSystemContext.GetInstantiatedMethod(instantiatedMethod, method.Instantiation);
-                    }
-                    method = instantiatedMethod;
-                }
+                method = InstantiateMethodWithContext(method, context);
             }
 
             // Add an early CanInline check to see if referring to the IL of the target methods is
@@ -1327,6 +1313,27 @@ namespace Internal.JitInterface
 
             MethodIL methodIL = method.IsUnboxingThunk() ? null : GetMethodILWithPotentialAsyncVersion(method);
             return Get_CORINFO_METHOD_INFO(method, methodIL, info);
+        }
+
+        private MethodDesc InstantiateMethodWithContext(MethodDesc method, CORINFO_CONTEXT_STRUCT* context)
+        {
+            TypeSystemEntity ctx = entityFromContext(context);
+            if (ctx is MethodDesc methodFromCtx && context != contextFromMethodBeingCompiled())
+            {
+                Debug.Assert(method.GetTypicalMethodDefinition() == methodFromCtx.GetTypicalMethodDefinition());
+                return methodFromCtx;
+            }
+            else if (ctx is InstantiatedType instantiatedCtxType)
+            {
+                MethodDesc instantiatedMethod = _compilation.TypeSystemContext.GetMethodForInstantiatedType(method.GetTypicalMethodDefinition(), instantiatedCtxType);
+                if (method.HasInstantiation)
+                {
+                    instantiatedMethod = _compilation.TypeSystemContext.GetInstantiatedMethod(instantiatedMethod, method.Instantiation);
+                }
+                return instantiatedMethod;
+            }
+
+            return method;
         }
 
         private bool haveSameMethodDefinition(CORINFO_METHOD_STRUCT_* methHnd1, CORINFO_METHOD_STRUCT_* methHnd2)
@@ -3554,7 +3561,7 @@ namespace Internal.JitInterface
             pAsyncInfoOut.finishSuspensionWithContinuationContextMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("FinishSuspensionWithContinuationContext"u8, null));
         }
 
-        private CORINFO_METHOD_STRUCT_* getAwaitReturnCall(CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_LOOKUP instArg)
+        private CORINFO_METHOD_STRUCT_* getAwaitReturnCall(CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_CONTEXT_STRUCT* callerContext, ref CORINFO_LOOKUP instArg)
         {
 #if READYTORUN
             instArg = default;
@@ -3562,6 +3569,8 @@ namespace Internal.JitInterface
 #else
             MethodDesc caller = HandleToObject(callerHandle);
             Debug.Assert(caller.IsAsyncVariant() && caller.IsAsyncThunk());
+
+            caller = InstantiateMethodWithContext(caller, callerContext);
 
             MethodDesc taskReturningMethod = caller.GetTargetOfAsyncVariant();
             TypeDesc taskReturnType = taskReturningMethod.Signature.ReturnType;
