@@ -635,4 +635,26 @@ public unsafe class DacDbiImplTests
     }
 
     private delegate void GetStackLimitDataCallback(TargetPointer threadPointer, out TargetPointer stackBase, out TargetPointer stackLimit, out TargetPointer frameAddress);
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetObjectContents(MockTarget.Architecture arch)
+    {
+        TargetPointer objectAddr = new(0x5000);
+        ulong expectedSize = 48;
+
+        var mockObject = new Mock<IObject>();
+        mockObject.Setup(o => o.GetObjectSize(objectAddr)).Returns(expectedSize);
+
+        var target = new TestPlaceholderTarget.Builder(arch)
+            .AddMockContract(mockObject)
+            .Build();
+        var dacDbi = new DacDbiImpl(target, legacyObj: null);
+
+        DacDbiTargetBuffer result;
+        int hr = dacDbi.GetObjectContents(objectAddr.Value, &result);
+        Assert.Equal(HResults.S_OK, hr);
+        Assert.Equal(objectAddr.Value, result.pAddress);
+        Assert.Equal((uint)expectedSize, result.cbSize);
+    }
 }

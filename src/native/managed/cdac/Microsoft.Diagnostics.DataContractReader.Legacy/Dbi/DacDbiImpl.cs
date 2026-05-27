@@ -2260,7 +2260,34 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int GetObjectContents(ulong obj, DacDbiTargetBuffer* pRetVal)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetObjectContents(obj, pRetVal) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            TargetPointer objPtr = new TargetPointer(obj);
+            ulong size = _target.Contracts.Object.GetObjectSize(objPtr);
+            Debug.Assert(size <= uint.MaxValue);
+            *pRetVal = new DacDbiTargetBuffer { pAddress = obj, cbSize = (uint)size };
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            DacDbiTargetBuffer retValLocal;
+            int hrLocal = _legacy.GetObjectContents(obj, &retValLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(pRetVal->pAddress == retValLocal.pAddress, $"cDAC pAddress: 0x{pRetVal->pAddress:X}, DAC pAddress: 0x{retValLocal.pAddress:X}");
+                Debug.Assert(pRetVal->cbSize == retValLocal.cbSize, $"cDAC cbSize: {pRetVal->cbSize}, DAC cbSize: {retValLocal.cbSize}");
+            }
+        }
+#endif
+        return hr;
+    }
 
     public int GetThreadOwningMonitorLock(ulong vmObject, DacDbiMonitorLockInfo* pRetVal)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetThreadOwningMonitorLock(vmObject, pRetVal) : HResults.E_NOTIMPL;

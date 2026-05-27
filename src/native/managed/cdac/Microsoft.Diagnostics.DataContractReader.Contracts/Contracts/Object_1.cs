@@ -105,6 +105,23 @@ internal readonly struct Object_1 : IObject
         return _target.Contracts.SyncBlock.GetBuiltInComData(syncBlockPtr, out rcw, out ccw, out ccf);
     }
 
+    public ulong GetObjectSize(TargetPointer address)
+    {
+        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+        TargetPointer mt = GetMethodTableAddress(address);
+        TypeHandle th = rts.GetTypeHandle(mt);
+        ulong size = rts.GetBaseSize(th);
+        uint componentSize = rts.GetComponentSize(th);
+        Debug.Assert(componentSize <= 2 || rts.IsArray(th, out _));
+        if (componentSize > 0)
+        {
+            Data.Array array = _target.ProcessedData.GetOrAdd<Data.Array>(address);
+            size += (ulong)array.NumComponents * componentSize;
+        }
+
+        return size;
+    }
+
     int IObject.TryGetHashCode(TargetPointer address)
     {
         ulong objectHeaderSize = _target.GetTypeInfo(DataType.ObjectHeader).Size!.Value;
