@@ -906,13 +906,28 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
                 break;
             }
 
+#if defined(FEATURE_HW_INTRINSICS)
+#if defined(TARGET_XARCH)
+            case VNF_HWI_AVX2_LeadingZeroCount:
+            case VNF_HWI_AVX2_TrailingZeroCount:
+            case VNF_HWI_AVX2_X64_LeadingZeroCount:
+            case VNF_HWI_AVX2_X64_TrailingZeroCount:
+            case VNF_HWI_X86Base_PopCount:
+            case VNF_HWI_X86Base_X64_PopCount:
+#elif defined(TARGET_ARM64)
+            case VNF_HWI_ArmBase_LeadingZeroCount:
+            case VNF_HWI_ArmBase_Arm64_LeadingZeroCount:
+#endif
+#endif
             case VNF_LeadingZeroCount:
             case VNF_TrailingZeroCount:
             case VNF_PopCount:
+            {
                 // We can be a bit more precise here if we want to
                 result.lLimit = Limit(Limit::keConstant, 0);
                 result.uLimit = Limit(Limit::keConstant, 64);
                 break;
+            }
 
             default:
                 break;

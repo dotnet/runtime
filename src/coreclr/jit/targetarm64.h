@@ -162,16 +162,6 @@
 //       x14: incremented by 8
 //       x15: trashed
 //       x17: trashed (ip1) if FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-// CORINFO_HELP_ASSIGN_BYREF (JIT_ByRefWriteBarrier):
-//     On entry:
-//       x13: the source address (points to object reference to write)
-//       x14: the destination address (object reference written here)
-//     On exit:
-//       x12: trashed
-//       x13: incremented by 8
-//       x14: incremented by 8
-//       x15: trashed
-//       x17: trashed (ip1) if FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 //
 // Note that while x17 (ip1) is currently only trashed under FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP,
 // it is expected to be set in the future for R2R. Consider it trashed to avoid later breaking changes.
@@ -182,12 +172,6 @@
 #define REG_WRITE_BARRIER_SRC          REG_R15
 #define RBM_WRITE_BARRIER_SRC          RBM_R15
 
-#define REG_WRITE_BARRIER_DST_BYREF    REG_R14
-#define RBM_WRITE_BARRIER_DST_BYREF    RBM_R14
-
-#define REG_WRITE_BARRIER_SRC_BYREF    REG_R13
-#define RBM_WRITE_BARRIER_SRC_BYREF    RBM_R13
-
 #define RBM_CALLEE_TRASH_NOGC          (RBM_R12|RBM_R15|RBM_IP0|RBM_IP1|RBM_DEFAULT_HELPER_CALL_TARGET)
 
 // Registers killed by CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
@@ -195,13 +179,6 @@
 
 // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
 #define RBM_CALLEE_GCTRASH_WRITEBARRIER       RBM_CALLEE_TRASH_NOGC
-
-// Registers killed by CORINFO_HELP_ASSIGN_BYREF.
-#define RBM_CALLEE_TRASH_WRITEBARRIER_BYREF   (RBM_WRITE_BARRIER_DST_BYREF | RBM_WRITE_BARRIER_SRC_BYREF | RBM_CALLEE_TRASH_NOGC)
-
-// Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_BYREF.
-// Note that x13 and x14 are still valid byref pointers after this helper call, despite their value being changed.
-#define RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF RBM_CALLEE_TRASH_NOGC
 
 // GenericPInvokeCalliHelper VASigCookie Parameter
 #define REG_PINVOKE_COOKIE_PARAM          REG_R15
