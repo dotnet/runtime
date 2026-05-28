@@ -1011,6 +1011,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/128538", typeof(PlatformDetection), nameof(PlatformDetection.IsReadyToRunCompiled))]
         public static void X509Certificate2CollectionRemoveRangeArray()
         {
             using (X509Certificate2 c1 = new X509Certificate2(TestData.MsCertificate))
