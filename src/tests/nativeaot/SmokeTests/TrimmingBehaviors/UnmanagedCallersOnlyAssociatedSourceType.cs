@@ -15,6 +15,8 @@ class UnmanagedCallersOnlyAssociatedSourceType
     private const string DynamicSourceExport = "UnmanagedCallersOnlyAssociatedSourceType_DynamicSource";
     private const string DynamicArraySourceExport = "UnmanagedCallersOnlyAssociatedSourceType_DynamicArraySource";
     private const string UsedAsElementOnlyArrayExport = "UnmanagedCallersOnlyAssociatedSourceType_UsedAsElementOnlyArray";
+    private const string UsedAsElementOnly2ArrayExport = "UnmanagedCallersOnlyAssociatedSourceType_UsedAsElementOnly2Array";
+    private const string StructUsedAsElementOnlyArrayExport = "UnmanagedCallersOnlyAssociatedSourceType_StructUsedAsElementOnlyArray";
 
     public static unsafe int Run()
     {
@@ -22,6 +24,8 @@ class UnmanagedCallersOnlyAssociatedSourceType
         typeof(UnmanagedCallersOnlyAssociatedSourceType).GetMethod(nameof(CreateDynamicSource))!.MakeGenericMethod([GetDynamicAtom()]).Invoke(null, []);
         typeof(UnmanagedCallersOnlyAssociatedSourceType).GetMethod(nameof(CreateDynamicSourceArray))!.MakeGenericMethod([GetDynamicAtom()]).Invoke(null, []);
         typeof(UnmanagedCallersOnlyAssociatedSourceType).GetMethod(nameof(CreateArray))!.MakeGenericMethod([typeof(UsedAsElementOnly)]).Invoke(null, []);
+        typeof(UnmanagedCallersOnlyAssociatedSourceType).GetMethod(nameof(CreateTripleArray))!.MakeGenericMethod([typeof(UsedAsElementOnly2)]).Invoke(null, []);
+        GC.KeepAlive(typeof(StructUsedAsElementOnly));
 
         IntPtr programHandle = NativeLibrary.GetMainProgramHandle();
 
@@ -30,8 +34,10 @@ class UnmanagedCallersOnlyAssociatedSourceType
         AssertExportReturns(programHandle, DynamicSourceExport, 4);
         AssertExportReturns(programHandle, DynamicArraySourceExport, 5);
         AssertExportReturns(programHandle, UsedAsElementOnlyArrayExport, 7);
+        AssertExportReturns(programHandle, UsedAsElementOnly2ArrayExport, 8);
         AssertNoExport(programHandle, UnusedSourceExport);
         AssertNoExport(programHandle, UnusedArraySourceExport);
+        AssertNoExport(programHandle, StructUsedAsElementOnlyArrayExport);
 
         return 100;
     }
@@ -44,6 +50,9 @@ class UnmanagedCallersOnlyAssociatedSourceType
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static object CreateArray<T>() where T : class => new T[0];
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static object CreateTripleArray<T>() where T : class => new T[0][][];
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static Type GetDynamicAtom() => typeof(DynamicAtom);
@@ -95,6 +104,12 @@ class UnmanagedCallersOnlyAssociatedSourceType
     [UnmanagedCallersOnly(EntryPoint = UsedAsElementOnlyArrayExport, AssociatedSourceType = typeof(UsedAsElementOnly[]))]
     private static int UsedAsElementOnlyArrayEntryPoint() => 7;
 
+    [UnmanagedCallersOnly(EntryPoint = UsedAsElementOnly2ArrayExport, AssociatedSourceType = typeof(UsedAsElementOnly2[][][]))]
+    private static int UsedAsElementOnly2ArrayEntryPoint() => 8;
+
+    [UnmanagedCallersOnly(EntryPoint = StructUsedAsElementOnlyArrayExport, AssociatedSourceType = typeof(StructUsedAsElementOnly[]))]
+    private static int StructUsedAsElementOnlyArrayEntryPoint() => 9;
+
     private sealed class UsedSource;
 
     private sealed class UnusedNonArraySource;
@@ -102,6 +117,10 @@ class UnmanagedCallersOnlyAssociatedSourceType
     private sealed class UnusedSource;
 
     private sealed class UsedAsElementOnly;
+
+    private sealed class UsedAsElementOnly2;
+
+    private struct StructUsedAsElementOnly;
 
     public sealed class DynamicSource<T>;
 

@@ -40,14 +40,14 @@ namespace ILCompiler.DependencyAnalysis
                 var (targetType, trimmingTargetType) = entry.Value;
                 if (trimmingTargetType is not null)
                 {
-                    TypeDesc effectiveTrimTargetType = RuntimeConstructableTypeDependencies.GetEffectiveTrimTargetType(trimmingTargetType);
+                    IEETypeNode effectiveTrimTargetType = GetEffectiveTrimTargetType(context, trimmingTargetType);
 
                     dependencies.Add(new CombinedDependencyListEntry(
                         context.MetadataTypeSymbol(targetType),
-                        context.NecessaryTypeSymbol(effectiveTrimTargetType),
+                        effectiveTrimTargetType,
                         "Type in external type map is cast target"));
 
-                    RuntimeConstructableTypeDependencies.GetNecessaryTypeDependencies(dependencies, context, effectiveTrimTargetType, "External type map trim target that could be loaded at runtime");
+                    RuntimeConstructableTypeDependencies.AddTypeLoaderDependencies(dependencies, context, effectiveTrimTargetType, "External type map trim target that could be loaded at runtime");
                 }
             }
 
@@ -86,7 +86,7 @@ namespace ILCompiler.DependencyAnalysis
                 var (targetType, trimmingTargetType) = entry.Value;
 
                 if (trimmingTargetType is null
-                    || factory.NecessaryTypeSymbol(RuntimeConstructableTypeDependencies.GetEffectiveTrimTargetType(trimmingTargetType)).Marked)
+                    || GetEffectiveTrimTargetType(factory, trimmingTargetType).Marked)
                 {
                     IEETypeNode targetNode = factory.MetadataTypeSymbol(targetType);
                     Debug.Assert(targetNode.Marked);
@@ -94,6 +94,9 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
         }
+
+        private static IEETypeNode GetEffectiveTrimTargetType(NodeFactory factory, TypeDesc trimmingTargetType)
+            => RuntimeConstructableTypeDependencies.GetEffectiveTrimTargetType(factory, trimmingTargetType, conditionConstructed: false);
 
         public Vertex CreateTypeMap(NodeFactory factory, NativeWriter writer, Section section, INativeFormatTypeReferenceProvider externalReferences)
         {

@@ -127,14 +127,16 @@ namespace ILCompiler
                     if (associatedSourceType is null)
                         continue;
 
+                    IEETypeNode effectiveTrimTargetType = RuntimeConstructableTypeDependencies.GetEffectiveTrimTargetType(context, associatedSourceType, conditionConstructed: true);
+
                     IMethodNode methodEntryPoint = GetMethodEntrypointAndAddAlias(context, method, new Utf8String(method.GetUnmanagedCallersOnlyExportName()));
 
                     dependencies.Add(new CombinedDependencyListEntry(
                         methodEntryPoint,
-                        RuntimeConstructableTypeDependencies.GetRuntimeConstructableTypeNode(context, associatedSourceType),
+                        effectiveTrimTargetType,
                         "Native callable with associated source type"));
 
-                    RuntimeConstructableTypeDependencies.GetMaximallyConstructableTypeDependencies(dependencies, context, associatedSourceType, "Associated source type that could be loaded at runtime");
+                    RuntimeConstructableTypeDependencies.AddTypeLoaderDependencies(dependencies, context, effectiveTrimTargetType, "Associated source type that could be loaded at runtime");
                 }
 
                 return dependencies;

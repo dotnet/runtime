@@ -12,68 +12,63 @@ namespace ILCompiler
 {
     internal static class RuntimeConstructableTypeDependencies
     {
-        public static TypeDesc GetEffectiveTrimTargetType(TypeDesc trimmingTargetType)
+        public static IEETypeNode GetEffectiveTrimTargetType(NodeFactory factory, TypeDesc trimmingTargetType, bool conditionConstructed)
         {
-            while (trimmingTargetType is ParameterizedType parameterized && !trimmingTargetType.IsArray)
-                trimmingTargetType = parameterized.ParameterType;
-            return trimmingTargetType;
+            bool unwrapped = false;
+
+            // Many parameterized types can be created at runtime using the type loader.
+            // Pointers and byrefs can be made out of thin air since there's no code for them.
+            // Arrays have some rules so we may still be able to condition on the array.
+            while (trimmingTargetType.IsParameterizedType)
+            {
+                if (GenericTypesTemplateMap.IsArrayTypeEligibleForTemplate(trimmingTargetType)
+                    // The template shouldn't be __Canon[]
+                    && !trimmingTargetType.ConvertToCanonForm(CanonicalFormKind.Specific).GetParameterType().IsCanonicalDefinitionType(CanonicalFormKind.Any))
+                {
+                    // We can condition on this type since we'd either need this type to be
+                    // present in the compilation, or template for this type to be present.
+                    //
+                    // We specifically exlude the `__Canon[]` template because conditioning
+                    // on the __Canon[] template would be strictly worse than conditioning on
+                    // the element type in a normal app.
+                    break;
+                }
+
+                // The type can be just MakeArrayType/MakePointerType at runtime, so drill into
+                // the element type, we need to condition on that - can't condition on the
+                // constructed type.
+                trimmingTargetType = trimmingTargetType.GetParameterType();
+
+                unwrapped = true;
+            }
+
+            if (!conditionConstructed)
+                return factory.NecessaryTypeSymbol(trimmingTargetType);
+
+            // If we're conditioning on the type being constructed but we unwrapped element type,
+            // the condition is now only a metadata type symbol. This is because e.g.
+            // `Array.CreateInstance(typeof(Element))` needs only the typeof-level type load
+            // of the element type to create a constructed array type.
+            return unwrapped
+                ? factory.MetadataTypeSymbol(trimmingTargetType)
+                : factory.MaximallyConstructableType(trimmingTargetType);
         }
 
-        public static void GetNecessaryTypeDependencies(List<DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry> dependencies, NodeFactory context, TypeDesc type, string reason)
-        {
-            TypeDesc effectiveType = GetEffectiveTrimTargetType(type);
-            AddDependencies(dependencies, context, context.NecessaryTypeSymbol(effectiveType), effectiveType, reason, useNecessaryTypeSymbol: true);
-        }
-
-        public static void GetMaximallyConstructableTypeDependencies(List<DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry> dependencies, NodeFactory context, TypeDesc type, string reason)
-        {
-            AddDependencies(dependencies, context, GetRuntimeConstructableTypeNode(context, type), type, reason, useNecessaryTypeSymbol: false);
-        }
-
-        public static object GetRuntimeConstructableTypeNode(NodeFactory context, TypeDesc type)
-        {
-            if (type is ArrayType arrayType)
-                return context.MaximallyConstructableType(GetEffectiveTrimTargetType(arrayType.ElementType));
-
-            return context.MaximallyConstructableType(type);
-        }
-
-        private static void AddDependencies(
+        public static void AddTypeLoaderDependencies(
             List<DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry> dependencies,
-            NodeFactory context,
-            object conditionalDependencyNode,
-            TypeDesc type,
-            string reason,
-            bool useNecessaryTypeSymbol)
+            NodeFactory factory,
+            IEETypeNode dependencyType,
+            string reason)
         {
+            TypeDesc type = dependencyType.Type;
             TypeDesc canonType = type.ConvertToCanonForm(CanonicalFormKind.Specific);
             if (canonType != type && GenericTypesTemplateMap.IsEligibleToHaveATemplate(canonType))
             {
                 dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(
-                    conditionalDependencyNode,
-                    context.NativeLayout.TemplateTypeLayout(canonType),
+                    dependencyType,
+                    factory.NativeLayout.TemplateTypeLayout(canonType),
                     reason));
             }
-            else if (type is ArrayType arrayType)
-            {
-                TypeDesc effectiveElementType = GetEffectiveTrimTargetType(arrayType.ElementType);
-                TypeDesc canonElementType = effectiveElementType.ConvertToCanonForm(CanonicalFormKind.Specific);
-                if (canonElementType != effectiveElementType && GenericTypesTemplateMap.IsEligibleToHaveATemplate(canonElementType))
-                {
-                    dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(
-                        conditionalDependencyNode,
-                        context.NativeLayout.TemplateTypeLayout(canonElementType),
-                        reason));
-                }
-
-                if (!GenericTypesTemplateMap.IsArrayTypeEligibleForTemplate(arrayType))
-                {
-                    dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(
-                        conditionalDependencyNode,
-                        useNecessaryTypeSymbol ? context.NecessaryTypeSymbol(effectiveElementType) : context.MaximallyConstructableType(effectiveElementType),
-                        reason));
-                }
-            }
-        }
+       }
     }
 }
