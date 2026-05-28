@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Runtime;
 
 /// <summary>
 /// Debuggee for cDAC dump tests — exercises the round-trip path through
@@ -33,7 +34,7 @@ internal static class Program
         var dict = new Dictionary<string, int> { ["k"] = 1 };
         object plainObj = new object();
         string str = TestStringValue;
-        PlainClass plainClass = new PlainClass();
+        PlainClass plainClass = new PlainClass { Value = 42 };
 
         // Esoteric GC handles — enumerable from the dump via IGC.GetHandles().
         GCHandle pinned = GCHandle.Alloc(intArr, GCHandleType.Pinned);
