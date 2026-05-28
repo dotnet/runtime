@@ -1759,31 +1759,100 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
     switch (binop->OperGet())
     {
         case GT_ADD:
+        {
             r = RangeOps::Add(op1Range, op2Range);
             break;
+        }
+
         case GT_MUL:
+        {
             r = RangeOps::Multiply(op1Range, op2Range);
             break;
+        }
+
         case GT_RSH:
+        {
+            if (varTypeIsLong(binop))
+            {
+                int shiftAmount;
+
+                if (op2Range.IsSingleValueConstant(&shiftAmount) && (shiftAmount >= 32) && (shiftAmount < 63))
+                {
+                    // The upper 33-bits of the input will all match, so we are within [INT32_MIN, INT32_MAX]
+                    // and can further reduce based on the remaining shift amount.
+
+                    op1Range = GetRangeFromType(TYP_INT);
+                    op2Range = Range(Limit(Limit::keConstant, shiftAmount - 32));
+                }
+                else
+                {
+                    return Range(Limit::keUnknown);
+                }
+            }
+
             r = RangeOps::ShiftRight(op1Range, op2Range, /*logical*/ false);
             break;
+        }
+
         case GT_RSZ:
+        {
+            if (varTypeIsLong(binop))
+            {
+                int shiftAmount;
+
+                if (op2Range.IsSingleValueConstant(&shiftAmount) && (shiftAmount >= 33) && (shiftAmount < 63))
+                {
+                    // The upper 33-bits of the input must all be zero, so we are within [0, INT32_MAX]
+                    // and can further reduce based on the remaining shift amount. This is notably one
+                    // higher than RSH since we'd otherwise get a value within [INT32_MAX + 1, UINT32_MAX]
+
+                    op1Range = Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, INT32_MAX));
+                    op2Range = Range(Limit(Limit::keConstant, shiftAmount - 33));
+                }
+                else
+                {
+                    return Range(Limit::keUnknown);
+                }
+            }
+
             r = RangeOps::ShiftRight(op1Range, op2Range, /*logical*/ true);
             break;
+        }
+
         case GT_LSH:
+        {
+            if (varTypeIsLong(binop))
+            {
+                // We can't handle LSH for long since we don't know the state of the upper 32-bits
+                return Range(Limit::keUnknown);
+            }
+
             r = RangeOps::ShiftLeft(op1Range, op2Range);
             break;
+        }
+
         case GT_AND:
+        {
             r = RangeOps::And(op1Range, op2Range);
             break;
+        }
+
         case GT_OR:
+        {
             r = RangeOps::Or(op1Range, op2Range);
             break;
+        }
+
         case GT_UMOD:
+        {
             r = RangeOps::UnsignedMod(op1Range, op2Range);
             break;
+        }
+
         default:
+        {
             return Range(Limit::keUnknown);
+        }
     }
 
     JITDUMP("BinOp %s %s %s = %s\n", op1Range.ToString(m_compiler), GenTree::OpName(binop->OperGet()),
@@ -2189,18 +2258,33 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
         range = Range(Limit(Limit::keUnknown));
         JITDUMP("GetRangeWorker not tractable within max stack depth.\n");
     }
-    // TYP_LONG is not supported anyway.
-    else if (expr->TypeIs(TYP_LONG))
-    {
-        range = Range(Limit(Limit::keUnknown));
-        JITDUMP("GetRangeWorker long, setting to unknown value.\n");
-    }
     // If VN is constant return range as constant.
     else if (m_compiler->vnStore->IsVNConstant(vn))
     {
-        range = (m_compiler->vnStore->TypeOfVN(vn) == TYP_INT)
-                    ? Range(Limit(Limit::keConstant, m_compiler->vnStore->ConstantValue<int>(vn)))
-                    : Limit(Limit::keUnknown);
+        var_types vnType  = m_compiler->vnStore->TypeOfVN(vn);
+        bool      handled = false;
+
+        if (vnType == TYP_INT)
+        {
+            range   = Range(Limit(Limit::keConstant, m_compiler->vnStore->GetConstantInt32(vn)));
+            handled = true;
+        }
+        else if (vnType == TYP_LONG)
+        {
+            int64_t cns = m_compiler->vnStore->GetConstantInt64(vn);
+
+            if (FitsIn<int32_t>(cns))
+            {
+                range   = Range(Limit(Limit::keConstant, static_cast<int32_t>(cns)));
+                handled = true;
+            }
+        }
+
+        if (!handled)
+        {
+            range = Limit(Limit::keUnknown);
+            JITDUMP("GetRangeWorker unsupported VN constant, setting to unknown value.\n");
+        }
     }
     // If local, find the definition from the def map and evaluate the range for rhs.
     else if (expr->IsLocal())
@@ -2253,8 +2337,34 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
     }
     else if (expr->OperIs(GT_CAST))
     {
+        GenTreeCast* cast = expr->AsCast();
+
+        var_types toType   = cast->CastToType();
+        var_types fromType = cast->CastFromType();
+
+        var_types rangeType;
+
+        if (genTypeSize(fromType) < genTypeSize(toType))
+        {
+            // We're going from a small type to a large type
+            // and so regardless of whether we zero or sign-extend
+            // the value is preserved within the confines of its
+            // original input for the destination, i.e. it always
+            // passes the FitsIn<fromType> check.
+
+            rangeType = fromType;
+        }
+        else
+        {
+            // We're either going from a big type to a small type
+            // or between signed and unsigned types of the same size
+            // so we want to use toType as the range.
+
+            rangeType = toType;
+        }
+
         // TODO: consider computing range for CastOp and intersect it with this.
-        range = GetRangeFromType(expr->AsCast()->CastToType());
+        range = GetRangeFromType(rangeType);
     }
     else if (expr->OperIs(GT_ARR_LENGTH))
     {
@@ -2271,6 +2381,66 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
             range = Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, CORINFO_Array_MaxLength));
         }
     }
+    else if (expr->OperIs(GT_INTRINSIC))
+    {
+        GenTreeIntrinsic* intrinsic = expr->AsIntrinsic();
+        NamedIntrinsic    ni        = intrinsic->gtIntrinsicName;
+
+        switch (ni)
+        {
+            case NI_PRIMITIVE_LeadingZeroCount:
+            case NI_PRIMITIVE_TrailingZeroCount:
+            case NI_PRIMITIVE_PopCount:
+            {
+                var_types op1Type = intrinsic->gtGetOp1()->TypeGet();
+
+                range.lLimit = Limit(Limit::keConstant, 0);
+                range.uLimit = Limit(Limit::keConstant, varTypeIsLong(op1Type) ? 64 : 32);
+                break;
+            }
+
+            default:
+            {
+                range = Range(Limit(Limit::keUnknown));
+                break;
+            }
+        }
+    }
+#if defined(FEATURE_HW_INTRINSICS)
+    else if (expr->OperIs(GT_HWINTRINSIC))
+    {
+        GenTreeHWIntrinsic* hwintrinsic = expr->AsHWIntrinsic();
+        NamedIntrinsic      ni          = hwintrinsic->GetHWIntrinsicId();
+
+        switch (ni)
+        {
+#if defined(TARGET_XARCH)
+            case NI_AVX2_LeadingZeroCount:
+            case NI_AVX2_TrailingZeroCount:
+            case NI_AVX2_X64_LeadingZeroCount:
+            case NI_AVX2_X64_TrailingZeroCount:
+            case NI_X86Base_PopCount:
+            case NI_X86Base_X64_PopCount:
+#elif defined(TARGET_ARM64)
+            case NI_ArmBase_LeadingZeroCount:
+            case NI_ArmBase_Arm64_LeadingZeroCount:
+#endif
+            {
+                var_types op1Type = hwintrinsic->Op(1)->TypeGet();
+
+                range.lLimit = Limit(Limit::keConstant, 0);
+                range.uLimit = Limit(Limit::keConstant, varTypeIsLong(op1Type) ? 64 : 32);
+                break;
+            }
+
+            default:
+            {
+                range = Range(Limit(Limit::keUnknown));
+                break;
+            }
+        }
+    }
+#endif
     else
     {
         // The expression is not recognized, so the result is unknown.

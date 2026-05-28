@@ -1022,6 +1022,22 @@ public:
 
     static uint64_t RotateRight(uint64_t value, uint32_t offset);
 
+    static uint32_t RoundUpToPowerOf2(uint32_t value)
+    {
+        return static_cast<uint32_t>(0x1'0000'0000ULL >> LeadingZeroCount(value - 1));
+    }
+
+    static uint64_t RoundUpToPowerOf2(uint64_t value)
+    {
+        if ((value == 0) || (value > 0x8000'0000'0000'0000ULL))
+        {
+             return 0;
+        }
+
+        uint64_t shift = 64 - LeadingZeroCount(value - 1);
+        return (1ULL ^ (shift >> 6)) << shift;
+    }
+
     static uint32_t SingleToUInt32Bits(float value);
 
     static uint32_t TrailingZeroCount(uint32_t value);
