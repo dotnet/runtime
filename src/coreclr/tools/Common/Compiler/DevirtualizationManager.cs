@@ -148,25 +148,12 @@ namespace ILCompiler
                                 return null;
 
                             case DefaultInterfaceMethodResolution.DefaultImplementation:
-#if READYTORUN
                                 if (declMethod != defaultInterfaceDispatchDeclMethod)
                                 {
                                     // Fail for variant default interface dispatch
                                     devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_DIM;
                                     return null;
                                 }
-#else
-                                if (dimMethod.OwningType.HasInstantiation || (declMethod != defaultInterfaceDispatchDeclMethod))
-                                {
-                                    // If we devirtualized into a default interface method on a generic type, we should actually return an
-                                    // instantiating stub but this is not happening.
-                                    // Making this work is tracked by https://github.com/dotnet/runtime/issues/9588
-
-                                    // In addition, we fail here for variant default interface dispatch
-                                    devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_DIM;
-                                    return null;
-                                }
-#endif
                                 else
                                 {
                                     impl = dimMethod;
