@@ -3,10 +3,8 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -195,50 +193,11 @@ namespace System.Threading.Channels.Tests
                 }));
         }
 
-        private static int s_id;
-
-#pragma warning disable CS0649
-#pragma warning disable CS0169
-        private class RuntimeAsyncTask<T> : Task<T>
-        {
-            public RuntimeAsyncTask(Func<T> function) : base(function)
-            {
-                ContinuationTrace = new List<Continuation>();
-            }
-
-            public List<Continuation> ContinuationTrace;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct ResumeInfo
-        {
-            public void* Resume;
-            public void* DiagnosticIP;
-        }
-
-        private unsafe class Continuation
-        {
-            public Continuation? Next;
-            public ResumeInfo* ResumeInfo;
-            public int Flags;
-            public int State;
-        }
-
-        private sealed unsafe class ValueTaskSourceContinuation : Continuation
-        {
-            internal object? Source;
-            internal short Token;
-            internal void* OnCompletedValueTaskSource;
-            private void* _getResult;
-            //internal string? WasNull;
-            //internal Continuation? PrevSuspendedCont;
-        }
-
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(1, 1)]
-        //[InlineData(1, 10)]
-        //[InlineData(10, 1)]
-        //[InlineData(10, 10)]
+        [InlineData(1, 10)]
+        [InlineData(10, 1)]
+        [InlineData(10, 10)]
         public void ManyProducerConsumer_ConcurrentReadWrite_Success(int numReaders, int numWriters)
         {
             if (RequiresSingleReader && numReaders > 1)
@@ -251,8 +210,6 @@ namespace System.Threading.Channels.Tests
                 return;
             }
 
-            int id = Interlocked.Increment(ref s_id);
-
             Channel<int> c = CreateChannel();
 
             const int NumItems = 10000;
@@ -262,58 +219,19 @@ namespace System.Threading.Channels.Tests
             int remainingItems = NumItems;
 
             Task[] tasks = new Task[numWriters + numReaders];
-            List<int> values = new();
 
             for (int i = 0; i < numReaders; i++)
             {
-                var del = async () =>
+                tasks[i] = Task.Run(async () =>
                 {
-                    //Console.WriteLine(id + " Reader starting on thread " + Thread.CurrentThread.ManagedThreadId);
                     while (await c.Reader.WaitToReadAsync())
                     {
                         while (c.Reader.TryRead(out int value))
                         {
                             Interlocked.Add(ref readTotal, value);
-                            values.Add(value);
                         }
                     }
-
-                    //Console.WriteLine(id + " Exited at " + values.Count + " with value " + readTotal);
-                    return 42;
-                };
-
-                var del2 = () =>
-                {
-                    Task<int> t = del();
-                    int result = t.Result;
-                    Console.WriteLine(result);
-                    RuntimeAsyncTask<int> myRat = Unsafe.As<Task<int>, RuntimeAsyncTask<int>>(ref t);
-                    if (result != 42)
-                    {
-                        Console.WriteLine("{0} continuations", myRat.ContinuationTrace.Count);
-                        foreach (Continuation o in myRat.ContinuationTrace)
-                        {
-                            unsafe
-                            {
-                                Console.Write("  Next={3}, ResumeInfo={0:x}, ResumeIP={1:x}, DiagnosticIP={2:x}", (ulong)o.ResumeInfo, (ulong)o.ResumeInfo->Resume, (ulong)o.ResumeInfo->DiagnosticIP, o.Next != null ? "non-null" : "null");
-
-                                if (o.ResumeInfo->DiagnosticIP == null)
-                                {
-                                    Continuation copy = o;
-                                    ValueTaskSourceContinuation vtsCont = Unsafe.As<Continuation, ValueTaskSourceContinuation>(ref copy);
-                                    //Console.WriteLine(", WasNull = " + vtsCont.WasNull);
-                                    //Console.WriteLine(", PrevSuspendedCont = {0}", vtsCont.PrevSuspendedCont != null ? $"ResumeInfo={((long)vtsCont.PrevSuspendedCont.ResumeInfo):x}" : "null");
-                                }
-                                else
-                                {
-                                    Console.WriteLine();
-                                }
-                            }
-                        }
-                    }
-                    return t;
-                };
-                tasks[i] = Task.Run(del2);
+                });
             }
 
             for (int i = 0; i < numWriters; i++)
@@ -337,17 +255,7 @@ namespace System.Threading.Channels.Tests
             }
 
             Task.WaitAll(tasks);
-            Console.WriteLine("[{0}] Reader is completed: {1} returned {2}", id, tasks[0].IsCompletedSuccessfully, tasks[0].IsCompletedSuccessfully ? (((Task<int>)tasks[0]).Result) : -1);
-            if ((NumItems * (NumItems + 1L)) / 2 != readTotal)
-            {
-                Console.WriteLine("[{0}] sees wrong result", id);
-                Console.WriteLine("[{0}] Outer sees " + readTotal, id);
-                Console.WriteLine("[{0}] Outer sees " + Interlocked.CompareExchange(ref readTotal, 0, 0), id);
-                Console.WriteLine("[{0}] Outer sees " + values.Count, id);
-                Console.WriteLine("[{0}] Outer sees " + values.Count, id);
-                File.WriteAllLines(@"C:\dev\temp\lines.txt", values.Select(v => v.ToString()));
-                Assert.Equal((NumItems * (NumItems + 1L) / 2), readTotal);
-            }
+            Assert.Equal((NumItems * (NumItems + 1L)) / 2, readTotal);
         }
 
         [Fact]
