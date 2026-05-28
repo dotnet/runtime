@@ -137,6 +137,8 @@ bool GetBuiltInComData(TargetPointer address, out TargetPointer rcw, out TargetP
 ulong GetObjectSize(TargetPointer address)
 {
     TargetPointer mt = GetMethodTableAddress(address);
+    if (mt == TargetPointer.Null)
+        throw new ArgumentException("Address represents a set-free object");
     IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
     TypeHandle th = rts.GetTypeHandle(mt);
     ulong size = rts.GetBaseSize(th);
@@ -146,7 +148,7 @@ ulong GetObjectSize(TargetPointer address)
     if (componentSize > 0)
     {
         uint numComponents = target.Read<uint>(address + /* Array::m_NumComponents offset */);
-        size += numComponents * componentSize;
+        size += (ulong)numComponents * componentSize;
     }
     return size;
 }
