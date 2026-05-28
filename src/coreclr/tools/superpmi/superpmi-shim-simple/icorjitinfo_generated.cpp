@@ -866,10 +866,9 @@ void interceptor_ICJI::getAsyncInfo(
 
 CORINFO_METHOD_HANDLE interceptor_ICJI::getAwaitReturnCall(
           CORINFO_METHOD_HANDLE callerHandle,
-          CORINFO_CONTEXT_HANDLE callerContext,
           CORINFO_LOOKUP* instArg)
 {
-    return original_ICorJitInfo->getAwaitReturnCall(callerHandle, callerContext, instArg);
+    return original_ICorJitInfo->getAwaitReturnCall(callerHandle, instArg);
 }
 
 mdMethodDef interceptor_ICJI::getMethodDefFromMethod(

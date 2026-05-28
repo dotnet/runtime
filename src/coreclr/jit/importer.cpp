@@ -11681,7 +11681,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 void Compiler::impWrapTopOfStackInAwait()
 {
     CORINFO_LOOKUP        instArgLookup;
-    CORINFO_METHOD_HANDLE awaitMethod = info.compCompHnd->getAwaitReturnCall(info.compMethodHnd, impTokenLookupContextHandle, &instArgLookup);
+    CORINFO_METHOD_HANDLE awaitMethod = info.compCompHnd->getAwaitReturnCall(info.compMethodHnd, &instArgLookup);
 
     CORINFO_SIG_INFO awaitSig;
     info.compCompHnd->getMethodSig(awaitMethod, &awaitSig);

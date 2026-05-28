@@ -3146,7 +3146,7 @@ public:
 
     // Get information about which await call to use to await the return type
     // of the non-async version of an async call.
-    virtual CORINFO_METHOD_HANDLE getAwaitReturnCall(CORINFO_METHOD_HANDLE callerHandle, CORINFO_CONTEXT_HANDLE callerContext, CORINFO_LOOKUP* instArg) = 0;
+    virtual CORINFO_METHOD_HANDLE getAwaitReturnCall(CORINFO_METHOD_HANDLE callerHandle, CORINFO_LOOKUP* instArg) = 0;
 
     /*********************************************************************************/
     //
