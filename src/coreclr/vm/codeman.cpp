@@ -67,7 +67,11 @@ VOLATILE_SVAL_IMPL_INIT(LONG, ExecutionManager, m_dwWriterLock, 0);
 #ifdef TARGET_WASM
 VirtualIPRangeSection* ExecutionManager::s_pVirtualIPRangeList = nullptr;
 FunctionTableIndexRangeSection* ExecutionManager::s_pFunctionTableIndexRangeList = nullptr;
+#ifdef TARGET_64BIT
 static TADDR s_nextVirtualIP = 0x80000001;
+#else
+static TADDR s_nextVirtualIP = 0x8000000000000001ULL;
+#endif
 #endif // TARGET_WASM
 
 #ifndef DACCESS_COMPILE
@@ -5781,7 +5785,7 @@ TADDR ExecutionManager::AddVirtualIPRange(UINT32 numVirtualIPs,
     return startVIP;
 }
 
-VirtualIPRangeSection* ExecutionManager::FindVirtualIPRangeSection(UINT32 virtualIP)
+VirtualIPRangeSection* ExecutionManager::FindVirtualIPRangeSection(TADDR virtualIP)
 {
     LIMITED_METHOD_CONTRACT;
 

@@ -2497,26 +2497,16 @@ public:
                                             PTR_Module pModule);
 
     // Find the VirtualIPRangeSection for a given virtual IP.
-    static VirtualIPRangeSection* FindVirtualIPRangeSection(UINT32 virtualIP);
+    static VirtualIPRangeSection* FindVirtualIPRangeSection(TADDR virtualIP);
 
     // Returns true if the given PCODE is a virtual IP encoding (both low and high bits set).
     static bool           IsVirtualIP(PCODE pc)
     {
+#ifdef TARGET_64BIT
+        return (pc & 0x8000000000000001ULL) == 0x8000000000000001ULL;
+#else
         return (pc & 0x80000001) == 0x80000001;
-    }
-
-    // Encode a virtual IP value into a PCODE.
-    static PCODE          EncodeVirtualIP(UINT32 virtualIP)
-    {
-        _ASSERTE(virtualIP < (1u << 30));
-        return (PCODE)((virtualIP << 1) | 0x80000001);
-    }
-
-    // Decode a virtual IP value from a PCODE.
-    static UINT32         DecodeVirtualIP(PCODE pc)
-    {
-        _ASSERTE(IsVirtualIP(pc));
-        return (UINT32)((pc >> 1) & 0x3FFFFFFF);
+#endif
     }
 
     // Register a function table index range for a WASM R2R module.

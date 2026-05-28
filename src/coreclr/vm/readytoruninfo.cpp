@@ -2879,7 +2879,7 @@ void ReadyToRunInfo::RegisterVirtualIPRange(Module* pModule)
     // Unwind format: ULEB128(frameSize) ULEB128(virtualIPCount)
     PTR_BYTE pUnwindData = dac_cast<PTR_BYTE>(imageBase + pLastEntry->UnwindData);
     DecodeULEB128AsU32(&pUnwindData); // skip frame size
-    UINT32 lastEntryVIPCount = DecodeULEB128AsU32(&pUnwindData);
+    UINT32 lastEntryVIPCount = DecodeULEB128AsU32(&pUnwindData) * 2; // Multiply by 2 to force all virtual IPs to be an even number.
 
     UINT32 totalVirtualIPs = lastEntryVirtualIPIndex + lastEntryVIPCount;
 

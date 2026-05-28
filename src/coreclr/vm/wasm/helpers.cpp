@@ -728,7 +728,8 @@ RtlpGetFunctionEndAddress (
 {
     PTR_BYTE pUnwindData = dac_cast<PTR_BYTE>(FunctionEntry->UnwindData + ImageBase);
     DecodeULEB128AsU32(&pUnwindData); // Skip the count of bytes to unwind
-    return DecodeULEB128AsU32(&pUnwindData); // Read the function length in virtual IP units, then multiply by 2 to report them as even numbers.
+    uint32_t logicalVirtualIPLength = DecodeULEB128AsU32(&pUnwindData) * 2; // Read the function length in virtual IP units, then multiply by 2 to report them as even numbers.
+    return logicalVirtualIPLength + RUNTIME_FUNCTION__BeginAddress(FunctionEntry);
 }
 
 EXTERN_C Thread * JIT_InitPInvokeFrame(InlinedCallFrame *pFrame)
@@ -1359,7 +1360,7 @@ TADDR GetWasmVirtualIPFromStackPointer(TADDR sp)
     else
     {
         uint32_t r2rFunctionTableEntryNumber = ((uint32_t*)fp)[0];
-        uint32_t logicalVirtualIP = ((uint32_t*)fp)[1] * 2; // Multiple by 2 as virtual IPs are encoded in units of 2 to leave the low bit in the VirtualIP mapping available to distinguish between virtual IPs and interpreter addresses/PortableEntryPoints.
+        uint32_t logicalVirtualIP = ((uint32_t*)fp)[1] * 2; // Multiply by 2 as virtual IPs are encoded in units of 2 to leave the low bit in the VirtualIP mapping available to distinguish between virtual IPs and interpreter addresses/PortableEntryPoints.
         TADDR baseVirtualIP = ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex(r2rFunctionTableEntryNumber);
         return baseVirtualIP + logicalVirtualIP;
     }
