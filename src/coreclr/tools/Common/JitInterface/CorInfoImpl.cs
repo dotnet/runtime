@@ -1482,7 +1482,6 @@ namespace Internal.JitInterface
                 info->resolvedTokenDevirtualizedUnboxedMethod = default(CORINFO_RESOLVED_TOKEN);
             }
 
-
             bool isArrayInterfaceDevirtualization = objType.IsArray && decl.OwningType.IsInterface;
             bool isGenericVirtual = decl.HasInstantiation;
             bool isGenericDim = impl.OwningType.IsInterface && !impl.IsAbstract && impl.RequiresInstMethodTableArg();
