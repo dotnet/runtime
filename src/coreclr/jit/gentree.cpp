@@ -2531,6 +2531,12 @@ bool GenTreeCall::Equals(GenTreeCall* c1, GenTreeCall* c2)
         {
             return false;
         }
+
+        // For virtual stub calls the stub addresses must agree.
+        if (c1->IsVirtualStub() && (c1->gtStubCallStubAddr != c2->gtStubCallStubAddr))
+        {
+            return false;
+        }
     }
     else
     {
