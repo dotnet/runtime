@@ -24,8 +24,9 @@ public enum StackWalkState
     // frame down to an M2U boundary. FrameIter is on the explicit Frame.
     SW_NATIVE_MARKER,
 
-    // Context has been bridged through the explicit Frame at FrameIter
-    // (FrameAddress is valid). The next step advances past this Frame.
+    // FrameAddress is valid and identifies the explicit Frame at FrameIter.
+    // The current Context has not yet been bridged through that Frame; the
+    // next step uses it to update the Context, after which SW_FRAMELESS is yielded.
     SW_FRAME,
     SW_SKIPPED_FRAME,
 }
