@@ -70,22 +70,6 @@ const generatorGlobalConfig = write_file({
     ],
 });
 
-const coreclrRuntimeConfig = write_file({
-    name: "coreclr_runtimeconfig",
-    out: "coreclr.runtimeconfig.json",
-    content: [
-        "{",
-        "  \"runtimeOptions\": {",
-        "    \"tfm\": \"net11.0\",",
-        "    \"framework\": {",
-        "      \"name\": \"Microsoft.NETCore.App\",",
-        "      \"version\": \"11.0.0-preview.5.26264.105\"",
-        "    }",
-        "  }",
-        "}",
-    ],
-});
-
 // ============================================================================
 //  coreclr_test arguments and result
 // ============================================================================
@@ -123,7 +107,7 @@ export interface CoreClrTestArguments {
 }
 
 export interface CoreClrTestResult extends Rules.Provider {
-    binary: File;
+    binary: Rules.Artifact;
     testInfo?: Rules.TestInfo;
     csInfo: CSharp.CSharpInfo;
     defaultInfo: Rules.DefaultInfo;
@@ -135,8 +119,8 @@ export interface CoreClrTestResult extends Rules.Provider {
 
 interface CoreClrTestRunnerAttrs {
     name: string;
-    binary: File;
-    runtimeFiles: File[];
+    binary: Rules.Artifact;
+    runtimeFiles: Rules.Artifact[];
     env?: {name: string, value: string}[];
     flaky?: boolean;
     tags?: string[];
@@ -153,14 +137,13 @@ const coreclrTestRunner = Rules.rule<CoreClrTestRunnerAttrs, CoreClrTestRunnerAt
     resolve: (attrs, _resolver) => attrs,
     impl: (ctx) => {
         const corerunPath = Defs.CORE_ROOT_CORERUN.path.toDiagnosticString();
-        const dllName = ctx.args.binary.name.toString();
+        const dllName = ctx.args.binary.shortPath;
 
         // Generate the runner script via ctx.actions (build-time, untagged)
         // so it is produced by `bxl build` and available for Helix staging.
         // Test *execution* stays on ctx.runActions (tagged bxl-kind:test).
         const dllPath = ctx.args.binary.path.toDiagnosticString();
-        const runtimeSources = ctx.args.runtimeFiles.map(f => `# runtime-source: ${f.path.toDiagnosticString()}`);
-        const envLines = (ctx.args.env || []).map(e => `export "${e.name}=${e.value}"`);
+        const runtimeSources = ctx.args.runtimeFiles.map(f => `# runtime-source: ${f.path.toDiagnosticString()}`);        const envLines = (ctx.args.env || []).map(e => `export "${e.name}=${e.value}"`);
         const runner = ctx.actions.writeFile(
             ctx.actions.declareOutput(`${ctx.args.name}.runner.sh`),
             [
@@ -180,8 +163,8 @@ const coreclrTestRunner = Rules.rule<CoreClrTestRunnerAttrs, CoreClrTestRunnerAt
             successExitCodes: [100],
             env: ctx.args.env,
             deps: [
-                Rules.sourceArtifact(ctx.args.binary),
-                ...ctx.args.runtimeFiles.map(f => Rules.sourceArtifact(f)),
+                ctx.args.binary,
+                ...ctx.args.runtimeFiles,
             ],
             size: "small",
             flaky: ctx.args.flaky,
@@ -228,9 +211,8 @@ export function coreclr_test(args: CoreClrTestArguments): CoreClrTestResult {
         nowarn: allNowarn,
         useSharedCompilation: true,
         disableImplicitFrameworkRefs: true,
-        analyzers: referenceXunitWrapperGenerator ? [Rules.sourceArtifact(xunitWrapperGenerator.binary)] : undefined,
+        analyzers: referenceXunitWrapperGenerator ? [xunitWrapperGenerator.binary] : undefined,
         analyzerConfigs: analyzerConfigs,
-        runtimeConfig: coreclrRuntimeConfig.out,
     });
 
     const runtimeFiles = [

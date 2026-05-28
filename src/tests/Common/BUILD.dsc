@@ -7,7 +7,7 @@ import * as Defs from "Defs";
 export const tc = CSharp.csharpToolchain({
     name: "dotnet-sdk",
     contents: importFrom("DotNetSdk").extracted,
-    compilerPath: "sdk/11.0.100-preview.5.26227.104/Roslyn/bincore/csc.dll",
+    sdkVersion: "11.0.100-preview.5.26227.104",
     externalPackages: Defs.EXTERNAL_PACKAGES,
 });
 

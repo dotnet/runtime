@@ -91,16 +91,15 @@ export const XUNIT_DEPS: Rules.Label[] = [
 
 // ============================================================================
 //  XUNIT_RUNTIME_DEPS — runtime files staged beside executable tests
-//  These are resolved File objects (not labels) because they are staged
-//  directly into the test output directory by the test runner.
+//  These are source artifacts resolved from external packages.
 // ============================================================================
 
 @@public
-export const XUNIT_RUNTIME_DEPS: File[] = [
-    EXTERNAL_PACKAGES.get("Microsoft.DotNet.XUnitAssert").assertExistence(r`lib/net10.0/xunit.assert.dll`),
-    EXTERNAL_PACKAGES.get("xunit.extensibility.core").assertExistence(r`lib/netstandard1.1/xunit.core.dll`),
-    EXTERNAL_PACKAGES.get("Microsoft.DotNet.XUnitExtensions").assertExistence(r`lib/net10.0/Microsoft.DotNet.XUnitExtensions.dll`),
-    EXTERNAL_PACKAGES.get("xunit.abstractions").assertExistence(r`lib/netstandard1.0/xunit.abstractions.dll`),
+export const XUNIT_RUNTIME_DEPS: Rules.Artifact[] = [
+    Rules.sourceArtifact(EXTERNAL_PACKAGES.get("Microsoft.DotNet.XUnitAssert").assertExistence(r`lib/net10.0/xunit.assert.dll`)),
+    Rules.sourceArtifact(EXTERNAL_PACKAGES.get("xunit.extensibility.core").assertExistence(r`lib/netstandard1.1/xunit.core.dll`)),
+    Rules.sourceArtifact(EXTERNAL_PACKAGES.get("Microsoft.DotNet.XUnitExtensions").assertExistence(r`lib/net10.0/Microsoft.DotNet.XUnitExtensions.dll`)),
+    Rules.sourceArtifact(EXTERNAL_PACKAGES.get("xunit.abstractions").assertExistence(r`lib/netstandard1.0/xunit.abstractions.dll`)),
 ];
 
 //  CORE_ROOT paths used by BuildXL-backed CoreCLR test execution.
@@ -112,12 +111,12 @@ export const CORE_ROOT_DIR: Directory =
     d`${Context.getMount("SourceRoot").path}/artifacts/tests/coreclr/linux.x64.Checked/Tests/Core_Root`;
 
 @@public
-export const CORE_ROOT_CORERUN: File =
-    f`${CORE_ROOT_DIR}/corerun`;
+export const CORE_ROOT_CORERUN: Rules.Artifact =
+    Rules.sourceArtifact(f`${CORE_ROOT_DIR}/corerun`);
 
 @@public
-export const CORE_ROOT_ILASM: File =
-    f`${CORE_ROOT_DIR}/ilasm`;
+export const CORE_ROOT_ILASM: Rules.Artifact =
+    Rules.sourceArtifact(f`${CORE_ROOT_DIR}/ilasm`);
 
 // ============================================================================
 //  CORECLR_TEST_COMMON_DEPS — label-based deps baked into coreclr_test

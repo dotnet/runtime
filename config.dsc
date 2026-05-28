@@ -33,7 +33,7 @@ config({
                     moduleName: "bxl_rules_dotnet_repo",
                     owner: "agocke",
                     repository: "bxl_rules_dotnet",
-                    commit: "25b8d775c94f6cf5a51b4d5bacfc19d7101b756a",
+                    commit: "3d22c47fbe5859e2376d90a511c0178e98d73844",
                     modules: ["Sdk.Managed", "Sdk.Rules.CSharp", "Sdk.Rules.CSharp.Generated"],
                 },
             ],

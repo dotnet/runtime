@@ -32,7 +32,7 @@ interface IlCompileResolved {
 }
 
 interface IlCompileResult extends Rules.Provider {
-    binary: File;
+    binary: Rules.Artifact;
     defaultInfo: Rules.DefaultInfo;
 }
 
@@ -62,16 +62,15 @@ const ilCompile = Rules.rule<IlCompileAttrs, IlCompileResolved, Rules.Toolchain,
         }
 
         const produced = ctx.actions.run({
-            tool: Rules.sourceArtifact(Defs.CORE_ROOT_ILASM),
+            tool: Defs.CORE_ROOT_ILASM,
             arguments: cmdArgs,
             outputs: [dll],
             description: `ilasm ${ctx.args.name}`,
         });
 
-        const binaryFile = Rules.getFile(produced[0]);
         return {
             kind: "IlCompileResult",
-            binary: binaryFile,
+            binary: produced[0],
             defaultInfo: Rules.defaultInfo({ files: [produced[0]] }),
         };
     },
@@ -83,7 +82,7 @@ const ilCompile = Rules.rule<IlCompileAttrs, IlCompileResolved, Rules.Toolchain,
 
 interface IlTestRunnerAttrs {
     name: string;
-    binary: File;
+    binary: Rules.Artifact;
     env?: {name: string, value: string}[];
     flaky?: boolean;
     tags?: string[];
@@ -100,7 +99,7 @@ const ilTestRunner = Rules.rule<IlTestRunnerAttrs, IlTestRunnerAttrs, Rules.Tool
     resolve: (attrs, _resolver) => attrs,
     impl: (ctx) => {
         const corerunPath = Defs.CORE_ROOT_CORERUN.path.toDiagnosticString();
-        const dllName = ctx.args.binary.name.toString();
+        const dllName = ctx.args.binary.shortPath;
 
         // Generate the runner script via ctx.actions (build-time, untagged)
         // so it is produced by `bxl build` and available for Helix staging.
@@ -123,7 +122,7 @@ const ilTestRunner = Rules.rule<IlTestRunnerAttrs, IlTestRunnerAttrs, Rules.Tool
             executable: runner,
             successExitCodes: [100],
             env: ctx.args.env,
-            deps: [Rules.sourceArtifact(ctx.args.binary)],
+            deps: [ctx.args.binary],
             size: "small",
             flaky: ctx.args.flaky,
             tags: ctx.args.tags,
@@ -161,7 +160,7 @@ export interface IlCoreClrTestArguments {
 }
 
 export interface IlCoreClrTestResult extends Rules.Provider {
-    binary: File;
+    binary: Rules.Artifact;
     testInfo?: Rules.TestInfo;
     defaultInfo: Rules.DefaultInfo;
 }
