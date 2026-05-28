@@ -1502,9 +1502,9 @@ namespace Internal.JitInterface
                 info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ConstructedTypeSymbol(originalImpl.OwningType));
 #endif
             }
-            else if ((isArrayInterfaceDevirtualization || isGenericVirtual) && impl.IsMethodSharedByGenericInstantiations)
+            else if ((isArrayInterfaceDevirtualization || isGenericVirtual) && impl.IsSharedByGenericMethodInstantiations)
             {
-                bool requiresRuntimeLookup = originalImpl.IsMethodSharedByGenericInstantiations;
+                bool requiresRuntimeLookup = originalImpl.IsSharedByGenericMethodInstantiations;
                 if (requiresRuntimeLookup)
                 {
                     // TODO: Support for runtime lookup

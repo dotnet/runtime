@@ -73,7 +73,7 @@ namespace Internal.TypeSystem
         /// Gets a value indicating whether this is a shared method body.
         /// Similar to <see cref="IsSharedByGenericInstantiations"/> but this doesn't consider the owning type's generic instantiation.
         /// </summary>
-        public bool IsMethodSharedByGenericInstantiations
+        public bool IsSharedByGenericMethodInstantiations
         {
             get
             {
