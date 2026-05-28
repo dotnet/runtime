@@ -97,18 +97,22 @@ static RtlDeleteGrowableFunctionTableFnPtr pRtlDeleteGrowableFunctionTable;
 
 static bool s_publishingActive;              // Publishing to ETW is turned on
 
-// Lock protecting initialization of UnwindInfoTables.
-static CrstStatic s_unwindInfoInitLock;
-
 namespace
 {
+    // Uses unsigned subtraction to handle sequence counter wrapping correctly.
+    inline bool SequenceReached(LONG published, LONG target)
+    {
+        // published >= target
+        return (LONG)((ULONG)published - (ULONG)target) >= 0;
+    }
+
     // RAII helper used by UnwindInfoTable::FlushPendingEntries
     class FlushGateHolder
     {
-        UnwindInfoTable* m_pTable;
+        volatile LONG* m_pFlag;
     public:
-        explicit FlushGateHolder(UnwindInfoTable* pTable) : m_pTable(pTable) {}
-        ~FlushGateHolder() { m_pTable->ReleaseFlushGate(); }
+        explicit FlushGateHolder(volatile LONG* pFlag) : m_pFlag(pFlag) {}
+        ~FlushGateHolder() { InterlockedExchange(m_pFlag, 0); }
 
         FlushGateHolder(const FlushGateHolder&) = delete;
         FlushGateHolder& operator=(const FlushGateHolder&) = delete;
@@ -116,21 +120,58 @@ namespace
         FlushGateHolder& operator=(FlushGateHolder&&) = delete;
     };
 
-    int __cdecl CompareByBeginAddress(const void* a, const void* b)
+    inline void SortPendingByBeginAddress(T_RUNTIME_FUNCTION* p, ULONG n)
     {
-        CONTRACTL
+        auto cmpSwap = [](T_RUNTIME_FUNCTION& x, T_RUNTIME_FUNCTION& y)
         {
-            NOTHROW;
-            GC_NOTRIGGER;
-            FORBID_FAULT;
-        }
-        CONTRACTL_END;
+            if (y.BeginAddress < x.BeginAddress)
+            {
+                T_RUNTIME_FUNCTION tmp = x;
+                x = y;
+                y = tmp;
+            }
+        };
 
-        DWORD aBegin = ((const T_RUNTIME_FUNCTION*)a)->BeginAddress;
-        DWORD bBegin = ((const T_RUNTIME_FUNCTION*)b)->BeginAddress;
-        if (aBegin < bBegin) return -1;
-        if (aBegin > bBegin) return 1;
-        return 0;
+        if (n <= 1)
+            return;
+
+        if (n == 2)
+        {
+            cmpSwap(p[0], p[1]);
+            return;
+        }
+
+        if (n == 3)
+        {
+            cmpSwap(p[0], p[1]);
+            cmpSwap(p[1], p[2]);
+            cmpSwap(p[0], p[1]);
+            return;
+        }
+
+        if (n == 4)
+        {
+            cmpSwap(p[0], p[1]);
+            cmpSwap(p[2], p[3]);
+            cmpSwap(p[0], p[2]);
+            cmpSwap(p[1], p[3]);
+            cmpSwap(p[1], p[2]);
+            return;
+        }
+
+        // Insertion sort for the remaining sizes.
+        for (ULONG i = 1; i < n; i++)
+        {
+            T_RUNTIME_FUNCTION key = p[i];
+            DWORD keyBegin = key.BeginAddress;
+            ULONG j = i;
+            while (j > 0 && p[j - 1].BeginAddress > keyBegin)
+            {
+                p[j] = p[j - 1];
+                j--;
+            }
+            p[j] = key;
+        }
     }
 }
 
@@ -195,7 +236,8 @@ UnwindInfoTable::UnwindInfoTable(ULONG_PTR rangeStart, ULONG_PTR rangeEnd)
     m_flushInProgress = 0;
     m_pendingSeq = 0;
     m_publishedSeq = 0;
-    m_flushCompleteEvent.CreateManualEvent(FALSE);
+    InitializeSRWLock(&m_flushLock);
+    InitializeConditionVariable(&m_flushCV);
     m_registrationFailed = false;
 }
 
@@ -212,7 +254,7 @@ UnwindInfoTable::~UnwindInfoTable()
     // It would be cleaner if we could take the lock (we did not have to be GC_NOTRIGGER)
     UnRegister();
     delete[] pTable;
-    m_flushCompleteEvent.CloseEvent();
+    // SRWLOCK and CONDITION_VARIABLE require no cleanup.
 }
 
 /*****************************************************************************/
@@ -306,40 +348,43 @@ LONG UnwindInfoTable::FlushPendingEntriesUnderGate()
 
     if (hHandle == NULL)
     {
-        // If hHandle is null, it means Register() failed. Skip flushing to avoid calling
-        // RtlGrowFunctionTable with a null handle.
-        CrstHolder pendingLock(&m_pendingLock);
-        cPendingCount = 0;
-        return m_pendingSeq;
+        if (m_registrationFailed)
+        {
+            // Registration failed permanently. Discard pending entries.
+            CrstHolder pendingLock(&m_pendingLock);
+            cPendingCount = 0;
+            return m_pendingSeq;
+        }
+
+        // Registration is still in progress on the winning thread.
+        return -1;
     }
 
     // Grab the pending entries under the pending lock, then release it so
     // other threads can keep accumulating new entries while we publish.
-    T_RUNTIME_FUNCTION localPending[cPendingMaxCount];
     ULONG localPendingCount;
     LONG drainedSeq;
     {
         CrstHolder pendingLock(&m_pendingLock);
         localPendingCount = cPendingCount;
-        memcpy(localPending, pendingTable, cPendingCount * sizeof(T_RUNTIME_FUNCTION));
-        cPendingCount = 0;
         drainedSeq = m_pendingSeq;
+
+        if (localPendingCount == 0)
+            return drainedSeq;
+
+        memcpy(flushBuffer, pendingTable, localPendingCount * sizeof(T_RUNTIME_FUNCTION));
+        cPendingCount = 0;
         INDEBUG( memset(pendingTable, 0xcc, sizeof(pendingTable)); )
     }
 
-    if (localPendingCount == 0)
-        return drainedSeq;
-
-    // Sort the pending entries by BeginAddress.
-    qsort(localPending, localPendingCount, sizeof(T_RUNTIME_FUNCTION),
-          CompareByBeginAddress);
+    SortPendingByBeginAddress(flushBuffer, localPendingCount);
 
     // Fast path: if all pending entries can be appended in order with room to spare,
     // we can just append and call RtlGrowFunctionTable.
     if (cTableCurCount + localPendingCount <= cTableMaxCount
-        && (cTableCurCount == 0 || pTable[cTableCurCount - 1].BeginAddress < localPending[0].BeginAddress))
+        && (cTableCurCount == 0 || pTable[cTableCurCount - 1].BeginAddress < flushBuffer[0].BeginAddress))
     {
-        memcpy(&pTable[cTableCurCount], localPending, localPendingCount * sizeof(T_RUNTIME_FUNCTION));
+        memcpy(&pTable[cTableCurCount], flushBuffer, localPendingCount * sizeof(T_RUNTIME_FUNCTION));
         cTableCurCount += localPendingCount;
         pRtlGrowFunctionTable(hHandle, cTableCurCount);
 
@@ -359,7 +404,7 @@ LONG UnwindInfoTable::FlushPendingEntriesUnderGate()
 
     NewArrayHolder<T_RUNTIME_FUNCTION> newPTable(new T_RUNTIME_FUNCTION[desiredSpace]);
 
-    // Merge-sort the main table and pending buffer into newPTable.
+    // Merge-sort the main table and flush buffer into newPTable.
     ULONG mainIdx = 0;
     ULONG pendIdx = 0;
     ULONG toIdx = 0;
@@ -373,9 +418,9 @@ LONG UnwindInfoTable::FlushPendingEntriesUnderGate()
             continue;
         }
 
-        if (localPending[pendIdx].BeginAddress < pTable[mainIdx].BeginAddress)
+        if (flushBuffer[pendIdx].BeginAddress < pTable[mainIdx].BeginAddress)
         {
-            newPTable[toIdx++] = localPending[pendIdx++];
+            newPTable[toIdx++] = flushBuffer[pendIdx++];
         }
         else
         {
@@ -392,7 +437,7 @@ LONG UnwindInfoTable::FlushPendingEntriesUnderGate()
 
     while (pendIdx < localPendingCount)
     {
-        newPTable[toIdx++] = localPending[pendIdx++];
+        newPTable[toIdx++] = flushBuffer[pendIdx++];
     }
 
     _ASSERTE(toIdx == newCount);
@@ -431,51 +476,56 @@ void UnwindInfoTable::FlushPendingEntries(LONG waitForSeq)
     CONTRACTL_END;
 
     // This thread attempts to become the sole flusher for this table by taking
-    // the flush gate. If it wins, publish the pending entries, signal waiters,
-    // re-check if more entries arrived and loop if so.
-    // If it loses, it waits until its sequence has been published.
+    // the flush gate. If it wins, publish the pending entries and signal waiters.
+    // If it loses, it waits until either its sequence has been published or the gate becomes free.
     while (true)
     {
         // Gate: only one thread flushes at a time.
         if (InterlockedCompareExchange(&m_flushInProgress, 1, 0) != 0)
         {
-            // Another thread is flushing. Wait until our entries are published.
-            while (m_publishedSeq < waitForSeq)
+            // Another thread is flushing. Wait until either our entries are
+            // published or the gate becomes free.
+            AcquireSRWLockExclusive(&m_flushLock);
+            while (!SequenceReached(m_publishedSeq, waitForSeq) && VolatileLoad(&m_flushInProgress) != 0)
             {
-                m_flushCompleteEvent.Wait(INFINITE, FALSE);
+                SleepConditionVariableSRW(&m_flushCV, &m_flushLock, INFINITE, 0);
             }
-            return;
+            ReleaseSRWLockExclusive(&m_flushLock);
+            if (SequenceReached(m_publishedSeq, waitForSeq))
+                return;
+            // Retry taking the gate.
+            continue;
         }
-
-        // Reset the event so waiters that arrive during our flush
-        // will block until we signal completion.
-        m_flushCompleteEvent.Reset();
 
         LONG drainedSeq;
         // Scope the gate holder so m_flushInProgress is reset when the scope exits.
         {
-            FlushGateHolder gateHolder(this);
+            FlushGateHolder gateHolder(&m_flushInProgress);
             drainedSeq = FlushPendingEntriesUnderGate();
 
             // Update published sequence while still holding the gate.
-            // This ensures no new flusher can start (and Reset the event)
-            // between our update and Set below.
-            m_publishedSeq = drainedSeq;
-            m_flushCompleteEvent.Set();
+            // A return of -1 means registration is still in progress.
+            if (drainedSeq != -1)
+            {
+                AcquireSRWLockExclusive(&m_flushLock);
+                m_publishedSeq = drainedSeq;
+                ReleaseSRWLockExclusive(&m_flushLock);
+            }
         }
+        // Gate released BEFORE WakeAll. Critical for correctness: if a waiter
+        // wakes while the gate is still held and its seq isn't satisfied, it
+        // could sleep again (see waiter loop above), and we'd never wake it
+        // again. By releasing the gate first, the waiter observes
+        // m_flushInProgress == 0 and can take over the flush itself.
+        WakeAllConditionVariable(&m_flushCV);
 
-        _ASSERTE(drainedSeq >= waitForSeq);
-
-        // Re-check pending table under m_pendingLock.
-        // We only stop the retry loop if we see no more pending entries.
-        // If producer threads enqueued after we determined we should break the loop,
-        // at least one will surely be able to set m_flushInProgress to 1 and publish its entry.
-        bool needRetry;
-        {
-            CrstHolder pendingLock(&m_pendingLock);
-            needRetry = (cPendingCount != 0);
-        }
-        if (!needRetry) return;
+        // drainedSeq could be -1 if registration is still in progress.
+        // Our entries are guaranteed published (drainedSeq >= waitForSeq) since
+        // FlushPendingEntriesUnderGate drains all pending entries atomically.
+        // Release the gate and let the next producer take over.
+        _ASSERTE(drainedSeq == -1 || SequenceReached(drainedSeq, waitForSeq));
+        if (drainedSeq != -1)
+            return;
     }
 }
 
@@ -555,18 +605,27 @@ void UnwindInfoTable::FlushPendingEntries(LONG waitForSeq)
     UnwindInfoTable* unwindInfo = VolatileLoad(&pRS->_pUnwindInfoTable);
     if (unwindInfo == NULL)
     {
-        CrstHolder lock(&s_unwindInfoInitLock);
-        unwindInfo = VolatileLoad(&pRS->_pUnwindInfoTable);
-        if (unwindInfo == NULL)
+        // Create the table and try to atomically install it.
+        // Only the winner thread calls Register() so exactly one table
+        // is ever registered with the OS for a given range. This avoids
+        // STATUS_CONFLICTING_ADDRESSES failures.
+        NewHolder<UnwindInfoTable> newTable(new UnwindInfoTable(pRS->_range.RangeStart(), pRS->_range.RangeEndOpen()));
+
+        if (InterlockedCompareExchangeT(&pRS->_pUnwindInfoTable, newTable.GetValue(), (UnwindInfoTable*)NULL) == NULL)
         {
-            unwindInfo = new UnwindInfoTable(pRS->_range.RangeStart(), pRS->_range.RangeEndOpen());
-            unwindInfo->Register();
-            if (unwindInfo->hHandle == NULL)
+            newTable.SuppressRelease();
+            // Other threads that observe the table before Register()
+            // completes will accumulate entries in the pending buffer.
+            // The first successful flush publishes them.
+            newTable->Register();
+            if (newTable->hHandle == NULL)
             {
-                unwindInfo->m_registrationFailed = true;
+                newTable->m_registrationFailed = true;
             }
-            VolatileStore(&pRS->_pUnwindInfoTable, unwindInfo);
         }
+        // else another thread won. NewHolder frees our unregistered table (no OS call).
+
+        unwindInfo = VolatileLoad(&pRS->_pUnwindInfoTable);
     }
 
     unwindInfo->AddToUnwindInfoTable(methodUnwindData, methodUnwindDataCount);
@@ -620,7 +679,6 @@ void UnwindInfoTable::FlushPendingEntries(LONG waitForSeq)
     if (!InitUnwindFtns())
         return;
 
-    s_unwindInfoInitLock.Init(CrstUnwindInfoTableInitLock);
     s_publishingActive = true;
 }
 
