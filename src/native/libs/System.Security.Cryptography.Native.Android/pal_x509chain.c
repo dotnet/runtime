@@ -97,7 +97,23 @@ X509ChainContext* AndroidCryptoNative_X509ChainCreateContext(jobject /*X509Certi
 
     ret = xcalloc(1, sizeof(X509ChainContext));
     ret->params = AddGRef(env, loc[params]);
+    if (ret->params == NULL)
+    {
+        CheckJNIExceptions(env);
+        free(ret);
+        ret = NULL;
+        goto cleanup;
+    }
+
     ret->errorList = AddGRef(env, loc[errorList]);
+    if (ret->errorList == NULL)
+    {
+        CheckJNIExceptions(env);
+        ReleaseGRef(env, ret->params);
+        free(ret);
+        ret = NULL;
+        goto cleanup;
+    }
 
 cleanup:
     RELEASE_LOCALS(loc, env);
