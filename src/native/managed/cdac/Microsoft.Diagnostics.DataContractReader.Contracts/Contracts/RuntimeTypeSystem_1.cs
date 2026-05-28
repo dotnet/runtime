@@ -1401,9 +1401,9 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         if (!IsSharedByGenericInstantiations(methodDesc))
             return GenericContextLoc.None;
         else if (HasMethodInstantiation(methodDesc))
-            return GenericContextLoc.InstArg_MethodDesc;
+            return GenericContextLoc.InstArgMethodDesc;
         else if (RequiresInstArgMethodTable(methodDesc))
-            return GenericContextLoc.InstArg_MethodTable;
+            return GenericContextLoc.InstArgMethodTable;
         else
             return GenericContextLoc.ThisPtr;
     }

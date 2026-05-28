@@ -169,8 +169,8 @@ public enum OptimizationTier
 public enum GenericContextLoc
 {
     None,
-    InstArg_MethodDesc,
-    InstArg_MethodTable,
+    InstArgMethodDesc,
+    InstArgMethodTable,
     ThisPtr,
 }
 ```
@@ -218,7 +218,7 @@ partial interface IRuntimeTypeSystem : IContract
     public virtual bool HasMDContextArg(MethodDescHandle);
 
     // Determine where a shared generic method obtains its generic context.
-    // Returns None if not shared, InstArg_MethodDesc if an MD via a hidden parameter, InstArg_MethodTable if an MT via a hidden parameter or ThisPtr if via the 'this' pointer's MethodTable.
+    // Returns None if not shared, InstArgMethodDesc if an MD via a hidden parameter, InstArgMethodTable if an MT via a hidden parameter or ThisPtr if via the 'this' pointer's MethodTable.
     public virtual GenericContextLoc GetGenericContextLoc(MethodDescHandle methodDesc);
 
     // Return true if the method uses the async calling convention.
@@ -1693,9 +1693,9 @@ Determining where a shared generic method obtains its generic context:
         if (!IsSharedByGenericInstantiations(md))
             return GenericContextLoc.None;
         else if (HasMethodInstantiation(md))
-            return GenericContextLoc.InstArg_MethodDesc;
+            return GenericContextLoc.InstArgMethodDesc;
         else if (RequiresInstArgMethodTable(md))
-            return GenericContextLoc.InstArg_MethodTable;
+            return GenericContextLoc.InstArgMethodTable;
         else
             return GenericContextLoc.ThisPtr;
     }

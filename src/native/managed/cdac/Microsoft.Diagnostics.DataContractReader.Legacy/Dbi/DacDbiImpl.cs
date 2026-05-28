@@ -1910,14 +1910,14 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             {
                 try
                 {
-                    if (ctxLoc == GenericContextLoc.InstArg_MethodDesc)
+                    if (ctxLoc == GenericContextLoc.InstArgMethodDesc)
                     {
                         // RequiresInstMethodDescArg: token is a MethodDesc*.
                         pSpecificMethod = rts.GetMethodDescHandle(new TargetPointer(genericsToken));
                         thSpecificClass = rts.GetTypeHandle(rts.GetMethodTable(pSpecificMethod));
                         isExact = true;
                     }
-                    else if (ctxLoc == GenericContextLoc.InstArg_MethodTable)
+                    else if (ctxLoc == GenericContextLoc.InstArgMethodTable)
                     {
                         // RequiresInstMethodTableArg: token is a MethodTable*.
                         thSpecificClass = rts.GetTypeHandle(new TargetPointer(genericsToken));
@@ -3386,8 +3386,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 case GenericContextLoc.None:
                     hr = HResults.S_FALSE;
                     break;
-                case GenericContextLoc.InstArg_MethodDesc:
-                case GenericContextLoc.InstArg_MethodTable:
+                case GenericContextLoc.InstArgMethodDesc:
+                case GenericContextLoc.InstArgMethodTable:
                     *pIndex = unchecked((uint)IlNum.TYPECTXT_ILNUM);
                     break;
                 case GenericContextLoc.ThisPtr:
