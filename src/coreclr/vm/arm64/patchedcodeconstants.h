@@ -8,7 +8,7 @@
 #ifndef PATCHEDCODECONSTANTS_H
 #define PATCHEDCODECONSTANTS_H
 
-// These are fixed constants becuase MacOS doesn't allow label arithmetic in
+// These are fixed constants because MacOS doesn't allow label arithmetic in
 // LDR instructions. Asserts in writebarriermanager CALC_TABLE_LOCATION ensure
 // the values are correct.
 
