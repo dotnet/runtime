@@ -66,7 +66,7 @@ namespace Microsoft.Win32.SafeHandles
 
                 if (error == Interop.Errors.ERROR_ACCESS_DENIED)
                 {
-                    throw new Win32Exception(error);
+                    throw new UnauthorizedAccessException();
                 }
 
                 processHandle = null;

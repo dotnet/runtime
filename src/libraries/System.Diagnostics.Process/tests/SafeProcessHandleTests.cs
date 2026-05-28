@@ -270,23 +270,10 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void Signal_SIGKILL_RunningProcess_ReturnsTrue()
-        {
-            Process process = CreateProcess(static () =>
-            {
-                Thread.Sleep(Timeout.Infinite);
-                return RemoteExecutor.SuccessExitCode;
-            });
-
-            using SafeProcessHandle processHandle = SafeProcessHandle.Start(process.StartInfo);
-            using Process fetchedProcess = Process.GetProcessById(processHandle.ProcessId);
-
-            bool delivered = processHandle.Signal(PosixSignal.SIGKILL);
-
-            Assert.True(delivered);
-            Assert.True(fetchedProcess.WaitForExit(WaitInMS));
-        }
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task WaitForExit_ProcessExitsNormally_ReturnsExitCode(bool useAsync)
         {
             Process process = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
 

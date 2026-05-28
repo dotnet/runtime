@@ -119,7 +119,7 @@ namespace System.Diagnostics
             _errorStreamReadMode = StreamReadMode.Undefined;
         }
 
-        private Process(int processId, SafeProcessHandle processHandle) : this(".", false, processId, null)
+        private Process(SafeProcessHandle processHandle) : this(".", false, processHandle.ProcessId, null)
         {
             _processHandle = processHandle;
             _haveProcessHandle = true;
@@ -949,7 +949,7 @@ namespace System.Diagnostics
         /// <param name="process">When this method returns <see langword="true"/>, contains a <see cref="Process"/> representing the opened process; otherwise, <see langword="null"/>.</param>
         /// <returns><see langword="true"/> if the process was found and opened successfully; otherwise, <see langword="false"/>.</returns>
         /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="processId"/> is negative or zero.</exception>
-        /// <exception cref="Win32Exception">Thrown when the process exists but the caller does not have permissions to open it.</exception>
+        /// <exception cref="UnauthorizedAccessException">Thrown when the process exists but the caller does not have permissions to open it.</exception>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
@@ -961,7 +961,7 @@ namespace System.Diagnostics
                 return false;
             }
 
-            process = new Process(processId, processHandle);
+            process = new Process(processHandle);
             return true;
         }
 

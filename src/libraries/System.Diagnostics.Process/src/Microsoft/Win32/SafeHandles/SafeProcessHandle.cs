@@ -91,7 +91,7 @@ namespace Microsoft.Win32.SafeHandles
         /// <param name="processHandle">When this method returns <see langword="true"/>, contains the <see cref="SafeProcessHandle"/> for the opened process; otherwise, <see langword="null"/>.</param>
         /// <returns><see langword="true"/> if the process was successfully opened; otherwise, <see langword="false"/>.</returns>
         /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="processId"/> is negative or zero.</exception>
-        /// <exception cref="Win32Exception">Thrown when the process exists but the caller does not have permissions to open it.</exception>
+        /// <exception cref="UnauthorizedAccessException">Thrown when the process exists but the caller does not have permissions to open it.</exception>
         /// <remarks>
         /// <para>
         /// This method does not throw when the process does not exist. Instead, it returns <see langword="false"/>.
