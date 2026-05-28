@@ -143,7 +143,6 @@ namespace System.Security.Cryptography.X509Certificates
                         ((AndroidCertificatePal)cert).SafeHandle,
                         extraCerts,
                         extraCerts.Length);
-                    ThrowIfInvalidChainContext(_chainContext);
 
                     if (useCustomRootTrust)
                     {
@@ -180,14 +179,6 @@ namespace System.Security.Cryptography.X509Certificates
                     {
                         customTrustCertHandles[customIdx].DangerousRelease();
                     }
-                }
-            }
-
-            private static void ThrowIfInvalidChainContext(SafeX509ChainContextHandle chainContext)
-            {
-                if (chainContext.IsInvalid)
-                {
-                    throw new CryptographicException(SR.Cryptography_AndroidX509ChainContextInitializationFailed);
                 }
             }
 

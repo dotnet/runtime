@@ -13,10 +13,26 @@ internal static partial class Interop
     internal static partial class AndroidCrypto
     {
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509ChainCreateContext")]
-        internal static partial SafeX509ChainContextHandle X509ChainCreateContext(
+        private static partial SafeX509ChainContextHandle X509ChainCreateContext_private(
             SafeX509Handle cert,
             IntPtr[] extraStore,
             int extraStoreLen);
+
+        internal static SafeX509ChainContextHandle X509ChainCreateContext(
+            SafeX509Handle cert,
+            IntPtr[] extraStore,
+            int extraStoreLen)
+        {
+            SafeX509ChainContextHandle chainContext = X509ChainCreateContext_private(cert, extraStore, extraStoreLen);
+
+            if (chainContext.IsInvalid)
+            {
+                chainContext.Dispose();
+                throw new CryptographicException(SR.Cryptography_AndroidX509ChainContextInitializationFailed);
+            }
+
+            return chainContext;
+        }
 
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509ChainDestroyContext")]
         internal static partial void X509ChainDestroyContext(IntPtr ctx);
