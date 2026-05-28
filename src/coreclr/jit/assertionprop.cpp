@@ -243,11 +243,15 @@ bool IntegralRange::Contains(int64_t value) const
                 return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
             }
 
-            int64_t constValue = node->AsIntCon()->IntegralValue();
+            int64_t constValue = node->AsIntConCommon()->IntegralValue();
 
             if (FitsIn<int32_t>(constValue))
             {
                 rangeType = TYP_INT;
+            }
+            else if (FitsIn<uint32_t>(constValue))
+            {
+                rangeType = TYP_UINT;
             }
 
             if (constValue >= 0)
