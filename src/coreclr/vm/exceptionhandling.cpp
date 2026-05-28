@@ -1331,6 +1331,14 @@ bool IsDivByZeroAnIntegerOverflow(PCONTEXT pContext)
     {
         BYTE payload = *ip++;
 
+        // Only map 0 (M=0) can encode IDIV/DIV (opcodes F6/F7).
+        // If M=1 (map 1, i.e. 0F-prefixed), this is not an IDIV/DIV instruction.
+        if ((payload & 0x80) != 0)
+        {
+            _ASSERTE(!"Invalid instruction (expected IDIV or DIV)");
+            return false;
+        }
+
         // Construct a REX-equivalent value.
         // Lower 4 bits (W:R3:X3:B3) have the same layout as the REX prefix bits.
         // Additionally pack B4 into bit 4 and X4 into bit 5 for GetModRMOperandValue.
