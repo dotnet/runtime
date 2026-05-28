@@ -117,6 +117,7 @@ internal readonly struct Object_1 : IObject
         Debug.Assert(componentSize <= 2 || rts.IsArray(th, out _));
         if (componentSize > 0)
         {
+            // May not be an array, but component count is always at the same offset.
             Data.Array array = _target.ProcessedData.GetOrAdd<Data.Array>(address);
             size += (ulong)array.NumComponents * componentSize;
         }
