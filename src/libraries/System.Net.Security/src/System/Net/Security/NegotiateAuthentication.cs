@@ -254,34 +254,38 @@ namespace System.Net.Security
         public string? GetOutgoingBlob(string? incomingBlob, out NegotiateAuthenticationStatusCode statusCode)
         {
             byte[]? rentedBuffer = null;
-            ReadOnlySpan<byte> decodedIncomingBlob = default;
-            if (!string.IsNullOrEmpty(incomingBlob))
+            try
             {
-                rentedBuffer = ArrayPool<byte>.Shared.Rent((incomingBlob.Length / 4) * 3);
-                if (!Convert.TryFromBase64String(incomingBlob, rentedBuffer, out int decodedLength))
+                ReadOnlySpan<byte> decodedIncomingBlob = default;
+                if (!string.IsNullOrEmpty(incomingBlob))
                 {
-                    ArrayPool<byte>.Shared.Return(rentedBuffer);
-                    statusCode = NegotiateAuthenticationStatusCode.InvalidToken;
-                    return null;
+                    rentedBuffer = ArrayPool<byte>.Shared.Rent((incomingBlob.Length / 4) * 3);
+                    if (!Convert.TryFromBase64String(incomingBlob, rentedBuffer, out int decodedLength))
+                    {
+                        statusCode = NegotiateAuthenticationStatusCode.InvalidToken;
+                        return null;
+                    }
+
+                    decodedIncomingBlob = rentedBuffer.AsSpan(0, decodedLength);
                 }
 
-                decodedIncomingBlob = rentedBuffer.AsSpan(0, decodedLength);
+                byte[]? decodedOutgoingBlob = GetOutgoingBlob(decodedIncomingBlob, out statusCode);
+
+                string? outgoingBlob = null;
+                if (decodedOutgoingBlob != null && decodedOutgoingBlob.Length > 0)
+                {
+                    outgoingBlob = Convert.ToBase64String(decodedOutgoingBlob);
+                }
+
+                return outgoingBlob;
             }
-
-            byte[]? decodedOutgoingBlob = GetOutgoingBlob(decodedIncomingBlob, out statusCode);
-
-            if (rentedBuffer is not null)
+            finally
             {
-                ArrayPool<byte>.Shared.Return(rentedBuffer);
+                if (rentedBuffer is not null)
+                {
+                    ArrayPool<byte>.Shared.Return(rentedBuffer, clearArray: true);
+                }
             }
-
-            string? outgoingBlob = null;
-            if (decodedOutgoingBlob != null && decodedOutgoingBlob.Length > 0)
-            {
-                outgoingBlob = Convert.ToBase64String(decodedOutgoingBlob);
-            }
-
-            return outgoingBlob;
         }
 
         /// <summary>
