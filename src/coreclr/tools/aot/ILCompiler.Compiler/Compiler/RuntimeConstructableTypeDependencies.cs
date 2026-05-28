@@ -28,7 +28,7 @@ namespace ILCompiler
                     // We can condition on this type since we'd either need this type to be
                     // present in the compilation, or template for this type to be present.
                     //
-                    // We specifically exlude the `__Canon[]` template because conditioning
+                    // We specifically exclude the `__Canon[]` template because conditioning
                     // on the __Canon[] template would be strictly worse than conditioning on
                     // the element type in a normal app.
                     break;
