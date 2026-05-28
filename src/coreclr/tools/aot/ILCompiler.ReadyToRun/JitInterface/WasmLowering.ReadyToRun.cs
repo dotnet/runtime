@@ -7,6 +7,8 @@ using System.Text;
 using ILCompiler;
 using ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
+using Internal.CallingConvention;
+using ArgIterator = Internal.CallingConvention.ArgIterator;
 
 using Internal.TypeSystem;
 
@@ -19,9 +21,9 @@ namespace Internal.JitInterface
             if (argit.IsValueType())
             {
                 // Check to see if this argument lowers to a byref on the wasm side
-                TypeHandle typeHandle;
+                ITypeHandle typeHandle;
                 argit.GetArgType(out typeHandle);
-                if (WasmLowering.LowerToAbiType(typeHandle.GetRuntimeTypeHandle()) == null)
+                if (WasmLowering.LowerToAbiType(((TypeHandle)typeHandle).GetRuntimeTypeHandle()) == null)
                 {
                     return true;
                 }

@@ -327,135 +327,78 @@ internal class GcScanner
             return;
 
         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+        ICallingConvention cc = _target.Contracts.CallingConvention;
         MethodDescHandle mdh = rts.GetMethodDescHandle(methodDescPtr);
 
-        MethodSignature<GcTypeKind> methodSig;
-        try
+        foreach (ArgumentLocation arg in cc.EnumerateArguments(mdh))
         {
-            TargetPointer methodTablePtr = rts.GetMethodTable(mdh);
-            TypeHandle typeHandle = rts.GetTypeHandle(methodTablePtr);
-            TargetPointer modulePtr = rts.GetModule(typeHandle);
+            TargetPointer slotAddress = transitionBlock + (ulong)arg.Offset;
 
-            ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
-            MetadataReader? mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle);
-            if (mdReader is null)
-                return;
-
-            GcSignatureTypeProvider provider = new(_target, moduleHandle);
-            GcSignatureContext genericContext = new(typeHandle, mdh);
-            RuntimeSignatureDecoder<GcTypeKind, GcSignatureContext> decoder = new(
-                provider, _target, mdReader, genericContext);
-
-            // Match native MethodDesc::GetSig: prefer stored signature (dynamic, EEImpl,
-            // and array method descs) before falling back to a metadata token lookup.
-            if (rts.IsStoredSigMethodDesc(mdh, out ReadOnlySpan<byte> storedSig))
+            if (arg.IsParamType)
             {
-                unsafe
-                {
-                    fixed (byte* pStoredSig = storedSig)
+                // Generic instantiation arg -- not a GC reference itself but may need pinning
+                scanContext.GCReportCallback(slotAddress, GcScanFlags.GC_CALL_INTERIOR);
+                continue;
+            }
+
+            if (arg.IsThis)
+            {
+                GcScanFlags thisFlags = arg.IsValueTypeThis ? GcScanFlags.GC_CALL_INTERIOR : GcScanFlags.None;
+                scanContext.GCReportCallback(slotAddress, thisFlags);
+                continue;
+            }
+
+            switch ((CorElementType)arg.ElementType)
+            {
+                case CorElementType.Class:
+                case CorElementType.String:
+                case CorElementType.Object:
+                case CorElementType.Array:
+                case CorElementType.SzArray:
+                    scanContext.GCReportCallback(slotAddress, GcScanFlags.None);
+                    break;
+
+                case CorElementType.Byref:
+                    scanContext.GCReportCallback(slotAddress, GcScanFlags.GC_CALL_INTERIOR);
+                    break;
+
+                case CorElementType.ValueType:
+                    if (arg.IsPassedByRef)
                     {
-                        BlobReader blobReader = new BlobReader(pStoredSig, storedSig.Length);
-                        methodSig = decoder.DecodeMethodSignature(ref blobReader);
+                        scanContext.GCReportCallback(slotAddress, GcScanFlags.GC_CALL_INTERIOR);
                     }
-                }
-            }
-            else
-            {
-                uint methodToken = rts.GetMethodToken(mdh);
-                if (methodToken == (uint)EcmaMetadataUtils.TokenType.mdtMethodDef)
-                    return;
-
-                MethodDefinitionHandle methodDefHandle = MetadataTokens.MethodDefinitionHandle((int)EcmaMetadataUtils.GetRowId(methodToken));
-                MethodDefinition methodDef = mdReader.GetMethodDefinition(methodDefHandle);
-
-                BlobReader blobReader = mdReader.GetBlobReader(methodDef.Signature);
-                methodSig = decoder.DecodeMethodSignature(ref blobReader);
+                    else
+                    {
+                        ReportPointersFromValueType(rts, arg.TypeHandle, slotAddress, scanContext);
+                    }
+                    break;
             }
         }
-        catch (System.Exception)
-        {
-            return;
-        }
-
-        if (methodSig.Header.CallingConvention is SignatureCallingConvention.VarArgs)
-            return;
-
-        bool hasThis = methodSig.Header.IsInstance;
-        bool hasRetBuf = methodSig.ReturnType is GcTypeKind.Other;
-        bool requiresInstArg = false;
-        bool isAsync = false;
-        bool isValueTypeThis = false;
-
-        try
-        {
-            requiresInstArg = rts.GetGenericContextLoc(mdh) == GenericContextLoc.InstArg;
-            isAsync = rts.IsAsyncMethod(mdh);
-        }
-        catch
-        {
-        }
-
-        PromoteCallerStackHelper(transitionBlock, methodSig, hasThis, hasRetBuf,
-            requiresInstArg, isAsync, isValueTypeThis, scanContext);
     }
 
     /// <summary>
-    /// Core logic for promoting caller stack GC references.
-    /// Matches native TransitionFrame::PromoteCallerStackHelper (frames.cpp:1560).
+    /// Report GC references within an unboxed value type using GCDesc series.
+    /// Port of native ReportPointersFromValueType (siginfo.cpp).
     /// </summary>
-    private void PromoteCallerStackHelper(
-        TargetPointer transitionBlock,
-        MethodSignature<GcTypeKind> methodSig,
-        bool hasThis,
-        bool hasRetBuf,
-        bool requiresInstArg,
-        bool isAsync,
-        bool isValueTypeThis,
-        GcScanContext scanContext)
+    private void ReportPointersFromValueType(
+        IRuntimeTypeSystem rts, TypeHandle typeHandle, TargetPointer baseAddress, GcScanContext scanContext)
     {
-        Data.TransitionBlock tb = _target.ProcessedData.GetOrAdd<Data.TransitionBlock>(transitionBlock);
+        if (!rts.ContainsGCPointers(typeHandle))
+            return;
 
-        int numRegistersUsed = 0;
-        if (hasThis)
-            numRegistersUsed++;
-        if (hasRetBuf)
-            numRegistersUsed++;
-        if (requiresInstArg)
-            numRegistersUsed++;
-        if (isAsync)
-            numRegistersUsed++;
+        int pointerSize = _target.PointerSize;
 
-        bool isArm64 = IsTargetArm64();
-        if (isArm64)
-            numRegistersUsed++;
-
-        if (hasThis)
+        foreach ((uint seriesOffset, uint seriesSize) in rts.GetGCDescSeries(typeHandle))
         {
-            int thisPos = isArm64 ? 1 : 0;
-            TargetPointer thisAddr = AddressFromGCRefMapPos(tb, thisPos);
-            GcScanFlags thisFlags = isValueTypeThis ? GcScanFlags.GC_CALL_INTERIOR : GcScanFlags.None;
-            scanContext.GCReportCallback(thisAddr, thisFlags);
-        }
+            // GCDesc offset includes the MethodTable pointer; subtract it for unboxed layout.
+            int fieldOffset = (int)seriesOffset - pointerSize;
+            int runBytes = (int)seriesSize;
 
-        int pos = numRegistersUsed;
-        foreach (GcTypeKind kind in methodSig.ParameterTypes)
-        {
-            TargetPointer slotAddress = AddressFromGCRefMapPos(tb, pos);
-
-            switch (kind)
+            for (int off = 0; off < runBytes; off += pointerSize)
             {
-                case GcTypeKind.Ref:
-                    scanContext.GCReportCallback(slotAddress, GcScanFlags.None);
-                    break;
-                case GcTypeKind.Interior:
-                    scanContext.GCReportCallback(slotAddress, GcScanFlags.GC_CALL_INTERIOR);
-                    break;
-                case GcTypeKind.Other:
-                    break;
-                case GcTypeKind.None:
-                    break;
+                TargetPointer refAddr = baseAddress + (ulong)(fieldOffset + off);
+                scanContext.GCReportCallback(refAddr, GcScanFlags.None);
             }
-            pos++;
         }
     }
 

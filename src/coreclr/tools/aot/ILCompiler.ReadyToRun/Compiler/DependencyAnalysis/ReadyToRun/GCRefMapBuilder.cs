@@ -7,6 +7,8 @@ using System.Diagnostics;
 using System.Linq;
 using System.Xml.Linq;
 using Internal.TypeSystem;
+using Internal.CallingConvention;
+using ArgIterator = Internal.CallingConvention.ArgIterator;
 
 // The GCRef map is used to encode GC type of arguments for callsites. Logically, it is sequence <pos, token> where pos is
 // position of the reference in the stack frame and token is type of GC reference (one of GCREFMAP_XXX values).
@@ -63,12 +65,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _bits = 0;
             _pos = 0;
             Builder = new ObjectDataBuilder(target, relocsOnly);
-            _transitionBlock = TransitionBlock.FromTarget(target);
+            _transitionBlock = TransitionBlock.FromTarget(target.Architecture,
+                target.OperatingSystem == TargetOS.Windows,
+                target.IsApplePlatform,
+                target.Abi == TargetAbi.NativeAotArmel);
         }
 
         internal static (ArgIterator, TransitionBlock) BuildArgIterator(MethodSignature signature, TypeSystemContext context, bool methodRequiresInstArg = false, bool isUnboxingStub = false, bool methodIsArrayAddressMethod = false, bool methodIsStringConstructor = false, bool methodIsAsyncCall = false)
         {
-            TransitionBlock transitionBlock = TransitionBlock.FromTarget(context.Target);
+            TransitionBlock transitionBlock = TransitionBlock.FromTarget(context.Target.Architecture,
+                context.Target.OperatingSystem == TargetOS.Windows,
+                context.Target.IsApplePlatform,
+                context.Target.Abi == TargetAbi.NativeAotArmel);
 
             bool hasThis = (signature.Flags & MethodSignatureFlags.Static) == 0;
 
@@ -79,7 +87,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             bool isVarArg = false;
             TypeHandle returnType = new TypeHandle(signature.ReturnType);
-            TypeHandle[] parameterTypes = new TypeHandle[signature.Length];
+            ITypeHandle[] parameterTypes = new ITypeHandle[signature.Length];
             for (int parameterIndex = 0; parameterIndex < parameterTypes.Length; parameterIndex++)
             {
                 parameterTypes[parameterIndex] = new TypeHandle(signature[parameterIndex]);
@@ -105,7 +113,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ArgIteratorData argIteratorData = new ArgIteratorData(hasThis, isVarArg, parameterTypes, returnType);
 
             ArgIterator argit = new ArgIterator(
-                context,
+                transitionBlock,
                 argIteratorData,
                 callingConventions,
                 hasParamType,
@@ -113,7 +121,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 extraFunctionPointerArg,
                 forcedByRefParams,
                 skipFirstArg,
-                extraObjectFirstArg);
+                extraObjectFirstArg,
+                isWindows: context.Target.IsWindows,
+                objectTypeHandle: new TypeHandle(context.GetWellKnownType(WellKnownType.Object)),
+                intPtrTypeHandle: new TypeHandle(context.GetWellKnownType(WellKnownType.IntPtr)));
 
             return (argit, transitionBlock);
         }
@@ -288,7 +299,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 if (argDest.IsStructPassedInRegs())
                 {
-                    argDest.ReportPointersFromStructInRegisters(type, delta, frame);
+                    argDest.ReportPointersFromStructInRegisters(new TypeHandle(type), delta, frame);
                     return;
                 }
             }

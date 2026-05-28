@@ -264,6 +264,7 @@ public interface IRuntimeTypeSystem : IContract
     bool IsAsyncThunkMethod(MethodDescHandle methodDesc) => throw new NotImplementedException();
 
     bool IsWrapperStub(MethodDescHandle methodDesc) => throw new NotImplementedException();
+    bool IsUnboxingStub(MethodDescHandle methodDesc) => throw new NotImplementedException();
     #endregion MethodDesc inspection APIs
     #region FieldDesc inspection APIs
     TargetPointer GetMTOfEnclosingClass(TargetPointer fieldDescPointer) => throw new NotImplementedException();
