@@ -1793,11 +1793,11 @@ private:
         return count;
     }
 
-    HRESULT AdvanceToNextValidObject();
+    HRESULT AdvanceToNextValidSegment();
     void CheckAllocAndSegmentRange();
 
 private:
-    int mThreadCount;
+    int mAllocContextCount;
     AllocInfo *mAllocInfo;
 
     size_t mHeapCount;

@@ -44,6 +44,8 @@ internal struct GC_1 : IGC
     private readonly uint _handleMaxInternalTypes;
     private readonly uint _handleSegmentSize;
     private readonly uint _heapSegmentFlagsReadonly = 1;
+    private readonly uint _smallObjectHeapAlignment;
+    private readonly uint _largeObjectHeapAlignment = 7;
 
     private List<AllocContext>? _allocContexts;
 
@@ -62,6 +64,7 @@ internal struct GC_1 : IGC
         _debugDestroyedHandleValue = target.ReadGlobalPointer(Constants.Globals.DebugDestroyedHandleValue);
         _handleMaxInternalTypes = target.ReadGlobal<uint>(Constants.Globals.HandleMaxInternalTypes);
         _handleSegmentSize = target.ReadGlobal<uint>(Constants.Globals.HandleSegmentSize);
+        _smallObjectHeapAlignment = (uint)target.PointerSize - 1;
     }
 
     string[] IGC.GetGCIdentifiers()
@@ -529,12 +532,11 @@ internal struct GC_1 : IGC
     // SOH alignment: pointer-sized (4 on 32-bit, 8 on 64-bit). Mirrors gcpriv.h Align().
     private ulong AlignForSmallObject(ulong size)
     {
-        ulong alignConst = (ulong)_target.PointerSize - 1;
-        return (size + alignConst) & ~alignConst;
+        return (size + _smallObjectHeapAlignment) & ~_smallObjectHeapAlignment;
     }
 
     // LOH/POH alignment: always 8-byte. Mirrors dacimpl.h DacHeapWalker::AlignLarge().
-    private static ulong AlignForLargeObject(ulong size) => (size + 7) & ~7UL;
+    private ulong AlignForLargeObject(ulong size) => (size + _largeObjectHeapAlignment) & ~_largeObjectHeapAlignment;
 
     HandleType[] IGC.GetSupportedHandleTypes()
     {

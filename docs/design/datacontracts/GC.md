@@ -324,6 +324,8 @@ Constants used:
 | --- | --- | --- | --- |
 | `WRK_HEAP_COUNT` | uint | The number of heaps in the `workstation` GC type | `1` |
 | `HEAP_SEGMENT_FLAGS_READONLY` | ulong | `HeapSegment.Flags` bit identifying a readonly (e.g. frozen, non-GC) segment. | `1` |
+| `ALIGNCONST` | uint | Alignment mask for small object heaps | Target pointer size - 1 |
+| `ALIGNCONST_LARGE` | uint | Alignment mask for large/pinned object heaps | `7` |
 
 ```csharp
 GCHeapType IGC.GetGCIdentifiers()
@@ -1177,13 +1179,13 @@ TargetPointer IGC.GetPotentialNextObjectAddress(
 AlignObjectSize
 
 Aligns a raw object size to the alignment required by its containing segment. SOH segments
-use pointer-sized alignment (`Align()`); LOH/POH use 8-byte alignment (`AlignLarge()`).
+use pointer-sized alignment; LOH/POH use 8-byte alignment.
 
 ```csharp
 ulong IGC.AlignObjectSize(ulong size, GCSegmentClassification generation)
 {
     return generation is GCSegmentClassification.LOH or GCSegmentClassification.POH
-        ? AlignForLargeObject(size)     // (size + 7) & ~7
-        : AlignForSmallObject(size);    // pointer-sized alignment
+        ? AlignForLargeObject(size)     // (size + ALIGNCONST_LARGE) & ~ALIGNCONST_LARGE
+        : AlignForSmallObject(size);    // (size + ALIGNCONST) & ~ALIGNCONST
 }
 ```

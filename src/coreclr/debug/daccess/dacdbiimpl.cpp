@@ -6295,7 +6295,7 @@ CORDB_ADDRESS DacHeapWalker::HeapStart = 0;
 CORDB_ADDRESS DacHeapWalker::HeapEnd = ~0;
 
 DacHeapWalker::DacHeapWalker()
-    : mThreadCount(0), mAllocInfo(0), mHeapCount(0), mHeaps(0),
+    : mAllocContextCount(0), mAllocInfo(0), mHeapCount(0), mHeaps(0),
         mCurrObj(0), mCurrSize(0), mCurrMT(0),
         mCurrHeap(0), mCurrSeg(0), mStart((TADDR)HeapStart), mEnd((TADDR)HeapEnd)
 {
@@ -6343,12 +6343,12 @@ HRESULT DacHeapWalker::Next(CORDB_ADDRESS *pValue, CORDB_ADDRESS *pMT, ULONG64 *
 
     if (mCurrObj >= mHeaps[mCurrHeap].Segments[mCurrSeg].End || mCurrObj > mEnd)
     {
-        return AdvanceToNextValidObject();
+        return AdvanceToNextValidSegment();
     }
 
     if (!mCache.ReadMT(mCurrObj, &mCurrMT) || !GetSize(mCurrMT, mCurrSize))
     {
-        (void)AdvanceToNextValidObject();
+        (void)AdvanceToNextValidSegment();
         return E_FAIL;
     }
 
@@ -6402,7 +6402,7 @@ bool DacHeapWalker::GetSize(TADDR tMT, size_t &size)
 }
 
 
-HRESULT DacHeapWalker::AdvanceToNextValidObject()
+HRESULT DacHeapWalker::AdvanceToNextValidSegment()
 {
     HRESULT hr = S_OK;
     mCurrObj = 0;
@@ -6464,7 +6464,7 @@ void DacHeapWalker::CheckAllocAndSegmentRange()
 {
     const size_t MinObjSize = sizeof(TADDR)*3;
 
-    for (int i = 0; i < mThreadCount; ++i)
+    for (int i = 0; i < mAllocContextCount; ++i)
         if (mCurrObj == mAllocInfo[i].Ptr)
         {
             mCurrObj = mAllocInfo[i].Limit + Align(MinObjSize);
@@ -6519,7 +6519,7 @@ HRESULT DacHeapWalker::Init(CORDB_ADDRESS start, CORDB_ADDRESS end)
             j++;
         }
 
-        mThreadCount = j;
+        mAllocContextCount = j;
     }
 
 #ifdef FEATURE_SVR_GC
@@ -6557,7 +6557,7 @@ HRESULT DacHeapWalker::Reset(CORDB_ADDRESS start, CORDB_ADDRESS end)
 
     // it's possible the first segment is empty
     if (mCurrObj >= mHeaps[0].Segments[0].End)
-        hr = AdvanceToNextValidObject();
+        hr = AdvanceToNextValidSegment();
 
     if (!mCache.ReadMT(mCurrObj, &mCurrMT))
         return E_FAIL;
@@ -6566,7 +6566,7 @@ HRESULT DacHeapWalker::Reset(CORDB_ADDRESS start, CORDB_ADDRESS end)
         return E_FAIL;
 
     if (mCurrObj < mStart || mCurrObj > mEnd)
-        hr = AdvanceToNextValidObject();
+        hr = AdvanceToNextValidSegment();
 
     return hr;
 }
