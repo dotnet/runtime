@@ -5254,7 +5254,7 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
 
             for (int i = matchesEnd - 1; i >= matchesStart; i--)
             {
-                Candidate&        candidate = candidates[i];
+                Candidate         candidate = candidates[i];
                 BasicBlock* const block     = candidate.m_block;
                 Statement* const  stmt      = candidate.m_stmt;
 
@@ -5329,7 +5329,7 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
             //
             for (int i = matchesStart; i < matchesEnd; i++)
             {
-                Candidate&        candidate = candidates[i];
+                Candidate         candidate = candidates[i];
                 BasicBlock* const block     = candidate.m_block;
                 Statement* const  stmt      = candidate.m_stmt;
 
@@ -5471,7 +5471,7 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
     int numOpts = tailMerge(nullptr);
     if (numOpts > 0)
     {
-        JITDUMP("Deduplicated %d sets of RETURN/THROW blocks\n", numOpts);
+        JITDUMP("Deduplicated %d sets of return/throw blocks\n", numOpts);
     }
 
     // Tail merge predecessors
@@ -5479,13 +5479,13 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
     for (BasicBlock* const block : Blocks())
     {
         tailMergePreds(block);
-    }
 
-    // Work through any retries
-    //
-    while (retryBlocks.Height() > 0)
-    {
-        tailMergePreds(retryBlocks.Pop());
+        // Work through any retries
+        //
+        while (retryBlocks.Height() > 0)
+        {
+            tailMergePreds(retryBlocks.Pop());
+        }
     }
 
     // Visit each block and try to merge first statements of successors.
