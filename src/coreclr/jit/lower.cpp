@@ -10150,6 +10150,12 @@ void Lowering::LowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blk)
     assert(!blk->IsVolatile());
     assert(!blk->Data()->OperIs(GT_IND) || !blk->Data()->AsIndir()->IsVolatile());
 
+    // Capture whether the original block store could throw (e.g. NRE from a null address).
+    // Must be sampled before gtBashToNOP below, which clears GTF_ALL_EFFECT.
+    // If GTF_EXCEPT is clear, assertion prop / morph has proven the indirection cannot fault,
+    // so the explicit nullchecks we would otherwise insert around the helper call are redundant.
+    const bool blockStoreMayThrow = (blk->gtFlags & GTF_EXCEPT) != 0;
+
     GenTree* dest = blk->Addr();
     GenTree* data = blk->Data();
 
@@ -10228,8 +10234,12 @@ void Lowering::LowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blk)
             LowerNode(nullcheck);
         }
     };
-    wrapWithNullcheck(dest);
-    wrapWithNullcheck(data);
+
+    if (blockStoreMayThrow)
+    {
+        wrapWithNullcheck(dest);
+        wrapWithNullcheck(data);
+    }
 }
 
 //------------------------------------------------------------------------
