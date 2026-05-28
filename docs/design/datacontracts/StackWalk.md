@@ -20,8 +20,10 @@ public enum StackWalkState
     // Current Context is native, produced by unwinding a managed frame down to
     // an M2U boundary. FrameIter is on the explicit Frame at the transition.
     SW_NATIVE_MARKER,
-    // Context has been bridged through the explicit Frame at FrameIter
-    // (FrameAddress is valid). The next step advances past this Frame.
+    // FrameIter is on an explicit Frame (FrameAddress is valid), but the
+    // current Context has not yet been bridged through that Frame. Bridging
+    // occurs via UpdateContextFromCurrentFrame; the next step advances past
+    // this Frame.
     SW_FRAME,
     SW_SKIPPED_FRAME,
 }
