@@ -10151,14 +10151,17 @@ void Lowering::LowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blk)
     assert(!blk->Data()->OperIs(GT_IND) || !blk->Data()->AsIndir()->IsVolatile());
 
     // Capture whether the original block store could throw (e.g. NRE from a null address).
-    const bool blockStoreMayThrow = (blk->gtFlags & GTF_EXCEPT) != 0;
 
     GenTree* dest = blk->Addr();
     GenTree* data = blk->Data();
 
+    bool destMayFault = blk->IndirMayFault(m_compiler);
+    bool dataMayFault;
+
     if (data->OperIs(GT_IND))
     {
         // Drop GT_IND nodes
+        dataMayFault = data->IndirMayFault(m_compiler);
         BlockRange().Remove(data);
         data = data->AsIndir()->Addr();
     }
@@ -10167,6 +10170,7 @@ void Lowering::LowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blk)
         assert(data->OperIs(GT_LCL_VAR, GT_LCL_FLD));
 
         // Convert local to LCL_ADDR
+        dataMayFault       = false;
         unsigned lclOffset = data->AsLclVarCommon()->GetLclOffs();
         data->ChangeOper(GT_LCL_ADDR);
         data->ChangeType(TYP_I_IMPL);
@@ -10232,9 +10236,13 @@ void Lowering::LowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blk)
         }
     };
 
-    if (blockStoreMayThrow)
+    if (destMayFault)
     {
         wrapWithNullcheck(dest);
+    }
+
+    if (dataMayFault)
+    {
         wrapWithNullcheck(data);
     }
 }
