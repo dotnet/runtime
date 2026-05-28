@@ -5904,11 +5904,7 @@ void LinearScan::allocateRegisters()
 
                 // Normally, the only live physReg here would be callee-save (lower half only) d8-d15.
                 // But PROF_HOOK fully preserves q0-q7, so an UpperVectorSave here does not require a spill.
-                bool profHookUpperHalfPreserved = (lclVarInterval->physReg != REG_NA) &&
-                                                  (currentRefPosition.treeNode != nullptr) &&
-                                                  currentRefPosition.treeNode->OperIs(GT_PROF_HOOK) &&
-                                                  !getKillSetForProfilerHook().IsRegNumInMask(lclVarInterval->physReg) &&
-                                                  !RBM_FLT_CALLEE_SAVED.IsRegNumInMask(lclVarInterval->physReg);
+                bool profHookUpperHalfPreserved = CanSkipUpperVectorSave(&currentRefPosition, lclVarInterval);
 
                 if ((lclVarInterval->physReg == REG_NA) || isExtraUpperVectorSave || profHookUpperHalfPreserved ||
                     (lclVarInterval->isPartiallySpilled && (currentInterval->physReg == REG_STK)))
@@ -7418,6 +7414,25 @@ void LinearScan::insertCopyOrReload(BasicBlock* block, GenTree* tree, unsigned m
 }
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+//------------------------------------------------------------------------
+// CanSkipUpperVectorSave: Determine whether an UpperVectorSave ref position doesn't actually require a save.
+//
+// Arguments:
+//    refPosition             - The RefTypeUpperVectorSave RefPosition.
+//    lclVarInterval          - The Interval for the local variable whose upper vector half might be saved.
+//
+bool LinearScan::CanSkipUpperVectorSave(RefPosition* refPosition, Interval* lclVarInterval)
+{
+    assert(refPosition->refType == RefTypeUpperVectorSave);
+
+    // PROF_HOOK preserves upper halves of q0-q7, LSRA must be told explicitly that saving these is not needed
+    return (lclVarInterval->physReg != REG_NA) &&
+           (refPosition->treeNode != nullptr) &&
+           refPosition->treeNode->OperIs(GT_PROF_HOOK) &&
+           !getKillSetForProfilerHook().IsRegNumInMask(lclVarInterval->physReg) &&
+           !RBM_FLT_CALLEE_SAVED.IsRegNumInMask(lclVarInterval->physReg);
+}
+
 //------------------------------------------------------------------------
 // insertUpperVectorSave: Insert code to save the upper half of a vector that lives
 //                        in a callee-save register at the point of a kill (the upper half is
