@@ -3154,7 +3154,6 @@ PhaseStatus Compiler::fgCreateFunclets()
 #endif
 #ifdef TARGET_WASM
         funcInfo[i].funWasmLocalDecls = nullptr;
-        funcInfo[i].funWasmVirtualIPCount = 10;
 #endif
     }
 #endif
