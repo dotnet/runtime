@@ -26,7 +26,8 @@ class OutOfMemoryExceptionTest
     // and the standard unhandled-exception path ("Unhandled exception. System.OutOfMemoryException...")
     // contain this token. The test validates that some OOM diagnostic is printed rather than
     // just "Aborted" with no context.
-    const string ExpectedToken = "OutOfMemoryException";
+    const string ExpectedOomToken = "OutOfMemoryException";
+    const string ExpectedMinimalOomToken = "Out of memory.";
 
     static int Main(string[] args)
     {
@@ -38,7 +39,12 @@ class OutOfMemoryExceptionTest
             // virtually no memory is left when OOM is finally thrown.
             var list = new List<object>();
             try { while (true) list.Add(new byte[16 * 1024]); } catch (OutOfMemoryException) { }
-            while (true) list.Add(new object());
+            // If we keep adding elements to the list, it's possible that the list's
+            // internal array fails when trying a big allocation to grow.
+            // Instead, we create a long chain of objects that will fail with OOM when
+            // trying to allocate the next one.
+            object a = null;
+            for (;;) a = new object[] { a };
         }
 
         if (args.Length > 0 && args[0] == AllocateLargeArg)
@@ -72,8 +78,8 @@ class OutOfMemoryExceptionTest
             RedirectStandardError = true,
             UseShellExecute = false,
         };
-        // 32 MB GC heap limit (hex): small enough to exhaust quickly but large enough for startup.
-        psi.Environment["DOTNET_GCHeapHardLimit"] = "0x2000000";
+        // 32 MB GC heap limit: small enough to exhaust quickly but large enough for startup.
+        psi.Environment["DOTNET_GCHeapHardLimit"] = "2000000";
         psi.Environment["DOTNET_DbgEnableMiniDump"] = "0";
 
         using Process? p = Process.Start(psi);
@@ -105,9 +111,17 @@ class OutOfMemoryExceptionTest
             return Fail;
         }
 
-        if (!stderr.Contains(ExpectedToken))
+        if (allocateArg == AllocateSmallArg && !stderr.Contains(ExpectedMinimalOomToken))
         {
-            Console.WriteLine($"Expected stderr to contain: {ExpectedToken}");
+            // This test should exercise the minimal OOM fail-fast path.
+            Console.WriteLine($"Expected minimal OOM diagnostic token not found in subprocess stderr.");
+            return Fail;
+        }
+
+        // In the general case, we expect either a message containing "OutOfMemoryException" or the minimal OOM message.
+        if (!(stderr.Contains(ExpectedOomToken) || stderr.Contains(ExpectedMinimalOomToken)))
+        {
+            Console.WriteLine($"Expected OOM diagnostic token not found in subprocess stderr.");
             return Fail;
         }
 
