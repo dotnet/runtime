@@ -43,19 +43,20 @@ public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
     /// </summary>
     private bool MoveNextLegacyVisible()
     {
-        IStackWalk sw = _target.Contracts.StackWalk;
         while (_dataFrames.MoveNext())
         {
-            StackWalkState state = sw.GetState(_dataFrames.Current);
-            if (state is StackWalkState.SW_FRAMELESS
-                      or StackWalkState.SW_FRAME
-                      or StackWalkState.SW_SKIPPED_FRAME)
+            if (IsLegacyVisible(_dataFrames.Current))
             {
                 return true;
             }
         }
         return false;
     }
+
+    internal static bool IsLegacyVisible(IStackDataFrameHandle frame)
+        => frame.State is StackWalkState.Frameless
+                       or StackWalkState.Frame
+                       or StackWalkState.SkippedFrame;
 
     int IXCLRDataStackWalk.GetContext(uint contextFlags, uint contextBufSize, uint* contextSize, [MarshalUsing(CountElementName = "contextBufSize"), Out] byte[] contextBuf)
     {

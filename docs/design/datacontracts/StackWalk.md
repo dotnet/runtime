@@ -5,36 +5,36 @@ This contract encapsulates support for walking the stack of managed threads.
 ## APIs of contract
 
 ```csharp
-public interface IStackDataFrameHandle { };
+public interface IStackDataFrameHandle
+{
+    // Describes what the current Context/FrameIter of this handle represents.
+    StackWalkState State { get; }
+}
 
-// Describes what the current Context/FrameIter of a handle represents.
 public enum StackWalkState
 {
-    SW_COMPLETE,
-    SW_ERROR,
+    Complete,
+    Error,
     // Current Context represents a managed method.
-    SW_FRAMELESS,
+    Frameless,
     // Current Context is the seed native context from init (the thread's saved
     // CONTEXT). FrameIter may or may not be on a Frame.
-    SW_INITIAL_NATIVE_CONTEXT,
+    InitialNativeContext,
     // Current Context is native, produced by unwinding a managed frame down to
     // an M2U boundary. FrameIter is on the explicit Frame at the transition.
-    SW_NATIVE_MARKER,
+    NativeMarker,
     // FrameIter is on an explicit Frame (FrameAddress is valid), but the
     // current Context has not yet been bridged through that Frame. Bridging
     // occurs via UpdateContextFromCurrentFrame; the next step advances past
     // this Frame.
-    SW_FRAME,
-    SW_SKIPPED_FRAME,
+    Frame,
+    SkippedFrame,
 }
 ```
 
 ```csharp
 // Creates a stack walk and returns a handle
 IEnumerable<IStackDataFrameHandle> CreateStackWalk(ThreadData threadData);
-
-// Gets the StackWalkState that produced the current handle.
-StackWalkState GetState(IStackDataFrameHandle stackDataFrameHandle);
 
 // Gets the thread context at the given stack dataframe.
 byte[] GetRawContext(IStackDataFrameHandle stackDataFrameHandle);
@@ -481,7 +481,7 @@ TargetPointer GetMethodDescPtr(TargetPointer framePtr)
 * This API can either be at a capital 'F' frame or a managed frame unlike the TargetPointer overload which only works at capital 'F' frames.
 * This API handles the special ReportInteropMD case which happens under the following conditions
     1. The dataFrame is at an `InlinedCallFrame`
-    2. The dataFrame is in a `SW_SKIPPED_FRAME` state
+    2. The dataFrame is in a `SkippedFrame` state
     3. The InlinedCallFrame's return address is managed code
     4. The InlinedCallFrame's return address method has a MDContext arg
 
@@ -569,12 +569,6 @@ DebuggerEvalData GetDebuggerEvalData(TargetPointer funcEvalFrameAddress)
 TargetPointer GetInstructionPointer(IStackDataFrameHandle stackDataFrameHandle)
 ```
 
-`GetState` returns the `StackWalkState` that produced the given handle. The state classifies what the handle's Context and FrameIter represent at the point it was yielded:
-
-```csharp
-StackWalkState GetState(IStackDataFrameHandle stackDataFrameHandle)
-```
-
 `WalkStackReferences` walks the entire managed stack and enumerates all live GC references at each frame. It returns a list of `StackReferenceData` describing each GC-tracked slot (its address, whether it's an interior pointer, and the register/stack location). This API is the primary consumer for `SOSDacImpl.GetStackReferences`.
 
 ```csharp
@@ -594,9 +588,9 @@ The GC reference walk uses the `Filter` function to drive the stack walk. `Filte
 Key state tracked during the walk:
 
 - **IsInterrupted**: Set when transitioning to a managed frame from a `FaultingExceptionFrame` or `SoftwareExceptionFrame` (frames with `FRAME_ATTR_EXCEPTION`). When true, the managed frame's GC enumeration uses `ExecutionAborted` mode, which causes the GcInfoDecoder to skip live slot reporting at non-interruptible offsets.
-- **LastProcessedFrameType**: Records the frame type when processing `SW_FRAME` state, so `UpdateState` can detect exception frames during the transition to `SW_FRAMELESS`.
+- **LastProcessedFrameType**: Records the frame type when processing `Frame` state, so `UpdateState` can detect exception frames during the transition to `Frameless`.
 - **IsFirst**: Preserved during skipped frame processing (native `SFITER_SKIPPED_FRAME_FUNCTION` does not modify `IsFirst`), ensuring the subsequent managed frame is still treated as the leaf/active frame.
-- **GetReturnAddress gating**: In `SW_FRAME` state, `UpdateContextFromFrame` is only called when `GetReturnAddress()` returns a non-null value. This matches native behavior where the context is only updated when the frame has a valid return address.
+- **GetReturnAddress gating**: In `Frame` state, `UpdateContextFromFrame` is only called when `GetReturnAddress()` returns a non-null value. This matches native behavior where the context is only updated when the frame has a valid return address.
 
 #### Per-Frame GC Enumeration
 

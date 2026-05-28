@@ -104,7 +104,7 @@ internal partial class StackWalk_1 : IStackWalk
     private bool IsFunclet(StackDataFrameHandle handle)
     {
         // Only frames whose Context represents a managed method can be funclets.
-        if (handle.State is not StackWalkState.SW_FRAMELESS)
+        if (handle.State is not StackWalkState.Frameless)
         {
             return false;
         }
@@ -118,7 +118,7 @@ internal partial class StackWalk_1 : IStackWalk
     private bool IsFilterFunclet(StackDataFrameHandle handle)
     {
         // Only frames whose Context represents a managed method can be filter funclets.
-        if (handle.State is not StackWalkState.SW_FRAMELESS)
+        if (handle.State is not StackWalkState.Frameless)
         {
             return false;
         }
@@ -142,7 +142,7 @@ internal partial class StackWalk_1 : IStackWalk
         StackDataFrameHandle handle = AssertCorrectHandle(stackDataFrameHandle);
 
         TargetPointer callerStackPointer;
-        if (handle.State is StackWalkState.SW_FRAMELESS)
+        if (handle.State is StackWalkState.Frameless)
         {
             IPlatformAgnosticContext callerContext = handle.Context.Clone();
             callerContext.Unwind(_target);

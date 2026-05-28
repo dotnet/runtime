@@ -197,7 +197,7 @@ public unsafe class IXCLRDataMethodDefinitionDumpTests : DumpTestBase
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
 
-        foreach (IStackDataFrameHandle frame in stackWalk.CreateStackWalk(crashingThread))
+        foreach (IStackDataFrameHandle frame in stackWalk.CreateStackWalk(crashingThread).Where(ClrDataStackWalk.IsLegacyVisible))
         {
             TargetPointer methodDescPtr = stackWalk.GetMethodDescPtr(frame);
             if (methodDescPtr == TargetPointer.Null)

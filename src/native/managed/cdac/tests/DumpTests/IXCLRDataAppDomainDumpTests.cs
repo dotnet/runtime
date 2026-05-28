@@ -193,7 +193,7 @@ public unsafe class IXCLRDataAppDomainDumpTests : DumpTestBase
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
 
         IStackDataFrameHandle? managedFrame = null;
-        foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread))
+        foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread).Where(ClrDataStackWalk.IsLegacyVisible))
         {
             TargetPointer md = stackWalk.GetMethodDescPtr(dataFrame);
             if (md != TargetPointer.Null)
