@@ -3,16 +3,8 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class CodeRangeMapRangeList : IData<CodeRangeMapRangeList>
+[CdacType(nameof(DataType.CodeRangeMapRangeList))]
+internal sealed partial class CodeRangeMapRangeList : IData<CodeRangeMapRangeList>
 {
-    static CodeRangeMapRangeList IData<CodeRangeMapRangeList>.Create(Target target, TargetPointer address)
-        => new CodeRangeMapRangeList(target, address);
-
-    public CodeRangeMapRangeList(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.CodeRangeMapRangeList);
-        RangeListType = target.ReadField<int>(address, type, nameof(RangeListType));
-    }
-
-    public int RangeListType { get; init; }
+    [Field] public int RangeListType { get; }
 }

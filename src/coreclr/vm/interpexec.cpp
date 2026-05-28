@@ -1613,11 +1613,11 @@ SWITCH_OPCODE:
                     ip += 3;
                     break;
                 case INTOP_CONV_U1_R4:
-                    ConvFpHelper<uint8_t, uint32_t, float>(stack, ip);
+                    ConvFpHelper<uint8_t, int32_t, float>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_U1_R8:
-                    ConvFpHelper<uint8_t, uint32_t, double>(stack, ip);
+                    ConvFpHelper<uint8_t, int32_t, double>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_I2_I4:
@@ -1645,11 +1645,11 @@ SWITCH_OPCODE:
                     ip += 3;
                     break;
                 case INTOP_CONV_U2_R4:
-                    ConvFpHelper<uint16_t, uint32_t, float>(stack, ip);
+                    ConvFpHelper<uint16_t, int32_t, float>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_U2_R8:
-                    ConvFpHelper<uint16_t, uint32_t, double>(stack, ip);
+                    ConvFpHelper<uint16_t, int32_t, double>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_I4_R4:
@@ -4581,7 +4581,7 @@ do                                                                      \
 
                     // Explicitly copy the return value from the continuation's result storage
                     // to the interpreter stack.
-                    if (pAsyncSuspendData->returnValueContinuationDataSize > 0)
+                    if (pAsyncSuspendData->returnValueVarStackOffset != -1)
                     {
                         memcpy(LOCAL_VAR_ADDR(pAsyncSuspendData->returnValueVarStackOffset, uint8_t),
                                continuation->GetResultStorage(),
