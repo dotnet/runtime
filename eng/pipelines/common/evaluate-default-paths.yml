@@ -212,21 +212,6 @@ jobs:
       exclude:
       - ${{ parameters._const_paths._always_exclude }}
 
-    - subset: wasmdebuggertests
-      combined: true
-      include:
-      - eng/testing/ProvisioningVersions.props
-      - src/libraries/System.Runtime.InteropServices/*
-      - src/libraries/System.Runtime.InteropServices.JavaScript/*
-      - src/mono/mono/*
-      - src/mono/wasm/debugger/*
-      - src/mono/wasm/runtime/*
-      - ${{ parameters._const_paths._wasm_src_native }}
-      - ${{ parameters._const_paths._wasm_pipelines }}
-      exclude:
-      - src/mono/nuget/*
-      - ${{ parameters._const_paths._always_exclude }}
-
     # wasm/runtimetests need to be run
     - subset: wasm_runtimetests
       combined: true

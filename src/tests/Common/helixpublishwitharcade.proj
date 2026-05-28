@@ -197,6 +197,7 @@
 
   <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
     <IncludeXHarnessCli>true</IncludeXHarnessCli>
+    <XHarnessTargetFramework>net8.0</XHarnessTargetFramework>
     <EnableXHarnessTelemetry>true</EnableXHarnessTelemetry>
   </PropertyGroup>
 
