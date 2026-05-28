@@ -1538,6 +1538,11 @@ void Compiler::optDebugCheckAssertion(const AssertionDsc& assertion) const
         case O1K_VN:
             assert(!optLocalAssertionProp);
             break;
+
+        case O1K_LCLVAR:
+            assert(optLocalAssertionProp);
+            break;
+
         default:
             break;
     }
@@ -2490,8 +2495,9 @@ GenTree* Compiler::optVNBasedFoldExpr_Call_Memcmp(GenTreeCall* call)
     CallArg* arg2   = call->gtArgs.GetUserArgByIndex(1);
     CallArg* lenArg = call->gtArgs.GetUserArgByIndex(2);
 
-    ValueNum lenVN = vnStore->VNConservativeNormalValue(lenArg->GetNode()->gtVNPair);
-    if (!vnStore->IsVNConstant(lenVN))
+    ValueNum lenVN = optConservativeNormalVN(lenArg->GetNode());
+    size_t   len;
+    if (!vnStore->IsVNIntegralConstant(lenVN, &len))
     {
         // See if arguments are the same - in that case we can optimize to constant true
         ValueNum arg1VN = optConservativeNormalVN(arg1->GetNode());
@@ -2505,8 +2511,6 @@ GenTree* Compiler::optVNBasedFoldExpr_Call_Memcmp(GenTreeCall* call)
         JITDUMP("...length is not a constant - bail out.\n");
         return nullptr;
     }
-
-    const size_t len = vnStore->CoercedConstantValue<size_t>(lenVN);
 
     // SequenceEqual(..., len == 0) => true, and does not dereference pointers
     if (len == 0)
@@ -3687,9 +3691,12 @@ GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeL
         {
             break;
         }
-        // See if the variable is equal to a constant or another variable.
+
         const AssertionDsc& curAssertion = optGetAssertion(assertionIndex);
-        if (!curAssertion.CanPropLclVar())
+
+        // We need an equality assertion for either a copy prop or a constant prop.
+        if (!curAssertion.CanPropLclVar() ||
+            !(curAssertion.GetOp2().IsConstant() || curAssertion.GetOp2().KindIs(O2K_LCLVAR_COPY)))
         {
             continue;
         }
