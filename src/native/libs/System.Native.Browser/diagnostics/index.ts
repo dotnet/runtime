@@ -6,6 +6,7 @@ import { InternalExchangeIndex } from "../types";
 
 import GitHash from "consts:gitHash";
 
+import { ENVIRONMENT_IS_WEB } from "./per-module";
 import { dotnetApi, dotnetUpdateInternals, dotnetUpdateInternalsSubscriber, Module } from "./cross-module";
 import { registerExit } from "./exit";
 import { installNativeSymbols, symbolicateStackTrace } from "./symbolicate";
@@ -28,7 +29,10 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
         globalThis.performance && typeof globalThis.performance.measure === "function"
             ? (namePtr: CharPtr, start: number) => {
                 try {
-                    globalThis.performance.measure(Module.UTF8ToString(namePtr), { start: start });
+                    const fnName = Module.UTF8ToString(namePtr);
+                    // NodeJs accepts startTime, browsers accepts start
+                    const options = ENVIRONMENT_IS_WEB ? { start: start } : { startTime: start };
+                    globalThis.performance.measure(fnName, options);
                 } catch {
                     // Ignore
                 }
