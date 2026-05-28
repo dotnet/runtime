@@ -329,7 +329,10 @@ extends:
             nameSuffix: CoreCLR_Libraries
             buildArgs: -s clr+libs -c $(_BuildConfig)
             timeoutInMinutes: 120
+            preBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/setup-sccache.yml
             postBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/sccache-stats.yml
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:
                   rootFolder: $(Build.SourcesDirectory)/artifacts/bin

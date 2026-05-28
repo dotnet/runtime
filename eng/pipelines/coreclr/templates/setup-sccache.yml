@@ -18,7 +18,7 @@ parameters:
   sccacheVersion: '0.15.0'
 
 steps:
-  - ${{ if or(and(eq(parameters.osGroup, 'linux'), or(eq(parameters.osSubgroup, ''), eq(parameters.osSubgroup, '_musl')), eq(parameters.archType, 'x64')), and(eq(parameters.osGroup, 'osx'), eq(parameters.archType, 'arm64'))) }}:
+  - ${{ if or(and(eq(parameters.osGroup, 'linux'), or(eq(parameters.osSubgroup, ''), eq(parameters.osSubgroup, '_musl')), eq(parameters.archType, 'x64')), and(eq(parameters.osGroup, 'osx'), or(eq(parameters.archType, 'arm64'), eq(parameters.archType, 'x64')))) }}:
     # Set up the Azure Pipeline Cache for sccache's local cache directory.
     # Use a rolling key so each build can update the cache; restoreKeys
     # falls back to the most recent saved entry.
