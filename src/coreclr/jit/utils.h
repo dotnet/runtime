@@ -1031,7 +1031,7 @@ public:
     {
         if ((value == 0) || (value > 0x8000'0000'0000'0000ULL))
         {
-             return 0;
+            return 0;
         }
 
         uint64_t shift = 64 - LeadingZeroCount(value - 1);
