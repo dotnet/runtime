@@ -20,44 +20,30 @@ namespace System.Runtime.CompilerServices
 #else
         [FieldOffset(4)]
 #endif
-        public IAsyncStateMachineBox? InnerBox;
+        public AsyncTaskDispatcher? Dispatcher;
 
 #if TARGET_64BIT
         [FieldOffset(16)]
 #else
         [FieldOffset(8)]
 #endif
-        public AsyncTaskDispatcher? Dispatcher;
-
-#if TARGET_64BIT
-        [FieldOffset(24)]
-#else
-        [FieldOffset(12)]
-#endif
-        public bool Suspended;
-
-#if TARGET_64BIT
-        [FieldOffset(32)]
-#else
-        [FieldOffset(16)]
-#endif
         public AsyncProfiler.Info AsyncProfilerInfo;
 
         [ThreadStatic]
         internal static unsafe AsyncTaskDispatcherInfo* t_current;
 
-        internal static bool IsSuspended => t_current != null && t_current->Suspended;
+        internal static bool IsSuspended => t_current != null && t_current->Dispatcher is { Suspended: true };
 
         internal static unsafe AsyncTaskDispatcher? SuspendAsyncContext()
         {
-            AsyncTaskDispatcherInfo* info = AsyncTaskDispatcherInfo.t_current;
-            if (info != null && info->Dispatcher is AsyncTaskDispatcher activeDispatcher)
+            AsyncTaskDispatcherInfo* current = AsyncTaskDispatcherInfo.t_current;
+            if (current != null && current->Dispatcher is AsyncTaskDispatcher activeDispatcher)
             {
-                Debug.Assert(!info->Suspended);
-                info->Suspended = true;
+                Debug.Assert(!activeDispatcher.Suspended);
+                activeDispatcher.Suspended = true;
                 if (AsyncInstrumentation.IsEnabled.SuspendAsyncContext(AsyncInstrumentation.SyncActiveFlags()))
                 {
-                    AsyncProfiler.SuspendAsyncContext.Suspend(ref info->AsyncProfilerInfo);
+                    AsyncProfiler.SuspendAsyncContext.Suspend(activeDispatcher, ref current->AsyncProfilerInfo);
                 }
 
                 return activeDispatcher;
@@ -78,9 +64,9 @@ namespace System.Runtime.CompilerServices
         internal static unsafe void ResumeAsyncMethod()
         {
             AsyncTaskDispatcherInfo* current = t_current;
-            if (current != null)
+            if (current != null && current->Dispatcher is AsyncTaskDispatcher activeDispatcher)
             {
-                AsyncProfiler.ResumeAsyncMethod.Resume(ref current->AsyncProfilerInfo);
+                AsyncProfiler.ResumeAsyncMethod.Resume(activeDispatcher, ref current->AsyncProfilerInfo);
             }
         }
 
@@ -99,6 +85,14 @@ namespace System.Runtime.CompilerServices
         private IAsyncStateMachineBox? _inner;
         private Action? _moveNextAction;
         private ulong _contextId;
+
+        internal IAsyncStateMachineBox? InnerBox => _inner;
+
+        // Set by SuspendAsyncContext when this dispatcher's box yields during its single MoveNext.
+        // Dispatcher instances are one-shot (one MoveNext call per dispatcher), so default-false is sufficient.
+        internal bool Suspended;
+
+        internal Task? LastContinuation;
 
         internal AsyncTaskDispatcher(IAsyncStateMachineBox inner) : base()
         {
@@ -127,7 +121,7 @@ namespace System.Runtime.CompilerServices
 
         /// <summary>
         /// Creates a new dispatcher for the given box. If a dispatcher is already active on the
-        /// info thread (mid-chain yield), marks the info frame as suspended and emit a suspend event.
+        /// current thread (mid-chain yield), marks the current frame as suspended and emit a suspend event.
         /// </summary>
         internal static AsyncTaskDispatcher Create(IAsyncStateMachineBox box)
         {
@@ -168,9 +162,7 @@ namespace System.Runtime.CompilerServices
             refCurrent = &dispatcherInfo;
             dispatcherInfo.Next = previous;
 
-            dispatcherInfo.InnerBox = inner;
             dispatcherInfo.Dispatcher = this;
-            dispatcherInfo.Suspended = false;
 
             AsyncInstrumentation.Flags flags = AsyncInstrumentation.SyncActiveFlags();
             AsyncProfiler.InitInfo(ref dispatcherInfo.AsyncProfilerInfo);
@@ -187,10 +179,10 @@ namespace System.Runtime.CompilerServices
             }
             finally
             {
-                if (!dispatcherInfo.Suspended && AsyncInstrumentation.IsEnabled.CompleteAsyncContext(flags))
+                if (!Suspended && AsyncInstrumentation.IsEnabled.CompleteAsyncContext(flags))
                 {
                     Debug.WriteLine($"[AsyncTaskDispatcher.MoveNext] Completed Id={ContextId}, tid={Environment.CurrentManagedThreadId}");
-                    AsyncProfiler.CompleteAsyncContext.Complete(ref dispatcherInfo.AsyncProfilerInfo);
+                    AsyncProfiler.CompleteAsyncContext.Complete(this, ref dispatcherInfo.AsyncProfilerInfo);
                 }
 
                 // If Suspended, the Suspend event was already emitted inline by Create.
@@ -211,6 +203,20 @@ namespace System.Runtime.CompilerServices
         {
             _inner?.ClearStateUponCompletion();
             _inner = null;
+        }
+
+        public void GetDiagnosticData(out ulong methodId, out int state, out object? nextContinuation)
+        {
+            IAsyncStateMachineBox? inner = _inner;
+            if (inner != null)
+            {
+                inner.GetDiagnosticData(out methodId, out state, out nextContinuation);
+                return;
+            }
+
+            methodId = 0;
+            state = -1;
+            nextContinuation = null;
         }
     }
 }

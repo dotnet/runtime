@@ -399,7 +399,7 @@ namespace System.Runtime.CompilerServices
             void IThreadPoolWorkItem.Execute() => MoveNext();
 
             /// <summary>Calls MoveNext on <see cref="StateMachine"/></summary>
-            // TODO-AsyncProfiler: This MoveNext lacks profiler instrumentation (Resume/Complete/Yield events).
+            // TODO-AsyncProfiler: This MoveNext lacks profiler instrumentation (Resume/Complete events).
             // The pooling builder is opt-in and uses ManualResetValueTaskSourceCore for completion instead of
             // Task.TrySetResult, so SetExistingTaskResult events don't fire here either. Needs dedicated
             // instrumentation similar to AsyncTaskMethodBuilder's AsyncStateMachineBox.MoveNext.
@@ -446,6 +446,14 @@ namespace System.Runtime.CompilerServices
 
             /// <summary>Gets the state machine as a boxed object.  This should only be used for debugging purposes.</summary>
             IAsyncStateMachine IAsyncStateMachineBox.GetStateMachineObject() => StateMachine!; // likely boxes, only use for debugging
+
+            void IAsyncStateMachineBox.GetDiagnosticData(out ulong methodId, out int state, out object? nextContinuation)
+            {
+                // TODO-AsyncProfiler: Implement when pooling async builders are fully supported in AsyncProfiler. For now, return default values that won't cause confusion in the profiler.
+                methodId = 0;
+                state = -1;
+                nextContinuation = null;
+            }
         }
     }
 }
