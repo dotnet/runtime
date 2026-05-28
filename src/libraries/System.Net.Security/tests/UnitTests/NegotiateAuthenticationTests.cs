@@ -85,6 +85,20 @@ namespace System.Net.Security.Tests
             Assert.Equal(NegotiateAuthenticationStatusCode.Unsupported, statusCode);
         }
 
+        [Theory]
+        [InlineData("!!!!")]
+        [InlineData("AAA")]
+        [InlineData("AAAAA")]
+        [InlineData("AA=A")]
+        public void GetOutgoingBlob_InvalidBase64_ReturnsInvalidToken(string incomingBlob)
+        {
+            NegotiateAuthenticationClientOptions clientOptions = new NegotiateAuthenticationClientOptions { Package = "Negotiate", Credential = s_testCredentialRight, TargetName = "HTTP/foo" };
+            NegotiateAuthentication negotiateAuthentication = new NegotiateAuthentication(clientOptions);
+            string? outgoingBlob = negotiateAuthentication.GetOutgoingBlob(incomingBlob, out NegotiateAuthenticationStatusCode statusCode);
+            Assert.Null(outgoingBlob);
+            Assert.Equal(NegotiateAuthenticationStatusCode.InvalidToken, statusCode);
+        }
+
         [ConditionalFact(typeof(NegotiateAuthenticationTests), nameof(IsNtlmAvailable))]
         public void Package_Supported_NTLM()
         {

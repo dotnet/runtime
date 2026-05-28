@@ -253,12 +253,27 @@ namespace System.Net.Security
         /// </remarks>
         public string? GetOutgoingBlob(string? incomingBlob, out NegotiateAuthenticationStatusCode statusCode)
         {
-            byte[]? decodedIncomingBlob = null;
+            byte[]? rentedBuffer = null;
+            ReadOnlySpan<byte> decodedIncomingBlob = default;
             if (!string.IsNullOrEmpty(incomingBlob))
             {
-                decodedIncomingBlob = Convert.FromBase64String(incomingBlob);
+                rentedBuffer = ArrayPool<byte>.Shared.Rent((incomingBlob.Length / 4) * 3);
+                if (!Convert.TryFromBase64String(incomingBlob, rentedBuffer, out int decodedLength))
+                {
+                    ArrayPool<byte>.Shared.Return(rentedBuffer);
+                    statusCode = NegotiateAuthenticationStatusCode.InvalidToken;
+                    return null;
+                }
+
+                decodedIncomingBlob = rentedBuffer.AsSpan(0, decodedLength);
             }
+
             byte[]? decodedOutgoingBlob = GetOutgoingBlob(decodedIncomingBlob, out statusCode);
+
+            if (rentedBuffer is not null)
+            {
+                ArrayPool<byte>.Shared.Return(rentedBuffer);
+            }
 
             string? outgoingBlob = null;
             if (decodedOutgoingBlob != null && decodedOutgoingBlob.Length > 0)
