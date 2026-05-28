@@ -410,7 +410,7 @@ struct InfoHdrSmall {
     unsigned char  genericsContext : 1;//4 [1]      function reports a generics context parameter is present
     unsigned char  genericsContextIsMethodDesc : 1;//4[2]
     unsigned char  returnKind : 2; // 4 [4]  Available GcInfo v2 onwards, previously undefined
-    unsigned char  isAsync : 1;    // 4 [5]  Available GcInfo v3 onwards, previously undefined
+    unsigned char  isAsync : 1;    // 4 [5]
     unsigned short argCount;          // 5,6        in bytes
     unsigned int   frameSize;         // 7,8,9,10   in bytes
     unsigned int   untrackedCnt;      // 11,12,13,14
