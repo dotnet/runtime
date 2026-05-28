@@ -10328,6 +10328,7 @@ void Lowering::LowerCopyBlockStore(GenTreeBlk* blkNode)
 #endif // TARGET_WASM
 }
 
+#ifndef TARGET_WASM
 //------------------------------------------------------------------------
 // LowerInitBlockStore: Shared lowering of a block init store (memset).
 //
@@ -10352,44 +10353,20 @@ void Lowering::LowerInitBlockStore(GenTreeBlk* blkNode)
         src = src->AsUnOp()->gtGetOp1();
     }
 
-#ifdef TARGET_WASM
-    if (blkNode->IsZeroingGcPointersOnHeap())
-    {
-        blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindLoop;
-        src->SetContained();
-    }
-    else
-    {
-        // Use the wasm `memory.fill` instruction.
-        blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindNativeOpcode;
-    }
-
-    if ((blkNode->gtBlkOpKind != GenTreeBlk::BlkOpKindNativeOpcode) || ((blkNode->gtFlags & GTF_IND_NONFAULTING) == 0))
-    {
-        SetMultiplyUsed(dstAddr DEBUGARG("LowerInitBlockStore destination address"));
-    }
-#else // !TARGET_WASM
-    // On xarch, SIMD stores aren't atomic at 8-byte boundaries, so we can't use the larger
-    // SIMD-aware unroll threshold when the destination contains GC pointers on heap.
-    // On arm64 SIMD stores guarantee 8-byte atomicity (and other targets don't use SIMD here).
-#ifdef TARGET_XARCH
-    const bool canUseSimd = !blkNode->IsOnHeapAndContainsReferences();
-#else
+#ifdef TARGET_ARM64
+    // On arm64 SIMD stores guarantee 8-byte atomicity when data is 8-byte aligned
     const bool canUseSimd = true;
+#else
+    const bool canUseSimd = !blkNode->IsOnHeapAndContainsReferences();
 #endif
-    bool canUnroll =
-        src->OperIs(GT_CNS_INT) && (size <= m_compiler->getUnrollThreshold(Compiler::UnrollKind::Memset, canUseSimd));
 
-    if (canUnroll)
+    if (src->OperIs(GT_CNS_INT) && (size <= m_compiler->getUnrollThreshold(Compiler::UnrollKind::Memset, canUseSimd)))
     {
         // The fill value of an initblk is interpreted to hold a value of (unsigned int8)
-        // however a constant of any size may practically reside on the evaluation stack.
-        // So extract the lower byte out of the initVal constant and replicate it to a larger
-        // constant whose size is sufficient to support the largest width store of the desired
-        // inline expansion.
         ssize_t fill = src->AsIntCon()->IconValue() & 0xFF;
 
         bool useSimdFill = false;
+
 #ifdef TARGET_XARCH
         useSimdFill = canUseSimd && (size >= XMM_REGSIZE_BYTES);
 #endif
@@ -10438,8 +10415,8 @@ void Lowering::LowerInitBlockStore(GenTreeBlk* blkNode)
     {
         LowerBlockStoreAsHelperCall(blkNode);
     }
-#endif // !TARGET_WASM
 }
+#endif // !TARGET_WASM
 
 //------------------------------------------------------------------------
 // LowerBlockStoreAsHelperCall: Lower a block store node as a memset/memcpy call
