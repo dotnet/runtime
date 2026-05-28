@@ -5774,7 +5774,7 @@ TADDR ExecutionManager::AddVirtualIPRange(UINT32 numVirtualIPs,
     VirtualIPRangeSection* pOldRangeSection = nullptr;
     do
     {
-        VirtualIPRangeSection* pOldRangeSection = VolatileLoadWithoutBarrier(&s_pVirtualIPRangeList);
+        pOldRangeSection = VolatileLoadWithoutBarrier(&s_pVirtualIPRangeList);
         pNewRange->pNext = pOldRangeSection;
     } while (pOldRangeSection != InterlockedCompareExchangeT(&s_pVirtualIPRangeList, pNewRange, pOldRangeSection));
 
@@ -5855,6 +5855,10 @@ TADDR ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex(DWORD functionInd
         PTR_RUNTIME_FUNCTION pRuntimeFunction = pR2RInfo->GetRuntimeFunctions() + localIndex;
         if (RUNTIME_FUNCTION__IsFunclet(pRuntimeFunction))
         {
+            if (localIndex == 0)
+            {
+                return 0;
+            }
             localIndex--;
             continue;
         }
