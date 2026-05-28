@@ -158,9 +158,9 @@ namespace ILCompiler.DependencyAnalysis
             return _gvmDependenciesNode.GetOrAdd(canonMethod);
         }
 
-        private NodeCache<MethodDesc, ReadyToRun.VirtualMethodUseNode> _virtualMethodUseNodes;
+        private NodeCache<MethodDesc, VirtualMethodUseNode> _virtualMethodUseNodes;
 
-        public ReadyToRun.VirtualMethodUseNode VirtualMethodUse(MethodDesc method)
+        public VirtualMethodUseNode VirtualMethodUse(MethodDesc method)
         {
             Debug.Assert(method.IsVirtual);
             Debug.Assert(!method.HasInstantiation);
@@ -301,9 +301,9 @@ namespace ILCompiler.DependencyAnalysis
                 return new GVMDependenciesNode(method);
             });
 
-            _virtualMethodUseNodes = new NodeCache<MethodDesc, ReadyToRun.VirtualMethodUseNode>(method =>
+            _virtualMethodUseNodes = new NodeCache<MethodDesc, VirtualMethodUseNode>(method =>
             {
-                return new ReadyToRun.VirtualMethodUseNode(method);
+                return new VirtualMethodUseNode(method);
             });
 
             _genericReadyToRunHelpersFromDict = new NodeCache<ReadyToRunGenericHelperKey, ISymbolNode>(helperKey =>
