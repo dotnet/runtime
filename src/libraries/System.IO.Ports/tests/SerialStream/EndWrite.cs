@@ -12,7 +12,7 @@ namespace System.IO.Ports.Tests
     public class SerialStream_EndWrite : PortsTest
     {
         #region Test Cases
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_EndWrite), nameof(HasOneSerialPort))]
         public void AsyncResult_Null()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -24,7 +24,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_EndWrite), nameof(HasOneSerialPort))]
         public void AsyncResult_MultipleInOrder()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -45,7 +45,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_EndWrite), nameof(HasOneSerialPort))]
         public void AsyncResult_MultipleOutOfOrder()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))

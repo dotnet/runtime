@@ -670,7 +670,7 @@ namespace System.Security.Cryptography
             Debug.Assert(read == source.Length);
             return dsa;
 
-            static void SubjectPublicKeyReader(ReadOnlyMemory<byte> key, in AlgorithmIdentifierAsn identifier, out CompositeMLDsa dsa)
+            static void SubjectPublicKeyReader(ReadOnlySpan<byte> key, in ValueAlgorithmIdentifierAsn identifier, out CompositeMLDsa dsa)
             {
                 CompositeMLDsaAlgorithm algorithm = GetAlgorithmIdentifier(in identifier);
 
@@ -679,7 +679,7 @@ namespace System.Security.Cryptography
                     throw new CryptographicException(SR.Argument_PublicKeyWrongSizeForAlgorithm);
                 }
 
-                dsa = CompositeMLDsaImplementation.ImportCompositeMLDsaPublicKeyImpl(algorithm, key.Span);
+                dsa = CompositeMLDsaImplementation.ImportCompositeMLDsaPublicKeyImpl(algorithm, key);
             }
         }
 
@@ -861,8 +861,8 @@ namespace System.Security.Cryptography
             return dsa;
 
             static void PrivateKeyReader(
-                ReadOnlyMemory<byte> privateKeyContents,
-                in AlgorithmIdentifierAsn algorithmIdentifier,
+                ReadOnlySpan<byte> privateKeyContents,
+                in ValueAlgorithmIdentifierAsn algorithmIdentifier,
                 out CompositeMLDsa dsa)
             {
                 CompositeMLDsaAlgorithm algorithm = GetAlgorithmIdentifier(in algorithmIdentifier);
@@ -872,7 +872,7 @@ namespace System.Security.Cryptography
                     throw new CryptographicException(SR.Argument_PrivateKeyWrongSizeForAlgorithm);
                 }
 
-                dsa = CompositeMLDsaImplementation.ImportCompositeMLDsaPrivateKeyImpl(algorithm, privateKeyContents.Span);
+                dsa = CompositeMLDsaImplementation.ImportCompositeMLDsaPrivateKeyImpl(algorithm, privateKeyContents);
             }
         }
 
@@ -1910,16 +1910,14 @@ namespace System.Security.Cryptography
             }
         }
 
-        private static CompositeMLDsaAlgorithm GetAlgorithmIdentifier(ref readonly AlgorithmIdentifierAsn identifier)
+        private static CompositeMLDsaAlgorithm GetAlgorithmIdentifier(ref readonly ValueAlgorithmIdentifierAsn identifier)
         {
             CompositeMLDsaAlgorithm? algorithm = CompositeMLDsaAlgorithm.GetAlgorithmFromOid(identifier.Algorithm);
             Debug.Assert(algorithm is not null, "Algorithm identifier should have been pre-validated by KeyFormatHelper.");
 
-            if (identifier.Parameters.HasValue)
+            if (identifier.HasParameters)
             {
-                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-                identifier.Encode(writer);
-                throw Helpers.CreateAlgorithmUnknownException(writer);
+                throw Helpers.CreateAlgorithmUnknownException(in identifier);
             }
 
             return algorithm;

@@ -12,7 +12,7 @@ namespace Mono.Linker.Tests.Cases.TypeForwarding
     ///
     /// In order words, until https://github.com/dotnet/linker/issues/1703 is addressed this test will pass with or without the fix to update the scope on security attributes
     /// </summary>
-    [SetupLinkerArgument("--skip-unresolved", "true")]
+    [SkipUnresolved(true)]
     [SetupLinkerArgument("--strip-security", "false")]
     [Define("IL_ASSEMBLY_AVAILABLE")]
     [SetupLinkerAction("copy", "Library")]

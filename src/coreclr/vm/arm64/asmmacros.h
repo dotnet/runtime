@@ -33,10 +33,15 @@ $name   SETS    "|$symbol|"
 ; Define the prolog for a TransitionFrame-based method. This macro should be called first in the method and
 ; comprises the entire prolog (i.e. don't modify SP after calling this).The locals must be 8 byte aligned
 ;
+; $pushCalleeSavedFloatRegs - Optional parameter. If set to PushCalleeSavedFloatRegs, the macro will also save
+;                             the callee-saved floating point registers (d8-d15) to the stack. These registers
+;                             are NOT restored by the EPILOG_WITH_TRANSITION_BLOCK variants.
+;
     MACRO
-        PROLOG_WITH_TRANSITION_BLOCK $extraLocals, $SaveFPArgs
+        PROLOG_WITH_TRANSITION_BLOCK $extraLocals, $SaveFPArgs, $pushCalleeSavedFloatRegs
 
         GBLA __PWTB_FloatArgumentRegisters
+        GBLA __PWTB_FloatCalleeSavedRegisters
         GBLA __PWTB_ArgumentRegisters
         GBLA __PWTB_ArgumentRegister_FirstArg ; We save the x8 register ahead of the first argument, so this
                                               ; is different from the start of the argument register save area.
@@ -51,13 +56,20 @@ __PWTB_SaveFPArgs SETL {true}
         ENDIF
 
         IF "$extraLocals" != ""
-__PWTB_FloatArgumentRegisters SETA $extraLocals
+__PWTB_FloatCalleeSavedRegisters SETA $extraLocals
         ELSE
-__PWTB_FloatArgumentRegisters SETA 0
+__PWTB_FloatCalleeSavedRegisters SETA 0
         ENDIF
 
-        IF __PWTB_FloatArgumentRegisters:MOD:16 != 0
-__PWTB_FloatArgumentRegisters SETA __PWTB_FloatArgumentRegisters + 8
+        IF __PWTB_FloatCalleeSavedRegisters:MOD:16 != 0
+__PWTB_FloatCalleeSavedRegisters SETA __PWTB_FloatCalleeSavedRegisters + 8
+        ENDIF
+
+        ; If PushCalleeSavedFloatRegs is specified, reserve space for d8-d15 (8 registers * 8 bytes = 64 bytes)
+        IF "$pushCalleeSavedFloatRegs" == "PushCalleeSavedFloatRegs"
+__PWTB_FloatArgumentRegisters SETA __PWTB_FloatCalleeSavedRegisters + 64
+        ELSE
+__PWTB_FloatArgumentRegisters SETA __PWTB_FloatCalleeSavedRegisters
         ENDIF
 
         IF __PWTB_SaveFPArgs
@@ -86,6 +98,14 @@ __PWTB_ArgumentRegister_FirstArg SETA __PWTB_ArgumentRegisters + 8
 
         IF __PWTB_SaveFPArgs
         SAVE_FLOAT_ARGUMENT_REGISTERS  sp, __PWTB_FloatArgumentRegisters
+        ENDIF
+
+        ; Save callee-saved floating point registers if requested
+        IF "$pushCalleeSavedFloatRegs" == "PushCalleeSavedFloatRegs"
+        stp     d8, d9, [sp, #__PWTB_FloatCalleeSavedRegisters]
+        stp     d10, d11, [sp, #(__PWTB_FloatCalleeSavedRegisters + 16)]
+        stp     d12, d13, [sp, #(__PWTB_FloatCalleeSavedRegisters + 32)]
+        stp     d14, d15, [sp, #(__PWTB_FloatCalleeSavedRegisters + 48)]
         ENDIF
 
     MEND
@@ -202,6 +222,55 @@ OFFSETOF__ee_alloc_context  EQU OFFSETOF__RuntimeThreadLocals__ee_alloc_context
         EPILOG_RESTORE_REG_PAIR   x25, x26, #64
         EPILOG_RESTORE_REG_PAIR   x27, x28, #80
         EPILOG_RESTORE_REG_PAIR   fp, lr,   #176!
+    MEND
+
+; Pushes a full TransitionBlock on the stack including argument registers and
+; floating point argument registers. Used for exception throw helpers where we
+; need to capture the complete register state including FP callee-saved registers.
+;
+; Stack layout (from low to high address):
+;   sp+0:     FP callee-saved registers (d8-d15, 64 bytes)
+;   sp+64:    FloatArgumentRegisters (q0-q7, 128 bytes)
+;   sp+192:   TransitionBlock start (176 bytes)
+;             - CalleeSavedRegisters (fp, lr, x19-x28 - 96 bytes)
+;             - padding (8 bytes)
+;             - x8 (8 bytes)
+;             - ArgumentRegisters (x0-x7, 64 bytes)
+;
+; On exit, $Target contains the TransitionBlock pointer (sp+192).
+    MACRO
+    PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS $Target
+
+        PROLOG_SAVE_REG_PAIR   fp, lr, #-176!
+
+        ; Spill callee saved registers
+        PROLOG_SAVE_REG_PAIR   x19, x20, #16
+        PROLOG_SAVE_REG_PAIR   x21, x22, #32
+        PROLOG_SAVE_REG_PAIR   x23, x24, #48
+        PROLOG_SAVE_REG_PAIR   x25, x26, #64
+        PROLOG_SAVE_REG_PAIR   x27, x28, #80
+
+        ; Allocate space for FloatArgumentRegisters (128) + FP callee-saved (64) = 192 bytes
+        PROLOG_STACK_ALLOC 192
+
+        ; Save argument registers (x8, x0-x7) at offset 296 from sp (192 + 104)
+        SAVE_ARGUMENT_REGISTERS sp, 296
+
+        ; Save floating point argument registers (q0-q7) at sp+64
+        SAVE_FLOAT_ARGUMENT_REGISTERS sp, 64
+
+        ; Save FP callee-saved registers (d8-d15) at sp+0
+        str     d8,  [sp, #0]
+        str     d9,  [sp, #8]
+        str     d10, [sp, #16]
+        str     d11, [sp, #24]
+        str     d12, [sp, #32]
+        str     d13, [sp, #40]
+        str     d14, [sp, #48]
+        str     d15, [sp, #56]
+
+        ; Set target to TransitionBlock pointer
+        add     $Target, sp, #192
     MEND
 
 #define GC_ALLOC_FINALIZE 1

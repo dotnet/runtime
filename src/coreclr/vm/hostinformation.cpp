@@ -23,24 +23,38 @@ bool HostInformation::GetProperty(_In_z_ const char* name, SString& value)
         return false;
 
     size_t len = MAX_PATH + 1;
-    char* dest = value.OpenUTF8Buffer(static_cast<COUNT_T>(len));
+    char* dest = value.OpenUTF8Buffer(static_cast<COUNT_T>(len) - 1); // OpenUTF8Buffer already includes a byte for the null terminator
+    // get_runtime_property returns the length including a null terminator
     size_t lenActual = s_hostContract.get_runtime_property(name, dest, len, s_hostContract.context);
-    value.CloseBuffer();
 
     // Doesn't exist or failed to get property
     if (lenActual == (size_t)-1 || lenActual == 0)
+    {
+        value.CloseBuffer(0);
         return false;
+    }
 
     if (lenActual <= len)
+    {
+        value.CloseBuffer(static_cast<COUNT_T>(lenActual) - 1);
         return true;
+    }
+
+    value.CloseBuffer();
 
     // Buffer was not large enough
     len = lenActual;
-    dest = value.OpenUTF8Buffer(static_cast<COUNT_T>(len));
+    dest = value.OpenUTF8Buffer(static_cast<COUNT_T>(len) - 1); // OpenUTF8Buffer already includes a byte for the null terminator
     lenActual = s_hostContract.get_runtime_property(name, dest, len, s_hostContract.context);
-    value.CloseBuffer();
 
-    return lenActual > 0 && lenActual <= len;
+    if (lenActual == (size_t)-1 || lenActual == 0 || lenActual > len)
+    {
+        value.CloseBuffer(0);
+        return false;
+    }
+
+    value.CloseBuffer(static_cast<COUNT_T>(lenActual) - 1);
+    return true;
 }
 
 bool HostInformation::HasExternalProbe()

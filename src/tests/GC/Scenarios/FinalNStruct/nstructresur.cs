@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Xunit;
+using TestLibrary;
 /*****************************************************************************/
 /* Test:    NStructResur
 /* Coverage:    NStruct objects' finalize can be called and the objects can be
@@ -47,6 +48,7 @@ namespace NStruct {
             return ( FinalizeCount.icFinal == FinalizeCount.icCreat );
         }
 
+        [ActiveIssue("PlatformDetection.IsPreciseGcSupported false on mono", TestRuntimes.Mono)]
         [Fact]
         public static int TestEntryPoint()
         {

@@ -7,4 +7,7 @@
     <Compile Include="EnterExit11.cs" />
     <Compile Include="MonitorHelper.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

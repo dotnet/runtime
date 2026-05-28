@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
@@ -26,6 +26,9 @@ The System.Reflection.Metadata library is built-in as part of the shared framewo
              Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ReadFile_SafeHandle_IntPtr.cs"
              Link="Common\Interop\Windows\kernel32\Interop.ReadFile_SafeHandle_IntPtr.cs"
+             Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
+    <Compile Include="$(CommonPath)Polyfills\StreamSpanPolyfills.cs"
+             Link="Common\Polyfills\StreamSpanPolyfills.cs"
              Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
     <Compile Include="System\Reflection\Internal\Utilities\PinnedObject.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\CriticalDisposableObject.cs" />
@@ -93,6 +96,9 @@ The System.Reflection.Metadata library is built-in as part of the shared framewo
     <Compile Include="System\Reflection\PortableExecutable\ResourceSectionBuilder.cs" />
     <Compile Include="System\Reflection\PortableExecutable\SectionLocation.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\BlobUtilities.cs" />
+    <Compile Include="$(CommonPath)Polyfills\BitConverterPolyfills.cs" Link="Common\Polyfills\BitConverterPolyfills.cs" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
+    <Compile Include="$(CommonPath)Polyfills\BitOperationsPolyfills.cs" Link="Common\Polyfills\BitOperationsPolyfills.cs" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
+    <Compile Include="$(CommonPath)Polyfills\GuidPolyfills.cs" Link="Common\Polyfills\GuidPolyfills.cs" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
   </ItemGroup>
 
   <ItemGroup>
@@ -108,8 +114,7 @@ The System.Reflection.Metadata library is built-in as part of the shared framewo
     <Compile Include="System\Reflection\Internal\MemoryBlocks\StreamMemoryBlockProvider.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\BitArithmetic.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\StringUtils.cs" />
-    <Compile Include="System\Reflection\Internal\Utilities\EncodingHelper.cs" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
-    <Compile Include="System\Reflection\Internal\Utilities\EncodingHelper.netcoreapp.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
+    <Compile Include="System\Reflection\Internal\Utilities\EncodingHelper.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\StreamExtensions.netcoreapp.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
     <Compile Include="System\Reflection\Internal\Utilities\StreamExtensions.netstandard2.0.cs" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
     <Compile Include="System\Reflection\Internal\Utilities\Hash.cs" />

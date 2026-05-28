@@ -101,6 +101,10 @@ namespace System
         public static System.IO.Stream OpenStandardError() { throw null; }
         public static System.IO.Stream OpenStandardError(int bufferSize) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        public static Microsoft.Win32.SafeHandles.SafeFileHandle OpenStandardErrorHandle() { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
@@ -108,8 +112,17 @@ namespace System
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static System.IO.Stream OpenStandardInput(int bufferSize) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        public static Microsoft.Win32.SafeHandles.SafeFileHandle OpenStandardInputHandle() { throw null; }
         public static System.IO.Stream OpenStandardOutput() { throw null; }
         public static System.IO.Stream OpenStandardOutput(int bufferSize) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        public static Microsoft.Win32.SafeHandles.SafeFileHandle OpenStandardOutputHandle() { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static int Read() { throw null; }

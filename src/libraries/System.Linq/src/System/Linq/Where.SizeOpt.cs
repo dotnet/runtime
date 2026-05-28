@@ -51,6 +51,17 @@ namespace System.Linq
                 return false;
             }
 
+            public override void Dispose()
+            {
+                if (_enumerator is { } e)
+                {
+                    _enumerator = null;
+                    e.Dispose();
+                }
+
+                base.Dispose();
+            }
+
             public override IEnumerable<TSource> Where(Func<TSource, bool> predicate) =>
                 new SizeOptIListWhereIterator<TSource>(_source, Utilities.CombinePredicates(_predicate, predicate));
 

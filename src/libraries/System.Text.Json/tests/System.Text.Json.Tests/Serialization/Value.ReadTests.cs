@@ -30,13 +30,19 @@ namespace System.Text.Json.Serialization.Tests
             long l2 = JsonSerializer.Deserialize<long>(long.MaxValue.ToString());
             Assert.Equal(long.MaxValue, l2);
 
-            string s = JsonSerializer.Deserialize<string>(Encoding.UTF8.GetBytes(@"""Hello"""));
+            string s = JsonSerializer.Deserialize<string>(Encoding.UTF8.GetBytes("""
+                "Hello"
+                """));
             Assert.Equal("Hello", s);
 
-            string s2 = JsonSerializer.Deserialize<string>(@"""Hello""");
+            string s2 = JsonSerializer.Deserialize<string>("""
+                "Hello"
+                """);
             Assert.Equal("Hello", s2);
 
-            Uri u = JsonSerializer.Deserialize<Uri>(@"""""");
+            Uri u = JsonSerializer.Deserialize<Uri>("""
+                ""
+                """);
             Assert.Equal("", u.OriginalString);
         }
 
@@ -58,10 +64,10 @@ namespace System.Text.Json.Serialization.Tests
             long l2 = JsonSerializer.Deserialize<long>(long.MaxValue.ToString() + " \r\n");
             Assert.Equal(long.MaxValue, l2);
 
-            string s = JsonSerializer.Deserialize<string>(Encoding.UTF8.GetBytes(@"""Hello"" "));
+            string s = JsonSerializer.Deserialize<string>(Encoding.UTF8.GetBytes("\"Hello\" "));
             Assert.Equal("Hello", s);
 
-            string s2 = JsonSerializer.Deserialize<string>(@"  ""Hello"" ");
+            string s2 = JsonSerializer.Deserialize<string>("""  "Hello" """);
             Assert.Equal("Hello", s2);
 
             bool b = JsonSerializer.Deserialize<bool>(" \ttrue ");
@@ -75,9 +81,11 @@ namespace System.Text.Json.Serialization.Tests
         public static void ReadPrimitivesFail()
         {
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<int>(Encoding.UTF8.GetBytes(@"a")));
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<int[]>(Encoding.UTF8.GetBytes(@"[1,a]")));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<int[]>(Encoding.UTF8.GetBytes("[1,a]")));
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<int>(@"null"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<int>(@""""""));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<int>("""
+                ""
+                """));
 
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<DateTime>("\"abc\""));
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<DateTimeOffset>("\"abc\""));
@@ -129,14 +137,16 @@ namespace System.Text.Json.Serialization.Tests
         public static void PrimitivesShouldFailWithArrayOrObjectAssignment(Type primitiveType)
         {
             // This test lines up with the built in JsonConverters
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(@"[]", primitiveType));
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(@"{}", primitiveType));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize("[]", primitiveType));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize("{}", primitiveType));
         }
 
         [Fact]
         public static void EmptyStringInput()
         {
-            string obj = JsonSerializer.Deserialize<string>(@"""""");
+            string obj = JsonSerializer.Deserialize<string>("""
+                ""
+                """);
             Assert.Equal(string.Empty, obj);
         }
 
@@ -144,9 +154,13 @@ namespace System.Text.Json.Serialization.Tests
         public static void ReadPrimitiveExtraBytesFail()
         {
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<int[]>("[2] {3}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<int[]>(Encoding.UTF8.GetBytes(@"[2] {3}")));
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<string>(@"""Hello"" 42"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<string>(Encoding.UTF8.GetBytes(@"""Hello"" 42")));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<int[]>(Encoding.UTF8.GetBytes("[2] {3}")));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<string>("""
+                "Hello" 42
+                """));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<string>(Encoding.UTF8.GetBytes("""
+                "Hello" 42
+                """)));
         }
 
         [Fact]
@@ -265,7 +279,9 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ValueFail()
         {
-            string unexpectedString = @"""unexpected string""";
+            string unexpectedString = """
+                "unexpected string"
+                """;
 
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<byte>(unexpectedString));
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<byte?>(unexpectedString));
@@ -336,6 +352,11 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("2147483647.2147483647.2147483647.2147483647")]
         [InlineData("\\u0032\\u0031\\u0034\\u0037\\u0034\\u0038\\u0033\\u0036\\u0034\\u0037\\u002e\\u0032\\u0031\\u0034\\u0037\\u0034\\u0038\\u0033\\u0036\\u0034\\u0037\\u002e\\u0032\\u0031\\u0034\\u0037\\u0034\\u0038\\u0033\\u0036\\u0034\\u0037\\u002e\\u0032\\u0031\\u0034\\u0037\\u0034\\u0038\\u0033\\u0036\\u0034\\u0037",
             "2147483647.2147483647.2147483647.2147483647")]
+        [InlineData("1.+1", "1.1")] // Plus in components should work as before
+        [InlineData("1 .1", "1.1")] // Whitespace before dot should work as before
+        [InlineData("1. 1", "1.1")] // Whitespace after dot should work as before
+        [InlineData("1 . +1", "1.1")] // Combined whitespace and plus should work as before
+        [InlineData("+1.1", "1.1")] // Leading plus should work
         public static void Version_Read_Success(string json, string? actual = null)
         {
             actual ??= json;
@@ -348,6 +369,9 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("")]
         [InlineData("     ")]
         [InlineData(" ")]
+        [InlineData("   1.2.3.4")] // Leading whitespace should be rejected
+        [InlineData("1.2.3.4    ")] // Trailing whitespace should be rejected
+        [InlineData("  1.2.3.4  ")] // Leading and trailing whitespace should be rejected
         [InlineData("2147483648.2147483648.2147483648.2147483648")] //int.MaxValue + 1
         [InlineData("2147483647.2147483647.2147483647.21474836477")] // Slightly bigger in size than max length of Version
         [InlineData("-2147483648.-2147483648")]
@@ -355,9 +379,6 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("-2147483648.-2147483648.-2147483648.-2147483648")]
         [InlineData("1.-1")]
         [InlineData("1")]
-        [InlineData("   1.2.3.4")] //Valid but has leading whitespace
-        [InlineData("1.2.3.4    ")] //Valid but has trailing whitespace
-        [InlineData("  1.2.3.4  ")] //Valid but has trailing and leading whitespaces
         [InlineData("{}", false)]
         [InlineData("[]", false)]
         [InlineData("true", false)]
@@ -372,19 +393,27 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ReadPrimitiveUri()
         {
-            Uri uri = JsonSerializer.Deserialize<Uri>(@"""https://domain/path""");
+            Uri uri = JsonSerializer.Deserialize<Uri>("""
+                "https://domain/path"
+                """);
             Assert.Equal(@"https://domain/path", uri.ToString());
             Assert.Equal("https://domain/path", uri.OriginalString);
 
-            uri = JsonSerializer.Deserialize<Uri>(@"""https:\/\/domain\/path""");
+            uri = JsonSerializer.Deserialize<Uri>("""
+                "https:\/\/domain\/path"
+                """);
             Assert.Equal(@"https://domain/path", uri.ToString());
             Assert.Equal("https://domain/path", uri.OriginalString);
 
-            uri = JsonSerializer.Deserialize<Uri>(@"""https:\u002f\u002fdomain\u002fpath""");
+            uri = JsonSerializer.Deserialize<Uri>("""
+                "https:\u002f\u002fdomain\u002fpath"
+                """);
             Assert.Equal(@"https://domain/path", uri.ToString());
             Assert.Equal("https://domain/path", uri.OriginalString);
 
-            uri = JsonSerializer.Deserialize<Uri>(@"""~/path""");
+            uri = JsonSerializer.Deserialize<Uri>("""
+                "~/path"
+                """);
             Assert.Equal("~/path", uri.ToString());
             Assert.Equal("~/path", uri.OriginalString);
         }

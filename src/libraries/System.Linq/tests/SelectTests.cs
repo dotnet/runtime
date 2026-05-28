@@ -102,7 +102,7 @@ namespace System.Linq.Tests
             Assert.Equal([], Enumerable.Empty<string>().Select((s, i) => s.Length + i));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void EnumerateFromDifferentThread()
         {
             var selected = Enumerable.Range(0, 100).Where(i => i > 3).Select(i => i.ToString());
@@ -1260,6 +1260,31 @@ namespace System.Linq.Tests
                     yield return [transform(enumerable)];
                 }
             }
+        }
+
+        [Fact]
+        public void Select_SourceIsIList_EnumeratorDisposedOnComplete()
+        {
+            var source = new DisposeTrackingList<int>([1, 2, 3, 4, 5]);
+
+            foreach (int item in source.Select(i => i * 2))
+            {
+            }
+
+            Assert.Equal(1, source.DisposeCalls);
+        }
+
+        [Fact]
+        public void Select_SourceIsIList_EnumeratorDisposedOnExplicitDispose()
+        {
+            var source = new DisposeTrackingList<int>([1, 2, 3, 4, 5]);
+
+            using (var enumerator = source.Select(i => i * 2).GetEnumerator())
+            {
+                enumerator.MoveNext();
+            }
+
+            Assert.Equal(1, source.DisposeCalls);
         }
     }
 }

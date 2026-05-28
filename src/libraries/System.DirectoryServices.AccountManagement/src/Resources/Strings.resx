@@ -240,7 +240,7 @@
     <value>This computer's policy information could not be retrieved ({0}).</value>
   </data>
   <data name="UnableToImpersonateCredentials" xml:space="preserve">
-    <value>The supplied credentials could not be impersonated.</value>
+    <value>The supplied credentials could not be impersonated. Error: {0}.</value>
   </data>
   <data name="StoreCtxUnsupportedPrincipalTypeForSave" xml:space="preserve">
     <value>Principal objects of type {0} can not be saved in this store.</value>

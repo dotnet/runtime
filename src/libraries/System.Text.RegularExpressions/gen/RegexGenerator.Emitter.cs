@@ -43,7 +43,8 @@ namespace System.Text.RegularExpressions.Generator
                         case '>': sb.Append("&gt;"); break;
 
                         // Propagate all other valid XML characters as-is. Control chars are considered invalid.
-                        case (>= 0x20 and <= 0x7F) or (>= 0xA0 and <= 0xD7FF) or (>= 0xE000 and <= 0xFFFD): sb.Append(c); break;
+                        // U+2028 and U+2029 are valid XML but are C# line terminators, so they'd break /// comments.
+                        case (>= 0x20 and <= 0x7F) or (>= 0xA0 and <= 0xD7FF and not 0x2028 and not 0x2029) or (>= 0xE000 and <= 0xFFFD): sb.Append(c); break;
 
                         // Use Unicode escape sequences for everything else.
                         default: sb.Append($"\\u{(int)c:X4}"); break;
@@ -1106,6 +1107,7 @@ namespace System.Text.RegularExpressions.Generator
                                 noMatchFoundLabelNeeded = true;
                                 Goto(NoMatchFound);
                             }
+                            writer.WriteLine("base.runtextpos = pos;");
                         }
                         writer.WriteLine();
                         break;
@@ -1605,9 +1607,10 @@ namespace System.Text.RegularExpressions.Generator
             // "doneLabel" is simply the final return location from the TryMatchAtCurrentPosition method that will undo any captures and exit, signaling to
             // the calling scan loop that nothing was matched.
 
-            // Arbitrary limit for unrolling vs creating a loop.  We want to balance size in the generated
-            // code with other costs, like the (small) overhead of slicing to create the temp span to iterate.
-            const int MaxUnrollSize = 16;
+            // Limit for unrolling vs creating a loop. Benchmarking shows vectorized operations
+            // (e.g. ContainsAnyExcept) beat unrolled scalar checks at counts above ~4-8, so
+            // we unroll up to/including this threshold and use a loop with vectorization beyond it.
+            const int MaxUnrollSize = 7;
 
             RegexOptions options = rm.Options;
             RegexTree regexTree = rm.Tree;
@@ -1822,94 +1825,39 @@ namespace System.Text.RegularExpressions.Generator
                 // the whole alternation can be treated as a simple switch, so we special-case that. However,
                 // we can't goto _into_ switch cases, which means we can't use this approach if there's any
                 // possibility of backtracking into the alternation.
-                bool useSwitchedBranches = false;
-                if ((node.Options & RegexOptions.RightToLeft) == 0)
+                if ((node.Options & RegexOptions.RightToLeft) != 0 ||
+                    !TryEmitAlternationAsSwitch())
                 {
-                    useSwitchedBranches = isAtomic;
-                    if (!useSwitchedBranches)
+                    EmitAllBranches();
+                }
+
+                return;
+
+                // Tries to emit an alternation as a switch on the first character of each branch.
+                // Returns true if the optimization was applied, false otherwise.
+                bool TryEmitAlternationAsSwitch()
+                {
+                    // We can't use switched branches if there's any possibility of backtracking into the alternation.
+                    if (!isAtomic)
                     {
-                        useSwitchedBranches = true;
                         for (int i = 0; i < childCount; i++)
                         {
                             if (rm.Analysis.MayBacktrack(node.Child(i)))
                             {
-                                useSwitchedBranches = false;
-                                break;
+                                return false;
                             }
                         }
                     }
-                }
 
-                // Detect whether every branch begins with one or more unique characters.
-                const int SetCharsSize = 64; // arbitrary limit; we want it to be large enough to handle ignore-case of common sets, like hex, the latin alphabet, etc.
-                Span<char> setChars = stackalloc char[SetCharsSize];
-                if (useSwitchedBranches)
-                {
-                    // Iterate through every branch, seeing if we can easily find a starting One, Multi, or small Set.
-                    // If we can, extract its starting char (or multiple in the case of a set), validate that all such
-                    // starting characters are unique relative to all the branches.
-                    var seenChars = new HashSet<char>();
-                    for (int i = 0; i < childCount && useSwitchedBranches; i++)
+                    // Detect whether every branch begins with one or more unique characters.
+                    if (!node.TryGetAlternationStartingChars(out _))
                     {
-                        // Look for the guaranteed starting node that's a one, multi, set,
-                        // or loop of one of those with at least one minimum iteration. We need to exclude notones.
-                        if (node.Child(i).FindStartingLiteralNode(allowZeroWidth: false) is not RegexNode startingLiteralNode ||
-                            startingLiteralNode.IsNotoneFamily)
-                        {
-                            useSwitchedBranches = false;
-                            break;
-                        }
-
-                        // If it's a One or a Multi, get the first character and add it to the set.
-                        // If it was already in the set, we can't apply this optimization.
-                        if (startingLiteralNode.IsOneFamily || startingLiteralNode.Kind is RegexNodeKind.Multi)
-                        {
-                            if (!seenChars.Add(startingLiteralNode.FirstCharOfOneOrMulti()))
-                            {
-                                useSwitchedBranches = false;
-                                break;
-                            }
-                        }
-                        else
-                        {
-                            // The branch begins with a set.  Make sure it's a set of only a few characters
-                            // and get them.  If we can't, we can't apply this optimization.
-                            Debug.Assert(startingLiteralNode.IsSetFamily);
-                            int numChars;
-                            if (RegexCharClass.IsNegated(startingLiteralNode.Str!) ||
-                                (numChars = RegexCharClass.GetSetChars(startingLiteralNode.Str!, setChars)) == 0)
-                            {
-                                useSwitchedBranches = false;
-                                break;
-                            }
-
-                            // Check to make sure each of the chars is unique relative to all other branches examined.
-                            foreach (char c in setChars.Slice(0, numChars))
-                            {
-                                if (!seenChars.Add(c))
-                                {
-                                    useSwitchedBranches = false;
-                                    break;
-                                }
-                            }
-                        }
+                        return false;
                     }
-                }
 
-                if (useSwitchedBranches)
-                {
-                    // Note: This optimization does not exist with RegexOptions.Compiled.  Here we rely on the
-                    // C# compiler to lower the C# switch statement with appropriate optimizations. In some
-                    // cases there are enough branches that the compiler will emit a jump table.  In others
-                    // it'll optimize the order of checks in order to minimize the total number in the worst
-                    // case.  In any case, we get easier to read and reason about C#.
                     EmitSwitchedBranches();
+                    return true;
                 }
-                else
-                {
-                    EmitAllBranches();
-                }
-                return;
 
                 // Emits the code for a switch-based alternation of non-overlapping branches.
                 void EmitSwitchedBranches()
@@ -1921,7 +1869,8 @@ namespace System.Text.RegularExpressions.Generator
                     // Emit a switch statement on the first char of each branch.
                     using (EmitBlock(writer, $"switch ({sliceSpan}[{sliceStaticPos}])"))
                     {
-                        Span<char> setChars = stackalloc char[SetCharsSize]; // needs to be same size as detection check in caller
+                        const int SetCharsSize = 64; // arbitrary limit; we want it to be large enough to handle ignore-case of common sets, like hex, the latin alphabet, etc.
+                        Span<char> setChars = stackalloc char[SetCharsSize];
                         int startingSliceStaticPos = sliceStaticPos;
 
                         // Emit a case for each branch.
@@ -2001,9 +1950,11 @@ namespace System.Text.RegularExpressions.Generator
                                     break;
                             }
 
-                            // This is only ever used for atomic alternations, so we can simply reset the doneLabel
-                            // after emitting the child, as nothing will backtrack here (and we need to reset it
-                            // so that all branches see the original).
+                            // This is only ever used for alternations where no branch may backtrack
+                            // (whether due to being atomic or simply because nothing in the branch
+                            // can backtrack), so we can simply reset the doneLabel after emitting the
+                            // child, as nothing will backtrack here (and we need to reset it so that
+                            // all branches see the original).
                             doneLabel = originalDoneLabel;
 
                             // If we get here in the generated code, the branch completed successfully.
@@ -2576,7 +2527,7 @@ namespace System.Text.RegularExpressions.Generator
                 writer.WriteLine();
                 TransferSliceStaticPosToPos(); // make sure sliceStaticPos is 0 after each branch
                 string postYesDoneLabel = doneLabel;
-                if (!isAtomic && postYesDoneLabel != originalDoneLabel)
+                if ((!isAtomic && postYesDoneLabel != originalDoneLabel) || isInLoop)
                 {
                     writer.WriteLine($"{resumeAt} = 0;");
                 }
@@ -2605,7 +2556,7 @@ namespace System.Text.RegularExpressions.Generator
                     writer.WriteLine();
                     TransferSliceStaticPosToPos(); // make sure sliceStaticPos is 0 after each branch
                     postNoDoneLabel = doneLabel;
-                    if (!isAtomic && postNoDoneLabel != originalDoneLabel)
+                    if ((!isAtomic && postNoDoneLabel != originalDoneLabel) || isInLoop)
                     {
                         writer.WriteLine($"{resumeAt} = 1;");
                     }
@@ -2615,7 +2566,7 @@ namespace System.Text.RegularExpressions.Generator
                     // There's only a yes branch.  If it's going to cause us to output a backtracking
                     // label but code may not end up taking the yes branch path, we need to emit a resumeAt
                     // that will cause the backtracking to immediately pass through this node.
-                    if (!isAtomic && postYesDoneLabel != originalDoneLabel)
+                    if ((!isAtomic && postYesDoneLabel != originalDoneLabel) || isInLoop)
                     {
                         writer.WriteLine($"{resumeAt} = 2;");
                     }
@@ -3533,19 +3484,59 @@ namespace System.Text.RegularExpressions.Generator
                     subsequent?.FindStartingLiteralNode() is RegexNode literalNode &&
                     TryEmitIndexOf(requiredHelpers, literalNode, useLast: true, negate: false, out int literalLength, out string? indexOfExpr))
                 {
-                    writer.WriteLine($"if ({startingPos} >= {endingPos} ||");
-
-                    string setEndingPosCondition = $"    ({endingPos} = inputSpan.Slice({startingPos}, ";
-                    setEndingPosCondition = literalLength > 1 ?
-                        $"{setEndingPosCondition}Math.Min(inputSpan.Length, {endingPos} + {literalLength - 1}) - {startingPos})" :
-                        $"{setEndingPosCondition}{endingPos} - {startingPos})";
-
-                    using (EmitBlock(writer, $"{setEndingPosCondition}.{indexOfExpr}) < 0)"))
+                    // If CanReduceLoopBacktrackingToSinglePosition determines only the last consumed character
+                    // can succeed, we can just check it directly instead of repeatedly searching with LastIndexOf.
+                    if (subsequent is not null && RegexNode.CanReduceLoopBacktrackingToSinglePosition(node, subsequent))
                     {
-                        Goto(doneLabel);
+                        using (EmitBlock(writer, $"if ({startingPos} >= {endingPos})"))
+                        {
+                            Goto(doneLabel);
+                        }
+                        writer.WriteLine($"{endingPos}--;");
+
+                        string charAccessExpr = $"inputSpan[{endingPos}]";
+                        string condition = literalNode.Kind switch
+                        {
+                            RegexNodeKind.One or RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic or RegexNodeKind.Onelazy =>
+                                $"{charAccessExpr} != {Literal(literalNode.Ch)}",
+                            RegexNodeKind.Notone or RegexNodeKind.Notoneloop or RegexNodeKind.Notoneloopatomic or RegexNodeKind.Notonelazy =>
+                                $"{charAccessExpr} == {Literal(literalNode.Ch)}",
+                            RegexNodeKind.Multi =>
+                                $"{charAccessExpr} != {Literal(literalNode.Str![0])}",
+                            _ => // Set, Setloop, Setloopatomic, Setlazy
+                                $"!{MatchCharacterClass(charAccessExpr, literalNode.Str!, negate: false, additionalDeclarations, requiredHelpers)}",
+                        };
+                        using (EmitBlock(writer, $"if ({condition})"))
+                        {
+                            Goto(doneLabel);
+                        }
+
+                        writer.WriteLine($"pos = {endingPos};");
+
+                        // We've now checked the only backtrack position that can succeed. Force any
+                        // subsequent backtrack to fail immediately by setting endingPos to 0, which
+                        // guarantees the "startingPos >= endingPos" guard (emitted above) will be true
+                        // on re-entry. Note: if the emitter's backtracking structure changes (e.g. the
+                        // guard condition or how endingPos is used beyond the guard and stack save/restore),
+                        // this assumption would need to be revisited.
+                        writer.WriteLine($"{endingPos} = 0;");
                     }
-                    writer.WriteLine($"{endingPos} += {startingPos};");
-                    writer.WriteLine($"pos = {endingPos};");
+                    else
+                    {
+                        writer.WriteLine($"if ({startingPos} >= {endingPos} ||");
+
+                        string setEndingPosCondition = $"    ({endingPos} = inputSpan.Slice({startingPos}, ";
+                        setEndingPosCondition = literalLength > 1 ?
+                            $"{setEndingPosCondition}Math.Min(inputSpan.Length, {endingPos} + {literalLength - 1}) - {startingPos})" :
+                            $"{setEndingPosCondition}{endingPos} - {startingPos})";
+
+                        using (EmitBlock(writer, $"{setEndingPosCondition}.{indexOfExpr}) < 0)"))
+                        {
+                            Goto(doneLabel);
+                        }
+                        writer.WriteLine($"{endingPos} += {startingPos};");
+                        writer.WriteLine($"pos = {endingPos};");
+                    }
                 }
                 else
                 {

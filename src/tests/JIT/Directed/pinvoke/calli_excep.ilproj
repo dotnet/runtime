@@ -1,13 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-    <!-- Needed for CLRTestTargetUnsupported -->
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <!-- Test unsupported outside of windows -->
-    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
-    <!-- Native exception interop is not supported with interpreter. See https://github.com/dotnet/runtime/issues/118965 -->
-    <InterpreterIncompatible>true</InterpreterIncompatible>
-  </PropertyGroup>
-  <PropertyGroup>
     <DebugType>PdbOnly</DebugType>
     <Optimize>True</Optimize>
   </PropertyGroup>

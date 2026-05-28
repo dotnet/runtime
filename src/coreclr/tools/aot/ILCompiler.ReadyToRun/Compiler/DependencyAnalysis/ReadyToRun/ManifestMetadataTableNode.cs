@@ -27,7 +27,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         void MaterializeSignature();
     }
 
-    public class ManifestMetadataTableNode : HeaderTableNode
+    public class ManifestMetadataTableNode : HeaderTableNode, IDisposable
     {
         /// <summary>
         /// Map from simple assembly names to their module indices. The map gets prepopulated
@@ -253,7 +253,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
                 else
                 {
-                    Debug.Assert(_nodeFactory.CompilationModuleGroup.CrossModuleInlineableModule(emodule));
+                    // Module lookups can also be used in scenarios (e.g. certain module fixups)
+                    // where there is no actual image reference available. In those cases we
+                    // record a default MVID instead of enforcing that the module must have
+                    // been tracked as "indexable" earlier in the pipeline.
                     _manifestAssemblyMvids.Add(default(Guid));
                 }
             }
@@ -328,6 +331,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 _manifestAssemblyMvids[i].TryWriteBytes(new Span<byte>(manifestAssemblyMvidTable, GuidByteSize * i, GuidByteSize));
             }
             return manifestAssemblyMvidTable;
+        }
+
+        public void Dispose()
+        {
+            _modulesWhichMustBeIndexable = null;
         }
     }
 }

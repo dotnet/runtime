@@ -24,7 +24,7 @@ namespace System.Xml.Serialization
 
             if (!xmlMapping.IsWriteable || !xmlMapping.GenerateSerializer)
             {
-                throw new ArgumentException(SR.Format(SR.XmlInternalError, nameof(xmlMapping)));
+                throw new ArgumentException(SR.XmlInternalError);
             }
 
             if (xmlMapping is XmlTypeMapping || xmlMapping is XmlMembersMapping)
@@ -33,7 +33,7 @@ namespace System.Xml.Serialization
             }
             else
             {
-                throw new ArgumentException(SR.Format(SR.XmlInternalError, nameof(xmlMapping)));
+                throw new ArgumentException(SR.XmlInternalError);
             }
         }
 
@@ -661,9 +661,7 @@ namespace System.Xml.Serialization
 
                     if (m.CheckShouldPersist)
                     {
-                        string methodInvoke = $"ShouldSerialize{m.Name}";
-                        MethodInfo method = o!.GetType().GetMethod(methodInvoke, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly)!;
-                        shouldPersist = (bool)method.Invoke(o, Array.Empty<object>())!;
+                        shouldPersist = (bool)m.CheckShouldPersistMethodInfo!.Invoke(o, Array.Empty<object>())!;
                     }
 
                     if (m.Attribute != null)
@@ -693,9 +691,7 @@ namespace System.Xml.Serialization
 
                     if (m.CheckShouldPersist)
                     {
-                        string methodInvoke = $"ShouldSerialize{m.Name}";
-                        MethodInfo method = o!.GetType().GetMethod(methodInvoke, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly)!;
-                        shouldPersist = (bool)method.Invoke(o, Array.Empty<object>())!;
+                        shouldPersist = (bool)m.CheckShouldPersistMethodInfo!.Invoke(o, Array.Empty<object>())!;
                     }
 
                     bool checkShouldPersist = m.CheckShouldPersist && (m.Elements!.Length > 0 || m.Text != null);

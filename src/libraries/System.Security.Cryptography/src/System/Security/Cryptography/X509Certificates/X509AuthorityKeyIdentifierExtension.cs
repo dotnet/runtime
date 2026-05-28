@@ -514,8 +514,8 @@ namespace System.Security.Cryptography.X509Certificates
 
             try
             {
-                AsnValueReader reader = new AsnValueReader(rawData, AsnEncodingRules.DER);
-                AsnValueReader aki = reader.ReadSequence();
+                ValueAsnReader reader = new ValueAsnReader(rawData, AsnEncodingRules.DER);
+                ValueAsnReader aki = reader.ReadSequence();
                 reader.ThrowIfNotEmpty();
 
                 Asn1Tag nextTag = default;
@@ -540,7 +540,7 @@ namespace System.Security.Cryptography.X509Certificates
                     byte[] rawIssuer = aki.PeekEncodedValue().ToArray();
                     _rawIssuer = rawIssuer;
 
-                    AsnValueReader generalNames = aki.ReadSequence(nextTag);
+                    ValueAsnReader generalNames = aki.ReadSequence(nextTag);
                     bool foundIssuer = false;
 
                     // Walk all of the entities to make sure they decode legally, so no early abort.

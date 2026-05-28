@@ -41,7 +41,7 @@ static int32_t AcquirePThreadMutexWithTimeout(pthread_mutex_t* mutex, int32_t ti
     timeoutTimeSpec.tv_nsec = (timeoutMilliseconds % 1000) * 1000 * 1000;
 
     error = pthread_mutex_reltimedlock_np(mutex, &timeoutTimeSpec);
-#elif HAVE_PTHREAD_MUTEX_CLOCKLOCK && HAVE_CLOCK_MONOTONIC
+#elif HAVE_PTHREAD_MUTEX_CLOCKLOCK
     error = clock_gettime(CLOCK_MONOTONIC, &timeoutTimeSpec);
     assert(error == 0);
 

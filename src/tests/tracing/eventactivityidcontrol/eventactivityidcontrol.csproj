@@ -11,6 +11,9 @@
     <Compile Include="EventActivityIdControl.cs" />
     <ProjectReference Include="../common/tracing_common.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TestBuildMode)' == 'nativeaot'">
     <RdXmlFile Include="rd.xml" />
   </ItemGroup>  

@@ -26,7 +26,7 @@ public:
         : Phase(compiler, PHASE_LOWERING)
         , vtableCallTemp(BAD_VAR_NUM)
 #ifdef TARGET_ARM64
-        , m_blockIndirs(compiler->getAllocator(CMK_ArrayStack))
+        , m_blockIndirs(compiler->getAllocator(CMK_Lower))
 #endif
     {
         m_regAlloc = static_cast<RegAllocImpl*>(regAlloc);
@@ -38,7 +38,7 @@ public:
     // so it creates its own instance of Lowering to do so.
     void LowerRange(BasicBlock* block, LIR::ReadOnlyRange& range)
     {
-        Lowering lowerer(comp, m_regAlloc);
+        Lowering lowerer(m_compiler, m_regAlloc);
         lowerer.m_block = block;
 
         lowerer.LowerRange(range);
@@ -72,7 +72,7 @@ private:
 
     void InsertTreeBeforeAndContainCheck(GenTree* insertionPoint, GenTree* tree)
     {
-        LIR::Range range = LIR::SeqTree(comp, tree);
+        LIR::Range range = LIR::SeqTree(m_compiler, tree);
         ContainCheckRange(range);
         BlockRange().InsertBefore(insertionPoint, std::move(range));
     }
@@ -106,6 +106,7 @@ private:
     void ContainCheckCallOperands(GenTreeCall* call);
     void ContainCheckIndir(GenTreeIndir* indirNode);
     void ContainCheckStoreIndir(GenTreeStoreInd* indirNode);
+    void ContainCheckNonLocalJmp(GenTreeUnOp* node);
     void ContainCheckMul(GenTreeOp* node);
     void ContainCheckShiftRotate(GenTreeOp* node);
     void ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const;
@@ -139,6 +140,7 @@ private:
     unsigned TryReuseLocalForParameterAccess(const LIR::Use& use, const LocalSet& storedToLocals);
 
     void     LowerBlock(BasicBlock* block);
+    void     AfterLowerBlocks();
     GenTree* LowerNode(GenTree* node);
 
     bool IsCFGCallArgInvariantInRange(GenTree* node, GenTree* endExclusive);
@@ -151,8 +153,11 @@ private:
     bool     LowerCallMemcmp(GenTreeCall* call, GenTree** next);
     bool     LowerCallMemset(GenTreeCall* call, GenTree** next);
     void     LowerCFGCall(GenTreeCall* call);
-    void     MovePutArgNodesUpToCall(GenTreeCall* call);
-    void     MovePutArgUpToCall(GenTreeCall* call, GenTree* node);
+#ifdef TARGET_WASM
+    void LowerPEPCall(GenTreeCall* call);
+#endif
+    void MovePutArgNodesUpToCall(GenTreeCall* call);
+    void MovePutArgUpToCall(GenTreeCall* call, GenTree* node);
 #ifndef TARGET_64BIT
     GenTree* DecomposeLongCompare(GenTree* cmp);
 #endif
@@ -207,6 +212,7 @@ private:
     GenTree* LowerVirtualVtableCall(GenTreeCall* call);
     GenTree* LowerVirtualStubCall(GenTreeCall* call);
     void     LowerArgsForCall(GenTreeCall* call);
+    void     AfterLowerArgsForCall(GenTreeCall* call);
 #if defined(TARGET_X86) && defined(FEATURE_IJW)
     void LowerSpecialCopyArgs(GenTreeCall* call);
     void InsertSpecialCopyArg(GenTreePutArgStk* putArgStk, CORINFO_CLASS_HANDLE argType, unsigned lclNum);
@@ -235,35 +241,35 @@ private:
 
     GenTree* Ind(GenTree* tree, var_types type = TYP_I_IMPL)
     {
-        return comp->gtNewIndir(type, tree);
+        return m_compiler->gtNewIndir(type, tree);
     }
 
     GenTree* PhysReg(regNumber reg, var_types type = TYP_I_IMPL)
     {
-        return comp->gtNewPhysRegNode(reg, type);
+        return m_compiler->gtNewPhysRegNode(reg, type);
     }
 
     GenTree* ThisReg(GenTreeCall* call)
     {
-        return PhysReg(comp->codeGen->genGetThisArgReg(call), TYP_REF);
+        return PhysReg(m_compiler->codeGen->genGetThisArgReg(call), TYP_REF);
     }
 
     GenTree* Offset(GenTree* base, unsigned offset)
     {
         var_types resultType = base->TypeIs(TYP_REF) ? TYP_BYREF : base->TypeGet();
-        return new (comp, GT_LEA) GenTreeAddrMode(resultType, base, nullptr, 0, offset);
+        return new (m_compiler, GT_LEA) GenTreeAddrMode(resultType, base, nullptr, 0, offset);
     }
 
     GenTree* OffsetByIndex(GenTree* base, GenTree* index)
     {
         var_types resultType = base->TypeIs(TYP_REF) ? TYP_BYREF : base->TypeGet();
-        return new (comp, GT_LEA) GenTreeAddrMode(resultType, base, index, 0, 0);
+        return new (m_compiler, GT_LEA) GenTreeAddrMode(resultType, base, index, 0, 0);
     }
 
     GenTree* OffsetByIndexWithScale(GenTree* base, GenTree* index, unsigned scale)
     {
         var_types resultType = base->TypeIs(TYP_REF) ? TYP_BYREF : base->TypeGet();
-        return new (comp, GT_LEA) GenTreeAddrMode(resultType, base, index, scale, 0);
+        return new (m_compiler, GT_LEA) GenTreeAddrMode(resultType, base, index, scale, 0);
     }
 
     // Replace the definition of the given use with a lclVar, allocating a new temp
@@ -274,7 +280,7 @@ private:
         if (!oldUseNode->OperIs(GT_LCL_VAR) || (tempNum != BAD_VAR_NUM))
         {
             GenTree* store;
-            use.ReplaceWithLclVar(comp, tempNum, &store);
+            use.ReplaceWithLclVar(m_compiler, tempNum, &store);
 
             GenTree* newUseNode = use.Def();
             ContainCheckRange(oldUseNode->gtNext, newUseNode);
@@ -348,32 +354,62 @@ private:
 
     struct LoadStoreCoalescingData
     {
-        var_types targetType;
-        GenTree*  baseAddr;
-        GenTree*  index;
-        GenTree*  value;
-        uint32_t  scale;
-        int       offset;
-        GenTree*  rangeStart;
-        GenTree*  rangeEnd;
+        var_types    targetType       = TYP_UNDEF;
+        GenTree*     baseAddr         = nullptr;
+        GenTree*     index            = nullptr;
+        GenTree*     value            = nullptr;
+        uint32_t     scale            = 1;
+        int          offset           = 0;
+        unsigned     accessSize       = 0;
+        unsigned     lclNum           = BAD_VAR_NUM;
+        GenTreeFlags storeFlags       = GTF_EMPTY;
+        bool         isLocalStoreNode = false;
+        bool         isAddressExposed = false;
+        GenTree*     rangeStart       = nullptr;
+        GenTree*     rangeEnd         = nullptr;
 
         bool IsStore() const
         {
             return value != nullptr;
         }
 
-        bool IsAddressEqual(const LoadStoreCoalescingData& other, bool ignoreOffset) const
+        bool IsLocalStore() const
         {
-            if ((scale != other.scale) || (targetType != other.targetType) ||
-                !GenTree::Compare(baseAddr, other.baseAddr) || !GenTree::Compare(index, other.index))
+            return isLocalStoreNode;
+        }
+
+        bool AllowsNonAtomic() const
+        {
+            return (storeFlags & GTF_IND_ALLOW_NON_ATOMIC) != 0;
+        }
+
+        bool IsAddressEqual(const LoadStoreCoalescingData& other,
+                            bool                           ignoreOffset,
+                            bool                           allowDifferentTypes = false) const
+        {
+            if ((scale != other.scale) || (!allowDifferentTypes && (targetType != other.targetType)))
             {
                 return false;
             }
+
+            if (IsLocalStore() || other.IsLocalStore())
+            {
+                if (!IsLocalStore() || !other.IsLocalStore() || (lclNum != other.lclNum))
+                {
+                    return false;
+                }
+            }
+            else if (!GenTree::Compare(baseAddr, other.baseAddr) || !GenTree::Compare(index, other.index))
+            {
+                return false;
+            }
+
             return ignoreOffset || (offset == other.offset);
         }
     };
 
     bool GetLoadStoreCoalescingData(GenTreeIndir* ind, LoadStoreCoalescingData* data) const;
+    bool GetStoreCoalescingData(GenTree* store, LoadStoreCoalescingData* data) const;
 
     // Per tree node member functions
     GenTree* LowerStoreIndirCommon(GenTreeStoreInd* ind);
@@ -386,18 +422,26 @@ private:
     void     MarkTree(GenTree* root);
     void     UnmarkTree(GenTree* root);
     GenTree* LowerStoreIndir(GenTreeStoreInd* node);
+    void     LowerStoreCoalescing(GenTree* node);
     void     LowerStoreIndirCoalescing(GenTreeIndir* node);
+    bool     LowerCheckCoalescedStoreAtomicity(GenTree*                       currStore,
+                                               const LoadStoreCoalescingData& currData,
+                                               const LoadStoreCoalescingData& prevData);
     GenTree* LowerAdd(GenTreeOp* node);
     GenTree* LowerMul(GenTreeOp* mul);
     bool     TryLowerAndNegativeOne(GenTreeOp* node, GenTree** nextNode);
     GenTree* LowerBinaryArithmetic(GenTreeOp* binOp);
-    bool     LowerUnsignedDivOrMod(GenTreeOp* divMod);
+    GenTree* LowerUnsignedDivOrMod(GenTreeOp* divMod);
+    bool     TryLowerConstIntUDivOrUMod(GenTreeOp* divMod);
     bool     TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode);
     GenTree* LowerSignedDivOrMod(GenTree* node);
+    void     LowerDivOrMod(GenTreeOp* divMod);
     void     LowerBlockStore(GenTreeBlk* blkNode);
     void     LowerBlockStoreCommon(GenTreeBlk* blkNode);
     void     LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode);
-    bool     TryLowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blkNode);
+    void     LowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blkNode);
+    void     LowerCopyBlockStore(GenTreeBlk* blkNode);
+    bool     TryDecomposeBlockStoreAsIndirs(GenTreeBlk* blkNode);
     void     LowerLclHeap(GenTree* node);
     void     ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenTree* addr, GenTree* addrParent);
     void     LowerPutArgStk(GenTreePutArgStk* putArgNode);
@@ -411,7 +455,9 @@ private:
 #endif // TARGET_XARCH
 
 #ifdef TARGET_WASM
-    GenTree* LowerNeg(GenTreeOp* node);
+    static void SetMultiplyUsed(GenTree* node DEBUGARG(const char* reason));
+    GenTree*    LowerNeg(GenTreeOp* node);
+    void        LowerIndexAddr(GenTreeIndexAddr* indexAddr);
 #endif
 
     bool TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* parent);
@@ -456,11 +502,13 @@ private:
     GenTree* LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node);
+    bool     TryInvertMask(GenTree* node, unsigned simdSize, var_types simdBaseType);
     GenTree* TryLowerAndOpToResetLowestSetBit(GenTreeOp* andNode);
     GenTree* TryLowerAndOpToExtractLowestSetBit(GenTreeOp* andNode);
     GenTree* TryLowerAndOpToAndNot(GenTreeOp* andNode);
     GenTree* TryLowerXorOpToGetMaskUpToLowestSetBit(GenTreeOp* xorNode);
     void     LowerBswapOp(GenTreeOp* node);
+    GenTree* LowerHWIntrinsicDotInnerMulSum(GenTreeHWIntrinsic* node);
 #elif defined(TARGET_ARM64)
     bool     IsValidConstForMovImm(GenTreeHWIntrinsic* node);
     void     LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node);
@@ -539,7 +587,7 @@ public:
     // Similar to above, but allows bypassing a "transparent" parent.
     bool IsSafeToContainMem(GenTree* grandparentNode, GenTree* parentNode, GenTree* childNode) const;
 
-    static void TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, BasicBlock* block);
+    static void TransformUnusedIndirection(GenTreeIndir* ind, Compiler* m_compiler, BasicBlock* block);
 
 private:
     static bool NodesAreEquivalentLeaves(GenTree* candidate, GenTree* storeInd);
@@ -563,8 +611,11 @@ private:
     // Checks and makes 'childNode' contained in the 'parentNode'
     bool CheckImmedAndMakeContained(GenTree* parentNode, GenTree* childNode);
 
-    bool IsInvariantInRange(GenTree* node, GenTree* endExclusive) const;
-    bool IsInvariantInRange(GenTree* node, GenTree* endExclusive, GenTree* ignoreNode) const;
+    bool IsInvariantInRange(GenTree* node, GenTree* endExclusive, GenTreeFlags ignoreFlagsOnNode = GTF_EMPTY) const;
+    bool IsInvariantInRange(GenTree*     node,
+                            GenTree*     endExclusive,
+                            GenTree*     ignoreNode,
+                            GenTreeFlags ignoreFlagsOnNode = GTF_EMPTY) const;
     bool IsRangeInvariantInRange(GenTree* rangeStart,
                                  GenTree* rangeEnd,
                                  GenTree* endExclusive,
@@ -587,14 +638,14 @@ private:
     // This ensures that the local's value is valid on-stack as expected for a *LCL_FLD.
     void verifyLclFldDoNotEnregister(unsigned lclNum)
     {
-        LclVarDsc* varDsc = comp->lvaGetDesc(lclNum);
+        LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
         // Do a couple of simple checks before setting lvDoNotEnregister.
         // This may not cover all cases in 'isRegCandidate()' but we don't want to
         // do an expensive check here. For non-candidates it is not harmful to set lvDoNotEnregister.
         if (varDsc->lvTracked && !varDsc->lvDoNotEnregister)
         {
             assert(!m_regAlloc->isRegCandidate(varDsc));
-            comp->lvaSetVarDoNotEnregister(lclNum DEBUG_ARG(DoNotEnregisterReason::LocalField));
+            m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUG_ARG(DoNotEnregisterReason::LocalField));
         }
     }
 

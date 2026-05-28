@@ -29,7 +29,7 @@ namespace System.Security.Cryptography.Dsa.Tests
             GenerateKey(dsa => GetMin(dsa.LegalKeySizes));
         }
 
-        [ConditionalFact(nameof(HasSecondMinSize))]
+        [ConditionalFact(typeof(DSAKeyGeneration), nameof(HasSecondMinSize))]
         public static void GenerateSecondMinKey()
         {
             GenerateKey(dsa => GetSecondMin(dsa.LegalKeySizes));

@@ -377,8 +377,8 @@ namespace Internal.Cryptography
 
             try
             {
-                AsnValueReader reader = new AsnValueReader(normalizedValue, AsnEncodingRules.DER);
-                AsnValueReader setReader = reader.ReadSetOf();
+                ValueAsnReader reader = new ValueAsnReader(normalizedValue, AsnEncodingRules.DER);
+                ValueAsnReader setReader = reader.ReadSetOf();
                 AttributeAsn[] decodedSet = new AttributeAsn[setItems.Length];
                 int i = 0;
                 while (setReader.HasData)

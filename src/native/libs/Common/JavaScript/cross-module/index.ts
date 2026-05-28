@@ -19,7 +19,7 @@
  *  - each JS module to use exported symbols in ergonomic way
  */
 
-import type { DotnetModuleInternal, InternalExchange, RuntimeExports, LoaderExports, RuntimeAPI, LoggerType, AssertType, BrowserHostExports, InteropJavaScriptExports, LoaderExportsTable, RuntimeExportsTable, BrowserHostExportsTable, InteropJavaScriptExportsTable, NativeBrowserExports, NativeBrowserExportsTable, InternalExchangeSubscriber, BrowserUtilsExports, BrowserUtilsExportsTable, DiagnosticsExports, DiagnosticsExportsTable } from "../types";
+import type { DotnetModuleInternal, InternalExchange, RuntimeExports, LoaderExports, RuntimeAPI, LoggerType, AssertType, BrowserHostExports, InteropJavaScriptExports, LoaderExportsTable, RuntimeExportsTable, BrowserHostExportsTable, InteropJavaScriptExportsTable, NativeBrowserExports, NativeBrowserExportsTable, InternalExchangeSubscriber, BrowserUtilsExports, BrowserUtilsExportsTable, VoidPtr, CharPtr, NativePointer, DiagnosticsExports, DiagnosticsExportsTable } from "../types";
 import { InternalExchangeIndex } from "../types";
 
 export let dotnetInternals: InternalExchange;
@@ -34,6 +34,10 @@ export const dotnetInteropJSExports: InteropJavaScriptExports = {} as any;
 export const dotnetNativeBrowserExports: NativeBrowserExports = {} as any;
 export const dotnetBrowserUtilsExports: BrowserUtilsExports = {} as any;
 export const dotnetDiagnosticsExports: DiagnosticsExports = {} as any;
+
+export const VoidPtrNull: VoidPtr = <VoidPtr><any>0;
+export const CharPtrNull: CharPtr = <CharPtr><any>0;
+export const NativePointerNull: NativePointer = <NativePointer><any>0;
 
 export function dotnetGetInternals(): InternalExchange {
     return dotnetInternals;
@@ -96,6 +100,14 @@ export function dotnetUpdateInternalsSubscriber() {
     // keep in sync with runtimeExportsToTable()
     function runtimeExportsFromTable(table: RuntimeExportsTable, runtime: RuntimeExports): void {
         const runtimerLocal: RuntimeExports = {
+            bindJSImportST: table[0],
+            invokeJSImportST: table[1],
+            releaseCSOwnedObject: table[2],
+            resolveOrRejectPromise: table[3],
+            cancelPromise: table[4],
+            invokeJSFunction: table[5],
+            forceDisposeProxies: table[6],
+            abortInteropTimers: table[7],
         };
         Object.assign(runtime, runtimerLocal);
     }
@@ -124,6 +136,10 @@ export function dotnetUpdateInternalsSubscriber() {
             addOnExitListener: table[14],
             abortStartup: table[15],
             quitNow: table[16],
+            exit: table[17],
+            normalizeException: table[18],
+            fetchSatelliteAssemblies: table[19],
+            fetchLazyAssembly: table[20],
         };
         Object.assign(dotnetLoaderExports, loaderExportsLocal);
         Object.assign(logger, loggerLocal);
@@ -138,6 +154,8 @@ export function dotnetUpdateInternalsSubscriber() {
             loadIcuData: table[2],
             initializeCoreCLR: table[3],
             registerPdbBytes: table[4],
+            instantiateWasm: table[5],
+            instantiateWebcilModule: table[6],
         };
         Object.assign(native, nativeLocal);
     }
@@ -145,6 +163,12 @@ export function dotnetUpdateInternalsSubscriber() {
     // keep in sync with interopJavaScriptExportsToTable()
     function interopJavaScriptExportsFromTable(table: InteropJavaScriptExportsTable, interop: InteropJavaScriptExports): void {
         const interopLocal: InteropJavaScriptExports = {
+            SystemInteropJS_GetManagedStackTrace: table[0],
+            SystemInteropJS_CallDelegate: table[1],
+            SystemInteropJS_CompleteTask: table[2],
+            SystemInteropJS_ReleaseJSOwnedObjectByGCHandle: table[3],
+            SystemInteropJS_BindAssemblyExports: table[4],
+            SystemInteropJS_CallJSExport: table[5],
         };
         Object.assign(interop, interopLocal);
     }
@@ -152,6 +176,9 @@ export function dotnetUpdateInternalsSubscriber() {
     // keep in sync with nativeBrowserExportsToTable()
     function nativeBrowserExportsFromTable(table: NativeBrowserExportsTable, interop: NativeBrowserExports): void {
         const interopLocal: NativeBrowserExports = {
+            getWasmMemory: table[0],
+            getWasmTable: table[1],
+            SystemJS_ScheduleDiagnosticServer: table[2],
         };
         Object.assign(interop, interopLocal);
     }
@@ -160,6 +187,13 @@ export function dotnetUpdateInternalsSubscriber() {
     function diagnosticsExportsFromTable(table: DiagnosticsExportsTable, interop: DiagnosticsExports): void {
         const interopLocal: DiagnosticsExports = {
             symbolicateStackTrace: table[0],
+            installNativeSymbols: table[1],
+            ds_rt_websocket_create: table[2],
+            ds_rt_websocket_send: table[3],
+            ds_rt_websocket_poll: table[4],
+            ds_rt_websocket_recv: table[5],
+            ds_rt_websocket_close: table[6],
+            ds_rt_browser_performance_measure: table[7],
         };
         Object.assign(interop, interopLocal);
     }
@@ -171,11 +205,15 @@ export function dotnetUpdateInternalsSubscriber() {
             stringToUTF16: table[1],
             stringToUTF16Ptr: table[2],
             stringToUTF8Ptr: table[3],
-            zeroRegion: table[4],
-            isSharedArrayBuffer: table[5],
-            abortTimers: table[6],
-            abortPosix: table[7],
-            getExitStatus: table[8],
+            stringToUTF8: table[4],
+            utf8ToStringRelaxed: table[5],
+            zeroRegion: table[6],
+            isSharedArrayBuffer: table[7],
+            viewOrCopy: table[8],
+            abortBackgroundTimers: table[9],
+            abortPosix: table[10],
+            getExitStatus: table[11],
+            runBackgroundTimers: table[12],
         };
         Object.assign(interop, interopLocal);
     }

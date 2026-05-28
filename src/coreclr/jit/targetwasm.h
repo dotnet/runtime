@@ -13,6 +13,8 @@
 #error NYI: WASM64
 #endif
 
+#define WASM_THREAD_SUPPORT      0       // Codegen does not support WasmThreads yet
+
 #define CPU_LOAD_STORE_ARCH      1
 #define CPU_HAS_FP_SUPPORT       1
 #define CPU_HAS_BYTE_REGS        0
@@ -46,8 +48,9 @@
 
 // TODO-WASM-CQ: measure if "CSE_CONSTS" is beneficial.
 #define CSE_CONSTS               1       // Enable if we want to CSE constants
+#define LOWER_DECOMPOSE_LONGS    0       // Decompose TYP_LONG operations into (typically two) TYP_INT ones
 #define EMIT_TRACK_STACK_DEPTH   0       // No need to track arg pushes/pops
-#define EMIT_GENERATE_GCINFO     0       // Codegen and emit not responsible for GC liveness tracking and GCInfo generation
+#define EMIT_GENERATE_GCINFO     1       // Codegen and emit generate GC info; on WASM this enables stack slot GC info encoding without fixed-register GC tracking
 
 // Since we don't have a fixed register set on WASM, we set most of the following register defines to 'none'-like values.
 #define REG_FP_FIRST             REG_NA
@@ -143,12 +146,6 @@
 #define REG_WRITE_BARRIER_SRC          REG_NA
 #define RBM_WRITE_BARRIER_SRC          RBM_NONE
 
-#define REG_WRITE_BARRIER_DST_BYREF    REG_NA
-#define RBM_WRITE_BARRIER_DST_BYREF    RBM_NONE
-
-#define REG_WRITE_BARRIER_SRC_BYREF    REG_NA
-#define RBM_WRITE_BARRIER_SRC_BYREF    RBM_NONE
-
 #define RBM_CALLEE_TRASH_NOGC          RBM_NONE
 
 // Registers killed by CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
@@ -156,12 +153,6 @@
 
 // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
 #define RBM_CALLEE_GCTRASH_WRITEBARRIER       RBM_CALLEE_TRASH_NOGC
-
-// Registers killed by CORINFO_HELP_ASSIGN_BYREF.
-#define RBM_CALLEE_TRASH_WRITEBARRIER_BYREF   RBM_NONE
-
-// Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_BYREF.
-#define RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF RBM_NONE
 
 // GenericPInvokeCalliHelper VASigCookie Parameter
 #define REG_PINVOKE_COOKIE_PARAM          REG_NA

@@ -132,6 +132,7 @@ namespace System.Net.Sockets
             {
                 // Get properties like address family and blocking mode from the OS.
                 LoadSocketTypeFromHandle(handle, out _addressFamily, out _socketType, out _protocolType, out _willBlockInternal, out _isListening, out bool isSocket);
+                _willBlock = _willBlockInternal;
 
                 if (isSocket)
                 {
@@ -291,7 +292,7 @@ namespace System.Net.Sockets
         }
 
         // Gets the local end point.
-        public EndPoint? LocalEndPoint
+        public unsafe EndPoint? LocalEndPoint
         {
             get
             {
@@ -339,7 +340,7 @@ namespace System.Net.Sockets
         }
 
         // Gets the remote end point.
-        public EndPoint? RemoteEndPoint
+        public unsafe EndPoint? RemoteEndPoint
         {
             get
             {
@@ -2925,7 +2926,7 @@ namespace System.Net.Sockets
                 e.StartOperationConnect(saeaMultiConnectCancelable, userSocket);
                 try
                 {
-                    pending = e.DnsConnectAsync(dnsEP, default, default, cancellationToken);
+                    pending = e.DnsConnectAsync(dnsEP, default, default, default, cancellationToken);
                 }
                 catch
                 {
@@ -2988,9 +2989,16 @@ namespace System.Net.Sockets
             return pending;
         }
 
-        public static bool ConnectAsync(SocketType socketType, ProtocolType protocolType, SocketAsyncEventArgs e)
+        public static bool ConnectAsync(SocketType socketType, ProtocolType protocolType, SocketAsyncEventArgs e) =>
+                            ConnectAsync(socketType, protocolType, e, ConnectAlgorithm.Default);
+        public static bool ConnectAsync(SocketType socketType, ProtocolType protocolType, SocketAsyncEventArgs e, ConnectAlgorithm connectAlgorithm)
         {
             ArgumentNullException.ThrowIfNull(e);
+            if (connectAlgorithm != ConnectAlgorithm.Default &&
+                connectAlgorithm != ConnectAlgorithm.Parallel)
+            {
+                throw new ArgumentException(SR.Format(SR.net_sockets_invalid_connect_algorithm, connectAlgorithm), nameof(connectAlgorithm));
+            }
 
             if (e.HasMultipleBuffers)
             {
@@ -3012,7 +3020,7 @@ namespace System.Net.Sockets
                 e.StartOperationConnect(saeaMultiConnectCancelable: true, userSocket: false);
                 try
                 {
-                    pending = e.DnsConnectAsync(dnsEP, socketType, protocolType, cancellationToken: default);
+                    pending = e.DnsConnectAsync(dnsEP, socketType, protocolType, connectAlgorithm, cancellationToken: default);
                 }
                 catch
                 {

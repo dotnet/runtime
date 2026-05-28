@@ -58,8 +58,8 @@ public class X86Unwinder(Target target)
 
         eman.GetGCInfo(cbh, out TargetPointer gcInfoAddress, out uint gcInfoVersion);
         uint relOffset = (uint)eman.GetRelativeOffset(cbh).Value;
-        TargetPointer methodStart = eman.GetStartAddress(cbh).AsTargetPointer;
-        TargetPointer funcletStart = eman.GetFuncletStartAddress(cbh).AsTargetPointer;
+        TargetPointer methodStart = eman.GetStartAddress(cbh);
+        TargetPointer funcletStart = eman.GetFuncletStartAddress(cbh);
         bool isFunclet = eman.IsFunclet(cbh);
 
         GCInfo gcInfo = new(_target, gcInfoAddress, gcInfoVersion, relOffset);
@@ -311,8 +311,6 @@ public class X86Unwinder(Target target)
     {
         Debug.Assert(!gcInfo.Header.EbpFrame && !gcInfo.Header.DoubleAlign);
         Debug.Assert(!gcInfo.IsInEpilog);
-
-        Console.WriteLine(methodStart);
 
         uint esp = context.Esp;
 

@@ -217,7 +217,7 @@ namespace System.Net.Http.Functional.Tests
         };
 
         [OuterLoop("Uses external servers")]
-        [ConditionalTheory(nameof(ClientSupportsDHECipherSuites))]
+        [ConditionalTheory(typeof(HttpClientHandler_ServerCertificates_Test), nameof(ClientSupportsDHECipherSuites))]
         [MemberData(nameof(CertificateValidationServers))]
         public async Task NoCallback_BadCertificate_ThrowsException(string url)
         {
@@ -228,7 +228,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external servers")]
-        [ConditionalFact(nameof(ClientSupportsDHECipherSuites))]
+        [ConditionalFact(typeof(HttpClientHandler_ServerCertificates_Test), nameof(ClientSupportsDHECipherSuites))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/106634", typeof(PlatformDetection), nameof(PlatformDetection.IsAlpine))]
         public async Task NoCallback_RevokedCertificate_NoRevocationChecking_Succeeds()
         {

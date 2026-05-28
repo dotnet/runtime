@@ -35,7 +35,7 @@ namespace System.Timers.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void TestTimerStartAutoReset()
         {
             using (var timer = new TestTimer(1))
@@ -116,7 +116,7 @@ namespace System.Timers.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void SettingAutoResetOrIntervalOnDisabledOneShotTimerDoesNotRestartIt()
         {
             using (var timer = new TestTimer(1))

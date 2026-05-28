@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -116,10 +116,6 @@ namespace System.Threading
             // to ensure that one instance is used in all places in this method
             SafeWaitHandle? waitHandle = _waitHandle;
             ObjectDisposedException.ThrowIf(waitHandle is null, this);
-
-#if FEATURE_WASM_MANAGED_THREADS
-            Thread.AssureBlockingPossible();
-#endif
 
             bool success = false;
             try
@@ -297,7 +293,7 @@ namespace System.Threading
             return WaitMultiple(new ReadOnlySpan<WaitHandle>(waitHandles), waitAll, millisecondsTimeout);
         }
 
-        private static int WaitMultiple(ReadOnlySpan<WaitHandle> waitHandles, bool waitAll, int millisecondsTimeout)
+        private static unsafe int WaitMultiple(ReadOnlySpan<WaitHandle> waitHandles, bool waitAll, int millisecondsTimeout)
         {
             if (waitHandles.Length == 0)
             {
@@ -360,7 +356,7 @@ namespace System.Threading
             }
         }
 
-        private static int WaitAnyMultiple(ReadOnlySpan<SafeWaitHandle> safeWaitHandles, int millisecondsTimeout)
+        private static unsafe int WaitAnyMultiple(ReadOnlySpan<SafeWaitHandle> safeWaitHandles, int millisecondsTimeout)
         {
             // - Callers are expected to manage the lifetimes of the safe wait handles such that they would not expire during
             //   this wait

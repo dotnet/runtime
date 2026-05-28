@@ -58,6 +58,48 @@ The rest of the documentation workflow depends on whether the assembly has the `
 - Triple-slash comments in source code are synced to dotnet-api-docs periodically (every preview).
 - More recently introduced libraries typically follow this workflow.
 
+### Documentation placement in platform-specific libraries
+
+When a library targets platform-specific frameworks (e.g. `net11.0-windows`, `net11.0-linux`),
+only **one** platform's compiler-generated doc XML is selected as the source of truth and shipped
+to all customers in the IntelliSense package. This means that if XML doc comments for a public API
+appear only in a platform-specific partial file, they may be missing from the shipped docs on other
+platforms.
+
+To ensure consistent documentation across all platforms, follow these rules:
+
+1. **Place docs on the primary source file.** Each public type should have a primary source file
+   named `TypeName.cs`. All public API documentation (`/// <summary>`, `/// <param>`, etc.) must
+   be placed in this file.
+2. **Follow the naming convention for partial files.** Platform-specific or feature-specific
+   partials must follow the `TypeName.Something.cs` naming convention (e.g. `Socket.Windows.cs`,
+   `Socket.Unix.cs`).
+3. **Do not add public XML doc comments in non-primary partial files.** If a public member is
+   declared in a file like `TypeName.Windows.cs`, its documentation should be in `TypeName.cs`
+   (using a partial method declaration or `<inheritdoc/>`), not in the platform-specific file.
+
+These rules are enforced by the **PlatformDocAnalyzer** (`eng/analyzers/PlatformDocAnalyzer`),
+which is automatically applied to all library source projects. The analyzer only activates when
+building a platform-specific target framework with `UseCompilerGeneratedDocXmlFile=true`, and
+produces the following diagnostics:
+
+| Diagnostic | Description |
+|------------|-------------|
+| PLATDOC001 | Public type has no source file named `TypeName.cs`. |
+| PLATDOC002 | Partial source file doesn't follow the `TypeName.Something.cs` naming convention. |
+| PLATDOC003 | Public member in a non-primary partial file has XML documentation that should be moved to `TypeName.cs`. |
+| PLATDOC004 | Documentation for a public API differs from the canonical (platform-agnostic) build. |
+
+PLATDOC001–003 are heuristic rules that guide source organization. PLATDOC004 is an authoritative
+check: when a project also targets a platform-agnostic TFM (e.g. `net11.0` alongside
+`net11.0-windows`), the build passes the canonical TFM's compiler-generated doc XML to the
+analyzer, which compares each public API's documentation against it. Any mismatch indicates that
+docs were placed on platform-specific source and will be inconsistent across platforms.
+
+If a file legitimately doesn't follow these conventions (e.g. an `Async` partial using the
+established `TypeNameAsync.cs` pattern), suppress the specific diagnostic with
+`#pragma warning disable PLATDOCnnn` and a brief comment explaining why.
+
 **For libraries with `<UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>`:**
 - The [dotnet-api-docs](https://github.com/dotnet/dotnet-api-docs) repo is the source of truth for documentation.
 - Triple-slash comments in source code are synced to dotnet-api-docs **only once** for newly introduced APIs. After the initial sync, all subsequent documentation

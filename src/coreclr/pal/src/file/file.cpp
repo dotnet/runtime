@@ -2128,6 +2128,10 @@ CorUnix::InternalCreatePipe(
     DWORD nSize
     )
 {
+#ifdef TARGET_WASM
+    // Pipes are not supported on wasm
+    return ERROR_NOT_SUPPORTED;
+#else // TARGET_WASM
     PAL_ERROR palError = NO_ERROR;
     IPalObject *pReadFileObject = NULL;
     IPalObject *pReadRegisteredFile = NULL;
@@ -2342,6 +2346,7 @@ InternalCreatePipeExit:
     }
 
     return palError;
+#endif // !TARGET_WASM
 }
 
 /*++

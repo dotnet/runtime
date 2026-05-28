@@ -95,7 +95,8 @@
     <Compile Include="..\..\src\System\Net\SocketException.Unix.cs"
              Link="ProductionCode\System\Net\SocketException.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\SocketAddressPal.Unix.cs"
-             Link="Common\System\Net\SocketAddressPal.Unix.cs" />
+             Link="Common\System\Net\SocketAddressPal.Unix.cs"
+             Condition="'$(TargetPlatformIdentifier)' != 'browser'" />
     <Compile Include="$(CommonPath)System\Net\Sockets\SocketErrorPal.Unix.cs"
              Link="Common\System\Net\Sockets\SocketErrorPal.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
@@ -105,7 +106,12 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.IPAddress.cs"
              Link="ProductionCode\Common\Interop\Unix\System.Native\Interop.IPAddress.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SocketAddress.cs"
-             Link="ProductionCode\Common\Interop\Unix\System.Native\Interop.SocketAddress.cs" />
+             Link="ProductionCode\Common\Interop\Unix\System.Native\Interop.SocketAddress.cs"
+             Condition="'$(TargetPlatformIdentifier)' != 'browser'" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser'">
+    <Compile Include="$(CommonPath)System\Net\SocketAddressPal.Browser.cs"
+             Link="Common\System\Net\SocketAddressPal.Browser.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix'">
     <Compile Include="InterfaceInfoPalTest.Unix.cs" />

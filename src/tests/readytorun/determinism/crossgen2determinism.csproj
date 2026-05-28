@@ -3,6 +3,7 @@
     <!-- Needed for CLRTestTargetUnsupported, GCStressIncompatible, CrossGenTest -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' != 'coreclr'">true</CLRTestTargetUnsupported>
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'wasm'">true</CLRTestTargetUnsupported>
     <!-- We skip the ReadyToRun tests when sanitized due to build complexity -->
     <DisableProjectBuild Condition="'$(EnableNativeSanitizers)' != ''">true</DisableProjectBuild>
     <!-- Running Crossgen2 under GCStress takes too long -->
@@ -12,6 +13,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 
   <Target Name="PrepareDLLs">

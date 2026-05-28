@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -159,7 +159,7 @@ namespace System.Globalization
         /// <see langword="true"/> if <paramref name="value"/> is a sortable Unicode scalar
         /// value; otherwise, <see langword="false"/>.
         /// </returns>
-        public static bool IsSortable(Rune value)
+        public static unsafe bool IsSortable(Rune value)
         {
             Span<char> valueAsUtf16 = stackalloc char[Rune.MaxUtf16CharsPerRune];
             int charCount = value.EncodeToUtf16(valueAsUtf16);
@@ -1031,7 +1031,7 @@ namespace System.Globalization
         /// <exception cref="ArgumentException">
         /// <paramref name="options"/> contains an unsupported combination of flags.
         /// </exception>
-        public int IndexOf(ReadOnlySpan<char> source, Rune value, CompareOptions options = CompareOptions.None)
+        public unsafe int IndexOf(ReadOnlySpan<char> source, Rune value, CompareOptions options = CompareOptions.None)
         {
             Span<char> valueAsUtf16 = stackalloc char[Rune.MaxUtf16CharsPerRune];
             int charCount = value.EncodeToUtf16(valueAsUtf16);

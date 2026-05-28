@@ -32,9 +32,7 @@ namespace System.Net.Security
     internal sealed class SafeDeleteNwContext : SafeDeleteContext
     {
         // AppContext switch to enable Network Framework usage
-        internal static bool IsSwitchEnabled { get; } = AppContextSwitchHelper.GetBooleanConfig(
-            "System.Net.Security.UseNetworkFramework",
-            "DOTNET_SYSTEM_NET_SECURITY_USENETWORKFRAMEWORK");
+        internal static bool IsSwitchEnabled => LocalAppContextSwitches.UseNetworkFramework;
         private static readonly Lazy<bool> s_isNetworkFrameworkAvailable = new Lazy<bool>(CheckNetworkFrameworkAvailability);
 
         private const int InitialReceiveBufferSize = 2 * 1024;
@@ -442,10 +440,17 @@ namespace System.Net.Security
                 }
 
                 int protocolSize = 0;
+                int wireSize = 0;
 
                 foreach (SslApplicationProtocol protocol in applicationProtocols)
                 {
                     protocolSize += protocol.Protocol.Length + 2;
+
+                    wireSize += protocol.Protocol.Length + 1;
+                    if (wireSize > ushort.MaxValue)
+                    {
+                        throw new ArgumentException(SR.net_ssl_app_protocols_invalid, nameof(applicationProtocols));
+                    }
                 }
 
                 return protocolSize;

@@ -6,9 +6,11 @@ jobs:
   - template: /eng/pipelines/performance/templates/perf-coreclr-build-jobs.yml
     parameters:
       linux_x64: true
+      linux_arm64: true
       windows_x64: true
       windows_x86: true
       android_arm64: true
+      coreclr_r2r_interpreter: true
 
   # build mono for AOT
   - template: /eng/pipelines/performance/templates/perf-mono-build-jobs.yml

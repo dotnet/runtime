@@ -204,7 +204,7 @@ static MonoThreadAttachCB mono_thread_attach_cb = NULL;
 static MonoThreadCleanupFunc mono_thread_cleanup_fn = NULL;
 
 /* The default stack size for each thread */
-static guint32 default_stacksize = 0;
+static guint32 default_stacksize = ~0;
 
 static void mono_free_static_data (gpointer* static_data);
 static void mono_init_static_data_info (StaticDataInfo *static_data);
@@ -1371,7 +1371,7 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, MonoThreadStart
 	mono_coop_sem_init (&start_info->registered, 0);
 
 	if (flags != MONO_THREAD_CREATE_FLAGS_SMALL_STACK)
-		stack_set_size = stack_size ? stack_size : default_stacksize;
+		stack_set_size = stack_size ? stack_size : mono_threads_get_default_stacksize();
 	else
 		stack_set_size = 0;
 
@@ -1445,6 +1445,21 @@ mono_threads_set_default_stacksize (guint32 stacksize)
 guint32
 mono_threads_get_default_stacksize (void)
 {
+	if (default_stacksize == ~0)
+	{
+		unsigned long stacksize = 0;
+
+		const char *value = g_getenv ("DOTNET_Thread_DefaultStackSize");
+		if (value) {
+			errno = 0;
+			stacksize = strtoul (value, NULL, 16);
+			if (errno != 0 || stacksize >= UINT_MAX)
+				stacksize = 0;
+		}
+
+		default_stacksize = (guint32)stacksize;
+	}
+
 	return default_stacksize;
 }
 
@@ -3043,7 +3058,7 @@ dump_thread (MonoInternalThread *thread, ThreadDumpUserData *ud, FILE* output_fi
 		MonoStackFrameInfo *frame = &ud->frames [i];
 		MonoMethod *method = NULL;
 
-		if (frame->type == FRAME_TYPE_MANAGED)
+		if (frame->type == FRAME_TYPE_MANAGED && frame->ji && !frame->ji->async)
 			method = mono_jit_info_get_method (frame->ji);
 
 		if (method) {

@@ -10,6 +10,7 @@ using Xunit;
 public static class SlowTailCallArgs
 {
     [ConditionalFact(typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNotNativeAot))]
+    [ActiveIssue("times out", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsArm))]
     [OuterLoop]
     [SkipOnCoreClr("Incompatible with GC stress", RuntimeTestModes.AnyGCStress)]
     public static int TestEntryPoint()

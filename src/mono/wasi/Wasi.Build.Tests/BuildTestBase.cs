@@ -148,6 +148,12 @@ namespace Wasm.Build.Tests
         {
             targetFramework ??= DefaultTargetFramework;
             Directory.CreateDirectory(dir);
+
+            // Create an empty global.json so the SDK resolver doesn't walk up
+            // to the repo root's global.json which may contain relative "paths"
+            // entries that don't apply in the test directory.
+            File.WriteAllText(Path.Combine(dir, "global.json"), "{}");
+
             File.WriteAllText(Path.Combine(dir, "Directory.Build.props"), s_buildEnv.DirectoryBuildPropsContents);
             File.WriteAllText(Path.Combine(dir, "Directory.Build.targets"), s_buildEnv.DirectoryBuildTargetsContents);
             File.Copy(BuildEnvironment.WasmOverridePacksTargetsPath, Path.Combine(dir, Path.GetFileName(BuildEnvironment.WasmOverridePacksTargetsPath)), overwrite: true);
@@ -220,8 +226,8 @@ namespace Wasm.Build.Tests
                 options.InitProject?.Invoke();
 
                 File.WriteAllText(Path.Combine(_projectDir, $"{buildArgs.ProjectName}.csproj"), buildArgs.ProjectFileContents);
-                File.Copy(Path.Combine(AppContext.BaseDirectory, "test-main.js"),
-                            Path.Combine(_projectDir, "test-main.js"));
+                File.Copy(Path.Combine(AppContext.BaseDirectory, "test-main.mjs"),
+                            Path.Combine(_projectDir, "test-main.mjs"));
             }
             else if (_projectDir is null)
             {

@@ -5,6 +5,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Xunit;
+using TestLibrary;
 
 public unsafe class Runtime_76194
 {
@@ -59,6 +60,8 @@ public unsafe class Runtime_76194
 
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    [ActiveIssue("Needs coreclr build", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     [Fact]
     public static void TestEntryPoint()
     {

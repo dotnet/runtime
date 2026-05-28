@@ -130,7 +130,7 @@ public class NativeLibraryTests : IDisposable
         OperatingSystem.IsWindows()
         && File.Exists(Path.Combine(Environment.SystemDirectory, "url.dll"));
 
-    [ConditionalFact(nameof(HasKnownLibraryInSystemDirectory))]
+    [ConditionalFact(typeof(NativeLibraryTests), nameof(HasKnownLibraryInSystemDirectory))]
     public void LoadSystemLibrary_WithSearchPath()
     {
         string libName = "url.dll";

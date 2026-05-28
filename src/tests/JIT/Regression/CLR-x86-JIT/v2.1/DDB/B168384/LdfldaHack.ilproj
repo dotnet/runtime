@@ -2,6 +2,8 @@
   <PropertyGroup>
     <!-- TODO: This test isn't executing properly with test merging. -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- needs triage -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'mono'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>Full</DebugType>

@@ -6,12 +6,14 @@ namespace Runtime_72265;
 
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using TestLibrary;
 using Xunit;
 
 public unsafe class Runtime_72265
 {
     [Fact]
     [SkipOnMono("https://github.com/dotnet/runtime/issues/72016")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/124219", typeof(PlatformDetection), nameof(PlatformDetection.IsWasm))]
     public static int TestEntryPoint()
     {
         var unmanaged = ((delegate* unmanaged<StructWithIndex>)&GetStructUnmanaged)();

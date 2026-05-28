@@ -119,11 +119,11 @@ namespace System.Net.Http
                     {
                         // Strip leading spaces and scheme if any.
                         while (idx < proxyHelper.ProxyBypass.Length && proxyHelper.ProxyBypass[idx] == ' ') { idx += 1; };
-                        if (string.Compare(proxyHelper.ProxyBypass, idx, "http://", 0, 7, StringComparison.OrdinalIgnoreCase) == 0)
+                        if (proxyHelper.ProxyBypass.AsSpan(idx).StartsWith("http://", StringComparison.OrdinalIgnoreCase))
                         {
                             idx += 7;
                         }
-                        else if (string.Compare(proxyHelper.ProxyBypass, idx, "https://", 0, 8, StringComparison.OrdinalIgnoreCase) == 0)
+                        else if (proxyHelper.ProxyBypass.AsSpan(idx).StartsWith("https://", StringComparison.OrdinalIgnoreCase))
                         {
                             idx += 8;
                         }
@@ -142,7 +142,7 @@ namespace System.Net.Http
                             // Empty string.
                             tmp = null;
                         }
-                        else if (string.Compare(proxyHelper.ProxyBypass, start, "<local>", 0, 7, StringComparison.OrdinalIgnoreCase) == 0)
+                        else if (proxyHelper.ProxyBypass.AsSpan(start).StartsWith("<local>", StringComparison.OrdinalIgnoreCase))
                         {
                             bypassLocal = true;
                             tmp = null;

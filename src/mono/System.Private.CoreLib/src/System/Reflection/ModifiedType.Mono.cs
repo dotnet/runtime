@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+
 namespace System.Reflection
 {
     internal partial class ModifiedType
@@ -19,11 +21,13 @@ namespace System.Reflection
         ///         volatile delegate* unmanaged[Cdecl]&lt;int&gt; fptrField2;
         ///     NOTE: In scenario 3) the SignatureHolderInfo has higher priority for retrieving field data (like custom modifiers)
         /// </summary>
-        internal struct TypeSignature
+        internal readonly struct TypeSignature
         {
-            internal readonly RuntimeType? SignatureHolderType;
-            internal readonly object? SignatureHolderInfo;
-            internal int ParameterIndex;
+            public readonly RuntimeType? SignatureHolderType;
+            public readonly object? SignatureHolderInfo;
+            // The index of the function pointer (starting from 1, 0 being the return type)
+            // or generic parameter for which we are retrieving modifiers.
+            public readonly int ParameterIndex;
 
             internal TypeSignature(RuntimeType signatureHolderType, int parameterIndex)
             {
@@ -39,8 +43,9 @@ namespace System.Reflection
                 ParameterIndex = parameterIndex;
             }
 
-            internal TypeSignature(RuntimeType signatureHolderType, object signatureHolderInfo, int parameterIndex)
+            internal TypeSignature(RuntimeType? signatureHolderType, object? signatureHolderInfo, int parameterIndex)
             {
+                Debug.Assert(signatureHolderType is not null || signatureHolderInfo is not null);
                 SignatureHolderType = signatureHolderType;
                 SignatureHolderInfo = signatureHolderInfo;
                 ParameterIndex = parameterIndex;
@@ -88,15 +93,15 @@ namespace System.Reflection
             }
         }
 
-        internal static Type Create(Type sourceType, object sourceTypeInfo, int parameterIndex = 0)
+        internal static Type Create(Type sourceType, object sourceTypeInfo)
         {
             var unmodifiedType = (RuntimeType)sourceType;
             TypeSignature typeSignature;
 
             if (unmodifiedType.IsFunctionPointer)
-                typeSignature = new TypeSignature(unmodifiedType, sourceTypeInfo, parameterIndex);
+                typeSignature = new TypeSignature(unmodifiedType, sourceTypeInfo, -1);
             else
-                typeSignature = new TypeSignature(sourceTypeInfo, parameterIndex);
+                typeSignature = new TypeSignature(sourceTypeInfo, -1);
 
             return Create(unmodifiedType, typeSignature);
         }
@@ -118,18 +123,12 @@ namespace System.Reflection
             }
             else
             {
+                var parentSignatureHolderInfo = _typeSignature.SignatureHolderInfo;
                 if (parentUnmodifiedType.IsFunctionPointer)
                 {
-                    var parentSignatureHolderType = _typeSignature.SignatureHolderType ??
-                        throw new Exception($"Parent's {nameof(_typeSignature.SignatureHolderType)} cannot be null");
-                    childTypeSignature = new TypeSignature(parentSignatureHolderType, index);
+                    parentSignatureHolderInfo = null;
                 }
-                else
-                {
-                    var parentSignatureHolderInfo = _typeSignature.SignatureHolderInfo ??
-                        throw new Exception($"Parent's {nameof(_typeSignature.SignatureHolderInfo)} cannot be null");
-                    childTypeSignature = new TypeSignature(parentSignatureHolderInfo, index);
-                }
+                childTypeSignature = new TypeSignature(_typeSignature.SignatureHolderType, parentSignatureHolderInfo, index);
             }
 
             return Create(childUnmodifiedType, childTypeSignature);

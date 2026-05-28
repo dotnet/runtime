@@ -222,8 +222,8 @@ namespace System.Net
 
                 try
                 {
-                    AsnValueReader reader = new AsnValueReader(challenge, AsnEncodingRules.DER);
-                    AsnValueReader challengeReader = reader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegotiationToken.NegTokenResp));
+                    ValueAsnReader reader = new ValueAsnReader(challenge, AsnEncodingRules.DER);
+                    ValueAsnReader challengeReader = reader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegotiationToken.NegTokenResp));
                     reader.ThrowIfNotEmpty();
 
                     // NegTokenResp ::= SEQUENCE {
@@ -245,28 +245,28 @@ namespace System.Net
 
                     if (challengeReader.HasData && challengeReader.PeekTag().HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenResp.NegState)))
                     {
-                        AsnValueReader valueReader = challengeReader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenResp.NegState));
+                        ValueAsnReader valueReader = challengeReader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenResp.NegState));
                         state = valueReader.ReadEnumeratedValue<NegState>();
                         valueReader.ThrowIfNotEmpty();
                     }
 
                     if (challengeReader.HasData && challengeReader.PeekTag().HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenResp.SupportedMech)))
                     {
-                        AsnValueReader valueReader = challengeReader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenResp.SupportedMech));
+                        ValueAsnReader valueReader = challengeReader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenResp.SupportedMech));
                         mech = valueReader.ReadObjectIdentifier();
                         valueReader.ThrowIfNotEmpty();
                     }
 
                     if (challengeReader.HasData && challengeReader.PeekTag().HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenResp.ResponseToken)))
                     {
-                        AsnValueReader valueReader = challengeReader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenResp.ResponseToken));
+                        ValueAsnReader valueReader = challengeReader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenResp.ResponseToken));
                         blob = valueReader.ReadOctetString();
                         valueReader.ThrowIfNotEmpty();
                     }
 
                     if (challengeReader.HasData && challengeReader.PeekTag().HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenResp.MechListMIC)))
                     {
-                        AsnValueReader valueReader = challengeReader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenResp.MechListMIC));
+                        ValueAsnReader valueReader = challengeReader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenResp.MechListMIC));
                         mechListMIC = valueReader.ReadOctetString();
                         valueReader.ThrowIfNotEmpty();
                     }

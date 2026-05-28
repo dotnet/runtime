@@ -22,7 +22,7 @@ namespace Microsoft.Extensions.DependencyInjection
     // These are mostly integration tests that verify the configuration experience.
     public class HttpClientFactoryServiceCollectionExtensionsTest
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))] // Verifies that AddHttpClient is enough to get the factory and make clients.
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))] // Verifies that AddHttpClient is enough to get the factory and make clients.
         public void AddHttpClient_IsSelfContained_CanCreateClient()
         {
             // Arrange
@@ -43,7 +43,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.NotNull(client);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))] // Verifies that AddHttpClient is enough to get the factory and make handlers.
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))] // Verifies that AddHttpClient is enough to get the factory and make handlers.
         public void AddHttpClient_IsSelfContained_CanCreateHandler()
         {
             // Arrange
@@ -63,7 +63,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.NotNull(handler);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))] // Verifies that AddHttpClient registers a default client
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))] // Verifies that AddHttpClient registers a default client
         public void AddHttpClient_RegistersDefaultClientAsHttpClient()
         {
             // Arrange
@@ -102,7 +102,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Equal(TimeSpan.FromSeconds(42), client.Timeout);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddHttpClient_WithDefaultName_ConfiguresDefaultClient()
         {
             // Arrange
@@ -123,7 +123,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Equal("http://example.com/", client.BaseAddress.AbsoluteUri);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddHttpClient_WithName_ConfiguresNamedClient()
         {
             // Arrange
@@ -143,7 +143,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Equal("http://example.com/", client.BaseAddress.AbsoluteUri);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddHttpClient_WithDefaults_ConfiguresClient()
         {
             // Arrange
@@ -167,7 +167,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Equal("http://example.com/", client.BaseAddress.AbsoluteUri);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddHttpClient_WithTypedClient_ConfiguresNamedClient()
         {
             // Arrange
@@ -190,7 +190,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Equal("http://example.com/", client.HttpClient.BaseAddress.AbsoluteUri);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddHttpClient_WithGenericTypedClient_ConfiguresNamedClient()
         {
             // Arrange
@@ -213,7 +213,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Equal("http://example.com/", client.HttpClient.BaseAddress.AbsoluteUri);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddHttpClient_WithTypedClientAndImplementation_ConfiguresNamedClient()
         {
             // Arrange
@@ -236,7 +236,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Equal("http://example.com/", client.HttpClient.BaseAddress.AbsoluteUri);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddHttpClient_WithTypedClient_AndName_ConfiguresNamedClient()
         {
             // Arrange
@@ -259,7 +259,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Equal("http://example.com/", client.HttpClient.BaseAddress.AbsoluteUri);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddHttpClient_WithTypedClientAndImplementation_AndName_ConfiguresNamedClient()
         {
             // Arrange
@@ -282,7 +282,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Equal("http://example.com/", client.HttpClient.BaseAddress.AbsoluteUri);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddHttpClient_WithTypedClient_AndDelegate_ConfiguresNamedClient()
         {
             // Arrange
@@ -309,7 +309,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Equal("http://example2.com/", client.HttpClient.BaseAddress.AbsoluteUri);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddHttpClient_WithTypedClientAndImplementation_AndDelegate_ConfiguresNamedClient()
         {
             // Arrange
@@ -336,7 +336,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Equal("http://example2.com/", client.HttpClient.BaseAddress.AbsoluteUri);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddHttpClient_AddTypedClient_ConfiguresNamedClient()
         {
             // Arrange
@@ -359,7 +359,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Equal("http://example.com/", client.HttpClient.BaseAddress.AbsoluteUri);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddHttpClient_AddTypedClientAndImplementation_ConfiguresNamedClient()
         {
             // Arrange
@@ -382,7 +382,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Equal("http://example.com/", client.HttpClient.BaseAddress.AbsoluteUri);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddHttpClient_AddTypedClient_WithDelegate_ConfiguresNamedClient()
         {
             // Arrange
@@ -411,7 +411,7 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddHttpClient_WithTypedClient_WithFactory_ConfiguresNamedClient()
         {
             // Arrange
@@ -439,7 +439,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Equal("http://example2.com/", client.HttpClient.BaseAddress.AbsoluteUri);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddHttpClient_WithTypedClient_WithFactoryAndName_ConfiguresNamedClient()
         {
             // Arrange
@@ -467,7 +467,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Equal("http://example2.com/", client.HttpClient.BaseAddress.AbsoluteUri);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddHttpClient_WithTypedClient_WithFactoryServices_ConfiguresNamedClient()
         {
             // Arrange
@@ -495,7 +495,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Equal("http://example2.com/", client.HttpClient.BaseAddress.AbsoluteUri);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddHttpClient_WithTypedClient_WithFactoryServicesAndName_ConfiguresNamedClient()
         {
             // Arrange
@@ -523,7 +523,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Equal("http://example2.com/", client.HttpClient.BaseAddress.AbsoluteUri);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddHttpClient_AddSameTypedClientTwice_WithSameName_Works()
         {
             // Arrange
@@ -545,7 +545,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Equal("http://example.com/", client.HttpClient.BaseAddress.AbsoluteUri);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddHttpClient_AddSameTypedClientTwice_WithSameName_WithAddTypedClient_Works()
         {
             // Arrange
@@ -568,7 +568,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Equal("http://example.com/", client.HttpClient.BaseAddress.AbsoluteUri);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddHttpClient_AddSameTypedClientTwice_WithDifferentNames_IsAllowed()
         {
             // Arrange
@@ -585,7 +585,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Equal(2, clients.Count());
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddHttpClient_AddSameTypedClientTwice_WithDifferentNames_WithAddTypedClient_IsAllowed()
         {
             // Arrange
@@ -602,7 +602,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Equal(2, clients.Count());
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddHttpClient_TypedClient_NoHttpClientCtor_ThrowsSpecificException()
         {
             // Arrange
@@ -636,7 +636,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 ex.Message);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddHttpClient_AddSameNameWithTypedClientTwice_WithAddTypedClient_IsAllowed()
         {
             // Arrange
@@ -664,7 +664,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Equal("http://example.com/", client2.HttpClient.BaseAddress.AbsoluteUri);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddHttpClient_AddSameNameWithTypedClientTwice_WithExplicitName_IsAllowed()
         {
             // Arrange
@@ -692,7 +692,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Equal("http://example.com/", client2.HttpClient.BaseAddress.AbsoluteUri);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddHttpClient_RegisteringMultipleTypes_WithAddTypedClient_IsAllowed()
         {
             // Arrange
@@ -721,7 +721,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Equal("http://example.com/", client2.HttpClient.BaseAddress.AbsoluteUri);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddHttpClient_AddTypedClient_WithServiceDelegate_ConfiguresNamedClient()
         {
             // Arrange
@@ -749,7 +749,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Equal("http://example2.com/", client.HttpClient.BaseAddress.AbsoluteUri);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddHttpClient_WithTypedClient_AndName_AndDelegate_ConfiguresNamedClient()
         {
             // Arrange
@@ -776,7 +776,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Equal("http://example2.com/", client.HttpClient.BaseAddress.AbsoluteUri);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void AddHttpMessageHandler_WithName_NewHandlerIsSurroundedByLogging_ForHttpClient()
         {
             // Arrange
@@ -810,7 +810,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 h => Assert.IsType<LoggingHttpMessageHandler>(h));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddHttpClient_WithTypedClient_AndServiceDelegate_ConfiguresClient()
         {
             // Arrange
@@ -837,7 +837,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Equal("http://example.com/", client.HttpClient.BaseAddress.AbsoluteUri);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddHttpClient_WithTypedClientAndImplementation_AndServiceDelegate_ConfiguresClient()
         {
             // Arrange
@@ -864,7 +864,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Equal("http://example.com/", client.HttpClient.BaseAddress.AbsoluteUri);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddHttpClient_WithTypedClient_AndServiceDelegate_ConfiguresNamedClient()
         {
             // Arrange
@@ -891,7 +891,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Equal("http://example.com/", client.HttpClient.BaseAddress.AbsoluteUri);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddHttpClient_WithTypedClientAndImplementation_AndServiceDelegate_ConfiguresNamedClient()
         {
             // Arrange
@@ -918,7 +918,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Equal("http://example.com/", client.HttpClient.BaseAddress.AbsoluteUri);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void AddHttpMessageHandler_WithName_NewHandlerIsSurroundedByLogging_ForHttpMessageHandler()
         {
             var serviceCollection = new ServiceCollection();
@@ -969,7 +969,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Same(clientFactory, handlerFactory);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task AddHttpClient_MessageHandler_SingletonDependency()
         {
             // Arrange
@@ -1010,7 +1010,7 @@ namespace Microsoft.Extensions.DependencyInjection
 #endif
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task AddHttpClient_MessageHandler_Scope_SingletonDependency()
         {
             // Arrange
@@ -1062,7 +1062,7 @@ namespace Microsoft.Extensions.DependencyInjection
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddHttpClient_MessageHandler_ScopedDependency()
         {
             // Arrange
@@ -1082,7 +1082,7 @@ namespace Microsoft.Extensions.DependencyInjection
             });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task AddHttpClient_MessageHandler_Scope_ScopedDependency()
         {
             // Arrange
@@ -1134,7 +1134,7 @@ namespace Microsoft.Extensions.DependencyInjection
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task AddHttpClient_MessageHandler_TransientDependency()
         {
             // Arrange
@@ -1175,7 +1175,7 @@ namespace Microsoft.Extensions.DependencyInjection
 #endif
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task AddHttpClient_MessageHandler_Scope_TransientDependency()
         {
             // Arrange
@@ -1219,7 +1219,7 @@ namespace Microsoft.Extensions.DependencyInjection
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void AddHttpClient_GetAwaiterAndResult_InSingleThreadedSynchronizationContext_ShouldNotHangs()
         {
             // Arrange
@@ -1263,7 +1263,7 @@ namespace Microsoft.Extensions.DependencyInjection
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void SuppressScope_False_CreatesNewScope()
         {
             // Arrange
@@ -1291,7 +1291,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.NotSame(services, capturedServices);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void SuppressScope_False_InScope_CreatesNewScope()
         {
             // Arrange
@@ -1323,7 +1323,7 @@ namespace Microsoft.Extensions.DependencyInjection
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void SuppressScope_True_DoesNotCreateScope()
         {
             // Arrange
@@ -1351,7 +1351,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.NotSame(services, capturedServices);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void SuppressScope_True_InScope_DoesNotCreateScope()
         {
             // Arrange
@@ -1382,7 +1382,7 @@ namespace Microsoft.Extensions.DependencyInjection
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [SkipOnPlatform(TestPlatforms.Browser, "Credentials is not supported on Browser")]
         public void AddHttpClient_ConfigurePrimaryHttpMessageHandler_ApplyChangesPrimaryHandler()
         {
@@ -1407,7 +1407,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Same(testCredentials, ((HttpClientHandler)testBuilder.PrimaryHandler).Credentials);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void AddHttpClient_ConfigureAdditionalHttpMessageHandlers_ModifyAdditionalHandlers()
         {
             // Arrange
@@ -1447,7 +1447,7 @@ namespace Microsoft.Extensions.DependencyInjection
             public NetworkCredential GetCredential(Uri uri, string authType) => throw new NotImplementedException();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddHttpClientDefaults_MultipleConfigInOneDefault_LastWins()
         {
             // Arrange

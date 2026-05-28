@@ -6,5 +6,5 @@ import { _ems_ } from "../../Common/JavaScript/ems-ambient";
 
 export function registerCDAC(runtimeApi: RuntimeAPI): void {
     runtimeApi.INTERNAL.GetDotNetRuntimeContractDescriptor = () => _ems_._GetDotNetRuntimeContractDescriptor();
-    runtimeApi.INTERNAL.GetDotNetRuntimeHeap = (ptr: number, length: number) => _ems_.Module.HEAPU8.subarray(ptr >>> 0, (ptr >>> 0) + length);
+    runtimeApi.INTERNAL.GetDotNetRuntimeHeap = (ptr: number, length: number) => _ems_.HEAPU8.subarray(ptr >>> 0, (ptr >>> 0) + length);
 }

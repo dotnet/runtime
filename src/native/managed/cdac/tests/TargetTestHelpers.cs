@@ -147,17 +147,6 @@ internal unsafe class TargetTestHelpers
         };
     }
 
-    internal int SizeOfTypeInfo(Target.TypeInfo info)
-    {
-        int size = 0;
-        foreach (var (_, field) in info.Fields)
-        {
-            size = Math.Max(size, field.Offset + SizeOfPrimitive(field.Type));
-        }
-
-        return size;
-    }
-
     #endregion Mock memory initialization
 
     private static int AlignUp(int offset, int align)
@@ -215,7 +204,7 @@ internal unsafe class TargetTestHelpers
             };
             fieldInfos[name] = new Target.FieldInfo {
                 Offset = offset,
-                Type = type,
+                TypeName = type.ToString(),
             };
             offset += size;
         }
@@ -235,6 +224,24 @@ internal unsafe class TargetTestHelpers
         int offset = (int)baseClass.Stride;
         int maxAlign = (int)baseClass.MaxAlign;
         return LayoutFieldsWorker(fieldLayout, fields, ref offset, ref maxAlign);
+    }
+
+    internal static Target.TypeInfo CreateTypeInfo(Layout layout)
+    {
+        Dictionary<string, Target.FieldInfo> fields = new(layout.Fields.Length, StringComparer.Ordinal);
+        foreach (LayoutField field in layout.Fields)
+        {
+            fields[field.Name] = new Target.FieldInfo
+            {
+                Offset = field.Offset,
+            };
+        }
+
+        return new Target.TypeInfo
+        {
+            Size = (uint)layout.Size,
+            Fields = fields,
+        };
     }
 
 }

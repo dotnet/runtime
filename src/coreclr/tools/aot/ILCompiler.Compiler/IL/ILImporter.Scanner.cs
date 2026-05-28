@@ -432,6 +432,57 @@ namespace Internal.IL
                 return;
             }
 
+            // Are we scanning a call within a state machine?
+            if (opcode is ILOpcode.call or ILOpcode.callvirt
+                && _canonMethod.IsAsyncCall())
+            {
+                // Add dependencies on infra to do suspend/resume. We only need to do this once per method scanned.
+                if (!_asyncDependenciesReported && method.IsAsync)
+                {
+                    _asyncDependenciesReported = true;
+
+                    const string asyncReason = "Async state machine";
+
+                    AsyncResumptionStub resumptionStub = _compilation.TypeSystemContext.GetAsyncResumptionStub(_canonMethod, _compilation.TypeSystemContext.GeneratedAssembly.GetGlobalModuleType());
+                    _dependencies.Add(_compilation.NodeFactory.MethodEntrypoint(resumptionStub), asyncReason);
+
+                    _dependencies.Add(_factory.ConstructedTypeSymbol(_compilation.TypeSystemContext.ContinuationType), asyncReason);
+
+                    DefType asyncHelpers = _compilation.TypeSystemContext.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8);
+
+                    _dependencies.Add(_compilation.GetHelperEntrypoint(ReadyToRunHelper.AllocContinuation), asyncReason);
+                    _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("CaptureExecutionContext"u8, null)), asyncReason);
+                    _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("CaptureContinuationContext"u8, null)), asyncReason);
+                    _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("RestoreContextsOnSuspension"u8, null)), asyncReason);
+                    _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("FinishSuspensionNoContinuationContext"u8, null)), asyncReason);
+                    _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("FinishSuspensionWithContinuationContext"u8, null)), asyncReason);
+                }
+
+                // If this is the task await pattern, the JIT will first resolve the call to the
+                // async variant, then may switch back to the original if the async variant is just
+                // a thunk (for non-runtime-async methods). Report both variants as dependencies such
+                // that the JIT can pick either one.
+
+                // in rare cases a method that returns Task is not actually TaskReturning (i.e. returns T).
+                // we cannot resolve to an Async variant in such case.
+                bool allowAsyncVariant = method.GetTypicalMethodDefinition().Signature.ReturnsTaskOrValueTask();
+
+                // Don't get async variant of Delegate.Invoke method; the pointed to method is not an async variant either.
+                allowAsyncVariant = allowAsyncVariant && !method.OwningType.IsDelegate;
+
+                if (allowAsyncVariant && MatchTaskAwaitPattern())
+                {
+                    MethodDesc asyncVariantMethod = _factory.TypeSystemContext.GetAsyncVariantMethod(method);
+                    MethodDesc asyncVariantRuntimeDeterminedMethod = _factory.TypeSystemContext.GetAsyncVariantMethod(runtimeDeterminedMethod);
+                    ImportCall(opcode, asyncVariantMethod, asyncVariantRuntimeDeterminedMethod);
+                }
+            }
+
+            ImportCall(opcode, method, runtimeDeterminedMethod);
+        }
+
+        private void ImportCall(ILOpcode opcode, MethodDesc method, MethodDesc runtimeDeterminedMethod)
+        {
             string reason = null;
             switch (opcode)
             {
@@ -447,42 +498,6 @@ namespace Internal.IL
                     reason = "ldvirtftn"; break;
                 default:
                     Debug.Assert(false); break;
-            }
-
-            // Are we scanning a call within a state machine?
-            if (opcode is ILOpcode.call or ILOpcode.callvirt
-                && _canonMethod.IsAsyncCall())
-            {
-                // Add dependencies on infra to do suspend/resume. We only need to do this once per method scanned.
-                if (!_asyncDependenciesReported && method.IsAsync)
-                {
-                    _asyncDependenciesReported = true;
-
-                    const string asyncReason = "Async state machine";
-
-                    var resumptionStub = new AsyncResumptionStub(_canonMethod, _compilation.TypeSystemContext.GeneratedAssembly.GetGlobalModuleType());
-                    _dependencies.Add(_compilation.NodeFactory.MethodEntrypoint(resumptionStub), asyncReason);
-
-                    _dependencies.Add(_factory.ConstructedTypeSymbol(_compilation.TypeSystemContext.ContinuationType), asyncReason);
-
-                    DefType asyncHelpers = _compilation.TypeSystemContext.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8);
-
-                    _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("AllocContinuation"u8, null)), asyncReason);
-                    _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("CaptureExecutionContext"u8, null)), asyncReason);
-                    _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("RestoreExecutionContext"u8, null)), asyncReason);
-                    _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("CaptureContinuationContext"u8, null)), asyncReason);
-                    _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("RestoreContextsOnSuspension"u8, null)), asyncReason);
-                }
-
-                // If this is the task await pattern, we're actually going to call the variant
-                // so switch our focus to the variant.
-                if (method.GetTypicalMethodDefinition().Signature.ReturnsTaskOrValueTask()
-                    && !method.OwningType.IsDelegate
-                    && MatchTaskAwaitPattern())
-                {
-                    runtimeDeterminedMethod = _factory.TypeSystemContext.GetAsyncVariantMethod(runtimeDeterminedMethod);
-                    method = _factory.TypeSystemContext.GetAsyncVariantMethod(method);
-                }
             }
 
             if (opcode == ILOpcode.newobj)
@@ -609,14 +624,19 @@ namespace Internal.IL
                 if (constrained.IsRuntimeDeterminedSubtype)
                     constrained = constrained.ConvertToCanonForm(CanonicalFormKind.Specific);
 
-                MethodDesc directMethod = constrained.GetClosestDefType().TryResolveConstraintMethodApprox(method.OwningType, method, out forceUseRuntimeLookup, ref staticResolution);
-                if (directMethod == null && constrained.IsEnum)
+                if (constrained.IsEnum)
                 {
-                    // Constrained calls to methods on enum methods resolve to System.Enum's methods. System.Enum is a reference
-                    // type though, so we would fail to resolve and box. We have a special path for those to avoid boxing.
-                    directMethod = _compilation.TypeSystemContext.TryResolveConstrainedEnumMethod(constrained, method);
+                    // Optimize constrained calls to enum's GetHashCode method. TryResolveConstraintMethodApprox would return
+                    // null since the virtual method resolves to System.Enum's implementation and that's a reference type.
+                    // We can't do this for any other method since ToString and Equals have different semantics for enums
+                    // and their underlying type.
+                    if (method.OwningType.IsObject && method.Name.SequenceEqual("GetHashCode"u8))
+                    {
+                        constrained = constrained.UnderlyingType;
+                    }
                 }
 
+                MethodDesc directMethod = constrained.GetClosestDefType().TryResolveConstraintMethodApprox(method.OwningType, method, out forceUseRuntimeLookup, ref staticResolution);
                 if (directMethod != null)
                 {
                     // Either
@@ -683,9 +703,7 @@ namespace Internal.IL
             }
             else
             {
-                if (!targetMethod.IsVirtual ||
-                    // Final/sealed has no meaning for interfaces, but lets us devirtualize otherwise
-                    (!targetMethod.OwningType.IsInterface && (targetMethod.IsFinal || targetMethod.OwningType.IsSealed())))
+                if (targetMethod.IsCallEffectivelyDirect())
                 {
                     directCall = true;
                 }
@@ -716,8 +734,7 @@ namespace Internal.IL
                 else
                 {
                     // We have the canonical version of the method - find the runtime determined version.
-                    // This is simplified because we know the method is on a valuetype.
-                    Debug.Assert(targetMethod.OwningType.IsValueType);
+                    Debug.Assert(targetMethod.OwningType.IsValueType || targetMethod.Signature.IsStatic);
 
                     MethodDesc targetOfLookup;
                     if (_constrained.IsRuntimeDeterminedType)
@@ -790,6 +807,11 @@ namespace Internal.IL
                         else if (targetMethod.RequiresInstMethodTableArg())
                         {
                             instParam = GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, runtimeDeterminedMethod.OwningType);
+                        }
+                        else
+                        {
+                            Debug.Assert(targetMethod.AcquiresInstMethodTableFromThis());
+                            _dependencies.Add(_factory.ShadowNonConcreteMethod(concreteMethod), reason);
                         }
 
                         if (instParam != null)
@@ -1597,6 +1619,11 @@ namespace Internal.IL
         }
 
         private static void ReportInvalidInstruction(ILOpcode opcode)
+        {
+            ThrowHelper.ThrowInvalidProgramException();
+        }
+
+        private static void ReportInvalidExceptionRegion()
         {
             ThrowHelper.ThrowInvalidProgramException();
         }

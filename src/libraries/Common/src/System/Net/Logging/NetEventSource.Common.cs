@@ -38,12 +38,6 @@ namespace System.Net
         public static readonly NetEventSource Log = new NetEventSource();
 
         #region Metadata
-        public static class Keywords
-        {
-            public const EventKeywords Default = (EventKeywords)0x0001;
-            public const EventKeywords Debug = (EventKeywords)0x0002;
-        }
-
         private const string MissingMember = "(?)";
         private const string NullInstance = "(null)";
         private const string StaticMethodObject = "(static)";
@@ -74,7 +68,7 @@ namespace System.Net
         public static void Info(object? thisOrContextObject, object? message, [CallerMemberName] string? memberName = null) =>
             Log.Info(IdOf(thisOrContextObject), memberName, Format(message));
 
-        [Event(InfoEventId, Level = EventLevel.Informational, Keywords = Keywords.Default)]
+        [Event(InfoEventId, Level = EventLevel.Informational)]
         private void Info(string thisOrContextObject, string? memberName, string? message)
         {
             Debug.Assert(IsEnabled());
@@ -99,7 +93,7 @@ namespace System.Net
         public static void Error(object? thisOrContextObject, object message, [CallerMemberName] string? memberName = null) =>
             Log.ErrorMessage(IdOf(thisOrContextObject), memberName, Format(message));
 
-        [Event(ErrorEventId, Level = EventLevel.Error, Keywords = Keywords.Default)]
+        [Event(ErrorEventId, Level = EventLevel.Error)]
         private void ErrorMessage(string thisOrContextObject, string? memberName, string? message)
         {
             Debug.Assert(IsEnabled());

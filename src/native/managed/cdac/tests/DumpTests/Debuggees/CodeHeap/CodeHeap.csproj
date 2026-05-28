@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- R2R disabled so all methods are JIT-compiled. -->
+    <R2RModes>Jit</R2RModes>
+  </PropertyGroup>
+</Project>

@@ -38,11 +38,7 @@ namespace Microsoft.Extensions.Hosting.Internal
             // for SIGTERM on Windows we must block this thread until the application is finished
             // otherwise the process will be killed immediately on return from this handler
 
-            // don't allow Dispose to unregister handlers, since Windows has a lock that prevents the unregistration while this handler is running
-            // just leak these, since the process is exiting
-            _sigIntRegistration = null;
-            _sigQuitRegistration = null;
-            _sigTermRegistration = null;
+            UnregisterShutdownHandlers();
 
             ApplicationLifetime.StopApplication();
 

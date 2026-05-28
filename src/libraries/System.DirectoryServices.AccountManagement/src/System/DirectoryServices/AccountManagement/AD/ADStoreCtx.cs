@@ -1510,7 +1510,7 @@ namespace System.DirectoryServices.AccountManagement
                     Debug.Assert(foreignPrincipal.ContextType != ContextType.ApplicationDirectory);
 
                     DirectorySearcher[] memberSearcher = { SDSUtils.ConstructSearcher(this.ctxBase) };
-                    memberSearcher[0].Filter = "(&(objectClass=Group)(member=" + foreignPrincipal.DistinguishedName + "))";
+                    memberSearcher[0].Filter = "(&(objectClass=Group)(member=" + ADUtils.EscapeRFC2254SpecialChars(foreignPrincipal.DistinguishedName) + "))";
                     memberSearcher[0].CacheResults = false;
 
                     resultSet = new ADDNLinkedAttrSet(foreignPrincipal.DistinguishedName, memberSearcher, null, null, false, this);

@@ -206,7 +206,7 @@ namespace System.IO.Tests
             Assert.False(Exists(component));
         }
 
-        [ConditionalTheory(nameof(ReservedDeviceNamesAreBlocked))] // device names
+        [ConditionalTheory(typeof(File_Exists), nameof(ReservedDeviceNamesAreBlocked))] // device names
         [MemberData(nameof(PathsWithReservedDeviceNames))]
         [OuterLoop]
         public void PathWithReservedDeviceNameAsPath_ReturnsFalse(string component)

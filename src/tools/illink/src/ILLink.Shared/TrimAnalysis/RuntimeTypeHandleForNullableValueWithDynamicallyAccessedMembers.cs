@@ -11,7 +11,7 @@ using ILLink.Shared.TypeSystemProxy;
 namespace ILLink.Shared.TrimAnalysis
 {
     /// <summary>
-    /// This represents a type handle of a Nullable<T> where T is an unknown value with DynamicallyAccessedMembers annotations.
+    /// This represents a type handle of a Nullable{T} where T is an unknown value with DynamicallyAccessedMembers annotations.
     /// It is necessary to track the underlying type to ensure DynamicallyAccessedMembers annotations on the underlying type match the target parameters where the Nullable is used.
     /// </summary>
     internal sealed record RuntimeTypeHandleForNullableValueWithDynamicallyAccessedMembers : SingleValue

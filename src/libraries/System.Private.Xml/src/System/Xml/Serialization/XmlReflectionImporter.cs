@@ -2117,7 +2117,7 @@ namespace System.Xml.Serialization
                     XmlArrayItemAttribute? item = (XmlArrayItemAttribute?)arrayTypes[type.FullName, ns];
                     if (item != null)
                     {
-                        throw new InvalidOperationException(SR.Format(SR.XmlArrayItemAmbiguousTypes, accessorName, item.ElementName, items[i]!.ElementName, nameof(XmlElementAttribute), nameof(XmlChoiceIdentifierAttribute), accessorName));
+                        throw new InvalidOperationException(SR.Format(SR.XmlArrayItemAmbiguousTypes, accessorName, item.ElementName, items[i]!.ElementName, nameof(XmlElementAttribute), nameof(XmlChoiceIdentifierAttribute)));
                     }
                     else
                     {

@@ -15,7 +15,7 @@ namespace System.IO.Ports.Tests
         private const int numReadBytes = 32;
         private const int numWriteBytes = 32;
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_Close), nameof(HasOneSerialPort))]
         public void OpenClose_WriteMethods()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -58,7 +58,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_Close), nameof(HasOneSerialPort))]
         public void OpenClose_ReadMethods()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -117,7 +117,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_Close), nameof(HasOneSerialPort))]
         public void OpenClose_DiscardMethods()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -145,7 +145,7 @@ namespace System.IO.Ports.Tests
         }
 
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_Close), nameof(HasOneSerialPort))]
         public void OpenClose_OpenClose()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -175,7 +175,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_Close), nameof(HasOneSerialPort))]
         public void OpenClose_Properties()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -193,7 +193,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
+        [ConditionalFact(typeof(SerialStream_Close), nameof(HasNullModem), nameof(HasHardwareFlowControl))]
         public void OpenFillBuffersClose()
         {
             using (var com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -251,7 +251,7 @@ namespace System.IO.Ports.Tests
             Thread.Sleep(200);
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_Close), nameof(HasOneSerialPort))]
         public void OpenCloseNewInstanceOpen()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -289,7 +289,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_Close), nameof(HasOneSerialPort))]
         public void Open_BaseStreamClose_Open()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -308,7 +308,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_Close), nameof(HasOneSerialPort))]
         public void Open_BaseStreamClose_Close()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -328,7 +328,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_Close), nameof(HasOneSerialPort))]
         public void Open_MultipleBaseStreamClose()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))

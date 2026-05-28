@@ -10,24 +10,24 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal sealed class AnalyzedExternalTypeMapNode(TypeDesc typeMapGroup, IReadOnlyDictionary<string, TypeDesc> entries) : DependencyNodeCore<NodeFactory>, IExternalTypeMapNode
+    internal sealed class AnalyzedExternalTypeMapNode(TypeDesc typeMapGroup, IReadOnlyDictionary<string, TypeDesc> entries) : SortableDependencyNode, IExternalTypeMapNode
     {
         public TypeDesc TypeMapGroup => typeMapGroup;
 
-        public Vertex CreateTypeMap(NodeFactory factory, NativeWriter writer, Section section, ExternalReferencesTableNode externalReferences)
+        public Vertex CreateTypeMap(NodeFactory factory, NativeWriter writer, Section section, INativeFormatTypeReferenceProvider externalReferences)
         {
             VertexHashtable typeMapHashTable = new();
 
             foreach ((string key, TypeDesc type) in entries)
             {
                 Vertex keyVertex = writer.GetStringConstant(key);
-                Vertex valueVertex = writer.GetUnsignedConstant(externalReferences.GetIndex(factory.MetadataTypeSymbol(type)));
+                Vertex valueVertex = externalReferences.EncodeReferenceToType(writer, type);
                 Vertex entry = writer.GetTuple(keyVertex, valueVertex);
                 typeMapHashTable.Append((uint)TypeHashingAlgorithms.ComputeNameHashCode(key), section.Place(entry));
             }
 
             Vertex typeMapStateVertex = writer.GetUnsignedConstant(1); // Valid type map state
-            Vertex typeMapGroupVertex = writer.GetUnsignedConstant(externalReferences.GetIndex(factory.NecessaryTypeSymbol(TypeMapGroup)));
+            Vertex typeMapGroupVertex = externalReferences.EncodeReferenceToType(writer, TypeMapGroup);
             Vertex tuple = writer.GetTuple(typeMapGroupVertex, typeMapStateVertex, typeMapHashTable);
             return section.Place(tuple);
         }
@@ -51,9 +51,9 @@ namespace ILCompiler.DependencyAnalysis
         public override bool HasConditionalStaticDependencies => false;
 
         public override bool StaticDependenciesAreComputed => true;
-        public int ClassCode => -874354558;
+        public override int ClassCode => -874354558;
 
-        public int CompareToImpl(ISortableNode other, CompilerComparer comparer)
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             AnalyzedExternalTypeMapNode otherEntry = (AnalyzedExternalTypeMapNode)other;
             return comparer.Compare(TypeMapGroup, otherEntry.TypeMapGroup);

@@ -1032,7 +1032,7 @@ LEAF_ENTRY IL_Throw, _TEXT
 
     CHECK_STACK_ALIGNMENT
 
-    call    C_FUNC(IL_Throw_x86)
+    call    C_FUNC(IL_Throw_Impl)
 
     add     esp, STACK_ALIGN_PADDING
     #undef STACK_ALIGN_PADDING
@@ -1058,7 +1058,7 @@ LEAF_ENTRY IL_ThrowExact, _TEXT
 
     CHECK_STACK_ALIGNMENT
 
-    call    C_FUNC(IL_ThrowExact_x86)
+    call    C_FUNC(IL_ThrowExact_Impl)
 
     add     esp, STACK_ALIGN_PADDING
     #undef STACK_ALIGN_PADDING
@@ -1081,7 +1081,7 @@ LEAF_ENTRY IL_Rethrow, _TEXT
 
     CHECK_STACK_ALIGNMENT
 
-    call    C_FUNC(IL_Rethrow_x86)
+    call    C_FUNC(IL_Rethrow_Impl)
 
     add     esp, STACK_ALIGN_PADDING
     #undef STACK_ALIGN_PADDING

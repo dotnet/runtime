@@ -653,13 +653,20 @@ private:
     };  // class bmtTypeHandle
 
     // --------------------------------------------------------------------------------------------
-    // MethodSignature encapsulates the name and metadata signature of a method, as well as
-    // the scope (Module*) and substitution for the signature. It is intended to facilitate
-    // passing around this tuple of information as well as providing efficient comparison
-    // operations when looking for types.
+    // MethodSignature encapsulates the name and metadata signature of a method, as well as the
+    // scope (Module*) substitution and optional async promise type (Task vs. ValueTask).
+    // It is intended to facilitate passing around this tuple of information as well as providing
+    // efficient comparison operations.
     //
     // Meant to be passed around by reference or by value. Please make sure this is declared
     // on the stack or properly deleted after use.
+
+    enum AsyncVariantKind
+    {
+        None      = 0,  // this is not a signature of an async variant method
+        Task      = 1,  // this is a signature of an async variant for a Task[<T>] returning method
+        ValueTask = 2   // this is a signature of an async variant for a ValueTask[<T>] returning method
+    };
 
     class MethodSignature
     {
@@ -673,6 +680,7 @@ private:
             const Substitution * pSubst)
             : m_pModule(pModule),
               m_tok(tok),
+              m_asyncVariantKind(None),
               m_szName(NULL),
               m_pSig(NULL),
               m_cSig(0),
@@ -693,10 +701,12 @@ private:
         MethodSignature(
             Module *             pModule,
             mdToken              tok,
+            bool                 isValueTaskVariant,
             Signature            sig,
             const Substitution * pSubst)
             : m_pModule(pModule),
               m_tok(tok),
+              m_asyncVariantKind(isValueTaskVariant ? AsyncVariantKind::ValueTask : AsyncVariantKind::Task),
               m_szName(NULL),
               m_pSig(sig.GetRawSig()),
               m_cSig(sig.GetRawSigLen()),
@@ -723,6 +733,7 @@ private:
             const Substitution * pSubst = NULL)
             : m_pModule(pModule),
               m_tok(mdTokenNil),
+              m_asyncVariantKind(None),
               m_szName(szName),
               m_pSig(pSig),
               m_cSig(cSig),
@@ -743,6 +754,7 @@ private:
             const MethodSignature & s)
             : m_pModule(s.m_pModule),
               m_tok(s.m_tok),
+              m_asyncVariantKind(s.m_asyncVariantKind),
               m_szName(s.m_szName),
               m_pSig(s.m_pSig),
               m_cSig(s.m_cSig),
@@ -809,6 +821,13 @@ private:
             const MethodSignature & sig2);
 
         //-----------------------------------------------------------------------------------------
+        // Returns true if the signatures have the same async variant kinds.
+        static bool
+        SameAsyncVariantKind(
+            const MethodSignature& sig1,
+            const MethodSignature& sig2);
+
+        //-----------------------------------------------------------------------------------------
         // Returns true if the metadata signatures (PCCOR_SIGNATURE) are equivalent. (Type equivalence permitted)
         static bool
         SignaturesEquivalent(
@@ -860,6 +879,7 @@ private:
         //-----------------------------------------------------------------------------------------
         Module *                m_pModule;
         mdToken                 m_tok;
+        AsyncVariantKind        m_asyncVariantKind;
         mutable LPCUTF8         m_szName;   // mutable because it is lazily evaluated.
         mutable PCCOR_SIGNATURE m_pSig;     // mutable because it is lazily evaluated.
         mutable size_t          m_cSig;     // mutable because it is lazily evaluated.
@@ -1092,9 +1112,6 @@ private:
             return m_asyncMethodFlags;
         }
 
-        bmtMDMethod *     GetAsyncOtherVariant() const { return m_asyncOtherVariant; }
-        void              SetAsyncOtherVariant(bmtMDMethod* pAsyncOtherVariant) { m_asyncOtherVariant = pAsyncOtherVariant; }
-
     private:
         //-----------------------------------------------------------------------------------------
         bmtMDType *       m_pOwningType;
@@ -1106,7 +1123,6 @@ private:
         AsyncMethodFlags  m_asyncMethodFlags;
         METHOD_IMPL_TYPE  m_implType;           // Whether or not the method is a methodImpl body
         MethodSignature   m_methodSig;
-        bmtMDMethod*      m_asyncOtherVariant = NULL;
 
         MethodDesc *      m_pMD;                // MethodDesc created and assigned to this method
         MethodDesc *      m_pUnboxedMD;         // Unboxing MethodDesc if this is a virtual method on a valuetype
@@ -2007,11 +2023,7 @@ private:
                 if ((*this)[i]->GetMethodSignature().GetToken() == tok)
                 {
                     auto result = (*this)[i];
-                    if (variantLookup == AsyncVariantLookup::AsyncOtherVariant)
-                    {
-                        return result->GetAsyncOtherVariant();
-                    }
-                    else
+                    if ((variantLookup == AsyncVariantLookup::Async) == result->IsAsyncVariant())
                     {
                         return result;
                     }
@@ -2998,6 +3010,9 @@ private:
     VOID    HandleGCForExplicitLayout();
 
     VOID HandleCStructLayout(
+        MethodTable **);
+
+    VOID HandleCUnionLayout(
         MethodTable **);
 
     VOID    CheckForHFA(MethodTable ** pByValueClassCache);

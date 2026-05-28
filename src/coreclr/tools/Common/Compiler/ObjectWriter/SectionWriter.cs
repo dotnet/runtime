@@ -3,6 +3,7 @@
 
 using System;
 using System.Buffers;
+using System.Diagnostics;
 using System.Numerics;
 using System.Text;
 using ILCompiler.DependencyAnalysis;
@@ -16,6 +17,7 @@ namespace ILCompiler.ObjectWriter
         private readonly SectionData _sectionData;
 
         public int SectionIndex { get; init; }
+        public readonly IBufferWriter<byte> Buffer => _sectionData.BufferWriter;
 
         internal SectionWriter(
             ObjectWriter objectWriter,
@@ -143,6 +145,12 @@ namespace ILCompiler.ObjectWriter
             Span<byte> buffer = bufferWriter.GetSpan(size);
             Encoding.UTF8.GetBytes(value, buffer);
             bufferWriter.Advance(size);
+        }
+
+        public readonly void WriteUtf8WithLength(string value)
+        {
+            WriteULEB128((ulong)Encoding.UTF8.GetByteCount(value));
+            WriteUtf8StringNoNull(value);
         }
 
         public readonly void WritePadding(int size) => _sectionData.AppendPadding(size);

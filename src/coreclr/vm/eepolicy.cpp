@@ -16,6 +16,10 @@
 
 #include "typestring.h"
 
+#ifdef FEATURE_INPROC_CRASHREPORT
+#include "inproccrashreporter.h"
+#endif
+
 #ifndef TARGET_UNIX
 #include "dwreport.h"
 #endif // !TARGET_UNIX
@@ -176,6 +180,15 @@ class CallStackLogger
             }
         }
 
+        MethodDesc* pMD = pCF->GetFunction();
+
+        // Skip Environment.CallEntryPoint so it doesn't appear in
+        // unhandled exception experiences.
+        if (pMD != nullptr && pMD == g_pEnvironmentCallEntryPointMethodDesc)
+        {
+            return SWA_CONTINUE;
+        }
+
         MethodDesc** itemPtr = m_frames.Append();
         if (itemPtr == nullptr)
         {
@@ -183,19 +196,29 @@ class CallStackLogger
             return SWA_ABORT;
         }
 
-        *itemPtr = pCF->GetFunction();
+        *itemPtr = pMD;
 
         return SWA_CONTINUE;
     }
 
-    void PrintFrame(int index, const WCHAR* pWordAt)
+    void PrintFrame(
+        int index,
+        const WCHAR* pWordAt,
+        uint32_t repeatCount = 0,
+        uint32_t repeatSequenceLength = 0)
     {
         WRAPPER_NO_CONTRACT;
 
-        SString str(pWordAt);
-
+        SString frame;
         MethodDesc* pMD = m_frames[index];
-        TypeString::AppendMethodInternal(str, pMD, TypeString::FormatNamespace|TypeString::FormatFullInst|TypeString::FormatSignature);
+        TypeString::AppendMethodInternal(frame, pMD, TypeString::FormatNamespace|TypeString::FormatFullInst|TypeString::FormatSignature);
+
+#ifdef FEATURE_INPROC_CRASHREPORT
+        InProcCrashReportAddStackOverflowTraceFrame(frame.GetUTF8(), repeatCount, repeatSequenceLength);
+#endif // FEATURE_INPROC_CRASHREPORT
+
+        SString str(pWordAt);
+        str.Append(frame);
         str.Append(W("\n"));
 
         PrintToStdErrW(str.GetUnicode());
@@ -219,7 +242,7 @@ public:
         return logger->LogCallstackForLogCallbackWorker(pCF);
     }
 
-    void PrintStackTrace(const WCHAR* pWordAt)
+    void PrintStackTrace(const WCHAR* pWordAt, uint64_t crashingTid)
     {
         WRAPPER_NO_CONTRACT;
 
@@ -287,6 +310,16 @@ public:
             }
         }
 
+        // Skip special formatting if it would make the output more verbose (add more lines)
+        if (largestCommonRepeat * largestCommonLength < 4)
+        {
+            largestCommonLength = 0;
+        }
+
+#ifdef FEATURE_INPROC_CRASHREPORT
+        InProcCrashReportBeginStackOverflowTrace(crashingTid, static_cast<uint32_t>(m_frames.Count()));
+#endif // FEATURE_INPROC_CRASHREPORT
+
         for (int i = 0; i < largestCommonStartOffset; i++)
         {
             PrintFrame(i, pWordAt);
@@ -302,7 +335,10 @@ public:
             PrintToStdErrA("--------------------------------\n");
             for (int i = largestCommonStartOffset; i < largestCommonStartOffset + largestCommonLength; i++)
             {
-                PrintFrame(i, pWordAt);
+                PrintFrame(i,
+                    pWordAt,
+                    static_cast<uint32_t>(largestCommonRepeat),
+                    static_cast<uint32_t>(largestCommonLength));
             }
             PrintToStdErrA("--------------------------------\n");
         }
@@ -311,6 +347,10 @@ public:
         {
             PrintFrame(i, pWordAt);
         }
+
+#ifdef FEATURE_INPROC_CRASHREPORT
+        InProcCrashReportEndStackOverflowTrace();
+#endif // FEATURE_INPROC_CRASHREPORT
     }
 };
 
@@ -350,7 +390,7 @@ inline void LogCallstackForLogWorker(Thread* pThread, PEXCEPTION_POINTERS pExcep
 
     pThread->StackWalkFrames(&CallStackLogger::LogCallstackForLogCallback, &logger, QUICKUNWIND | FUNCTIONSONLY | ALLOW_ASYNC_STACK_WALK);
 
-    logger.PrintStackTrace(WordAt.GetUnicode());
+    logger.PrintStackTrace(WordAt.GetUnicode(), static_cast<uint64_t>(pThread->GetOSThreadId()));
 #ifdef _DEBUG
     if (g_LogStackOverflowExit)
         PrintToStdErrA("@Exiting stack trace printing thread.\n");
@@ -709,7 +749,7 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
 
         DisplayStackOverflowException();
 
-        HandleHolder stackDumpThreadHandle = Thread::CreateUtilityThread(Thread::StackSize_Small, LogStackOverflowStackTraceThread, GetThreadNULLOk(), W(".NET Stack overflow trace logger"));
+        HandleHolder stackDumpThreadHandle = Thread::CreateUtilityThread(Thread::StackSize_Small, LogStackOverflowStackTraceThread, GetThreadNULLOk(), W(".NET SO Tracer"));
         if (stackDumpThreadHandle != INVALID_HANDLE_VALUE)
         {
             // Wait for the stack trace logging completion
@@ -774,8 +814,7 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
             OBJECTHANDLE ohSO = CLRException::GetPreallocatedStackOverflowExceptionHandle();
             if (ohSO != NULL)
             {
-                pThread->SafeSetThrowables(ObjectFromHandle(ohSO)
-                                           DEBUG_ARG(ThreadExceptionState::STEC_CurrentTrackerEqualNullOkHackForFatalStackOverflow),
+                pThread->SafeSetThrowables(ObjectFromHandle(ohSO),
                                            TRUE);
             }
             else
@@ -896,3 +935,20 @@ int NOINLINE EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR
     UNREACHABLE();
     return -1;
 }
+
+#if defined(HOST_ANDROID) || defined(HOST_IOS) || defined(HOST_TVOS) || defined(HOST_MACCATALYST)
+// Logs the managed callstack when a signal is received.
+void EEPolicy::LogManagedCallstackForSignal(LPCWSTR signalName)
+{
+    WRAPPER_NO_CONTRACT;
+
+    InlineSString<256> message;
+    message.Append(W("Got a "));
+    message.Append(signalName);
+    message.Append(W(" while executing native code. This usually indicates\n")
+                   W("a fatal error in the runtime or one of the native libraries\n")
+                   W("used by your application."));
+
+    LogInfoForFatalError(0, message.GetUnicode(), nullptr, nullptr, nullptr);
+}
+#endif

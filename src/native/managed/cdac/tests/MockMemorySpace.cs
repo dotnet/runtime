@@ -53,6 +53,16 @@ internal unsafe static partial class MockMemorySpace
             throw new InvalidOperationException($"No fragment includes addresses from 0x{address:x} with length {length}");
         }
 
+        internal Memory<byte> BorrowAddressRangeMemory(ulong address, int length)
+        {
+            foreach (var fragment in _heapFragments)
+            {
+                if (address >= fragment.Address && address + (ulong)length <= fragment.Address + (ulong)fragment.Data.Length)
+                    return fragment.Data.AsMemory((int)(address - fragment.Address), length);
+            }
+            throw new InvalidOperationException($"No fragment includes addresses from 0x{address:x} with length {length}");
+        }
+
         public Builder AddHeapFragment(HeapFragment fragment)
         {
             if (fragment.Data is null || fragment.Data.Length == 0)
@@ -109,10 +119,11 @@ internal unsafe static partial class MockMemorySpace
             return true;
         }
 
-        // Get an allocator for a range of addresses to simplify creating heap fragments
+        // Get an allocator for a range of addresses to simplify creating heap fragments.
+        // Fragments allocated from the returned allocator are registered with this builder automatically.
         public BumpAllocator CreateAllocator(ulong start, ulong end, int minAlign = 16)
         {
-            BumpAllocator allocator = new BumpAllocator(start, end) { MinAlign = minAlign };
+            BumpAllocator allocator = new BumpAllocator(this, start, end) { MinAlign = minAlign };
             foreach (var a in _allocators)
             {
                 if (allocator.Overlaps(a))

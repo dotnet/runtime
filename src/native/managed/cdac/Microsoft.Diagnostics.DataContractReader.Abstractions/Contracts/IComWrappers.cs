@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -9,6 +10,13 @@ public interface IComWrappers : IContract
 {
     static string IContract.Name { get; } = nameof(ComWrappers);
     TargetPointer GetComWrappersIdentity(TargetPointer address) => throw new NotImplementedException();
+    TargetPointer GetManagedObjectWrapperFromCCW(TargetPointer ccw) => throw new NotImplementedException();
+    TargetPointer GetComWrappersObjectFromMOW(TargetPointer mow) => throw new NotImplementedException();
+    long GetMOWReferenceCount(TargetPointer mow) => throw new NotImplementedException();
+    TargetPointer GetIdentityForMOW(TargetPointer mow) => throw new NotImplementedException();
+    List<TargetPointer> GetMOWs(TargetPointer obj, out bool hasMOWTable) => throw new NotImplementedException();
+    bool IsComWrappersRCW(TargetPointer rcw) => throw new NotImplementedException();
+    TargetPointer GetComWrappersRCWForObject(TargetPointer obj) => throw new NotImplementedException();
 }
 
 public readonly struct ComWrappers : IComWrappers

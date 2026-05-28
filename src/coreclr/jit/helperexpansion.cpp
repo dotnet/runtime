@@ -92,6 +92,15 @@ GenTreeCall* Compiler::gtNewRuntimeLookupHelperCallNode(CORINFO_RUNTIME_LOOKUP* 
                                                         GenTree*                ctxTree,
                                                         void*                   compileTimeHandle)
 {
+#ifdef FEATURE_READYTORUN
+    if (IsAot() && (pRuntimeLookup->indirections == CORINFO_USEHELPER))
+    {
+        GenTreeCall* call = gtNewHelperCallNode(pRuntimeLookup->helper, TYP_I_IMPL, ctxTree);
+        call->setEntryPoint(pRuntimeLookup->helperEntryPoint);
+        return call;
+    }
+#endif
+
     // Call the helper
     // - Setup argNode with the pointer to the signature returned by the lookup
     GenTree* argNode = gtNewIconEmbHndNode(pRuntimeLookup->signature, nullptr, GTF_ICON_GLOBAL_PTR, compileTimeHandle);
@@ -2844,7 +2853,7 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
         return false;
     }
 
-    const CorInfoHelpFunc helper         = eeGetHelperNum(call->gtCallMethHnd);
+    const CorInfoHelpFunc helper         = call->GetHelperNum();
     int                   lengthArgIndex = -1;
     int                   typeArgIndex   = -1;
 

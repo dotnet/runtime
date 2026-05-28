@@ -18,7 +18,13 @@ TYPE LookupMap<TYPE>::GetValueAt(PTR_TADDR pValue, TADDR* pFlags, TADDR supporte
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 #ifndef DACCESS_COMPILE
-    TYPE value = dac_cast<TYPE>(VolatileLoadWithoutBarrier(pValue)); // LookupMap's hold pointers, so we can use a data dependency instead of an explicit barrier here.
+    // LookupMap's hold pointers to data which is immutable, so normally we could use a data
+    // dependency instead of an explicit barrier here. However, the access pattern between
+    // m_TypeDefToMethodTableMap and m_MethodDefToDescMap/m_FieldDefToDescMap is such that a
+    // data dependency is not sufficient to ensure that the MethodTable is visible when we
+    // access the MethodDesc/FieldDesc. Since those loads are independent, we use
+    // VolatileLoad here to ensure proper ordering.
+    TYPE value = dac_cast<TYPE>(VolatileLoad(pValue));
 #else
     TYPE value = dac_cast<TYPE>(*pValue);
 #endif
@@ -51,7 +57,13 @@ SIZE_T LookupMap<SIZE_T>::GetValueAt(PTR_TADDR pValue, TADDR* pFlags, TADDR supp
 {
     WRAPPER_NO_CONTRACT;
 
-    TADDR value = VolatileLoadWithoutBarrier(pValue); // LookupMap's hold pointers, so we can use a data dependency instead of an explicit barrier here.
+    // LookupMap's hold pointers to data which is immutable, so normally we could use a data
+    // dependency instead of an explicit barrier here. However, the access pattern between
+    // m_TypeDefToMethodTableMap and m_MethodDefToDescMap/m_FieldDefToDescMap is such that a
+    // data dependency is not sufficient to ensure that the MethodTable is visible when we
+    // access the MethodDesc/FieldDesc. Since those loads are independent, we use
+    // VolatileLoad here to ensure proper ordering.
+    TADDR value = VolatileLoad(pValue);
 
     if (pFlags)
         *pFlags = value & supportedFlags;

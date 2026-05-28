@@ -472,7 +472,7 @@ namespace System.Runtime.Serialization
                     else
                     {
                         Debug.Fail("Encountered invalid data node when deserializing unknown data");
-                        throw new SerializationException(SR.Format(SR.InvalidStateInExtensionDataReader));
+                        throw new SerializationException(SR.InvalidStateInExtensionDataReader);
                     }
                     break;
             }

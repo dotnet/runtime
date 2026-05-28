@@ -103,6 +103,8 @@ bool g_registered_signal_handlers = false;
 #if !HAVE_MACH_EXCEPTIONS
 bool g_enable_alternate_stack_check = false;
 #endif // !HAVE_MACH_EXCEPTIONS
+// When true, generate crash dump before invoking previously registered signal handler
+static bool g_crash_report_before_signal_chaining = false;
 
 static bool g_registered_sigterm_handler = false;
 static bool g_registered_activation_handler = false;
@@ -132,6 +134,22 @@ const int StackOverflowFlag = 0x40000000;
 #endif // !HAVE_MACH_EXCEPTIONS
 
 /* public function definitions ************************************************/
+
+/*++
+Function:
+  PAL_EnableCrashReportBeforeSignalChaining
+
+Abstract:
+  Enables generating a crash report before the signal is chained to previous handlers.
+--*/
+PALIMPORT
+VOID
+PALAPI
+PAL_EnableCrashReportBeforeSignalChaining(
+    void)
+{
+    g_crash_report_before_signal_chaining = true;
+}
 
 /*++
 Function :
@@ -430,9 +448,11 @@ static void invoke_previous_action(struct sigaction* action, int code, siginfo_t
     {
         if (signalRestarts)
         {
-            // Shutdown and create the core dump before we restore the signal to the default handler.
+            // Shutdown, log the managed callstack (if a host callback is registered),
+            // and create the core dump before we restore the signal to the default handler.
             PROCNotifyProcessShutdown(IsRunningOnAlternateStack(context));
 
+            PROCLogManagedCallstackForSignal(code);
             PROCCreateCrashDumpIfEnabled(code, siginfo, context, true);
 
             // Restore the original and restart h/w exception.
@@ -447,7 +467,18 @@ static void invoke_previous_action(struct sigaction* action, int code, siginfo_t
             PROCAbort(code, siginfo, context);
         }
     }
-    else if (IsSaSigInfo(action))
+
+    _ASSERTE(!IsSigDfl(action) && !IsSigIgn(action));
+
+    if (g_crash_report_before_signal_chaining)
+    {
+        PROCNotifyProcessShutdown(IsRunningOnAlternateStack(context));
+
+        PROCLogManagedCallstackForSignal(code);
+        PROCCreateCrashDumpIfEnabled(code, siginfo, context, true);
+    }
+
+    if (IsSaSigInfo(action))
     {
         // Directly call the previous handler.
         _ASSERTE(action->sa_sigaction != NULL);
@@ -460,9 +491,13 @@ static void invoke_previous_action(struct sigaction* action, int code, siginfo_t
         action->sa_handler(code);
     }
 
-    PROCNotifyProcessShutdown(IsRunningOnAlternateStack(context));
+    if (!g_crash_report_before_signal_chaining)
+    {
+        PROCNotifyProcessShutdown(IsRunningOnAlternateStack(context));
 
-    PROCCreateCrashDumpIfEnabled(code, siginfo, context, true);
+        PROCLogManagedCallstackForSignal(code);
+        PROCCreateCrashDumpIfEnabled(code, siginfo, context, true);
+    }
 }
 
 /*++
@@ -851,6 +886,7 @@ static void sigterm_handler(int code, siginfo_t *siginfo, void *context)
         DWORD val = 0;
         if (enableDumpOnSigTerm.IsSet() && enableDumpOnSigTerm.TryAsInteger(10, val) && val == 1)
         {
+            PROCLogManagedCallstackForSignal(code);
             PROCCreateCrashDumpIfEnabled(code, siginfo, context, false);
         }
     }
@@ -936,20 +972,22 @@ static void inject_activation_handler(int code, siginfo_t *siginfo, void *contex
             CONTEXTToNativeContext(&winContext, ucontext);
         }
     }
-
-    // Call the original handler when it is not ignored or default (terminate).
-    if (g_previous_activation.sa_flags & SA_SIGINFO)
-    {
-        _ASSERTE(g_previous_activation.sa_sigaction != NULL);
-        g_previous_activation.sa_sigaction(code, siginfo, context);
-    }
     else
     {
-        if (g_previous_activation.sa_handler != SIG_IGN &&
-            g_previous_activation.sa_handler != SIG_DFL)
+        // Call the original handler when it is not ignored or default (terminate).
+        if (g_previous_activation.sa_flags & SA_SIGINFO)
         {
-            _ASSERTE(g_previous_activation.sa_handler != NULL);
-            g_previous_activation.sa_handler(code);
+            _ASSERTE(g_previous_activation.sa_sigaction != NULL);
+            g_previous_activation.sa_sigaction(code, siginfo, context);
+        }
+        else
+        {
+            if (g_previous_activation.sa_handler != SIG_IGN &&
+                g_previous_activation.sa_handler != SIG_DFL)
+            {
+                _ASSERTE(g_previous_activation.sa_handler != NULL);
+                g_previous_activation.sa_handler(code);
+            }
         }
     }
 }
@@ -997,6 +1035,7 @@ PAL_ERROR InjectActivationInternal(CorUnix::CPalThread* pThread)
         // Failure to send the signal is fatal. There are only two cases when sending
         // the signal can fail. First, if the signal ID is invalid and second,
         // if the thread doesn't exist anymore.
+        PROCLogManagedCallstackForSignal(SIGABRT);
         PROCAbort();
     }
 

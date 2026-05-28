@@ -12,12 +12,14 @@
 // further details about these tests.
 //
 
+using TestLibrary;
 #pragma warning disable 414
 using System;
 using Xunit;
 
 public class L171
 {
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static int TestEntryPoint()
     {

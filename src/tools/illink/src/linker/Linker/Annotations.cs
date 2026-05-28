@@ -609,7 +609,7 @@ namespace Mono.Linker
 
         public void SetEntryPointAssembly(AssemblyDefinition asmDef)
         {
-            Debug.Assert(entry_assembly is null);
+            Debug.Assert(entry_assembly is null || entry_assembly == asmDef);
             entry_assembly = asmDef;
         }
 

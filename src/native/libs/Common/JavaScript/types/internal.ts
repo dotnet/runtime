@@ -14,6 +14,12 @@ export type JSHandle = {
 export type JSFnHandle = {
     __brand: "JSFnHandle"
 }
+export interface JSMarshalerArguments extends NativePointer {
+    __brand: "JSMarshalerArguments"
+}
+export type CSFnHandle = {
+    __brand: "CSFnHandle"
+}
 
 export type MemOffset = number | VoidPtr | NativePointer | ManagedPointer;
 export type NumberOrPointer = number | VoidPtr | NativePointer | ManagedPointer;
@@ -38,28 +44,25 @@ export type EmscriptenInternals = {
 };
 
 export type EmscriptenModuleInternal = EmscriptenModule & DotnetModuleConfig & {
-    HEAP8: Int8Array,
-    HEAP16: Int16Array;
-    HEAP32: Int32Array;
-    HEAP64: BigInt64Array;
-    HEAPU8: Uint8Array;
-    HEAPU16: Uint16Array;
-    HEAPU32: Uint32Array;
-    HEAPF32: Float32Array;
-    HEAPF64: Float64Array;
-
-    FS: any;
     runtimeKeepalivePush(): void;
     runtimeKeepalivePop(): void;
+    print(message: string): void;
+    printErr(message: string): void;
     instantiateWasm?: InstantiateWasmCallBack;
     onAbort?: (reason: any, extraJson?: string) => void;
     onExit?: (code: number) => void;
+    preInit?: (() => any)[];
+    preRun?: (() => any)[];
+    postRun?: (() => any)[];
 }
 
 export interface AssetEntryInternal extends AssetEntry {
-    integrity?: string
     cache?: RequestCache
     useCredentials?: boolean
+    culture?: string
+    priority?: boolean
+    shortName?: string
+    inprogress?: boolean
 }
 
 export type LoaderConfigInternal = LoaderConfig & {

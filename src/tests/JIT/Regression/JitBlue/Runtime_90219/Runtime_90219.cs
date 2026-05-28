@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 
+using TestLibrary;
 namespace Runtime_90219;
 
 using Xunit;
@@ -35,6 +36,7 @@ public class Runtime_90219
     public static byte[] s_4 = new byte[]{0};
     public static byte Result;
 
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Assembly.Load", typeof(Utilities), nameof(Utilities.IsNativeAot))]
     [Fact]
     [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Assembly.Load", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/90374", TestRuntimes.Mono)]

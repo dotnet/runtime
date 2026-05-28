@@ -14,7 +14,6 @@
 
 #include "hash.h"
 #include "assemblyspecbase.h"
-#include "domainassembly.h"
 #include "holder.h"
 
 enum FileLoadLevel
@@ -27,8 +26,8 @@ enum FileLoadLevel
     // Note that semantics here are description is the LAST step done, not what is
     // currently being done.
 
-    FILE_LOAD_CREATE,            // List entry + FileLoadLock created, no Assembly/DomainAssembly yet
-    FILE_LOAD_ALLOCATE,          // DomainAssembly & Assembly object allocated and associated with the lock
+    FILE_LOAD_CREATE,            // List entry + FileLoadLock created, no Assembly yet
+    FILE_LOAD_ALLOCATE,          // Assembly object allocated and associated with the lock
     FILE_LOAD_BEGIN,
     FILE_LOAD_BEFORE_TYPE_LOAD,
     FILE_LOAD_EAGER_FIXUPS,
@@ -40,6 +39,7 @@ enum FileLoadLevel
     FILE_ACTIVE                     // Fully active (constructors run & security checked)
 };
 
+// [cDAC] [Loader]: Contract depends on the value of PROFILER_NOTIFIED.
 enum NotificationStatus
 {
     NOT_NOTIFIED=0,
@@ -194,7 +194,8 @@ class AssemblySpec  : public BaseAssemblySpec
 
     HRESULT Bind(
         AppDomain* pAppDomain,
-        BINDER_SPACE::Assembly** ppAssembly);
+        BINDER_SPACE::Assembly** ppAssembly,
+        SString* pDiagnosticInfo = NULL);
 
     Assembly *LoadAssembly(FileLoadLevel targetLevel,
                            BOOL fThrowOnFileNotFound = TRUE);
@@ -220,110 +221,9 @@ class AssemblySpec  : public BaseAssemblySpec
         return m_pAppDomain;
     }
 
-    inline HRESULT SetContentType(AssemblyContentType type)
-    {
-        LIMITED_METHOD_CONTRACT;
-        if (type == AssemblyContentType_Default)
-        {
-            m_dwFlags = (m_dwFlags & ~afContentType_Mask) | afContentType_Default;
-            return S_OK;
-        }
-        else if (type == AssemblyContentType_WindowsRuntime)
-        {
-            // WinRT assemblies are not supported as direct references.
-            return COR_E_PLATFORMNOTSUPPORTED;
-        }
-        else
-        {
-            _ASSERTE(!"Unexpected content type.");
-            return E_UNEXPECTED;
-        }
-    }
 };
 
 #define INITIAL_ASM_SPEC_HASH_SIZE 7
-class AssemblySpecHash
-{
-    LoaderHeap *m_pHeap;
-    PtrHashMap m_map;
-
-  public:
-
-#ifndef DACCESS_COMPILE
-    AssemblySpecHash(LoaderHeap *pHeap = NULL)
-      : m_pHeap(pHeap)
-    {
-        CONTRACTL
-        {
-            CONSTRUCTOR_CHECK;
-            THROWS;
-            GC_NOTRIGGER;
-            MODE_ANY;
-        }
-        CONTRACTL_END;
-
-        m_map.Init(INITIAL_ASM_SPEC_HASH_SIZE, CompareSpecs, FALSE, NULL);
-    }
-
-    ~AssemblySpecHash();
-#endif
-
-#ifndef DACCESS_COMPILE
-    //
-    // Returns TRUE if the spec was already in the table
-    //
-
-    BOOL Store(AssemblySpec *pSpec, AssemblySpec **ppStoredSpec = NULL)
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_TRIGGERS;
-            MODE_ANY;
-            INJECT_FAULT(COMPlusThrowOM());
-        }
-        CONTRACTL_END
-
-        DWORD key = pSpec->Hash();
-
-        AssemblySpec *entry = (AssemblySpec *) m_map.LookupValue(key, pSpec);
-
-        if (entry == (AssemblySpec*) INVALIDENTRY)
-        {
-            if (m_pHeap != NULL)
-                entry = new (m_pHeap->AllocMem(S_SIZE_T(sizeof(AssemblySpec)))) AssemblySpec;
-            else
-                entry = new AssemblySpec;
-
-            GCX_PREEMP();
-            entry->CopyFrom(pSpec);
-            entry->CloneFields();
-
-            m_map.InsertValue(key, entry);
-
-            if (ppStoredSpec != NULL)
-                *ppStoredSpec = entry;
-
-            return FALSE;
-        }
-        else
-        {
-            if (ppStoredSpec != NULL)
-                *ppStoredSpec = entry;
-            return TRUE;
-        }
-    }
-#endif // DACCESS_COMPILE
-
-    DWORD Hash(AssemblySpec *pSpec)
-    {
-        WRAPPER_NO_CONTRACT;
-        return pSpec->Hash();
-    }
-
-    static BOOL CompareSpecs(UPTR u1, UPTR u2);
-};
-
 
 class AssemblySpecBindingCache
 {
@@ -345,6 +245,8 @@ class AssemblySpecBindingCache
         inline Assembly* GetAssembly(){ LIMITED_METHOD_CONTRACT; return m_pAssembly; };
         inline void SetAssembly(Assembly* pAssembly){ LIMITED_METHOD_CONTRACT; m_pAssembly = pAssembly; };
         inline PEAssembly* GetFile(){ LIMITED_METHOD_CONTRACT; return m_pPEAssembly;};
+        inline Assembly* GetParentAssembly(){ LIMITED_METHOD_CONTRACT; return m_spec.GetParentAssembly(); };
+        inline void ClearParentAssembly(){ LIMITED_METHOD_CONTRACT; m_spec.SetParentAssembly(NULL); };
         inline BOOL IsError(){ LIMITED_METHOD_CONTRACT; return (m_exceptionType!=EXTYPE_NONE);};
 
         // bound to the file, but failed later
@@ -491,6 +393,7 @@ class AssemblySpecBindingCache
 
     Assembly *LookupAssembly(AssemblySpec *pSpec, BOOL fThrow=TRUE);
     PEAssembly *LookupFile(AssemblySpec *pSpec, BOOL fThrow = TRUE);
+    void GetParentAssemblyMap(MapSHash<Assembly*, Assembly*> &parentMap);
 
     BOOL StoreAssembly(AssemblySpec *pSpec, Assembly *pAssembly);
     BOOL StorePEAssembly(AssemblySpec *pSpec, PEAssembly *pPEAssembly);

@@ -45,12 +45,10 @@ export interface EmscriptenModule {
     UTF8ArrayToString(u8Array: Uint8Array, idx?: number, maxBytesToRead?: number): string;
     stringToUTF8Array(str: string, heap: Uint8Array, outIdx: number, maxBytesToWrite: number): void;
     lengthBytesUTF8(str: string): number;
-    FS_createPath(parent: string, path: string, canRead?: boolean, canWrite?: boolean): string;
-    FS_createDataFile(parent: string, name: string, data: TypedArray, canRead: boolean, canWrite: boolean, canOwn?: boolean): string;
-    addFunction(fn: Function, signature: string): number;
     stackSave(): VoidPtr;
     stackRestore(stack: VoidPtr): void;
     stackAlloc(size: number): VoidPtr;
+    safeSetTimeout(func: Function, delay: number): number;
 }
 
 export type InstantiateWasmSuccessCallback = (instance: WebAssembly.Instance, module: WebAssembly.Module | undefined) => void;

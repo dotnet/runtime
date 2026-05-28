@@ -14,7 +14,7 @@ namespace System.Net.WebSockets.Client.Tests
     [SkipOnPlatform(TestPlatforms.Browser, "KeepAlive not supported on browser")]
     public class KeepAliveTest(ITestOutputHelper output) : ClientWebSocketTestBase(output)
     {
-        [ConditionalFact(nameof(WebSocketsSupported))]
+        [ConditionalFact(typeof(KeepAliveTest), nameof(WebSocketsSupported))]
         [OuterLoop("Uses Task.Delay")]
         public async Task KeepAlive_LongDelayBetweenSendReceives_Succeeds()
         {
@@ -32,7 +32,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [ConditionalTheory(nameof(WebSocketsSupported))]
+        [ConditionalTheory(typeof(KeepAliveTest), nameof(WebSocketsSupported))]
         [OuterLoop("Uses Task.Delay")]
         [InlineData(1, 0)] // unsolicited pong
         [InlineData(1, 2)] // ping/pong

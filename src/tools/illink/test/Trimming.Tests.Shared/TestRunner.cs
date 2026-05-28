@@ -201,7 +201,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
             builder.ProcessTestInputAssembly(compilationResult.InputAssemblyPath);
         }
 
-        protected partial TrimmingCustomizations? CustomizeTrimming(TrimmingDriver linker, TestCaseMetadataProvider metadataProvider);
+        protected virtual partial TrimmingCustomizations? CustomizeTrimming(TrimmingDriver linker, TestCaseMetadataProvider metadataProvider);
 
         protected partial void AddDumpDependenciesOptions(TestCaseLinkerOptions caseDefinedOptions, ManagedCompilationResult compilationResult, TrimmingArgumentBuilder builder, TestCaseMetadataProvider metadataProvider);
 

@@ -27,6 +27,7 @@ public enum RuntimeInfoOperatingSystem : uint
     Windows,
     Unix,
     Browser,
+    Apple,
 }
 
 public interface IRuntimeInfo : IContract
@@ -34,6 +35,8 @@ public interface IRuntimeInfo : IContract
     static string IContract.Name { get; } = nameof(RuntimeInfo);
     RuntimeInfoArchitecture GetTargetArchitecture() => throw new NotImplementedException();
     RuntimeInfoOperatingSystem GetTargetOperatingSystem() => throw new NotImplementedException();
+    uint GetCurrentReaderVersion() => throw new NotImplementedException();
+    uint GetRecommendedReaderVersion() => throw new NotImplementedException();
 }
 
 public readonly struct RuntimeInfo : IRuntimeInfo

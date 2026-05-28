@@ -11,7 +11,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
 {
     public class ConcurrentTests
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [OuterLoop]
         public async Task StressTargetCorePostponement()
         {
@@ -55,7 +55,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
         static readonly int s_dop = Environment.ProcessorCount * 2;
         const int IterationCount = 10000;
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [OuterLoop] // should be a stress test that runs for a while, but needs cleanup
         public void RunConcurrentTests()
         {
@@ -163,7 +163,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
         {
             var block = new BufferBlock<int>();
             block.PostRange(0, messagesCount);
-            SpinWait.SpinUntil(() => block.Count == messagesCount); // spin until messages available
+            Assert.True(SpinWait.SpinUntil(() => block.Count == messagesCount, DataflowTestHelpers.SpinTimeoutMs)); // spin until messages available
             return block;
         }
 
@@ -171,7 +171,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
         {
             var block = new TransformBlock<int, string>(i => i.ToString());
             block.PostRange(0, messagesCount);
-            SpinWait.SpinUntil(() => block.OutputCount == messagesCount);
+            Assert.True(SpinWait.SpinUntil(() => block.OutputCount == messagesCount, DataflowTestHelpers.SpinTimeoutMs));
             return block;
         }
 
@@ -179,7 +179,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
         {
             var block = new TransformManyBlock<int, int>(i => new int[] { i });
             block.PostRange(0, messagesCount);
-            SpinWait.SpinUntil(() => block.OutputCount == messagesCount); // spin until messages available
+            Assert.True(SpinWait.SpinUntil(() => block.OutputCount == messagesCount, DataflowTestHelpers.SpinTimeoutMs)); // spin until messages available
             return block;
         }
 
@@ -187,7 +187,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
         {
             var block = new BatchBlock<int>(1);
             block.PostRange(0, messagesCount);
-            SpinWait.SpinUntil(() => block.OutputCount == messagesCount); // spin until messages available
+            Assert.True(SpinWait.SpinUntil(() => block.OutputCount == messagesCount, DataflowTestHelpers.SpinTimeoutMs)); // spin until messages available
             return block;
         }
 
@@ -199,7 +199,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 block.Target1.Post(i);
                 block.Target2.Post(i);
             }
-            SpinWait.SpinUntil(() => block.OutputCount == messagesCount); // spin until messages available
+            Assert.True(SpinWait.SpinUntil(() => block.OutputCount == messagesCount, DataflowTestHelpers.SpinTimeoutMs)); // spin until messages available
             return block;
         }
 
@@ -223,7 +223,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             var block = new JoinBlock<int, int>();
             block.Target1.PostRange(0, messagesCount);
             block.Target2.PostRange(0, messagesCount);
-            SpinWait.SpinUntil(() => block.OutputCount == messagesCount); // spin until messages available
+            Assert.True(SpinWait.SpinUntil(() => block.OutputCount == messagesCount, DataflowTestHelpers.SpinTimeoutMs)); // spin until messages available
             return block;
         }
 

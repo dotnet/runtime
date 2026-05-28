@@ -10,6 +10,15 @@
 #include "ep.h"
 #include "ds-rt.h"
 
+#if HAVE_SYS_MMAN_H && HAVE_MEMFD_CREATE && HAVE_UNISTD_H
+#include <sys/mman.h>
+#include <sys/syscall.h>
+#include <unistd.h>
+#ifndef MFD_CLOEXEC
+#define MFD_CLOEXEC 0x0001U
+#endif
+#endif
+
 /*
  * Globals and volatile access functions.
  */
@@ -342,6 +351,19 @@ ds_ipc_stream_factory_configure (ds_ipc_error_callback_func callback)
 	DS_LOG_DEBUG_0 ("ds_ipc_stream_factory_configure - Ignoring default LISTEN port");
 #endif
 
+#if HAVE_SYS_MMAN_H && HAVE_MEMFD_CREATE && HAVE_UNISTD_H
+	// Create a mapping to signal that the diagnostic server IPC is available.
+	// External tools can use this to detect when the runtime is ready to accept diagnostic commands.
+	// The mapping's lifetime is tied to the process, so tools that start after the .NET process can still detect it.
+	if (ds_ipc_stream_factory_any_listen_ports ()) {
+		int fd = (int)syscall (__NR_memfd_create, "dotnet_ipc_created", (unsigned int)MFD_CLOEXEC);
+		if (fd >= 0) {
+			mmap (NULL, 1, PROT_NONE, MAP_PRIVATE, fd, 0);
+			close (fd);
+		}
+	}
+#endif
+
 	return result;
 }
 
@@ -480,14 +502,25 @@ ds_ipc_stream_factory_resume_current_port (void)
 }
 
 bool
-ds_ipc_stream_factory_any_suspended_ports (void)
+ds_ipc_stream_factory_any_listen_ports (void)
 {
-	bool any_suspended_ports = false;
 	DN_VECTOR_PTR_FOREACH_BEGIN (DiagnosticsPort *, port, _ds_port_array) {
-		any_suspended_ports |= !(port->suspend_mode == DS_PORT_SUSPEND_MODE_NOSUSPEND || port->has_resumed_runtime);
+		if (port->type == DS_PORT_TYPE_LISTEN)
+			return true;
 	} DN_VECTOR_PTR_FOREACH_END;
 
-	return any_suspended_ports;
+	return false;
+}
+
+bool
+ds_ipc_stream_factory_any_suspended_ports (void)
+{
+	DN_VECTOR_PTR_FOREACH_BEGIN (DiagnosticsPort *, port, _ds_port_array) {
+		if (port->suspend_mode == DS_PORT_SUSPEND_MODE_SUSPEND && !port->has_resumed_runtime)
+			return true;
+	} DN_VECTOR_PTR_FOREACH_END;
+
+	return false;
 }
 
 bool

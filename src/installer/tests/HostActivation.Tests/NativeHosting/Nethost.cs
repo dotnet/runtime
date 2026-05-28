@@ -357,6 +357,20 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             }
         }
 
+        [Fact]
+        public void GetHostFxrPath_StaticNativeHost()
+        {
+            string dotNetRoot = Path.Combine(sharedState.ValidInstallRoot, "dotnet");
+            CommandResult result = Command.Create(sharedState.NativeHostStaticPath, $"{GetHostFxrPath} false nullptr {dotNetRoot}")
+                .EnableTracingAndCaptureOutputs()
+                .DotNetRoot(null)
+                .Execute();
+
+            result.Should().Pass()
+                .And.HaveStdErrContaining("Using dotnet root parameter")
+                .And.HaveStdOutContaining($"hostfxr_path: {sharedState.HostFxrPath}".ToLower());
+        }
+
         public class SharedTestState : SharedTestStateBase
         {
             public string HostFxrPath { get; }
@@ -366,6 +380,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             public string TestAssemblyPath { get; }
 
             public string ProductHostFxrPath { get; }
+
+            public string NativeHostStaticPath { get; }
 
             public SharedTestState()
             {
@@ -385,6 +401,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 Directory.CreateDirectory(productDir);
                 ProductHostFxrPath = Path.Combine(productDir, HostFxrName);
                 File.Copy(Binaries.HostFxr.FilePath, ProductHostFxrPath);
+
+                // Copy over the static native host - this executable has nethost statically linked,
+                // so it does not require the nethost shared library at runtime.
+                NativeHostStaticPath = Path.Combine(BaseDirectory, Binaries.NativeHostStatic.FileName);
+                File.Copy(Binaries.NativeHostStatic.FilePath, NativeHostStaticPath);
             }
 
             private string CreateHostFxr(string destinationDirectory)

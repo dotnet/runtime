@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Reflection.Metadata
@@ -1156,6 +1157,25 @@ namespace System.Reflection.Metadata
                 ParameterInfo[] pars = mi.GetParameters();
                 Assert.Equal("x800", pars[0].Name);
             });
+        }
+
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsRemoteExecutorSupportedAndFeatureCapable), nameof(ApplyUpdateUtil.IsNotMonoRuntime))]
+        void TestDisableMetadataUpdate()
+        {
+            RemoteInvokeOptions options = null;
+            ApplyUpdateUtil.AddRemoteInvokeOptions(ref options);
+            RemoteExecutor.Invoke(static () => { Assert.True(MetadataUpdater.IsSupported); }, options).Dispose();
+
+            options.StartInfo.EnvironmentVariables[ApplyUpdateUtil.DotNetModifiableAssembliesSwitch] = ApplyUpdateUtil.DotNetModifiableAssembliesDisabledValue;
+            RemoteExecutor.Invoke(static () =>
+            {
+                Assert.False(MetadataUpdater.IsSupported);
+                var assm = typeof(System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributeUpdates).Assembly;
+                var metadataDelta = new byte[20];
+                var ilDelta = new byte[20];
+                Assert.Throws<InvalidOperationException>(() =>
+                    MetadataUpdater.ApplyUpdate(assm, metadataDelta, ilDelta, ReadOnlySpan<byte>.Empty));
+            }, options).Dispose();
         }
     }
 }

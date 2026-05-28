@@ -14,7 +14,7 @@
 #if defined(__linux__)
 #include <unistd.h>
 #include <sys/syscall.h>
-#elif defined(__FreeBSD__)
+#elif defined(__FreeBSD__) || defined(__OpenBSD__)
 #include <pthread_np.h>
 #elif defined(__NetBSD__)
 #include <lwp.h>
@@ -60,6 +60,8 @@ static inline size_t minipal_get_current_thread_id_no_cache(void)
     tid = (size_t)pthread_getthreadid_np();
 #elif defined(__NetBSD__)
     tid = (size_t)_lwp_self();
+#elif defined(__OpenBSD__)
+    tid = (size_t)getthrid();
 #elif defined(__HAIKU__)
     tid = (size_t)find_thread(NULL);
 #elif defined(__sun)
@@ -130,6 +132,9 @@ static inline int minipal_set_thread_name(pthread_t thread, const char* name)
     if (thread != pthread_self()) return 0;
 
     return pthread_setname_np(threadName);
+#elif defined(__OpenBSD__)
+    pthread_set_name_np(thread, threadName);
+    return 0;
 #elif defined(__HAIKU__)
     return rename_thread(get_pthread_thread_id(thread), threadName);
 #else

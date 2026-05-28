@@ -7,7 +7,7 @@ namespace System.Data.Odbc.Tests
 {
     public class DependencyCheckTest
     {
-        [ConditionalFact(Helpers.OdbcNotAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.CheckOdbcNotAvailable))]
         public void OdbcConnection_OpenWhenOdbcNotInstalled_ThrowsException()
         {
             if (PlatformDetection.IsWindowsServerCore && !Environment.Is64BitProcess)

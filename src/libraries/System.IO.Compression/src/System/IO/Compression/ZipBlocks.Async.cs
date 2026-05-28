@@ -190,23 +190,20 @@ internal sealed partial class ZipCentralDirectoryFileHeader
             // Data needs to come from two sources, and we must thus copy data into a single address space.
             else
             {
-                if (dynamicHeaderSize > StackAllocationThreshold)
-                {
-                    arrayPoolBuffer = ArrayPool<byte>.Shared.Rent(dynamicHeaderSize);
-                }
-
-                byte[] collatedHeader = dynamicHeaderSize <= StackAllocationThreshold ? new byte[dynamicHeaderSize] : arrayPoolBuffer.AsSpan(0, dynamicHeaderSize).ToArray();
+                arrayPoolBuffer = ArrayPool<byte>.Shared.Rent(dynamicHeaderSize);
+                Memory<byte> collatedHeader = arrayPoolBuffer.AsMemory(0, dynamicHeaderSize);
 
                 buffer[FieldLocations.DynamicData..].CopyTo(collatedHeader);
 
-                Debug.Assert(bytesToRead == collatedHeader[remainingBufferLength..].Length);
-                int realBytesRead = await furtherReads.ReadAtLeastAsync(collatedHeader.AsMemory(remainingBufferLength..), bytesToRead, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
+                Debug.Assert(bytesToRead == collatedHeader.Length - remainingBufferLength);
+                int realBytesRead = await furtherReads.ReadAtLeastAsync(collatedHeader.Slice(remainingBufferLength), bytesToRead, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
 
                 if (realBytesRead != bytesToRead)
                 {
                     return (false, bytesRead, null);
                 }
-                dynamicHeader = collatedHeader;
+
+                dynamicHeader = collatedHeader.Span;
             }
 
             TryReadBlockFinalize(header, dynamicHeader, dynamicHeaderSize, uncompressedSizeSmall, compressedSizeSmall, diskNumberStartSmall, relativeOffsetOfLocalHeaderSmall, saveExtraFieldsAndComments, ref bytesRead, out Zip64ExtraField zip64);

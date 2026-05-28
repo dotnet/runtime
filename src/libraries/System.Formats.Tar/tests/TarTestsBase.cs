@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -6,6 +6,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -501,6 +502,8 @@ namespace System.Formats.Tar.Tests
             return entryType;
         }
 
+        protected static TarEntryType GetRegularFileEntryTypeForFormat(TarEntryFormat format) => format is TarEntryFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile;
+
         protected TarEntry InvokeTarEntryCreationConstructor(TarEntryFormat targetFormat, TarEntryType entryType, string entryName, bool setATimeCTime = false)
         {
             TarEntry entry = (targetFormat, setATimeCTime) switch
@@ -560,6 +563,22 @@ namespace System.Formats.Tar.Tests
             }
         }
 
+        public static IEnumerable<object[]> GetTarEntryFormats()
+        {
+            yield return new object[] { TarEntryFormat.V7 };
+            yield return new object[] { TarEntryFormat.Ustar };
+            yield return new object[] { TarEntryFormat.Pax };
+            yield return new object[] { TarEntryFormat.Gnu };
+        }
+
+        public static IEnumerable<object[]> GetInvalidTarEntryFormats()
+        {
+            yield return new object[] { TarEntryFormat.Unknown };
+            yield return new object[] { (TarEntryFormat)67 };
+            yield return new object[] { (TarEntryFormat)int.MaxValue };
+            yield return new object[] { (TarEntryFormat)int.MinValue };
+        }
+
         public static IEnumerable<object[]> GetFormatsAndLinks()
         {
             foreach (TarEntryFormat format in new[] { TarEntryFormat.V7, TarEntryFormat.Ustar, TarEntryFormat.Pax, TarEntryFormat.Gnu })
@@ -567,6 +586,15 @@ namespace System.Formats.Tar.Tests
                 yield return new object[] { format, TarEntryType.SymbolicLink };
                 yield return new object[] { format, TarEntryType.HardLink };
             }
+        }
+
+        public static IEnumerable<object[]> GetLinkStrategies()
+            => Enum.GetValues<TarHardLinkMode>().Select(s => new object[] { s });
+
+        public static IEnumerable<object[]> GetInvalidLinkStrategies()
+        {
+            yield return new object[] { (TarHardLinkMode)(-1) };
+            yield return new object[] { (TarHardLinkMode)99 };
         }
 
         public static IEnumerable<object[]> GetFormatsAndFiles()
@@ -886,6 +914,17 @@ namespace System.Formats.Tar.Tests
             Unlimited
         }
 
+        internal static void WriteHeaderChecksum(byte[] header)
+        {
+            int checksum = 0;
+            for (int i = 0; i < header.Length; i++)
+            {
+                checksum += (i >= 148 && i < 156) ? (byte)' ' : header[i];
+            }
+            string checksumStr = Convert.ToString(checksum, 8).PadLeft(6, '0') + "\0 ";
+            Encoding.UTF8.GetBytes(checksumStr).CopyTo(header.AsSpan(148, 8));
+        }
+
         internal void WriteTarArchiveWithOneEntry(Stream s, TarEntryFormat entryFormat, TarEntryType entryType)
         {
             using TarWriter writer = new(s, leaveOpen: true);
@@ -897,6 +936,193 @@ namespace System.Formats.Tar.Tests
             }
 
             writer.WriteEntry(entry);
+        }
+
+        internal static TempDirectory CreateSourceDirectoryForCreateFromDirectory_UsesWriterOptions()
+        {
+            TempDirectory root = new TempDirectory();
+            try
+            {
+                string file1 = Path.Join(root.Path, "file.txt");
+                File.WriteAllText(file1, "content");
+                string file2 = Path.Join(root.Path, "linked.txt");
+                File.CreateHardLink(file2, file1);
+
+                return root;
+            }
+            catch
+            {
+                root.Dispose();
+                throw;
+            }
+        }
+
+        internal static void VerifyCreateFromDirectory_UsesWriterOptions(Stream archive, bool preserveLinks)
+        {
+            archive.Position = 0;
+            using TarReader reader = new TarReader(archive);
+
+            TarEntry entry1 = reader.GetNextEntry();
+            Assert.NotNull(entry1);
+
+            TarEntry entry2 = reader.GetNextEntry();
+            Assert.NotNull(entry2);
+
+            if (preserveLinks)
+            {
+                Assert.True(entry1.EntryType == TarEntryType.HardLink || entry2.EntryType == TarEntryType.HardLink);
+            }
+            else
+            {
+                Assert.Equal(TarEntryType.RegularFile, entry1.EntryType);
+                Assert.Equal(TarEntryType.RegularFile, entry2.EntryType);
+            }
+
+            Assert.Null(reader.GetNextEntry());
+        }
+
+        protected static byte[] BuildRawPaxArchive(
+            string headerName, string eaPath,
+            Dictionary<string, string> extraEAs = null,
+            byte[] fileContent = null,
+            int mode = 0b110_100_100, // 0644
+            int uid = 0, int gid = 0,
+            long headerSizeField = -1,
+            long mtime = 1700000000,
+            char typeflag = '0',
+            string linkname = "")
+        {
+            using var ms = new MemoryStream();
+            byte[] eaData = BuildRawPaxExtendedAttributeData(eaPath, extraEAs);
+
+            WriteRawTarHeader(ms, "PaxHeaders.0/entry", 0, 0, 0, eaData.Length, 0, 'x', "");
+            ms.Write(eaData);
+            PadToTarBlockBoundary(ms);
+
+            long size = headerSizeField >= 0 ? headerSizeField : (fileContent?.Length ?? 0);
+            WriteRawTarHeader(ms, headerName, mode, uid, gid, size, mtime, typeflag, linkname);
+            if (fileContent is not null)
+            {
+                ms.Write(fileContent);
+            }
+            PadToTarBlockBoundary(ms);
+
+            ms.Write(new byte[1024]);
+            return ms.ToArray();
+        }
+
+        protected static byte[] BuildRawPaxArchiveWithEAPathOverride(string headerName, string eaPath, byte[] fileContent)
+            => BuildRawPaxArchive(headerName, eaPath, fileContent: fileContent);
+
+        protected static byte[] BuildRawPaxArchiveWithSizeOverride(
+            string headerName, string eaPath, byte[] fileContent,
+            long headerSizeField, long eaSizeOverride)
+            => BuildRawPaxArchive(headerName, eaPath,
+                extraEAs: new Dictionary<string, string> { ["size"] = eaSizeOverride.ToString() },
+                fileContent: fileContent, headerSizeField: headerSizeField);
+
+        protected static byte[] BuildRawPaxArchiveSymlink(
+            string headerName, string eaPath,
+            string headerLinkName, string eaLinkPath)
+            => BuildRawPaxArchive(headerName, eaPath,
+                extraEAs: new Dictionary<string, string> { ["linkpath"] = eaLinkPath },
+                mode: Convert.ToInt32("777", 8), typeflag: '2', linkname: headerLinkName);
+
+        protected static byte[] BuildRawPaxExtendedAttributeData(string eaPath, Dictionary<string, string> extraEAs)
+        {
+            var sb = new StringBuilder();
+            AppendRawPaxExtendedAttributeRecord(sb, "path", eaPath);
+            if (extraEAs is not null)
+            {
+                foreach (KeyValuePair<string, string> kvp in extraEAs)
+                {
+                    AppendRawPaxExtendedAttributeRecord(sb, kvp.Key, kvp.Value);
+                }
+            }
+
+            return Encoding.UTF8.GetBytes(sb.ToString());
+        }
+
+        protected static void WriteRawTarHeader(MemoryStream ms, string name, int mode, int uid, int gid,
+            long size, long mtime, char typeflag, string linkname)
+        {
+            byte[] header = new byte[512];
+            Encoding.UTF8.GetBytes(name.AsSpan(0, Math.Min(name.Length, 100)), header.AsSpan(0));
+            WriteRawOctalField(header, 100, 8, mode);
+            WriteRawOctalField(header, 108, 8, uid);
+            WriteRawOctalField(header, 116, 8, gid);
+            WriteRawOctalField(header, 124, 12, size);
+            WriteRawOctalField(header, 136, 12, mtime);
+            header[156] = (byte)typeflag;
+            if (!string.IsNullOrEmpty(linkname))
+            {
+                Encoding.UTF8.GetBytes(linkname.AsSpan(0, Math.Min(linkname.Length, 100)), header.AsSpan(157));
+            }
+
+            "ustar\0"u8.CopyTo(header.AsSpan(257));
+            "00"u8.CopyTo(header.AsSpan(263));
+
+            for (int i = 148; i < 156; i++)
+            {
+                header[i] = (byte)' ';
+            }
+
+            long checksum = 0;
+            for (int i = 0; i < 512; i++)
+            {
+                checksum += header[i];
+            }
+
+            WriteRawOctalField(header, 148, 7, checksum);
+            header[155] = (byte)' ';
+            ms.Write(header);
+        }
+
+        protected static void PadToTarBlockBoundary(MemoryStream ms)
+        {
+            int remainder = (int)(ms.Length % 512);
+            if (remainder != 0)
+            {
+                ms.Write(new byte[512 - remainder]);
+            }
+        }
+
+        protected static void AppendRawPaxExtendedAttributeRecord(StringBuilder sb, string key, string value)
+        {
+            string content = $" {key}={value}\n";
+            int contentByteCount = Encoding.UTF8.GetByteCount(content);
+            int totalLen = contentByteCount + 1;
+            while (true)
+            {
+                string lenString = totalLen.ToString(CultureInfo.InvariantCulture);
+                int newTotalLen = lenString.Length + contentByteCount;
+                if (newTotalLen == totalLen)
+                {
+                    break;
+                }
+
+                totalLen = newTotalLen;
+            }
+
+            sb.Append($"{totalLen}{content}");
+        }
+
+        private static void WriteRawOctalField(byte[] buffer, int offset, int fieldLen, long value)
+        {
+            string octal = Convert.ToString(value, 8);
+            int maxDigits = fieldLen - 1;
+            octal = octal.PadLeft(maxDigits, '0');
+            if (octal.Length > maxDigits)
+            {
+                octal = octal[^maxDigits..];
+            }
+
+            for (int i = 0; i < octal.Length; i++)
+            {
+                buffer[offset + i] = (byte)octal[i];
+            }
+
+            buffer[offset + maxDigits] = 0;
         }
     }
 }

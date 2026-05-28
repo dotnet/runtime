@@ -9,17 +9,21 @@ using System.IO;
 using System.Linq;
 using System.Xml.Linq;
 using ILCompiler.DependencyAnalysis;
+using ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.DependencyAnalysisFramework;
 using Internal.Text;
 using Internal.TypeSystem;
+
 using static ILCompiler.DependencyAnalysis.ObjectNode;
 using static ILCompiler.DependencyAnalysis.RelocType;
 using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
+using CodeDataLayout = CodeDataLayoutMode.CodeDataLayout;
 
 namespace ILCompiler.ObjectWriter
 {
     public abstract partial class ObjectWriter
     {
+        protected virtual CodeDataLayout LayoutMode => CodeDataLayout.Unified;
         private protected sealed record SymbolDefinition(int SectionIndex, long Value, int Size = 0, bool Global = false);
         protected sealed record SymbolicRelocation(long Offset, RelocType Type, Utf8String SymbolName, long Addend = 0);
         private sealed record BlockToRelocate(int SectionIndex, long Offset, byte[] Data, Relocation[] Relocations);
@@ -168,22 +172,14 @@ namespace ILCompiler.ObjectWriter
                 definedSymbol.SectionIndex == sectionIndex)
             {
                 // Resolve the relocation to already defined symbol and write it into data
-                fixed (byte *pData = data)
+                fixed (byte* pData = data)
                 {
-                    // RyuJIT generates the Thumb bit in the addend and we also get it from
-                    // the symbol value. The AAELF ABI specification defines the R_ARM_THM_JUMP24
-                    // and R_ARM_THM_MOVW_PREL_NC relocations using the formula ((S + A) | T) – P.
-                    // The thumb bit is thus supposed to be only added once.
-                    // For R_ARM_THM_JUMP24 the thumb bit cannot be encoded, so mask it out.
-                    //
-                    // R2R doesn't use add the thumb bit to the symbol value, so we don't need to do this here.
-#if !READYTORUN
-                    long maskThumbBitOut = relocType is IMAGE_REL_BASED_THUMB_BRANCH24 or IMAGE_REL_BASED_THUMB_MOV32_PCREL ? 1 : 0;
-                    long maskThumbBitIn = relocType is IMAGE_REL_BASED_THUMB_MOV32_PCREL ? 1 : 0;
-#else
-                    long maskThumbBitOut = 0;
-                    long maskThumbBitIn = 0;
-#endif
+                    // Method symbols should be defined with the thumb bit (+1) set per the AAELF ABI
+                    // convention. For BRANCH24, the encoding cannot represent the thumb bit
+                    // (per AAELF formula ((S + A) | T) – P), so strip it from the symbol value.
+                    long symbolValue = relocType is IMAGE_REL_BASED_THUMB_BRANCH24
+                        ? definedSymbol.Value & ~1L
+                        : definedSymbol.Value;
                     long adjustedAddend = addend;
 
                     adjustedAddend -= relocType switch
@@ -194,9 +190,8 @@ namespace ILCompiler.ObjectWriter
                         _ => 0
                     };
 
-                    adjustedAddend += definedSymbol.Value & ~maskThumbBitOut;
+                    adjustedAddend += symbolValue;
                     adjustedAddend += Relocation.ReadValue(relocType, (void*)pData);
-                    adjustedAddend |= definedSymbol.Value & maskThumbBitIn;
                     adjustedAddend -= offset;
 
                     if (relocType is IMAGE_REL_BASED_THUMB_BRANCH24 && !Relocation.FitsInThumb2BlRel24((int)adjustedAddend))
@@ -313,11 +308,13 @@ namespace ILCompiler.ObjectWriter
         {
             SortedSet<Utf8String> undefinedSymbolSet = new SortedSet<Utf8String>();
             foreach (var relocationList in _sectionIndexToRelocations)
-            foreach (var symbolicRelocation in relocationList)
             {
-                if (!_definedSymbols.ContainsKey(symbolicRelocation.SymbolName))
+                foreach (var symbolicRelocation in relocationList)
                 {
-                    undefinedSymbolSet.Add(symbolicRelocation.SymbolName);
+                    if (!_definedSymbols.ContainsKey(symbolicRelocation.SymbolName))
+                    {
+                        undefinedSymbolSet.Add(symbolicRelocation.SymbolName);
+                    }
                 }
             }
             return undefinedSymbolSet;
@@ -360,6 +357,9 @@ namespace ILCompiler.ObjectWriter
             List<ChecksumsToCalculate> checksumRelocations = [];
             foreach (DependencyNode depNode in nodes)
             {
+                // TODO-WASM: emit symbol ranges properly when code and data are separated
+                // Right now we still need to determine placements for some traditionally text-placed nodes,
+                // such as DebugDirectoryEntryNode and AssemblyStubNode
                 if (depNode is ISymbolRangeNode symbolRange)
                 {
                     symbolRangeNodes.Add(symbolRange);
@@ -377,14 +377,15 @@ namespace ILCompiler.ObjectWriter
 
                 ISymbolNode symbolNode = node as ISymbolNode;
 
-#if !READYTORUN
-                ISymbolNode deduplicatedSymbolNode = _nodeFactory.ObjectInterner.GetDeduplicatedSymbol(_nodeFactory, symbolNode);
-                if (deduplicatedSymbolNode != symbolNode)
+                if (symbolNode is not null)
                 {
-                    dumper?.ReportFoldedNode(_nodeFactory, node, deduplicatedSymbolNode);
-                    continue;
+                    ISymbolNode deduplicatedSymbolNode = _nodeFactory.ObjectInterner.GetDeduplicatedSymbol(_nodeFactory, symbolNode);
+                    if (deduplicatedSymbolNode != symbolNode)
+                    {
+                        dumper?.ReportFoldedNode(_nodeFactory, node, deduplicatedSymbolNode);
+                        continue;
+                    }
                 }
-#endif
 
                 ObjectData nodeContents = node.GetData(_nodeFactory);
 
@@ -401,24 +402,37 @@ namespace ILCompiler.ObjectWriter
                     GetOrCreateSection(section, currentSymbolName, currentSymbolName) :
                     GetOrCreateSection(section);
 
-                sectionWriter.EmitAlignment(nodeContents.Alignment);
+                if (section.NeedsAlignment)
+                {
+                    sectionWriter.EmitAlignment(nodeContents.Alignment);
+                }
 
-                bool isMethod = node is IMethodBodyNode or AssemblyStubNode;
-#if !READYTORUN
-                bool recordSize = isMethod;
+                bool isMethod = node is IPCodeSymbolNode;
                 long thumbBit = _nodeFactory.Target.Architecture == TargetArchitecture.ARM && isMethod ? 1 : 0;
-#else
-                bool recordSize = true;
-                // R2R records the thumb bit in the addend when needed, so we don't have to do it here.
-                long thumbBit = 0;
-#endif
+
+                if (node is WasmTypeNode signature)
+                {
+                    RecordMethodSignature(signature);
+                }
+
+                if (node is INodeWithTypeSignature codeNode && _nodeFactory.Target.IsWasm)
+                {
+                    Debug.Assert(codeNode.Signature != null, $"Wasm code node {codeNode.GetType()} has null signature");
+
+                    // Record only information we can get from the MethodDesc here. The actual
+                    // body will be emitted by the call to EmitData() at the end
+                    // of this loop iteration.
+                    RecordMethodDeclaration(codeNode);
+                }
+
                 foreach (ISymbolDefinitionNode n in nodeContents.DefinedSymbols)
                 {
                     Utf8String mangledName = n == node ? currentSymbolName : GetMangledName(n);
+                    Debug.Assert(((ulong)thumbBit & (ulong)(uint)n.Offset) == 0);
                     sectionWriter.EmitSymbolDefinition(
                         mangledName,
                         n.Offset + thumbBit,
-                        n.Offset == 0 && recordSize ? nodeContents.Data.Length : 0);
+                        n.Offset == 0 ? nodeContents.Data.Length : 0);
 
                     _outputInfoBuilder?.AddSymbol(new OutputSymbol(sectionWriter.SectionIndex, (ulong)(sectionWriter.Position + n.Offset), mangledName));
 
@@ -429,7 +443,7 @@ namespace ILCompiler.ObjectWriter
                         sectionWriter.EmitSymbolDefinition(
                             alternateCName,
                             n.Offset + thumbBit,
-                            n.Offset == 0 && recordSize ? nodeContents.Data.Length : 0,
+                            n.Offset == 0 ? nodeContents.Data.Length : 0,
                             global: !isHidden);
 
                         if (n is IMethodNode)
@@ -458,8 +472,8 @@ namespace ILCompiler.ObjectWriter
 #if DEBUG
                     // Pointer relocs should be aligned at pointer boundaries within the image.
                     // Processing misaligned relocs (especially relocs that straddle page boundaries) can be
-                    // expensive on Windows. But: we can't guarantee this on x86.
-                    if (_nodeFactory.Target.Architecture != TargetArchitecture.X86)
+                    // expensive on Windows. But: we can't guarantee this on x86, and Wasm doesn't have reloc pointer alignment requirements.
+                    if (_nodeFactory.Target.Architecture is not TargetArchitecture.X86 and not TargetArchitecture.Wasm32)
                     {
                         bool hasPointerRelocs = false;
                         foreach (Relocation reloc in nodeContents.Relocs)
@@ -499,8 +513,7 @@ namespace ILCompiler.ObjectWriter
                     }
                 }
 
-                // Write the data. Note that this has to be done last as not to advance
-                // the section writer position.
+                // Note that this has to be done last as not to advance the section writer position.
                 sectionWriter.EmitData(nodeContents.Data);
             }
 
@@ -522,10 +535,8 @@ namespace ILCompiler.ObjectWriter
                     continue;
                 }
 
-#if !READYTORUN
                 startNode = _nodeFactory.ObjectInterner.GetDeduplicatedSymbol(_nodeFactory, startNode);
                 endNode = _nodeFactory.ObjectInterner.GetDeduplicatedSymbol(_nodeFactory, endNode);
-#endif
                 Utf8String startNodeName = GetMangledName(startNode);
                 Utf8String endNodeName = GetMangledName(endNode);
 
@@ -544,11 +555,7 @@ namespace ILCompiler.ObjectWriter
                 ArrayBuilder<Relocation> checksumRelocationsBuilder = default;
                 foreach (Relocation reloc in blockToRelocate.Relocations)
                 {
-#if READYTORUN
-                    ISymbolNode relocTarget = reloc.Target;
-#else
                     ISymbolNode relocTarget = _nodeFactory.ObjectInterner.GetDeduplicatedSymbol(_nodeFactory, reloc.Target);
-#endif
 
                     if (reloc.RelocType == RelocType.IMAGE_REL_FILE_CHECKSUM_CALLBACK)
                     {
@@ -607,6 +614,16 @@ namespace ILCompiler.ObjectWriter
                     _outputInfoBuilder.AddSection(outputSection);
                 }
             }
+        }
+
+        private protected virtual void RecordMethodDeclaration(INodeWithTypeSignature node)
+        {
+            Debug.Assert(LayoutMode == CodeDataLayout.Separate);
+        }
+
+        private protected virtual void RecordMethodSignature(WasmTypeNode signature)
+        {
+            Debug.Assert(LayoutMode == CodeDataLayout.Separate);
         }
 
         private protected virtual void RecordWellKnownSymbol(Utf8String currentSymbolName, SortableDependencyNode.ObjectNodeOrder classCode)
@@ -708,8 +725,9 @@ namespace ILCompiler.ObjectWriter
         private struct ProgressReporter
         {
             private readonly Logger _logger;
-            private readonly int _increment;
+            private readonly int _total;
             private int _current;
+            private int _lastReportedStep;
 
             // Will report progress every (100 / 10) = 10%
             private const int Steps = 10;
@@ -717,18 +735,20 @@ namespace ILCompiler.ObjectWriter
             public ProgressReporter(Logger logger, int total)
             {
                 _logger = logger;
-                _increment = total / Steps;
+                _total = total;
                 _current = 0;
+                _lastReportedStep = 0;
             }
 
             public void LogProgress()
             {
                 _current++;
 
-                int adjusted = _current + Steps - 1;
-                if ((adjusted % _increment) == 0)
+                int step = (_current * Steps) / _total;
+                if (step > _lastReportedStep)
                 {
-                    _logger.LogMessage($"{(adjusted / _increment) * (100 / Steps)}%...");
+                    _logger.LogMessage($"{step * (100 / Steps)}%...");
+                    _lastReportedStep = step;
                 }
             }
         }

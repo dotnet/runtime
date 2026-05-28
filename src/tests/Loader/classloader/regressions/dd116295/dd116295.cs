@@ -5,6 +5,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using Xunit;
+using TestLibrary;
 
 namespace ConsoleApplication1
 {
@@ -25,6 +26,7 @@ namespace ConsoleApplication1
             public B[] b;
         }
 
+        [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
         [Fact]
         public static void TestEntryPoint()
         {

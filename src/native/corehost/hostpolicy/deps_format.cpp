@@ -119,11 +119,9 @@ void deps_json_t::reconcile_libraries_with_targets(
             continue;
         }
 
-        const pal::string_t& hash = library.value[_X("sha512")].GetString();
         bool serviceable = library.value[_X("serviceable")].GetBool();
 
         pal::string_t library_path = get_optional_path(library.value, _X("path"));
-        pal::string_t library_hash_path = get_optional_path(library.value, _X("hashPath"));
         pal::string_t runtime_store_manifest_list = get_optional_path(library.value, _X("runtimeStoreManifestName"));
         pal::string_t library_type = to_lower(library.value[_X("type")].GetString());
 
@@ -153,9 +151,7 @@ void deps_json_t::reconcile_libraries_with_targets(
                 entry.library_name = library_name;
                 entry.library_version = library_version;
                 entry.library_type = library_type;
-                entry.library_hash = hash;
                 entry.library_path = library_path;
-                entry.library_hash_path = library_hash_path;
                 entry.runtime_store_manifest_list = runtime_store_manifest_list;
                 entry.asset_type = static_cast<deps_entry_t::asset_types>(i);
                 entry.is_serviceable = serviceable;
@@ -404,7 +400,8 @@ void deps_json_t::process_runtime_targets(const json_parser_t::value_t& json, co
                     continue;
                 }
 
-                version_t assembly_version, file_version;
+                version_t assembly_version = version_t::empty();
+                version_t file_version = version_t::empty();
 
                 pal::string_t assembly_version_str = get_optional_property(file.value, _X("assemblyVersion"));
                 if (!assembly_version_str.empty())
@@ -466,7 +463,8 @@ void deps_json_t::process_targets(const json_parser_t::value_t& json, const pal:
             asset_files.reserve(files.MemberCount());
             for (const auto& file : files)
             {
-                version_t assembly_version, file_version;
+                version_t assembly_version = version_t::empty();
+                version_t file_version = version_t::empty();
 
                 pal::string_t assembly_version_str = get_optional_property(file.value, _X("assemblyVersion"));
                 if (assembly_version_str.length() > 0)

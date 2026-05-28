@@ -64,6 +64,7 @@ public class Interfaces
         TestDynamicStaticGenericVirtualMethods.Run();
         TestRuntime109496Regression.Run();
         TestRuntime113664Regression.Run();
+        TestRuntime125577Regression.Run();
 
         return Pass;
     }
@@ -2046,4 +2047,30 @@ public class Interfaces
             return T.Frob<V>();
         }
     }
+
+    class TestRuntime125577Regression
+    {
+        class Shapeshifter : IDynamicInterfaceCastable
+        {
+            bool _result;
+            public Shapeshifter(bool result) => _result = result;
+
+            public RuntimeTypeHandle GetInterfaceImplementation(RuntimeTypeHandle interfaceType) => throw new NotImplementedException();
+            public bool IsInterfaceImplemented(RuntimeTypeHandle interfaceType, bool throwIfNotImplemented) => _result;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool Is(object o, bool expected) => o is IEnumerable<object> == expected;
+
+        public static void Run()
+        {
+            // Call multiple times in case we just flushed the cast cache (when we flush we don't store).
+            if (!Is(new Shapeshifter(true), true)
+                || !Is(new Shapeshifter(false), false)
+                || !Is(new Shapeshifter(true), true)
+                || !Is(new Shapeshifter(false), false))
+                throw new Exception();
+        }
+    }
+
 }

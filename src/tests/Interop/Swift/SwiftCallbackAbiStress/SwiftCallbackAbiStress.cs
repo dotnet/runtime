@@ -7,7 +7,10 @@ using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Swift;
 using Xunit;
+using TestLibrary;
 
+[PlatformSpecific(TestPlatforms.AnyApple)]
+[ActiveIssue("https://github.com/dotnet/runtime/issues/121983", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMiniJIT), nameof(PlatformDetection.IsX64Process))]
 public unsafe class SwiftCallbackAbiStress
 {
     private const string SwiftLib = "libSwiftCallbackAbiStress.dylib";
@@ -8570,3 +8573,4 @@ public unsafe class SwiftCallbackAbiStress
     }
 
 }
+

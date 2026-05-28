@@ -1343,8 +1343,8 @@ namespace System.Tests
                 {
                     // We'll build up the exception message ourselves so the dev knows what code point failed.
                     throw EqualException.ForMismatchedValues(
-                        expected: expected,
-                        actual: char.GetUnicodeCategory((char)i),
+                        expected: expected.ToString(),
+                        actual: char.GetUnicodeCategory((char)i).ToString(),
                         banner: FormattableString.Invariant($@"char.GetUnicodeCategory('\u{i:X4}') returned wrong value."));
                 }
             }
@@ -1363,8 +1363,8 @@ namespace System.Tests
                 {
                     // We'll build up the exception message ourselves so the dev knows what code point failed.
                     throw EqualException.ForMismatchedValues(
-                        expected: UnicodeData.IsLetter((char)i),
-                        actual: char.IsLetter((char)i),
+                        expected: UnicodeData.IsLetter((char)i).ToString(),
+                        actual: char.IsLetter((char)i).ToString(),
                         banner: FormattableString.Invariant($@"char.IsLetter('\u{i:X4}') returned wrong value."));
                 }
             }
@@ -1384,8 +1384,8 @@ namespace System.Tests
                 {
                     // We'll build up the exception message ourselves so the dev knows what code point failed.
                     throw EqualException.ForMismatchedValues(
-                        expected: expected,
-                        actual: char.IsLower((char)i),
+                        expected: expected.ToString(),
+                        actual: char.IsLower((char)i).ToString(),
                         banner: FormattableString.Invariant($@"char.IsLower('\u{i:X4}') returned wrong value."));
                 }
             }
@@ -1406,8 +1406,8 @@ namespace System.Tests
                 {
                     // We'll build up the exception message ourselves so the dev knows what code point failed.
                     throw EqualException.ForMismatchedValues(
-                        expected: expected,
-                        actual: char.IsUpper((char)i),
+                        expected: expected.ToString(),
+                        actual: char.IsUpper((char)i).ToString(),
                         banner: FormattableString.Invariant($@"char.IsUpper('\u{i:X4}') returned wrong value."));
                 }
             }
@@ -1426,8 +1426,8 @@ namespace System.Tests
                 {
                     // We'll build up the exception message ourselves so the dev knows what code point failed.
                     throw EqualException.ForMismatchedValues(
-                        expected: UnicodeData.IsWhiteSpace(i),
-                        actual: char.IsWhiteSpace((char)i),
+                        expected: UnicodeData.IsWhiteSpace(i).ToString(),
+                        actual: char.IsWhiteSpace((char)i).ToString(),
                         banner: FormattableString.Invariant($@"char.IsWhiteSpace('\u{i:X4}') returned wrong value."));
                 }
             }

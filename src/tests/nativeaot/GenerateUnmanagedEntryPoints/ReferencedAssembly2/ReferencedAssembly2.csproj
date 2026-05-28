@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <CLRTestKind>SharedLibrary</CLRTestKind>
     <OutputType>Library</OutputType>
   </PropertyGroup>
 

@@ -301,7 +301,7 @@ namespace System.Numerics
         /// <exception cref="ArgumentException"><paramref name="style" /> is not a supported <see cref="NumberStyles" /> value.</exception>
         /// <exception cref="FormatException"><paramref name="utf8Text" /> is not in the correct format.</exception>
         /// <exception cref="OverflowException"><paramref name="utf8Text" /> is not representable by <typeparamref name="TSelf" />.</exception>
-        static virtual TSelf Parse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider)
+        static virtual unsafe TSelf Parse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider)
         {
             // Convert text using stackalloc for <= 256 characters and ArrayPool otherwise
 
@@ -435,7 +435,7 @@ namespace System.Numerics
         /// <param name="result">On return, contains the result of successfully parsing <paramref name="utf8Text" /> or an undefined value on failure.</param>
         /// <returns><c>true</c> if <paramref name="utf8Text" /> was successfully parsed; otherwise, <c>false</c>.</returns>
         /// <exception cref="ArgumentException"><paramref name="style" /> is not a supported <see cref="NumberStyles" /> value.</exception>
-        static virtual bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out TSelf result)
+        static virtual unsafe bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out TSelf result)
         {
             // Convert text using stackalloc for <= 256 characters and ArrayPool otherwise
 
@@ -483,7 +483,7 @@ namespace System.Numerics
             return succeeded;
         }
 
-        bool IUtf8SpanFormattable.TryFormat(Span<byte> utf8Destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider)
+        unsafe bool IUtf8SpanFormattable.TryFormat(Span<byte> utf8Destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider)
         {
             char[]? utf16DestinationArray;
             scoped Span<char> utf16Destination;
@@ -537,7 +537,7 @@ namespace System.Numerics
             return false;
         }
 
-        static TSelf IUtf8SpanParsable<TSelf>.Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider)
+        static unsafe TSelf IUtf8SpanParsable<TSelf>.Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider)
         {
             // Convert text using stackalloc for <= 256 characters and ArrayPool otherwise
 
@@ -584,7 +584,7 @@ namespace System.Numerics
             return result;
         }
 
-        static bool IUtf8SpanParsable<TSelf>.TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, [MaybeNullWhen(returnValue: false)] out TSelf result)
+        static unsafe bool IUtf8SpanParsable<TSelf>.TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, [MaybeNullWhen(returnValue: false)] out TSelf result)
         {
             // Convert text using stackalloc for <= 256 characters and ArrayPool otherwise
 

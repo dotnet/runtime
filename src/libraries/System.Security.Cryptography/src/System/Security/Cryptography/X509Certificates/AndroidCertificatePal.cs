@@ -148,7 +148,7 @@ namespace System.Security.Cryptography.X509Certificates
                 {
                     using (PointerMemoryManager<byte> manager = new(rawDataPtr, rawData.Length))
                     {
-                        AsnValueReader reader = new AsnValueReader(rawData, AsnEncodingRules.DER);
+                        ValueAsnReader reader = new ValueAsnReader(rawData, AsnEncodingRules.DER);
                         CertificateAsn.Decode(ref reader, manager.Memory, out _);
                     }
                 }

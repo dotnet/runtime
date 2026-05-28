@@ -156,6 +156,9 @@
   <data name="Argument_AddingDuplicate" xml:space="preserve">
     <value>An item with the same key has already been added.</value>
   </data>
+  <data name="Argument_AddingDuplicateWithKey" xml:space="preserve">
+    <value>An item with the same key has already been added. Key: {0}</value>
+  </data>
   <data name="Argument_GenericArgsCount" xml:space="preserve">
     <value>The number of generic arguments provided doesn't equal the arity of the generic type definition.</value>
   </data>

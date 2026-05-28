@@ -44,7 +44,7 @@ class FieldDesc
 
     // See also: FieldDesc::InitializeFrom method
 
-    union { //create a union so I can get the correct offset for ClrDump.
+    union { //create a union so I can get the correct offset for ClrDump. [cDAC] [RuntimeTypeSystem]: Contract depends on these offsets.
         unsigned m_dword1;
         struct {
         unsigned m_mb               : 24;
@@ -61,6 +61,7 @@ class FieldDesc
         struct {
         // Note: this has been as low as 22 bits in the past & seemed to be OK.
         // we can steal some more bits here if we need them.
+        // [cDAC] [RuntimeTypeSystem]: Contract depends on these offsets.
         unsigned m_dwOffset         : 27;
         unsigned m_type             : 5;
         };

@@ -59,7 +59,7 @@ namespace System.Xml.Serialization
                 return null;
 
             if (!xmlMapping.GenerateSerializer)
-                throw new ArgumentException(SR.Format(SR.XmlInternalError, "xmlMapping"));
+                throw new ArgumentException(SR.XmlInternalError);
 
             if (xmlMapping is XmlTypeMapping xmlTypeMapping)
             {
@@ -71,7 +71,7 @@ namespace System.Xml.Serialization
             }
             else
             {
-                throw new ArgumentException(SR.Format(SR.XmlInternalError, "xmlMapping"));
+                throw new ArgumentException(SR.XmlInternalError);
             }
         }
 
@@ -1739,11 +1739,10 @@ namespace System.Xml.Serialization
 
                     if (member.Mapping.CheckSpecified == SpecifiedAccessor.ReadWrite)
                     {
+                        var specifiedSetter = GetSetMemberValueDelegate(o!, $"{member.Mapping.Name}Specified");
                         member.CheckSpecifiedSource = (_) =>
                         {
-                            string specifiedMemberName = $"{member.Mapping.Name}Specified";
-                            MethodInfo? specifiedMethodInfo = o!.GetType().GetMethod($"set_{specifiedMemberName}");
-                            specifiedMethodInfo?.Invoke(o, new object[] { true });
+                            specifiedSetter(o, true);
                         };
                     }
 

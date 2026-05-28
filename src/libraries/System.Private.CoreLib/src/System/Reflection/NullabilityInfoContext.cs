@@ -339,7 +339,7 @@ namespace System.Reflection
         {
             NullabilityState state = NullabilityState.Unknown;
             NullabilityInfo? elementState = null;
-            NullabilityInfo[] genericArgumentsState = Array.Empty<NullabilityInfo>();
+            NullabilityInfo[] genericArgumentsState = [];
             Type underlyingType = type;
 
             if (underlyingType.IsByRef || underlyingType.IsPointer)

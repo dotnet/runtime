@@ -13,4 +13,7 @@
     <Compile Include="gh53564.cs" />
     <ProjectReference Include="../common/tracing_common.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

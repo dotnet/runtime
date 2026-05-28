@@ -411,6 +411,9 @@
   <data name="SerializationConverterOnAttributeNotCompatible" xml:space="preserve">
     <value>The converter specified on '{0}' is not compatible with the type '{1}'.</value>
   </data>
+  <data name="SerializationConverterOnAttributeOpenGenericNotCompatible" xml:space="preserve">
+    <value>The open generic converter type '{1}' specified on '{0}' cannot be instantiated because the target type is not a generic type with a matching number of type parameters.</value>
+  </data>
   <data name="SerializationConverterOnAttributeInvalid" xml:space="preserve">
     <value>The converter specified on '{0}' does not derive from JsonConverter or have a public parameterless constructor.</value>
   </data>
@@ -638,8 +641,17 @@
   <data name="MissingFSharpCoreMember" xml:space="preserve">
     <value>Could not locate required member '{0}' from FSharp.Core. This might happen because your application has enabled member-level trimming.</value>
   </data>
-  <data name="FSharpDiscriminatedUnionsNotSupported" xml:space="preserve">
-    <value>F# discriminated union serialization is not supported. Consider authoring a custom converter for the type.</value>
+  <data name="FSharpUnionDuplicateCaseName" xml:space="preserve">
+    <value>The F# discriminated union type '{0}' has duplicate case discriminator name '{1}'.</value>
+  </data>
+  <data name="FSharpUnionDuplicateFieldName" xml:space="preserve">
+    <value>The F# discriminated union type '{0}' case '{1}' has duplicate field name '{2}'.</value>
+  </data>
+  <data name="FSharpUnionFieldConflictsWithDiscriminator" xml:space="preserve">
+    <value>The F# discriminated union type '{0}' has a case field name '{1}' that conflicts with the type discriminator property name '{2}'.</value>
+  </data>
+  <data name="FSharpUnionMissingDiscriminatorProperty" xml:space="preserve">
+    <value>Required type discriminator property '{0}' not found when deserializing F# discriminated union type '{1}'.</value>
   </data>
   <data name="Polymorphism_BaseConverterDoesNotSupportMetadata" xml:space="preserve">
     <value>The converter for polymorphic type '{0}' does not support metadata writes or reads.</value>
@@ -838,5 +850,41 @@
   </data>
   <data name="PipeReaderCanceled" xml:space="preserve">
     <value>PipeReader.ReadAsync was canceled.</value>
+  </data>
+  <data name="PolymorphicTypeClassifierReturnedNull" xml:space="preserve">
+    <value>The custom type classifier returned null, indicating it was unable to determine the target type for the JSON payload. Ensure the classifier handles all expected JSON shapes.</value>
+  </data>
+  <data name="TypeClassifierMustDeriveFromJsonTypeClassifierFactory" xml:space="preserve">
+    <value>The type classifier '{0}' specified for type '{1}' must derive from JsonTypeClassifierFactory.</value>
+  </data>
+  <data name="TypeClassifierNotSupported" xml:space="preserve">
+    <value>The type classifier '{0}' does not support type '{1}'.</value>
+  </data>
+  <data name="UnionAmbiguousJsonValueType" xml:space="preserve">
+    <value>JSON value type '{0}' is ambiguous for union type '{1}' because multiple case types can use this value type. Specify a custom type classifier to support deserialization.</value>
+  </data>
+  <data name="UnionCaseWithCustomConverterRequiresClassifier" xml:space="preserve">
+    <value>The union type '{0}' contains a case type that uses a custom JsonConverter. Specify a custom type classifier to support deserialization.</value>
+  </data>
+  <data name="UnionCannotCreateValue" xml:space="preserve">
+    <value>Cannot create values for union type '{0}'. Ensure the type has a public single-parameter constructor for each union case, or configure a constructor in its JSON contract.</value>
+  </data>
+  <data name="UnionCannotReadValue" xml:space="preserve">
+    <value>Cannot read values from union type '{0}'. Ensure the type has a public object Value property, or configure a deconstructor in its JSON contract.</value>
+  </data>
+  <data name="UnionCasesNotPopulated" xml:space="preserve">
+    <value>The union type '{0}' must specify at least one union case.</value>
+  </data>
+  <data name="UnionDoesNotAcceptNull" xml:space="preserve">
+    <value>The union type '{0}' does not support null values.</value>
+  </data>
+  <data name="UnionJsonTokenTypeNotSupported" xml:space="preserve">
+    <value>JSON token type '{0}' is not supported for union type '{1}'.</value>
+  </data>
+  <data name="UnionRuntimeTypeNotMatchedToCase" xml:space="preserve">
+    <value>The runtime type '{0}' is not supported by union type '{1}'.</value>
+  </data>
+  <data name="UnionTypeClassifierReturnedNull" xml:space="preserve">
+    <value>The custom type classifier for union type '{0}' returned null for JSON token type '{1}'.</value>
   </data>
 </root>

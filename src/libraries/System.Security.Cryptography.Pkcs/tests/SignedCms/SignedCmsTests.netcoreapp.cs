@@ -102,7 +102,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportsDraft10Pkcs8))]
+        [ConditionalFact(typeof(SignedCmsTests), nameof(SupportsDraft10Pkcs8))]
         public static void SignCmsUsingExplicitMLDsaKey()
         {
             using (X509Certificate2 cert = Certificates.MLDsaIetf[MLDsaAlgorithm.MLDsa65].TryGetCertificateWithPrivateKey())
@@ -158,7 +158,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportsDraft10Pkcs8))]
+        [ConditionalFact(typeof(SignedCmsTests), nameof(SupportsDraft10Pkcs8))]
         public static void CounterSignCmsUsingExplicitECDsaKeyForFirstSignerAndMLDsaForCounterSignature()
         {
             using (X509Certificate2 cert = Certificates.ECDsaP256Win.TryGetCertificateWithPrivateKey())
@@ -170,7 +170,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportsDraft10Pkcs8))]
+        [ConditionalFact(typeof(SignedCmsTests), nameof(SupportsDraft10Pkcs8))]
         public static void CounterSignCmsUsingExplicitMLDsaKeyForFirstSignerAndRSAForCounterSignature()
         {
             using (X509Certificate2 cert = Certificates.MLDsaIetf[MLDsaAlgorithm.MLDsa65].TryGetCertificateWithPrivateKey())
@@ -808,7 +808,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportsDraft10Pkcs8))]
+        [ConditionalFact(typeof(SignedCmsTests), nameof(SupportsDraft10Pkcs8))]
         public static void CreateSignature_MLDsa_ThrowsWithRsaSignaturePadding()
         {
             ContentInfo content = new ContentInfo(new byte[] { 1, 2, 3 });
@@ -1016,7 +1016,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
         }
 
-        [ConditionalTheory(nameof(SupportsDraft10Pkcs8))]
+        [ConditionalTheory(typeof(SignedCmsTests), nameof(SupportsDraft10Pkcs8))]
         [InlineData(Oids.Sha3_256)]
         [InlineData(Oids.Sha3_384)]
         [InlineData(Oids.Sha3_512)]

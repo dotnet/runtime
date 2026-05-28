@@ -53,6 +53,8 @@
     <Compile Include="AddRequestTests.cs" />
     <Compile Include="DirectoryServicesProtocolsTests.cs" />
     <Compile Include="DirectoryServicesTestHelpers.cs" />
+    <Compile Include="TestServer\LdapTestServer.cs" />
+    <Compile Include="TestServer\LdapTestServer.Protocol.cs" />
     <Compile Include="$(CommonTestPath)System\DirectoryServices\LdapConfiguration.cs"
              Link="Common\DirectoryServices\LdapConfiguration.cs" />
   </ItemGroup>
@@ -68,5 +70,7 @@
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.DirectoryServices" />
     <Reference Include="System.DirectoryServices.Protocols" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.Cryptography\src\Microsoft.Bcl.Cryptography.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Formats.Asn1\src\System.Formats.Asn1.csproj" />
   </ItemGroup>
 </Project>

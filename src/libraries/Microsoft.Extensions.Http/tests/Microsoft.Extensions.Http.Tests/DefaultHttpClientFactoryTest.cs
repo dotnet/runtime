@@ -252,7 +252,7 @@ namespace Microsoft.Extensions.Http
             Assert.Same(expected[7], handler);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task Factory_CreateClient_WithExpiry_CanExpire()
         {
             // Arrange
@@ -295,7 +295,7 @@ namespace Microsoft.Extensions.Http
             Assert.NotSame(activeEntry1.Handler, activeEntry2.Handler);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task Factory_CreateClient_WithExpiry_HandlerCanBeReusedBeforeExpiry()
         {
             // Arrange
@@ -344,7 +344,7 @@ namespace Microsoft.Extensions.Http
             Assert.NotSame(activeEntry1.Handler, activeEntry2.Handler);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported), nameof(PlatformDetection.IsPreciseGcSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported), nameof(PlatformDetection.IsPreciseGcSupported))]
         public async Task Factory_CleanupCycle_DisposesEligibleHandler()
         {
             // Arrange

@@ -365,7 +365,7 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void ReadNumberWithExponentAcrossSegments()
         {
-            string jsonString = """[1.23456789e+100,-9.87654321e-50,1e308]""";
+            string jsonString = "[1.23456789e+100,-9.87654321e-50,1e308]";
             byte[] utf8 = Encoding.UTF8.GetBytes(jsonString);
 
             for (int splitLocation = 1; splitLocation < utf8.Length; splitLocation++)

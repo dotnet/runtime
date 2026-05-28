@@ -3,7 +3,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /* eslint-disable no-undef */
-/* eslint-disable space-before-function-paren */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 var fetch = fetch || undefined; var dotnetNativeModuleLoaded = false; var dotnetInternals = null;
 export function dotnetInitializeModule(internals) {

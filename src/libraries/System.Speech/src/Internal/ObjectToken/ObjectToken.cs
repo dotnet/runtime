@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
@@ -40,7 +41,7 @@ namespace System.Speech.Internal.ObjectTokens
         /// you are creating ObjectTokens with this function.
         /// </summary>
         /// <returns>ObjectToken object</returns>
-        internal static ObjectToken Open(string sCategoryId, string sTokenId, bool fCreateIfNotExist)
+        internal static ObjectToken? Open(string? sCategoryId, string? sTokenId, bool fCreateIfNotExist)
         {
             ISpObjectToken sapiObjectToken = (ISpObjectToken)new SpObjectToken();
 
@@ -66,7 +67,7 @@ namespace System.Speech.Internal.ObjectTokens
                     if (_disposeSapiObjectToken && _sapiObjectToken != null)
                     {
                         Marshal.ReleaseComObject(_sapiObjectToken);
-                        _sapiObjectToken = null;
+                        _sapiObjectToken = null!;
                     }
                     if (_attributes != null)
                     {
@@ -88,10 +89,9 @@ namespace System.Speech.Internal.ObjectTokens
         /// <summary>
         /// Tests whether two AutomationIdentifier objects are equivalent
         /// </summary>
-        public override bool Equals(object obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            ObjectToken token = obj as ObjectToken;
-            return token != null && string.Equals(Id, token.Id, StringComparison.OrdinalIgnoreCase);
+            return obj is ObjectToken token && string.Equals(Id, token.Id, StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>
@@ -110,7 +110,7 @@ namespace System.Speech.Internal.ObjectTokens
         {
             get
             {
-                return _attributes ??= OpenKey("Attributes");
+                return _attributes ??= OpenKey("Attributes")!;
             }
         }
 
@@ -176,11 +176,11 @@ namespace System.Speech.Internal.ObjectTokens
         /// <summary>
         /// Returns the Culture defined in the Language field for a token
         /// </summary>
-        internal CultureInfo Culture
+        internal CultureInfo? Culture
         {
             get
             {
-                CultureInfo culture = null;
+                CultureInfo? culture = null;
                 string langId;
                 if (Attributes.TryGetString("Language", out langId))
                 {
@@ -213,7 +213,7 @@ namespace System.Speech.Internal.ObjectTokens
 
         #region ISpObjectToken Implementation
 
-        public void SetId([MarshalAs(UnmanagedType.LPWStr)] string pszCategoryId, [MarshalAs(UnmanagedType.LPWStr)] string pszTokenId, [MarshalAs(UnmanagedType.Bool)] bool fCreateIfNotExist)
+        public void SetId([MarshalAs(UnmanagedType.LPWStr)] string? pszCategoryId, [MarshalAs(UnmanagedType.LPWStr)] string? pszTokenId, [MarshalAs(UnmanagedType.Bool)] bool fCreateIfNotExist)
         {
             throw new NotImplementedException();
         }
@@ -255,9 +255,10 @@ namespace System.Speech.Internal.ObjectTokens
             return fMatch;
         }
 
-        internal T CreateObjectFromToken<T>(string name)
+        internal T? CreateObjectFromToken<T>(string name)
+            where T : class
         {
-            T instanceValue = default(T);
+            T? instanceValue = default(T);
             string clsid;
 
             if (!TryGetString(name, out clsid))
@@ -268,14 +269,13 @@ namespace System.Speech.Internal.ObjectTokens
             try
             {
                 // Application Class Id
-                Type type = Type.GetTypeFromCLSID(new Guid(clsid));
+                Type type = Type.GetTypeFromCLSID(new Guid(clsid))!;
 
                 // Create the object instance
-                instanceValue = (T)Activator.CreateInstance(type);
+                instanceValue = (T?)Activator.CreateInstance(type);
 
                 // Initialize the instance
-                ISpObjectWithToken objectWithToken = instanceValue as ISpObjectWithToken;
-                if (objectWithToken != null)
+                if (instanceValue is ISpObjectWithToken objectWithToken)
                 {
                     int hresult = objectWithToken.SetObjectToken(this);
                     if (hresult < 0)
@@ -324,7 +324,7 @@ namespace System.Speech.Internal.ObjectTokens
 
         private bool _disposeSapiObjectToken;
 
-        private RegistryDataKey _attributes;
+        private RegistryDataKey? _attributes;
 
         #endregion
     }

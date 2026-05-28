@@ -44,6 +44,7 @@ extern "C" PCODE STDCALL VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
 #endif
                                            );
 
+extern "C" PCODE STDCALL VSD_ResolveWorkerForInterfaceLookupSlot(TransitionBlock * pTransitionBlock, TADDR siteAddrForRegisterIndirect);
 
 /////////////////////////////////////////////////////////////////////////////////////
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
@@ -743,6 +744,17 @@ protected:
         return W("Unexpected. RangeSectionStubManager should report the name");
     }
 #endif
+
+    friend struct ::cdac_data<VirtualCallStubManager>;
+};
+
+template<>
+struct cdac_data<VirtualCallStubManager>
+{
+    static constexpr size_t IndcellHeap = offsetof(VirtualCallStubManager, indcell_heap);
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
+    static constexpr size_t CacheEntryHeap = offsetof(VirtualCallStubManager, cache_entry_heap);
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
 };
 
 /********************************************************************************************************

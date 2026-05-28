@@ -28,6 +28,32 @@ WasmClassifier::WasmClassifier(const ClassifierInfo& info)
 }
 
 //-----------------------------------------------------------------------------
+// ToJitType: translate CorInfoWasmType to var_types
+//
+// Parameters:
+//   wasmType -- wasm type to translate
+//
+var_types WasmClassifier::ToJitType(CorInfoWasmType wasmType)
+{
+    switch (wasmType)
+    {
+        case CORINFO_WASM_TYPE_I32:
+            return TYP_INT;
+        case CORINFO_WASM_TYPE_I64:
+            return TYP_LONG;
+        case CORINFO_WASM_TYPE_F32:
+            return TYP_FLOAT;
+        case CORINFO_WASM_TYPE_F64:
+            return TYP_DOUBLE;
+        case CORINFO_WASM_TYPE_V128:
+            // TODO-WASM: Simd support
+            unreached();
+        default:
+            unreached();
+    }
+}
+
+//-----------------------------------------------------------------------------
 // Classify:
 //   Classify a parameter for the Wasm ABI.
 //
@@ -48,7 +74,28 @@ ABIPassingInformation WasmClassifier::Classify(Compiler*    comp,
 {
     if (type == TYP_STRUCT)
     {
-        NYI_WASM("WasmClassifier::Classify - structs");
+        CORINFO_CLASS_HANDLE clsHnd = structLayout->GetClassHandle();
+        assert(clsHnd != NO_CLASS_HANDLE);
+        CorInfoWasmType wasmAbiType = comp->info.compCompHnd->getWasmLowering(clsHnd);
+        bool            passByRef   = false;
+        var_types       abiType     = TYP_UNDEF;
+
+        if (wasmAbiType == CORINFO_WASM_TYPE_VOID)
+        {
+            abiType   = TYP_I_IMPL;
+            passByRef = true;
+        }
+        else
+        {
+            abiType = ToJitType(wasmAbiType);
+        }
+
+        regNumber reg = MakeWasmReg(m_localIndex++, genActualType(abiType));
+        // If the struct is being passed directly as a wasm value, make sure we record
+        //  the actual size of the struct, not the size of the containing wasm value.
+        unsigned segmentSize  = passByRef ? genTypeSize(abiType) : min(structLayout->GetSize(), genTypeSize(abiType));
+        ABIPassingSegment seg = ABIPassingSegment::InRegister(reg, 0, segmentSize);
+        return ABIPassingInformation::FromSegment(comp, passByRef, seg);
     }
 
     regNumber         reg = MakeWasmReg(m_localIndex++, genActualType(type));

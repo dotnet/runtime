@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
+using System.Runtime.InteropServices;
 using System.Text;
 using ILCompiler.Diagnostics;
 using ILCompiler.Reflection.ReadyToRun;
@@ -220,6 +221,7 @@ namespace R2RDump
                     OperatingSystem.Apple => TargetOS.OSX,
                     OperatingSystem.FreeBSD => TargetOS.FreeBSD,
                     OperatingSystem.NetBSD => TargetOS.FreeBSD,
+                    OperatingSystem.Unknown => TargetOS.Unknown, // Webcil/WASM images don't encode OS
                     _ => throw new NotImplementedException(r2r.OperatingSystem.ToString()),
                 };
                 TargetDetails details = new(architecture, os, TargetAbi.NativeAot);
@@ -395,6 +397,22 @@ namespace R2RDump
 
         public int Run()
         {
+            NativeLibrary.SetDllImportResolver(typeof(PdbWriter).Assembly,
+                (string libraryName, System.Reflection.Assembly assembly, DllImportSearchPath? searchPath) =>
+                {
+                    IntPtr libraryHandle = IntPtr.Zero;
+                    if (libraryName == "Microsoft.DiaSymReader.Native")
+                    {
+                        string archSuffix = RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
+                        if (archSuffix == "x64")
+                        {
+                            archSuffix = "amd64";
+                        }
+                        libraryHandle = NativeLibrary.Load(libraryName + "." + archSuffix + ".dll", assembly, searchPath);
+                    }
+                    return libraryHandle;
+                });
+
             Disassembler disassembler = null;
             List<string> inputs = Get(_command.In);
             bool inlineSignatureBinary = Get(_command.InlineSignatureBinary);
@@ -448,7 +466,7 @@ namespace R2RDump
                     // parse the ReadyToRun image
                     ReadyToRunReader r2r = new(model, filename);
                     r2r.ValidateDebugInfo = Get(_command.ValidateDebugInfo);
-                    if (disasm)
+                    if (disasm && !(r2r.CompositeReader is WebcilImageReader))
                     {
                         disassembler = new Disassembler(r2r, model);
                     }

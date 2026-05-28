@@ -3,9 +3,11 @@
 #include "interpreter.h"
 #include "stackmap.h"
 
+#include <algorithm>
+
 // Allocates the offset for var at the stack position identified by
 // *pPos while bumping the pointer to point to the next stack location
-int32_t InterpCompiler::AllocVarOffset(int var, int32_t *pPos)
+int32_t InterpCompiler::AllocVarOffset(int32_t var, int32_t *pPos)
 {
     int32_t size, offset;
 
@@ -14,14 +16,10 @@ int32_t InterpCompiler::AllocVarOffset(int var, int32_t *pPos)
 
     size_t align = INTERP_STACK_SLOT_SIZE;
 
-    if (size > INTERP_STACK_SLOT_SIZE)
+    if (size > (int32_t)INTERP_STACK_SLOT_SIZE)
     {
         assert(m_pVars[var].interpType == InterpTypeVT);
-        align = m_compHnd->getClassAlignmentRequirement(m_pVars[var].clsHnd);
-        if (align < INTERP_STACK_SLOT_SIZE)
-            align = INTERP_STACK_SLOT_SIZE;
-        if (align > INTERP_STACK_ALIGNMENT)
-            align = INTERP_STACK_ALIGNMENT;
+        align = std::clamp(m_compHnd->getClassAlignmentRequirement(m_pVars[var].clsHnd), INTERP_STACK_SLOT_SIZE, INTERP_STACK_ALIGNMENT);
     }
     else
     {
@@ -162,10 +160,10 @@ void InterpCompiler::EndActiveCall(InterpInst *call)
     {
         TSList<InterpInst*> *callDeps = NULL;
         for (int i = 0; i < m_pActiveCalls->GetSize(); i++)
-            callDeps = TSList<InterpInst*>::Push(callDeps, m_pActiveCalls->Get(i));
+            callDeps = TSList<InterpInst*>::Push(callDeps, m_pActiveCalls->Get(i), getAllocator(IMK_CallDependencies));
         call->info.pCallInfo->callDeps = callDeps;
 
-        m_pDeferredCalls = TSList<InterpInst*>::Push(m_pDeferredCalls, call);
+        m_pDeferredCalls = TSList<InterpInst*>::Push(m_pDeferredCalls, call, getAllocator(IMK_CallDependencies));
     }
     else
     {
@@ -237,8 +235,8 @@ void InterpCompiler::CompactActiveVars(int32_t *pCurrentOffset)
 void InterpCompiler::AllocOffsets()
 {
     InterpBasicBlock *pBB;
-    m_pActiveVars = new TArray<int32_t, MemPoolAllocator>(GetMemPoolAllocator());
-    m_pActiveCalls = new TArray<InterpInst*, MemPoolAllocator>(GetMemPoolAllocator());
+    m_pActiveVars = new (getAllocator(IMK_AllocOffsets)) TArray<int32_t, MemPoolAllocator>(GetMemPoolAllocator(IMK_AllocOffsets));
+    m_pActiveCalls = new (getAllocator(IMK_AllocOffsets)) TArray<InterpInst*, MemPoolAllocator>(GetMemPoolAllocator(IMK_AllocOffsets));
     m_pDeferredCalls = NULL;
 
     InitializeGlobalVars();

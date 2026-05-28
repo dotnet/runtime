@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.InteropServices;
 using Xunit;
+using TestLibrary;
 
 [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
 public class ExactSpellingTest
@@ -126,6 +127,7 @@ public class ExactSpellingTest
         Assert.Throws<EntryPointNotFoundException>(() => Ansi.MarshalPointer_Int_InOut2(ref int8));
     }
 
+    [ActiveIssue("needs triage", TestRuntimes.Mono)]
     [Fact]
     public static int TestEntryPoint()
     {

@@ -72,6 +72,7 @@ namespace System.Threading.Tasks.Tests
             yield return new object[] { new Func<TaskCompletionSource<int>>(() => new TaskCompletionSource<int>(new object(), TaskCreationOptions.RunContinuationsAsynchronously)) };
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/114096", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         [MemberData(nameof(TaskCompletionSourceDoesntCaptureExecutionContext_MemberData))]
         public static async Task TaskCompletionSourceDoesntCaptureExecutionContext(Func<TaskCompletionSource<int>> tcsFactory)

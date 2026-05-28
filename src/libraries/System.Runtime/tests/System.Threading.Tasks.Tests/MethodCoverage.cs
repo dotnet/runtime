@@ -13,7 +13,7 @@ namespace TaskCoverage
     public class Coverage
     {
         // Regression test: Validates that tasks can wait on int.MaxValue without assertion.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void TaskWait_MaxInt32()
         {
             Task t = Task.Delay(1);
@@ -89,7 +89,7 @@ namespace TaskCoverage
         /// <summary>
         /// Test various Task.WhenAll and Wait overloads - EH
         /// </summary>
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void TaskWaitWithCTS()
         {
             ManualResetEvent mre = new ManualResetEvent(false);
@@ -138,7 +138,7 @@ namespace TaskCoverage
         /// <summary>
         /// test WaitAny and when Any overloads
         /// </summary>
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void TaskWaitAny_WhenAny()
         {
             ManualResetEvent mre = new ManualResetEvent(false);
@@ -294,7 +294,7 @@ namespace TaskCoverage
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/99500", TestPlatforms.Browser)]
         public static void CancellationTokenRegitration()
         {
@@ -312,7 +312,7 @@ namespace TaskCoverage
         /// <summary>
         /// verify that the taskawaiter.UnsafeOnCompleted is invoked
         /// </summary>
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/99500", TestPlatforms.Browser)]
         public static void TaskAwaiter()
         {
@@ -333,7 +333,7 @@ namespace TaskCoverage
         /// <summary>
         /// verify that the taskawaiter.UnsafeOnCompleted is invoked
         /// </summary>
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void TaskConfigurableAwaiter()
         {
             ManualResetEvent mre = new ManualResetEvent(false);
@@ -353,7 +353,7 @@ namespace TaskCoverage
         /// <summary>
         /// FromAsync testing: Not supported in .NET Native
         /// </summary>
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void FromAsync()
         {
             Task emptyTask = new Task(() => { });
@@ -852,7 +852,7 @@ namespace TaskCoverage
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void Task_WhenAll_TwoTasks_WakesOnBothCompletionWithSameCancellationForBoth()
         {
             // Non-generic, first completes first
@@ -987,7 +987,7 @@ namespace TaskCoverage
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void Task_WhenEach_NullsTriggerExceptions()
         {
             AssertExtensions.Throws<ArgumentNullException>("tasks", () => Task.WhenEach((Task[])null));
@@ -1003,7 +1003,7 @@ namespace TaskCoverage
             AssertExtensions.Throws<ArgumentException>("tasks", () => Task.WhenEach((IEnumerable<Task<int>>)[null]));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task Task_WhenEach_EmptyInputsCompleteImmediately()
         {
             Assert.False(await Task.WhenEach((Task[])[]).GetAsyncEnumerator().MoveNextAsync());
@@ -1014,7 +1014,7 @@ namespace TaskCoverage
             Assert.False(await Task.WhenEach((IEnumerable<Task<int>>)[]).GetAsyncEnumerator().MoveNextAsync());
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task Task_WhenEach_TasksOnlyEnumerableOnce()
         {
             IAsyncEnumerable<Task>[] enumerables =
@@ -1049,7 +1049,7 @@ namespace TaskCoverage
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(2)]

@@ -46,7 +46,6 @@
     <Content Include="TestFramework\Dependencies\CanCompileReferencesWithResources_Lib1.txt" />
     <Content Include="TestFramework\Dependencies\CanCompileReferencesWithResources_Lib1.log" />
     <Content Include="TestFramework\Dependencies\CanCompileTestCaseWithCsc.txt" />
-    <Content Include="TestFramework\Dependencies\CanCompileTestCaseWithMcs.txt" />
     <Content Include="TestFramework\Dependencies\VerifyResourceInAssemblyAttributesBehavior.txt" />
   </ItemGroup>
   <ItemGroup>

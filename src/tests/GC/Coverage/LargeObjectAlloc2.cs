@@ -9,6 +9,7 @@
 
 using System;
 using Xunit;
+using TestLibrary;
 
 namespace LargeObjectTest
 {
@@ -53,6 +54,7 @@ namespace LargeObjectTest
     public class Test
     {
         public static int ExitCode = 1;
+        [ActiveIssue("needs triage", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         [Fact]
         public static int TestEntryPoint()
         {

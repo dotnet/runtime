@@ -44,13 +44,9 @@ namespace System.Text.RegularExpressions
                     // Certain kinds of nodes incur backtracking logic themselves: add them to the backtracking collection.
                     // We may later find that a node contains another that has backtracking; we'll add nodes based on that
                     // after examining the children.
-                    switch (node.Kind)
+                    if (node.IsBacktrackingConstruct)
                     {
-                        case RegexNodeKind.Alternate:
-                        case RegexNodeKind.Loop or RegexNodeKind.Lazyloop when node.M != node.N:
-                        case RegexNodeKind.Oneloop or RegexNodeKind.Notoneloop or RegexNodeKind.Setloop or RegexNodeKind.Onelazy or RegexNodeKind.Notonelazy or RegexNodeKind.Setlazy when node.M != node.N:
-                            (results._mayBacktrack ??= new HashSet<RegexNode>()).Add(node);
-                            break;
+                        (results._mayBacktrack ??= new HashSet<RegexNode>()).Add(node);
                     }
                 }
 

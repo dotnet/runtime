@@ -214,7 +214,7 @@ namespace System.IO.Tests
             Assert.False(Directory.Exists(testDir));
         }
 
-        [ConditionalFact(nameof(IsBindMountSupportedAndPrivilegedProcess))]
+        [ConditionalFact(typeof(Directory_Delete_str), nameof(IsBindMountSupportedAndPrivilegedProcess))]
         [OuterLoop("Needs sudo access")]
         [PlatformSpecific(TestPlatforms.Linux)]
         public void Unix_NotFoundDirectory_ReadOnlyVolume()

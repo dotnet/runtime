@@ -26,7 +26,7 @@ namespace Mono.Linker.Tests.Cases.Libraries
             new string[] { "Dependencies/RootAllLibrary_Substitutions.xml", "ILLink.Substitutions.xml" },
         })]
 
-    [SetupLinkerArgument("-a", "library.dll")]
+    [SetupLinkerArgument("-a", "library")]
     [IgnoreSubstitutions(false)]
     [IgnoreLinkAttributes(false)]
 

@@ -2,18 +2,21 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Xunit;
+using TestLibrary;
 
 // This test comes from https://github.com/dotnet/runtime/issues/79603
 namespace RecursiveConstraintOnDefaultImplementationOfStaticAbstractMember
 {
     public class Tests
     {
+        [ActiveIssue("needs triage", TestPlatforms.tvOS)]
         [Fact]
         public static void AbstractClass()
         {
             _ = typeof(Buggyclass).TypeHandle;
         }
 
+        [ActiveIssue("needs triage", TestPlatforms.tvOS)]
         [Fact]
         public static void ImplClass()
         {

@@ -193,7 +193,7 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             string serialized = JsonSerializer.Serialize(obj);
-            Assert.Equal(@"{""ArraySegment"":[1]}", serialized);
+            Assert.Equal("""{"ArraySegment":[1]}""", serialized);
 
             NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithArraySegment>(serialized));
             Assert.Contains(typeof(ArraySegment<byte>).ToString(), ex.Message);

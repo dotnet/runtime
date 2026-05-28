@@ -7,7 +7,9 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Swift;
 using System.Text;
 using Xunit;
+using TestLibrary;
 
+[PlatformSpecific(TestPlatforms.AnyApple)]
 public class ErrorHandlingTests
 {
     private const string SwiftLib = "libSwiftErrorHandling.dylib";

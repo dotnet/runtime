@@ -23,8 +23,8 @@ public unsafe partial class TargetTests
         {
             Size = 56,
             Fields = new Dictionary<string, Target.FieldInfo> {
-                { "Field1", new(){ Offset = 8, Type = DataType.uint16, TypeName = DataType.uint16.ToString() }},
-                { "Field2", new(){ Offset = 16, Type = DataType.GCHandle, TypeName = DataType.GCHandle.ToString() }},
+                { "Field1", new(){ Offset = 8, TypeName = DataType.uint16.ToString() }},
+                { "Field2", new(){ Offset = 16, TypeName = DataType.ObjectHandle.ToString() }},
                 { "Field3", new(){ Offset = 32 }}
             }
         },
@@ -35,11 +35,6 @@ public unsafe partial class TargetTests
                 { "Field1", new(){ Offset = 0, TypeName = "FieldType" }},
                 { "Field2", new(){ Offset = 8 }}
             }
-        },
-        // Size only
-        [DataType.ArrayClass] = new()
-        {
-            Size = 8
         }
     };
 

@@ -298,10 +298,10 @@
   The value was a valid value for the property and the provider supports the property as a settable property, but the provider does not support the value specified. This includes the case where the value was added to the property in OLEDB after the provider was written.</value>
   </data>
   <data name="OleDb_PropertyBadOption" xml:space="preserve">
-    <value>The value of Options was invalid.</value>
+    <value>The value of Options was invalid. {0}</value>
   </data>
   <data name="OleDb_PropertyBadColumn" xml:space="preserve">
-    <value>The ColumnID element was invalid.</value>
+    <value>The ColumnID element was invalid. {0}</value>
   </data>
   <data name="OleDb_PropertyNotAllSettable" xml:space="preserve">
     <value>A '{0}' property was specified to be applied to all columns but could not be applied to one or more of them.</value>
@@ -316,7 +316,7 @@
     <value>The '{0}'property's value was not set because doing so would have conflicted with an existing property.</value>
   </data>
   <data name="OleDb_PropertyNotAvailable" xml:space="preserve">
-    <value>(Reserved).</value>
+    <value>Property '{0}': (Reserved).</value>
   </data>
   <data name="OleDb_PropertyStatusUnknown" xml:space="preserve">
     <value>The provider returned an unknown DBPROPSTATUS_ value '{0}'.</value>

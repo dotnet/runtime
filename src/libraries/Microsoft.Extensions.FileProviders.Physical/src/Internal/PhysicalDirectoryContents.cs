@@ -17,7 +17,7 @@ namespace Microsoft.Extensions.FileProviders.Internal
         private readonly PhysicalDirectoryInfo _info;
 
         /// <summary>
-        /// Initializes an instance of <see cref="PhysicalDirectoryContents"/>.
+        /// Initializes a new instance of the <see cref="PhysicalDirectoryContents"/> class.
         /// </summary>
         /// <param name="directory">The directory to represent.</param>
         public PhysicalDirectoryContents(string directory)
@@ -25,10 +25,10 @@ namespace Microsoft.Extensions.FileProviders.Internal
         { }
 
         /// <summary>
-        /// Initializes an instance of <see cref="PhysicalDirectoryContents"/>.
+        /// Initializes a new instance of the <see cref="PhysicalDirectoryContents"/> class.
         /// </summary>
         /// <param name="directory">The directory to represent.</param>
-        /// <param name="filters">Specifies which files or directories are excluded from enumeration.</param>
+        /// <param name="filters">A bitwise combination of the enumeration values that specifies which files or directories are excluded from enumeration.</param>
         public PhysicalDirectoryContents(string directory, ExclusionFilters filters)
         {
             ArgumentNullException.ThrowIfNull(directory);

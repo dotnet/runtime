@@ -22,39 +22,39 @@ namespace System.IO.Ports.Tests
 
         #region Test Cases
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadExisting), nameof(HasLoopbackOrNullModem))]
         public void ASCIIEncoding()
         {
             VerifyRead(new ASCIIEncoding());
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadExisting), nameof(HasLoopbackOrNullModem))]
         public void UTF8Encoding()
         {
             VerifyRead(new UTF8Encoding());
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadExisting), nameof(HasLoopbackOrNullModem))]
         public void UTF32Encoding()
         {
             VerifyRead(new UTF32Encoding());
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadExisting), nameof(HasLoopbackOrNullModem))]
         public void SerialPort_ReadBufferedData()
         {
             int numberOfBytesToRead = 32;
             VerifyRead(Encoding.ASCII, numberOfBytesToRead, ReadDataFromEnum.Buffered);
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadExisting), nameof(HasLoopbackOrNullModem))]
         public void SerialPort_IterativeReadBufferedData()
         {
             int numberOfBytesToRead = 32;
             VerifyRead(Encoding.ASCII, numberOfBytesToRead, ReadDataFromEnum.Buffered);
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadExisting), nameof(HasLoopbackOrNullModem))]
         public void SerialPort_ReadBufferedAndNonBufferedData()
         {
             int numberOfBytesToRead = 64;
@@ -62,7 +62,7 @@ namespace System.IO.Ports.Tests
             VerifyRead(Encoding.ASCII, numberOfBytesToRead, ReadDataFromEnum.BufferedAndNonBuffered);
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadExisting), nameof(HasLoopbackOrNullModem))]
         public void SerialPort_IterativeReadBufferedAndNonBufferedData()
         {
             int numberOfBytesToRead = 3;
@@ -70,7 +70,7 @@ namespace System.IO.Ports.Tests
             VerifyRead(Encoding.ASCII, numberOfBytesToRead, ReadDataFromEnum.BufferedAndNonBuffered);
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadExisting), nameof(HasLoopbackOrNullModem))]
         public void GreedyRead()
         {
             using (SerialPort com1 = TCSupport.InitFirstSerialPort())
@@ -133,7 +133,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadExisting), nameof(HasLoopbackOrNullModem))]
         private void LargeInputBuffer()
         {
             VerifyRead(largeNumRndBytesToRead);

@@ -328,9 +328,9 @@ internal static partial class Interop
             throw new SslException();
         }
 
-        internal static void SslSetCertificate(SafeSslHandle sslHandle, IntPtr[] certChainPtrs)
+        internal static void SslSetCertificate(SafeSslHandle sslHandle, ReadOnlySpan<IntPtr> certChainPtrs)
         {
-            using (SafeCreateHandle cfCertRefs = CoreFoundation.CFArrayCreate(certChainPtrs, (UIntPtr)certChainPtrs.Length))
+            using (SafeCreateHandle cfCertRefs = CoreFoundation.CFArrayCreate(certChainPtrs))
             {
                 int osStatus = AppleCryptoNative_SslSetCertificate(sslHandle, cfCertRefs);
 
@@ -386,7 +386,7 @@ internal static partial class Interop
                 {
                     // we did not match common case. This is more expensive path allocating Core Foundation objects.
                     cfProtocolsArrayRef = new SafeCreateHandle[protocols.Count];
-                    IntPtr[] protocolsPtr = new System.IntPtr[protocols.Count];
+                    IntPtr[] protocolsPtr = new IntPtr[protocols.Count];
 
                     for (int i = 0; i < protocols.Count; i++)
                     {
@@ -460,6 +460,13 @@ namespace System.Net
 {
     internal sealed class SafeSslHandle : SafeHandle
     {
+        // Backreference used by AppleCryptoNative_SslSetConnection so native
+        // Read/Write callbacks can resolve the owning SafeDeleteSslContext.
+        // Owned here so the lifetime is tied to ReleaseHandle, which only
+        // runs once all outstanding P/Invokes (and therefore any in-flight
+        // callbacks) have completed.
+        private GCHandle<SafeDeleteSslContext> _connectionGCHandle;
+
         public SafeSslHandle()
             : base(IntPtr.Zero, ownsHandle: true)
         {
@@ -470,10 +477,18 @@ namespace System.Net
         {
         }
 
+        internal void SetConnectionGCHandle(GCHandle<SafeDeleteSslContext> handle)
+        {
+            Debug.Assert(!_connectionGCHandle.IsAllocated, "Connection GCHandle already set");
+            _connectionGCHandle = handle;
+        }
+
         protected override bool ReleaseHandle()
         {
             Interop.CoreFoundation.CFRelease(handle);
             SetHandle(IntPtr.Zero);
+            _connectionGCHandle.Dispose();
+
             return true;
         }
 

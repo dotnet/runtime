@@ -239,7 +239,7 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task ConcurrentOperationsAreSerialized()
         {
             byte[] data = Enumerable.Range(0, 1000).Select(i => unchecked((byte)i)).ToArray();
@@ -281,9 +281,9 @@ namespace System.IO.Tests
         [InlineData(true)]
         public async Task CopyToTest_RequiresFlushingOfWrites(bool copyAsynchronously)
         {
-            if (copyAsynchronously && !PlatformDetection.IsThreadingSupported)
+            if (copyAsynchronously && !PlatformDetection.IsMultithreadingSupported)
             {
-                throw new SkipTestException(nameof(PlatformDetection.IsThreadingSupported));
+                throw new SkipTestException(nameof(PlatformDetection.IsMultithreadingSupported));
             }
 
             byte[] data = Enumerable.Range(0, 1000).Select(i => (byte)(i % 256)).ToArray();

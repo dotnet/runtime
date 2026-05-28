@@ -712,6 +712,7 @@ bool EECodeManager::IsGcSafe( EECodeInfo     *pCodeInfo,
     return false;
 }
 
+// FIXME-WASM: Add TARGET_WASM once we implement tail calls on Wasm.
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 bool EECodeManager::HasTailCalls( EECodeInfo     *pCodeInfo)
 {
@@ -1825,7 +1826,16 @@ void EECodeManager::UpdateSSP(PREGDISPLAY pRD)
 #endif // HOST_AMD64 && HOST_WINDOWS
 
 #ifdef FEATURE_INTERPRETER
-DWORD_PTR InterpreterCodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilter)
+
+#if !defined(TARGET_WASM)
+// ASM helper that creates a TransitionBlock and calls CallInterpreterFuncletWorker
+extern "C" DWORD_PTR STDCALL CallInterpreterFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilter);
+#endif // !TARGET_WASM
+
+// Worker function that executes an interpreter funclet with a TransitionBlock
+// On non-WASM platforms, this is called from the ASM helper CallInterpreterFunclet
+// On WASM, this is called directly from InterpreterCodeManager::CallFunclet
+extern "C" DWORD_PTR STDCALL CallInterpreterFuncletWorker(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilter, TransitionBlock *pTransitionBlock)
 {
     Thread *pThread = GetThread();
     InterpThreadContext *threadContext = pThread->GetInterpThreadContext();
@@ -1843,7 +1853,7 @@ DWORD_PTR InterpreterCodeManager::CallFunclet(OBJECTREF throwable, void* pHandle
         {
         }
     }
-    frames(NULL);
+    frames(pTransitionBlock);
 
     // Use the InterpreterFrame address as a representation of the caller SP of the funclet
     // Note: this needs to match what the VirtualUnwindInterpreterCallFrame sets as the SP
@@ -1882,6 +1892,20 @@ DWORD_PTR InterpreterCodeManager::CallFunclet(OBJECTREF throwable, void* pHandle
     }
 }
 
+DWORD_PTR InterpreterCodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilter)
+{
+#if !defined(TARGET_WASM)
+    // Call the ASM helper which creates a real TransitionBlock
+    return CallInterpreterFunclet(throwable, pHandler, pRD, pExInfo, isFilter);
+#else
+    // For WASM, create the TransitionBlock in C++ and call the worker directly
+    TransitionBlock transitionBlock{};
+    transitionBlock.m_StackPointer = 0;
+    transitionBlock.m_ReturnAddress = (TADDR)&CallInterpreterFuncletWorker;
+    return CallInterpreterFuncletWorker(throwable, pHandler, pRD, pExInfo, isFilter, &transitionBlock);
+#endif
+}
+
 void InterpreterCodeManager::ResumeAfterCatch(CONTEXT *pContext, size_t targetSSP, bool fIntercepted)
 {
     TADDR resumeSP = GetSP(pContext);
@@ -1908,7 +1932,7 @@ void InterpreterCodeManager::ResumeAfterCatch(CONTEXT *pContext, size_t targetSS
         else
         {
 #ifdef TARGET_UNIX
-            PAL_VirtualUnwind(pContext, NULL);
+            PAL_VirtualUnwind(pContext);
 #else
             Thread::VirtualUnwindCallFrame(pContext);
 #endif
@@ -1918,7 +1942,7 @@ void InterpreterCodeManager::ResumeAfterCatch(CONTEXT *pContext, size_t targetSS
 
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)
     targetSSP = pInterpreterFrame->GetInterpExecMethodSSP();
-#endif    
+#endif
     ExecuteFunctionBelowContext((PCODE)ThrowResumeAfterCatchException, pContext, targetSSP, resumeSP, resumeIP);
 #endif // TARGET_WASM
 }
@@ -2081,6 +2105,7 @@ static void VirtualUnwindInterpreterCallFrame(TADDR sp, T_CONTEXT *pContext)
     pFrame = pFrame->pParent;
     if (pFrame != NULL)
     {
+        // The parent frame's IP points past the call instruction (the resumption point).
         SetIP(pContext, (TADDR)pFrame->ip);
         SetSP(pContext, dac_cast<TADDR>(pFrame));
         SetFP(pContext, (TADDR)pFrame->pStack);
@@ -2088,7 +2113,7 @@ static void VirtualUnwindInterpreterCallFrame(TADDR sp, T_CONTEXT *pContext)
     else
     {
         // This indicates that there are no more interpreter frames to unwind in the current InterpExecMethod
-        // The stack walker will not find any code manager for the address InterpreterFrame::DummyCallerIP (0) 
+        // The stack walker will not find any code manager for the address InterpreterFrame::DummyCallerIP (0)
         // and move on to the next explicit frame which is the InterpreterFrame.
         // The SP is set to the address of the InterpreterFrame. For the case of interpreted exception handling
         // funclets, this matches the pExInfo->m_csfEHClause.SP that the CallFunclet sets.

@@ -13,6 +13,7 @@ using Tracing.Tests.Common;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Microsoft.Diagnostics.NETCore.Client;
 using Xunit;
+using TestLibrary;
 
 namespace Tracing.Tests.BigEventsValidation
 {
@@ -42,6 +43,8 @@ namespace Tracing.Tests.BigEventsValidation
 
     public class BigEventsValidation
     {
+        [ActiveIssue("Could not load legacy Microsoft.Diagnostics.Tools.RuntimeClient and system.diagnostics.process not supported", TestPlatforms.Browser)]
+        [ActiveIssue("Can't find file dotnet-diagnostic-{pid}-*-socket", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsRiscv64Process))]
         [Fact]
         public static int TestEntryPoint()
         {

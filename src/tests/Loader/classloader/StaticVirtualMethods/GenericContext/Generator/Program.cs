@@ -102,7 +102,7 @@ namespace VirtualStaticInterfaceMethodTestGen
             tw.WriteLine(".assembly extern System.Console {}");
             tw.WriteLine(".assembly extern xunit.core {}");
             tw.WriteLine(".assembly extern mscorlib {}");
-            tw.WriteLine(".assembly extern System.Runtime {}");
+            tw.WriteLine(".assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }");
             tw.WriteLine(".assembly extern GenericContextCommonCs {}");
             tw.WriteLine(".assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }");
         }

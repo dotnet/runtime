@@ -2,7 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { CharPtr, MemOffset, NumberOrPointer, VoidPtr } from "./types";
-import { Module, dotnetAssert, dotnetLogger } from "./cross-module";
+import { dotnetAssert, dotnetLogger } from "./cross-module";
+import { _ems_ } from "../../Common/JavaScript/ems-ambient";
 
 const max_int64_big = BigInt("9223372036854775807");
 const min_int64_big = BigInt("-9223372036854775808");
@@ -18,24 +19,24 @@ export function setHeapB32(offset: MemOffset, value: number | boolean): void {
     const boolValue = !!value;
     if (typeof (value) === "number")
         assertIntInRange(value, 0, 1);
-    Module.HEAP32[<any>offset >>> 2] = boolValue ? 1 : 0;
+    _ems_.HEAP32[<any>offset >>> 2] = boolValue ? 1 : 0;
 }
 
 export function setHeapB8(offset: MemOffset, value: number | boolean): void {
     const boolValue = !!value;
     if (typeof (value) === "number")
         assertIntInRange(value, 0, 1);
-    Module.HEAPU8[<any>offset >>> 0] = boolValue ? 1 : 0;
+    _ems_.HEAPU8[<any>offset >>> 0] = boolValue ? 1 : 0;
 }
 
 export function setHeapU8(offset: MemOffset, value: number): void {
     assertIntInRange(value, 0, 0xFF);
-    Module.HEAPU8[<any>offset >>> 0] = value;
+    _ems_.HEAPU8[<any>offset >>> 0] = value;
 }
 
 export function setHeapU16(offset: MemOffset, value: number): void {
     assertIntInRange(value, 0, 0xFFFF);
-    Module.HEAPU16[<any>offset >>> 1] = value;
+    _ems_.HEAPU16[<any>offset >>> 1] = value;
 }
 
 // does not check for growable heap
@@ -46,36 +47,36 @@ export function setHeapU16_local(localView: Uint16Array, offset: MemOffset, valu
 
 // does not check for overflow nor growable heap
 export function setHeapU16_unchecked(offset: MemOffset, value: number): void {
-    Module.HEAPU16[<any>offset >>> 1] = value;
+    _ems_.HEAPU16[<any>offset >>> 1] = value;
 }
 
 // does not check for overflow nor growable heap
 export function setHeapU32_unchecked(offset: MemOffset, value: NumberOrPointer): void {
-    Module.HEAPU32[<any>offset >>> 2] = <number><any>value;
+    _ems_.HEAPU32[<any>offset >>> 2] = <number><any>value;
 }
 
 export function setHeapU32(offset: MemOffset, value: NumberOrPointer): void {
     assertIntInRange(<any>value, 0, 0xFFFF_FFFF);
-    Module.HEAPU32[<any>offset >>> 2] = <number><any>value;
+    _ems_.HEAPU32[<any>offset >>> 2] = <number><any>value;
 }
 
 export function setHeapI8(offset: MemOffset, value: number): void {
     assertIntInRange(value, -0x80, 0x7F);
-    Module.HEAP8[<any>offset >>> 0] = value;
+    _ems_.HEAP8[<any>offset >>> 0] = value;
 }
 
 export function setHeapI16(offset: MemOffset, value: number): void {
     assertIntInRange(value, -0x8000, 0x7FFF);
-    Module.HEAP16[<any>offset >>> 1] = value;
+    _ems_.HEAP16[<any>offset >>> 1] = value;
 }
 
 export function setHeapI32_unchecked(offset: MemOffset, value: number): void {
-    Module.HEAP32[<any>offset >>> 2] = value;
+    _ems_.HEAP32[<any>offset >>> 2] = value;
 }
 
 export function setHeapI32(offset: MemOffset, value: number): void {
     assertIntInRange(<any>value, -0x8000_0000, 0x7FFF_FFFF);
-    Module.HEAP32[<any>offset >>> 2] = value;
+    _ems_.HEAP32[<any>offset >>> 2] = value;
 }
 
 /**
@@ -83,7 +84,7 @@ export function setHeapI32(offset: MemOffset, value: number): void {
  */
 export function setHeapI52(offset: MemOffset, value: number): void {
     dotnetAssert.fastCheck(Number.isSafeInteger(value), () => `Value is not a safe integer: ${value} (${typeof (value)})`);
-    throw new Error("WASM-TODO");
+    _ems_.writeI53ToI64(offset, value);
 }
 
 /**
@@ -92,28 +93,28 @@ export function setHeapI52(offset: MemOffset, value: number): void {
 export function setHeapU52(offset: MemOffset, value: number): void {
     dotnetAssert.fastCheck(Number.isSafeInteger(value), () => `Value is not a safe integer: ${value} (${typeof (value)})`);
     dotnetAssert.fastCheck(value >= 0, () => "Can't convert negative Number into UInt64");
-    throw new Error("WASM-TODO");
+    _ems_.writeI53ToI64(offset, value);
 }
 
 export function setHeapI64Big(offset: MemOffset, value: bigint): void {
     dotnetAssert.fastCheck(typeof value === "bigint", () => `Value is not an bigint: ${value} (${typeof (value)})`);
     dotnetAssert.fastCheck(value >= min_int64_big && value <= max_int64_big, () => `Overflow: value ${value} is out of ${min_int64_big} ${max_int64_big} range`);
 
-    Module.HEAP64[<any>offset >>> 3] = value;
+    _ems_.HEAP64[<any>offset >>> 3] = value;
 }
 
 export function setHeapF32(offset: MemOffset, value: number): void {
     dotnetAssert.fastCheck(typeof value === "number", () => `Value is not a Number: ${value} (${typeof (value)})`);
-    Module.HEAPF32[<any>offset >>> 2] = value;
+    _ems_.HEAPF32[<any>offset >>> 2] = value;
 }
 
 export function setHeapF64(offset: MemOffset, value: number): void {
     dotnetAssert.fastCheck(typeof value === "number", () => `Value is not a Number: ${value} (${typeof (value)})`);
-    Module.HEAPF64[<any>offset >>> 3] = value;
+    _ems_.HEAPF64[<any>offset >>> 3] = value;
 }
 
 export function getHeapB32(offset: MemOffset): boolean {
-    const value = (Module.HEAPU32[<any>offset >>> 2]);
+    const value = (_ems_.HEAPU32[<any>offset >>> 2]);
     if (value > 1 && !(getHeapB32 as any).warnDirtyBool) {
         (getHeapB32 as any).warnDirtyBool = true;
         dotnetLogger.warn(`getB32: value at ${offset} is not a boolean, but a number: ${value}`);
@@ -122,15 +123,15 @@ export function getHeapB32(offset: MemOffset): boolean {
 }
 
 export function getHeapB8(offset: MemOffset): boolean {
-    return !!(Module.HEAPU8[<any>offset >>> 0]);
+    return !!(_ems_.HEAPU8[<any>offset >>> 0]);
 }
 
 export function getHeapU8(offset: MemOffset): number {
-    return Module.HEAPU8[<any>offset >>> 0];
+    return _ems_.HEAPU8[<any>offset >>> 0];
 }
 
 export function getHeapU16(offset: MemOffset): number {
-    return Module.HEAPU16[<any>offset >>> 1];
+    return _ems_.HEAPU16[<any>offset >>> 1];
 }
 
 // does not check for growable heap
@@ -139,7 +140,7 @@ export function getHeapU16_local(localView: Uint16Array, offset: MemOffset): num
 }
 
 export function getHeapU32(offset: MemOffset): number {
-    return Module.HEAPU32[<any>offset >>> 2] >>> 0;
+    return _ems_.HEAPU32[<any>offset >>> 2] >>> 0;
 }
 
 // does not check for growable heap
@@ -148,11 +149,11 @@ export function getHeapU32_local(localView: Uint32Array, offset: MemOffset): num
 }
 
 export function getHeapI8(offset: MemOffset): number {
-    return Module.HEAP8[<any>offset >>> 0];
+    return _ems_.HEAP8[<any>offset >>> 0];
 }
 
 export function getHeapI16(offset: MemOffset): number {
-    return Module.HEAP16[<any>offset >>> 1];
+    return _ems_.HEAP16[<any>offset >>> 1];
 }
 
 // does not check for growable heap
@@ -161,7 +162,7 @@ export function getHeapI16_local(localView: Int16Array, offset: MemOffset): numb
 }
 
 export function getHeapI32(offset: MemOffset): number {
-    return Module.HEAP32[<any>offset >>> 2];
+    return _ems_.HEAP32[<any>offset >>> 2];
 }
 
 // does not check for growable heap
@@ -174,7 +175,7 @@ export function getHeapI32_local(localView: Int32Array, offset: MemOffset): numb
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function getHeapI52(offset: MemOffset): number {
-    throw new Error("WASM-TODO");
+    return _ems_.readI53FromI64(offset);
 }
 
 /**
@@ -182,64 +183,64 @@ export function getHeapI52(offset: MemOffset): number {
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function getHeapU52(offset: MemOffset): number {
-    throw new Error("WASM-TODO");
+    return _ems_.readI53FromU64(offset);
 }
 
 export function getHeapI64Big(offset: MemOffset): bigint {
-    return Module.HEAP64[<any>offset >>> 3];
+    return _ems_.HEAP64[<any>offset >>> 3];
 }
 
 export function getHeapF32(offset: MemOffset): number {
-    return Module.HEAPF32[<any>offset >>> 2];
+    return _ems_.HEAPF32[<any>offset >>> 2];
 }
 
 export function getHeapF64(offset: MemOffset): number {
-    return Module.HEAPF64[<any>offset >>> 3];
+    return _ems_.HEAPF64[<any>offset >>> 3];
 }
 
 // returns memory view which is valid within current synchronous call stack
 export function localHeapViewI8(): Int8Array {
-    return Module.HEAP8;
+    return _ems_.HEAP8;
 }
 
 // returns memory view which is valid within current synchronous call stack
 export function localHeapViewI16(): Int16Array {
-    return Module.HEAP16;
+    return _ems_.HEAP16;
 }
 
 // returns memory view which is valid within current synchronous call stack
 export function localHeapViewI32(): Int32Array {
-    return Module.HEAP32;
+    return _ems_.HEAP32;
 }
 
 // returns memory view which is valid within current synchronous call stack
 export function localHeapViewI64Big(): BigInt64Array {
-    return Module.HEAP64;
+    return _ems_.HEAP64;
 }
 
 // returns memory view which is valid within current synchronous call stack
 export function localHeapViewU8(): Uint8Array {
-    return Module.HEAPU8;
+    return _ems_.HEAPU8;
 }
 
 // returns memory view which is valid within current synchronous call stack
 export function localHeapViewU16(): Uint16Array {
-    return Module.HEAPU16;
+    return _ems_.HEAPU16;
 }
 
 // returns memory view which is valid within current synchronous call stack
 export function localHeapViewU32(): Uint32Array {
-    return Module.HEAPU32;
+    return _ems_.HEAPU32;
 }
 
 // returns memory view which is valid within current synchronous call stack
 export function localHeapViewF32(): Float32Array {
-    return Module.HEAPF32;
+    return _ems_.HEAPF32;
 }
 
 // returns memory view which is valid within current synchronous call stack
 export function localHeapViewF64(): Float64Array {
-    return Module.HEAPF64;
+    return _ems_.HEAPF64;
 }
 
 export function copyBytes(srcPtr: VoidPtr, dstPtr: VoidPtr, bytes: number): void {

@@ -4,8 +4,6 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <TargetFrameworks Condition="'$(NetCoreAppPrevious)' != ''">$(TargetFrameworks);$(NetCoreAppPrevious)-windows;$(NetCoreAppPrevious)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <!-- Suppress CA2249: Consider using String.Contains instead of String.IndexOf to avoid ifdefs. -->
-    <NoWarn>$(NoWarn);CA2249</NoWarn>
     <!-- Suppress SYSLIB0004: 'RuntimeHelpers.PrepareConstrainedRegions()' is obsolete to avoid ifdefs. -->
     <NoWarn>$(NoWarn);SYSLIB0004</NoWarn>
     <!-- Suppress CS3016: Arrays as attribute arguments is not CLS-compliant to work around https://github.com/dotnet/roslyn/issues/68526 in generated code -->
@@ -46,7 +44,6 @@ System.Data.OleDb.OleDbTransaction</PackageDescription>
     <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.SysAllocStringLen.cs" Link="Common\Interop\Windows\OleAut32\Interop.SysAllocStringLen.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.SetErrorInfo.cs" Link="Common\Interop\Windows\OleAut32\Interop.SetErrorInfo.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.SysFreeString.cs" Link="Common\Interop\Windows\OleAut32\Interop.SysFreeString.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.VariantClear.cs" Link="Common\Interop\Windows\OleAut32\Interop.VariantClear.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.CoTaskMemAlloc.cs" Link="Common\Interop\Windows\Ole32\Interop.CoTaskMemAlloc.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.PropVariantClear.cs" Link="Common\Interop\Windows\Ole32\Interop.PropVariantClear.cs" />
     <Compile Include="$(CommonPath)System\Data\Common\MultipartIdentifier.cs" Link="Common\System\Data\Common\MultipartIdentifier.cs" />

@@ -24,6 +24,11 @@
 #endif
 #include <pthread.h>
 
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wjump-misses-init"
+#endif
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // LowLevelMonitor - Represents a non-recursive mutex and condition
 
@@ -64,7 +69,7 @@ LowLevelMonitor* SystemNative_LowLevelMonitor_Create(void)
         return NULL;
     }
 
-#if HAVE_PTHREAD_CONDATTR_SETCLOCK && HAVE_CLOCK_MONOTONIC
+#if HAVE_PTHREAD_CONDATTR_SETCLOCK
     pthread_condattr_t conditionAttributes;
     error = pthread_condattr_init(&conditionAttributes);
     if (error != 0)
@@ -176,7 +181,7 @@ int32_t SystemNative_LowLevelMonitor_TimedWait(LowLevelMonitor *monitor, int32_t
 
     error = pthread_cond_timedwait_relative_np(&monitor->Condition, &monitor->Mutex, &timeoutTimeSpec);
 #else
-#if HAVE_PTHREAD_CONDATTR_SETCLOCK && HAVE_CLOCK_MONOTONIC
+#if HAVE_PTHREAD_CONDATTR_SETCLOCK
     error = clock_gettime(CLOCK_MONOTONIC, &timeoutTimeSpec);
     assert(error == 0);
 #else

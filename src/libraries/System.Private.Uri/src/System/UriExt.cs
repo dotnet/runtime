@@ -13,11 +13,21 @@ namespace System
 {
     public partial class Uri
     {
-        //
-        // All public ctors go through here
-        //
+        /// <summary>Helper called by all constructors to construct the Uri.</summary>
         [MemberNotNull(nameof(_string))]
         private void CreateThis(string? uri, bool dontEscape, UriKind uriKind, in UriCreationOptions creationOptions = default)
+        {
+            UriFormatException? e = TryCreateThis(uri, dontEscape, uriKind, in creationOptions);
+
+            if (e is not null)
+            {
+                throw e;
+            }
+        }
+
+        /// <summary>Core helper called by all constructors and TryCreate factories to construct the Uri.</summary>
+        [MemberNotNull(nameof(_string))]
+        private UriFormatException? TryCreateThis(string? uri, bool dontEscape, UriKind uriKind, in UriCreationOptions creationOptions = default)
         {
             DebugAssertInCtor();
 
@@ -37,15 +47,6 @@ namespace System
                 _flags |= Flags.DisablePathAndQueryCanonicalization;
 
             ParsingError err = ParseScheme(_string, ref _flags, ref _syntax!);
-
-            UriFormatException? e = InitializeUri(err, uriKind);
-            if (e != null)
-                throw e;
-        }
-
-        private UriFormatException? InitializeUri(ParsingError err, UriKind uriKind)
-        {
-            DebugAssertInCtor();
             Debug.Assert((err is ParsingError.None) == (_syntax is not null));
 
             bool hasUnicode = false;
@@ -63,17 +64,10 @@ namespace System
                 // and we'll allow relative Uri's, then create one.
                 if (uriKind != UriKind.Absolute && err <= ParsingError.LastErrorOkayForRelativeUris)
                 {
-                    _flags &= Flags.UserEscaped | Flags.HasUnicode; // the only flags that makes sense for a relative uri
-                    if (hasUnicode)
-                    {
-                        // Iri'ze and then normalize relative uris
-                        _string = EscapeUnescapeIri(_originalUnicodeString, 0, _originalUnicodeString.Length, isQuery: false);
-                    }
-                    return null;
+                    goto SwitchToRelativeUri;
                 }
 
                 // This is a fatal error based solely on scheme name parsing
-                _string = null!; // make it be invalid Uri
                 return GetException(err);
             }
 
@@ -83,9 +77,7 @@ namespace System
             {
                 if (uriKind == UriKind.Relative)
                 {
-                    _syntax = null!; // make it be relative Uri
-                    _flags &= Flags.UserEscaped; // the only flag that makes sense for a relative uri
-                    return null;
+                    goto SwitchToRelativeUri;
                 }
 
                 // V1 compat
@@ -96,9 +88,7 @@ namespace System
                    ((_string.Length >= 2 && (_string[0] != '\\' || _string[1] != '\\'))
                     || (!OperatingSystem.IsWindows() && InFact(Flags.UnixPath))))
                 {
-                    _syntax = null!; //make it be relative Uri
-                    _flags &= Flags.UserEscaped; // the only flag that makes sense for a relative uri
-                    return null;
+                    goto SwitchToRelativeUri;
                     // Otherwise an absolute file Uri wins when it's of the form "\\something"
                 }
             }
@@ -110,18 +100,10 @@ namespace System
                     if (uriKind != UriKind.Absolute && err <= ParsingError.LastErrorOkayForRelativeUris)
                     {
                         // RFC 3986 Section 5.4.2 - http:(relativeUri) may be considered a valid relative Uri.
-                        _syntax = null!; // convert to relative uri
-                        _flags &= Flags.UserEscaped; // the only flag that makes sense for a relative uri
-                        return null;
+                        goto SwitchToRelativeUri;
                     }
 
                     return GetException(err);
-                }
-
-                if (uriKind == UriKind.Relative)
-                {
-                    // Here we know that we can create an absolute Uri, but the user has requested only a relative one
-                    return GetException(ParsingError.CannotCreateRelative);
                 }
             }
             else
@@ -146,12 +128,12 @@ namespace System
                     // we use = here to clear all parsing flags for a uri that we think is invalid.
                     _flags = Flags.UserDrivenParsing | (_flags & Flags.UserEscaped);
                 }
-                else if (uriKind == UriKind.Relative)
-                {
-                    // Here we know that custom parser can create an absolute Uri, but the user has requested only a
-                    // relative one
-                    return GetException(ParsingError.CannotCreateRelative);
-                }
+            }
+
+            if (uriKind == UriKind.Relative)
+            {
+                // Here we know that we can create an absolute Uri, but the user has requested only a relative one
+                return GetException(ParsingError.CannotCreateRelative);
             }
 
             if (hasUnicode)
@@ -168,6 +150,23 @@ namespace System
             }
 
             // We have a valid absolute Uri.
+            DebugSetLeftCtor();
+            return null;
+
+        SwitchToRelativeUri:
+            Debug.Assert(uriKind != UriKind.Absolute);
+
+            _syntax = null!;
+            _flags &= Flags.UserEscaped | Flags.HasUnicode; // the only flags that make sense for a relative uri
+
+            if (hasUnicode)
+            {
+                var vsb = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
+                IriHelper.EscapeUnescapeIri(ref vsb, _originalUnicodeString, isQuery: false);
+                _string = vsb.ToString();
+            }
+
+            DebugSetLeftCtor();
             return null;
         }
 
@@ -224,7 +223,6 @@ namespace System
         public static bool TryCreate([NotNullWhen(true), StringSyntax(StringSyntaxAttribute.Uri, "uriKind")] string? uriString, UriKind uriKind, [NotNullWhen(true)] out Uri? result)
         {
             result = CreateHelper(uriString, false, uriKind);
-            result?.DebugSetLeftCtor();
             return result is not null;
         }
 
@@ -238,7 +236,6 @@ namespace System
         public static bool TryCreate([NotNullWhen(true), StringSyntax(StringSyntaxAttribute.Uri)] string? uriString, in UriCreationOptions creationOptions, [NotNullWhen(true)] out Uri? result)
         {
             result = CreateHelper(uriString, false, UriKind.Absolute, in creationOptions);
-            result?.DebugSetLeftCtor();
             return result is not null;
         }
 
@@ -287,7 +284,6 @@ namespace System
             result ??= CreateHelper(newUriString!, dontEscape, UriKind.Absolute);
             Debug.Assert(result is null || result.IsAbsoluteUri);
 
-            result?.DebugSetLeftCtor();
             return result is not null;
         }
 
@@ -552,6 +548,12 @@ namespace System
                 return false;
             }
 
+            if (destination.Length < indexOfFirstToUnescape)
+            {
+                charsWritten = 0;
+                return false;
+            }
+
             // We may throw for very large inputs (when growing the ValueStringBuilder).
             scoped ValueStringBuilder vsb;
 
@@ -629,35 +631,12 @@ namespace System
         public static bool TryEscapeDataString(ReadOnlySpan<char> charsToEscape, Span<char> destination, out int charsWritten) =>
             UriHelper.TryEscapeDataString(charsToEscape, destination, out charsWritten);
 
-        //
-        // Cleans up the specified component according to Iri rules
-        // a) Chars allowed by iri in a component are unescaped if found escaped
-        // b) Bidi chars are stripped
-        //
-        // should be called only if IRI parsing is switched on
-        internal static string EscapeUnescapeIri(string input, int start, int end, bool isQuery)
-        {
-            return IriHelper.EscapeUnescapeIri(input.AsSpan(start, end - start), isQuery);
-        }
+#pragma warning disable CS8618 // _string will be initialized by TryCreateThis later.
+        /// <summary>Must never be used except by <see cref="CreateHelper(string?, bool, UriKind, in UriCreationOptions)"/>.</summary>
+        private Uri() { }
+#pragma warning restore CS8618
 
-        // Should never be used except by the below method
-        private Uri(Flags flags, UriParser? uriParser, string uri)
-        {
-            _flags = flags;
-            _syntax = uriParser!;
-            _string = uri;
-
-            if (uriParser is null)
-            {
-                // Relative Uris are fully initialized after the call to this constructor
-                // Absolute Uris will be initialized with a call to InitializeUri on the newly created instance
-                DebugSetLeftCtor();
-            }
-        }
-
-        //
-        // a Uri.TryCreate() method goes through here.
-        //
+        /// <summary>Called by TryCreate.</summary>
         internal static Uri? CreateHelper(string? uriString, bool dontEscape, UriKind uriKind, in UriCreationOptions creationOptions = default)
         {
             if (uriString is null)
@@ -665,52 +644,15 @@ namespace System
                 return null;
             }
 
-            if (uriKind is < UriKind.RelativeOrAbsolute or > UriKind.Relative)
-            {
-                throw new ArgumentException(SR.Format(SR.net_uri_InvalidUriKind, uriKind));
-            }
-
-            UriParser? syntax = null;
-            Flags flags = Flags.Zero;
-            ParsingError err = ParseScheme(uriString, ref flags, ref syntax);
-
-            if (dontEscape)
-                flags |= Flags.UserEscaped;
-
-            if (creationOptions.DangerousDisablePathAndQueryCanonicalization)
-                flags |= Flags.DisablePathAndQueryCanonicalization;
-
-            // We won't use User factory for these errors
-            if (err != ParsingError.None)
-            {
-                // If it looks as a relative Uri, custom factory is ignored
-                if (uriKind != UriKind.Absolute && err <= ParsingError.LastErrorOkayForRelativeUris)
-                    return new Uri((flags & Flags.UserEscaped), null, uriString);
-
-                return null;
-            }
-
-            // Cannot be relative Uri if came here
-            Debug.Assert(syntax != null);
-            Uri result = new Uri(flags, syntax, uriString);
-
-            // Validate instance using ether built in or a user Parser
+            Uri result = new();
             try
             {
-                UriFormatException? e = result.InitializeUri(err, uriKind);
-
-                if (e == null)
-                {
-                    result.DebugSetLeftCtor();
-                    return result;
-                }
-
-                return null;
+                UriFormatException? e = result.TryCreateThis(uriString, dontEscape, uriKind, in creationOptions);
+                return e is null ? result : null;
             }
             catch (UriFormatException)
             {
-                Debug.Assert(!syntax.IsSimple, "A UriPraser threw on InitializeAndValidate.");
-                // A precaution since custom Parser should never throw in this case.
+                Debug.Assert(result.Syntax is { IsSimple: false }, "A custom UriParser threw on InitializeAndValidate.");
                 return null;
             }
         }
@@ -953,8 +895,9 @@ namespace System
         private void CreateThisFromUri(Uri otherUri)
         {
             DebugAssertInCtor();
+            Debug.Assert((otherUri._flags & Flags.Debug_LeftConstructor) != 0);
 
-            _flags = otherUri._flags;
+            _flags = otherUri._flags & ~Flags.Debug_LeftConstructor;
 
             if (InFact(Flags.AllUriInfoSet))
             {

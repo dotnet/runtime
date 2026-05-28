@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using TestLibrary;
 
 [assembly:Xunit.ActiveIssue("https://github.com/dotnet/runtime/issues/75767", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMonoLLVMAOT))]
 [assembly:Xunit.ActiveIssue("https://github.com/dotnet/runtime/issues/102150", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMonoFULLAOT))]

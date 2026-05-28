@@ -824,7 +824,7 @@ void InlineResult::Report()
 //    compiler - root compiler instance
 
 InlineStrategy::InlineStrategy(Compiler* compiler)
-    : m_Compiler(compiler)
+    : m_compiler(compiler)
     , m_RootContext(nullptr)
     , m_LastSuccessfulPolicy(nullptr)
     , m_LastContext(nullptr)
@@ -840,6 +840,7 @@ InlineStrategy::InlineStrategy(Compiler* compiler)
     , m_MaxInlineSize(DEFAULT_MAX_INLINE_SIZE)
     , m_MaxInlineDepth(DEFAULT_MAX_INLINE_DEPTH)
     , m_MaxForceInlineDepth(DEFAULT_MAX_FORCE_INLINE_DEPTH)
+    , m_OverBudgetIntrinsicInlineCount(0)
     , m_InitialTimeBudget(0)
     , m_InitialTimeEstimate(0)
     , m_CurrentTimeBudget(0)
@@ -847,6 +848,7 @@ InlineStrategy::InlineStrategy(Compiler* compiler)
     , m_InitialSizeEstimate(0)
     , m_CurrentSizeEstimate(0)
     , m_HasForceViaDiscretionary(false)
+    , m_HasHardwareIntrinsicCheck(false)
 #if defined(DEBUG)
     , m_MethodXmlFilePosition(0)
     , m_Random(nullptr)
@@ -854,7 +856,7 @@ InlineStrategy::InlineStrategy(Compiler* compiler)
 
 {
     // Verify compiler is a root compiler instance
-    assert(m_Compiler->impInlineRoot() == m_Compiler);
+    assert(m_compiler->impInlineRoot() == m_compiler);
 
 #ifdef DEBUG
 
@@ -865,7 +867,7 @@ InlineStrategy::InlineStrategy(Compiler* compiler)
     m_MaxInlineSize = JitConfig.JitInlineSize();
 
     // Up the max size under stress
-    if (m_Compiler->compInlineStress())
+    if (m_compiler->compInlineStress())
     {
         m_MaxInlineSize *= 10;
     }
@@ -1255,6 +1257,46 @@ bool InlineStrategy::BudgetCheck(unsigned ilSize)
 }
 
 //------------------------------------------------------------------------
+// NoteHardwareIntrinsicCheckObserved: record that the root method or an
+//   already-imported inlinee references a HW-intrinsic IsSupported /
+//   IsHardwareAccelerated capability check, and grow the inline time
+//   budget on the first such observation per root method.
+//
+// Notes:
+//   Methods with SIMD paths typically carry several ISA-specific fallbacks
+//   (e.g. Vector512/Vector256/Vector128/scalar variants), making them
+//   IL-heavy. Inlining one such callee can otherwise consume nearly the
+//   entire inline time budget for the root method, blocking subsequent
+//   inlines of trivial helpers (Span.Slice, property getters, etc.).
+//
+//   The boost is one-shot per root method and monotonic: it never lowers
+//   the current budget (preserving any prior growth from force inlines).
+//
+void InlineStrategy::NoteHardwareIntrinsicCheckObserved()
+{
+    if (m_HasHardwareIntrinsicCheck)
+    {
+        return;
+    }
+
+    m_HasHardwareIntrinsicCheck = true;
+
+    // Compute the boosted budget in 64-bit to avoid signed overflow when
+    // an unusually large JitInlineBudget is configured.
+    const int64_t boosted64 =
+        static_cast<int64_t>(m_InitialTimeBudget) * static_cast<int64_t>(SIMD_BUDGET_BOOST_MULTIPLIER);
+    const int boosted = (boosted64 > INT_MAX) ? INT_MAX : static_cast<int>(boosted64);
+
+    if (m_CurrentTimeBudget < boosted)
+    {
+        JITDUMP("\nBudget: HW intrinsic IsSupported/IsHardwareAccelerated check observed; "
+                "boosting inline time budget from %d to %d (initial=%d, multiplier=%d)\n",
+                m_CurrentTimeBudget, boosted, m_InitialTimeBudget, (int)SIMD_BUDGET_BOOST_MULTIPLIER);
+        m_CurrentTimeBudget = boosted;
+    }
+}
+
+//------------------------------------------------------------------------
 // NewRoot: construct an InlineContext for the root method
 //
 // Return Value:
@@ -1267,11 +1309,11 @@ bool InlineStrategy::BudgetCheck(unsigned ilSize)
 
 InlineContext* InlineStrategy::NewRoot()
 {
-    InlineContext* rootContext = new (m_Compiler, CMK_Inlining) InlineContext(this);
+    InlineContext* rootContext = new (m_compiler, CMK_Inlining) InlineContext(this);
 
-    rootContext->m_ILSize = m_Compiler->info.compILCodeSize;
-    rootContext->m_Code   = m_Compiler->info.compCode;
-    rootContext->m_Callee = m_Compiler->info.compMethodHnd;
+    rootContext->m_ILSize = m_compiler->info.compILCodeSize;
+    rootContext->m_Code   = m_compiler->info.compCode;
+    rootContext->m_Callee = m_compiler->info.compMethodHnd;
 
     // May fail to block recursion for normal methods
     // Might need the actual context handle here
@@ -1282,7 +1324,7 @@ InlineContext* InlineStrategy::NewRoot()
 
 InlineContext* InlineStrategy::NewContext(InlineContext* parentContext, Statement* stmt, GenTreeCall* call)
 {
-    InlineContext* context = new (m_Compiler, CMK_Inlining) InlineContext(this);
+    InlineContext* context = new (m_compiler, CMK_Inlining) InlineContext(this);
 
     context->m_InlineStrategy = this;
     context->m_Parent         = parentContext;
@@ -1460,14 +1502,14 @@ void InlineStrategy::DumpData()
 void InlineStrategy::DumpDataEnsurePolicyIsSet()
 {
     // Cache references to compiler substructures.
-    const Compiler::Info& info = m_Compiler->info;
+    const Compiler::Info& info = m_compiler->info;
 
     // If there weren't any successful inlines, we won't have a
     // successful policy, so fake one up.
     if (m_LastSuccessfulPolicy == nullptr)
     {
-        const bool isPrejitRoot = m_Compiler->IsAot();
-        m_LastSuccessfulPolicy  = InlinePolicy::GetPolicy(m_Compiler, isPrejitRoot);
+        const bool isPrejitRoot = m_compiler->IsAot();
+        m_LastSuccessfulPolicy  = InlinePolicy::GetPolicy(m_compiler, isPrejitRoot);
 
         // Add in a bit of data....
         const bool isForceInline = (info.compFlags & CORINFO_FLG_FORCEINLINE) != 0;
@@ -1515,7 +1557,7 @@ void InlineStrategy::DumpDataContents(FILE* file)
     DumpDataEnsurePolicyIsSet();
 
     // Cache references to compiler substructures.
-    const Compiler::Info& info = m_Compiler->info;
+    const Compiler::Info& info = m_compiler->info;
 
     // We'd really like the method identifier to be unique and
     // durable across crossgen invocations. Not clear how to
@@ -1527,7 +1569,7 @@ void InlineStrategy::DumpDataContents(FILE* file)
 
     // Convert time spent jitting into microseconds
     unsigned microsecondsSpentJitting = 0;
-    uint64_t compCycles               = m_Compiler->getInlineCycleCount();
+    uint64_t compCycles               = m_compiler->getInlineCycleCount();
     if (compCycles > 0)
     {
         double countsPerSec      = CachedCyclesPerSecond();
@@ -1604,9 +1646,9 @@ void InlineStrategy::DumpXml(FILE* file, unsigned indent)
     }
 
     // Cache references to compiler substructures.
-    const Compiler::Info& info = m_Compiler->info;
+    const Compiler::Info& info = m_compiler->info;
 
-    const bool isPrejitRoot = m_Compiler->IsAot();
+    const bool isPrejitRoot = m_compiler->IsAot();
 
     // We'd really like the method identifier to be unique and
     // durable across crossgen invocations. Not clear how to
@@ -1620,7 +1662,7 @@ void InlineStrategy::DumpXml(FILE* file, unsigned indent)
 
     // Convert time spent jitting into microseconds
     unsigned microsecondsSpentJitting = 0;
-    uint64_t compCycles               = m_Compiler->getInlineCycleCount();
+    uint64_t compCycles               = m_compiler->getInlineCycleCount();
     if (compCycles > 0)
     {
         double countsPerSec      = CachedCyclesPerSecond();
@@ -1630,7 +1672,7 @@ void InlineStrategy::DumpXml(FILE* file, unsigned indent)
 
     // Get method name just for root method, to make it a bit easier
     // to search for things in the inline xml.
-    const char* methodName = m_Compiler->eeGetMethodFullName(info.compMethodHnd);
+    const char* methodName = m_compiler->eeGetMethodFullName(info.compMethodHnd);
 
     char buf[1024];
     strncpy(buf, methodName, sizeof(buf));
@@ -1720,7 +1762,7 @@ CLRRandom* InlineStrategy::GetRandom(int optionalSeed)
 
 #ifdef DEBUG
 
-        if (m_Compiler->compRandomInlineStress())
+        if (m_compiler->compRandomInlineStress())
         {
             externalSeed = getJitStressLevel();
             // We can set DOTNET_JitStressModeNames without setting DOTNET_JitStress,
@@ -1739,7 +1781,7 @@ CLRRandom* InlineStrategy::GetRandom(int optionalSeed)
             externalSeed = randomPolicyFlag;
         }
 
-        int internalSeed = m_Compiler->info.compMethodHash();
+        int internalSeed = m_compiler->info.compMethodHash();
 
         assert(externalSeed != 0);
         assert(internalSeed != 0);
@@ -1748,7 +1790,7 @@ CLRRandom* InlineStrategy::GetRandom(int optionalSeed)
 
         JITDUMP("\n*** Using random seed ext(%u) ^ int(%u) = %u\n", externalSeed, internalSeed, seed);
 
-        m_Random = new (m_Compiler, CMK_Inlining) CLRRandom();
+        m_Random = new (m_compiler, CMK_Inlining) CLRRandom();
         m_Random->Init(seed);
     }
 
@@ -1793,7 +1835,7 @@ bool InlineStrategy::IsInliningDisabled()
     range.EnsureInit(noInlineRange, 2 * entryCount);
     assert(!range.Error());
 
-    return range.Contains(m_Compiler->info.compMethodHash());
+    return range.Contains(m_compiler->info.compMethodHash());
 
 #else
 

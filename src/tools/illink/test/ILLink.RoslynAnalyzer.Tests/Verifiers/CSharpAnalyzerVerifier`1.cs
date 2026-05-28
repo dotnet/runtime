@@ -38,14 +38,24 @@ namespace ILLink.RoslynAnalyzer.Tests
             => CSharpAnalyzerVerifier<TAnalyzer, DefaultVerifier>.Diagnostic(DiagnosticDescriptors.GetDiagnosticDescriptor(diagnosticId));
 
         /// <inheritdoc cref="AnalyzerVerifier{TAnalyzer, TTest, TVerifier}.VerifyAnalyzerAsync(string, DiagnosticResult[])"/>
-        public static async Task VerifyAnalyzerAsync(
+        public static Task VerifyAnalyzerAsync(
             string src,
             bool consoleApplication,
             (string, string)[]? analyzerOptions = null,
             IEnumerable<MetadataReference>? additionalReferences = null,
             params DiagnosticResult[] expected)
+            => VerifyAnalyzerAsync(src, consoleApplication, analyzerOptions, additionalReferences, allowUnsafe: false, expected);
+
+        /// <inheritdoc cref="AnalyzerVerifier{TAnalyzer, TTest, TVerifier}.VerifyAnalyzerAsync(string, DiagnosticResult[])"/>
+        public static async Task VerifyAnalyzerAsync(
+            string src,
+            bool consoleApplication,
+            (string, string)[]? analyzerOptions,
+            IEnumerable<MetadataReference>? additionalReferences,
+            bool allowUnsafe,
+            DiagnosticResult[] expected)
         {
-            var (comp, _, exceptionDiagnostics) = TestCaseCompilation.CreateCompilation(src, consoleApplication, analyzerOptions, additionalReferences);
+            var (comp, _, exceptionDiagnostics) = TestCaseCompilation.CreateCompilation(src, consoleApplication, analyzerOptions, additionalReferences, allowUnsafe: allowUnsafe);
             var diags = (await comp.GetAllDiagnosticsAsync()).AddRange(exceptionDiagnostics);
             var analyzers = ImmutableArray.Create<DiagnosticAnalyzer>(new TAnalyzer());
             VerifyDiagnosticResults(diags, analyzers, expected, DefaultVerifier);

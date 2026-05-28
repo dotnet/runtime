@@ -67,15 +67,6 @@ ASM_OFFSET(    4,     8, gc_alloc_context, alloc_limit)
 ASM_OFFSET(    0,     0, ee_alloc_context, combined_limit)
 ASM_OFFSET(    4,     8, ee_alloc_context, m_rgbAllocContextBuffer)
 
-#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
-ASM_OFFSET(    4,     8, InterfaceDispatchCell, m_pCache)
-#ifdef INTERFACE_DISPATCH_CACHE_HAS_CELL_BACKPOINTER
-ASM_OFFSET(    8,     0, InterfaceDispatchCache, m_pCell)
-#endif
-ASM_OFFSET(   10,    20, InterfaceDispatchCache, m_rgEntries)
-ASM_SIZEOF(    8,    10, InterfaceDispatchCacheEntry)
-#endif
-
 // Undefine macros that are only used in this header for convenience.
 #undef ASM_OFFSET
 #undef ASM_SIZEOF

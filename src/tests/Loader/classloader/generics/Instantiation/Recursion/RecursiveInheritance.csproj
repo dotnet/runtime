@@ -6,4 +6,7 @@
   <ItemGroup>
     <Compile Include="RecursiveInheritance.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

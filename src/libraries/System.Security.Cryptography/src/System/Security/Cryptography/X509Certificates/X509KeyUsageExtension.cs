@@ -67,7 +67,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             try
             {
-                AsnValueReader reader = new AsnValueReader(encoded, AsnEncodingRules.BER);
+                ValueAsnReader reader = new ValueAsnReader(encoded, AsnEncodingRules.BER);
                 keyUsagesAsn = reader.ReadNamedBitListValue<KeyUsageFlagsAsn>();
                 reader.ThrowIfNotEmpty();
             }

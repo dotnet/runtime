@@ -403,6 +403,10 @@ public:
         LIMITED_METHOD_CONTRACT;
         return !(m_token == INVALID_TOKEN);
     }
+
+    //------------------------------------------------------------------------
+    // Returns a hash of the token suitable for use in dispatch caches.
+    UINT16 GetHash() const;
 };  // struct DispatchToken
 
 // DispatchToken.m_token should be the only field of DispatchToken.
