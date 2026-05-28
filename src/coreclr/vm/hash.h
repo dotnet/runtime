@@ -234,7 +234,7 @@ public:
 
     // for unique keys, use this function to get the value that is
     // stored in the hash table, returns INVALIDENTRY if key not found
-    UPTR GetHash(UPTR key);
+    UPTR LookupValueByUniqueKey(UPTR key);
 
     // Called only when all threads are frozed, like during GC
     // for a SINGLE user mode, call compact after every delete
@@ -593,13 +593,13 @@ public:
 
     // for unique keys, use this function to get the value that is
     // stored in the hash table, returns INVALIDENTRY if key not found
-    LPVOID GetHash(UPTR key)
+    LPVOID LookupValueByUniqueKey(UPTR key)
     {
         WRAPPER_NO_CONTRACT;
 
         key = SanitizeKey(key);
 
-        UPTR val = m_HashMap.GetHash(key);
+        UPTR val = m_HashMap.LookupValueByUniqueKey(key);
         if (val != (UPTR) INVALIDENTRY)
         {
             val <<= 1;
