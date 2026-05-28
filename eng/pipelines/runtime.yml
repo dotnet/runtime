@@ -363,7 +363,10 @@ extends:
             nameSuffix: Libraries_CheckedCoreCLR
             buildArgs: -s clr+libs+libs.tests -c $(_BuildConfig) -rc Checked /p:ArchiveTests=true
             timeoutInMinutes: 120
+            preBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/setup-sccache.yml
             postBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/sccache-stats.yml
               - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:
@@ -474,7 +477,10 @@ extends:
             nameSuffix: Libraries_CheckedCoreCLR
             buildArgs: -s clr+libs -c $(_BuildConfig) -rc Checked
             timeoutInMinutes: 120
+            preBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/setup-sccache.yml
             postBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/sccache-stats.yml
               - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:
@@ -762,7 +768,10 @@ extends:
             timeoutInMinutes: 180
             nameSuffix: NativeAOT
             buildArgs: -s clr.aot+libs+tools.illink -c $(_BuildConfig) -rc $(_BuildConfig) -lc Release /p:RunAnalyzers=false
+            preBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/setup-sccache.yml
             postBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/sccache-stats.yml
               - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
                 parameters:
                   creator: dotnet-bot
@@ -800,8 +809,11 @@ extends:
             nameSuffix: NativeAOT_Libraries
             buildArgs: -s clr.aot+libs+libs.tests -c $(_BuildConfig) /p:TestNativeAot=true /p:RunSmokeTestsOnly=true /p:ArchiveTests=true /p:RunAnalyzers=false
             timeoutInMinutes: 240 # Doesn't actually take long, but we've seen the ARM64 Helix queue often get backlogged for 2+ hours
+            preBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/setup-sccache.yml
             # extra steps, run tests
             postBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/sccache-stats.yml
               - template: /eng/pipelines/libraries/helix.yml
                 parameters:
                   creator: dotnet-bot
@@ -1572,6 +1584,7 @@ extends:
               - nameSuffix: CoreCLR_Libraries
                 buildConfig: release
             preBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/setup-sccache.yml
               - template: /eng/pipelines/common/download-artifact-step.yml
                 parameters:
                   artifactName: CoreCLR_Libraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Release
@@ -1580,6 +1593,7 @@ extends:
                   displayName: 'unified artifacts'
             timeoutInMinutes: 150
             postBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/sccache-stats.yml
               - template: /eng/pipelines/installer/helix.yml
                 parameters:
                   creator: dotnet-bot
@@ -1634,6 +1648,7 @@ extends:
               - nameSuffix: CoreCLR_Libraries
                 buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
             preBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/setup-sccache.yml
               - template: /eng/pipelines/common/download-artifact-step.yml
                 parameters:
                   artifactName: CoreCLR_Libraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)
@@ -1642,6 +1657,7 @@ extends:
                   displayName: 'unified artifacts'
             timeoutInMinutes: 150
             postBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/sccache-stats.yml
               - template: /eng/pipelines/installer/helix.yml
                 parameters:
                   creator: dotnet-bot
