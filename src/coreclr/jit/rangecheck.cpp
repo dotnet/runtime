@@ -1776,7 +1776,7 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
             {
                 int shiftAmount;
 
-                if (op2Range.IsSingleValueConstant(&shiftAmount) && (shiftAmount >= 32) && (shiftAmount < 63))
+                if (op2Range.IsSingleValueConstant(&shiftAmount) && (shiftAmount >= 32) && (shiftAmount < 64))
                 {
                     // The upper 33-bits of the input will all match, so we are within [INT32_MIN, INT32_MAX]
                     // and can further reduce based on the remaining shift amount.
@@ -1800,7 +1800,7 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
             {
                 int shiftAmount;
 
-                if (op2Range.IsSingleValueConstant(&shiftAmount) && (shiftAmount >= 33) && (shiftAmount < 63))
+                if (op2Range.IsSingleValueConstant(&shiftAmount) && (shiftAmount >= 33) && (shiftAmount < 64))
                 {
                     // The upper 33-bits of the input must all be zero, so we are within [0, INT32_MAX]
                     // and can further reduce based on the remaining shift amount. This is notably one
@@ -2341,6 +2341,11 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
 
         var_types toType   = cast->CastToType();
         var_types fromType = cast->CastFromType();
+
+        if (cast->IsUnsigned())
+        {
+            fromType = varTypeToUnsigned(fromType);
+        }
 
         var_types rangeType;
 
