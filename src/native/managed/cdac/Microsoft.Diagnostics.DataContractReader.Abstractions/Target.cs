@@ -239,6 +239,14 @@ public abstract class Target
     public abstract TypeInfo GetTypeInfo(string typeName);
 
     /// <summary>
+    /// Try to resolve a native cdac type info by name. Returns <c>false</c> when the
+    /// descriptor does not define this type, instead of throwing. Used by
+    /// <c>TargetLayoutExtensions.ResolveLayouts</c> for IData classes that opt into
+    /// per-field fallback between native cdac descriptors and managed type metadata.
+    /// </summary>
+    public abstract bool TryGetTypeInfo(string typeName, out TypeInfo info);
+
+    /// <summary>
     /// Get the data cache for the target
     /// </summary>
     public abstract IDataCache ProcessedData { get; }

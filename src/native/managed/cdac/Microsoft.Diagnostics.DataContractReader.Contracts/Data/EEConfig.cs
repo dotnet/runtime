@@ -3,17 +3,8 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class EEConfig : IData<EEConfig>
+[CdacType(nameof(DataType.EEConfig))]
+internal sealed partial class EEConfig : IData<EEConfig>
 {
-    static EEConfig IData<EEConfig>.Create(Target target, TargetPointer address)
-        => new EEConfig(target, address);
-
-    public EEConfig(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.EEConfig);
-
-        ModifiableAssemblies = target.ReadField<uint>(address, type, nameof(ModifiableAssemblies));
-    }
-
-    public uint ModifiableAssemblies { get; init; }
+    [Field] public uint ModifiableAssemblies { get; }
 }

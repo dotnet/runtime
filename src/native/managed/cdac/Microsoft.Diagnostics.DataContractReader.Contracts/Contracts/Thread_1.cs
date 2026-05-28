@@ -48,14 +48,14 @@ internal readonly struct Thread_1 : IThread
 
     void IThread.SetDebuggerControlledThreadState(TargetPointer thread, DebuggerControlledThreadState state)
     {
-        uint current = _target.ReadField<uint>(thread, _threadTypeInfo, nameof(Data.Thread.DebuggerControlledThreadState));
-        _target.WriteField(thread, _threadTypeInfo, nameof(Data.Thread.DebuggerControlledThreadState), current | (uint)state);
+        Data.Thread t = _target.ProcessedData.GetOrAdd<Data.Thread>(thread);
+        t.WriteDebuggerControlledThreadState(t.DebuggerControlledThreadState | (uint)state);
     }
 
     void IThread.ResetDebuggerControlledThreadState(TargetPointer thread, DebuggerControlledThreadState state)
     {
-        uint current = _target.ReadField<uint>(thread, _threadTypeInfo, nameof(Data.Thread.DebuggerControlledThreadState));
-        _target.WriteField(thread, _threadTypeInfo, nameof(Data.Thread.DebuggerControlledThreadState), current & ~(uint)state);
+        Data.Thread t = _target.ProcessedData.GetOrAdd<Data.Thread>(thread);
+        t.WriteDebuggerControlledThreadState(t.DebuggerControlledThreadState & ~(uint)state);
     }
 
     ThreadStoreData IThread.GetThreadStoreData()
@@ -283,10 +283,10 @@ internal readonly struct Thread_1 : IThread
             }
             else
             {
-                readFrom = thread.UEWatsonBucketTrackerBuckets;
+                readFrom = thread.UEWatsonBucketTrackerBuckets ?? TargetPointer.Null;
                 if (readFrom == TargetPointer.Null)
                 {
-                    readFrom = exceptionInfo.ExceptionWatsonBucketTrackerBuckets;
+                    readFrom = exceptionInfo.ExceptionWatsonBucketTrackerBuckets ?? TargetPointer.Null;
                 }
                 else
                 {
@@ -296,7 +296,7 @@ internal readonly struct Thread_1 : IThread
         }
         else
         {
-            readFrom = thread.UEWatsonBucketTrackerBuckets;
+            readFrom = thread.UEWatsonBucketTrackerBuckets ?? TargetPointer.Null;
         }
 
         if (readFrom == TargetPointer.Null)
