@@ -903,6 +903,97 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
 
 #if defined(FEATURE_HW_INTRINSICS)
 #if defined(TARGET_XARCH)
+            case VNF_HWI_Vector256_ExtractMostSignificantBits:
+            case VNF_HWI_Vector512_ExtractMostSignificantBits:
+            case VNF_HWI_X86Base_MoveMask:
+            case VNF_HWI_AVX_MoveMask:
+            case VNF_HWI_AVX2_MoveMask:
+            case VNF_HWI_AVX512_MoveMask:
+#elif defined(TARGET_ARM64)
+            case NI_Vector64_ExtractMostSignificantBits:
+#endif
+            case VNF_HWI_Vector128_ExtractMostSignificantBits:
+            {
+                // We have 1 bit per element, remaining upper bits are 0
+
+                var_types simdBaseType;
+                uint32_t  simdSize = comp->vnStore->GetVNHWIntrinsicSizeAndBaseType(funcApp, &simdBaseType);
+
+                size_t elementSize  = genTypeSize(simdBaseType);
+                size_t elementCount = simdSize / elementSize;
+
+                if (elementCount <= 16)
+                {
+                    result.lLimit = Limit(Limit::keConstant, 0);
+                    result.uLimit = Limit(Limit::keConstant, (1 << elementCount) - 1);
+                }
+                break;
+            }
+
+#if defined(TARGET_XARCH)
+            case VNF_HWI_Vector256_op_Equality:
+            case VNF_HWI_Vector256_op_Inequality:
+            case VNF_HWI_Vector512_op_Equality:
+            case VNF_HWI_Vector512_op_Inequality:
+            case VNF_HWI_X86Base_CompareScalarOrderedEqual:
+            case VNF_HWI_X86Base_CompareScalarOrderedGreaterThan:
+            case VNF_HWI_X86Base_CompareScalarOrderedGreaterThanOrEqual:
+            case VNF_HWI_X86Base_CompareScalarOrderedLessThan:
+            case VNF_HWI_X86Base_CompareScalarOrderedLessThanOrEqual:
+            case VNF_HWI_X86Base_CompareScalarOrderedNotEqual:
+            case VNF_HWI_X86Base_CompareScalarUnorderedEqual:
+            case VNF_HWI_X86Base_CompareScalarUnorderedGreaterThan:
+            case VNF_HWI_X86Base_CompareScalarUnorderedGreaterThanOrEqual:
+            case VNF_HWI_X86Base_CompareScalarUnorderedLessThan:
+            case VNF_HWI_X86Base_CompareScalarUnorderedLessThanOrEqual:
+            case VNF_HWI_X86Base_CompareScalarUnorderedNotEqual:
+            case VNF_HWI_X86Base_TestC:
+            case VNF_HWI_X86Base_TestNotZAndNotC:
+            case VNF_HWI_X86Base_TestZ:
+            case VNF_HWI_AVX_TestC:
+            case VNF_HWI_AVX_TestNotZAndNotC:
+            case VNF_HWI_AVX_TestZ:
+#elif defined(TARGET_ARM64)
+            case VNF_HWI_Vector64_op_Equality:
+            case VNF_HWI_Vector64_op_Inequality:
+#endif
+            case VNF_HWI_Vector128_op_Equality:
+            case VNF_HWI_Vector128_op_Inequality:
+            {
+                // A boolean [0, 1]
+                result.lLimit = Limit(Limit::keConstant, 0);
+                result.uLimit = Limit(Limit::keConstant, 1);
+                break;
+            }
+
+#if defined(TARGET_XARCH)
+            case VNF_HWI_Vector256_GetElement:
+            case VNF_HWI_Vector256_ToScalar:
+            case VNF_HWI_Vector512_GetElement:
+            case VNF_HWI_Vector512_ToScalar:
+            case VNF_HWI_X86Base_Extract:
+            case VNF_HWI_X86Base_X64_Extract:
+#elif defined(TARGET_ARM64)
+            case VNF_HWI_Vector64_GetElement:
+            case VNF_HWI_Vector64_ToScalar:
+            case VNF_HWI_AdvSimd_Extract:
+#endif
+            case VNF_HWI_Vector128_GetElement:
+            case VNF_HWI_Vector128_ToScalar:
+            {
+                // We are extracting a value of the base types width and sign
+
+                var_types simdBaseType;
+                uint32_t  simdSize = comp->vnStore->GetVNHWIntrinsicSizeAndBaseType(funcApp, &simdBaseType);
+
+                if (varTypeIsSmall(simdBaseType))
+                {
+                    result = GetRangeFromType(simdBaseType);
+                }
+                break;
+            }
+
+#if defined(TARGET_XARCH)
             case VNF_HWI_AVX2_LeadingZeroCount:
             case VNF_HWI_AVX2_TrailingZeroCount:
             case VNF_HWI_AVX2_X64_LeadingZeroCount:
@@ -918,9 +1009,11 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
             case VNF_TrailingZeroCount:
             case VNF_PopCount:
             {
-                // We can be a bit more precise here if we want to
+                // The actual range is [0..32] or [0..64]
+                var_types baseType = comp->vnStore->TypeOfVN(funcApp.GetArg(0));
+
                 result.lLimit = Limit(Limit::keConstant, 0);
-                result.uLimit = Limit(Limit::keConstant, 64);
+                result.uLimit = Limit(Limit::keConstant, varTypeIsLong(baseType) ? 64 : 32);
                 break;
             }
 
@@ -2266,6 +2359,158 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
             range = Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, CORINFO_Array_MaxLength));
         }
     }
+    else if (expr->OperIs(GT_INTRINSIC))
+    {
+        GenTreeIntrinsic* intrinsic = expr->AsIntrinsic();
+        NamedIntrinsic    ni        = intrinsic->gtIntrinsicName;
+
+        switch (ni)
+        {
+            case NI_PRIMITIVE_LeadingZeroCount:
+            case NI_PRIMITIVE_TrailingZeroCount:
+            case NI_PRIMITIVE_PopCount:
+            {
+                var_types baseType = intrinsic->gtGetOp1()->TypeGet();
+
+                range.lLimit = Limit(Limit::keConstant, 0);
+                range.uLimit = Limit(Limit::keConstant, varTypeIsLong(baseType) ? 64 : 32);
+                break;
+            }
+
+            default:
+            {
+                range = Range(Limit(Limit::keUnknown));
+                break;
+            }
+        }
+    }
+#if defined(FEATURE_HW_INTRINSICS)
+    else if (expr->OperIs(GT_HWINTRINSIC))
+    {
+        GenTreeHWIntrinsic* hwintrinsic = expr->AsHWIntrinsic();
+        NamedIntrinsic      ni          = hwintrinsic->GetHWIntrinsicId();
+
+        switch (ni)
+        {
+#if defined(TARGET_XARCH)
+            case NI_Vector256_ExtractMostSignificantBits:
+            case NI_Vector512_ExtractMostSignificantBits:
+            case NI_X86Base_MoveMask:
+            case NI_AVX_MoveMask:
+            case NI_AVX2_MoveMask:
+            case NI_AVX512_MoveMask:
+#elif defined(TARGET_ARM64)
+            case NI_Vector64_ExtractMostSignificantBits:
+#endif
+            case NI_Vector128_ExtractMostSignificantBits:
+            {
+                // We have 1 bit per element, remaining upper bits are 0
+
+                size_t elementSize  = genTypeSize(hwintrinsic->GetSimdBaseType());
+                size_t elementCount = hwintrinsic->GetSimdSize() / elementSize;
+
+                if (elementCount <= 16)
+                {
+                    range.lLimit = Limit(Limit::keConstant, 0);
+                    range.uLimit = Limit(Limit::keConstant, (1 << elementCount) - 1);
+                }
+                break;
+            }
+
+#if defined(TARGET_XARCH)
+            case NI_Vector256_op_Equality:
+            case NI_Vector256_op_Inequality:
+            case NI_Vector512_op_Equality:
+            case NI_Vector512_op_Inequality:
+            case NI_X86Base_CompareScalarOrderedEqual:
+            case NI_X86Base_CompareScalarOrderedGreaterThan:
+            case NI_X86Base_CompareScalarOrderedGreaterThanOrEqual:
+            case NI_X86Base_CompareScalarOrderedLessThan:
+            case NI_X86Base_CompareScalarOrderedLessThanOrEqual:
+            case NI_X86Base_CompareScalarOrderedNotEqual:
+            case NI_X86Base_CompareScalarUnorderedEqual:
+            case NI_X86Base_CompareScalarUnorderedGreaterThan:
+            case NI_X86Base_CompareScalarUnorderedGreaterThanOrEqual:
+            case NI_X86Base_CompareScalarUnorderedLessThan:
+            case NI_X86Base_CompareScalarUnorderedLessThanOrEqual:
+            case NI_X86Base_CompareScalarUnorderedNotEqual:
+            case NI_X86Base_TestC:
+            case NI_X86Base_TestNotZAndNotC:
+            case NI_X86Base_TestZ:
+            case NI_AVX_TestC:
+            case NI_AVX_TestNotZAndNotC:
+            case NI_AVX_TestZ:
+#elif defined(TARGET_ARM64)
+            case NI_Vector64_op_Equality:
+            case NI_Vector64_op_Inequality:
+#endif
+            case NI_Vector128_op_Equality:
+            case NI_Vector128_op_Inequality:
+            {
+                // A boolean [0, 1]
+                range.lLimit = Limit(Limit::keConstant, 0);
+                range.uLimit = Limit(Limit::keConstant, 1);
+                break;
+            }
+
+#if defined(TARGET_XARCH)
+            case NI_Vector256_GetElement:
+            case NI_Vector256_ToScalar:
+            case NI_Vector512_GetElement:
+            case NI_Vector512_ToScalar:
+            case NI_X86Base_Extract:
+            case NI_X86Base_X64_Extract:
+#elif defined(TARGET_ARM64)
+            case NI_Vector64_GetElement:
+            case NI_Vector64_ToScalar:
+            case NI_AdvSimd_Extract:
+#endif
+            case NI_Vector128_GetElement:
+            case NI_Vector128_ToScalar:
+            {
+                // We are extracting a value of the base types width and sign
+                var_types simdBaseType = hwintrinsic->GetSimdBaseType();
+
+                if (varTypeIsSmall(simdBaseType))
+                {
+                    range = GetRangeFromType(simdBaseType);
+                }
+                break;
+            }
+
+#if defined(TARGET_XARCH)
+            case NI_AVX2_LeadingZeroCount:
+            case NI_AVX2_TrailingZeroCount:
+            case NI_AVX2_X64_LeadingZeroCount:
+            case NI_AVX2_X64_TrailingZeroCount:
+            case NI_X86Base_PopCount:
+            case NI_X86Base_X64_PopCount:
+#elif defined(TARGET_ARM64)
+            case NI_ArmBase_LeadingZeroCount:
+            case NI_ArmBase_Arm64_LeadingZeroCount:
+            case NI_ArmBase_Arm64_LeadingSignCount:
+#else
+#error Unsupported platform
+#endif
+            {
+                // The actual range is [0..32] or [0..64]
+                var_types baseType = hwintrinsic->Op(1)->TypeGet();
+
+                range.lLimit = Limit(Limit::keConstant, 0);
+                range.uLimit = Limit(Limit::keConstant, varTypeIsLong(baseType) ? 64 : 32);
+                break;
+            }
+
+                // TODO-SVE: Various intrinsics extract scalars or test patterns and return bool
+
+            default:
+            {
+                range = Range(Limit(Limit::keUnknown));
+                break;
+            }
+        }
+    }
+#endif
     else
     {
         // The expression is not recognized, so the result is unknown.
