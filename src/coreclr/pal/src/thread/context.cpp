@@ -880,7 +880,7 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
                 memcpy_s(dest, sizeof(M512) * 16, &lpContext->Zmm16, sizeof(M512) * 16);
             }
 #ifndef TARGET_OSX
-            // TODO-xarch-apx: I suppose OSX will not support APX.
+            // APX xstate handling is compiled only for non-macOS targets.
             if (FPREG_HasApxRegisters(native))
             {
                 _ASSERT((lpContext->XStateFeaturesMask & XSTATE_MASK_APX) == XSTATE_MASK_APX);
