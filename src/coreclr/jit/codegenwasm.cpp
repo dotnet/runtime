@@ -699,7 +699,8 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
     assert(!treeNode->IsReuseRegVal()); // TODO-WASM-CQ: enable.
 
     // Contained nodes are part of the parent for codegen purposes.
-    if (treeNode->isContained())
+    // Except for 'partially contained' address nodes, which still need to push FP/SP onto the stack at the right spot.
+    if (treeNode->isContained() && !treeNode->OperIs(GT_LCL_ADDR))
     {
         return;
     }
@@ -2263,8 +2264,14 @@ void CodeGen::genCodeForLclAddr(GenTreeLclFld* lclAddrNode)
     unsigned lclNum    = lclAddrNode->GetLclNum();
     unsigned lclOffset = lclAddrNode->GetLclOffs();
 
+    // Even if contained, we always load the frame pointer at the right place so that containing get/set
+    // opcodes have a base address to work from.
     GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
-    if ((lclOffset != 0) || (m_compiler->lvaFrameAddress(lclNum, &FPBased) != 0))
+    if (lclAddrNode->isContained())
+    {
+        printf("skipping const+add for contained GT_LCL_ADDR [%06u]\n", Compiler::dspTreeID(lclAddrNode));
+    }
+    else if ((lclOffset != 0) || (m_compiler->lvaFrameAddress(lclNum, &FPBased) != 0))
     {
         GetEmitter()->emitIns_S(INS_I_const, EA_PTRSIZE, lclNum, lclOffset);
         GetEmitter()->emitIns(INS_I_add);
@@ -2374,14 +2381,27 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
 {
     assert(tree->OperIs(GT_IND));
 
-    var_types   type = tree->TypeGet();
-    instruction ins  = ins_Load(type);
+    var_types   type      = tree->TypeGet();
+    instruction ins       = ins_Load(type);
+    GenTree*    addr      = tree->Addr();
+    cnsval_ssize_t offset = 0;
 
-    genConsumeAddress(tree->Addr());
+    genConsumeAddress(addr);
 
     // TODO-WASM: Memory barriers
 
-    GetEmitter()->emitIns_I(ins, emitActualTypeSize(type), 0);
+    if (addr->isContained())
+    {
+        if (addr->OperIs(GT_LCL_ADDR))
+        {
+            bool FPBased;
+            int  lclOffset = m_compiler->lvaFrameAddress(addr->AsLclFld()->GetLclNum(), &FPBased);
+            offset    = lclOffset + addr->AsLclFld()->GetLclOffs();
+            noway_assert(offset >= 0); // WASM address modes are unsigned.
+        }
+    }
+
+    GetEmitter()->emitIns_I(ins, emitActualTypeSize(type), offset);
 
     WasmProduceReg(tree);
 }
@@ -2397,8 +2417,6 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
     GenTree* data = tree->Data();
     GenTree* addr = tree->Addr();
 
-    assert(!addr->isContained());
-
     // We must consume the operands in the proper execution order,
     // so that liveness is updated appropriately.
     genConsumeAddress(addr);
@@ -2413,16 +2431,29 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
     GCInfo::WriteBarrierForm writeBarrierForm = gcInfo.gcIsWriteBarrierCandidate(tree);
     if (writeBarrierForm != GCInfo::WBF_NoBarrier)
     {
+        assert(!addr->isContained());
         genGCWriteBarrier(tree, writeBarrierForm);
     }
     else // A normal store, not a WriteBarrier store
     {
-        var_types   type = tree->TypeGet();
-        instruction ins  = ins_Store(type);
+        var_types   type      = tree->TypeGet();
+        instruction ins       = ins_Store(type);
+        cnsval_ssize_t offset = 0;
+
+        if (addr->isContained())
+        {
+            if (addr->OperIs(GT_LCL_ADDR))
+            {
+                bool FPBased;
+                int  lclOffset = m_compiler->lvaFrameAddress(addr->AsLclFld()->GetLclNum(), &FPBased);
+                offset    = lclOffset + addr->AsLclFld()->GetLclOffs();
+                noway_assert(offset >= 0); // WASM address modes are unsigned.
+            }
+        }
 
         // TODO-WASM: Memory barriers
 
-        GetEmitter()->emitIns_I(ins, emitActualTypeSize(type), 0);
+        GetEmitter()->emitIns_I(ins, emitActualTypeSize(type), offset);
     }
 
     genUpdateLife(tree);
