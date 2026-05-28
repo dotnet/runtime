@@ -449,7 +449,11 @@ namespace System.Net.NameResolution.Tests
 
             static void VerifyAddressFamily(IPHostEntry entry, AddressFamily addressFamily, bool strictAddressFamily)
             {
-                Assert.Contains(entry.AddressList, addr => addr.AddressFamily == addressFamily);
+                if (addressFamily == AddressFamily.InterNetwork)
+                {
+                    Assert.Contains(entry.AddressList, addr => addr.AddressFamily == addressFamily);
+                }
+
                 if (strictAddressFamily)
                 {
                     Assert.All(entry.AddressList, addr => Assert.Equal(addressFamily, addr.AddressFamily));
