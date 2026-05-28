@@ -3663,7 +3663,8 @@ LPCWSTR GetCommandLineForDiagnostics()
     // Get the managed command line.
     LPCWSTR pCmdLine = s_pCommandLine;
 
-    // Checkout https://github.com/dotnet/coreclr/pull/24433 for more information about this fall back.
+    // GetCommandLineForDiagnostics can be called without s_pCommandLine being initialized
+    // when the runtime is hosted without entrypoint assembly
     if (pCmdLine == nullptr)
     {
 #ifdef TARGET_WINDOWS
