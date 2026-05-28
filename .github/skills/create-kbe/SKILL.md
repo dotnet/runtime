@@ -192,7 +192,7 @@ issue bodies. Keep them easy to compare and edit on disk.
 
 Prefer this layout for dry-run files:
 
-```markdown
+````markdown
 # Draft KBE issue
 
 - Proposed title: `...`
@@ -226,7 +226,7 @@ Build error leg or test failing: ...
 
 **Recommended action:**
 ...
-```
+````
 
 For dry-run artifacts, prefer the layout above over adding extra sections like
 `Pull request:` or `## Error Details` unless they are truly necessary for
