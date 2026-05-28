@@ -5082,7 +5082,7 @@ def setup_args(args):
             if coreclr_args.mch_arch == coreclr_args.target_arch and coreclr_args.mch_arch != coreclr_args.arch:
                 logging.warning("Overriding 'mch_arch' to '%s'", coreclr_args.arch)
                 coreclr_args.mch_arch = coreclr_args.arch
-            if not args.altjit:
+            if not getattr(args, 'altjit', False):
                 logging.warning("Overriding 'altjit' to True for wasm cross-target JIT")
                 args.altjit = True
 
