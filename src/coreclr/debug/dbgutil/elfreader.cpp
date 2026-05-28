@@ -391,14 +391,7 @@ ElfReader::EnumerateLinkMapEntries(Elf_Dyn* dynamicAddr)
 
     // Add the DSO link_map entries.
     //
-    // Detect cycles using Brent's algorithm: a single "walker" pointer reads
-    // and visits each module exactly once on a sound chain, while a "checkpoint"
-    // pointer is moved to the walker's position only at exponentially spaced
-    // intervals (powers of two) and never moves between updates. If the walker
-    // ever returns to the checkpoint, the chain is cyclic and we abort. This
-    // gives O(N) work with one ReadMemory per node on the happy path, and on a
-    // ReadMemory failure mid-chain we have already visited every prior
-    // module — matching the original (pre-cycle-detection) behavior.
+    // Detect cycles using Brent's algorithm (variant of Floyd's cycle-finding algorithm)
     struct link_map* walker = debugEntry.r_map;
     struct link_map* checkpoint = nullptr;
     int power = 1;
