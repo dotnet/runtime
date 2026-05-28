@@ -70,10 +70,7 @@ namespace Microsoft.Win32.SafeHandles
         /// waiting on such a handle returns immediately.
         /// </para>
         /// <para>
-        /// On Linux with pidfd support, this method uses the pidfd_open syscall.
-        /// </para>
-        /// <para>
-        /// On other Unix systems, this method uses kill(pid, 0) to verify the process exists and the caller has permission to signal it.
+        /// On Unix, this method uses kill(pid, 0) to verify the process exists and the caller has permission to signal it.
         /// If it's not a child process of the current process, the returned handle is prone to process ID reuse issues in this case.
         /// </para>
         /// <para>

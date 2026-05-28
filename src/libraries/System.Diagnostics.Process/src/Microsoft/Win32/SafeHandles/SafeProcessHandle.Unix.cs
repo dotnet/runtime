@@ -28,7 +28,6 @@ namespace Microsoft.Win32.SafeHandles
 
         private readonly SafeWaitHandle? _handle;
         private readonly bool _releaseRef;
-        private int _pidfd = -1;
         private readonly ProcessWaitState.Holder? _waitStateHolder;
 
         internal SafeProcessHandle(ProcessWaitState.Holder waitStateHolder) : base(ownsHandle: true)
@@ -73,40 +72,21 @@ namespace Microsoft.Win32.SafeHandles
                 _handle.DangerousRelease();
             }
 
-            if (_pidfd >= 0)
-            {
-                Interop.Sys.Close(_pidfd);
-            }
-
             _waitStateHolder?.Dispose();
             return true;
         }
 
         private static SafeProcessHandle OpenCore(int processId)
         {
-            int result = Interop.Sys.OpenProcess(processId, out int pidfd);
+            int result = Interop.Sys.OpenProcess(processId);
 
             if (result == -1)
             {
                 throw new Win32Exception();
             }
 
-            SafeProcessHandle processHandle;
-            try
-            {
-                ProcessWaitState.Holder waitStateHolder = new(processId);
-                processHandle = new SafeProcessHandle(waitStateHolder);
-                processHandle._pidfd = pidfd;
-            }
-            catch
-            {
-                if (pidfd >= 0)
-                {
-                    Interop.Sys.Close(pidfd);
-                }
-                throw;
-            }
-            return processHandle;
+            ProcessWaitState.Holder waitStateHolder = new(processId);
+            return new SafeProcessHandle(waitStateHolder);
         }
 
 
@@ -341,7 +321,6 @@ namespace Microsoft.Win32.SafeHandles
             }
 
             int childPid, errno;
-            int pidfd = -1;
 
             // Lock to avoid races with OnSigChild
             // By using a ReaderWriterLock we allow multiple processes to start concurrently.
@@ -363,7 +342,7 @@ namespace Microsoft.Win32.SafeHandles
                     setCredentials, userId, groupId, groups,
                     out childPid, stdinHandle, stdoutHandle, stderrHandle,
 #pragma warning disable CA1416 // KillOnParentExit getter works on all platforms; the native shim is a no-op where unsupported
-                    startInfo.StartDetached, startInfo.KillOnParentExit, inheritedHandles, out pidfd);
+                    startInfo.StartDetached, startInfo.KillOnParentExit, inheritedHandles);
 #pragma warning restore CA1416
 
                 if (errno == 0)
@@ -401,20 +380,7 @@ namespace Microsoft.Win32.SafeHandles
                 throw ProcessUtils.CreateExceptionForErrorStartingProcess(new Interop.ErrorInfo(errno).GetErrorMessage(), errno, resolvedFilename, cwd);
             }
 
-            SafeProcessHandle processHandle;
-            try
-            {
-                processHandle = new SafeProcessHandle(waitStateHolder!);
-                processHandle._pidfd = pidfd;
-            }
-            catch
-            {
-                if (pidfd >= 0)
-                {
-                    Interop.Sys.Close(pidfd);
-                }
-                throw;
-            }
+            SafeProcessHandle processHandle = new SafeProcessHandle(waitStateHolder!);
             return processHandle;
         }
     }

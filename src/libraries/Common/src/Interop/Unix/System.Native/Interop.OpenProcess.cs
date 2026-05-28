@@ -8,6 +8,6 @@ internal static partial class Interop
     internal static partial class Sys
     {
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_OpenProcess", SetLastError = true)]
-        internal static partial int OpenProcess(int processId, out int pidfd);
+        internal static partial int OpenProcess(int processId);
     }
 }

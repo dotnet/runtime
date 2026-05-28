@@ -33,8 +33,7 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
                                       int32_t* inheritedFds,
                                       int32_t inheritedFdCount,
                                       int32_t startDetached,
-                                      int32_t killOnParentExit,
-                                      int32_t* outPidfd)
+                                      int32_t killOnParentExit)
 {
     return -1;
 }
@@ -128,10 +127,9 @@ char* SystemNative_GetProcessPath(void)
     return minipal_getexepath();
 }
 
-int32_t SystemNative_OpenProcess(int32_t pid, int32_t* out_pidfd)
+int32_t SystemNative_OpenProcess(int32_t pid)
 {
     (void)pid;
-    *out_pidfd = -1;
     errno = ENOTSUP;
     return -1;
 }

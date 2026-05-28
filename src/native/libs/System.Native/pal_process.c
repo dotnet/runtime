@@ -40,17 +40,6 @@
 #else // HAVE_CLOSE_RANGE
 #include <sys/syscall.h>
 #endif // !defined(HAVE_CLOSE_RANGE)
-#if !defined(__NR_pidfd_open)
-// pidfd_open was added in Linux 5.3. The syscall number is 434 for all
-// architectures using the generic syscall table (asm-generic/unistd.h),
-// which covers aarch64, riscv, s390x, ppc64le, and others. The exception
-// is alpha, which has its own syscall table and uses 544 instead.
-# if defined(__alpha__)
-#  define __NR_pidfd_open 544
-# else
-#  define __NR_pidfd_open 434
-# endif
-#endif // !defined(__NR_pidfd_open)
 #endif // defined(__linux__)
 #if (HAVE_CLOSE_RANGE || defined(__NR_close_range)) && !defined(CLOSE_RANGE_CLOEXEC)
 #define CLOSE_RANGE_CLOEXEC (1U << 2)
@@ -342,22 +331,6 @@ static void RestrictHandleInheritance(int32_t* inheritedFds, int32_t inheritedFd
     }
 }
 
-// Attempts to open a pidfd for the given pid using pidfd_open.
-// Returns the pidfd on success, or -1 if pidfd is not available.
-static int32_t TryOpenPidfd(int32_t pid)
-{
-#if defined(__linux__)
-    int pidfd = (int)syscall(__NR_pidfd_open, pid, 0);
-    if (pidfd >= 0)
-    {
-        return pidfd;
-    }
-#else
-    (void)pid;
-#endif
-    return -1;
-}
-
 // Forward declaration of the internal fork+exec function
 static int32_t ForkAndExecProcessInternal(
     const char* filename, char* const argv[], char* const envp[], const char* cwd,
@@ -564,12 +537,8 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
                                       int32_t* inheritedFds,
                                       int32_t inheritedFdCount,
                                       int32_t startDetached,
-                                      int32_t killOnParentExit,
-                                      int32_t* outPidfd)
+                                      int32_t killOnParentExit)
 {
-    assert(outPidfd != NULL);
-    *outPidfd = -1;
-
 #if HAVE_PR_SET_PDEATHSIG
     if (killOnParentExit)
     {
@@ -578,26 +547,17 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
             setCredentials, userId, groupId, groups, groupsLength,
             childPid, stdinFd, stdoutFd, stderrFd,
             inheritedFds, inheritedFdCount, startDetached);
-        if (result == 0 && *childPid > 0)
-        {
-            *outPidfd = TryOpenPidfd(*childPid);
-        }
         return result;
     }
 #else
     (void)killOnParentExit;
 #endif
 
-    int32_t result = ForkAndExecProcessInternal(
+    return ForkAndExecProcessInternal(
         filename, argv, envp, cwd,
         setCredentials, userId, groupId, groups, groupsLength,
         childPid, stdinFd, stdoutFd, stderrFd,
         inheritedFds, inheritedFdCount, startDetached, 0);
-    if (result == 0 && *childPid > 0)
-    {
-        *outPidfd = TryOpenPidfd(*childPid);
-    }
-    return result;
 }
 
 static int32_t ForkAndExecProcessInternal(
@@ -1419,13 +1379,7 @@ char* SystemNative_GetProcessPath(void)
     return minipal_getexepath();
 }
 
-int32_t SystemNative_OpenProcess(int32_t pid, int32_t* out_pidfd)
+int32_t SystemNative_OpenProcess(int32_t pid)
 {
-    *out_pidfd = TryOpenPidfd(pid);
-    if (*out_pidfd >= 0)
-    {
-        return 0;
-    }
-
     return kill(pid, 0);
 }
