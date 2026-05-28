@@ -1573,7 +1573,7 @@ size_t GCInfo::gcInfoBlockHdrSave(
     _ASSERTE(!IsStructReturnKind(returnKind) && "Struct Return Kinds Unexpected for JIT32");
     _ASSERTE(((int)returnKind <= (int)SET_RET_KIND_MAX) && "ReturnKind has no legal encoding");
     header->returnKind = returnKind;
-    header->isAsync = m_compiler->compIsAsync();
+    header->isAsync    = m_compiler->compIsAsync();
 
     header->gsCookieOffset = INVALID_GS_COOKIE_OFFSET;
     if (m_compiler->getNeedsGSSecurityCookie())
