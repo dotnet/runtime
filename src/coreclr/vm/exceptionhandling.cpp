@@ -973,8 +973,8 @@ Function :
 
 Parameters:
     PCONTEXT pContext : context containing the registers
-    UINT index :        index of the register (Rax=0 .. R31=31)
-
+    UINT index :        index of the register; on AMD64, indices 16..31 map to
+                        R16..R31 only when APX state is present
 Return value :
     Pointer to the context member represetting the register
 --*/
@@ -999,7 +999,8 @@ Function :
 
 Parameters:
     PCONTEXT pContext : context containing the registers
-    UINT index :        index of the register (Rax=0 .. R31=31)
+    UINT index :        index of the register; on AMD64, indices 16..31 map to
+                        R16..R31 only when APX state is present
 
 Return value :
     Value of the context member represetting the register
@@ -1293,8 +1294,13 @@ bool IsDivByZeroAnIntegerOverflow(PCONTEXT pContext)
         BYTE p2 = *ip++; // P2 (contains NF, ND bits - not needed for operand decoding)
         (void)p2;
 
-        // Verify this is map 4 (APX legacy promoted)
-        _ASSERTE((p0 & 0x07) == 0x04);
+        // Only map 4 (APX legacy promoted) can encode IDIV/DIV.
+        // If this is a different EVEX map, we cannot decode it — treat as not an overflow.
+        if ((p0 & 0x07) != 0x04)
+        {
+            _ASSERTE(!"Invalid instruction (expected IDIV or DIV)");
+            return false;
+        }
 
         // Extract register extension bits from EVEX (inverted in P0, not inverted for W in P1)
         BYTE evex_b3 = (~p0 >> 5) & 1;

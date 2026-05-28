@@ -399,8 +399,8 @@ bool Xstate_IsAvx512Supported()
 
 bool Xstate_IsApxSupported()
 {
-#if defined (HOST_OSX)
-    // TODO-xarch-apx: I assume OSX will never support APX
+#if !defined(HOST_AMD64) || defined(TARGET_OSX)
+    // APX is AMD64 only and not supported on macOS.
     return false;
 #else
     static int Xstate_ApxSupported = -1;
