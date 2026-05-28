@@ -112,11 +112,11 @@ namespace ILCompiler.Reflection.ReadyToRun
             public override int NumCalleeSavedRegisters => 0;
             // Argument registers, callee-save registers, return address
             public override int SizeOfTransitionBlock => 8;
-            public override int OffsetOfArgumentRegisters => 0;
+            public override int OffsetOfArgumentRegisters => SizeOfTransitionBlock;
 
             public override int OffsetFromGCRefMapPos(int pos)
             {
-                return SizeOfTransitionBlock + pos * PointerSize;
+                return OffsetOfArgumentRegisters + pos * PointerSize;
             }
         }
 
