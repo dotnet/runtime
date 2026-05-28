@@ -3658,17 +3658,10 @@ static LPWSTR GetExePath()
 }
 #endif // TARGET_UNIX
 
-// Retrieve the full command line for the current process.
-LPCWSTR GetManagedCommandLine()
-{
-    LIMITED_METHOD_CONTRACT;
-    return s_pCommandLine;
-}
-
 LPCWSTR GetCommandLineForDiagnostics()
 {
     // Get the managed command line.
-    LPCWSTR pCmdLine = GetManagedCommandLine();
+    LPCWSTR pCmdLine = s_pCommandLine;
 
     // Checkout https://github.com/dotnet/coreclr/pull/24433 for more information about this fall back.
     if (pCmdLine == nullptr)
