@@ -1403,6 +1403,7 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
 #ifdef FEATURE_TIERED_COMPILATION
 #error "Portable entry points are not currently supported with tiered compilation, as the interaction between the two is not yet fully worked out."
 #endif
+#ifdef TARGET_WASM
     PCODE actualEntryPoint;
     actualEntryPoint = GetMinFunctionTableIndex() + id;
     PCODE virtualEntrypointIP;
@@ -1410,6 +1411,9 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     pEntryPoint = pMD->GetTemporaryEntryPoint();
     PortableEntryPoint::SetActualCode(pEntryPoint, actualEntryPoint);
     m_pCompositeInfo->SetMethodDescForEntryPointInNativeImage(virtualEntrypointIP, pMD);
+#else
+#error "ReadyToRun and PortableEntryPoints are not currently compatible on non-WASM targets, as the R2R image layout would need to be changed to support this scenario."
+#endif
 #endif
 
 #ifdef PROFILING_SUPPORTED
@@ -1609,7 +1613,7 @@ MethodDesc * ReadyToRunInfo::MethodIterator::GetMethodDesc_NoRestore()
 
     _ASSERTE(id < m_pInfo->m_nRuntimeFunctions);
 #ifdef TARGET_WASM
-    PCODE pEntryPoint = ExecutionManager::EncodeVirtualIP(m_pInfo->GetMinVirtualIP() + RUNTIME_FUNCTION__BeginAddress(&m_pInfo->m_pRuntimeFunctions[id]));
+    PCODE pEntryPoint = m_pInfo->GetMinVirtualIP() + RUNTIME_FUNCTION__BeginAddress(&m_pInfo->m_pRuntimeFunctions[id]);
 #else
     PCODE pEntryPoint = dac_cast<TADDR>(m_pInfo->GetImage()->GetBase()) + RUNTIME_FUNCTION__BeginAddress(&m_pInfo->m_pRuntimeFunctions[id]);
 #endif
