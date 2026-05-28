@@ -23,6 +23,7 @@ static constexpr size_t CRASHREPORT_PATH_BUFFER_SIZE = 1024;
 static constexpr size_t CRASHREPORT_STRING_BUFFER_SIZE = 256;
 static constexpr int32_t CRASHREPORT_DEFAULT_MAX_FILE_COUNT = 32;
 static constexpr int32_t CRASHREPORT_UNLIMITED_FILE_COUNT = -1;
+static constexpr int32_t CRASHREPORT_CLEANUP_ONLY_FILE_COUNT = 0;
 
 #if defined(__ANDROID__)
 static const char CRASHREPORT_LOG_TAG[] = "DOTNET_CRASH";
