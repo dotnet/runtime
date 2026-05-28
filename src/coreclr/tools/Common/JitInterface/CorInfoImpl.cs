@@ -1500,7 +1500,6 @@ namespace Internal.JitInterface
                 info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.TypeDictionary, originalImpl.OwningType));
 #else
                 info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ConstructedTypeSymbol(originalImpl.OwningType));
-                return false;
 #endif
             }
             else if ((isArrayInterfaceDevirtualization || isGenericVirtual) && impl.IsCanonicalMethod(CanonicalFormKind.Any))
