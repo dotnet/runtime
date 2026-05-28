@@ -5167,8 +5167,8 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
             // The Resulting set is in [matchesStart, matchesEnd)
             //
             {
-                auto end   = std::stable_partition(candidates.begin() + matchesStart + 1, candidates.end(),
-                                                   [candidateA](Candidate candidateB) {
+                auto end   = std::partition(candidates.begin() + matchesStart + 1, candidates.end(),
+                                            [candidateA](Candidate candidateB) {
                     // Consider: bypass this for statements that can't cause exceptions.
                     //
                     if (!BasicBlock::sameEHRegion(candidateA.m_block, candidateB.m_block))
@@ -5233,8 +5233,8 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
                 // Add one of the matching stmts to block, and
                 // update its flags.
                 //
-                fgInsertStmtAtBeg(commSucc, candidates[matchesEnd - 1].m_stmt);
-                commSucc->CopyFlags(candidates[matchesEnd - 1].m_block, BBF_COPY_PROPAGATE);
+                fgInsertStmtAtBeg(commSucc, candidates[matchesStart].m_stmt);
+                commSucc->CopyFlags(candidates[matchesStart].m_block, BBF_COPY_PROPAGATE);
 
                 // It's worth retrying tail merge on this block.
                 //
@@ -5252,7 +5252,6 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
             bool        haveNoSplitVictim     = false;
             bool        haveFallThroughVictim = false;
 
-            // todo: investigate why order matters
             for (int i = matchesEnd - 1; i >= matchesStart; i--)
             {
                 Candidate&        candidate = candidates[i];
@@ -5428,9 +5427,6 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
             assert(!lastStmt->IsPhiDefnStmt());
             candidates.push_back(Candidate{predBlock, lastStmt});
         }
-
-        // todo: investigate why order matters and remove
-        std::reverse(candidates.begin(), candidates.end());
 
         int numOpts = tailMerge(block);
         if (numOpts > 0)
