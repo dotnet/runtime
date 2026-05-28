@@ -1515,9 +1515,7 @@ namespace Internal.JitInterface
                 MethodWithToken originalImplWithToken = new MethodWithToken(originalImpl, methodWithTokenImpl.Token, null, false, null, null);
                 info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.MethodHandle, originalImplWithToken));
 #else
-                // TODO: Implement array interface and generic virtual method devirtualization constant lookup for NativeAOT
-                info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
-                return false;
+                info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.MethodGenericDictionary(originalImpl));
 #endif
             }
 

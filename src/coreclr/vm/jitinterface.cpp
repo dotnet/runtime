@@ -8895,7 +8895,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     {
         info->tokenLookupContext = MAKE_CLASSCONTEXT((CORINFO_CLASS_HANDLE) pExactMT);
     }
-    
+
     pDevirtMD = pDevirtMD->IsInstantiatingStub() ? pDevirtMD->GetWrappedMethodDesc() : pDevirtMD;
 
     // Success! Pass back the results.
