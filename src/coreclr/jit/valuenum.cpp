@@ -10927,7 +10927,7 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
                 simdmaskvalue_t cnsVal = GetConstantSimdMaskValue(vn);
 
 #if defined(TARGET_ARM64) && defined(DEBUG)
-                if (cnsVal.IsScalable() && JitConfig.JitUseScalableVectorT())
+                if (cnsVal.IsScalable())
                 {
                     printf("SimdMaskScalableCns[base:%s idx:%u]",
                            varTypeName(cnsVal.scalable.gtSimdMaskScalableBaseType),
