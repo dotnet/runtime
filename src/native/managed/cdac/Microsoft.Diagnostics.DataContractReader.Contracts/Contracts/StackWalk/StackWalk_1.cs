@@ -694,20 +694,28 @@ internal partial class StackWalk_1 : IStackWalk
             case StackWalkState.SW_NATIVE_MARKER:
                 break;
             case StackWalkState.SW_FRAME:
+                // Native SFITER_FRAME_FUNCTION gates ProcessIp + UpdateRegDisplay on
+                // GetReturnAddress() != 0, and gates GotoNextFrame on !pInlinedFrame.
+                // pInlinedFrame is set only for active InlinedCallFrames.
                 {
-                    FrameType frameType = handle.FrameIter.GetCurrentFrameType();
+                    var frameType = handle.FrameIter.GetCurrentFrameType();
                     TargetPointer returnAddress = handle.FrameIter.GetCurrentReturnAddress();
                     bool isActiveICF = frameType == FrameType.InlinedCallFrame
-                                        && returnAddress != TargetPointer.Null;
+                                       && returnAddress != TargetPointer.Null;
 
+                    // Record the frame type so UpdateState can detect exception frames
+                    // and set IsInterrupted when transitioning to the managed frame.
                     handle.LastProcessedFrameType = frameType;
 
+                    // For InterpreterFrame the FrameIterator has no GetReturnAddress
+                    // (interpreter virtual unwind manages the IP), but we still need
+                    // UpdateContextFromFrame to transition to SW_FRAMELESS in the
+                    // interpreted method.
                     if (returnAddress != TargetPointer.Null
                         || frameType == FrameType.InterpreterFrame)
                     {
                         handle.FrameIter.UpdateContextFromCurrentFrame(handle.Context);
                     }
-
                     if (!isActiveICF)
                     {
                         handle.FrameIter.Next();
@@ -770,8 +778,8 @@ internal partial class StackWalk_1 : IStackWalk
                 return;
             }
 
-            // No-op step. If there is a Frame, yield SW_FRAME so the consumer
-            // sees it (and the next Next() will bridge); otherwise terminate.
+            // The step that just ran bridged through a Frame. Yield SW_FRAME
+            // so the consumer sees the bridged Frame; if there was no Frame, terminate.
             case StackWalkState.SW_INITIAL_NATIVE_CONTEXT:
             case StackWalkState.SW_NATIVE_MARKER:
                 handle.State = handle.FrameIter.IsValid() ? StackWalkState.SW_FRAME : StackWalkState.SW_COMPLETE;
