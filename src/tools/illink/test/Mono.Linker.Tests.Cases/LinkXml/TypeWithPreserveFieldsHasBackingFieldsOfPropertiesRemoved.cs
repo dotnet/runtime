@@ -11,10 +11,10 @@ namespace Mono.Linker.Tests.Cases.LinkXml
         }
 
         [Kept]
-        [KeptInterface(typeof(IFoo<int>))]
-        [KeptInterface(typeof(IFoo<string>))]
-        [KeptInterface(typeof(IFoo<Cat>))]
-        [KeptInterface(typeof(IFoo<IFoo<int>>))]
+        [KeptInterface(typeof(IFoo<int>), By = Tool.Trimmer)]
+        [KeptInterface(typeof(IFoo<string>), By = Tool.Trimmer)]
+        [KeptInterface(typeof(IFoo<Cat>), By = Tool.Trimmer)]
+        [KeptInterface(typeof(IFoo<IFoo<int>>), By = Tool.Trimmer)]
         class Unused : IFoo<int>, IFoo<string>, IFoo<Cat>, IFoo2<int>, IFoo3<int, string, char>, IDog, IFoo<IFoo<int>>
         {
             [Kept]
