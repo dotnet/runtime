@@ -78,7 +78,7 @@ namespace System.Net.Quic.Tests
         {
             using var _ = new TestEventListener(_output, TestEventListener.NetworkingEvents);
             using CancellationTokenSource cts = new CancellationTokenSource();
-            cts.CancelAfter(PassingTestTimeout);
+            cts.CancelAfter(PassingTestTimeoutMilliseconds * 100);
             const int sendCount = 5;
             int expectedBytesCount = s_data.Length * sendCount;
             byte[] expected = new byte[expectedBytesCount];
