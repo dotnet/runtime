@@ -8824,7 +8824,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     bool isArray = false;
     bool isGenericVirtual = false;
 
-    if (pExactMT->IsInterface())
+    if (pApproxMT->IsInterface())
     {
         if (pDevirtMD->HasClassInstantiation())
         {
