@@ -49,6 +49,7 @@ public class Test_thread01
 	
 	}
 	
+	[ActiveIssue("https://github.com/dotnet/runtime/issues/125597", typeof(PlatformDetection), nameof(PlatformDetection.Is32BitProcess))]
 	[ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
 	public static int TestEntryPoint()
 	{
