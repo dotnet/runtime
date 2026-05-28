@@ -1495,17 +1495,6 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
 
         switch (blkNode->gtBlkOpKind)
         {
-            case GenTreeBlk::BlkOpKindCpObjRepInstr:
-                // We need the size of the contiguous Non-GC-region to be in RCX to call rep movsq.
-                sizeRegMask = SRBM_RCX;
-                FALLTHROUGH;
-
-            case GenTreeBlk::BlkOpKindCpObjUnroll:
-                // The srcAddr must be in a register. If it was under a GT_IND, we need to subsume all of its sources.
-                dstAddrRegMask = SRBM_RDI;
-                srcRegMask     = SRBM_RSI;
-                break;
-
             case GenTreeBlk::BlkOpKindUnroll:
             {
                 unsigned regSize   = m_compiler->roundDownSIMDSize(size);
