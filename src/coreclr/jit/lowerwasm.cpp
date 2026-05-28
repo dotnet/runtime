@@ -288,45 +288,6 @@ void Lowering::LowerDivOrMod(GenTreeOp* divMod)
 }
 
 //------------------------------------------------------------------------
-// LowerBlockStore: Lower a block init node (memset / loop zeroing).
-//   The copy variant (non-InitBlkOp) is handled by the shared
-//   Lowering::LowerCopyBlockStore.
-//
-// Arguments:
-//    blkNode - The block store node to lower
-//
-void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
-{
-    assert(blkNode->OperIsInitBlkOp());
-
-    GenTree* dstAddr = blkNode->Addr();
-    GenTree* src     = blkNode->Data();
-
-    if (src->OperIs(GT_INIT_VAL))
-    {
-        src->SetContained();
-        src = src->AsUnOp()->gtGetOp1();
-    }
-
-    if (blkNode->IsZeroingGcPointersOnHeap())
-    {
-        blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindLoop;
-        src->SetContained();
-    }
-    else
-    {
-        // memory.fill
-        blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindNativeOpcode;
-    }
-
-    if (((blkNode->gtBlkOpKind != GenTreeBlk::BlkOpKindNativeOpcode) ||
-         ((blkNode->gtFlags & GTF_IND_NONFAULTING) == 0)))
-    {
-        SetMultiplyUsed(dstAddr DEBUGARG("LowerBlockStore destination address"));
-    }
-}
-
-//------------------------------------------------------------------------
 // LowerPutArgStk: Lower a GT_PUTARG_STK.
 //
 // Arguments:

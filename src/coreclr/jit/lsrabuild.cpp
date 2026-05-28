@@ -873,23 +873,6 @@ regMaskTP LinearScan::getKillSetForBlockStore(GenTreeBlk* blkNode)
     bool isCopyBlk = varTypeIsStruct(blkNode->Data());
     switch (blkNode->gtBlkOpKind)
     {
-#ifdef TARGET_XARCH
-        case GenTreeBlk::BlkOpKindRepInstr:
-            if (isCopyBlk)
-            {
-                // rep movs kills RCX, RDI and RSI
-                killMask.AddGprRegs(SRBM_RCX | SRBM_RDI | SRBM_RSI DEBUG_ARG(RBM_ALLINT));
-            }
-            else
-            {
-                // rep stos kills RCX and RDI.
-                // (Note that the Data() node, if not constant, will be assigned to
-                // RCX, but it's find that this kills it, as the value is not available
-                // after this node in any case.)
-                killMask.AddGprRegs(SRBM_RDI | SRBM_RCX DEBUG_ARG(RBM_ALLINT));
-            }
-            break;
-#endif
         case GenTreeBlk::BlkOpKindUnrollMemmove:
         case GenTreeBlk::BlkOpKindUnroll:
         case GenTreeBlk::BlkOpKindLoop:

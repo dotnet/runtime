@@ -14015,11 +14015,6 @@ void Compiler::gtDispTree(GenTree*                    tree,
             {
                 switch (tree->AsBlk()->gtBlkOpKind)
                 {
-#ifdef TARGET_XARCH
-                    case GenTreeBlk::BlkOpKindRepInstr:
-                        printf(" (RepInstr)");
-                        break;
-#endif
                     case GenTreeBlk::BlkOpKindUnroll:
                         printf(" (Unroll)");
                         break;
