@@ -1,5 +1,5 @@
 ---
-name: create-kbe
+name: pr-failure-scan
 description: >
   Analyze a dotnet/runtime PR's CI failures, skip failures already known to
   Build Analysis, find matching Known Build Errors, and create or draft new
@@ -7,12 +7,12 @@ description: >
   files instead of creating GitHub issues.
 ---
 
-# Create KBE Skill
+# PR Failure Scan Skill
 
 Use this skill for requests like:
 
-- `/create-kbe <PR URL>`
-- `/create-kbe <PR URL> dryrun`
+- `/pr-failure-scan <PR URL>`
+- `/pr-failure-scan <PR URL> dryrun`
 - `create KBEs for PR <number>`
 
 This skill is **PR-targeted** and **local-account-aware**. It complements the
@@ -43,9 +43,9 @@ Interpret `dryrun` case-insensitively. The source repository is always
 
 Examples:
 
-- `/create-kbe 123456`
-- `/create-kbe https://github.com/dotnet/runtime/pull/123456`
-- `/create-kbe https://github.com/dotnet/runtime/pull/123456 dryrun`
+- `/pr-failure-scan 123456`
+- `/pr-failure-scan https://github.com/dotnet/runtime/pull/123456`
+- `/pr-failure-scan https://github.com/dotnet/runtime/pull/123456 dryrun`
 
 ## Step 1: Resolve identities and require explicit permission for non-owned PRs
 
