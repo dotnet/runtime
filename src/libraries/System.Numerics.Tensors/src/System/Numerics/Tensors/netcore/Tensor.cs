@@ -313,19 +313,6 @@ namespace System.Numerics.Tensors
                 rentedBuffer.Dispose();
             }
         }
-
-        private static nint CalculateCopyLength(ReadOnlySpan<nint> lengths, int startingAxis)
-        {
-            // When starting axis is -1 we want all the data at once same as if starting axis is 0
-            if (startingAxis == -1)
-                startingAxis = 0;
-            nint length = 1;
-            for (int i = startingAxis; i < lengths.Length; i++)
-            {
-                length *= lengths[i];
-            }
-            return length;
-        }
         #endregion
 
         #region Create
