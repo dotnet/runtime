@@ -868,20 +868,11 @@ regMaskTP LinearScan::getKillSetForCall(GenTreeCall* call)
 regMaskTP LinearScan::getKillSetForBlockStore(GenTreeBlk* blkNode)
 {
     assert(blkNode->OperIsStoreBlk());
-    regMaskTP killMask = RBM_NONE;
 
-    bool isCopyBlk = varTypeIsStruct(blkNode->Data());
-    switch (blkNode->gtBlkOpKind)
-    {
-        case GenTreeBlk::BlkOpKindUnrollMemmove:
-        case GenTreeBlk::BlkOpKindUnroll:
-        case GenTreeBlk::BlkOpKindLoop:
-        case GenTreeBlk::BlkOpKindInvalid:
-            // for these 'gtBlkOpKind' kinds, we leave 'killMask' = RBM_NONE
-            break;
-    }
-
-    return killMask;
+    // After removing BlkOpKindRepInstr, the remaining block-store kinds
+    // (BlkOpKindUnroll, BlkOpKindUnrollMemmove, BlkOpKindLoop, BlkOpKindInvalid)
+    // don't kill any fixed registers; helper calls handle their own kill sets.
+    return RBM_NONE;
 }
 
 #ifdef FEATURE_HW_INTRINSICS
