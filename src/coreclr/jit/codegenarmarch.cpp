@@ -721,11 +721,16 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
             assert(genIsValidIntReg(srcReg));
             assert(genIsValidIntReg(dstReg));
 
-            GetEmitter()->emitIns_R_I(INS_movi, EA_8BYTE, tmpReg, 0, INS_OPTS_8B);
-            GetEmitter()->emitIns_R_R_I(INS_ins, emitTypeSize(srcNode->TypeGet()), tmpReg, srcReg, 0, INS_OPTS_NONE);
+            emitAttr attr = emitTypeSize(srcNode->TypeGet());
+
+            if (attr != EA_8BYTE)
+            {
+                GetEmitter()->emitIns_R_I(INS_movi, EA_8BYTE, tmpReg, 0, INS_OPTS_8B);
+            }
+            GetEmitter()->emitIns_R_R_I(INS_ins, attr, tmpReg, srcReg, 0, INS_OPTS_NONE);
             GetEmitter()->emitIns_R_R(INS_cnt, EA_8BYTE, tmpReg, tmpReg, INS_OPTS_8B);
             GetEmitter()->emitIns_R_R(INS_addv, EA_8BYTE, tmpReg, tmpReg, INS_OPTS_8B);
-            GetEmitter()->emitIns_R_R_I(INS_umov, emitTypeSize(srcNode->TypeGet()), dstReg, tmpReg, 0, INS_OPTS_NONE);
+            GetEmitter()->emitIns_R_R_I(INS_umov, attr, dstReg, tmpReg, 0, INS_OPTS_NONE);
             break;
         }
 
