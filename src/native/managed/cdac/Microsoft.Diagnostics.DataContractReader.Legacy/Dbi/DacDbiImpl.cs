@@ -1886,12 +1886,12 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 throw new ArgumentException("MethodDesc cannot be null", nameof(vmMethodDesc));
             if (pcGenericClassTypeParams == null)
                 throw new ArgumentNullException(nameof(pcGenericClassTypeParams));
-            *pcGenericClassTypeParams = 0;
             if (fpCallback == null)
                 throw new ArgumentNullException(nameof(fpCallback));
 
+            *pcGenericClassTypeParams = 0;
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-            Contracts.MethodDescHandle pRepMethod = rts.GetMethodDescHandle(new TargetPointer(vmMethodDesc));
+            Contracts.MethodDescHandle pRepMethod = rts.GetMethodDescHandle(vmMethodDesc);
             TypeHandle thRepMt = rts.GetTypeHandle(rts.GetMethodTable(pRepMethod));
 
             // Try to resolve exact instantiations using the generics token. Fall back
@@ -1899,30 +1899,29 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             // resolution step fails (analogous to native's SanityCheck path).
             Contracts.MethodDescHandle pSpecificMethod = pRepMethod;
             TypeHandle thSpecificClass = thRepMt;
-            bool fExact = false;
+            bool isExact = false;
 
             GenericContextLoc ctxLoc = rts.GetGenericContextLoc(pRepMethod);
             if (ctxLoc == GenericContextLoc.None)
             {
-                fExact = true;
+                isExact = true;
             }
             else if (genericsToken != 0)
             {
                 try
                 {
-                    bool hasMethodInst = rts.GetGenericMethodInstantiation(pRepMethod).Length != 0;
-                    if (ctxLoc == GenericContextLoc.InstArg && hasMethodInst)
+                    if (ctxLoc == GenericContextLoc.InstArg_MethodDesc)
                     {
                         // RequiresInstMethodDescArg: token is a MethodDesc*.
                         pSpecificMethod = rts.GetMethodDescHandle(new TargetPointer(genericsToken));
                         thSpecificClass = rts.GetTypeHandle(rts.GetMethodTable(pSpecificMethod));
-                        fExact = true;
+                        isExact = true;
                     }
-                    else if (ctxLoc == GenericContextLoc.InstArg)
+                    else if (ctxLoc == GenericContextLoc.InstArg_MethodTable)
                     {
                         // RequiresInstMethodTableArg: token is a MethodTable*.
                         thSpecificClass = rts.GetTypeHandle(new TargetPointer(genericsToken));
-                        fExact = true;
+                        isExact = true;
                     }
                     else
                     {
@@ -1933,18 +1932,18 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                         if (!thMatch.IsNull)
                         {
                             thSpecificClass = thMatch;
-                            fExact = true;
+                            isExact = true;
                         }
                     }
                 }
                 catch (VirtualReadException)
                 {
                     // Any failure resolving the exact token: fall back to canonical.
-                    fExact = false;
+                    isExact = false;
                 }
             }
 
-            if (!fExact)
+            if (!isExact)
             {
                 pSpecificMethod = pRepMethod;
                 thSpecificClass = thRepMt;
@@ -3387,7 +3386,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 case GenericContextLoc.None:
                     hr = HResults.S_FALSE;
                     break;
-                case GenericContextLoc.InstArg:
+                case GenericContextLoc.InstArg_MethodDesc:
+                case GenericContextLoc.InstArg_MethodTable:
                     *pIndex = unchecked((uint)IlNum.TYPECTXT_ILNUM);
                     break;
                 case GenericContextLoc.ThisPtr:

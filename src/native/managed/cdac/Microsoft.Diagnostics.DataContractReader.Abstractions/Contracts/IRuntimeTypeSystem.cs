@@ -92,7 +92,8 @@ public enum OptimizationTier : uint
 public enum GenericContextLoc
 {
     None,
-    InstArg,
+    InstArg_MethodDesc,
+    InstArg_MethodTable,
     ThisPtr,
 }
 

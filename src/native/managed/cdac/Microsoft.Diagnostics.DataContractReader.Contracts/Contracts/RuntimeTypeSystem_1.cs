@@ -1380,11 +1380,8 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return AsInstantiatedMethodDesc(methodDesc).Instantiation;
     }
 
-    private bool RequiresInstArg(MethodDesc methodDesc)
+    private bool RequiresInstArgMethodTable(MethodDesc methodDesc)
     {
-        if (HasMethodInstantiation(methodDesc))
-            return true;
-
         if (methodDesc.IsStatic)
             return true;
 
@@ -1403,8 +1400,10 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
         if (!IsSharedByGenericInstantiations(methodDesc))
             return GenericContextLoc.None;
-        else if (RequiresInstArg(methodDesc))
-            return GenericContextLoc.InstArg;
+        else if (HasMethodInstantiation(methodDesc))
+            return GenericContextLoc.InstArg_MethodDesc;
+        else if (RequiresInstArgMethodTable(methodDesc))
+            return GenericContextLoc.InstArg_MethodTable;
         else
             return GenericContextLoc.ThisPtr;
     }
