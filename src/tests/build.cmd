@@ -315,13 +315,6 @@ set __MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!
 set __MsbuildBinLog=/bl:!__BuildBinLog!
 set __Logging='!__MsbuildLog!' '!__MsbuildWrn!' '!__MsbuildErr!' '!__MsbuildBinLog!'
 
-REM Workaround for https://github.com/dotnet/arcade/issues/16898 - remove once Arcade is fixed.
-REM Use a contains check via findstr so this is safe when __ArcadeScriptArgs is undefined or
-REM contains multiple tokens (cmd's IF parses %var% at parse time before short-circuiting).
-if not defined NUGET_PACKAGES (
-    echo %__ArcadeScriptArgs% | findstr /i /c:"-ci" >nul 2>&1 && set "NUGET_PACKAGES=%__RepoRootDir%\.packages\"
-)
-
 set BuildCommand=powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -Command "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
   %__RepoRootDir%\src\tests\build.proj -warnAsError:0 /t:TestBuild /nodeReuse:false^
   /p:RestoreDefaultOptimizationDataPackage=false /p:PortableBuild=true^
