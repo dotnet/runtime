@@ -27191,91 +27191,42 @@ GenTree* Compiler::gtNewSimdCreateGeometricSequenceNode(
     uint32_t       simdCount = getSIMDVectorLength(simdSize, simdBaseType);
     bool           isPartial = !op1->OperIsConst();
 
-    switch (simdBaseType)
+    if (varTypeIsIntegral(simdBaseType))
     {
-        case TYP_BYTE:
-        case TYP_UBYTE:
+        uint64_t initial    = isPartial ? 1 : static_cast<uint64_t>(op1->AsIntConCommon()->IntegralValue());
+        uint64_t multiplier = static_cast<uint64_t>(op2->AsIntConCommon()->IntegralValue());
+
+        for (uint32_t index = 0; index < simdCount; index++)
         {
-            uint64_t initial    = isPartial ? 1 : static_cast<uint64_t>(op1->AsIntConCommon()->IntegralValue());
-            uint64_t multiplier = static_cast<uint64_t>(op2->AsIntConCommon()->IntegralValue());
-
-            for (uint32_t index = 0; index < simdCount; index++)
-            {
-                vecCon->gtSimdVal.u8[index] = static_cast<uint8_t>(initial);
-                initial *= multiplier;
-            }
-            break;
+            vecCon->SetElementIntegral(simdBaseType, index, static_cast<int64_t>(initial));
+            initial *= multiplier;
         }
+    }
+    else
+    {
+        assert(varTypeIsFloating(simdBaseType));
 
-        case TYP_SHORT:
-        case TYP_USHORT:
-        {
-            uint64_t initial    = isPartial ? 1 : static_cast<uint64_t>(op1->AsIntConCommon()->IntegralValue());
-            uint64_t multiplier = static_cast<uint64_t>(op2->AsIntConCommon()->IntegralValue());
-
-            for (uint32_t index = 0; index < simdCount; index++)
-            {
-                vecCon->gtSimdVal.u16[index] = static_cast<uint16_t>(initial);
-                initial *= multiplier;
-            }
-            break;
-        }
-
-        case TYP_INT:
-        case TYP_UINT:
-        {
-            uint64_t initial    = isPartial ? 1 : static_cast<uint64_t>(op1->AsIntConCommon()->IntegralValue());
-            uint64_t multiplier = static_cast<uint64_t>(op2->AsIntConCommon()->IntegralValue());
-
-            for (uint32_t index = 0; index < simdCount; index++)
-            {
-                vecCon->gtSimdVal.u32[index] = static_cast<uint32_t>(initial);
-                initial *= multiplier;
-            }
-            break;
-        }
-
-        case TYP_LONG:
-        case TYP_ULONG:
-        {
-            uint64_t initial    = isPartial ? 1 : static_cast<uint64_t>(op1->AsIntConCommon()->IntegralValue());
-            uint64_t multiplier = static_cast<uint64_t>(op2->AsIntConCommon()->IntegralValue());
-
-            for (uint32_t index = 0; index < simdCount; index++)
-            {
-                vecCon->gtSimdVal.u64[index] = initial;
-                initial *= multiplier;
-            }
-            break;
-        }
-
-        case TYP_FLOAT:
+        if (simdBaseType == TYP_FLOAT)
         {
             float initial    = isPartial ? 1.0f : static_cast<float>(op1->AsDblCon()->DconValue());
             float multiplier = static_cast<float>(op2->AsDblCon()->DconValue());
 
             for (uint32_t index = 0; index < simdCount; index++)
             {
-                vecCon->gtSimdVal.f32[index] = initial * powf(multiplier, static_cast<float>(index));
+                vecCon->SetElementFloating(simdBaseType, index, initial * powf(multiplier, static_cast<float>(index)));
             }
-            break;
         }
-
-        case TYP_DOUBLE:
+        else
         {
+            assert(simdBaseType == TYP_DOUBLE);
+
             double initial    = isPartial ? 1.0 : op1->AsDblCon()->DconValue();
             double multiplier = op2->AsDblCon()->DconValue();
 
             for (uint32_t index = 0; index < simdCount; index++)
             {
-                vecCon->gtSimdVal.f64[index] = initial * pow(multiplier, static_cast<double>(index));
+                vecCon->SetElementFloating(simdBaseType, index, initial * pow(multiplier, static_cast<double>(index)));
             }
-            break;
-        }
-
-        default:
-        {
-            unreached();
         }
     }
 
@@ -27339,93 +27290,27 @@ GenTree* Compiler::gtNewSimdCreateAlternatingSequenceNode(
         assert(simdCount > 1);
         GenTreeVecCon* vecCon = gtNewVconNode(type);
 
-        switch (simdBaseType)
+        if (varTypeIsIntegral(simdBaseType))
         {
-            case TYP_BYTE:
-            case TYP_UBYTE:
-            {
-                uint64_t even = static_cast<uint64_t>(op1->AsIntConCommon()->IntegralValue());
-                uint64_t odd  = static_cast<uint64_t>(op2->AsIntConCommon()->IntegralValue());
+            int64_t even = op1->AsIntConCommon()->IntegralValue();
+            int64_t odd  = op2->AsIntConCommon()->IntegralValue();
 
-                for (uint32_t index = 1; index < simdCount; index += 2)
-                {
-                    vecCon->gtSimdVal.u8[index - 1] = static_cast<uint8_t>(even);
-                    vecCon->gtSimdVal.u8[index]     = static_cast<uint8_t>(odd);
-                }
-                break;
+            for (uint32_t index = 1; index < simdCount; index += 2)
+            {
+                vecCon->SetElementIntegral(simdBaseType, index - 1, even);
+                vecCon->SetElementIntegral(simdBaseType, index, odd);
             }
+        }
+        else
+        {
+            assert(varTypeIsFloating(simdBaseType));
 
-            case TYP_SHORT:
-            case TYP_USHORT:
+            double even = op1->AsDblCon()->DconValue();
+            double odd  = op2->AsDblCon()->DconValue();
+            for (uint32_t index = 1; index < simdCount; index += 2)
             {
-                uint64_t even = static_cast<uint64_t>(op1->AsIntConCommon()->IntegralValue());
-                uint64_t odd  = static_cast<uint64_t>(op2->AsIntConCommon()->IntegralValue());
-
-                for (uint32_t index = 1; index < simdCount; index += 2)
-                {
-                    vecCon->gtSimdVal.u16[index - 1] = static_cast<uint16_t>(even);
-                    vecCon->gtSimdVal.u16[index]     = static_cast<uint16_t>(odd);
-                }
-                break;
-            }
-
-            case TYP_INT:
-            case TYP_UINT:
-            {
-                uint64_t even = static_cast<uint64_t>(op1->AsIntConCommon()->IntegralValue());
-                uint64_t odd  = static_cast<uint64_t>(op2->AsIntConCommon()->IntegralValue());
-
-                for (uint32_t index = 1; index < simdCount; index += 2)
-                {
-                    vecCon->gtSimdVal.u32[index - 1] = static_cast<uint32_t>(even);
-                    vecCon->gtSimdVal.u32[index]     = static_cast<uint32_t>(odd);
-                }
-                break;
-            }
-
-            case TYP_LONG:
-            case TYP_ULONG:
-            {
-                uint64_t even = static_cast<uint64_t>(op1->AsIntConCommon()->IntegralValue());
-                uint64_t odd  = static_cast<uint64_t>(op2->AsIntConCommon()->IntegralValue());
-
-                for (uint32_t index = 1; index < simdCount; index += 2)
-                {
-                    vecCon->gtSimdVal.u64[index - 1] = even;
-                    vecCon->gtSimdVal.u64[index]     = odd;
-                }
-                break;
-            }
-
-            case TYP_FLOAT:
-            {
-                double even = op1->AsDblCon()->DconValue();
-                double odd  = op2->AsDblCon()->DconValue();
-
-                for (uint32_t index = 1; index < simdCount; index += 2)
-                {
-                    vecCon->gtSimdVal.f32[index - 1] = static_cast<float>(even);
-                    vecCon->gtSimdVal.f32[index]     = static_cast<float>(odd);
-                }
-                break;
-            }
-
-            case TYP_DOUBLE:
-            {
-                double even = op1->AsDblCon()->DconValue();
-                double odd  = op2->AsDblCon()->DconValue();
-
-                for (uint32_t index = 1; index < simdCount; index += 2)
-                {
-                    vecCon->gtSimdVal.f64[index - 1] = even;
-                    vecCon->gtSimdVal.f64[index]     = odd;
-                }
-                break;
-            }
-
-            default:
-            {
-                unreached();
+                vecCon->SetElementFloating(simdBaseType, index - 1, even);
+                vecCon->SetElementFloating(simdBaseType, index, odd);
             }
         }
 
@@ -27512,6 +27397,22 @@ GenTree* Compiler::gtNewSimdConcatNode(var_types type,
 #if defined(TARGET_XARCH)
     if (simdSize == 16)
     {
+        if (!leftUpper && !rightUpper)
+        {
+            // return Sse.MoveLowToHigh(op1.AsSingle(), op2.AsSingle()).As<T>();
+
+            return gtNewSimdHWIntrinsicNode(type, op1, op2, NI_X86Base_MoveLowToHigh, TYP_FLOAT, simdSize);
+        }
+
+        if (leftUpper && rightUpper)
+        {
+            // return Sse.MoveHighToLow(op2.AsSingle(), op1.AsSingle()).As<T>();
+
+            GenTree* result = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_X86Base_MoveHighToLow, TYP_FLOAT, simdSize);
+            result->SetReverseOp();
+            return result;
+        }
+
         // return Sse.Shuffle(op1.AsSingle(), op2.AsSingle(), immediate).As<T>();
 
         uint32_t leftStart  = leftUpper ? 2 : 0;
@@ -27769,9 +27670,12 @@ GenTree* Compiler::gtNewSimdUnzipNode(
     NamedIntrinsic intrinsic = odd ? NI_AdvSimd_Arm64_UnzipOdd : NI_AdvSimd_Arm64_UnzipEven;
     return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, simdBaseType, simdSize);
 #elif defined(TARGET_XARCH)
+
+    unsigned elementSize = genTypeSize(simdBaseType);
+
     if (simdSize == 16)
     {
-        if ((simdBaseType == TYP_INT) || (simdBaseType == TYP_UINT) || (simdBaseType == TYP_FLOAT))
+        if (elementSize == 4)
         {
             // return Sse.Shuffle(op1.AsSingle(), op2.AsSingle(), odd ? 0xDD : 0x88).As<T>();
 
@@ -27799,27 +27703,21 @@ GenTree* Compiler::gtNewSimdUnzipNode(
                     (index < lowerCount) ? start + (index * 2) : simdCount + start + ((index - lowerCount) * 2);
             }
 
-            switch (simdBaseType)
+            switch (elementSize)
             {
-                case TYP_BYTE:
-                case TYP_UBYTE:
+                case 1:
                     shuffle->gtSimdVal.u8[index] = static_cast<uint8_t>(shuffleIndex);
                     break;
 
-                case TYP_SHORT:
-                case TYP_USHORT:
+                case 2:
                     shuffle->gtSimdVal.u16[index] = static_cast<uint16_t>(shuffleIndex);
                     break;
 
-                case TYP_INT:
-                case TYP_UINT:
-                case TYP_FLOAT:
+                case 4:
                     shuffle->gtSimdVal.u32[index] = shuffleIndex;
                     break;
 
-                case TYP_LONG:
-                case TYP_ULONG:
-                case TYP_DOUBLE:
+                case 8:
                     shuffle->gtSimdVal.u64[index] = shuffleIndex;
                     break;
 
@@ -27837,8 +27735,6 @@ GenTree* Compiler::gtNewSimdUnzipNode(
 
         return gtNewSimdGetLowerNode(type, result, simdBaseType, wideSimdSize);
     }
-
-    unsigned elementSize = genTypeSize(simdBaseType);
 
     if ((simdSize >= 32) &&
         compOpportunisticallyDependsOn((elementSize == 1) ? InstructionSet_AVX512v2 : InstructionSet_AVX512))
@@ -27967,33 +27863,28 @@ GenTree* Compiler::gtNewSimdReverseNode(var_types type, GenTree* op1, var_types 
 
     // return Shuffle(op1, indices);
 
-    GenTreeVecCon* shuffle = gtNewVconNode(type);
+    GenTreeVecCon* shuffle     = gtNewVconNode(type);
+    unsigned       elementSize = genTypeSize(simdBaseType);
 
     for (uint32_t index = 0; index < simdCount; index++)
     {
         uint32_t shuffleIndex = simdCount - 1 - index;
 
-        switch (simdBaseType)
+        switch (elementSize)
         {
-            case TYP_BYTE:
-            case TYP_UBYTE:
+            case 1:
                 shuffle->gtSimdVal.u8[index] = static_cast<uint8_t>(shuffleIndex);
                 break;
 
-            case TYP_SHORT:
-            case TYP_USHORT:
+            case 2:
                 shuffle->gtSimdVal.u16[index] = static_cast<uint16_t>(shuffleIndex);
                 break;
 
-            case TYP_INT:
-            case TYP_UINT:
-            case TYP_FLOAT:
+            case 4:
                 shuffle->gtSimdVal.u32[index] = shuffleIndex;
                 break;
 
-            case TYP_LONG:
-            case TYP_ULONG:
-            case TYP_DOUBLE:
+            case 8:
                 shuffle->gtSimdVal.u64[index] = shuffleIndex;
                 break;
 
