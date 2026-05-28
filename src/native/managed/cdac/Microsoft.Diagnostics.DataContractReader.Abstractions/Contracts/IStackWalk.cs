@@ -8,6 +8,28 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 public interface IStackDataFrameHandle { };
 
+public enum StackWalkState
+{
+    SW_COMPLETE,
+    SW_ERROR,
+
+    // The current Context represents a managed method.
+    SW_FRAMELESS,
+
+    // The current Context is the seed native context from init (the
+    // thread's saved CONTEXT). FrameIter may or may not be on a Frame.
+    SW_INITIAL_NATIVE_CONTEXT,
+
+    // The current Context is native, produced by unwinding a managed
+    // frame down to an M2U boundary. FrameIter is on the explicit Frame.
+    SW_NATIVE_MARKER,
+
+    // Context has been bridged through the explicit Frame at FrameIter
+    // (FrameAddress is valid). The next step advances past this Frame.
+    SW_FRAME,
+    SW_SKIPPED_FRAME,
+}
+
 public class StackReferenceData
 {
     public bool HasRegisterInformation { get; init; }
@@ -48,6 +70,7 @@ public interface IStackWalk : IContract
 
     public virtual IEnumerable<IStackDataFrameHandle> CreateStackWalk(ThreadData threadData) => throw new NotImplementedException();
     IReadOnlyList<StackReferenceData> WalkStackReferences(ThreadData threadData) => throw new NotImplementedException();
+    StackWalkState GetState(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();
     byte[] GetRawContext(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();
     TargetPointer GetFrameAddress(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();
     string GetFrameName(TargetPointer frameIdentifier) => throw new NotImplementedException();

@@ -103,7 +103,8 @@ internal partial class StackWalk_1 : IStackWalk
 
     private bool IsFunclet(StackDataFrameHandle handle)
     {
-        if (handle.State is StackWalkState.SW_FRAME or StackWalkState.SW_SKIPPED_FRAME)
+        // Only frames whose Context represents a managed method can be funclets.
+        if (handle.State is not StackWalkState.SW_FRAMELESS)
         {
             return false;
         }
@@ -116,7 +117,8 @@ internal partial class StackWalk_1 : IStackWalk
 
     private bool IsFilterFunclet(StackDataFrameHandle handle)
     {
-        if (handle.State is StackWalkState.SW_FRAME or StackWalkState.SW_SKIPPED_FRAME)
+        // Only frames whose Context represents a managed method can be filter funclets.
+        if (handle.State is not StackWalkState.SW_FRAMELESS)
         {
             return false;
         }

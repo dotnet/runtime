@@ -34,7 +34,27 @@ public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
 
         // IEnumerator<T> begins before the first element.
         // Call MoveNext() to set _dataFrames.Current to the first element.
-        _currentFrameIsValid = _dataFrames.MoveNext();
+        _currentFrameIsValid = MoveNextLegacyVisible();
+    }
+
+    /// <summary>
+    /// Advance the enumerator to the next frame that the legacy SOSDAC stack walker
+    /// would have surfaced.
+    /// </summary>
+    private bool MoveNextLegacyVisible()
+    {
+        IStackWalk sw = _target.Contracts.StackWalk;
+        while (_dataFrames.MoveNext())
+        {
+            StackWalkState state = sw.GetState(_dataFrames.Current);
+            if (state is StackWalkState.SW_FRAMELESS
+                      or StackWalkState.SW_FRAME
+                      or StackWalkState.SW_SKIPPED_FRAME)
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     int IXCLRDataStackWalk.GetContext(uint contextFlags, uint contextBufSize, uint* contextSize, [MarshalUsing(CountElementName = "contextBufSize"), Out] byte[] contextBuf)
@@ -121,7 +141,7 @@ public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
         int hr;
         try
         {
-            _currentFrameIsValid = _dataFrames.MoveNext();
+            _currentFrameIsValid = MoveNextLegacyVisible();
             hr = _currentFrameIsValid ? HResults.S_OK : HResults.S_FALSE;
         }
         catch (System.Exception ex)

@@ -6,11 +6,33 @@ This contract encapsulates support for walking the stack of managed threads.
 
 ```csharp
 public interface IStackDataFrameHandle { };
+
+// Describes what the current Context/FrameIter of a handle represents.
+public enum StackWalkState
+{
+    SW_COMPLETE,
+    SW_ERROR,
+    // Current Context represents a managed method.
+    SW_FRAMELESS,
+    // Current Context is the seed native context from init (the thread's saved
+    // CONTEXT). FrameIter may or may not be on a Frame.
+    SW_INITIAL_NATIVE_CONTEXT,
+    // Current Context is native, produced by unwinding a managed frame down to
+    // an M2U boundary. FrameIter is on the explicit Frame at the transition.
+    SW_NATIVE_MARKER,
+    // Context has been bridged through the explicit Frame at FrameIter
+    // (FrameAddress is valid). The next step advances past this Frame.
+    SW_FRAME,
+    SW_SKIPPED_FRAME,
+}
 ```
 
 ```csharp
 // Creates a stack walk and returns a handle
 IEnumerable<IStackDataFrameHandle> CreateStackWalk(ThreadData threadData);
+
+// Gets the StackWalkState that produced the current handle.
+StackWalkState GetState(IStackDataFrameHandle stackDataFrameHandle);
 
 // Gets the thread context at the given stack dataframe.
 byte[] GetRawContext(IStackDataFrameHandle stackDataFrameHandle);
@@ -543,6 +565,12 @@ DebuggerEvalData GetDebuggerEvalData(TargetPointer funcEvalFrameAddress)
 `GetInstructionPointer` returns the instruction pointer (IP) from the current frame's context. This is the address of the instruction being executed (or about to be executed) in the method associated with this frame.
 ```csharp
 TargetPointer GetInstructionPointer(IStackDataFrameHandle stackDataFrameHandle)
+```
+
+`GetState` returns the `StackWalkState` that produced the given handle. The state classifies what the handle's Context and FrameIter represent at the point it was yielded:
+
+```csharp
+StackWalkState GetState(IStackDataFrameHandle stackDataFrameHandle)
 ```
 
 `WalkStackReferences` walks the entire managed stack and enumerates all live GC references at each frame. It returns a list of `StackReferenceData` describing each GC-tracked slot (its address, whether it's an interior pointer, and the register/stack location). This API is the primary consumer for `SOSDacImpl.GetStackReferences`.
