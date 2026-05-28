@@ -6198,6 +6198,8 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
             }
 #endif // !TARGET_64BIT
 #if defined(FEATURE_HW_INTRINSICS)
+            impPopStack();
+
             GenTree* op1Dup = nullptr;
 
             if (!varTypeIsUnsigned(JitType2PreciseVarType(baseJitType)))
@@ -6217,8 +6219,6 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
             bool isLong  = varTypeIsLong(baseType);
 
 #if defined(TARGET_XARCH)
-            impPopStack();
-
             if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
             {
                 hwintrinsic = varTypeIsLong(baseType) ? NI_AVX2_X64_LeadingZeroCount : NI_AVX2_LeadingZeroCount;
@@ -6231,15 +6231,11 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                 isLzcnt     = false;
             }
 #elif defined(TARGET_ARM64)
-            impPopStack();
-
             hwintrinsic = varTypeIsLong(baseType) ? NI_ArmBase_Arm64_LeadingZeroCount : NI_ArmBase_LeadingZeroCount;
             result      = gtNewScalarHWIntrinsicNode(TYP_INT, op1, hwintrinsic);
             baseType    = TYP_INT;
 #else
-            isLzcnt = false;
-            assert(op1Dup == nullptr);
-            assert(result == nullptr);
+#error Unsupported platform
 #endif
 
             if (isLzcnt)
