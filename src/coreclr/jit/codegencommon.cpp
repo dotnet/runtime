@@ -38,7 +38,9 @@ void CodeGenInterface::setFramePointerRequiredEH(bool value)
 {
     m_cgFramePointerRequired = value;
 
-#ifndef JIT32_GCENCODER
+#if defined(JIT32_GCENCODER) || defined(TARGET_WASM)
+    // No impact on GC reporting for x86 or Wasm
+#else
     if (value)
     {
         // EnumGcRefs will only enumerate slots in aborted frames
@@ -55,7 +57,7 @@ void CodeGenInterface::setFramePointerRequiredEH(bool value)
 
         m_cgInterruptible = true;
     }
-#endif // JIT32_GCENCODER
+#endif // defined(JIT32_GCENCODER) || defined(TARGET_WASM)
 }
 
 #if HAS_FIXED_REGISTER_SET

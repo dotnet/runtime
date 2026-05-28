@@ -990,6 +990,27 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
         // all have RMW semantics if VEX support is not available
 
         bool isRMW = !m_compiler->canUseVexEncoding();
+
+        if (!isRMW && !treeNode->OperIs(GT_DIV, GT_SUB))
+        {
+            assert(treeNode->OperIs(GT_ADD, GT_MUL));
+
+            if (!emitter::IsExtendedReg(op1reg) && emitter::IsExtendedReg(op2reg))
+            {
+                // We have a VEX encoded commutative instruction in which
+                // case we want to try to put the non-extended register as
+                // op2 since this may allow the 2-byte VEX prefix to be used.
+                //
+                // This is not handled by the general path because the scalar
+                // instructions copy the upper bits from op1 and so it is
+                // normally not safe. It is safe here because we know we're
+                // emitting the instruction for a non-SIMD path and so the
+                // upper bits are irrelevant.
+
+                std::swap(op1, op2);
+                std::swap(op1reg, op2reg);
+            }
+        }
         inst_RV_RV_TT(ins, emitTypeSize(treeNode), targetReg, op1reg, op2, isRMW, INS_OPTS_NONE);
 
         genProduceReg(treeNode);
