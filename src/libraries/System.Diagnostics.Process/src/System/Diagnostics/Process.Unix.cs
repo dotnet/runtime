@@ -96,113 +96,47 @@ namespace System.Diagnostics
 
         private void KillTree(ref List<Exception>? exceptions)
         {
-            // PR_SET_PDEATHSIG (KillOnParentExit) is only supported on Linux and Android.
-            // When it is in use, killing a parent process causes children to be killed by the
-            // kernel immediately (via the parent-death signal), before their own descendants can
-            // be discovered.  The two-phase stop-then-kill algorithm below avoids this race.
-            //
-            // On macOS (and other non-Linux/Android platforms) the GetProcesses() call inside
-            // GetChildProcesses() invokes proc_pidinfo for every running process; that syscall
-            // blocks indefinitely when the target process is stopped (SIGSTOP'd), so we must
-            // use the simpler single-phase algorithm there.
-            if (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid())
+            // First, stop and collect the entire process tree before killing any process.
+            // This is necessary because killing a parent process may cause children with
+            // PR_SET_PDEATHSIG (KillOnParentExit) to be killed by the kernel immediately,
+            // making it impossible to discover their descendants afterward.
+            List<Process> stoppedProcesses = [];
+            try
             {
-                // Phase 1: recursively SIGSTOP the entire tree and collect all processes.
-                // This ensures the full tree is visible before any kill signal triggers a
-                // cascading PR_SET_PDEATHSIG death.
-                List<Process> stoppedProcesses = [];
-                try
+                StopTree(ref exceptions, stoppedProcesses);
+            }
+            catch (Exception ex)
+            {
+                (exceptions ??= new List<Exception>()).Add(ex);
+            }
+            finally
+            {
+                // Kill all stopped processes even if StopTree threw partway through.
+                foreach (Process process in stoppedProcesses)
                 {
-                    StopTree(ref exceptions, stoppedProcesses);
-                }
-                catch (Exception ex)
-                {
-                    (exceptions ??= new List<Exception>()).Add(ex);
-                }
-                finally
-                {
-                    // Phase 2: kill all stopped processes even if StopTree threw partway through.
-                    foreach (Process process in stoppedProcesses)
+                    int killResult = Interop.Sys.Kill(process._processId, Interop.Sys.GetPlatformSignalNumber(PosixSignal.SIGKILL));
+                    if (killResult != 0)
                     {
-                        int killResult = Interop.Sys.Kill(process._processId, Interop.Sys.GetPlatformSignalNumber(PosixSignal.SIGKILL));
-                        if (killResult != 0)
+                        Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                        // Ignore 'process no longer exists' error.
+                        if (errorInfo.Error != Interop.Error.ESRCH)
                         {
-                            Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                            // Ignore 'process no longer exists' error.
-                            if (errorInfo.Error != Interop.Error.ESRCH)
-                            {
-                                (exceptions ??= new List<Exception>()).Add(new Win32Exception(errorInfo.RawErrno));
-                            }
-                        }
-
-                        if (process != this)
-                        {
-                            process.Dispose();
+                            (exceptions ??= new List<Exception>()).Add(new Win32Exception(errorInfo.RawErrno));
                         }
                     }
+
+                    if (process != this)
+                    {
+                        process.Dispose();
+                    }
                 }
-            }
-            else
-            {
-                // Single-phase algorithm: stop the process, enumerate its children, kill it,
-                // then recurse into children.  Safe on platforms where PR_SET_PDEATHSIG does
-                // not exist and GetChildProcesses() does not block on stopped processes.
-                KillTreeSinglePhase(ref exceptions);
-            }
-        }
-
-        /// <summary>
-        /// Single-phase tree-kill: stops the process, enumerates its children, kills the process,
-        /// then recursively kills each child.  Used on platforms other than Linux/Android where
-        /// <c>PR_SET_PDEATHSIG</c> is not available.
-        /// </summary>
-        private void KillTreeSinglePhase(ref List<Exception>? exceptions)
-        {
-            // If the process has exited, we can no longer determine its children.
-            if (GetHasExited(refresh: false))
-            {
-                return;
-            }
-
-            // Stop the process, so it won't start additional children.
-            // This is best effort: kill can return before the process is stopped.
-            int stopResult = Interop.Sys.Kill(_processId, Interop.Sys.GetPlatformSIGSTOP());
-            if (stopResult != 0)
-            {
-                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                // Ignore 'process no longer exists' error.
-                if (errorInfo.Error != Interop.Error.ESRCH)
-                {
-                    (exceptions ??= new List<Exception>()).Add(new Win32Exception(errorInfo.RawErrno));
-                }
-                return;
-            }
-
-            List<Process> children = GetChildProcesses();
-
-            int killResult = Interop.Sys.Kill(_processId, Interop.Sys.GetPlatformSignalNumber(PosixSignal.SIGKILL));
-            if (killResult != 0)
-            {
-                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                // Ignore 'process no longer exists' error.
-                if (errorInfo.Error != Interop.Error.ESRCH)
-                {
-                    (exceptions ??= new List<Exception>()).Add(new Win32Exception(errorInfo.RawErrno));
-                }
-            }
-
-            foreach (Process childProcess in children)
-            {
-                childProcess.KillTreeSinglePhase(ref exceptions);
-                childProcess.Dispose();
             }
         }
 
         /// <summary>
         /// Recursively stops all processes in the tree (depth-first) and collects them into a flat list.
         /// Stopping (SIGSTOP) before enumerating children ensures we can discover the entire tree
-        /// before any kill signals cause cascading PR_SET_PDEATHSIG terminations.
-        /// Only called on Linux and Android where PR_SET_PDEATHSIG is supported.
+        /// before any kill signals cause cascading terminations.
         /// </summary>
         /// <returns>
         /// <see langword="true"/> if the process was successfully stopped and added to
