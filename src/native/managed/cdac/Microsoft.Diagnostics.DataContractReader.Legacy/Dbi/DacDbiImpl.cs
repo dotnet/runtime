@@ -2055,8 +2055,72 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
-    public int GetStackFramesFromException(ulong vmObject, nint pDacStackFrames)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetStackFramesFromException(vmObject, pDacStackFrames) : HResults.E_NOTIMPL;
+#if DEBUG
+    [ThreadStatic]
+    private static List<(ulong VmAppDomain, ulong VmAssembly, ulong Ip, uint MethodDef, Interop.BOOL IsLastForeignExceptionFrame)>? _debugEnumerateStackFramesFromException;
+
+    private static List<(ulong VmAppDomain, ulong VmAssembly, ulong Ip, uint MethodDef, Interop.BOOL IsLastForeignExceptionFrame)> DebugEnumerateStackFramesFromException
+        => _debugEnumerateStackFramesFromException ??= new();
+
+    [UnmanagedCallersOnly]
+    private static void EnumerateStackFramesFromExceptionDebugCallback(ulong vmAppDomain, ulong vmAssembly, ulong ip, uint methodDef, Interop.BOOL isLastForeignExceptionFrame, nint _)
+    {
+        DebugEnumerateStackFramesFromException.Add((vmAppDomain, vmAssembly, ip, methodDef, isLastForeignExceptionFrame));
+    }
+#endif
+
+    public int EnumerateStackFramesFromException(ulong vmObject, delegate* unmanaged<ulong, ulong, ulong, uint, Interop.BOOL, nint, void> fpCallback, nint pUserData)
+    {
+        int hr = HResults.S_OK;
+#if DEBUG
+        List<(ulong VmAppDomain, ulong VmAssembly, ulong Ip, uint MethodDef, Interop.BOOL IsLastForeignExceptionFrame)> frames = new();
+#endif
+        try
+        {
+            if (fpCallback is null)
+                throw new ArgumentNullException(nameof(fpCallback));
+
+            TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
+            ulong vmAppDomain = _target.ReadPointer(appDomainPointer).Value;
+
+            IException exceptionContract = _target.Contracts.Exception;
+            foreach (ExceptionStackFrameInfo frame in exceptionContract.GetExceptionStackFrames(new TargetPointer(vmObject)))
+            {
+                ResolveStubFrameAssemblyAndToken(frame.MethodDesc, out TargetPointer vmAssembly, out uint methodDef);
+                Interop.BOOL isLastForeign = frame.IsLastForeignExceptionFrame ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+#if DEBUG
+                frames.Add((vmAppDomain, vmAssembly.Value, frame.Ip.Value, methodDef, isLastForeign));
+#endif
+                fpCallback(vmAppDomain, vmAssembly.Value, frame.Ip.Value, methodDef, isLastForeign, pUserData);
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacy is not null)
+        {
+            DebugEnumerateStackFramesFromException.Clear();
+            delegate* unmanaged<ulong, ulong, ulong, uint, Interop.BOOL, nint, void> debugCallbackPtr = &EnumerateStackFramesFromExceptionDebugCallback;
+            int hrLocal = _legacy.EnumerateStackFramesFromException(vmObject, debugCallbackPtr, 0);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                List<(ulong VmAppDomain, ulong VmAssembly, ulong Ip, uint MethodDef, Interop.BOOL IsLastForeignExceptionFrame)> legacyFrames = DebugEnumerateStackFramesFromException;
+                static string FormatFrame((ulong VmAppDomain, ulong VmAssembly, ulong Ip, uint MethodDef, Interop.BOOL IsLastForeignExceptionFrame) f)
+                    => $"(AppDomain=0x{f.VmAppDomain:x}, Assembly=0x{f.VmAssembly:x}, Ip=0x{f.Ip:x}, MethodDef=0x{f.MethodDef:x}, IsLastForeignExceptionFrame={f.IsLastForeignExceptionFrame})";
+                Debug.Assert(frames.SequenceEqual(legacyFrames),
+                    $"Exception stack frame enumeration mismatch - "
+                    + $"cDAC: [{string.Join(",", frames.Select(FormatFrame))}], "
+                    + $"DAC: [{string.Join(",", legacyFrames.Select(FormatFrame))}]");
+            }
+            DebugEnumerateStackFramesFromException.Clear();
+        }
+#endif
+        return hr;
+    }
 
     public int IsRcw(ulong vmObject, Interop.BOOL* pResult)
     {
