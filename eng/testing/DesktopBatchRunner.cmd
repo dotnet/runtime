@@ -5,6 +5,8 @@ set "BATCH_DIR=%CD%"
 set /a SUITE_COUNT=0
 set /a FAIL_COUNT=0
 set "FOUND_ZIP="
+set "PYTHON=%HELIX_PYTHONPATH%"
+if "%PYTHON%"=="" set "PYTHON=python"
 
 if "%HELIX_WORKITEM_UPLOAD_ROOT%"=="" (
     set "ORIGINAL_UPLOAD_ROOT=%CD%\test-results"
@@ -27,7 +29,7 @@ for %%z in ("%BATCH_DIR%\*.zip") do (
         echo ========================= BEGIN !suiteName! =============================
 
         mkdir "!suiteDir!" >nul 2>nul
-        "%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive -LiteralPath '%%~fz' -DestinationPath '!suiteDir!' -Force"
+        "%PYTHON%" -c "import zipfile,sys; zipfile.ZipFile(sys.argv[1]).extractall(sys.argv[2])" "%%~fz" "!suiteDir!"
         if !errorlevel! neq 0 (
             echo ERROR: Failed to extract %%~fz
             set "suiteExitCode=1"
