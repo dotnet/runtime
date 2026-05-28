@@ -148,12 +148,11 @@ namespace ILCompiler.ObjectWriter
             for (int i = 1; i < frameInfos.Length; i++)
             {
                  WasmFuncType funcletSignature = GetFuncletType(funcletKinds[i - 1], pointerType);
-                _uniqueSymbols.Add($"{mangledNodeName}_funclet_{i}", _methodCount);
+                _uniqueSymbols.Add($"{mangledNodeName}_funclet_{i - 1}", _methodCount);
                 _methodCount++;
                 RegisterStubIndexAndSignature(funcletSignature);
             }
         }
-
 
         enum FuncletKind : byte
         {
@@ -190,7 +189,7 @@ namespace ILCompiler.ObjectWriter
                 }
                 else if (flags.HasFlag(CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_FILTER))
                 {
-                    // Filters always inspire two funclets: a filter funclet and a catch-like handler funclet
+                    // Filters inspire two funclets: a filter funclet and a catch-like handler funclet
                     funcletKinds.Add(FuncletKind.Filter);
                     funcletKinds.Add(FuncletKind.CatchOrFilterHandler);
                 }
@@ -208,7 +207,7 @@ namespace ILCompiler.ObjectWriter
             return funcletKind switch
             {
                 FuncletKind.CatchOrFilterHandler or FuncletKind.Filter => new WasmFuncType(
-                    new([pointerType, pointerType, pointerType]), new([])), // (FP, SP, EXN) -> void
+                    new([pointerType, pointerType, pointerType]), new([pointerType])), // (FP, SP, EXN) -> RESULT
                 _ => new WasmFuncType(new([pointerType, pointerType]), new([])), // (FP, SP) -> void
             };
         }
