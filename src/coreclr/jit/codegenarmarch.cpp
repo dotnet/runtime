@@ -3832,7 +3832,7 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned            codeSize,
         //  -saved off FP
         //  -all callee-preserved registers in case of varargs
         //  -saved bool for synchronized methods
-        //  -async contexts for async methods
+        //  -thread/async contexts for async methods
 
         int preservedAreaSize = (2 + genCountBits((uint64_t)RBM_ENC_CALLEE_SAVED)) * REGSIZE_BYTES;
 
@@ -3850,6 +3850,13 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned            codeSize,
 
             // Verify that MonAcquired bool is at the bottom of the frame header
             assert(m_compiler->lvaGetCallerSPRelativeOffset(m_compiler->lvaMonAcquired) == -preservedAreaSize);
+        }
+
+        if (m_compiler->lvaAsyncThreadObjectVar != BAD_VAR_NUM)
+        {
+            preservedAreaSize += TARGET_POINTER_SIZE;
+
+            assert(m_compiler->lvaGetCallerSPRelativeOffset(m_compiler->lvaAsyncThreadObjectVar) == -preservedAreaSize);
         }
 
         if (m_compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM)
@@ -4013,11 +4020,6 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
 
     switch (blkOp->gtBlkOpKind)
     {
-        case GenTreeBlk::BlkOpKindCpObjUnroll:
-            assert(!blkOp->gtBlkOpGcUnsafe);
-            genCodeForCpObj(blkOp->AsBlk());
-            break;
-
         case GenTreeBlk::BlkOpKindLoop:
             assert(!isCopyBlk);
             genCodeForInitBlkLoop(blkOp);

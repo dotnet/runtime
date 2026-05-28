@@ -409,7 +409,7 @@ public unsafe partial interface IDacDbiInterface
     int IsThreadMarkedDead(ulong vmThread, Interop.BOOL* pResult);
 
     [PreserveSig]
-    int GetThreadHandle(ulong vmThread, nint pRetVal);
+    int GetThreadHandle(ulong vmThread, void** pRetVal);
 
     [PreserveSig]
     int GetThreadObject(ulong vmThread, ulong* pRetVal);
@@ -574,7 +574,7 @@ public unsafe partial interface IDacDbiInterface
     int IsExceptionObject(ulong vmObject, Interop.BOOL* pResult);
 
     [PreserveSig]
-    int GetStackFramesFromException(ulong vmObject, nint pDacStackFrames);
+    int EnumerateStackFramesFromException(ulong vmObject, /*FP_EXCEPTION_STACK_FRAME_CALLBACK*/ delegate* unmanaged<ulong, ulong, ulong, uint, Interop.BOOL, nint, void> fpCallback, nint pUserData);
 
     [PreserveSig]
     int IsRcw(ulong vmObject, Interop.BOOL* pResult);
@@ -661,7 +661,7 @@ public unsafe partial interface IDacDbiInterface
     int GetTypeIDForType(ulong vmTypeHandle, COR_TYPEID* pId);
 
     [PreserveSig]
-    int GetObjectFields(nint id, uint celt, COR_FIELD* layout, uint* pceltFetched);
+    int GetObjectFields(ulong id, uint celt, COR_FIELD* layout, uint* pceltFetched);
 
     [PreserveSig]
     int GetTypeLayout(ulong id, COR_TYPE_LAYOUT* pLayout);

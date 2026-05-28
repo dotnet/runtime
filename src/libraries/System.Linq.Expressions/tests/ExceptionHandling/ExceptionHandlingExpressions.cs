@@ -224,6 +224,7 @@ namespace System.Linq.Expressions.Tests
 
         [Theory, ClassData(typeof(CompilationTypes))]
         [ActiveIssue("https://github.com/mono/mono/issues/14925", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/128164", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void ExpressionsUnwrapeExternallyThrownRuntimeWrappedException(bool useInterpreter)
         {
             ParameterExpression exRWE = Expression.Variable(typeof(RuntimeWrappedException));

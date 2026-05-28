@@ -1778,6 +1778,8 @@ struct FuncInfoDsc
     bool needsUnwindableFrame;
     emitLocation* startLoc;
     emitLocation* endLoc;
+    unsigned startVirtualIP;
+    unsigned endVirtualIP;
 
     void ensureUnwindableFrame(Compiler* comp);
 #endif // defined(TARGET_WASM)
@@ -1991,6 +1993,15 @@ struct NaturalLoopIterInfo
     // length of an invariant array.
     bool HasArrayLengthLimit : 1;
 
+    // Whether the consumer must emit its own runtime entry guard for this loop.
+    // Set when AnalyzeIteration could not prove statically that the loop
+    // condition [IterVar TestOper Limit] holds on entry (so the analysis
+    // invariants only hold conditionally). The consumer must insert a runtime
+    // test equivalent to that condition on the path that reaches the analyzed
+    // loop body. Only set when AnalyzeIteration is called with
+    // allowMissingBaseCase=true.
+    bool NeedsZeroTripGuard : 1;
+
     NaturalLoopIterInfo()
         : ExitedOnTrue(false)
         , HasConstInit(false)
@@ -1998,6 +2009,7 @@ struct NaturalLoopIterInfo
         , HasSimdLimit(false)
         , HasInvariantLocalLimit(false)
         , HasArrayLengthLimit(false)
+        , NeedsZeroTripGuard(false)
     {
     }
 
@@ -2191,7 +2203,7 @@ public:
     BasicBlock* GetLexicallyTopMostBlock();
     BasicBlock* GetLexicallyBottomMostBlock();
 
-    bool AnalyzeIteration(NaturalLoopIterInfo* info);
+    bool AnalyzeIteration(NaturalLoopIterInfo* info, bool allowMissingBaseCase = false);
 
     bool HasDef(unsigned lclNum);
 
@@ -4239,6 +4251,7 @@ public:
     unsigned lvaMonAcquired = BAD_VAR_NUM; // boolean variable introduced into in synchronized methods
                              // that tracks whether the lock has been taken
 
+    unsigned lvaAsyncThreadObjectVar = BAD_VAR_NUM;           // Thread local for async methods
     unsigned lvaAsyncExecutionContextVar = BAD_VAR_NUM;       // ExecutionContext local for async methods
     unsigned lvaAsyncSynchronizationContextVar = BAD_VAR_NUM; // SynchronizationContext local for async methods
 
@@ -4959,6 +4972,34 @@ public:
                              bool                    isExplicitTailCall,
                              IL_OFFSET               ilOffset = BAD_IL_OFFSET);
 
+    // Information needed to turn a resolved devirtualization target into a direct call.
+    struct DevirtualizedCallInfo
+    {
+        CORINFO_CONTEXT_HANDLE  tokenLookupContext;      // The class context or method context
+        CORINFO_RESOLVED_TOKEN* pResolvedToken;          // Resolved token for the target method, used by R2R.
+        CORINFO_RESOLVED_TOKEN* pUnboxedResolvedToken;   // Resolved token for the unboxed entry, used by R2R.
+        CORINFO_LOOKUP*         pInstParamLookup;        // All the information needed for the instantiation parameter lookup.
+        CORINFO_SIG_INFO*       pMethSig;                // The devirted method signature.
+        bool                    objIsNonNull;            // True if the receiver is known non-null.
+        bool                    hadImplicitNullCheck;    // True if the original call's null check was implicit.
+        bool                    isDelegateCall;          // True when transforming a delegate invoke into a direct call.
+        bool                    isExplicitTailCall;      // True for explicit tail calls.
+        bool                    objClassIsExact;         // True if the receiver type is exact.
+        bool                    objClassIsFinal;         // True if the receiver type is final.
+        IL_OFFSET               ilOffset;                // IL offset of the original call.
+    };
+
+    void impTransformDevirtualizedCall(GenTreeCall*            call,
+                                       CORINFO_METHOD_HANDLE*  method,
+                                       unsigned*               methodFlags,
+                                       DevirtualizedCallInfo*  dcInfo,
+                                       BasicBlock*             block,
+                                       CORINFO_CONTEXT_HANDLE* contextHandle
+#if defined(DEBUG)
+                                     , CORINFO_METHOD_HANDLE   baseMethod
+#endif // defined(DEBUG)
+    );
+
     bool impConsiderCallProbe(GenTreeCall* call, IL_OFFSET ilOffset);
 
     enum class GDVProbeType
@@ -5103,7 +5144,8 @@ protected:
 
     void impSetupAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned prefixFlags, const DebugInfo& callDI);
 
-    void impInsertAsyncContinuationForLdvirtftnCall(GenTreeCall* call);
+    void impInsertAsyncArgsForLdvirtftnCall(GenTreeCall* call);
+    void impInheritAsyncContextsFromInliner(GenTreeCall* call);
 
     CORINFO_CLASS_HANDLE impGetSpecialIntrinsicExactReturnType(GenTreeCall* call);
 
@@ -7104,13 +7146,11 @@ private:
     GenTree* fgCreateCallDispatcherAndGetResult(GenTreeCall*          origCall,
                                                 CORINFO_METHOD_HANDLE callTargetStubHnd,
                                                 CORINFO_METHOD_HANDLE dispatcherHnd);
-    GenTree* getLookupTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                           CORINFO_LOOKUP*         pLookup,
-                           GenTreeFlags            handleFlags,
-                           void*                   compileTimeHandle);
-    GenTree* getRuntimeLookupTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                  CORINFO_LOOKUP*         pLookup,
-                                  void*                   compileTimeHandle);
+    GenTree* getLookupTree(CORINFO_LOOKUP* pLookup,
+                           GenTreeFlags    handleFlags,
+                           void*           compileTimeHandle);
+    GenTree* getRuntimeLookupTree(CORINFO_LOOKUP* pLookup,
+                                  void*           compileTimeHandle);
     GenTree* getVirtMethodPointerTree(GenTree*                thisPtr,
                                       CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                       CORINFO_CALL_INFO*      pCallInfo);
@@ -7151,6 +7191,8 @@ private:
     GenTree* fgOptimizeCast(GenTreeCast* cast);
     GenTree* fgOptimizeCastOnStore(GenTree* store);
     GenTree* fgOptimizeBitCast(GenTreeUnOp* bitCast);
+    GenTree* fgOptimizeRelationalComparison(GenTreeOp* cmp);
+    GenTree* fgOptimizeRelationalComparisonWithCasts(GenTreeOp* cmp);
     GenTree* fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp);
     GenTree* fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp);
     GenTree* fgOptimizeRelationalComparisonWithFullRangeConst(GenTreeOp* cmp);
@@ -7162,7 +7204,6 @@ private:
     GenTree* fgOptimizeHWIntrinsicAssociative(GenTreeHWIntrinsic* node);
 #endif // FEATURE_HW_INTRINSICS
     GenTree* fgOptimizeCommutativeArithmetic(GenTreeOp* tree);
-    GenTree* fgOptimizeRelationalComparisonWithCasts(GenTreeOp* cmp);
     GenTree* fgOptimizeAddition(GenTreeOp* add);
     GenTree* fgOptimizeMultiply(GenTreeOp* mul);
     GenTree* fgOptimizeBitwiseAnd(GenTreeOp* andOp);
@@ -8003,17 +8044,17 @@ public:
 
     bool isCompatibleMethodGDV(GenTreeCall* call, CORINFO_METHOD_HANDLE gdvTarget);
 
-    void addGuardedDevirtualizationCandidate(GenTreeCall*           call,
-                                             CORINFO_METHOD_HANDLE  methodHandle,
-                                             CORINFO_CLASS_HANDLE   classHandle,
-                                             CORINFO_CONTEXT_HANDLE contextHandle,
-                                             unsigned               methodAttr,
-                                             unsigned               classAttr,
-                                             unsigned               likelihood,
-                                             bool                   arrayInterface,
-                                             bool                   instantiatingStub,
-                                             CORINFO_METHOD_HANDLE  originalMethodHandle,
-                                             CORINFO_CONTEXT_HANDLE originalContextHandle);
+    void addGuardedDevirtualizationCandidate(GenTreeCall*            call,
+                                             CORINFO_METHOD_HANDLE   methodHandle,
+                                             CORINFO_CLASS_HANDLE    classHandle,
+                                             CORINFO_CONTEXT_HANDLE  contextHandle,
+                                             unsigned                methodAttr,
+                                             unsigned                classAttr,
+                                             unsigned                likelihood,
+                                             const CORINFO_LOOKUP*   instParamLookup,
+                                             CORINFO_METHOD_HANDLE   originalMethodHandle,
+                                             CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                             CORINFO_RESOLVED_TOKEN* pUnboxedResolvedToken);
 
     int getGDVMaxTypeChecks()
     {
@@ -8258,7 +8299,7 @@ public:
             ValueNum GetVN() const
             {
                 assert(!m_compiler->optLocalAssertionProp);
-                // TODO-Cleanup: O1K_LCLVAR should be Local-AP only.
+                assert(KindIs(O1K_VN, O1K_EXACT_TYPE, O1K_SUBTYPE));
                 assert(m_vn != ValueNumStore::NoVN);
                 return m_vn;
             }
@@ -8433,6 +8474,11 @@ public:
                 assert(KindIs(O2K_CONST_INT));
                 return m_icon.m_fieldSeq;
             }
+
+            bool IsConstant() const
+            {
+                return KindIs(O2K_CONST_INT, O2K_CONST_DOUBLE, O2K_ZEROOBJ, O2K_CONST_VEC);
+            }
         };
 
     private:
@@ -8487,7 +8533,8 @@ public:
 
         bool CanPropLclVar() const
         {
-            return KindIs(OAK_EQUAL) && GetOp1().KindIs(O1K_LCLVAR);
+            // O1K_LCLVAR is local-AP only, for global-AP we use O1K_VN
+            return KindIs(OAK_EQUAL) && GetOp1().KindIs(O1K_LCLVAR, O1K_VN);
         }
 
         bool CanPropEqualOrNotEqual() const
@@ -8661,15 +8708,15 @@ public:
             {
                 return false;
             }
-            else if (GetOp1().KindIs(O1K_VN))
+            else if (GetOp1().KindIs(O1K_VN, O1K_EXACT_TYPE, O1K_SUBTYPE))
             {
                 assert(vnBased);
                 return (GetOp1().GetVN() == that.GetOp1().GetVN());
             }
             else
             {
-                return ((vnBased && (GetOp1().GetVN() == that.GetOp1().GetVN())) ||
-                        (!vnBased && (GetOp1().GetLclNum() == that.GetOp1().GetLclNum())));
+                assert(!vnBased);
+                return (GetOp1().GetLclNum() == that.GetOp1().GetLclNum());
             }
         }
 
@@ -8748,12 +8795,12 @@ public:
         {
             AssertionDsc dsc    = CreateEmptyAssertion(comp);
             dsc.m_assertionKind = equals ? OAK_EQUAL : OAK_NOT_EQUAL;
-            dsc.m_op1.m_kind    = O1K_LCLVAR;
 
             if (comp->optLocalAssertionProp)
             {
                 assert(lclNum != BAD_VAR_NUM);
 
+                dsc.m_op1.m_kind   = O1K_LCLVAR;
                 dsc.m_op1.m_lclNum = lclNum;
 
                 // We use ValueNumStore::VNForNull() as a hint of nullness. This allows us to avoid looking up the
@@ -8772,8 +8819,9 @@ public:
             {
                 assert(vn != ValueNumStore::NoVN);
                 assert(cnsVN != ValueNumStore::NoVN);
-                dsc.m_op1.m_vn = vn;
-                dsc.m_op2.m_vn = cnsVN;
+                dsc.m_op1.m_kind = O1K_VN;
+                dsc.m_op1.m_vn   = vn;
+                dsc.m_op2.m_vn   = cnsVN;
             }
 
             if constexpr (std::is_same_v<T, int> || std::is_same_v<T, ssize_t>)
@@ -9076,9 +9124,9 @@ public:
 
     // Used for respective assertion propagations.
     AssertionIndex optAssertionIsSubrange(GenTree* tree, IntegralRange range, ASSERT_VALARG_TP assertions);
-    AssertionIndex optAssertionIsSubtype(GenTree* tree, GenTree* methodTableArg, ASSERT_VALARG_TP assertions);
-    bool           optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions, int budget = 10);
-    bool           optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions);
+    bool optAssertionVNIsSubtype(ValueNum objVN, ValueNum castToVN, ASSERT_VALARG_TP assertions, int budget = 10);
+    bool optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions, int budget = 10);
+    bool optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions);
 
     AssertionIndex optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP assertions, GenTree* op1, GenTree* op2);
     AssertionIndex optLocalAssertionIsEqualOrNotEqual(

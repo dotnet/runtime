@@ -1703,8 +1703,23 @@ public:
     // For the specified object, check whether the object derives from System.Exception.
     virtual HRESULT STDMETHODCALLTYPE IsExceptionObject(VMPTR_Object vmObject, OUT BOOL * pResult) = 0;
 
-    // Get the list of raw stack frames for the specified exception object.
-    virtual HRESULT STDMETHODCALLTYPE GetStackFramesFromException(VMPTR_Object vmObject, DacDbiArrayList<DacExceptionCallStackData>* pDacStackFrames) = 0;
+    // Callback invoked for each raw stack frame on a managed exception.
+    //
+    // Arguments:
+    //    vmAppDomain                - the AppDomain that owns the method (always the singleton
+    //                                 AppDomain in CoreCLR).
+    //    vmAssembly                 - the Assembly that owns the method.
+    //    ip                         - the captured native instruction pointer.
+    //    methodDef                  - the metadata token of the method.
+    //    isLastForeignExceptionFrame - TRUE iff the underlying StackTraceElement had
+    //                                 STEF_LAST_FRAME_FROM_FOREIGN_STACK_TRACE set.
+    //    pUserData                  - user data passed to EnumerateStackFramesFromException.
+    typedef void (*FP_EXCEPTION_STACK_FRAME_CALLBACK)(VMPTR_AppDomain vmAppDomain, VMPTR_Assembly vmAssembly, CORDB_ADDRESS ip, mdMethodDef methodDef, BOOL isLastForeignExceptionFrame, CALLBACK_DATA pUserData);
+
+    // Enumerate the raw stack frames captured on a managed exception object.
+    //
+    // The callback is invoked once per frame and must not throw.
+    virtual HRESULT STDMETHODCALLTYPE EnumerateStackFramesFromException(VMPTR_Object vmObject, FP_EXCEPTION_STACK_FRAME_CALLBACK fpCallback, CALLBACK_DATA pUserData) = 0;
 
     // Check whether the argument is a runtime callable wrapper.
     virtual HRESULT STDMETHODCALLTYPE IsRcw(VMPTR_Object vmObject, OUT BOOL * pResult) = 0;
@@ -2038,7 +2053,7 @@ public:
 
     virtual HRESULT STDMETHODCALLTYPE GetTypeIDForType(VMPTR_TypeHandle vmTypeHandle, COR_TYPEID *pId) = 0;
 
-    virtual HRESULT STDMETHODCALLTYPE GetObjectFields(COR_TYPEID id, ULONG32 celt, OUT COR_FIELD * layout, OUT ULONG32 * pceltFetched) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetObjectFields(UINT64 id, ULONG32 celt, OUT COR_FIELD * layout, OUT ULONG32 * pceltFetched) = 0;
 
     virtual HRESULT STDMETHODCALLTYPE GetTypeLayout(CORDB_ADDRESS id, COR_TYPE_LAYOUT * pLayout) = 0;
 
