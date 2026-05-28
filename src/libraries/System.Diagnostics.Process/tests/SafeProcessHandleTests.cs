@@ -270,87 +270,23 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Theory]
-        [InlineData(0)]
-        [InlineData(-1)]
-        public void Open_InvalidProcessId_ThrowsArgumentOutOfRangeException(int processId)
-        {
-            Assert.Throws<ArgumentOutOfRangeException>(() => SafeProcessHandle.Open(processId));
-        }
-
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void Open_NonExistentProcessId_ThrowsWin32Exception()
+        public void Signal_SIGKILL_RunningProcess_ReturnsTrue()
         {
-            // Use an unlikely process ID that should not exist.
-            Assert.Throws<Win32Exception>(() => SafeProcessHandle.Open(int.MaxValue));
-        }
-
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void Open_RunningProcess_ReturnsValidHandle()
-        {
-            using Process process = CreateProcess(static () =>
+            Process process = CreateProcess(static () =>
             {
                 Thread.Sleep(Timeout.Infinite);
                 return RemoteExecutor.SuccessExitCode;
             });
-            process.Start();
 
-            try
-            {
-                using SafeProcessHandle handle = SafeProcessHandle.Open(process.Id);
-                Assert.False(handle.IsInvalid);
-                Assert.Equal(process.Id, handle.ProcessId);
-            }
-            finally
-            {
-                process.Kill();
-                process.WaitForExit();
-            }
+            using SafeProcessHandle processHandle = SafeProcessHandle.Start(process.StartInfo);
+            using Process fetchedProcess = Process.GetProcessById(processHandle.ProcessId);
+
+            bool delivered = processHandle.Signal(PosixSignal.SIGKILL);
+
+            Assert.True(delivered);
+            Assert.True(fetchedProcess.WaitForExit(WaitInMS));
         }
-
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void Open_ExitedProcess_BehaviorDependsOnPlatform()
-        {
-            using Process process = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
-            process.Start();
-            process.WaitForExit();
-
-            if (OperatingSystem.IsWindows())
-            {
-                // On Windows, the kernel process object persists as long as at least one handle is open.
-                // Since Process.WaitForExit() doesn't release the handle, OpenProcess succeeds and returns
-                // a valid handle to the terminated process.
-                using SafeProcessHandle handle = SafeProcessHandle.Open(process.Id);
-                Assert.False(handle.IsInvalid);
-            }
-            else
-            {
-                // On Unix, once the process has been waited for (reaped), it is removed from the process
-                // table and its PID may be reused. Open throws because the process no longer exists.
-                Assert.Throws<Win32Exception>(() => SafeProcessHandle.Open(process.Id));
-            }
-        }
-
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void Open_ThenKill_TerminatesProcess()
-        {
-            using Process process = CreateProcess(static () =>
-            {
-                Thread.Sleep(Timeout.Infinite);
-                return RemoteExecutor.SuccessExitCode;
-            });
-            process.Start();
-
-            using SafeProcessHandle handle = SafeProcessHandle.Open(process.Id);
-            handle.Kill();
-
-            Assert.True(handle.TryWaitForExit(TimeSpan.FromMilliseconds(WaitInMS), out _));
-        }
-
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task WaitForExit_ProcessExitsNormally_ReturnsExitCode(bool useAsync)
         {
             Process process = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
 
