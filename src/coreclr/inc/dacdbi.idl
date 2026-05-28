@@ -145,6 +145,7 @@ typedef void (*FP_THREAD_ENUMERATION_CALLBACK)(VMPTR_Thread vmThread, CALLBACK_D
 typedef BOOL (*FP_INTERNAL_FRAME_ENUMERATION_CALLBACK)(FramePointer fpFrame, CALLBACK_DATA pUserData);
 typedef void (*FP_HEAPSEGMENT_CALLBACK)(CORDB_ADDRESS rangeStart, CORDB_ADDRESS rangeEnd, int generation, ULONG heap, CALLBACK_DATA pUserData);
 typedef void (*FP_RCW_INTERFACE_CALLBACK)(CORDB_ADDRESS itfPtr, CALLBACK_DATA pUserData);
+typedef void (*FP_EXCEPTION_STACK_FRAME_CALLBACK)(VMPTR_AppDomain vmAppDomain, VMPTR_Assembly vmAssembly, CORDB_ADDRESS ip, mdMethodDef methodDef, BOOL isLastForeignExceptionFrame, CALLBACK_DATA pUserData);
 
 
 //
@@ -334,7 +335,7 @@ interface IDacDbiInterface : IUnknown
 
     // Exception and COM Interop
     HRESULT IsExceptionObject([in] VMPTR_Object vmObject, [out] BOOL * pResult);
-    HRESULT GetStackFramesFromException([in] VMPTR_Object vmObject, [out] DacDbiArrayList_DacExceptionCallStackData * pDacStackFrames);
+    HRESULT EnumerateStackFramesFromException([in] VMPTR_Object vmObject, [in] FP_EXCEPTION_STACK_FRAME_CALLBACK fpCallback, [in] CALLBACK_DATA pUserData);
     HRESULT IsRcw([in] VMPTR_Object vmObject, [out] BOOL * pResult);
     HRESULT EnumerateRcwCachedInterfacePointers([in] VMPTR_Object vmObject, [in] FP_RCW_INTERFACE_CALLBACK fpCallback, [in] CALLBACK_DATA pUserData);
 
