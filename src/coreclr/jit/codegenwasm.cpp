@@ -2371,6 +2371,20 @@ void CodeGen::genCodeForPhysReg(GenTreePhysReg* tree)
     WasmProduceReg(tree);
 }
 
+static cnsval_ssize_t getOffsetForPossiblyContainedAddress(Compiler *comp, GenTree *addr)
+{
+    if (addr->isContained() && addr->OperIs(GT_LCL_ADDR))
+    {
+            bool FPBased;
+            int  lclOffset = comp->lvaFrameAddress(addr->AsLclFld()->GetLclNum(), &FPBased);
+            cnsval_ssize_t offset = lclOffset + addr->AsLclFld()->GetLclOffs();
+            noway_assert(offset >= 0); // WASM address modes are unsigned.
+            return offset;
+    }
+
+    return 0;
+}
+
 //------------------------------------------------------------------------
 // genCodeForIndir: Produce code for a GT_IND node.
 //
@@ -2384,24 +2398,12 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
     var_types   type      = tree->TypeGet();
     instruction ins       = ins_Load(type);
     GenTree*    addr      = tree->Addr();
-    cnsval_ssize_t offset = 0;
 
     genConsumeAddress(addr);
 
     // TODO-WASM: Memory barriers
 
-    if (addr->isContained())
-    {
-        if (addr->OperIs(GT_LCL_ADDR))
-        {
-            bool FPBased;
-            int  lclOffset = m_compiler->lvaFrameAddress(addr->AsLclFld()->GetLclNum(), &FPBased);
-            offset    = lclOffset + addr->AsLclFld()->GetLclOffs();
-            noway_assert(offset >= 0); // WASM address modes are unsigned.
-        }
-    }
-
-    GetEmitter()->emitIns_I(ins, emitActualTypeSize(type), offset);
+    GetEmitter()->emitIns_I(ins, emitActualTypeSize(type), getOffsetForPossiblyContainedAddress(m_compiler, addr));
 
     WasmProduceReg(tree);
 }
@@ -2438,22 +2440,10 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
     {
         var_types   type      = tree->TypeGet();
         instruction ins       = ins_Store(type);
-        cnsval_ssize_t offset = 0;
-
-        if (addr->isContained())
-        {
-            if (addr->OperIs(GT_LCL_ADDR))
-            {
-                bool FPBased;
-                int  lclOffset = m_compiler->lvaFrameAddress(addr->AsLclFld()->GetLclNum(), &FPBased);
-                offset    = lclOffset + addr->AsLclFld()->GetLclOffs();
-                noway_assert(offset >= 0); // WASM address modes are unsigned.
-            }
-        }
 
         // TODO-WASM: Memory barriers
 
-        GetEmitter()->emitIns_I(ins, emitActualTypeSize(type), offset);
+        GetEmitter()->emitIns_I(ins, emitActualTypeSize(type), getOffsetForPossiblyContainedAddress(m_compiler, addr));
     }
 
     genUpdateLife(tree);
