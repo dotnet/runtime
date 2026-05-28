@@ -141,7 +141,6 @@ const ilTestRunner = Rules.rule<IlTestRunnerAttrs, IlTestRunnerAttrs, Rules.Tool
 //  il_coreclr_test public API
 // ============================================================================
 
-@@public
 export interface IlCoreClrTestArguments {
     name: string;
     srcs: Rules.Label[];
@@ -161,14 +160,12 @@ export interface IlCoreClrTestArguments {
     targetCompatibleWith?: string[];
 }
 
-@@public
 export interface IlCoreClrTestResult extends Rules.Provider {
     binary: File;
     testInfo?: Rules.TestInfo;
     defaultInfo: Rules.DefaultInfo;
 }
 
-@@public
 export function il_coreclr_test(args: IlCoreClrTestArguments): IlCoreClrTestResult {
     const ilResult = ilCompile({
         name: args.name,

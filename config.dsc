@@ -21,9 +21,14 @@ config({
                     moduleName: "bxl_rules_repo",
                     owner: "agocke",
                     repository: "bxl_rules",
-                    commit: "a92f15122e7b0f5bbaa4615df990d8322ee49a74",
+                    commit: "12e4c0c8d92d75d3f9b3197e302a50c1a73fedb9",
                     modules: ["Sdk.Rules"],
                 },
+            ],
+        },
+        {
+            kind: "GitRepository",
+            repositories: [
                 {
                     moduleName: "bxl_rules_dotnet_repo",
                     owner: "agocke",
@@ -39,15 +44,7 @@ config({
                 // Repo-specific definitions
                 f`defs/module.config.dsc`,
 
-                // Common test support libraries
-                f`src/tests/Common/module.config.dsc`,
-
-                // Repo-specific test macro (like src/tests/live_test.bzl)
-                f`src/tests/coreclr_test/module.config.dsc`,
-
-                // Repo test root: owns all BUILD.dsc files under src/tests/
-                // (recursively, stopping at nested module boundaries like
-                // src/tests/Common/ and src/tests/coreclr_test/).
+                // All test support libraries, macros, and BUILD.dsc files
                 f`src/tests/module.config.dsc`
             ]
         },
@@ -78,6 +75,10 @@ config({
                 { id: "Microsoft.DotNet.XUnitExtensions", version: "11.0.0-beta.26211.102", tfm: ".NETCoreApp,Version=v10.0",
                   dependentPackageIdsToSkip: ["*"], dependentPackageIdsToIgnore: ["*"] },
                 { id: "xunit.abstractions", version: "2.0.3", tfm: ".NETStandard,Version=v1.0",
+                  dependentPackageIdsToSkip: ["*"], dependentPackageIdsToIgnore: ["*"] },
+                { id: "Microsoft.CodeAnalysis.Common", version: "5.0.0-2.26070.104", tfm: ".NETCoreApp,Version=v9.0",
+                  dependentPackageIdsToSkip: ["*"], dependentPackageIdsToIgnore: ["*"] },
+                { id: "Microsoft.CodeAnalysis.CSharp", version: "5.0.0-2.26070.104", tfm: ".NETCoreApp,Version=v9.0",
                   dependentPackageIdsToSkip: ["*"], dependentPackageIdsToIgnore: ["*"] }
             ]
         }

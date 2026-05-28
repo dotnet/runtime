@@ -22,7 +22,9 @@ export const EXTERNAL_PACKAGES: Map<string, StaticDirectory> = Map.empty<string,
     .add("Microsoft.DotNet.XUnitAssert", importFrom("Microsoft.DotNet.XUnitAssert").Contents.all)
     .add("xunit.extensibility.core", importFrom("xunit.extensibility.core").Contents.all)
     .add("Microsoft.DotNet.XUnitExtensions", importFrom("Microsoft.DotNet.XUnitExtensions").Contents.all)
-    .add("xunit.abstractions", importFrom("xunit.abstractions").Contents.all);
+    .add("xunit.abstractions", importFrom("xunit.abstractions").Contents.all)
+    .add("Microsoft.CodeAnalysis.Common", importFrom("Microsoft.CodeAnalysis.Common").Contents.all)
+    .add("Microsoft.CodeAnalysis.CSharp", importFrom("Microsoft.CodeAnalysis.CSharp").Contents.all);
 
 // ============================================================================
 //  CORE_ROOT_REFPACK_DEPS — framework refs from Microsoft.NETCore.App.Ref

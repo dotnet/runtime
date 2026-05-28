@@ -4,21 +4,18 @@
 import * as CSharp from "Sdk.Rules.CSharp";
 import * as Defs from "Defs";
 
-const sdkVersion = "11.0.100-preview.5.26227.104";
-
-@@public
-export const csharpToolchain = CSharp.csharpToolchain({
+export const tc = CSharp.csharpToolchain({
     name: "dotnet-sdk",
     contents: importFrom("DotNetSdk").extracted,
-    compilerPath: `sdk/${sdkVersion}/Roslyn/bincore/csc.dll`,
+    compilerPath: "sdk/11.0.100-preview.5.26227.104/Roslyn/bincore/csc.dll",
+    externalPackages: Defs.EXTERNAL_PACKAGES,
 });
 
-@@public
-export const testLibrary = CSharp.csharp_library({
+export const testLibrary = tc.csharp_library({
     name: "TestLibrary",
-    toolchain: csharpToolchain,
     tfm: "net11.0",
     useSharedCompilation: true,
+    disableImplicitFrameworkRefs: true,
     srcs: [
         "CoreCLRTestLibrary/AssertExtensions.cs",
         "CoreCLRTestLibrary/CoreclrTestWrapperLib.cs",
@@ -37,7 +34,6 @@ export const testLibrary = CSharp.csharp_library({
         ...Defs.XUNIT_DEPS,
         "@Microsoft.NETCore.App.Ref//ref/net11.0:System.Text.Json.dll",
     ],
-    externalPackages: Defs.EXTERNAL_PACKAGES,
     allowUnsafe: true,
     nowarn: [
         "CS0419",
@@ -50,12 +46,11 @@ export const testLibrary = CSharp.csharp_library({
     ],
 });
 
-@@public
-export const xunitWrapperLibrary = CSharp.csharp_library({
+export const xunitWrapperLibrary = tc.csharp_library({
     name: "XUnitWrapperLibrary",
-    toolchain: csharpToolchain,
     tfm: "net11.0",
     useSharedCompilation: true,
+    disableImplicitFrameworkRefs: true,
     srcs: [
         "XUnitWrapperLibrary/Help.cs",
         "XUnitWrapperLibrary/TestFilter.cs",
@@ -66,16 +61,14 @@ export const xunitWrapperLibrary = CSharp.csharp_library({
         ...Defs.CORE_ROOT_REFPACK_DEPS,
         "@Microsoft.NETCore.App.Ref//ref/net11.0:System.Xml.ReaderWriter.dll",
     ],
-    externalPackages: Defs.EXTERNAL_PACKAGES,
     allowUnsafe: true,
 });
 
-@@public
-export const xunitWrapperGenerator = CSharp.csharp_library({
+export const xunitWrapperGenerator = tc.csharp_library({
     name: "XUnitWrapperGenerator",
-    toolchain: csharpToolchain,
     tfm: "net11.0",
     useSharedCompilation: true,
+    disableImplicitFrameworkRefs: true,
     srcs: [
         "XUnitWrapperGenerator/CodeBuilder.cs",
         "XUnitWrapperGenerator/Descriptors.cs",
@@ -94,8 +87,7 @@ export const xunitWrapperGenerator = CSharp.csharp_library({
     ],
     refs: [
         ...Defs.CORE_ROOT_REFPACK_DEPS,
-        `@DotNetSdk//sdk/${sdkVersion}:Microsoft.CodeAnalysis.dll`,
-        `@DotNetSdk//sdk/${sdkVersion}:Microsoft.CodeAnalysis.CSharp.dll`,
+        "@Microsoft.CodeAnalysis.Common//lib/net9.0:Microsoft.CodeAnalysis.dll",
+        "@Microsoft.CodeAnalysis.CSharp//lib/net9.0:Microsoft.CodeAnalysis.CSharp.dll",
     ],
-    externalPackages: Defs.EXTERNAL_PACKAGES,
 });

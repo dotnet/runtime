@@ -16,7 +16,6 @@ import * as Rules from "Sdk.Rules";
 import * as CSharp from "Sdk.Rules.CSharp";
 import {Cmd} from "Sdk.Transformers";
 import * as Defs from "Defs";
-import * as Common from "Tests.Common";
 
 // ============================================================================
 //  write_file — local rule for generating text files
@@ -91,7 +90,6 @@ const coreclrRuntimeConfig = write_file({
 //  coreclr_test arguments and result
 // ============================================================================
 
-@@public
 export interface CoreClrTestArguments {
     name: string;
     srcs: Rules.Label[];
@@ -124,7 +122,6 @@ export interface CoreClrTestArguments {
     targetCompatibleWith?: string[];
 }
 
-@@public
 export interface CoreClrTestResult extends Rules.Provider {
     binary: File;
     testInfo?: Rules.TestInfo;
@@ -203,7 +200,6 @@ const coreclrTestRunner = Rules.rule<CoreClrTestRunnerAttrs, CoreClrTestRunnerAt
 //  coreclr_test — public macro
 // ============================================================================
 
-@@public
 export function coreclr_test(args: CoreClrTestArguments): CoreClrTestResult {
     const testNowarn = [
         "CS0078", "CS0162", "CS0164", "CS0168", "CS0169", "CS0219",
@@ -219,28 +215,27 @@ export function coreclr_test(args: CoreClrTestArguments): CoreClrTestResult {
         ? [generatorGlobalConfig.out]
         : undefined;
 
-    const deps = [Common.testLibrary, ...(referenceXunitWrapperGenerator ? [Common.xunitWrapperLibrary] : []), ...(args.deps || []), ...(args.testDeps || [])];
-    const csInfo = CSharp.csharp_binary({
+    const deps = [testLibrary, ...(referenceXunitWrapperGenerator ? [xunitWrapperLibrary] : []), ...(args.deps || []), ...(args.testDeps || [])];
+    const csInfo = tc.csharp_binary({
         name: args.name,
-        toolchain: Common.csharpToolchain,
         tfm: "net11.0",
         srcs: args.srcs,
         refs: Defs.CORECLR_TEST_COMMON_DEPS,
-        externalPackages: Defs.EXTERNAL_PACKAGES,
         deps: deps,
         optimize: args.optimize !== undefined ? args.optimize : true,
         allowUnsafe: args.allowUnsafe !== undefined ? args.allowUnsafe : true,
         defines: args.defines,
         nowarn: allNowarn,
         useSharedCompilation: true,
-        analyzers: referenceXunitWrapperGenerator ? [Rules.sourceArtifact(Common.xunitWrapperGenerator.binary)] : undefined,
+        disableImplicitFrameworkRefs: true,
+        analyzers: referenceXunitWrapperGenerator ? [Rules.sourceArtifact(xunitWrapperGenerator.binary)] : undefined,
         analyzerConfigs: analyzerConfigs,
         runtimeConfig: coreclrRuntimeConfig.out,
     });
 
     const runtimeFiles = [
-        Common.testLibrary.binary,
-        ...(referenceXunitWrapperGenerator ? [Common.xunitWrapperLibrary.binary] : []),
+        testLibrary.binary,
+        ...(referenceXunitWrapperGenerator ? [xunitWrapperLibrary.binary] : []),
         ...Defs.XUNIT_RUNTIME_DEPS,
     ];
 
