@@ -304,6 +304,20 @@ namespace System.ComponentModel.DataAnnotations
             return new ValidationResult(FormatErrorMessage(validationContext.DisplayName), memberNames);
         }
 
+        private protected ValidationResult? EnsureValidationResultErrorMessage(
+            ValidationResult? result,
+            ValidationContext validationContext)
+        {
+            if (result is not null && string.IsNullOrEmpty(result.ErrorMessage))
+            {
+                string errorMessage = FormatErrorMessage(validationContext.DisplayName);
+
+                return new ValidationResult(errorMessage, result.MemberNames);
+            }
+
+            return result;
+        }
+
         #endregion
 
         #region Protected & Public Methods
@@ -433,17 +447,7 @@ namespace System.ComponentModel.DataAnnotations
 
             var result = IsValid(value, validationContext);
 
-            // If validation fails, we want to ensure we have a ValidationResult that guarantees it has an ErrorMessage
-            if (result != null)
-            {
-                if (string.IsNullOrEmpty(result.ErrorMessage))
-                {
-                    var errorMessage = FormatErrorMessage(validationContext.DisplayName);
-                    result = new ValidationResult(errorMessage, result.MemberNames);
-                }
-            }
-
-            return result;
+            return EnsureValidationResultErrorMessage(result, validationContext);
         }
 
         /// <summary>

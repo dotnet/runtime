@@ -423,7 +423,7 @@ namespace System.ComponentModel.DataAnnotations
         ///         is non-null, all properties complete and all errors are collected.
         ///     </para>
         ///     <para>
-        ///         Returns <see cref="Task{TResult}" /> for interoperability with standard async
+        ///         Returns <see cref="Task{Boolean}" /> for interoperability with standard async
         ///         composition patterns such as <c>Task.WhenAll</c> and <c>Task.WhenAny</c>.
         ///     </para>
         /// </remarks>

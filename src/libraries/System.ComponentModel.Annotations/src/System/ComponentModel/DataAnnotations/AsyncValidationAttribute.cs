@@ -63,9 +63,9 @@ namespace System.ComponentModel.DataAnnotations
         /// </param>
         /// <param name="cancellationToken">A <see cref="CancellationToken" /> to observe while waiting for the task to complete.</param>
         /// <returns>
-        ///     A <see cref="Task{TResult}" /> representing the asynchronous validation operation.
-        ///     When validation is valid, <see cref="ValidationResult.Success" />.
-        ///     When validation is invalid, an instance of <see cref="ValidationResult" />.
+        ///     A <see cref="Task{ValidationResult}" /> representing the asynchronous validation operation.
+        ///     When validation is valid, the result is <see langword="null" /> (i.e. <see cref="ValidationResult.Success" />).
+        ///     When validation is invalid, the result is an instance of <see cref="ValidationResult" />.
         /// </returns>
         protected abstract Task<ValidationResult?> IsValidAsync(
             object? value,
@@ -83,9 +83,12 @@ namespace System.ComponentModel.DataAnnotations
         /// </param>
         /// <param name="cancellationToken">A <see cref="CancellationToken" /> to observe while waiting for the task to complete.</param>
         /// <returns>
-        ///     A <see cref="Task{TResult}" /> whose result is <see cref="ValidationResult.Success" /> when valid,
-        ///     or a <see cref="ValidationResult" /> instance when invalid.
+        ///     A <see cref="Task{ValidationResult}" /> representing the asynchronous validation operation.
+        ///     When validation is valid, the result is <see langword="null" /> (i.e. <see cref="ValidationResult.Success" />).
+        ///     When validation is invalid, the result is an instance of <see cref="ValidationResult" />.
         /// </returns>
+        /// <exception cref="InvalidOperationException"> is thrown if the current attribute is malformed.</exception>
+        /// <exception cref="ArgumentNullException">When <paramref name="validationContext" /> is null.</exception>
         public async Task<ValidationResult?> GetValidationResultAsync(
             object? value,
             ValidationContext validationContext,
@@ -98,18 +101,5 @@ namespace System.ComponentModel.DataAnnotations
             return EnsureValidationResultErrorMessage(result, validationContext);
         }
 
-        private ValidationResult? EnsureValidationResultErrorMessage(
-            ValidationResult? result,
-            ValidationContext validationContext)
-        {
-            if (result is not null && string.IsNullOrEmpty(result.ErrorMessage))
-            {
-                string errorMessage = FormatErrorMessage(validationContext.DisplayName);
-
-                return new ValidationResult(errorMessage, result.MemberNames);
-            }
-
-            return result;
-        }
     }
 }
