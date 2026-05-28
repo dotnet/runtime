@@ -7101,7 +7101,7 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
                 case VNF_HWI_AVX2_MoveMask:
                 case VNF_HWI_AVX512_MoveMask:
 #elif defined(TARGET_ARM64)
-                case NI_Vector64_ExtractMostSignificantBits:
+                case VNF_HWI_Vector64_ExtractMostSignificantBits:
 #endif
                 case VNF_HWI_Vector128_ExtractMostSignificantBits:
                 {
@@ -10689,10 +10689,9 @@ uint32_t ValueNumStore::GetVNHWIntrinsicSizeAndBaseType(const VNFuncApp& funcApp
     assert(funcApp.GetArity() != 0);
     VNFuncApp simdType;
 
-    if (!GetVNFunc(funcApp.GetArg(funcApp.GetArity() - 1), &simdType))
-    {
-        return false;
-    }
+    // All HWIntrinsic funcApps must encode the simdSize and baseType
+    bool succeeded = GetVNFunc(funcApp.GetArg(funcApp.GetArity() - 1), &simdType);
+    assert(succeeded);
 
     assert(simdType.FuncIs(VNF_SimdType));
     assert(simdType.GetArity() == 2);
