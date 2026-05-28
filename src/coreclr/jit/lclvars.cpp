@@ -4869,6 +4869,18 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
 
     // Pre-compute alignment requirements for each local.
     // 0 = no alignment needed, otherwise the required alignment in bytes.
+    //
+    // NOTE: This is an approximation of the alignment behavior in
+    // lvaAssignVirtualFrameOffsetsToLocals + lvaAllocLocalAndSetVirtualOffset.
+    // In particular it does NOT model the x86-only DOUBLE_ALIGN /
+    // mustDoubleAlign / lvaIncrementFrameSize path for TYP_DOUBLE / TYP_LONG /
+    // lvStructDoubleAlign, nor the cross-bucket have_LclVarDoubleAlign
+    // pre-reservation. Frames where those apply may see the simulated simOff
+    // drift from the real layout by a pointer-sized slot, causing the
+    // straddler boundary and per-strategy cost estimate to be slightly
+    // imprecise. This is a heuristic, not a correctness path: the real
+    // allocator still runs unchanged and only the chosen sort permutation
+    // is affected.
     unsigned* lclAlignTo = new (this, CMK_LvaTable) unsigned[lvaCount];
     for (unsigned i = 0; i < lvaCount; i++)
     {
@@ -4922,11 +4934,25 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
         {
             continue;
         }
+        if (lvaIsUnknownSizeLocal(i))
+        {
+            // The real loop calls lvaAllocUnknownSizeLocal for these; their stack home
+            // size is not modeled by lvaLclStackHomeSize so simulating them would skew
+            // the simOff walk.
+            continue;
+        }
         if (i == lvaRetAddrVar)
         {
             continue;
         }
-        if ((i == lvaMonAcquired) || (i == lvaAsyncExecutionContextVar) || (i == lvaAsyncSynchronizationContextVar))
+#ifdef JIT32_GCENCODER
+        if (i == lvaLocAllocSPvar)
+        {
+            continue;
+        }
+#endif
+        if ((i == lvaMonAcquired) || (i == lvaAsyncThreadObjectVar) || (i == lvaAsyncExecutionContextVar) ||
+            (i == lvaAsyncSynchronizationContextVar))
         {
             continue;
         }
@@ -5160,6 +5186,7 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
     bool  useBlockInit = false;
     int   baseInitLo   = 0;
     int   baseInitHi   = 0;
+    bool  baseHasInit  = false;
     if (!isMinOpts)
     {
         lclNeedsInit           = new (this, CMK_LvaTable) bool[lvaCount];
@@ -5224,10 +5251,11 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
                     {
                         int loOffs = so;
                         int hiOffs = so + static_cast<int>(lclSize[lcl]);
-                        if ((baseInitLo == 0) && (baseInitHi == 0))
+                        if (!baseHasInit)
                         {
-                            baseInitLo = loOffs;
-                            baseInitHi = hiOffs;
+                            baseInitLo  = loOffs;
+                            baseInitHi  = hiOffs;
+                            baseHasInit = true;
                         }
                         else
                         {
@@ -5253,10 +5281,11 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
     // Compute the straddling bucket's cost contribution given a particular intra-bucket order.
     // Folds in the init-span penalty when block init is in use.
     auto walkStraddle = [&](unsigned* order) -> unsigned {
-        unsigned cost   = 0;
-        int      so     = straddleSimOffEntry;
-        int      initLo = baseInitLo;
-        int      initHi = baseInitHi;
+        unsigned cost    = 0;
+        int      so      = straddleSimOffEntry;
+        int      initLo  = baseInitLo;
+        int      initHi  = baseInitHi;
+        bool     hasInit = baseHasInit;
         for (unsigned k = 0; k < straddleCount; k++)
         {
             unsigned lcl         = order[k];
@@ -5272,10 +5301,11 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
             {
                 int loOffs = so;
                 int hiOffs = so + static_cast<int>(lclSize[lcl]);
-                if ((initLo == 0) && (initHi == 0))
+                if (!hasInit)
                 {
-                    initLo = loOffs;
-                    initHi = hiOffs;
+                    initLo  = loOffs;
+                    initHi  = hiOffs;
+                    hasInit = true;
                 }
                 else
                 {
@@ -5285,7 +5315,7 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
             }
         }
 
-        if (useBlockInit && (initHi > initLo))
+        if (useBlockInit && hasInit && (initHi > initLo))
         {
             unsigned initSpan = static_cast<unsigned>(initHi - initLo);
             unsigned initCost = ((initSpan + 15) / 16) * 2;
