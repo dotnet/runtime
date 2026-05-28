@@ -119,8 +119,6 @@ public:
         return m_locals;
     }
 
-    static bool Equals(const ContinuationLayoutBuilder& a, const ContinuationLayoutBuilder& b);
-
     struct ContinuationLayout* Create();
 
     static ContinuationLayoutBuilder* CreateSharedLayout(Compiler*                                comp,
@@ -406,21 +404,6 @@ class AsyncTransformation
 
     CallDefinitionInfo CanonicalizeCallDefinition(BasicBlock* block, GenTreeCall* call, AsyncAnalysis* analyses);
 
-    const AsyncState* FindReusableSuspension(BasicBlock*                block,
-                                             GenTreeCall*               call,
-                                             const CallDefinitionInfo&  defInfo,
-                                             ContinuationLayoutBuilder* layoutBuilder,
-                                             bool                       resumeReachable,
-                                             VARSET_VALARG_TP           mutatedSinceResumption);
-    bool              IsReusableSuspension(const AsyncState*          state,
-                                           BasicBlock*                block,
-                                           GenTreeCall*               call,
-                                           const CallDefinitionInfo&  defInfo,
-                                           ContinuationLayoutBuilder* layoutBuilder,
-                                           bool                       resumeReachable,
-                                           VARSET_VALARG_TP           mutatedSinceResumption);
-    void              HandleReusedSuspension(BasicBlock* callBlock, GenTreeCall* call);
-
     BasicBlock* CreateSuspensionBlock(BasicBlock* block, unsigned stateNum);
     void        CreateSuspension(BasicBlock*                      callBlock,
                                  GenTreeCall*                     call,
@@ -435,7 +418,8 @@ class AsyncTransformation
                                              GenTree*                  prevContinuation,
                                              const ContinuationLayout& layout);
 
-    void                    FillInDataOnSuspension(const ContinuationLayout&        layout,
+    void                    FillInDataOnSuspension(GenTreeCall*                     call,
+                                                   const ContinuationLayout&        layout,
                                                    const ContinuationLayoutBuilder& subLayout,
                                                    BasicBlock*                      suspendBB,
                                                    VARSET_VALARG_TP                 mutatedSinceResumption,
@@ -459,14 +443,13 @@ class AsyncTransformation
                                                            const CallDefinitionInfo& callDefInfo,
                                                            BasicBlock*               suspendBB,
                                                            BasicBlock**              remainder);
-
-    BasicBlock* CreateResumptionBlock(BasicBlock* remainder, unsigned stateNum);
-    void        CreateResumption(BasicBlock*                      callBlock,
-                                 GenTreeCall*                     call,
-                                 BasicBlock*                      resumeBB,
-                                 const CallDefinitionInfo&        callDefInfo,
-                                 const ContinuationLayout&        layout,
-                                 const ContinuationLayoutBuilder& subLayout);
+    BasicBlock*             CreateResumptionBlock(BasicBlock* remainder, unsigned stateNum);
+    void                    CreateResumption(BasicBlock*                      callBlock,
+                                             GenTreeCall*                     call,
+                                             BasicBlock*                      resumeBB,
+                                             const CallDefinitionInfo&        callDefInfo,
+                                             const ContinuationLayout&        layout,
+                                             const ContinuationLayoutBuilder& subLayout);
 
     void        RestoreFromDataOnResumption(const ContinuationLayout&        layout,
                                             const ContinuationLayoutBuilder& subLayout,
