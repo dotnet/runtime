@@ -1901,7 +1901,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
     public int GetExactTypeHandle(DebuggerIPCE_ExpandedTypeData* pTypeData, ArgInfoList* pArgInfo, ulong* pVmTypeHandle)
     {
-        if (pVmTypeHandle == null)
+        if (pVmTypeHandle == null || pTypeData == null || pArgInfo == null)
             return HResults.E_POINTER;
         *pVmTypeHandle = 0;
         int hr = HResults.S_OK;
