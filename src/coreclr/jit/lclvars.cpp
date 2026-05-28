@@ -4867,81 +4867,6 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
         return nullptr;
     }
 
-    // Pre-compute ref counts and weights into flat arrays for fast comparator access.
-    // For MinOpts/Tier0, precise ref counts are not available (all lvRefCnt == 0),
-    // so we do a lightweight LIR walk to count local references.
-    unsigned* lclRefCnt = new (this, CMK_LvaTable) unsigned[lvaCount];
-    weight_t* lclWeight = new (this, CMK_LvaTable) weight_t[lvaCount];
-    bool      isMinOpts = !PreciseRefCountsRequired();
-
-    if (isMinOpts)
-    {
-        memset(lclRefCnt, 0, lvaCount * sizeof(unsigned));
-
-        for (BasicBlock* const block : Blocks())
-        {
-            for (GenTree* node : LIR::AsRange(block))
-            {
-                if (node->OperIsAnyLocal())
-                {
-                    unsigned lclNum = node->AsLclVarCommon()->GetLclNum();
-                    if (lclNum < lvaCount)
-                    {
-                        lclRefCnt[lclNum]++;
-                    }
-                }
-            }
-        }
-
-        // For MinOpts, weighted = unweighted (no block weights available).
-        for (unsigned i = 0; i < lvaCount; i++)
-        {
-            lclWeight[i] = static_cast<weight_t>(lclRefCnt[i]);
-        }
-    }
-    else
-    {
-        for (unsigned i = 0; i < lvaCount; i++)
-        {
-            LclVarDsc* varDsc = lvaGetDesc(i);
-            lclRefCnt[i]      = varDsc->lvRefCnt(lvaRefCountState);
-            lclWeight[i]      = varDsc->lvRefCntWtd(lvaRefCountState);
-        }
-    }
-
-    // Quick upper bound on potential savings: walk locals in default order,
-    // accumulate frame size, and count weighted refs that fall beyond disp8 range.
-    // This approximation ignores alignment padding and allocation passes but is
-    // cheap to compute and lets us skip methods where reordering cannot help much.
-    {
-        int      simOff       = stkOffs;
-        unsigned refsInDisp32 = 0;
-
-        for (unsigned i = 0; i < lvaCount; i++)
-        {
-            if (lclSize[i] == 0)
-            {
-                continue;
-            }
-            simOff -= static_cast<int>(lclSize[i]);
-            if (simOff < -128)
-            {
-                refsInDisp32 += lclRefCnt[i];
-            }
-        }
-
-        // Each ref beyond disp8 costs 3 extra bytes (disp32 vs disp8 encoding).
-        // If even moving ALL those refs into disp8 range wouldn't save much, skip.
-        unsigned maxSavings = refsInDisp32 * 3;
-        if (maxSavings <= (unsigned)JitConfig.JitFrameLayoutMaxSavingsThreshold())
-        {
-            JITDUMP("Frame layout optimization: skipping — max possible savings is %u bytes "
-                    "(refsInDisp32=%u)\n",
-                    maxSavings, refsInDisp32);
-            return nullptr;
-        }
-    }
-
     // Pre-compute alignment requirements for each local.
     // 0 = no alignment needed, otherwise the required alignment in bytes.
     unsigned* lclAlignTo = new (this, CMK_LvaTable) unsigned[lvaCount];
@@ -4966,10 +4891,6 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
             }
         }
     }
-
-    JITDUMP("Frame layout optimization: trying strategies for %u locals "
-            "(estimated frame size %u bytes%s)\n",
-            lvaCount, estimatedLocalSize, isMinOpts ? ", using lightweight ref counts" : "");
 
     // Pre-compute which locals will be allocated in the main loop and their
     // pass category. Category 0 means "not allocatable" (skipped by the loop).
@@ -5028,156 +4949,369 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
         }
     }
 
-    // Pre-compute which locals will likely need zero-initialization in the prolog.
-    // This approximates the logic in genCheckUseBlockInit (codegencommon.cpp).
-    // When block init is used, the JIT zeros a contiguous range [untrLclLo, untrLclHi]
-    // using SIMD stores. The code size depends on the span and alignment, so layouts
-    // that scatter init-requiring locals produce larger prologs.
-    bool*    lclNeedsInit  = new (this, CMK_LvaTable) bool[lvaCount];
-    unsigned initSlotCount = 0;
+    // Build per-pass buckets in allocOrder order. ALLOC_* values are powers of two;
+    // their bit indices (0..3) map to positions in allocOrder via passBitToAllocIdx.
+    const unsigned MAX_PASS_BITS = 4;
+    unsigned       passBitToAllocIdx[MAX_PASS_BITS];
+    for (unsigned k = 0; k < MAX_PASS_BITS; k++)
+    {
+        passBitToAllocIdx[k] = UINT_MAX;
+    }
+
+    unsigned allocOrderLen = 0;
+    for (unsigned p = 0; allocOrder[p] != 0; p++)
+    {
+        // The optimization is gated off for compDbgEnC (which merges ALLOC_PTRS into the
+        // previous pass), so each allocOrder entry here is a single ALLOC_* bit.
+        unsigned bit = BitOperations::Log2((unsigned)allocOrder[p]);
+        assert(bit < MAX_PASS_BITS);
+        assert(((unsigned)allocOrder[p] & ((unsigned)allocOrder[p] - 1)) == 0);
+        passBitToAllocIdx[bit] = p;
+        allocOrderLen++;
+    }
+    assert(allocOrderLen <= MAX_PASS_BITS);
+
+    unsigned passCount[MAX_PASS_BITS + 1] = {0};
     for (unsigned i = 0; i < lvaCount; i++)
     {
-        lclNeedsInit[i] = false;
         if (lclPassCategory[i] == 0)
         {
             continue;
         }
+        unsigned bit = BitOperations::Log2(lclPassCategory[i]);
+        unsigned p   = passBitToAllocIdx[bit];
+        assert(p != UINT_MAX);
+        passCount[p]++;
+    }
 
-        LclVarDsc* varDsc = lvaGetDesc(i);
+    unsigned passStart[MAX_PASS_BITS + 1];
+    passStart[0] = 0;
+    for (unsigned p = 0; p < allocOrderLen; p++)
+    {
+        passStart[p + 1] = passStart[p] + passCount[p];
+    }
+    const unsigned numAllocatable = passStart[allocOrderLen];
 
-        if (fgVarIsNeverZeroInitializedInProlog(i))
-        {
-            continue;
-        }
-        if (lvaIsFieldOfDependentlyPromotedStruct(varDsc))
-        {
-            continue;
-        }
-        if (varDsc->lvHasExplicitInit)
-        {
-            continue;
-        }
-        if ((varDsc->lvIsTemp) && !varDsc->HasGCPtr())
-        {
-            continue;
-        }
+    if (numAllocatable == 0)
+    {
+        return nullptr;
+    }
 
-        if ((info.compInitMem) || varDsc->HasGCPtr() || (varDsc->lvMustInit))
+    // Concatenated bucket array: allocatable locals first (grouped by allocOrder pass, in
+    // ascending lclNum within each pass), then non-allocatable locals at the tail.
+    unsigned* bucketLcls = new (this, CMK_LvaTable) unsigned[lvaCount];
+    unsigned  writePos[MAX_PASS_BITS];
+    for (unsigned p = 0; p < allocOrderLen; p++)
+    {
+        writePos[p] = passStart[p];
+    }
+    unsigned tailPos = numAllocatable;
+    for (unsigned i = 0; i < lvaCount; i++)
+    {
+        if (lclPassCategory[i] == 0)
         {
-            lclNeedsInit[i] = true;
-            initSlotCount += (lclSize[i] + sizeof(int) - 1) / sizeof(int);
+            bucketLcls[tailPos++] = i;
+            continue;
+        }
+        unsigned bit              = BitOperations::Log2(lclPassCategory[i]);
+        unsigned p                = passBitToAllocIdx[bit];
+        bucketLcls[writePos[p]++] = i;
+    }
+
+    // Walk buckets in their original order to determine where the disp8/disp32 boundary
+    // (simOff == -128) falls. simOff decreases monotonically across the walk, so at most
+    // ONE bucket can straddle the boundary. Buckets entirely above -128 contribute fixed
+    // cost = refCnt * 1; buckets entirely below contribute fixed cost = refCnt * 4. Only
+    // the straddling bucket's internal order affects total cost.
+    int      bucketSimOffStart[MAX_PASS_BITS];
+    int      bucketSimOffEnd[MAX_PASS_BITS];
+    int      simOff         = stkOffs;
+    unsigned straddleBucket = UINT_MAX;
+    for (unsigned p = 0; p < allocOrderLen; p++)
+    {
+        bucketSimOffStart[p] = simOff;
+        for (unsigned k = passStart[p]; k < passStart[p + 1]; k++)
+        {
+            unsigned lcl         = bucketLcls[k];
+            int      signedAlign = static_cast<int>(lclAlignTo[lcl]);
+            if ((signedAlign != 0) && ((simOff % signedAlign) != 0))
+            {
+                simOff -= signedAlign + (simOff % signedAlign);
+            }
+            simOff -= static_cast<int>(lclSize[lcl]);
+        }
+        bucketSimOffEnd[p] = simOff;
+
+        if ((bucketSimOffStart[p] > -128) && (bucketSimOffEnd[p] <= -128))
+        {
+            straddleBucket = p;
         }
     }
 
-    // On AMD64, block init is used when initSlotCount > 4; on x86 when > 4.
-    // Block init zeros a contiguous range, so the code size depends on span.
-    // Individual init zeros each local separately, cost is independent of layout.
-    bool useBlockInit = (initSlotCount > 4);
+    if (straddleBucket == UINT_MAX)
+    {
+        // The frame either fits entirely in disp8 (nothing to optimize) or every
+        // allocated bucket already starts past disp8 (reordering within a bucket
+        // can't pull refs into disp8 range). Bail.
+        JITDUMP("Frame layout optimization: skipping — no straddling bucket "
+                "(simOff at end = %d)\n",
+                simOff);
+        return nullptr;
+    }
 
-    // Simulate frame layout for a given sort order and return total encoding cost.
-    // Lower cost = better layout. Cost = Σ(refCnt × encodingBytes) where
-    // encodingBytes is 1 for disp8 (offset in [-128,+127]) or 4 for disp32.
-    // When block init is used, we also add a zero-init cost proportional to the
-    // span of init-requiring locals (larger span = more SIMD stores in the prolog).
-    auto estimateLayoutCost = [&](unsigned* order) -> unsigned {
-        unsigned totalCost = 0;
-        int      simOff    = stkOffs;
-        int      initLo    = 0;
-        int      initHi    = 0;
+    // Pre-compute ref counts and weights. For MinOpts/Tier0, precise ref counts are not
+    // available (all lvRefCnt == 0), so we do a lightweight LIR walk to count local refs.
+    unsigned* lclRefCnt = new (this, CMK_LvaTable) unsigned[lvaCount];
+    weight_t* lclWeight = new (this, CMK_LvaTable) weight_t[lvaCount];
+    bool      isMinOpts = !PreciseRefCountsRequired();
 
-        for (int p = 0; allocOrder[p]; p++)
+    if (isMinOpts)
+    {
+        memset(lclRefCnt, 0, lvaCount * sizeof(unsigned));
+
+        for (BasicBlock* const block : Blocks())
         {
-            UINT pass = allocOrder[p];
-            for (unsigned idx = 0; idx < lvaCount; idx++)
+            for (GenTree* node : LIR::AsRange(block))
             {
-                unsigned lcl = order[idx];
-                if (lclPassCategory[lcl] != pass)
+                if (node->OperIsAnyLocal())
                 {
-                    continue;
-                }
-
-                unsigned size    = lclSize[lcl];
-                unsigned alignTo = lclAlignTo[lcl];
-
-                // Simulate alignment padding (mirrors lvaAllocLocalAndSetVirtualOffset).
-                // Use signed arithmetic throughout: simOff is negative, and the remainder
-                // (simOff % alignment) is non-positive, so pad = alignment + remainder
-                // yields a small positive value in [1, alignment-1]. Mixing unsigned alignTo
-                // with the signed remainder would convert the negative remainder to a huge
-                // unsigned value and corrupt simOff.
-                int signedAlign = static_cast<int>(alignTo);
-                if ((signedAlign != 0) && ((simOff % signedAlign) != 0))
-                {
-                    simOff -= signedAlign + (simOff % signedAlign);
-                }
-
-                simOff -= static_cast<int>(size);
-
-                totalCost += lclRefCnt[lcl] * ((simOff >= -128) ? 1u : 4u);
-
-                // Track the zero-init span for block-init cost estimation.
-                if (useBlockInit && (lclNeedsInit[lcl]))
-                {
-                    int loOffs = simOff;
-                    int hiOffs = simOff + static_cast<int>(size);
-                    if ((initLo == 0) && (initHi == 0))
+                    unsigned lclNum = node->AsLclVarCommon()->GetLclNum();
+                    if (lclNum < lvaCount)
                     {
-                        initLo = loOffs;
-                        initHi = hiOffs;
-                    }
-                    else
-                    {
-                        initLo = min(initLo, loOffs);
-                        initHi = max(initHi, hiOffs);
+                        lclRefCnt[lclNum]++;
                     }
                 }
             }
         }
 
-        // Add zero-init prolog cost when block init will be used.
-        // The JIT zeros the contiguous range [initLo, initHi) using SIMD stores.
-        // Each 16-byte chunk requires one SIMD store instruction. We add a
-        // small penalty per chunk to favor layouts that keep the init span tight,
-        // without overwhelming the main encoding cost.
+        // For MinOpts, weighted = unweighted (no block weights available).
+        for (unsigned i = 0; i < lvaCount; i++)
+        {
+            lclWeight[i] = static_cast<weight_t>(lclRefCnt[i]);
+        }
+    }
+    else
+    {
+        for (unsigned i = 0; i < lvaCount; i++)
+        {
+            LclVarDsc* varDsc = lvaGetDesc(i);
+            lclRefCnt[i]      = varDsc->lvRefCnt(lvaRefCountState);
+            lclWeight[i]      = varDsc->lvRefCntWtd(lvaRefCountState);
+        }
+    }
+
+    // Precise upper bound on savings: walk the straddling bucket in its original order,
+    // count refs that land past disp8. Each such ref could save at most 3 bytes by being
+    // moved into disp8 range. Bail if even moving them all wouldn't help much.
+    unsigned maxSavings;
+    {
+        int      so           = bucketSimOffStart[straddleBucket];
+        unsigned refsInDisp32 = 0;
+        for (unsigned k = passStart[straddleBucket]; k < passStart[straddleBucket + 1]; k++)
+        {
+            unsigned lcl         = bucketLcls[k];
+            int      signedAlign = static_cast<int>(lclAlignTo[lcl]);
+            if ((signedAlign != 0) && ((so % signedAlign) != 0))
+            {
+                so -= signedAlign + (so % signedAlign);
+            }
+            so -= static_cast<int>(lclSize[lcl]);
+            if (so < -128)
+            {
+                refsInDisp32 += lclRefCnt[lcl];
+            }
+        }
+        maxSavings = refsInDisp32 * 3;
+        if (maxSavings <= (unsigned)JitConfig.JitFrameLayoutMaxSavingsThreshold())
+        {
+            JITDUMP("Frame layout optimization: skipping — max possible savings is %u bytes "
+                    "(refsInDisp32=%u)\n",
+                    maxSavings, refsInDisp32);
+            return nullptr;
+        }
+    }
+
+    // Compute baseline cost from non-straddling buckets. These contributions are
+    // independent of any intra-bucket sort order, so they cancel out when comparing
+    // strategies. We still include them in totalCost for accurate JITDUMP output.
+    unsigned baseCost = 0;
+    for (unsigned p = 0; p < allocOrderLen; p++)
+    {
+        if (p == straddleBucket)
+        {
+            continue;
+        }
+        unsigned encoding = (bucketSimOffStart[p] <= -128) ? 4u : 1u;
+        for (unsigned k = passStart[p]; k < passStart[p + 1]; k++)
+        {
+            baseCost += lclRefCnt[bucketLcls[k]] * encoding;
+        }
+    }
+
+    // Pre-compute zero-init data for the cost model. Only used at FullOpts where S4
+    // (initGroupedDensity) is active. At MinOpts S4 is skipped and the init-span term
+    // is small relative to the encoding-cost term, so we omit it.
+    bool* lclNeedsInit  = nullptr;
+    bool  useBlockInit  = false;
+    int   baseInitLo    = 0;
+    int   baseInitHi    = 0;
+    if (!isMinOpts)
+    {
+        lclNeedsInit          = new (this, CMK_LvaTable) bool[lvaCount];
+        unsigned initSlotCount = 0;
+        for (unsigned i = 0; i < lvaCount; i++)
+        {
+            lclNeedsInit[i] = false;
+            if (lclPassCategory[i] == 0)
+            {
+                continue;
+            }
+
+            LclVarDsc* varDsc = lvaGetDesc(i);
+
+            if (fgVarIsNeverZeroInitializedInProlog(i))
+            {
+                continue;
+            }
+            if (lvaIsFieldOfDependentlyPromotedStruct(varDsc))
+            {
+                continue;
+            }
+            if (varDsc->lvHasExplicitInit)
+            {
+                continue;
+            }
+            if ((varDsc->lvIsTemp) && !varDsc->HasGCPtr())
+            {
+                continue;
+            }
+
+            if ((info.compInitMem) || varDsc->HasGCPtr() || (varDsc->lvMustInit))
+            {
+                lclNeedsInit[i] = true;
+                initSlotCount += (lclSize[i] + sizeof(int) - 1) / sizeof(int);
+            }
+        }
+        useBlockInit = (initSlotCount > 4);
+
+        // If block init applies, precompute the init-span contribution from non-straddling
+        // buckets. The straddling bucket's contribution is folded in by walkStraddle.
+        if (useBlockInit)
+        {
+            int so = stkOffs;
+            for (unsigned p = 0; p < allocOrderLen; p++)
+            {
+                if (p == straddleBucket)
+                {
+                    so = bucketSimOffEnd[p];
+                    continue;
+                }
+                for (unsigned k = passStart[p]; k < passStart[p + 1]; k++)
+                {
+                    unsigned lcl         = bucketLcls[k];
+                    int      signedAlign = static_cast<int>(lclAlignTo[lcl]);
+                    if ((signedAlign != 0) && ((so % signedAlign) != 0))
+                    {
+                        so -= signedAlign + (so % signedAlign);
+                    }
+                    so -= static_cast<int>(lclSize[lcl]);
+                    if (lclNeedsInit[lcl])
+                    {
+                        int loOffs = so;
+                        int hiOffs = so + static_cast<int>(lclSize[lcl]);
+                        if ((baseInitLo == 0) && (baseInitHi == 0))
+                        {
+                            baseInitLo = loOffs;
+                            baseInitHi = hiOffs;
+                        }
+                        else
+                        {
+                            baseInitLo = min(baseInitLo, loOffs);
+                            baseInitHi = max(baseInitHi, hiOffs);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    JITDUMP("Frame layout optimization: trying strategies for %u locals "
+            "(estimated frame size %u bytes%s, straddle bucket=%u of %u, baseCost=%u, "
+            "maxSavings=%u)\n",
+            lvaCount, estimatedLocalSize, isMinOpts ? ", using lightweight ref counts" : "",
+            straddleBucket, allocOrderLen, baseCost, maxSavings);
+
+    const unsigned straddleStart       = passStart[straddleBucket];
+    const unsigned straddleCount       = passStart[straddleBucket + 1] - straddleStart;
+    const int      straddleSimOffEntry = bucketSimOffStart[straddleBucket];
+
+    // Compute the straddling bucket's cost contribution given a particular intra-bucket order.
+    // Folds in the init-span penalty when block init is in use.
+    auto walkStraddle = [&](unsigned* order) -> unsigned {
+        unsigned cost   = 0;
+        int      so     = straddleSimOffEntry;
+        int      initLo = baseInitLo;
+        int      initHi = baseInitHi;
+        for (unsigned k = 0; k < straddleCount; k++)
+        {
+            unsigned lcl         = order[k];
+            int      signedAlign = static_cast<int>(lclAlignTo[lcl]);
+            if ((signedAlign != 0) && ((so % signedAlign) != 0))
+            {
+                so -= signedAlign + (so % signedAlign);
+            }
+            so -= static_cast<int>(lclSize[lcl]);
+            cost += lclRefCnt[lcl] * ((so >= -128) ? 1u : 4u);
+
+            if (useBlockInit && (lclNeedsInit[lcl]))
+            {
+                int loOffs = so;
+                int hiOffs = so + static_cast<int>(lclSize[lcl]);
+                if ((initLo == 0) && (initHi == 0))
+                {
+                    initLo = loOffs;
+                    initHi = hiOffs;
+                }
+                else
+                {
+                    initLo = min(initLo, loOffs);
+                    initHi = max(initHi, hiOffs);
+                }
+            }
+        }
+
         if (useBlockInit && (initHi > initLo))
         {
             unsigned initSpan = static_cast<unsigned>(initHi - initLo);
             unsigned initCost = ((initSpan + 15) / 16) * 2;
-            totalCost += initCost;
+            cost += initCost;
         }
 
-        return totalCost;
+        return cost;
     };
 
-    unsigned* sortOrder = new (this, CMK_LvaTable) unsigned[lvaCount];
-    unsigned* bestOrder = new (this, CMK_LvaTable) unsigned[lvaCount];
-    for (unsigned i = 0; i < lvaCount; i++)
-    {
-        sortOrder[i] = i;
-    }
+    unsigned* straddleOrder     = new (this, CMK_LvaTable) unsigned[straddleCount];
+    unsigned* bestStraddleOrder = new (this, CMK_LvaTable) unsigned[straddleCount];
+    memcpy(straddleOrder, &bucketLcls[straddleStart], straddleCount * sizeof(unsigned));
+    memcpy(bestStraddleOrder, straddleOrder, straddleCount * sizeof(unsigned));
 
     // Score the original (unsorted) order as baseline.
-    unsigned    origCost     = estimateLayoutCost(sortOrder);
+    unsigned    origCost     = baseCost + walkStraddle(straddleOrder);
     unsigned    bestCost     = origCost;
-    int         bestStrategy = -1; // -1 = original order
+    int         bestStrategy = -1;
     const char* bestName     = "original";
 
-    // Helper to try a strategy: sort sortOrder, estimate cost, track if best.
-    // When a strategy improves on the current best, we save its permutation
-    // into bestOrder to avoid a redundant re-sort at the end.
+    // Helper to try a strategy: sort straddleOrder, score, track if best.
     auto tryStrategy = [&](int strategyIdx, const char* name, auto comparator) -> unsigned {
-        for (unsigned i = 0; i < lvaCount; i++)
-        {
-            sortOrder[i] = i;
-        }
-        jitstd::sort(sortOrder, sortOrder + lvaCount, comparator);
-        unsigned cost = estimateLayoutCost(sortOrder);
+        memcpy(straddleOrder, &bucketLcls[straddleStart], straddleCount * sizeof(unsigned));
+        jitstd::sort(straddleOrder, straddleOrder + straddleCount, comparator);
+        unsigned cost = baseCost + walkStraddle(straddleOrder);
         if (cost < bestCost)
         {
             bestCost     = cost;
             bestStrategy = strategyIdx;
             bestName     = name;
-            memcpy(bestOrder, sortOrder, lvaCount * sizeof(unsigned));
+            memcpy(bestStraddleOrder, straddleOrder, straddleCount * sizeof(unsigned));
         }
         return cost;
     };
@@ -5292,10 +5426,37 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
         initGroupedDensityCost = tryStrategy(4, "initGroupedDensity", initGroupedDensityCompare);
     }
 
-    // Return the winning permutation (saved in bestOrder), or nullptr if original won.
     if (bestStrategy < 0)
     {
-        bestOrder = nullptr;
+        JITDUMP("Frame layout costs: original=%u density=%u sizeAsc=%u weight=%u refDensity=%u "
+                "initGroupedDensity=%u; original order is best, no change\n",
+                origCost, densityCost, sizeAscCost, weightCost, refDensityCost, initGroupedDensityCost);
+        return nullptr;
+    }
+
+    // Assemble the final permutation: each bucket in its original order, EXCEPT the
+    // straddling bucket, which uses the best strategy's intra-bucket sort; followed by
+    // non-allocatable locals (the caller filters those out anyway).
+    unsigned* bestOrder = new (this, CMK_LvaTable) unsigned[lvaCount];
+    unsigned  outIdx    = 0;
+    for (unsigned p = 0; p < allocOrderLen; p++)
+    {
+        if (p == straddleBucket)
+        {
+            memcpy(&bestOrder[outIdx], bestStraddleOrder, straddleCount * sizeof(unsigned));
+            outIdx += straddleCount;
+        }
+        else
+        {
+            unsigned bucketSize = passStart[p + 1] - passStart[p];
+            memcpy(&bestOrder[outIdx], &bucketLcls[passStart[p]], bucketSize * sizeof(unsigned));
+            outIdx += bucketSize;
+        }
+    }
+    if (outIdx < lvaCount)
+    {
+        memcpy(&bestOrder[outIdx], &bucketLcls[numAllocatable],
+               (lvaCount - numAllocatable) * sizeof(unsigned));
     }
 
     JITDUMP("Frame layout costs: original=%u density=%u sizeAsc=%u weight=%u refDensity=%u "
