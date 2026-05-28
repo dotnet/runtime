@@ -187,32 +187,6 @@
         // Exit label
     .endm
 
-// void RhpByRefAssignRef
-// On entry:
-//   t5  : the source address (points to object reference to write)
-//   t3  : the destination address (object reference written here)
-//
-// On exit:
-//   t5  : incremented by 8
-//   t3  : incremented by 8
-//   t4  : trashed
-//   t2, t3  : trashed
-//
-//   NOTE: Keep in sync with RBM_CALLEE_TRASH_WRITEBARRIER_BYREF and RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF
-//         if you add more trashed registers.
-//
-// WARNING: Code in EHHelpers.cpp makes assumptions about write barrier code, in particular:
-// - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen at RhpByRefAssignRefAVLocation1
-// - Function "UnwindSimpleHelperToCaller" assumes no registers were pushed and RA contains the return address
-LEAF_ENTRY RhpByRefAssignRef, _TEXT
-
-    ALTERNATE_ENTRY RhpByRefAssignRefAVLocation1
-        ld    t4, 0(t5)
-        addi  t5, t5, 8
-        j C_FUNC(RhpCheckedAssignRef)
-
-LEAF_END RhpByRefAssignRef, _TEXT
-
 // RhpCheckedAssignRef(Object** dst, Object* src)
 //
 // Write barrier for writes to objects that may reside

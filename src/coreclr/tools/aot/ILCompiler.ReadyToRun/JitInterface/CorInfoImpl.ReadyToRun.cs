@@ -1041,9 +1041,6 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_CHECKED_ASSIGN_REF:
                     id = ReadyToRunHelper.CheckedWriteBarrier;
                     break;
-                case CorInfoHelpFunc.CORINFO_HELP_ASSIGN_BYREF:
-                    id = ReadyToRunHelper.ByRefWriteBarrier;
-                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_BULK_WRITEBARRIER:
                     id = ReadyToRunHelper.BulkWriteBarrier;
                     break;

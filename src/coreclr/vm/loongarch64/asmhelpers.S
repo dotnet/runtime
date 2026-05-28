@@ -120,22 +120,6 @@ LEAF_ENTRY JIT_PatchedCodeStart, _TEXT
     jirl  $r0, $ra, 0
 LEAF_END JIT_PatchedCodeStart, _TEXT
 
-// void JIT_ByRefWriteBarrier
-//
-// On entry:
-//   t8 : the source address (points to object reference to write)
-//   t6: the destination address (object reference written here)
-//
-// On exit:
-//   t8  : incremented by 8
-//   t7  : trashed
-//
-WRITE_BARRIER_ENTRY JIT_ByRefWriteBarrier
-    ld.d  $t7, $t8, 0
-    addi.d  $t8, $t8, 8
-    b  C_FUNC(JIT_CheckedWriteBarrier)
-WRITE_BARRIER_END JIT_ByRefWriteBarrier
-
 //-----------------------------------------------------------------------------
 // Simple WriteBarriers
 // void JIT_CheckedWriteBarrier(Object** dst, Object* src)
@@ -149,7 +133,7 @@ WRITE_BARRIER_END JIT_ByRefWriteBarrier
 //   $t0  : trashed
 //   $t3  : trashed
 //   $t4  : trashed
-//   $t6  : trashed (incremented by 8 to implement JIT_ByRefWriteBarrier contract)
+//   $t6  : trashed (incremented by 8)
 //
 WRITE_BARRIER_ENTRY JIT_CheckedWriteBarrier
 
@@ -182,7 +166,7 @@ WRITE_BARRIER_END JIT_CheckedWriteBarrier
 //   $t1  : trashed
 //   $t3  : trashed
 //   $t4  : trashed
-//   $t6  : trashed (incremented by 8 to implement JIT_ByRefWriteBarrier contract)
+//   $t6  : trashed (incremented by 8)
 //   $t7  : trashed
 //
 WRITE_BARRIER_ENTRY JIT_WriteBarrier
