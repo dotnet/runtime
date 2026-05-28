@@ -472,15 +472,6 @@ Initialize(
         goto CLEANUP1e;
     }
 
-    palError = InitializeProcessCommandLine(
-        exe_path);
-
-    if (NO_ERROR != palError)
-    {
-        ERROR("Unable to initialize command line\n");
-        goto CLEANUP2;
-    }
-
     if (!LOADSetExeName(exe_path))
     {
         ERROR("Unable to set exe name\n");
@@ -580,7 +571,7 @@ CLEANUP13:
 CLEANUP10:
     MAPCleanup();
 CLEANUP6:
-    PROCCleanupInitialProcess();
+    // Cleanup initial process data
 CLEANUP2:
     free(exe_path);
 CLEANUP1e:

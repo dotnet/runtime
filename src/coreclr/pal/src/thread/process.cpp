@@ -140,11 +140,6 @@ CAllowedObjectTypes aotProcess(otiProcess);
 //
 IPalObject* CorUnix::g_pobjProcess;
 
-//
-// The app name for the process
-//
-LPWSTR g_lpwstrAppDir = NULL;
-
 // Thread ID of thread that has started the ExitProcess process
 Volatile<LONG> terminator = 0;
 
@@ -2088,75 +2083,6 @@ PROCGetProcessIDFromHandleExit:
     return dwProcessId;
 }
 
-/*++
-Function
-    InitializeProcessCommandLine
-
-Abstract
-    Initializes (or re-initializes) the saved command line and exe path.
-
-Parameter
-    lpwstrCmdLine
-    lpwstrFullPath
-
-Return
-    PAL_ERROR
-
-Notes
-    This function takes ownership of lpwstrCmdLine, but not of lpwstrFullPath
---*/
-
-PAL_ERROR
-CorUnix::InitializeProcessCommandLine(
-    LPWSTR lpwstrFullPath
-)
-{
-    PAL_ERROR palError = NO_ERROR;
-    LPWSTR initial_dir = NULL;
-
-    //
-    // Save the command line and initial directory
-    //
-
-    if (lpwstrFullPath)
-    {
-        LPWSTR lpwstr = PAL_wcsrchr(lpwstrFullPath, '/');
-        if (!lpwstr)
-        {
-            ERROR("Invalid full path\n");
-            palError = ERROR_INTERNAL_ERROR;
-            goto exit;
-        }
-        lpwstr[0] = '\0';
-        size_t n = PAL_wcslen(lpwstrFullPath) + 1;
-
-        size_t iLen = n;
-        initial_dir = reinterpret_cast<LPWSTR>(malloc(iLen*sizeof(WCHAR)));
-        if (NULL == initial_dir)
-        {
-            ERROR("malloc() failed! (initial_dir) \n");
-            palError = ERROR_NOT_ENOUGH_MEMORY;
-            goto exit;
-        }
-
-        if (wcscpy_s(initial_dir, iLen, lpwstrFullPath) != SAFECRT_SUCCESS)
-        {
-            ERROR("wcscpy_s failed!\n");
-            free(initial_dir);
-            palError = ERROR_INTERNAL_ERROR;
-            goto exit;
-        }
-
-        lpwstr[0] = '/';
-
-        free(g_lpwstrAppDir);
-        g_lpwstrAppDir = initial_dir;
-    }
-
-exit:
-    return palError;
-}
-
 
 /*++
 Function:
@@ -2273,32 +2199,6 @@ CreateInitialProcessAndThreadObjectsExit:
     return palError;
 }
 
-
-/*++
-Function:
-  PROCCleanupInitialProcess
-
-Abstract
-  Cleanup all the structures for the initial process.
-
-Parameter
-  VOID
-
-Return
-  VOID
-
---*/
-VOID
-PROCCleanupInitialProcess(VOID)
-{
-    /* Free the application directory */
-    free(g_lpwstrAppDir);
-
-    //
-    // Object manager shutdown will handle freeing the underlying
-    // thread and process data
-    //
-}
 
 /*++
 Function:
