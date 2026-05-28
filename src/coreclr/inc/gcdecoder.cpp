@@ -207,7 +207,8 @@ PTR_CBYTE FASTCALL decodeHeader(PTR_CBYTE table, UINT32 version, InfoHdr* header
                 // encoding here always corresponds to codes in InfoHdrAdjust2 set
                 if (encoding <= SET_RET_KIND_MAX)
                 {
-                    header->returnKind = (ReturnKind)encoding;
+                    header->returnKind = (ReturnKind)encoding & 3;
+                    header->isAsync = (encoding & 4) != 0;
                 }
                 else if (encoding < FFFF_NOGCREGION_CNT)
                 {

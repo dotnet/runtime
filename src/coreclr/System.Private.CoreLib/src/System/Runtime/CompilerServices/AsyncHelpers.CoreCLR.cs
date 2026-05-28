@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -8,6 +9,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Sources;
+using Internal;
 
 #if NATIVEAOT
 using Internal.Runtime;
@@ -215,6 +217,7 @@ namespace System.Runtime.CompilerServices
             public ICriticalNotifyCompletion? CriticalNotifier;
             public INotifyCompletion? Notifier;
             public ValueTaskSourceContinuation? ValueTaskSourceContinuation;
+            public int SuspendedWithHashCode;
             public RuntimeAsyncTaskContinuation? TaskContinuation;
 
             // When we suspend in the leaf, the contexts are captured into these fields.
@@ -226,6 +229,8 @@ namespace System.Runtime.CompilerServices
             // fields.
             public ExecutionContext? RootExecutionContext;
             public SynchronizationContext? RootSynchronizationContext;
+
+            public Continuation SuspendingCont;
 
             public unsafe RuntimeAsyncStackState* Next;
 
@@ -559,6 +564,8 @@ namespace System.Runtime.CompilerServices
                 nextCont = vtsCont;
             }
 
+            state.StackState->SuspendedWithHashCode = RuntimeHelpers.GetHashCode(nextCont);
+
             sentinelContinuation.Next = nextCont;
             state.CaptureContexts();
             AsyncSuspend(nextCont);
@@ -753,6 +760,14 @@ namespace System.Runtime.CompilerServices
                     else if (stackState->ValueTaskSourceContinuation is { } valueTaskSourceCont)
                     {
                         Debug.Assert(headContinuation == valueTaskSourceCont);
+                        if (valueTaskSourceCont.Next == null)
+                        {
+                            Environment.FailFast(
+                                $"Should not be null! " +
+                                $"{((long)valueTaskSourceCont.ResumeInfo):x} ({RuntimeHelpers.GetHashCode(valueTaskSourceCont):x}), " +
+                                $"{((long)state.StackState->SuspendingCont.ResumeInfo):x} ({RuntimeHelpers.GetHashCode(state.StackState->SuspendingCont):x}) " +
+                                $"Suspended with: {state.StackState->SuspendedWithHashCode:x}");
+                        }
                         object? source = valueTaskSourceCont.Source;
                         Debug.Assert(source != null);
                         // The awaiter must inform the ValueTaskSource on whether the continuation
@@ -891,6 +906,7 @@ namespace System.Runtime.CompilerServices
                         if (newContinuation != null)
                         {
                             newContinuation.Next = nextContinuation;
+                            awaitState.StackState->SuspendingCont = newContinuation;
                             HandleSuspended(ref awaitState);
 
                             awaitState.Pop();

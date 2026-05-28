@@ -160,7 +160,7 @@ namespace System.Runtime.CompilerServices
 
                 Debug.Assert((taskCont.Flags & ContinuationFlags.AllContinuationFlags) == 0);
 
-                AsyncHelpers.ReturnTaskContinuation(taskCont);
+                //AsyncHelpers.ReturnTaskContinuation(taskCont);
 
                 taskCont.GetResult(ref result);
                 return null;
