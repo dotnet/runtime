@@ -1778,7 +1778,7 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
 
                 if (op2Range.IsSingleValueConstant(&shiftAmount) && (shiftAmount >= 32) && (shiftAmount < 64))
                 {
-                    // The upper 33-bits of the input will all match, so we are within [INT32_MIN, INT32_MAX]
+                    // The upper 33-bits  will all match post shift, so we are within [INT32_MIN, INT32_MAX]
                     // and can further reduce based on the remaining shift amount.
 
                     op1Range = GetRangeFromType(TYP_INT);
@@ -1802,7 +1802,7 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
 
                 if (op2Range.IsSingleValueConstant(&shiftAmount) && (shiftAmount >= 33) && (shiftAmount < 64))
                 {
-                    // The upper 33-bits of the input must all be zero, so we are within [0, INT32_MAX]
+                    // The upper 33-bits of the must all be zero post shift, so we are within [0, INT32_MAX]
                     // and can further reduce based on the remaining shift amount. This is notably one
                     // higher than RSH since we'd otherwise get a value within [INT32_MAX + 1, UINT32_MAX]
 
