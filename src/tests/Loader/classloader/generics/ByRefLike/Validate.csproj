@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <MonoAotIncompatible>true</MonoAotIncompatible>  <!-- https://github.com/dotnet/runtime/issues/90427  -->
+    <!-- https://github.com/dotnet/runtime/issues/90427  -->
+    <MonoAotIncompatible>true</MonoAotIncompatible> 
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Validate.cs" />
