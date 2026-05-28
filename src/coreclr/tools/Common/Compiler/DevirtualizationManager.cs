@@ -148,6 +148,14 @@ namespace ILCompiler
                                 return null;
 
                             case DefaultInterfaceMethodResolution.DefaultImplementation:
+#if READYTORUN
+                                if (declMethod != defaultInterfaceDispatchDeclMethod)
+                                {
+                                    // Fail for variant default interface dispatch
+                                    devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_DIM;
+                                    return null;
+                                }
+#else
                                 if (dimMethod.OwningType.HasInstantiation || (declMethod != defaultInterfaceDispatchDeclMethod))
                                 {
                                     // If we devirtualized into a default interface method on a generic type, we should actually return an
@@ -158,6 +166,7 @@ namespace ILCompiler
                                     devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_DIM;
                                     return null;
                                 }
+#endif
                                 else
                                 {
                                     impl = dimMethod;
@@ -217,13 +226,6 @@ namespace ILCompiler
                         impl = null;
                     }
                 }
-            }
-
-            if (impl != null && impl.HasInstantiation && impl.GetCanonMethodTarget(CanonicalFormKind.Specific).IsCanonicalMethod(CanonicalFormKind.Specific))
-            {
-                // We don't support devirtualization of shared generic virtual methods yet.
-                devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
-                impl = null;
             }
 
             return impl;
