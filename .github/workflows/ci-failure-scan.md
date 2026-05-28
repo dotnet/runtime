@@ -13,6 +13,9 @@ on:
   roles: [admin, maintainer, write]
   permissions: {}
 
+if: |
+  github.repository == 'dotnet/runtime'
+
 # ###############################################################
 # Override COPILOT_GITHUB_TOKEN with a random PAT from the pool.
 # This stop-gap will be removed when org billing is available.
@@ -76,6 +79,8 @@ network:
 
 You are a CI triage agent. Each scheduled run, you scan a fixed list of `dnceng-public/public` outer-loop AzDO pipelines on `main`, classify failures, and emit gh-aw `safe-outputs` requests so every actionable failure converges on a Known Build Error issue (immediate effect on PR CI via Build Analysis) plus a follow-up test-disable PR (permanent effect after human merge).
 
+To suggest changes, edit this file or comment on the issues/PRs it files — the [`ci-failure-scan-feedback`](ci-failure-scan-feedback.md) workflow reads recent runs and that feedback daily, and opens (or updates) a single draft PR with proposed edits.
+
 The agent runs read-only. All writes go through `safe-outputs`.
 
 ## Hard rules — non-negotiable
@@ -129,12 +134,12 @@ Read once at start:
 
 ### Step 2 — Walk pipelines
 
-For each row in the pipeline table below, in order:
+For each row in the pipeline table below:
 
-1. Pre-bind the build-list URL to a shell variable on its own line, then `curl -s "$url" | tee /tmp/gh-aw/agent/builds_<id>.json`.
-2. Pick the most recent build with `result in {succeeded, failed, partiallySucceeded}`; skip `canceled`.
-3. If no such build in the last 7 days -> record `pipeline-skipped: stale` in the tally and continue.
-4. Pass failed timeline records to Step 3.
+1. Pre-bind the build-list URL to a shell variable, then `curl -s "$url" | tee /tmp/gh-aw/agent/builds_<id>.json`. Fetch at least 25 builds.
+2. Pick `source` = most recent build with `result in {failed, partiallySucceeded}` that has at least one COMPLETED build with a strictly later `finishTime`. That later build is the `follow_up` anchor for Step 3.5; without it, a freshly-fixed regression cannot be distinguished from a still-failing one. (The dnceng-public build-list is sorted DESC by `queueTime`, so `source` will appear AFTER its `follow_up` in the JSON array; "later in time" refers to wall-clock, not array position.)
+3. Skip reasons: `source.finishTime > 14d` -> `pipeline-skipped: stale build window (>14d)`. No `follow_up` (source is the absolute latest) -> `pipeline-skipped: no follow-up build yet — defer to next run`. No qualifying build in 7 days -> `pipeline-skipped: stale`. The 14-day window accommodates JIT-stress family pipelines (defs 109–160, 230, 235) that run on a weekly-or-longer cadence; tightening to 72h blanket-suppresses their actionable failures.
+4. Otherwise pass `source`'s failed timeline records to Step 3.
 
 | Pipeline | Definition ID | Notes |
 |---|---|---|
@@ -176,6 +181,13 @@ For each row in the pipeline table below, in order:
 
 Classification here drives WHERE the agent reads the signature text from. It does NOT drive WHERE the issue gets filed — every actionable signature flows through Step 4 + Step 5 Branch A. The timeline graph is `Stage -> Phase -> Job -> Task`; walk it via `parentId`. Drill into one representative console log per signature to confirm the shape.
 
+Save the canonical failure log to `/tmp/gh-aw/agent/failure.log` per signature before extracting; KBE check 7 greps it for the verbatim signature.
+
+```bash
+log_url="<console URL from Helix work item or AzDO task log>"
+curl -s "$log_url" | tee /tmp/gh-aw/agent/failure.log | tail -5
+```
+
 1. **Build break.** Failed task is `Build product` / `Build native components` / `Configure CMake` / any pre-test compile step, AND `Send to Helix` is `skipped`. Read the signature from the failing compile task log (CSxxxx / linker error / cmake error line).
 2. **Phase/Stage-only failure with no failed Job underneath.** Compile breaks aggregated at phase level (e.g. `windows-arm64 checked` on JIT stress pipelines). Open the Phase log + the latest log of any non-succeeded child Task and treat as build break.
 3. **Helix work-item failure.** `Send to Helix` succeeded but Job still failed. Extract Helix job IDs from the `Send to Helix` log (`Sent Helix Job: <GUID>`), query Helix work items, fetch the failing console log, locate the `[FAIL]` line.
@@ -189,14 +201,35 @@ If the same signature appears in *every* sampled build (100% failure rate in the
 #### Data sources
 
 - **AzDO REST.** `https://dev.azure.com/dnceng-public/public/_apis/build/...`. Anonymous, no auth.
-  - List builds: `?definitions={id}&branchName=refs/heads/main&statusFilter=completed&resultFilter=succeeded,failed,partiallySucceeded&%24top=20&api-version=7.1`
+  - List builds: `?definitions={id}&branchName=refs/heads/main&statusFilter=completed&resultFilter=succeeded,failed,partiallySucceeded&%24top=25&api-version=7.1`
   - Timeline: `/builds/{id}/timeline?api-version=7.1` returns flat `records[]`; reconstruct via `parentId`. A failed record with non-null log id is a leaf to inspect.
 - **Helix REST.** `https://helix.dot.net/api/jobs/{jobId}/workitems?api-version=2019-06-17`. Each item has `Name`, `State`, `ExitCode`, `ConsoleOutputUri`. Failed: `ExitCode != 0` or `State == "Failed"`.
 - **Build Analysis attachment (best-effort).** `https://dev.azure.com/dnceng-public/public/_apis/build/builds/{id}/attachments/Build_Analysis_KnownIssues_v1?api-version=7.1`. Use to dedupe. 404 = none attached; do not fail.
 
+### Step 3.5 — Follow-up-build presence gate
+
+For each signature from `source`, check `follow_up`:
+
+- `succeeded`, or `failed` / `partiallySucceeded` without the signature -> `skipped: signature absent from follow-up build #<id>`.
+- `canceled` -> walk one build further back; if none, fall through and file.
+- Contains the signature -> proceed.
+
+For build breaks, additionally search merged PRs touching the failing source file (or the cited error code) with `merged:>=<source.finishTime>`. If anything matches, record `skipped: fix already merged after source build`.
+
 ### Step 4 — Per-signature walk
 
 For each `(definition_id, phase, queue, stress_mode, signature)` produced by Step 3:
+
+#### Step 4.0 — Same-run dedup cache (check first)
+
+Cache filed signatures in `/tmp/gh-aw/agent/filed.tsv` as `<key>\t<aw_id>` where `key = <definition_id>|<queue>|<stress_mode>|<signature_norm>`. `<signature_norm>` is the signature with tab/newline/CR characters stripped — needed because raw signatures are copied verbatim from logs and may contain whitespace that would corrupt the TSV. On match, record `skipped: dup of filed-issue #aw_<id> earlier in this run` and stop. Append after every Branch A emission.
+
+```bash
+signature_norm=$(printf '%s' "<signature>" | tr -d '\t\n\r')
+key="<definition_id>|<queue>|<stress_mode>|${signature_norm}"
+test -f /tmp/gh-aw/agent/filed.tsv && cut -f1 /tmp/gh-aw/agent/filed.tsv | grep -Fxq "$key"  # dup if exit 0
+printf '%s\t%s\n' "$key" "aw_<id>" >> /tmp/gh-aw/agent/filed.tsv                              # after emit
+```
 
 #### Step 4.1 — Load the matching skill
 
@@ -209,6 +242,8 @@ For each `(definition_id, phase, queue, stress_mode, signature)` produced by Ste
 | Generic | `ci-pipeline-monitor/SKILL.md` |
 
 #### Step 4.2 through Step 4.6 — Run the shared KBE lookup flow
+
+Follow exactly these sections from `.github/workflows/shared/create-kbe.instructions.md`, in this order:
 
 Follow exactly these sections from `.github/workflows/shared/create-kbe.instructions.md`, in this order:
 
@@ -226,11 +261,11 @@ Record the same outcomes described there:
 
 #### Step 4.7 — Confirm a test-disable is welcome on the candidate issue
 
-Read the candidate KBE / tracker body + its most recent area-owner comment. Skip the test-disable (record `-> skipped: do-not-disable on issue #<n>`) if ANY of:
+Read the candidate KBE / tracker body + the latest 5 comments (not just the most recent). Skip the test-disable (record `-> skipped: do-not-disable on issue #<n>`) if ANY of:
 
-- Body or recent comment from area owner says `please don't disable`, `do not mute`, `keep failing`, `investigation in progress`.
+- Body or recent comment from any `MEMBER`/`OWNER` mentions one of (case-insensitive): `please don't disable`, `do not mute`, `do not disable`, `keep failing`, `investigation in progress`, `fix-forward`, `fix forward`, `should be supported`, `will investigate`, `wait for #`, `landing in #`.
 - Issue carries a label semantically equivalent to "do not mute" (verify the label exists in `dotnet/runtime` before relying on it; do not invent labels).
-- Most recent area-owner comment within the last 14 days opposes disabling the test on procedural grounds (fix-forward request, awaiting JIT/GC repro).
+- Most recent area-owner comment within the last 14 days opposes disabling on procedural grounds.
 
 When in doubt -> skip the test-disable and let the next run revisit.
 
@@ -249,9 +284,14 @@ answers in the test-disable PR body's `Reasoning` section.
 
 Exactly one of Branch A / B fires per signature. Branch C is an additive refinement of Branch B (Branch B's outputs are still emitted, plus an additional small-fix PR). Signatures that do not match any branch get `skipped: <reason>` in the tally and emit nothing.
 
+No meta / aggregate / outage issues. Every KBE is keyed to a single `(definition_id, signature)` tuple. Do NOT summarize across pipelines. If >= 10 pipelines fail with >= 3 distinct signatures each:
+
+- Infra-shaped (agent disconnect, pool offline, dead-letter, queue capacity, transient network): emit zero issues and one `missing_data` safe-output. Record `skipped: suspected infra outage` for each signature.
+- Product-shaped (assertion, exception, stack frame, JIT marker) converging on a common element (same assembly / stack frame / assertion file): file ONE representative KBE per element (cap 3 total). Skip the rest with `skipped: representative KBE filed as #aw_<id>`.
+
 **Branch A — No existing KBE; signature is stable.**
 
-Stable means >= 2 occurrences in the ~10-build window, OR a build break that fails all legs of the current build (block-everyone severity that warrants filing on first sight). Emit one `create_issue` using exactly the shared new-KBE template from `.github/workflows/shared/create-kbe.instructions.md` section `<a id="new-kbe-template"></a>` / `## New-KBE template`, including whichever of `<a id="literal-kbe-template"></a>` / `### KBE issue body - literal substring match`, `<a id="regex-kbe-template"></a>` / `### KBE issue body - regex match`, or `<a id="kbe-array-form"></a>` / `### KBE multi-line array form` fits the signature. Apply both `Known Build Error` and `blocking-clean-ci` labels so the org project auto-add rule picks it up; do NOT try to mutate the project from this workflow.
+Stable means >= 2 occurrences in the ~10-build window, OR a build break that fails all legs of the current build (block-everyone severity that warrants filing on first sight). Emit one `create_issue` using exactly the shared new-KBE template from `.github/workflows/shared/create-kbe.instructions.md` section `<a id="new-kbe-template"></a>` / `## New-KBE template`, including whichever of `<a id="literal-kbe-template"></a>` / `### KBE issue body - literal substring match`, `<a id="regex-kbe-template"></a>` / `### KBE issue body - regex match`, or `<a id="kbe-array-form"></a>` / `### KBE multi-line array form` fits the signature. Apply both `Known Build Error` and `blocking-clean-ci` labels so the org project auto-add rule picks it up; do NOT try to mutate the project from this workflow. Append to the same-run dedup cache (Step 4.0) after emission.
 
 If the shared KBE lookup flow recorded `linked-tracker #<tracker>`, cross-link it as `Tracking: dotnet/runtime#<tracker>` in the KBE body. Test-disable PR is deferred to the next run.
 
@@ -281,7 +321,7 @@ Per signature, append one outcome line to `/tmp/gh-aw/agent/coverage/<pipeline>.
 
 `<outcome>` is one of: `filed-issue #aw_<id>`, `filed-PR #aw_<id>`, `existing-issue #<n>`, `existing-PR #<n>`, `skipped: <reason>`.
 
-A skipped signature MUST have a reason (e.g., `build canceled`, `< 2 occurrences and not blocking`, `do-not-disable on issue #<n>`, `cap reached`, `infra noise — no stable signature`, `build break — no test-disable path`).
+A skipped signature MUST have a reason. Recognized values: `build canceled`, `< 2 occurrences and not blocking`, `do-not-disable on issue #<n>`, `cap reached`, `infra noise — no stable signature`, `build break — no test-disable path`, `signature absent from follow-up build #<id>`, `stale build window (>14d)`, `no follow-up build yet — defer to next run`, `fix already merged after source build`, `fix recently merged in #<n>`, `dup of filed-issue #aw_<id> earlier in this run`, `ambiguous dup #<a>/#<b>, needs human review`, `integrity-filtered candidate, needs human review`, `suspected infra outage`, `weak signature`, `recommendation already present in source`, `signature did not match failure.log (N=<count>)`, `native assert not in xunit log`. The list is non-exhaustive but additions SHOULD reuse one of these phrasings to keep the feedback workflow's tally aggregation stable.
 
 At end of run, print this table to the agent log:
 
@@ -339,6 +379,9 @@ Match verification (from Step 4.8):
 
 ## Linked issue
 <if ActiveIssue reference used, link the issue>
+
+---
+Filed by [`ci-failure-scan`](https://github.com/dotnet/runtime/blob/main/.github/workflows/ci-failure-scan.md), which scans dnceng-public outer-loop pipelines on `main` and converts stable failures into KBEs and test-disable PRs. Comment here or on the workflow file to suggest changes; [`ci-failure-scan-feedback`](https://github.com/dotnet/runtime/blob/main/.github/workflows/ci-failure-scan-feedback.md) reads in-scope feedback daily and opens (or updates) a PR with prompt edits.
 ````
 
 Allowed test-disable mechanisms:

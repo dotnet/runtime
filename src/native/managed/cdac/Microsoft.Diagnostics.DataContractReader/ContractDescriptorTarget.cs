@@ -844,6 +844,9 @@ public sealed unsafe class ContractDescriptorTarget : Target
         throw new InvalidOperationException($"Failed to get type info for '{type}'");
     }
 
+    public override bool TryGetTypeInfo(string type, out Target.TypeInfo info)
+        => _types.TryGetValue(type, out info);
+
     internal bool TryGetContractVersion(string contractName, [NotNullWhen(true)] out string? version)
     {
         return _contracts.TryGetValue(contractName, out version);

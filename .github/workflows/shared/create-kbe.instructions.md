@@ -50,10 +50,19 @@ best-match ranking can place noisier hits above the correct one.
    `SocketBlockingModeTransitionTests label:"Known Build Error"`.
 5. Test class name + area label, no KBE filter, for example
    `SocketBlockingModeTransitionTests label:area-System.Net.Sockets`.
+6. Stripped test-family stem. Strip platform/arch suffixes (`_linux_arm`,
+   `_osx_arm64`) and type-width suffixes (`_byte_short`, `_long_ulong`,
+   `_8bit`, `_16bit`, `_32bit`); search the stem in `in:title` and `in:body`.
+   Catches sibling KBEs at different bit widths or instantiations.
 
 Variations 4 and 5 catch sibling failures filed for the same test class on a
 different platform or runtime variant, plus pre-existing area-team trackers
-that lack the `Known Build Error` label.
+that lack the `Known Build Error` label. Variation 6 catches siblings at
+different bit widths or instantiations.
+
+If two candidate KBEs share more than 70% of their `ErrorMessage` /
+`ErrorPattern` tokens, do **not** guess: record
+`skipped: ambiguous dup #<a>/#<b>, needs human review` and stop.
 
 If a KBE-labeled search returns a `[Filtered]` marker, treat it as a likely
 existing-KBE hit and record
@@ -96,6 +105,15 @@ Search for:
 
 On hit, record `existing-PR #<n>`.
 
+If neither variation hits, also try with the test-name **stem**. Strip common
+verb prefixes (`DnsGetHostEntry_`, `DnsGetHostAddresses_`, `Get*_`, `Set*_`,
+`Try*_`) and platform / arch suffixes (`_linux`, `_windows`, `_arm64`). Search
+the stem with `is:pr is:open in:title "<stem>" "[ci-scan]"`. PR titles often
+abbreviate the test name (for example, test
+`DnsGetHostEntry_LocalhostSubdomain_RespectsAddressFamily` becomes PR title
+`Skip LocalhostSubdomain_RespectsAddressFamily tests on Android`). The stem
+catches these.
+
 ### In-flight fix PR by anyone
 
 Search broadly, not just `[ci-scan]` PRs:
@@ -106,6 +124,33 @@ Search broadly, not just `[ci-scan]` PRs:
 
 Fetch each candidate body. If it claims to fix this failure or links the same
 KBE, record `existing-PR #<n>`.
+
+For JIT, runtime, or build-level failures (no test workitem) — assert in
+`coreclr!*`, `clrjit!*`, native crash, compiler diagnostic — the queries above
+never match because there is no test name. Add:
+
+- `is:pr is:open "<source-symbol>"` for every distinct C / C++ identifier in
+  the stack frame or assertion text (for example `CompressDebugInfo`,
+  `iOffsetMapping`, `m_pILToNativeMap`). Pick the 2-3 most unique identifiers;
+  skip generic ones (`Compress`, `Map`, `Buffer`).
+- `is:pr is:open "<assertion-text>"` using a 6-12 word literal slice of the
+  assert, diagnostic, or exception message (not the full line; GitHub search
+  treats quoted strings as exact phrases and trims punctuation).
+- `is:pr is:open "Fixes #<tracker>"` when a `linked-tracker #<n>` was recorded.
+
+Each candidate body must be fetched and read; do not match on title alone. On
+hit, record `existing-PR #<n>`.
+
+### Merged fix PR (last 14 days)
+
+Only when an existing KBE or area-team tracker was recorded:
+
+- `is:pr is:merged "<test-name>" merged:>=<14-days-ago>`
+- `is:pr is:merged "<test-file-path>" merged:>=<14-days-ago>`
+- `is:pr is:merged "Fixes #<tracker-or-kbe>"`
+
+On match, record `skipped: fix recently merged in #<n>` and do not file a
+test-disable PR.
 
 <a id="verify-embedded-issues"></a>
 
@@ -275,8 +320,43 @@ Walk all nine checks before creating a new KBE:
 6. The signature is **not** a bare identifier. A fully-qualified test name, a
    stack-frame line, or a bare exception type often matches passing or skipped
    lines too.
-7. Perform a negative-match smoke test against the failure log. The signature
-   must match the failing log, and it must not match `[PASS]` or `[SKIP]` lines.
+7. **Verbatim match against the failure log (mandatory, hard gate).** Build
+   Analysis runs `String.Contains` against the actual log; paraphrased
+   signatures close with "Known issue did not match with the provided build".
+   The signature must match the failing log, and it must not match `[PASS]`
+   or `[SKIP]` lines. Verify with:
+
+   ```bash
+   grep -Fc "<ErrorMessage value>" <failure-log> | tee pos_count.txt
+   grep -F  "<ErrorMessage value>" <failure-log> | grep -E '^\[(PASS|SKIP)\]' | tee neg_lines.txt
+   ```
+
+   For array form, repeat the positive `grep -Fc` for every element. Swap
+   `-F` for `-E` when verifying `ErrorPattern`.
+
+   The KBE body MUST embed
+   `<!-- ci-scan-match-count: <N> hits in failure.log -->` where `<N>` is the
+   positive count of the most-specific element. If you cannot produce this
+   marker — positive count is 0 for any element, OR the failure log is
+   unavailable (no log saved, log too large, redaction), OR the log you have
+   is a test-runner xunit log but the actual error is a JIT, runtime, or
+   build-level assert that does not appear there — do **not** emit the KBE.
+   Record `skipped: signature did not match failure.log (N=<count>)` and stop.
+   A KBE without a verified positive count is guaranteed Build Analysis
+   noise.
+
+   JIT, runtime, and build-level asserts: the per-workitem xunit log Build
+   Analysis indexes typically does NOT contain native assert output from
+   `CHECK::Trigger`, `_ASSERTE`, NativeAOT diagnostics, or crash dumps.
+   Native asserts print to stderr or the leg's raw console, which is a
+   different log source. Prefer the array form pairing the source symbol or
+   method name with the assertion text — Build Analysis is more likely to
+   find at least one of two anchors. If neither element greps positive in
+   the available failure log, treat as
+   `skipped: native assert not in xunit log` and rely on the linked tracker
+   plus a test-disable PR instead.
+
+   Negative output MUST be empty. If non-empty, narrow the signature.
 8. Keep the signature single-line and escape correctly. Build Analysis does not
    strip newlines, ANSI escapes, or time prefixes.
 9. JSON escaping is correct. Inside the JSON string value:
@@ -319,10 +399,12 @@ the shared flow. Return the failure as unhandled or human-review-needed instead.
 | Bad | Why bad | Good |
 |---|---|---|
 | `"Some.Test.Class.TestMethodName"` | bare test name; matches `[PASS]` lines | array: `["Some.Test.Class.TestMethodName", "System.Net.Sockets.SocketException : Try again"]` |
+| array: `["TestMethodName", "Assert.Equal() Failure: Values differ"]` | test name plus generic xunit assertion stem; matches every `Assert.Equal` mismatch in the test | array: `["TestMethodName", "Assert.Equal() Failure: Values differ", "Expected: 2", "Actual:   0"]` |
 | `"SomeTests.Prefix_"` | trailing `_` / `*` / `.` over-matches | `ErrorPattern: "^SomeTests\\.Prefix_[A-Za-z]+\\b[^\\n]*Xunit\\.Sdk\\."` |
 | `"Some.Type.Method"` | matches unrelated stack scans | `ErrorPattern: "^System\\.NullReferenceException\\b[^\\n]*\\n\\s+at Some\\.Type\\.Method\\b"` |
 | `"BadImageFormatException"` | bare exception type | `"System.BadImageFormatException: Could not load file or assembly 'System.Private.CoreLib'"` |
 | `"Operation timed out"` | matches transient network failures everywhere | array: `["xharness exec android test", "Operation timed out after 3600s"]` with `BuildRetry: false` |
+| `"ComInterfaceGenerator.Tests.ilc.rsp exited with code 134"` | paraphrased; not in the log | copy the actual MSBuild line verbatim: `"Microsoft.NETCore.Native.targets(313,5): error MSB3073: ... exited with code 134."` |
 
 <a id="sanitization"></a>
 

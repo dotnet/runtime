@@ -192,6 +192,18 @@ CDAC_TYPE_SIZE(sizeof(ArrayBase))
 CDAC_TYPE_FIELD(Array, T_UINT32, m_NumComponents, cdac_data<ArrayBase>::m_NumComponents)
 CDAC_TYPE_END(Array)
 
+CDAC_TYPE_BEGIN(StackTraceArrayHeader)
+CDAC_TYPE_SIZE(cdac_data<StackTraceArray>::HeaderSize)
+CDAC_TYPE_FIELD(StackTraceArrayHeader, T_UINT32, Size, cdac_data<StackTraceArray>::Size)
+CDAC_TYPE_END(StackTraceArrayHeader)
+
+CDAC_TYPE_BEGIN(StackTraceElement)
+CDAC_TYPE_SIZE(sizeof(StackTraceElement))
+CDAC_TYPE_FIELD(StackTraceElement, T_POINTER, Ip, offsetof(StackTraceElement, ip))
+CDAC_TYPE_FIELD(StackTraceElement, T_POINTER, MethodDesc, offsetof(StackTraceElement, pFunc))
+CDAC_TYPE_FIELD(StackTraceElement, T_INT32, Flags, offsetof(StackTraceElement, flags))
+CDAC_TYPE_END(StackTraceElement)
+
 CDAC_TYPE_BEGIN(InteropSyncBlockInfo)
 CDAC_TYPE_INDETERMINATE(InteropSyncBlockInfo)
 #ifdef FEATURE_COMINTEROP
@@ -1632,6 +1644,7 @@ CDAC_GLOBAL_CONTRACT(Exception, c1)
 CDAC_GLOBAL_CONTRACT(ExecutionManager, c2)
 CDAC_GLOBAL_CONTRACT(GCInfo, c1)
 CDAC_GLOBAL_CONTRACT(Loader, c1)
+CDAC_GLOBAL_CONTRACT(ManagedTypeSource, c1)
 CDAC_GLOBAL_CONTRACT(Notifications, c1)
 #ifdef FEATURE_OBJCMARSHAL
 CDAC_GLOBAL_CONTRACT(ObjectiveCMarshal, c1)
