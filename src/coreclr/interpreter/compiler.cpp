@@ -1399,16 +1399,16 @@ class InterpGcSlotAllocator
                     if (existingRange.OverlapsOrAdjacentTo(start, end))
                     {
                         ConservativeRange updatedRange = existingRange;
-                        INTERP_DUMP("Merging with existing range [%u - %u]\n", existingRange.startOffset, existingRange.endOffset);
+                        INTERP_DUMP("Merging with existing range [%04x - %04x]\n", existingRange.startOffset, existingRange.endOffset);
                         updatedRange.MergeWith(start, end);
                         while ((i + 1 < m_liveRanges.GetSize()) && m_liveRanges.Get(i + 1).OverlapsOrAdjacentTo(start, end))
                         {
                             ConservativeRange otherExistingRange = m_liveRanges.Get(i + 1);
-                            INTERP_DUMP("Merging with existing range [%u - %u]\n", otherExistingRange.startOffset, otherExistingRange.endOffset);
+                            INTERP_DUMP("Merging with existing range [%04x - %04x]\n", otherExistingRange.startOffset, otherExistingRange.endOffset);
                             updatedRange.MergeWith(otherExistingRange.startOffset, otherExistingRange.endOffset);
                             m_liveRanges.RemoveAt(i + 1);
                         }
-                        INTERP_DUMP("Final merged range [%u - %u]\n", updatedRange.startOffset, updatedRange.endOffset);
+                        INTERP_DUMP("Final merged range [%04x - %04x]\n", updatedRange.startOffset, updatedRange.endOffset);
                         m_liveRanges.Set(i, updatedRange);
                         return;
                     }
@@ -1497,7 +1497,7 @@ public:
         uint32_t startOffset = ConvertOffset(m_compiler->GetLiveStartOffset(varIndex)),
             endOffset = ConvertOffset(m_compiler->GetLiveEndOffset(varIndex));
         INTERP_DUMP(
-            "Slot %u (%s var #%d offset %u) live [IR_%04x - IR_%04x] [%u - %u]\n",
+            "Slot %u (%s var #%d offset %u) live [IR_%04x - IR_%04x] [%04x - %04x]\n",
             slot, pVar->global ? "global" : "local",
             varIndex, pVar->offset,
             m_compiler->GetLiveStartOffset(varIndex), m_compiler->GetLiveEndOffset(varIndex),
@@ -1532,7 +1532,7 @@ public:
                 ConservativeRange range = ranges->m_liveRanges.Get(iRange);
 
                 INTERP_DUMP(
-                    "Conservative range for slot %u at %u [%u - %u]\n",
+                    "Conservative range for slot %u at %u [%04x - %04x]\n",
                     *pSlot,
                     (unsigned)(iSlot * sizeof(void *)),
                     range.startOffset,
