@@ -460,6 +460,13 @@ namespace System.Net
 {
     internal sealed class SafeSslHandle : SafeHandle
     {
+        // Backreference used by AppleCryptoNative_SslSetConnection so native
+        // Read/Write callbacks can resolve the owning SafeDeleteSslContext.
+        // Owned here so the lifetime is tied to ReleaseHandle, which only
+        // runs once all outstanding P/Invokes (and therefore any in-flight
+        // callbacks) have completed.
+        private GCHandle<SafeDeleteSslContext> _connectionGCHandle;
+
         public SafeSslHandle()
             : base(IntPtr.Zero, ownsHandle: true)
         {
@@ -470,10 +477,18 @@ namespace System.Net
         {
         }
 
+        internal void SetConnectionGCHandle(GCHandle<SafeDeleteSslContext> handle)
+        {
+            Debug.Assert(!_connectionGCHandle.IsAllocated, "Connection GCHandle already set");
+            _connectionGCHandle = handle;
+        }
+
         protected override bool ReleaseHandle()
         {
             Interop.CoreFoundation.CFRelease(handle);
             SetHandle(IntPtr.Zero);
+            _connectionGCHandle.Dispose();
+
             return true;
         }
 

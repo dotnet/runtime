@@ -33,12 +33,18 @@ namespace System.Xml.XslCompiledTransformApiTests
         XmlDocument, DataDocument, XPathDocument, Unknown
     }
 
+    internal static class XsltApiTestRequirements
+    {
+        public static bool IsSupported =>
+            PlatformDetection.IsReflectionEmitSupported &&
+            // [ActiveIssue("https://github.com/dotnet/runtime/issues/124344")]
+            !(PlatformDetection.IsAppleMobile && PlatformDetection.IsCoreCLR);
+    }
+
     ////////////////////////////////////////////////////////////////
     // Base class for test cases
     //
     ////////////////////////////////////////////////////////////////
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
     public class XsltApiTestCaseBase2
     {
         // Generic data for all derived test cases
