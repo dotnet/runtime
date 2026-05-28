@@ -10,16 +10,16 @@ namespace System.Runtime.CompilerServices
 {
     public static partial class AsyncHelpers
     {
-        private sealed unsafe class ValueTaskContinuation : Continuation
+        private sealed unsafe class ValueTaskSourceContinuation : Continuation
         {
             internal object? Source;
             internal short Token;
             internal delegate*<object, Action<object?>, object?, short, ValueTaskSourceOnCompletedFlags, void> OnCompletedValueTaskSource;
             private delegate*<object, short, ref byte, void> _getResult;
 
-            public ValueTaskContinuation()
+            public ValueTaskSourceContinuation()
             {
-                ResumeInfo = (ResumeInfo*)Unsafe.AsPointer(in ValueTaskContinuationResume.ResumeInfo);
+                ResumeInfo = (ResumeInfo*)Unsafe.AsPointer(in ValueTaskSourceContinuationResume.ResumeInfo);
             }
 
             public void GetResult(ref byte returnValue)
@@ -33,7 +33,7 @@ namespace System.Runtime.CompilerServices
                 _getResult(source, Token, ref returnValue);
             }
 
-            public void Initialize(object source, short token)
+            public void Initialize(IValueTaskSource source, short token)
             {
                 Source = source;
                 Token = token;
@@ -41,7 +41,7 @@ namespace System.Runtime.CompilerServices
                 _getResult = &GetResult;
             }
 
-            public void Initialize<T>(object source, short token)
+            public void Initialize<T>(IValueTaskSource<T> source, short token)
             {
                 Source = source;
                 Token = token;
@@ -58,16 +58,9 @@ namespace System.Runtime.CompilerServices
 
             private static void GetResult(object source, short token, ref byte result)
             {
-                if (source is Task t)
-                {
-                    TaskAwaiter.ValidateEnd(t);
-                }
-                else
-                {
-                    Debug.Assert(source is IValueTaskSource);
-                    IValueTaskSource typedSource = Unsafe.As<object, IValueTaskSource>(ref source);
-                    typedSource.GetResult(token);
-                }
+                Debug.Assert(source is IValueTaskSource);
+                IValueTaskSource typedSource = Unsafe.As<object, IValueTaskSource>(ref source);
+                typedSource.GetResult(token);
             }
 
             private static void OnCompleted<T>(object source, Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags)
@@ -79,36 +72,28 @@ namespace System.Runtime.CompilerServices
 
             private static void GetResult<T>(object source, short token, ref byte result)
             {
-                if (source is Task<T> t)
-                {
-                    TaskAwaiter.ValidateEnd(t);
-                    Unsafe.As<byte, T>(ref result) = t.ResultOnSuccess;
-                }
-                else
-                {
-                    Debug.Assert(source is IValueTaskSource<T>);
-                    IValueTaskSource<T> typedSource = Unsafe.As<object, IValueTaskSource<T>>(ref source);
-                    Unsafe.As<byte, T>(ref result) = typedSource.GetResult(token);
-                }
+                Debug.Assert(source is IValueTaskSource<T>);
+                IValueTaskSource<T> typedSource = Unsafe.As<object, IValueTaskSource<T>>(ref source);
+                Unsafe.As<byte, T>(ref result) = typedSource.GetResult(token);
             }
 
-            private static class ValueTaskContinuationResume
+            private static class ValueTaskSourceContinuationResume
             {
                 [FixedAddressValueType]
                 public static readonly ResumeInfo ResumeInfo = new ResumeInfo
                 {
                     DiagnosticIP = null,
-                    Resume = &ResumeValueTaskContinuation,
+                    Resume = &ResumeValueTaskSourceContinuation,
                 };
 
-                private static Continuation? ResumeValueTaskContinuation(Continuation cont, ref byte result)
+                private static Continuation? ResumeValueTaskSourceContinuation(Continuation cont, ref byte result)
                 {
-                    var vtsCont = (ValueTaskContinuation)cont;
+                    var vtsCont = (ValueTaskSourceContinuation)cont;
                     vtsCont.Next = null;
 
                     Debug.Assert((vtsCont.Flags & ContinuationFlags.AllContinuationFlags) == 0);
 
-                    t_runtimeAsyncAwaitState.CachedValueTaskContinuation = vtsCont;
+                    t_runtimeAsyncAwaitState.CachedValueTaskSourceContinuation = vtsCont;
 
                     vtsCont.GetResult(ref result);
                     return null;

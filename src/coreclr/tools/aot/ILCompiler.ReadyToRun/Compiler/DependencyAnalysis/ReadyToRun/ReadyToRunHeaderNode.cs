@@ -186,7 +186,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 builder.EmitInt((int)item.Id);
 
-                builder.EmitReloc(item.StartSymbol, RelocType.IMAGE_REL_BASED_ADDR32NB);
+                // DelayLoadMethodCallThunks symbols are PCode, but the header entry encodes a data RVA.
+                // Remove the target code delta so the RVA does not include the ARM Thumb bit.
+                int rvaDelta = item.Id == ReadyToRunSectionType.DelayLoadMethodCallThunks ? -factory.Target.CodeDelta : 0;
+                builder.EmitReloc(item.StartSymbol, RelocType.IMAGE_REL_BASED_ADDR32NB, rvaDelta);
 
                 // The header entry for the runtime functions table should not include the 4 byte 0xffffffff sentinel
                 // value in the covered range.
