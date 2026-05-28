@@ -5226,18 +5226,16 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
         }
         useBlockInit = (initSlotCount > 4);
 
-        // If block init applies, precompute the init-span contribution from non-straddling
-        // buckets. The straddling bucket's contribution is folded in by walkStraddle.
+        // If block init applies, precompute the init-span contribution from POST-straddler
+        // buckets only. Pre-straddler buckets contribute order-dependent simOffs (since each
+        // strategy resorts them), so their init-span contribution is folded in per-strategy
+        // by walkLayout. The straddler's contribution is also folded in by walkLayout.
+        // Post-straddler buckets use canonical simOffs computed from bucketSimOffEnd[straddleBucket].
         if (useBlockInit)
         {
-            int so = stkOffs;
-            for (unsigned p = 0; p < allocOrderLen; p++)
+            int so = bucketSimOffEnd[straddleBucket];
+            for (unsigned p = straddleBucket + 1; p < allocOrderLen; p++)
             {
-                if (p == straddleBucket)
-                {
-                    so = bucketSimOffEnd[p];
-                    continue;
-                }
                 for (unsigned k = passStart[p]; k < passStart[p + 1]; k++)
                 {
                     unsigned lcl         = bucketLcls[k];
@@ -5274,21 +5272,64 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
             lvaCount, estimatedLocalSize, isMinOpts ? ", using lightweight ref counts" : "", straddleBucket,
             allocOrderLen, baseCost, maxSavings);
 
-    const unsigned straddleStart       = passStart[straddleBucket];
-    const unsigned straddleCount       = passStart[straddleBucket + 1] - straddleStart;
-    const int      straddleSimOffEntry = bucketSimOffStart[straddleBucket];
+    const unsigned straddleStart    = passStart[straddleBucket];
+    const unsigned straddleCount    = passStart[straddleBucket + 1] - straddleStart;
+    const unsigned preStraddleCount = straddleStart;
 
-    // Compute the straddling bucket's cost contribution given a particular intra-bucket order.
-    // Folds in the init-span penalty when block init is in use.
-    auto walkStraddle = [&](unsigned* order) -> unsigned {
+    // Pre-straddler buckets (when present) participate in each strategy's sort.
+    // Reordering inside a pre-straddler bucket can change alignment padding,
+    // which shifts the straddler's entry simOff and can pull more refs into disp8.
+    unsigned* preStraddleOrder = (preStraddleCount > 0) ? new (this, CMK_LvaTable) unsigned[preStraddleCount] : nullptr;
+    unsigned* bestPreStraddleOrder =
+        (preStraddleCount > 0) ? new (this, CMK_LvaTable) unsigned[preStraddleCount] : nullptr;
+    unsigned* straddleOrder     = new (this, CMK_LvaTable) unsigned[straddleCount];
+    unsigned* bestStraddleOrder = new (this, CMK_LvaTable) unsigned[straddleCount];
+
+    // Walk the layout from the start of frame through the end of the straddler,
+    // using the given pre-straddler and straddler orders. Returns the variable
+    // part of the cost: the straddler's encoding cost plus the init-span penalty.
+    // (Non-straddler bucket encoding costs are invariant w.r.t. order and live in baseCost.)
+    auto walkLayout = [&](unsigned* preOrder, unsigned* strOrder) -> unsigned {
         unsigned cost    = 0;
-        int      so      = straddleSimOffEntry;
+        int      so      = stkOffs;
         int      initLo  = baseInitLo;
         int      initHi  = baseInitHi;
         bool     hasInit = baseHasInit;
+
+        // Pre-straddler buckets: walk for alignment padding (which shifts the straddler
+        // entry simOff) and for init-span contribution. Encoding cost is invariant.
+        for (unsigned k = 0; k < preStraddleCount; k++)
+        {
+            unsigned lcl         = preOrder[k];
+            int      signedAlign = static_cast<int>(lclAlignTo[lcl]);
+            if ((signedAlign != 0) && ((so % signedAlign) != 0))
+            {
+                so -= signedAlign + (so % signedAlign);
+            }
+            so -= static_cast<int>(lclSize[lcl]);
+
+            if (useBlockInit && (lclNeedsInit[lcl]))
+            {
+                int loOffs = so;
+                int hiOffs = so + static_cast<int>(lclSize[lcl]);
+                if (!hasInit)
+                {
+                    initLo  = loOffs;
+                    initHi  = hiOffs;
+                    hasInit = true;
+                }
+                else
+                {
+                    initLo = min(initLo, loOffs);
+                    initHi = max(initHi, hiOffs);
+                }
+            }
+        }
+
+        // Straddler bucket: encoding cost varies with order; init span continues to accumulate.
         for (unsigned k = 0; k < straddleCount; k++)
         {
-            unsigned lcl         = order[k];
+            unsigned lcl         = strOrder[k];
             int      signedAlign = static_cast<int>(lclAlignTo[lcl]);
             if ((signedAlign != 0) && ((so % signedAlign) != 0))
             {
@@ -5325,27 +5366,42 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
         return cost;
     };
 
-    unsigned* straddleOrder     = new (this, CMK_LvaTable) unsigned[straddleCount];
-    unsigned* bestStraddleOrder = new (this, CMK_LvaTable) unsigned[straddleCount];
+    // Score the original (unsorted) order as baseline.
+    if (preStraddleCount > 0)
+    {
+        memcpy(preStraddleOrder, bucketLcls, preStraddleCount * sizeof(unsigned));
+        memcpy(bestPreStraddleOrder, preStraddleOrder, preStraddleCount * sizeof(unsigned));
+    }
     memcpy(straddleOrder, &bucketLcls[straddleStart], straddleCount * sizeof(unsigned));
     memcpy(bestStraddleOrder, straddleOrder, straddleCount * sizeof(unsigned));
-
-    // Score the original (unsorted) order as baseline.
-    unsigned    origCost     = baseCost + walkStraddle(straddleOrder);
+    unsigned    origCost     = baseCost + walkLayout(preStraddleOrder, straddleOrder);
     unsigned    bestCost     = origCost;
     int         bestStrategy = -1;
     const char* bestName     = "original";
 
-    // Helper to try a strategy: sort straddleOrder, score, track if best.
+    // Helper to try a strategy: sort each pre-straddler bucket and the straddler
+    // independently with the comparator (bucket boundaries are preserved), then
+    // score with walkLayout and track if best.
     auto tryStrategy = [&](int strategyIdx, const char* name, auto comparator) -> unsigned {
+        for (unsigned p = 0; p < straddleBucket; p++)
+        {
+            unsigned bStart = passStart[p];
+            unsigned bEnd   = passStart[p + 1];
+            memcpy(&preStraddleOrder[bStart], &bucketLcls[bStart], (bEnd - bStart) * sizeof(unsigned));
+            jitstd::sort(&preStraddleOrder[bStart], &preStraddleOrder[bEnd], comparator);
+        }
         memcpy(straddleOrder, &bucketLcls[straddleStart], straddleCount * sizeof(unsigned));
         jitstd::sort(straddleOrder, straddleOrder + straddleCount, comparator);
-        unsigned cost = baseCost + walkStraddle(straddleOrder);
+        unsigned cost = baseCost + walkLayout(preStraddleOrder, straddleOrder);
         if (cost < bestCost)
         {
             bestCost     = cost;
             bestStrategy = strategyIdx;
             bestName     = name;
+            if (preStraddleCount > 0)
+            {
+                memcpy(bestPreStraddleOrder, preStraddleOrder, preStraddleCount * sizeof(unsigned));
+            }
             memcpy(bestStraddleOrder, straddleOrder, straddleCount * sizeof(unsigned));
         }
         return cost;
@@ -5469,24 +5525,30 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
         return nullptr;
     }
 
-    // Assemble the final permutation: each bucket in its original order, EXCEPT the
-    // straddling bucket, which uses the best strategy's intra-bucket sort; followed by
-    // non-allocatable locals (the caller filters those out anyway).
+    // Assemble the final permutation:
+    //   - Pre-straddler buckets use the best strategy's intra-bucket sort.
+    //   - The straddler bucket uses the best strategy's intra-bucket sort.
+    //   - Post-straddler buckets stay in canonical order.
+    //   - Non-allocatable locals tail (the caller filters those out anyway).
     unsigned* bestOrder = new (this, CMK_LvaTable) unsigned[lvaCount];
     unsigned  outIdx    = 0;
     for (unsigned p = 0; p < allocOrderLen; p++)
     {
-        if (p == straddleBucket)
+        unsigned bStart     = passStart[p];
+        unsigned bucketSize = passStart[p + 1] - bStart;
+        if (p < straddleBucket)
         {
-            memcpy(&bestOrder[outIdx], bestStraddleOrder, straddleCount * sizeof(unsigned));
-            outIdx += straddleCount;
+            memcpy(&bestOrder[outIdx], &bestPreStraddleOrder[bStart], bucketSize * sizeof(unsigned));
+        }
+        else if (p == straddleBucket)
+        {
+            memcpy(&bestOrder[outIdx], bestStraddleOrder, bucketSize * sizeof(unsigned));
         }
         else
         {
-            unsigned bucketSize = passStart[p + 1] - passStart[p];
-            memcpy(&bestOrder[outIdx], &bucketLcls[passStart[p]], bucketSize * sizeof(unsigned));
-            outIdx += bucketSize;
+            memcpy(&bestOrder[outIdx], &bucketLcls[bStart], bucketSize * sizeof(unsigned));
         }
+        outIdx += bucketSize;
     }
     if (outIdx < lvaCount)
     {
