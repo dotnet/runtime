@@ -37,8 +37,6 @@
 #  define __NR_close_range 436
 # endif
 #endif // !defined(__NR_close_range)
-#else // HAVE_CLOSE_RANGE
-#include <sys/syscall.h>
 #endif // !defined(HAVE_CLOSE_RANGE)
 #endif // defined(__linux__)
 #if (HAVE_CLOSE_RANGE || defined(__NR_close_range)) && !defined(CLOSE_RANGE_CLOEXEC)
@@ -542,12 +540,11 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
 #if HAVE_PR_SET_PDEATHSIG
     if (killOnParentExit)
     {
-        int32_t result = ForkAndExecOnPDeathSigThread(
+        return ForkAndExecOnPDeathSigThread(
             filename, argv, envp, cwd,
             setCredentials, userId, groupId, groups, groupsLength,
             childPid, stdinFd, stdoutFd, stderrFd,
             inheritedFds, inheritedFdCount, startDetached);
-        return result;
     }
 #else
     (void)killOnParentExit;

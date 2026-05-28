@@ -65,16 +65,10 @@ namespace Microsoft.Win32.SafeHandles
         /// <exception cref="Win32Exception">Thrown when the process could not be opened.</exception>
         /// <remarks>
         /// <para>
-        /// On Windows, this method uses OpenProcess with PROCESS_QUERY_LIMITED_INFORMATION, SYNCHRONIZE, and PROCESS_TERMINATE permissions.
-        /// If the process has already exited, the method may still succeed and return a valid handle representing the terminated process;
-        /// waiting on such a handle returns immediately.
+        /// On Windows, if the process has already exited, the method may still succeed and return a valid handle representing the terminated process.
         /// </para>
         /// <para>
-        /// On Unix, this method uses kill(pid, 0) to verify the process exists and the caller has permission to signal it.
-        /// If it's not a child process of the current process, the returned handle is prone to process ID reuse issues in this case.
-        /// </para>
-        /// <para>
-        /// On Unix, if the process has already exited and been removed from the process table, a <see cref="Win32Exception"/> is thrown.
+        /// On Unix, if the process has already exited and been reaped, a <see cref="Win32Exception"/> is thrown.
         /// </para>
         /// </remarks>
         [UnsupportedOSPlatform("ios")]

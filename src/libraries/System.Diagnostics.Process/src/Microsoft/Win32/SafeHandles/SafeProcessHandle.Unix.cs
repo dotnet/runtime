@@ -380,8 +380,7 @@ namespace Microsoft.Win32.SafeHandles
                 throw ProcessUtils.CreateExceptionForErrorStartingProcess(new Interop.ErrorInfo(errno).GetErrorMessage(), errno, resolvedFilename, cwd);
             }
 
-            SafeProcessHandle processHandle = new SafeProcessHandle(waitStateHolder!);
-            return processHandle;
+            return new SafeProcessHandle(waitStateHolder!);
         }
     }
 }

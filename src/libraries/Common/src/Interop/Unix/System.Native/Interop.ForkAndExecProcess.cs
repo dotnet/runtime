@@ -17,7 +17,7 @@ internal static partial class Interop
             string filename, string[] argv, IDictionary<string, string?> env, string? cwd,
             bool setUser, uint userId, uint groupId, uint[]? groups,
             out int lpChildPid, SafeFileHandle? stdinFd, SafeFileHandle? stdoutFd, SafeFileHandle? stderrFd,
-            bool startDetached, bool killOnParentExit, SafeHandle[]? inheritedHandles)
+            bool startDetached, bool killOnParentExit, SafeHandle[]? inheritedHandles = null)
         {
             byte** argvPtr = null, envpPtr = null;
             int result = -1;
