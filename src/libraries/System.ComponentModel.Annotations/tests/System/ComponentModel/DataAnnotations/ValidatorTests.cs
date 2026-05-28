@@ -1584,7 +1584,8 @@ namespace System.ComponentModel.DataAnnotations.Tests
             protected override async Task<ValidationResult?> IsValidAsync(
                 object? value, ValidationContext validationContext, CancellationToken cancellationToken)
             {
-                await Task.Delay(100, cancellationToken);
+                await Task.Yield();
+                cancellationToken.ThrowIfCancellationRequested();
 
                 return ValidationResult.Success;
             }
@@ -1599,7 +1600,8 @@ namespace System.ComponentModel.DataAnnotations.Tests
             protected override async Task<ValidationResult?> IsValidAsync(
                 object? value, ValidationContext validationContext, CancellationToken cancellationToken)
             {
-                await Task.Delay(100, cancellationToken);
+                await Task.Yield();
+                cancellationToken.ThrowIfCancellationRequested();
 
                 return new ValidationResult("Async delayed validation failed");
             }
@@ -1609,13 +1611,13 @@ namespace System.ComponentModel.DataAnnotations.Tests
         public class AsyncConcurrencyProbeAttribute : AsyncValidationAttribute
         {
             public static int ConcurrentCount;
-            public static TaskCompletionSource<bool> AllRunningGate = new();
+            public static TaskCompletionSource<bool> AllRunningGate = new(TaskCreationOptions.RunContinuationsAsynchronously);
             public static int ExpectedCount;
 
             public static void Reset(int expectedCount)
             {
                 ConcurrentCount = 0;
-                AllRunningGate = new TaskCompletionSource<bool>();
+                AllRunningGate = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
                 ExpectedCount = expectedCount;
             }
 
