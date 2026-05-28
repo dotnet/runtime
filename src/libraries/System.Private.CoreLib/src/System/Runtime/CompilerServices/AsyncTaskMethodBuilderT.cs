@@ -357,7 +357,7 @@ namespace System.Runtime.CompilerServices
                 AsyncInstrumentation.Flags flags = AsyncInstrumentation.SyncActiveFlags();
                 if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
                 {
-                    if (AsyncInstrumentation.IsEnabled.ResumeAsyncMethod(flags))
+                    if (AsyncInstrumentation.IsEnabled.ResumeAsyncContext(flags) || AsyncInstrumentation.IsEnabled.ResumeAsyncMethod(flags))
                     {
                         Debug.WriteLine($"[AsyncTaskMethodBuilder.MoveNext] method={GetType().Name}, tid={Environment.CurrentManagedThreadId}");
                         AsyncTaskDispatcherInfo.ResumeAsyncMethod();
@@ -434,6 +434,104 @@ namespace System.Runtime.CompilerServices
 
             /// <summary>Gets the state machine as a boxed object.  This should only be used for debugging purposes.</summary>
             IAsyncStateMachine IAsyncStateMachineBox.GetStateMachineObject() => StateMachine!; // likely boxes, only use for debugging
+
+            void IAsyncStateMachineBox.GetDiagnosticData(out ulong methodId, out int state, out object? nextContinuation)
+            {
+                methodId = TStateMachineDiagnosticData.MethodId;
+                state = TStateMachineDiagnosticData.GetState(ref StateMachine);
+                nextContinuation = this.DiagnosticContinuationObject;
+            }
+
+            private static class TStateMachineDiagnosticData
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                public static int GetState(ref TStateMachine? stateMachine)
+                {
+                    if (typeof(TStateMachine).IsValueType)
+                    {
+                        // Struct: state field is inline at offset within the struct
+                        return Unsafe.As<byte, int>(ref Unsafe.AddByteOffset(ref Unsafe.As<TStateMachine?, byte>(ref stateMachine), (nint)s_resolveStateFieldOffset));
+                    }
+                    else
+                    {
+                        // Class (debug builds): StateMachine is a reference, dereference to get object data
+                        if (stateMachine != null)
+                        {
+                            return Unsafe.As<byte, int>(ref Unsafe.AddByteOffset(ref RuntimeHelpers.GetRawData(stateMachine), (nint)s_resolveStateFieldOffset));
+                        }
+                    }
+
+                    return -1;
+                }
+
+                public static ulong MethodId => s_methodId;
+
+                private static readonly ulong s_methodId = ResolveMethodId();
+                private static readonly int s_resolveStateFieldOffset = ResolveStateFieldOffset();
+
+#if NATIVEAOT
+                private static ulong ResolveMethodId()
+                {
+                    unsafe
+                    {
+                        MethodTable* instanceType = (MethodTable*)typeof(TStateMachine).TypeHandle.Value;
+                        MethodTable* interfaceType = (MethodTable*)typeof(IAsyncStateMachine).TypeHandle.Value;
+                        if (instanceType != null && interfaceType != null)
+                        {
+                            return (ulong)RuntimeImports.RhResolveDispatchOnType(instanceType, interfaceType, slot: 0);
+                        }
+                        return 0;
+                    }
+                }
+#else
+
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2090", Justification = "State machine types are always preserved.")]
+                private static ulong ResolveMethodId()
+                {
+                    MethodInfo? methodInfo = typeof(TStateMachine).GetMethod("MoveNext", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                    if (methodInfo != null)
+                    {
+                        return (ulong)methodInfo.MethodHandle.Value;
+                    }
+
+                    return 0;
+                }
+#endif
+
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2090", Justification = "State machine types are always preserved.")]
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2087", Justification = "Only reachable for class state machines (debug builds) where Roslyn always generates constructors. The type is guaranteed preserved because AsyncStateMachineBox<TStateMachine> directly instantiates and uses it.")]
+                private static int ResolveStateFieldOffset()
+                {
+                    FieldInfo? stateField = typeof(TStateMachine).GetField("<>1__state", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                    if (stateField != null)
+                    {
+#if NATIVEAOT
+                        const int Sentinel = 0x7F345678;
+
+                        object instance = typeof(TStateMachine).IsValueType ? (object)default(TStateMachine)! : RuntimeHelpers.GetUninitializedObject(typeof(TStateMachine));
+                        stateField.SetValue(instance, Sentinel);
+
+                        int size = (int)RuntimeHelpers.GetRawObjectDataSize(instance);
+                        Debug.Assert(size >= sizeof(int), "TStateMachine object is too small to contain a state field.");
+
+                        ref byte data = ref RuntimeHelpers.GetRawData(instance);
+
+                        for (int i = 0; i < size; i += sizeof(int))
+                        {
+                            if (Unsafe.As<byte, int>(ref Unsafe.AddByteOffset(ref data, i)) == Sentinel)
+                            {
+                                return i;
+                            }
+                        }
+#else
+                        Debug.Assert(stateField is RtFieldInfo, $"Expected RtFieldInfo but got {stateField.GetType().Name}");
+                        return RuntimeFieldHandle.GetInstanceFieldOffset((RtFieldInfo)stateField);
+#endif
+                    }
+
+                    return 0;
+                }
+            }
         }
 
         /// <summary>Gets the <see cref="Task{TResult}"/> for this builder.</summary>

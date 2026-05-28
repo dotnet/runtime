@@ -30,6 +30,15 @@ namespace System.Threading.Tasks.Tests
         ResetAsyncContinuationWrapperIndex = 12,
         AsyncProfilerMetadata = 13,
         AsyncProfilerSyncClock = 14,
+        AppendAsyncCallstack = 15,
+    }
+
+    //Mirrors AsyncProfiler.AsyncCallstackType from the runtime (which is internal and inaccessible from tests).
+    public enum AsyncCallstackType : byte
+    {
+        Compiler = 0x1,
+        Runtime = 0x2,
+        Cached = 0x80
     }
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/127951", TestPlatforms.Android | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
@@ -95,19 +104,45 @@ namespace System.Threading.Tasks.Tests
                 ? typeof(StackFrame).GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic, null, new[] { typeof(IntPtr), typeof(bool) }, null)
                 : null;
 
-        internal static string? GetMethodNameFromNativeIP(ulong nativeIP)
+        internal static string? GetMethodNameFromMethodId(AsyncCallstackType callstackType, ulong methodId)
         {
-            if (s_getMethodFromNativeIPMethod is not null)
+            if (methodId != 0)
             {
-                var method = (MethodBase?)s_getMethodFromNativeIPMethod.Invoke(null, new object[] { (IntPtr)nativeIP });
-                return method?.Name;
-            }
+                if (callstackType == AsyncCallstackType.Runtime)
+                {
+                    if (s_getMethodFromNativeIPMethod is not null)
+                    {
+                        var method = (MethodBase?)s_getMethodFromNativeIPMethod.Invoke(null, new object[] { (IntPtr)methodId });
+                        return method?.Name;
+                    }
 
-            if (s_stackFrameFromIPCtor is not null)
-            {
-                var frame = (StackFrame)s_stackFrameFromIPCtor.Invoke(new object[] { (IntPtr)nativeIP, false })!;
-                var diagInfo = DiagnosticMethodInfo.Create(frame);
-                return diagInfo?.Name;
+                    if (s_stackFrameFromIPCtor is not null)
+                    {
+                        var frame = (StackFrame)s_stackFrameFromIPCtor.Invoke(new object[] { (IntPtr)methodId, false })!;
+                        var diagInfo = DiagnosticMethodInfo.Create(frame);
+                        return diagInfo?.Name;
+                    }
+                }
+                else if (callstackType == AsyncCallstackType.Compiler)
+                {
+                    System.RuntimeMethodHandle handle = RuntimeMethodHandle.FromIntPtr((IntPtr)methodId);
+                    MethodBase? method = MethodBase.GetMethodFromHandle(handle);
+                    if (method != null)
+                    {
+                        string methodName = method.DeclaringType.Name;
+
+                        int start = methodName.IndexOf('<');
+                        int end = methodName.IndexOf('>');
+
+                        start++;
+                        if (start > 0 && end > start)
+                        {
+                            methodName = methodName.Substring(start, end - start);
+                        }
+
+                        return methodName;
+                    }
+                }
             }
 
             return null;
@@ -370,6 +405,7 @@ namespace System.Threading.Tasks.Tests
                 case AsyncEventID.CreateAsyncCallstack:
                 case AsyncEventID.ResumeAsyncCallstack:
                 case AsyncEventID.SuspendAsyncCallstack:
+                case AsyncEventID.AppendAsyncCallstack:
                     SkipCallstackPayload(buffer, ref index);
                     return true;
                 default:
@@ -395,15 +431,15 @@ namespace System.Threading.Tasks.Tests
         }
 
         private static void ReadCallstackPayload(ReadOnlySpan<byte> buffer, ref int index,
-            out byte frameCount, out List<(ulong NativeIP, int State)> frames)
+            out byte frameCount, out List<(ulong MethodId, int State)> frames)
         {
-            ReadCallstackPayload(buffer, ref index, out _, out frameCount, out frames);
+            ReadCallstackPayload(buffer, ref index, out _, out _, out frameCount, out frames);
         }
 
         private static void ReadCallstackPayload(ReadOnlySpan<byte> buffer, ref int index,
-            out ulong taskId, out byte frameCount, out List<(ulong NativeIP, int State)> frames)
+            out ulong taskId, out AsyncCallstackType callstackType, out byte frameCount, out List<(ulong MethodId, int State)> frames)
         {
-            index++; // type
+            callstackType = (AsyncCallstackType)buffer[index++]; // type
             index++; // callstack ID (reserved)
             frameCount = buffer[index++];
             taskId = ReadCompressedUInt64(buffer, ref index);
@@ -412,16 +448,16 @@ namespace System.Threading.Tasks.Tests
             if (frameCount == 0)
                 return;
 
-            ulong currentNativeIP = ReadCompressedUInt64(buffer, ref index);
+            ulong currentMethodId = ReadCompressedUInt64(buffer, ref index);
             int state = ReadCompressedInt32(buffer, ref index);
-            frames.Add((currentNativeIP, state));
+            frames.Add((currentMethodId, state));
 
             for (int i = 1; i < frameCount; i++)
             {
                 long delta = ReadCompressedInt64(buffer, ref index);
                 state = ReadCompressedInt32(buffer, ref index);
-                currentNativeIP = (ulong)((long)currentNativeIP + delta);
-                frames.Add((currentNativeIP, state));
+                currentMethodId = (ulong)((long)currentMethodId + delta);
+                frames.Add((currentMethodId, state));
             }
         }
 
@@ -486,8 +522,9 @@ namespace System.Threading.Tasks.Tests
             public ulong TaskId { get; init; }
 
             // Callstack events (Create/Resume/Suspend): frames
+            public AsyncCallstackType CallstackType { get; init; }
             public byte FrameCount { get; init; }
-            public List<(ulong NativeIP, int State)> Frames { get; init; } = [];
+            public List<(ulong MethodId, int State)> Frames { get; init; } = [];
 
             // UnwindAsyncException: frame count unwound
             public uint UnwindFrameCount { get; init; }
@@ -507,9 +544,9 @@ namespace System.Threading.Tasks.Tests
             {
                 if (Frames.Count == 0)
                     return false;
-                foreach (var (nativeIP, _) in Frames)
+                foreach (var (methodId, _) in Frames)
                 {
-                    var methodName = GetMethodNameFromNativeIP(nativeIP);
+                    var methodName = GetMethodNameFromMethodId(CallstackType, methodId);
                     if (methodName is not null && methodName.Contains(markerMethodName, StringComparison.Ordinal))
                         return true;
                 }
@@ -614,6 +651,7 @@ namespace System.Threading.Tasks.Tests
 
                 ulong osThreadId = header.Value.OsThreadId;
                 ulong currentTaskId = 0;
+                var taskIdStack = new Stack<ulong>();
                 int index = HeaderSize;
                 long baseTimestamp = (long)header.Value.StartTimestamp;
 
@@ -629,9 +667,12 @@ namespace System.Threading.Tasks.Tests
                     ParsedEvent evt = eventId switch
                     {
                         AsyncEventID.CreateAsyncContext or AsyncEventID.ResumeAsyncContext =>
-                            ParseContextEvent(eventId, baseTimestamp, osThreadId, buffer, ref index, ref currentTaskId),
+                            ParseContextEvent(eventId, baseTimestamp, osThreadId, buffer, ref index, ref currentTaskId, taskIdStack),
 
-                        AsyncEventID.SuspendAsyncContext or AsyncEventID.CompleteAsyncContext or
+                        AsyncEventID.CompleteAsyncContext =>
+                            ParseCompleteContextEvent(baseTimestamp, osThreadId, ref currentTaskId, taskIdStack),
+
+                        AsyncEventID.SuspendAsyncContext or
                         AsyncEventID.ResumeAsyncMethod or AsyncEventID.CompleteAsyncMethod =>
                             new ParsedEvent
                             {
@@ -645,8 +686,8 @@ namespace System.Threading.Tasks.Tests
                             ParseResetEvent(eventId, baseTimestamp, osThreadId, ref currentTaskId),
 
                         AsyncEventID.CreateAsyncCallstack or AsyncEventID.ResumeAsyncCallstack or
-                        AsyncEventID.SuspendAsyncCallstack =>
-                            ParseCallstackEvent(eventId, baseTimestamp, osThreadId, buffer, ref index),
+                        AsyncEventID.SuspendAsyncCallstack or AsyncEventID.AppendAsyncCallstack =>
+                            ParseCallstackEvent(eventId, baseTimestamp, osThreadId, buffer, ref index, ref currentTaskId, taskIdStack),
 
                         AsyncEventID.UnwindAsyncException =>
                             ParseUnwindEvent(baseTimestamp, osThreadId, currentTaskId, buffer, ref index),
@@ -667,9 +708,11 @@ namespace System.Threading.Tasks.Tests
             return new ParsedEventStream(allEvents);
 
             static ParsedEvent ParseContextEvent(AsyncEventID eventId, long timestamp, ulong osThreadId,
-                ReadOnlySpan<byte> buffer, ref int index, ref ulong currentTaskId)
+                ReadOnlySpan<byte> buffer, ref int index, ref ulong currentTaskId, Stack<ulong> taskIdStack)
             {
                 ulong id = ReadCompressedUInt64(buffer, ref index);
+                if (eventId == AsyncEventID.ResumeAsyncContext && id != currentTaskId)
+                    taskIdStack.Push(currentTaskId);
                 currentTaskId = id;
                 return new ParsedEvent
                 {
@@ -677,6 +720,20 @@ namespace System.Threading.Tasks.Tests
                     Timestamp = timestamp,
                     OsThreadId = osThreadId,
                     TaskId = id
+                };
+            }
+
+            static ParsedEvent ParseCompleteContextEvent(long timestamp, ulong osThreadId,
+                ref ulong currentTaskId, Stack<ulong> taskIdStack)
+            {
+                ulong completedTaskId = currentTaskId;
+                currentTaskId = taskIdStack.Count > 0 ? taskIdStack.Pop() : 0;
+                return new ParsedEvent
+                {
+                    EventId = AsyncEventID.CompleteAsyncContext,
+                    Timestamp = timestamp,
+                    OsThreadId = osThreadId,
+                    TaskId = completedTaskId
                 };
             }
 
@@ -695,15 +752,21 @@ namespace System.Threading.Tasks.Tests
             }
 
             static ParsedEvent ParseCallstackEvent(AsyncEventID eventId, long timestamp, ulong osThreadId,
-                ReadOnlySpan<byte> buffer, ref int index)
+                ReadOnlySpan<byte> buffer, ref int index, ref ulong currentTaskId, Stack<ulong> taskIdStack)
             {
-                ReadCallstackPayload(buffer, ref index, out ulong taskId, out byte frameCount, out var frames);
+                ReadCallstackPayload(buffer, ref index, out ulong taskId, out AsyncCallstackType callstackType, out byte frameCount, out var frames);
+                if (taskId != currentTaskId)
+                {
+                    taskIdStack.Push(currentTaskId);
+                    currentTaskId = taskId;
+                }
                 return new ParsedEvent
                 {
                     EventId = eventId,
                     Timestamp = timestamp,
                     OsThreadId = osThreadId,
                     TaskId = taskId,
+                    CallstackType = callstackType,
                     FrameCount = frameCount,
                     Frames = frames
                 };
@@ -793,8 +856,20 @@ namespace System.Threading.Tasks.Tests
 
         private static void RunScenarioAndFlush(Func<Task> scenario)
         {
-            Task.Run(scenario).GetAwaiter().GetResult();
-            SendFlushCommand();
+            // V1 (task-based) async: the dispatcher's finally block emits CompleteAsyncContext
+            // after inner.MoveNext() returns, but MoveNext() already set the task result which
+            // unblocks this thread. Brief sleep ensures the pool thread's finally completes.
+            // V2 (runtime-async) does not have this issue — Complete fires inside the dispatch
+            // loop before the task is signaled.
+            try
+            {
+                Task.Run(scenario).GetAwaiter().GetResult();
+            }
+            finally
+            {
+                Thread.Sleep(50);
+                SendFlushCommand();
+            }
         }
 
         private static void RunScenario(Func<Task> scenario)
@@ -870,7 +945,7 @@ namespace System.Threading.Tasks.Tests
             foreach (var cs in callstacks)
             {
                 var resolvedNames = cs.Frames
-                    .Select(f => GetMethodNameFromNativeIP(f.NativeIP))
+                    .Select(f => GetMethodNameFromMethodId(cs.CallstackType, f.MethodId))
                     .ToList();
 
                 int matchIndex = 0;
@@ -1119,7 +1194,7 @@ namespace System.Threading.Tasks.Tests
             {
                 Assert.True(cs.FrameCount > 0, "Expected at least one frame in create callstack");
                 Assert.True(cs.TaskId != 0, "Expected non-zero task ID in create callstack");
-                Assert.True(cs.Frames[0].NativeIP != 0, "Expected non-zero NativeIP in first frame");
+                Assert.True(cs.Frames[0].MethodId != 0, "Expected non-zero MethodId in first frame");
             });
         }
 
@@ -1173,7 +1248,7 @@ namespace System.Threading.Tasks.Tests
             {
                 Assert.True(cs.FrameCount > 0, "Expected at least one frame in suspend callstack");
                 Assert.True(cs.TaskId != 0, "Expected non-zero task ID in suspend callstack");
-                Assert.True(cs.Frames[0].NativeIP != 0, "Expected non-zero NativeIP in first frame");
+                Assert.True(cs.Frames[0].MethodId != 0, "Expected non-zero MethodId in first frame");
             });
         }
 
@@ -1339,7 +1414,7 @@ namespace System.Threading.Tasks.Tests
                 Assert.Equal(create.Frames.Count, matchingResume.Frames.Count);
                 for (int i = 0; i < create.Frames.Count; i++)
                 {
-                    Assert.Equal(create.Frames[i].NativeIP, matchingResume.Frames[i].NativeIP);
+                    Assert.Equal(create.Frames[i].MethodId, matchingResume.Frames[i].MethodId);
                 }
             }
 
@@ -1369,7 +1444,7 @@ namespace System.Threading.Tasks.Tests
             {
                 Assert.True(cs.FrameCount > 0, "Expected at least one frame in callstack");
                 Assert.True(cs.TaskId != 0, "Expected non-zero task ID in resume callstack");
-                Assert.True(cs.Frames[0].NativeIP != 0, "Expected non-zero NativeIP in first frame");
+                Assert.True(cs.Frames[0].MethodId != 0, "Expected non-zero MethodId in first frame");
             });
         }
 
@@ -1991,15 +2066,15 @@ namespace System.Threading.Tasks.Tests
             {
                 for (int i = 0; i < cs.Frames.Count; i++)
                 {
-                    var (nativeIP, _) = cs.Frames[i];
-                    Assert.True(nativeIP != 0, $"Frame {i} has zero NativeIP");
+                    var (methodId, _) = cs.Frames[i];
+                    Assert.True(methodId != 0, $"Frame {i} has zero MethodId");
 
-                    var method = GetMethodNameFromNativeIP(nativeIP);
-                    Assert.True(method is not null, $"Frame {i}: NativeIP 0x{nativeIP:X} does not resolve to a managed method");
+                    var method = GetMethodNameFromMethodId(cs.CallstackType, methodId);
+                    Assert.True(method is not null, $"Frame {i}: MethodId 0x{methodId:X} does not resolve to a managed method");
 
                     if (i > 0)
                     {
-                        long delta = (long)(cs.Frames[i].NativeIP - cs.Frames[i - 1].NativeIP);
+                        long delta = (long)(cs.Frames[i].MethodId - cs.Frames[i - 1].MethodId);
                         if (delta > 0)
                             hasPositiveDelta = true;
                         else if (delta < 0)
@@ -2060,11 +2135,11 @@ namespace System.Threading.Tasks.Tests
                 Assert.Equal((int)cs.FrameCount, cs.Frames.Count);
                 for (int f = 0; f < cs.Frames.Count; f++)
                 {
-                    var (nativeIP, _) = cs.Frames[f];
-                    Assert.True(nativeIP != 0, $"Frame {f} has zero NativeIP");
+                    var (methodId, _) = cs.Frames[f];
+                    Assert.True(methodId != 0, $"Frame {f} has zero MethodId");
 
-                    var method = GetMethodNameFromNativeIP(nativeIP);
-                    Assert.True(method is not null, $"Frame {f}: NativeIP 0x{nativeIP:X} does not resolve to a managed method");
+                    var method = GetMethodNameFromMethodId(cs.CallstackType, methodId);
+                    Assert.True(method is not null, $"Frame {f}: MethodId 0x{methodId:X} does not resolve to a managed method");
                 }
             }
 
@@ -2210,11 +2285,11 @@ namespace System.Threading.Tasks.Tests
                         Assert.Equal((int)cs.FrameCount, cs.Frames.Count);
                         for (int f = 0; f < cs.Frames.Count; f++)
                         {
-                            var (nativeIP, _) = cs.Frames[f];
-                            Assert.True(nativeIP != 0, $"Overflow callstack frame {f} has zero NativeIP");
+                            var (methodId, _) = cs.Frames[f];
+                            Assert.True(methodId != 0, $"Overflow callstack frame {f} has zero MethodId");
 
-                            var method = GetMethodNameFromNativeIP(nativeIP);
-                            Assert.True(method is not null, $"Overflow callstack frame {f}: NativeIP 0x{nativeIP:X} does not resolve to a managed method");
+                            var method = GetMethodNameFromMethodId(cs.CallstackType, methodId);
+                            Assert.True(method is not null, $"Overflow callstack frame {f}: MethodId 0x{methodId:X} does not resolve to a managed method");
                         }
                     }
                 }
@@ -2258,11 +2333,11 @@ namespace System.Threading.Tasks.Tests
             Assert.Equal((int)deepest.FrameCount, deepest.Frames.Count);
 
             // Verify all frames are valid.
-            foreach (var (nativeIP, _) in deepest.Frames)
+            foreach (var (methodId, _) in deepest.Frames)
             {
-                Assert.True(nativeIP != 0, "Frame has zero NativeIP");
-                var method = GetMethodNameFromNativeIP(nativeIP);
-                Assert.True(method is not null, $"NativeIP 0x{nativeIP:X} does not resolve to a managed method");
+                Assert.True(methodId != 0, "Frame has zero MethodId");
+                var method = GetMethodNameFromMethodId(deepest.CallstackType, methodId);
+                Assert.True(method is not null, $"MethodId 0x{methodId:X} does not resolve to a managed method");
             }
         }
 
@@ -2371,6 +2446,7 @@ namespace System.Threading.Tasks.Tests
                         AsyncEventID.CreateAsyncCallstack => OutputAsyncCallstackEvent("CreateAsyncCallstack", buffer.Slice(index)),
                         AsyncEventID.ResumeAsyncCallstack => OutputAsyncCallstackEvent("ResumeAsyncCallstack", buffer.Slice(index)),
                         AsyncEventID.SuspendAsyncCallstack => OutputAsyncCallstackEvent("SuspendAsyncCallstack", buffer.Slice(index)),
+                        AsyncEventID.AppendAsyncCallstack => OutputAsyncCallstackEvent("AppendAsyncCallstack", buffer.Slice(index)),
                         AsyncEventID.ResumeAsyncMethod => OutputResumeAsyncMethodEvent(),
                         AsyncEventID.CompleteAsyncMethod => OutputCompleteAsyncMethodEvent(),
                         AsyncEventID.ResetAsyncThreadContext => OutputResetAsyncThreadContextEvent(),
@@ -2539,32 +2615,32 @@ namespace System.Threading.Tasks.Tests
                 return index;
             }
 
-            ulong previousNativeIP;
-            ulong currentNativeIP;
+            ulong previousMethodId;
+            ulong currentMethodId;
             int state;
 
-            Deserializer.ReadCompressedUInt64(buffer, ref index, out currentNativeIP);
+            Deserializer.ReadCompressedUInt64(buffer, ref index, out currentMethodId);
             Deserializer.ReadCompressedInt32(buffer, ref index, out state);
 
-            OutputAsyncFrame(currentNativeIP, state, 0);
+            OutputAsyncFrame((AsyncCallstackType)type, currentMethodId, state, 0);
 
             for (int i = 1; i < asyncCallstackLength; i++)
             {
-                previousNativeIP = currentNativeIP;
-                Deserializer.ReadCompressedInt64(buffer, ref index, out long nativeIPDelta);
+                previousMethodId = currentMethodId;
+                Deserializer.ReadCompressedInt64(buffer, ref index, out long methodIdDelta);
                 Deserializer.ReadCompressedInt32(buffer, ref index, out state);
-                currentNativeIP = previousNativeIP + (ulong)nativeIPDelta;
-                OutputAsyncFrame(currentNativeIP, state, i);
+                currentMethodId = previousMethodId + (ulong)methodIdDelta;
+                OutputAsyncFrame((AsyncCallstackType)type, currentMethodId, state, i);
             }
 
             return index;
         }
 
-        private static void OutputAsyncFrame(ulong nativeIP, int state, int frameIndex)
+        private static void OutputAsyncFrame(AsyncCallstackType type, ulong methodId, int state, int frameIndex)
         {
-            string asyncMethodName = AsyncProfilerTests.GetMethodNameFromNativeIP(nativeIP) ?? "??";
-            string nativeIPString = $"0x{nativeIP:X}";
-            Console.WriteLine($"  Frame {frameIndex}: AsyncMethod = {asyncMethodName}, NativeIP = {nativeIPString}, State = {state}");
+            string asyncMethodName = AsyncProfilerTests.GetMethodNameFromMethodId(type, methodId) ?? "??";
+            string methodIdString = $"0x{methodId:X}";
+            Console.WriteLine($"  Frame {frameIndex}: AsyncMethod = {asyncMethodName}, MethodId = {methodIdString}, State = {state}");
         }
 
         internal static class Deserializer

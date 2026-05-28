@@ -22,5 +22,8 @@ namespace System.Runtime.CompilerServices
 
         /// <summary>Clears the state of the box.</summary>
         void ClearStateUponCompletion();
+
+        /// <summary>Gets the state machine diagnostic data.</summary>
+        void GetDiagnosticData(out ulong methodId, out int state, out object? nextContinuation);
     }
 }

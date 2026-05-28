@@ -93,14 +93,15 @@ namespace System.Runtime.CompilerServices
                 if (IsEnabled.AnyAsyncEvents(activeEventKeywords))
                 {
                     long currentTimestamp = Stopwatch.GetTimestamp();
-                    if (IsEnabled.SuspendAsyncContextEvent(activeEventKeywords))
-                    {
-                        EmitEvent(context, currentTimestamp);
-                    }
 
                     if (IsEnabled.SuspendAsyncCallstackEvent(activeEventKeywords))
                     {
                         AsyncCallstack.EmitEvent(context, currentTimestamp, AsyncEventID.SuspendAsyncCallstack, GetId(ref info), nextContinuation);
+                    }
+
+                    if (IsEnabled.SuspendAsyncContextEvent(activeEventKeywords))
+                    {
+                        EmitEvent(context, currentTimestamp);
                     }
                 }
 
@@ -433,23 +434,48 @@ namespace System.Runtime.CompilerServices
 
         private static partial class AsyncCallstack
         {
-            private const int MaxAsyncMethodFrameSize = Serializer.MaxCompressedUInt64Size + Serializer.MaxCompressedUInt32Size;
+            private const int MaxRuntimeAsyncMethodFrameSize = Serializer.MaxCompressedUInt64Size + Serializer.MaxCompressedUInt32Size;
 
-            public ref struct CaptureRuntimeAsyncCallstackState
+            private ref struct CaptureRuntimeAsyncCallstackState : ICaptureAsyncCallstack
             {
                 public Continuation? Continuation;
                 public ulong LastNativeIP;
                 public byte Count;
+
+                public bool Capture(byte[] buffer, ref int index, out byte count)
+                {
+                    bool result = CaptureRuntimeAsyncCallstack(buffer, ref index, ref this);
+                    count = Count;
+                    return result;
+                }
+
+                public static AsyncCallstackType CallstackType => AsyncCallstackType.Runtime;
+                public static int MaxAsyncMethodFrameSize => MaxRuntimeAsyncMethodFrameSize;
             }
 
-            public static bool CaptureRuntimeAsyncCallstack(byte[] buffer, ref int index, ref CaptureRuntimeAsyncCallstackState state)
+            public static void EmitEvent(AsyncThreadContext context, long currentTimestamp, ulong id, Continuation? asyncCallstack)
+            {
+                EmitEvent(context, currentTimestamp, AsyncEventID.ResumeAsyncCallstack, id, asyncCallstack);
+            }
+
+            public static void EmitEvent(AsyncThreadContext context, long currentTimestamp, AsyncEventID eventID, ulong id, Continuation? asyncCallstack)
+            {
+                if (asyncCallstack != null)
+                {
+                    CaptureRuntimeAsyncCallstackState state = default;
+                    state.Continuation = asyncCallstack;
+                    EmitAsyncCallstack(context, currentTimestamp, currentTimestamp - context.LastEventTimestamp, eventID, id, state);
+                }
+            }
+
+            private static bool CaptureRuntimeAsyncCallstack(byte[] buffer, ref int index, ref CaptureRuntimeAsyncCallstackState state)
             {
                 if (index > buffer.Length || state.Continuation == null)
                 {
                     return false;
                 }
 
-                byte maxAsyncCallstackFrames = (byte)Math.Min(byte.MaxValue, (buffer.Length - index) / MaxAsyncMethodFrameSize);
+                byte maxAsyncCallstackFrames = (byte)Math.Min(byte.MaxValue, (buffer.Length - index) / MaxRuntimeAsyncMethodFrameSize);
                 if (maxAsyncCallstackFrames == 0)
                 {
                     return false;
@@ -504,130 +530,6 @@ namespace System.Runtime.CompilerServices
                 index += callstackSpanIndex;
 
                 return state.Continuation == null || state.Count == byte.MaxValue;
-            }
-
-            public static void EmitEvent(AsyncThreadContext context, long currentTimestamp, ulong id, Continuation? asyncCallstack)
-            {
-                EmitEvent(context, currentTimestamp, AsyncEventID.ResumeAsyncCallstack, id, AsyncCallstackType.Runtime, asyncCallstack);
-            }
-
-            public static void EmitEvent(AsyncThreadContext context, long currentTimestamp, AsyncEventID eventID, ulong id, Continuation? asyncCallstack)
-            {
-                EmitEvent(context, currentTimestamp, eventID, id, AsyncCallstackType.Runtime, asyncCallstack);
-            }
-
-            public static void EmitEvent(AsyncThreadContext context, long currentTimestamp, AsyncEventID eventID, ulong id, AsyncCallstackType type, Continuation? asyncCallstack)
-            {
-                EmitEvent(context, currentTimestamp, currentTimestamp - context.LastEventTimestamp, eventID, id, type, asyncCallstack);
-            }
-
-            public static void EmitEvent(AsyncThreadContext context, long currentTimestamp, long delta, AsyncEventID eventID, ulong id, AsyncCallstackType type, Continuation? asyncCallstack)
-            {
-                if (asyncCallstack != null)
-                {
-                    ref EventBuffer eventBuffer = ref context.EventBuffer;
-
-                    // Max callstack data that can fit in the buffer after flush.
-                    int maxCallstackBytes = Math.Min(
-                        byte.MaxValue * MaxAsyncMethodFrameSize,
-                        eventBuffer.Data.Length);
-
-                    CaptureRuntimeAsyncCallstackState state = default;
-                    state.Continuation = asyncCallstack;
-
-                    // Static callstack payload: type (1) + callstackId (1) + frameCount (1) + id (max 10 bytes compressed).
-                    const int MaxStaticEventPayloadSize = sizeof(byte) + sizeof(byte) + sizeof(byte) + Serializer.MaxCompressedUInt64Size;
-
-                    if (Serializer.AsyncEventHeader(context, ref eventBuffer, currentTimestamp, delta, eventID, MaxStaticEventPayloadSize, out Serializer.AsyncEventHeaderRollbackData rollbackData))
-                    {
-                        int frameCountOffset = CallstackHeader(ref eventBuffer, id, type, 0);
-
-                        byte[] buffer = eventBuffer.Data;
-                        int startIndex = eventBuffer.Index;
-                        int currentIndex = startIndex;
-
-                        if (!CaptureRuntimeAsyncCallstack(buffer, ref currentIndex, ref state))
-                        {
-                            byte[]? rentedArray = RentArray(maxCallstackBytes);
-                            if (rentedArray != null)
-                            {
-                                int length = currentIndex - startIndex;
-                                int index = length;
-
-                                Buffer.BlockCopy(buffer, startIndex, rentedArray, 0, length);
-                                CaptureRuntimeAsyncCallstack(rentedArray, ref index, ref state);
-
-                                // Rollback async event header before flushing.
-                                Serializer.RollbackAsyncEventHeader(context, in rollbackData);
-                                context.Flush();
-
-                                // Write the callstack again.
-                                if (Serializer.AsyncEventHeader(context, ref eventBuffer, context.LastEventTimestamp, 0, eventID, MaxStaticEventPayloadSize + index))
-                                {
-                                    CallstackHeader(ref eventBuffer, id, type, state.Count);
-                                    CallstackData(ref eventBuffer, rentedArray, index);
-                                }
-
-                                ArrayPool<byte>.Shared.Return(rentedArray);
-                            }
-                            else
-                            {
-                                // Rollback async event header since we can't write the callstack.
-                                Serializer.RollbackAsyncEventHeader(context, in rollbackData);
-                            }
-                        }
-                        else
-                        {
-                            // Patch frame count in the event buffer using the offset from CallstackHeader.
-                            eventBuffer.Data[frameCountOffset] = state.Count;
-                            eventBuffer.Index += currentIndex - startIndex;
-                        }
-                    }
-                }
-            }
-
-            private static int CallstackHeader(ref EventBuffer eventBuffer, ulong id, AsyncCallstackType type, byte callstackFrameCount)
-            {
-                // Callstack header layout: type (1 byte) + callstackId (1 byte, reserved for future use) + frameCount (1 byte) + id (max 10 bytes compressed).
-                const int MaxCallstackHeaderSize = sizeof(byte) + sizeof(byte) + sizeof(byte) + Serializer.MaxCompressedUInt64Size;
-
-                ref int index = ref eventBuffer.Index;
-
-                Span<byte> callstackHeaderSpan = eventBuffer.Data.AsSpan(index, MaxCallstackHeaderSize);
-                int spanIndex = 0;
-
-                callstackHeaderSpan[spanIndex++] = (byte)type;
-                callstackHeaderSpan[spanIndex++] = 0; // Reserved callstack ID for future callstack interning.
-
-                int frameCountOffset = index + spanIndex;
-                callstackHeaderSpan[spanIndex++] = callstackFrameCount;
-
-                spanIndex += Serializer.WriteCompressedUInt64(callstackHeaderSpan.Slice(spanIndex), id);
-                eventBuffer.Index += spanIndex;
-
-                return frameCountOffset;
-            }
-
-            private static void CallstackData(ref EventBuffer eventBuffer, byte[] callstackData, int callstackDataByteCount)
-            {
-                ref int index = ref eventBuffer.Index;
-                Buffer.BlockCopy(callstackData, 0, eventBuffer.Data, index, callstackDataByteCount);
-                index += callstackDataByteCount;
-            }
-
-            private static byte[]? RentArray(int minimumLength)
-            {
-                byte[]? rentedArray = null;
-                try
-                {
-                    rentedArray = ArrayPool<byte>.Shared.Rent(minimumLength);
-                }
-                catch
-                {
-                    //AsyncProfiler can't throw, return null if renting fails.
-                }
-
-                return rentedArray;
             }
         }
     }
