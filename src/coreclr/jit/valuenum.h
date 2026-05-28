@@ -249,18 +249,20 @@ static const var_types TYP_HEAP = TYP_UNKNOWN;
 // VarTypConv and others to work), but on ARM64 the mask can be scalable or fixed.
 struct simdmaskvalue_t
 {
-    uint8_t    isScalable;
-    simdmask_t fixed;
 #if defined(TARGET_ARM64)
+    uint8_t            isScalable;
     simdmaskscalable_t scalable;
 #endif // TARGET_ARM64
+    simdmask_t fixed;
 
     static simdmaskvalue_t FromFixed(const simdmask_t& mask)
     {
         simdmaskvalue_t result = {};
 
+#if defined(TARGET_ARM64)
         result.isScalable = 0;
-        result.fixed      = mask;
+#endif // TARGET_ARM64
+        result.fixed = mask;
 
         return result;
     }
@@ -276,15 +278,13 @@ struct simdmaskvalue_t
 
         return result;
     }
-#endif // TARGET_ARM64
 
-    bool IsScalable() const
+    inline bool IsScalable() const
     {
-#if !defined(TARGET_ARM64)
         assert(isScalable == 0);
-#endif // !TARGET_ARM64
         return isScalable != 0;
     }
+#endif // TARGET_ARM64
 };
 #endif // FEATURE_MASKED_HW_INTRINSICS
 
@@ -2048,12 +2048,15 @@ private:
                 }
             }
             else
-#endif // TARGET_ARM64
             {
                 hash = static_cast<unsigned>(hash ^ val.isScalable);
                 hash = static_cast<unsigned>(hash ^ val.fixed.u32[0]);
                 hash = static_cast<unsigned>(hash ^ val.fixed.u32[1]);
             }
+#else
+            hash = static_cast<unsigned>(hash ^ val.fixed.u32[0]);
+            hash = static_cast<unsigned>(hash ^ val.fixed.u32[1]);
+#endif // TARGET_ARM64
 
             return hash;
         }
@@ -2367,7 +2370,9 @@ FORCEINLINE simdmask_t ValueNumStore::SafeGetConstantValue<simdmask_t>(Chunk* c,
 {
     assert(c->m_typ == TYP_MASK);
     simdmaskvalue_t storage = SafeGetConstantValue<simdmaskvalue_t>(c, offset);
+#if defined(TARGET_ARM64)
     assert(!storage.IsScalable());
+#endif // TARGET_ARM64
     return storage.fixed;
 }
 
