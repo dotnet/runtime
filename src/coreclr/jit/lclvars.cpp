@@ -5042,7 +5042,12 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
         }
         bucketSimOffEnd[p] = simOff;
 
-        if ((bucketSimOffStart[p] > -128) && (bucketSimOffEnd[p] <= -128))
+        // A bucket straddles the disp8/disp32 boundary when its first local can land in disp8
+        // (simOff at entry strictly above -128, so at least 1 byte of disp8 budget remains) and
+        // its last local lands in disp32 (simOff after allocation strictly below -128).
+        // simOffEnd == -128 means the last local sits exactly at -128 (still disp8), so the
+        // bucket is fully disp8 and not a straddler.
+        if ((bucketSimOffStart[p] > -128) && (bucketSimOffEnd[p] < -128))
         {
             straddleBucket = p;
         }
@@ -5151,13 +5156,13 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
     // Pre-compute zero-init data for the cost model. Only used at FullOpts where S4
     // (initGroupedDensity) is active. At MinOpts S4 is skipped and the init-span term
     // is small relative to the encoding-cost term, so we omit it.
-    bool* lclNeedsInit  = nullptr;
-    bool  useBlockInit  = false;
-    int   baseInitLo    = 0;
-    int   baseInitHi    = 0;
+    bool* lclNeedsInit = nullptr;
+    bool  useBlockInit = false;
+    int   baseInitLo   = 0;
+    int   baseInitHi   = 0;
     if (!isMinOpts)
     {
-        lclNeedsInit          = new (this, CMK_LvaTable) bool[lvaCount];
+        lclNeedsInit           = new (this, CMK_LvaTable) bool[lvaCount];
         unsigned initSlotCount = 0;
         for (unsigned i = 0; i < lvaCount; i++)
         {
@@ -5238,8 +5243,8 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
     JITDUMP("Frame layout optimization: trying strategies for %u locals "
             "(estimated frame size %u bytes%s, straddle bucket=%u of %u, baseCost=%u, "
             "maxSavings=%u)\n",
-            lvaCount, estimatedLocalSize, isMinOpts ? ", using lightweight ref counts" : "",
-            straddleBucket, allocOrderLen, baseCost, maxSavings);
+            lvaCount, estimatedLocalSize, isMinOpts ? ", using lightweight ref counts" : "", straddleBucket,
+            allocOrderLen, baseCost, maxSavings);
 
     const unsigned straddleStart       = passStart[straddleBucket];
     const unsigned straddleCount       = passStart[straddleBucket + 1] - straddleStart;
@@ -5455,8 +5460,7 @@ unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* a
     }
     if (outIdx < lvaCount)
     {
-        memcpy(&bestOrder[outIdx], &bucketLcls[numAllocatable],
-               (lvaCount - numAllocatable) * sizeof(unsigned));
+        memcpy(&bestOrder[outIdx], &bucketLcls[numAllocatable], (lvaCount - numAllocatable) * sizeof(unsigned));
     }
 
     JITDUMP("Frame layout costs: original=%u density=%u sizeAsc=%u weight=%u refDensity=%u "
