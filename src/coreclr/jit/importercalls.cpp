@@ -6272,7 +6272,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
 
                 GenTree* fallback =
                     gtNewMustThrowException(CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION, baseType, NO_CLASS_HANDLE);
-                GenTree*      cond  = gtNewOperNode(GT_LT, TYP_INT, op1Dup, gtNewZeroConNode(isLong ? TYP_LONG : TYP_INT));
+                GenTree* cond = gtNewOperNode(GT_LT, TYP_INT, op1Dup, gtNewZeroConNode(isLong ? TYP_LONG : TYP_INT));
                 GenTreeColon* colon = gtNewColonNode(baseType, fallback, result);
                 GenTree*      qmark = gtNewQmarkNode(baseType, cond, colon);
 
