@@ -2979,6 +2979,9 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         int hr = HResults.S_OK;
         try
         {
+            if (vmModule == 0)
+                throw new ArgumentException("Module pointer cannot be null.", nameof(vmModule));
+
             if (pOptimizationsDisabled is null)
                 throw new ArgumentException("Output pointer cannot be null.", nameof(pOptimizationsDisabled));
 
