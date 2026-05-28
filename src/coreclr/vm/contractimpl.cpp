@@ -61,7 +61,7 @@ UINT32 TypeIDMap::LookupTypeID(PTR_MethodTable pMT)
         if (GetThread()->PreemptiveGCDisabled()) { GC_NOTRIGGER; } else { GC_TRIGGERS; }
     } CONTRACTL_END;
 
-    UINT32 id = (UINT32) m_mtMap.Gethash((UPTR)dac_cast<TADDR>(pMT));
+    UINT32 id = (UINT32) m_mtMap.GetHash((UPTR)dac_cast<TADDR>(pMT));
 
     return id;
 }
@@ -76,7 +76,7 @@ PTR_MethodTable TypeIDMap::LookupType(UINT32 id)
         PRECONDITION(id <= TypeIDProvider::MAX_TYPE_ID);
     } CONTRACTL_END;
 
-    UPTR ret = m_idMap.Gethash((UPTR)id);
+    UPTR ret = m_idMap.GetHash((UPTR)id);
     if (ret == static_cast<UPTR>(INVALIDENTRY))
         return NULL;
 
