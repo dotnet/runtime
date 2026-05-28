@@ -8828,6 +8828,14 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     {
         if (pDevirtMD->HasClassInstantiation())
         {
+            if (TypeHandle::IsCanonicalSubtypeInstantiation(pDevirtMD->GetClassInstantiation()))
+            {
+                // If we end up with a shared MethodTable that is not exact,
+                // we can't devirtualize since it's not possible to compute the instantiation argument even as a runtime lookup.
+                info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                return false;
+            }
+
             info->instParamLookup.constLookup.handle = (CORINFO_GENERIC_HANDLE)pExactMT;
             info->instParamLookup.constLookup.accessType = IAT_VALUE;
         }
