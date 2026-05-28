@@ -151,6 +151,7 @@ class InProcessDataTarget : public ICLRDataTarget
     volatile LONG m_refCount;
 public:
     InProcessDataTarget() : m_refCount(1) {}
+    virtual ~InProcessDataTarget() = default;
 
     HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppObj) override
     {
@@ -193,10 +194,14 @@ public:
 
     HRESULT STDMETHODCALLTYPE GetImageBase(LPCWSTR imagePath, CLRDATA_ADDRESS* baseAddress) override
     {
+#ifdef HOST_WINDOWS
         HMODULE hMod = ::GetModuleHandleW(imagePath);
         if (hMod == NULL) return E_FAIL;
         *baseAddress = (CLRDATA_ADDRESS)hMod;
         return S_OK;
+#else
+        return E_NOTIMPL;
+#endif
     }
 
     HRESULT STDMETHODCALLTYPE ReadVirtual(CLRDATA_ADDRESS address, BYTE* buffer, ULONG32 bytesRequested, ULONG32* bytesRead) override
