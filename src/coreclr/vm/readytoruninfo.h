@@ -16,10 +16,6 @@
 #include "wellknownattributes.h"
 #include "nativeimage.h"
 
-#ifndef TARGET_WASM
-#define FEATURE_COLD_R2R_CODE
-#endif // !TARGET_WASM
-
 typedef DPTR(struct READYTORUN_SECTION) PTR_READYTORUN_SECTION;
 
 class NativeImage;
