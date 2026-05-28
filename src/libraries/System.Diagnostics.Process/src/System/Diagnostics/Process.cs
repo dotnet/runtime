@@ -119,6 +119,12 @@ namespace System.Diagnostics
             _errorStreamReadMode = StreamReadMode.Undefined;
         }
 
+        private Process(int processId, SafeProcessHandle processHandle) : this(".", false, processId, null)
+        {
+            _processHandle = processHandle;
+            _haveProcessHandle = true;
+        }
+
         public SafeProcessHandle SafeHandle
         {
             get
@@ -955,8 +961,7 @@ namespace System.Diagnostics
                 return false;
             }
 
-            process = new Process(".", false, processId, null);
-            processHandle.Dispose();
+            process = new Process(processId, processHandle);
             return true;
         }
 

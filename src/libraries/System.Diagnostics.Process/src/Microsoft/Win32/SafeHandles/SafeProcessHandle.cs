@@ -76,14 +76,7 @@ namespace Microsoft.Win32.SafeHandles
         [SupportedOSPlatform("maccatalyst")]
         public static SafeProcessHandle Open(int processId)
         {
-            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(processId, 0);
-
-            if (!ProcessUtils.PlatformSupportsProcessStartAndKill)
-            {
-                throw new PlatformNotSupportedException();
-            }
-
-            if (!TryOpenCore(processId, out SafeProcessHandle? handle))
+            if (!TryOpen(processId, out SafeProcessHandle? handle))
             {
                 throw new Win32Exception();
             }
