@@ -3,23 +3,20 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class InterpreterRealCodeHeader : IData<InterpreterRealCodeHeader>
+[CdacType(nameof(DataType.InterpreterRealCodeHeader))]
+internal sealed partial class InterpreterRealCodeHeader : IData<InterpreterRealCodeHeader>
 {
-    static InterpreterRealCodeHeader IData<InterpreterRealCodeHeader>.Create(Target target, TargetPointer address)
-        => new InterpreterRealCodeHeader(target, address);
+    [Field] public TargetPointer MethodDesc { get; }
+    [Field] public TargetPointer DebugInfo { get; }
+    [Field] public TargetPointer GCInfo { get; }
 
-    public InterpreterRealCodeHeader(Target target, TargetPointer address)
+    public EEILException? JitEHInfo { get; private set; }
+
+    partial void OnInit(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.InterpreterRealCodeHeader);
-        MethodDesc = target.ReadPointerField(address, type, nameof(MethodDesc));
-        DebugInfo = target.ReadPointerField(address, type, nameof(DebugInfo));
-        GCInfo = target.ReadPointerField(address, type, nameof(GCInfo));
         TargetPointer jitEHInfoAddr = target.ReadPointerField(address, type, nameof(JitEHInfo));
-        JitEHInfo = jitEHInfoAddr != TargetPointer.Null ? target.ProcessedData.GetOrAdd<EEILException>(jitEHInfoAddr) : null;
+        if (jitEHInfoAddr != TargetPointer.Null)
+            JitEHInfo = target.ProcessedData.GetOrAdd<EEILException>(jitEHInfoAddr);
     }
-
-    public TargetPointer MethodDesc { get; init; }
-    public TargetPointer DebugInfo { get; init; }
-    public TargetPointer GCInfo { get; init; }
-    public EEILException? JitEHInfo { get; init; }
 }
