@@ -565,6 +565,21 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Null(GetUnionValue(nullUnion));
         }
 
+        [Fact]
+        public async Task UnionWithValueTypeNullableCase_SerializesNullAsJsonNull()
+        {
+            string json = await Serializer.SerializeWrapper<ValueTypeNullablePairUnion>(new ValueTypeNullablePairUnion((int?)null));
+            Assert.Equal("null", json);
+        }
+
+        [Fact]
+        public async Task UnionWithValueTypeNullableCase_RoundTripsNullValue()
+        {
+            string json = await Serializer.SerializeWrapper<ValueTypeNullablePairUnion>(new ValueTypeNullablePairUnion((int?)null));
+            ValueTypeNullablePairUnion roundTripped = await Serializer.DeserializeWrapper<ValueTypeNullablePairUnion>(json);
+            Assert.Null(roundTripped.Value);
+        }
+
         public class PayloadCase
         {
             public string? Name { get; set; }
