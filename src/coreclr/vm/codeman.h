@@ -630,9 +630,6 @@ private:
     void Register();
     UnwindInfoTable(ULONG_PTR rangeStart, ULONG_PTR rangeEnd);
 
-public:
-    void ReleaseFlushGate() { InterlockedExchange(&m_flushInProgress, 0); }
-
 private:
     void FlushPendingEntries(LONG waitForSeq);
     LONG FlushPendingEntriesUnderGate();
@@ -648,9 +645,12 @@ private:
     // Pending buffer for out-of-order entries that haven't been published to the OS yet.
     // These entries are accumulated and batch-merged into pTable to amortize the cost of
     // RtlDeleteGrowableFunctionTable + RtlAddGrowableFunctionTable.
-    static const ULONG  cPendingMaxCount = 128;
+    static const ULONG  cPendingMaxCount = 32;
     T_RUNTIME_FUNCTION  pendingTable[cPendingMaxCount];
     ULONG               cPendingCount;
+
+    // Pre-allocated flush buffer.
+    T_RUNTIME_FUNCTION  flushBuffer[cPendingMaxCount];
 
     // Per-table locks. Each UnwindInfoTable corresponds to one RangeSection, and
     // independent RangeSections can publish/unpublish concurrently.
@@ -660,10 +660,12 @@ private:
     Volatile<LONG>      m_flushInProgress;
 
     // Sequence counters used to ensure callers wait until their entries are
-    // published to the OS before returning
+    // published to the OS before returning.
+    // m_flushLock + m_flushCV form a lightweight condition variable pair.
     Volatile<LONG>      m_pendingSeq;
-    Volatile<LONG>      m_publishedSeq;
-    CLREvent            m_flushCompleteEvent;
+    LONG                m_publishedSeq;   // Protected by m_flushLock.
+    SRWLOCK             m_flushLock;
+    CONDITION_VARIABLE  m_flushCV;
 
     // Whether initial OS registration failed, used to return early in AddToUnwindInfoTable.
     // We cannot just check if hHandle is null because it's temporarily set to NULL
