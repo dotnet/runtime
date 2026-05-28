@@ -131,7 +131,7 @@ public:
 
     HRESULT STDMETHODCALLTYPE GetTypeIDForType(VMPTR_TypeHandle vmTypeHandle, COR_TYPEID *pID);
 
-    HRESULT STDMETHODCALLTYPE GetObjectFields(COR_TYPEID id, ULONG32 celt, COR_FIELD *layout, ULONG32 *pceltFetched);
+    HRESULT STDMETHODCALLTYPE GetObjectFields(UINT64 id, ULONG32 celt, COR_FIELD *layout, ULONG32 *pceltFetched);
     HRESULT STDMETHODCALLTYPE GetTypeLayout(CORDB_ADDRESS id, COR_TYPE_LAYOUT *pLayout);
     HRESULT STDMETHODCALLTYPE GetArrayLayout(CORDB_ADDRESS id, COR_ARRAY_LAYOUT *pLayout);
     HRESULT STDMETHODCALLTYPE GetGCHeapInformation(OUT COR_HEAPINFO * pHeapInfo);
@@ -314,7 +314,7 @@ public:
     // retrieves the list of interfaces pointers implemented by vmObject, as it is known at
     // the time of the call (the list may change as new interface types become available
     // in the runtime)
-    HRESULT STDMETHODCALLTYPE GetRcwCachedInterfacePointers(VMPTR_Object vmObject, BOOL bIInspectableOnly, OUT DacDbiArrayList<CORDB_ADDRESS> * pDacItfPtrs);
+    HRESULT STDMETHODCALLTYPE EnumerateRcwCachedInterfacePointers(VMPTR_Object vmObject, FP_RCW_INTERFACE_CALLBACK fpCallback, CALLBACK_DATA pUserData);
 
 private:
     // Given a pointer to a managed function, obtain the method desc for it.
@@ -711,7 +711,7 @@ public:
                          const DT_CONTEXT * pContext);
 
     // Retrieve information about the current frame from the stackwalker.
-    HRESULT STDMETHODCALLTYPE GetStackWalkCurrentFrameInfo(StackWalkHandle pSFIHandle, OPTIONAL DebuggerIPCE_STRData * pFrameData, OUT FrameType * pRetVal);
+    HRESULT STDMETHODCALLTYPE GetStackWalkCurrentFrameInfo(StackWalkHandle pSFIHandle, OPTIONAL Debugger_STRData * pFrameData, OUT FrameType * pRetVal);
 
     // Return the number of internal frames on the specified thread.
     HRESULT STDMETHODCALLTYPE GetCountOfInternalFrames(VMPTR_Thread vmThread, OUT ULONG32 * pRetVal);
@@ -840,15 +840,15 @@ private:
     // Fill in the structure with information about the current frame at which the stackwalker is stopped
     void InitFrameData(StackFrameIterator *   pIter,
                        FrameType              ft,
-                       DebuggerIPCE_STRData * pFrameData);
+                       Debugger_STRData * pFrameData);
 
     // Helper method to fill in the address and the size of the hot and cold regions.
     void InitNativeCodeAddrAndSize(TADDR                      taStartAddr,
-                                   DebuggerIPCE_JITFuncData * pJITFuncData);
+                                   Debugger_JITFuncData * pJITFuncData);
 
     // Fill in the information about the parent frame.
     void InitParentFrameInfo(CrawlFrame * pCF,
-                             DebuggerIPCE_JITFuncData * pJITFuncData);
+                             Debugger_JITFuncData * pJITFuncData);
 
     typedef enum
     {
@@ -887,12 +887,11 @@ private:
                            SIZE_T *         pLatestEnCVersion,
                            SIZE_T *         pJittedInstanceEnCVersion = NULL);
 
-    // @dbgtodo - This method should be removed once CordbFunctionBreakpoint and SetIP are moved OOP and
-    // no longer use nativeCodeJITInfoToken.
+    // @dbgtodo - This method should be removed once CordbFunctionBreakpoint and SetIP are moved OOP.
     void SetDJIPointer(Module *                   pModule,
                        MethodDesc *               pMD,
                        mdMethodDef                mdMethod,
-                       DebuggerIPCE_JITFuncData * pJITFuncData);
+                       Debugger_JITFuncData * pJITFuncData);
 
     // This is just a worker function for GetILCodeAndSig.  It returns the function's ILCode and SigToken
     // given a module, a token, and the RVA.  If a MethodDesc is provided, it has to be consistent with

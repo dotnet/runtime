@@ -1318,7 +1318,7 @@ void ClassLoader::LoadExactParents(MethodTable* pMT)
 /*static*/
 CorElementType ClassLoader::GetReducedTypeElementType(TypeHandle hType)
 {
-    CorElementType elemType = hType.GetVerifierCorElementType();
+    CorElementType elemType = hType.GetInternalCorElementType();
     switch (elemType)
     {
         case ELEMENT_TYPE_U1:

@@ -146,28 +146,12 @@
 //       r0: trashed
 //       r3: trashed
 //      r12: trashed
-// CORINFO_HELP_ASSIGN_BYREF (JIT_ByRefWriteBarrier):
-//     On entry:
-//       r0: the destination address (object reference written here)
-//       r1: the source address (points to object reference to write)
-//     On exit:
-//       r0: incremented by 4
-//       r1: incremented by 4
-//       r2: trashed
-//       r3: trashed
-//      r12: trashed
 
 #define REG_WRITE_BARRIER_DST          REG_ARG_0
 #define RBM_WRITE_BARRIER_DST          RBM_ARG_0
 
 #define REG_WRITE_BARRIER_SRC          REG_ARG_1
 #define RBM_WRITE_BARRIER_SRC          RBM_ARG_1
-
-#define REG_WRITE_BARRIER_DST_BYREF    REG_ARG_0
-#define RBM_WRITE_BARRIER_DST_BYREF    RBM_ARG_0
-
-#define REG_WRITE_BARRIER_SRC_BYREF    REG_ARG_1
-#define RBM_WRITE_BARRIER_SRC_BYREF    RBM_ARG_1
 
 #define RBM_CALLEE_TRASH_NOGC          (RBM_R2|RBM_R3|RBM_LR|RBM_DEFAULT_HELPER_CALL_TARGET)
 
@@ -176,13 +160,6 @@
 
 // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
 #define RBM_CALLEE_GCTRASH_WRITEBARRIER       RBM_CALLEE_TRASH_WRITEBARRIER
-
-// Registers killed by CORINFO_HELP_ASSIGN_BYREF.
-#define RBM_CALLEE_TRASH_WRITEBARRIER_BYREF   (RBM_WRITE_BARRIER_DST_BYREF | RBM_WRITE_BARRIER_SRC_BYREF | RBM_CALLEE_TRASH_NOGC)
-
-// Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_BYREF.
-// Note that r0 and r1 are still valid byref pointers after this helper call, despite their value being changed.
-#define RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF RBM_CALLEE_TRASH_NOGC
 
 // GenericPInvokeCalliHelper VASigCookie Parameter
 #define REG_PINVOKE_COOKIE_PARAM          REG_R4
