@@ -881,5 +881,176 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             Assert.Empty(result.Diagnostics);
             result.AssertContainsType("global::HelloWorld.TypeWithManyParams<int, string, bool, double, long>");
         }
+
+        [Fact]
+        public void OpenGenericDerivedType_SupportedPattern_CompileSuccessfully()
+        {
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(MyBase<int>))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonDerivedType(typeof(MyDerived<>), "derived")]
+                    public class MyBase<T>
+                    {
+                        public T? Value { get; set; }
+                    }
+
+                    public class MyDerived<T> : MyBase<T>
+                    {
+                        public T? Extra { get; set; }
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+
+            Assert.Empty(result.Diagnostics);
+            result.AssertContainsType("global::HelloWorld.MyBase<int>");
+        }
+
+        [Fact]
+        public void OpenGenericDerivedType_WrappedTypeArgs_WarnsWithSYSLIB1227()
+        {
+            string source = """
+                using System.Collections.Generic;
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(MyBase<int>))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonDerivedType(typeof(MyDerived<>), "derived")]
+                    public class MyBase<T>
+                    {
+                        public T? Value { get; set; }
+                    }
+
+                    public class MyDerived<T> : MyBase<List<T>>
+                    {
+                        public T? Extra { get; set; }
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Id == "SYSLIB1227");
+            Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
+            Assert.Contains("MyDerived<>", diagnostic.GetMessage());
+            Assert.Contains("MyBase<int>", diagnostic.GetMessage());
+        }
+
+        [Fact]
+        public void OpenGenericDerivedType_ArityMismatch_WarnsWithSYSLIB1227()
+        {
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(MyBase<int, string>))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonDerivedType(typeof(MyDerived<>), "derived")]
+                    public class MyBase<T1, T2>
+                    {
+                        public T1? Value1 { get; set; }
+                        public T2? Value2 { get; set; }
+                    }
+
+                    public class MyDerived<T> : MyBase<T, int>
+                    {
+                        public T? Extra { get; set; }
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Id == "SYSLIB1227");
+            Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
+        }
+
+        [Fact]
+        public void OpenGenericDerivedType_NonGenericBase_WarnsWithSYSLIB1227()
+        {
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(MyBase))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonDerivedType(typeof(MyDerived<>), "derived")]
+                    public class MyBase
+                    {
+                        public int Value { get; set; }
+                    }
+
+                    public class MyDerived<T> : MyBase
+                    {
+                        public T? Extra { get; set; }
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Id == "SYSLIB1227");
+            Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
+        }
+
+        [Fact]
+        public void OpenGenericDerivedType_SYSLIB1227_IsPragmaSuppressible()
+        {
+            string source = """
+                #pragma warning disable SYSLIB1227
+                using System.Collections.Generic;
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(MyBase<int>))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonDerivedType(typeof(MyDerived<>), "derived")]
+                    public class MyBase<T>
+                    {
+                        public T? Value { get; set; }
+                    }
+
+                    public class MyDerived<T> : MyBase<List<T>>
+                    {
+                        public T? Extra { get; set; }
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+            var effective = CompilationWithAnalyzers.GetEffectiveDiagnostics(result.Diagnostics, compilation);
+            Diagnostic diagnostic = Assert.Single(effective, d => d.Id == "SYSLIB1227");
+            Assert.True(diagnostic.IsSuppressed);
+        }
     }
 }
