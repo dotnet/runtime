@@ -74,7 +74,7 @@ LEAF_END JIT_PatchedCodeStart, _TEXT
 //
 // On exit:
 //   x12  : trashed
-//   x14  : trashed (incremented by 8)
+//   x14  : preserved (the destination address is not modified)
 //   x15  : trashed
 //   x17  : trashed (ip1)
 //
@@ -88,7 +88,7 @@ WRITE_BARRIER_ENTRY JIT_CheckedWriteBarrier
     b C_FUNC(JIT_WriteBarrier)
 
 LOCAL_LABEL(NotInHeap):
-    str  x15, [x14], 8
+    str  x15, [x14]
     ret  lr
 WRITE_BARRIER_END JIT_CheckedWriteBarrier
 
@@ -104,7 +104,7 @@ WRITE_BARRIER_END JIT_CheckedWriteBarrier
 //
 // On exit:
 //   x12  : trashed
-//   x14  : trashed (incremented by 8)
+//   x14  : preserved (the destination address is not modified)
 //   x15  : trashed
 //   x17  : trashed (ip1)
 //
@@ -316,7 +316,6 @@ LOCAL_LABEL(WriteWatchForGCHeapEnd\@):
 
 .macro WRITE_BARRIER_RETURN_STUB exit
 LOCAL_LABEL(\exit):
-    add  x14, x14, 8
     ret  lr
 .endm
 

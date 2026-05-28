@@ -118,7 +118,7 @@ LEAF_END JIT_PatchedCodeStart, _TEXT
 //   t1  : trashed
 //   t0  : trashed
 //   t6  : trashed
-//   t3  : trashed (incremented by 8)
+//   t3  : preserved (the destination address is not modified)
 //
 
 WRITE_BARRIER_ENTRY JIT_CheckedWriteBarrier
@@ -131,7 +131,6 @@ WRITE_BARRIER_ENTRY JIT_CheckedWriteBarrier
     beq  t6, zero, C_FUNC(JIT_WriteBarrier)
 
     sd  t4, 0(t3)
-    addi  t3, t3, 8
     ret
 WRITE_BARRIER_END JIT_CheckedWriteBarrier
 
@@ -145,7 +144,7 @@ WRITE_BARRIER_END JIT_CheckedWriteBarrier
 //   t1  : trashed
 //   t6  : trashed
 //   t4  : trashed
-//   t3  : trashed (incremented by 8)
+//   t3  : preserved (the destination address is not modified)
 //
 WRITE_BARRIER_ENTRY JIT_WriteBarrier
     // TODO: sync_release (runtime detection required)
@@ -240,7 +239,6 @@ LOCAL_LABEL(SkipEphemeralCheck):
     sb  t0, 0(t4)
 #endif
 LOCAL_LABEL(Exit):
-    addi  t3, t3, 8
     ret
 WRITE_BARRIER_END JIT_WriteBarrier
 

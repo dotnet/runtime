@@ -48,7 +48,7 @@
 ;
 ; On exit:
 ;   x12  : trashed
-;   x14  : incremented by 8
+;   x14  : preserved (the destination address is not modified)
 ;   x15  : trashed
 ;   x17  : trashed (ip1)
 ;
@@ -60,7 +60,7 @@
         blo      JIT_WriteBarrier
 
 NotInHeap
-        str      x15, [x14], 8
+        str      x15, [x14]
         ret      lr
     WRITE_BARRIER_END JIT_CheckedWriteBarrier
 
@@ -75,7 +75,7 @@ NotInHeap
 ;
 ; On exit:
 ;   x12  : trashed
-;   x14  : incremented by 8
+;   x14  : preserved (the destination address is not modified)
 ;   x15  : trashed
 ;   x17  : trashed (ip1)
 ;
@@ -281,7 +281,6 @@ WriteWatchForGCHeapEnd$name
     MACRO
         WRITE_BARRIER_RETURN_STUB $name
 exit$name
-            add  x14, x14, 8
             ret  lr
     MEND
 

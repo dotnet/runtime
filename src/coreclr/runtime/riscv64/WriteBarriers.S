@@ -199,7 +199,7 @@
 //
 // On exit:
 //   t2, t6 : trashed
-//   t3      : incremented by 8
+//   t3      : preserved (the destination address is not modified)
 LEAF_ENTRY RhpCheckedAssignRef, _TEXT
 
         # Check if the destination is within the heap bounds
@@ -216,7 +216,6 @@ LEAF_ENTRY RhpCheckedAssignRef, _TEXT
 LOCAL_LABEL(NotInHeap):
         ALTERNATE_ENTRY RhpCheckedAssignRefAVLocation
         sd      t4, 0(t3)
-        addi    t3, t3, 8
 
         ret
 
@@ -233,7 +232,7 @@ LEAF_END RhpCheckedAssignRef, _TEXT
 //
 // On exit:
 //  t2, t6 : trashed
-//  t3 : incremented by 8
+//  t3 : preserved (the destination address is not modified)
 LEAF_ENTRY RhpAssignRefRiscV64, _TEXT
         fence rw, rw
 
@@ -241,8 +240,6 @@ LEAF_ENTRY RhpAssignRefRiscV64, _TEXT
         sd    t4, 0(t3)
 
         INSERT_UNCHECKED_WRITE_BARRIER_CORE t3, t4
-
-        addi  t3, t3, 8
 
         ret
 

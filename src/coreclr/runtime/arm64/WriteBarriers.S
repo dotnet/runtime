@@ -199,7 +199,7 @@
 //
 // On exit:
 //   x12, x17 : trashed
-//   x14      : incremented by 8
+//   x14      : preserved (the destination address is not modified)
  LEAF_ENTRY RhpCheckedAssignRefArm64, _TEXT
 
         // is destReg within the heap?
@@ -221,7 +221,7 @@ LOCAL_LABEL(NotInHeap):
 #ifdef TARGET_APPLE
 .cfi_startproc
 #endif
-        str     x15, [x14], 8
+        str     x15, [x14]
         ret
 LEAF_END RhpCheckedAssignRefArm64, _TEXT
 
@@ -236,7 +236,7 @@ LEAF_END RhpCheckedAssignRefArm64, _TEXT
 //
 // On exit:
 //  x12, x17 : trashed
-//  x14 : incremented by 8
+//  x14 : preserved (the destination address is not modified)
 LEAF_ENTRY RhpAssignRefArm64, _TEXT
 
     ALTERNATE_ENTRY RhpAssignRefAVLocation
@@ -244,7 +244,6 @@ LEAF_ENTRY RhpAssignRefArm64, _TEXT
 
         INSERT_UNCHECKED_WRITE_BARRIER_CORE x14, x15
 
-        add     x14, x14, 8
         ret
 
 LEAF_END RhpAssignRefArm64, _TEXT

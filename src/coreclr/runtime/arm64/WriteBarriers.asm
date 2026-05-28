@@ -201,7 +201,7 @@ INVALIDGCVALUE  EQU 0xCCCCCCCD
 ;;
 ;; On exit:
 ;;   x12, x17 : trashed
-;;   x14      : incremented by 8
+;;   x14      : preserved (the destination address is not modified)
     LEAF_ENTRY RhpCheckedAssignRefArm64
 
         ;; is destReg within the heap?
@@ -213,7 +213,7 @@ INVALIDGCVALUE  EQU 0xCCCCCCCD
 
 NotInHeap
     ALTERNATE_ENTRY RhpCheckedAssignRefAVLocation
-        str     x15, [x14], 8
+        str     x15, [x14]
         ret
 
     LEAF_END RhpCheckedAssignRefArm64
@@ -229,7 +229,7 @@ NotInHeap
 ;;
 ;; On exit:
 ;;   x12, x17 : trashed
-;;   x14 : incremented by 8
+;;   x14 : preserved (the destination address is not modified)
     LEAF_ENTRY RhpAssignRefArm64
 
     ALTERNATE_ENTRY RhpAssignRefAVLocation
@@ -237,7 +237,6 @@ NotInHeap
 
         INSERT_UNCHECKED_WRITE_BARRIER_CORE x14, x15
 
-        add     x14, x14, 8
         ret
 
     LEAF_END RhpAssignRefArm64

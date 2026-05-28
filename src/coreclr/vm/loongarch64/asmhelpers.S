@@ -133,7 +133,7 @@ LEAF_END JIT_PatchedCodeStart, _TEXT
 //   $t0  : trashed
 //   $t3  : trashed
 //   $t4  : trashed
-//   $t6  : trashed (incremented by 8)
+//   $t6  : preserved (the destination address is not modified)
 //
 WRITE_BARRIER_ENTRY JIT_CheckedWriteBarrier
 
@@ -152,7 +152,6 @@ WRITE_BARRIER_ENTRY JIT_CheckedWriteBarrier
     beq  $t4, $zero, C_FUNC(JIT_WriteBarrier)
 
     st.d  $t7, $t6, 0
-    addi.d  $t6, $t6, 8
     jirl  $r0, $ra, 0
 WRITE_BARRIER_END JIT_CheckedWriteBarrier
 
@@ -166,7 +165,7 @@ WRITE_BARRIER_END JIT_CheckedWriteBarrier
 //   $t1  : trashed
 //   $t3  : trashed
 //   $t4  : trashed
-//   $t6  : trashed (incremented by 8)
+//   $t6  : preserved (the destination address is not modified)
 //   $t7  : trashed
 //
 WRITE_BARRIER_ENTRY JIT_WriteBarrier
@@ -281,7 +280,6 @@ LOCAL_LABEL(SkipEphemeralCheck):
     st.b  $t4, $t7, 0
 #endif
 LOCAL_LABEL(Exit):
-    addi.d  $t6, $t6, 8
     jirl  $r0, $ra, 0
 WRITE_BARRIER_END JIT_WriteBarrier
 

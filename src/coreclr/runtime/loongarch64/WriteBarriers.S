@@ -189,7 +189,7 @@
 //
 // On exit:
 //   $t3 : trashed
-//   $t6 : incremented by 8
+//   $t6 : preserved (the destination address is not modified)
  LEAF_ENTRY RhpCheckedAssignRef, _TEXT
 
         // is destReg within the heap?
@@ -202,7 +202,6 @@
 LOCAL_LABEL(NotInHeap):
     ALTERNATE_ENTRY RhpCheckedAssignRefAVLocation
         st.d  $t7, $t6, 0
-        addi.d  $t6, $t6, 8
         jirl  $r0, $ra, 0
 
 LEAF_END RhpCheckedAssignRef, _TEXT
@@ -218,7 +217,7 @@ LEAF_END RhpCheckedAssignRef, _TEXT
 //
 // On exit:
 //  t3, t4 : trashed
-//  t6 : incremented by 8
+//  t6 : preserved (the destination address is not modified)
 LEAF_ENTRY RhpAssignRefLoongArch64, _TEXT
         dbar 0
 
@@ -227,7 +226,6 @@ LEAF_ENTRY RhpAssignRefLoongArch64, _TEXT
 
         INSERT_UNCHECKED_WRITE_BARRIER_CORE  $t6, $t7
 
-        addi.d  $t6, $t6, 8
         jirl  $r0, $ra, 0
 
 LEAF_END RhpAssignRefLoongArch64, _TEXT
