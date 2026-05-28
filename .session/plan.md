@@ -1,118 +1,136 @@
-# Rebase Plan: Open Generics in Polymorphic Serialization PR
+# Rebase Plan: Open Generics in Polymorphic Serialization PR #127318
 
 ## Context
 
-PR #127318 adds open generic derived type support in `[JsonDerivedType]`. The branch has 18 commits on top of main (from ~April 2026). Since then, **7 commits** landed in main touching `System.Text.Json`, most critically:
+PR #127318 adds open generic derived type support in `[JsonDerivedType]`. The branch has 18 commits on top of a stale main. Since the PR was last active, the **union support PR (#128162)** landed in main, restructuring the source generator's polymorphism infrastructure — the exact same infrastructure our PR independently built.
 
-- **`b521e155` — "Add System.Text.Json union support (#128162)"**: This is the key commit. It restructured the source generator's polymorphism infrastructure — the exact same infrastructure our PR independently built. Specifically, it added:
-  - `PolymorphismOptionsSpec` and `DerivedTypeSpec` model types (our PR has `PolymorphicDerivedTypeSpec` and a flat `ResolvedDerivedTypes` on `TypeGenerationSpec`)
-  - `PolymorphismOptions` property on `TypeGenerationSpec` (replacing our `ResolvedDerivedTypes`)
-  - `IsPolymorphic` flag back on `TypeGenerationSpec` (our PR removed it)
-  - `PolymorphismOptions` property on `JsonObjectInfoValues<T>` (our PR used `DerivedTypes` of type `JsonDerivedType[]?`)
-  - `TypeClassifierFactory` on `JsonObjectInfoValues<T>` (new union concept)
-  - Emitter: `FormatPolymorphismOptions()` and `FormatDerivedType()` helpers
-  - Parser: Reads `[JsonDerivedType]` into `DerivedTypeSpec` list, builds `PolymorphismOptionsSpec`
-  - `JsonMetadataServices.Helpers.PopulatePolymorphismMetadata()` now accepts `JsonPolymorphismOptions?` + `JsonTypeClassifierFactory?` (our PR modified the old signature)
-  - `JsonPolymorphismOptions.CreateFromAttributeDeclarations()` now returns `out JsonPolymorphicAttribute?`
-  - `JsonPolymorphismOptions.IsEmpty` property added
-  - `SetPolymorphismOptions()` internal method on `JsonTypeInfo` (our PR also added this)
+## Design Decisions (from reviewer feedback)
 
-## Strategy: Squash-then-Rebase
+1. **Two methods for polymorphism resolution** (AOT boundary):
+   - **Legacy/shared method** (`JsonMetadataServices.Helpers.PopulatePolymorphismMetadata`): AOT-friendly, no open generic support. Used by source-gen path and as backward-compat fallback for older source generators. Calls `CreateFromAttributeDeclarations` which reads `[JsonDerivedType]` as-is (open generic type defs pass through unresolved → will fail at runtime validation in `PolymorphicTypeResolver`).
+   - **Reflection-only method** (`DefaultJsonTypeInfoResolver.Helpers.PopulatePolymorphismMetadata`): Has `[RequiresUnreferencedCode]`/`[RequiresDynamicCode]`. Adds open-generic resolution via `Type.MakeGenericType`. Lives only in the reflection resolver, never in AOT/source-gen runtime paths.
 
-Because our PR has 18 commits with a tangled merge history and the infrastructure it built now partially exists in main, a clean approach is:
+2. **Source generator**: Resolve open generics **inline** (direct computation) in the parser's `[JsonDerivedType]` handling block — no separate pass.
 
-1. **Identify the pure open-generics delta** — what our PR adds ON TOP of what main now provides
-2. **Reset to main**, then **re-apply** only the open-generics logic on top of main's infrastructure
+3. **Model files**: Delete our `PolymorphicDerivedTypeSpec.cs`, use main's `DerivedTypeSpec.cs` and `PolymorphismOptionsSpec`.
 
-### What our PR uniquely contributes (must be preserved):
+4. **Backward-compat fallback** in `JsonMetadataServices.Helpers.PopulatePolymorphismMetadata`: Does NOT resolve open generics (preserves AOT compatibility).
 
-#### Reflection path (`DefaultJsonTypeInfoResolver.Helpers.cs`)
-- `PopulatePolymorphismFromAttributes()` → In main, this is now `PopulatePolymorphismMetadata()` which calls `CreateFromAttributeDeclarations`. Our open-generic resolution logic needs to be injected into this flow.
-- `TryResolveOpenGenericDerivedType()` — the core reflection-based resolution helper
-- The key logic: when iterating `[JsonDerivedType]` attributes, if `derivedType.IsGenericTypeDefinition`, resolve it via `MakeGenericType` using the base type's generic arguments (with direct-parameter-matching constraint)
+5. **SYSLIB1227 conflict**: Main now uses SYSLIB1227 for union case classification. Our open-generic diagnostic needs a new ID — likely **SYSLIB1229** (within the reserved STJ source-gen range 1220-1229).
 
-#### Source generator (`Parser.cs`)
-- `TryResolveOpenGenericDerivedType()` — Roslyn-based: checks if derived type is unbound generic, resolves against base type's type arguments using `INamedTypeSymbol.Construct()`
-- Open generic derived types need to be resolved before being added to `DerivedTypeSpec` list
-- Resolved types need to be enqueued for source generation
-- SYSLIB1227 diagnostic for unresolvable open generic patterns
+## Architecture After Rebase
 
-#### Source generator (`Emitter.cs`)
-- No structural changes needed — main's emitter already emits `PolymorphismOptions` with `DerivedTypes`. Our resolved types just flow through the existing infrastructure.
+```
+Source Generator (compile time)
+  └─ Parser: TryResolveOpenGenericDerivedType() [Roslyn-based, INamedTypeSymbol.Construct()]
+       → resolves Derived<> to Derived<int> using base type's type args
+       → adds resolved DerivedTypeSpec to PolymorphismOptionsSpec
+       → reports SYSLIB1229 if unresolvable
+  └─ Emitter: FormatPolymorphismOptions() [already in main, no changes needed]
+       → emits PolymorphismOptions with resolved derived types
 
-#### Source generator model
-- No new model types needed — main's `DerivedTypeSpec` and `PolymorphismOptionsSpec` serve the same purpose as our `PolymorphicDerivedTypeSpec` and `ResolvedDerivedTypes`
+Source-gen runtime path (AOT-safe, shared)
+  └─ JsonMetadataServices.Helpers.PopulatePolymorphismMetadata(typeInfo, options, classifierFactory)
+       → if options is null: legacy fallback → CreateFromAttributeDeclarations (NO open generic resolution)
+       → if options.IsEmpty: no polymorphism
+       → otherwise: use source-gen-provided options (already resolved at compile time)
 
-#### Runtime (`JsonPolymorphismOptions.cs`)
-- Main already handles backward compat in `PopulatePolymorphismMetadata` in `JsonMetadataServices.Helpers`
-
-#### Error handling
-- `SR.OpenGenericDerivedTypeNotResolvable` string resource
-- `ThrowHelper.ThrowInvalidOperationException_OpenGenericDerivedTypeNotSupported()` 
-- SYSLIB1227 diagnostic descriptor
-
-#### Tests
-- All test classes/methods in `PolymorphicTests.CustomTypeHierarchies.cs`
-- Source gen unit tests for SYSLIB1227
-
-#### Docs
-- `list-of-diagnostics.md` entry for SYSLIB1227
-
-### What our PR built that main now supersedes (must be dropped):
-
-- `PolymorphicDerivedTypeSpec.cs` model file → use main's `DerivedTypeSpec`
-- `ResolvedDerivedTypes` property on `TypeGenerationSpec` → use main's `PolymorphismOptions`
-- Removal of `IsPolymorphic` flag → main restored it
-- `DerivedTypes` property on `JsonObjectInfoValues<T>` → main uses `PolymorphismOptions`
-- `PopulatePolymorphismFromDerivedTypes()` in `JsonMetadataServices.Helpers` → main's `PopulatePolymorphismMetadata()` with its new signature
-- `SetPolymorphismOptions()` internal method → main already has it
-- Changes to `PopulatePolymorphismMetadata` flow → main restructured this
-- `MemberAccessor` changes in Helpers.cs → unrelated main refactor
-- Emitter restructuring for `PolymorphismOptions` emission → main already does this
+Reflection runtime path (NOT AOT-safe)
+  └─ DefaultJsonTypeInfoResolver.Helpers.PopulatePolymorphismMetadata(typeInfo)
+       → calls CreateFromAttributeDeclarations to get base options
+       → post-processes DerivedTypes list: resolves open generic entries via MakeGenericType
+       → throws InvalidOperationException for unresolvable patterns
+```
 
 ## Execution Plan
 
-### Phase 1: Prepare the rebase
+### Phase 0: Prepare the rebase
+- [ ] Save current branch state as a reference tag/stash
 - [ ] Hard-reset branch to `origin/main`
-- [ ] Save our open-generics-specific changes as patches for reference
 
-### Phase 2: Apply open-generic resolution to the reflection path
-- [ ] Add `TryResolveOpenGenericDerivedType()` to `DefaultJsonTypeInfoResolver.Helpers.cs`
-- [ ] Modify `PopulatePolymorphismMetadata()` in `DefaultJsonTypeInfoResolver.Helpers.cs` to resolve open generics when iterating `[JsonDerivedType]` attributes (inject into the existing `CreateFromAttributeDeclarations` flow or post-process)
-- [ ] Add `SR.OpenGenericDerivedTypeNotResolvable` to resource strings + xlf files
-- [ ] Add `ThrowHelper` method for open generic errors
+### Phase 1: Reflection path — open generic resolution
+- [ ] Add `TryResolveOpenGenericDerivedType(Type derivedTypeDefinition, Type baseTypeDefinition, Type[] baseTypeArgs, out Type? resolvedType)` as a private static method in `DefaultJsonTypeInfoResolver.Helpers.cs`
+  - Direct parameter matching constraint: derived type's generic params must exactly match base type's in number and position
+  - Walks base classes and interfaces of the derived type definition to find a match
+  - Returns false for unsupported patterns (wrapped args, reordered params, arity mismatch)
+- [ ] Modify `DefaultJsonTypeInfoResolver.Helpers.PopulatePolymorphismMetadata()` to post-process derived types:
+  - After `CreateFromAttributeDeclarations` returns options, iterate `options.DerivedTypes`
+  - For any entry where `derivedType.DerivedType.IsGenericTypeDefinition`, resolve it
+  - Replace the entry with the resolved closed type
+  - Throw `InvalidOperationException` if base type is not generic or resolution fails
+- [ ] Add `SR.OpenGenericDerivedTypeNotResolvable` string resource to `src/libraries/System.Text.Json/src/Resources/Strings.resx`
+- [ ] Add corresponding `ThrowHelper` method
+- [ ] Update xlf files (run `dotnet build /t:UpdateXlf` or similar)
 
-### Phase 3: Apply open-generic resolution to the source generator
-- [ ] Add `TryResolveOpenGenericDerivedType()` to `JsonSourceGenerator.Parser.cs`
-- [ ] Modify the parser's `[JsonDerivedType]` handling to resolve open generics before adding to `DerivedTypeSpec` list
-- [ ] Add SYSLIB1227 diagnostic descriptor to `DiagnosticDescriptors`
-- [ ] Add SYSLIB1227 string resources + xlf
-- [ ] Ensure resolved types are sorted deterministically
+### Phase 2: Source generator — compile-time open generic resolution
+- [ ] Add `TryResolveOpenGenericDerivedType(INamedTypeSymbol unboundDerived, ITypeSymbol baseType, out INamedTypeSymbol? resolvedType)` as a private method in `JsonSourceGenerator.Parser.cs`
+  - Check `baseType` is `INamedTypeSymbol { IsGenericType: true }`
+  - Extract base type's type arguments
+  - Verify derived type definition's generic params match base type's in number and position
+  - Use `derivedDefinition.Construct(resolvedArgs)` to create the closed type
+  - Return false for unsupported patterns
+- [ ] Modify the parser's `[JsonDerivedType]` handling block (around line 921 in main):
+  - When `derivedType` is `INamedTypeSymbol { IsUnboundGenericType: true }` (or similar), call `TryResolveOpenGenericDerivedType`
+  - On success: use the resolved type for `EnqueueType` and `DerivedTypeSpec`
+  - On failure: report diagnostic, skip this derived type entry
+- [ ] Add diagnostic descriptor `OpenGenericDerivedTypeNotResolvable` with ID **SYSLIB1229** to `DiagnosticDescriptors`
+- [ ] Add SYSLIB1229 string resources to source gen `Strings.resx` + update xlf files
+- [ ] Ensure derived types remain sorted deterministically (main already sorts via `PolymorphismOptionsSpec`)
 
-### Phase 4: Add tests
-- [ ] Add polymorphic open-generic test types and test methods to `PolymorphicTests.CustomTypeHierarchies.cs`
-- [ ] Add source gen unit tests for SYSLIB1227 diagnostic
-- [ ] Add source gen baseline files if needed
+### Phase 3: Tests
+- [ ] Add test types to `PolymorphicTests.CustomTypeHierarchies.cs`:
+  - `Foo<T>` / `Bar<T> : Foo<T>` — basic open generic with string discriminator
+  - `Foo<T>` / `Bar<T> : Foo<T>` — with int discriminator
+  - Multi-param: `Base<T1,T2>` / `Derived<T1,T2> : Base<T1,T2>`
+  - Interface: `IBase<T>` / `Impl<T> : IBase<T>`
+  - Interface hierarchy: `IDerived<T> : IBase<T>` / `Impl<T> : IDerived<T>`
+  - Nested type
+  - Properties on both layers for round-trip validation
+  - **Rejection tests**: wrapped type args (`Derived<T> : Base<List<T>>`), reordered params (`Derived<T1,T2> : Base<T2,T1>`), arity mismatch (`Derived<T> : Base<T, int>`), non-generic base
+  - Programmatic API test (using `JsonPolymorphismOptions` directly)
+  - Deserialization validation for all discriminator-bearing tests
+- [ ] Add source gen unit tests for SYSLIB1229 diagnostic in `JsonSourceGeneratorDiagnosticsTests.cs`
+- [ ] Add source gen baseline files if required
 
-### Phase 5: Documentation
-- [ ] Add SYSLIB1227 to `docs/project/list-of-diagnostics.md`
+### Phase 4: Documentation
+- [ ] Add SYSLIB1229 to `docs/project/list-of-diagnostics.md`
 
-### Phase 6: Validate
-- [ ] Build the source generator
-- [ ] Run System.Text.Json unit tests
-- [ ] Run source gen unit tests
-- [ ] Run source gen integration tests
+### Phase 5: Validate
+- [ ] Build the source generator project
+- [ ] Run `System.Text.Json.Tests` 
+- [ ] Run `System.Text.Json.SourceGeneration.Unit.Tests`
+- [ ] Run `System.Text.Json.SourceGeneration.Tests` (integration)
 
-## Questions for @eiriktsarpalis before starting
+## Key Files to Modify
 
-1. **Reflection path integration point**: Main's `PopulatePolymorphismMetadata()` now calls `CreateFromAttributeDeclarations()` which reads `[JsonDerivedType]` and creates options. The open-generic resolution needs to happen during or after this. Should I:
-   - (a) Modify `CreateFromAttributeDeclarations()` to resolve open generics inline (it currently just reads `attr.DerivedType` and adds it), or
-   - (b) Post-process the `JsonPolymorphismOptions.DerivedTypes` list after `CreateFromAttributeDeclarations()` returns, replacing open generic entries with resolved ones?
-   
-   Option (a) is cleaner but requires changing `CreateFromAttributeDeclarations` (which is in `JsonPolymorphismOptions.cs`). Option (b) keeps the change isolated to `DefaultJsonTypeInfoResolver.Helpers.cs`.
+| File | Change |
+|------|--------|
+| `gen/JsonSourceGenerator.Parser.cs` | Add `TryResolveOpenGenericDerivedType`, modify `[JsonDerivedType]` handling |
+| `gen/JsonSourceGenerator.DiagnosticDescriptors.cs` | Add SYSLIB1229 descriptor |
+| `gen/Resources/Strings.resx` + xlf | Add SYSLIB1229 strings |
+| `src/.../DefaultJsonTypeInfoResolver.Helpers.cs` | Add `TryResolveOpenGenericDerivedType`, modify `PopulatePolymorphismMetadata` |
+| `src/Resources/Strings.resx` + xlf | Add `OpenGenericDerivedTypeNotResolvable` |
+| `src/.../ThrowHelper.cs` | Add throw method |
+| `tests/.../PolymorphicTests.CustomTypeHierarchies.cs` | Add test types and methods |
+| `tests/.../JsonSourceGeneratorDiagnosticsTests.cs` | Add SYSLIB1229 tests |
+| `docs/project/list-of-diagnostics.md` | Add SYSLIB1229 |
 
-2. **Source generator**: Main's parser reads `[JsonDerivedType]` at line ~921 and calls `EnqueueType(derivedType, ...)` immediately. For open generics, we need to resolve first then enqueue the resolved type. Is it acceptable to modify this section inline, or would you prefer a separate pass?
+## Files NOT modified (handled by main)
 
-3. **`PolymorphicDerivedTypeSpec.cs`**: Our PR added this file. Main has `DerivedTypeSpec.cs` which is identical in structure. I'll delete our file and use main's. Correct?
+| File | Reason |
+|------|--------|
+| `gen/Model/DerivedTypeSpec.cs` | Already exists in main |
+| `gen/Model/PolymorphismOptionsSpec.cs` | Already exists in main |
+| `gen/Model/TypeGenerationSpec.cs` | Main's `PolymorphismOptions` property sufficient |
+| `gen/JsonSourceGenerator.Emitter.cs` | Main's `FormatPolymorphismOptions`/`FormatDerivedType` sufficient |
+| `src/.../JsonObjectInfoValuesOfT.cs` | Main's `PolymorphismOptions` property sufficient |
+| `src/.../JsonMetadataServices.Helpers.cs` | Legacy fallback stays AOT-safe, no changes |
+| `src/.../JsonPolymorphismOptions.cs` | `CreateFromAttributeDeclarations` unchanged |
+| `src/.../JsonTypeInfo.cs` | `SetPolymorphismOptions` already exists in main |
 
-4. **Backward compat**: Main's `PopulatePolymorphismMetadata` in `JsonMetadataServices.Helpers` handles the case where `PolymorphismOptions` is null (older source gen) by falling back to `CreateFromAttributeDeclarations`. Open generic resolution in this fallback path — should it be supported or not? (I'd lean toward no, since older source gens wouldn't have open generic support anyway.)
+## Files to DELETE (from our PR, superseded by main)
+
+| File | Reason |
+|------|--------|
+| `gen/Model/PolymorphicDerivedTypeSpec.cs` | Replaced by main's `DerivedTypeSpec.cs` |
+
