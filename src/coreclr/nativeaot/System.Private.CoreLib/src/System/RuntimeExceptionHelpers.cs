@@ -249,7 +249,7 @@ namespace System
                     // report that OOM is the reason for the crash.
                     try
                     {
-                        // Try to print a short message at least.
+                        // Try to print the same short message CoreCLR prints.
                         Internal.Console.Error.Write("Out of memory.");
                         Internal.Console.Error.WriteLine();
                     }
