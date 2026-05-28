@@ -250,7 +250,7 @@ static const var_types TYP_HEAP = TYP_UNKNOWN;
 struct simdmaskvalue_t
 {
 #if defined(TARGET_ARM64)
-    uint8_t            isScalable;
+    bool               isScalable;
     simdmaskscalable_t scalable;
 #endif // TARGET_ARM64
     simdmask_t fixed;
@@ -260,7 +260,7 @@ struct simdmaskvalue_t
         simdmaskvalue_t result = {};
 
 #if defined(TARGET_ARM64)
-        result.isScalable = 0;
+        result.isScalable = false;
 #endif // TARGET_ARM64
         result.fixed = mask;
 
@@ -272,7 +272,7 @@ struct simdmaskvalue_t
     {
         simdmaskvalue_t result = {};
 
-        result.isScalable = 1;
+        result.isScalable = true;
         result.scalable   = mask;
         result.fixed      = simdmask_t::Zero();
 
@@ -281,8 +281,7 @@ struct simdmaskvalue_t
 
     inline bool IsScalable() const
     {
-        assert(isScalable == 0);
-        return isScalable != 0;
+        return isScalable;
     }
 #endif // TARGET_ARM64
 };
