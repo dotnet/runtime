@@ -319,6 +319,58 @@ namespace Internal.JitInterface
             return null;
         }
 
+        private sealed class AsyncVersionMethodIL : MethodIL
+        {
+            private readonly MethodDesc _variant;
+            private readonly MethodIL _ecmaIL;
+
+            public MethodIL WrappedIL => _ecmaIL;
+
+            public AsyncVersionMethodIL(MethodDesc variant, MethodIL ecmaIL)
+                => (_variant, _ecmaIL) = (variant, ecmaIL);
+
+            // This is the reason we need this class - the method that owns the IL is the variant.
+            public override MethodDesc OwningMethod => _variant;
+
+            // Everything else dispatches to MethodIL
+            public override MethodDebugInformation GetDebugInfo() => _ecmaIL.GetDebugInfo();
+            public override ILExceptionRegion[] GetExceptionRegions() => _ecmaIL.GetExceptionRegions();
+            public override byte[] GetILBytes() => _ecmaIL.GetILBytes();
+            public override LocalVariableDefinition[] GetLocals() => _ecmaIL.GetLocals();
+            public override object GetObject(int token, NotFoundBehavior notFoundBehavior = NotFoundBehavior.Throw) => _ecmaIL.GetObject(token, notFoundBehavior);
+            public override bool IsInitLocals => _ecmaIL.IsInitLocals;
+            public override int MaxStack => _ecmaIL.MaxStack;
+        }
+
+        private MethodIL GetMethodILWithPotentialAsyncVersion(MethodDesc method)
+        {
+            if (method.IsAsyncVersion())
+            {
+                MethodDesc targetMethod = method.GetTargetOfAsyncVariant();
+
+                MethodDesc methodDef = method.GetTypicalMethodDefinition();
+                MethodDesc targetMethodDef = targetMethod.GetTypicalMethodDefinition();
+                MethodIL methodIL = new AsyncVersionMethodIL(methodDef, _compilation.GetMethodIL(targetMethodDef));
+                if (method != methodDef)
+                {
+                    methodIL = new InstantiatedMethodIL(method, methodIL);
+                }
+
+                return methodIL;
+            }
+
+            return _compilation.GetMethodIL(method);
+        }
+
+        private MethodIL RemoveAsyncVersion(MethodIL methodIL)
+        {
+            if (methodIL.GetMethodILDefinition() is AsyncVersionMethodIL)
+            {
+                return _compilation.GetMethodIL(methodIL.OwningMethod);
+            }
+            return methodIL;
+        }
+
         private CompilationResult CompileMethodInternal(IMethodNode methodCodeNodeNeedingCode, MethodIL methodIL)
         {
             // methodIL must not be null
@@ -575,7 +627,7 @@ namespace Internal.JitInterface
             }
 #else
             var methodIL = (MethodIL)HandleToObject((void*)_methodScope);
-            CodeBasedDependencyAlgorithm.AddDependenciesDueToMethodCodePresence(ref _additionalDependencies, _compilation.NodeFactory, MethodBeingCompiled, methodIL);
+            CodeBasedDependencyAlgorithm.AddDependenciesDueToMethodCodePresence(ref _additionalDependencies, _compilation.NodeFactory, MethodBeingCompiled, RemoveAsyncVersion(methodIL));
             _methodCodeNode.InitializeDebugInfo(_debugInfo);
 
             LocalVariableDefinition[] locals = methodIL.GetLocals();
@@ -829,10 +881,18 @@ namespace Internal.JitInterface
             // of async contexts. Regular user implemented runtime async methods
             // require this behavior, but thunks should be transparent and should not
             // come with this behavior.
-            if (method.IsAsyncVariant() && method.IsAsync)
+            if (method.RequiresSaveRestoreOfAsyncContexts())
             {
                 methodInfo->options |= CorInfoOptions.CORINFO_ASYNC_SAVE_CONTEXTS;
             }
+
+#if !READYTORUN
+            if (method.IsAsyncVersion())
+            {
+                // This is an async version and the IL belongs to the sync version.
+                methodInfo->options |= CorInfoOptions.CORINFO_ASYNC_VERSION;
+            }
+#endif
 
             methodInfo->regionKind = CorInfoRegionKind.CORINFO_REGION_NONE;
             Get_CORINFO_SIG_INFO(method, sig: &methodInfo->args, methodIL);
@@ -1265,7 +1325,7 @@ namespace Internal.JitInterface
             if (!_compilation.CanInline(MethodBeingCompiled, method))
                 return false;
 
-            MethodIL methodIL = method.IsUnboxingThunk() ? null : _compilation.GetMethodIL(method);
+            MethodIL methodIL = method.IsUnboxingThunk() ? null : GetMethodILWithPotentialAsyncVersion(method);
             return Get_CORINFO_METHOD_INFO(method, methodIL, info);
         }
 
@@ -1294,7 +1354,7 @@ namespace Internal.JitInterface
             {
                 if (rootModule.IsWrapNonExceptionThrows != calleeModule.IsWrapNonExceptionThrows)
                 {
-                    var calleeIL = _compilation.GetMethodIL(calleeMethod);
+                    var calleeIL = GetMethodILWithPotentialAsyncVersion(calleeMethod);
                     if (calleeIL.GetExceptionRegions().Length != 0)
                     {
                         // Fail inlining if root method and callee have different exception wrapping behavior
@@ -1327,7 +1387,7 @@ namespace Internal.JitInterface
 
         private void getEHinfo(CORINFO_METHOD_STRUCT_* ftn, uint EHnumber, ref CORINFO_EH_CLAUSE clause)
         {
-            var methodIL = _compilation.GetMethodIL(HandleToObject(ftn));
+            var methodIL = GetMethodILWithPotentialAsyncVersion(HandleToObject(ftn));
 
             var ehRegion = methodIL.GetExceptionRegions()[EHnumber];
 
@@ -1516,7 +1576,7 @@ namespace Internal.JitInterface
 #endif
 
                 CORINFO_RESOLVED_TOKEN result = default(CORINFO_RESOLVED_TOKEN);
-                MethodILScope scope = jitInterface._compilation.GetMethodIL(methodWithToken.Method);
+                MethodILScope scope = jitInterface.GetMethodILWithPotentialAsyncVersion(methodWithToken.Method);
                 scope ??= EcmaMethodILScope.Create((EcmaMethod)methodWithToken.Method.GetTypicalMethodDefinition());
                 result.tokenScope = jitInterface.ObjectToHandle(scope);
                 result.tokenContext = jitInterface.contextFromMethod(method);
@@ -1890,7 +1950,7 @@ namespace Internal.JitInterface
                     ValidateSafetyOfUsingTypeEquivalenceInSignature(method.Signature);
                 }
 #else
-                _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _additionalDependencies, _compilation.NodeFactory, (MethodIL)methodIL, method);
+                _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _additionalDependencies, _compilation.NodeFactory, RemoveAsyncVersion((MethodIL)methodIL), method);
 #endif
 
                 if (pResolvedToken.tokenType is CorInfoTokenKind.CORINFO_TOKENKIND_Await)
@@ -3490,6 +3550,56 @@ namespace Internal.JitInterface
             pAsyncInfoOut.restoreContextsOnSuspensionMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("RestoreContextsOnSuspension"u8, null));
             pAsyncInfoOut.finishSuspensionNoContinuationContextMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("FinishSuspensionNoContinuationContext"u8, null));
             pAsyncInfoOut.finishSuspensionWithContinuationContextMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("FinishSuspensionWithContinuationContext"u8, null));
+        }
+
+        private CORINFO_METHOD_STRUCT_* getAwaitReturnCall(CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_LOOKUP instArg)
+        {
+#if READYTORUN
+            instArg = default;
+            return null;
+#else
+            MethodDesc caller = HandleToObject(callerHandle);
+            Debug.Assert(caller.IsAsyncVariant() && caller.IsAsyncThunk());
+
+            MethodDesc taskReturningMethod = caller.GetTargetOfAsyncVariant();
+            TypeDesc taskReturnType = taskReturningMethod.Signature.ReturnType;
+            bool isValueTask = taskReturnType.IsValueType;
+
+            CompilerTypeSystemContext context = _compilation.TypeSystemContext;
+            DefType asyncHelpers = context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8);
+
+            MethodDesc runtimeDeterminedCaller = caller.GetSharedRuntimeFormMethodTarget();
+
+            TypeDesc returnType = runtimeDeterminedCaller.Signature.ReturnType;
+            MethodDesc runtimeDeterminedResult;
+            if (returnType.IsVoid)
+            {
+                TypeDesc parameterType = isValueTask
+                    ? context.SystemModule.GetKnownType("System.Threading.Tasks"u8, "ValueTask"u8)
+                    : context.SystemModule.GetKnownType("System.Threading.Tasks"u8, "Task"u8);
+                MethodSignature signature = new MethodSignature(MethodSignatureFlags.Static, 0, context.GetWellKnownType(WellKnownType.Void), [parameterType]);
+                runtimeDeterminedResult = asyncHelpers.GetKnownMethod("TransparentAwaitWithResult"u8, signature);
+            }
+            else
+            {
+                TypeDesc signatureVariable = context.GetSignatureVariable(0, method: true);
+                TypeDesc parameterType = isValueTask
+                    ? context.SystemModule.GetKnownType("System.Threading.Tasks"u8, "ValueTask`1"u8).MakeInstantiatedType(signatureVariable)
+                    : context.SystemModule.GetKnownType("System.Threading.Tasks"u8, "Task`1"u8).MakeInstantiatedType(signatureVariable);
+                MethodSignature signature = new MethodSignature(MethodSignatureFlags.Static, 1, signatureVariable, [parameterType]);
+                runtimeDeterminedResult = asyncHelpers.GetKnownMethod("TransparentAwaitWithResult"u8, signature).MakeInstantiatedMethod(returnType);
+            }
+
+            MethodDesc result = runtimeDeterminedResult.GetCanonMethodTarget(CanonicalFormKind.Specific);
+
+            if (result.RequiresInstArg())
+            {
+                // Runtime lookup is needed
+                ComputeLookup(ref Unsafe.NullRef<CORINFO_RESOLVED_TOKEN>(), runtimeDeterminedResult, ReadyToRunHelperId.MethodDictionary, caller, ref instArg);
+            }
+
+            return ObjectToHandle(result);
+#endif
         }
 
         private CORINFO_CLASS_STRUCT_* getContinuationType(nuint dataSize, ref bool objRefs, nuint objRefsSize)
