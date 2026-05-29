@@ -16,6 +16,7 @@ import { collectCpuSamples } from "./dotnet-cpu-profiler";
 // .withEnvironmentVariable("DOTNET_DiagnosticPorts", "download:gcdump")
 // or implement function globalThis.dotnetDiagnosticClient with IDiagClient interface
 
+let startupJsClient: IDiagnosticClient | undefined = undefined;
 let nextJsClient: PromiseCompletionSource<IDiagnosticClient>;
 let fromScenarioNameOnce = false;
 
@@ -54,7 +55,12 @@ class DiagnosticSession extends DiagnosticConnectionBase implements IDiagnosticC
     }
 
     async connectNewClient() {
-        this.diagClient = await nextJsClient.promise;
+        if (startupJsClient) {
+            this.diagClient = startupJsClient;
+            startupJsClient = undefined;
+        } else {
+            this.diagClient = await nextJsClient.promise;
+        }
         initializeJsClient();
         const firstCommand = this.diagClient.commandOnAdvertise();
         this.respond(firstCommand);
@@ -136,29 +142,37 @@ class DiagnosticSession extends DiagnosticConnectionBase implements IDiagnosticC
 
 export function initializeJsClient() {
     nextJsClient = dotnetLoaderExports.createPromiseCompletionSource<IDiagnosticClient>();
+    startupJsClient = undefined;
 }
 
-export function setupJsClient(client: IDiagnosticClient) {
-    if (!dotnetLoaderExports.isRuntimeRunning()) {
+export function setupJsClient(client: IDiagnosticClient, startup?: boolean) {
+    if (!startup && !dotnetLoaderExports.isRuntimeRunning()) {
         throw new Error("Runtime is not running");
     }
-    if (nextJsClient.isDone) {
-        throw new Error("multiple clients in parallel are not allowed");
+    if (startup) {
+        if (startupJsClient) {
+            throw new Error("startup diagnostic client already registered");
+        }
+        startupJsClient = client;
+    } else {
+        if (nextJsClient.isDone) {
+            throw new Error("multiple clients in parallel are not allowed");
+        }
+        nextJsClient.resolve(client);
     }
-    nextJsClient.resolve(client);
 }
 
 export function createDiagConnectionJs(socketHandle: number, scenarioName: string): DiagnosticSession {
     if (!fromScenarioNameOnce) {
         fromScenarioNameOnce = true;
         if (scenarioName.startsWith("js://gcdump")) {
-            collectGcDump({});
+            collectGcDump({}, true);
         }
         if (scenarioName.startsWith("js://counters")) {
-            collectMetrics({});
+            collectMetrics({}, true);
         }
         if (scenarioName.startsWith("js://cpu-samples")) {
-            collectCpuSamples({});
+            collectCpuSamples({}, true);
         }
         const dotnetDiagnosticClient: FnClientProvider = (globalThis as any).dotnetDiagnosticClient;
         if (typeof dotnetDiagnosticClient === "function") {
