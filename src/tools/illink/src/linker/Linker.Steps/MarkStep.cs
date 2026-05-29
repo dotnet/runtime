@@ -1188,12 +1188,6 @@ namespace Mono.Linker.Steps
             MarkCustomAttributeArguments(ca, origin);
 
             TypeReference constructor_type = ca.Constructor.DeclaringType;
-
-            // The attribute type can be a generic instantiation (e.g. [MyAttribute<Handler>]).
-            // Process the generic argument data flow for it so that requirements coming from the
-            // generic parameters (e.g. a new() constraint or DynamicallyAccessedMembers annotations)
-            // are satisfied on the generic arguments. Otherwise the attribute could fail to construct
-            // at runtime (for example a new() constraint would be left unsatisfiable).
             GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(in origin, this, Context, constructor_type);
 
             TypeDefinition? type = Context.Resolve(constructor_type);
