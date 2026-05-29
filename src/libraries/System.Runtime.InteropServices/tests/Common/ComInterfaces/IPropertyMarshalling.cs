@@ -1,0 +1,79 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
+using System.Threading;
+
+namespace SharedTypes.ComInterfaces
+{
+    [GeneratedComInterface]
+    [Guid(IID)]
+    internal partial interface IPropertyMarshalling
+    {
+        public const string IID = "21DD41F1-7B6E-4F75-8C50-2D8E68C5C0BD";
+
+        int TargetScoped
+        {
+            [return: MarshalUsing(typeof(TrackedIntMarshaller))]
+            get;
+            [param: MarshalUsing(typeof(TrackedIntMarshaller))]
+            set;
+        }
+
+        int ReadOnlyMarshalled
+        {
+            [return: MarshalUsing(typeof(TrackedIntMarshaller))]
+            get;
+        }
+
+        int WriteOnlyMarshalled
+        {
+            [param: MarshalUsing(typeof(TrackedIntMarshaller))]
+            set;
+        }
+    }
+
+    [GeneratedComClass]
+    internal partial class PropertyMarshalling : IPropertyMarshalling
+    {
+        private int _writeOnly;
+
+        public int TargetScoped { get; set; }
+        public int ReadOnlyMarshalled { get; set; } = 99;
+        public int WriteOnlyMarshalled { get => _writeOnly; set => _writeOnly = value; }
+
+        public int WriteOnlySink => _writeOnly;
+    }
+
+    [CustomMarshaller(typeof(int), MarshalMode.ManagedToUnmanagedIn, typeof(TrackedIntMarshaller))]
+    [CustomMarshaller(typeof(int), MarshalMode.UnmanagedToManagedIn, typeof(TrackedIntMarshaller))]
+    [CustomMarshaller(typeof(int), MarshalMode.ManagedToUnmanagedOut, typeof(TrackedIntMarshaller))]
+    [CustomMarshaller(typeof(int), MarshalMode.UnmanagedToManagedOut, typeof(TrackedIntMarshaller))]
+    internal static class TrackedIntMarshaller
+    {
+        private static int s_managedToUnmanagedCount;
+        private static int s_unmanagedToManagedCount;
+
+        public static int ManagedToUnmanagedCount => s_managedToUnmanagedCount;
+        public static int UnmanagedToManagedCount => s_unmanagedToManagedCount;
+
+        public static void Reset()
+        {
+            s_managedToUnmanagedCount = 0;
+            s_unmanagedToManagedCount = 0;
+        }
+
+        public static int ConvertToUnmanaged(int managed)
+        {
+            Interlocked.Increment(ref s_managedToUnmanagedCount);
+            return managed;
+        }
+
+        public static int ConvertToManaged(int unmanaged)
+        {
+            Interlocked.Increment(ref s_unmanagedToManagedCount);
+            return unmanaged;
+        }
+    }
+}

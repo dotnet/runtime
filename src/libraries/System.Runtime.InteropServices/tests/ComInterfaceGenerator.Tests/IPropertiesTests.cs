@@ -159,5 +159,69 @@ namespace ComInterfaceGenerator.Tests
             rcw.StringProperty = value;
             Assert.Equal(value, rcw.StringProperty);
         }
+
+        // -------------------------------------------------------------------------
+        // Property-accessor marshalling-attribute coverage. Verifies that
+        // `[return: MarshalUsing(...)]` on a get accessor and `[param: MarshalUsing(...)]`
+        // on a set accessor are honored end-to-end through both the RCW and CCW
+        // marshalling pipelines.
+        // -------------------------------------------------------------------------
+
+        private static (PropertyMarshalling Impl, IPropertyMarshalling Rcw) CreatePropertyMarshallingRcwAroundCcw()
+        {
+            var impl = new PropertyMarshalling();
+            var cw = new StrategyBasedComWrappers();
+            var comPtr = cw.GetOrCreateComInterfaceForObject(impl, CreateComInterfaceFlags.None);
+            var comObject = cw.GetOrCreateObjectForComInstance(comPtr, CreateObjectFlags.None);
+            return (impl, (IPropertyMarshalling)comObject);
+        }
+
+        [Fact]
+        public void PropertyAccessorMarshalling_ReadWrite_InvokesMarshallerOnBothAccessors()
+        {
+            TrackedIntMarshaller.Reset();
+
+            (_, IPropertyMarshalling rcw) = CreatePropertyMarshallingRcwAroundCcw();
+
+            rcw.TargetScoped = 7;
+            int observed = rcw.TargetScoped;
+
+            Assert.Equal(7, observed);
+
+            // CCW + RCW round-trip causes each marshaller direction to fire at least once
+            // per accessor invocation.
+            Assert.True(TrackedIntMarshaller.ManagedToUnmanagedCount > 0, "ConvertToUnmanaged was never called.");
+            Assert.True(TrackedIntMarshaller.UnmanagedToManagedCount > 0, "ConvertToManaged was never called.");
+        }
+
+        [Fact]
+        public void PropertyAccessorMarshalling_ReadOnly_InvokesMarshallerOnGetterOnly()
+        {
+            TrackedIntMarshaller.Reset();
+
+            (_, IPropertyMarshalling rcw) = CreatePropertyMarshallingRcwAroundCcw();
+
+            int observed = rcw.ReadOnlyMarshalled;
+
+            Assert.Equal(99, observed);
+
+            Assert.True(TrackedIntMarshaller.ManagedToUnmanagedCount > 0, "ConvertToUnmanaged was never called for the getter return.");
+            Assert.True(TrackedIntMarshaller.UnmanagedToManagedCount > 0, "ConvertToManaged was never called for the getter return.");
+        }
+
+        [Fact]
+        public void PropertyAccessorMarshalling_WriteOnly_InvokesMarshallerOnSetterOnly()
+        {
+            TrackedIntMarshaller.Reset();
+
+            (PropertyMarshalling impl, IPropertyMarshalling rcw) = CreatePropertyMarshallingRcwAroundCcw();
+
+            rcw.WriteOnlyMarshalled = 23;
+
+            Assert.Equal(23, impl.WriteOnlySink);
+
+            Assert.True(TrackedIntMarshaller.ManagedToUnmanagedCount > 0, "ConvertToUnmanaged was never called for the setter value.");
+            Assert.True(TrackedIntMarshaller.UnmanagedToManagedCount > 0, "ConvertToManaged was never called for the setter value.");
+        }
     }
 }
