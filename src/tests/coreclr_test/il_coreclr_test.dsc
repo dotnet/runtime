@@ -10,6 +10,7 @@
  */
 
 import * as Rules from "Sdk.Rules";
+import * as CSharp from "Sdk.Rules.CSharp";
 import {Cmd} from "Sdk.Transformers";
 import * as Defs from "Defs";
 
@@ -29,11 +30,6 @@ interface IlCompileResolved {
     srcs: Rules.Artifact[];
     debugType?: string;
     optimize?: boolean;
-}
-
-interface IlCompileResult extends Rules.Provider {
-    binary: Rules.Artifact;
-    defaultInfo: Rules.DefaultInfo;
 }
 
 const ilCompile = Rules.rule<IlCompileAttrs, IlCompileResolved, Rules.Toolchain>({
@@ -68,11 +64,17 @@ const ilCompile = Rules.rule<IlCompileAttrs, IlCompileResolved, Rules.Toolchain>
             description: `ilasm ${ctx.args.name}`,
         });
 
+        const binary = produced[0];
         return [
-            <IlCompileResult>{
-                kind: "IlCompileResult",
-                binary: produced[0],
-                defaultInfo: Rules.defaultInfo({ files: [produced[0]] }),
+            <CSharp.DotnetAssemblyCompileInfo>{
+                kind: "DotnetAssemblyCompileInfo",
+                binary: binary,
+                tfm: "net11.0",
+                refs: [],
+            },
+            <CSharp.DotnetAssemblyRuntimeInfo>{
+                kind: "DotnetAssemblyRuntimeInfo",
+                binary: binary,
             },
         ];
     },
@@ -114,7 +116,7 @@ export function il_coreclr_test(args: IlCoreClrTestArguments): IlCoreClrTestResu
         debugType: args.debugType,
         optimize: args.optimize,
     });
-    const ilResult = Rules.getProvider<IlCompileResult>(ilTarget, "IlCompileResult");
+    const compileInfo = Rules.getProvider<CSharp.DotnetAssemblyCompileInfo>(ilTarget, "DotnetAssemblyCompileInfo");
 
     const taggedManual = (args.tags || []).filter(t => t === "manual").length > 0;
     const shouldRun = args.run !== false && !taggedManual;
@@ -122,7 +124,7 @@ export function il_coreclr_test(args: IlCoreClrTestArguments): IlCoreClrTestResu
         ? undefined
         : corerunTestRunner({
             name: `${args.name}_test`,
-            binary: ilResult.binary,
+            binary: compileInfo.binary,
             env: args.env,
             flaky: args.flaky,
             tags: args.tags,
@@ -133,8 +135,8 @@ export function il_coreclr_test(args: IlCoreClrTestArguments): IlCoreClrTestResu
 
     return {
         kind: "IlCoreClrTestResult",
-        binary: ilResult.binary,
+        binary: compileInfo.binary,
         testInfo: testResult !== undefined ? testResult.testInfo : undefined,
-        defaultInfo: ilResult.defaultInfo,
+        defaultInfo: Rules.defaultInfo({ files: [compileInfo.binary] }),
     };
 }
