@@ -2396,8 +2396,8 @@ bool Compiler::optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsN
     if (lhsNum == BAD_VAR_NUM)
     {
         result->arrLcl = arrLcl;
+        result->arrType = arrBndsChk->GetArrayLength()->gtGetOp1()->TypeGet();
     }
-    result->arrType = arrBndsChk->GetArrayLength()->gtGetOp1()->TypeGet();
     result->indLcls.Push(indLcl);
     result->bndsChks.Push(tree);
     result->useBlock = compCurBB;
