@@ -695,12 +695,13 @@ namespace System.Net.Security
         Closed = 3,
         WantCredentials = 4,
         NeedsCertificateValidation = 5,
+        NeedsServerOptions = 6,
     }
     public sealed partial class TlsContext : System.IDisposable
     {
         internal TlsContext() { }
         public bool IsServer { get { throw null; } }
-        public static System.Net.Security.TlsContext Create(System.Net.Security.SslServerAuthenticationOptions options) { throw null; }
+        public static System.Net.Security.TlsContext Create(System.Net.Security.SslServerAuthenticationOptions? options) { throw null; }
         public static System.Net.Security.TlsContext Create(System.Net.Security.SslClientAuthenticationOptions options) { throw null; }
         public void Dispose() { }
     }
@@ -711,6 +712,7 @@ namespace System.Net.Security
         public bool IsHandshakeComplete { get { throw null; } }
         public bool HasPendingOutput { get { throw null; } }
         public string? TargetHostName { get { throw null; } set { } }
+        public System.Net.Security.SslClientHelloInfo? ClientHelloInfo { get { throw null; } }
         public System.Security.Authentication.SslProtocols NegotiatedProtocol { get { throw null; } }
         [System.CLSCompliantAttribute(false)]
         public System.Net.Security.TlsCipherSuite NegotiatedCipherSuite { get { throw null; } }
@@ -725,6 +727,7 @@ namespace System.Net.Security
         public System.Security.Cryptography.X509Certificates.X509Chain? GetRemoteCertificateChain() { throw null; }
         public System.Net.Security.SslPolicyErrors AcceptWithDefaultValidation() { throw null; }
         public void SetRemoteCertificateValidationResult(System.Net.Security.SslPolicyErrors errors) { }
+        public void SetServerOptions(System.Net.Security.SslServerAuthenticationOptions options) { }
         public System.Security.Cryptography.X509Certificates.X509Certificate2? LocalCertificate { get { throw null; } }
         public System.Security.Authentication.ExtendedProtection.ChannelBinding? GetChannelBinding(System.Security.Authentication.ExtendedProtection.ChannelBindingKind kind) { throw null; }
         public System.Net.Security.TlsOperationStatus RequestClientCertificate(System.Span<byte> ciphertext, out int produced) { throw null; }

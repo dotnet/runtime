@@ -20,6 +20,7 @@ namespace System.Net.Security
     {
         private readonly SslAuthenticationOptions _options;
         private readonly bool _ownsOptions;
+        private bool _hasServerOptions;
 
         // Credential handle is owned by TlsContext so it can be shared across multiple
         // TlsSession instances. In wedge mode (WrapShared) SslStream owns the lifetime
@@ -27,22 +28,54 @@ namespace System.Net.Security
         // storage that SslStream and TlsSession both read/write via ref.
         internal SafeFreeCredentials? CredentialsHandle;
 
-        private TlsContext(SslAuthenticationOptions options, bool ownsOptions)
+        private TlsContext(SslAuthenticationOptions options, bool ownsOptions, bool hasServerOptions)
         {
             _options = options;
             _ownsOptions = ownsOptions;
+            _hasServerOptions = hasServerOptions;
         }
 
         internal SslAuthenticationOptions Options => _options;
 
+        // Server-only. False if the context was created with null options and
+        // SetServerOptions has not yet been called on a session.
+        internal bool HasServerOptions => _hasServerOptions;
+
+        // Applies user-supplied server options to the deferred bag. Called from
+        // TlsSession.SetServerOptions once the caller has inspected the ClientHello.
+        internal void ApplyServerOptions(SslServerAuthenticationOptions options)
+        {
+            Debug.Assert(_options.IsServer);
+            Debug.Assert(!_hasServerOptions);
+            _options.UpdateOptions(options);
+            _hasServerOptions = true;
+        }
+
         public bool IsServer => _options.IsServer;
 
-        public static TlsContext Create(SslServerAuthenticationOptions options)
+        /// <summary>
+        /// Creates a server-side TLS context.
+        /// </summary>
+        /// <param name="options">
+        /// The server authentication options, or <see langword="null"/> to defer
+        /// configuration. When null, the first <see cref="TlsSession.ProcessHandshake"/>
+        /// call on a session built from this context returns
+        /// <see cref="TlsOperationStatus.NeedsServerOptions"/> with
+        /// <see cref="TlsSession.ClientHelloInfo"/> populated; the caller must then
+        /// invoke <see cref="TlsSession.SetServerOptions"/> before continuing the
+        /// handshake. Useful for SNI-based options selection that involves I/O.
+        /// </param>
+        public static TlsContext Create(SslServerAuthenticationOptions? options)
         {
-            ArgumentNullException.ThrowIfNull(options);
             SslAuthenticationOptions bag = new SslAuthenticationOptions();
+            if (options is null)
+            {
+                bag.IsServer = true;
+                return new TlsContext(bag, ownsOptions: true, hasServerOptions: false);
+            }
+
             bag.UpdateOptions(options);
-            return new TlsContext(bag, ownsOptions: true);
+            return new TlsContext(bag, ownsOptions: true, hasServerOptions: true);
         }
 
         /// <summary>
@@ -62,7 +95,7 @@ namespace System.Net.Security
             ArgumentNullException.ThrowIfNull(options);
             SslAuthenticationOptions bag = new SslAuthenticationOptions();
             bag.UpdateOptions(options);
-            return new TlsContext(bag, ownsOptions: true);
+            return new TlsContext(bag, ownsOptions: true, hasServerOptions: false);
         }
 
         // Used by SslStream's TlsSession wedge: share the existing options bag so
@@ -71,7 +104,7 @@ namespace System.Net.Security
         internal static TlsContext WrapShared(SslAuthenticationOptions sharedOptions)
         {
             Debug.Assert(sharedOptions != null);
-            return new TlsContext(sharedOptions, ownsOptions: false);
+            return new TlsContext(sharedOptions, ownsOptions: false, hasServerOptions: sharedOptions.IsServer);
         }
 
         public void Dispose()

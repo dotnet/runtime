@@ -53,6 +53,7 @@ namespace System.Net.Security
         private X509Chain? _externalValidationChain;
         private X509Certificate2? _externalPendingCert;
         private Exception? _externalValidationFault;
+        private SslClientHelloInfo? _clientHelloInfo;
         private bool _disposed;
         private SslConnectionInfo _connectionInfo;
         private X509Certificate2? _remoteCertificate;
@@ -271,6 +272,60 @@ namespace System.Net.Security
             DisposeExternalValidationChain();
         }
 
+        /// <summary>
+        /// Server-side only. The parsed ClientHello information, populated when
+        /// <see cref="ProcessHandshake"/> returns
+        /// <see cref="TlsOperationStatus.NeedsServerOptions"/> after the context was
+        /// created with null server options. Returns <see langword="null"/> at all
+        /// other times. The value is cleared after <see cref="SetServerOptions"/> is
+        /// called.
+        /// </summary>
+        public SslClientHelloInfo? ClientHelloInfo
+        {
+            get
+            {
+                ThrowIfDisposed();
+                return _clientHelloInfo;
+            }
+        }
+
+        /// <summary>
+        /// Server-side only. Supplies the resolved server options when the session is
+        /// suspended on <see cref="TlsOperationStatus.NeedsServerOptions"/>. The next
+        /// <see cref="ProcessHandshake"/> call should be invoked with the same input
+        /// buffer (the ClientHello bytes the session returned uncomsumed).
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if the session is not currently awaiting server options, or if
+        /// server options were already supplied at <see cref="TlsContext"/> creation.
+        /// </exception>
+        public void SetServerOptions(SslServerAuthenticationOptions options)
+        {
+            ArgumentNullException.ThrowIfNull(options);
+            ThrowIfDisposed();
+
+            if (!_context.IsServer)
+            {
+                throw new InvalidOperationException("SetServerOptions can only be called on a server-side session.");
+            }
+            if (_context.HasServerOptions)
+            {
+                throw new InvalidOperationException("Server options were already supplied when the TlsContext was created.");
+            }
+            if (_clientHelloInfo is null)
+            {
+                throw new InvalidOperationException("SetServerOptions can only be called after ProcessHandshake returned NeedsServerOptions.");
+            }
+
+            _context.ApplyServerOptions(options);
+#if !TARGET_WINDOWS && !SYSNETSECURITY_NO_OPENSSL
+            // Preserve the retry-verify suspension semantics that TlsSession.Create
+            // would have configured up front had server options been available then.
+            _context.Options.DeferCertificateValidation = true;
+#endif
+            _clientHelloInfo = null;
+        }
+
         private void ThrowIfPendingExternalValidation()
         {
             if (_externalValidationFault is not null)
@@ -364,6 +419,12 @@ namespace System.Net.Security
                 return TlsOperationStatus.NeedsCertificateValidation;
             }
 
+            if (_clientHelloInfo is not null)
+            {
+                // The caller previously saw NeedsServerOptions but hasn't supplied options yet.
+                return TlsOperationStatus.NeedsServerOptions;
+            }
+
             if (_isHandshakeComplete)
             {
                 // Once the caller has resolved external validation, subsequent
@@ -425,6 +486,21 @@ namespace System.Net.Security
                     // server certificate from it before AllocateSslHandle runs.
                     if (_securityContext is null)
                     {
+                        // Deferred options: parse ClientHello and suspend so the caller can
+                        // supply server options via SetServerOptions. Leave input unconsumed
+                        // (consumed = 0); the caller re-feeds the same bytes after resuming.
+                        if (!_context.HasServerOptions)
+                        {
+                            SslClientHelloInfo? parsed = TryParseClientHello(input);
+                            if (parsed is null)
+                            {
+                                return TlsOperationStatus.WantRead;
+                            }
+
+                            _clientHelloInfo = parsed;
+                            return TlsOperationStatus.NeedsServerOptions;
+                        }
+
                         bool needsCertResolution =
                             _context.Options.CertificateContext is null &&
                             _context.Options.ServerCertSelectionDelegate is not null;
@@ -934,6 +1010,26 @@ namespace System.Net.Security
         }
 
         private void ThrowIfDisposed() => ObjectDisposedException.ThrowIf(_disposed, this);
+
+        // Server-side: parses the ClientHello and returns a populated
+        // SslClientHelloInfo (SNI + supported versions), or null if more bytes
+        // are needed or the record is not a ClientHello. Used by the
+        // deferred-options path; does not mutate session state.
+        private static SslClientHelloInfo? TryParseClientHello(ReadOnlySpan<byte> input)
+        {
+            TlsFrameHelper.TlsFrameInfo frameInfo = default;
+            if (!TlsFrameHelper.TryGetFrameInfo(input, ref frameInfo))
+            {
+                return null;
+            }
+
+            if (frameInfo.HandshakeType != TlsHandshakeType.ClientHello)
+            {
+                return null;
+            }
+
+            return new SslClientHelloInfo(frameInfo.TargetName ?? string.Empty, frameInfo.SupportedVersions);
+        }
 
         // Server-side SNI + certificate selection. Parses the ClientHello to
         // extract the server_name extension (SNI) and, if a

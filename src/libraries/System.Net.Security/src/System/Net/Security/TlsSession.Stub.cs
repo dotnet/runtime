@@ -23,6 +23,7 @@ namespace System.Net.Security
             get => throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
             set => throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
         }
+        public SslClientHelloInfo? ClientHelloInfo => throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
         public SslProtocols NegotiatedProtocol => throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
         [System.CLSCompliant(false)]
         public TlsCipherSuite NegotiatedCipherSuite => throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
@@ -56,6 +57,9 @@ namespace System.Net.Security
             throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
 
         public void SetRemoteCertificateValidationResult(SslPolicyErrors errors) =>
+            throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
+
+        public void SetServerOptions(SslServerAuthenticationOptions options) =>
             throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
 
         public X509Certificate2? LocalCertificate =>
