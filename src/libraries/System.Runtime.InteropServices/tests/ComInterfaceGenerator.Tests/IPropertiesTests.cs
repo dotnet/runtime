@@ -223,5 +223,71 @@ namespace ComInterfaceGenerator.Tests
             Assert.True(TrackedIntMarshaller.ManagedToUnmanagedCount > 0, "ConvertToUnmanaged was never called for the setter value.");
             Assert.True(TrackedIntMarshaller.UnmanagedToManagedCount > 0, "ConvertToManaged was never called for the setter value.");
         }
+
+        // -------------------------------------------------------------------------
+        // Property-level marshalling-attribute coverage. Verifies that a bare
+        // [MarshalUsing(...)] placed on the property declaration is propagated
+        // to both accessors, and that per-accessor [return:]/[param:] attributes
+        // take precedence over the property-level fallback.
+        // -------------------------------------------------------------------------
+
+        [Fact]
+        public void PropertyLevelMarshalling_Bare_InvokesMarshallerOnBothAccessors()
+        {
+            TrackedIntMarshaller.Reset();
+            AlternateIntMarshaller.Reset();
+
+            (_, IPropertyMarshalling rcw) = CreatePropertyMarshallingRcwAroundCcw();
+
+            rcw.BareMarshalled = 5;
+            int observed = rcw.BareMarshalled;
+
+            Assert.Equal(5, observed);
+
+            Assert.True(TrackedIntMarshaller.ManagedToUnmanagedCount > 0, "Property-level [MarshalUsing] was not propagated to an accessor (ConvertToUnmanaged never invoked).");
+            Assert.True(TrackedIntMarshaller.UnmanagedToManagedCount > 0, "Property-level [MarshalUsing] was not propagated to an accessor (ConvertToManaged never invoked).");
+            Assert.Equal(0, AlternateIntMarshaller.ManagedToUnmanagedCount);
+            Assert.Equal(0, AlternateIntMarshaller.UnmanagedToManagedCount);
+        }
+
+        [Fact]
+        public void PropertyLevelMarshalling_AccessorOverride_AccessorMarshallerWinsOnBothSides()
+        {
+            TrackedIntMarshaller.Reset();
+            AlternateIntMarshaller.Reset();
+
+            (_, IPropertyMarshalling rcw) = CreatePropertyMarshallingRcwAroundCcw();
+
+            rcw.AccessorOverridesProperty = 11;
+            int observed = rcw.AccessorOverridesProperty;
+
+            Assert.Equal(11, observed);
+
+            Assert.True(TrackedIntMarshaller.ManagedToUnmanagedCount > 0, "Accessor-level [MarshalUsing] was overridden by the property-level fallback (ConvertToUnmanaged).");
+            Assert.True(TrackedIntMarshaller.UnmanagedToManagedCount > 0, "Accessor-level [MarshalUsing] was overridden by the property-level fallback (ConvertToManaged).");
+            Assert.Equal(0, AlternateIntMarshaller.ManagedToUnmanagedCount);
+            Assert.Equal(0, AlternateIntMarshaller.UnmanagedToManagedCount);
+        }
+
+        [Fact]
+        public void PropertyLevelMarshalling_MixedOverride_AccessorWinsOnGetterPropertyFallbackOnSetter()
+        {
+            TrackedIntMarshaller.Reset();
+            AlternateIntMarshaller.Reset();
+
+            (_, IPropertyMarshalling rcw) = CreatePropertyMarshallingRcwAroundCcw();
+
+            rcw.MixedPropertyAndAccessor = 13;
+            int observed = rcw.MixedPropertyAndAccessor;
+
+            Assert.Equal(13, observed);
+
+            // Getter has [return: MarshalUsing(typeof(TrackedIntMarshaller))]; setter has no override
+            // and falls back to the property-level [MarshalUsing(typeof(AlternateIntMarshaller))].
+            Assert.True(TrackedIntMarshaller.ManagedToUnmanagedCount > 0, "Tracked marshaller was not invoked on the getter return path.");
+            Assert.True(TrackedIntMarshaller.UnmanagedToManagedCount > 0, "Tracked marshaller was not invoked on the getter return path.");
+            Assert.True(AlternateIntMarshaller.ManagedToUnmanagedCount > 0, "Property-level fallback marshaller was not invoked on the setter value path.");
+            Assert.True(AlternateIntMarshaller.UnmanagedToManagedCount > 0, "Property-level fallback marshaller was not invoked on the setter value path.");
+        }
     }
 }

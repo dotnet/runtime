@@ -103,13 +103,22 @@ namespace Microsoft.Interop
             MarshallingInfoParser marshallingInfoParser,
             StubEnvironment env)
         {
+            // When the underlying method is a property accessor, bare attributes on the property declaration
+            // (e.g. `[MarshalUsing(typeof(X))] string Prop { get; set; }`) land on the property symbol and
+            // are not otherwise visible to the marshalling pipeline. Fall them through to the accessor's
+            // attribute set, with accessor-level attributes winning over property-level ones on a per-type
+            // basis. Target-scoped attributes (`[return:]`, `[param:]`, `[get:]`, `[set:]`) are routed by
+            // Roslyn onto the accessor directly and so are already in the accessor's attribute set.
+            ImmutableArray<AttributeData> associatedPropertyAttributes = method.AssociatedSymbol is IPropertySymbol property
+                ? property.GetAttributes()
+                : ImmutableArray<AttributeData>.Empty;
 
-            // Determine parameter and return types
             ImmutableArray<TypePositionInfo>.Builder typeInfos = ImmutableArray.CreateBuilder<TypePositionInfo>();
             for (int i = 0; i < method.Parameters.Length; i++)
             {
                 IParameterSymbol param = method.Parameters[i];
-                MarshallingInfo marshallingInfo = marshallingInfoParser.ParseMarshallingInfo(param.Type, param.GetAttributes());
+                ImmutableArray<AttributeData> paramAttributes = MergeAccessorAndPropertyAttributes(param.GetAttributes(), associatedPropertyAttributes);
+                MarshallingInfo marshallingInfo = marshallingInfoParser.ParseMarshallingInfo(param.Type, paramAttributes);
                 var typeInfo = TypePositionInfo.CreateForParameter(param, marshallingInfo, env.Compilation);
                 typeInfo = typeInfo with
                 {
@@ -119,7 +128,8 @@ namespace Microsoft.Interop
                 typeInfos.Add(typeInfo);
             }
 
-            TypePositionInfo retTypeInfo = new(ManagedTypeInfo.CreateTypeInfoForTypeSymbol(method.ReturnType), marshallingInfoParser.ParseMarshallingInfo(method.ReturnType, method.GetReturnTypeAttributes()));
+            ImmutableArray<AttributeData> returnAttributes = MergeAccessorAndPropertyAttributes(method.GetReturnTypeAttributes(), associatedPropertyAttributes);
+            TypePositionInfo retTypeInfo = new(ManagedTypeInfo.CreateTypeInfoForTypeSymbol(method.ReturnType), marshallingInfoParser.ParseMarshallingInfo(method.ReturnType, returnAttributes));
             retTypeInfo = retTypeInfo with
             {
                 ManagedIndex = TypePositionInfo.ReturnIndex,
@@ -129,6 +139,33 @@ namespace Microsoft.Interop
             typeInfos.Add(retTypeInfo);
 
             return typeInfos.ToImmutable();
+        }
+
+        private static ImmutableArray<AttributeData> MergeAccessorAndPropertyAttributes(
+            ImmutableArray<AttributeData> accessorAttributes,
+            ImmutableArray<AttributeData> associatedPropertyAttributes)
+        {
+            if (associatedPropertyAttributes.IsEmpty)
+            {
+                return accessorAttributes;
+            }
+
+            HashSet<ISymbol?> accessorAttributeTypes = new(SymbolEqualityComparer.Default);
+            foreach (AttributeData attr in accessorAttributes)
+            {
+                accessorAttributeTypes.Add(attr.AttributeClass);
+            }
+
+            ImmutableArray<AttributeData>.Builder merged = ImmutableArray.CreateBuilder<AttributeData>(accessorAttributes.Length + associatedPropertyAttributes.Length);
+            merged.AddRange(accessorAttributes);
+            foreach (AttributeData attr in associatedPropertyAttributes)
+            {
+                if (accessorAttributeTypes.Add(attr.AttributeClass))
+                {
+                    merged.Add(attr);
+                }
+            }
+            return merged.ToImmutable();
         }
 
         public bool Equals(SignatureContext other)

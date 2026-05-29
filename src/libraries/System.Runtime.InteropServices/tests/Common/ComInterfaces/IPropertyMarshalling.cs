@@ -32,6 +32,26 @@ namespace SharedTypes.ComInterfaces
             [param: MarshalUsing(typeof(TrackedIntMarshaller))]
             set;
         }
+
+        [MarshalUsing(typeof(TrackedIntMarshaller))]
+        int BareMarshalled { get; set; }
+
+        [MarshalUsing(typeof(AlternateIntMarshaller))]
+        int AccessorOverridesProperty
+        {
+            [return: MarshalUsing(typeof(TrackedIntMarshaller))]
+            get;
+            [param: MarshalUsing(typeof(TrackedIntMarshaller))]
+            set;
+        }
+
+        [MarshalUsing(typeof(AlternateIntMarshaller))]
+        int MixedPropertyAndAccessor
+        {
+            [return: MarshalUsing(typeof(TrackedIntMarshaller))]
+            get;
+            set;
+        }
     }
 
     [GeneratedComClass]
@@ -42,6 +62,9 @@ namespace SharedTypes.ComInterfaces
         public int TargetScoped { get; set; }
         public int ReadOnlyMarshalled { get; set; } = 99;
         public int WriteOnlyMarshalled { get => _writeOnly; set => _writeOnly = value; }
+        public int BareMarshalled { get; set; }
+        public int AccessorOverridesProperty { get; set; }
+        public int MixedPropertyAndAccessor { get; set; }
 
         public int WriteOnlySink => _writeOnly;
     }
@@ -51,6 +74,37 @@ namespace SharedTypes.ComInterfaces
     [CustomMarshaller(typeof(int), MarshalMode.ManagedToUnmanagedOut, typeof(TrackedIntMarshaller))]
     [CustomMarshaller(typeof(int), MarshalMode.UnmanagedToManagedOut, typeof(TrackedIntMarshaller))]
     internal static class TrackedIntMarshaller
+    {
+        private static int s_managedToUnmanagedCount;
+        private static int s_unmanagedToManagedCount;
+
+        public static int ManagedToUnmanagedCount => s_managedToUnmanagedCount;
+        public static int UnmanagedToManagedCount => s_unmanagedToManagedCount;
+
+        public static void Reset()
+        {
+            s_managedToUnmanagedCount = 0;
+            s_unmanagedToManagedCount = 0;
+        }
+
+        public static int ConvertToUnmanaged(int managed)
+        {
+            Interlocked.Increment(ref s_managedToUnmanagedCount);
+            return managed;
+        }
+
+        public static int ConvertToManaged(int unmanaged)
+        {
+            Interlocked.Increment(ref s_unmanagedToManagedCount);
+            return unmanaged;
+        }
+    }
+
+    [CustomMarshaller(typeof(int), MarshalMode.ManagedToUnmanagedIn, typeof(AlternateIntMarshaller))]
+    [CustomMarshaller(typeof(int), MarshalMode.UnmanagedToManagedIn, typeof(AlternateIntMarshaller))]
+    [CustomMarshaller(typeof(int), MarshalMode.ManagedToUnmanagedOut, typeof(AlternateIntMarshaller))]
+    [CustomMarshaller(typeof(int), MarshalMode.UnmanagedToManagedOut, typeof(AlternateIntMarshaller))]
+    internal static class AlternateIntMarshaller
     {
         private static int s_managedToUnmanagedCount;
         private static int s_unmanagedToManagedCount;

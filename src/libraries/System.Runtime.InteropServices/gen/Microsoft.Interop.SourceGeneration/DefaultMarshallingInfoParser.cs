@@ -54,9 +54,18 @@ namespace Microsoft.Interop
                     new MarshalAsAttributeParser(diagnostics, defaultInfo),
                     new MarshalUsingAttributeParser(env.Compilation, diagnostics));
 
+            // Property accessors cannot legitimately use peer-element lookups
+            // (the getter has no parameters; the setter has only its own value parameter, so
+            // self-reference is nonsensical), so route them to an empty provider that always
+            // fails such lookups. This also lets MethodSignatureElementInfoProvider assert it
+            // never sees a property accessor.
+            IElementInfoProvider elementInfoProvider = method.AssociatedSymbol is IPropertySymbol
+                ? EmptyElementInfoProvider.Instance
+                : new MethodSignatureElementInfoProvider(env.Compilation, diagnostics, method, useSiteAttributeParsers);
+
             return new MarshallingInfoParser(
                 diagnostics,
-                new MethodSignatureElementInfoProvider(env.Compilation, diagnostics, method, useSiteAttributeParsers),
+                elementInfoProvider,
                 useSiteAttributeParsers,
                 ImmutableArray.Create<IMarshallingInfoAttributeParser>(
                     new MarshalAsWithCustomMarshallersParser(env.Compilation, diagnostics, new MarshalAsAttributeParser(diagnostics, defaultInfo)),
