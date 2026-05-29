@@ -37,11 +37,11 @@ INLINE_OBSERVATION(HAS_MANAGED_VARARGS,       bool,   "managed varargs",        
 INLINE_OBSERVATION(HAS_NATIVE_VARARGS,        bool,   "native varargs",                       FATAL,       CALLEE)
 INLINE_OBSERVATION(HAS_NO_BODY,               bool,   "has no body",                          FATAL,       CALLEE)
 INLINE_OBSERVATION(HAS_NULL_FOR_LDELEM,       bool,   "has null pointer for ldelem",          FATAL,       CALLEE)
-INLINE_OBSERVATION(HAS_UNMANAGED_CALLCONV,    bool,   "has unmanaged calling convention",     FATAL,       CALLEE)
 INLINE_OBSERVATION(IS_ARRAY_METHOD,           bool,   "is array method",                      FATAL,       CALLEE)
 INLINE_OBSERVATION(IS_JIT_NOINLINE,           bool,   "noinline per JitNoinline",             FATAL,       CALLEE)
 INLINE_OBSERVATION(IS_NOINLINE,               bool,   "noinline per IL/cached result",        FATAL,       CALLEE)
 INLINE_OBSERVATION(IS_SYNCHRONIZED,           bool,   "is synchronized",                      FATAL,       CALLEE)
+INLINE_OBSERVATION(IS_UNMANAGED,              bool,   "is unmanaged code",                    FATAL,       CALLEE)
 INLINE_OBSERVATION(IS_VM_NOINLINE,            bool,   "noinline per VM",                      FATAL,       CALLEE)
 INLINE_OBSERVATION(LACKS_RETURN,              bool,   "no return opcode",                     FATAL,       CALLEE)
 INLINE_OBSERVATION(LDFLD_NEEDS_HELPER,        bool,   "ldfld needs helper",                   FATAL,       CALLEE)
@@ -163,7 +163,7 @@ INLINE_OBSERVATION(RANDOM_REJECT,             bool,   "random reject",          
 INLINE_OBSERVATION(RETURN_TYPE_MISMATCH,      bool,   "return type mismatch",                 FATAL,       CALLSITE)
 INLINE_OBSERVATION(STFLD_NEEDS_HELPER,        bool,   "stfld needs helper",                   FATAL,       CALLSITE)
 INLINE_OBSERVATION(TOO_MANY_LOCALS,           bool,   "too many locals",                      FATAL,       CALLSITE)
-INLINE_OBSERVATION(PINVOKE_EH,                bool,   "PInvoke call site with EH",            FATAL,       CALLSITE)
+INLINE_OBSERVATION(PINVOKE_STUB_NO_INLINE,    bool,   "PInvoke stub not to be inlined",       FATAL,       CALLSITE)
 
 // ------ Call Site Performance -------
 

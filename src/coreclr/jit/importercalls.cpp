@@ -6930,6 +6930,8 @@ void Compiler::impCheckForPInvokeCall(
         {
             if (!impCanPInvokeInline())
             {
+                // Mark this so we won't decide to inline the stub.
+                call->gtCallMoreFlags |= GTF_CALL_M_PINVOKE_STUB_NO_INLINE;
                 return;
             }
 
@@ -6942,6 +6944,8 @@ void Compiler::impCheckForPInvokeCall(
             if ((!compIsForInlining() && block->isRunRarely()) ||
                 (compIsForInlining() && impInlineInfo->iciBlock->isRunRarely()))
             {
+                // Mark this so we won't decide to inline the stub.
+                call->gtCallMoreFlags |= GTF_CALL_M_PINVOKE_STUB_NO_INLINE;
                 return;
             }
         }
@@ -8376,12 +8380,11 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
         }
     }
 
-    // The inliner gets confused when the unmanaged convention reverses arg order (like x86).
-    // Just suppress for all targets for now.
-    //
-    if (call->GetUnmanagedCallConv() != CorInfoCallConvExtension::Managed)
+    if (call->IsUnmanaged())
     {
-        inlineResult->NoteFatal(InlineObservation::CALLEE_HAS_UNMANAGED_CALLCONV);
+        // We must have IL to inline.
+        //
+        inlineResult->NoteFatal(InlineObservation::CALLEE_IS_UNMANAGED);
         return;
     }
 
@@ -8480,15 +8483,13 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
         return;
     }
 
-    /* Check legality of PInvoke callsite (for inlining of marshalling code) */
-
-    if (methAttr & CORINFO_FLG_PINVOKE)
+    // Don't inline the IL stub for PInvoke calls where impCheckForPInvokeCall set this flag.
+    if (call->IsPInvokeStubNoInline())
     {
-        if (!impCanPInvokeInlineCallSite(compCurBB))
-        {
-            inlineResult->NoteFatal(InlineObservation::CALLSITE_PINVOKE_EH);
-            return;
-        }
+        assert(!call->IsUnmanaged());
+        assert(methAttr & CORINFO_FLG_PINVOKE);
+        inlineResult->NoteFatal(InlineObservation::CALLSITE_PINVOKE_STUB_NO_INLINE);
+        return;
     }
 
     InlineCandidateInfo* inlineCandidateInfo = nullptr;
@@ -8507,14 +8508,6 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
         if (bbInFilterBBRange(compCurBB))
         {
             inlineResult->NoteFatal(InlineObservation::CALLSITE_IS_WITHIN_FILTER);
-            return;
-        }
-
-        // Do not inline pinvoke stubs with EH.
-        //
-        if ((methAttr & CORINFO_FLG_PINVOKE) != 0)
-        {
-            inlineResult->NoteFatal(InlineObservation::CALLEE_HAS_EH);
             return;
         }
     }
