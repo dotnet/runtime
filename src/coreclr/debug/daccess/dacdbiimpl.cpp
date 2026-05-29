@@ -2681,7 +2681,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetExactTypeHandle(DebuggerIPCE_E
 
 // Retrieve the generic type params for a given MethodDesc.  This function is specifically
 // for stackwalking because it requires the generic type token on the stack.
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetMethodDescParams(VMPTR_MethodDesc vmMethodDesc, GENERICS_TYPE_TOKEN genericsToken, OUT UINT32 * pcGenericClassTypeParams, OUT TypeParamsList * pGenericTypeParams)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateMethodDescParams(VMPTR_MethodDesc vmMethodDesc, GENERICS_TYPE_TOKEN genericsToken, OUT UINT32 * pcGenericClassTypeParams, FP_TYPEPARAM_CALLBACK fpCallback, CALLBACK_DATA pUserData)
 {
     DD_ENTER_MAY_THROW;
 
@@ -2694,7 +2694,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetMethodDescParams(VMPTR_MethodD
             ThrowHR(E_INVALIDARG);
         }
 
-        _ASSERTE((pcGenericClassTypeParams != NULL) && (pGenericTypeParams != NULL));
+        _ASSERTE((pcGenericClassTypeParams != NULL) && (fpCallback != NULL));
 
         MethodDesc * pMD = vmMethodDesc.GetDacPtr();
 
@@ -2739,9 +2739,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetMethodDescParams(VMPTR_MethodD
         _ASSERTE((classInst.IsEmpty())  == (cGenericClassTypeParams  == 0));
         _ASSERTE((methodInst.IsEmpty()) == (cGenericMethodTypeParams == 0));
 
-        // allocate memory for the return array
-        pGenericTypeParams->Alloc(cTotalGenericTypeParams);
-
         for (UINT32 i = 0; i < cTotalGenericTypeParams; i++)
         {
             // Retrieve the current type parameter depending on the index.
@@ -2755,6 +2752,8 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetMethodDescParams(VMPTR_MethodD
                 thCurrent = methodInst[i - cGenericClassTypeParams];
             }
 
+            DebuggerIPCE_ExpandedTypeData entry;
+
             // There is the possibility that we'll get this far with a dump and not fail, but still
             // not be able to get full info for a particular param.
             EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY_WITH_HANDLER
@@ -2762,7 +2761,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetMethodDescParams(VMPTR_MethodD
                 // Fill in the struct using the TypeHandle of the current type parameter if we can.
                 IfFailThrow(TypeHandleToExpandedTypeInfo(NoValueTypeBoxing,
                                                          (CORDB_ADDRESS)thCurrent.AsTAddr(),
-                                                         &((*pGenericTypeParams)[i])));
+                                                         &entry));
             }
             EX_CATCH_ALLOW_DATATARGET_MISSING_MEMORY_WITH_HANDLER
             {
@@ -2770,9 +2769,11 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetMethodDescParams(VMPTR_MethodD
                 TypeHandle thCanon = TypeHandle(g_pCanonMethodTableClass);
                 IfFailThrow(TypeHandleToExpandedTypeInfo(NoValueTypeBoxing,
                                                          (CORDB_ADDRESS)thCanon.AsTAddr(),
-                                                         &((*pGenericTypeParams)[i])));
+                                                         &entry));
             }
             EX_END_CATCH_ALLOW_DATATARGET_MISSING_MEMORY_WITH_HANDLER
+
+            fpCallback(&entry, pUserData);
         }
     }
     EX_CATCH_HRESULT(hr);
@@ -3169,37 +3170,35 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetCollectibleTypeStaticAddress(V
     return hr;
 }
 
-// DacDbi API: GetTypeHandleParams
+// DacDbi API: EnumerateTypeHandleParams
 // - gets the necessary data for a type handle, i.e. its type parameters, e.g. "String" and "List<int>" from the type handle
-//   for "Dict<String,List<int>>", and sends it back to the right side.
-// - pParams is allocated and initialized by this function
+//   for "Dict<String,List<int>>", and sends it back to the right side via the callback.
 // - This should not fail except for OOM
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetTypeHandleParams(VMPTR_TypeHandle vmTypeHandle, OUT TypeParamsList * pParams)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateTypeHandleParams(VMPTR_TypeHandle vmTypeHandle, FP_TYPEPARAM_CALLBACK fpCallback, CALLBACK_DATA pUserData)
 {
     DD_ENTER_MAY_THROW
 
     HRESULT hr = S_OK;
     EX_TRY
     {
+        _ASSERTE(fpCallback != NULL);
 
         TypeHandle typeHandle = TypeHandle::FromPtr(vmTypeHandle.GetDacPtr());
-        LOG((LF_CORDB, LL_INFO10000, "D::GTHP: getting type parameters for 0x%08x 0x%0x8.\n",
-             vmAppDomain.GetDacPtr(), typeHandle.AsPtr()));
+        LOG((LF_CORDB, LL_INFO10000, "D::ETHP: enumerating type parameters for 0x%p.\n", typeHandle.AsPtr()));
 
+        unsigned int count = typeHandle.GetNumGenericArgs();
+        Instantiation inst = typeHandle.GetInstantiation();
 
-        // Find the class given its type handle.
-        _ASSERTE(pParams->IsEmpty());
-        pParams->Alloc(typeHandle.GetNumGenericArgs());
-
-        // collect type information for each type parameter
-        for (unsigned int i = 0; i < pParams->Count(); ++i)
+        for (unsigned int i = 0; i < count; ++i)
         {
+            DebuggerIPCE_ExpandedTypeData entry;
             IfFailThrow(TypeHandleToExpandedTypeInfo(NoValueTypeBoxing,
-                                                     (CORDB_ADDRESS)typeHandle.GetInstantiation()[i].AsTAddr(),
-                                                     &((*pParams)[i])));
+                                                     (CORDB_ADDRESS)inst[i].AsTAddr(),
+                                                     &entry));
+            fpCallback(&entry, pUserData);
         }
 
-        LOG((LF_CORDB, LL_INFO10000, "D::GTHP: sending  result"));
+        LOG((LF_CORDB, LL_INFO10000, "D::ETHP: sending result"));
     }
     EX_CATCH_HRESULT(hr);
     return hr;

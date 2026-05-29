@@ -105,6 +105,14 @@ struct CallbackAccumulator
     {
         return reinterpret_cast<CallbackAccumulator*>(pUserData);
     }
+
+    // Adapter for FP_*_CALLBACK signatures that deliver an item by pointer
+    // (e.g. FP_TYPEPARAM_CALLBACK). Pass as the callback with &acc as pUserData:
+    //   pDAC->EnumX(args, &CallbackAccumulator<T>::PushCallback, &acc);
+    static void PushCallback(T * pItem, CALLBACK_DATA pUserData)
+    {
+        From(pUserData)->Push(*pItem);
+    }
 };
 
 

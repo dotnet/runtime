@@ -78,6 +78,8 @@ namespace R2RDump
                 case Machine.RiscV64:
                     target = TargetArch.Target_RiscV64;
                     break;
+                case WasmMachine.Wasm32:
+                    return IntPtr.Zero;
                 default:
                     Program.WriteWarning($"{machine} not supported on CoreDisTools");
                     return IntPtr.Zero;

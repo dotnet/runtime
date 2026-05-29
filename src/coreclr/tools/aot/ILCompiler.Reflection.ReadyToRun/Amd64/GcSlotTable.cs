@@ -75,7 +75,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
                         return ((RiscV64.Registers)registerNumber).ToString();
 
                     case WasmMachine.Wasm32:
-                         throw new NotImplementedException("No implementation for machine type Wasm32.");
+                        throw new NotImplementedException("No implementation for machine type Wasm32.");
                     default:
                         throw new NotImplementedException(machine.ToString());
                 }

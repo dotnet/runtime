@@ -87,7 +87,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 case Machine.RiscV64:
                     return ((RiscV64.Registers)regnum).ToString();
                 case WasmMachine.Wasm32:
-                    return "NYI";
+                    throw new NotImplementedException($"No implementation for machine type {machine}.");
                 default:
                     throw new NotImplementedException($"No implementation for machine type {machine}.");
             }

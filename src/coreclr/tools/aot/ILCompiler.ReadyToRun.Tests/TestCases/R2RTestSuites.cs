@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Reflection.PortableExecutable;
 using ILCompiler.ReadyToRun.Tests.TestCasesRunner;
 using ILCompiler.Reflection.ReadyToRun;
 using Internal.ReadyToRunConstants;
+using Internal.Runtime;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -54,6 +56,39 @@ public class R2RTestSuites
             Assert.True(R2RAssert.HasCrossModuleInlinedMethod(reader, "TestGetValue", "GetValue", out diag), diag);
             Assert.True(R2RAssert.HasCrossModuleInlinedMethod(reader, "TestGetString", "GetString", out diag), diag);
             Assert.True(R2RAssert.HasCrossModuleInliningInfo(reader, out diag), diag);
+        }
+    }
+
+    [Fact]
+    public void RuntimeFunctionsSectionSizeExcludesSentinel()
+    {
+        var lib = new CompiledAssembly
+        {
+            AssemblyName = nameof(RuntimeFunctionsSectionSizeExcludesSentinel),
+            SourceResourceNames = ["ThumbBit/HotColdSplitting.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(RuntimeFunctionsSectionSizeExcludesSentinel),
+            [
+                new(nameof(RuntimeFunctionsSectionSizeExcludesSentinel), [new CrossgenAssembly(lib)])
+                {
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            Assert.True(reader.ReadyToRunHeader.Sections.TryGetValue(
+                ReadyToRunSectionType.RuntimeFunctions, out ReadyToRunSection section));
+
+            // The header entry records the runtime-functions table size *excluding* the trailing
+            // 0xffffffff sentinel word. Each entry is 12 bytes on x64 and 8 bytes on other targets.
+            int entrySize = reader.Machine == Machine.Amd64 ? 12 : 8;
+            Assert.True(section.Size > 0, "RuntimeFunctions section should not be empty");
+            Assert.True(
+                section.Size % entrySize == 0,
+                $"RuntimeFunctions section size {section.Size} is not a multiple of entry size {entrySize} (machine: {reader.Machine}); remainder {section.Size % entrySize} suggests the trailing sentinel was included.");
         }
     }
 

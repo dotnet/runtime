@@ -155,8 +155,6 @@ namespace ILCompiler.Reflection.ReadyToRun
                     SECURITY_OBJECT_STACK_SLOT_ENCBASE = 6;
                     GS_COOKIE_STACK_SLOT_ENCBASE = 6;
                     CODE_LENGTH_ENCBASE = 6;
-//                    SIZE_OF_RETURN_KIND_IN_SLIM_HEADER = 2;
-//                    SIZE_OF_RETURN_KIND_IN_FAT_HEADER = 2;
                     STACK_BASE_REGISTER_ENCBASE = 3;
                     SIZE_OF_STACK_AREA_ENCBASE = 6;
                     SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE = 3;
@@ -166,7 +164,6 @@ namespace ILCompiler.Reflection.ReadyToRun
                     NUM_UNTRACKED_SLOTS_ENCBASE = 5;
                     NORM_PROLOG_SIZE_ENCBASE = 4;
                     NORM_EPILOG_SIZE_ENCBASE = 3;
-//                    NORM_CODE_OFFSET_DELTA_ENCBASE = 3;
                     INTERRUPTIBLE_RANGE_DELTA1_ENCBASE = 5;
                     INTERRUPTIBLE_RANGE_DELTA2_ENCBASE = 5;
                     REGISTER_ENCBASE = 3;
@@ -175,7 +172,6 @@ namespace ILCompiler.Reflection.ReadyToRun
                     STACK_SLOT_DELTA_ENCBASE = 4;
                     NUM_SAFE_POINTS_ENCBASE = 4;
                     NUM_INTERRUPTIBLE_RANGES_ENCBASE = 1;
-//                    NUM_EH_CLAUSES_ENCBASE = 2;
                     POINTER_SIZE_ENCBASE = 3;
                     LIVESTATE_RLE_RUN_ENCBASE = 2;
                     LIVESTATE_RLE_SKIP_ENCBASE = 4;

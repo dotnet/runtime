@@ -553,7 +553,8 @@ public unsafe partial interface IDacDbiInterface
     int GetExactTypeHandle(nint pTypeData, nint pArgInfo, ulong* pVmTypeHandle);
 
     [PreserveSig]
-    int GetMethodDescParams(ulong vmMethodDesc, ulong genericsToken, uint* pcGenericClassTypeParams, nint pGenericTypeParams);
+    int EnumerateMethodDescParams(ulong vmMethodDesc, ulong genericsToken, uint* pcGenericClassTypeParams,
+        delegate* unmanaged<DebuggerIPCE_ExpandedTypeData*, nint, void> fpCallback, nint pUserData);
 
     [PreserveSig]
     int GetThreadStaticAddress(ulong vmField, ulong vmRuntimeThread, ulong* pRetVal);
@@ -565,7 +566,8 @@ public unsafe partial interface IDacDbiInterface
     int GetEnCHangingFieldInfo(nint pEnCFieldInfo, nint pFieldData, Interop.BOOL* pfStatic);
 
     [PreserveSig]
-    int GetTypeHandleParams(ulong vmTypeHandle, nint pParams);
+    int EnumerateTypeHandleParams(ulong vmTypeHandle,
+        delegate* unmanaged<DebuggerIPCE_ExpandedTypeData*, nint, void> fpCallback, nint pUserData);
 
     [PreserveSig]
     int GetSimpleType(int simpleType, uint* pMetadataToken, ulong* pVmModule);

@@ -598,11 +598,10 @@ UPTR HashMap::LookupValue(UPTR key, UPTR value)
 }
 
 //---------------------------------------------------------------------
-//  UPTR HashMap::LookupValue(UPTR key)
-//  Lookup value in the hash table, use the comparison function
-//  to verify the values match
+//  UPTR HashMap::LookupValueByUniqueKey(UPTR key)
+//  Lookup value in the hash table assumes that there is no Comparison function and the keys are unique, returns the value or INVALIDENTRY if not present
 //
-UPTR HashMap::Gethash(UPTR key)
+UPTR HashMap::LookupValueByUniqueKey(UPTR key)
 {
     CONTRACTL
     {
@@ -953,7 +952,7 @@ LDone:
             ASSERT (keyv != DELETED);
             if (m_pCompare == NULL && keyv != EMPTY)
             {
-                ASSERT ((Buckets()[nb].GetValue (i)) == Gethash (keyv));
+                ASSERT ((Buckets()[nb].GetValue (i)) == LookupValueByUniqueKey (keyv));
             }
         }
     }
