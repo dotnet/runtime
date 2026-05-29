@@ -1,8 +1,12 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Attributes
 {
+    [SetupCompileBefore("GenericAttributesDataFlow.dll", new[] { "Dependencies/GenericAttributesDataFlow.il" })]
     class GenericAttributes
     {
         static void Main()
@@ -10,6 +14,9 @@ namespace Mono.Linker.Tests.Cases.Attributes
             new WithGenericAttribute_OfString();
             new WithGenericAttribute_OfInt();
             new WithConstrainedGenericAttribute();
+            typeof(WithNewConstrainedGenericAttribute).GetCustomAttributes(false);
+            ReflectOnGenericAttributeWithUnannotatedTypeParameter<TypeWithPublicMethods>.Test();
+            ReflectOnGenericAttributeWithAnnotatedTypeParameter<TypeWithPublicMethods>.Test();
         }
 
         [Kept]
@@ -60,6 +67,13 @@ namespace Mono.Linker.Tests.Cases.Attributes
         {
         }
 
+        [Kept]
+        class TypeWithPublicMethods
+        {
+            [Kept]
+            public void Method() { }
+        }
+
         [KeptBaseType(typeof(ConstraintType))]
         class DerivedFromConstraintType : ConstraintType
         {
@@ -71,6 +85,61 @@ namespace Mono.Linker.Tests.Cases.Attributes
         {
             [Kept]
             public ConstrainedGenericAttribute() { }
+        }
+
+        [Kept]
+        class Handler
+        {
+            [Kept]
+            public Handler() { }
+        }
+
+        [Kept]
+        [KeptAttributeAttribute(typeof(NewConstrainedGenericAttribute<Handler>))]
+        [KeptMember(".ctor()")]
+        [NewConstrainedGenericAttribute<Handler>]
+        class WithNewConstrainedGenericAttribute
+        {
+        }
+
+        [Kept]
+        [KeptBaseType(typeof(Attribute))]
+        class NewConstrainedGenericAttribute<[KeptGenericParamAttributes(GenericParameterAttributes.DefaultConstructorConstraint)] T> : Attribute
+            where T : new()
+        {
+            [Kept]
+            public NewConstrainedGenericAttribute() { }
+        }
+
+        [Kept]
+        class ReflectOnGenericAttributeWithUnannotatedTypeParameter<T>
+        {
+            [Kept]
+            [ExpectedWarning("IL2091", Tool.Trimmer | Tool.NativeAot, "")]
+            public static void Test()
+            {
+                GetDynamicallyAccessedMembersGenericClass(typeof(T)).GetCustomAttributes(false);
+            }
+        }
+
+        [Kept]
+        class ReflectOnGenericAttributeWithAnnotatedTypeParameter<
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+            [KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+            T>()
+        {
+            [Kept]
+            public static void Test()
+            {
+                GetDynamicallyAccessedMembersGenericClass(typeof(T)).GetCustomAttributes(false);
+            }
+        }
+
+        [Kept]
+        static Type GetDynamicallyAccessedMembersGenericClass(Type typeArgument)
+        {
+            return Type.GetType("Mono.Linker.Tests.Cases.Attributes.Dependencies.DynamicallyAccessedMembersGenericClass`1, GenericAttributesDataFlow")!
+                .MakeGenericType(typeArgument);
         }
     }
 }
