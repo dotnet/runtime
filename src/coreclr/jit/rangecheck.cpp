@@ -2261,27 +2261,14 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
     // If VN is constant return range as constant.
     else if (m_compiler->vnStore->IsVNConstant(vn))
     {
-        var_types vnType  = m_compiler->vnStore->TypeOfVN(vn);
-        bool      handled = false;
-
-        if (vnType == TYP_INT)
+        int32_t cns;
+        if (IsVNIntegralConstant(vn, &cns))
         {
-            range   = Range(Limit(Limit::keConstant, m_compiler->vnStore->GetConstantInt32(vn)));
-            handled = true;
+            range = Range(Limit(Limit::keConstant, static_cast<int32_t>(cns)));
         }
-        else if (vnType == TYP_LONG)
+        else
         {
-            int64_t cns = m_compiler->vnStore->GetConstantInt64(vn);
-
-            if (FitsIn<int32_t>(cns))
-            {
-                range   = Range(Limit(Limit::keConstant, static_cast<int32_t>(cns)));
-                handled = true;
-            }
-        }
-
-        if (!handled)
-        {
+            // TOOD: We may want to also check for `uint32_t` since that allows knowing a TYP_LONG is never negative
             range = Limit(Limit::keUnknown);
             JITDUMP("GetRangeWorker unsupported VN constant, setting to unknown value.\n");
         }
