@@ -90,7 +90,6 @@ typedef int CorElementType;
 typedef int AddressType;
 typedef int SymbolFormat;
 typedef int AreValueTypesBoxed;
-typedef int DelegateType;
 typedef int DynamicMethodType;
 typedef int FrameType;
 typedef int EHijackReason;
@@ -416,17 +415,13 @@ interface IDacDbiInterface : IUnknown
 
     // Delegate
     HRESULT IsDelegate([in] VMPTR_Object vmObject, [out] BOOL * pResult);
-    HRESULT GetDelegateType([in] VMPTR_Object delegateObject, [out] DelegateType * delegateType);
     HRESULT GetDelegateFunctionData(
-        [in] DelegateType delegateType,
         [in] VMPTR_Object delegateObject,
         [out] VMPTR_Assembly * ppFunctionAssembly,
         [out] mdMethodDef * pMethodDef);
     HRESULT GetDelegateTargetObject(
-        [in] DelegateType delegateType,
         [in] VMPTR_Object delegateObject,
-        [out] VMPTR_Object * ppTargetObj,
-        [out] VMPTR_AppDomain * ppTargetAppDomain);
+        [out] VMPTR_Object * ppTargetObj);
 
     // Module Mapping
     HRESULT IsModuleMapped([in] VMPTR_Module pModule, [out] BOOL * isModuleMapped);

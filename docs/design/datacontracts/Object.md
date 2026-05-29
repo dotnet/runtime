@@ -5,6 +5,12 @@ This contract is for getting information about well-known managed objects
 ## APIs of contract
 
 ``` csharp
+public readonly record struct DelegateInfo(
+    TargetPointer Target,
+    TargetCodePointer MethodPtr,
+    TargetCodePointer MethodPtrAux,
+    TargetNUInt InvocationCount);
+
 // Get the method table address for the object
 TargetPointer GetMethodTableAddress(TargetPointer address);
 
@@ -23,6 +29,8 @@ int TryGetHashCode(TargetPointer address);
 
 // Returns the SyncBlock address for the object, or TargetPointer.Null if no sync block is associated with it.
 TargetPointer GetSyncBlockAddress(TargetPointer address);
+
+DelegateInfo GetDelegateInfo(TargetPointer address);
 ```
 
 ## Version 1
@@ -37,6 +45,10 @@ Data descriptors used:
 | `SyncTableEntry` | `SyncBlock` | `SyncBlock` corresponding to the entry |
 | `ObjectHeader` | `SyncBlockValue` | Sync block value from the object header |
 | `SyncBlock` | `HashCode` | Hash code stored in the sync block |
+| `Delegate` | `Target` | Bound `this` reference for closed delegates |
+| `Delegate` | `MethodPtr` | Primary method pointer |
+| `Delegate` | `MethodPtrAux` | Auxiliary method pointer (open/wrapper delegates) |
+| `Delegate` | `InvocationCount` | Invocation count (non-zero for multicast/wrapper/special delegates) |
 
 Global variables used:
 | Global Name | Type | Purpose |
@@ -164,5 +176,14 @@ TargetPointer GetSyncBlockAddress(TargetPointer address)
 
     uint index = syncBlockValue & target.ReadGlobal<uint>("SyncBlockIndexMask");
     return target.Contracts.SyncBlock.GetSyncBlock(index);
+}
+
+DelegateInfo GetDelegateInfo(TargetPointer address)
+{
+    return new DelegateInfo(
+        Target:          target.ReadPointer(address + /* Delegate::_target offset */),
+        MethodPtr:       target.ReadCodePointer(address + /* Delegate::MethodPtr offset */),
+        MethodPtrAux:    target.ReadCodePointer(address + /* Delegate::MethodPtrAux offset */),
+        InvocationCount: target.ReadNUInt(address + /* Delegate::InvocationCount offset */));
 }
 ```

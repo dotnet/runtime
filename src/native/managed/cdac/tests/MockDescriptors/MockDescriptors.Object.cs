@@ -140,6 +140,65 @@ internal sealed class MockSyncTableEntry : TypedView
     }
 }
 
+internal sealed class MockDelegateObjectData : TypedView
+{
+    public const string MethodTableFieldName = "m_pMethTab";
+    public const string TargetFieldName = "Target";
+    public const string MethodPtrFieldName = "MethodPtr";
+    public const string MethodPtrAuxFieldName = "MethodPtrAux";
+    public const string InvocationListFieldName = "InvocationList";
+    public const string InvocationCountFieldName = "InvocationCount";
+
+    public static Layout<MockDelegateObjectData> CreateLayout(MockTarget.Architecture architecture)
+    {
+        SequentialLayoutBuilder builder = new("Delegate", architecture);
+        return builder
+            .AddPointerField(MethodTableFieldName)
+            .AddPointerField(TargetFieldName)
+            .AddPointerField(MethodPtrFieldName)
+            .AddPointerField(MethodPtrAuxFieldName)
+            .AddPointerField(InvocationListFieldName)
+            .AddNUIntField(InvocationCountFieldName)
+            .Build<MockDelegateObjectData>();
+    }
+
+    public ulong MethodTable
+    {
+        get => ReadPointerField(MethodTableFieldName);
+        set => WritePointerField(MethodTableFieldName, value);
+    }
+
+    public ulong Target
+    {
+        get => ReadPointerField(TargetFieldName);
+        set => WritePointerField(TargetFieldName, value);
+    }
+
+    public ulong MethodPtr
+    {
+        get => ReadPointerField(MethodPtrFieldName);
+        set => WritePointerField(MethodPtrFieldName, value);
+    }
+
+    public ulong MethodPtrAux
+    {
+        get => ReadPointerField(MethodPtrAuxFieldName);
+        set => WritePointerField(MethodPtrAuxFieldName, value);
+    }
+
+    public ulong InvocationList
+    {
+        get => ReadPointerField(InvocationListFieldName);
+        set => WritePointerField(InvocationListFieldName, value);
+    }
+
+    public ulong InvocationCount
+    {
+        get => ReadPointerField(InvocationCountFieldName);
+        set => WritePointerField(InvocationCountFieldName, value);
+    }
+}
+
 internal partial class MockDescriptors
 {
     internal sealed class MockObjectBuilder
@@ -164,6 +223,7 @@ internal partial class MockDescriptors
         internal Layout<MockObjectData> ObjectLayout { get; }
         internal Layout<MockStringObjectData> StringLayout { get; }
         internal Layout<MockArrayObjectData> ArrayLayout { get; }
+        internal Layout<MockDelegateObjectData> DelegateLayout { get; }
         internal Layout<MockSyncTableEntry> SyncTableEntryLayout { get; }
         internal ulong TestStringMethodTableAddress { get; private set; }
         internal Layout<MockSyncBlock> SyncBlockLayout => SyncBlockBuilder.SyncBlockLayout;
@@ -187,6 +247,7 @@ internal partial class MockDescriptors
             ObjectLayout = MockObjectData.CreateLayout(Builder.TargetTestHelpers.Arch);
             StringLayout = MockStringObjectData.CreateLayout(Builder.TargetTestHelpers.Arch);
             ArrayLayout = MockArrayObjectData.CreateLayout(Builder.TargetTestHelpers.Arch);
+            DelegateLayout = MockDelegateObjectData.CreateLayout(Builder.TargetTestHelpers.Arch);
             SyncTableEntryLayout = MockSyncTableEntry.CreateLayout(Builder.TargetTestHelpers.Arch);
 
             Debug.Assert(ArrayLayout.Size == Builder.TargetTestHelpers.ArrayBaseSize);
@@ -271,6 +332,19 @@ internal partial class MockDescriptors
             MockArrayObjectData arrayObject = ArrayLayout.Create(fragment);
             arrayObject.MethodTable = methodTable.Address;
             arrayObject.NumComponents = (uint)array.Length;
+            return fragment.Address;
+        }
+
+        internal ulong AddDelegateObject(ulong methodTable, ulong target, ulong methodPtr, ulong methodPtrAux, ulong invocationList, ulong invocationCount)
+        {
+            MockMemorySpace.HeapFragment fragment = ManagedObjectAllocator.Allocate((uint)DelegateLayout.Size, $"Delegate : MT = '{methodTable}'");
+            MockDelegateObjectData mockDelegate = DelegateLayout.Create(fragment);
+            mockDelegate.MethodTable = methodTable;
+            mockDelegate.Target = target;
+            mockDelegate.MethodPtr = methodPtr;
+            mockDelegate.MethodPtrAux = methodPtrAux;
+            mockDelegate.InvocationList = invocationList;
+            mockDelegate.InvocationCount = invocationCount;
             return fragment.Address;
         }
 

@@ -3417,14 +3417,112 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     public int IsDelegate(ulong vmObject, Interop.BOOL* pResult)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.IsDelegate(vmObject, pResult) : HResults.E_NOTIMPL;
 
-    public int GetDelegateType(ulong delegateObject, int* delegateType)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetDelegateType(delegateObject, delegateType) : HResults.E_NOTIMPL;
+    public int GetDelegateFunctionData(ulong delegateObject, ulong* ppFunctionAssembly, uint* pMethodDef)
+    {
+        int hr = HResults.S_OK;
+        ulong functionAssembly = 0;
+        uint methodDef = 0;
+        try
+        {
+            if (ppFunctionAssembly == null)
+                throw new ArgumentNullException(nameof(ppFunctionAssembly));
+            if (pMethodDef == null)
+                throw new ArgumentNullException(nameof(pMethodDef));
 
-    public int GetDelegateFunctionData(int delegateType, ulong delegateObject, ulong* ppFunctionAssembly, uint* pMethodDef)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetDelegateFunctionData(delegateType, delegateObject, ppFunctionAssembly, pMethodDef) : HResults.E_NOTIMPL;
+            DelegateInfo delegateInfo = _target.Contracts.Object.GetDelegateInfo(new TargetPointer(delegateObject));
 
-    public int GetDelegateTargetObject(int delegateType, ulong delegateObject, ulong* ppTargetObj, ulong* ppTargetAppDomain)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetDelegateTargetObject(delegateType, delegateObject, ppTargetObj, ppTargetAppDomain) : HResults.E_NOTIMPL;
+            // Multicast/wrapper/special-sig delegates are not supported by this API.
+            if (delegateInfo.InvocationCount.Value != 0)
+            {
+                throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+            }
+
+            // Open delegate uses methodPtrAux; closed delegate uses methodPtr.
+            TargetCodePointer targetMethodPtr = delegateInfo.MethodPtrAux != TargetCodePointer.Null
+                ? delegateInfo.MethodPtrAux
+                : delegateInfo.MethodPtr;
+
+            IExecutionManager eman = _target.Contracts.ExecutionManager;
+            TargetPointer methodDescPtr  = eman.NonVirtualEntry2MethodDesc(targetMethodPtr);
+
+            if (methodDescPtr == TargetPointer.Null)
+            {
+                throw new ArgumentException("Unable to find MethodDesc for the delegate's target method.", nameof(delegateObject));
+            }
+
+            IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+            MethodDescHandle mdHandle = rts.GetMethodDescHandle(methodDescPtr);
+            methodDef = rts.GetMethodToken(mdHandle);
+
+            TargetPointer mtPtr = rts.GetMethodTable(mdHandle);
+            TypeHandle typeHandle = rts.GetTypeHandle(mtPtr);
+            TargetPointer modulePtr = rts.GetModule(typeHandle);
+            Contracts.ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
+            functionAssembly = _target.Contracts.Loader.GetAssembly(moduleHandle).Value;
+
+            *ppFunctionAssembly = functionAssembly;
+            *pMethodDef = methodDef;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            ulong asmLocal;
+            uint methodDefLocal;
+            int hrLocal = _legacy.GetDelegateFunctionData(delegateObject, &asmLocal, &methodDefLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(*ppFunctionAssembly == asmLocal, $"cDAC: {*ppFunctionAssembly:x}, DAC: {asmLocal:x}");
+                Debug.Assert(*pMethodDef == methodDefLocal, $"cDAC: {*pMethodDef:x}, DAC: {methodDefLocal:x}");
+            }
+        }
+#endif
+        return hr;
+    }
+
+    public int GetDelegateTargetObject(ulong delegateObject, ulong* ppTargetObj)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (ppTargetObj == null)
+                throw new ArgumentNullException(nameof(ppTargetObj));
+
+            ulong targetObj = 0;
+            DelegateInfo delegateInfo = _target.Contracts.Object.GetDelegateInfo(new TargetPointer(delegateObject));
+
+            if (delegateInfo.InvocationCount.Value != 0)
+            {
+                throw Marshal.GetExceptionForHR(HResults.CorDbgHResults.CORDBG_E_UNSUPPORTED_DELEGATE)!;
+            }
+
+            if (delegateInfo.MethodPtrAux == TargetCodePointer.Null)
+            {
+                // Closed delegate: return the bound target object reference.
+                *ppTargetObj = delegateInfo.Target.Value;
+            }
+            // else: open delegate has no bound target; targetObj stays 0.
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            ulong targetObjLocal;
+            int hrLocal = _legacy.GetDelegateTargetObject(delegateObject, &targetObjLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*ppTargetObj == targetObjLocal, $"cDAC: {*ppTargetObj:x}, DAC: {targetObjLocal:x}");
+        }
+#endif
+        return hr;
+    }
 
     public int IsModuleMapped(ulong pModule, Interop.BOOL* isModuleMapped)
     {

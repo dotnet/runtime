@@ -3325,124 +3325,36 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsDelegate(VMPTR_Object vmObject,
     return hr;
 }
 
-
-//-----------------------------------------------------------------------------
-// DacDbi API: GetDelegateType
-// Given a delegate pointer, compute the type of delegate according to the data held in it.
-//-----------------------------------------------------------------------------
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetDelegateType(VMPTR_Object delegateObject, DelegateType *delegateType)
-{
-    DD_ENTER_MAY_THROW;
-
-    _ASSERTE(!delegateObject.IsNull());
-    _ASSERTE(delegateType != NULL);
-
-#ifdef _DEBUG
-    // ensure we have a Delegate object
-    BOOL fIsDelegate = FALSE;
-    IsDelegate(delegateObject, &fIsDelegate);
-    _ASSERTE(fIsDelegate);
-#endif
-
-    // Ideally, we would share the implementation of this method with the runtime, or get the same information
-    // we are getting from here from other EE methods. Nonetheless, currently the implementation is sharded across
-    // several pieces of logic so this replicates the logic mostly due to time constraints. The Mainly from:
-    // - System.Private.CoreLib!System.Delegate.GetMethodImpl and System.Private.CoreLib!System.MulticastDelegate.GetMethodImpl
-    // - System.Private.CoreLib!System.Delegate.GetTarget and System.Private.CoreLib!System.MulticastDelegate.GetTarget
-    // - coreclr!COMDelegate::GetMethodDesc and coreclr!COMDelegate::FindMethodHandle
-    // - coreclr!Delegate_Construct and the delegate type table in
-    // - DELEGATE KINDS TABLE in comdelegate.cpp
-
-    *delegateType = DelegateType::kUnknownDelegateType;
-    PTR_DelegateObject pDelObj = dac_cast<PTR_DelegateObject>(delegateObject.GetDacPtr());
-    INT_PTR invocationCount = pDelObj->GetInvocationCount();
-
-    if (invocationCount == -1)
-    {
-        // We could get a native code for this case from _methodPtr, but not a methodDef as we'll need.
-        // We can also get the shuffling thunk. However, this doesn't have a token and there's
-        // no easy way to expose through the DBI now.
-        *delegateType = kUnmanagedFunctionDelegate;
-        return S_OK;
-    }
-
-    PTR_Object pInvocationList = OBJECTREFToObject(pDelObj->GetInvocationList());
-
-    if (invocationCount == 0)
-    {
-        if (pInvocationList == NULL)
-        {
-            // If this delegate points to a static function or this is a open virtual delegate, this should be non-null
-            // Special case: This might fail in a VSD delegate (instance open virtual)...
-            // TODO: There is the special signatures cases missing.
-            TADDR targetMethodPtr = PCODEToPINSTR(pDelObj->GetMethodPtrAux());
-            if (targetMethodPtr == (TADDR)NULL)
-            {
-                // Static extension methods, other closed static delegates, and instance delegates fall into this category.
-                *delegateType = kClosedDelegate;
-            }
-            else {
-                *delegateType = kOpenDelegate;
-            }
-
-            return S_OK;
-        }
-    }
-    else
-    {
-        if (pInvocationList != NULL)
-        {
-            PTR_MethodTable invocationListMT = pInvocationList->GetGCSafeMethodTable();
-
-            if (invocationListMT->IsArray())
-                *delegateType = kTrueMulticastDelegate;
-
-            if (invocationListMT->IsDelegate())
-                *delegateType = kWrapperDelegate;
-
-            // Cases missing: Loader allocator, or dynamic resolver.
-            return S_OK;
-        }
-
-        // According to the table in comdelegates.cpp, there shouldn't be a case where .
-        // Multicast falls outside of the table, so not
-    }
-
-    _ASSERT(FALSE);
-    *delegateType = kUnknownDelegateType;
-    return CORDBG_E_UNSUPPORTED_DELEGATE;
-}
-
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetDelegateFunctionData(
-    DelegateType delegateType,
     VMPTR_Object delegateObject,
     OUT VMPTR_Assembly *ppFunctionAssembly,
     OUT mdMethodDef *pMethodDef)
 {
     DD_ENTER_MAY_THROW;
 
-#ifdef _DEBUG
-    // ensure we have a Delegate object
     BOOL fIsDelegate = FALSE;
     IsDelegate(delegateObject, &fIsDelegate);
-    _ASSERTE(fIsDelegate);
-#endif
+    if (!fIsDelegate)
+    {
+        return E_FAIL;
+    }
 
     HRESULT hr = S_OK;
     PTR_DelegateObject pDelObj = dac_cast<PTR_DelegateObject>(delegateObject.GetDacPtr());
+    if (pDelObj->GetInvocationCount())
+    {
+        return E_FAIL;
+    }
+
     TADDR targetMethodPtr = (TADDR)NULL;
     VMPTR_MethodDesc pMD;
-
-    switch (delegateType)
+    if (pDelObj->GetMethodPtrAux() != NULL)
     {
-    case kClosedDelegate:
-        targetMethodPtr = PCODEToPINSTR(pDelObj->GetMethodPtr());
-        break;
-    case kOpenDelegate:
         targetMethodPtr = PCODEToPINSTR(pDelObj->GetMethodPtrAux());
-        break;
-    default:
-        return E_FAIL;
+    }
+    else
+    {
+        targetMethodPtr = PCODEToPINSTR(pDelObj->GetMethodPtr());
     }
 
     hr = GetMethodDescPtrFromIpEx(targetMethodPtr, &pMD);
@@ -3456,38 +3368,35 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetDelegateFunctionData(
 }
 
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetDelegateTargetObject(
-    DelegateType delegateType,
     VMPTR_Object delegateObject,
-    OUT VMPTR_Object *ppTargetObj,
-    OUT VMPTR_AppDomain *ppTargetAppDomain)
+    OUT VMPTR_Object *ppTargetObj)
 {
     DD_ENTER_MAY_THROW;
 
-#ifdef _DEBUG
-    // ensure we have a Delegate object
     BOOL fIsDelegate = FALSE;
     IsDelegate(delegateObject, &fIsDelegate);
-    _ASSERTE(fIsDelegate);
-#endif
+    if (!fIsDelegate)
+    {
+        return CORDBG_E_UNSUPPORTED_DELEGATE;
+    }
 
     HRESULT hr = S_OK;
     PTR_DelegateObject pDelObj = dac_cast<PTR_DelegateObject>(delegateObject.GetDacPtr());
-
-    switch (delegateType)
+    if (pDelObj->GetInvocationCount())
     {
-        case kClosedDelegate:
-        {
-            PTR_Object pRemoteTargetObj = OBJECTREFToObject(pDelObj->GetTarget());
-            ppTargetObj->SetDacTargetPtr(pRemoteTargetObj.GetAddr());
-            break;
-        }
-
-        default:
-            ppTargetObj->SetDacTargetPtr((TADDR)NULL);
-            break;
+        return CORDBG_E_UNSUPPORTED_DELEGATE;
     }
 
-    ppTargetAppDomain->SetDacTargetPtr(dac_cast<TADDR>(AppDomain::GetCurrentDomain()));
+    if (pDelObj->GetMethodPtrAux() == NULL)
+    {
+        // closed delegate
+        PTR_Object pRemoteTargetObj = OBJECTREFToObject(pDelObj->GetTarget());
+        ppTargetObj->SetDacTargetPtr(pRemoteTargetObj.GetAddr());
+    }
+    else
+    {
+        ppTargetObj->SetDacTargetPtr((TADDR)NULL);
+    }
     return hr;
 }
 

@@ -145,4 +145,14 @@ internal readonly struct Object_1 : IObject
         uint index = syncBlockValue & _syncBlockIndexMask;
         return _target.Contracts.SyncBlock.GetSyncBlock(index);
     }
+
+    public DelegateInfo GetDelegateInfo(TargetPointer address)
+    {
+        Data.Delegate del = _target.ProcessedData.GetOrAdd<Data.Delegate>(address);
+        return new DelegateInfo(
+            Target: del.Target,
+            MethodPtr: del.MethodPtr,
+            MethodPtrAux: del.MethodPtrAux,
+            InvocationCount: del.InvocationCount);
+    }
 }
