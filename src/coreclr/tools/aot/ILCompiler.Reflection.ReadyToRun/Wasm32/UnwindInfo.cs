@@ -6,9 +6,9 @@ using System.Text;
 namespace ILCompiler.Reflection.ReadyToRun.Wasm32
 {
     /// Parses the WASM unwind info blob used by ReadyToRun.
-    /// The blob format consumed by this type is two unsigned LEB128 values in order:
-    /// <c>BytesUnwind</c>, followed by <c>VirtualIPCount</c>. <see cref="BaseUnwindInfo.Size"/>
-    /// is the number of bytes consumed while decoding those fields.
+    /// The blob format is two unsigned LEB128 values in order:
+    /// <c>BytesUnwind</c> (frame size), followed by <c>VirtualIPCount</c> (virtual IP span / 2).
+    /// <see cref="BaseUnwindInfo.Size"/> is the number of bytes consumed while decoding those fields.
     public class UnwindInfo : BaseUnwindInfo
     {
         public uint BytesUnwind { get; set; }

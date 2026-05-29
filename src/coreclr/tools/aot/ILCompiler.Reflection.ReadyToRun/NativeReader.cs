@@ -390,8 +390,11 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// </summary>
         public uint ReadULEB128(ref int start)
         {
+            int bytesToRead = Math.Min(5, (int)_backingStream.Length - start);
+            if (bytesToRead <= 0)
+                throw new BadImageFormatException("Unexpected end of image while reading ULEB128");
+
             Span<byte> buffer = stackalloc byte[5];
-            int bytesToRead = Math.Min(buffer.Length, (int)_backingStream.Length - start);
             int readStart = start;
             ReadSpanAt(ref readStart, buffer.Slice(0, bytesToRead));
             uint result = (uint)DwarfHelper.ReadULEB128(buffer.Slice(0, bytesToRead), out int bytesRead);

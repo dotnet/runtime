@@ -184,7 +184,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                         if (isWasm)
                         {
-                            // Emit the virtual IP index as a plain u32 (not a reloc)
                             // Set high bit for frame indices greater than 0 to indicate that the RUNTIME_FUNCTION is a funclet
                             runtimeFunctionsBuilder.EmitUInt(GetWasmVirtualIP(method, frameIndex) | (frameIndex != 0 ? 0x80000000 : 0));
                         }

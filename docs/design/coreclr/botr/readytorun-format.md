@@ -423,7 +423,7 @@ the function or funclet.
 | Offset | Size | Value
 |-------:|-----:|:-----
 |      0 |    4 | Virtual IP (bits 30:0) &#124; IsFunclet flag (bit 31)
-|      4 |    4 | GC info start RVA
+|      4 |    4 | UnwindData RVA (GC info follows immediately after the unwind blob)
 
 The table is terminated by a sentinel entry with all bits set (`0xFFFFFFFF`), followed by a 4-byte
 value containing the minimum WebAssembly function table index for the image.

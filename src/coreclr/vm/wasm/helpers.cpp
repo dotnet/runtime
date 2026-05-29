@@ -1355,6 +1355,8 @@ TADDR GetWasmVirtualIPFromStackPointer(TADDR sp)
         uint32_t r2rFunctionTableEntryNumber = ((uint32_t*)fp)[0];
         uint32_t logicalVirtualIP = ((uint32_t*)fp)[1] * 2; // Multiply by 2 as virtual IPs are encoded in units of 2 to leave the low bit in the VirtualIP mapping available to distinguish between virtual IPs and interpreter addresses/PortableEntryPoints.
         TADDR baseVirtualIP = ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex(r2rFunctionTableEntryNumber);
+        if (baseVirtualIP == 0)
+            return 0;
         return baseVirtualIP + logicalVirtualIP;
     }
 }
@@ -1376,8 +1378,9 @@ RtlVirtualUnwind (
     _ASSERTE(ExecutionManager::IsVirtualIP(ControlPc));
     _ASSERTE(ImageBase != 0);
 
-    // I don't believe any users of this api actually use HandlerData or EstablisherFrame, so we will just set them to 0 rather than trying to unwind them properly. 
-    // If we do need to support them in the future we can add support for setting them properly.
+    // CoreCLR callers currently do not use HandlerData or EstablisherFrame on WASM,
+    // so we set them to 0. If future callers require them, proper unwinding support
+    // can be added at that point.
     *HandlerData = 0;
     *EstablisherFrame = 0;
 

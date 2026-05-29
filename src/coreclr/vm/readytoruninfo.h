@@ -148,7 +148,7 @@ class ReadyToRunInfo
 
 #ifdef TARGET_WASM
     DWORD                           m_minFunctionTableIndex;
-    TADDR                           m_minVirtualIP;
+    TADDR                           m_minVirtualIP = 0;
 #endif // TARGET_WASM
 
 #ifdef FEATURE_COLD_R2R_CODE
