@@ -1778,7 +1778,7 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
 
                 if (op2Range.IsSingleValueConstant(&shiftAmount) && (shiftAmount >= 32) && (shiftAmount < 64))
                 {
-                    // The upper 33-bits  will all match post shift, so we are within [INT32_MIN, INT32_MAX]
+                    // The upper 33-bits will all match post shift, so we are within [INT32_MIN, INT32_MAX]
                     // and can further reduce based on the remaining shift amount.
 
                     op1Range = GetRangeFromType(TYP_INT);
@@ -1802,7 +1802,7 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
 
                 if (op2Range.IsSingleValueConstant(&shiftAmount) && (shiftAmount >= 33) && (shiftAmount < 64))
                 {
-                    // The upper 33-bits of the must all be zero post shift, so we are within [0, INT32_MAX]
+                    // The upper 33-bits must all be zero post shift, so we are within [0, INT32_MAX]
                     // and can further reduce based on the remaining shift amount. This is notably one
                     // higher than RSH since we'd otherwise get a value within [INT32_MAX + 1, UINT32_MAX]
 
@@ -2262,13 +2262,13 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
     else if (m_compiler->vnStore->IsVNConstant(vn))
     {
         int32_t cns;
-        if (IsVNIntegralConstant(vn, &cns))
+        if (m_compiler->vnStore->IsVNIntegralConstant(vn, &cns))
         {
             range = Range(Limit(Limit::keConstant, static_cast<int32_t>(cns)));
         }
         else
         {
-            // TOOD: We may want to also check for `uint32_t` since that allows knowing a TYP_LONG is never negative
+            // TODO: We may want to also check for `uint32_t` since that allows knowing a TYP_LONG is never negative
             range = Limit(Limit::keUnknown);
             JITDUMP("GetRangeWorker unsupported VN constant, setting to unknown value.\n");
         }
