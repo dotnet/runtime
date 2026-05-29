@@ -715,8 +715,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
                     Assert.Equal(
                         levelPrefix + ": test[0]" + Environment.NewLine +
                         _paddingString + "This is a test, and {curly braces} are just fine!" + Environment.NewLine +
-                        _paddingString + "System.Exception: Exception message" + Environment.NewLine +
-                        _paddingString + "with a second line" + Environment.NewLine,
+                        _paddingString + "System.Exception: Exception message\\u000Awith a second line" + Environment.NewLine,
                         GetMessage(sink.Writes));
                 }
                 break;
@@ -726,8 +725,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
                     Assert.Equal(
                         levelPrefix + "test[0]" + " " +
                         "This is a test, and {curly braces} are just fine!" + " " +
-                        "System.Exception: Exception message" + " " +
-                        "with a second line" + Environment.NewLine,
+                        "System.Exception: Exception message\\u000Awith a second line" + Environment.NewLine,
                         GetMessage(sink.Writes));
                 }
                 break;
@@ -1117,8 +1115,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
                     Assert.Equal(2, sink.Writes.Count);
                     Assert.Equal(
                         levelPrefix + ": test[0]" + Environment.NewLine +
-                        _paddingString + "System.Exception: Exception message" + Environment.NewLine +
-                        _paddingString + "with a second line" + Environment.NewLine,
+                        _paddingString + "System.Exception: Exception message\\u000Awith a second line" + Environment.NewLine,
                         GetMessage(sink.Writes));
                 }
                 break;
@@ -1127,8 +1124,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
                     Assert.Single(sink.Writes);
                     Assert.Equal(
                         levelPrefix + "test[0]" + " " +
-                        "System.Exception: Exception message" + " " +
-                        "with a second line" + Environment.NewLine,
+                        "System.Exception: Exception message\\u000Awith a second line" + Environment.NewLine,
                         GetMessage(sink.Writes));
                 }
                 break;
@@ -1160,8 +1156,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
                     Assert.Equal(2, sink.Writes.Count);
                     Assert.Equal(
                         levelPrefix + ": test[0]" + Environment.NewLine +
-                        _paddingString + "System.Exception: Exception message" + Environment.NewLine +
-                        _paddingString + "with a second line" + Environment.NewLine,
+                        _paddingString + "System.Exception: Exception message\\u000Awith a second line" + Environment.NewLine,
                         GetMessage(sink.Writes));
                 }
                 break;
@@ -1170,8 +1165,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
                     Assert.Single(sink.Writes);
                     Assert.Equal(
                         levelPrefix + "test[0]" + " " +
-                        "System.Exception: Exception message" + " " +
-                        "with a second line" + Environment.NewLine,
+                        "System.Exception: Exception message\\u000Awith a second line" + Environment.NewLine,
                         GetMessage(sink.Writes));
                 }
                 break;

@@ -68,6 +68,11 @@ namespace Microsoft.Extensions.Logging.Console
         private void WriteInternal(IExternalScopeProvider? scopeProvider, TextWriter textWriter, string message, LogLevel logLevel,
             int eventId, string? exception, string category, DateTimeOffset stamp)
         {
+            bool sanitizeControlCharacters = FormatterOptions.SanitizeControlCharacters;
+            message = ConsoleControlCharacterSanitizer.Sanitize(message, sanitizeControlCharacters)!;
+            exception = ConsoleControlCharacterSanitizer.Sanitize(exception, sanitizeControlCharacters);
+            category = ConsoleControlCharacterSanitizer.Sanitize(category, sanitizeControlCharacters)!;
+
             ConsoleColors logLevelColors = GetLogLevelConsoleColors(logLevel);
             string logLevelString = GetLogLevelString(logLevel);
 
@@ -112,7 +117,7 @@ namespace Microsoft.Extensions.Logging.Console
             }
 
             // scope information
-            WriteScopeInformation(textWriter, scopeProvider, singleLine);
+            WriteScopeInformation(textWriter, scopeProvider, singleLine, sanitizeControlCharacters);
             WriteMessage(textWriter, message, singleLine);
 
             // Example:
@@ -198,7 +203,7 @@ namespace Microsoft.Extensions.Logging.Console
             };
         }
 
-        private void WriteScopeInformation(TextWriter textWriter, IExternalScopeProvider? scopeProvider, bool singleLine)
+        private void WriteScopeInformation(TextWriter textWriter, IExternalScopeProvider? scopeProvider, bool singleLine, bool sanitizeControlCharacters)
         {
             if (FormatterOptions.IncludeScopes && scopeProvider != null)
             {
@@ -215,7 +220,8 @@ namespace Microsoft.Extensions.Logging.Console
                     {
                         state.Write(" => ");
                     }
-                    state.Write(scope);
+                    string? scopeMessage = ConsoleControlCharacterSanitizer.Sanitize(scope?.ToString(), sanitizeControlCharacters);
+                    state.Write(scopeMessage);
                 }, textWriter);
 
                 if (!paddingNeeded && !singleLine)
