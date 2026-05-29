@@ -863,6 +863,20 @@ namespace System.Runtime.Loader
 
             string assemblyPath = Path.Combine(parentDirectory, assemblyName.CultureName!, $"{assemblyName.Name}.dll");
 
+#if TARGET_BROWSER
+            // On Browser/WASM, satellite assemblies are registered in JS memory via registerDllBytes
+            // and served through external_assembly_probe. They are not in the Emscripten VFS,
+            // so FileSystem.FileExists would return false. Skip the existence check and let
+            // LoadFromAssemblyPath use external_assembly_probe directly.
+            try
+            {
+                return (RuntimeAssembly?)parentALC.LoadFromAssemblyPath(assemblyPath);
+            }
+            catch (IOException)
+            {
+                return null;
+            }
+#else
             bool exists = FileSystem.FileExists(assemblyPath);
             if (!exists && PathInternal.IsCaseSensitive)
             {
@@ -885,6 +899,7 @@ namespace System.Runtime.Loader
 #endif // CORECLR
 
             return asm;
+#endif // TARGET_BROWSER
         }
 
         internal IntPtr GetResolvedUnmanagedDll(Assembly assembly, string unmanagedDllName)

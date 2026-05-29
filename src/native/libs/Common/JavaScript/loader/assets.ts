@@ -532,6 +532,7 @@ async function loadResourceFetch(asset: AssetEntryInternal): Promise<Response> {
         }
     }
 
+    dotnetLogger.debug(`Attempting to download '${asset.resolvedUrl}'`);
     return fetchLike(asset.resolvedUrl!, fetchOptions, expectedContentType);
 }
 
