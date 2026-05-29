@@ -66,7 +66,7 @@ namespace Microsoft.Win32.SafeHandles
 
                 if (error == Interop.Errors.ERROR_ACCESS_DENIED)
                 {
-                    throw new UnauthorizedAccessException(OpenProcessAccessDeniedMessage(processId));
+                    ThrowOpenProcessAccessDeniedException(processId);
                 }
 
                 if (error == Interop.Errors.ERROR_NOT_FOUND || error == Interop.Errors.ERROR_INVALID_PARAMETER)

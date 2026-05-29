@@ -86,7 +86,7 @@ namespace Microsoft.Win32.SafeHandles
 
                 if (errorInfo.Error == Interop.Error.EPERM)
                 {
-                    throw new UnauthorizedAccessException(OpenProcessAccessDeniedMessage(processId));
+                    ThrowOpenProcessAccessDeniedException(processId);
                 }
 
                 if (errorInfo.Error == Interop.Error.ESRCH || errorInfo.Error == Interop.Error.EINVAL)

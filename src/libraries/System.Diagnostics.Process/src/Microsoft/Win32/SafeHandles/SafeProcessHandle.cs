@@ -122,8 +122,8 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        private static string OpenProcessAccessDeniedMessage(int processId) =>
-            SR.Format(SR.OpenProcessAccessDenied, processId);
+        private static void ThrowOpenProcessAccessDeniedException(int processId) =>
+            throw new UnauthorizedAccessException(SR.Format(SR.OpenProcessAccessDenied, processId));
 
         /// <summary>
         /// Starts a process using the specified <see cref="ProcessStartInfo"/>.
