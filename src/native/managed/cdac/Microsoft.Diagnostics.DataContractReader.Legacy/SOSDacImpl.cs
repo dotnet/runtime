@@ -2884,7 +2884,7 @@ public sealed unsafe partial class SOSDacImpl
             TargetPointer mtAddress = mt.ToTargetPointer(_target);
             Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
             TypeHandle typeHandle = rtsContract.GetTypeHandle(mtAddress);
-            data->FirstField = rtsContract.GetFieldDescList(typeHandle).ToClrDataAddress(_target);
+            data->FirstField = rtsContract.GetFieldDescList(typeHandle).FirstOrDefault().ToClrDataAddress(_target);
             data->wNumInstanceFields = rtsContract.GetNumInstanceFields(typeHandle);
             data->wNumStaticFields = rtsContract.GetNumStaticFields(typeHandle);
             data->wNumThreadStaticFields = rtsContract.GetNumThreadStaticFields(typeHandle);

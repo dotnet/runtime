@@ -57,7 +57,6 @@ JITMETADATAMETRIC(ImporterBranchFold,                    int,              0)
 JITMETADATAMETRIC(ImporterSwitchFold,                    int,              0)
 JITMETADATAMETRIC(DevirtualizedCall,                     int,              0)
 JITMETADATAMETRIC(DevirtualizedCallUnboxedEntry,         int,              0)
-JITMETADATAMETRIC(DevirtualizedCallRemovedBox,           int,              0)
 JITMETADATAMETRIC(GDV,                                   int,              0)
 JITMETADATAMETRIC(ClassGDV,                              int,              0)
 JITMETADATAMETRIC(MethodGDV,                             int,              0)
@@ -95,6 +94,7 @@ JITMETADATAMETRIC(MorphTrackedLocals,                    int,              0)
 JITMETADATAMETRIC(MorphLocals,                           int,              0)
 JITMETADATAMETRIC(EnumeratorGDVProvisionalNoEscape,      int,              0)
 JITMETADATAMETRIC(EnumeratorGDVCanCloneToEnsureNoEscape, int,              0)
+JITMETADATAMETRIC(SuspensionPointsMerged,                int,              0)
 
 #undef JITMETADATA
 #undef JITMETADATAINFO
