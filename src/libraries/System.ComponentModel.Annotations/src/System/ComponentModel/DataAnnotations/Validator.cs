@@ -713,7 +713,7 @@ namespace System.ComponentModel.DataAnnotations
             {
                 using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
-                var tasks = new HashSet<Task<List<ValidationError>>>(properties.Count);
+                var tasks = new List<Task<List<ValidationError>>>(properties.Count);
                 foreach (var property in properties)
                 {
                     var attributes = _store.GetPropertyValidationAttributes(property.Key);
@@ -722,37 +722,47 @@ namespace System.ComponentModel.DataAnnotations
                         breakOnFirstError, linkedCts.Token));
                 }
 
-                while (tasks.Count > 0)
+                try
                 {
-                    Task<List<ValidationError>> completed = await Task.WhenAny(tasks).ConfigureAwait(false);
-                    tasks.Remove(completed);
-
-                    List<ValidationError> propertyErrors;
-                    try
+                    while (tasks.Count > 0)
                     {
-                        propertyErrors = await completed.ConfigureAwait(false);
-                    }
-                    catch (OperationCanceledException) when (linkedCts.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
-                    {
-                        continue;
-                    }
+                        Task<List<ValidationError>> completed = await Task.WhenAny(tasks).ConfigureAwait(false);
+                        tasks.Remove(completed);
 
-                    if (propertyErrors.Count > 0)
-                    {
-                        errors.AddRange(propertyErrors);
-
-                        if (breakOnFirstError)
+                        List<ValidationError> propertyErrors;
+                        try
                         {
-                            linkedCts.Cancel();
+                            propertyErrors = await completed.ConfigureAwait(false);
+                        }
+                        catch (OperationCanceledException) when (linkedCts.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+                        {
+                            continue;
+                        }
 
-                            // Observe remaining tasks to prevent UnobservedTaskException
-                            foreach (Task<List<ValidationError>> remaining in tasks)
+                        if (propertyErrors.Count > 0)
+                        {
+                            errors.AddRange(propertyErrors);
+
+                            if (breakOnFirstError)
                             {
-                                try { await remaining.ConfigureAwait(false); }
-                                catch { }
+                                linkedCts.Cancel();
+                                break;
                             }
-
-                            break;
+                        }
+                    }
+                }
+                finally
+                {
+                    // Observe any remaining in-flight tasks on every exit path
+                    // (success short-circuit, external cancellation, or unexpected exception)
+                    // to prevent UnobservedTaskException from the finalizer thread.
+                    if (tasks.Count > 0)
+                    {
+                        linkedCts.Cancel();
+                        foreach (Task<List<ValidationError>> remaining in tasks)
+                        {
+                            try { await remaining.ConfigureAwait(false); }
+                            catch { }
                         }
                     }
                 }
@@ -847,44 +857,54 @@ namespace System.ComponentModel.DataAnnotations
             {
                 using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
-                var tasks = new HashSet<Task<(AsyncValidationAttribute Attr, ValidationResult? Result)>>(asyncAttributes.Count);
+                var tasks = new List<Task<(AsyncValidationAttribute Attr, ValidationResult? Result)>>(asyncAttributes.Count);
                 foreach (AsyncValidationAttribute asyncAttr in asyncAttributes)
                 {
                     tasks.Add(RunAsyncValidation(asyncAttr, value, validationContext, linkedCts.Token));
                 }
 
-                while (tasks.Count > 0)
+                try
                 {
-                    Task<(AsyncValidationAttribute Attr, ValidationResult? Result)> completed =
-                        await Task.WhenAny(tasks).ConfigureAwait(false);
-                    tasks.Remove(completed);
-
-                    (AsyncValidationAttribute attr, ValidationResult? result) completedResult;
-                    try
+                    while (tasks.Count > 0)
                     {
-                        completedResult = await completed.ConfigureAwait(false);
-                    }
-                    catch (OperationCanceledException) when (linkedCts.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
-                    {
-                        continue;
-                    }
+                        Task<(AsyncValidationAttribute Attr, ValidationResult? Result)> completed =
+                            await Task.WhenAny(tasks).ConfigureAwait(false);
+                        tasks.Remove(completed);
 
-                    if (completedResult.result != ValidationResult.Success)
-                    {
-                        errors.Add(new ValidationError(completedResult.attr, value, completedResult.result!));
-
-                        if (breakOnFirstError)
+                        (AsyncValidationAttribute attr, ValidationResult? result) completedResult;
+                        try
                         {
-                            linkedCts.Cancel();
+                            completedResult = await completed.ConfigureAwait(false);
+                        }
+                        catch (OperationCanceledException) when (linkedCts.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+                        {
+                            continue;
+                        }
 
-                            // Observe remaining tasks to prevent UnobservedTaskException
-                            foreach (var remaining in tasks)
+                        if (completedResult.result != ValidationResult.Success)
+                        {
+                            errors.Add(new ValidationError(completedResult.attr, value, completedResult.result!));
+
+                            if (breakOnFirstError)
                             {
-                                try { await remaining.ConfigureAwait(false); }
-                                catch { }
+                                linkedCts.Cancel();
+                                break;
                             }
-
-                            break;
+                        }
+                    }
+                }
+                finally
+                {
+                    // Observe any remaining in-flight tasks on every exit path
+                    // (success short-circuit, external cancellation, or unexpected exception)
+                    // to prevent UnobservedTaskException from the finalizer thread.
+                    if (tasks.Count > 0)
+                    {
+                        linkedCts.Cancel();
+                        foreach (var remaining in tasks)
+                        {
+                            try { await remaining.ConfigureAwait(false); }
+                            catch { }
                         }
                     }
                 }

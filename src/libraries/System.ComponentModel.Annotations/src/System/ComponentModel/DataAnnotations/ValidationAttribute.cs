@@ -136,6 +136,13 @@ namespace System.ComponentModel.DataAnnotations
         ///     <see cref="ValidationContext" /> to perform validation.
         ///     Base class returns false. Override in child classes as appropriate.
         /// </summary>
+        /// <remarks>
+        ///     This property is only consulted by the synchronous validation path.
+        ///     The asynchronous validation entry point
+        ///     <see cref="AsyncValidationAttribute.GetValidationResultAsync(object?, ValidationContext, System.Threading.CancellationToken)" />
+        ///     always requires a non-null <see cref="ValidationContext" /> parameter,
+        ///     so this property has no effect when validating via the asynchronous pipeline.
+        /// </remarks>
         public virtual bool RequiresValidationContext => false;
 
         #endregion
