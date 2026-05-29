@@ -12295,10 +12295,10 @@ void emitter::emitDispClsVar(CORINFO_FIELD_HANDLE fldHnd, ssize_t offs, bool rel
  *  Display a stack frame reference.
  */
 
-void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
+void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm, instruction ins)
 {
-    int  addr;
-    bool bEBP;
+    int  addr = 0;
+    bool bEBP = false;
 
     printf("[");
 
@@ -12323,6 +12323,20 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
         }
     }
 
+#if defined(TARGET_AMD64)
+    // x64 spike: when an access is redirected through the secondary frame pointer the emitted bytes
+    // use [REG_OPT_RSVD2 + disp8] rather than the canonical [rbp/rsp + disp]. Print what is actually
+    // encoded so the listing matches the bytes, then append the logical reference as a comment.
+    bool secondRedirected = false;
+    int  secondDsp        = 0;
+    if ((m_compiler->lvaDoneFrameLayout == Compiler::FINAL_FRAME_LAYOUT) && asmfm)
+    {
+        bool bEBPcand = false;
+        int  rawDsp   = m_compiler->lvaFrameAddress(varx, &bEBPcand) + disp;
+        secondRedirected = emitIsSecondFramePtrCandidate(ins, bEBPcand, rawDsp, &secondDsp);
+    }
+#endif // TARGET_AMD64
+
     if (m_compiler->lvaDoneFrameLayout == Compiler::FINAL_FRAME_LAYOUT)
     {
         if (!asmfm)
@@ -12332,7 +12346,23 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
 
         addr = m_compiler->lvaFrameAddress(varx, &bEBP) + disp;
 
-        if (bEBP)
+#if defined(TARGET_AMD64)
+        if (secondRedirected)
+        {
+            printf("%s", emitRegName(REG_OPT_RSVD2, EA_PTRSIZE));
+
+            if (secondDsp < 0)
+            {
+                printf("-0x%02X", -secondDsp);
+            }
+            else if (secondDsp > 0)
+            {
+                printf("+0x%02X", secondDsp);
+            }
+        }
+        else
+#endif // TARGET_AMD64
+            if (bEBP)
         {
             printf(STR_FPBASE);
 
@@ -12370,6 +12400,28 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
     }
 
     printf("]");
+
+#if defined(TARGET_AMD64)
+    if (secondRedirected)
+    {
+        // Show the canonical frame reference the redirected access stands in for. Use a parenthesized
+        // suffix (mirroring the varName annotation below) rather than a ';' comment, since operands
+        // may still follow on the same line.
+        printf(" (%s", bEBP ? STR_FPBASE : STR_SPBASE);
+
+        if (addr < 0)
+        {
+            printf("-0x%02X", -addr);
+        }
+        else if (addr > 0)
+        {
+            printf("+0x%02X", addr);
+        }
+
+        printf(")");
+    }
+#endif // TARGET_AMD64
+
 #ifdef DEBUG
     if ((varx >= 0) && m_compiler->opts.varNames && (((IL_OFFSET)offs) != BAD_IL_OFFSET))
     {
@@ -13305,7 +13357,7 @@ void emitter::emitDispIns(
 #endif
 
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
-                             id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+                             id->idDebugOnlyInfo()->idVarRefOffs, asmfm, ins);
 
 #if !FEATURE_FIXED_OUT_ARGS
             if (ins == INS_pop)
@@ -13324,7 +13376,7 @@ void emitter::emitDispIns(
             printf("%s", sstr);
 
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
-                             id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+                             id->idDebugOnlyInfo()->idVarRefOffs, asmfm, ins);
             emitDispEmbMasking(id);
 
             printf(", %s", emitRegName(id->idReg1(), attr));
@@ -13339,7 +13391,7 @@ void emitter::emitDispIns(
             printf("%s", sstr);
 
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
-                             id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+                             id->idDebugOnlyInfo()->idVarRefOffs, asmfm, ins);
             emitDispEmbMasking(id);
             emitDispConstant(id);
             break;
@@ -13353,7 +13405,7 @@ void emitter::emitDispIns(
             printf("%s", sstr);
 
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
-                             id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+                             id->idDebugOnlyInfo()->idVarRefOffs, asmfm, ins);
             emitDispEmbMasking(id);
 
             printf(", %s", emitRegName(id->idReg1(), attr));
@@ -13387,7 +13439,7 @@ void emitter::emitDispIns(
             emitDispEmbMasking(id);
             printf(", %s", sstr);
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
-                             id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+                             id->idDebugOnlyInfo()->idVarRefOffs, asmfm, ins);
             emitDispEmbBroadcastCount(id);
 
             break;
@@ -13401,7 +13453,7 @@ void emitter::emitDispIns(
             emitDispEmbMasking(id);
             printf(", %s", sstr);
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
-                             id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+                             id->idDebugOnlyInfo()->idVarRefOffs, asmfm, ins);
             emitDispEmbBroadcastCount(id);
             emitDispConstant(id);
             break;
@@ -13421,7 +13473,7 @@ void emitter::emitDispIns(
                 printf("%s", emitRegName(id->idReg1(), attr));
                 printf(", %s", sstr);
                 emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
-                                 id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+                                 id->idDebugOnlyInfo()->idVarRefOffs, asmfm, ins);
                 printf(", %s", emitRegName(id->idReg2(), attr));
                 break;
             }
@@ -13430,7 +13482,7 @@ void emitter::emitDispIns(
             emitDispEmbMasking(id);
             printf(", %s, %s", emitRegName(id->idReg2(), attr), sstr);
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
-                             id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+                             id->idDebugOnlyInfo()->idVarRefOffs, asmfm, ins);
             emitDispEmbBroadcastCount(id);
             break;
         }
@@ -13441,7 +13493,7 @@ void emitter::emitDispIns(
             emitDispEmbMasking(id);
             printf(", %s, %s", emitRegName(id->idReg2(), attr), sstr);
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
-                             id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+                             id->idDebugOnlyInfo()->idVarRefOffs, asmfm, ins);
             emitDispEmbBroadcastCount(id);
             emitDispConstant(id);
             break;
@@ -13464,7 +13516,7 @@ void emitter::emitDispIns(
 
             printf(", %s, %s", emitRegName(id->idReg2(), attr), sstr);
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
-                             id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+                             id->idDebugOnlyInfo()->idVarRefOffs, asmfm, ins);
             emitDispEmbBroadcastCount(id);
 
             if (!hasMaskReg)
@@ -13483,7 +13535,7 @@ void emitter::emitDispIns(
             printf(", %s", sstr);
 
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
-                             id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+                             id->idDebugOnlyInfo()->idVarRefOffs, asmfm, ins);
             emitDispEmbBroadcastCount(id);
             printf(", %s", emitRegName(id->idReg2(), attr));
             break;
@@ -13493,7 +13545,7 @@ void emitter::emitDispIns(
         {
             printf("%s", sstr);
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
-                             id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+                             id->idDebugOnlyInfo()->idVarRefOffs, asmfm, ins);
             emitDispEmbMasking(id);
             printf(", %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), attr));
             break;
@@ -14191,7 +14243,7 @@ void emitter::emitDispIns(
                 assert(id->idInsFmt() == IF_SWR_LABEL);
                 instrDescLbl* idlbl = (instrDescLbl*)id;
 
-                emitDispFrameRef(idlbl->dstLclVar.lvaVarNum(), idlbl->dstLclVar.lvaOffset(), 0, asmfm);
+                emitDispFrameRef(idlbl->dstLclVar.lvaVarNum(), idlbl->dstLclVar.lvaOffset(), 0, asmfm, ins);
 
                 printf(", ");
             }

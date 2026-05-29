@@ -7810,7 +7810,7 @@ void emitter::emitDispIns(
  *  Display a stack frame reference.
  */
 
-void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
+void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm, instruction ins)
 {
 #ifdef DEBUG
     printf("[");
