@@ -259,7 +259,7 @@ void SystemNative_LowLevelFutex_WakeByAddressSingle(int32_t* address)
 }
 #else// TARGET_LINUX
 
-[[noreturn]]
+__attribute__((noreturn))
 void SystemNative_LowLevelFutex_WaitOnAddress(int32_t* address, int32_t comparand)
 {
     (void)address; // unused
@@ -269,7 +269,7 @@ void SystemNative_LowLevelFutex_WaitOnAddress(int32_t* address, int32_t comparan
     abort();
 }
 
-[[noreturn]]
+__attribute__((noreturn))
 int32_t SystemNative_LowLevelFutex_WaitOnAddressTimeout(int32_t* address, int32_t comparand, int32_t timeoutMilliseconds)
 {
     (void)address; // unused
@@ -279,7 +279,7 @@ int32_t SystemNative_LowLevelFutex_WaitOnAddressTimeout(int32_t* address, int32_
     abort();
 }
 
-[[noreturn]]
+__attribute__((noreturn))
 void SystemNative_LowLevelFutex_WakeByAddressSingle(int32_t* address)
 {
     (void)address; // unused
