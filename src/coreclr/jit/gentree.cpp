@@ -27543,7 +27543,7 @@ GenTree* Compiler::gtNewSimdZipNode(
         }
 
         GenTreeVecCon* shuffle       = gtNewVconNode(type);
-        var_types      indexBaseType = varTypeToUnsigned(roundUpGPRType(elementSize));
+        var_types      indexBaseType = getIndexTypeForShuffle(simdBaseType);
         uint32_t       start         = upper ? (simdCount / 2) : 0;
 
         for (uint32_t index = 0; index < simdCount; index++)
@@ -27652,7 +27652,8 @@ GenTree* Compiler::gtNewSimdUnzipNode(
     return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, simdBaseType, simdSize);
 #elif defined(TARGET_XARCH)
 
-    unsigned elementSize = genTypeSize(simdBaseType);
+    unsigned  elementSize   = genTypeSize(simdBaseType);
+    var_types indexBaseType = getIndexTypeForShuffle(simdBaseType);
 
     if (simdSize == 16)
     {
@@ -27667,13 +27668,12 @@ GenTree* Compiler::gtNewSimdUnzipNode(
         // var tmp = op1.ToVectorUnsafe().WithUpper(op2);
         // return Shuffle(tmp, indices).GetLower();
 
-        unsigned       wideSimdSize  = simdSize * 2;
-        var_types      wideType      = getSIMDTypeForSize(wideSimdSize);
-        GenTreeVecCon* shuffle       = gtNewVconNode(wideType);
-        var_types      indexBaseType = varTypeToUnsigned(roundUpGPRType(elementSize));
-        uint32_t       wideCount     = getSIMDVectorLength(wideSimdSize, simdBaseType);
-        uint32_t       start         = odd ? 1 : 0;
-        uint32_t       lowerCount    = (simdCount - start + 1) / 2;
+        unsigned       wideSimdSize = simdSize * 2;
+        var_types      wideType     = getSIMDTypeForSize(wideSimdSize);
+        GenTreeVecCon* shuffle      = gtNewVconNode(wideType);
+        uint32_t       wideCount    = getSIMDVectorLength(wideSimdSize, simdBaseType);
+        uint32_t       start        = odd ? 1 : 0;
+        uint32_t       lowerCount   = (simdCount - start + 1) / 2;
 
         for (uint32_t index = 0; index < wideCount; index++)
         {
@@ -27729,9 +27729,8 @@ GenTree* Compiler::gtNewSimdUnzipNode(
                 unreached();
         }
 
-        GenTreeVecCon* shuffle       = gtNewVconNode(type);
-        var_types      indexBaseType = varTypeToUnsigned(roundUpGPRType(elementSize));
-        uint32_t       start         = odd ? 1 : 0;
+        GenTreeVecCon* shuffle = gtNewVconNode(type);
+        uint32_t       start   = odd ? 1 : 0;
 
         for (uint32_t index = 0; index < simdCount; index++)
         {
@@ -27807,8 +27806,7 @@ GenTree* Compiler::gtNewSimdReverseNode(var_types type, GenTree* op1, var_types 
     // return Shuffle(op1, indices);
 
     GenTreeVecCon* shuffle       = gtNewVconNode(type);
-    unsigned       elementSize   = genTypeSize(simdBaseType);
-    var_types      indexBaseType = varTypeToUnsigned(roundUpGPRType(elementSize));
+    var_types      indexBaseType = getIndexTypeForShuffle(simdBaseType);
 
     for (uint32_t index = 0; index < simdCount; index++)
     {

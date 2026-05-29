@@ -4806,6 +4806,8 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             AssertVectorEqual(Vector64.Create(leftParts.GetElement(1), rightParts.GetElement(0)).AsInt64(), Vector64.ConcatUpperLower(left, right));
             AssertVectorEqual(Vector64.Create(leftParts.GetElement(1), rightParts.GetElement(1)).AsInt64(), Vector64.ConcatUpperUpper(left, right));
             AssertVectorEqual(Vector64.Create(leftParts.GetElement(0), rightParts.GetElement(1)).AsInt64(), Vector64.ConcatLowerUpper(left, right));
+
+            AssertVectorEqual(left, Vector64.Reverse(left));
         }
 
         [Fact]
@@ -4835,6 +4837,8 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             AssertVectorEqual(Vector64.Create(leftParts.GetElement(1), rightParts.GetElement(0)).AsDouble(), Vector64.ConcatUpperLower(left, right));
             AssertVectorEqual(Vector64.Create(leftParts.GetElement(1), rightParts.GetElement(1)).AsDouble(), Vector64.ConcatUpperUpper(left, right));
             AssertVectorEqual(Vector64.Create(leftParts.GetElement(0), rightParts.GetElement(1)).AsDouble(), Vector64.ConcatLowerUpper(left, right));
+
+            AssertVectorEqual(left, Vector64.Reverse(left));
         }
 
         private static Vector64<int> CreateVector64(Func<int, int> elementSelector)

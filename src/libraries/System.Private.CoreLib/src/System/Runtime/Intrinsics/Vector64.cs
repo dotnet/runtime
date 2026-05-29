@@ -1639,7 +1639,22 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="Vector.Reverse{T}(Vector{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<T> Reverse<T>(Vector64<T> vector) => ShuffleFallback(vector, CreateSequence(Vector64<T>.Count - 1, -1));
+        public static Vector64<T> Reverse<T>(Vector64<T> vector)
+        {
+            if (Vector64<T>.Count == 1)
+            {
+                return vector;
+            }
+
+            Unsafe.SkipInit(out Vector64<T> result);
+
+            for (int index = 0; index < Vector64<T>.Count; index++)
+            {
+                result.SetElementUnsafe(index, vector.GetElementUnsafe(Vector64<T>.Count - 1 - index));
+            }
+
+            return result;
+        }
 
         internal static Vector64<T> DegreesToRadians<T>(Vector64<T> degrees)
             where T : ITrigonometricFunctions<T>

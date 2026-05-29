@@ -10402,6 +10402,33 @@ public:
         return simdType;
     }
 
+    static var_types getIndexTypeForShuffle(var_types simdBaseType)
+    {
+        switch (simdBaseType)
+        {
+            case TYP_BYTE:
+            case TYP_UBYTE:
+                return TYP_UBYTE;
+
+            case TYP_SHORT:
+            case TYP_USHORT:
+                return TYP_USHORT;
+
+            case TYP_INT:
+            case TYP_UINT:
+            case TYP_FLOAT:
+                return TYP_UINT;
+
+            case TYP_LONG:
+            case TYP_ULONG:
+            case TYP_DOUBLE:
+                return TYP_ULONG;
+
+            default:
+                unreached();
+        }
+    }
+
 private:
     unsigned getSIMDInitTempVarNum(var_types simdType);
 
