@@ -421,7 +421,8 @@ bool emitter::IsEvexEncodableInstruction(instruction ins) const
         case INS_vpdpbusds:
         case INS_vpdpwssds:
         {
-            return m_compiler->compSupportsHWIntrinsic(InstructionSet_AVX512v3);
+            return m_compiler->compSupportsHWIntrinsic(InstructionSet_AVX512v3) ||
+                   m_compiler->compSupportsHWIntrinsic(InstructionSet_AVXVNNI_V512);
         }
 
         case INS_vpmadd52huq:
