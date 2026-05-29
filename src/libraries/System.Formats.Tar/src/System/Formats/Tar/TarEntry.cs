@@ -569,7 +569,7 @@ namespace System.Formats.Tar
             // Rely on FileStream's ctor for further checking destinationFileName parameter
             using (FileStream fs = new FileStream(destinationFileName, CreateFileStreamOptions(isAsync: false)))
             {
-                if (_header._gnuSparseDataStream is GnuSparseStream sparseStream)
+                if (_header._gnuSparseDataStream is GnuSparseStream { Position: 0 } sparseStream)
                 {
                     // Sparse-aware extraction: write only the populated segments, seeking over holes
                     // so file systems can leave them as actual sparse holes (NTFS once marked sparse;
@@ -599,7 +599,7 @@ namespace System.Formats.Tar
             FileStream fs = new FileStream(destinationFileName, CreateFileStreamOptions(isAsync: true));
             await using (fs.ConfigureAwait(false))
             {
-                if (_header._gnuSparseDataStream is GnuSparseStream sparseStream)
+                if (_header._gnuSparseDataStream is GnuSparseStream { Position: 0 } sparseStream)
                 {
                     TryMarkFileSparse(fs);
                     await sparseStream.CopyPopulatedDataToAsync(fs, cancellationToken).ConfigureAwait(false);
