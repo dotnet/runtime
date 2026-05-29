@@ -82,21 +82,21 @@ namespace Microsoft.Win32.SafeHandles
 
             if (result == -1)
             {
-                Interop.Error error = Interop.Sys.GetLastError();
+                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
 
-                if (error == Interop.Error.EPERM)
+                if (errorInfo.Error == Interop.Error.EPERM)
                 {
                     throw new UnauthorizedAccessException(OpenProcessAccessDeniedMessage(processId));
                 }
 
-                if (error == Interop.Error.ESRCH || error == Interop.Error.EINVAL)
+                if (errorInfo.Error == Interop.Error.ESRCH || errorInfo.Error == Interop.Error.EINVAL)
                 {
-                    lastError = (int)error;
+                    lastError = errorInfo.RawErrno;
                     processHandle = null;
                     return false;
                 }
 
-                throw new Win32Exception((int)error);
+                throw new Win32Exception(errorInfo.RawErrno);
             }
 
             lastError = 0;
