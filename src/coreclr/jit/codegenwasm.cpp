@@ -745,6 +745,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_PARTIALLY_CONTAINED_LCL_ADDR:
             GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
+            WasmProduceReg(treeNode);
             break;
 
         case GT_LCL_FLD:
