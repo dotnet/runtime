@@ -93,8 +93,8 @@ internal sealed class MockReJITBuilder
     internal Layout<MockILCodeVersionNode> ILCodeVersionNodeLayout => _codeVersions.ILCodeVersionNodeLayout;
     internal Layout<MockGCCoverageInfo> GCCoverageInfoLayout => _codeVersions.GCCoverageInfoLayout;
 
-    public MockILCodeVersionNode AddExplicitILCodeVersionNode(ulong rejitId, RejitFlags rejitFlags)
-        => _codeVersions.AddILCodeVersionNode(rejitId, (uint)rejitFlags);
+    public MockILCodeVersionNode AddExplicitILCodeVersionNode(ulong rejitId, RejitFlags rejitFlags, bool deoptimized = false)
+        => _codeVersions.AddILCodeVersionNode(rejitId, (uint)rejitFlags, deoptimized);
 
     private ulong AddProfControlBlock(bool rejitOnAttachEnabled)
     {
