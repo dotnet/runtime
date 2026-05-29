@@ -5,6 +5,7 @@ using System;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -599,47 +600,12 @@ namespace Microsoft.Interop
                 writer.WriteLine('}');
             }
 
-            PropertyDeclarationSyntax? bufferedGetter = null;
+            PropertyDeclarationSyntax? bufferedDeclaredGetter = null;
             foreach (ComMethodContext declaredMethod in data.DeclaredMethods)
             {
                 if (declaredMethod.ManagedToUnmanagedStub is GeneratedStubCodeContext managedToUnmanagedContext)
                 {
-                    MemberDeclarationSyntax node = managedToUnmanagedContext.Stub.Node;
-                    if (node is PropertyDeclarationSyntax propertyDecl)
-                    {
-                        // Property accessor stubs arrive one per accessor (get then set when both exist).
-                        // Merge consecutive get+set halves of the same property into a single property
-                        // declaration before emitting, so the resulting code is a valid explicit
-                        // interface property implementation.
-                        bool isGetter = propertyDecl.AccessorList!.Accessors[0].Kind() is SyntaxKind.GetAccessorDeclaration;
-                        if (isGetter)
-                        {
-                            FlushBufferedPropertyGetter(writer, ref bufferedGetter);
-                            bufferedGetter = propertyDecl;
-                        }
-                        else if (bufferedGetter is not null
-                            && bufferedGetter.Identifier.Text == propertyDecl.Identifier.Text
-                            && (bufferedGetter.ExplicitInterfaceSpecifier?.Name.ToString() ?? string.Empty)
-                                == (propertyDecl.ExplicitInterfaceSpecifier?.Name.ToString() ?? string.Empty))
-                        {
-                            PropertyDeclarationSyntax merged = MergePropertyAccessors(bufferedGetter, propertyDecl);
-                            writer.InnerWriter.WriteLine();
-                            writer.WriteMultilineNode(merged.NormalizeWhitespace());
-                            bufferedGetter = null;
-                        }
-                        else
-                        {
-                            FlushBufferedPropertyGetter(writer, ref bufferedGetter);
-                            writer.InnerWriter.WriteLine();
-                            writer.WriteMultilineNode(propertyDecl.NormalizeWhitespace());
-                        }
-                    }
-                    else
-                    {
-                        FlushBufferedPropertyGetter(writer, ref bufferedGetter);
-                        writer.InnerWriter.WriteLine();
-                        writer.WriteMultilineNode(node.NormalizeWhitespace());
-                    }
+                    EmitMemberHonoringPropertyMerge(writer, managedToUnmanagedContext.Stub.Node, ref bufferedDeclaredGetter);
                 }
 
                 if (declaredMethod.UnmanagedToManagedStub is GeneratedStubCodeContext unmanagedToManagedContext &&
@@ -649,8 +615,10 @@ namespace Microsoft.Interop
                     writer.WriteMultilineNode(unmanagedToManagedContext.Stub.Node.NormalizeWhitespace());
                 }
             }
-            FlushBufferedPropertyGetter(writer, ref bufferedGetter);
+            FlushBufferedPropertyGetter(writer, ref bufferedDeclaredGetter);
 
+            PropertyDeclarationSyntax? bufferedShadowGetter = null;
+            string derivedInterfaceName = data.Interface.Info.Type.FullTypeName;
             foreach (ComMethodContext inheritedStub in data.InheritedMethods)
             {
                 if (inheritedStub is not { IsExternallyDefined: false, ManagedToUnmanagedStub: GeneratedStubCodeContext shadowImplementationContextContext })
@@ -658,24 +626,29 @@ namespace Microsoft.Interop
                     continue;
                 }
 
-                // Inherited property accessors require the same merge-into-property treatment as declared
-                // ones, plus rewriting the explicit interface specifier to the derived interface. That is
-                // not implemented in the Phase 1 PoC; skip emission for now so the rest of the surface still
-                // compiles. Inherited properties are tracked as a follow-up.
-                if (shadowImplementationContextContext.Stub.Node is not MethodDeclarationSyntax methodNode)
+                MemberDeclarationSyntax stubNode = shadowImplementationContextContext.Stub.Node;
+                if (stubNode is PropertyDeclarationSyntax propertyNode)
                 {
-                    continue;
+                    // The accessor stub was generated for the base interface; rewrite its explicit-interface
+                    // specifier to point at the derived interface before emitting/merging.
+                    propertyNode = propertyNode.WithExplicitInterfaceSpecifier(
+                        ExplicitInterfaceSpecifier(ParseName(derivedInterfaceName)));
+                    EmitMemberHonoringPropertyMerge(writer, propertyNode, ref bufferedShadowGetter);
                 }
-
-                MethodDeclarationSyntax preparedNode = methodNode
-                    .WithExplicitInterfaceSpecifier(
-                        ExplicitInterfaceSpecifier(ParseName(data.Interface.Info.Type.FullTypeName)))
-                    .NormalizeWhitespace();
-
-                writer.InnerWriter.WriteLine();
-                writer.WriteMultilineNode(preparedNode);
+                else if (stubNode is MethodDeclarationSyntax methodNode)
+                {
+                    FlushBufferedPropertyGetter(writer, ref bufferedShadowGetter);
+                    MethodDeclarationSyntax preparedNode = methodNode
+                        .WithExplicitInterfaceSpecifier(
+                            ExplicitInterfaceSpecifier(ParseName(derivedInterfaceName)))
+                        .NormalizeWhitespace();
+                    writer.InnerWriter.WriteLine();
+                    writer.WriteMultilineNode(preparedNode);
+                }
             }
+            FlushBufferedPropertyGetter(writer, ref bufferedShadowGetter);
 
+            PropertyDeclarationSyntax? bufferedUnreachableGetter = null;
             foreach (ComMethodContext inheritedStub in data.InheritedMethods)
             {
                 if (inheritedStub.IsExternallyDefined)
@@ -683,22 +656,89 @@ namespace Microsoft.Interop
                     continue;
                 }
 
-                // Phase 1 skips emitting the inherited unreachable forwarder for property accessors;
-                // see the inherited-shadow loop above for context. The discriminator lives on the base
-                // context, so this pattern doesn't need to narrow to the source-available subtype.
                 if (inheritedStub.GenerationContext is { MemberKind: StubMemberKind.PropertyGetter or StubMemberKind.PropertySetter })
                 {
+                    // Property accessors must be emitted as one explicit-interface property declaration per
+                    // get/set pair. Synthesize a single-accessor property here and let the merge helper
+                    // collapse a getter+setter pair into one declaration.
+                    PropertyDeclarationSyntax synthesized = SynthesizeUnreachableInheritedPropertyAccessor(inheritedStub);
+                    EmitMemberHonoringPropertyMerge(writer, synthesized, ref bufferedUnreachableGetter);
                     continue;
                 }
 
+                FlushBufferedPropertyGetter(writer, ref bufferedUnreachableGetter);
                 writer.InnerWriter.WriteLine();
                 writer.Write($"{inheritedStub.GenerationContext.SignatureContext.StubReturnType} {inheritedStub.OriginalDeclaringInterface.Info.Type.FullTypeName}.{inheritedStub.MethodInfo.MethodName}");
                 writer.Write($"({string.Join(", ", inheritedStub.GenerationContext.SignatureContext.StubParameters.Select(p => p.NormalizeWhitespace().ToString()))})");
                 writer.WriteLine(" => throw new global::System.Diagnostics.UnreachableException();");
             }
+            FlushBufferedPropertyGetter(writer, ref bufferedUnreachableGetter);
 
             writer.Indent--;
             writer.WriteLine('}');
+        }
+
+        private static void EmitMemberHonoringPropertyMerge(
+            IndentedTextWriter writer,
+            MemberDeclarationSyntax node,
+            ref PropertyDeclarationSyntax? bufferedGetter)
+        {
+            // Property accessor stubs arrive one per accessor (get then set when both exist).
+            // Merge consecutive get+set halves of the same property into a single property
+            // declaration before emitting, so the resulting code is a valid explicit interface
+            // property implementation.
+            if (node is PropertyDeclarationSyntax propertyDecl)
+            {
+                bool isGetter = propertyDecl.AccessorList!.Accessors[0].Kind() is SyntaxKind.GetAccessorDeclaration;
+                if (isGetter)
+                {
+                    FlushBufferedPropertyGetter(writer, ref bufferedGetter);
+                    bufferedGetter = propertyDecl;
+                    return;
+                }
+                if (bufferedGetter is not null
+                    && bufferedGetter.Identifier.Text == propertyDecl.Identifier.Text
+                    && (bufferedGetter.ExplicitInterfaceSpecifier?.Name.ToString() ?? string.Empty)
+                        == (propertyDecl.ExplicitInterfaceSpecifier?.Name.ToString() ?? string.Empty))
+                {
+                    PropertyDeclarationSyntax merged = MergePropertyAccessors(bufferedGetter, propertyDecl);
+                    writer.InnerWriter.WriteLine();
+                    writer.WriteMultilineNode(merged.NormalizeWhitespace());
+                    bufferedGetter = null;
+                    return;
+                }
+            }
+            FlushBufferedPropertyGetter(writer, ref bufferedGetter);
+            writer.InnerWriter.WriteLine();
+            writer.WriteMultilineNode(node.NormalizeWhitespace());
+        }
+
+        private static PropertyDeclarationSyntax SynthesizeUnreachableInheritedPropertyAccessor(ComMethodContext inheritedStub)
+        {
+            IncrementalMethodStubGenerationContext genCtx = inheritedStub.GenerationContext;
+            Debug.Assert(genCtx.MemberKind is StubMemberKind.PropertyGetter or StubMemberKind.PropertySetter);
+
+            bool isSetter = genCtx.MemberKind is StubMemberKind.PropertySetter;
+            TypeSyntax propertyType = isSetter
+                ? genCtx.SignatureContext.StubParameters.Single().Type!
+                : genCtx.SignatureContext.StubReturnType;
+
+            // Recover the property name from the property accessor method name.
+            string accessorName = inheritedStub.MethodInfo.MethodName;
+            string propertyName = IncrementalMethodStubGenerationContext.GetPropertyNameFromAccessor(accessorName);
+
+            AccessorDeclarationSyntax accessor = AccessorDeclaration(
+                isSetter ? SyntaxKind.SetAccessorDeclaration : SyntaxKind.GetAccessorDeclaration)
+                .WithExpressionBody(ArrowExpressionClause(
+                    ThrowExpression(
+                        ObjectCreationExpression(ParseTypeName("global::System.Diagnostics.UnreachableException"))
+                            .WithArgumentList(ArgumentList()))))
+                .WithSemicolonToken(Token(SyntaxKind.SemicolonToken));
+
+            return PropertyDeclaration(propertyType, Identifier(propertyName))
+                .WithExplicitInterfaceSpecifier(
+                    ExplicitInterfaceSpecifier(ParseName(inheritedStub.OriginalDeclaringInterface.Info.Type.FullTypeName)))
+                .WithAccessorList(AccessorList(SingletonList(accessor)));
         }
 
         private static void FlushBufferedPropertyGetter(IndentedTextWriter writer, ref PropertyDeclarationSyntax? bufferedGetter)
@@ -733,10 +773,61 @@ namespace Microsoft.Interop
                 writer.WriteLine('{');
                 writer.Indent++;
 
+                // Buffered getter state for merging consecutive get+set pairs into one property
+                // declaration.
+                (string? PropName, string? DeclaringType, string? PropType) pendingGetter = default;
+
                 foreach (ComMethodContext shadow in shadowingMethods)
                 {
                     IncrementalMethodStubGenerationContext generationContext = shadow.GenerationContext;
                     SignatureContext sigContext = generationContext.SignatureContext;
+
+                    if (generationContext.MemberKind is StubMemberKind.PropertyGetter or StubMemberKind.PropertySetter)
+                    {
+                        bool isSetter = generationContext.MemberKind is StubMemberKind.PropertySetter;
+                        string accessorName = shadow.MethodInfo.MethodName;
+                        string propName = IncrementalMethodStubGenerationContext.GetPropertyNameFromAccessor(accessorName);
+                        string declaringType = shadow.OriginalDeclaringInterface.Info.Type.FullTypeName;
+                        string propType = (isSetter
+                            ? sigContext.StubParameters.Single().Type!
+                            : sigContext.StubReturnType).NormalizeWhitespace().ToString();
+
+                        // Phase 1 strict surface disallows per-accessor attributes; in practice the
+                        // accessor IMethodSymbol carries no attributes for our supported shapes, so we
+                        // skip per-accessor attribute emission on the merged property header. Per-
+                        // accessor attribute propagation is tracked as a follow-up.
+
+                        if (!isSetter)
+                        {
+                            FlushPendingGetter(writer, ref pendingGetter);
+                            pendingGetter = (propName, declaringType, propType);
+                            continue;
+                        }
+
+                        if (pendingGetter.PropName == propName && pendingGetter.DeclaringType == declaringType)
+                        {
+                            writer.WriteLine($"new {propType} {propName}");
+                            writer.WriteLine('{');
+                            writer.Indent++;
+                            writer.WriteLine($"get => (({declaringType})this).{propName};");
+                            writer.WriteLine($"set => (({declaringType})this).{propName} = value;");
+                            writer.Indent--;
+                            writer.WriteLine('}');
+                            pendingGetter = default;
+                            continue;
+                        }
+
+                        FlushPendingGetter(writer, ref pendingGetter);
+                        writer.WriteLine($"new {propType} {propName}");
+                        writer.WriteLine('{');
+                        writer.Indent++;
+                        writer.WriteLine($"set => (({declaringType})this).{propName} = value;");
+                        writer.Indent--;
+                        writer.WriteLine('}');
+                        continue;
+                    }
+
+                    FlushPendingGetter(writer, ref pendingGetter);
 
                     foreach (AttributeListSyntax additionalAttr in sigContext.AdditionalAttributes)
                     {
@@ -754,8 +845,25 @@ namespace Microsoft.Interop
                     writer.WriteLine($"({string.Join(", ", sigContext.ManagedParameters.Select(mp => $"{(mp.IsByRef ? $"{MarshallerHelpers.GetManagedArgumentRefKindKeyword(mp)} " : "")}{mp.InstanceIdentifier}"))});");
                 }
 
+                FlushPendingGetter(writer, ref pendingGetter);
+
                 writer.Indent--;
                 writer.WriteLine('}');
+
+                static void FlushPendingGetter(IndentedTextWriter writer, ref (string? PropName, string? DeclaringType, string? PropType) pending)
+                {
+                    if (pending.PropName is null)
+                    {
+                        return;
+                    }
+                    writer.WriteLine($"new {pending.PropType} {pending.PropName}");
+                    writer.WriteLine('{');
+                    writer.Indent++;
+                    writer.WriteLine($"get => (({pending.DeclaringType})this).{pending.PropName};");
+                    writer.Indent--;
+                    writer.WriteLine('}');
+                    pending = default;
+                }
             });
         }
     }

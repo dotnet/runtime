@@ -43,7 +43,7 @@ namespace ComInterfaceGenerator.Tests
         {
             (_, IProperties rcw) = CreateRcwAroundCcw();
 
-            Assert.Equal(42, rcw.ReadOnlyInt);
+            Assert.Equal(111, rcw.ReadOnlyInt);
         }
 
         [Fact]
@@ -127,7 +127,7 @@ namespace ComInterfaceGenerator.Tests
         {
             IProperties rcw = CreateRcwOverNativeShim();
 
-            Assert.Equal(42, rcw.ReadOnlyInt);
+            Assert.Equal(111, rcw.ReadOnlyInt);
         }
 
         [Fact]

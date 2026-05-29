@@ -86,7 +86,7 @@ namespace NativeExports.ComInterfaceGenerator
                 set => _int = value;
             }
 
-            int IProperties.ReadOnlyInt => 42;
+            int IProperties.ReadOnlyInt => 111;
 
             int IProperties.WriteOnlyInt
             {

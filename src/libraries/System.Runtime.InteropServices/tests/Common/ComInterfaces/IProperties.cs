@@ -41,7 +41,7 @@ namespace SharedTypes.ComInterfaces
             set => _int = value;
         }
 
-        public int ReadOnlyInt => 42;
+        public int ReadOnlyInt => 111;
 
         public int WriteOnlyInt
         {

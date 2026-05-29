@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Diagnostics;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -26,7 +27,32 @@ namespace Microsoft.Interop
         ManagedTypeInfo DeclaringType,
         SequenceEqualImmutableArray<DiagnosticInfo> Diagnostics,
         MarshallingInfo ManagedThisMarshallingInfo,
-        StubMemberKind MemberKind) : GeneratedMethodContextBase(DeclaringType, Diagnostics);
+        StubMemberKind MemberKind) : GeneratedMethodContextBase(DeclaringType, Diagnostics)
+    {
+        private const string GetterPrefix = "get_";
+        private const string SetterPrefix = "set_";
+
+        /// <summary>
+        /// Returns true if <paramref name="name"/> matches the Roslyn naming convention for a
+        /// property accessor method (<c>get_X</c> or <c>set_X</c>). Centralizes the convention so
+        /// callers do not embed the prefix literals directly.
+        /// </summary>
+        public static bool IsPropertyAccessorName(string name)
+            => name.StartsWith(GetterPrefix, StringComparison.Ordinal)
+               || name.StartsWith(SetterPrefix, StringComparison.Ordinal);
+
+        /// <summary>
+        /// Strips the <c>get_</c>/<c>set_</c> prefix from <paramref name="accessorName"/> to recover
+        /// the underlying property name. Caller is responsible for ensuring the input is an
+        /// accessor-shaped name (validated via <see cref="IsPropertyAccessorName"/>).
+        /// </summary>
+        public static string GetPropertyNameFromAccessor(string accessorName)
+        {
+            Debug.Assert(IsPropertyAccessorName(accessorName));
+            // GetterPrefix and SetterPrefix are the same length; either constant works here.
+            return accessorName.Substring(GetterPrefix.Length);
+        }
+    }
 
     internal sealed record SourceAvailableIncrementalMethodStubGenerationContext(
         SignatureContext SignatureContext,
@@ -67,10 +93,7 @@ namespace Microsoft.Interop
                 string templateName = StubMethodSyntaxTemplate.Identifier.Text;
                 if (MemberKind is StubMemberKind.PropertyGetter or StubMemberKind.PropertySetter)
                 {
-                    // Roslyn always names property accessor methods "get_<PropertyName>" / "set_<PropertyName>".
-                    Debug.Assert(templateName.StartsWith("get_", System.StringComparison.Ordinal)
-                        || templateName.StartsWith("set_", System.StringComparison.Ordinal));
-                    return templateName.Substring("get_".Length);
+                    return GetPropertyNameFromAccessor(templateName);
                 }
                 return templateName;
             }
