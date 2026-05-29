@@ -107,10 +107,6 @@ namespace System.Threading
                     bool noSpin = false;
                     while (noSpin ? semaphore.WaitNoSpin(timeoutMs) : semaphore.Wait(timeoutMs))
                     {
-                        bool signaled = noSpin ? semaphore.WaitNoSpin(timeoutMs) : semaphore.Wait(timeoutMs);
-                        if (!signaled)
-                            break;
-
                         noSpin = WorkerDoWork(threadPoolInstance);
                     }
 
