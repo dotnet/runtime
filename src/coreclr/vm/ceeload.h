@@ -1728,6 +1728,9 @@ struct cdac_data<Module>
     static constexpr size_t MethodDefToILCodeVersioningStateMap = offsetof(Module, m_ILCodeVersioningStateMap);
 #endif // FEATURE_CODE_VERSIONING
     static constexpr size_t DynamicILBlobTable = offsetof(Module, m_debuggerSpecificData.m_pDynamicILBlobTable);
+#ifdef FEATURE_METADATA_UPDATER
+    static constexpr size_t EnCClassList = offsetof(Module, m_ClassList);
+#endif // FEATURE_METADATA_UPDATER
 };
 
 //

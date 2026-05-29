@@ -521,6 +521,8 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     public uint GetBaseSize(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (uint)0 : _methodTables[typeHandle.Address].Flags.BaseSize;
 
+    public uint GetNumInstanceFieldBytes(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (uint)0 : _methodTables[typeHandle.Address].Flags.BaseSize - GetClassData(typeHandle).BaseSizePadding;
+
     public uint GetComponentSize(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (uint)0 : _methodTables[typeHandle.Address].Flags.ComponentSize;
 
     public TargetPointer GetClassPointer(TypeHandle typeHandle)
@@ -1898,7 +1900,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return (fieldDesc.DWord1 & (uint)FieldDescFlags1.IsThreadStatic) != 0;
     }
 
-    private bool IsFieldDescRVA(TargetPointer fieldDescPointer)
+    bool IRuntimeTypeSystem.IsFieldDescRVA(TargetPointer fieldDescPointer)
     {
         Data.FieldDesc fieldDesc = _target.ProcessedData.GetOrAdd<Data.FieldDesc>(fieldDescPointer);
         return (fieldDesc.DWord1 & (uint)FieldDescFlags1.IsRVA) != 0;
@@ -1910,6 +1912,13 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return (fieldDesc.DWord1 & (uint)FieldDescFlags1.IsStatic) != 0;
     }
 
+    bool IRuntimeTypeSystem.IsFieldDescEnCNew(TargetPointer fieldDescPointer)
+    {
+        Data.FieldDesc fieldDesc = _target.ProcessedData.GetOrAdd<Data.FieldDesc>(fieldDescPointer);
+        uint offset = fieldDesc.DWord2 & (uint)FieldDescFlags2.OffsetMask;
+        return offset == _target.ReadGlobal<uint>(Constants.Globals.FieldOffsetNewEnc);
+    }
+
     CorElementType IRuntimeTypeSystem.GetFieldDescType(TargetPointer fieldDescPointer)
     {
         Data.FieldDesc fieldDesc = _target.ProcessedData.GetOrAdd<Data.FieldDesc>(fieldDescPointer);
@@ -1917,12 +1926,14 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return (CorElementType)((fieldDesc.DWord2 & (uint)FieldDescFlags2.TypeMask) >> TYPE_MASK_OFFSET);
     }
 
-    uint IRuntimeTypeSystem.GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition fieldDef)
+    uint IRuntimeTypeSystem.GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition? fieldDef)
     {
         Data.FieldDesc fieldDesc = _target.ProcessedData.GetOrAdd<Data.FieldDesc>(fieldDescPointer);
         if (fieldDesc.DWord2 == _target.ReadGlobal<uint>(Constants.Globals.FieldOffsetBigRVA))
         {
-            return (uint)fieldDef.GetRelativeVirtualAddress();
+            if (fieldDef is null)
+                throw new ArgumentNullException(nameof(fieldDef), "Field definition is required for big RVA fields");
+            return (uint)fieldDef.Value.GetRelativeVirtualAddress();
         }
         return fieldDesc.DWord2 & (uint)FieldDescFlags2.OffsetMask;
     }
@@ -2023,7 +2034,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         FieldDefinition fieldDef = mdReader.GetFieldDefinition(fieldHandle);
 
         uint offset = ((IRuntimeTypeSystem)this).GetFieldDescOffset(fieldDescPointer, fieldDef);
-        bool isRVA = IsFieldDescRVA(fieldDescPointer);
+        bool isRVA = ((IRuntimeTypeSystem)this).IsFieldDescRVA(fieldDescPointer);
         TargetPointer handleAddr = GetStaticAddressHandle(@base, offset, isRVA, fieldDescPointer, moduleHandle);
         if (unboxValueTypes && type == CorElementType.ValueType && !isRVA)
         {

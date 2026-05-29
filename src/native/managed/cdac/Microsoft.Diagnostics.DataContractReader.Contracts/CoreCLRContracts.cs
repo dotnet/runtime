@@ -72,5 +72,7 @@ public static class CoreCLRContracts
 
         registry.Register<IExecutionManager>("c1", static t => new ExecutionManager_1(t));
         registry.Register<IExecutionManager>("c2", static t => new ExecutionManager_2(t));
+
+        registry.Register<IEditAndContinue>("c1", static t => new EditAndContinue_1(t));
     }
 }

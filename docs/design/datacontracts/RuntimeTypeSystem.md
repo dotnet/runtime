@@ -51,6 +51,11 @@ partial interface IRuntimeTypeSystem : IContract
     public virtual TargetCodePointer GetSlot(TypeHandle typeHandle, uint slot);
 
     public virtual uint GetBaseSize(TypeHandle typeHandle);
+    // The number of bytes of instance fields stored in an object of this type on the GC heap.
+    // Equivalent to the native MethodTable::GetNumInstanceFieldBytes(), which is computed as
+    // GetBaseSize() minus the EEClass base-size padding (the trailing alignment/min-object-size
+    // bytes included in BaseSize but not occupied by actual instance fields).
+    public virtual uint GetNumInstanceFieldBytes(TypeHandle typeHandle);
     // The component size is only available for strings and arrays.  It is the size of the element type of the array, or the size of an ECMA 335 character (2 bytes)
     public virtual uint GetComponentSize(TypeHandle typeHandle);
 
@@ -274,8 +279,10 @@ TargetPointer GetMTOfEnclosingClass(TargetPointer fieldDescPointer);
 uint GetFieldDescMemberDef(TargetPointer fieldDescPointer);
 bool IsFieldDescThreadStatic(TargetPointer fieldDescPointer);
 bool IsFieldDescStatic(TargetPointer fieldDescPointer);
+bool IsFieldDescRVA(TargetPointer fieldDescPointer);
+bool IsFieldDescEnCNew(TargetPointer fieldDescPointer);
 uint GetFieldDescType(TargetPointer fieldDescPointer);
-uint GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition fieldDef);
+uint GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition? fieldDef);
 TargetPointer GetFieldDescStaticAddress(TargetPointer fieldDescPointer, bool unboxValueTypes = true);
 TargetPointer GetFieldDescThreadStaticAddress(TargetPointer fieldDescPointer, TargetPointer thread, bool unboxValueTypes = true);
 ```
@@ -575,6 +582,8 @@ Contracts used:
     public TargetPointer GetParentMethodTable(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? TargetPointer.Null : _methodTables[TypeHandle.Address].ParentMethodTable;
 
     public uint GetBaseSize(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? (uint)0 : _methodTables[TypeHandle.Address].Flags.BaseSize;
+
+    public uint GetNumInstanceFieldBytes(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? (uint)0 : _methodTables[TypeHandle.Address].Flags.BaseSize - GetClassData(TypeHandle).BaseSizePadding;
 
     public uint GetComponentSize(TypeHandle TypeHandle) =>!typeHandle.IsMethodTable() ? (uint)0 :  GetComponentSize(_methodTables[TypeHandle.Address]);
 
@@ -2023,6 +2032,13 @@ Getting a MethodDesc for a certain slot in a MethodTable
 
 ### FieldDesc
 
+The version 1 FieldDesc APIs depend on the following globals:
+
+| Global name | Meaning |
+| --- | --- |
+| `FieldOffsetBigRVA` | Sentinel value of `FieldDesc::DWord2` indicating the field is an RVA static whose offset is too large to encode in the bitfield; the real offset must be read from the field's metadata (`FieldDefinition.GetRelativeVirtualAddress`). |
+| `FieldOffsetNewEnc` | Sentinel value of `FieldDesc`'s offset bitfield indicating the field was added via Edit-and-Continue and does not yet have backing storage. |
+
 The version 1 FieldDesc APIs depend on the following data descriptors:
 | Data Descriptor Name | Field | Meaning |
 | --- | --- | --- |
@@ -2036,6 +2052,7 @@ internal enum FieldDescFlags1 : uint
     TokenMask = 0xffffff,
     IsStatic = 0x1000000,
     IsThreadStatic = 0x2000000,
+    IsRVA = 0x4000000,
 }
 
 internal enum FieldDescFlags2 : uint
@@ -2067,18 +2084,31 @@ bool IsFieldDescStatic(TargetPointer fieldDescPointer)
     return (DWord1 & (uint)FieldDescFlags1.IsStatic) != 0;
 }
 
+bool IsFieldDescRVA(TargetPointer fieldDescPointer)
+{
+    uint DWord1 = target.Read<uint>(fieldDescPointer + /* FieldDesc::DWord1 offset */);
+    return (DWord1 & (uint)FieldDescFlags1.IsRVA) != 0;
+}
+
+bool IsFieldDescEnCNew(TargetPointer fieldDescPointer)
+{
+    uint DWord2 = target.Read<uint>(fieldDescPointer + /* FieldDesc::DWord2 offset */);
+    uint offset = DWord2 & (uint)FieldDescFlags2.OffsetMask;
+    return offset == _target.ReadGlobal<uint>("FieldOffsetNewEnc");
+}
+
 uint GetFieldDescType(TargetPointer fieldDescPointer)
 {
     uint DWord2 = target.Read<uint>(fieldDescPointer + /* FieldDesc::DWord2 offset */);
     return (DWord2 & (uint)FieldDescFlags2.TypeMask) >> 27;
 }
 
-uint GetFieldDescOffset(TargetPointer fieldDescPointer)
+uint GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition? fieldDef)
 {
     uint DWord2 = target.Read<uint>(fieldDescPointer + /* FieldDesc::DWord2 offset */);
-    if (DWord2 == _target.ReadGlobal<uint>("FieldOffsetBigRVA"))
+    if (DWord2 == _target.ReadGlobal<uint>("FieldOffsetBigRVA") && fieldDef.HasValue)
     {
-        return (uint)fieldDef.GetRelativeVirtualAddress();
+        return (uint)fieldDef.Value.GetRelativeVirtualAddress();
     }
     return DWord2 & (uint)FieldDescFlags2.OffsetMask;
 }
