@@ -31,16 +31,22 @@ namespace System.Threading
 
         // When we need to block threads we use a linked list of per-thread blockers.
         // When we need to wake a worker, we pop the topmost blocker and release it.
-        private sealed class LifoWaitNode : LowLevelThreadBlocker
+        private sealed class LifoBlockerNode
         {
-            internal LifoWaitNode? _next;
+            internal LifoBlockerNode? _next;
+            internal LowLevelThreadBlocker _blocker;
+
+            ~LifoBlockerNode()
+            {
+                _blocker.Dispose();
+            }
         }
 
         [ThreadStatic]
-        private static LifoWaitNode? t_blocker;
+        private static LifoBlockerNode? t_blockerNode;
 
         private readonly LowLevelLock _blockerStackLock = new LowLevelLock();
-        private LifoWaitNode? _blockerStack;
+        private LifoBlockerNode? _blockerStack;
 
         // Sometimes due to races we may see nonzero waiter count, but no blockers to wake.
         // That happens if threads that added themselves to waiter count, have not yet blocked themselves.
@@ -277,12 +283,12 @@ namespace System.Threading
         {
             Debug.Assert(timeoutMs >= -1);
 
-            LifoWaitNode? blocker = t_blocker;
-            if (blocker == null)
+            LifoBlockerNode? blockerNode = t_blockerNode;
+            if (blockerNode == null)
             {
                 try
                 {
-                    t_blocker = blocker = new LifoWaitNode();
+                    t_blockerNode = blockerNode = new LifoBlockerNode();
                 }
                 catch (OutOfMemoryException)
                 {
@@ -298,12 +304,12 @@ namespace System.Threading
                 Debug.Assert(_blockerStack == null);
                 Debug.Assert(_racingUnblocks > 0);
                 _racingUnblocks--;
-                blocker = null;
+                blockerNode = null;
             }
             else
             {
-                blocker._next = _blockerStack;
-                _blockerStack = blocker;
+                blockerNode._next = _blockerStack;
+                _blockerStack = blockerNode;
             }
 
             _blockerStackLock.Release();
@@ -312,7 +318,7 @@ namespace System.Threading
             if (_pendingWake > 0)
                 WakeOneCore();
 
-            if (blocker != null)
+            if (blockerNode != null)
             {
 #if TARGET_WINDOWS
                 // Disable the priority boost that Windows would normally apply
@@ -326,9 +332,9 @@ namespace System.Threading
 
                 try
                 {
-                    while (!blocker.TimedWait(timeoutMs))
+                    while (!blockerNode._blocker.TimedWait(timeoutMs))
                     {
-                        if (TryRemove(blocker))
+                        if (TryRemove(blockerNode))
                         {
                             return false;
                         }
@@ -399,7 +405,7 @@ namespace System.Threading
                 Debug.Assert(_pendingWake == 1);
                 _pendingWake--;
 
-                LifoWaitNode? top = _blockerStack;
+                LifoBlockerNode? top = _blockerStack;
                 if (top != null)
                 {
                     _blockerStack = top._next;
@@ -419,7 +425,7 @@ namespace System.Threading
 
                 if (top != null)
                 {
-                    top.WakeOne();
+                    top._blocker.WakeOne();
                 }
 
                 return;
@@ -427,12 +433,12 @@ namespace System.Threading
         }
 
         // Used when waiter times out
-        private bool TryRemove(LifoWaitNode node)
+        private bool TryRemove(LifoBlockerNode node)
         {
             bool removed = false;
             _blockerStackLock.Acquire();
 
-            LifoWaitNode? current = _blockerStack;
+            LifoBlockerNode? current = _blockerStack;
             if (current == node)
             {
                 _blockerStack = node._next;
