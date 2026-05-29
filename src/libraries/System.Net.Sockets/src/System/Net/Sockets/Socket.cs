@@ -132,6 +132,7 @@ namespace System.Net.Sockets
             {
                 // Get properties like address family and blocking mode from the OS.
                 LoadSocketTypeFromHandle(handle, out _addressFamily, out _socketType, out _protocolType, out _willBlockInternal, out _isListening, out bool isSocket);
+                _willBlock = _willBlockInternal;
 
                 if (isSocket)
                 {
@@ -291,7 +292,7 @@ namespace System.Net.Sockets
         }
 
         // Gets the local end point.
-        public EndPoint? LocalEndPoint
+        public unsafe EndPoint? LocalEndPoint
         {
             get
             {
@@ -339,7 +340,7 @@ namespace System.Net.Sockets
         }
 
         // Gets the remote end point.
-        public EndPoint? RemoteEndPoint
+        public unsafe EndPoint? RemoteEndPoint
         {
             get
             {

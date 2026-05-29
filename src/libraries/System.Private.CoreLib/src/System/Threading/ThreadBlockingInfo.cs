@@ -48,7 +48,6 @@ namespace System.Threading
         // Points to the next-most-recent blocking info for the thread
         private ThreadBlockingInfo* _next; // may be used by debuggers
 
-        [RequiresUnsafe]
         private void Push(void* objectPtr, ObjectKind objectKind, int timeoutMs)
         {
             Debug.Assert(objectPtr != null);

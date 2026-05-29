@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -106,7 +106,7 @@ namespace System.Runtime.Versioning
         //  - The identifier and version is required, profile is optional
         //  - Only three components are allowed.
         //  - The version string must be in the System.Version format; an optional "v" or "V" prefix is allowed
-        public FrameworkName(string frameworkName)
+        public unsafe FrameworkName(string frameworkName)
         {
             ArgumentException.ThrowIfNullOrEmpty(frameworkName);
 

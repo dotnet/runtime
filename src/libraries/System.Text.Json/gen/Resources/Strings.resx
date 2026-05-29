@@ -207,4 +207,16 @@
   <data name="JsonIgnoreConditionAlwaysInvalidOnTypeFormat" xml:space="preserve">
     <value>The type '{0}' has been annotated with 'JsonIgnoreAttribute' using 'JsonIgnoreCondition.Always' which is not valid on type declarations. The attribute will be ignored.</value>
   </data>
+  <data name="UnionCaseTypesNotClassifiableTitle" xml:space="preserve">
+    <value>Union case types cannot be unambiguously classified by JSON value type.</value>
+  </data>
+  <data name="UnionCaseTypesNotClassifiableMessageFormat" xml:space="preserve">
+    <value>Union type '{0}': {1}. Set JsonUnionAttribute.TypeClassifier to provide a custom classifier that can disambiguate.</value>
+  </data>
+  <data name="UnionTypeShapeNotSupportedTitle" xml:space="preserve">
+    <value>Union type shape is not a valid C# union.</value>
+  </data>
+  <data name="UnionTypeShapeNotSupportedMessageFormat" xml:space="preserve">
+    <value>Union type '{0}' does not match the C# union shape convention: it must declare at least one public single-parameter case constructor and a public instance property named 'Value' with type 'object'.</value>
+  </data>
 </root>

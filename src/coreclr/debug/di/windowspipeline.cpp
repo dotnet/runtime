@@ -56,20 +56,6 @@ public:
 
     virtual BOOL DebugSetProcessKillOnExit(bool fKillOnExit);
 
-    // Create
-    virtual HRESULT CreateProcessUnderDebugger(
-        MachineInfo machineInfo,
-        LPCWSTR lpApplicationName,
-        LPCWSTR lpCommandLine,
-        LPSECURITY_ATTRIBUTES lpProcessAttributes,
-        LPSECURITY_ATTRIBUTES lpThreadAttributes,
-        BOOL bInheritHandles,
-        DWORD dwCreationFlags,
-        LPVOID lpEnvironment,
-        LPCWSTR lpCurrentDirectory,
-        LPSTARTUPINFOW lpStartupInfo,
-        LPPROCESS_INFORMATION lpProcessInformation);
-
     // Attach
     virtual HRESULT DebugActiveProcess(MachineInfo machineInfo, const ProcessDescriptor& processDescriptor);
 
@@ -123,43 +109,6 @@ BOOL WindowsNativePipeline::DebugSetProcessKillOnExit(bool fKillOnExit)
     // has spawned a debuggee. So cache the value now and call it later.
     m_fKillOnExit = fKillOnExit;
     return TRUE;
-}
-
-// Create an process under the debugger.
-HRESULT WindowsNativePipeline::CreateProcessUnderDebugger(
-    MachineInfo machineInfo,
-    LPCWSTR lpApplicationName,
-    LPCWSTR lpCommandLine,
-    LPSECURITY_ATTRIBUTES lpProcessAttributes,
-    LPSECURITY_ATTRIBUTES lpThreadAttributes,
-    BOOL bInheritHandles,
-    DWORD dwCreationFlags,
-    LPVOID lpEnvironment,
-    LPCWSTR lpCurrentDirectory,
-    LPSTARTUPINFOW lpStartupInfo,
-    LPPROCESS_INFORMATION lpProcessInformation)
-{
-    // This is always doing Native-debugging at the OS-level.
-    dwCreationFlags |= (DEBUG_PROCESS | DEBUG_ONLY_THIS_PROCESS);
-
-    BOOL ret = ::WszCreateProcess(
-          lpApplicationName,
-          lpCommandLine,
-          lpProcessAttributes,
-          lpThreadAttributes,
-          bInheritHandles,
-          dwCreationFlags,
-          lpEnvironment,
-          lpCurrentDirectory,
-          lpStartupInfo,
-          lpProcessInformation);
-    if (!ret)
-    {
-        return HRESULT_FROM_GetLastError();
-    }
-
-    m_dwProcessId = lpProcessInformation->dwProcessId;
-    return S_OK;
 }
 
 // Attach the debugger to this process.

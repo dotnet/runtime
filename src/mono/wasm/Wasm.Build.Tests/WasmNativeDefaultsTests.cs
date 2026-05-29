@@ -11,7 +11,7 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests
 {
-    [TestCategory("native")]
+    [TestCategory("native-mono")]
     public class WasmNativeDefaultsTests : WasmTemplateTestsBase
     {
         private static Regex s_regex = new("\\*\\* WasmBuildNative:.*");

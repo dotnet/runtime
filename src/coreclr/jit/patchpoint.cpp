@@ -116,9 +116,13 @@ private:
     //
     //  if (--ppCounter <= 0)
     //  {
-    //     ppHelper(&ppCounter, ilOffset);
+    //     GT_PATCHPOINT(&ppCounter, ilOffset);  // calls helper + unconditional jump
     //  }
     //  S;
+    //
+    // The GT_PATCHPOINT node emits the helper call and a jump to the returned
+    // address. The helper returns the OSR method address when a transition should
+    // occur, or return_address + jump_size to skip the jump and continue in Tier0.
     //
     void TransformBlock(BasicBlock* block)
     {
@@ -151,6 +155,8 @@ private:
         falseEdge->setLikelihood((100 - HIGH_PROBABILITY) / 100.0);
         block->SetCond(trueEdge, falseEdge);
 
+        // Helper block falls through to remainder (the helper returns a skip
+        // address that jumps past the GT_PATCHPOINT jump instruction).
         FlowEdge* const newEdge = compiler->fgAddRefPred(remainderBlock, helperBlock);
         helperBlock->SetTargetEdge(newEdge);
 
@@ -178,13 +184,14 @@ private:
 
         // Fill in helper block
         //
-        // call PPHelper(&ppCounter, ilOffset)
-        GenTree*     ilOffsetNode  = compiler->gtNewIconNode(ilOffset, TYP_INT);
-        GenTree*     ppCounterAddr = compiler->gtNewLclVarAddrNode(ppCounterLclNum);
-        GenTreeCall* helperCall =
-            compiler->gtNewHelperCallNode(CORINFO_HELP_PATCHPOINT, TYP_VOID, ppCounterAddr, ilOffsetNode);
+        // GT_PATCHPOINT(&ppCounter, ilOffset) — emits helper call + unconditional jump
+        GenTree* ilOffsetNode  = compiler->gtNewIconNode(ilOffset, TYP_INT);
+        GenTree* ppCounterAddr = compiler->gtNewLclVarAddrNode(ppCounterLclNum);
 
-        compiler->fgNewStmtAtEnd(helperBlock, helperCall);
+        GenTree* patchpointNode = compiler->gtNewOperNode(GT_PATCHPOINT, TYP_VOID, ppCounterAddr, ilOffsetNode);
+        patchpointNode->gtFlags |= GTF_CALL;
+
+        compiler->fgNewStmtAtEnd(helperBlock, patchpointNode);
     }
 
     //  ppCounter = <initial value>
@@ -205,18 +212,18 @@ private:
 
     //------------------------------------------------------------------------
     // TransformPartialCompilation: delete all the statements in the block and insert
-    //     a call to the partial compilation patchpoint helper
+    //     a call to the partial compilation patchpoint helper, then transition
+    //     to the OSR method.
     //
     //  S0; S1; S2; ... SN;
     //
     //  ==>
     //
     //  ~~{ S0; ... SN; }~~ (deleted)
-    //  call JIT_PARTIAL_COMPILATION_PATCHPOINT(ilOffset)
+    //  GT_PATCHPOINT_FORCED(ilOffset);  // calls forced helper + jump to OSR method
     //
     // Note S0 -- SN are not forever lost -- they will appear in the OSR version
-    // of the method created when the patchpoint is hit. Also note the patchpoint
-    // helper call will not return control to this method.
+    // of the method created when the patchpoint is hit.
     //
     void TransformPartialCompilation(BasicBlock* block)
     {
@@ -233,14 +240,13 @@ private:
         // Update flow
         block->SetKindAndTargetEdge(BBJ_THROW);
 
-        // Add helper call
-        //
-        // call PartialCompilationPatchpointHelper(ilOffset)
-        //
-        GenTree*     ilOffsetNode = compiler->gtNewIconNode(ilOffset, TYP_INT);
-        GenTreeCall* helperCall = compiler->gtNewHelperCallNode(CORINFO_HELP_PATCHPOINT_FORCED, TYP_VOID, ilOffsetNode);
+        // GT_PATCHPOINT_FORCED(ilOffset) — emits forced helper call + jump to OSR method
+        GenTree* ilOffsetNode = compiler->gtNewIconNode(ilOffset, TYP_INT);
 
-        compiler->fgNewStmtAtEnd(block, helperCall);
+        GenTree* patchpointNode = compiler->gtNewOperNode(GT_PATCHPOINT_FORCED, TYP_VOID, ilOffsetNode);
+        patchpointNode->gtFlags |= GTF_CALL;
+
+        compiler->fgNewStmtAtEnd(block, patchpointNode);
     }
 };
 

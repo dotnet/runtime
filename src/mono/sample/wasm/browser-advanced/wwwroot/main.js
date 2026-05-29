@@ -55,8 +55,8 @@ try {
                     callSpec: "N:Sample" // needs to match AOT profile
                 };
             },
-            preInit: () => { console.log('user code Module.preInit'); },
-            preRun: () => { console.log('user code Module.preRun'); },
+            preInit: [() => { console.log('user code Module.preInit'); }],
+            preRun: [() => { console.log('user code Module.preRun'); }],
             onRuntimeInitialized: () => {
                 console.log('user code Module.onRuntimeInitialized');
                 // here we could use API passed into this callback
@@ -66,7 +66,7 @@ try {
                 // This is called after all assets are loaded.
                 console.log('user code Module.onDotnetReady');
             },
-            postRun: () => { console.log('user code Module.postRun'); },
+            postRun: [() => { console.log('user code Module.postRun'); }],
             out: (text) => { console.log("ADVANCED:" + text) },
         })
         .withResourceLoader((type, name, defaultUri, integrity, behavior) => {

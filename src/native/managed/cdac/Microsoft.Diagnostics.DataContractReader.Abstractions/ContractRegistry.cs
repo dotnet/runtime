@@ -93,9 +93,13 @@ public abstract class ContractRegistry
     /// </summary>
     public virtual INotifications Notifications => GetContract<INotifications>();
     /// <summary>
-    /// Gets an instance of the SignatureDecoder contract for the target.
+    /// Gets an instance of the CodeNotifications contract for the target.
     /// </summary>
-    public virtual ISignatureDecoder SignatureDecoder => GetContract<ISignatureDecoder>();
+    public virtual ICodeNotifications CodeNotifications => GetContract<ICodeNotifications>();
+    /// <summary>
+    /// Gets an instance of the Signature contract for the target.
+    /// </summary>
+    public virtual ISignature Signature => GetContract<ISignature>();
     /// <summary>
     /// Gets an instance of the SyncBlock contract for the target.
     /// </summary>
@@ -105,9 +109,17 @@ public abstract class ContractRegistry
     /// </summary>
     public virtual IBuiltInCOM BuiltInCOM => GetContract<IBuiltInCOM>();
     /// <summary>
+    /// Gets an instance of the ObjectiveCMarshal contract for the target.
+    /// </summary>
+    public virtual IObjectiveCMarshal ObjectiveCMarshal => GetContract<IObjectiveCMarshal>();
+    /// <summary>
     /// Gets an instance of the ConditionalWeakTable contract for the target.
     /// </summary>
     public virtual IConditionalWeakTable ConditionalWeakTable => GetContract<IConditionalWeakTable>();
+    /// <summary>
+    /// Gets an instance of the ManagedTypeSource contract for the target.
+    /// </summary>
+    public virtual IManagedTypeSource ManagedTypeSource => GetContract<IManagedTypeSource>();
     /// <summary>
     /// Gets an instance of the AuxiliarySymbols contract for the target.
     /// </summary>

@@ -29,6 +29,11 @@ internal struct PrecodeStubs_2_Impl : IPrecodeStubsContractCommonApi<Data.StubPr
         return thisPtrRetBufPrecodeData.MethodDesc;
     }
 
+    public static TargetPointer InterpreterPrecode_GetMethodDesc(TargetPointer instrPointer, Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
+    {
+        throw new NotImplementedException();
+    }
+
     public static byte StubPrecodeData_GetType(Data.StubPrecodeData_2 stubPrecodeData)
     {
         return stubPrecodeData.Type;

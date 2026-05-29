@@ -498,6 +498,7 @@ int HWIntrinsicInfo::lookupImmUpperBound(NamedIntrinsic id)
         case NI_AVX_CompareScalar:
         case NI_AVX512_Compare:
         case NI_AVX512_CompareMask:
+        case NI_AVX512_CompareScalarMask:
         case NI_AVX10v2_MinMaxScalar:
         case NI_AVX10v2_MinMax:
         {
@@ -4208,6 +4209,26 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             divRemIntrinsic->SetSimdBaseType(simdBaseType);
 
             retNode = impStoreMultiRegValueToVar(divRemIntrinsic,
+                                                 sig->retTypeSigClass DEBUGARG(CorInfoCallConvExtension::Managed));
+            break;
+        }
+
+        case NI_X86Base_X64_BigMul:
+        {
+            assert(sig->numArgs == 2);
+            assert(HWIntrinsicInfo::IsMultiReg(intrinsic));
+            assert(retType == TYP_STRUCT);
+            assert(simdBaseType != TYP_UNDEF);
+
+            op2 = impPopStack().val;
+            op1 = impPopStack().val;
+
+            GenTreeHWIntrinsic* multiplyIntrinsic = gtNewScalarHWIntrinsicNode(retType, op1, op2, intrinsic);
+
+            // Store the type from signature into SIMD base type for convenience
+            multiplyIntrinsic->SetSimdBaseType(simdBaseType);
+
+            retNode = impStoreMultiRegValueToVar(multiplyIntrinsic,
                                                  sig->retTypeSigClass DEBUGARG(CorInfoCallConvExtension::Managed));
             break;
         }

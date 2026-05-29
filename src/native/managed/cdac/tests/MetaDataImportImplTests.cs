@@ -146,6 +146,15 @@ public unsafe class MetaDataImportImplTests
         mb.AddCustomAttribute(testClassHandle, obsoleteCtor,
             mb.GetOrAddBlob(new byte[] { 0x01, 0x00, 0x0C, 0x74, 0x65, 0x73, 0x74, 0x20, 0x6D, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x00, 0x00 }));
 
+        // Exported types (for GetExportedTypeProps and FindExportedTypeByName testing)
+        ExportedTypeHandle exportedType1 = mb.AddExportedType(
+            TypeAttributes.Public, mb.GetOrAddString("TestNamespace"), mb.GetOrAddString("ExportedClass"),
+            mscorlibRef, 0x02000002);
+
+        mb.AddExportedType(
+            TypeAttributes.NestedPublic, default, mb.GetOrAddString("NestedExported"),
+            exportedType1, 0);
+
         // Serialize
         BlobBuilder metadataBlob = new();
         MetadataRootBuilder root = new(mb);
@@ -448,7 +457,6 @@ public unsafe class MetaDataImportImplTests
 
         Assert.Equal(HResults.E_NOTIMPL, wrapper.GetScopeProps(null, 0, null, null));
         Assert.Equal(HResults.E_NOTIMPL, wrapper.ResolveTypeRef(0, null, null, null));
-        Assert.Equal(HResults.E_NOTIMPL, wrapper.EnumTypeDefs(null, null, 0, null));
         Assert.Equal(HResults.E_NOTIMPL, wrapper.EnumTypeRefs(null, null, 0, null));
     }
 
@@ -773,7 +781,7 @@ public unsafe class MetaDataImportImplTests
         uint nameLen;
 
         int hr = assemblyImport.GetAssemblyProps(0x20000001, null, null, null, nameBuf, 5, &nameLen, null, null);
-        Assert.Equal(0x00131106, hr); // CLDB_S_TRUNCATION
+        Assert.Equal(CldbHResults.CLDB_S_TRUNCATION, hr);
         // Full name is "TestAssembly" (12 chars + null = 13)
         Assert.Equal(13u, nameLen);
         // Buffer should contain "Test\0"
@@ -806,7 +814,7 @@ public unsafe class MetaDataImportImplTests
 
             // Pass an invalid assembly token (wrong RID)
             int hr = assemblyImport.GetAssemblyProps(0x20000002, null, null, null, null, 0, null, null, null);
-            Assert.Equal(unchecked((int)0x80131130), hr); // CLDB_E_RECORD_NOTFOUND
+            Assert.Equal(CldbHResults.CLDB_E_RECORD_NOTFOUND, hr);
         }
     }
 
@@ -1015,7 +1023,7 @@ public unsafe class MetaDataImportImplTests
                     var fn = (delegate* unmanaged[Stdcall]<nint, nint*, uint, uint*, uint, uint*, int>)enumGenericParams;
                     hr = fn(pImportAgain, &hEnum, 0x02000002, null, 0, &count);
                     // Should succeed (or return no results) without AV
-                    Assert.True(hr >= 0 || hr == unchecked((int)0x80131130)); // S_OK or CLDB_E_RECORD_NOTFOUND
+                    Assert.True(hr >= 0 || hr == CldbHResults.CLDB_E_RECORD_NOTFOUND);
                 }
                 finally
                 {
@@ -1098,5 +1106,221 @@ public unsafe class MetaDataImportImplTests
 
         int hr = wrapper.ResetEnum(0, 0);
         Assert.Equal(HResults.S_OK, hr);
+    }
+
+    [Fact]
+    public void EnumTypeDefs_ReturnsAllTypes()
+    {
+        IMetaDataImport2 wrapper = CreateWrapper();
+
+        // Enumerate all type defs at once (metadata has 4 TypeDefs: <Module>, TestClass, NestedType, LayoutClass)
+        nint hEnum = 0;
+        uint* tokens = stackalloc uint[10];
+        uint count;
+
+        int hr = wrapper.EnumTypeDefs(&hEnum, tokens, 10, &count);
+        Assert.True(hr >= 0);
+        Assert.Equal(4u, count);
+
+        // Verify first token is <Module> (TypeDef RID 1 = 0x02000001)
+        Assert.Equal(0x02000001u, tokens[0]);
+
+        wrapper.CloseEnum(hEnum);
+    }
+
+    [Fact]
+    public void EnumTypeDefs_Pagination()
+    {
+        IMetaDataImport2 wrapper = CreateWrapper();
+
+        nint hEnum = 0;
+        uint token;
+        uint count;
+        int totalCount = 0;
+
+        // Enumerate one at a time
+        while (true)
+        {
+            int hr = wrapper.EnumTypeDefs(&hEnum, &token, 1, &count);
+            Assert.True(hr >= 0);
+            if (count == 0)
+                break;
+            totalCount++;
+        }
+
+        Assert.Equal(4, totalCount);
+        wrapper.CloseEnum(hEnum);
+    }
+
+    [Fact]
+    public void EnumMethods_ReturnsMethodsForType()
+    {
+        IMetaDataImport2 wrapper = CreateWrapper();
+
+        // TestClass (TypeDef RID 2 = 0x02000002) has 1 method: DoWork
+        nint hEnum = 0;
+        uint token;
+        uint count;
+
+        int hr = wrapper.EnumMethods(&hEnum, 0x02000002, &token, 1, &count);
+        Assert.Equal(HResults.S_OK, hr);
+        Assert.Equal(1u, count);
+        // DoWork is method row 2 = 0x06000002
+        Assert.Equal(0x06000002u, token);
+
+        // No more methods
+        hr = wrapper.EnumMethods(&hEnum, 0x02000002, &token, 1, &count);
+        Assert.True(hr >= 0);
+        Assert.Equal(0u, count);
+
+        wrapper.CloseEnum(hEnum);
+    }
+
+    [Fact]
+    public void EnumMethods_ModuleType_ReturnsGlobalMethod()
+    {
+        IMetaDataImport2 wrapper = CreateWrapper();
+
+        // <Module> (TypeDef RID 1 = 0x02000001) has 1 method: GlobalHelper
+        nint hEnum = 0;
+        uint token;
+        uint count;
+
+        int hr = wrapper.EnumMethods(&hEnum, 0x02000001, &token, 1, &count);
+        Assert.Equal(HResults.S_OK, hr);
+        Assert.Equal(1u, count);
+        // GlobalHelper is method row 1 = 0x06000001
+        Assert.Equal(0x06000001u, token);
+
+        wrapper.CloseEnum(hEnum);
+    }
+
+    [Fact]
+    public void EnumMethods_NoMethods_ReturnsFalse()
+    {
+        IMetaDataImport2 wrapper = CreateWrapper();
+
+        // NestedType (TypeDef RID 3 = 0x02000003) has no methods
+        nint hEnum = 0;
+        uint token;
+        uint count;
+
+        int hr = wrapper.EnumMethods(&hEnum, 0x02000003, &token, 1, &count);
+        Assert.True(hr >= 0);
+        Assert.Equal(0u, count);
+
+        wrapper.CloseEnum(hEnum);
+    }
+
+    [Fact]
+    public void GetExportedTypeProps_ReturnsCorrectProperties()
+    {
+        IMetaDataImport2 wrapper = CreateWrapper();
+        IMetaDataAssemblyImport assemblyImport = (IMetaDataAssemblyImport)wrapper;
+
+        // ExportedType row 1 = 0x27000001 (TestNamespace.ExportedClass)
+        char* szName = stackalloc char[256];
+        uint pchName;
+        uint tkImplementation;
+        uint tkTypeDef;
+        uint dwFlags;
+
+        int hr = assemblyImport.GetExportedTypeProps(0x27000001, szName, 256, &pchName,
+            &tkImplementation, &tkTypeDef, &dwFlags);
+        Assert.True(hr >= 0);
+
+        string name = new string(szName);
+        Assert.Equal("TestNamespace.ExportedClass", name);
+        Assert.Equal((uint)TypeAttributes.Public, dwFlags);
+        Assert.Equal(0x02000002u, tkTypeDef);
+        // Implementation should be the mscorlib AssemblyRef
+        Assert.NotEqual(0u, tkImplementation);
+    }
+
+    [Fact]
+    public void GetExportedTypeProps_NestedType()
+    {
+        IMetaDataImport2 wrapper = CreateWrapper();
+        IMetaDataAssemblyImport assemblyImport = (IMetaDataAssemblyImport)wrapper;
+
+        // ExportedType row 2 = 0x27000002 (NestedExported, nested in ExportedClass)
+        char* szName = stackalloc char[256];
+        uint pchName;
+        uint tkImplementation;
+        uint tkTypeDef;
+        uint dwFlags;
+
+        int hr = assemblyImport.GetExportedTypeProps(0x27000002, szName, 256, &pchName,
+            &tkImplementation, &tkTypeDef, &dwFlags);
+        Assert.True(hr >= 0);
+
+        string name = new string(szName);
+        Assert.Equal("NestedExported", name);
+        Assert.Equal((uint)TypeAttributes.NestedPublic, dwFlags);
+        // Implementation should point to the parent ExportedType (0x27000001)
+        Assert.Equal(0x27000001u, tkImplementation);
+    }
+
+    [Fact]
+    public void GetExportedTypeProps_Truncation()
+    {
+        IMetaDataImport2 wrapper = CreateWrapper();
+        IMetaDataAssemblyImport assemblyImport = (IMetaDataAssemblyImport)wrapper;
+
+        // Use a small buffer to trigger truncation
+        char* szName = stackalloc char[5];
+        uint pchName;
+        uint tkImplementation;
+        uint tkTypeDef;
+        uint dwFlags;
+
+        int hr = assemblyImport.GetExportedTypeProps(0x27000001, szName, 5, &pchName,
+            &tkImplementation, &tkTypeDef, &dwFlags);
+        Assert.Equal(CldbHResults.CLDB_S_TRUNCATION, hr);
+    }
+
+    [Fact]
+    public void FindExportedTypeByName_FindsType()
+    {
+        IMetaDataImport2 wrapper = CreateWrapper();
+        IMetaDataAssemblyImport assemblyImport = (IMetaDataAssemblyImport)wrapper;
+
+        uint tkExportedType;
+        fixed (char* szName = "TestNamespace.ExportedClass")
+        {
+            int hr = assemblyImport.FindExportedTypeByName(szName, 0, &tkExportedType);
+            Assert.True(hr >= 0);
+            Assert.Equal(0x27000001u, tkExportedType);
+        }
+    }
+
+    [Fact]
+    public void FindExportedTypeByName_NestedType()
+    {
+        IMetaDataImport2 wrapper = CreateWrapper();
+        IMetaDataAssemblyImport assemblyImport = (IMetaDataAssemblyImport)wrapper;
+
+        uint tkExportedType;
+        fixed (char* szName = "NestedExported")
+        {
+            // Find nested type with parent = ExportedType row 1
+            int hr = assemblyImport.FindExportedTypeByName(szName, 0x27000001, &tkExportedType);
+            Assert.True(hr >= 0);
+            Assert.Equal(0x27000002u, tkExportedType);
+        }
+    }
+
+    [Fact]
+    public void FindExportedTypeByName_NotFound()
+    {
+        IMetaDataImport2 wrapper = CreateWrapper();
+        IMetaDataAssemblyImport assemblyImport = (IMetaDataAssemblyImport)wrapper;
+
+        uint tkExportedType;
+        fixed (char* szName = "NonExistent.Type")
+        {
+            int hr = assemblyImport.FindExportedTypeByName(szName, 0, &tkExportedType);
+            Assert.True(hr < 0); // CLDB_E_RECORD_NOTFOUND
+        }
     }
 }

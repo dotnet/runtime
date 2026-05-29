@@ -116,6 +116,23 @@ public readonly struct GCMemoryRegionData
     public int Heap { get; init; }
 }
 
+public enum GCSegmentClassification
+{
+    Unknown,
+    Gen0,
+    Gen1,
+    Gen2,
+    LOH,
+    POH,
+    NonGC,
+    Ephemeral,
+}
+
+public readonly record struct GCHeapSegmentInfo(
+    TargetPointer Start,
+    TargetPointer End,
+    GCSegmentClassification Generation);
+
 public interface IGC : IContract
 {
     static string IContract.Name { get; } = nameof(GC);
@@ -151,6 +168,10 @@ public interface IGC : IContract
     IReadOnlyList<GCMemoryRegionData> GetHandleTableMemoryRegions() => throw new NotImplementedException();
     IReadOnlyList<GCMemoryRegionData> GetGCBookkeepingMemoryRegions() => throw new NotImplementedException();
     IReadOnlyList<GCMemoryRegionData> GetGCFreeRegions() => throw new NotImplementedException();
+
+    // Enumerates the raw GC heap segments for a single heap as recorded by the GC's per-generation
+    // segment lists.
+    IEnumerable<GCHeapSegmentInfo> EnumerateHeapSegments(GCHeapData heapData) => throw new NotImplementedException();
 }
 
 public readonly struct GC : IGC

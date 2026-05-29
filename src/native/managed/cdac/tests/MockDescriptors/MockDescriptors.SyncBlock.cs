@@ -33,12 +33,14 @@ internal sealed class MockInteropSyncBlockInfo : TypedView
     private const string RCWFieldName = "RCW";
     private const string CCWFieldName = "CCW";
     private const string CCFFieldName = "CCF";
+    private const string TaggedMemoryFieldName = "TaggedMemory";
 
     public static Layout<MockInteropSyncBlockInfo> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("InteropSyncBlockInfo", architecture)
             .AddPointerField(RCWFieldName)
             .AddPointerField(CCWFieldName)
             .AddPointerField(CCFFieldName)
+            .AddPointerField(TaggedMemoryFieldName)
             .Build<MockInteropSyncBlockInfo>();
 
     public ulong RCW
@@ -57,6 +59,12 @@ internal sealed class MockInteropSyncBlockInfo : TypedView
     {
         get => ReadPointerField(CCFFieldName);
         set => WritePointerField(CCFFieldName, value);
+    }
+
+    public ulong TaggedMemory
+    {
+        get => ReadPointerField(TaggedMemoryFieldName);
+        set => WritePointerField(TaggedMemoryFieldName, value);
     }
 }
 
@@ -151,7 +159,8 @@ internal sealed class MockSyncBlockBuilder
         ulong ccw,
         ulong ccf,
         bool hasInteropInfo = true,
-        string name = "SyncBlock")
+        string name = "SyncBlock",
+        ulong taggedMemory = 0)
     {
         int totalSize = SyncBlockLayout.Size + (hasInteropInfo ? InteropSyncBlockInfoLayout.Size : 0);
         MockMemorySpace.HeapFragment fragment = _allocator.Allocate((ulong)totalSize, name);
@@ -168,6 +177,7 @@ internal sealed class MockSyncBlockBuilder
             interopInfo.RCW = rcw;
             interopInfo.CCW = ccw;
             interopInfo.CCF = ccf;
+            interopInfo.TaggedMemory = taggedMemory;
             syncBlock.InteropInfo = interopAddress;
         }
 
@@ -181,15 +191,16 @@ internal sealed class MockSyncBlockBuilder
     /// <param name="ccw">CCW pointer to store (pass 0 for none).</param>
     /// <param name="ccf">CCF pointer to store (pass 0 for none).</param>
     /// <param name="hasInteropInfo">When false, the InteropInfo pointer in the SyncBlock is left null.</param>
+    /// <param name="taggedMemory">Tagged memory pointer to store (pass 0 for none).</param>
     internal MockSyncBlock AddSyncBlockToCleanupList(
-        ulong rcw, ulong ccw, ulong ccf, bool hasInteropInfo = true)
+        ulong rcw, ulong ccw, ulong ccf, bool hasInteropInfo = true, ulong taggedMemory = 0)
     {
         if (_syncBlockCache is null)
         {
             throw new InvalidOperationException("Cleanup-list support requires the cache/global initialization path.");
         }
 
-        MockSyncBlock syncBlock = AddSyncBlock(rcw, ccw, ccf, hasInteropInfo, "SyncBlock (cleanup)");
+        MockSyncBlock syncBlock = AddSyncBlock(rcw, ccw, ccf, hasInteropInfo, "SyncBlock (cleanup)", taggedMemory);
         syncBlock.LinkNext = _cleanupListHeadAddress;
         _cleanupListHeadAddress = syncBlock.Address;
         _syncBlockCache.CleanupBlockList = _cleanupListHeadAddress;

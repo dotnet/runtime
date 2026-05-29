@@ -67,6 +67,35 @@ namespace System.Linq.Tests
 #endif
 
         [Fact]
+        public async Task NullKeysRemainUnmatched()
+        {
+            string[] expected =
+            [
+                "#o1:<null>",
+                "a:A",
+                "#o2:<null>"
+            ];
+
+            Assert.Equal(
+                expected,
+                await CreateSource("#o1", "a", "#o2").LeftJoin(
+                    CreateSource("#i1", "A", "#i2", "b"),
+                    s => s[0] == '#' ? null : s,
+                    s => s[0] == '#' ? null : s,
+                    (outer, inner) => $"{outer}:{inner ?? "<null>"}",
+                    StringComparer.OrdinalIgnoreCase).ToListAsync());
+
+            Assert.Equal(
+                expected,
+                await CreateSource("#o1", "a", "#o2").LeftJoin(
+                    CreateSource("#i1", "A", "#i2", "b"),
+                    async (s, ct) => s[0] == '#' ? null : s,
+                    async (s, ct) => s[0] == '#' ? null : s,
+                    async (outer, inner, ct) => $"{outer}:{inner ?? "<null>"}",
+                    StringComparer.OrdinalIgnoreCase).ToListAsync());
+        }
+
+        [Fact]
         public async Task Cancellation_Cancels()
         {
             IAsyncEnumerable<int> source = CreateSource(2, 4, 8, 16);
@@ -171,6 +200,86 @@ namespace System.Linq.Tests
             outer = CreateSource(2, 4, 8, 16).Track();
             inner = CreateSource(1, 2, 3, 4).Track();
             await ConsumeAsync(outer.LeftJoin(inner, async (outer, ct) => outer, async (inner, ct) => inner, async (outer, inner, ct) => outer + inner));
+            Assert.Equal(5, outer.MoveNextAsyncCount);
+            Assert.Equal(4, outer.CurrentCount);
+            Assert.Equal(1, outer.DisposeAsyncCount);
+            Assert.Equal(5, inner.MoveNextAsyncCount);
+            Assert.Equal(4, inner.CurrentCount);
+            Assert.Equal(1, inner.DisposeAsyncCount);
+        }
+
+        [Fact]
+        public void TupleLeftJoin_InvalidInputs_Throws()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("outer", () => AsyncEnumerable.LeftJoin((IAsyncEnumerable<string>)null, AsyncEnumerable.Empty<string>(), outer => outer, inner => inner));
+            AssertExtensions.Throws<ArgumentNullException>("inner", () => AsyncEnumerable.LeftJoin(AsyncEnumerable.Empty<string>(), (IAsyncEnumerable<string>)null, outer => outer, inner => inner));
+            AssertExtensions.Throws<ArgumentNullException>("outerKeySelector", () => AsyncEnumerable.LeftJoin(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<string>(), (Func<string, string>)null, inner => inner));
+            AssertExtensions.Throws<ArgumentNullException>("innerKeySelector", () => AsyncEnumerable.LeftJoin(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<string>(), outer => outer, (Func<string, string>)null));
+
+            AssertExtensions.Throws<ArgumentNullException>("outer", () => AsyncEnumerable.LeftJoin((IAsyncEnumerable<string>)null, AsyncEnumerable.Empty<string>(), async (outer, ct) => outer, async (inner, ct) => inner));
+            AssertExtensions.Throws<ArgumentNullException>("inner", () => AsyncEnumerable.LeftJoin(AsyncEnumerable.Empty<string>(), (IAsyncEnumerable<string>)null, async (outer, ct) => outer, async (inner, ct) => inner));
+            AssertExtensions.Throws<ArgumentNullException>("outerKeySelector", () => AsyncEnumerable.LeftJoin(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<string>(), (Func<string, CancellationToken, ValueTask<string>>)null, async (inner, ct) => inner));
+            AssertExtensions.Throws<ArgumentNullException>("innerKeySelector", () => AsyncEnumerable.LeftJoin(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<string>(), async (outer, ct) => outer, (Func<string, CancellationToken, ValueTask<string>>)null));
+        }
+
+        [Fact]
+        public void TupleLeftJoin_Empty_ProducesEmpty()
+        {
+            IAsyncEnumerable<string> empty = AsyncEnumerable.Empty<string>();
+            IAsyncEnumerable<string> nonEmpty = CreateSource("1", "2", "3");
+
+            Assert.Same(AsyncEnumerable.Empty<(string, string)>(), empty.LeftJoin(empty, s => s, s => s));
+            Assert.Same(AsyncEnumerable.Empty<(string, string)>(), empty.LeftJoin(empty, async (s, ct) => s, async (s, ct) => s));
+
+            Assert.NotSame(AsyncEnumerable.Empty<(string, string)>(), nonEmpty.LeftJoin(empty, s => s, s => s));
+            Assert.NotSame(AsyncEnumerable.Empty<(string, string)>(), nonEmpty.LeftJoin(empty, async (s, ct) => s, async (s, ct) => s));
+
+            Assert.Same(AsyncEnumerable.Empty<(string, string)>(), empty.LeftJoin(nonEmpty, s => s, s => s));
+            Assert.Same(AsyncEnumerable.Empty<(string, string)>(), empty.LeftJoin(nonEmpty, async (s, ct) => s, async (s, ct) => s));
+        }
+
+#if NET
+        [Fact]
+        public async Task TupleLeftJoin_VariousValues_MatchesEnumerable_String()
+        {
+            Random rand = new(42);
+            foreach (int length in new[] { 0, 1, 2, 1000 })
+            {
+                string[] values = new string[length];
+                FillRandom(rand, values);
+
+                foreach (IAsyncEnumerable<string> source in CreateSources(values))
+                {
+                    await AssertEqual(
+                        values.LeftJoin(values, s => s.Length > 0 ? s[0] : ' ', s => s.Length > 1 ? s[1] : ' ').Select(t => t.Outer + t.Inner),
+                        source.LeftJoin(source, s => s.Length > 0 ? s[0] : ' ', s => s.Length > 1 ? s[1] : ' ').Select(t => t.Outer + t.Inner));
+
+                    await AssertEqual(
+                        values.LeftJoin(values, s => s.Length > 0 ? s[0] : ' ', s => s.Length > 1 ? s[1] : ' ').Select(t => t.Outer + t.Inner),
+                        source.LeftJoin(source, async (s, ct) => s.Length > 0 ? s[0] : ' ', async (s, ct) => s.Length > 1 ? s[1] : ' ').Select(t => t.Outer + t.Inner));
+                }
+            }
+        }
+#endif
+
+        [Fact]
+        public async Task TupleLeftJoin_InterfaceCalls_ExpectedCounts()
+        {
+            TrackingAsyncEnumerable<int> outer, inner;
+
+            outer = CreateSource(2, 4, 8, 16).Track();
+            inner = CreateSource(1, 2, 3, 4).Track();
+            await ConsumeAsync(outer.LeftJoin(inner, outer => outer, inner => inner));
+            Assert.Equal(5, outer.MoveNextAsyncCount);
+            Assert.Equal(4, outer.CurrentCount);
+            Assert.Equal(1, outer.DisposeAsyncCount);
+            Assert.Equal(5, inner.MoveNextAsyncCount);
+            Assert.Equal(4, inner.CurrentCount);
+            Assert.Equal(1, inner.DisposeAsyncCount);
+
+            outer = CreateSource(2, 4, 8, 16).Track();
+            inner = CreateSource(1, 2, 3, 4).Track();
+            await ConsumeAsync(outer.LeftJoin(inner, async (outer, ct) => outer, async (inner, ct) => inner));
             Assert.Equal(5, outer.MoveNextAsyncCount);
             Assert.Equal(4, outer.CurrentCount);
             Assert.Equal(1, outer.DisposeAsyncCount);

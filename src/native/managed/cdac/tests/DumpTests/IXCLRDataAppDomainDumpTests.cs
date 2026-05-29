@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Xunit;
@@ -16,7 +17,6 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 public unsafe class IXCLRDataAppDomainDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "StackWalk";
-    protected override string DumpType => "full";
 
     // ========== GetName ==========
 
@@ -194,7 +194,7 @@ public unsafe class IXCLRDataAppDomainDumpTests : DumpTestBase
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
 
         IStackDataFrameHandle? managedFrame = null;
-        foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread))
+        foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread).Where(ClrDataStackWalk.IsLegacyVisible))
         {
             TargetPointer md = stackWalk.GetMethodDescPtr(dataFrame);
             if (md != TargetPointer.Null)

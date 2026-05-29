@@ -126,6 +126,9 @@ CONFIG_STRING(JitInlineMethodsWithEHRange, "JitInlineMethodsWithEHRange")
 
 CONFIG_INTEGER(JitLongAddress, "JitLongAddress", 0) // Force using the large pseudo instruction form for long address
 CONFIG_INTEGER(JitMaxUncheckedOffset, "JitMaxUncheckedOffset", 8)
+#if defined(TARGET_ARM64)
+RELEASE_CONFIG_INTEGER(JitPacEnabled, "JitPacEnabled", 0)
+#endif
 
 // Enable devirtualization for generic virtual methods
 RELEASE_CONFIG_INTEGER(JitEnableGenericVirtualDevirtualization, "JitEnableGenericVirtualDevirtualization", 1)
@@ -347,7 +350,7 @@ CONFIG_INTEGER(JitDisasmWithDebugInfo, "JitDisasmWithDebugInfo", 0)
 CONFIG_INTEGER(JitDisasmSpilled, "JitDisasmSpilled", 0)
 
 // Print the process address next to each instruction of the disassembly
-CONFIG_INTEGER(JitDasmWithAddress, "JitDasmWithAddress", 0)
+CONFIG_INTEGER(JitDisasmWithAddress, "JitDisasmWithAddress", 0)
 
 RELEASE_CONFIG_STRING(JitStdOutFile, "JitStdOutFile") // If set, sends JIT's stdout output to this file.
 
@@ -445,7 +448,8 @@ RELEASE_CONFIG_INTEGER(EnableEmbeddedBroadcast,     "EnableEmbeddedBroadcast",  
 RELEASE_CONFIG_INTEGER(EnableEmbeddedMasking,       "EnableEmbeddedMasking",     1) // Allows embedded masking to be disabled
 RELEASE_CONFIG_INTEGER(EnableApxNDD,                "EnableApxNDD",              0) // Allows APX NDD feature to be disabled
 RELEASE_CONFIG_INTEGER(EnableApxConditionalChaining, "EnableApxConditionalChaining",        0) // Allows APX conditional compare chaining
-RELEASE_CONFIG_INTEGER(EnableApxPPX,                "EnableApxPPX",              0) // Allows APX PPX feature to be disabled
+RELEASE_CONFIG_INTEGER(EnableApxPPHint,                "EnableApxPPHint",              0) // Allows APX PPX Hint feature to be disabled
+RELEASE_CONFIG_INTEGER(EnableApxPP2,                "EnableApxPP2",              0) // Allows APX PP2 feature to be disabled
 RELEASE_CONFIG_INTEGER(EnableApxZU,                 "EnableApxZU",              0)  // Allows APX ZU feature to be disabled
 
 // clang-format on
@@ -884,7 +888,7 @@ CONFIG_INTEGER(JitDispIns, "JitDispIns", 0)
 
 #if defined(TARGET_WASM)
 // Set this to 1 to turn NYI_WASM into R2R unsupported failures instead of asserts.
-CONFIG_INTEGER(JitWasmNyiToR2RUnsupported, "JitWasmNyiToR2RUnsupported", 0)
+RELEASE_CONFIG_INTEGER(JitWasmNyiToR2RUnsupported, "JitWasmNyiToR2RUnsupported", 0)
 // Specify methods that will fail with R2R unsupported after codegen.
 // Useful for bypassing methods that compile cleanly but have invalid Wasm codegen.
 CONFIG_STRING(JitR2RUnsupportedRange, "JitR2RUnsupportedRange")

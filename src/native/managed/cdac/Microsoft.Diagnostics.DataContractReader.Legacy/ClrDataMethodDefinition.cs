@@ -122,7 +122,7 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
             if (methodDescAddr != TargetPointer.Null)
             {
                 SOSDacImpl.EnumMethodInstances emi = new(_target, methodDescAddr, TargetPointer.Null);
-                emi.LegacyHandle = legacyHandle;
+                emi.LegacyHandle = (nuint)legacyHandle;
 
                 hr = emi.Start();
                 if (hr == HResults.S_OK)
@@ -181,7 +181,7 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
             DacComNullableByRef<IXCLRDataMethodInstance> legacyMethodOut = new(isNullRef: false);
             hrLocal = _legacyImpl.EnumInstance(&legacyHandle, legacyMethodOut);
             legacyMethod = legacyMethodOut.Interface;
-            emi.LegacyHandle = legacyHandle;
+            emi.LegacyHandle = (nuint)legacyHandle;
         }
 
         try
@@ -236,7 +236,7 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
             ((IEnum<MethodDescHandle>)emi).Dispose();
             gcHandle.Free();
 
-            if (_legacyImpl is not null && emi.LegacyHandle != TargetPointer.Null)
+            if (_legacyImpl is not null && emi.LegacyHandle != 0)
             {
                 int hrLocal = _legacyImpl.EndEnumInstances(emi.LegacyHandle);
                 if (hrLocal < 0)
@@ -393,10 +393,52 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
         => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.EndEnumExtents(handle) : HResults.E_NOTIMPL;
 
     int IXCLRDataMethodDefinition.GetCodeNotification(uint* flags)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetCodeNotification(flags) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        ICodeNotifications codeNotif = _target.Contracts.CodeNotifications;
+
+        try
+        {
+            if (flags is null)
+                throw new ArgumentNullException(nameof(flags));
+
+            *flags = CodeNotificationFlagsConverter.ToCom(codeNotif.GetCodeNotification(_module, _token));
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        // No #if DEBUG validation: GetCodeNotification is a read, but both cDAC and
+        // legacy DAC allocate the table on-demand when called, which would cause
+        // dual-allocation. Validation is safe at a higher layer when a dump is used.
+
+        return hr;
+    }
 
     int IXCLRDataMethodDefinition.SetCodeNotification(uint flags)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.SetCodeNotification(flags) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        ICodeNotifications codeNotif = _target.Contracts.CodeNotifications;
+
+        try
+        {
+            if (!CodeNotificationFlagsConverter.IsValid(flags))
+                throw new ArgumentException("Invalid code notification flags", nameof(flags));
+
+            codeNotif.SetCodeNotification(_module, _token, CodeNotificationFlagsConverter.FromCom(flags));
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        // No #if DEBUG validation: SetCodeNotification is a write operation.
+        // Both the cDAC and legacy DAC independently allocate and write to
+        // g_pNotificationTable via AllocVirtual, causing dual-write corruption.
+
+        return hr;
+    }
 
     int IXCLRDataMethodDefinition.Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer)
         => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer) : HResults.E_NOTIMPL;

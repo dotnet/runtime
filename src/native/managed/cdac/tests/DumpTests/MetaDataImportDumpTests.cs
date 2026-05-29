@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
@@ -142,5 +143,84 @@ public class MetaDataImportDumpTests : DumpTestBase
         Assert.Equal(HResults.S_OK, hr);
         // Native returns character count WITHOUT null terminator
         Assert.Equal((uint)expectedCharCount, pchString);
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "Assembly type does not include IsDynamic/IsLoaded fields in .NET 10")]
+    public unsafe void EnumTypeDefs_MatchesMetadataReader(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        var (reader, mdi) = GetRootModuleImport();
+
+        List<uint> enumTokens = new();
+        nint hEnum = 0;
+        uint* rTokens = stackalloc uint[16];
+
+        while (true)
+        {
+            uint count;
+            int hr = mdi.EnumTypeDefs(&hEnum, rTokens, 16, &count);
+            Assert.True(hr >= 0);
+            if (count == 0)
+                break;
+            for (uint i = 0; i < count; i++)
+                enumTokens.Add(rTokens[i]);
+        }
+
+        List<uint> readerTokens = new();
+        foreach (TypeDefinitionHandle h in reader.TypeDefinitions)
+            readerTokens.Add((uint)MetadataTokens.GetToken(h));
+
+        Assert.Equal(readerTokens, enumTokens);
+        mdi.CloseEnum(hEnum);
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "Assembly type does not include IsDynamic/IsLoaded fields in .NET 10")]
+    public unsafe void EnumMethods_MatchesMetadataReader(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        var (reader, mdi) = GetRootModuleImport();
+
+        // Find a type with methods (skip <Module>)
+        uint classToken = 0;
+        TypeDefinitionHandle targetType = default;
+        foreach (TypeDefinitionHandle tdh in reader.TypeDefinitions)
+        {
+            if (MetadataTokens.GetRowNumber(tdh) == 1) continue;
+            TypeDefinition td = reader.GetTypeDefinition(tdh);
+            if (td.GetMethods().Count > 0)
+            {
+                classToken = (uint)MetadataTokens.GetToken(tdh);
+                targetType = tdh;
+                break;
+            }
+        }
+
+        Assert.True(classToken != 0, "Expected at least one non-global type with methods");
+
+        List<uint> enumTokens = new();
+        nint hEnum = 0;
+        uint* rMethods = stackalloc uint[16];
+
+        while (true)
+        {
+            uint count;
+            int hr = mdi.EnumMethods(&hEnum, classToken, rMethods, 16, &count);
+            Assert.True(hr >= 0);
+            if (count == 0)
+                break;
+            for (uint i = 0; i < count; i++)
+                enumTokens.Add(rMethods[i]);
+        }
+
+        List<uint> readerTokens = new();
+        foreach (MethodDefinitionHandle mdh in reader.GetTypeDefinition(targetType).GetMethods())
+            readerTokens.Add((uint)MetadataTokens.GetToken(mdh));
+
+        Assert.Equal(readerTokens, enumTokens);
+        mdi.CloseEnum(hEnum);
     }
 }

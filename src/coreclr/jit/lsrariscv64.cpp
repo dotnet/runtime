@@ -202,6 +202,22 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = BuildOperandUses(tree->gtGetOp1());
             break;
 
+        case GT_PATCHPOINT:
+            // Patchpoint takes two args: counter addr and IL offset
+            // Calls helper and jumps to returned address - no value produced
+            srcCount = BuildOperandUses(tree->gtGetOp1(), RBM_ARG_0.GetIntRegSet());
+            BuildOperandUses(tree->gtGetOp2(), RBM_ARG_1.GetIntRegSet());
+            srcCount++;
+            BuildKills(tree, m_compiler->compHelperCallKillSet(CORINFO_HELP_PATCHPOINT));
+            break;
+
+        case GT_PATCHPOINT_FORCED:
+            // Forced patchpoint takes one arg: IL offset
+            // Calls helper and jumps to returned address - no value produced
+            srcCount = BuildOperandUses(tree->gtGetOp1(), RBM_ARG_0.GetIntRegSet());
+            BuildKills(tree, m_compiler->compHelperCallKillSet(CORINFO_HELP_PATCHPOINT_FORCED));
+            break;
+
         case GT_JMP:
             srcCount = 0;
             assert(dstCount == 0);
@@ -1118,37 +1134,6 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
 
         switch (blkNode->gtBlkOpKind)
         {
-            case GenTreeBlk::BlkOpKindCpObjUnroll:
-            {
-                // We don't need to materialize the struct size but we still need
-                // a temporary register to perform the sequence of loads and stores.
-                // We can't use the special Write Barrier registers, so exclude them from the mask
-                SingleTypeRegSet internalIntCandidates =
-                    allRegs(TYP_INT) &
-                    ~(RBM_WRITE_BARRIER_DST_BYREF | RBM_WRITE_BARRIER_SRC_BYREF).GetRegSetForType(IntRegisterType);
-                buildInternalIntRegisterDefForNode(blkNode, internalIntCandidates);
-
-                if (size >= 2 * REGSIZE_BYTES)
-                {
-                    // TODO-RISCV64: We will use ld/st paired to reduce code size and improve performance
-                    // so we need to reserve an extra internal register.
-                    buildInternalIntRegisterDefForNode(blkNode, internalIntCandidates);
-                }
-
-                // If we have a dest address we want it in RBM_WRITE_BARRIER_DST_BYREF.
-                dstAddrRegMask = RBM_WRITE_BARRIER_DST_BYREF.GetIntRegSet();
-
-                // If we have a source address we want it in REG_WRITE_BARRIER_SRC_BYREF.
-                // Otherwise, if it is a local, codegen will put its address in REG_WRITE_BARRIER_SRC_BYREF,
-                // which is killed by a StoreObj (and thus needn't be reserved).
-                if (srcAddrOrFill != nullptr)
-                {
-                    assert(!srcAddrOrFill->isContained());
-                    srcRegMask = RBM_WRITE_BARRIER_SRC_BYREF.GetIntRegSet();
-                }
-            }
-            break;
-
             case GenTreeBlk::BlkOpKindUnroll:
                 buildInternalIntRegisterDefForNode(blkNode);
                 break;

@@ -375,7 +375,7 @@ PTR_MethodDesc ReadyToRunInfo::GetMethodDescForEntryPointInNativeImage(PCODE ent
         return NULL;
 #endif
 
-    TADDR val = (TADDR)m_entryPointToMethodDescMap.LookupValue(PCODEToPINSTR(entryPoint), (LPVOID)PCODEToPINSTR(entryPoint));
+    TADDR val = (TADDR)m_entryPointToMethodDescMap.LookupValueByUniqueKey(PCODEToPINSTR(entryPoint));
     if (val == (TADDR)INVALIDENTRY)
         return NULL;
 
@@ -394,7 +394,7 @@ bool ReadyToRunInfo::SetMethodDescForEntryPointInNativeImage(PCODE entryPoint, M
     CONTRACTL_END;
 
     CrstHolder ch(&m_Crst);
-    if ((TADDR)m_entryPointToMethodDescMap.LookupValue(PCODEToPINSTR(entryPoint), (LPVOID)PCODEToPINSTR(entryPoint)) == (TADDR)INVALIDENTRY)
+    if ((TADDR)m_entryPointToMethodDescMap.LookupValueByUniqueKey(PCODEToPINSTR(entryPoint)) == (TADDR)INVALIDENTRY)
     {
         m_entryPointToMethodDescMap.InsertValue(PCODEToPINSTR(entryPoint), methodDesc);
         return true;
@@ -1279,6 +1279,14 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
         goto done;
     // If R2R code is disabled for this module, simply behave as if it is never found
     if (ReadyToRunCodeDisabled())
+        goto done;
+
+    // Return-dropping async thunks are VM-synthesized. They share the same metadata
+    // token and signature shape as a regular async variant, so the R2R lookup below
+    // would incorrectly bind the thunk to the non-thunk's compiled code and bypass
+    // the virtual dispatch the thunk performs. Crossgen2 does not emit R2R code for
+    // these thunks; fall back to transient IL generation in the prestub.
+    if (pMD->IsReturnDroppingThunk())
         goto done;
 
     ETW::MethodLog::GetR2RGetEntryPointStart(pMD);
