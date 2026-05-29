@@ -259,7 +259,7 @@ Record the same outcomes described there:
 
 #### Step 4.7 — Confirm a test-disable is welcome on the candidate issue
 
-Read the candidate KBE / tracker body + the latest 5 comments (not just the most recent). Skip the test-disable (record `-> skipped: do-not-disable on issue #<n>`) if ANY of:
+Read the candidate KBE / tracker body + the latest 5 comments (not just the most recent). Also read the body + latest 5 comments of ANY issue referenced in the KBE body (e.g. `refs #<n>`, `Tracking: dotnet/runtime#<n>`) — maintainer signals on the root-cause issue override the KBE. Skip the test-disable (record `-> skipped: do-not-disable on issue #<n>`) if ANY of:
 
 - Body or recent comment from any `MEMBER`/`OWNER` mentions one of (case-insensitive): `please don't disable`, `do not mute`, `do not disable`, `keep failing`, `investigation in progress`, `fix-forward`, `fix forward`, `should be supported`, `will investigate`, `wait for #`, `landing in #`.
 - Issue carries a label semantically equivalent to "do not mute" (verify the label exists in `dotnet/runtime` before relying on it; do not invent labels).
@@ -387,6 +387,7 @@ Allowed test-disable mechanisms:
 - `[SkipOnPlatform(TestPlatforms.<plat>, "<reason>")]` — platform-specific failures.
 - `[ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.<helper>))]` — narrow via existing helpers.
 - `[ActiveIssue("https://github.com/dotnet/runtime/issues/<N>", TestPlatforms.<plat>)]` — reference the KBE.
+- `[ActiveIssue("https://github.com/dotnet/runtime/issues/<N>", TestPlatforms.<plat>, TargetFrameworkMonikers.<tfm>, TestRuntimes.<rt>)]` — full 4-parameter overload. The positional order is `(string issue, TestPlatforms platforms = Any, TargetFrameworkMonikers framework = Any, TestRuntimes runtimes = Any)`. Do NOT place a `TestRuntimes` value in the `TargetFrameworkMonikers` slot.
 - JIT/GC stress: `[ActiveIssue("...", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsStressTest))]` or `<GCStressIncompatible>true</GCStressIncompatible>` at the csproj level.
 
 Scope rule (mandatory): condition must be AS NARROW AS the observed failure scope.
@@ -398,6 +399,12 @@ Scope rule (mandatory): condition must be AS NARROW AS the observed failure scop
 | Only one stress mode | `<GCStressIncompatible>true</GCStressIncompatible>` (all stress modes) | Add stress-mode predicate via the failing variant |
 
 In the PR `Reasoning` section, list the exact set of failing legs (definition + queue + stress mode) that justifies the chosen condition.
+
+Pre-emit compile-validation checklist for test-disable PRs:
+
+1. Verify the `[ActiveIssue]` overload matches the constructor signature above (no `TestRuntimes` in `TargetFrameworkMonikers` slot).
+2. Verify the test project builds: `dotnet build` in the test directory must succeed.
+3. If build fails due to type mismatch, fix before emitting.
 
 Sanitize every log excerpt in issue and PR bodies using
 `.github/workflows/shared/create-kbe.instructions.md` section
