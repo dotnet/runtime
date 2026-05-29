@@ -129,14 +129,12 @@ namespace System.Runtime.InteropServices
             /// <typeparam name="T">Desired type.</typeparam>
             /// <param name="dispatchPtr">Pointer supplied to Vtable function entry.</param>
             /// <returns>Instance of type associated with dispatched function call.</returns>
-            [RequiresUnsafe]
             public static unsafe T GetInstance<T>(ComInterfaceDispatch* dispatchPtr) where T : class
             {
                 ManagedObjectWrapper* comInstance = ToManagedObjectWrapper(dispatchPtr);
                 return Unsafe.As<T>(comInstance->Holder!.WrappedObject);
             }
 
-            [RequiresUnsafe]
             internal static unsafe ManagedObjectWrapper* ToManagedObjectWrapper(ComInterfaceDispatch* dispatchPtr)
             {
                 InternalComInterfaceDispatch* dispatch = (InternalComInterfaceDispatch*)unchecked((nuint)dispatchPtr & (nuint)InternalComInterfaceDispatch.DispatchAlignmentMask);
@@ -488,7 +486,6 @@ namespace System.Runtime.InteropServices
 
             private readonly ManagedObjectWrapper* _wrapper;
 
-            [RequiresUnsafe]
             public ManagedObjectWrapperHolder(ManagedObjectWrapper* wrapper, object wrappedObject)
             {
                 _wrapper = wrapper;
@@ -505,7 +502,6 @@ namespace System.Runtime.InteropServices
 
             public bool IsActivated => _wrapper->Flags.HasFlag(CreateComInterfaceFlagsEx.IsComActivated);
 
-            [RequiresUnsafe]
             internal ManagedObjectWrapper* Wrapper => _wrapper;
         }
 
@@ -513,7 +509,6 @@ namespace System.Runtime.InteropServices
         {
             private ManagedObjectWrapper* _wrapper;
 
-            [RequiresUnsafe]
             public ManagedObjectWrapperReleaser(ManagedObjectWrapper* wrapper)
             {
                 _wrapper = wrapper;
@@ -831,7 +826,6 @@ namespace System.Runtime.InteropServices
             return (nuint)((value + alignMask) & ~alignMask);
         }
 
-        [RequiresUnsafe]
         private unsafe ManagedObjectWrapper* CreateManagedObjectWrapper(object instance, CreateComInterfaceFlags flags)
         {
             ComInterfaceEntry* userDefined = ComputeVtables(instance, flags, out int userDefinedCount);
@@ -991,7 +985,6 @@ namespace System.Runtime.InteropServices
             return obj;
         }
 
-        [RequiresUnsafe]
         private static unsafe ComInterfaceDispatch* TryGetComInterfaceDispatch(IntPtr comObject)
         {
             // If the first Vtable entry is part of a ManagedObjectWrapper impl,
@@ -1513,7 +1506,6 @@ namespace System.Runtime.InteropServices
         /// If the interface entries cannot be created and a negative <paramref name="count" /> or <code>null</code> and a non-zero <paramref name="count" /> are returned,
         /// the call to <see cref="GetOrCreateComInterfaceForObject(object, CreateComInterfaceFlags)"/> will throw a <see cref="ArgumentException"/>.
         /// </remarks>
-        [RequiresUnsafe]
         protected abstract unsafe ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count);
 
         /// <summary>

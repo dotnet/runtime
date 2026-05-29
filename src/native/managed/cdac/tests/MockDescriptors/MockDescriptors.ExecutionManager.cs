@@ -99,6 +99,7 @@ internal sealed class MockRangeSection : TypedView
     private const string FlagsFieldName = "Flags";
     private const string HeapListFieldName = "HeapList";
     private const string R2RModuleFieldName = "R2RModule";
+    private const string RangeListFieldName = "RangeList";
 
     public static Layout<MockRangeSection> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("RangeSection", architecture)
@@ -109,6 +110,7 @@ internal sealed class MockRangeSection : TypedView
             .AddUInt32Field(FlagsFieldName)
             .AddPointerField(HeapListFieldName)
             .AddPointerField(R2RModuleFieldName)
+            .AddPointerField(RangeListFieldName)
             .Build<MockRangeSection>();
 
     public ulong RangeBegin
@@ -145,6 +147,28 @@ internal sealed class MockRangeSection : TypedView
     {
         get => ReadPointerField(R2RModuleFieldName);
         set => WritePointerField(R2RModuleFieldName, value);
+    }
+
+    public ulong RangeList
+    {
+        get => ReadPointerField(RangeListFieldName);
+        set => WritePointerField(RangeListFieldName, value);
+    }
+}
+
+internal sealed class MockCodeRangeMapRangeList : TypedView
+{
+    private const string RangeListTypeFieldName = "RangeListType";
+
+    public static Layout<MockCodeRangeMapRangeList> CreateLayout(MockTarget.Architecture architecture)
+        => new SequentialLayoutBuilder("CodeRangeMapRangeList", architecture)
+            .AddUInt32Field(RangeListTypeFieldName)
+            .Build<MockCodeRangeMapRangeList>();
+
+    public int RangeListType
+    {
+        get => (int)ReadUInt32Field(RangeListTypeFieldName);
+        set => WriteUInt32Field(RangeListTypeFieldName, (uint)value);
     }
 }
 
@@ -316,6 +340,46 @@ internal sealed class MockRealCodeHeader : TypedView
     }
 }
 
+internal sealed class MockInterpreterRealCodeHeader : TypedView
+{
+    private const string MethodDescFieldName = "MethodDesc";
+    private const string DebugInfoFieldName = "DebugInfo";
+    private const string GCInfoFieldName = "GCInfo";
+    private const string JitEHInfoFieldName = "JitEHInfo";
+
+    public static Layout<MockInterpreterRealCodeHeader> CreateLayout(MockTarget.Architecture architecture)
+        => new SequentialLayoutBuilder("InterpreterRealCodeHeader", architecture)
+            .AddPointerField(MethodDescFieldName)
+            .AddPointerField(DebugInfoFieldName)
+            .AddPointerField(GCInfoFieldName)
+            .AddPointerField(JitEHInfoFieldName)
+            .Build<MockInterpreterRealCodeHeader>();
+
+    public ulong MethodDesc
+    {
+        get => ReadPointerField(MethodDescFieldName);
+        set => WritePointerField(MethodDescFieldName, value);
+    }
+
+    public ulong DebugInfo
+    {
+        get => ReadPointerField(DebugInfoFieldName);
+        set => WritePointerField(DebugInfoFieldName, value);
+    }
+
+    public ulong GCInfo
+    {
+        get => ReadPointerField(GCInfoFieldName);
+        set => WritePointerField(GCInfoFieldName, value);
+    }
+
+    public ulong JitEHInfo
+    {
+        get => ReadPointerField(JitEHInfoFieldName);
+        set => WritePointerField(JitEHInfoFieldName, value);
+    }
+}
+
 internal sealed class MockReadyToRunInfo : TypedView
 {
     private const string ReadyToRunHeaderFieldName = "ReadyToRunHeader";
@@ -331,6 +395,9 @@ internal sealed class MockReadyToRunInfo : TypedView
     private const string LoadedImageBaseFieldName = "LoadedImageBase";
     private const string CompositeFieldName = "Composite";
 
+    private const string ImportSectionsFieldName = "ImportSections";
+    private const string NumImportSectionsFieldName = "NumImportSections";
+
     public static Layout<MockReadyToRunInfo> CreateLayout(MockTarget.Architecture architecture, int hashMapStride)
         => new SequentialLayoutBuilder("ReadyToRunInfo", architecture)
             .AddPointerField(ReadyToRunHeaderFieldName)
@@ -342,6 +409,8 @@ internal sealed class MockReadyToRunInfo : TypedView
             .AddPointerField(DelayLoadMethodCallThunksFieldName)
             .AddPointerField(DebugInfoSectionFieldName)
             .AddPointerField(ExceptionInfoSectionFieldName)
+            .AddPointerField(ImportSectionsFieldName)
+            .AddUInt32Field(NumImportSectionsFieldName)
             .AddField(EntryPointToMethodDescMapFieldName, hashMapStride)
             .AddPointerField(LoadedImageBaseFieldName)
             .AddPointerField(CompositeFieldName)
@@ -383,7 +452,37 @@ internal sealed class MockReadyToRunInfo : TypedView
         set => WritePointerField(ExceptionInfoSectionFieldName, value);
     }
 
+    public ulong DelayLoadMethodCallThunks
+    {
+        get => ReadPointerField(DelayLoadMethodCallThunksFieldName);
+        set => WritePointerField(DelayLoadMethodCallThunksFieldName, value);
+    }
+
     public ulong EntryPointToMethodDescMapAddress => GetFieldAddress(EntryPointToMethodDescMapFieldName);
+}
+
+internal sealed class MockImageDataDirectory : TypedView
+{
+    private const string VirtualAddressFieldName = "VirtualAddress";
+    private const string SizeFieldName = "Size";
+
+    public static Layout<MockImageDataDirectory> CreateLayout(MockTarget.Architecture architecture)
+        => new SequentialLayoutBuilder("ImageDataDirectory", architecture)
+            .AddUInt32Field(VirtualAddressFieldName)
+            .AddUInt32Field(SizeFieldName)
+            .Build<MockImageDataDirectory>();
+
+    public uint VirtualAddress
+    {
+        get => ReadUInt32Field(VirtualAddressFieldName);
+        set => WriteUInt32Field(VirtualAddressFieldName, value);
+    }
+
+    public uint Size
+    {
+        get => ReadUInt32Field(SizeFieldName);
+        set => WriteUInt32Field(SizeFieldName, value);
+    }
 }
 
 internal sealed class MockEEJitManager : TypedView
@@ -442,6 +541,8 @@ internal sealed class MockJittedMethod : TypedView
 internal sealed class MockExecutionManagerBuilder
 {
     private const uint CodeHeapRangeSectionFlag = 0x02;
+    private const uint RangeListRangeSectionFlag = 0x04;
+    private const uint InterpreterRangeSectionFlag = 0x0A; // CodeHeap | Interpreter
     private const string EEJitManagerGlobalName = "EEJitManagerGlobalPointer";
     private const int RangeSectionMapBitsPerLevel = 8;
 
@@ -498,9 +599,12 @@ internal sealed class MockExecutionManagerBuilder
     internal Layout<MockLoaderCodeHeap> LoaderCodeHeapLayout { get; }
     internal Layout<MockHostCodeHeap> HostCodeHeapLayout { get; }
     internal Layout<MockRealCodeHeader> RealCodeHeaderLayout { get; }
+    internal Layout<MockInterpreterRealCodeHeader> InterpreterRealCodeHeaderLayout { get; }
     internal Layout<MockReadyToRunInfo> ReadyToRunInfoLayout { get; }
     internal Layout<MockEEJitManager> EEJitManagerLayout { get; }
     internal Layout<MockLoaderModule> ModuleLayout { get; }
+    internal Layout<MockCodeRangeMapRangeList> CodeRangeMapRangeListLayout { get; }
+    internal Layout<MockImageDataDirectory> ImageDataDirectoryLayout { get; }
     internal Layout<MockRuntimeFunction> RuntimeFunctionLayout => _runtimeFunctions.RuntimeFunctionLayout;
     internal Layout<MockUnwindInfo> UnwindInfoLayout => _runtimeFunctions.UnwindInfoLayout;
     internal (string Name, ulong Value)[] Globals { get; }
@@ -552,9 +656,12 @@ internal sealed class MockExecutionManagerBuilder
         LoaderCodeHeapLayout = MockLoaderCodeHeap.CreateLayout(architecture);
         HostCodeHeapLayout = MockHostCodeHeap.CreateLayout(architecture);
         RealCodeHeaderLayout = MockRealCodeHeader.CreateLayout(architecture);
+        InterpreterRealCodeHeaderLayout = MockInterpreterRealCodeHeader.CreateLayout(architecture);
         ReadyToRunInfoLayout = MockReadyToRunInfo.CreateLayout(architecture, hashMapStride);
         EEJitManagerLayout = MockEEJitManager.CreateLayout(architecture);
         ModuleLayout = MockLoaderModule.CreateLayout(architecture);
+        CodeRangeMapRangeListLayout = MockCodeRangeMapRangeList.CreateLayout(architecture);
+        ImageDataDirectoryLayout = MockImageDataDirectory.CreateLayout(architecture);
 
         _eeJitManager = AllocateAndCreate(EEJitManagerLayout, "EEJitManager");
         _eeJitManager.AllCodeHeaps = allCodeHeaps;
@@ -612,6 +719,38 @@ internal sealed class MockExecutionManagerBuilder
         rangeSection.R2RModule = r2rModuleAddress;
         rangeSection.JitManager = jitManagerAddress;
         return rangeSection;
+    }
+
+    public MockRangeSection AddRangeListRangeSection(JittedCodeRange jittedCodeRange, ulong jitManagerAddress, int rangeListType)
+    {
+        MockCodeRangeMapRangeList rangeList = AllocateAndCreate(CodeRangeMapRangeListLayout, "CodeRangeMapRangeList");
+        rangeList.RangeListType = rangeListType;
+
+        MockRangeSection rangeSection = AllocateAndCreate(RangeSectionLayout, "RangeSection (RangeList)", _rangeSectionMapAllocator);
+        rangeSection.RangeBegin = jittedCodeRange.RangeStart;
+        rangeSection.RangeEndOpen = jittedCodeRange.RangeEnd;
+        rangeSection.Flags = RangeListRangeSectionFlag;
+        rangeSection.RangeList = rangeList.Address;
+        rangeSection.JitManager = jitManagerAddress;
+        return rangeSection;
+    }
+
+    public MockRangeSection AddInterpreterRangeSection(JittedCodeRange jittedCodeRange, ulong jitManagerAddress, ulong codeHeapListNodeAddress)
+    {
+        MockRangeSection rangeSection = AllocateAndCreate(RangeSectionLayout, "InterpreterRangeSection", _rangeSectionMapAllocator);
+        rangeSection.RangeBegin = jittedCodeRange.RangeStart;
+        rangeSection.RangeEndOpen = jittedCodeRange.RangeEnd;
+        rangeSection.Flags = InterpreterRangeSectionFlag;
+        rangeSection.HeapList = codeHeapListNodeAddress;
+        rangeSection.JitManager = jitManagerAddress;
+        return rangeSection;
+    }
+
+    public MockJittedMethod AddStubCodeBlock(JittedCodeRange jittedCodeRange, uint codeSize, int stubCodeBlockKind)
+    {
+        MockJittedMethod stub = AllocateJittedMethod(jittedCodeRange, codeSize, "Stub Code Block");
+        stub.CodeHeader = (ulong)stubCodeBlockKind;
+        return stub;
     }
 
     public MockRangeSectionFragment AddRangeSectionFragment(JittedCodeRange jittedCodeRange, ulong rangeSectionAddress)
@@ -686,6 +825,20 @@ internal sealed class MockExecutionManagerBuilder
         return jittedMethod;
     }
 
+    public MockJittedMethod AddInterpretedMethod(JittedCodeRange jittedCodeRange, uint codeSize, ulong methodDescAddress)
+    {
+        MockJittedMethod jittedMethod = AllocateJittedMethod(jittedCodeRange, codeSize, "Interpreter Method Header & Code");
+        MockInterpreterRealCodeHeader codeHeader = AllocateAndCreate(InterpreterRealCodeHeaderLayout, "InterpreterRealCodeHeader");
+        jittedMethod.CodeHeader = codeHeader.Address;
+
+        codeHeader.MethodDesc = methodDescAddress;
+        codeHeader.DebugInfo = 0;
+        codeHeader.GCInfo = 0;
+        codeHeader.JitEHInfo = 0;
+
+        return jittedMethod;
+    }
+
     public MockReadyToRunInfo AddReadyToRunInfo(uint[] runtimeFunctions, uint[] hotColdMap)
     {
         ulong runtimeFunctionsAddress = _runtimeFunctions.AddRuntimeFunctions(runtimeFunctions);
@@ -708,6 +861,14 @@ internal sealed class MockExecutionManagerBuilder
         readyToRunInfo.NumHotColdMap = checked((uint)hotColdMap.Length);
         readyToRunInfo.HotColdMap = hotColdMapAddress;
         return readyToRunInfo;
+    }
+
+    public void SetDelayLoadMethodCallThunks(MockReadyToRunInfo readyToRunInfo, uint thunkRva, uint thunkSize)
+    {
+        MockImageDataDirectory imageDataDir = AllocateAndCreate(ImageDataDirectoryLayout, "DelayLoadMethodCallThunks");
+        imageDataDir.VirtualAddress = thunkRva;
+        imageDataDir.Size = thunkSize;
+        readyToRunInfo.DelayLoadMethodCallThunks = imageDataDir.Address;
     }
 
     public MockLoaderModule AddReadyToRunModule(ulong readyToRunInfoAddress)

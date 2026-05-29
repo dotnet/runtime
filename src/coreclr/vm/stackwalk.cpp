@@ -1088,7 +1088,25 @@ BOOL StackFrameIterator::Init(Thread *    pThread,
     // process the REGDISPLAY and stop at the first frame
     ProcessIp(GetControlPC(m_crawl.pRD));
 #ifdef FEATURE_INTERPRETER
-    _ASSERTE(!m_crawl.codeInfo.IsInterpretedCode());
+    if (m_crawl.codeInfo.IsInterpretedCode())
+    {
+        // CONTEXT is in interpreted code where the first-arg register holds the owning InterpreterFrame.
+        // Skip past it so we don't re-enter its frame chain.
+        PTR_InterpreterFrame pOwning =
+            dac_cast<PTR_InterpreterFrame>((TADDR)GetFirstArgReg(m_crawl.pRD->pCurrentContext));
+        _ASSERTE(pOwning != NULL);
+        _ASSERTE(pOwning->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame);
+
+        if (pFrame == NULL)
+        {
+            m_crawl.pFrame = pOwning->PtrNextFrame();
+        }
+        else
+        {
+            // Explicit pFrame must already be past the owner (callee Frames have lower addresses than their callers).
+            _ASSERTE(dac_cast<TADDR>(m_crawl.pFrame) > dac_cast<TADDR>(pOwning));
+        }
+    }
 #endif // FEATURE_INTERPRETER
     if (m_crawl.isFrameless && !!(m_crawl.pRD->pCurrentContext->ContextFlags & CONTEXT_EXCEPTION_ACTIVE))
     {
@@ -1166,10 +1184,8 @@ BOOL StackFrameIterator::ResetRegDisp(PREGDISPLAY pRegDisp,
 #ifdef FEATURE_INTERPRETER
     if (m_crawl.codeInfo.IsInterpretedCode())
     {
-        // The CONTEXT carries the owning InterpreterFrame in the first-arg register
-        // (set by InterpreterFrame::SetContextToInterpMethodContextFrame). Advance
-        // m_crawl.pFrame past it so the iterator does not re-enter the same
-        // InterpMethodContextFrame chain via the explicit frame link.
+        // CONTEXT is in interpreted code where the first-arg register holds the owning InterpreterFrame.
+        // Skip past it so we don't re-enter its frame chain.
         PTR_InterpreterFrame pOwningInterpFrame =
             dac_cast<PTR_InterpreterFrame>((TADDR)GetFirstArgReg(m_crawl.pRD->pCurrentContext));
         _ASSERTE(pOwningInterpFrame != NULL);

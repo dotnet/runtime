@@ -178,5 +178,25 @@ namespace System.Text.Json
             elementTypeInfo._asyncEnumerableArrayTypeInfo = listTypeInfo;
             return listTypeInfo;
         }
+
+        private static JsonTypeInfo<IAsyncEnumerable<T>> GetOrAddIAsyncEnumerableTypeInfoForSerialize<T>(JsonTypeInfo<T> elementTypeInfo)
+        {
+            if (elementTypeInfo._asyncEnumerableRootLevelSerializer != null)
+            {
+                return (JsonTypeInfo<IAsyncEnumerable<T>>)elementTypeInfo._asyncEnumerableRootLevelSerializer;
+            }
+
+            // Synthesize the IAsyncEnumerable<T> type info from the element type info so we don't depend on the
+            // resolver (e.g. a source-generated context) having registered IAsyncEnumerable<T> explicitly.
+            var converter = new IAsyncEnumerableOfTConverter<IAsyncEnumerable<T>, T>();
+            var asyncEnumerableTypeInfo = new JsonTypeInfo<IAsyncEnumerable<T>>(converter, elementTypeInfo.Options)
+            {
+                ElementTypeInfo = elementTypeInfo,
+            };
+
+            asyncEnumerableTypeInfo.EnsureConfigured();
+            elementTypeInfo._asyncEnumerableRootLevelSerializer = asyncEnumerableTypeInfo;
+            return asyncEnumerableTypeInfo;
+        }
     }
 }

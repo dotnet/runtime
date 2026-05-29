@@ -39,6 +39,16 @@ namespace System.Xml
             }
         }
 
+        private static int s_useXmlSerializerReadEndElementWorkaround;
+        public static bool UseXmlSerializerReadEndElementWorkaround
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                return SwitchesHelpers.GetCachedSwitchValue("Switch.System.Xml.UseXmlSerializerReadEndElementWorkaround", ref s_useXmlSerializerReadEndElementWorkaround, defaultValue: true);
+            }
+        }
+
         private static int s_allowXsdTimeToTimeOnlyWithOffsetLoss;
         public static bool AllowXsdTimeToTimeOnlyWithOffsetLoss
         {

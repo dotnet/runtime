@@ -34,26 +34,6 @@ namespace System.Threading.Tasks
 
             Debug = IsEnabled(EventLevel.Informational, Keywords.Debug);
             DebugActivityId = IsEnabled(EventLevel.Informational, Keywords.DebugActivityId);
-
-            // Until debugger explicitly set the AsyncInstrumentation keyword, we enable async instrumentation when
-            // Tasks, AsyncCausalitySynchronousWork, AsyncCausalityOperation and TasksFlowActivityIds keywords are enabled.
-            bool asyncInstrumentationEnabled = IsEnabled(EventLevel.Informational, Keywords.AsyncInstrumentation);
-            if (!asyncInstrumentationEnabled)
-            {
-                asyncInstrumentationEnabled = IsEnabled(EventLevel.Informational, Keywords.Tasks);
-                asyncInstrumentationEnabled &= IsEnabled(EventLevel.Informational, Keywords.AsyncCausalityOperation);
-                asyncInstrumentationEnabled &= IsEnabled(EventLevel.Informational, Keywords.AsyncCausalitySynchronousWork);
-                asyncInstrumentationEnabled &= IsEnabled(EventLevel.Informational, Keywords.TasksFlowActivityIds);
-            }
-
-            if (asyncInstrumentationEnabled)
-            {
-                AsyncInstrumentation.UpdateAsyncDebuggerFlags(AsyncInstrumentation.DefaultFlags);
-            }
-            else
-            {
-                AsyncInstrumentation.UpdateAsyncDebuggerFlags(AsyncInstrumentation.Flags.Disabled);
-            }
         }
 
         /// <summary>

@@ -279,7 +279,7 @@ namespace System.Security.Cryptography
         // This function is defined as follows:
         // Func (S, i) = HMAC(S || i) ^ HMAC2(S || i) ^ ... ^ HMAC(iterations) (S || i)
         // where i is the block number.
-        private void Func()
+        private unsafe void Func()
         {
             // Block number is going to overflow, exceeding the maximum total possible bytes
             // that can be extracted.
