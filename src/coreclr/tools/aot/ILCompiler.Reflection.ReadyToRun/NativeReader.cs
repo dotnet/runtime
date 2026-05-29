@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
+using ILCompiler.ObjectWriter;
+
 namespace ILCompiler.Reflection.ReadyToRun
 {
     public class NativeReader(Stream backingStream, bool littleEndian = true)
@@ -380,6 +382,21 @@ namespace ILCompiler.Reflection.ReadyToRun
         {
             uint delta = DecodeUnsignedGc(ref start);
             return lastValue + delta;
+        }
+
+        /// <summary>
+        /// Reads a standard unsigned LEB128 value starting at <paramref name="start"/> and advances
+        /// <paramref name="start"/> past the encoded bytes.
+        /// </summary>
+        public uint ReadULEB128(ref int start)
+        {
+            Span<byte> buffer = stackalloc byte[5];
+            int bytesToRead = Math.Min(buffer.Length, (int)_backingStream.Length - start);
+            int readStart = start;
+            ReadSpanAt(ref readStart, buffer.Slice(0, bytesToRead));
+            uint result = (uint)DwarfHelper.ReadULEB128(buffer.Slice(0, bytesToRead), out int bytesRead);
+            start += bytesRead;
+            return result;
         }
     }
 }

@@ -16,26 +16,11 @@ namespace ILCompiler.Reflection.ReadyToRun.Wasm32
 
         public UnwindInfo() { }
 
-        
-        private static uint ReadLebU32(NativeReader imageReader, ref int offset)
-        {
-            uint result = 0;
-            int shift = 0;
-            byte b;
-            do
-            {
-                b = imageReader.ReadByte(ref offset);
-                result |= (uint)(b & 0x7F) << shift;
-                shift += 7;
-            } while ((b & 0x80) != 0);
-            return result;
-        }
-
         public UnwindInfo(NativeReader imageReader, int offset)
         {
             uint startOffset = (uint)offset;
-            BytesUnwind = ReadLebU32(imageReader, ref offset);
-            VirtualIPCount = ReadLebU32(imageReader, ref offset);
+            BytesUnwind = imageReader.ReadULEB128(ref offset);
+            VirtualIPCount = imageReader.ReadULEB128(ref offset);
             Size = offset - (int)startOffset;
         }
 
