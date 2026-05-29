@@ -170,6 +170,53 @@ namespace System.Linq.Tests
             AssertMatches(key, element, source.ToLookup(e => e, e => e, EqualityComparer<string>.Default));
         }
 
+        [Theory]
+        [InlineData(true)]  // null key encountered first
+        [InlineData(false)] // null-equivalent ("") key encountered first
+        public void NullKeyMergedWithNullEquivalentKeyViaCustomComparer(bool nullFirst)
+        {
+            // A custom comparer that treats null and "" as equal, with GetHashCode("") == 0. Historically
+            // a null key and such a non-null key are merged into a single grouping, and that must be preserved.
+            var nullItem = new { Key = (string)null, Element = "fromNull" };
+            var emptyItem = new { Key = "", Element = "fromEmpty" };
+            var source = nullFirst ? new[] { nullItem, emptyItem } : new[] { emptyItem, nullItem };
+            string[] expected = nullFirst ? ["fromNull", "fromEmpty"] : ["fromEmpty", "fromNull"];
+
+            ILookup<string, string> lookup = source.ToLookup(e => e.Key, e => e.Element, new NullAndEmptyEqualityComparer());
+
+            Assert.Equal(1, lookup.Count);
+            Assert.True(lookup.Contains(null));
+            Assert.True(lookup.Contains(""));
+            Assert.Equal(expected, lookup[null]);
+            Assert.Equal(expected, lookup[""]);
+        }
+
+        [Fact]
+        public void NullKeyNotMergedWhenNullEquivalentKeyHashIsNonZero()
+        {
+            // The historical implementation only merged a null key with a non-null key whose hash code was 0.
+            // A null-equivalent key whose hash code is non-zero stays in its own grouping; preserve that.
+            var source = new[]
+            {
+                new { Key = (string)null, Element = "a" },
+                new { Key = "xy", Element = "b" }, // GetHashCode("xy") == 2, equal to null per comparer
+            };
+
+            ILookup<string, string> lookup = source.ToLookup(e => e.Key, e => e.Element, new NullAndEmptyEqualityComparer());
+
+            Assert.Equal(2, lookup.Count);
+            Assert.Equal(new[] { "a" }, lookup[null]);
+            Assert.Equal(new[] { "b" }, lookup["xy"]);
+        }
+
+        private sealed class NullAndEmptyEqualityComparer : IEqualityComparer<string>
+        {
+            // Treats null and "" (and any value with the same length) as equal; GetHashCode is the string length.
+            public bool Equals(string x, string y) => (x?.Length ?? 0) == (y?.Length ?? 0);
+
+            public int GetHashCode(string obj) => obj.Length;
+        }
+
         [Fact]
         public void NullSource()
         {

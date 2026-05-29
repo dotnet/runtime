@@ -79,6 +79,9 @@ namespace System.Linq
 #pragma warning disable CS8714 // Nullability of type argument doesn't match 'notnull' constraint.
         private readonly Dictionary<TKey, Grouping<TKey, TElement>> _groupings;
 #pragma warning restore CS8714
+        // True when a custom comparer was supplied. The default comparer never considers null equal to a
+        // non-null key, but a custom comparer might, so null keys must then be routed through the comparer.
+        private readonly bool _customComparer;
         private Grouping<TKey, TElement>? _nullKeyGrouping;
         internal Grouping<TKey, TElement>? _lastGrouping;
         private int _count;
@@ -132,6 +135,7 @@ namespace System.Linq
 #pragma warning disable CS8714 // Nullability of type argument doesn't match 'notnull' constraint.
             _groupings = new Dictionary<TKey, Grouping<TKey, TElement>>(comparer);
 #pragma warning restore CS8714
+            _customComparer = comparer is not null;
         }
 
         public int Count => _count;
@@ -203,15 +207,22 @@ namespace System.Linq
         internal Grouping<TKey, TElement>? GetGrouping(TKey key, bool create)
         {
             // Dictionary<TKey, TValue> does not support null keys, so they are tracked separately.
-            // This also avoids passing null to comparer implementations that throw when passed null.
             if (key is null)
             {
-                if (create && _nullKeyGrouping is null)
-                {
-                    _nullKeyGrouping = CreateGrouping(key);
-                }
+                return GetNullKeyGrouping(create);
+            }
 
-                return _nullKeyGrouping;
+            // A custom comparer may consider a non-null key equal to null. The historical implementation
+            // hashed null to 0 and routed equality through the comparer, so a non-null key merged with the
+            // null grouping only when its own hash code (masked to non-negative) was also 0. Preserve that
+            // exact behavior so this remains non-breaking, while never passing null to a comparer's GetHashCode.
+            if (_nullKeyGrouping is not null && _customComparer)
+            {
+                IEqualityComparer<TKey> comparer = _groupings.Comparer;
+                if ((comparer.GetHashCode(key) & 0x7FFFFFFF) == 0 && comparer.Equals(default, key))
+                {
+                    return _nullKeyGrouping;
+                }
             }
 
             if (create)
@@ -224,6 +235,52 @@ namespace System.Linq
 
             _groupings.TryGetValue(key, out Grouping<TKey, TElement>? g);
             return g;
+        }
+
+        private Grouping<TKey, TElement>? GetNullKeyGrouping(bool create)
+        {
+            Grouping<TKey, TElement>? nullGrouping = _nullKeyGrouping;
+            if (nullGrouping is null)
+            {
+                // A custom comparer may already have grouped null-equivalent non-null keys. Old behavior only
+                // merged keys whose hash code was 0, so look for such a grouping before creating a new one.
+                if (_customComparer)
+                {
+                    nullGrouping = FindNullEquivalentGrouping();
+                }
+
+                if (nullGrouping is null && create)
+                {
+                    nullGrouping = CreateGrouping(default!);
+                }
+
+                _nullKeyGrouping = nullGrouping;
+            }
+
+            return nullGrouping;
+        }
+
+        private Grouping<TKey, TElement>? FindNullEquivalentGrouping()
+        {
+            IEqualityComparer<TKey> comparer = _groupings.Comparer;
+            Grouping<TKey, TElement>? g = _lastGrouping;
+            if (g is not null)
+            {
+                do
+                {
+                    g = g._next!;
+                    TKey existingKey = g._key;
+                    if (existingKey is not null &&
+                        (comparer.GetHashCode(existingKey) & 0x7FFFFFFF) == 0 &&
+                        comparer.Equals(existingKey, default))
+                    {
+                        return g;
+                    }
+                }
+                while (g != _lastGrouping);
+            }
+
+            return null;
         }
 
         private Grouping<TKey, TElement> CreateGrouping(TKey key)
