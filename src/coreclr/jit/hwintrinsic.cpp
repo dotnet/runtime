@@ -2316,6 +2316,26 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                         break;
                     }
 
+                    case NI_AVX2_X64_LeadingZeroCount:
+                    case NI_AVX2_X64_TrailingZeroCount:
+                    case NI_X86Base_X64_BitScanForward:
+                    case NI_X86Base_X64_BitScanReverse:
+                    case NI_X86Base_X64_PopCount:
+                    {
+                        assert(isScalar);
+                        assert(varTypeIsLong(nodeRetType));
+
+                        // rangecheck requires the type to be TYP_INT to handle this, but the operation may expect
+                        // TYP_LONG so we fixup the baseType here and in remove the cast in lowering if its
+                        // unnecessary
+
+                        retNode->gtType = TYP_INT;
+                        retNode         = gtFoldExpr(retNode);
+
+                        retNode = gtFoldExpr(gtNewCastNode(TYP_LONG, retNode, /* unsigned */ true, nodeRetType));
+                        break;
+                    }
+
                     default:
                     {
                         break;
@@ -2334,6 +2354,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                         // ConditionalSelect.
                         retNode->AsHWIntrinsic()->SetAuxiliaryType(getBaseTypeOfSIMDType(sig->retTypeSigClass));
                         break;
+
                     default:
                         break;
                 }

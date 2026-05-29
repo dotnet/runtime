@@ -6093,19 +6093,15 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                                                                nullptr R2RARG(CORINFO_CONST_LOOKUP{IAT_VALUE}));
 #elif defined(FEATURE_HW_INTRINSICS)
 #if defined(TARGET_XARCH)
+            impPopStack();
+
             if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
             {
-                // Pop the value from the stack
-                impPopStack();
-
                 hwintrinsic = varTypeIsLong(baseType) ? NI_AVX2_X64_LeadingZeroCount : NI_AVX2_LeadingZeroCount;
-                result      = gtNewScalarHWIntrinsicNode(baseType, op1, hwintrinsic);
+                result      = gtNewScalarHWIntrinsicNode(TYP_INT, op1, hwintrinsic);
             }
             else
             {
-                // Pop the value from the stack
-                impPopStack();
-
                 // We're importing this as the following...
                 // * 32-bit lzcnt: (value == 0) ? 32 : (31 ^ BSR(value))
                 // * 64-bit lzcnt: (value == 0) ? 64 : (63 ^ BSR(value))
@@ -6114,7 +6110,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                 op1 = impCloneExpr(op1, &op1Dup, CHECK_SPILL_ALL, nullptr DEBUGARG("Cloning op1 for LeadingZeroCount"));
 
                 hwintrinsic = varTypeIsLong(baseType) ? NI_X86Base_X64_BitScanReverse : NI_X86Base_BitScanReverse;
-                op1Dup      = gtNewScalarHWIntrinsicNode(baseType, op1Dup, hwintrinsic);
+                op1Dup      = gtNewScalarHWIntrinsicNode(TYP_INT, op1Dup, hwintrinsic);
 
                 GenTree* cond = gtFoldExpr(gtNewOperNode(GT_EQ, TYP_INT, op1, gtNewZeroConNode(baseType)));
 
@@ -6123,32 +6119,34 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
 
                 if (varTypeIsLong(baseType))
                 {
-                    trueRes = gtNewLconNode(64);
-                    icon    = gtNewLconNode(63);
+                    trueRes = gtNewIconNode(64);
+                    icon    = gtNewIconNode(63);
                 }
                 else
                 {
-                    trueRes = gtNewIconNode(32, baseType);
-                    icon    = gtNewIconNode(31, baseType);
+                    trueRes = gtNewIconNode(32);
+                    icon    = gtNewIconNode(31);
                 }
 
-                GenTree*      falseRes = gtNewOperNode(GT_XOR, baseType, op1Dup, icon);
-                GenTreeColon* colon    = gtNewColonNode(baseType, trueRes, falseRes);
+                GenTree*      falseRes = gtNewOperNode(GT_XOR, TYP_INT, op1Dup, icon);
+                GenTreeColon* colon    = gtNewColonNode(TYP_INT, trueRes, falseRes);
 
-                result = gtNewQmarkNode(baseType, cond, colon);
+                result = gtNewQmarkNode(TYP_INT, cond, colon);
 
                 unsigned tmp = lvaGrabTemp(true DEBUGARG("Grabbing temp for LeadingZeroCount Qmark"));
                 impStoreToTemp(tmp, result, CHECK_SPILL_NONE);
-                result = gtNewLclvNode(tmp, baseType);
+                result = gtNewLclvNode(tmp, TYP_INT);
             }
 #elif defined(TARGET_ARM64)
-            // Pop the value from the stack
             impPopStack();
 
             hwintrinsic = varTypeIsLong(baseType) ? NI_ArmBase_Arm64_LeadingZeroCount : NI_ArmBase_LeadingZeroCount;
             result      = gtNewScalarHWIntrinsicNode(TYP_INT, op1, hwintrinsic);
-            baseType    = TYP_INT;
 #endif // TARGET_*
+
+            // rangecheck requires the type to be TYP_INT to handle this, but the operation may expect TYP_LONG
+            // so we fixup the baseType here and in remove the cast in lowering if its unnecessary
+            baseType = TYP_INT;
 #endif // FEATURE_HW_INTRINSICS
 
             break;
@@ -6277,14 +6275,17 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                 GenTreeIntrinsic(retType, op1, NI_PRIMITIVE_PopCount, nullptr R2RARG(CORINFO_CONST_LOOKUP{IAT_VALUE}));
 #elif defined(FEATURE_HW_INTRINSICS)
 #if defined(TARGET_XARCH)
-            // Pop the value from the stack
             impPopStack();
 
             hwintrinsic = varTypeIsLong(baseType) ? NI_X86Base_X64_PopCount : NI_X86Base_PopCount;
-            result      = gtNewScalarHWIntrinsicNode(baseType, op1, hwintrinsic);
+            result      = gtNewScalarHWIntrinsicNode(TYP_INT, op1, hwintrinsic);
 #elif defined(TARGET_ARM64)
             // TODO-ARM64-CQ: PopCount should be handled as an intrinsic for non-constant cases
 #endif // TARGET_*
+
+            // rangecheck requires the type to be TYP_INT to handle this, but the operation may expect TYP_LONG
+            // so we fixup the baseType here and in remove the cast in lowering if its unnecessary
+            baseType = TYP_INT;
 #endif // FEATURE_HW_INTRINSICS
 
             break;
@@ -6439,19 +6440,15 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                                                                nullptr R2RARG(CORINFO_CONST_LOOKUP{IAT_VALUE}));
 #elif defined(FEATURE_HW_INTRINSICS)
 #if defined(TARGET_XARCH)
+            impPopStack();
+
             if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
             {
-                // Pop the value from the stack
-                impPopStack();
-
                 hwintrinsic = varTypeIsLong(baseType) ? NI_AVX2_X64_TrailingZeroCount : NI_AVX2_TrailingZeroCount;
-                result      = gtNewScalarHWIntrinsicNode(baseType, op1, hwintrinsic);
+                result      = gtNewScalarHWIntrinsicNode(TYP_INT, op1, hwintrinsic);
             }
             else
             {
-                // Pop the value from the stack
-                impPopStack();
-
                 // We're importing this as the following...
                 // * 32-bit tzcnt: (value == 0) ? 32 : BSF(value)
                 // * 64-bit tzcnt: (value == 0) ? 64 : BSF(value)
@@ -6461,7 +6458,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                     impCloneExpr(op1, &op1Dup, CHECK_SPILL_ALL, nullptr DEBUGARG("Cloning op1 for TrailingZeroCount"));
 
                 hwintrinsic = varTypeIsLong(baseType) ? NI_X86Base_X64_BitScanForward : NI_X86Base_BitScanForward;
-                op1Dup      = gtNewScalarHWIntrinsicNode(baseType, op1Dup, hwintrinsic);
+                op1Dup      = gtNewScalarHWIntrinsicNode(TYP_INT, op1Dup, hwintrinsic);
 
                 GenTree* cond = gtFoldExpr(gtNewOperNode(GT_EQ, TYP_INT, op1, gtNewZeroConNode(baseType)));
 
@@ -6469,24 +6466,23 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
 
                 if (varTypeIsLong(baseType))
                 {
-                    trueRes = gtNewLconNode(64);
+                    trueRes = gtNewIconNode(64);
                 }
                 else
                 {
-                    trueRes = gtNewIconNode(32, baseType);
+                    trueRes = gtNewIconNode(32);
                 }
 
                 GenTree*      falseRes = op1Dup;
-                GenTreeColon* colon    = gtNewColonNode(baseType, trueRes, falseRes);
+                GenTreeColon* colon    = gtNewColonNode(TYP_INT, trueRes, falseRes);
 
-                result = gtNewQmarkNode(baseType, cond, colon);
+                result = gtNewQmarkNode(TYP_INT, cond, colon);
 
                 unsigned tmp = lvaGrabTemp(true DEBUGARG("Grabbing temp for TrailingZeroCount Qmark"));
                 impStoreToTemp(tmp, result, CHECK_SPILL_NONE);
-                result = gtNewLclvNode(tmp, baseType);
+                result = gtNewLclvNode(tmp, TYP_INT);
             }
 #elif defined(TARGET_ARM64)
-            // Pop the value from the stack
             impPopStack();
 
             hwintrinsic = varTypeIsLong(baseType) ? NI_ArmBase_Arm64_ReverseElementBits : NI_ArmBase_ReverseElementBits;
@@ -6494,8 +6490,11 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
 
             hwintrinsic = varTypeIsLong(baseType) ? NI_ArmBase_Arm64_LeadingZeroCount : NI_ArmBase_LeadingZeroCount;
             result      = gtNewScalarHWIntrinsicNode(TYP_INT, op1, hwintrinsic);
-            baseType    = TYP_INT;
 #endif // TARGET_*
+
+            // rangecheck requires the type to be TYP_INT to handle this, but the operation may expect TYP_LONG
+            // so we fixup the baseType here and in remove the cast in lowering if its unnecessary
+            baseType = TYP_INT;
 #endif // FEATURE_HW_INTRINSICS
 
             break;

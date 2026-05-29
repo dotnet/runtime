@@ -33976,7 +33976,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                 case NI_AVX2_LeadingZeroCount:
 #endif
                 {
-                    assert(!varTypeIsSmall(retType) && !varTypeIsLong(retType));
+                    assert(varTypeIsInt(retType));
 
                     int32_t  value  = static_cast<int32_t>(cnsNode->AsIntConCommon()->IconValue());
                     uint32_t result = BitOperations::LeadingZeroCount(static_cast<uint32_t>(value));
@@ -33994,21 +33994,19 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     int64_t  value  = cnsNode->AsIntConCommon()->IntegralValue();
                     uint32_t result = BitOperations::LeadingZeroCount(static_cast<uint64_t>(value));
 
-                    cnsNode->AsIntConCommon()->SetIconValue(static_cast<int32_t>(result));
-                    cnsNode->gtType = retType;
-
+                    cnsNode->BashToConst(static_cast<int32_t>(result), retType);
                     resultNode = cnsNode;
                     break;
                 }
 #else
                 case NI_AVX2_X64_LeadingZeroCount:
                 {
-                    assert(varTypeIsLong(retType));
+                    assert(varTypeIsInt(retType));
 
                     int64_t  value  = cnsNode->AsIntConCommon()->IntegralValue();
                     uint32_t result = BitOperations::LeadingZeroCount(static_cast<uint64_t>(value));
 
-                    cnsNode->AsIntConCommon()->SetIntegralValue(static_cast<int64_t>(result));
+                    cnsNode->BashToConst(static_cast<int32_t>(result), retType);
                     resultNode = cnsNode;
                     break;
                 }
@@ -34181,7 +34179,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 #ifdef TARGET_XARCH
                 case NI_AVX2_TrailingZeroCount:
                 {
-                    assert(!varTypeIsSmall(retType) && !varTypeIsLong(retType));
+                    assert(varTypeIsInt(retType));
 
                     int32_t  value  = static_cast<int32_t>(cnsNode->AsIntConCommon()->IconValue());
                     uint32_t result = BitOperations::TrailingZeroCount(static_cast<uint32_t>(value));
@@ -34193,19 +34191,19 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
                 case NI_AVX2_X64_TrailingZeroCount:
                 {
-                    assert(varTypeIsLong(retType));
+                    assert(varTypeIsInt(retType));
 
                     int64_t  value  = cnsNode->AsIntConCommon()->IntegralValue();
                     uint32_t result = BitOperations::TrailingZeroCount(static_cast<uint64_t>(value));
 
-                    cnsNode->AsIntConCommon()->SetIntegralValue(static_cast<int64_t>(result));
+                    cnsNode->BashToConst(static_cast<int32_t>(result), retType);
                     resultNode = cnsNode;
                     break;
                 }
 
                 case NI_X86Base_PopCount:
                 {
-                    assert(!varTypeIsSmall(retType) && !varTypeIsLong(retType));
+                    assert(varTypeIsInt(retType));
 
                     int32_t  value  = static_cast<int32_t>(cnsNode->AsIntConCommon()->IconValue());
                     uint32_t result = BitOperations::PopCount(static_cast<uint32_t>(value));
@@ -34217,20 +34215,19 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
                 case NI_X86Base_X64_PopCount:
                 {
-                    assert(varTypeIsLong(retType));
+                    assert(varTypeIsInt(retType));
 
                     int64_t  value  = cnsNode->AsIntConCommon()->IntegralValue();
                     uint32_t result = BitOperations::PopCount(static_cast<uint64_t>(value));
 
-                    cnsNode->AsIntConCommon()->SetIntegralValue(static_cast<int64_t>(result));
+                    cnsNode->BashToConst(static_cast<int32_t>(result), retType);
                     resultNode = cnsNode;
                     break;
                 }
 
                 case NI_X86Base_BitScanForward:
                 {
-                    assert(!varTypeIsSmall(retType) && !varTypeIsLong(retType));
-
+                    assert(varTypeIsInt(retType));
                     int32_t value = static_cast<int32_t>(cnsNode->AsIntConCommon()->IconValue());
 
                     if (value == 0)
@@ -34247,8 +34244,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
                 case NI_X86Base_X64_BitScanForward:
                 {
-                    assert(varTypeIsLong(retType));
-
+                    assert(varTypeIsInt(retType));
                     int64_t value = cnsNode->AsIntConCommon()->IntegralValue();
 
                     if (value == 0)
@@ -34258,15 +34254,14 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     }
                     uint32_t result = BitOperations::BitScanForward(static_cast<uint64_t>(value));
 
-                    cnsNode->AsIntConCommon()->SetIntegralValue(static_cast<int64_t>(result));
+                    cnsNode->BashToConst(static_cast<int32_t>(result), retType);
                     resultNode = cnsNode;
                     break;
                 }
 
                 case NI_X86Base_BitScanReverse:
                 {
-                    assert(!varTypeIsSmall(retType) && !varTypeIsLong(retType));
-
+                    assert(varTypeIsInt(retType));
                     int32_t value = static_cast<int32_t>(cnsNode->AsIntConCommon()->IconValue());
 
                     if (value == 0)
@@ -34283,8 +34278,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
                 case NI_X86Base_X64_BitScanReverse:
                 {
-                    assert(varTypeIsLong(retType));
-
+                    assert(varTypeIsInt(retType));
                     int64_t value = cnsNode->AsIntConCommon()->IntegralValue();
 
                     if (value == 0)
@@ -34294,7 +34288,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     }
                     uint32_t result = BitOperations::BitScanReverse(static_cast<uint64_t>(value));
 
-                    cnsNode->AsIntConCommon()->SetIntegralValue(static_cast<int64_t>(result));
+                    cnsNode->BashToConst(static_cast<int32_t>(result), retType);
                     resultNode = cnsNode;
                     break;
                 }
