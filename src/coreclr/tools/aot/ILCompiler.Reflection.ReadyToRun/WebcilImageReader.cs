@@ -141,6 +141,8 @@ namespace ILCompiler.Reflection.ReadyToRun
         }
 
         private WasmFunctionInfo[] _wasmFunctionCache;
+        private uint[] _elemTable;
+        private uint _numImportedFunctions;
 
         /// <summary>
         /// Gets the full function info for a WASM function by its index in the code section.
@@ -157,6 +159,143 @@ namespace ILCompiler.Reflection.ReadyToRun
                 return null;
 
             return _wasmFunctionCache[functionIndex];
+        }
+
+        /// <summary>
+        /// Resolves a WASM function table index to a code section function index.
+        /// Returns -1 if the table index is out of range or does not map to a code section function.
+        /// </summary>
+        public int GetFunctionIndexFromTableIndex(int tableIndex)
+        {
+            if (!IsWasmWrapped)
+                return -1;
+
+            EnsureElemTable();
+
+            if ((uint)tableIndex >= (uint)_elemTable.Length)
+                return -1;
+
+            uint globalFuncIndex = _elemTable[tableIndex];
+            if (globalFuncIndex < _numImportedFunctions)
+                return -1;
+
+            return (int)(globalFuncIndex - _numImportedFunctions);
+        }
+
+        private void EnsureElemTable()
+        {
+            if (_elemTable is not null)
+                return;
+
+            ReadOnlySpan<byte> imageSpan = _image.AsSpan();
+            int offset = 8; // Skip WASM magic + version
+            uint numImports = 0;
+            uint[] elemEntries = null;
+
+            while (offset < imageSpan.Length)
+            {
+                byte sectionId = imageSpan[offset++];
+                uint sectionSize = ReadLebU32(imageSpan, ref offset);
+                int sectionEnd = offset + (int)sectionSize;
+
+                if (sectionEnd > imageSpan.Length)
+                    break;
+
+                switch (sectionId)
+                {
+                    case 2: // Import section
+                        numImports = CountFunctionImports(imageSpan, ref offset, sectionEnd);
+                        break;
+                    case 9: // Elem section
+                        elemEntries = ParseElemSection(imageSpan, ref offset, sectionEnd);
+                        break;
+                }
+
+                offset = sectionEnd;
+            }
+
+            _numImportedFunctions = numImports;
+            _elemTable = elemEntries ?? [];
+        }
+
+        private static uint CountFunctionImports(ReadOnlySpan<byte> data, ref int offset, int end)
+        {
+            uint count = ReadLebU32(data, ref offset);
+            uint funcImports = 0;
+            for (uint i = 0; i < count && offset < end; i++)
+            {
+                // module name
+                uint modLen = ReadLebU32(data, ref offset);
+                offset += (int)modLen;
+                // field name
+                uint fieldLen = ReadLebU32(data, ref offset);
+                offset += (int)fieldLen;
+                // import kind
+                byte kind = data[offset++];
+                switch (kind)
+                {
+                    case 0: // function
+                        ReadLebU32(data, ref offset); // type index
+                        funcImports++;
+                        break;
+                    case 1: // table
+                        offset++; // reftype
+                        SkipLimits(data, ref offset);
+                        break;
+                    case 2: // memory
+                        SkipLimits(data, ref offset);
+                        break;
+                    case 3: // global
+                        offset++; // valtype
+                        offset++; // mutability
+                        break;
+                }
+            }
+            return funcImports;
+        }
+
+        private static void SkipLimits(ReadOnlySpan<byte> data, ref int offset)
+        {
+            uint flags = ReadLebU32(data, ref offset);
+            ReadLebU32(data, ref offset); // min
+            if ((flags & 0x01) != 0)
+            {
+                ReadLebU32(data, ref offset); // max
+            }
+        }
+
+        private static uint[] ParseElemSection(ReadOnlySpan<byte> data, ref int offset, int end)
+        {
+            // We're looking for the first elem segment that contains a plain
+            // function index vector. The segment may be active (flags==0) or
+            // passive (flags==1). In the R2R WASM case the compiler arranges
+            // the entries so that position in the vector == table index.
+            uint segCount = ReadLebU32(data, ref offset);
+            if (segCount == 0 || offset >= end)
+                return [];
+
+            uint flags = ReadLebU32(data, ref offset);
+            switch (flags)
+            {
+                case 0:
+                    // Active segment, table 0, offset expr, vec of funcidx
+                    SkipConstExpr(data, ref offset);
+                    break;
+                case 1:
+                    // Passive segment: elemkind byte, then vec of funcidx
+                    offset++; // skip elemkind (0x00 = funcref)
+                    break;
+                default:
+                    return [];
+            }
+
+            uint numElems = ReadLebU32(data, ref offset);
+            uint[] entries = new uint[numElems];
+            for (uint i = 0; i < numElems && offset < end; i++)
+            {
+                entries[i] = ReadLebU32(data, ref offset);
+            }
+            return entries;
         }
 
         private WasmFunctionInfo[] BuildWasmFunctionCache()
