@@ -376,17 +376,17 @@
     <Error Text="Dump file could not be created: $(_DumpFile)" Condition="!Exists('$(_DumpFile)')" />
   </Target>
 
-  <!-- Local build, single-file: self-contained single-file publish, run the bundled exe directly -->
+  <!-- Local build, single-file: self-contained single-file publish, run the bundled exe directly.
+       Always published with ReadyToRun — the jit variant controls R2R at runtime via
+       DOTNET_ReadyToRun=0, matching the existing normal-mode approach in _GenerateLocalDump. -->
   <Target Name="_GenerateSingleFileDump">
     <PropertyGroup>
       <_PublishDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'DumpTests', '$(DebuggeeName)', '$(DebuggeeConfiguration)', '$(NetCoreAppCurrent)-singlefile'))</_PublishDir>
       <_DebuggeeCsproj>$([MSBuild]::NormalizePath('$(_DebuggeeDir)', '$(DebuggeeName).csproj'))</_DebuggeeCsproj>
       <_PublishedExe>$([MSBuild]::NormalizePath('$(_PublishDir)', '$(DebuggeeName)$(ExeSuffix)'))</_PublishedExe>
-      <_R2RPublishFlag Condition="'$(_R2RValue)' == '1'">/p:PublishReadyToRun=true</_R2RPublishFlag>
-      <_R2RPublishFlag Condition="'$(_R2RValue)' != '1'"></_R2RPublishFlag>
     </PropertyGroup>
 
-    <Exec Command="&quot;$(_DotNetExe)&quot; publish &quot;$(_DebuggeeCsproj)&quot; -c $(DebuggeeConfiguration) -f $(NetCoreAppCurrent) -r $(PortableTargetRid) --self-contained /p:PublishSingleFile=true $(_R2RPublishFlag) $(_DebuggeePublishProps) --nologo -o &quot;$(_PublishDir)&quot;"
+    <Exec Command="&quot;$(_DotNetExe)&quot; publish &quot;$(_DebuggeeCsproj)&quot; -c $(DebuggeeConfiguration) -f $(NetCoreAppCurrent) -r $(PortableTargetRid) --self-contained /p:PublishSingleFile=true /p:PublishReadyToRun=true $(_DebuggeePublishProps) --nologo -o &quot;$(_PublishDir)&quot;"
           WorkingDirectory="$(_DebuggeeDir)" />
 
     <MakeDir Directories="$(_DumpDir)" />
