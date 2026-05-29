@@ -14,58 +14,51 @@ int32_t AndroidCryptoNative_EcdhDeriveKey(EC_KEY* ourKey, EC_KEY* peerKey, uint8
     abort_if_invalid_pointer_argument (usedBufferLength);
 
     JNIEnv* env = GetJNIEnv();
+    int32_t ret = FAIL;
+    *usedBufferLength = 0;
 
-    jstring algorithmName = make_java_string(env, "ECDH");
+    jstring algorithmName = NULL;
+    jobject keyAgreement = NULL;
+    jobject privateKey = NULL;
+    jobject peerPublicKey = NULL;
+    jbyteArray secret = NULL;
 
-    jobject keyAgreement = (*env)->CallStaticObjectMethod(env, g_KeyAgreementClass, g_KeyAgreementGetInstance, algorithmName);
-    ReleaseLRef(env, algorithmName);
-    if (CheckJNIExceptions(env))
-    {
-        *usedBufferLength = 0;
-        return FAIL;
-    }
+    algorithmName = make_java_string(env, "ECDH");
 
-    jobject privateKey = (*env)->CallObjectMethod(env, ourKey->keyPair, g_keyPairGetPrivateMethod);
+    keyAgreement = (*env)->CallStaticObjectMethod(env, g_KeyAgreementClass, g_KeyAgreementGetInstance, algorithmName);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    privateKey = (*env)->CallObjectMethod(env, ourKey->keyPair, g_keyPairGetPrivateMethod);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     (*env)->CallVoidMethod(env, keyAgreement, g_KeyAgreementInit, privateKey);
-    ReleaseLRef(env, privateKey);
-    if (CheckJNIExceptions(env))
-    {
-        ReleaseLRef(env, keyAgreement);
-        *usedBufferLength = 0;
-        return FAIL;
-    }
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    jobject peerPublicKey = (*env)->CallObjectMethod(env, peerKey->keyPair, g_keyPairGetPublicMethod);
+    peerPublicKey = (*env)->CallObjectMethod(env, peerKey->keyPair, g_keyPairGetPublicMethod);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     ReleaseLRef(env, (*env)->CallObjectMethod(env, keyAgreement, g_KeyAgreementDoPhase, peerPublicKey, JNI_TRUE));
-    ReleaseLRef(env, peerPublicKey);
-    if (CheckJNIExceptions(env))
-    {
-        ReleaseLRef(env, keyAgreement);
-        *usedBufferLength = 0;
-        return FAIL;
-    }
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    jbyteArray secret = (*env)->CallObjectMethod(env, keyAgreement, g_KeyAgreementGenerateSecret);
-    ReleaseLRef(env, keyAgreement);
-
-    if (CheckJNIExceptions(env))
-    {
-        *usedBufferLength = 0;
-        return FAIL;
-    }
+    secret = (*env)->CallObjectMethod(env, keyAgreement, g_KeyAgreementGenerateSecret);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     jsize secretBufferLen = (*env)->GetArrayLength(env, secret);
     if (secretBufferLen > bufferLength)
-    {
-        ReleaseLRef(env, secret);
-        *usedBufferLength = 0;
-        return FAIL;
-    }
+        goto cleanup;
 
     (*env)->GetByteArrayRegion(env, secret, 0, secretBufferLen, (jbyte*)resultKey);
-    ReleaseLRef(env, secret);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     *usedBufferLength = secretBufferLen;
 
-    return CheckJNIExceptions(env) ? FAIL : SUCCESS;
+    ret = SUCCESS;
+
+cleanup:
+    ReleaseLRef(env, secret);
+    ReleaseLRef(env, peerPublicKey);
+    ReleaseLRef(env, privateKey);
+    ReleaseLRef(env, keyAgreement);
+    ReleaseLRef(env, algorithmName);
+    if (ret != SUCCESS)
+        *usedBufferLength = 0;
+    return ret;
 }

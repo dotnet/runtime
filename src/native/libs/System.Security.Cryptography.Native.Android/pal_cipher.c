@@ -138,6 +138,7 @@ int32_t AndroidCryptoNative_CipherSetTagLength(CipherCtx* ctx, int32_t tagLength
 ARGS_NON_NULL_ALL static int32_t ReinitializeCipher(CipherCtx* ctx)
 {
     JNIEnv* env = GetJNIEnv();
+    int32_t ret = FAIL;
 
     // SecretKeySpec keySpec = new SecretKeySpec(key.getEncoded(), "AES");
     // IvParameterSpec ivSpec = new IvParameterSpec(IV); or GCMParameterSpec for GCM/CCM
@@ -167,25 +168,21 @@ ARGS_NON_NULL_ALL static int32_t ReinitializeCipher(CipherCtx* ctx)
             ivPsObj = (*env)->NewObject(env, g_ivPsClass, g_ivPsCtor, ivBytes);
         }
 
-        (*env)->DeleteLocalRef(env, ivBytes);
-
-        if (CheckJNIExceptions(env))
-        {
-            (*env)->DeleteLocalRef(env, algName);
-            (*env)->DeleteLocalRef(env, sksObj);
-            (*env)->DeleteLocalRef(env, ivPsObj);
-            (*env)->DeleteLocalRef(env, keyBytes);
-            return FAIL;
-        }
+        ReleaseLRef(env, ivBytes);
+        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     }
 
     (*env)->CallVoidMethod(env, ctx->cipher, g_cipherInitMethod, ctx->encMode, sksObj, ivPsObj);
-    (*env)->DeleteLocalRef(env, algName);
-    (*env)->DeleteLocalRef(env, sksObj);
-    (*env)->DeleteLocalRef(env, ivPsObj);
-    (*env)->DeleteLocalRef(env, keyBytes);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    return CheckJNIExceptions(env) ? FAIL : SUCCESS;
+    ret = SUCCESS;
+
+cleanup:
+    ReleaseLRef(env, algName);
+    ReleaseLRef(env, sksObj);
+    ReleaseLRef(env, ivPsObj);
+    ReleaseLRef(env, keyBytes);
+    return ret;
 }
 
 int32_t AndroidCryptoNative_CipherSetKeyAndIV(CipherCtx* ctx, uint8_t* key, uint8_t* iv, int32_t enc)

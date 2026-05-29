@@ -15,6 +15,8 @@ jobject CryptoNative_HmacCreate(uint8_t* key, int32_t keyLen, intptr_t type)
     // mac.init(key);
 
     JNIEnv* env = GetJNIEnv();
+    jobject macObj = NULL;
+    bool success = false;
 
     jstring macName = NULL;
     if (type == CryptoNative_EvpSha1())
@@ -47,40 +49,30 @@ jobject CryptoNative_HmacCreate(uint8_t* key, int32_t keyLen, intptr_t type)
     }
 
     jobject sksObj = (*env)->NewObject(env, g_sksClass, g_sksCtor, keyBytes, macName);
-    if (CheckJNIExceptions(env) || sksObj == NULL)
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    if (sksObj == NULL)
     {
-        if(sksObj == NULL)
-        {
-            LOG_WARN ("Unable to create an instance of SecretKeySpec");
-        }
-
-        (*env)->DeleteLocalRef(env, keyBytes);
-        (*env)->DeleteLocalRef(env, sksObj);
-        (*env)->DeleteLocalRef(env, macName);
-        return FAIL;
+        LOG_WARN ("Unable to create an instance of SecretKeySpec");
+        goto cleanup;
     }
 
-    jobject macObj = ToGRef(env, (*env)->CallStaticObjectMethod(env, g_MacClass, g_MacGetInstance, macName));
-    if (CheckJNIExceptions(env))
-    {
-        ReleaseGRef(env, macObj);
-        (*env)->DeleteLocalRef(env, keyBytes);
-        (*env)->DeleteLocalRef(env, sksObj);
-        (*env)->DeleteLocalRef(env, macName);
-        return FAIL;
-    }
+    macObj = ToGRef(env, (*env)->CallStaticObjectMethod(env, g_MacClass, g_MacGetInstance, macName));
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     (*env)->CallVoidMethod(env, macObj, g_MacInit, sksObj);
-    (*env)->DeleteLocalRef(env, keyBytes);
-    (*env)->DeleteLocalRef(env, sksObj);
-    (*env)->DeleteLocalRef(env, macName);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    if (CheckJNIExceptions(env))
+    success = true;
+
+cleanup:
+    ReleaseLRef(env, keyBytes);
+    ReleaseLRef(env, sksObj);
+    ReleaseLRef(env, macName);
+    if (!success)
     {
         ReleaseGRef(env, macObj);
         return FAIL;
     }
-
     return macObj;
 }
 
