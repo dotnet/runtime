@@ -143,7 +143,7 @@
 //       t1: trashed
 //       t3: trashed
 //       t4: trashed
-//       t6: incremented by 8
+//       t6: preserved (the destination address is not modified)
 //       t7: trashed
 //
 
@@ -156,7 +156,8 @@
 #define RBM_CALLEE_TRASH_NOGC          (RBM_T0|RBM_T1|RBM_T3|RBM_T4|RBM_T7|RBM_DEFAULT_HELPER_CALL_TARGET)
 
 // Registers killed by CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
-#define RBM_CALLEE_TRASH_WRITEBARRIER         (RBM_WRITE_BARRIER_DST|RBM_CALLEE_TRASH_NOGC)
+// Note: the destination register (t6) is preserved by the helper, so it is not in the kill set.
+#define RBM_CALLEE_TRASH_WRITEBARRIER         RBM_CALLEE_TRASH_NOGC
 
 // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
 #define RBM_CALLEE_GCTRASH_WRITEBARRIER       RBM_CALLEE_TRASH_NOGC
