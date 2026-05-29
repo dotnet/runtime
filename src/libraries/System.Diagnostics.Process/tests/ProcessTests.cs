@@ -382,6 +382,23 @@ namespace System.Diagnostics.Tests
             Assert.Throws<ArgumentOutOfRangeException>("timeout", () => _process.WaitForExit(TimeSpan.FromMilliseconds(milliseconds)));
         }
 
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(-2)]
+        [InlineData(-10)]
+        [InlineData(int.MinValue)]
+        public void TestWaitForExitInt_Validation(int milliseconds)
+        {
+            Process process = CreateDefaultProcess();
+            try
+            {
+                Assert.Throws<ArgumentOutOfRangeException>("milliseconds", () => process.WaitForExit(milliseconds));
+            }
+            finally
+            {
+                process.Kill();
+            }
+        }
+
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.Windows)]  // Expected behavior varies on Windows and Unix
         public void TestBasePriorityOnWindows()

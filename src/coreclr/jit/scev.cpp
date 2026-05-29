@@ -1640,12 +1640,12 @@ bool ScalarEvolutionContext::MayOverflowBeforeExit(ScevAddRec* lhs, Scev* rhs, V
     }
 
     // A step count of 1/-1 will always exit for "or equal" checks.
-    if ((stepCns == 1) && ((exitOp == VNFunc(GT_GE)) || (exitOp == VNF_GE_UN)))
+    if ((stepCns == 1) && ((exitOp == VNF_GE) || (exitOp == VNF_GE_UN)))
     {
         return false;
     }
 
-    if ((stepCns == -1) && ((exitOp == VNFunc(GT_LE)) || (exitOp == VNF_LE_UN)))
+    if ((stepCns == -1) && ((exitOp == VNF_LE) || (exitOp == VNF_LE_UN)))
     {
         return false;
     }

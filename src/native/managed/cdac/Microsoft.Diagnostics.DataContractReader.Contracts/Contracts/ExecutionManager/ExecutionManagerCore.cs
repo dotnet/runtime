@@ -260,7 +260,8 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         // TODO(cdac): EXCEPTION_DATA_SUPPORTS_FUNCTION_FRAGMENTS, implement iterating over fragments until finding
         // non-fragment RuntimeFunction
 
-        return range.Data.RangeBegin + runtimeFunction.BeginAddress;
+        return CodePointerUtils.AddressFromCodePointer(
+            new TargetCodePointer(range.Data.RangeBegin + runtimeFunction.BeginAddress), _target);
     }
 
     void IExecutionManager.GetMethodRegionInfo(CodeBlockHandle codeInfoHandle, out uint hotSize, out TargetPointer coldStart, out uint coldSize)
@@ -400,6 +401,24 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
             throw new InvalidOperationException($"{nameof(CodeBlock)} not found for {codeInfoHandle.Address}");
 
         return info.RelativeOffset;
+    }
+
+    uint IExecutionManager.GetStackParameterSize(CodeBlockHandle codeInfoHandle)
+    {
+        IExecutionManager eman = this;
+        if (_target.Contracts.RuntimeInfo.GetTargetArchitecture() is not RuntimeInfoArchitecture.X86)
+            return 0;
+
+        if (eman.IsFunclet(codeInfoHandle))
+            return 0;
+
+        eman.GetGCInfo(codeInfoHandle, out TargetPointer gcInfoAddress, out uint gcInfoVersion);
+        if (gcInfoAddress == TargetPointer.Null)
+            throw new InvalidOperationException($"GC info not available for {codeInfoHandle.Address}");
+
+        uint relOffset = (uint)eman.GetRelativeOffset(codeInfoHandle).Value;
+        StackWalkHelpers.X86.GCInfo gcInfo = new(_target, gcInfoAddress, gcInfoVersion, relOffset);
+        return gcInfo.Header.VarArgs ? 0u : gcInfo.Header.ArgCount * (uint)_target.PointerSize;
     }
 
     TargetPointer IExecutionManager.FindReadyToRunModule(TargetPointer address)

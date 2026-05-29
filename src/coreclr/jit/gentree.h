@@ -3851,6 +3851,8 @@ public:
     {
     }
 #endif
+
+    static bool EqualsLocal(GenTreeLclVarCommon* lcl1, GenTreeLclVarCommon* lcl2);
 };
 
 //------------------------------------------------------------------------
@@ -8110,10 +8112,6 @@ public:
     enum
     {
         BlkOpKindInvalid,
-        BlkOpKindCpObjUnroll,
-#ifdef TARGET_XARCH
-        BlkOpKindCpObjRepInstr,
-#endif
 #ifdef TARGET_XARCH
         BlkOpKindRepInstr,
 #endif
