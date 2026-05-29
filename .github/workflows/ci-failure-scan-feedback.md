@@ -52,12 +52,20 @@ safe-outputs:
     max: 1
     allowed-files:
       - ".github/workflows/ci-failure-scan.md"
+    protected-files:
+      policy: blocked
+      exclude:
+        - .github/
     labels: [agentic-workflows]
     allowed-labels: [agentic-workflows]
   push-to-pull-request-branch:
     max: 1
     allowed-files:
       - ".github/workflows/ci-failure-scan.md"
+    protected-files:
+      policy: blocked
+      exclude:
+        - .github/
   update-pull-request:
     max: 1
   create-issue:
