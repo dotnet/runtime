@@ -599,7 +599,7 @@ UPTR HashMap::LookupValue(UPTR key, UPTR value)
 
 //---------------------------------------------------------------------
 //  UPTR HashMap::LookupValueByUniqueKey(UPTR key)
-//  Lookup value in the hash table assumes that there is no Comparison function and the keys are unique, returns the value directly using the Comparison function.
+//  Lookup value in the hash table assumes that there is no Comparison function and the keys are unique, returns the value or INVALIDENTRY if not present
 //
 UPTR HashMap::LookupValueByUniqueKey(UPTR key)
 {
