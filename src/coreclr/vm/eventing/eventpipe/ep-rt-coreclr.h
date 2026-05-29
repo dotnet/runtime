@@ -779,6 +779,9 @@ ep_rt_wait_event_is_valid (ep_rt_wait_event_handle_t *wait_event)
 
 #else // PERFTRACING_DISABLE_THREADS
 
+// In single-threaded mode, wait events are no-ops. INVALID_HANDLE_VALUE is used as
+// the "allocated" sentinel (distinguishing allocated from freed/NULL).
+
 static
 inline
 void
@@ -787,8 +790,9 @@ ep_rt_wait_event_alloc (
 	bool manual,
 	bool initial)
 {
+	STATIC_CONTRACT_NOTHROW;
 	EP_ASSERT (wait_event != NULL);
-	wait_event->event = (CLREventStatic * )INVALID_HANDLE_VALUE;
+	wait_event->event = (CLREventStatic *)INVALID_HANDLE_VALUE;
 }
 
 static
@@ -796,6 +800,7 @@ inline
 void
 ep_rt_wait_event_free (ep_rt_wait_event_handle_t *wait_event)
 {
+	STATIC_CONTRACT_NOTHROW;
 	wait_event->event = NULL;
 }
 
@@ -804,6 +809,7 @@ inline
 bool
 ep_rt_wait_event_set (ep_rt_wait_event_handle_t *wait_event)
 {
+	STATIC_CONTRACT_NOTHROW;
 	return true;
 }
 
@@ -815,6 +821,7 @@ ep_rt_wait_event_wait (
 	uint32_t timeout,
 	bool alertable)
 {
+	STATIC_CONTRACT_NOTHROW;
 	EP_ASSERT (wait_event != NULL && wait_event->event == (CLREventStatic *)INVALID_HANDLE_VALUE);
 	return (int32_t)0;
 }
@@ -824,6 +831,7 @@ inline
 EventPipeWaitHandle
 ep_rt_wait_event_get_wait_handle (ep_rt_wait_event_handle_t *wait_event)
 {
+	STATIC_CONTRACT_NOTHROW;
 	EP_ASSERT (wait_event != NULL);
 	return (EventPipeWaitHandle)wait_event->event;
 }
@@ -833,10 +841,10 @@ inline
 bool
 ep_rt_wait_event_is_valid (ep_rt_wait_event_handle_t *wait_event)
 {
+	STATIC_CONTRACT_NOTHROW;
 	if (wait_event == NULL || wait_event->event == NULL || wait_event->event != (CLREventStatic *)INVALID_HANDLE_VALUE)
 		return false;
-	else
-		return true;
+	return true;
 }
 
 #endif // PERFTRACING_DISABLE_THREADS
@@ -1012,7 +1020,7 @@ ep_rt_queue_job (
 	void *job_func,
 	void *params)
 {
-	EP_UNREACHABLE ("Not implemented on in multi threaded");
+	EP_UNREACHABLE ("Not implemented in multi-threaded");
 	return false;
 }
 
@@ -1027,13 +1035,13 @@ ep_rt_thread_create (
 	EventPipeThreadType thread_type,
 	void *id)
 {
-	EP_UNREACHABLE ("Not implemented on in single threaded");
+	EP_UNREACHABLE ("Not implemented in single-threaded");
 	return false;
 }
 
 #ifdef HOST_BROWSER
+#include "wasm/entrypoints.h"
 typedef size_t (*ep_rt_job_cb_t)(void *data);
-extern "C" void SystemJS_DiagnosticServerQueueJob (ep_rt_job_cb_t cb, void *data);
 #endif
 
 static
