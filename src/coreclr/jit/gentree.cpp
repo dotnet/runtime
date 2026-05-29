@@ -13665,35 +13665,122 @@ void Compiler::gtDispConst(GenTree* tree)
 #elif defined(TARGET_ARM64)
                 case TYP_SIMD:
                 {
-                    printf("%-6s ", varTypeName(vecCon->gtSimdScalableVal.gtSimdScalableBaseType));
+                    const simdscalable_t& simdVal      = vecCon->gtSimdScalableVal;
+                    const var_types       simdBaseType = simdVal.gtSimdScalableBaseType;
 
-                    switch (vecCon->gtSimdScalableVal.gtSimdScalableKind)
-                    {
-                        case SimdScalableRepeated:
-                            printf("<0x%016llx, 0x%016llx, 0x%016llx... >",
-                                   vecCon->gtSimdScalableVal.gtSimdScalableIndex,
-                                   vecCon->gtSimdScalableVal.gtSimdScalableIndex,
-                                   vecCon->gtSimdScalableVal.gtSimdScalableIndex);
-                            break;
-
-                        case SimdScalableSequence:
+                    auto printElement = [&](unsigned index) {
+                        switch (simdBaseType)
                         {
-                            uint64_t index = vecCon->gtSimdScalableVal.gtSimdScalableIndex;
-                            printf("<0x%016llx, ", index);
-                            index += vecCon->gtSimdScalableVal.gtSimdScalableStep;
-                            printf("0x%016llx, ", index);
-                            index += vecCon->gtSimdScalableVal.gtSimdScalableStep;
-                            printf("0x%016llx...>", index);
-                            break;
+                            case TYP_BYTE:
+                            case TYP_UBYTE:
+                            {
+                                uint8_t element = simdVal.gtSimdScalableIndexU8[0];
+                                if (simdVal.gtSimdScalableKind == SimdScalableSequence)
+                                {
+                                    element =
+                                        static_cast<uint8_t>(element + (index * simdVal.gtSimdScalableStepU8[0]));
+                                }
+                                else if ((simdVal.gtSimdScalableKind == SimdScalableScalar) && (index != 0))
+                                {
+                                    element = 0;
+                                }
+                                printf("0x%02x", static_cast<unsigned>(element));
+                                break;
+                            }
+
+                            case TYP_SHORT:
+                            case TYP_USHORT:
+                            {
+                                uint16_t element = simdVal.gtSimdScalableIndexU16[0];
+                                if (simdVal.gtSimdScalableKind == SimdScalableSequence)
+                                {
+                                    element =
+                                        static_cast<uint16_t>(element + (index * simdVal.gtSimdScalableStepU16[0]));
+                                }
+                                else if ((simdVal.gtSimdScalableKind == SimdScalableScalar) && (index != 0))
+                                {
+                                    element = 0;
+                                }
+                                printf("0x%04x", static_cast<unsigned>(element));
+                                break;
+                            }
+
+                            case TYP_INT:
+                            case TYP_UINT:
+                            {
+                                uint32_t element = simdVal.gtSimdScalableIndexU32[0];
+                                if (simdVal.gtSimdScalableKind == SimdScalableSequence)
+                                {
+                                    element =
+                                        static_cast<uint32_t>(element + (index * simdVal.gtSimdScalableStepU32[0]));
+                                }
+                                else if ((simdVal.gtSimdScalableKind == SimdScalableScalar) && (index != 0))
+                                {
+                                    element = 0;
+                                }
+                                printf("0x%08x", element);
+                                break;
+                            }
+
+                            case TYP_LONG:
+                            case TYP_ULONG:
+                            {
+                                uint64_t element = simdVal.gtSimdScalableIndexU64[0];
+                                if (simdVal.gtSimdScalableKind == SimdScalableSequence)
+                                {
+                                    element += index * simdVal.gtSimdScalableStepU64[0];
+                                }
+                                else if ((simdVal.gtSimdScalableKind == SimdScalableScalar) && (index != 0))
+                                {
+                                    element = 0;
+                                }
+                                printf("0x%016llx", static_cast<unsigned long long>(element));
+                                break;
+                            }
+
+                            case TYP_FLOAT:
+                            {
+                                float element = simdVal.gtSimdScalableIndexF32[0];
+                                if (simdVal.gtSimdScalableKind == SimdScalableSequence)
+                                {
+                                    element += index * simdVal.gtSimdScalableStepF32[0];
+                                }
+                                else if ((simdVal.gtSimdScalableKind == SimdScalableScalar) && (index != 0))
+                                {
+                                    element = 0.0;
+                                }
+                                printf("%#.9g", element);
+                                break;
+                            }
+
+                            case TYP_DOUBLE:
+                            {
+                                double element = simdVal.gtSimdScalableIndexF64[0];
+                                if (simdVal.gtSimdScalableKind == SimdScalableSequence)
+                                {
+                                    element += index * simdVal.gtSimdScalableStepF64[0];
+                                }
+                                else if ((simdVal.gtSimdScalableKind == SimdScalableScalar) && (index != 0))
+                                {
+                                    element = 0.0;
+                                }
+                                printf("%#.17g", element);
+                                break;
+                            }
+
+                            default:
+                                unreached();
                         }
+                    };
 
-                        case SimdScalableScalar:
-                            printf("<0x%016llx, 0x0, 0x0... >", vecCon->gtSimdScalableVal.gtSimdScalableIndex);
-                            break;
+                    printf("%-6s <", varTypeName(simdBaseType));
+                    printElement(0);
+                    printf(", ");
+                    printElement(1);
+                    printf(", ");
+                    printElement(2);
+                    printf("...>");
 
-                        default:
-                            unreached();
-                    }
                     break;
                 }
 #endif // TARGET_XARCH
