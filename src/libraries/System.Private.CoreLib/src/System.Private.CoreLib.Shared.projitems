@@ -1266,6 +1266,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ApartmentState.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\AsyncLocal.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\AutoResetEvent.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Backoff.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\CancellationToken.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\CancellationTokenRegistration.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\CancellationTokenSource.cs" />
@@ -1284,9 +1285,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Lock.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LockRecursionException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelLock.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Backoff.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelSpinWaiter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelMonitor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelSpinWaiter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelThreadBlocker.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ManualResetEvent.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ManualResetEventSlim.cs" />
@@ -1876,9 +1876,6 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateSymbolicLink.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.CreateSymbolicLink.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Mincore\Interop.WaitOnAddress.cs">
-      <Link>Common\Interop\Windows\Mincore\Interop.WaitOnAddress.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CriticalSection.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.CriticalSection.cs</Link>
     </Compile>
@@ -2179,6 +2176,9 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.VirtualQuery_Ptr.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.VirtualQuery_Ptr.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Mincore\Interop.WaitOnAddress.cs">
+      <Link>Common\Interop\Windows\Mincore\Interop.WaitOnAddress.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.WideCharToMultiByte.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.WideCharToMultiByte.cs</Link>
     </Compile>
@@ -2360,8 +2360,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\SecureString.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\DeferredDisposableLifetime.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\EventWaitHandle.Windows.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelMonitor.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelFutex.Windows.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelMonitor.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Mutex.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PreAllocatedOverlapped.WindowsThreadPool.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\RegisteredWaitHandle.WindowsThreadPool.cs" />
@@ -2461,6 +2461,9 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.FTruncate.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.FTruncate.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Futex.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.Futex.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetCpuUtilization.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetCpuUtilization.cs</Link>
     </Compile>
@@ -2526,9 +2529,6 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.LowLevelMonitor.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.LowLevelMonitor.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Futex.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.Futex.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.LSeek.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.LSeek.cs</Link>
@@ -2698,8 +2698,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\RuntimeInformation.Unix.cs" Condition="'$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\StandardOleMarshalObject.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\SecureString.Unix.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelMonitor.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelFutex.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelMonitor.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Thread.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\TimerQueue.Unix.cs" Condition="'$(FeaturePortableTimer)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.Unix.cs" />
