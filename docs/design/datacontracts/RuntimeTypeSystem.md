@@ -117,10 +117,10 @@ partial interface IRuntimeTypeSystem : IContract
     // return true if the TypeHandle represents an array, and set the rank to either 0 (if the type is not an array), or the rank number if it is.
     bool IsArray(TypeHandle typeHandle, out uint rank);
     TypeHandle GetTypeParam(TypeHandle typeHandle);
-    TypeHandle GetConstructedType(TypeHandle typeHandle, CorElementType corElementType, int rank, ImmutableArray<TypeHandle> typeArguments, byte callConv = 0); // callConv being one of the legal ECMA calling conventions as defined in II.15.3
+    TypeHandle GetConstructedType(TypeHandle typeHandle, CorElementType corElementType, int rank, ImmutableArray<TypeHandle> typeArguments, SignatureCallingConvention callConv = SignatureCallingConvention.Default);
     TypeHandle GetPrimitiveType(CorElementType typeCode);
     bool IsGenericVariable(TypeHandle typeHandle, out TargetPointer module, out uint token);
-    bool IsFunctionPointer(TypeHandle typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out byte callConv);
+    bool IsFunctionPointer(TypeHandle typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out SignatureCallingConvention callConv);
     bool IsPointer(TypeHandle typeHandle);
     bool IsTypeDesc(TypeHandle typeHandle);
     TargetPointer GetLoaderModule(TypeHandle typeHandle);
@@ -1005,9 +1005,9 @@ Contracts used:
 
     }
 
-    private bool FnPtrMatch(TypeHandle candidate, ImmutableArray<TypeHandle> retAndArgTypes, byte callConv)
+    private bool FnPtrMatch(TypeHandle candidate, ImmutableArray<TypeHandle> retAndArgTypes, SignatureCallingConvention callConv)
     {
-        if (!IsFunctionPointer(candidate, out ReadOnlySpan<TypeHandle> candidateRetAndArgs, out byte candidateCallConv))
+        if (!IsFunctionPointer(candidate, out ReadOnlySpan<TypeHandle> candidateRetAndArgs, out SignatureCallingConvention candidateCallConv))
             return false;
         if (candidateCallConv != callConv)
             return false;
@@ -1036,7 +1036,7 @@ Contracts used:
         return (flags & (uint)MethodTableAuxiliaryFlags.IsNotFullyLoaded) == 0;
     }
 
-    TypeHandle GetConstructedType(TypeHandle typeHandle, CorElementType corElementType, int rank, ImmutableArray<TypeHandle> typeArguments, byte callConv)
+    TypeHandle GetConstructedType(TypeHandle typeHandle, CorElementType corElementType, int rank, ImmutableArray<TypeHandle> typeArguments, SignatureCallingConvention callConv)
     {
         // For function pointers the type handle arg is unused - type information is provided in the type arguments.
         if (corElementType != CorElementType.FnPtr && typeHandle.Address == TargetPointer.Null)
@@ -1113,7 +1113,7 @@ Contracts used:
         return false;
     }
 
-    public bool IsFunctionPointer(TypeHandle typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out byte callConv)
+    public bool IsFunctionPointer(TypeHandle typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out SignatureCallingConvention callConv)
     {
         retAndArgTypes = default;
         callConv = default;
