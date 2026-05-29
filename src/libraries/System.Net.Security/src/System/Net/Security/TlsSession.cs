@@ -12,10 +12,10 @@ namespace System.Net.Security
 {
     /// <summary>
     /// Non-blocking TLS state machine wrapper around the existing
-    /// <see cref="SslStreamPal"/>. PoC scope: detached mode only (caller owns I/O).
-    /// Supported on Linux/FreeBSD (OpenSSL) and Windows (SChannel). Provides
-    /// <see cref="ProcessHandshake"/>, <see cref="Encrypt"/>, <see cref="Decrypt"/>,
-    /// and a pending-output queue.
+    /// <see cref="SslStreamPal"/>. The caller owns I/O and drives ciphertext
+    /// in and out via byte spans. Supported on Linux/FreeBSD (OpenSSL) and
+    /// Windows (SChannel). Provides <see cref="ProcessHandshake"/>,
+    /// <see cref="Encrypt"/>, <see cref="Decrypt"/>, and a pending-output queue.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -795,23 +795,7 @@ namespace System.Net.Security
             }
         }
 
-        // ── Renegotiation / Post-handshake auth ──────────────────────────
-
-        /// <summary>
-        /// Server-side: initiates a TLS renegotiation. On TLS 1.2 this issues
-        /// a HelloRequest; on TLS 1.3 this issues a post-handshake
-        /// CertificateRequest (same primitive as <see cref="RequestClientCertificate"/>,
-        /// because OpenSSL exposes only the combined operation).
-        /// </summary>
-        /// <remarks>
-        /// The generated handshake bytes are staged into the pending-output
-        /// buffer (drained into <paramref name="ciphertext"/>). The caller must
-        /// then continue normal <see cref="Decrypt"/> / <see cref="Encrypt"/>
-        /// operations; OpenSSL processes the peer's response transparently
-        /// inside subsequent <c>SSL_read</c> calls.
-        /// </remarks>
-        public TlsOperationStatus RequestRenegotiation(Span<byte> ciphertext, out int produced)
-            => RequestClientCertificate(ciphertext, out produced);
+        // ── Post-handshake auth ──────────────────────────────────────────
 
         /// <summary>
         /// Server-side: requests a client certificate from the peer after the
@@ -1232,11 +1216,10 @@ namespace System.Net.Security
         // call. OpenSSL handles credential acquisition lazily inside the PAL,
         // but SChannel rejects ASC/ISC with a null credentials handle.
         //
-        // PoC scope: minimal acquisition path — server requires a pre-set
-        // CertificateContext (or one resolved via ServerCertSelectionDelegate
-        // above), and the client connects anonymously. We don't yet integrate
-        // with SslSessionsCache, the legacy CertSelectionDelegate, or client
-        // certificate selection.
+        // Server requires a pre-set CertificateContext (or one resolved via
+        // ServerCertSelectionDelegate above); the client connects anonymously.
+        // SslSessionsCache, the legacy CertSelectionDelegate, and client
+        // certificate selection are not yet integrated.
         private void EnsureCredentialsAcquired()
         {
             if (_context.CredentialsHandle is not null)

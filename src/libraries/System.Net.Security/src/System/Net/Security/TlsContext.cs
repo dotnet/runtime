@@ -12,8 +12,8 @@ namespace System.Net.Security
     /// determined by which factory is used.
     /// </summary>
     /// <remarks>
-    /// PoC scope: holds the resolved options bag. Multi-connection sharing /
-    /// session cache reuse is not yet wired through; each <see cref="TlsSession"/>
+    /// Holds the resolved options bag. Multi-connection sharing / session
+    /// cache reuse is not yet wired through; each <see cref="TlsSession"/>
     /// gets its own native context allocated lazily on the first handshake call.
     /// </remarks>
     public sealed class TlsContext : IDisposable

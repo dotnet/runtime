@@ -1004,7 +1004,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        public async Task ServerSession_RequestRenegotiation_Tls12_ProducesHelloRequest()
+        public async Task ServerSession_RequestClientCertificate_Tls12_ProducesHandshakeBytes()
         {
             using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
             string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
@@ -1035,18 +1035,18 @@ namespace System.Net.Security.Tests
                 Assert.True(session.IsHandshakeComplete);
                 Assert.Equal(SslProtocols.Tls12, session.NegotiatedProtocol);
 
-                // Server requests renegotiation. We only verify that the API runs
-                // and produces a HelloRequest byte stream; driving the full
-                // renegotiation back through SslStream is intentionally out of
-                // scope here since SslStream's client-side reneg path needs the
-                // server to also pump the post-handshake read loop, which the
-                // standalone TlsSession leaves to the caller.
+                // On TLS 1.2, post-handshake client-cert request is implemented
+                // as a renegotiation initiated by a HelloRequest. We only verify
+                // that the API runs and emits handshake bytes; driving the
+                // exchange back through SslStream is out of scope because the
+                // standalone TlsSession leaves the post-handshake read loop to
+                // the caller.
                 byte[] reneg = ArrayPool<byte>.Shared.Rent(CipherBufSize);
                 try
                 {
-                    TlsOperationStatus status = session.RequestRenegotiation(reneg, out int produced);
+                    TlsOperationStatus status = session.RequestClientCertificate(reneg, out int produced);
                     Assert.NotEqual(TlsOperationStatus.Closed, status);
-                    Assert.True(produced > 0, "RequestRenegotiation should emit a HelloRequest.");
+                    Assert.True(produced > 0, "RequestClientCertificate should emit a HelloRequest.");
                 }
                 finally
                 {
