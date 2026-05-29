@@ -66,7 +66,7 @@ struct CnsVal
 UNATIVE_OFFSET emitInsSize(instrDesc* id, code_t code, bool includeRexPrefixSize);
 UNATIVE_OFFSET emitInsSizeSVCalcDisp(instrDesc* id, code_t code, int var, int dsp);
 #if defined(TARGET_AMD64)
-    bool emitIsSecondFramePtrCandidate(instruction ins, bool EBPbased, int dsp, int* pAdjustedDsp);
+bool emitIsSecondFramePtrCandidate(instruction ins, bool EBPbased, int dsp, int* pAdjustedDsp);
 #endif // TARGET_AMD64
 UNATIVE_OFFSET emitInsSizeSV(instrDesc* id, code_t code, int var, int dsp);
 UNATIVE_OFFSET emitInsSizeSV(instrDesc* id, code_t code, int var, int dsp, int val);
@@ -818,9 +818,9 @@ void emitDispAddrMode(instrDesc* id, bool noDetail = false) const;
 void emitDispShift(instruction ins, int cnt = 0) const;
 
 #if defined(TARGET_AMD64)
-// Display state for secondary frame-pointer redirects (see emitDispFrameRef): when a stack access
-// is redirected through REG_OPT_RSVD2 the operand shows [rbx+disp8] and the canonical frame
-// reference is emitted as a trailing comment finalized at the end of the instruction line.
+// Display state for secondary frame-pointer redirects (see emitDispFrameRef): the operand shows
+// [rbx+disp8] and the canonical frame reference is emitted as a trailing comment, finalized at the
+// end of the instruction line.
 bool emitDispSecondFramePtrPending = false;
 bool emitDispSecondFramePtrFPbased = false;
 int  emitDispSecondFramePtrAddr    = 0;

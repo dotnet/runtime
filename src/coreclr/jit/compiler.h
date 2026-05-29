@@ -10918,18 +10918,6 @@ public:
     bool compMaskConvertUsed          = false; // Does the method have Convert Mask To Vector nodes.
     bool compUsesThrowHelper          = false; // There is a call to a THROW_HELPER for the compiled method.
 
-#ifdef TARGET_AMD64
-    // x64 spike (see JitSecondFramePtr): when enabled, a callee-saved register is reserved to
-    // act as a secondary stack base pointer. It holds (primaryBase +/- compSecondFramePtrOffset),
-    // used to address far locals with a short (disp8) displacement. REG_NA means the feature is
-    // off. compSecondFramePtrFPbased records whether the secondary register shadows the frame
-    // pointer (RBP, locals at negative offsets) or the stack pointer (RSP, locals at positive
-    // offsets); only accesses matching that base are redirected.
-    regNumber compSecondFramePtrReg     = REG_NA;
-    int       compSecondFramePtrOffset  = 0;
-    bool      compSecondFramePtrFPbased = false;
-#endif // TARGET_AMD64
-
     // NOTE: These values are only reliable after
     //       the importing is completely finished.
 

@@ -5251,12 +5251,10 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instrDesc* id)
     return sz;
 }
 
-//------------------------------------------------------------------------
 #if defined(TARGET_AMD64)
 //------------------------------------------------------------------------
-// emitIsSecondFramePtrCandidate: Determine whether a stack access should be
-//    redirected through the reserved secondary frame-pointer register (an x64
-//    spike enabled by JitConfig.JitSecondFramePtr).
+// emitIsSecondFramePtrCandidate: should this stack access be redirected through the secondary
+//    frame-pointer register (see JitConfig.JitSecondFramePtr)?
 //
 // Arguments:
 //    ins         -- the instruction
@@ -5265,26 +5263,26 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instrDesc* id)
 //    pAdjustedDsp - [out] the displacement off the secondary register
 //
 // Return Value:
-//    true if the access can use [REG_OPT_RSVD2 + disp8] instead of a disp32
-//    form off the canonical base; false to use the canonical base/displacement.
+//    true if the access can use [REG_OPT_RSVD2 + disp8] instead of a disp32 form off the canonical
+//    base; false to keep the canonical base/displacement.
 //
 // Notes:
-//    Must be deterministic between size estimation and output. Redirects an access whose
-//    canonical displacement does not fit in a disp8 but does once shifted by the secondary
-//    offset, and only when its base (RBP vs RSP) matches the base the secondary register
-//    shadows. Instructions with special displacement/encoding handling (EVEX, APX extended
-//    EVEX, SSE 0F38/0F3A, crc32) are excluded so the simple [reg+disp8] form always applies.
+//    Must be deterministic between size estimation and output. Redirects an access whose canonical
+//    displacement needs a disp32 but fits a disp8 once shifted by the secondary offset, and only when
+//    its base (RBP vs RSP) matches the base the secondary register shadows. Instructions with special
+//    displacement/encoding handling (EVEX, APX extended EVEX, SSE 0F38/0F3A, crc32) are excluded so the
+//    plain [reg+disp8] form always applies.
 //
 bool emitter::emitIsSecondFramePtrCandidate(instruction ins, bool EBPbased, int dsp, int* pAdjustedDsp)
 {
-    if (m_compiler->compSecondFramePtrReg == REG_NA)
+    if (codeGen->genSecondFramePtrReg == REG_NA)
     {
         return false;
     }
 
     // Only redirect accesses whose canonical base matches the base the secondary register shadows
     // (RBP for FP-based frames, RSP otherwise). Mixing bases would compute a wrong displacement.
-    if (EBPbased != m_compiler->compSecondFramePtrFPbased)
+    if (EBPbased != codeGen->genSecondFramePtrFPbased)
     {
         return false;
     }
@@ -5297,10 +5295,9 @@ bool emitter::emitIsSecondFramePtrCandidate(instruction ins, bool EBPbased, int 
 
     // The secondary register holds (base - offset) for RBP frames (locals at negative offsets) and
     // (base + offset) for RSP frames (locals at positive offsets); invert accordingly.
-    const int  adjusted = EBPbased ? (dsp + m_compiler->compSecondFramePtrOffset)
-                                    : (dsp - m_compiler->compSecondFramePtrOffset);
-    const bool rawFits  = ((signed char)dsp == (ssize_t)dsp);
-    const bool adjFits  = ((signed char)adjusted == (ssize_t)adjusted);
+    const int adjusted = EBPbased ? (dsp + codeGen->genSecondFramePtrOffset) : (dsp - codeGen->genSecondFramePtrOffset);
+    const bool rawFits = ((signed char)dsp == (ssize_t)dsp);
+    const bool adjFits = ((signed char)adjusted == (ssize_t)adjusted);
 
     if (rawFits || !adjFits)
     {
@@ -5312,6 +5309,7 @@ bool emitter::emitIsSecondFramePtrCandidate(instruction ins, bool EBPbased, int 
 }
 #endif // TARGET_AMD64
 
+//------------------------------------------------------------------------
 // emitInsSizeSVCalcDisp: Calculate instruction size.
 //
 // Arguments:
@@ -5337,8 +5335,8 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSVCalcDisp(instrDesc* id, code_t code,
     dsp = adr + id->idAddr()->iiaLclVar.lvaOffset();
 
 #if defined(TARGET_AMD64)
-    // x64 spike: when the access can be redirected through the secondary frame pointer it uses a
-    // [reg+disp8] form with no SIB byte, regardless of EVEX/zero-disp handling below.
+    // A redirected access uses a [reg+disp8] form with no SIB byte, regardless of the EVEX/zero-disp
+    // handling below.
     int secondDsp;
     if (emitIsSecondFramePtrCandidate(ins, EBPbased, dsp, &secondDsp))
     {
@@ -12324,15 +12322,15 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm, instruc
     }
 
 #if defined(TARGET_AMD64)
-    // x64 spike: when an access is redirected through the secondary frame pointer the emitted bytes
-    // use [REG_OPT_RSVD2 + disp8] rather than the canonical [rbp/rsp + disp]. Print what is actually
-    // encoded so the listing matches the bytes, then append the logical reference as a comment.
+    // A redirected access is emitted as [REG_OPT_RSVD2 + disp8] rather than the canonical
+    // [rbp/rsp + disp]. Print what is actually encoded so the listing matches the bytes, then append
+    // the logical reference as a trailing comment.
     bool secondRedirected = false;
     int  secondDsp        = 0;
     if ((m_compiler->lvaDoneFrameLayout == Compiler::FINAL_FRAME_LAYOUT) && asmfm)
     {
-        bool bEBPcand = false;
-        int  rawDsp   = m_compiler->lvaFrameAddress(varx, &bEBPcand) + disp;
+        bool bEBPcand    = false;
+        int  rawDsp      = m_compiler->lvaFrameAddress(varx, &bEBPcand) + disp;
         secondRedirected = emitIsSecondFramePtrCandidate(ins, bEBPcand, rawDsp, &secondDsp);
     }
 #endif // TARGET_AMD64
@@ -12363,40 +12361,40 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm, instruc
         else
 #endif // TARGET_AMD64
             if (bEBP)
-        {
-            printf(STR_FPBASE);
+            {
+                printf(STR_FPBASE);
 
-            if (addr < 0)
-            {
-                printf("-0x%02X", -addr);
+                if (addr < 0)
+                {
+                    printf("-0x%02X", -addr);
+                }
+                else if (addr > 0)
+                {
+                    printf("+0x%02X", addr);
+                }
             }
-            else if (addr > 0)
+            else
             {
-                printf("+0x%02X", addr);
-            }
-        }
-        else
-        {
-            /* Adjust the offset by amount currently pushed on the stack */
+                /* Adjust the offset by amount currently pushed on the stack */
 
-            printf(STR_SPBASE);
+                printf(STR_SPBASE);
 
-            if (addr < 0)
-            {
-                printf("-0x%02X", -addr);
-            }
-            else if (addr > 0)
-            {
-                printf("+0x%02X", addr);
-            }
+                if (addr < 0)
+                {
+                    printf("-0x%02X", -addr);
+                }
+                else if (addr > 0)
+                {
+                    printf("+0x%02X", addr);
+                }
 
 #if !FEATURE_FIXED_OUT_ARGS
 
-            if (emitCurStackLvl)
-                printf("+0x%02X", emitCurStackLvl);
+                if (emitCurStackLvl)
+                    printf("+0x%02X", emitCurStackLvl);
 
 #endif // !FEATURE_FIXED_OUT_ARGS
-        }
+            }
     }
 
     printf("]");
@@ -12404,8 +12402,8 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm, instruc
 #if defined(TARGET_AMD64)
     if (secondRedirected)
     {
-        // Defer the canonical frame reference to a trailing comment at the end of the instruction
-        // line (operands may still follow the memory operand on the same line).
+        // Defer the canonical frame reference to a trailing comment: operands may still follow the
+        // memory operand on the same line.
         emitDispSecondFramePtrPending = true;
         emitDispSecondFramePtrFPbased = bEBP;
         emitDispSecondFramePtrAddr    = addr;
@@ -15928,97 +15926,97 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     else
 #endif // TARGET_AMD64
         if (EBPbased)
-    {
-        // EBP-based variable: does the offset fit in a byte?
-        if (EncodedBySSE38orSSE3A(ins) || (ins == INS_crc32))
         {
-            if (dspInByte)
+            // EBP-based variable: does the offset fit in a byte?
+            if (EncodedBySSE38orSSE3A(ins) || (ins == INS_crc32))
             {
-                dst += emitOutputByte(dst, code | 0x45);
+                if (dspInByte)
+                {
+                    dst += emitOutputByte(dst, code | 0x45);
+                    dst += emitOutputByte(dst, dsp);
+                }
+                else
+                {
+                    dst += emitOutputByte(dst, code | 0x85);
+                    dst += emitOutputLong(dst, dsp);
+                }
+            }
+            else if (dspInByte)
+            {
+                dst += emitOutputWord(dst, code | 0x4500);
                 dst += emitOutputByte(dst, dsp);
             }
             else
             {
-                dst += emitOutputByte(dst, code | 0x85);
+                dst += emitOutputWord(dst, code | 0x8500);
                 dst += emitOutputLong(dst, dsp);
             }
         }
-        else if (dspInByte)
-        {
-            dst += emitOutputWord(dst, code | 0x4500);
-            dst += emitOutputByte(dst, dsp);
-        }
         else
         {
-            dst += emitOutputWord(dst, code | 0x8500);
-            dst += emitOutputLong(dst, dsp);
-        }
-    }
-    else
-    {
 #if !FEATURE_FIXED_OUT_ARGS
-        // Adjust the offset by the amount currently pushed on the CPU stack
-        dsp += emitCurStackLvl;
+            // Adjust the offset by the amount currently pushed on the CPU stack
+            dsp += emitCurStackLvl;
 
-        if (IsEvexEncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins))
-        {
-            // We cannot reliably predict the encoding size up front so we shouldn't
-            // have encountered a scenario marked with compressed displacement. We
-            // did predict cases that could use the small encoding for VEX scenarios
+            if (IsEvexEncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins))
+            {
+                // We cannot reliably predict the encoding size up front so we shouldn't
+                // have encountered a scenario marked with compressed displacement. We
+                // did predict cases that could use the small encoding for VEX scenarios
 
-            assert(!HasCompressedDisplacement(id));
+                assert(!HasCompressedDisplacement(id));
 
-            if (!TakesEvexPrefix(id))
+                if (!TakesEvexPrefix(id))
+                {
+                    dspInByte = ((signed char)dsp == (ssize_t)dsp);
+                }
+            }
+            else
             {
                 dspInByte = ((signed char)dsp == (ssize_t)dsp);
             }
-        }
-        else
-        {
-            dspInByte = ((signed char)dsp == (ssize_t)dsp);
-        }
-        dspIsZero = (dsp == 0);
+            dspIsZero = (dsp == 0);
 #endif // !FEATURE_FIXED_OUT_ARGS
 
-        // Does the offset fit in a byte?
-        if (EncodedBySSE38orSSE3A(ins) || (ins == INS_crc32))
-        {
-            if (dspIsZero)
+            // Does the offset fit in a byte?
+            if (EncodedBySSE38orSSE3A(ins) || (ins == INS_crc32))
             {
-                dst += emitOutputByte(dst, code | 0x04);
+                if (dspIsZero)
+                {
+                    dst += emitOutputByte(dst, code | 0x04);
+                    dst += emitOutputByte(dst, 0x24);
+                }
+                else if (dspInByte)
+                {
+                    dst += emitOutputByte(dst, code | 0x44);
+                    dst += emitOutputByte(dst, 0x24);
+                    dst += emitOutputByte(dst, dsp);
+                }
+                else
+                {
+                    dst += emitOutputByte(dst, code | 0x84);
+                    dst += emitOutputByte(dst, 0x24);
+                    dst += emitOutputLong(dst, dsp);
+                }
+            }
+            else if (dspIsZero)
+            {
+                dst += emitOutputWord(dst, code | 0x0400);
                 dst += emitOutputByte(dst, 0x24);
             }
             else if (dspInByte)
             {
-                dst += emitOutputByte(dst, code | 0x44);
+                dst += emitOutputWord(dst, code | 0x4400);
                 dst += emitOutputByte(dst, 0x24);
                 dst += emitOutputByte(dst, dsp);
             }
             else
             {
-                dst += emitOutputByte(dst, code | 0x84);
+                dst += emitOutputWord(dst, code | 0x8400);
                 dst += emitOutputByte(dst, 0x24);
                 dst += emitOutputLong(dst, dsp);
             }
         }
-        else if (dspIsZero)
-        {
-            dst += emitOutputWord(dst, code | 0x0400);
-            dst += emitOutputByte(dst, 0x24);
-        }
-        else if (dspInByte)
-        {
-            dst += emitOutputWord(dst, code | 0x4400);
-            dst += emitOutputByte(dst, 0x24);
-            dst += emitOutputByte(dst, dsp);
-        }
-        else
-        {
-            dst += emitOutputWord(dst, code | 0x8400);
-            dst += emitOutputByte(dst, 0x24);
-            dst += emitOutputLong(dst, dsp);
-        }
-    }
 
     // Now generate the constant value, if present
     if (addc)

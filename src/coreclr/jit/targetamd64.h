@@ -417,8 +417,8 @@
 #define RBM_SPBASE               RBM_ESP
 #define STR_SPBASE               "rsp"
 
-// x64 spike: secondary stack base pointer register (see JitSecondFramePtr).
-// A low callee-saved register (RBX) is used to avoid REX.B / SIB encoding complications.
+// Secondary stack base pointer register (see JitSecondFramePtr). A low callee-saved register
+// (RBX) avoids REX.B / SIB encoding complications.
 #define REG_OPT_RSVD2            REG_EBX
 #define RBM_OPT_RSVD2            RBM_EBX
 

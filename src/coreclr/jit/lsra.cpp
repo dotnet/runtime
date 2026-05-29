@@ -2589,30 +2589,50 @@ void LinearScan::setFrameType()
 #endif // TARGET_ARMARCH || TARGET_RISCV64
 
 #if defined(TARGET_AMD64)
-    // x64 spike (see JitSecondFramePtr): reserve a callee-saved register to act as a secondary
-    // stack base pointer for large frames, extending cheap disp8 addressing. SuperPMI asmdiffs
-    // showed this is a net code-size win when optimizations are disabled (accurate frame estimate,
-    // no register-pressure cost) but a loss with optimizations on (enregistration makes the
-    // pre-allocation frame estimate a poor predictor and removing a register raises spill
-    // pressure), so restrict it to the optimizations-disabled path. Bail on localloc/OSR to keep
-    // the spike contained. Methods with EH are supported only on RBP frames: funclets re-establish
-    // the secondary pointer from RBP (the establisher frame pointer), so an SP base would not be
-    // recoverable inside a funclet.
+    // Consider reserving a callee-saved register as a secondary stack base pointer holding
+    // (primaryBase +/- offset), so far locals in a large frame can use cheap disp8 addressing
+    // (see JitSecondFramePtr).
     {
-        const int secondOffset = (int)JitConfig.JitSecondFramePtr();
-        if ((secondOffset != 0) && m_compiler->opts.OptimizationDisabled() &&
-            ((frameType == FT_ESP_FRAME) || (frameType == FT_EBP_FRAME)) && !m_compiler->compLocallocUsed &&
-            !m_compiler->opts.IsOSR() && ((m_compiler->compHndBBtabCount == 0) || (frameType == FT_EBP_FRAME)) &&
-            (m_compiler->lvaFrameSize(Compiler::REGALLOC_FRAME_LAYOUT) > 256))
+        const int secondFramePtrOffset = (int)JitConfig.JitSecondFramePtr();
+
+        // Only a win with optimizations disabled: with opts on, enregistration makes the pre-layout
+        // frame estimate a poor predictor and removing a register from allocation raises spill pressure.
+        const bool optDisabled = m_compiler->opts.OptimizationDisabled();
+
+        // We need a single base register (RBP or RSP) that is fixed for the whole method body. Other
+        // frame types (e.g. double-aligned) are not handled.
+        const bool haveFixedBase = (frameType == FT_EBP_FRAME) || (frameType == FT_ESP_FRAME);
+
+        // The frame must be large enough that some local can fall outside the primary disp8 window.
+        // Necessary but not sufficient; the precise band test is deferred to genSecondFramePtrIsProfitable
+        // (FINAL offsets are not available yet).
+        const bool frameLargeEnough = m_compiler->lvaFrameSize(Compiler::REGALLOC_FRAME_LAYOUT) > 256;
+
+        // With EH we require an RBP frame: filter funclets re-establish the pointer from RBP (the
+        // establisher frame pointer), so an RSP base would not be recoverable inside a funclet.
+        const bool ehCompatible = (m_compiler->compHndBBtabCount == 0) || (frameType == FT_EBP_FRAME);
+
+        // OSR reuses the Tier0 frame with a bespoke callee-save/SP setup the secondary-pointer prolog
+        // does not handle. OSR is normally optimized, so optDisabled already excludes it; this guard only
+        // matters under stress modes that force MinOpts on an OSR method.
+        const bool notOsr = !m_compiler->opts.IsOSR();
+
+        if ((secondFramePtrOffset != 0) && optDisabled && haveFixedBase && frameLargeEnough && ehCompatible && notOsr)
         {
-            m_compiler->compSecondFramePtrReg     = REG_OPT_RSVD2;
-            m_compiler->compSecondFramePtrOffset  = secondOffset;
-            m_compiler->compSecondFramePtrFPbased = (frameType == FT_EBP_FRAME);
+            // Reserve the register only as a candidate: remove it from allocation now, but defer the
+            // real decision -- does any local land in the secondary disp8 band -- to genFinalizeFrame
+            // (genSecondFramePtrIsProfitable), which can still cancel the reservation. The REGALLOC-layout
+            // offsets available here are unreliable (base-register flag not yet set, offsets inflated by
+            // an over-estimated callee-save area) so cannot drive the band test.
+            const bool wantFPbased                        = (frameType == FT_EBP_FRAME);
+            m_compiler->codeGen->genSecondFramePtrReg     = REG_OPT_RSVD2;
+            m_compiler->codeGen->genSecondFramePtrOffset  = secondFramePtrOffset;
+            m_compiler->codeGen->genSecondFramePtrFPbased = wantFPbased;
             m_compiler->codeGen->regSet.rsMaskResvd |= RBM_OPT_RSVD2;
             removeMask |= RBM_OPT_RSVD2.GetIntRegSet();
-            JITDUMP("  Reserved REG_OPT_RSVD2 (%s) as secondary frame pointer (%s%s%d)\n",
-                    getRegName(REG_OPT_RSVD2), m_compiler->compSecondFramePtrFPbased ? "RBP" : "RSP",
-                    m_compiler->compSecondFramePtrFPbased ? "-" : "+", secondOffset);
+            JITDUMP("  Reserved REG_OPT_RSVD2 (%s) as candidate secondary frame pointer (%s%s%d)\n",
+                    getRegName(REG_OPT_RSVD2), wantFPbased ? "RBP" : "RSP", wantFPbased ? "-" : "+",
+                    secondFramePtrOffset);
         }
     }
 #endif // TARGET_AMD64

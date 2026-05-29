@@ -700,10 +700,11 @@ RELEASE_CONFIG_INTEGER(JitInlinePolicyProfileThreshold, "JitInlinePolicyProfileT
 CONFIG_STRING(JitObjectStackAllocationRange, "JitObjectStackAllocationRange")
 RELEASE_CONFIG_INTEGER(JitObjectStackAllocation, "JitObjectStackAllocation", 1)
 
-// x64 spike: when non-zero, reserve a callee-saved register as a secondary stack base
-// pointer set to SP + <value>, used to address far locals with a short (disp8) displacement.
-// 0 disables the feature. Typical experimental value: 256.
-RELEASE_CONFIG_INTEGER(JitSecondFramePtr, "JitSecondFramePtr", 0)
+// When non-zero, reserve a callee-saved register as a secondary stack base pointer, offset by this
+// many bytes from the primary base, to address far locals with a disp8 displacement. 0 disables.
+// 256 is canonical: it tiles the two disp8 windows contiguously for a 512-byte cheap range; other
+// values overlap (less reach) or leave a gap. x64 only.
+RELEASE_CONFIG_INTEGER(JitSecondFramePtr, "JitSecondFramePtr", 0x100)
 RELEASE_CONFIG_INTEGER(JitObjectStackAllocationRefClass, "JitObjectStackAllocationRefClass", 1)
 RELEASE_CONFIG_INTEGER(JitObjectStackAllocationBoxedValueClass, "JitObjectStackAllocationBoxedValueClass", 1)
 RELEASE_CONFIG_INTEGER(JitObjectStackAllocationConditionalEscape, "JitObjectStackAllocationConditionalEscape", 1)
