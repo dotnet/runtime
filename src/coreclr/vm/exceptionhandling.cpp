@@ -1502,7 +1502,7 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
             exInfo.TakeExceptionPointersOwnership(ex);
         }
 
-        INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT(exInfo.m_ptrs.ContextRecord);
+        INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT(fef.GetExceptionContext());
         // m_exception is GC-reported via ExInfo chain scanning in ScanStackRoots.
         // Do NOT also GCPROTECT it - reporting the same location twice corrupts
         // the GC's relocation logic (see clr-code-guide.md §2.1.5).
