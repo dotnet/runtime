@@ -108,7 +108,7 @@ public abstract class DumpTestBase : IDisposable
             if (_dumpInfo is not null && _dumpInfo.IsDumpExpected(debuggeeName, dumpType, config.CompoundDirName))
                 Assert.Fail($"Expected {config.CompoundDirName}/{dumpType} dump for {debuggeeName} but not found: {dumpPath}");
 
-            throw new SkipTestException($"No {config.R2RMode} dump for {debuggeeName}: {dumpPath}");
+            throw new SkipTestException($"No {config.CompoundDirName} dump for {debuggeeName}: {dumpPath}");
         }
 
         _host = ClrMdDumpHost.Open(dumpPath, GetSymbolPaths(debuggeeName, versionDir));
