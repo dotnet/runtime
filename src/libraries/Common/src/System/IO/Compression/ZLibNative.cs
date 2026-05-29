@@ -288,11 +288,6 @@ namespace System.IO.Compression
                 set { _zStream.availOut = value; }
             }
 
-            private void EnsureNotDisposed()
-            {
-                ObjectDisposedException.ThrowIf(InitializationState == State.Disposed, this);
-            }
-
             private void EnsureState(State requiredState)
             {
                 if (InitializationState != requiredState)
@@ -370,7 +365,6 @@ namespace System.IO.Compression
 
             public unsafe ErrorCode DeflateEnd()
             {
-                EnsureNotDisposed();
                 EnsureState(State.InitializedForDeflate);
 
                 fixed (ZStream* stream = &_zStream)
@@ -450,7 +444,6 @@ namespace System.IO.Compression
 
             public unsafe ErrorCode InflateEnd()
             {
-                EnsureNotDisposed();
                 EnsureState(State.InitializedForInflate);
 
                 fixed (ZStream* stream = &_zStream)
