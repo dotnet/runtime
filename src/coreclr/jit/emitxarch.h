@@ -817,6 +817,15 @@ void emitDispReloc(ssize_t value) const;
 void emitDispAddrMode(instrDesc* id, bool noDetail = false) const;
 void emitDispShift(instruction ins, int cnt = 0) const;
 
+#if defined(TARGET_AMD64)
+// Display state for secondary frame-pointer redirects (see emitDispFrameRef): when a stack access
+// is redirected through REG_OPT_RSVD2 the operand shows [rbx+disp8] and the canonical frame
+// reference is emitted as a trailing comment finalized at the end of the instruction line.
+bool emitDispSecondFramePtrPending = false;
+bool emitDispSecondFramePtrFPbased = false;
+int  emitDispSecondFramePtrAddr    = 0;
+#endif // TARGET_AMD64
+
 const char* emitXMMregName(unsigned reg) const;
 const char* emitYMMregName(unsigned reg) const;
 const char* emitZMMregName(unsigned reg) const;

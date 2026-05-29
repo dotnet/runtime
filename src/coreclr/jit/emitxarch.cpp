@@ -12404,21 +12404,11 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm, instruc
 #if defined(TARGET_AMD64)
     if (secondRedirected)
     {
-        // Show the canonical frame reference the redirected access stands in for. Use a parenthesized
-        // suffix (mirroring the varName annotation below) rather than a ';' comment, since operands
-        // may still follow on the same line.
-        printf(" (%s", bEBP ? STR_FPBASE : STR_SPBASE);
-
-        if (addr < 0)
-        {
-            printf("-0x%02X", -addr);
-        }
-        else if (addr > 0)
-        {
-            printf("+0x%02X", addr);
-        }
-
-        printf(")");
+        // Defer the canonical frame reference to a trailing comment at the end of the instruction
+        // line (operands may still follow the memory operand on the same line).
+        emitDispSecondFramePtrPending = true;
+        emitDispSecondFramePtrFPbased = bEBP;
+        emitDispSecondFramePtrAddr    = addr;
     }
 #endif // TARGET_AMD64
 
@@ -12963,6 +12953,10 @@ void emitter::emitDispIns(
     const char* sstr;
 
     instruction ins = id->idIns();
+
+#if defined(TARGET_AMD64)
+    emitDispSecondFramePtrPending = false;
+#endif // TARGET_AMD64
 
 #ifdef DEBUG
     if (m_compiler->verbose)
@@ -14316,6 +14310,26 @@ void emitter::emitDispIns(
         printf(" (ECS:%d, ACS:%d)", id->idCodeSize(), sz);
     }
 #endif
+
+#if defined(TARGET_AMD64)
+    if (emitDispSecondFramePtrPending)
+    {
+        // The memory operand was emitted as [REG_OPT_RSVD2 + disp8]; show the canonical frame
+        // reference it stands in for as a trailing comment.
+        printf("      ; %s", emitDispSecondFramePtrFPbased ? STR_FPBASE : STR_SPBASE);
+
+        if (emitDispSecondFramePtrAddr < 0)
+        {
+            printf("-0x%02X", -emitDispSecondFramePtrAddr);
+        }
+        else if (emitDispSecondFramePtrAddr > 0)
+        {
+            printf("+0x%02X", emitDispSecondFramePtrAddr);
+        }
+
+        emitDispSecondFramePtrPending = false;
+    }
+#endif // TARGET_AMD64
 
     printf("\n");
 }
