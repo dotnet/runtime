@@ -27542,8 +27542,9 @@ GenTree* Compiler::gtNewSimdZipNode(
                 unreached();
         }
 
-        GenTreeVecCon* shuffle = gtNewVconNode(type);
-        uint32_t       start   = upper ? (simdCount / 2) : 0;
+        GenTreeVecCon* shuffle       = gtNewVconNode(type);
+        var_types      indexBaseType = varTypeToUnsigned(roundUpGPRType(elementSize));
+        uint32_t       start         = upper ? (simdCount / 2) : 0;
 
         for (uint32_t index = 0; index < simdCount; index++)
         {
@@ -27554,27 +27555,7 @@ GenTree* Compiler::gtNewSimdZipNode(
                 shuffleIndex += simdCount;
             }
 
-            switch (elementSize)
-            {
-                case 1:
-                    shuffle->gtSimdVal.u8[index] = static_cast<uint8_t>(shuffleIndex);
-                    break;
-
-                case 2:
-                    shuffle->gtSimdVal.u16[index] = static_cast<uint16_t>(shuffleIndex);
-                    break;
-
-                case 4:
-                    shuffle->gtSimdVal.u32[index] = shuffleIndex;
-                    break;
-
-                case 8:
-                    shuffle->gtSimdVal.u64[index] = shuffleIndex;
-                    break;
-
-                default:
-                    unreached();
-            }
+            shuffle->SetElementIntegral(indexBaseType, index, shuffleIndex);
         }
 
         return gtNewSimdHWIntrinsicNode(type, op1, shuffle, op2, intrinsic, simdBaseType, simdSize);
@@ -27686,12 +27667,13 @@ GenTree* Compiler::gtNewSimdUnzipNode(
         // var tmp = op1.ToVectorUnsafe().WithUpper(op2);
         // return Shuffle(tmp, indices).GetLower();
 
-        unsigned       wideSimdSize = simdSize * 2;
-        var_types      wideType     = getSIMDTypeForSize(wideSimdSize);
-        GenTreeVecCon* shuffle      = gtNewVconNode(wideType);
-        uint32_t       wideCount    = getSIMDVectorLength(wideSimdSize, simdBaseType);
-        uint32_t       start        = odd ? 1 : 0;
-        uint32_t       lowerCount   = (simdCount - start + 1) / 2;
+        unsigned       wideSimdSize  = simdSize * 2;
+        var_types      wideType      = getSIMDTypeForSize(wideSimdSize);
+        GenTreeVecCon* shuffle       = gtNewVconNode(wideType);
+        var_types      indexBaseType = varTypeToUnsigned(roundUpGPRType(elementSize));
+        uint32_t       wideCount     = getSIMDVectorLength(wideSimdSize, simdBaseType);
+        uint32_t       start         = odd ? 1 : 0;
+        uint32_t       lowerCount    = (simdCount - start + 1) / 2;
 
         for (uint32_t index = 0; index < wideCount; index++)
         {
@@ -27703,27 +27685,7 @@ GenTree* Compiler::gtNewSimdUnzipNode(
                     (index < lowerCount) ? start + (index * 2) : simdCount + start + ((index - lowerCount) * 2);
             }
 
-            switch (elementSize)
-            {
-                case 1:
-                    shuffle->gtSimdVal.u8[index] = static_cast<uint8_t>(shuffleIndex);
-                    break;
-
-                case 2:
-                    shuffle->gtSimdVal.u16[index] = static_cast<uint16_t>(shuffleIndex);
-                    break;
-
-                case 4:
-                    shuffle->gtSimdVal.u32[index] = shuffleIndex;
-                    break;
-
-                case 8:
-                    shuffle->gtSimdVal.u64[index] = shuffleIndex;
-                    break;
-
-                default:
-                    unreached();
-            }
+            shuffle->SetElementIntegral(indexBaseType, index, shuffleIndex);
         }
 
         assert(IsValidForShuffle(shuffle, wideSimdSize, simdBaseType, nullptr, false));
@@ -27767,35 +27729,16 @@ GenTree* Compiler::gtNewSimdUnzipNode(
                 unreached();
         }
 
-        GenTreeVecCon* shuffle = gtNewVconNode(type);
-        uint32_t       start   = odd ? 1 : 0;
+        GenTreeVecCon* shuffle       = gtNewVconNode(type);
+        var_types      indexBaseType = varTypeToUnsigned(roundUpGPRType(elementSize));
+        uint32_t       start         = odd ? 1 : 0;
 
         for (uint32_t index = 0; index < simdCount; index++)
         {
             uint32_t shuffleIndex =
                 (index < (simdCount / 2)) ? start + (2 * index) : simdCount + start + (2 * (index - (simdCount / 2)));
 
-            switch (elementSize)
-            {
-                case 1:
-                    shuffle->gtSimdVal.u8[index] = static_cast<uint8_t>(shuffleIndex);
-                    break;
-
-                case 2:
-                    shuffle->gtSimdVal.u16[index] = static_cast<uint16_t>(shuffleIndex);
-                    break;
-
-                case 4:
-                    shuffle->gtSimdVal.u32[index] = shuffleIndex;
-                    break;
-
-                case 8:
-                    shuffle->gtSimdVal.u64[index] = shuffleIndex;
-                    break;
-
-                default:
-                    unreached();
-            }
+            shuffle->SetElementIntegral(indexBaseType, index, shuffleIndex);
         }
 
         return gtNewSimdHWIntrinsicNode(type, op1, shuffle, op2, intrinsic, simdBaseType, simdSize);
@@ -27863,34 +27806,15 @@ GenTree* Compiler::gtNewSimdReverseNode(var_types type, GenTree* op1, var_types 
 
     // return Shuffle(op1, indices);
 
-    GenTreeVecCon* shuffle     = gtNewVconNode(type);
-    unsigned       elementSize = genTypeSize(simdBaseType);
+    GenTreeVecCon* shuffle       = gtNewVconNode(type);
+    unsigned       elementSize   = genTypeSize(simdBaseType);
+    var_types      indexBaseType = varTypeToUnsigned(roundUpGPRType(elementSize));
 
     for (uint32_t index = 0; index < simdCount; index++)
     {
         uint32_t shuffleIndex = simdCount - 1 - index;
 
-        switch (elementSize)
-        {
-            case 1:
-                shuffle->gtSimdVal.u8[index] = static_cast<uint8_t>(shuffleIndex);
-                break;
-
-            case 2:
-                shuffle->gtSimdVal.u16[index] = static_cast<uint16_t>(shuffleIndex);
-                break;
-
-            case 4:
-                shuffle->gtSimdVal.u32[index] = shuffleIndex;
-                break;
-
-            case 8:
-                shuffle->gtSimdVal.u64[index] = shuffleIndex;
-                break;
-
-            default:
-                unreached();
-        }
+        shuffle->SetElementIntegral(indexBaseType, index, shuffleIndex);
     }
 
     assert(IsValidForShuffle(shuffle, simdSize, simdBaseType, nullptr, false));
