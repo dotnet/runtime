@@ -10,12 +10,15 @@
     <MinOSForArch>win7</MinOSForArch>
     <MinOSForArch Condition="'$(PackagePlatform)' == 'arm'">win8</MinOSForArch>
     <MinOSForArch Condition="'$(PackagePlatform)' == 'arm64'">win10</MinOSForArch>
+    <!-- Non-desktop OS's use a custom dotnet host, instead of corerun.
+         Also defined in Common/Directory.Build.targets (different MSBuild context). Keep in sync. -->
+    <IsDesktopOS Condition="'$(TargetsBrowser)' != 'true' and '$(TargetsAndroid)' != 'true' and '$(TargetstvOS)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetsMacCatalyst)' != 'true'">true</IsDesktopOS>
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- These projects are individually restored in order. Each
-         subsequent restore only copies files that don't already exist
-         in CORE_ROOT, so assets from the first project file win. -->
+    <!-- These projects are restored and built to resolve NuGet-sourced test dependencies.
+         The Copy task uses SkipUnchangedFiles, so if both projects provide the same file
+         the last one to copy wins (test_dependencies.csproj). -->
     <CoreRootProjectFiles Include="$(RepoRoot)src\tests\Common\test_dependencies_fs\test_dependencies.fsproj" />
     <CoreRootProjectFiles Include="$(RepoRoot)src\tests\Common\test_dependencies\test_dependencies.csproj" />
   </ItemGroup>
@@ -25,10 +28,123 @@
     <RefDestination>$(ProductDestination)\ref</RefDestination>
   </PropertyGroup>
 
-  <Target Name="CopyDependencyToCoreRoot">
+  <!--
+    CopyDependencyToCoreRoot is the original entry point called by CreateTestOverlay.
+    It delegates to two sub-targets so that CopyRuntimeToCoreRoot can run
+    independently (e.g. for GenerateLayoutOnly) without requiring NuGet restore.
+
+    NOTE: Common/Directory.Build.targets also defines a target named CopyDependencyToCoreRoot
+    (for copying NuGet items inside test_dependencies project context). This definition
+    overrides that one in build.proj context because publishdependency.targets is imported
+    after Directory.Build.targets. Do not reorder the imports in build.proj.
+  -->
+  <Target Name="CopyDependencyToCoreRoot"
+          DependsOnTargets="CopyRuntimeToCoreRoot;CopyTestDependenciesToCoreRoot" />
+
+  <!--
+    Copy NuGet-sourced test dependencies into Core_Root via the test_dependencies projects.
+    Skipped for GenerateLayoutOnly since those projects require NuGet restore.
+  -->
+  <Target Name="CopyTestDependenciesToCoreRoot"
+          Condition="'$(__GenerateLayoutOnly)' != '1'">
     <MSBuild Projects="@(CoreRootProjectFiles)"
              Targets="CopyDependencyToCoreRoot"
              Properties="Language=C#;RuntimeIdentifier=$(TargetRid);CORE_ROOT=$(CORE_ROOT);EnableNativeSanitizers=$(EnableNativeSanitizers)" />
+  </Target>
 
+  <!--
+    Copy runtime and library files into Core_Root from local build artifacts.
+    Uses eng/liveBuilds.targets to resolve files — no NuGet restore needed.
+    CoreCLR artifact globs come from the shared CoreRootArtifacts.targets.
+  -->
+  <Import Project="$(MSBuildThisFileDirectory)CoreRootArtifacts.targets"
+          Condition="'$(_CoreRootArtifactsImported)' != 'true'" />
+
+  <Target Name="CopyRuntimeToCoreRoot"
+          DependsOnTargets="_ComputeCoreRootArtifactSources;ResolveRuntimeFilesFromLocalBuild;ResolveLibrariesRuntimeFilesFromLocalBuild">
+
+    <ItemGroup>
+      <RunTimeDependencyCopyLocal Include="@(LibrariesRuntimeFiles)" />
+      <RunTimeDependencyCopyLocal Include="$(TargetingPackPath)/*" />
+      <RunTimeDependencyCopyLocal Include="$(TargetingPackPath)/xunit.*" TargetDir="xunit/" />
+    </ItemGroup>
+
+    <!-- CoreCLR artifacts from shared CoreRootArtifacts.targets -->
+    <ItemGroup>
+      <RunTimeDependencyCopyLocal Include="@(_CoreRootArtifactSource)" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetArchitecture)' == 'wasm'">
+        <RunTimeDependencyCopyLocal
+          Include="@(RuntimeFiles)"
+          TargetDir="runtimepack/native/"/>
+
+        <!-- This throws everything in 'native', include many non-native assemblies.
+             This is done because LibrariesRuntimeFiles includes some .js files that
+             WasmAppBuilder expects in native/-->
+        <RunTimeDependencyCopyLocal
+          Include="@(LibrariesRuntimeFiles)"
+          TargetDir="runtimepack/native/%(LibrariesRuntimeFiles.NativeSubDirectory)/"
+          Condition="'%(LibrariesRuntimeFiles.NativeSubDirectory)' != ''" />
+
+        <RunTimeDependencyCopyLocal
+          Include="@(LibrariesRuntimeFiles)"
+          TargetDir="runtimepack/native/"
+          Condition="'%(LibrariesRuntimeFiles.NativeSubDirectory)' == ''" />
+
+        <RunTimeDependencyCopyLocal
+          Include="$(ArtifactsDir)\TargetingPack\**"
+          TargetDir="TargetingPack/"/>
+
+        <!-- Wasm App Builder builds as part of tasks, using the corresponding TasksConfiguration -->
+        <RunTimeDependencyCopyLocal
+          Include="$(ArtifactsBinDir)\WasmAppBuilder\$(TasksConfiguration)\$(NetCoreAppToolCurrent)\**"
+          TargetDir="WasmAppBuilder/"/>
+
+        <RunTimeDependencyCopyLocal
+          Include="$(ArtifactsBinDir)\MonoTargetsTasks\$(TasksConfiguration)\$(NetCoreAppToolCurrent)\publish\**"
+          TargetDir="WasmAppBuilder/"/>
+
+        <RunTimeDependencyCopyLocal
+          Include="$(RepoRoot)\src\tests\Common\wasm-test-runner\WasmTestRunner.proj"
+          TargetDir="wasm-test-runner/"/>
+
+        <RunTimeDependencyCopyLocal
+          Include="$(BrowserProjectRoot)\test-main.mjs"
+          TargetDir="runtime-test/"/>
+
+        <RunTimeDependencyCopyLocal
+          Include="$(RepoRoot)\src\tests\Common\wasm-test-runner\index.html"
+          TargetDir="runtime-test/"/>
+
+        <RunTimeDependencyCopyLocal
+          Include="$(MonoProjectRoot)\wasm\build\*"
+          TargetDir="build/"/>
+        <RunTimeDependencyCopyLocal
+          Include="$(MonoProjectRoot)\browser\build\*"
+          TargetDir="build/"/>
+    </ItemGroup>
+
+    <!-- For Mono desktop runs, swap in the Mono runtime binaries -->
+    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(IsDesktopOS)' == 'true'">
+      <RunTimeDependencyCopyLocal Remove="$(CoreCLRArtifactsPath)$(LibPrefix)coreclr$(LibSuffix)" />
+      <RunTimeDependencyCopyLocal Remove="$(CoreCLRArtifactsPath)System.Private.CoreLib.dll" />
+      <RunTimeDependencyCopyLocal Include="$(MonoArtifactsPath)$(LibPrefix)coreclr$(LibSuffix)" TargetDir="" />
+      <RunTimeDependencyCopyLocal Include="$(MonoArtifactsPath)/libmono-component-*" TargetDir="" />
+      <RunTimeDependencyCopyLocal Include="$(MonoArtifactsPath)/*.dll" TargetDir="" />
+      <RunTimeDependencyCopyLocal Include="$(MonoArtifactsPath)/libc++.so.1" TargetDir="" Condition="Exists('$(MonoArtifactsPath)/libc++.so.1')" />
+      <RunTimeDependencyCopyLocal Include="$(MonoArtifactsPath)/libc++abi.so.1" TargetDir="" Condition="Exists('$(MonoArtifactsPath)/libc++abi.so.1')" />
+    </ItemGroup>
+
+    <Copy
+      SourceFiles="@(RunTimeDependencyCopyLocal)"
+      DestinationFiles="@(RunTimeDependencyCopyLocal -> '$(CORE_ROOT)\%(TargetDir)%(RecursiveDir)%(Filename)%(Extension)')"
+      SkipUnchangedFiles="$(SkipCopyUnchangedFiles)"
+      OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)"
+      Retries="$(CopyRetryCount)"
+      RetryDelayMilliseconds="$(CopyRetryDelayMilliseconds)"
+      UseHardlinksIfPossible="$(CreateHardLinksForCopyFilesToOutputDirectoryIfPossible)">
+      <Output TaskParameter="DestinationFiles" ItemName="FileWrites" />
+    </Copy>
   </Target>
 </Project>

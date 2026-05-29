@@ -4,7 +4,7 @@
     Defines the directory-to-directory mapping and globs CoreCLRArtifactsPath.
 
     Used by:
-      CopyDependencyToCoreRoot (Directory.Build.targets) - to copy artifacts to Core_Root
+      CopyRuntimeToCoreRoot (publishdependency.targets) - to copy artifacts to Core_Root
       CheckCoreRootFreshness (tests.targets) - to verify Core_Root freshness
   -->
 

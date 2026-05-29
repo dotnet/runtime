@@ -162,7 +162,8 @@
 
   <Target Name="TestBuild" DependsOnTargets="@(TestBuildSteps)" />
 
-  <Target Name="BuildTargetingPack" AfterTargets="BatchRestorePackages">
+  <Target Name="BuildTargetingPack" AfterTargets="BatchRestorePackages"
+      Condition="'$(__GenerateLayoutOnly)' != '1'">
     <Message Text="$(MsgPrefix)Building Targeting Pack" Importance="High" />
     <MSBuild Projects="Common\external\external.csproj"
              Targets="Build" />
@@ -273,7 +274,7 @@
       Projects="Common\XUnitLogChecker\XUnitLogChecker.csproj"
       Targets="Publish"
       Properties="_IsPublishing=true;Configuration=Release;PublishDir=$(XunitTestBinBase)/XUnitLogChecker;RuntimeIdentifier=$(RuntimeIdentifier)"
-      Condition="$(IsXUnitLogCheckerSupported)" />
+      Condition="$(IsXUnitLogCheckerSupported) and '$(__GenerateLayoutOnly)' != '1'" />
   </Target>
 
   <Target Name="CrossgenFramework"

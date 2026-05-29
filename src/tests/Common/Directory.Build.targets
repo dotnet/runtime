@@ -17,7 +17,8 @@
     <GCStressDependsOnCoreDisTools Condition="'$(TargetOS)' == 'linux' And '$(TargetArchitecture)' == 'x64'">true</GCStressDependsOnCoreDisTools>
     <CopyCoreDisToolsToCoreRoot>false</CopyCoreDisToolsToCoreRoot>
     <CopyCoreDisToolsToCoreRoot Condition="$(GCStressDependsOnCoreDisTools) And '$(DotNetBuildSourceOnly)' != 'true'">true</CopyCoreDisToolsToCoreRoot>
-    <!-- Non-desktop OS's use a custom dotnet host, instead of corerun -->
+    <!-- Non-desktop OS's use a custom dotnet host, instead of corerun.
+         Also defined in publishdependency.targets (different MSBuild context). Keep in sync. -->
     <IsDesktopOS Condition="'$(TargetsBrowser)' != 'true' and '$(TargetsAndroid)' != 'true' and '$(TargetstvOS)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetsMacCatalyst)' != 'true'">true</IsDesktopOS>
   </PropertyGroup>
 
@@ -28,94 +29,27 @@
     <KnownFrameworkReference Remove="Microsoft.WindowsDesktop.App" />
   </ItemGroup>
 
-  <Import Project="$(MSBuildThisFileDirectory)CoreRootArtifacts.targets" />
-
+  <!-- This target has the same name as the router in publishdependency.targets.
+       In build.proj context, publishdependency.targets is imported later and overrides this.
+       In test_dependencies project context (invoked via CopyTestDependenciesToCoreRoot),
+       only this file is visible, so this definition runs to copy NuGet-sourced items. -->
   <Target Name="CopyDependencyToCoreRoot"
-    DependsOnTargets="_ComputeCoreRootArtifactSources;ResolveAssemblyReferences;ResolveRuntimeFilesFromLocalBuild">
+    DependsOnTargets="ResolveAssemblyReferences">
 
-    <!-- NuGet-resolved items (libraries runtime files, targeting pack, xunit) -->
+    <!-- Only NuGet-sourced files that cannot be resolved from local build artifacts.
+         The bulk of Core_Root is populated by CopyRuntimeToCoreRoot in publishdependency.targets.
+         Remove @(LibrariesRuntimeFiles) since CopyRuntimeToCoreRoot already copies them;
+         this avoids copying hundreds of library files twice in every normal build. -->
     <ItemGroup>
-      <RunTimeDependencyCopyLocal Include="@(RuntimeCopyLocalItems)" />
-      <RunTimeDependencyCopyLocal Include="@(NativeCopyLocalItems)" />
-      <RunTimeDependencyCopyLocal Include="$(TargetingPackPath)/*" />
-      <RunTimeDependencyCopyLocal Include="$(TargetingPackPath)/xunit.*" TargetDir="xunit/" />
-    </ItemGroup>
-
-    <!-- CoreCLR artifacts from shared target -->
-    <ItemGroup>
-      <RunTimeDependencyCopyLocal Include="@(_CoreRootArtifactSource)" />
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(TargetArchitecture)' == 'wasm'">
-        <RunTimeDependencyCopyLocal
-          Include="@(RuntimeFiles)"
-          TargetDir="runtimepack/native/"/>
-
-        <!-- This throws everything in 'native', include many non-native assemblies.
-             This is done because LibrariesRuntimeFiles includes some .js files that
-             WasmAppBuilder expects in native/-->
-        <RunTimeDependencyCopyLocal
-          Include="@(LibrariesRuntimeFiles)"
-          TargetDir="runtimepack/native/%(LibrariesRuntimeFiles.NativeSubDirectory)/"
-          Condition="'%(LibrariesRuntimeFiles.NativeSubDirectory)' != ''" />
-
-        <RunTimeDependencyCopyLocal
-          Include="@(LibrariesRuntimeFiles)"
-          TargetDir="runtimepack/native/"
-          Condition="'%(LibrariesRuntimeFiles.NativeSubDirectory)' == ''" />
-
-        <RunTimeDependencyCopyLocal
-          Include="$(ArtifactsDir)\TargetingPack\**"
-          TargetDir="TargetingPack/"/>
-
-        <!-- Wasm App Builder builds as part of tasks, using the corresponding TasksConfiguration -->
-        <RunTimeDependencyCopyLocal
-          Include="$(ArtifactsBinDir)\WasmAppBuilder\$(TasksConfiguration)\$(NetCoreAppToolCurrent)\**"
-          TargetDir="WasmAppBuilder/"/>
-
-        <RunTimeDependencyCopyLocal
-          Include="$(ArtifactsBinDir)\MonoTargetsTasks\$(TasksConfiguration)\$(NetCoreAppToolCurrent)\publish\**"
-          TargetDir="WasmAppBuilder/"/>
-
-        <RunTimeDependencyCopyLocal
-          Include="$(RepoRoot)\src\tests\Common\wasm-test-runner\WasmTestRunner.proj"
-          TargetDir="wasm-test-runner/"/>
-
-        <RunTimeDependencyCopyLocal
-          Include="$(BrowserProjectRoot)\test-main.mjs"
-          TargetDir="runtime-test/"/>
-
-        <RunTimeDependencyCopyLocal
-          Include="$(RepoRoot)\src\tests\Common\wasm-test-runner\index.html"
-          TargetDir="runtime-test/"/>
-
-        <RunTimeDependencyCopyLocal
-          Include="$(MonoProjectRoot)\wasm\build\*"
-          TargetDir="build/"/>
-        <RunTimeDependencyCopyLocal
-          Include="$(MonoProjectRoot)\browser\build\*"
-          TargetDir="build/"/>
-    </ItemGroup>
-
-    <ItemGroup>
-      <RunTimeDependencyCopyLocal Include="$(CoreDisToolsLibrary)" Condition="$(CopyCoreDisToolsToCoreRoot)" />
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(IsDesktopOS)' == 'true' " >
-      <!-- Copy the mono version of the coreclr library and SPCL instead of the corceclr one -->
-      <RuntimeDependencyCopyLocal Remove="$(CoreCLRArtifactsPath)$(LibPrefix)coreclr$(LibSuffix)" />
-      <RuntimeDependencyCopyLocal Remove="$(CoreCLRArtifactsPath)System.Private.CoreLib.dll" />
-      <RuntimeDependencyCopyLocal Include="$(MonoArtifactsPath)$(LibPrefix)coreclr$(LibSuffix)" TargetDir="" />
-
-      <RuntimeDependencyCopyLocal Include="$(MonoArtifactsPath)/libmono-component-*" TargetDir=""  />
-      <RuntimeDependencyCopyLocal Include="$(MonoArtifactsPath)/*.dll" TargetDir="" />
-      <RuntimeDependencyCopyLocal Include="$(MonoArtifactsPath)/libc++.so.1" TargetDir="" Condition="Exists('$(MonoArtifactsPath)/libc++.so.1')" />
-      <RuntimeDependencyCopyLocal Include="$(MonoArtifactsPath)/libc++abi.so.1" TargetDir="" Condition="Exists('$(MonoArtifactsPath)/libc++abi.so.1')" />
+      <_NuGetCopyLocal Include="@(RuntimeCopyLocalItems)" />
+      <_NuGetCopyLocal Remove="@(LibrariesRuntimeFiles)" />
+      <_NuGetCopyLocal Include="@(NativeCopyLocalItems)" />
+      <_NuGetCopyLocal Include="$(CoreDisToolsLibrary)" Condition="$(CopyCoreDisToolsToCoreRoot)" />
     </ItemGroup>
 
     <Copy
-      SourceFiles="@(RunTimeDependencyCopyLocal)"
-      DestinationFiles="@(RunTimeDependencyCopyLocal -> '$(CORE_ROOT)\%(TargetDir)%(RecursiveDir)%(Filename)%(Extension)')"
+      SourceFiles="@(_NuGetCopyLocal)"
+      DestinationFiles="@(_NuGetCopyLocal -> '$(CORE_ROOT)\%(TargetDir)%(RecursiveDir)%(Filename)%(Extension)')"
       SkipUnchangedFiles="$(SkipCopyUnchangedFiles)"
       OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)"
       Retries="$(CopyRetryCount)"
