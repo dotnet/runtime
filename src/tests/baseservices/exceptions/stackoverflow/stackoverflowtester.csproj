@@ -11,6 +11,8 @@
     <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono'">true</DisableProjectBuild>
     <!-- Requires corerun -->
     <NativeAotIncompatible>true</NativeAotIncompatible>
+    <!-- Stack overflow handling crashes under interpreter (assert m_crawl.GetCodeInfo()->IsValid()). https://github.com/dotnet/runtime/issues/127899 -->
+    <InterpreterIncompatible>true</InterpreterIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="stackoverflowtester.cs" />
