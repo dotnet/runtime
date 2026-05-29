@@ -1728,6 +1728,10 @@ struct cdac_data<Module>
     static constexpr size_t MethodDefToILCodeVersioningStateMap = offsetof(Module, m_ILCodeVersioningStateMap);
 #endif // FEATURE_CODE_VERSIONING
     static constexpr size_t DynamicILBlobTable = offsetof(Module, m_debuggerSpecificData.m_pDynamicILBlobTable);
+#ifdef FEATURE_METADATA_UPDATER
+    static constexpr size_t EnCClassListCount = offsetof(Module, m_ClassList) + offsetof(CUnorderedArrayWithAllocator<EnCEEClassData*, 5, CUnorderedArray__Allocator<EnCEEClassData*>>, m_iCount);
+    static constexpr size_t EnCClassListTable = offsetof(Module, m_ClassList) + offsetof(CUnorderedArrayWithAllocator<EnCEEClassData*, 5, CUnorderedArray__Allocator<EnCEEClassData*>>, m_pTable);
+#endif // FEATURE_METADATA_UPDATER
 };
 
 //

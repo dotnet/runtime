@@ -175,6 +175,25 @@ private:
 
     // Linked list of EnCFieldDescs for all the added static fields
     PTR_EnCAddedFieldElement m_pAddedStaticFields;
+
+    friend struct ::cdac_data<EnCEEClassData>;
+};
+
+template<>
+struct cdac_data<EnCEEClassData>
+{
+    static constexpr size_t MethodTable = offsetof(EnCEEClassData, m_pMT);
+    static constexpr size_t NumAddedInstanceFields = offsetof(EnCEEClassData, m_dwNumAddedInstanceFields);
+    static constexpr size_t NumAddedStaticFields = offsetof(EnCEEClassData, m_dwNumAddedStaticFields);
+    static constexpr size_t AddedInstanceFields = offsetof(EnCEEClassData, m_pAddedInstanceFields);
+    static constexpr size_t AddedStaticFields = offsetof(EnCEEClassData, m_pAddedStaticFields);
+};
+
+template<>
+struct cdac_data<EnCAddedFieldElement>
+{
+    static constexpr size_t Next = offsetof(EnCAddedFieldElement, m_next);
+    static constexpr size_t FieldDesc = offsetof(EnCAddedFieldElement, m_fieldDesc);
 };
 
 //---------------------------------------------------------------------------------------

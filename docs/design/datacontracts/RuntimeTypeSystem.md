@@ -274,6 +274,7 @@ TargetPointer GetMTOfEnclosingClass(TargetPointer fieldDescPointer);
 uint GetFieldDescMemberDef(TargetPointer fieldDescPointer);
 bool IsFieldDescThreadStatic(TargetPointer fieldDescPointer);
 bool IsFieldDescStatic(TargetPointer fieldDescPointer);
+bool IsFieldDescEnCNew(TargetPointer fieldDescPointer);
 uint GetFieldDescType(TargetPointer fieldDescPointer);
 uint GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition fieldDef);
 TargetPointer GetFieldDescStaticAddress(TargetPointer fieldDescPointer, bool unboxValueTypes = true);
@@ -2065,6 +2066,14 @@ bool IsFieldDescStatic(TargetPointer fieldDescPointer)
 {
     uint DWord1 = target.Read<uint>(fieldDescPointer + /* FieldDesc::DWord1 offset */);
     return (DWord1 & (uint)FieldDescFlags1.IsStatic) != 0;
+}
+
+bool IsFieldDescEnCNew(TargetPointer fieldDescPointer)
+{
+    // Mirrors native FieldDesc::IsEnCNew (m_dwOffset == FIELD_OFFSET_NEW_ENC).
+    uint DWord2 = target.Read<uint>(fieldDescPointer + /* FieldDesc::DWord2 offset */);
+    uint offset = DWord2 & (uint)FieldDescFlags2.OffsetMask;
+    return offset == _target.ReadGlobal<uint>("FieldOffsetNewEnc");
 }
 
 uint GetFieldDescType(TargetPointer fieldDescPointer)

@@ -199,6 +199,9 @@ public enum DataType
     TableSegment,
     CardTableInfo,
     RegionFreeList,
+
+    EnCEEClassData,
+    EnCAddedFieldElement,
 }
 
 public static class DataTypeTargetExtensions

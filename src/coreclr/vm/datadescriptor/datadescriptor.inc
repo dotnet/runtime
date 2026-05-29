@@ -292,7 +292,28 @@ CDAC_TYPE_FIELD(Module, T_POINTER, TypeRefToMethodTableMap, cdac_data<Module>::T
 CDAC_TYPE_FIELD(Module, T_POINTER, MethodDefToILCodeVersioningStateMap, cdac_data<Module>::MethodDefToILCodeVersioningStateMap)
 #endif // FEATURE_CODE_VERSIONING
 CDAC_TYPE_FIELD(Module, T_POINTER, DynamicILBlobTable, cdac_data<Module>::DynamicILBlobTable)
+#ifdef FEATURE_METADATA_UPDATER
+CDAC_TYPE_FIELD(Module, T_UINT32, EnCClassListCount, cdac_data<Module>::EnCClassListCount)
+CDAC_TYPE_FIELD(Module, T_POINTER, EnCClassListTable, cdac_data<Module>::EnCClassListTable)
+#endif // FEATURE_METADATA_UPDATER
 CDAC_TYPE_END(Module)
+
+#ifdef FEATURE_METADATA_UPDATER
+CDAC_TYPE_BEGIN(EnCEEClassData)
+CDAC_TYPE_INDETERMINATE(EnCEEClassData)
+CDAC_TYPE_FIELD(EnCEEClassData, T_POINTER, MethodTable, cdac_data<EnCEEClassData>::MethodTable)
+CDAC_TYPE_FIELD(EnCEEClassData, T_INT32, NumAddedInstanceFields, cdac_data<EnCEEClassData>::NumAddedInstanceFields)
+CDAC_TYPE_FIELD(EnCEEClassData, T_INT32, NumAddedStaticFields, cdac_data<EnCEEClassData>::NumAddedStaticFields)
+CDAC_TYPE_FIELD(EnCEEClassData, T_POINTER, AddedInstanceFields, cdac_data<EnCEEClassData>::AddedInstanceFields)
+CDAC_TYPE_FIELD(EnCEEClassData, T_POINTER, AddedStaticFields, cdac_data<EnCEEClassData>::AddedStaticFields)
+CDAC_TYPE_END(EnCEEClassData)
+
+CDAC_TYPE_BEGIN(EnCAddedFieldElement)
+CDAC_TYPE_INDETERMINATE(EnCAddedFieldElement)
+CDAC_TYPE_FIELD(EnCAddedFieldElement, T_POINTER, Next, cdac_data<EnCAddedFieldElement>::Next)
+CDAC_TYPE_FIELD(EnCAddedFieldElement, T_POINTER, FieldDesc, cdac_data<EnCAddedFieldElement>::FieldDesc)
+CDAC_TYPE_END(EnCAddedFieldElement)
+#endif // FEATURE_METADATA_UPDATER
 
 CDAC_TYPE_BEGIN(ModuleLookupMap)
 CDAC_TYPE_FIELD(ModuleLookupMap, T_POINTER, TableData, offsetof(LookupMapBase, pTable))
@@ -1549,6 +1570,7 @@ CDAC_GLOBAL(StaticsPointerMask, T_NUINT, DynamicStaticsInfo::STATICSPOINTERMASK)
 CDAC_GLOBAL(PtrArrayOffsetToDataArray, T_NUINT, offsetof(PtrArray, m_Array))
 CDAC_GLOBAL(NumberOfTlsOffsetsNotUsedInNoncollectibleArray, T_UINT8, NUMBER_OF_TLSOFFSETS_NOT_USED_IN_NONCOLLECTIBLE_ARRAY)
 CDAC_GLOBAL(MaxClrNotificationArgs, T_UINT32, MAX_CLR_NOTIFICATION_ARGS)
+CDAC_GLOBAL(FieldOffsetNewEnc, T_UINT32, FIELD_OFFSET_NEW_ENC)
 CDAC_GLOBAL(FieldOffsetBigRVA, T_UINT32, FIELD_OFFSET_BIG_RVA)
 CDAC_GLOBAL(FieldOffsetDynamicRVA, T_UINT32, FIELD_OFFSET_DYNAMIC_RVA)
 CDAC_GLOBAL_POINTER(ClrNotificationArguments, &::g_clrNotificationArguments)
