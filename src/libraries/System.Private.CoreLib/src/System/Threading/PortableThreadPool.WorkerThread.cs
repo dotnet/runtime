@@ -119,7 +119,7 @@ namespace System.Threading
                 }
             }
 
-            // returns true if the worker should Wait with out spinning.
+            // returns true if the worker should Wait without spinning.
             private static bool WorkerDoWork(PortableThreadPool threadPoolInstance)
             {
                 bool noSpin;
