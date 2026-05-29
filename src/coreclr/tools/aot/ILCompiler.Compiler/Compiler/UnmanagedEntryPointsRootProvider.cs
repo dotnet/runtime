@@ -89,8 +89,18 @@ namespace ILCompiler
                         && comparer.Equals(nsHandle, "System.Runtime.InteropServices"))
                     {
                         EcmaMethod method = module.GetMethod(parent);
-                        if (method.GetUnmanagedCallersOnlyExportName() != null)
-                            yield return method;
+                        try
+                        {
+                            if (method.GetUnmanagedCallersOnlyExportName() != null)
+                                yield return method;
+                        }
+                        catch (TypeSystemException)
+                        {
+                            // Keep export discovery consistent with the later associated-source handling:
+                            // if decoding UnmanagedCallersOnlyAttribute fails because a type-valued
+                            // named argument cannot be resolved, skip the export instead of failing
+                            // the compilation during discovery.
+                        }
                     }
                 }
             }
