@@ -17,9 +17,6 @@ TargetPointer GetArrayData(TargetPointer address, out uint count, out TargetPoin
 // Get built-in COM data for the object if available. Returns false if address does not represent a COM object using built-in COM.
 bool GetBuiltInComData(TargetPointer address, out TargetPointer rcw, out TargetPointer ccw, out TargetPointer ccf);
 
-// Get the total size of the object in bytes, including base size and any variable-length component data.
-ulong GetObjectSize(TargetPointer address);
-
 // Try to get the runtime-assigned hash code for the object. Returns 0 if the runtime has not
 // assigned a default hash code. This will never be 0 for objects that have been hashed.
 int TryGetHashCode(TargetPointer address);
@@ -132,25 +129,6 @@ bool GetBuiltInComData(TargetPointer address, out TargetPointer rcw, out TargetP
     // Delegate to the SyncBlock contract so that the interop data can also be read directly
     // from a sync block address without going through the object (e.g. during cleanup).
     return target.Contracts.SyncBlock.GetBuiltInComData(syncBlockPtr, out rcw, out ccw, out ccf);
-}
-
-ulong GetObjectSize(TargetPointer address)
-{
-    TargetPointer mt = GetMethodTableAddress(address);
-    if (mt == TargetPointer.Null)
-        throw new ArgumentException("Address represents a set-free object");
-    IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
-    TypeHandle th = rts.GetTypeHandle(mt);
-    ulong size = rts.GetBaseSize(th);
-    uint componentSize = rts.GetComponentSize(th);
-    // strings have component size 2, all other non-arrays should have 0
-    Debug.Assert(componentSize <= 2 || rts.IsArray(th, out _));
-    if (componentSize > 0)
-    {
-        uint numComponents = target.Read<uint>(address + /* Array::m_NumComponents offset */);
-        size += (ulong)numComponents * componentSize;
-    }
-    return size;
 }
 
 int TryGetHashCode(TargetPointer address)

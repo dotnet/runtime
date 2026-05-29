@@ -1783,7 +1783,6 @@ public:
     //    S_OK on success; otherwise, an appropriate failure HRESULT.
     //
     // Notes:
-    //    The VMPTR this produces can be deconstructed by GetObjectContents.
     //    This function will return a failure HRESULT if given a NULL or otherwise invalid pointer,
     //    but if given a valid address to an invalid pointer, it will produce
     //    a VMPTR_Object which points to invalid memory.
@@ -1800,7 +1799,6 @@ public:
     //    S_OK on success; otherwise, an appropriate failure HRESULT.
     //
     // Notes:
-    //    The VMPTR this produces can be deconstructed by GetObjectContents.
     //    This will produce a VMPTR_Object regardless of whether the pointer is
     //    valid or not.
     virtual HRESULT STDMETHODCALLTYPE GetObject(CORDB_ADDRESS ptr, OUT VMPTR_Object * pRetVal) = 0;
@@ -1881,22 +1879,6 @@ public:
     //    S_OK on success; otherwise, an appropriate failure HRESULT.
     //
     virtual HRESULT STDMETHODCALLTYPE GetHandleAddressFromVmHandle(VMPTR_OBJECTHANDLE vmHandle, OUT CORDB_ADDRESS * pRetVal) = 0;
-
-    // Given a VMPTR to an Object, get the target address.
-    //
-    // Arguments:
-    //    obj      - the Object VMPTR to get the address from
-    //    pRetVal - [out] The target address which obj is using.
-    //
-    // Return Value:
-    //    S_OK on success; otherwise, an appropriate failure HRESULT.
-    //
-    // Notes:
-    //    The VMPTR this consumes can be reconstructed using GetObject and
-    //    providing the address stored in the returned TargetBuffer. This has
-    //    undefined behavior for invalid VMPTR_Objects.
-
-    virtual HRESULT STDMETHODCALLTYPE GetObjectContents(VMPTR_Object obj, OUT TargetBuffer * pRetVal) = 0;
 
     //
     // Get the thread which owns the monitor lock on an object and the acquisition

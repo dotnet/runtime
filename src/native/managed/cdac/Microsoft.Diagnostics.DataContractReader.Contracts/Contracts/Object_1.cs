@@ -105,26 +105,6 @@ internal readonly struct Object_1 : IObject
         return _target.Contracts.SyncBlock.GetBuiltInComData(syncBlockPtr, out rcw, out ccw, out ccf);
     }
 
-    public ulong GetObjectSize(TargetPointer address)
-    {
-        TargetPointer mt = GetMethodTableAddress(address);
-        if (mt == TargetPointer.Null)
-            throw new ArgumentException("Address represents a set-free object");
-        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-        TypeHandle th = rts.GetTypeHandle(mt);
-        ulong size = rts.GetBaseSize(th);
-        uint componentSize = rts.GetComponentSize(th);
-        Debug.Assert(componentSize <= 2 || rts.IsArray(th, out _));
-        if (componentSize > 0)
-        {
-            // May not be an array, but component count is always at the same offset.
-            Data.Array array = _target.ProcessedData.GetOrAdd<Data.Array>(address);
-            size += (ulong)array.NumComponents * componentSize;
-        }
-
-        return size;
-    }
-
     int IObject.TryGetHashCode(TargetPointer address)
     {
         ulong objectHeaderSize = _target.GetTypeInfo(DataType.ObjectHeader).Size!.Value;

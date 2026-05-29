@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
-using Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
 using Moq;
 using Xunit;
 
@@ -300,108 +299,5 @@ public unsafe class ObjectTests
         int hr = sosDac.GetObjectClassName(new ClrDataAddress(TestObjectAddress.Value), 0, null, &needed);
         Assert.Equal(HResults.S_OK, hr);
         Assert.Equal((uint)"<Unloaded Type>".Length + 1, needed);
-    }
-
-    [Theory]
-    [ClassData(typeof(MockTarget.StdArch))]
-    public void GetObjectSize_PlainObject(MockTarget.Architecture arch)
-    {
-        TargetPointer TestObjectAddress = default;
-        TargetTestHelpers targetTestHelpers = new(arch);
-        uint expectedBaseSize = targetTestHelpers.ObjectBaseSize;
-
-        IObject contract = CreateObjectContract(
-            arch,
-            objectBuilder =>
-            {
-                MockEEClass eeClass = objectBuilder.RTSBuilder.AddEEClass("TestClass");
-                MockMethodTable mt = objectBuilder.RTSBuilder.AddMethodTable("TestClass");
-                mt.BaseSize = expectedBaseSize;
-                eeClass.MethodTable = mt.Address;
-                mt.EEClassOrCanonMT = eeClass.Address;
-
-                TestObjectAddress = objectBuilder.AddObject(mt.Address);
-            });
-
-        ulong size = contract.GetObjectSize(TestObjectAddress);
-
-        Assert.Equal(expectedBaseSize, size);
-    }
-
-    [Theory]
-    [ClassData(typeof(MockTarget.StdArch))]
-    public void GetObjectSize_ArrayObject(MockTarget.Architecture arch)
-    {
-        TargetPointer TestArrayAddress = default;
-        uint numComponents = 10;
-        ushort componentSize = sizeof(int);
-
-        IObject contract = CreateObjectContract(
-            arch,
-            objectBuilder =>
-            {
-                TargetTestHelpers helpers = objectBuilder.Builder.TargetTestHelpers;
-                uint flags = (uint)(MethodTableFlags_1.WFLAGS_HIGH.HasComponentSize | MethodTableFlags_1.WFLAGS_HIGH.Category_Array
-                    | MethodTableFlags_1.WFLAGS_HIGH.Category_IfArrayThenSzArray) | componentSize;
-                uint baseSize = helpers.ArrayBaseBaseSize;
-
-                MockEEClass eeClass = objectBuilder.RTSBuilder.AddEEClass("TestArray");
-                MockMethodTable mt = objectBuilder.RTSBuilder.AddMethodTable("TestArray");
-                mt.MTFlags = flags;
-                mt.BaseSize = baseSize;
-                eeClass.MethodTable = mt.Address;
-                mt.EEClassOrCanonMT = eeClass.Address;
-
-                MockMemorySpace.HeapFragment fragment = objectBuilder.ManagedObjectAllocator.Allocate(
-                    (uint)objectBuilder.ArrayLayout.Size, "TestArray");
-                MockArrayObjectData arrayObj = objectBuilder.ArrayLayout.Create(fragment);
-                arrayObj.MethodTable = mt.Address;
-                arrayObj.NumComponents = numComponents;
-                TestArrayAddress = fragment.Address;
-            });
-
-        ulong size = contract.GetObjectSize(TestArrayAddress);
-
-        TargetTestHelpers targetTestHelpers = new(arch);
-        ulong expectedSize = targetTestHelpers.ArrayBaseBaseSize + numComponents * componentSize;
-        Assert.Equal(expectedSize, size);
-    }
-
-    [Theory]
-    [ClassData(typeof(MockTarget.StdArch))]
-    public void GetObjectSize_StringObject(MockTarget.Architecture arch)
-    {
-        TargetPointer TestStringAddress = default;
-        string testString = "hello";
-        ushort componentSize = sizeof(char);
-
-        IObject contract = CreateObjectContract(
-            arch,
-            objectBuilder =>
-            {
-                TargetTestHelpers helpers = objectBuilder.Builder.TargetTestHelpers;
-                uint flags = (uint)MethodTableFlags_1.WFLAGS_HIGH.HasComponentSize | componentSize;
-                uint baseSize = helpers.StringBaseSize;
-
-                MockEEClass eeClass = objectBuilder.RTSBuilder.AddEEClass("TestString");
-                MockMethodTable mt = objectBuilder.RTSBuilder.AddMethodTable("TestString");
-                mt.MTFlags = flags;
-                mt.BaseSize = baseSize;
-                eeClass.MethodTable = mt.Address;
-                mt.EEClassOrCanonMT = eeClass.Address;
-
-                MockMemorySpace.HeapFragment fragment = objectBuilder.ManagedObjectAllocator.Allocate(
-                    (uint)objectBuilder.StringLayout.Size + (uint)(testString.Length * sizeof(char)), "TestString");
-                MockStringObjectData strObj = objectBuilder.StringLayout.Create(fragment.Data.AsMemory(), fragment.Address);
-                strObj.MethodTable = mt.Address;
-                strObj.StringLength = (uint)testString.Length;
-                TestStringAddress = fragment.Address;
-            });
-
-        ulong size = contract.GetObjectSize(TestStringAddress);
-
-        TargetTestHelpers targetTestHelpers = new(arch);
-        ulong expectedSize = targetTestHelpers.StringBaseSize + (ulong)testString.Length * componentSize;
-        Assert.Equal(expectedSize, size);
     }
 }
