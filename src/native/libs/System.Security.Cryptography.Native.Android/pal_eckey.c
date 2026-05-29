@@ -160,6 +160,13 @@ int32_t AndroidCryptoNative_EcKeyGetSize(const EC_KEY* key, int32_t* keySize)
 
     ReleaseLRef(env, field);
     ReleaseLRef(env, curve);
+
+    if (CheckJNIExceptions(env))
+    {
+        *keySize = 0;
+        return FAIL;
+    }
+
     return SUCCESS;
 }
 

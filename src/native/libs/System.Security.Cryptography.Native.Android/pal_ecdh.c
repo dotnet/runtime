@@ -19,6 +19,11 @@ int32_t AndroidCryptoNative_EcdhDeriveKey(EC_KEY* ourKey, EC_KEY* peerKey, uint8
 
     jobject keyAgreement = (*env)->CallStaticObjectMethod(env, g_KeyAgreementClass, g_KeyAgreementGetInstance, algorithmName);
     ReleaseLRef(env, algorithmName);
+    if (CheckJNIExceptions(env))
+    {
+        *usedBufferLength = 0;
+        return FAIL;
+    }
 
     jobject privateKey = (*env)->CallObjectMethod(env, ourKey->keyPair, g_keyPairGetPrivateMethod);
 

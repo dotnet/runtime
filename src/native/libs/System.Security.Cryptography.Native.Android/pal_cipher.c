@@ -168,6 +168,15 @@ ARGS_NON_NULL_ALL static int32_t ReinitializeCipher(CipherCtx* ctx)
         }
 
         (*env)->DeleteLocalRef(env, ivBytes);
+
+        if (CheckJNIExceptions(env))
+        {
+            (*env)->DeleteLocalRef(env, algName);
+            (*env)->DeleteLocalRef(env, sksObj);
+            (*env)->DeleteLocalRef(env, ivPsObj);
+            (*env)->DeleteLocalRef(env, keyBytes);
+            return FAIL;
+        }
     }
 
     (*env)->CallVoidMethod(env, ctx->cipher, g_cipherInitMethod, ctx->encMode, sksObj, ivPsObj);

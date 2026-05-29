@@ -61,12 +61,27 @@ jobject CryptoNative_HmacCreate(uint8_t* key, int32_t keyLen, intptr_t type)
     }
 
     jobject macObj = ToGRef(env, (*env)->CallStaticObjectMethod(env, g_MacClass, g_MacGetInstance, macName));
+    if (CheckJNIExceptions(env))
+    {
+        ReleaseGRef(env, macObj);
+        (*env)->DeleteLocalRef(env, keyBytes);
+        (*env)->DeleteLocalRef(env, sksObj);
+        (*env)->DeleteLocalRef(env, macName);
+        return FAIL;
+    }
+
     (*env)->CallVoidMethod(env, macObj, g_MacInit, sksObj);
     (*env)->DeleteLocalRef(env, keyBytes);
     (*env)->DeleteLocalRef(env, sksObj);
     (*env)->DeleteLocalRef(env, macName);
 
-    return CheckJNIExceptions(env) ? FAIL : macObj;
+    if (CheckJNIExceptions(env))
+    {
+        ReleaseGRef(env, macObj);
+        return FAIL;
+    }
+
+    return macObj;
 }
 
 int32_t CryptoNative_HmacReset(jobject ctx)
