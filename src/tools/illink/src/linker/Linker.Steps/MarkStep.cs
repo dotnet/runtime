@@ -1188,7 +1188,7 @@ namespace Mono.Linker.Steps
             MarkCustomAttributeArguments(ca, origin);
 
             GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(in origin, this, Context, constructor_type);
-TypeReference constructor_type = ca.Constructor.DeclaringType;
+            TypeReference constructor_type = ca.Constructor.DeclaringType;
             TypeDefinition? type = Context.Resolve(constructor_type);
 
             if (type == null)
