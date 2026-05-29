@@ -1,4 +1,5 @@
 using System;
+using System.Reflection;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 namespace Mono.Linker.Tests.Cases.Attributes
@@ -24,7 +25,7 @@ namespace Mono.Linker.Tests.Cases.Attributes
 
         [Kept]
         [KeptBaseType(typeof(Attribute))]
-        class MyAttribute<T> : Attribute where T : new()
+        class MyAttribute<[KeptGenericParamAttributes(GenericParameterAttributes.DefaultConstructorConstraint)] T> : Attribute where T : new()
         {
             [Kept]
             public MyAttribute() { }
