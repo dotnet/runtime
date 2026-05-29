@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Threading.Tasks.Sources;
 
 namespace System.Runtime.CompilerServices
 {
@@ -65,32 +66,34 @@ namespace System.Runtime.CompilerServices
         [StackTraceHidden]
         public static T Await<T>(Task<T> task)
         {
-            TaskAwaiter<T> awaiter = task.GetAwaiter();
-            if (!awaiter.IsCompleted)
+            if (!task.IsCompleted)
             {
-                UnsafeAwaitAwaiter(awaiter);
+                TailAwait();
+                return AwaitTask(task, ConfigureAwaitOptions.ContinueOnCapturedContext);
             }
 
-            return awaiter.GetResult();
+            TaskAwaiter.ValidateEnd(task);
+            return task.ResultOnSuccess;
         }
 
         /// <summary>
-        /// Awaits the specified <see cref="ValueTask"/> and throws any exception produced by the operation.
+        /// Awaits the specified <see cref="Task"/> and throws any exception produced by the operation.
         /// </summary>
-        /// <param name="task">The value task to await.</param>
+        /// <param name="task">The task to await.</param>
         [Intrinsic]
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.Async)]
         [StackTraceHidden]
         public static void Await(Task task)
         {
-            TaskAwaiter awaiter = task.GetAwaiter();
-            if (!awaiter.IsCompleted)
+            if (!task.IsCompleted)
             {
-                UnsafeAwaitAwaiter(awaiter);
+                TailAwait();
+                AwaitTask(task, ConfigureAwaitOptions.ContinueOnCapturedContext);
+                return;
             }
 
-            awaiter.GetResult();
+            TaskAwaiter.ValidateEnd(task);
         }
 
         /// <summary>
@@ -104,32 +107,74 @@ namespace System.Runtime.CompilerServices
         [StackTraceHidden]
         public static T Await<T>(ValueTask<T> task)
         {
-            ValueTaskAwaiter<T> awaiter = task.GetAwaiter();
-            if (!awaiter.IsCompleted)
+            object? obj = task._obj;
+            if (obj == null)
             {
-                UnsafeAwaitAwaiter(awaiter);
+                return task._result!;
             }
 
-            return awaiter.GetResult();
+            if (obj is Task<T> t)
+            {
+                if (t.IsCompleted)
+                {
+                    TaskAwaiter.ValidateEnd(t);
+                    return t.ResultOnSuccess;
+                }
+
+                TailAwait();
+                return AwaitTask(t, ConfigureAwaitOptions.ContinueOnCapturedContext);
+            }
+
+            Debug.Assert(obj is IValueTaskSource<T>);
+            IValueTaskSource<T> vts = Unsafe.As<object, IValueTaskSource<T>>(ref obj);
+            if (vts.GetStatus(task._token) == ValueTaskSourceStatus.Pending)
+            {
+                TailAwait();
+                return AwaitValueTaskSource(vts, task._token, true);
+            }
+
+            return vts.GetResult(task._token);
         }
 
         /// <summary>
-        /// Awaits the specified <see cref="Task"/> and throws any exception produced by the task.
+        /// Awaits the specified <see cref="ValueTask"/> and throws any exception produced by the operation.
         /// </summary>
-        /// <param name="task">The task to await.</param>
+        /// <param name="task">The value task to await.</param>
         [Intrinsic]
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.Async)]
         [StackTraceHidden]
         public static void Await(ValueTask task)
         {
-            ValueTaskAwaiter awaiter = task.GetAwaiter();
-            if (!awaiter.IsCompleted)
+            object? obj = task._obj;
+            if (obj == null)
             {
-                UnsafeAwaitAwaiter(awaiter);
+                return;
             }
 
-            awaiter.GetResult();
+            if (obj is Task t)
+            {
+                if (t.IsCompleted)
+                {
+                    TaskAwaiter.ValidateEnd(t);
+                    return;
+                }
+
+                TailAwait();
+                AwaitTask(t, ConfigureAwaitOptions.ContinueOnCapturedContext);
+                return;
+            }
+
+            Debug.Assert(obj is IValueTaskSource);
+            IValueTaskSource vts = Unsafe.As<object, IValueTaskSource>(ref obj);
+            if (vts.GetStatus(task._token) == ValueTaskSourceStatus.Pending)
+            {
+                TailAwait();
+                AwaitValueTaskSource(vts, task._token, true);
+                return;
+            }
+
+            vts.GetResult(task._token);
         }
 
         /// <summary>
@@ -143,6 +188,29 @@ namespace System.Runtime.CompilerServices
         public static void Await(ConfiguredTaskAwaitable configuredAwaitable)
         {
             ConfiguredTaskAwaitable.ConfiguredTaskAwaiter awaiter = configuredAwaitable.GetAwaiter();
+            if ((awaiter.m_options & ConfigureAwaitOptions.SuppressThrowing) != 0)
+            {
+                TailAwait();
+                AwaitTaskWithRareOptions(awaiter);
+                return;
+            }
+
+            if (!awaiter.IsCompleted)
+            {
+                TailAwait();
+                AwaitTask(awaiter.m_task, awaiter.m_options);
+                return;
+            }
+
+            awaiter.GetResult();
+        }
+
+        [Intrinsic]
+        [BypassReadyToRun]
+        [MethodImpl(MethodImplOptions.Async | MethodImplOptions.NoInlining)]
+        [StackTraceHidden]
+        private static void AwaitTaskWithRareOptions(ConfiguredTaskAwaitable.ConfiguredTaskAwaiter awaiter)
+        {
             if (!awaiter.IsCompleted)
             {
                 UnsafeAwaitAwaiter(awaiter);
@@ -161,13 +229,36 @@ namespace System.Runtime.CompilerServices
         [StackTraceHidden]
         public static void Await(ConfiguredValueTaskAwaitable configuredAwaitable)
         {
-            ConfiguredValueTaskAwaitable.ConfiguredValueTaskAwaiter awaiter = configuredAwaitable.GetAwaiter();
-            if (!awaiter.IsCompleted)
+            ValueTask task = configuredAwaitable._value;
+            object? obj = task._obj;
+            if (obj == null)
             {
-                UnsafeAwaitAwaiter(awaiter);
+                return;
             }
 
-            awaiter.GetResult();
+            if (obj is Task t)
+            {
+                if (t.IsCompleted)
+                {
+                    TaskAwaiter.ValidateEnd(t);
+                    return;
+                }
+
+                TailAwait();
+                AwaitTask(t, task._continueOnCapturedContext ? ConfigureAwaitOptions.ContinueOnCapturedContext : ConfigureAwaitOptions.None);
+                return;
+            }
+
+            Debug.Assert(obj is IValueTaskSource);
+            IValueTaskSource vts = Unsafe.As<object, IValueTaskSource>(ref obj);
+            if (vts.GetStatus(task._token) == ValueTaskSourceStatus.Pending)
+            {
+                TailAwait();
+                AwaitValueTaskSource(vts, task._token, task._continueOnCapturedContext);
+                return;
+            }
+
+            vts.GetResult(task._token);
         }
 
         /// <summary>
@@ -182,9 +273,14 @@ namespace System.Runtime.CompilerServices
         public static T Await<T>(ConfiguredTaskAwaitable<T> configuredAwaitable)
         {
             ConfiguredTaskAwaitable<T>.ConfiguredTaskAwaiter awaiter = configuredAwaitable.GetAwaiter();
+            // For the T version of ConfiguredTaskAwaiter we do not need to
+            // support ConfigureAwaitOptions.SuppressThrowing, but we do need
+            // to support ForceYielding. That one gets folded into the
+            // awaiter's IsCompleted here.
             if (!awaiter.IsCompleted)
             {
-                UnsafeAwaitAwaiter(awaiter);
+                TailAwait();
+                return AwaitTask(awaiter.m_task, awaiter.m_options);
             }
 
             return awaiter.GetResult();
@@ -201,13 +297,34 @@ namespace System.Runtime.CompilerServices
         [StackTraceHidden]
         public static T Await<T>(ConfiguredValueTaskAwaitable<T> configuredAwaitable)
         {
-            ConfiguredValueTaskAwaitable<T>.ConfiguredValueTaskAwaiter awaiter = configuredAwaitable.GetAwaiter();
-            if (!awaiter.IsCompleted)
+            ValueTask<T> task = configuredAwaitable._value;
+            object? obj = task._obj;
+            if (obj == null)
             {
-                UnsafeAwaitAwaiter(awaiter);
+                return task._result!;
             }
 
-            return awaiter.GetResult();
+            if (obj is Task<T> t)
+            {
+                if (t.IsCompleted)
+                {
+                    TaskAwaiter.ValidateEnd(t);
+                    return t.ResultOnSuccess;
+                }
+
+                TailAwait();
+                return AwaitTask(t, task._continueOnCapturedContext ? ConfigureAwaitOptions.ContinueOnCapturedContext : ConfigureAwaitOptions.None);
+            }
+
+            Debug.Assert(obj is IValueTaskSource<T>);
+            IValueTaskSource<T> vts = Unsafe.As<object, IValueTaskSource<T>>(ref obj);
+            if (vts.GetStatus(task._token) == ValueTaskSourceStatus.Pending)
+            {
+                TailAwait();
+                return AwaitValueTaskSource(vts, task._token, task._continueOnCapturedContext);
+            }
+
+            return vts.GetResult(task._token);
         }
 #else
         public static void UnsafeAwaitAwaiter<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion { throw new PlatformNotSupportedException("Runtime Async is not supported on this platform."); }

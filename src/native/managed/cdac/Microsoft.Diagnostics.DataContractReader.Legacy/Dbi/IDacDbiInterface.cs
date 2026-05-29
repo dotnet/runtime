@@ -409,7 +409,7 @@ public unsafe partial interface IDacDbiInterface
     int IsThreadMarkedDead(ulong vmThread, Interop.BOOL* pResult);
 
     [PreserveSig]
-    int GetThreadHandle(ulong vmThread, nint pRetVal);
+    int GetThreadHandle(ulong vmThread, void** pRetVal);
 
     [PreserveSig]
     int GetThreadObject(ulong vmThread, ulong* pRetVal);
@@ -553,7 +553,8 @@ public unsafe partial interface IDacDbiInterface
     int GetExactTypeHandle(nint pTypeData, nint pArgInfo, ulong* pVmTypeHandle);
 
     [PreserveSig]
-    int GetMethodDescParams(ulong vmMethodDesc, ulong genericsToken, uint* pcGenericClassTypeParams, nint pGenericTypeParams);
+    int EnumerateMethodDescParams(ulong vmMethodDesc, ulong genericsToken, uint* pcGenericClassTypeParams,
+        delegate* unmanaged<DebuggerIPCE_ExpandedTypeData*, nint, void> fpCallback, nint pUserData);
 
     [PreserveSig]
     int GetThreadStaticAddress(ulong vmField, ulong vmRuntimeThread, ulong* pRetVal);
@@ -565,7 +566,8 @@ public unsafe partial interface IDacDbiInterface
     int GetEnCHangingFieldInfo(nint pEnCFieldInfo, nint pFieldData, Interop.BOOL* pfStatic);
 
     [PreserveSig]
-    int GetTypeHandleParams(ulong vmTypeHandle, nint pParams);
+    int EnumerateTypeHandleParams(ulong vmTypeHandle,
+        delegate* unmanaged<DebuggerIPCE_ExpandedTypeData*, nint, void> fpCallback, nint pUserData);
 
     [PreserveSig]
     int GetSimpleType(int simpleType, uint* pMetadataToken, ulong* pVmModule);
@@ -574,13 +576,13 @@ public unsafe partial interface IDacDbiInterface
     int IsExceptionObject(ulong vmObject, Interop.BOOL* pResult);
 
     [PreserveSig]
-    int GetStackFramesFromException(ulong vmObject, nint pDacStackFrames);
+    int EnumerateStackFramesFromException(ulong vmObject, /*FP_EXCEPTION_STACK_FRAME_CALLBACK*/ delegate* unmanaged<ulong, ulong, ulong, uint, Interop.BOOL, nint, void> fpCallback, nint pUserData);
 
     [PreserveSig]
     int IsRcw(ulong vmObject, Interop.BOOL* pResult);
 
     [PreserveSig]
-    int GetRcwCachedInterfacePointers(ulong vmObject, Interop.BOOL bIInspectableOnly, nint pDacItfPtrs);
+    int EnumerateRcwCachedInterfacePointers(ulong vmObject, /*FP_RCW_INTERFACE_CALLBACK*/ delegate* unmanaged<ulong, nint, void> fpCallback, nint pUserData);
 
     [PreserveSig]
     int GetTypedByRefInfo(ulong pTypedByRef, nint pObjectData);
@@ -661,7 +663,7 @@ public unsafe partial interface IDacDbiInterface
     int GetTypeIDForType(ulong vmTypeHandle, COR_TYPEID* pId);
 
     [PreserveSig]
-    int GetObjectFields(nint id, uint celt, COR_FIELD* layout, uint* pceltFetched);
+    int GetObjectFields(ulong id, uint celt, COR_FIELD* layout, uint* pceltFetched);
 
     [PreserveSig]
     int GetTypeLayout(ulong id, COR_TYPE_LAYOUT* pLayout);

@@ -7,7 +7,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Reflection;
-using System.Threading;
 
 namespace System.Text.Json.Serialization.Metadata
 {
@@ -19,27 +18,9 @@ namespace System.Text.Json.Serialization.Metadata
             [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
             get
             {
-                return s_memberAccessor ?? Initialize();
-                static MemberAccessor Initialize()
-                {
-                    MemberAccessor value =
-#if NET
-                        // if dynamic code isn't supported, fallback to reflection
-                        RuntimeFeature.IsDynamicCodeSupported ?
-                            new ReflectionEmitCachingMemberAccessor() :
-                            new ReflectionMemberAccessor();
-#elif NETFRAMEWORK
-                            new ReflectionEmitCachingMemberAccessor();
-#else
-                            new ReflectionMemberAccessor();
-#endif
-                    return Interlocked.CompareExchange(ref s_memberAccessor, value, null) ?? value;
-                }
+                return global::System.Text.Json.Serialization.Metadata.MemberAccessor.Instance;
             }
         }
-
-        internal static void ClearMemberAccessorCaches() => s_memberAccessor?.Clear();
-        private static MemberAccessor? s_memberAccessor;
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
@@ -63,7 +44,8 @@ namespace System.Text.Json.Serialization.Metadata
                 typeInfo.UnmappedMemberHandling = unmappedMemberHandling;
             }
 
-            typeInfo.PopulatePolymorphismMetadata();
+            PopulatePolymorphismMetadata(typeInfo);
+
             typeInfo.MapInterfaceTypesToCallbacks();
 
             Func<object>? createObject = DetermineCreateObjectDelegate(type, converter);
@@ -86,10 +68,48 @@ namespace System.Text.Json.Serialization.Metadata
                 typeInfo.ConstructorAttributeProvider = typeInfo.Converter.ConstructorInfo;
             }
 
+            if (typeInfo.Kind is JsonTypeInfoKind.Union)
+            {
+                PopulateUnionMetadata(typeInfo);
+            }
+
             // Plug in any converter configuration -- should be run last.
             converter.ConfigureJsonTypeInfo(typeInfo, options);
             converter.ConfigureJsonTypeInfoUsingReflection(typeInfo, options);
             return typeInfo;
+        }
+
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+        internal static void PopulatePolymorphismMetadata(JsonTypeInfo typeInfo)
+        {
+            Debug.Assert(!typeInfo.IsReadOnly);
+
+            JsonPolymorphismOptions? options = JsonPolymorphismOptions.CreateFromAttributeDeclarations(typeInfo.Type, out JsonPolymorphicAttribute? polymorphicAttribute);
+
+            if (options is not null)
+            {
+                typeInfo.SetPolymorphismOptions(options);
+            }
+
+            if (typeInfo.Kind is not JsonTypeInfoKind.Union)
+            {
+                if (polymorphicAttribute?.TypeClassifier is Type classifierFactoryType)
+                {
+                    if (!typeof(JsonTypeClassifierFactory).IsAssignableFrom(classifierFactoryType))
+                    {
+                        ThrowHelper.ThrowInvalidOperationException_TypeClassifierMustDeriveFromJsonTypeClassifierFactory(classifierFactoryType, typeInfo.Type);
+                    }
+
+                    typeInfo.TypeClassifierFactory = (JsonTypeClassifierFactory)Activator.CreateInstance(classifierFactoryType)!;
+                }
+
+                if (typeInfo.PolymorphismOptions is not null &&
+                    (typeInfo.TypeClassifierFactory is not null || typeInfo.Options.TypeClassifiers.Count > 0))
+                {
+                    typeInfo.TypeClassifierResolutionPending = true;
+                }
+            }
         }
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]

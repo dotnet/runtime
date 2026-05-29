@@ -184,18 +184,6 @@
 // CORINFO_HELP_ASSIGN_REF (JIT_WriteBarrier), CORINFO_HELP_CHECKED_ASSIGN_REF (JIT_CheckedWriteBarrier):
 //     The usual amd64 calling convention is observed.
 //     TODO-CQ: could this be optimized?
-// CORINFO_HELP_ASSIGN_BYREF (JIT_ByRefWriteBarrier):
-//     On entry:
-//       rsi: the source address (points to object reference to write)
-//       rdi: the destination address (object reference written here)
-//     On exit:
-//       rcx: trashed
-//       rdi: incremented by 8
-//       rsi: incremented by 8
-//       rax: trashed when FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP is defined
-//     TODO-CQ: the above description matches the comments for the amd64 assembly code of JIT_ByRefWriteBarrier,
-//              however the defines below assume the normal calling convention *except* for rdi/rsi. If we could
-//              reduce the number of trashed variables, we could improve code quality.
 //
 
 #define REG_WRITE_BARRIER_DST          REG_ARG_0
@@ -211,12 +199,6 @@
 
 // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
 #define RBM_CALLEE_GCTRASH_WRITEBARRIER       RBM_CALLEE_TRASH_NOGC
-
-// Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_BYREF.
-#define RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF (RBM_RAX | RBM_RCX)
-
-// Registers killed by CORINFO_HELP_ASSIGN_BYREF.
-#define RBM_CALLEE_TRASH_WRITEBARRIER_BYREF   (RBM_RSI | RBM_RDI | RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF)
 
 // We have two register classifications
 // * callee trash: aka     volatile or caller saved

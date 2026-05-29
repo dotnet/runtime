@@ -1602,6 +1602,11 @@ public:
                                ArgInfoList *   pArgInfo,
                                VMPTR_TypeHandle * pVmTypeHandle) = 0;
 
+    // Callback invoked for each type parameter enumerated by EnumerateMethodDescParams or
+    // EnumerateTypeHandleParams. The callback must not throw. Implementations typically push
+    // the value into an accumulator stashed in pUserData.
+    typedef void (*FP_TYPEPARAM_CALLBACK)(DebuggerIPCE_ExpandedTypeData * pTypeData, CALLBACK_DATA pUserData);
+
     //
     // Retrieve the generic type params for a given MethodDesc.  This function is specifically
     // for stackwalking because it requires the generic type token on the stack.
@@ -1610,19 +1615,20 @@ public:
     //    vmMethodDesc  - the method in question
     //    genericsToken - the generic type token in the stack frame owned by the method
     //    pcGenericClassTypeParams - [out]
-    //    pGenericTypeParams - [out]
+    //    fpCallback - [in]
+    //    pUserData  - [in]
     //
     //    pcGenericClassTypeParams - out parameter; returns the number of type parameters for the class
     //                               containing the method in question; must not be NULL
-    //    pGenericTypeParams       - out parameter; returns an array of type parameters and
-    //                               the count of the total number of type parameters; must not be NULL
+    //    fpCallback - callback invoked once per type parameter, in order: class type parameters first
+    //                 then method type parameters; must not be NULL
+    //    pUserData  - opaque user data passed through to the callback
     //
     // Notes:
-    //    The memory for the array is allocated by this function on the Dbi heap.
-    //    The caller is responsible for releasing it.
+    //    The callback must not throw.
     //
 
-    virtual HRESULT STDMETHODCALLTYPE GetMethodDescParams(VMPTR_MethodDesc vmMethodDesc, GENERICS_TYPE_TOKEN genericsToken, OUT UINT32 * pcGenericClassTypeParams, OUT TypeParamsList * pGenericTypeParams) = 0;
+    virtual HRESULT STDMETHODCALLTYPE EnumerateMethodDescParams(VMPTR_MethodDesc vmMethodDesc, GENERICS_TYPE_TOKEN genericsToken, OUT UINT32 * pcGenericClassTypeParams, FP_TYPEPARAM_CALLBACK fpCallback, CALLBACK_DATA pUserData) = 0;
 
     // Get the target field address of a thread local static.
     // Arguments:
@@ -1669,20 +1675,16 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetEnCHangingFieldInfo(const EnCHangingFieldInfo * pEnCFieldInfo, OUT FieldData * pFieldData, OUT BOOL * pfStatic) = 0;
 
 
-    // GetTypeHandleParams gets the necessary data for a type handle, i.e. its
+    // EnumerateTypeHandleParams gets the necessary data for a type handle, i.e. its
     // type parameters, e.g. "String" and "List<int>" from the type handle
     // for "Dict<String,List<int>>", and sends it back to the right side.
     // Arguments:
     //    input:  vmTypeHandle - type handle for the type
-    //    output: pParams      - list of instances of DebuggerIPCE_ExpandedTypeData,
-    //                           one for each type parameter. These will be used on the
-    //                           RS to build up an instantiation which will allow
-    //                           building an instance of CordbType for the top-level
-    //                           type. The memory for this list is allocated on the dbi
-    //                           heap in this function.
+    //            fpCallback   - callback invoked once per type parameter (must not be NULL)
+    //            pUserData    - opaque user data passed through to the callback
     // This will not fail except for OOM
 
-    virtual HRESULT STDMETHODCALLTYPE GetTypeHandleParams(VMPTR_TypeHandle vmTypeHandle, OUT TypeParamsList * pParams) = 0;
+    virtual HRESULT STDMETHODCALLTYPE EnumerateTypeHandleParams(VMPTR_TypeHandle vmTypeHandle, FP_TYPEPARAM_CALLBACK fpCallback, CALLBACK_DATA pUserData) = 0;
 
     // GetSimpleType
     // gets the metadata token and assembly corresponding to a simple type
@@ -1703,16 +1705,34 @@ public:
     // For the specified object, check whether the object derives from System.Exception.
     virtual HRESULT STDMETHODCALLTYPE IsExceptionObject(VMPTR_Object vmObject, OUT BOOL * pResult) = 0;
 
-    // Get the list of raw stack frames for the specified exception object.
-    virtual HRESULT STDMETHODCALLTYPE GetStackFramesFromException(VMPTR_Object vmObject, DacDbiArrayList<DacExceptionCallStackData>* pDacStackFrames) = 0;
+    // Callback invoked for each raw stack frame on a managed exception.
+    //
+    // Arguments:
+    //    vmAppDomain                - the AppDomain that owns the method (always the singleton
+    //                                 AppDomain in CoreCLR).
+    //    vmAssembly                 - the Assembly that owns the method.
+    //    ip                         - the captured native instruction pointer.
+    //    methodDef                  - the metadata token of the method.
+    //    isLastForeignExceptionFrame - TRUE iff the underlying StackTraceElement had
+    //                                 STEF_LAST_FRAME_FROM_FOREIGN_STACK_TRACE set.
+    //    pUserData                  - user data passed to EnumerateStackFramesFromException.
+    typedef void (*FP_EXCEPTION_STACK_FRAME_CALLBACK)(VMPTR_AppDomain vmAppDomain, VMPTR_Assembly vmAssembly, CORDB_ADDRESS ip, mdMethodDef methodDef, BOOL isLastForeignExceptionFrame, CALLBACK_DATA pUserData);
+
+    // Enumerate the raw stack frames captured on a managed exception object.
+    //
+    // The callback is invoked once per frame and must not throw.
+    virtual HRESULT STDMETHODCALLTYPE EnumerateStackFramesFromException(VMPTR_Object vmObject, FP_EXCEPTION_STACK_FRAME_CALLBACK fpCallback, CALLBACK_DATA pUserData) = 0;
 
     // Check whether the argument is a runtime callable wrapper.
     virtual HRESULT STDMETHODCALLTYPE IsRcw(VMPTR_Object vmObject, OUT BOOL * pResult) = 0;
 
-    // retrieves the list of interfaces pointers implemented by vmObject, as it is known at
-    // the time of the call (the list may change as new interface types become available
-    // in the runtime)
-    virtual HRESULT STDMETHODCALLTYPE GetRcwCachedInterfacePointers(VMPTR_Object vmObject, BOOL bIInspectableOnly, OUT DacDbiArrayList<CORDB_ADDRESS> * pDacItfPtrs) = 0;
+    // Callback invoked for each cached interface pointer held by an RCW.
+    typedef void (*FP_RCW_INTERFACE_CALLBACK)(CORDB_ADDRESS itfPtr, CALLBACK_DATA pUserData);
+
+    // Enumerates the interface pointers cached by the RCW associated with vmObject, as known at
+    // the time of the call (the list may change as new interface types become available in the
+    // runtime). If vmObject is not an RCW the enumeration is empty. The callback must not throw.
+    virtual HRESULT STDMETHODCALLTYPE EnumerateRcwCachedInterfacePointers(VMPTR_Object vmObject, FP_RCW_INTERFACE_CALLBACK fpCallback, CALLBACK_DATA pUserData) = 0;
 
     // ----------------------------------------------------------------------------
     // functions to get information about reference/handle referents for ICDValue
@@ -2035,7 +2055,7 @@ public:
 
     virtual HRESULT STDMETHODCALLTYPE GetTypeIDForType(VMPTR_TypeHandle vmTypeHandle, COR_TYPEID *pId) = 0;
 
-    virtual HRESULT STDMETHODCALLTYPE GetObjectFields(COR_TYPEID id, ULONG32 celt, OUT COR_FIELD * layout, OUT ULONG32 * pceltFetched) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetObjectFields(UINT64 id, ULONG32 celt, OUT COR_FIELD * layout, OUT ULONG32 * pceltFetched) = 0;
 
     virtual HRESULT STDMETHODCALLTYPE GetTypeLayout(CORDB_ADDRESS id, COR_TYPE_LAYOUT * pLayout) = 0;
 

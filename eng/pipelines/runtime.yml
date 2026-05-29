@@ -1073,8 +1073,7 @@ extends:
           buildConfig: Release
           runtimeFlavor: mono
           platforms:
-          # Disabled until https://github.com/dotnet/runtime/issues/125440 is resolved.
-          # - android_arm
+          - android_arm
           - android_arm64
           variables:
             # map dependencies variables to local variables

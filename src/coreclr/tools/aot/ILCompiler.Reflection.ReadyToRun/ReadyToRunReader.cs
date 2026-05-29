@@ -33,6 +33,11 @@ namespace ILCompiler.Reflection.ReadyToRun
         Unknown = -1
     }
 
+    public static class WasmMachine
+    {
+        public const Machine Wasm32 = (Machine)0xFFFE;
+    }
+
     public struct InstanceMethod
     {
         public byte Bucket;
@@ -683,6 +688,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 case Machine.Arm:
                 case Machine.Thumb:
                 case Machine.ArmThumb2:
+                case WasmMachine.Wasm32:
                     _pointerSize = 4;
                     break;
 
@@ -1216,7 +1222,10 @@ namespace ILCompiler.Reflection.ReadyToRun
                             constrainedType: null,
                             instanceArgs: method.InstanceArgs,
                             signaturePrefixes: ["[RESUME]"],
-                            fixupOffset: null);
+                            fixupOffset: null)
+                        {
+                            RuntimeFunctionCount = 1,
+                        };
                         _instanceMethods.Add(new InstanceMethod(0, stubMethod));
                     }
                 }
@@ -1529,6 +1538,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     {
                         case Machine.I386:
                         case Machine.ArmThumb2:
+                        case WasmMachine.Wasm32:
                             entrySize = 4;
                             break;
 
