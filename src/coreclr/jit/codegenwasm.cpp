@@ -699,8 +699,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
     assert(!treeNode->IsReuseRegVal()); // TODO-WASM-CQ: enable.
 
     // Contained nodes are part of the parent for codegen purposes.
-    // Except for 'partially contained' address nodes, which still need to push FP/SP onto the stack at the right spot.
-    if (treeNode->isContained() && !treeNode->OperIs(GT_LCL_ADDR))
+    if (treeNode->isContained())
     {
         return;
     }
@@ -742,6 +741,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_LCL_ADDR:
             genCodeForLclAddr(treeNode->AsLclFld());
+            break;
+
+        case GT_PARTIALLY_CONTAINED_LCL_ADDR:
+            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
             break;
 
         case GT_LCL_FLD:
@@ -2267,11 +2270,7 @@ void CodeGen::genCodeForLclAddr(GenTreeLclFld* lclAddrNode)
     // Even if contained, we always load the frame pointer at the right place so that containing get/set
     // opcodes have a base address to work from.
     GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
-    if (lclAddrNode->isContained())
-    {
-        printf("skipping const+add for contained GT_LCL_ADDR [%06u]\n", Compiler::dspTreeID(lclAddrNode));
-    }
-    else if ((lclOffset != 0) || (m_compiler->lvaFrameAddress(lclNum, &FPBased) != 0))
+    if ((lclOffset != 0) || (m_compiler->lvaFrameAddress(lclNum, &FPBased) != 0))
     {
         GetEmitter()->emitIns_S(INS_I_const, EA_PTRSIZE, lclNum, lclOffset);
         GetEmitter()->emitIns(INS_I_add);
@@ -2373,13 +2372,14 @@ void CodeGen::genCodeForPhysReg(GenTreePhysReg* tree)
 
 static cnsval_ssize_t getOffsetForPossiblyContainedAddress(Compiler *comp, GenTree *addr)
 {
-    if (addr->isContained() && addr->OperIs(GT_LCL_ADDR))
+    if (addr->OperIs(GT_PARTIALLY_CONTAINED_LCL_ADDR))
     {
-            bool FPBased;
-            int  lclOffset = comp->lvaFrameAddress(addr->AsLclFld()->GetLclNum(), &FPBased);
-            cnsval_ssize_t offset = lclOffset + addr->AsLclFld()->GetLclOffs();
-            noway_assert(offset >= 0); // WASM address modes are unsigned.
-            return offset;
+        GenTreeLclFld * lclFld = addr->gtGetOp1()->AsLclFld();
+        bool FPBased;
+        int  lclOffset = comp->lvaFrameAddress(lclFld->GetLclNum(), &FPBased);
+        cnsval_ssize_t offset = lclOffset + lclFld->GetLclOffs();
+        noway_assert(offset >= 0); // WASM address modes are unsigned.
+        return offset;
     }
 
     return 0;

@@ -446,10 +446,15 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
     // TODO-WASM-CQ: contain suitable LEAs here. Take note of the fact that for this to be correct we must prove the
     // LEA doesn't overflow. It will involve creating a new frontend node to represent "nuw" (offset) addition.
 
-    if (indirNode->Addr()->OperIs(GT_LCL_ADDR))
+    GenTree * addr = indirNode->Addr();
+    if (addr->OperIs(GT_LCL_ADDR))
     {
-        printf("Containing GT_LCL_ADDR addr of indirection [%06u]\n", Compiler::dspTreeID(indirNode));
-        indirNode->Addr()->SetContained();
+        GenTreeUnOp * wrapper = m_compiler->gtNewOperNode(
+            GT_PARTIALLY_CONTAINED_LCL_ADDR, addr->TypeGet(), addr
+        );
+        addr->SetContained();
+        indirNode->SetAddr(wrapper);
+        BlockRange().InsertAfter(addr, wrapper);
     }
 }
 
