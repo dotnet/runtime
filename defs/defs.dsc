@@ -4,9 +4,9 @@
 /**
  * Repo-level definitions — pure label constants and external package map.
  *
- * Framework refs use labels that encode workspace-relative paths.
  * External packages (NuGet, SDK) use @pkg//path:file labels resolved
- * against the EXTERNAL_PACKAGES map.
+ * against the EXTERNAL_PACKAGES map. Assembly imports are created
+ * from labels via csharp_import in BUILD.dsc.
  */
 
 import * as Rules from "Sdk.Rules";
@@ -25,69 +25,6 @@ export const EXTERNAL_PACKAGES: Map<string, StaticDirectory> = Map.empty<string,
     .add("xunit.abstractions", importFrom("xunit.abstractions").Contents.all)
     .add("Microsoft.CodeAnalysis.Common", importFrom("Microsoft.CodeAnalysis.Common").Contents.all)
     .add("Microsoft.CodeAnalysis.CSharp", importFrom("Microsoft.CodeAnalysis.CSharp").Contents.all);
-
-// ============================================================================
-//  CORE_ROOT_REFPACK_DEPS — framework refs from Microsoft.NETCore.App.Ref
-//  Convention: @Microsoft.NETCore.App.Ref//ref/net11.0:<Name>.dll
-// ============================================================================
-
-function refLabel(name: string): Rules.Label {
-    return `@Microsoft.NETCore.App.Ref//ref/net11.0:${name}.dll`;
-}
-
-@@public
-export const CORE_ROOT_REFPACK_DEPS: Rules.Label[] = [
-    refLabel("Microsoft.Win32.Primitives"),
-    refLabel("System.Collections"),
-    refLabel("System.Collections.Concurrent"),
-    refLabel("System.Collections.Immutable"),
-    refLabel("System.Collections.NonGeneric"),
-    refLabel("System.Collections.Specialized"),
-    refLabel("System.ComponentModel"),
-    refLabel("System.ComponentModel.Primitives"),
-    refLabel("System.Console"),
-    refLabel("System.Diagnostics.FileVersionInfo"),
-    refLabel("System.Diagnostics.Process"),
-    refLabel("System.Diagnostics.Tracing"),
-    refLabel("System.IO.MemoryMappedFiles"),
-    refLabel("System.Linq"),
-    refLabel("System.Memory"),
-    refLabel("System.Numerics.Vectors"),
-    refLabel("System.ObjectModel"),
-    refLabel("System.Reflection.Emit"),
-    refLabel("System.Reflection.Emit.ILGeneration"),
-    refLabel("System.Reflection.Emit.Lightweight"),
-    refLabel("System.Reflection.Metadata"),
-    refLabel("System.Reflection.Primitives"),
-    refLabel("System.Reflection.TypeExtensions"),
-    refLabel("System.Runtime"),
-    refLabel("System.Runtime.InteropServices"),
-    refLabel("System.Runtime.Intrinsics"),
-    refLabel("System.Runtime.Loader"),
-    refLabel("System.Runtime.Numerics"),
-    refLabel("System.Runtime.Serialization.Primitives"),
-    refLabel("System.Security.Cryptography"),
-    refLabel("System.Text.Encoding.Extensions"),
-    refLabel("System.Text.Encodings.Web"),
-    refLabel("System.Text.RegularExpressions"),
-    refLabel("System.Threading"),
-    refLabel("System.Threading.Overlapped"),
-    refLabel("System.Threading.Tasks.Parallel"),
-    refLabel("System.Threading.Thread"),
-    refLabel("System.Threading.ThreadPool")
-];
-
-// ============================================================================
-//  XUNIT_DEPS — xunit compile-time refs (label-based)
-// ============================================================================
-
-@@public
-export const XUNIT_DEPS: Rules.Label[] = [
-    "@Microsoft.DotNet.XUnitAssert//lib/net10.0:xunit.assert.dll",
-    "@xunit.extensibility.core//lib/netstandard1.1:xunit.core.dll",
-    "@Microsoft.DotNet.XUnitExtensions//lib/net10.0:Microsoft.DotNet.XUnitExtensions.dll",
-    "@xunit.abstractions//lib/netstandard1.0:xunit.abstractions.dll"
-];
 
 // ============================================================================
 //  XUNIT_RUNTIME_DEPS — runtime files staged beside executable tests
@@ -117,13 +54,3 @@ export const CORE_ROOT_CORERUN: Rules.Artifact =
 @@public
 export const CORE_ROOT_ILASM: Rules.Artifact =
     Rules.sourceArtifact(f`${CORE_ROOT_DIR}/ilasm`);
-
-// ============================================================================
-//  CORECLR_TEST_COMMON_DEPS — label-based deps baked into coreclr_test
-// ============================================================================
-
-@@public
-export const CORECLR_TEST_COMMON_DEPS: Rules.Label[] = [
-    ...CORE_ROOT_REFPACK_DEPS,
-    ...XUNIT_DEPS
-];

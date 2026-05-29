@@ -36,17 +36,19 @@ interface WriteFileResult extends Rules.Provider {
     defaultInfo: Rules.DefaultInfo;
 }
 
-const write_file = Rules.rule<WriteFileAttrs, WriteFileAttrs, Rules.Toolchain, WriteFileResult>({
+const write_file = Rules.rule<WriteFileAttrs, WriteFileAttrs, Rules.Toolchain>({
     doc: "Generate a text file from a list of lines.",
     resolve: (attrs, _resolver) => attrs,
     impl: (ctx) => {
         const output = ctx.actions.declareOutput(ctx.args.out);
         const bound = ctx.actions.writeFile(output, ctx.args.content);
-        return {
-            kind: "WriteFileResult",
-            out: bound,
-            defaultInfo: Rules.defaultInfo({ files: [bound] }),
-        };
+        return [
+            <WriteFileResult>{
+                kind: "WriteFileResult",
+                out: bound,
+                defaultInfo: Rules.defaultInfo({ files: [bound] }),
+            },
+        ];
     },
 });
 
@@ -58,7 +60,7 @@ const write_file = Rules.rule<WriteFileAttrs, WriteFileAttrs, Rules.Toolchain, W
 //  Transformer.writeAllLines File.
 // ============================================================================
 
-const generatorGlobalConfig = write_file({
+const generatorGlobalConfigTarget = write_file({
     name: "coreclr_globalconfig",
     out: "coreclr.globalconfig",
     content: [
@@ -69,6 +71,7 @@ const generatorGlobalConfig = write_file({
         "build_property.RuntimeFlavor = CoreCLR",
     ],
 });
+const generatorGlobalConfig = Rules.getProvider<WriteFileResult>(generatorGlobalConfigTarget, "WriteFileResult");
 
 // ============================================================================
 //  coreclr_test arguments and result
@@ -77,7 +80,7 @@ const generatorGlobalConfig = write_file({
 export interface CoreClrTestArguments {
     name: string;
     srcs: Rules.Label[];
-    deps?: CSharp.CSharpInfo[];
+    deps?: Rules.Target[];
     optimize?: boolean;
     allowUnsafe?: boolean;
     defines?: string[];
@@ -98,7 +101,7 @@ export interface CoreClrTestArguments {
     flaky?: boolean;
     visibility?: string[];
     compilerOptions?: string[];
-    testDeps?: CSharp.CSharpInfo[];
+    testDeps?: Rules.Target[];
     // `tags` participates in skip-running ("manual") but is otherwise opaque.
     tags?: string[];
     // `targetCompatibleWith` is enforced at generation time (incompatible
@@ -109,7 +112,7 @@ export interface CoreClrTestArguments {
 export interface CoreClrTestResult extends Rules.Provider {
     binary: Rules.Artifact;
     testInfo?: Rules.TestInfo;
-    csInfo: CSharp.CSharpInfo;
+    target: Rules.Target;
     defaultInfo: Rules.DefaultInfo;
 }
 
@@ -131,7 +134,7 @@ interface CoreClrTestRunnerResult extends Rules.Provider {
     defaultInfo: Rules.DefaultInfo;
 }
 
-const coreclrTestRunner = Rules.rule<CoreClrTestRunnerAttrs, CoreClrTestRunnerAttrs, Rules.Toolchain, CoreClrTestRunnerResult>({
+const coreclrTestRunner = Rules.rule<CoreClrTestRunnerAttrs, CoreClrTestRunnerAttrs, Rules.Toolchain>({
     doc: "Run a CoreCLR test DLL via corerun.",
     kind: "test",
     resolve: (attrs, _resolver) => attrs,
@@ -139,9 +142,6 @@ const coreclrTestRunner = Rules.rule<CoreClrTestRunnerAttrs, CoreClrTestRunnerAt
         const corerunPath = Defs.CORE_ROOT_CORERUN.path.toDiagnosticString();
         const dllName = ctx.args.binary.shortPath;
 
-        // Generate the runner script via ctx.actions (build-time, untagged)
-        // so it is produced by `bxl build` and available for Helix staging.
-        // Test *execution* stays on ctx.runActions (tagged bxl-kind:test).
         const dllPath = ctx.args.binary.path.toDiagnosticString();
         const runtimeSources = ctx.args.runtimeFiles.map(f => `# runtime-source: ${f.path.toDiagnosticString()}`);        const envLines = (ctx.args.env || []).map(e => `export "${e.name}=${e.value}"`);
         const runner = ctx.actions.writeFile(
@@ -157,7 +157,6 @@ const coreclrTestRunner = Rules.rule<CoreClrTestRunnerAttrs, CoreClrTestRunnerAt
                 `exec "$corerun" "$(dirname "$0")/${dllName}" "$@"`,
             ]);
 
-        // Let the framework handle timeout, stamp, runat, success codes.
         const ti = Rules.scheduleTestRunner(ctx.args.name, Rules.testRunInfo({
             executable: runner,
             successExitCodes: [100],
@@ -171,11 +170,13 @@ const coreclrTestRunner = Rules.rule<CoreClrTestRunnerAttrs, CoreClrTestRunnerAt
             tags: ctx.args.tags,
         }), ctx.runActions);
 
-        return {
-            kind: "CoreClrTestRunnerResult",
-            testInfo: ti,
-            defaultInfo: Rules.defaultInfo({ files: [] }),
-        };
+        return [
+            <CoreClrTestRunnerResult>{
+                kind: "CoreClrTestRunnerResult",
+                testInfo: ti,
+                defaultInfo: Rules.defaultInfo({ files: [] }),
+            },
+        ];
     },
 });
 
@@ -199,47 +200,53 @@ export function coreclr_test(args: CoreClrTestArguments): CoreClrTestResult {
         : undefined;
 
     const deps = [testLibrary, ...(referenceXunitWrapperGenerator ? [xunitWrapperLibrary] : []), ...(args.deps || []), ...(args.testDeps || [])];
-    const csInfo = tc.csharp_binary({
+    const xunitWrapperGeneratorCompileInfo = Rules.getProvider<CSharp.DotnetAssemblyCompileInfo>(xunitWrapperGenerator, "DotnetAssemblyCompileInfo");
+    const binaryTarget = tc.csharp_binary({
         name: args.name,
         tfm: "net11.0",
         srcs: args.srcs,
-        refs: Defs.CORECLR_TEST_COMMON_DEPS,
-        deps: deps,
+        deps: [...COMMON_TEST_IMPORTS, ...deps],
         optimize: args.optimize !== undefined ? args.optimize : true,
         allowUnsafe: args.allowUnsafe !== undefined ? args.allowUnsafe : true,
         defines: args.defines,
         nowarn: allNowarn,
         useSharedCompilation: true,
         disableImplicitFrameworkRefs: true,
-        analyzers: referenceXunitWrapperGenerator ? [xunitWrapperGenerator.binary] : undefined,
+        analyzers: referenceXunitWrapperGenerator ? [xunitWrapperGeneratorCompileInfo.binary] : undefined,
         analyzerConfigs: analyzerConfigs,
     });
+    const binaryCompileInfo = Rules.getProvider<CSharp.DotnetAssemblyCompileInfo>(binaryTarget, "DotnetAssemblyCompileInfo");
+    const binaryDefaultInfo = Rules.getProvider<Rules.DefaultInfo>(binaryTarget, "DefaultInfo");
 
+    const testLibraryCompileInfo = Rules.getProvider<CSharp.DotnetAssemblyCompileInfo>(testLibrary, "DotnetAssemblyCompileInfo");
+    const xunitWrapperLibraryCompileInfo = Rules.getProvider<CSharp.DotnetAssemblyCompileInfo>(xunitWrapperLibrary, "DotnetAssemblyCompileInfo");
     const runtimeFiles = [
-        testLibrary.binary,
-        ...(referenceXunitWrapperGenerator ? [xunitWrapperLibrary.binary] : []),
+        testLibraryCompileInfo.binary,
+        ...(referenceXunitWrapperGenerator ? [xunitWrapperLibraryCompileInfo.binary] : []),
         ...Defs.XUNIT_RUNTIME_DEPS,
     ];
 
-    // Tests carrying the bazel "manual" tag are compiled but not run by default.
     const taggedManual = (args.tags || []).filter(t => t === "manual").length > 0;
     const shouldRun = args.run !== false && !taggedManual;
-    const testResult = !shouldRun
+    const testRunnerTarget = !shouldRun
         ? undefined
         : coreclrTestRunner({
             name: `${args.name}_test`,
-            binary: csInfo.binary,
+            binary: binaryCompileInfo.binary,
             runtimeFiles: runtimeFiles,
             env: args.env,
             flaky: args.flaky,
             tags: args.tags,
         });
+    const testResult = testRunnerTarget !== undefined
+        ? Rules.getProvider<CoreClrTestRunnerResult>(testRunnerTarget, "CoreClrTestRunnerResult")
+        : undefined;
 
     return {
         kind: "CoreClrTestResult",
-        binary: csInfo.binary,
+        binary: binaryCompileInfo.binary,
         testInfo: testResult !== undefined ? testResult.testInfo : undefined,
-        csInfo: csInfo,
-        defaultInfo: csInfo.defaultInfo,
+        target: binaryTarget,
+        defaultInfo: binaryDefaultInfo,
     };
 }

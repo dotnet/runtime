@@ -36,7 +36,7 @@ interface IlCompileResult extends Rules.Provider {
     defaultInfo: Rules.DefaultInfo;
 }
 
-const ilCompile = Rules.rule<IlCompileAttrs, IlCompileResolved, Rules.Toolchain, IlCompileResult>({
+const ilCompile = Rules.rule<IlCompileAttrs, IlCompileResolved, Rules.Toolchain>({
     doc: "Assemble .il source files into a .dll using ilasm.",
     resolve: (attrs, resolver) => <IlCompileResolved>{
         name: attrs.name,
@@ -68,11 +68,13 @@ const ilCompile = Rules.rule<IlCompileAttrs, IlCompileResolved, Rules.Toolchain,
             description: `ilasm ${ctx.args.name}`,
         });
 
-        return {
-            kind: "IlCompileResult",
-            binary: produced[0],
-            defaultInfo: Rules.defaultInfo({ files: [produced[0]] }),
-        };
+        return [
+            <IlCompileResult>{
+                kind: "IlCompileResult",
+                binary: produced[0],
+                defaultInfo: Rules.defaultInfo({ files: [produced[0]] }),
+            },
+        ];
     },
 });
 
@@ -93,7 +95,7 @@ interface IlTestRunnerResult extends Rules.Provider {
     defaultInfo: Rules.DefaultInfo;
 }
 
-const ilTestRunner = Rules.rule<IlTestRunnerAttrs, IlTestRunnerAttrs, Rules.Toolchain, IlTestRunnerResult>({
+const ilTestRunner = Rules.rule<IlTestRunnerAttrs, IlTestRunnerAttrs, Rules.Toolchain>({
     doc: "Run an IL test DLL via corerun.",
     kind: "test",
     resolve: (attrs, _resolver) => attrs,
@@ -101,9 +103,6 @@ const ilTestRunner = Rules.rule<IlTestRunnerAttrs, IlTestRunnerAttrs, Rules.Tool
         const corerunPath = Defs.CORE_ROOT_CORERUN.path.toDiagnosticString();
         const dllName = ctx.args.binary.shortPath;
 
-        // Generate the runner script via ctx.actions (build-time, untagged)
-        // so it is produced by `bxl build` and available for Helix staging.
-        // Test *execution* stays on ctx.runActions (tagged bxl-kind:test).
         const dllPath = ctx.args.binary.path.toDiagnosticString();
         const envLines = (ctx.args.env || []).map(e => `export "${e.name}=${e.value}"`);
         const runner = ctx.actions.writeFile(
@@ -128,11 +127,13 @@ const ilTestRunner = Rules.rule<IlTestRunnerAttrs, IlTestRunnerAttrs, Rules.Tool
             tags: ctx.args.tags,
         }), ctx.runActions);
 
-        return {
-            kind: "IlTestRunnerResult",
-            testInfo: ti,
-            defaultInfo: Rules.defaultInfo({ files: [] }),
-        };
+        return [
+            <IlTestRunnerResult>{
+                kind: "IlTestRunnerResult",
+                testInfo: ti,
+                defaultInfo: Rules.defaultInfo({ files: [] }),
+            },
+        ];
     },
 });
 
@@ -166,17 +167,17 @@ export interface IlCoreClrTestResult extends Rules.Provider {
 }
 
 export function il_coreclr_test(args: IlCoreClrTestArguments): IlCoreClrTestResult {
-    const ilResult = ilCompile({
+    const ilTarget = ilCompile({
         name: args.name,
         srcs: args.srcs,
         debugType: args.debugType,
         optimize: args.optimize,
     });
+    const ilResult = Rules.getProvider<IlCompileResult>(ilTarget, "IlCompileResult");
 
-    // Tests carrying the bazel "manual" tag are compiled but not run by default.
     const taggedManual = (args.tags || []).filter(t => t === "manual").length > 0;
     const shouldRun = args.run !== false && !taggedManual;
-    const testResult = !shouldRun
+    const testRunnerTarget = !shouldRun
         ? undefined
         : ilTestRunner({
             name: `${args.name}_test`,
@@ -185,6 +186,9 @@ export function il_coreclr_test(args: IlCoreClrTestArguments): IlCoreClrTestResu
             flaky: args.flaky,
             tags: args.tags,
         });
+    const testResult = testRunnerTarget !== undefined
+        ? Rules.getProvider<IlTestRunnerResult>(testRunnerTarget, "IlTestRunnerResult")
+        : undefined;
 
     return {
         kind: "IlCoreClrTestResult",

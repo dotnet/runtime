@@ -6,10 +6,10 @@
 
 import * as Rules from "Sdk.Rules";
 
-export const nullabletypesDesktopSharedSrcs = Rules.filegroup({
+export const nullabletypesDesktopSharedSrcs = Rules.getProvider<Rules.FilegroupResult>(Rules.filegroup({
     name: "nullabletypes_desktop_shared",
     srcs: ["StructDefinitions.cs"],
-});
+}), "FilegroupResult");
 
 @@public
 export const jIT_Directed_nullabletypes_Desktop_nullcomparaison_r = coreclr_test({
