@@ -177,11 +177,11 @@ Hard rules: no comments on issues/PRs, no edits outside `.github/workflows/ci-fa
 
    ### A) Acceptance classification (primary)
 
-   Each artifact (issue or PR) is classified into one of three buckets:
+   Each artifact (issue or PR) is classified into exactly one of three buckets. Evaluate the rules in order; the first matching rule wins.
 
    - **Accepted** — PR merged; OR issue closed with `state_reason: completed`; OR issue still open and >= 7 days old AND touched by a MEMBER/OWNER (commented, labeled, assigned, milestoned, or linked from another issue/PR).
    - **Rejected** — PR closed unmerged; OR issue closed with `state_reason` in `{not_planned, duplicate}`; OR ANY MEMBER/OWNER comment on the artifact matches (case-insensitive) one of: `don't disable`, `do not disable`, `do not mute`, `please don't`, `false positive`, `fix forward`, `fix-forward`, `investigation in progress`, `will investigate`, `stop filing`, `noise`, `not a real failure`, `flaky test`.
-   - **Pending** — younger than 7 days AND no MEMBER/OWNER touch. Excluded from the rate.
+   - **Pending** — every other artifact (no Accepted or Rejected rule has matched yet, e.g. a young untouched issue or an older open issue with only non-rejection maintainer activity). Excluded from the rate.
 
    Compute the classification over both the 30-day and 90-day rolling windows from `now`. For each window emit:
 
@@ -191,7 +191,24 @@ Hard rules: no comments on issues/PRs, no edits outside `.github/workflows/ci-fa
 
    ### B) Environment / scanner activity (volume)
 
-   Source CI failure counts from the same scanner runs the feedback workflow inspects (Step 1): each scanner run's agent log records the failures it observed; sum those over the window. The signature tuple is `(pipeline_definition_id, job_or_test_name, normalized_error_fingerprint)` as the scanner already produces it for filing.
+   Source CI failure counts from the scanner's own agent logs over the window. Step 1 (latest 10 runs) and Step 2 (tallies for the latest 2) are sized for the rubric-scoring path and do NOT cover 30 days, the prior-7d comparison period, or anything beyond the most recent two tallies — this section MUST enumerate scanner runs independently. Paginate `ci-failure-scan.lock.yml` runs created in the last 30 days and download the tally for each (reuse the Step 2 `awk` extractor; skip downloads when the tally file already exists from Step 2). The signature tuple is `(pipeline_definition_id, job_or_test_name, normalized_error_fingerprint)` as the scanner already produces it for filing.
+
+   ```bash
+   SINCE_30D=$(date -u -d '30 days ago' +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -v-30d +%Y-%m-%dT%H:%M:%SZ)
+   gh api --paginate \
+     "/repos/dotnet/runtime/actions/workflows/ci-failure-scan.lock.yml/runs?per_page=100&created=>=${SINCE_30D}" \
+     | jq -r '.workflow_runs[] | "\(.id) \(.created_at)"' \
+     | tee /tmp/gh-aw/agent/runs_30d.txt
+   while read -r RUN_ID RUN_CREATED; do
+     OUT="/tmp/gh-aw/agent/tally_${RUN_ID}.txt"
+     test -s "$OUT" && continue
+     gh run view "$RUN_ID" --log \
+       | awk '/^\| pipeline \|/{flag=1} flag && /^\|/{print; next} flag{exit}' \
+       > "$OUT"
+   done < /tmp/gh-aw/agent/runs_30d.txt
+   ```
+
+   Bucket each tally row by its source run's `created_at` into `last 7d`, `prior 7d` (the 7-day window ending 7 days ago), and `last 30d`. Sum failure counts within each bucket; de-duplicate signature tuples within each bucket before counting distinct signatures.
 
    - `ci_failures_7d`, `ci_failures_30d` — total failure observations across all pipelines the scanner monitors.
    - `ci_failures_delta_pct` — `(ci_failures_7d / ci_failures_prev_7d) - 1`, formatted as a signed percentage. Use the 7-day window ending 7 days ago as the prior period. Emit as `—` if either window has < 20 failures (too few to call a spike).
@@ -221,7 +238,7 @@ Hard rules: no comments on issues/PRs, no edits outside `.github/workflows/ci-fa
 
    ## Snapshot — <UTC timestamp>
 
-   Primary metric: **scanner artifact acceptance rate** = accepted / (accepted + rejected), measured over a rolling window. Pending artifacts (< 7 days old and not yet touched by a MEMBER/OWNER) are excluded.
+   Primary metric: **scanner artifact acceptance rate** = accepted / (accepted + rejected), measured over a rolling window. Pending artifacts (no accepted/rejected rule has matched yet) are excluded from the denominator.
 
    | window | accepted | rejected | pending | acceptance | Wilson 95% lower |
    |---|---|---|---|---|---|
