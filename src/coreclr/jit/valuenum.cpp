@@ -7213,7 +7213,6 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
 #endif // FEATURE_HW_INTRINSICS
 
                 case VNF_LeadingZeroCount:
-                case VNF_Log2:
                 case VNF_PopCount:
                 case VNF_TrailingZeroCount:
                 {
