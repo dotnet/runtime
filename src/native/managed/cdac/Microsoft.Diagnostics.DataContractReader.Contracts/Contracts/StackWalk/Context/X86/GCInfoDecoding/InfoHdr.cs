@@ -63,8 +63,8 @@ public struct InfoHdr
     private const byte SET_EPILOGSIZE_MAX = 10;
     private const byte SET_EPILOGCNT_MAX = 4;
     private const byte SET_UNTRACKED_MAX = 3;
-    private const byte SET_RET_KIND_MAX_V4 = 2;        // 2 bits for ReturnKind
-    private const byte SET_RET_KIND_MAX_V5 = 3;        // 3 bits for ReturnKind + isAsync
+    private const byte SET_RET_KIND_MAX_V4 = 3;        // 2 bits for ReturnKind
+    private const byte SET_RET_KIND_MAX_V5 = 7;        // 3 bits for ReturnKind + isAsync
     private const byte SET_NOGCREGIONS_MAX = 4;
     private const byte ADJ_ENCODING_MAX = 0x7f;     // Maximum valid encoding in a byte
                                                     // Also used to mask off next bit from each encoding byte.
