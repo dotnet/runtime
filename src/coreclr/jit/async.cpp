@@ -1975,10 +1975,13 @@ bool AsyncTransformation::IsReusableSuspension(const AsyncState*          state,
         }
     }
 
-    // At this point we expect both suspensions to agree on the live locals
-    // since they both join at the same point. So we only need to assert that
-    // the layouts match.
-    assert(ContinuationLayoutBuilder::Equals(*layoutBuilder, *state->Layout));
+    if (!ContinuationLayoutBuilder::Equals(*layoutBuilder, *state->Layout))
+    {
+        // TODO: We would expect liveness to match in tail positions here. But
+        // sometimes that isn't the case -- why not?
+        return false;
+    }
+
     return true;
 }
 
