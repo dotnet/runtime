@@ -1283,7 +1283,61 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 //
 void Lowering::ContainCheckSelect(GenTreeOp* node)
 {
-    noway_assert(!"GT_SELECT nodes are not supported on riscv64");
+    assert(node->OperIs(GT_SELECT));
+    // GT_SELECT is only produced/codegen'd on riscv64 when Zicond is available; integer-only.
+    assert(m_compiler->compOpportunisticallyDependsOn(InstructionSet_Zicond));
+    assert(varTypeIsIntegralOrI(node));
+
+    GenTreeConditional* sel = node->AsConditional();
+
+    // czero.{eqz,nez} encode both polarities, so reversed relops (GE/LE and unsigned
+    // EQ/NE-with-zero) that would otherwise emit slt+xori can have the trailing xori
+    // dropped by swapping the SELECT arms and using the un-reversed compare directly.
+    GenTree* cond = sel->gtCond;
+    if (cond->OperIsCompare())
+    {
+        GenTreeOp* relop = cond->AsOp();
+        genTreeOps oper  = relop->OperGet();
+        // genCodeForCompare reverses GE/LE into LT/GT and emits a trailing xori; it
+        // also rewrites unsigned EQ(x,0)/NE(x,0) into LE/GT and reverses again. Both
+        // patterns end up materializing the negation as xori reg, reg, 1.
+        bool relopIsReversed = oper == GT_GE || oper == GT_LE;
+        if (!relopIsReversed && relop->OperIs(GT_EQ, GT_NE))
+        {
+            GenTree* relopOp2 = relop->gtGetOp2();
+            relopIsReversed   = oper == GT_EQ && relopOp2->IsIntegralConst(0) && relopOp2->isContained();
+        }
+        LIR::Use condUse;
+        if (relopIsReversed && BlockRange().TryGetUse(cond, &condUse) && (condUse.User() == sel))
+        {
+            relop->SetOper(GenTree::ReverseRelop(oper));
+            std::swap(sel->gtOp1, sel->gtOp2);
+        }
+    }
+    // Also fold an explicit XOR-with-1 negation produced by other lowerings.
+    else if (cond->OperIs(GT_XOR))
+    {
+        GenTree* xorLhs = cond->AsOp()->gtGetOp1();
+        GenTree* xorRhs = cond->AsOp()->gtGetOp2();
+        LIR::Use condUse;
+        if (xorRhs->IsIntegralConst(1) && xorLhs->OperIsCompare() && BlockRange().TryGetUse(cond, &condUse) &&
+            (condUse.User() == sel))
+        {
+            sel->gtCond = xorLhs;
+            std::swap(sel->gtOp1, sel->gtOp2);
+            BlockRange().Remove(xorRhs);
+            BlockRange().Remove(cond);
+        }
+    }
+
+    // czero.{eqz,nez} take a register source and a register condition, so the only
+    // contained form is an integral-zero operand that can be expressed via REG_ZERO.
+    GenTree* op1 = sel->gtOp1;
+    GenTree* op2 = sel->gtOp2;
+    if (op1->IsIntegralConst(0) && !op1->AsIntCon()->ImmedValNeedsReloc(m_compiler))
+        MakeSrcContained(node, op1);
+    if (op2->IsIntegralConst(0) && !op2->AsIntCon()->ImmedValNeedsReloc(m_compiler))
+        MakeSrcContained(node, op2);
 }
 
 //------------------------------------------------------------------------

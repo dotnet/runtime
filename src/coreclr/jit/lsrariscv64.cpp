@@ -458,6 +458,19 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = BuildCmp(tree);
             break;
 
+        case GT_SELECT:
+        {
+            GenTreeConditional* sel = tree->AsConditional();
+            srcCount                = BuildOperandUses(sel->gtCond);
+            srcCount += BuildOperandUses(sel->gtOp1);
+            srcCount += BuildOperandUses(sel->gtOp2);
+            buildInternalIntRegisterDefForNode(tree);
+            assert(dstCount == 1);
+            BuildDef(tree);
+            buildInternalRegisterUses();
+        }
+        break;
+
         case GT_CKFINITE:
             srcCount = 1;
             assert(dstCount == 1);

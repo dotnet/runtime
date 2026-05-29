@@ -101,5 +101,6 @@ namespace Internal.ReadyToRunConstants
         SveAes = 88,
         SveSha3 = 89,
         SveSm4 = 90,
+        Zicond = 91,
     }
 }

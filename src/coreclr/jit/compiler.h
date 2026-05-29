@@ -10698,6 +10698,7 @@ private:
     }
 #endif // DEBUG
 
+public:
     bool notifyInstructionSetUsage(CORINFO_InstructionSet isa, bool supported) const;
 
     // Answer the question: Is a particular ISA allowed to be used implicitly by optimizations?
@@ -10741,6 +10742,7 @@ private:
         return opts.compSupportsISA.HasInstructionSet(isa);
     }
 
+private:
 #ifdef DEBUG
     //------------------------------------------------------------------------
     // canUseEvexEncodingDebugOnly - Answer the question: Is Evex encoding supported on this target.
