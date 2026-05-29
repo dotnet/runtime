@@ -2467,7 +2467,6 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
-
             case NI_X86Base_X64_BigMul:
             {
                 assert(numArgs == 2);
@@ -2476,7 +2475,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 assert(!op1->isContained());
 
                 if ((baseType == TYP_ULONG || baseType == TYP_UINT) &&
-                    compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                    m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
                 {
                     isRMW = false;
 
@@ -2501,7 +2500,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     SingleTypeRegSet apxAwareRegCandidates =
                         ForceLowGprForApxIfNeeded(op1, RBM_NONE, canHWIntrinsicUseApxRegs);
 
-                     // mulEAX always uses EAX; if one operand is contained, force the other op into EAX.
+                    // mulEAX always uses EAX; if one operand is contained, force the other op into EAX.
                     // Otherwise don't force any register: the second parameter may already happen to be in EAX,
                     // in which case codegen will use it as the implicit operand.
                     srcCount = BuildOperandUses(op1, op2->isContained() ? SRBM_EAX : apxAwareRegCandidates);

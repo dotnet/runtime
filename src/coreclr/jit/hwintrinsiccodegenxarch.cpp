@@ -2543,7 +2543,7 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             emitAttr attr = emitTypeSize(baseType);
 
             // Unsigned multiplication can use mulx on BMI2-capable CPUs
-            if (ins == INS_mulEAX && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
+            if (ins == INS_mulEAX && m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
             {
                 // If rmOp is already in EDX, use that as implicit operand
                 if (rmOp->isUsedFromReg() && rmOp->GetRegNum() == REG_EDX)
@@ -2551,7 +2551,7 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                     std::swap(rmOp, regOp);
                 }
 
-				// mov the first operand into implicit source operand EDX/RDX if not already there
+                // mov the first operand into implicit source operand EDX/RDX if not already there
                 emit->emitIns_Mov(INS_mov, attr, REG_EDX, regOp->GetRegNum(), /* canSkip */ true);
 
                 // emit MULX instruction
@@ -2578,6 +2578,9 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                 assert(node->GetRegByIndex(0) == REG_EAX);
                 assert(node->GetRegByIndex(1) == REG_EDX);
             }
+
+            break;
+        }
 
         case NI_X86Base_BitScanForward:
         case NI_X86Base_BitScanReverse:
@@ -4048,8 +4051,8 @@ void CodeGen::genPermuteVar2x(GenTreeHWIntrinsic* node, insOpts instOptions)
 }
 
 //------------------------------------------------------------------------
-// genXCNTIntrinsic: Generates the code for a lzcnt/tzcnt/popcnt hardware intrinsic node, breaks false dependencies on
-// the target register
+// genXCNTIntrinsic: Generates the code for a lzcnt/tzcnt/popcnt hardware intrinsic node, breaks false dependencies
+// on the target register
 //
 // Arguments:
 //    node - The hardware intrinsic node
@@ -4058,8 +4061,8 @@ void CodeGen::genPermuteVar2x(GenTreeHWIntrinsic* node, insOpts instOptions)
 void CodeGen::genXCNTIntrinsic(GenTreeHWIntrinsic* node, instruction ins)
 {
     // LZCNT/TZCNT/POPCNT have a false dependency on the target register on Intel Sandy Bridge, Haswell, and Skylake
-    // (POPCNT only) processors, so insert a `XOR target, target` to break the dependency via XOR triggering register
-    // renaming, but only if it's not an actual dependency.
+    // (POPCNT only) processors, so insert a `XOR target, target` to break the dependency via XOR triggering
+    // register renaming, but only if it's not an actual dependency.
 
     GenTree*  op1        = node->Op(1);
     regNumber sourceReg1 = REG_NA;
