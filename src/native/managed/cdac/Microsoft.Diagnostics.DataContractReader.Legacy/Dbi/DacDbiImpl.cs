@@ -2016,7 +2016,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
     private TypeHandle GetExactArrayTypeHandle(IRuntimeTypeSystem rts, DebuggerIPCE_ExpandedTypeData* pTopLevel, ArgInfoList* pArgInfo)
     {
-        Debug.Assert(pArgInfo->m_nEntries == 1, $"array arg count: {pArgInfo->m_nEntries}");
+        if (pArgInfo->m_nEntries != 1)
+            throw new ArgumentException($"Array type with arg count: {pArgInfo->m_nEntries}");
         TypeHandle elementType = BasicTypeInfoToTypeHandle(rts, &pArgInfo->m_pList[0]);
         CorElementType et = (CorElementType)ReadLittleEndian(pTopLevel->elementType);
         int rank = (int)ReadLittleEndian(pTopLevel->ArrayTypeData_arrayRank);
@@ -2025,7 +2026,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
     private TypeHandle GetExactPtrOrByRefTypeHandle(IRuntimeTypeSystem rts, DebuggerIPCE_ExpandedTypeData* pTopLevel, ArgInfoList* pArgInfo)
     {
-        Debug.Assert(pArgInfo->m_nEntries == 1, $"ptr/byref arg count: {pArgInfo->m_nEntries}");
+        if (pArgInfo->m_nEntries != 1)
+            throw new ArgumentException($"Pointer or byref type with arg count: {pArgInfo->m_nEntries}");
         TypeHandle referent = BasicTypeInfoToTypeHandle(rts, &pArgInfo->m_pList[0]);
         CorElementType et = (CorElementType)ReadLittleEndian(pTopLevel->elementType);
         return rts.GetConstructedType(referent, et, 0, ImmutableArray<TypeHandle>.Empty);
@@ -2055,7 +2057,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         for (int i = 0; i < argCount; i++)
             builder.Add(BasicTypeInfoToTypeHandle(rts, &pArgInfo->m_pList[i]));
 
-        // TODO: support non-default calling conventions.
+        // Non-default calling conventions are not supported.
         // Currently passes callConv=0 to match native DAC.
         return rts.GetConstructedType(default, CorElementType.FnPtr, 0, builder.MoveToImmutable());
     }

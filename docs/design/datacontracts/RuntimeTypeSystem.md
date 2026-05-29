@@ -117,7 +117,7 @@ partial interface IRuntimeTypeSystem : IContract
     // return true if the TypeHandle represents an array, and set the rank to either 0 (if the type is not an array), or the rank number if it is.
     bool IsArray(TypeHandle typeHandle, out uint rank);
     TypeHandle GetTypeParam(TypeHandle typeHandle);
-    TypeHandle GetConstructedType(TypeHandle typeHandle, CorElementType corElementType, int rank, ImmutableArray<TypeHandle> typeArguments, byte callConv = 0);
+    TypeHandle GetConstructedType(TypeHandle typeHandle, CorElementType corElementType, int rank, ImmutableArray<TypeHandle> typeArguments, byte callConv = 0); // callConv being one of the legal ECMA calling conventions as defined in II.15.3
     TypeHandle GetPrimitiveType(CorElementType typeCode);
     bool IsGenericVariable(TypeHandle typeHandle, out TargetPointer module, out uint token);
     bool IsFunctionPointer(TypeHandle typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out byte callConv);
@@ -1038,14 +1038,12 @@ Contracts used:
 
     TypeHandle GetConstructedType(TypeHandle typeHandle, CorElementType corElementType, int rank, ImmutableArray<TypeHandle> typeArguments, byte callConv)
     {
-        // For function pointers the "parent" type handle is unused. `callConv` discriminates
-        // overloads in the cache; for all other element types it is zero.
+        // For function pointers the type handle arg is unused - type information is provided in the type arguments.
         if (corElementType != CorElementType.FnPtr && typeHandle.Address == TargetPointer.Null)
             return new TypeHandle(TargetPointer.Null);
         ILoader loaderContract = _target.Contracts.Loader;
-        // Function pointer types are not owned by the loader module of any single type argument,
-        // so they need their own loader-module selection. Every other constructed type is owned
-        // by the loader module of its "parent" type handle.
+        // Function pointer types may not be owned by the loader module of any single type argument,
+        // so they need their own loader-module selection.
         TargetPointer loaderModule = corElementType == CorElementType.FnPtr
             ? FindFnPtrLoaderModule(typeArguments)
             : GetLoaderModule(typeHandle);
@@ -1058,7 +1056,6 @@ Contracts used:
             {
                 if (GenericInstantiationMatch(typeHandle, potentialMatch, typeArguments) && IsLoaded(potentialMatch))
                 {
-                    _ = _typeHandles.TryAdd(new TypeKey(typeHandle, corElementType, rank, typeArguments, callConv), potentialMatch);
                     return potentialMatch;
                 }
             }
@@ -1066,13 +1063,11 @@ Contracts used:
             {
                 if (FnPtrMatch(potentialMatch, typeArguments, callConv) && IsLoaded(potentialMatch))
                 {
-                    _ = _typeHandles.TryAdd(new TypeKey(typeHandle, corElementType, rank, typeArguments, callConv), potentialMatch);
                     return potentialMatch;
                 }
             }
             else if (ArrayPtrMatch(typeHandle, corElementType, rank, potentialMatch) && IsLoaded(potentialMatch))
             {
-                _ = _typeHandles.TryAdd(new TypeKey(typeHandle, corElementType, rank, typeArguments, callConv), potentialMatch);
                 return potentialMatch;
             }
         }

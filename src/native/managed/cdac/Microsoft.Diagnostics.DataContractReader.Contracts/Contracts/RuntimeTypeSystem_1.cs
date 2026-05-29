@@ -71,7 +71,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     private readonly struct TypeKey : IEquatable<TypeKey>
     {
-        public TypeKey(TypeHandle typeHandle, CorElementType elementType, int rank, ImmutableArray<TypeHandle> typeArgs, byte callConv = 0)
+        public TypeKey(TypeHandle typeHandle, CorElementType elementType, int rank, ImmutableArray<TypeHandle> typeArgs, SignatureCallingConvention callConv = SignatureCallingConvention.Default)
         {
             TypeHandle = typeHandle;
             ElementType = elementType;
@@ -83,7 +83,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         public CorElementType ElementType { get; }
         public int Rank { get; }
         public ImmutableArray<TypeHandle> TypeArgs { get; }
-        public byte CallConv { get; }
+        public SignatureCallingConvention CallConv { get; }
 
         public bool Equals(TypeKey other)
         {
@@ -1022,9 +1022,9 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     }
 
-    private bool FnPtrMatch(TypeHandle candidate, ImmutableArray<TypeHandle> retAndArgTypes, byte callConv)
+    private bool FnPtrMatch(TypeHandle candidate, ImmutableArray<TypeHandle> retAndArgTypes, SignatureCallingConvention callConv)
     {
-        if (!IsFunctionPointer(candidate, out ReadOnlySpan<TypeHandle> candidateRetAndArgs, out byte candidateCallConv))
+        if (!IsFunctionPointer(candidate, out ReadOnlySpan<TypeHandle> candidateRetAndArgs, out SignatureCallingConvention candidateCallConv))
             return false;
         if (candidateCallConv != callConv)
             return false;
@@ -1053,7 +1053,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return (auxData.Flags & (uint)MethodTableAuxiliaryFlags.IsNotFullyLoaded) == 0; // IsUnloaded
     }
 
-    TypeHandle IRuntimeTypeSystem.GetConstructedType(TypeHandle typeHandle, CorElementType corElementType, int rank, ImmutableArray<TypeHandle> typeArguments, byte callConv)
+    TypeHandle IRuntimeTypeSystem.GetConstructedType(TypeHandle typeHandle, CorElementType corElementType, int rank, ImmutableArray<TypeHandle> typeArguments, SignatureCallingConvention callConv)
     {
         if (typeHandle.Address == TargetPointer.Null && corElementType != CorElementType.FnPtr)
             return new TypeHandle(TargetPointer.Null);
@@ -1174,7 +1174,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return false;
     }
 
-    public bool IsFunctionPointer(TypeHandle typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out byte callConv)
+    public bool IsFunctionPointer(TypeHandle typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out SignatureCallingConvention callConv)
     {
         retAndArgTypes = default;
         callConv = default;
@@ -1189,7 +1189,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
         FnPtrTypeDesc fnPtrTypeDesc = _target.ProcessedData.GetOrAdd<FnPtrTypeDesc>(typeHandle.TypeDescAddress());
         retAndArgTypes = _target.ProcessedData.GetOrAdd<FunctionPointerRetAndArgs>(typeHandle.TypeDescAddress()).TypeHandles;
-        callConv = (byte)fnPtrTypeDesc.CallConv;
+        callConv = (SignatureCallingConvention)fnPtrTypeDesc.CallConv;
         return true;
     }
 
