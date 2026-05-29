@@ -2,50 +2,44 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class RCW : IData<RCW>
+[CdacType(nameof(DataType.RCW))]
+internal sealed partial class RCW : IData<RCW>
 {
-    static RCW IData<RCW>.Create(Target target, TargetPointer address) => new RCW(target, address);
-    public RCW(Target target, TargetPointer address)
+    [Field] public TargetPointer NextCleanupBucket { get; }
+    [Field] public TargetPointer NextRCW { get; }
+    [Field] public uint Flags { get; }
+    [Field] public TargetPointer CtxCookie { get; }
+    [Field] public TargetPointer CtxEntry { get; }
+    [Field] public TargetPointer IdentityPointer { get; }
+    [Field] public uint SyncBlockIndex { get; }
+    [Field] public TargetPointer VTablePtr { get; }
+    [Field] public TargetPointer CreatorThread { get; }
+    [Field] public uint RefCount { get; }
+    [Field] public TargetPointer UnknownPointer { get; }
+
+    public IReadOnlyList<Data.InterfaceEntry> InterfaceEntries { get; private set; } = [];
+
+    [MemberNotNull(nameof(InterfaceEntries))]
+    partial void OnInit(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.RCW);
-
-        NextCleanupBucket = target.ReadPointerField(address, type, nameof(NextCleanupBucket));
-        NextRCW = target.ReadPointerField(address, type, nameof(NextRCW));
-        Flags = target.ReadField<uint>(address, type, nameof(Flags));
-        CtxCookie = target.ReadPointerField(address, type, nameof(CtxCookie));
-        CtxEntry = target.ReadPointerField(address, type, nameof(CtxEntry));
-        IdentityPointer = target.ReadPointerField(address, type, nameof(IdentityPointer));
-        SyncBlockIndex = target.ReadField<uint>(address, type, nameof(SyncBlockIndex));
-        VTablePtr = target.ReadPointerField(address, type, nameof(VTablePtr));
-        CreatorThread = target.ReadPointerField(address, type, nameof(CreatorThread));
-        RefCount = target.ReadField<uint>(address, type, nameof(RefCount));
-        UnknownPointer = target.ReadPointerField(address, type, nameof(UnknownPointer));
         TargetPointer interfaceEntriesAddr = address + (ulong)type.Fields[nameof(InterfaceEntries)].Offset;
 
         uint cacheSize = target.ReadGlobal<uint>(Constants.Globals.RCWInterfaceCacheSize);
         Target.TypeInfo entryTypeInfo = target.GetTypeInfo(DataType.InterfaceEntry);
         uint entrySize = entryTypeInfo.Size!.Value;
 
+        List<Data.InterfaceEntry> entries = new((int)cacheSize);
         for (uint i = 0; i < cacheSize; i++)
         {
             TargetPointer entryAddress = interfaceEntriesAddr + i * entrySize;
-            InterfaceEntries.Add(target.ProcessedData.GetOrAdd<Data.InterfaceEntry>(entryAddress));
+            entries.Add(target.ProcessedData.GetOrAdd<Data.InterfaceEntry>(entryAddress));
         }
-    }
 
-    public TargetPointer NextCleanupBucket { get; init; }
-    public TargetPointer NextRCW { get; init; }
-    public uint Flags { get; init; }
-    public TargetPointer CtxCookie { get; init; }
-    public TargetPointer CtxEntry { get; init; }
-    public TargetPointer IdentityPointer { get; init; }
-    public uint SyncBlockIndex { get; init; }
-    public TargetPointer VTablePtr { get; init; }
-    public TargetPointer CreatorThread { get; init; }
-    public uint RefCount { get; init; }
-    public TargetPointer UnknownPointer { get; init; }
-    public List<Data.InterfaceEntry> InterfaceEntries { get; } = new List<Data.InterfaceEntry>();
+        InterfaceEntries = entries;
+    }
 }
