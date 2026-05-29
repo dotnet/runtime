@@ -447,11 +447,9 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
     // LEA doesn't overflow. It will involve creating a new frontend node to represent "nuw" (offset) addition.
 
     GenTree * addr = indirNode->Addr();
-    if (addr->OperIs(GT_LCL_ADDR))
+    if (addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), indirNode->Size()))
     {
-        GenTreeUnOp * wrapper = m_compiler->gtNewOperNode(
-            GT_PARTIALLY_CONTAINED_LCL_ADDR, addr->TypeGet(), addr
-        );
+        GenTreeUnOp* wrapper = m_compiler->gtNewOperNode(GT_PARTIALLY_CONTAINED_LCL_ADDR, addr->TypeGet(), addr);
         addr->SetContained();
         indirNode->SetAddr(wrapper);
         BlockRange().InsertAfter(addr, wrapper);
