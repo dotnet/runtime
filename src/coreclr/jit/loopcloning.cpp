@@ -176,8 +176,7 @@ GenTree* LC_Ident::ToGenTree(Compiler* comp, BasicBlock* bb)
             return comp->gtNewIconHandleNode((size_t)clsHnd, GTF_ICON_CLASS_HDL);
         case IndirOfLocal:
         {
-            assert(lclType != TYP_UNDEF);
-            GenTree* addr = comp->gtNewLclvNode(lclNum, lclType);
+            GenTree* addr = comp->gtNewLclvNode(lclNum, comp->lvaTable[lclNum].lvType);
             if (indirOffs == 0)
             {
                 return comp->gtNewMethodTableLookup(addr);
