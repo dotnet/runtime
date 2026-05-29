@@ -114,8 +114,10 @@ find_method_slow (MonoClass *klass, const char *name, const char *qname, const c
 		      (name && !strcmp (m->name, name))))
 			continue;
 		msig = mono_method_signature_checked (m, error);
-		if (!is_ok (error)) //bail out if we hit a loader error
+		if (!is_ok (error)) { //bail out if we hit a loader error
+			g_free (result);
 			return NULL;
+		}
 
 		if (!msig)
 			continue;
@@ -131,6 +133,7 @@ find_method_slow (MonoClass *klass, const char *name, const char *qname, const c
 				if (ignore_cmods) {
 					MethodLookupResultInfo *precise_match = find_method_slow (klass, name, qname, fqname, sig, FALSE, error);
 					if (precise_match->m)
+					g_free (result);
 						return precise_match;
 				}
 				mono_error_set_generic_error (error, "System.Reflection", "AmbiguousMatchException", "Ambiguity in binding of UnsafeAccessorAttribute.");
