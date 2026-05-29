@@ -169,22 +169,37 @@ public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
         const uint DACSTACKPRIV_REQUEST_FRAME_DATA = 0xf0000000;
 
         int hr = HResults.S_OK;
-
-        switch (reqCode)
+        try
         {
-            case DACSTACKPRIV_REQUEST_FRAME_DATA:
-                if (outBufferSize < sizeof(ulong))
-                    hr = HResults.E_INVALIDARG;
+            if (inBufferSize != 0 || inBuffer != null)
+                throw new ArgumentException("Invalid input buffer parameters");
+            switch (reqCode)
+            {
+                case (uint)CLRDataGeneralRequest.CLRDATA_REQUEST_REVISION:
+                    if (outBufferSize != sizeof(uint))
+                        throw new ArgumentException("Invalid buffer parameters for CLRDATA_REQUEST_REVISION");
+                    *(uint*)outBuffer = 1;
+                    hr = HResults.S_OK;
+                    break;
+                case DACSTACKPRIV_REQUEST_FRAME_DATA:
+                    if (outBufferSize != sizeof(ulong))
+                        throw new ArgumentException("Invalid buffer parameters for DACSTACKPRIV_REQUEST_FRAME_DATA");
+                    if (!_currentFrameIsValid)
+                        throw new ArgumentException("Invalid frame");
 
-                IStackWalk sw = _target.Contracts.StackWalk;
-                IStackDataFrameHandle frameData = _dataFrames.Current;
-                TargetPointer frameAddr = sw.GetFrameAddress(frameData);
-                *(ulong*)outBuffer = frameAddr.ToClrDataAddress(_target);
-                hr = HResults.S_OK;
-                break;
-            default:
-                hr = HResults.E_NOTIMPL;
-                break;
+                    IStackWalk sw = _target.Contracts.StackWalk;
+                    IStackDataFrameHandle frameData = _dataFrames.Current;
+                    TargetPointer frameAddr = sw.GetFrameAddress(frameData);
+                    *(ulong*)outBuffer = frameAddr.ToClrDataAddress(_target);
+                    hr = HResults.S_OK;
+                    break;
+                default:
+                    throw new NotImplementedException();
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
         }
 
 #if DEBUG
