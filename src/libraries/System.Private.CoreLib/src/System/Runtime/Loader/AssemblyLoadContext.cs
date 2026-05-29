@@ -858,16 +858,16 @@ namespace System.Runtime.Loader
             AssemblyLoadContext parentALC = GetLoadContext(parentAssembly)!;
 
             string? parentDirectory = Path.GetDirectoryName(parentAssembly.Location);
-            if (parentDirectory == null)
-                return null;
-
-            string assemblyPath = Path.Combine(parentDirectory, assemblyName.CultureName!, $"{assemblyName.Name}.dll");
 
 #if TARGET_BROWSER
-            // On Browser/WASM, satellite assemblies are registered in JS memory via registerDllBytes
-            // and served through external_assembly_probe. They are not in the Emscripten VFS,
-            // so FileSystem.FileExists would return false. Skip the existence check and let
-            // LoadFromAssemblyPath use external_assembly_probe directly.
+            // On Browser/WASM, assemblies loaded via external_assembly_probe have empty Location
+            // (PEAssembly::GetPath returns empty for IsExternalData). Satellite assemblies are
+            // registered in JS loadedAssemblies with virtual paths like "/{culture}/{name}.dll".
+            // Construct the path matching the JS loader's normalizeVirtualPath format.
+            string assemblyPath = string.IsNullOrEmpty(parentDirectory)
+                ? $"/{assemblyName.CultureName}/{assemblyName.Name}.dll"
+                : Path.Combine(parentDirectory, assemblyName.CultureName!, $"{assemblyName.Name}.dll");
+
             try
             {
                 return (RuntimeAssembly?)parentALC.LoadFromAssemblyPath(assemblyPath);
@@ -877,6 +877,10 @@ namespace System.Runtime.Loader
                 return null;
             }
 #else
+            if (parentDirectory == null)
+                return null;
+
+            string assemblyPath = Path.Combine(parentDirectory, assemblyName.CultureName!, $"{assemblyName.Name}.dll");
             bool exists = FileSystem.FileExists(assemblyPath);
             if (!exists && PathInternal.IsCaseSensitive)
             {
