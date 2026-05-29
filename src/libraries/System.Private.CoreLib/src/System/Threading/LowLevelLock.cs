@@ -30,12 +30,7 @@ namespace System.Threading
         private Thread? _ownerThread;
 #endif
 
-        private LowLevelThreadBlocker _blocker;
-
-        public LowLevelLock()
-        {
-            _blocker = new LowLevelThreadBlocker();
-        }
+        private LowLevelThreadBlocker _blocker = new LowLevelThreadBlocker();
 
         ~LowLevelLock() => Dispose();
 
