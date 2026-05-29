@@ -63,6 +63,7 @@ namespace Microsoft.Win32.SafeHandles
         /// <returns>A <see cref="SafeProcessHandle"/> that represents the opened process.</returns>
         /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="processId"/> is negative or zero.</exception>
         /// <exception cref="Win32Exception">Thrown when the process could not be opened.</exception>
+        /// <exception cref="UnauthorizedAccessException">Thrown when the process exists but the caller does not have permissions to open it.</exception>
         /// <remarks>
         /// <para>
         /// On Windows, if the process has already exited, the method may still succeed and return a valid handle representing the terminated process.
@@ -114,6 +115,9 @@ namespace Microsoft.Win32.SafeHandles
 
             return TryOpenCore(processId, out processHandle);
         }
+
+        private static string OpenProcessAccessDeniedMessage(int processId) =>
+            SR.Format(SR.OpenProcessAccessDenied, processId);
 
         /// <summary>
         /// Starts a process using the specified <see cref="ProcessStartInfo"/>.
