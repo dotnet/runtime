@@ -12525,8 +12525,7 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
 #elif defined(TARGET_ARM64)
         case TYP_SIMD:
         {
-            simdscalable_t simdVal;
-            memcpy(&simdVal, &tree->AsVecCon()->gtSimdScalableVal, sizeof(simdscalable_t));
+            simdscalable_t simdVal = tree->AsVecCon()->gtSimdScalableVal;
 
             tree->gtVNPair.SetBoth(vnStore->VNForSimdScalableCon(simdVal));
             break;
