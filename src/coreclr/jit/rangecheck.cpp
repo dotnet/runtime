@@ -2414,6 +2414,10 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
                     range.lLimit = Limit(Limit::keConstant, 0);
                     range.uLimit = Limit(Limit::keConstant, (1 << elementCount) - 1);
                 }
+                else
+                {
+                    range = GetRangeFromType((elementCount <= 32) ? TYP_INT : TYP_LONG);
+                }
                 break;
             }
 
@@ -2474,6 +2478,10 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
                 if (varTypeIsSmall(simdBaseType))
                 {
                     range = GetRangeFromType(simdBaseType);
+                }
+                else
+                {
+                    range = GetRangeFromType(genActualType(simdBaseType));
                 }
                 break;
             }
