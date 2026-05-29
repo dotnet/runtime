@@ -852,6 +852,13 @@ LinearScan::LinearScan(Compiler* theCompiler)
         (RBM_ALLINT & ~(RBM_PR | RBM_FP | RBM_LR) & ~compiler->codeGen->regSet.rsMaskResvd).GetIntRegSet();
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     availableIntRegs = (RBM_ALLINT & ~(RBM_FP | RBM_RA) & ~compiler->codeGen->regSet.rsMaskResvd).GetIntRegSet();
+#elif defined(TARGET_POWERPC64)
+    // Exclude R0 due to PowerPC architectural quirk: when R0 is used as source operand (rA field)
+    // in instructions like addi, add, etc., it is treated as constant 0 instead of register contents.
+    // This prevents infinite loops like: addi r0, r0, 1 => r0 = 0 + 1 = 1 (always 1, not incrementing)
+    // Also exclude R1 (SP) as it's the stack pointer.
+    // R31 (FP) is already excluded via rsMaskResvd when frame pointer is needed.
+    availableIntRegs = (RBM_ALLINT & ~(RBM_R0 | RBM_SP) & ~compiler->codeGen->regSet.rsMaskResvd).GetIntRegSet();
 #else
     availableIntRegs = (RBM_ALLINT & ~compiler->codeGen->regSet.rsMaskResvd).GetIntRegSet();
 #endif

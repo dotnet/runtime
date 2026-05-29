@@ -1132,6 +1132,52 @@ void emitter::emitIns_R_R_R(instruction ins,
     id->idReg2(reg2);
     id->idReg3(reg3);
     id->idInsOpt(opt);
+    
+    // Set instruction format based on instruction type
+    insFormat fmt = IF_NONE;
+    switch (ins)
+{
+    // Floating-point arithmetic (A-form)
+    case INS_fadds:
+    case INS_fadd:
+    case INS_fsubs:
+    case INS_fsub:
+    case INS_fmuls:
+    case INS_fmul:
+    case INS_fdivs:
+    case INS_fdiv:
+        fmt = IF_RR_2A;  // Use RR_2A format for 3-register FP operations
+        break;
+
+    // Integer arithmetic (XO-form)
+    case INS_add:
+    case INS_subf:
+    case INS_mulld:
+    case INS_mullw:
+    case INS_divd:
+    case INS_divdu:
+    case INS_divw:
+    case INS_divwu:
+        fmt = IF_RR_2A;  // Use RR_2A format for 3-register integer operations
+        break;
+
+    // Logical/Bitwise (X-form)
+    case INS_and_ins:
+    case INS_or_ins:
+    case INS_xor_ins:
+    case INS_nor:
+    case INS_nand:
+    case INS_andc:
+    case INS_orc:
+        fmt = IF_RR_2A;  // Use RR_2A format for 3-register logical operations
+        break;
+
+    default:
+        	assert(!"Unexpected instruction in emitIns_R_R_R");
+        	break;
+	}
+
+    id->idInsFmt(fmt);  // SET THE FORMAT!
 
     appendToCurIG(id);
 }
@@ -1348,6 +1394,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     BYTE* dstRW = dst + writeableOffset;
     
     instruction ins = id->idIns();
+
     switch (ins)
     {
        case INS_mov:
@@ -1846,7 +1893,10 @@ const char* emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id
         case INS_extsb:   return "extsb   ";
         case INS_extsh:   return "extsh   ";
         case INS_extsw:   return "extsw   ";
- 
+        case INS_mtctr:   return "mtctr   ";
+	case INS_bctrl:   return "bctrl   ";
+	case INS_blt:     return "blt     ";
+	case INS_add:     return "add     "; 
         default:
             return "???     ";
     }
