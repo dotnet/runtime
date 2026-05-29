@@ -38,7 +38,6 @@ namespace System.Net.Security
         internal const int MaxRecordPlaintext = 16354;
 
         private readonly TlsContext _context;
-        private SafeFreeCredentials? _credentialsHandle;
         private SafeDeleteSslContext? _securityContext;
 
         private byte[]? _pending;
@@ -48,6 +47,7 @@ namespace System.Net.Security
         private byte[]? _decryptScratch;
 
         private bool _isHandshakeComplete;
+        private bool _suppressInternalCertificateValidation;
         private bool _disposed;
         private SslConnectionInfo _connectionInfo;
         private X509Certificate2? _remoteCertificate;
@@ -168,7 +168,7 @@ namespace System.Net.Security
                     return null;
                 }
 
-                if (!CertificateValidationPal.IsLocalCertificateUsed(_credentialsHandle, _securityContext))
+                if (!CertificateValidationPal.IsLocalCertificateUsed(_context.CredentialsHandle, _securityContext))
                 {
                     return null;
                 }
@@ -273,7 +273,7 @@ namespace System.Net.Security
                     EnsureCredentialsAcquired();
 
                     token = SslStreamPal.AcceptSecurityContext(
-                        ref _credentialsHandle,
+                        ref _context.CredentialsHandle,
                         ref _securityContext,
                         input,
                         out consumed,
@@ -285,7 +285,7 @@ namespace System.Net.Security
 
                     string hostName = TargetHostNameHelper.NormalizeHostName(_context.Options.TargetHost);
                     token = SslStreamPal.InitializeSecurityContext(
-                        ref _credentialsHandle,
+                        ref _context.CredentialsHandle,
                         ref _securityContext,
                         hostName,
                         input,
@@ -563,7 +563,7 @@ namespace System.Net.Security
             if (_pendingLength == 0)
             {
                 ProtocolToken token = SslStreamPal.Renegotiate(
-                    ref _credentialsHandle,
+                    ref _context.CredentialsHandle,
                     ref _securityContext!,
                     _context.Options);
                 try
@@ -634,7 +634,7 @@ namespace System.Net.Security
                     if (_context.IsServer)
                     {
                         token = SslStreamPal.AcceptSecurityContext(
-                            ref _credentialsHandle,
+                            ref _context.CredentialsHandle,
                             ref _securityContext,
                             ReadOnlySpan<byte>.Empty,
                             out _,
@@ -644,7 +644,7 @@ namespace System.Net.Security
                     {
                         string hostName = TargetHostNameHelper.NormalizeHostName(_context.Options.TargetHost);
                         token = SslStreamPal.InitializeSecurityContext(
-                            ref _credentialsHandle,
+                            ref _context.CredentialsHandle,
                             ref _securityContext,
                             hostName,
                             ReadOnlySpan<byte>.Empty,
@@ -802,8 +802,23 @@ namespace System.Net.Security
         // Direct accessors used by SslStream to mirror state into its own fields after
         // each handshake step. Both handles are owned by this TlsSession; SslStream
         // observes them via the mirror but does not dispose them.
+        // Set by the SslStream wedge: SslStream owns the validation flow and will
+        // invoke the user callback itself with the SslStream as the sender. Skipping
+        // here avoids invoking the callback twice and avoids handing TlsSession to
+        // user code that expects SslStream.
+        internal bool SuppressInternalCertificateValidation
+        {
+            get => _suppressInternalCertificateValidation;
+            set => _suppressInternalCertificateValidation = value;
+        }
+
         internal SafeDeleteSslContext? SecurityContext => _securityContext;
-        internal SafeFreeCredentials? CredentialsHandle => _credentialsHandle;
+        internal TlsContext Context => _context;
+        internal SafeFreeCredentials? CredentialsHandle
+        {
+            get => _context.CredentialsHandle;
+            set => _context.CredentialsHandle = value;
+        }
 
         // SslStream's GenerateToken replacement. Drives one ASC/ISC step via PAL and
         // updates internal handshake-complete state. Returns the raw PAL token so the
@@ -817,7 +832,7 @@ namespace System.Net.Security
             if (_context.IsServer)
             {
                 token = SslStreamPal.AcceptSecurityContext(
-                    ref _credentialsHandle,
+                    ref _context.CredentialsHandle,
                     ref _securityContext,
                     input,
                     out consumed,
@@ -827,7 +842,7 @@ namespace System.Net.Security
             {
                 string hostName = TargetHostNameHelper.NormalizeHostName(_context.Options.TargetHost);
                 token = SslStreamPal.InitializeSecurityContext(
-                    ref _credentialsHandle,
+                    ref _context.CredentialsHandle,
                     ref _securityContext,
                     hostName,
                     input,
@@ -859,7 +874,8 @@ namespace System.Net.Security
             // Skip when the peer does not present a certificate AND validation isn't
             // mandatory (client always validates the server; server only when
             // ClientCertificateRequired).
-            bool needsValidation = !_context.IsServer || _context.Options.RemoteCertRequired;
+            bool needsValidation = !_suppressInternalCertificateValidation &&
+                (!_context.IsServer || _context.Options.RemoteCertRequired);
             if (needsValidation)
             {
                 X509Chain? chain = null;
@@ -923,12 +939,12 @@ namespace System.Net.Security
         // certificate selection.
         private void EnsureCredentialsAcquired()
         {
-            if (_credentialsHandle is not null)
+            if (_context.CredentialsHandle is not null)
             {
                 return;
             }
 
-            _credentialsHandle = SslStreamPal.AcquireCredentialsHandle(_context.Options, false);
+            _context.CredentialsHandle = SslStreamPal.AcquireCredentialsHandle(_context.Options, false);
         }
 
         // Feed a decrypted post-handshake message (e.g. TLS 1.3 NewSessionTicket
@@ -949,7 +965,7 @@ namespace System.Net.Security
                 if (_context.IsServer)
                 {
                     token = SslStreamPal.AcceptSecurityContext(
-                        ref _credentialsHandle,
+                        ref _context.CredentialsHandle,
                         ref _securityContext,
                         data,
                         out _,
@@ -959,7 +975,7 @@ namespace System.Net.Security
                 {
                     string hostName = TargetHostNameHelper.NormalizeHostName(_context.Options.TargetHost);
                     token = SslStreamPal.InitializeSecurityContext(
-                        ref _credentialsHandle,
+                        ref _context.CredentialsHandle,
                         ref _securityContext,
                         hostName,
                         data,
@@ -989,8 +1005,6 @@ namespace System.Net.Security
 
             _securityContext?.Dispose();
             _securityContext = null;
-            _credentialsHandle?.Dispose();
-            _credentialsHandle = null;
 
             if (_pending != null)
             {

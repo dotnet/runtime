@@ -21,6 +21,12 @@ namespace System.Net.Security
         private readonly SslAuthenticationOptions _options;
         private readonly bool _ownsOptions;
 
+        // Credential handle is owned by TlsContext so it can be shared across multiple
+        // TlsSession instances. In wedge mode (WrapShared) SslStream owns the lifetime
+        // and we skip disposing here to avoid double-free; the field acts as shared
+        // storage that SslStream and TlsSession both read/write via ref.
+        internal SafeFreeCredentials? CredentialsHandle;
+
         private TlsContext(SslAuthenticationOptions options, bool ownsOptions)
         {
             _options = options;
@@ -70,6 +76,8 @@ namespace System.Net.Security
         {
             if (_ownsOptions)
             {
+                CredentialsHandle?.Dispose();
+                CredentialsHandle = null;
                 _options.Dispose();
             }
         }
