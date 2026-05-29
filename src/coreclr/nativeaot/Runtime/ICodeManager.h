@@ -163,7 +163,8 @@ public:
 
     virtual bool GetReturnAddressHijackInfo(MethodInfo *    pMethodInfo,
                                             REGDISPLAY *    pRegisterSet,          // in
-                                            PTR_PTR_VOID *  ppvRetAddrLocation     // out
+                                            PTR_PTR_VOID *  ppvRetAddrLocation,    // out
+                                            uintptr_t *     pSpForArm64PacSign     // out
                                             ) PURE_VIRTUAL
 
 #ifdef TARGET_X86
