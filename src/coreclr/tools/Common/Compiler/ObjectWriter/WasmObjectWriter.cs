@@ -10,7 +10,6 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using ILCompiler.DependencyAnalysis;
-using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.DependencyAnalysisFramework;
 using ILCompiler.ObjectWriter.WasmInstructions;
@@ -122,27 +121,26 @@ namespace ILCompiler.ObjectWriter
             WriteSignatureIndexForFunction(node.Signature, flags, node);
             _uniqueSymbols.Add(node.GetMangledName(_nodeFactory.NameMangler), _methodCount);
             _methodCount++;
-
-            if (node is MethodWithGCInfo methodNode)
+            if (node is INodeWithFunclets nodeWithFunclets)
             {
-                RecordFunclets(methodNode);
+                RecordFunclets(nodeWithFunclets);
             }
         }
 
-        private void RecordFunclets(MethodWithGCInfo methodWithGCInfo)
+        private void RecordFunclets(INodeWithFunclets nodeWithFunclets)
         {
-            if (methodWithGCInfo.FrameInfos.Length <= 1)
+            if (nodeWithFunclets.FrameInfos.Length <= 1)
             {
                 return;
             }
 
-            string mangledNodeName = methodWithGCInfo.GetMangledName(_nodeFactory.NameMangler);
+            string mangledNodeName = nodeWithFunclets.GetMangledName(_nodeFactory.NameMangler);
 
-            FrameInfo[] frameInfos = methodWithGCInfo.FrameInfos;
+            FrameInfo[] frameInfos = nodeWithFunclets.FrameInfos;
 
             WasmValueType pointerType = _nodeFactory.Target.PointerSize == 8 ? WasmValueType.I64 : WasmValueType.I32;
 
-            FuncletKind[] funcletKinds = GetFuncletKinds(methodWithGCInfo.EHInfo);
+            FuncletKind[] funcletKinds = GetFuncletKinds(nodeWithFunclets.EHInfo);
             Debug.Assert(funcletKinds.Length == frameInfos.Length - 1);
 
             for (int i = 1; i < frameInfos.Length; i++)
