@@ -224,52 +224,54 @@ ARGS_NON_NULL_ALL static PAL_SSLStreamStatus DoWrap(JNIEnv* env, SSLStream* sslS
 
 ARGS_NON_NULL_ALL static PAL_SSLStreamStatus DoUnwrap(JNIEnv* env, SSLStream* sslStream, int* handshakeStatus)
 {
+    PAL_SSLStreamStatus ret = SSLStreamStatus_Error;
+    uint8_t* tmpNative = NULL;
+    jobject tmp = NULL;
+    jobject result = NULL;
+
     // if (netInBuffer.position() == 0)
     // {
     //     int netInBufferLimit = netInBuffer.limit();
-    //     ByteBuffer tmp = ByteBuffer.allocateDirect(netInBufferLimit);
-    //     int count = streamReader(tmp, 0, netInBufferLimit);
+    //     byte[] tmpNative = new byte[netInBufferLimit];
+    //     // ... fill tmpNative from the stream
+    //     ByteBuffer tmp = ByteBuffer.allocateDirect(count);
     //     netInBuffer.put(tmp);
     // }
     int position = (*env)->CallIntMethod(env, sslStream->netInBuffer, g_ByteBufferPosition);
-    if (CheckJNIExceptions(env))
-        return SSLStreamStatus_Error;
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     if (position == 0)
     {
+        // int netInBufferLimit = netInBuffer.limit();
         int netInBufferLimit = (*env)->CallIntMethod(env, sslStream->netInBuffer, g_ByteBufferLimit);
-        if (CheckJNIExceptions(env))
-            return SSLStreamStatus_Error;
+        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-        uint8_t* tmpNative = (uint8_t*)xmalloc((size_t)netInBufferLimit);
+        tmpNative = (uint8_t*)xmalloc((size_t)netInBufferLimit);
         int count = netInBufferLimit;
         // todo assert streamReader != 0 ?
         PAL_SSLStreamStatus status = sslStream->streamReader(sslStream->managedContextHandle, tmpNative, &count);
         if (status != SSLStreamStatus_OK)
         {
-            free(tmpNative);
-            return status;
+            ret = status;
+            goto cleanup;
         }
 
-        jobject tmp = (*env)->NewDirectByteBuffer(env, tmpNative, count);
+        // ByteBuffer tmp = ByteBuffer.allocateDirect(count);
+        tmp = (*env)->NewDirectByteBuffer(env, tmpNative, count);
         ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
+        // netInBuffer.put(tmp);
         IGNORE_RETURN(
             (*env)->CallObjectMethod(env, sslStream->netInBuffer, g_ByteBufferPutBuffer, tmp));
-cleanup:
-        free(tmpNative);
-        (*env)->DeleteLocalRef(env, tmp);
-        if (CheckJNIExceptions(env))
-            return SSLStreamStatus_Error;
+        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     }
 
     // netInBuffer.flip();
     // SSLEngineResult result = sslEngine.unwrap(netInBuffer, appInBuffer);
     IGNORE_RETURN((*env)->CallObjectMethod(env, sslStream->netInBuffer, g_ByteBufferFlip));
-    jobject result = (*env)->CallObjectMethod(
+    result = (*env)->CallObjectMethod(
         env, sslStream->sslEngine, g_SSLEngineUnwrap, sslStream->netInBuffer, sslStream->appInBuffer);
-    if (CheckJNIExceptions(env))
-        return SSLStreamStatus_Error;
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     // netInBuffer.compact();
     IGNORE_RETURN((*env)->CallObjectMethod(env, sslStream->netInBuffer, g_ByteBufferCompact));
@@ -278,17 +280,18 @@ cleanup:
     // SSLEngineResult.Status status = result.getStatus();
     *handshakeStatus = GetEnumAsInt(env, (*env)->CallObjectMethod(env, result, g_SSLEngineResultGetHandshakeStatus));
     int status = GetEnumAsInt(env, (*env)->CallObjectMethod(env, result, g_SSLEngineResultGetStatus));
-    (*env)->DeleteLocalRef(env, result);
 
     switch (status)
     {
         case STATUS__OK:
         {
-            return SSLStreamStatus_OK;
+            ret = SSLStreamStatus_OK;
+            break;
         }
         case STATUS__CLOSED:
         {
-            return Close(env, sslStream);
+            ret = Close(env, sslStream);
+            break;
         }
         case STATUS__BUFFER_UNDERFLOW:
         {
@@ -296,7 +299,8 @@ cleanup:
             // int newRemaining = sslSession.getPacketBufferSize();
             int32_t newRemaining = (*env)->CallIntMethod(env, sslStream->sslSession, g_SSLSessionGetPacketBufferSize);
             sslStream->netInBuffer = EnsureRemaining(env, sslStream->netInBuffer, newRemaining);
-            return SSLStreamStatus_OK;
+            ret = SSLStreamStatus_OK;
+            break;
         }
         case STATUS__BUFFER_OVERFLOW:
         {
@@ -306,14 +310,21 @@ cleanup:
                 (*env)->CallIntMethod(env, sslStream->sslSession, g_SSLSessionGetApplicationBufferSize) +
                 (*env)->CallIntMethod(env, sslStream->appInBuffer, g_ByteBufferRemaining);
             sslStream->appInBuffer = ExpandBuffer(env, sslStream->appInBuffer, newCapacity);
-            return SSLStreamStatus_OK;
+            ret = SSLStreamStatus_OK;
+            break;
         }
         default:
         {
             LOG_ERROR("Unknown SSLEngineResult status: %d", status);
-            return SSLStreamStatus_Error;
+            break;
         }
     }
+
+cleanup:
+    free(tmpNative);
+    ReleaseLRef(env, tmp);
+    ReleaseLRef(env, result);
+    return ret;
 }
 
 ARGS_NON_NULL_ALL static PAL_SSLStreamStatus DoHandshake(JNIEnv* env, SSLStream* sslStream)
