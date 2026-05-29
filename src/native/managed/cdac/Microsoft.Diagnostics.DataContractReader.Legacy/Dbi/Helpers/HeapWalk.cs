@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Buffers.Binary;
+using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
