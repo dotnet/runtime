@@ -3642,7 +3642,7 @@ static LPWSTR s_pExePath = NULL;
 
 static LPWSTR GetExePath()
 {
-    LPWSTR pExePath = s_pExePath;
+    LPWSTR pExePath = VolatileLoadWithoutBarrier(&s_pExePath);
 
     if (pExePath == nullptr)
     {
@@ -3661,7 +3661,7 @@ static LPWSTR GetExePath()
 LPCWSTR GetCommandLineForDiagnostics()
 {
     // Get the managed command line.
-    LPCWSTR pCmdLine = s_pCommandLine;
+    LPCWSTR pCmdLine = VolatileLoadWithoutBarrier(&s_pCommandLine);
 
     // GetCommandLineForDiagnostics can be called without s_pCommandLine being initialized
     // when the runtime is hosted without entrypoint assembly
