@@ -2491,8 +2491,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                         ForceLowGprForApxIfNeeded(intrinsicTree, RBM_NONE, canHWIntrinsicUseApxRegs);
 
                     // We don't really need to place any result in EDX, but this seems to be a better way of killing
-                    // the register than to specify a constraint on the use
-                    BuildDef(intrinsicTree, SRBM_EDX, 0);
+                    // the register than to specify a unconditional constraint on the use
+                    BuildDef(intrinsicTree, op2->isContained() ? apxAwareDestCandidates : SRBM_EDX, 0);
                     BuildDef(intrinsicTree, apxAwareDestCandidates, 1);
                 }
                 else // Signed multiply or normal unsigned multiply in one operand form
