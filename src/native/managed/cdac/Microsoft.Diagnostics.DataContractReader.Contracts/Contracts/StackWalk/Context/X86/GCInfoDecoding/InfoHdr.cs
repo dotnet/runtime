@@ -152,7 +152,6 @@ public struct InfoHdr
         InfoHdrAdjust2 SET_NOGCREGIONS_CNT = version >= 5 ? InfoHdrAdjust2.SET_NOGCREGIONS_CNT_V5 : InfoHdrAdjust2.SET_NOGCREGIONS_CNT_V4;
         InfoHdrAdjust2 FFFF_NOGCREGION_CNT = version >= 5 ? InfoHdrAdjust2.FFFF_NOGCREGION_CNT_V5 : InfoHdrAdjust2.FFFF_NOGCREGION_CNT_V4;
 
-
         byte nextByte = target.Read<byte>(offset++);
         byte encoding = (byte)(nextByte & 0x7Fu);
 
