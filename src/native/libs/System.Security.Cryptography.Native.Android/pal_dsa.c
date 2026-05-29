@@ -221,8 +221,12 @@ int32_t AndroidCryptoNative_GetDsaParameters(
 
     JNIEnv* env = GetJNIEnv();
     int32_t ret = FAIL;
+    int32_t cbP = 0, cbQ = 0, cbG = 0, cbY = 0, cbX = 0;
 
-    INIT_LOCALS(loc, algName, keyFactory, publicKey, publicKeySpec, privateKey, privateKeySpec);
+    INIT_LOCALS(loc, algName, keyFactory, publicKey, publicKeySpec, privateKey, privateKeySpec, pBn, qBn, gBn, yBn, xBn);
+
+    *p = *q = *g = *y = *x = NULL;
+    *pLength = *qLength = *gLength = *yLength = *xLength = 0;
 
     loc[algName] = make_java_string(env, "DSA");
     loc[keyFactory] = (*env)->CallStaticObjectMethod(env, g_KeyFactoryClass, g_KeyFactoryGetInstanceMethod, loc[algName]);
@@ -232,30 +236,45 @@ int32_t AndroidCryptoNative_GetDsaParameters(
     loc[publicKeySpec] = (*env)->CallObjectMethod(env, loc[keyFactory], g_KeyFactoryGetKeySpecMethod, loc[publicKey], g_DSAPublicKeySpecClass);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    *p = ToGRef(env, (*env)->CallObjectMethod(env, loc[publicKeySpec], g_DSAPublicKeySpecGetP));
+    loc[pBn] = (*env)->CallObjectMethod(env, loc[publicKeySpec], g_DSAPublicKeySpecGetP);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    *q = ToGRef(env, (*env)->CallObjectMethod(env, loc[publicKeySpec], g_DSAPublicKeySpecGetQ));
+    loc[qBn] = (*env)->CallObjectMethod(env, loc[publicKeySpec], g_DSAPublicKeySpecGetQ);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    *g = ToGRef(env, (*env)->CallObjectMethod(env, loc[publicKeySpec], g_DSAPublicKeySpecGetG));
+    loc[gBn] = (*env)->CallObjectMethod(env, loc[publicKeySpec], g_DSAPublicKeySpecGetG);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    *y = ToGRef(env, (*env)->CallObjectMethod(env, loc[publicKeySpec], g_DSAPublicKeySpecGetY));
+    loc[yBn] = (*env)->CallObjectMethod(env, loc[publicKeySpec], g_DSAPublicKeySpecGetY);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    *pLength = AndroidCryptoNative_GetBigNumBytes(*p);
-    *qLength = AndroidCryptoNative_GetBigNumBytes(*q);
-    *gLength = AndroidCryptoNative_GetBigNumBytes(*g);
-    *yLength = AndroidCryptoNative_GetBigNumBytes(*y);
 
-    *x = NULL;
-    *xLength = 0;
+    cbP = AndroidCryptoNative_GetBigNumBytes(loc[pBn]);
+    cbQ = AndroidCryptoNative_GetBigNumBytes(loc[qBn]);
+    cbG = AndroidCryptoNative_GetBigNumBytes(loc[gBn]);
+    cbY = AndroidCryptoNative_GetBigNumBytes(loc[yBn]);
+
     loc[privateKey] = (*env)->CallObjectMethod(env, dsa, g_keyPairGetPrivateMethod);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     if (loc[privateKey])
     {
         loc[privateKeySpec] = (*env)->CallObjectMethod(env, loc[keyFactory], g_KeyFactoryGetKeySpecMethod, loc[privateKey], g_DSAPrivateKeySpecClass);
         ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-        *x = ToGRef(env, (*env)->CallObjectMethod(env, loc[privateKeySpec], g_DSAPrivateKeySpecGetX));
+        loc[xBn] = (*env)->CallObjectMethod(env, loc[privateKeySpec], g_DSAPrivateKeySpecGetX);
         ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-        *xLength = AndroidCryptoNative_GetBigNumBytes(*x);
+        cbX = AndroidCryptoNative_GetBigNumBytes(loc[xBn]);
+    }
+
+    // Only promote local refs to global refs and write outputs on success so
+    // the caller never observes a partially-populated state.
+    *p = AddGRef(env, loc[pBn]);
+    *pLength = cbP;
+    *q = AddGRef(env, loc[qBn]);
+    *qLength = cbQ;
+    *g = AddGRef(env, loc[gBn]);
+    *gLength = cbG;
+    *y = AddGRef(env, loc[yBn]);
+    *yLength = cbY;
+    if (loc[xBn])
+    {
+        *x = AddGRef(env, loc[xBn]);
+        *xLength = cbX;
     }
 
     ret = SUCCESS;

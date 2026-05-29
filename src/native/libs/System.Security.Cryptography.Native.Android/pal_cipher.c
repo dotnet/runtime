@@ -140,23 +140,29 @@ ARGS_NON_NULL_ALL static int32_t ReinitializeCipher(CipherCtx* ctx)
     JNIEnv* env = GetJNIEnv();
     int32_t ret = FAIL;
 
+    jobject algName = NULL;
+    jbyteArray keyBytes = NULL;
+    jobject sksObj = NULL;
+    jbyteArray ivBytes = NULL;
+    jobject ivPsObj = NULL;
+
     // SecretKeySpec keySpec = new SecretKeySpec(key.getEncoded(), "AES");
     // IvParameterSpec ivSpec = new IvParameterSpec(IV); or GCMParameterSpec for GCM/CCM
     // cipher.init(encMode, keySpec, ivSpec);
 
-    jobject algName = GetAlgorithmName(env, ctx->type);
+    algName = GetAlgorithmName(env, ctx->type);
     if (!algName)
-        return FAIL;
+        goto cleanup;
 
     int32_t keyLength = ctx->keySizeInBits / 8;
-    jbyteArray keyBytes = make_java_byte_array(env, keyLength);
+    keyBytes = make_java_byte_array(env, keyLength);
     (*env)->SetByteArrayRegion(env, keyBytes, 0, keyLength, (jbyte*)ctx->key);
-    jobject sksObj = (*env)->NewObject(env, g_sksClass, g_sksCtor, keyBytes, algName);
+    sksObj = (*env)->NewObject(env, g_sksClass, g_sksCtor, keyBytes, algName);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    jobject ivPsObj = NULL;
     if (RequiresIV(ctx->type))
     {
-        jbyteArray ivBytes = make_java_byte_array(env, ctx->ivLength);
+        ivBytes = make_java_byte_array(env, ctx->ivLength);
         (*env)->SetByteArrayRegion(env, ivBytes, 0, ctx->ivLength, (jbyte*)ctx->iv);
 
         if (HasVariableTag(ctx->type))
@@ -167,8 +173,6 @@ ARGS_NON_NULL_ALL static int32_t ReinitializeCipher(CipherCtx* ctx)
         {
             ivPsObj = (*env)->NewObject(env, g_ivPsClass, g_ivPsCtor, ivBytes);
         }
-
-        ReleaseLRef(env, ivBytes);
         ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     }
 
@@ -181,6 +185,7 @@ cleanup:
     ReleaseLRef(env, algName);
     ReleaseLRef(env, sksObj);
     ReleaseLRef(env, ivPsObj);
+    ReleaseLRef(env, ivBytes);
     ReleaseLRef(env, keyBytes);
     return ret;
 }

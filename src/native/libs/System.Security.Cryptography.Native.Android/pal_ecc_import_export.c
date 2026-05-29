@@ -26,6 +26,7 @@ int32_t AndroidCryptoNative_GetECKeyParameters(const EC_KEY* key,
 
     JNIEnv* env = GetJNIEnv();
     int32_t ret = FAIL;
+    int32_t cbxBn = 0, cbyBn = 0, cbdBn = 0;
 
     INIT_LOCALS(loc, publicKey, Q, xBn, yBn, privateKey, dBn);
 
@@ -46,13 +47,9 @@ int32_t AndroidCryptoNative_GetECKeyParameters(const EC_KEY* key,
     loc[yBn] = (*env)->CallObjectMethod(env, loc[Q], g_ECPointGetAffineY);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    *qx = ToGRef(env, loc[xBn]);
-    loc[xBn] = NULL;
-    *cbQx = AndroidCryptoNative_GetBigNumBytes(*qx);
-    *qy = ToGRef(env, loc[yBn]);
-    loc[yBn] = NULL;
-    *cbQy = AndroidCryptoNative_GetBigNumBytes(*qy);
-    if (*cbQx == FAIL || *cbQy == FAIL)
+    cbxBn = AndroidCryptoNative_GetBigNumBytes(loc[xBn]);
+    cbyBn = AndroidCryptoNative_GetBigNumBytes(loc[yBn]);
+    if (cbxBn == FAIL || cbyBn == FAIL)
         goto cleanup;
 
     if (includePrivate)
@@ -66,29 +63,27 @@ int32_t AndroidCryptoNative_GetECKeyParameters(const EC_KEY* key,
         loc[dBn] = (*env)->CallObjectMethod(env, loc[privateKey], g_ECPrivateKeyGetS);
         ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-        *d = ToGRef(env, loc[dBn]);
-        loc[dBn] = NULL;
-        *cbD = AndroidCryptoNative_GetBigNumBytes(*d);
-        if (*cbD == FAIL)
+        cbdBn = AndroidCryptoNative_GetBigNumBytes(loc[dBn]);
+        if (cbdBn == FAIL)
             goto cleanup;
+    }
+
+    // Only promote local refs to global refs and write outputs on success so
+    // the caller never observes a partially-populated state.
+    *qx = AddGRef(env, loc[xBn]);
+    *cbQx = cbxBn;
+    *qy = AddGRef(env, loc[yBn]);
+    *cbQy = cbyBn;
+    if (includePrivate)
+    {
+        *d = AddGRef(env, loc[dBn]);
+        *cbD = cbdBn;
     }
 
     ret = SUCCESS;
 
 cleanup:
     RELEASE_LOCALS_ENV(loc, ReleaseLRef);
-    if (ret != SUCCESS)
-    {
-        // Release any global refs we allocated via ToGRef and reset outputs
-        // so the caller sees a clean failure state.
-        ReleaseGRef(env, *qx);
-        ReleaseGRef(env, *qy);
-        ReleaseGRef(env, *d);
-        *qx = *qy = NULL;
-        *cbQx = *cbQy = 0;
-        *d = NULL;
-        *cbD = 0;
-    }
     return ret;
 }
 
