@@ -73,6 +73,7 @@ safe-outputs:
     labels: [agentic-workflows]
     allowed-labels: [agentic-workflows]
   update-issue:
+    target: "*"
     max: 1
   noop:
     report-as-issue: false
