@@ -623,7 +623,7 @@ if (CLR_CMAKE_HOST_UNIX OR CLR_CMAKE_HOST_WASI)
   endif()
 
   if(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_MACCATALYST)
-    if(CLR_CMAKE_HOST_UNIX_ARM64)
+    if(CLR_CMAKE_HOST_ARCH_ARM64)
       # For OSX-Arm64, LSE instructions are enabled by default
       add_definitions(-DLSE_INSTRUCTIONS_ENABLED_BY_DEFAULT)
       add_compile_options(-mcpu=apple-m1)
