@@ -78,7 +78,7 @@ internal static class MockExtensions
         CodeBlockHandle handle = new CodeBlockHandle(block.StartAddress.AsTargetPointer);
         mock.Setup(e => e.GetCodeBlockHandle(It.Is<TargetCodePointer>(ip => ip >= block.StartAddress && ip < block.StartAddress + block.Length)))
             .Returns(handle);
-        mock.Setup(e => e.GetStartAddress(handle)).Returns(block.StartAddress);
+        mock.Setup(e => e.GetStartAddress(handle)).Returns(block.StartAddress.AsTargetPointer);
         mock.Setup(e => e.GetMethodDesc(handle)).Returns(block.MethodDesc.Address);
     }
 
@@ -153,13 +153,17 @@ public class CodeVersionsTests
         mockExecutionManager ??= new Mock<IExecutionManager>();
         mockRuntimeTypeSystem ??= new Mock<IRuntimeTypeSystem>();
 
+        Mock<IPlatformMetadata> mockPlatformMetadata = new Mock<IPlatformMetadata>();
+        mockPlatformMetadata.Setup(p => p.GetCodePointerFlags()).Returns(default(CodePointerFlags));
+
         return new TestPlaceholderTarget.Builder(arch)
             .UseReader(builder.Builder.GetMemoryContext().ReadFromTarget)
             .AddTypes(CreateContractTypes(builder))
-            .AddContract<ICodeVersions>(version: 1)
+            .AddContract<ICodeVersions>(version: "c1")
             .AddMockContract(mockRuntimeTypeSystem)
             .AddMockContract(mockExecutionManager)
             .AddMockContract(mockLoader)
+            .AddMockContract(mockPlatformMetadata)
             .Build();
     }
 

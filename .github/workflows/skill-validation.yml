@@ -55,7 +55,7 @@ jobs:
           if [ -d .github/skills ]; then
             echo "::group::Validate skills"
             set +e
-            skill-validator-bin/skill-validator check --skills .github/skills --verbose 2>&1 | tee skill-check-skills.txt
+            skill-validator-bin/skill-validator check --skills .github/skills --allow-repo-traversal --verbose 2>&1 | tee skill-check-skills.txt
             skills_rc=${PIPESTATUS[0]}
             set -e
             echo "::endgroup::"
@@ -65,7 +65,7 @@ jobs:
           if [ -d .github/agents ]; then
             echo "::group::Validate agents"
             set +e
-            skill-validator-bin/skill-validator check --agents .github/agents --verbose 2>&1 | tee skill-check-agents.txt
+            skill-validator-bin/skill-validator check --agents .github/agents --allow-repo-traversal --verbose 2>&1 | tee skill-check-agents.txt
             agents_rc=${PIPESTATUS[0]}
             set -e
             echo "::endgroup::"

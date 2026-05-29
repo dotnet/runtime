@@ -432,7 +432,7 @@ class PrecodeStubManager : public StubManager
 
   protected:
     virtual LPCWSTR GetStubManagerName(PCODE addr)
-        { LIMITED_METHOD_CONTRACT; return W("MethodDescPrestub"); }
+        { LIMITED_METHOD_CONTRACT; return W("Prestub"); }
 #endif
 };
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS

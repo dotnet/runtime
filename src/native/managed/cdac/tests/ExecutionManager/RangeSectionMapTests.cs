@@ -14,7 +14,7 @@ public class RangeSectionMapTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void TestLookupFail(MockTarget.Architecture arch)
     {
-        MockExecutionManagerBuilder executionManager = new(1, arch, MockExecutionManagerBuilder.DefaultAllocationRange);
+        MockExecutionManagerBuilder executionManager = new("c1", arch, MockExecutionManagerBuilder.DefaultAllocationRange);
         var target = new TestPlaceholderTarget(arch, executionManager.Builder.GetMemoryContext().ReadFromTarget);
 
         var rsla = RangeSectionMap.Create(target);
@@ -28,7 +28,7 @@ public class RangeSectionMapTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void TestLookupOne(MockTarget.Architecture arch)
     {
-        MockExecutionManagerBuilder executionManager = new(1, arch, MockExecutionManagerBuilder.DefaultAllocationRange);
+        MockExecutionManagerBuilder executionManager = new("c1", arch, MockExecutionManagerBuilder.DefaultAllocationRange);
         const ulong inputPC = 0x007f_0000;
         var length = 0x1000u;
         var value = 0x0a0a_0a0au;

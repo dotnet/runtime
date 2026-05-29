@@ -116,7 +116,7 @@ private static IBuiltInCOM CreateBuiltInCOM(
         CreateContractGlobals(builtInCom));
 
     target.SetContracts(Mock.Of<ContractRegistry>(
-        c => c.BuiltInCOM == ((IContractFactory<IBuiltInCOM>)new BuiltInCOMFactory()).CreateContract(target, 1)
+        c => c.BuiltInCOM == ((IContractFactory<IBuiltInCOM>)new BuiltInCOMFactory()).CreateContract(target, "c1")
           && c.SyncBlock == (syncBlock ?? Mock.Of<ISyncBlock>())));
 
     return target.Contracts.BuiltInCOM;

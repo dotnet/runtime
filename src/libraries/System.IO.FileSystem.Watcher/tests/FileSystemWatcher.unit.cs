@@ -289,7 +289,7 @@ namespace System.IO.Tests
             FileSystemWatcher watcher = new FileSystemWatcher();
             Assert.Equal(NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.DirectoryName, watcher.NotifyFilter);
 
-            var notifyFilters = Enum.GetValues(typeof(NotifyFilters)).Cast<NotifyFilters>();
+            var notifyFilters = Enum.GetValues<NotifyFilters>();
             foreach (NotifyFilters filterValue in notifyFilters)
             {
                 watcher.NotifyFilter = filterValue;

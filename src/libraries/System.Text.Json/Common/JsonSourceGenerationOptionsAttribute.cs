@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 namespace System.Text.Json.Serialization
@@ -136,6 +136,11 @@ namespace System.Text.Json.Serialization
         /// Specifies the default value of <see cref="JsonSerializerOptions.RespectRequiredConstructorParameters"/> when set.
         /// </summary>
         public bool RespectRequiredConstructorParameters { get; set; }
+
+        /// <summary>
+        /// Specifies the default value of <see cref="JsonSerializerOptions.TypeClassifiers"/> when set.
+        /// </summary>
+        public Type[]? TypeClassifiers { get; set; }
 
         /// <summary>
         /// Specifies the default value of <see cref="JsonSerializerOptions.UnknownTypeHandling"/> when set.

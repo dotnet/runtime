@@ -1538,7 +1538,7 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
 
             // If the thread is in sleep, wait, or join interrupt it
             // However, we do NOT want to interrupt if the thread is already processing an exception
-            if (m_State & TS_Interruptible)
+            if (m_State & TS_WaitSleepJoin)
             {
                 UserInterrupt(TI_Abort);        // if the user wakes up because of this, it will read the
                                                 // abort requested bit and initiate the abort
@@ -2221,7 +2221,7 @@ void Thread::HandleThreadAbort ()
 
     if (ReadyForAbort())
     {
-        ResetThreadState ((ThreadState)(TS_Interrupted | TS_Interruptible));
+        ResetThreadState ((ThreadState)(TS_Interrupted | TS_WaitSleepJoin));
         // We are going to abort.  Abort satisfies Thread.Interrupt requirement.
         InterlockedExchange (&m_UserInterrupt, 0);
 
@@ -2267,7 +2267,7 @@ void Thread::PreWorkForThreadAbort()
     SetAbortInitiated();
     // if an abort and interrupt happen at the same time (e.g. on a sleeping thread),
     // the abort is favored. But we do need to reset the interrupt bits.
-    ResetThreadState((ThreadState)(TS_Interruptible | TS_Interrupted));
+    ResetThreadState((ThreadState)(TS_WaitSleepJoin | TS_Interrupted));
     ResetUserInterrupted();
 }
 
@@ -2586,8 +2586,6 @@ extern "C" PCONTEXT __stdcall GetCurrentSavedRedirectContext()
 
 void Thread::RestoreContextSimulated(Thread* pThread, CONTEXT* pCtx, void* pFrame, DWORD dwLastError)
 {
-    pThread->HandleThreadAbort();        // Might throw an exception.
-
     // A counter to avoid a nasty case where an
     // up-stack filter throws another exception
     // causing our filter to be run again for
@@ -2672,16 +2670,6 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
     // We will restore the state as it was at the point of redirection
     // and continue normal execution.
 
-#ifdef TARGET_X86
-    if (!g_pfnRtlRestoreContext)
-    {
-        RestoreContextSimulated(pThread, pCtx, &frame, dwLastError);
-
-        // we never return to the caller.
-        UNREACHABLE();
-    }
-#endif // TARGET_X86
-
     UINT_PTR uAbortAddr;
     UINT_PTR uResumePC = (UINT_PTR)GetIP(pCtx);
     CopyOSContext(pThread->m_OSContext, pCtx);
@@ -2706,6 +2694,16 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
 
         SetIP(pCtx, uAbortAddr);
     }
+
+#ifdef TARGET_X86
+    if (!g_pfnRtlRestoreContext)
+    {
+        RestoreContextSimulated(pThread, pCtx, &frame, dwLastError);
+
+        // we never return to the caller.
+        UNREACHABLE();
+    }
+#endif // TARGET_X86
 
     // Unlink the frame in preparation for resuming in managed code
     frame.Pop();
@@ -2893,12 +2891,8 @@ BOOL Thread::RedirectThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt)
 #ifdef _DEBUG
         // In some rare cases the stack pointer may be outside the stack limits.
         // SetThreadContext would fail assuming that we are trying to bypass CFG.
-        //
-        // NB: the check here is slightly more strict than what OS requires,
-        //     but it is simple and uses only documented parts of TEB
-        auto pTeb = this->GetTEB();
         void* stackPointer = (void*)GetSP(pCtx);
-        if ((stackPointer < pTeb->StackLimit) || (stackPointer > pTeb->StackBase))
+        if ((stackPointer < this->GetCachedStackLimit()) || (stackPointer > this->GetCachedStackBase()))
         {
             return (FALSE);
         }
@@ -3941,7 +3935,7 @@ bool Thread::SysStartSuspendForDebug(AppDomain *pAppDomain)
 #endif
 
         // Don't try to suspend threads that you've left suspended.
-        if (thread->m_StateNC & TSNC_DebuggerUserSuspend)
+        if (thread->HasDebuggerControlledThreadState(Thread::DCTS_UserSuspend))
             continue;
 
         if (thread == pCurThread)
@@ -4326,7 +4320,7 @@ void Thread::SysResumeFromDebug(AppDomain *pAppDomain)
     {
         // If the user wants to keep the thread suspended, then
         // don't release the thread.
-        if (!(thread->m_StateNC & TSNC_DebuggerUserSuspend))
+        if (!(thread->HasDebuggerControlledThreadState(Thread::DCTS_UserSuspend)))
         {
             // If we are still trying to suspend this thread, forget about it.
             if (thread->m_State & TS_DebugSuspendPending)

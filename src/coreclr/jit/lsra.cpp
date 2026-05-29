@@ -191,7 +191,7 @@ weight_t LinearScan::getWeight(RefPosition* refPos)
             if (refPos->getInterval()->isSpilled)
             {
                 // Decrease the weight if the interval has already been spilled.
-                if (varDsc->lvLiveInOutOfHndlr || refPos->getInterval()->firstRefPosition->singleDefSpill)
+                if (varDsc->IsLiveInOutOfHandler() || refPos->getInterval()->firstRefPosition->singleDefSpill)
                 {
                     // An EH-var/single-def is always spilled at defs, and we'll decrease the weight by half,
                     // since only the reload is needed.
@@ -953,13 +953,8 @@ LinearScan::LinearScan(Compiler* theCompiler)
     availableIntRegs &= ~RBM_FPBASE.GetIntRegSet();
 #endif // ETW_EBP_FRAMED
 
-#ifdef TARGET_AMD64
     availableFloatRegs  = RBM_ALLFLOAT.GetFloatRegSet();
     availableDoubleRegs = RBM_ALLDOUBLE.GetFloatRegSet();
-#else
-    availableFloatRegs  = RBM_ALLFLOAT.GetFloatRegSet();
-    availableDoubleRegs = RBM_ALLDOUBLE.GetFloatRegSet();
-#endif
 
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     availableMaskRegs = RBM_ALLMASK.GetPredicateRegSet();
@@ -983,6 +978,22 @@ LinearScan::LinearScan(Compiler* theCompiler)
 #endif // TARGET_XARCH
     }
 #endif // TARGET_AMD64 || TARGET_ARM64
+
+#ifdef TARGET_AMD64
+    // On x64 the OSR method does not restore float/mask registers from the
+    // tier0 frame, so disallow using those in the tier0 method.
+    if (m_compiler->doesMethodHavePatchpoints())
+    {
+#if defined(UNIX_AMD64_ABI)
+        availableFloatRegs &= ~RBM_FLT_CALLEE_SAVED;
+        availableDoubleRegs &= ~RBM_FLT_CALLEE_SAVED;
+#else
+        availableFloatRegs &= ~RBM_FLT_CALLEE_SAVED.GetFloatRegSet();
+        availableDoubleRegs &= ~RBM_FLT_CALLEE_SAVED.GetFloatRegSet();
+#endif // UNIX_AMD64_ABI
+        availableMaskRegs &= ~RBM_MSK_CALLEE_SAVED;
+    }
+#endif
 
 #if defined(TARGET_AMD64)
     if (evexIsSupported)
@@ -1564,7 +1575,7 @@ void LinearScan::identifyCandidatesExceptionDataflow()
         unsigned   varNum = m_compiler->lvaTrackedIndexToLclNum(varIndex);
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(varNum);
 
-        assert(varDsc->lvLiveInOutOfHndlr);
+        assert(varDsc->IsLiveInOutOfHandler());
 
         if (varTypeIsGC(varDsc) && VarSetOps::IsMember(m_compiler, finallyVars, varIndex) && !varDsc->lvIsParam &&
             !varDsc->lvIsParamRegTarget)
@@ -1743,6 +1754,8 @@ void LinearScan::identifyCandidates()
         // the same register assignment throughout
         varDsc->lvRegister = false;
 
+        checkForDNER(lclNum, varDsc);
+
         if (!isRegCandidate(varDsc))
         {
             varDsc->lvLRACandidate = 0;
@@ -1803,7 +1816,7 @@ void LinearScan::identifyCandidates()
                 newInt->isStructField = true;
             }
 
-            if (varDsc->lvLiveInOutOfHndlr)
+            if (varDsc->IsLiveInOutOfHandler())
             {
                 newInt->isWriteThru = varDsc->lvSingleDefRegCandidate;
                 setIntervalAsSpilled(newInt);
@@ -2584,6 +2597,16 @@ void LinearScan::setFrameType()
         removeMask |= RBM_SAVED_LOCALLOC_SP.GetIntRegSet();
     }
 #endif // TARGET_ARM
+
+#if defined(TARGET_ARM64)
+    if (m_compiler->compUsesUnknownSizeFrame)
+    {
+        // We reserve x19 for addressing vector and mask locals on the UnknownSizeFrame.
+        m_compiler->codeGen->regSet.rsMaskResvd |= RBM_UNKBASE;
+        JITDUMP("  Reserved REG_UNKBASE (%s) due to presence of UnknownSizeFrame\n", getRegName(REG_UNKBASE));
+        removeMask |= RBM_UNKBASE.GetIntRegSet();
+    }
+#endif
 
     if ((removeMask != RBM_NONE) && ((availableIntRegs & removeMask) != 0))
     {
@@ -11052,29 +11075,20 @@ void LinearScan::dumpLsraAllocationEvent(LsraDumpEvent event,
             printf("DUconflict    ");
             dumpRegRecords();
             break;
-        case LSRA_EVENT_DEFUSE_CASE1:
-            printf(indentFormat, "  Case #1 use defRegAssignment");
+        case LSRA_EVENT_DEFUSE_DEF_IN_FIXED_USE:
+            printf(indentFormat, "  Define in fixed use reg");
             dumpRegRecords();
             break;
-        case LSRA_EVENT_DEFUSE_CASE2:
-            printf(indentFormat, "  Case #2 use useRegAssignment");
+        case LSRA_EVENT_DEFUSE_DEF_IN_USE:
+            printf(indentFormat, "  Define in candidate use reg");
             dumpRegRecords();
             break;
-        case LSRA_EVENT_DEFUSE_CASE3:
-            printf(indentFormat, "  Case #3 use useRegAssignment");
-            dumpRegRecords();
-            dumpRegRecords();
-            break;
-        case LSRA_EVENT_DEFUSE_CASE4:
-            printf(indentFormat, "  Case #4 use defRegAssignment");
+        case LSRA_EVENT_DEFUSE_ANY_DEF:
+            printf(indentFormat, "  Define in any reg");
             dumpRegRecords();
             break;
-        case LSRA_EVENT_DEFUSE_CASE5:
-            printf(indentFormat, "  Case #5 set def to all regs");
-            dumpRegRecords();
-            break;
-        case LSRA_EVENT_DEFUSE_CASE6:
-            printf(indentFormat, "  Case #6 need a copy");
+        case LSRA_EVENT_DEFUSE_COPY:
+            printf(indentFormat, "  Need a copy");
             dumpRegRecords();
             if (interval == nullptr)
             {
@@ -11247,7 +11261,6 @@ void LinearScan::dumpLsraAllocationEvent(LsraDumpEvent event,
             break;
 
         // We currently don't dump anything for these events.
-        case LSRA_EVENT_DEFUSE_FIXED_DELAY_USE:
         case LSRA_EVENT_SPILL_EXTENDED_LIFETIME:
         case LSRA_EVENT_END_BB:
         case LSRA_EVENT_FREE_REGS:

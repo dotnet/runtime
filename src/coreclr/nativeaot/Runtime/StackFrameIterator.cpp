@@ -33,8 +33,8 @@
 
 #if !defined(FEATURE_PORTABLE_HELPERS) // @TODO: these are (currently) only implemented in assembly helpers
 EXTERN_C CODE_LOCATION ReturnFromUniversalTransitionTailCall;
-#if (defined(HOST_AMD64) || defined(HOST_ARM64)) && defined(HOST_WINDOWS)
-EXTERN_C CODE_LOCATION ReturnFromUniversalTransitionReturnResult;
+#if defined(TARGET_WINDOWS) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
+EXTERN_C CODE_LOCATION ReturnFromUniversalTransitionGuardedTailCall;
 #endif
 
 EXTERN_C CODE_LOCATION RhpCallCatchFunclet2;
@@ -2072,6 +2072,10 @@ void StackFrameIterator::UnwindNonEHThunkSequence()
     // The iterator has reached the next managed frame.  Publish the computed lower bound value.
     ASSERT(m_pConservativeStackRangeLowerBound == NULL);
     m_pConservativeStackRangeLowerBound = pLowestLowerBound;
+
+    // The active frame was the thunk we just unwound through, not the managed caller. Do not
+    // report scratch registers from the caller's post-call GC state until the thunk has completed.
+    m_dwFlags &= ~ActiveStackFrame;
 }
 
 // This function is called immediately before a given frame is yielded from the iterator
@@ -2306,16 +2310,14 @@ StackFrameIterator::ReturnAddressCategory StackFrameIterator::CategorizeUnadjust
 
 #else // defined(FEATURE_PORTABLE_HELPERS)
 
-    if (EQUALS_RETURN_ADDRESS(returnAddress, ReturnFromUniversalTransitionTailCall))
-    {
-        return InUniversalTransitionThunk;
-    }
-#if (defined(HOST_AMD64) || defined(HOST_ARM64)) && defined(HOST_WINDOWS)
-    if (EQUALS_RETURN_ADDRESS(returnAddress, ReturnFromUniversalTransitionReturnResult))
-    {
-        return InUniversalTransitionThunk;
-    }
+    if (EQUALS_RETURN_ADDRESS(returnAddress, ReturnFromUniversalTransitionTailCall)
+#if defined(TARGET_WINDOWS) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
+        || EQUALS_RETURN_ADDRESS(returnAddress, ReturnFromUniversalTransitionGuardedTailCall)
 #endif
+        )
+    {
+        return InUniversalTransitionThunk;
+    }
 
     if (EQUALS_RETURN_ADDRESS(returnAddress, RhpThrowImpl2) ||
         EQUALS_RETURN_ADDRESS(returnAddress, RhpThrowHwEx2) ||

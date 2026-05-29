@@ -10,7 +10,11 @@
 inline PTR_MethodDescChunk EEClass::GetChunks()
 {
     LIMITED_METHOD_DAC_CONTRACT;
+#ifdef DACCESS_COMPILE
     return m_pChunks;
+#else
+    return VolatileLoad(&m_pChunks);
+#endif
 }
 
 //*******************************************************************************

@@ -34,13 +34,13 @@ bool Interop::ShouldCheckForPendingException(_In_ PInvokeMethodDesc* md)
 
 ManagedToNativeExceptionCallback Interop::GetPropagatingExceptionCallback(
     _In_ EECodeInfo* codeInfo,
-    _In_ OBJECTHANDLE throwable,
+    _In_ OBJECTREF throwable,
     _Outptr_ void** context)
 {
     CONTRACT(ManagedToNativeExceptionCallback)
     {
         NOTHROW;
-        MODE_PREEMPTIVE;
+        MODE_COOPERATIVE;
         PRECONDITION(codeInfo != NULL);
         PRECONDITION(throwable != NULL);
         PRECONDITION(context != NULL);

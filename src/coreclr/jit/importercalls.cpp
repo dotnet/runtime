@@ -415,7 +415,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
                 if (call->AsCall()->IsAsync())
                 {
-                    impInsertAsyncContinuationForLdvirtftnCall(call->AsCall());
+                    impInsertAsyncArgsForLdvirtftnCall(call->AsCall());
                 }
 
                 GenTree* thisPtr = impPopStack().val;
@@ -636,8 +636,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             if (sig->retTypeSigClass != actualMethodRetTypeSigClass)
             {
                 if (actualMethodRetTypeSigClass != nullptr && sig->retType != CORINFO_TYPE_CLASS &&
-                    sig->retType != CORINFO_TYPE_BYREF && sig->retType != CORINFO_TYPE_PTR &&
-                    sig->retType != CORINFO_TYPE_VAR)
+                    sig->retType != CORINFO_TYPE_BYREF && sig->retType != CORINFO_TYPE_PTR)
                 {
                     // Make sure that all valuetypes (including enums) that we push are loaded.
                     // This is to guarantee that if a GC is triggered from the prestub of this methods,
@@ -941,6 +940,11 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         }
     }
 
+    if (asyncContinuation != nullptr)
+    {
+        impInheritAsyncContextsFromInliner(call->AsCall());
+    }
+
     //-------------------------------------------------------------------------
     // The "this" pointer
 
@@ -1021,8 +1025,8 @@ DEVIRT:
         }
         else if (call->AsCall()->IsDelegateInvoke())
         {
-            considerGuardedDevirtualization(call->AsCall(), rawILOffset, false, NO_METHOD_HANDLE, NO_CLASS_HANDLE,
-                                            nullptr);
+            considerGuardedDevirtualization(call->AsCall(), rawILOffset, false, call->AsCall()->gtCallMethHnd,
+                                            NO_CLASS_HANDLE, nullptr);
         }
     }
 
@@ -1102,10 +1106,14 @@ DEVIRT:
 
 DONE:
 
-#ifdef DEBUG
+#if defined(DEBUG) || defined(TARGET_WASM)
     // In debug we want to be able to register callsites with the EE.
     assert(call->AsCall()->callSig == nullptr);
-    call->AsCall()->callSig  = new (this, CMK_DebugOnly) CORINFO_SIG_INFO;
+#ifdef TARGET_WASM
+    call->AsCall()->callSig = new (this, CMK_ASTNode) CORINFO_SIG_INFO;
+#else
+    call->AsCall()->callSig = new (this, CMK_DebugOnly) CORINFO_SIG_INFO;
+#endif
     *call->AsCall()->callSig = *sig;
 #endif
 
@@ -3144,6 +3152,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 case NI_IsSupported_True:
                 {
                     assert(sig->numArgs == 0);
+                    impInlineRoot()->m_inlineStrategy->NoteHardwareIntrinsicCheckObserved();
                     return gtNewIconNode(true);
                 }
 
@@ -3155,6 +3164,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
                 case NI_IsSupported_Dynamic:
                 {
+                    impInlineRoot()->m_inlineStrategy->NoteHardwareIntrinsicCheckObserved();
                     break;
                 }
 
@@ -3162,6 +3172,8 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 {
                     CORINFO_CLASS_HANDLE typeArgHnd;
                     CorInfoType          simdBaseJitType;
+
+                    impInlineRoot()->m_inlineStrategy->NoteHardwareIntrinsicCheckObserved();
 
                     typeArgHnd      = info.compCompHnd->getTypeInstantiationArgument(clsHnd, 0);
                     simdBaseJitType = info.compCompHnd->getTypeForPrimitiveNumericClass(typeArgHnd);
@@ -3411,6 +3423,8 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             // This one is just `return true/false`
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
 
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_WriteBarrier:
+
             // Not expanding this can lead to noticeable allocations in T0
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan:
 
@@ -3637,6 +3651,14 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray:
             {
                 retNode = impInitializeArrayIntrinsic(sig);
+                break;
+            }
+
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_WriteBarrier:
+            {
+                GenTree* val = impPopStack().val;
+                GenTree* dst = impPopStack().val;
+                retNode      = gtNewStoreIndNode(TYP_REF, dst, val, GTF_IND_TGT_HEAP);
                 break;
             }
 
@@ -4019,6 +4041,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             }
 
             case NI_System_ArgumentNullException_ThrowIfNull:
+            case NI_System_String_FastAllocateString:
                 isSpecial = true;
                 break;
 
@@ -4355,6 +4378,79 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             }
 
 #ifdef FEATURE_HW_INTRINSICS
+            case NI_System_Half_op_Explicit:
+            {
+                assert(sig->numArgs == 1);
+
+                CORINFO_CLASS_HANDLE retClsHnd  = sig->retTypeSigClass;
+                CorInfoType          retJitType = sig->retType;
+                var_types            retType    = JitType2PreciseVarType(retJitType);
+
+                CORINFO_CLASS_HANDLE op1ClsHnd;
+                CorInfoType          op1JitType = strip(info.compCompHnd->getArgType(sig, sig->args, &op1ClsHnd));
+                var_types            op1Type    = JitType2PreciseVarType(op1JitType);
+
+                if (retType == TYP_STRUCT)
+                {
+                    assert(isSystemHalfClass(retClsHnd));
+                    assert(varTypeIsArithmetic(op1Type));
+
+                    switch (op1Type)
+                    {
+                        case TYP_FLOAT:
+                        {
+#if defined(TARGET_XARCH)
+                            if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                            {
+                                GenTree* op1 = impPopStack().val;
+                                op1          = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, TYP_FLOAT, 16);
+
+                                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, gtNewIconNode(0),
+                                                                   NI_AVX2_ConvertToVector128Half, TYP_FLOAT, 16);
+                                retNode = impSimdToScalarHalf(retNode, retClsHnd);
+                            }
+#endif
+                            break;
+                        }
+
+                        default:
+                        {
+                            unreached();
+                        }
+                    }
+                }
+                else
+                {
+                    assert(varTypeIsArithmetic(retType));
+                    assert((op1Type == TYP_STRUCT) && isSystemHalfClass(op1ClsHnd));
+
+                    switch (retType)
+                    {
+                        case TYP_FLOAT:
+                        {
+#if defined(TARGET_XARCH)
+                            if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                            {
+                                GenTree* op1 = impPopStack().val;
+                                op1          = impSimdCreateScalarHalf(op1);
+
+                                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_AVX2_ConvertToVector128Single,
+                                                                   TYP_USHORT, 16);
+                                retNode = gtNewSimdToScalarNode(TYP_FLOAT, retNode, TYP_FLOAT, 16);
+                            }
+#endif
+                            break;
+                        }
+
+                        default:
+                        {
+                            unreached();
+                        }
+                    }
+                }
+                break;
+            }
+
             case NI_System_Math_FusedMultiplyAdd:
             {
                 assert(varTypeIsFloating(callType));
@@ -4685,8 +4781,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                                 // This is now known to be a multi-dimension array with a constant dimension
                                 // that is in range; we can expand it as an intrinsic.
 
-                                impPopStack().val; // Pop the dim and array object; we already have a pointer to them.
-                                impPopStack().val;
+                                impPopStack(2); // Pop the dim and array object; we already have a pointer to them.
 
                                 // Make sure there are no global effects in the array (such as it being a function
                                 // call), so we can mark the generated indirection with GTF_IND_INVARIANT. In the
@@ -6462,7 +6557,7 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
         params[i].CorType = strip(info.compCompHnd->getArgType(sig, sigArg, &params[i].ClassHandle));
 
         if (params[i].CorType != CORINFO_TYPE_CLASS && params[i].CorType != CORINFO_TYPE_BYREF &&
-            params[i].CorType != CORINFO_TYPE_PTR && params[i].CorType != CORINFO_TYPE_VAR)
+            params[i].CorType != CORINFO_TYPE_PTR)
         {
             CORINFO_CLASS_HANDLE argRealClass = info.compCompHnd->getArgClass(sig, sigArg);
             if (argRealClass != nullptr)
@@ -6480,8 +6575,7 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
     }
 
     if ((sig->retTypeSigClass != nullptr) && (sig->retType != CORINFO_TYPE_CLASS) &&
-        (sig->retType != CORINFO_TYPE_BYREF) && (sig->retType != CORINFO_TYPE_PTR) &&
-        (sig->retType != CORINFO_TYPE_VAR))
+        (sig->retType != CORINFO_TYPE_BYREF) && (sig->retType != CORINFO_TYPE_PTR))
     {
         // Make sure that all valuetypes (including enums) that we push are loaded.
         // This is to guarantee that if a GC is triggered from the prestub of this methods,
@@ -6887,13 +6981,28 @@ void Compiler::impCheckForPInvokeCall(
 //
 void Compiler::impSetupAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned prefixFlags, const DebugInfo& callDI)
 {
+    AsyncCallInfo asyncInfo;
+
     if (compIsForInlining())
     {
-        compInlineResult->NoteFatal(InlineObservation::CALLEE_AWAIT);
-        return;
-    }
+        if (!m_nextAwaitIsTail)
+        {
+            compInlineResult->NoteFatal(InlineObservation::CALLEE_AWAIT);
+            return;
+        }
 
-    AsyncCallInfo asyncInfo;
+        GenTreeCall* inlCall = impInlineInfo->iciCall;
+        JITDUMP("Call [%06u] is to call with a tail async call [%06u]\n", dspTreeID(inlCall), dspTreeID(call));
+
+        assert(inlCall->IsAsync());
+
+        asyncInfo.ContinuationContextHandling = inlCall->GetAsyncInfo().ContinuationContextHandling;
+        // Validate that below code won't override the handling
+        assert((prefixFlags & PREFIX_IS_TASK_AWAIT) == 0);
+        m_nextAwaitIsTail = false;
+
+        asyncInfo.IsTailAwait = inlCall->GetAsyncInfo().IsTailAwait;
+    }
 
     unsigned newSourceTypes = ICorDebugInfo::ASYNC;
     newSourceTypes |= (unsigned)callDI.GetLocation().GetSourceTypes() & ~ICorDebugInfo::CALL_INSTRUCTION;
@@ -6914,11 +7023,6 @@ void Compiler::impSetupAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned pref
             asyncInfo.ContinuationContextHandling = ContinuationContextHandling::ContinueOnThreadPool;
             JITDUMP("  Continuation continues on thread pool\n");
         }
-    }
-    else if (opcode == CEE_CALLI)
-    {
-        // Used for unboxing/instantiating stubs
-        JITDUMP("Call is an async calli\n");
     }
     else
     {
@@ -6950,9 +7054,54 @@ void Compiler::impSetupAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned pref
 }
 
 //------------------------------------------------------------------------
-// impInsertAsyncContinuationForLdvirtftnCall:
-//   Insert the async continuation argument for a call the EE asked to be
-//   performed via ldvirtftn.
+// impInheritAsyncContextsFromInliner:
+//   Inherit async args from inlining call as part of a new async call.
+//
+// Arguments:
+//   call - The async call
+//
+// Remarks:
+//   Currently we only allow inlining of async calls when all awaits are tail
+//   awaits. In that case inlining is simplified as we can just inherit
+//   everything from the inlining call.
+//
+void Compiler::impInheritAsyncContextsFromInliner(GenTreeCall* call)
+{
+    if (!compIsForInlining())
+    {
+        return;
+    }
+
+    GenTreeCall* inlCall = impInlineInfo->iciCall;
+    CallArg*     execArg = inlCall->gtArgs.FindWellKnownArg(WellKnownArg::AsyncExecutionContext);
+    CallArg*     syncArg = inlCall->gtArgs.FindWellKnownArg(WellKnownArg::AsyncSynchronizationContext);
+    assert((execArg == nullptr) == (syncArg == nullptr));
+    if ((execArg == nullptr) || (syncArg == nullptr))
+    {
+        // Caller also has no async contexts handling
+        return;
+    }
+
+    // We are inlining an async call that does not save contexts into a call
+    // that does. We currently allow this only in cases where the tail of the
+    // inlinee can run in the caller's context, and hence we propagate the
+    // caller's context here. It means we do not need to worry about switching
+    // into the caller's context when the inlinee is returning to the caller
+    // after the await.
+    assert(execArg->GetNode()->OperIs(GT_LCL_VAR) && syncArg->GetNode()->OperIs(GT_LCL_VAR));
+    JITDUMP("Inheriting contexts [%06u] and [%06u] from caller node\n", dspTreeID(execArg->GetNode()),
+            dspTreeID(syncArg->GetNode()));
+
+    GenTree* execNode = gtCloneExpr(execArg->GetNode());
+    GenTree* syncNode = gtCloneExpr(syncArg->GetNode());
+    call->gtArgs.PushFront(this, NewCallArg::Primitive(syncNode).WellKnown(WellKnownArg::AsyncSynchronizationContext));
+    call->gtArgs.PushFront(this, NewCallArg::Primitive(execNode).WellKnown(WellKnownArg::AsyncExecutionContext));
+}
+
+//------------------------------------------------------------------------
+// impInsertAsyncArgsForLdvirtftnCall:
+//   Insert async arguments for a call the EE asked to be performed via
+//   ldvirtftn.
 //
 // Arguments:
 //    call - The call
@@ -6961,7 +7110,7 @@ void Compiler::impSetupAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned pref
 //   Should be called before the 'this' arg is inserted, but after other IL args
 //   have been inserted.
 //
-void Compiler::impInsertAsyncContinuationForLdvirtftnCall(GenTreeCall* call)
+void Compiler::impInsertAsyncArgsForLdvirtftnCall(GenTreeCall* call)
 {
     assert(call->AsCall()->IsAsync());
 
@@ -6975,6 +7124,8 @@ void Compiler::impInsertAsyncContinuationForLdvirtftnCall(GenTreeCall* call)
         call->AsCall()->gtArgs.PushBack(this, NewCallArg::Primitive(gtNewNull(), TYP_REF)
                                                   .WellKnown(WellKnownArg::AsyncContinuation));
     }
+
+    impInheritAsyncContextsFromInliner(call);
 }
 
 //------------------------------------------------------------------------
@@ -7642,7 +7793,6 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                 dvInfo.virtualMethod               = baseMethod;
                 dvInfo.objClass                    = exactCls;
                 dvInfo.context                     = originalContext;
-                dvInfo.exactContext                = originalContext;
                 dvInfo.pResolvedTokenVirtualMethod = nullptr;
 
                 JITDUMP("GDV exact: resolveVirtualMethod (method %p class %p context %p)\n", dvInfo.virtualMethod,
@@ -7656,10 +7806,9 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                     break;
                 }
 
-                CORINFO_CONTEXT_HANDLE exactContext     = dvInfo.exactContext;
+                CORINFO_CONTEXT_HANDLE exactContext     = dvInfo.tokenLookupContext;
                 CORINFO_METHOD_HANDLE  exactMethod      = dvInfo.devirtualizedMethod;
                 uint32_t               exactMethodAttrs = info.compCompHnd->getMethodAttribs(exactMethod);
-
                 // NOTE: This is currently used only with NativeAOT. In theory, we could also check if we
                 // have static PGO data to decide which class to guess first. Presumably, this is a rare case.
                 //
@@ -7673,8 +7822,9 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                 }
 
                 addGuardedDevirtualizationCandidate(call, exactMethod, exactCls, exactContext, exactMethodAttrs,
-                                                    clsAttrs, likelyHood, dvInfo.needsMethodContext,
-                                                    dvInfo.isInstantiatingStub, baseMethod, originalContext);
+                                                    clsAttrs, likelyHood, &dvInfo.instParamLookup, baseMethod,
+                                                    &dvInfo.resolvedTokenDevirtualizedMethod,
+                                                    &dvInfo.resolvedTokenDevirtualizedUnboxedMethod);
             }
 
             if (call->GetInlineCandidatesCount() == numExactClasses)
@@ -7697,13 +7847,15 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
     // Iterate over the guesses
     for (int candidateId = 0; candidateId < candidatesCount; candidateId++)
     {
-        CORINFO_CLASS_HANDLE  likelyClass        = likelyClasses[candidateId];
-        CORINFO_METHOD_HANDLE likelyMethod       = likelyMethods[candidateId];
-        unsigned              likelihood         = likelihoods[candidateId];
-        bool                  needsMethodContext = false;
-        bool                  instantiatingStub  = false;
+        CORINFO_CLASS_HANDLE    likelyClass           = likelyClasses[candidateId];
+        CORINFO_METHOD_HANDLE   likelyMethod          = likelyMethods[candidateId];
+        unsigned                likelihood            = likelihoods[candidateId];
+        const CORINFO_LOOKUP*   pInstParamLookup      = nullptr;
+        CORINFO_RESOLVED_TOKEN* pResolvedToken        = nullptr;
+        CORINFO_RESOLVED_TOKEN* pUnboxedResolvedToken = nullptr;
 
-        CORINFO_CONTEXT_HANDLE likelyContext = originalContext;
+        CORINFO_CONTEXT_HANDLE        likelyContext = originalContext;
+        CORINFO_DEVIRTUALIZATION_INFO dvInfo;
 
         uint32_t likelyClassAttribs = 0;
         if (likelyClass != NO_CLASS_HANDLE)
@@ -7723,11 +7875,9 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
 
             // Figure out which method will be called.
             //
-            CORINFO_DEVIRTUALIZATION_INFO dvInfo;
             dvInfo.virtualMethod               = baseMethod;
             dvInfo.objClass                    = likelyClass;
             dvInfo.context                     = originalContext;
-            dvInfo.exactContext                = originalContext;
             dvInfo.pResolvedTokenVirtualMethod = nullptr;
 
             JITDUMP("GDV likely: resolveVirtualMethod (method %p class %p context %p)\n", dvInfo.virtualMethod,
@@ -7744,10 +7894,11 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                 break;
             }
 
-            likelyContext      = dvInfo.exactContext;
-            likelyMethod       = dvInfo.devirtualizedMethod;
-            needsMethodContext = dvInfo.needsMethodContext;
-            instantiatingStub  = dvInfo.isInstantiatingStub;
+            likelyContext         = dvInfo.tokenLookupContext;
+            likelyMethod          = dvInfo.devirtualizedMethod;
+            pResolvedToken        = &dvInfo.resolvedTokenDevirtualizedMethod;
+            pUnboxedResolvedToken = &dvInfo.resolvedTokenDevirtualizedUnboxedMethod;
+            pInstParamLookup      = &dvInfo.instParamLookup;
         }
         else
         {
@@ -7822,8 +7973,8 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
         // Add this as a potential candidate.
         //
         addGuardedDevirtualizationCandidate(call, likelyMethod, likelyClass, likelyContext, likelyMethodAttribs,
-                                            likelyClassAttribs, likelihood, needsMethodContext, instantiatingStub,
-                                            baseMethod, originalContext);
+                                            likelyClassAttribs, likelihood, pInstParamLookup, baseMethod,
+                                            pResolvedToken, pUnboxedResolvedToken);
     }
 }
 
@@ -7848,22 +7999,22 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
 //    methodAttr - attributes of the method
 //    classAttr - attributes of the class
 //    likelihood - odds that this class is the class seen at runtime
-//    needsMethodContext - devirtualized method may need generic method context (e.g. array interfaces)
-//    instantiatingStub - devirtualized method in an instantiating stub
+//    instParamLookup - lookup to use if the target signature requires an instantiation argument
 //    originalMethodHandle - method handle of base method (before devirt)
-//    originalContextHandle - context for the original call
+//    pResolvedToken - resolved token for methodHandle, used to get R2R call info; nullptr when unavailable
+//    pUnboxedResolvedToken - resolved token for the unboxed entry, paired with pResolvedToken
 //
-void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*           call,
-                                                   CORINFO_METHOD_HANDLE  methodHandle,
-                                                   CORINFO_CLASS_HANDLE   classHandle,
-                                                   CORINFO_CONTEXT_HANDLE contextHandle,
-                                                   unsigned               methodAttr,
-                                                   unsigned               classAttr,
-                                                   unsigned               likelihood,
-                                                   bool                   needsMethodContext,
-                                                   bool                   instantiatingStub,
-                                                   CORINFO_METHOD_HANDLE  originalMethodHandle,
-                                                   CORINFO_CONTEXT_HANDLE originalContextHandle)
+void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*            call,
+                                                   CORINFO_METHOD_HANDLE   methodHandle,
+                                                   CORINFO_CLASS_HANDLE    classHandle,
+                                                   CORINFO_CONTEXT_HANDLE  contextHandle,
+                                                   unsigned                methodAttr,
+                                                   unsigned                classAttr,
+                                                   unsigned                likelihood,
+                                                   const CORINFO_LOOKUP*   instParamLookup,
+                                                   CORINFO_METHOD_HANDLE   originalMethodHandle,
+                                                   CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                                   CORINFO_RESOLVED_TOKEN* pUnboxedResolvedToken)
 {
     // This transformation only makes sense for delegate and virtual calls
     assert(call->IsDelegateInvoke() || call->IsVirtual());
@@ -7919,6 +8070,7 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*           call,
     JITDUMP("Marking call [%06u] as guarded devirtualization candidate; will guess for %s %s\n", dspTreeID(call),
             classHandle != NO_CLASS_HANDLE ? "class" : "method",
             classHandle != NO_CLASS_HANDLE ? eeGetClassName(classHandle) : eeGetMethodFullName(methodHandle));
+
     setMethodHasGuardedDevirtualization();
 
     // Spill off any GT_RET_EXPR subtrees so we can clone the call.
@@ -7931,32 +8083,25 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*           call,
     //
     InlineCandidateInfo* pInfo = new (this, CMK_Inlining) InlineCandidateInfo;
 
-    pInfo->guardedMethodHandle                  = methodHandle;
-    pInfo->guardedMethodUnboxedEntryHandle      = nullptr;
-    pInfo->guardedMethodInstantiatedEntryHandle = nullptr;
-    pInfo->guardedClassHandle                   = classHandle;
-    pInfo->originalMethodHandle                 = originalMethodHandle;
-    pInfo->originalContextHandle                = originalContextHandle;
-    pInfo->likelihood                           = likelihood;
-    pInfo->exactContextHandle                   = contextHandle;
-    pInfo->needsMethodContext                   = needsMethodContext;
+    pInfo->guardedMethodHandle               = methodHandle;
+    pInfo->guardedMethodUnboxedEntryHandle   = nullptr;
+    pInfo->guardedMethodInstParamLookup      = {};
+    pInfo->guardedMethodResolvedToken        = {};
+    pInfo->guardedMethodUnboxedResolvedToken = {};
+    pInfo->guardedClassHandle                = classHandle;
+    pInfo->likelihood                        = likelihood;
+    pInfo->exactContextHandle                = contextHandle;
+    pInfo->originalMethodHandle              = originalMethodHandle;
 
-    // If the guarded method is an instantiating stub, find the instantiated method
-    //
-    if (instantiatingStub)
+    if (instParamLookup != nullptr)
     {
-        JITDUMP("    ... method is an instantiating stub, looking for instantiated entry\n");
-        CORINFO_CLASS_HANDLE  ignoredClass  = NO_CLASS_HANDLE;
-        CORINFO_METHOD_HANDLE ignoredMethod = NO_METHOD_HANDLE;
-        CORINFO_METHOD_HANDLE instantiatedMethod =
-            info.compCompHnd->getInstantiatedEntry(methodHandle, &ignoredMethod, &ignoredClass);
-        assert(ignoredClass == NO_CLASS_HANDLE);
+        pInfo->guardedMethodInstParamLookup = *instParamLookup;
+    }
 
-        if (instantiatedMethod != NO_METHOD_HANDLE)
-        {
-            JITDUMP("    ... updating GDV candidate with instantiated entry info\n");
-            pInfo->guardedMethodInstantiatedEntryHandle = instantiatedMethod;
-        }
+    if (pResolvedToken != nullptr)
+    {
+        pInfo->guardedMethodResolvedToken        = *pResolvedToken;
+        pInfo->guardedMethodUnboxedResolvedToken = *pUnboxedResolvedToken;
     }
 
     // If the guarded class is a value class, look for an unboxed entry point.
@@ -7976,6 +8121,53 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*           call,
     }
 
     call->AddGDVCandidateInfo(this, pInfo);
+}
+
+//------------------------------------------------------------------------
+// impConvertToUserCallAndMarkForInlining: convert a helper call to a user call
+//   and mark it for inlining. This is used for helper calls that are
+//   known to be backed by a user method that can be inlined.
+//
+// Arguments:
+//    call - the helper call to convert
+//
+void Compiler::impConvertToUserCallAndMarkForInlining(GenTreeCall* call)
+{
+    assert(call->IsHelperCall());
+
+    if (!opts.OptEnabled(CLFLG_INLINING))
+    {
+        return;
+    }
+
+    CORINFO_METHOD_HANDLE helperCallHnd     = call->gtCallMethHnd;
+    CORINFO_METHOD_HANDLE managedCallHnd    = NO_METHOD_HANDLE;
+    CORINFO_CONST_LOOKUP  pNativeEntrypoint = {};
+    info.compCompHnd->getHelperFtn(eeGetHelperNum(helperCallHnd), &pNativeEntrypoint, &managedCallHnd);
+
+    if (managedCallHnd != NO_METHOD_HANDLE)
+    {
+        call->gtCallMethHnd = managedCallHnd;
+        call->gtCallType    = CT_USER_FUNC;
+
+        CORINFO_CALL_INFO hCallInfo = {};
+        hCallInfo.hMethod           = managedCallHnd;
+        hCallInfo.methodFlags       = info.compCompHnd->getMethodAttribs(hCallInfo.hMethod);
+        impMarkInlineCandidate(call, nullptr, false, &hCallInfo, compInlineContext);
+
+#if DEBUG
+        CORINFO_METHOD_HANDLE existingValue = NO_METHOD_HANDLE;
+        if (impInlineRoot()->HelperToManagedMapLookup(helperCallHnd, &existingValue))
+        {
+            // Let's make sure HelperToManagedMap::Overwrite behavior always overwrites the same value.
+            assert(existingValue == managedCallHnd);
+        }
+#endif
+
+        impInlineRoot()->GetHelperToManagedMap()->Set(helperCallHnd, managedCallHnd, HelperToManagedMap::Overwrite);
+        JITDUMP("Converting helperCall [%06u] to user call [%s] and marking for inlining\n", dspTreeID(call),
+                eeGetMethodFullName(managedCallHnd));
+    }
 }
 
 //------------------------------------------------------------------------
@@ -8206,10 +8398,6 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
         if (gdvCandidate->guardedMethodUnboxedEntryHandle != nullptr)
         {
             fncHandle = gdvCandidate->guardedMethodUnboxedEntryHandle;
-        }
-        else if (gdvCandidate->guardedMethodInstantiatedEntryHandle != nullptr)
-        {
-            fncHandle = gdvCandidate->guardedMethodInstantiatedEntryHandle;
         }
         else
         {
@@ -8684,11 +8872,6 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         return;
     }
 
-    // Optionally, print info on devirtualization
-    Compiler* const rootCompiler = impInlineRoot();
-    const bool      doPrint      = JitConfig.JitPrintDevirtualizedMethods().contains(rootCompiler->info.compMethodHnd,
-                                                                                     rootCompiler->info.compClassHnd,
-                                                                                     &rootCompiler->info.compMethodInfo->args);
 #endif // DEBUG
 
     // Fetch information about the virtual method we're calling.
@@ -8777,26 +8960,20 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     const bool  objClassIsFinal = (objClassAttribs & CORINFO_FLG_FINAL) != 0;
 
 #if defined(DEBUG)
-    const char* callKind       = isInterface ? "interface" : "virtual";
-    const char* objClassNote   = "[?]";
-    const char* objClassName   = "?objClass";
-    const char* baseClassName  = "?baseClass";
-    const char* baseMethodName = "?baseMethod";
+    const char* objClassNote       = "[?]";
+    const char* objClassName       = "?objClass";
+    const char* baseMethodFullName = "?baseMethod";
 
-    if (verbose || doPrint)
+    if (verbose)
     {
-        objClassNote   = isExact ? " [exact]" : objClassIsFinal ? " [final]" : "";
-        objClassName   = eeGetClassName(objClass);
-        baseClassName  = eeGetClassName(baseClass);
-        baseMethodName = eeGetMethodName(baseMethod);
+        objClassNote       = isExact ? " [exact]" : objClassIsFinal ? " [final]" : "";
+        objClassName       = eeGetClassName(objClass);
+        baseMethodFullName = eeGetMethodFullName(baseMethod);
 
-        if (verbose)
-        {
-            printf("\nimpDevirtualizeCall: Trying to devirtualize %s call:\n"
-                   "    class for 'this' is %s%s (attrib %08x)\n"
-                   "    base method is %s::%s\n",
-                   callKind, objClassName, objClassNote, objClassAttribs, baseClassName, baseMethodName);
-        }
+        printf("\nimpDevirtualizeCall: Trying to devirtualize %s call:\n"
+               "    class for 'this' is %s%s (attrib %08x)\n"
+               "    base method is %s\n",
+               isInterface ? "interface" : "virtual", objClassName, objClassNote, objClassAttribs, baseMethodFullName);
     }
 #endif // defined(DEBUG)
 
@@ -8845,84 +9022,18 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     info.compCompHnd->resolveVirtualMethod(&dvInfo);
 
     CORINFO_METHOD_HANDLE   derivedMethod         = dvInfo.devirtualizedMethod;
-    CORINFO_CONTEXT_HANDLE  exactContext          = dvInfo.exactContext;
-    CORINFO_CLASS_HANDLE    derivedClass          = NO_CLASS_HANDLE;
+    CORINFO_CONTEXT_HANDLE  exactContext          = dvInfo.tokenLookupContext;
     CORINFO_RESOLVED_TOKEN* pDerivedResolvedToken = &dvInfo.resolvedTokenDevirtualizedMethod;
 
-    if (derivedMethod != nullptr)
-    {
-        assert(exactContext != nullptr);
-
-        if (((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS)
-        {
-            assert(!dvInfo.needsMethodContext);
-            derivedClass = (CORINFO_CLASS_HANDLE)((size_t)exactContext & ~CORINFO_CONTEXTFLAGS_MASK);
-        }
-        else
-        {
-            // Array interface devirt can return a nonvirtual generic method of the non-generic SZArrayHelper class.
-            // Generic virtual method devirt also returns a generic method.
-            //
-            assert(call->IsGenericVirtual(this) || dvInfo.needsMethodContext);
-            assert(((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD);
-            derivedClass = info.compCompHnd->getMethodClass(derivedMethod);
-        }
-    }
-
-    DWORD derivedMethodAttribs = 0;
-    bool  derivedMethodIsFinal = false;
-    bool  canDevirtualize      = false;
+    unsigned derivedMethodAttribs = 0;
+    bool     derivedMethodIsFinal = false;
+    bool     canDevirtualize      = false;
 
 #if defined(DEBUG)
-    const char* derivedClassName  = "?derivedClass";
-    const char* derivedMethodName = "?derivedMethod";
-    const char* note              = "inexact or not final";
-    const char* instArg           = "";
+    const char* note = "inexact or not final";
 #endif
 
-    CORINFO_METHOD_HANDLE instantiatingStub = NO_METHOD_HANDLE;
-
-    if (dvInfo.isInstantiatingStub)
-    {
-        // We should only end up with generic methods that needs a method context (eg. array interface, GVM).
-        //
-        assert(dvInfo.needsMethodContext);
-
-        // We don't expect NAOT to end up here, since it has Array<T>
-        // and normal devirtualization.
-        //
-        assert(!IsTargetAbi(CORINFO_NATIVEAOT_ABI));
-
-        // We don't expect R2R to end up here, since it does not (yet) support
-        // array interface devirtualization.
-        //
-        assert(!IsAot());
-
-        // We don't expect there to be an existing inst param arg.
-        //
-        CallArg* const instParam = call->gtArgs.FindWellKnownArg(WellKnownArg::InstParam);
-        if (instParam != nullptr)
-        {
-            assert(!"unexpected inst param in virtual/interface call");
-            return;
-        }
-
-        // If we don't know the array type exactly we may have the wrong interface type here.
-        // Bail out.
-        //
-        if (!isExact)
-        {
-            JITDUMP("Array interface devirt: array type is inexact, sorry.\n");
-            return;
-        }
-
-        // We want to inline the instantiating stub. Fetch the relevant info.
-        //
-        CORINFO_CLASS_HANDLE ignored = NO_CLASS_HANDLE;
-        derivedMethod = info.compCompHnd->getInstantiatedEntry(derivedMethod, &instantiatingStub, &ignored);
-        assert(ignored == NO_CLASS_HANDLE);
-        assert((derivedMethod == NO_METHOD_HANDLE) || (instantiatingStub != NO_METHOD_HANDLE));
-    }
+    CORINFO_SIG_INFO derivedSig;
 
     // If we failed to get a method handle, we can't directly devirtualize.
     //
@@ -8939,6 +9050,23 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         derivedMethodAttribs = info.compCompHnd->getMethodAttribs(derivedMethod);
         derivedMethodIsFinal = ((derivedMethodAttribs & CORINFO_FLG_FINAL) != 0);
 
+        info.compCompHnd->getMethodSig(derivedMethod, &derivedSig);
+
+        // Array interface devirt can return a nonvirtual generic method of the non-generic SZArrayHelper class.
+        //
+        if (derivedSig.hasTypeArg())
+        {
+            // If we don't know the array type exactly we may have the wrong interface type here.
+            // Bail out.
+            //
+            const bool isArrayInterfaceDevirt = (objClassAttribs & CORINFO_FLG_ARRAY) != 0;
+            if (isArrayInterfaceDevirt && !isExact)
+            {
+                JITDUMP("Array interface devirt: array type is inexact, sorry.\n");
+                return;
+            }
+        }
+
 #if defined(DEBUG)
         if (isExact)
         {
@@ -8952,20 +9080,10 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         {
             note = "final method";
         }
-        if (dvInfo.isInstantiatingStub)
+        if (verbose)
         {
-            instArg = " [instantiating stub]";
-        }
-
-        if (verbose || doPrint)
-        {
-            derivedMethodName = eeGetMethodName(derivedMethod);
-            derivedClassName  = eeGetClassName(derivedClass);
-            if (verbose)
-            {
-                printf("    devirt to %s::%s -- %s%s\n", derivedClassName, derivedMethodName, note, instArg);
-                gtDispTree(call);
-            }
+            printf("    devirt to %s -- %s\n", eeGetMethodFullName(derivedMethod), note);
+            gtDispTree(call);
         }
 #endif // defined(DEBUG)
 
@@ -9005,20 +9123,101 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     // All checks done. Time to transform the call.
     //
     assert(canDevirtualize);
-    Metrics.DevirtualizedCall++;
 
     JITDUMP("    %s; can devirtualize\n", note);
 
-    if (dvInfo.isInstantiatingStub)
+    DevirtualizedCallInfo dcInfo;
+    dcInfo.tokenLookupContext    = exactContext;
+    dcInfo.pInstParamLookup      = &dvInfo.instParamLookup;
+    dcInfo.pResolvedToken        = pDerivedResolvedToken;
+    dcInfo.pUnboxedResolvedToken = &dvInfo.resolvedTokenDevirtualizedUnboxedMethod;
+    dcInfo.pMethSig              = &derivedSig;
+    dcInfo.objIsNonNull          = objIsNonNull;
+    dcInfo.hadImplicitNullCheck  = true;
+    dcInfo.isDelegateCall        = false;
+    dcInfo.isExplicitTailCall    = isExplicitTailCall;
+    dcInfo.objClassIsExact       = isExact;
+    dcInfo.objClassIsFinal       = objClassIsFinal;
+    dcInfo.ilOffset              = ilOffset;
+    impTransformDevirtualizedCall(call, &derivedMethod, &derivedMethodAttribs, &dcInfo, compCurBB,
+                                  pContextHandle COMMA_INDEBUG(baseMethod));
+
+    *method      = derivedMethod;
+    *methodFlags = derivedMethodAttribs;
+
+    // Update exact context handle.
+    //
+    if (pExactContextHandle != nullptr)
     {
-        // Pass the instantiating stub method desc as the inst param arg.
-        //
-        // Note different embedding would be needed for NAOT/R2R,
-        // but we have ruled those out above.
-        //
-        GenTree* const instParam = gtNewIconEmbMethHndNode(instantiatingStub);
-        call->gtArgs.InsertInstParam(this, instParam);
+        *pExactContextHandle = exactContext;
     }
+}
+
+//------------------------------------------------------------------------
+// impTransformDevirtualizedCall: transform a resolved virtual call target
+//    into a direct call.
+//
+// Arguments:
+//     call - call to transform
+//     method - [IN/OUT] method handle for call. Updated to the devirtualized target method
+//     methodFlags - [IN/OUT] flags for the method to call. Updated to the devirtualized target method's flags
+//     dcInfo - [IN] resolved target information for the call
+//     block - [IN] block that will contain the transformed call
+//     pContextHandle - [OUT] context handle for the transformed call
+//
+void Compiler::impTransformDevirtualizedCall(GenTreeCall*            call,
+                                             CORINFO_METHOD_HANDLE*  method,
+                                             unsigned*               methodFlags,
+                                             DevirtualizedCallInfo*  dcInfo,
+                                             BasicBlock*             block,
+                                             CORINFO_CONTEXT_HANDLE* pContextHandle
+#if defined(DEBUG)
+                                             ,
+                                             CORINFO_METHOD_HANDLE baseMethod
+#endif // defined(DEBUG)
+)
+{
+    assert(call != nullptr);
+    assert(method != nullptr);
+    assert(methodFlags != nullptr);
+    assert(dcInfo != nullptr);
+    assert(pContextHandle != nullptr);
+
+    CORINFO_METHOD_HANDLE   derivedMethod         = *method;
+    unsigned                derivedMethodAttribs  = *methodFlags;
+    CORINFO_RESOLVED_TOKEN* pDerivedResolvedToken = dcInfo->pResolvedToken;
+    CORINFO_CLASS_HANDLE    derivedClass          = eeGetClassFromContext(dcInfo->tokenLookupContext);
+
+    assert(derivedMethod != nullptr);
+    assert(call->gtArgs.HasThisPointer());
+
+    CallArg* thisArg = call->gtArgs.GetThisArg();
+    GenTree* thisObj = thisArg->GetEarlyNode()->gtEffectiveVal();
+
+#if defined(DEBUG)
+    // Optionally, print info on devirtualization
+    Compiler* const rootCompiler = impInlineRoot();
+    const bool      doPrint      = JitConfig.JitPrintDevirtualizedMethods().contains(rootCompiler->info.compMethodHnd,
+                                                                                     rootCompiler->info.compClassHnd,
+                                                                                     &rootCompiler->info.compMethodInfo->args);
+
+    if (doPrint)
+    {
+        CORINFO_CLASS_HANDLE baseClass            = info.compCompHnd->getMethodClass(baseMethod);
+        const DWORD          baseClassAttribs     = info.compCompHnd->getClassAttribs(baseClass);
+        bool                 derivedMethodIsFinal = ((derivedMethodAttribs & CORINFO_FLG_FINAL) != 0);
+        const char*          callKind = (baseClassAttribs & CORINFO_FLG_INTERFACE) != 0 ? "interface" : "virtual";
+        const char*          note     = dcInfo->objClassIsExact   ? "exact"
+                                        : dcInfo->objClassIsFinal ? "final class"
+                                        : derivedMethodIsFinal    ? "final method"
+                                                                  : "inexact or not final";
+
+        printf("Devirtualized %s call to %s; now direct call to %s [%s]\n", callKind, eeGetMethodFullName(baseMethod),
+               eeGetMethodFullName(derivedMethod), note);
+    }
+#endif // defined(DEBUG)
+
+    Metrics.DevirtualizedCall++;
 
     // Make the updates.
     call->gtFlags &= ~GTF_CALL_VIRT_VTABLE;
@@ -9028,9 +9227,14 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     call->gtControlExpr = nullptr;
     INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_DEVIRTUALIZED);
 
+    if (dcInfo->isDelegateCall)
+    {
+        call->gtCallMoreFlags &= ~GTF_CALL_M_DELEGATE_INV;
+    }
+
     // Virtual calls include an implicit null check, which we may
     // now need to make explicit.
-    if (!objIsNonNull)
+    if (dcInfo->hadImplicitNullCheck && !dcInfo->objIsNonNull)
     {
         call->gtFlags |= GTF_CALL_NULLCHECK;
     }
@@ -9041,18 +9245,6 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     call->ClearInlineInfo();
 
 #if defined(DEBUG)
-    if (verbose)
-    {
-        printf("... after devirt...\n");
-        gtDispTree(call);
-    }
-
-    if (doPrint)
-    {
-        printf("Devirtualized %s call to %s:%s; now direct call to %s:%s [%s]\n", callKind, baseClassName,
-               baseMethodName, derivedClassName, derivedMethodName, note);
-    }
-
     // If we successfully devirtualized based on an exact or final class,
     // and we have dynamic PGO data describing the likely class, make sure they agree.
     //
@@ -9061,17 +9253,17 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     //
     // If method is an inlinee we may be specializing to a class that wasn't seen at runtime.
     //
-    const bool canSensiblyCheck =
-        (isExact || objClassIsFinal) && (fgPgoSource == ICorJitInfo::PgoSource::Dynamic) && !compIsForInlining();
+    const bool canSensiblyCheck = (dcInfo->objClassIsExact || dcInfo->objClassIsFinal) &&
+                                  (fgPgoSource == ICorJitInfo::PgoSource::Dynamic) && !compIsForInlining();
     if (JitConfig.JitCrossCheckDevirtualizationAndPGO() && canSensiblyCheck)
     {
         // We only can handle a single likely class for now
         const int               maxLikelyClasses = 1;
         LikelyClassMethodRecord likelyClasses[maxLikelyClasses];
 
-        UINT32 numberOfClasses =
-            getLikelyClasses(likelyClasses, maxLikelyClasses, fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset);
-        UINT32 likelihood = likelyClasses[0].likelihood;
+        UINT32 numberOfClasses = getLikelyClasses(likelyClasses, maxLikelyClasses, fgPgoSchema, fgPgoSchemaCount,
+                                                  fgPgoData, dcInfo->ilOffset);
+        UINT32 likelihood      = likelyClasses[0].likelihood;
 
         CORINFO_CLASS_HANDLE likelyClass = (CORINFO_CLASS_HANDLE)likelyClasses[0].handle;
 
@@ -9109,7 +9301,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                     {
                         printf("@@@ Likely %p (%s) != Derived %p (%s) [n=%u, l=%u, il=%u] in %s \n", likelyClass,
                                eeGetClassName(likelyClass), derivedClass, eeGetClassName(derivedClass), numberOfClasses,
-                               likelihood, ilOffset, info.compFullName);
+                               likelihood, dcInfo->ilOffset, info.compFullName);
                     }
 
                     assert(!(mismatch || (numberOfClasses != 1) || (likelihood != 100)));
@@ -9118,6 +9310,8 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         }
     }
 #endif // defined(DEBUG)
+
+    GenTree* instParam = nullptr;
 
     // If the 'this' object is a value class, see if we can rework the call to invoke the
     // unboxed entry. This effectively inlines the normally un-inlineable wrapper stub
@@ -9130,7 +9324,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     //
     if (info.compCompHnd->isValueClass(derivedClass))
     {
-        if (isExplicitTailCall)
+        if (dcInfo->isExplicitTailCall)
         {
             JITDUMP("Have a direct explicit tail call to boxed entry point; can't optimize further\n");
         }
@@ -9145,188 +9339,64 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
             if (unboxedEntryMethod != nullptr)
             {
-                bool optimizedTheBox = false;
-
-                // If the 'this' object is a local box, see if we can revise things
-                // to not require boxing.
+                // Rewrite the call to target the unboxed entry on the box payload. Keep the heap box,
+                // since the callee may return an interior managed pointer into it; object stack allocation
+                // can later promote the box to the stack when escape analysis proves the receiver does not
+                // escape.
                 //
-                if (thisObj->IsBoxedValue() && !isExplicitTailCall)
+                if (requiresInstMethodTableArg)
                 {
-                    // Since the call is the only consumer of the box, we know the box can't escape
-                    // since it is being passed an interior pointer.
+                    // Get the method table from the boxed object.
                     //
-                    // So, revise the box to simply create a local copy, use the address of that copy
-                    // as the this pointer, and update the entry point to the unboxed entry.
-                    //
-                    // Ideally, we then inline the boxed method and and if it turns out not to modify
-                    // the copy, we can undo the copy too.
-                    GenTree* localCopyThis = nullptr;
+                    // TODO-CallArgs-REVIEW: Use thisObj here? Differs by gtEffectiveVal.
+                    GenTree* const clonedThisArg = gtClone(thisArg->GetEarlyNode());
 
-                    if (requiresInstMethodTableArg)
+                    if (clonedThisArg == nullptr)
                     {
-                        // Perform a trial box removal and ask for the type handle tree that fed the box.
-                        //
-                        JITDUMP("Unboxed entry needs method table arg...\n");
-                        GenTree* methodTableArg =
-                            gtTryRemoveBoxUpstreamEffects(thisObj, BR_DONT_REMOVE_WANT_TYPE_HANDLE);
-
-                        if (methodTableArg != nullptr)
-                        {
-                            // If that worked, turn the box into a copy to a local var
-                            //
-                            JITDUMP("Found suitable method table arg tree [%06u]\n", dspTreeID(methodTableArg));
-                            localCopyThis = gtTryRemoveBoxUpstreamEffects(thisObj, BR_MAKE_LOCAL_COPY);
-
-                            if (localCopyThis != nullptr)
-                            {
-                                // Pass the local var as this and the type handle as a new arg
-                                //
-                                JITDUMP("Success! invoking unboxed entry point on local copy, and passing method table "
-                                        "arg\n");
-                                // TODO-CallArgs-REVIEW: Might discard commas otherwise?
-                                assert(thisObj == thisArg->GetEarlyNode());
-                                thisArg->SetEarlyNode(localCopyThis);
-                                INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_UNBOXED);
-
-                                call->gtArgs.InsertInstParam(this, methodTableArg);
-
-                                call->gtCallMethHnd   = unboxedEntryMethod;
-                                derivedMethod         = unboxedEntryMethod;
-                                pDerivedResolvedToken = &dvInfo.resolvedTokenDevirtualizedUnboxedMethod;
-
-                                // Method attributes will differ because unboxed entry point is shared
-                                //
-                                const DWORD unboxedMethodAttribs =
-                                    info.compCompHnd->getMethodAttribs(unboxedEntryMethod);
-                                JITDUMP("Updating method attribs from 0x%08x to 0x%08x\n", derivedMethodAttribs,
-                                        unboxedMethodAttribs);
-                                derivedMethodAttribs = unboxedMethodAttribs;
-                                optimizedTheBox      = true;
-                            }
-                            else
-                            {
-                                JITDUMP("Sorry, failed to undo the box -- can't convert to local copy\n");
-                            }
-                        }
-                        else
-                        {
-                            JITDUMP("Sorry, failed to undo the box -- can't find method table arg\n");
-                        }
+                        JITDUMP("unboxed entry needs MT arg, but `this` was too complex to clone. Deferring update.\n");
                     }
                     else
                     {
-                        JITDUMP("Found unboxed entry point, trying to simplify box to a local copy\n");
-                        localCopyThis = gtTryRemoveBoxUpstreamEffects(thisObj, BR_MAKE_LOCAL_COPY);
+                        JITDUMP("revising call to invoke unboxed entry with additional method table arg\n");
 
-                        if (localCopyThis != nullptr)
-                        {
-                            JITDUMP("Success! invoking unboxed entry point on local copy\n");
-                            assert(thisObj == thisArg->GetEarlyNode());
-                            // TODO-CallArgs-REVIEW: Might discard commas otherwise?
-                            thisArg->SetEarlyNode(localCopyThis);
-                            call->gtCallMethHnd = unboxedEntryMethod;
-                            INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_UNBOXED);
-                            derivedMethod         = unboxedEntryMethod;
-                            pDerivedResolvedToken = &dvInfo.resolvedTokenDevirtualizedUnboxedMethod;
+                        instParam = gtNewMethodTableLookup(clonedThisArg);
 
-                            optimizedTheBox = true;
-                        }
-                        else
-                        {
-                            JITDUMP("Sorry, failed to undo the box\n");
-                        }
-                    }
-
-                    if (optimizedTheBox)
-                    {
-                        assert(localCopyThis->IsLclVarAddr());
-
-                        // We may end up inlining this call, so the local copy must be marked as "aliased",
-                        // making sure the inlinee importer will know when to spill references to its value.
-                        lvaGetDesc(localCopyThis->AsLclFld())->lvHasLdAddrOp = true;
-                        Metrics.DevirtualizedCallRemovedBox++;
-                        Metrics.DevirtualizedCallUnboxedEntry++;
-
-#if FEATURE_TAILCALL_OPT
-                        if (call->IsImplicitTailCall())
-                        {
-                            JITDUMP("Clearing the implicit tail call flag\n");
-
-                            // If set, we clear the implicit tail call flag
-                            // as we just introduced a new address taken local variable
-                            //
-                            call->gtCallMoreFlags &= ~GTF_CALL_M_IMPLICIT_TAILCALL;
-                        }
-#endif // FEATURE_TAILCALL_OPT
-                    }
-                }
-
-                if (!optimizedTheBox)
-                {
-                    // If we get here, we have a boxed value class that either wasn't boxed
-                    // locally, or was boxed locally but we were unable to remove the box for
-                    // various reasons.
-                    //
-                    // We can still update the call to invoke the unboxed entry, if the
-                    // boxed value is simple.
-                    //
-                    if (requiresInstMethodTableArg)
-                    {
-                        // Get the method table from the boxed object.
+                        // Update the 'this' pointer to refer to the box payload
                         //
-                        // TODO-CallArgs-REVIEW: Use thisObj here? Differs by gtEffectiveVal.
-                        GenTree* const clonedThisArg = gtClone(thisArg->GetEarlyNode());
-
-                        if (clonedThisArg == nullptr)
-                        {
-                            JITDUMP(
-                                "unboxed entry needs MT arg, but `this` was too complex to clone. Deferring update.\n");
-                        }
-                        else
-                        {
-                            JITDUMP("revising call to invoke unboxed entry with additional method table arg\n");
-
-                            GenTree* const methodTableArg = gtNewMethodTableLookup(clonedThisArg);
-
-                            // Update the 'this' pointer to refer to the box payload
-                            //
-                            GenTree* const payloadOffset = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
-                            GenTree* const boxPayload =
-                                gtNewOperNode(GT_ADD, TYP_BYREF, thisArg->GetEarlyNode(), payloadOffset);
-
-                            assert(thisObj == thisArg->GetEarlyNode());
-                            thisArg->SetEarlyNode(boxPayload);
-                            call->gtCallMethHnd = unboxedEntryMethod;
-                            INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_UNBOXED);
-
-                            // Method attributes will differ because unboxed entry point is shared
-                            //
-                            const DWORD unboxedMethodAttribs = info.compCompHnd->getMethodAttribs(unboxedEntryMethod);
-                            JITDUMP("Updating method attribs from 0x%08x to 0x%08x\n", derivedMethodAttribs,
-                                    unboxedMethodAttribs);
-                            derivedMethod         = unboxedEntryMethod;
-                            pDerivedResolvedToken = &dvInfo.resolvedTokenDevirtualizedUnboxedMethod;
-                            derivedMethodAttribs  = unboxedMethodAttribs;
-
-                            call->gtArgs.InsertInstParam(this, methodTableArg);
-                            Metrics.DevirtualizedCallUnboxedEntry++;
-                        }
-                    }
-                    else
-                    {
-                        JITDUMP("revising call to invoke unboxed entry\n");
-
                         GenTree* const payloadOffset = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
                         GenTree* const boxPayload =
                             gtNewOperNode(GT_ADD, TYP_BYREF, thisArg->GetEarlyNode(), payloadOffset);
 
+                        assert(thisObj == thisArg->GetEarlyNode());
                         thisArg->SetEarlyNode(boxPayload);
                         call->gtCallMethHnd = unboxedEntryMethod;
                         INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_UNBOXED);
+
+                        // Method attributes will differ because unboxed entry point is shared
+                        //
+                        const DWORD unboxedMethodAttribs = info.compCompHnd->getMethodAttribs(unboxedEntryMethod);
+                        JITDUMP("Updating method attribs from 0x%08x to 0x%08x\n", derivedMethodAttribs,
+                                unboxedMethodAttribs);
                         derivedMethod         = unboxedEntryMethod;
-                        pDerivedResolvedToken = &dvInfo.resolvedTokenDevirtualizedUnboxedMethod;
+                        pDerivedResolvedToken = dcInfo->pUnboxedResolvedToken;
+                        derivedMethodAttribs  = unboxedMethodAttribs;
                         Metrics.DevirtualizedCallUnboxedEntry++;
                     }
+                }
+                else
+                {
+                    JITDUMP("revising call to invoke unboxed entry\n");
+
+                    GenTree* const payloadOffset = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
+                    GenTree* const boxPayload =
+                        gtNewOperNode(GT_ADD, TYP_BYREF, thisArg->GetEarlyNode(), payloadOffset);
+
+                    thisArg->SetEarlyNode(boxPayload);
+                    call->gtCallMethHnd = unboxedEntryMethod;
+                    INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_UNBOXED);
+                    derivedMethod         = unboxedEntryMethod;
+                    pDerivedResolvedToken = dcInfo->pUnboxedResolvedToken;
+                    Metrics.DevirtualizedCallUnboxedEntry++;
                 }
             }
             else
@@ -9340,6 +9410,34 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             }
         }
     }
+    else
+    {
+        if (dcInfo->pMethSig->hasTypeArg())
+        {
+            if (((SIZE_T)dcInfo->tokenLookupContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD)
+            {
+                CORINFO_METHOD_HANDLE exactMethodHandle =
+                    (CORINFO_METHOD_HANDLE)((SIZE_T)dcInfo->tokenLookupContext & ~CORINFO_CONTEXTFLAGS_MASK);
+
+                instParam = getLookupTree(dcInfo->pInstParamLookup, GTF_ICON_METHOD_HDL, exactMethodHandle);
+            }
+            else
+            {
+                assert(((SIZE_T)dcInfo->tokenLookupContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS);
+
+                CORINFO_CLASS_HANDLE exactClassHandle =
+                    (CORINFO_CLASS_HANDLE)((SIZE_T)dcInfo->tokenLookupContext & ~CORINFO_CONTEXTFLAGS_MASK);
+
+                instParam = getLookupTree(dcInfo->pInstParamLookup, GTF_ICON_CLASS_HDL, exactClassHandle);
+            }
+        }
+    }
+
+    if (instParam != nullptr)
+    {
+        assert(call->gtArgs.FindWellKnownArg(WellKnownArg::InstParam) == nullptr);
+        call->gtArgs.InsertInstParam(this, instParam);
+    }
 
     // Need to update call info too.
     //
@@ -9350,19 +9448,19 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     //
     *pContextHandle = MAKE_METHODCONTEXT(derivedMethod);
 
-    // Update exact context handle.
-    //
-    if (pExactContextHandle != nullptr)
-    {
-        *pExactContextHandle = exactContext;
-    }
-
     // We might have created a new recursive tail call candidate.
     //
     if (call->CanTailCall() && gtIsRecursiveCall(derivedMethod))
     {
+        assert(block != nullptr);
         setMethodHasRecursiveTailcall();
-        compCurBB->SetFlags(BBF_RECURSIVE_TAILCALL);
+        block->SetFlags(BBF_RECURSIVE_TAILCALL);
+        JITDUMP("[%06u] is a recursive call in tail position\n", dspTreeID(call));
+    }
+    else
+    {
+        JITDUMP("[%06u] is%s in tail position and is%s recursive\n", dspTreeID(call), call->CanTailCall() ? "" : " not",
+                gtIsRecursiveCall(derivedMethod) ? "" : " not");
     }
 
 #ifdef FEATURE_READYTORUN
@@ -9370,6 +9468,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     {
         // For R2R, getCallInfo triggers bookkeeping on the zap
         // side and acquires the actual symbol to call so we need to call it here.
+        assert(pDerivedResolvedToken != nullptr);
 
         // Look up the new call info.
         CORINFO_CALL_INFO derivedCallInfo;
@@ -9380,6 +9479,14 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         call->setEntryPoint(derivedCallInfo.codePointerLookup.constLookup);
     }
 #endif // FEATURE_READYTORUN
+
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("... after devirt...\n");
+        gtDispTree(call);
+    }
+#endif // DEBUG
 }
 
 //------------------------------------------------------------------------
@@ -9880,14 +9987,14 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
 
             // Null out bits we don't use when we're just inlining
             //
-            pInfo->guardedClassHandle                   = nullptr;
-            pInfo->guardedMethodHandle                  = nullptr;
-            pInfo->guardedMethodUnboxedEntryHandle      = nullptr;
-            pInfo->guardedMethodInstantiatedEntryHandle = nullptr;
-            pInfo->originalMethodHandle                 = nullptr;
-            pInfo->originalContextHandle                = nullptr;
-            pInfo->likelihood                           = 0;
-            pInfo->needsMethodContext                   = false;
+            pInfo->guardedClassHandle                = nullptr;
+            pInfo->guardedMethodHandle               = nullptr;
+            pInfo->guardedMethodUnboxedEntryHandle   = nullptr;
+            pInfo->guardedMethodInstParamLookup      = {};
+            pInfo->guardedMethodResolvedToken        = {};
+            pInfo->guardedMethodUnboxedResolvedToken = {};
+            pInfo->originalMethodHandle              = nullptr;
+            pInfo->likelihood                        = 0;
         }
 
         pInfo->methInfo                       = methInfo;
@@ -10454,6 +10561,15 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                     break;
                 }
 
+                case 'H':
+                {
+                    if (strcmp(className, "Half") == 0)
+                    {
+                        result = lookupPrimitiveFloatNamedIntrinsic(method, methodName);
+                    }
+                    break;
+                }
+
                 case 'I':
                 {
                     if ((strcmp(className, "Int32") == 0) || (strcmp(className, "Int64") == 0) ||
@@ -10587,6 +10703,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         if (strcmp(methodName, "Equals") == 0)
                         {
                             result = NI_System_String_Equals;
+                        }
+                        else if (strcmp(methodName, "FastAllocateString") == 0)
+                        {
+                            result = NI_System_String_FastAllocateString;
                         }
                         else if (strcmp(methodName, "get_Chars") == 0)
                         {
@@ -10953,6 +11073,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             else if (strcmp(methodName, "IsKnownConstant") == 0)
                             {
                                 result = NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant;
+                            }
+                            else if (strcmp(methodName, "WriteBarrier") == 0)
+                            {
+                                result = NI_System_Runtime_CompilerServices_RuntimeHelpers_WriteBarrier;
                             }
                             else if (strcmp(methodName, "IsReferenceOrContainsReferences") == 0)
                             {
@@ -11691,6 +11815,20 @@ NamedIntrinsic Compiler::lookupPrimitiveFloatNamedIntrinsic(CORINFO_METHOD_HANDL
             else if (strcmp(methodName, "Truncate") == 0)
             {
                 result = NI_System_Math_Truncate;
+            }
+            break;
+        }
+
+        case 'o':
+        {
+            if (strncmp(methodName, "op_", 3) == 0)
+            {
+                methodName += 3;
+
+                if (strcmp(methodName, "Explicit") == 0)
+                {
+                    result = NI_System_Half_op_Explicit;
+                }
             }
             break;
         }

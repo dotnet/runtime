@@ -33,9 +33,9 @@
 class ExceptionNative
 {
 public:
-    static FCDECL1(FC_BOOL_RET, IsImmutableAgileException, Object* pExceptionUNSAFE);
-    static FCDECL1(FC_BOOL_RET, IsTransient, INT32 hresult);
-    static FCDECL0(VOID, PrepareForForeignExceptionRaise);
+    FCDECL1(static FC_BOOL_RET, IsImmutableAgileException, Object* pExceptionUNSAFE);
+    FCDECL1(static FC_BOOL_RET, IsTransient, INT32 hresult);
+    FCDECL0(static VOID, PrepareForForeignExceptionRaise);
 
 #ifdef FEATURE_COMINTEROP
     // NOTE: caller cleans up any partially initialized BSTRs in pED
@@ -43,9 +43,9 @@ public:
 #endif
 
     // Note: these are on the PInvoke class to hide these from the user.
-    static FCDECL0(EXCEPTION_POINTERS*, GetExceptionPointers);
-    static FCDECL0(INT32, GetExceptionCode);
-    static FCDECL0(UINT32, GetExceptionCount);
+    FCDECL0(static EXCEPTION_POINTERS*, GetExceptionPointers);
+    FCDECL0(static INT32, GetExceptionCode);
+    FCDECL0(static UINT32, GetExceptionCount);
 };
 
 extern "C" void QCALLTYPE ExceptionNative_GetFrozenStackTrace(QCall::ObjectHandleOnStack exception, QCall::ObjectHandleOnStack ret);
@@ -79,7 +79,7 @@ extern "C" void QCALLTYPE ExceptionNative_ThrowClassAccessException(MethodDesc* 
 class Buffer
 {
 public:
-    static FCDECL3(VOID, BulkMoveWithWriteBarrier, void *dst, void *src, size_t byteCount);
+    FCDECL3(static VOID, BulkMoveWithWriteBarrier, void *dst, void *src, size_t byteCount);
 };
 
 const UINT MEM_PRESSURE_COUNT = 4;
@@ -157,27 +157,27 @@ public:
     static FORCEINLINE UINT64 InterlockedAdd(UINT64 *pAugend, UINT64 addend);
     static FORCEINLINE UINT64 InterlockedSub(UINT64 *pMinuend, UINT64 subtrahend);
 
-    static FCDECL0(INT64,   GetTotalPauseDuration);
-    static FCDECL2(void,    GetMemoryInfo, Object* objUNSAFE, int kind);
-    static FCDECL0(UINT32,  GetMemoryLoad);
-    static FCDECL0(int,     GetGcLatencyMode);
-    static FCDECL1(int,     SetGcLatencyMode, int newLatencyMode);
-    static FCDECL0(int,     GetLOHCompactionMode);
-    static FCDECL1(void,    SetLOHCompactionMode, int newLOHCompactionyMode);
-    static FCDECL2(FC_BOOL_RET, RegisterForFullGCNotification, UINT32 gen2Percentage, UINT32 lohPercentage);
-    static FCDECL0(FC_BOOL_RET, CancelFullGCNotification);
-    static FCDECL1(int,     GetGenerationInternal, Object* objUNSAFE);
-    static FCDECL0(UINT64,  GetSegmentSize);
-    static FCDECL0(int,     GetLastGCPercentTimeInGC);
-    static FCDECL1(UINT64,  GetGenerationSize, int gen);
+    FCDECL0(static INT64,   GetTotalPauseDuration);
+    FCDECL2(static void,    GetMemoryInfo, Object* objUNSAFE, int kind);
+    FCDECL0(static UINT32,  GetMemoryLoad);
+    FCDECL0(static int,     GetGcLatencyMode);
+    FCDECL1(static int,     SetGcLatencyMode, int newLatencyMode);
+    FCDECL0(static int,     GetLOHCompactionMode);
+    FCDECL1(static void,    SetLOHCompactionMode, int newLOHCompactionyMode);
+    FCDECL2(static FC_BOOL_RET, RegisterForFullGCNotification, UINT32 gen2Percentage, UINT32 lohPercentage);
+    FCDECL0(static FC_BOOL_RET, CancelFullGCNotification);
+    FCDECL1(static int,     GetGenerationInternal, Object* objUNSAFE);
+    FCDECL0(static UINT64,  GetSegmentSize);
+    FCDECL0(static int,     GetLastGCPercentTimeInGC);
+    FCDECL1(static UINT64,  GetGenerationSize, int gen);
 
-    static FCDECL0(int,     GetMaxGeneration);
-    static FCDECL0(FC_BOOL_RET, IsServerGC);
-    static FCDECL1(void,    SuppressFinalize, Object *obj);
-    static FCDECL2(int,     CollectionCount, INT32 generation, INT32 getSpecialGCCount);
+    FCDECL0(static int,     GetMaxGeneration);
+    FCDECL0(static FC_BOOL_RET, IsServerGC);
+    FCDECL1(static void,    SuppressFinalize, Object *obj);
+    FCDECL2(static int,     CollectionCount, INT32 generation, INT32 getSpecialGCCount);
 
-    static FCDECL0(INT64,    GetAllocatedBytesForCurrentThread);
-    static FCDECL0(INT64,    GetTotalAllocatedBytesApproximate);
+    FCDECL0(static INT64,    GetAllocatedBytesForCurrentThread);
+    FCDECL0(static INT64,    GetTotalAllocatedBytesApproximate);
 
     NOINLINE static void SendEtwRemoveMemoryPressureEvent(UINT64 bytesAllocated);
     static void SendEtwAddMemoryPressureEvent(UINT64 bytesAllocated);
@@ -242,8 +242,8 @@ class EnvironmentNative
 {
 public:
     // Functions on the System.Environment class
-    static FCDECL1(VOID,SetExitCode,INT32 exitcode);
-    static FCDECL0(INT32, GetExitCode);
+    FCDECL1(static VOID,SetExitCode,INT32 exitcode);
+    FCDECL0(static INT32, GetExitCode);
 };
 
 extern "C" void QCALLTYPE Environment_Exit(INT32 exitcode);
@@ -262,8 +262,8 @@ extern "C" void QCALLTYPE FileLoadException_GetMessageForHR(UINT32 hresult, QCal
 class ObjectNative
 {
 public:
-    static FCDECL1(INT32, TryGetHashCode, Object* vThisRef);
-    static FCDECL2(FC_BOOL_RET, ContentEquals, Object *pThisRef, Object *pCompareRef);
+    FCDECL1(static INT32, TryGetHashCode, Object* vThisRef);
+    FCDECL2(static FC_BOOL_RET, ContentEquals, Object *pThisRef, Object *pCompareRef);
 };
 
 extern "C" INT32 QCALLTYPE ObjectNative_GetHashCodeSlow(QCall::ObjectHandleOnStack objHandle);
@@ -272,23 +272,23 @@ extern "C" void QCALLTYPE ObjectNative_AllocateUninitializedClone(QCall::ObjectH
 class COMInterlocked
 {
 public:
-        static FCDECL2(INT32, Exchange32, INT32 *location, INT32 value);
-        static FCDECL2_IV(INT64, Exchange64, INT64 *location, INT64 value);
-        static FCDECL3(INT32, CompareExchange32, INT32* location, INT32 value, INT32 comparand);
-        static FCDECL3_IVV(INT64, CompareExchange64, INT64* location, INT64 value, INT64 comparand);
-        static FCDECL2(LPVOID, ExchangeObject, LPVOID* location, LPVOID value);
-        static FCDECL3(LPVOID, CompareExchangeObject, LPVOID* location, LPVOID value, LPVOID comparand);
-        static FCDECL2(INT32, ExchangeAdd32, INT32 *location, INT32 value);
-        static FCDECL2_IV(INT64, ExchangeAdd64, INT64 *location, INT64 value);
+        FCDECL2(static INT32, Exchange32, INT32 *location, INT32 value);
+        FCDECL2_IV(static INT64, Exchange64, INT64 *location, INT64 value);
+        FCDECL3(static INT32, CompareExchange32, INT32* location, INT32 value, INT32 comparand);
+        FCDECL3_IVV(static INT64, CompareExchange64, INT64* location, INT64 value, INT64 comparand);
+        FCDECL2(static LPVOID, ExchangeObject, LPVOID* location, LPVOID value);
+        FCDECL3(static LPVOID, CompareExchangeObject, LPVOID* location, LPVOID value, LPVOID comparand);
+        FCDECL2(static INT32, ExchangeAdd32, INT32 *location, INT32 value);
+        FCDECL2_IV(static INT64, ExchangeAdd64, INT64 *location, INT64 value);
 };
 
 class MethodTableNative {
 public:
-    static FCDECL1(UINT32, GetNumInstanceFieldBytes, MethodTable* mt);
-    static FCDECL1(CorElementType, GetPrimitiveCorElementType, MethodTable* mt);
-    static FCDECL2(MethodTable*, GetMethodTableMatchingParentClass, MethodTable* mt, MethodTable* parent);
-    static FCDECL1(MethodTable*, InstantiationArg0, MethodTable* mt);
-    static FCDECL1(OBJECTHANDLE, GetLoaderAllocatorHandle, MethodTable* mt);
+    FCDECL1(static UINT32, GetNumInstanceFieldBytes, MethodTable* mt);
+    FCDECL1(static CorElementType, GetPrimitiveCorElementType, MethodTable* mt);
+    FCDECL2(static MethodTable*, GetMethodTableMatchingParentClass, MethodTable* mt, MethodTable* parent);
+    FCDECL1(static MethodTable*, InstantiationArg0, MethodTable* mt);
+    FCDECL1(static OBJECTHANDLE, GetLoaderAllocatorHandle, MethodTable* mt);
 };
 
 extern "C" BOOL QCALLTYPE MethodTable_AreTypesEquivalent(MethodTable* mta, MethodTable* mtb);

@@ -17,7 +17,6 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 public class ComWrappersDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "ComWrappers";
-    protected override string DumpType => "full";
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]

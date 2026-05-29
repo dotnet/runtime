@@ -20,12 +20,10 @@ SET_DEFAULT_DEBUG_CHANNEL(MISC);
 #include "pal/virtual.h"
 #include "pal/cgroup.h"
 #include <algorithm>
-#if defined(__APPLE__) || defined(__FreeBSD__)
-#include <sys/param.h>
-#include <sys/mount.h>
-#elif !defined(__HAIKU__)
+
+#if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+
 #include <sys/vfs.h>
-#endif
 
 #define CGROUP2_SUPER_MAGIC 0x63677270
 
@@ -87,9 +85,6 @@ private:
         // modes because both of those involve cgroup v1 controllers managing
         // resources.
 
-#if !HAVE_NON_LEGACY_STATFS || TARGET_OPENBSD || TARGET_WASM
-        return 0;
-#else
         struct statfs stats;
         int result = statfs("/sys/fs/cgroup", &stats);
 
@@ -107,7 +102,6 @@ private:
             // been seen in the wild.
             return 1;
         }
-#endif
     }
 
     static bool IsCGroup1CpuSubsystem(const char *strTok){
@@ -525,3 +519,22 @@ PAL_GetCpuLimit(UINT* val)
 
     return CGroup::GetCpuLimit(val);
 }
+
+#else // !(TARGET_LINUX || TARGET_ANDROID)
+
+void InitializeCGroup()
+{
+}
+
+void CleanupCGroup()
+{
+}
+
+BOOL
+PALAPI
+PAL_GetCpuLimit(UINT* val)
+{
+    return FALSE;
+}
+
+#endif // TARGET_LINUX || TARGET_ANDROID

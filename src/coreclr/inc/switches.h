@@ -12,9 +12,6 @@
 
 #define GC_CONFIG_DRIVEN
 
-// define this to test data safety for the DAC. See code:DataTest::TestDataSafety.
-#define TEST_DATA_CONSISTENCY
-
 #if !defined(STRESS_LOG) && !defined(FEATURE_UTILCODE_NO_DEPENDENCIES)
 #define STRESS_LOG
 #endif

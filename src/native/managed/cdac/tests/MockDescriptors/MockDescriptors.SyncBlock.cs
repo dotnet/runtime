@@ -33,12 +33,14 @@ internal sealed class MockInteropSyncBlockInfo : TypedView
     private const string RCWFieldName = "RCW";
     private const string CCWFieldName = "CCW";
     private const string CCFFieldName = "CCF";
+    private const string TaggedMemoryFieldName = "TaggedMemory";
 
     public static Layout<MockInteropSyncBlockInfo> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("InteropSyncBlockInfo", architecture)
             .AddPointerField(RCWFieldName)
             .AddPointerField(CCWFieldName)
             .AddPointerField(CCFFieldName)
+            .AddPointerField(TaggedMemoryFieldName)
             .Build<MockInteropSyncBlockInfo>();
 
     public ulong RCW
@@ -57,6 +59,12 @@ internal sealed class MockInteropSyncBlockInfo : TypedView
     {
         get => ReadPointerField(CCFFieldName);
         set => WritePointerField(CCFFieldName, value);
+    }
+
+    public ulong TaggedMemory
+    {
+        get => ReadPointerField(TaggedMemoryFieldName);
+        set => WritePointerField(TaggedMemoryFieldName, value);
     }
 }
 
@@ -86,8 +94,6 @@ internal sealed class MockSyncBlock : TypedView
         set => WritePointerField(LinkNextFieldName, value);
     }
 
-    public ulong CleanupLinkAddress
-        => GetFieldAddress(LinkNextFieldName);
 }
 
 internal sealed class MockSyncBlockBuilder
@@ -139,7 +145,7 @@ internal sealed class MockSyncBlockBuilder
 
         if (initializeCacheAndGlobals)
         {
-            MockMemorySpace.HeapFragment syncBlockCacheFragment = AllocateAndAdd((ulong)SyncBlockCacheLayout.Size, "SyncBlockCache");
+            MockMemorySpace.HeapFragment syncBlockCacheFragment = _allocator.Allocate((ulong)SyncBlockCacheLayout.Size, "SyncBlockCache");
             _syncBlockCache = SyncBlockCacheLayout.Create(syncBlockCacheFragment);
             _syncBlockCache.FreeSyncTableIndex = 1;
 
@@ -153,10 +159,11 @@ internal sealed class MockSyncBlockBuilder
         ulong ccw,
         ulong ccf,
         bool hasInteropInfo = true,
-        string name = "SyncBlock")
+        string name = "SyncBlock",
+        ulong taggedMemory = 0)
     {
         int totalSize = SyncBlockLayout.Size + (hasInteropInfo ? InteropSyncBlockInfoLayout.Size : 0);
-        MockMemorySpace.HeapFragment fragment = AllocateAndAdd((ulong)totalSize, name);
+        MockMemorySpace.HeapFragment fragment = _allocator.Allocate((ulong)totalSize, name);
         MockSyncBlock syncBlock = SyncBlockLayout.Create(
             fragment.Data.AsMemory(0, SyncBlockLayout.Size),
             fragment.Address);
@@ -170,6 +177,7 @@ internal sealed class MockSyncBlockBuilder
             interopInfo.RCW = rcw;
             interopInfo.CCW = ccw;
             interopInfo.CCF = ccf;
+            interopInfo.TaggedMemory = taggedMemory;
             syncBlock.InteropInfo = interopAddress;
         }
 
@@ -183,17 +191,18 @@ internal sealed class MockSyncBlockBuilder
     /// <param name="ccw">CCW pointer to store (pass 0 for none).</param>
     /// <param name="ccf">CCF pointer to store (pass 0 for none).</param>
     /// <param name="hasInteropInfo">When false, the InteropInfo pointer in the SyncBlock is left null.</param>
+    /// <param name="taggedMemory">Tagged memory pointer to store (pass 0 for none).</param>
     internal MockSyncBlock AddSyncBlockToCleanupList(
-        ulong rcw, ulong ccw, ulong ccf, bool hasInteropInfo = true)
+        ulong rcw, ulong ccw, ulong ccf, bool hasInteropInfo = true, ulong taggedMemory = 0)
     {
         if (_syncBlockCache is null)
         {
             throw new InvalidOperationException("Cleanup-list support requires the cache/global initialization path.");
         }
 
-        MockSyncBlock syncBlock = AddSyncBlock(rcw, ccw, ccf, hasInteropInfo, "SyncBlock (cleanup)");
+        MockSyncBlock syncBlock = AddSyncBlock(rcw, ccw, ccf, hasInteropInfo, "SyncBlock (cleanup)", taggedMemory);
         syncBlock.LinkNext = _cleanupListHeadAddress;
-        _cleanupListHeadAddress = syncBlock.CleanupLinkAddress;
+        _cleanupListHeadAddress = syncBlock.Address;
         _syncBlockCache.CleanupBlockList = _cleanupListHeadAddress;
         return syncBlock;
     }
@@ -201,15 +210,8 @@ internal sealed class MockSyncBlockBuilder
     private ulong AddPointerGlobal(string name, ulong value)
     {
         TargetTestHelpers helpers = Builder.TargetTestHelpers;
-        MockMemorySpace.HeapFragment global = AllocateAndAdd((ulong)helpers.PointerSize, $"[global pointer] {name}");
+        MockMemorySpace.HeapFragment global = _allocator.Allocate((ulong)helpers.PointerSize, $"[global pointer] {name}");
         helpers.WritePointer(global.Data, value);
         return global.Address;
-    }
-
-    private MockMemorySpace.HeapFragment AllocateAndAdd(ulong size, string name)
-    {
-        MockMemorySpace.HeapFragment fragment = _allocator.Allocate(size, name);
-        Builder.AddHeapFragment(fragment);
-        return fragment;
     }
 }
