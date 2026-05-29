@@ -117,33 +117,37 @@ export interface CoreClrTestResult extends Rules.Provider {
 }
 
 // ============================================================================
-//  Internal test runner rule (kind: "test" → auto-tagged bxl-kind:test)
+//  Shared test runner rule (kind: "test" → auto-tagged bxl-kind:test)
+//
+//  Used by both coreclr_test (C#) and il_coreclr_test (IL) to run a
+//  compiled test DLL via corerun.
 // ============================================================================
 
-interface CoreClrTestRunnerAttrs {
+export interface CorerunTestRunnerAttrs {
     name: string;
     binary: Rules.Artifact;
-    runtimeFiles: Rules.Artifact[];
+    runtimeFiles?: Rules.Artifact[];
     env?: {name: string, value: string}[];
     flaky?: boolean;
     tags?: string[];
 }
 
-interface CoreClrTestRunnerResult extends Rules.Provider {
+export interface CorerunTestRunnerResult extends Rules.Provider {
     testInfo: Rules.TestInfo;
     defaultInfo: Rules.DefaultInfo;
 }
 
-const coreclrTestRunner = Rules.rule<CoreClrTestRunnerAttrs, CoreClrTestRunnerAttrs, Rules.Toolchain>({
-    doc: "Run a CoreCLR test DLL via corerun.",
+export const corerunTestRunner = Rules.rule<CorerunTestRunnerAttrs, CorerunTestRunnerAttrs, Rules.Toolchain>({
+    doc: "Run a test DLL via corerun.",
     kind: "test",
     resolve: (attrs, _resolver) => attrs,
     impl: (ctx) => {
         const corerunPath = Defs.CORE_ROOT_CORERUN.path.toDiagnosticString();
         const dllName = ctx.args.binary.shortPath;
-
         const dllPath = ctx.args.binary.path.toDiagnosticString();
-        const runtimeSources = ctx.args.runtimeFiles.map(f => `# runtime-source: ${f.path.toDiagnosticString()}`);        const envLines = (ctx.args.env || []).map(e => `export "${e.name}=${e.value}"`);
+        const runtimeFiles = ctx.args.runtimeFiles || [];
+        const runtimeSources = runtimeFiles.map(f => `# runtime-source: ${f.path.toDiagnosticString()}`);
+        const envLines = (ctx.args.env || []).map(e => `export "${e.name}=${e.value}"`);
         const runner = ctx.actions.writeFile(
             ctx.actions.declareOutput(`${ctx.args.name}.runner.sh`),
             [
@@ -163,7 +167,7 @@ const coreclrTestRunner = Rules.rule<CoreClrTestRunnerAttrs, CoreClrTestRunnerAt
             env: ctx.args.env,
             deps: [
                 ctx.args.binary,
-                ...ctx.args.runtimeFiles,
+                ...runtimeFiles,
             ],
             size: "small",
             flaky: ctx.args.flaky,
@@ -171,8 +175,8 @@ const coreclrTestRunner = Rules.rule<CoreClrTestRunnerAttrs, CoreClrTestRunnerAt
         }), ctx.runActions);
 
         return [
-            <CoreClrTestRunnerResult>{
-                kind: "CoreClrTestRunnerResult",
+            <CorerunTestRunnerResult>{
+                kind: "CorerunTestRunnerResult",
                 testInfo: ti,
                 defaultInfo: Rules.defaultInfo({ files: [] }),
             },
@@ -230,7 +234,7 @@ export function coreclr_test(args: CoreClrTestArguments): CoreClrTestResult {
     const shouldRun = args.run !== false && !taggedManual;
     const testRunnerTarget = !shouldRun
         ? undefined
-        : coreclrTestRunner({
+        : corerunTestRunner({
             name: `${args.name}_test`,
             binary: binaryCompileInfo.binary,
             runtimeFiles: runtimeFiles,
@@ -239,7 +243,7 @@ export function coreclr_test(args: CoreClrTestArguments): CoreClrTestResult {
             tags: args.tags,
         });
     const testResult = testRunnerTarget !== undefined
-        ? Rules.getProvider<CoreClrTestRunnerResult>(testRunnerTarget, "CoreClrTestRunnerResult")
+        ? Rules.getProvider<CorerunTestRunnerResult>(testRunnerTarget, "CorerunTestRunnerResult")
         : undefined;
 
     return {

@@ -79,65 +79,6 @@ const ilCompile = Rules.rule<IlCompileAttrs, IlCompileResolved, Rules.Toolchain>
 });
 
 // ============================================================================
-//  Internal test runner rule (kind: "test" → auto-tagged bxl-kind:test)
-// ============================================================================
-
-interface IlTestRunnerAttrs {
-    name: string;
-    binary: Rules.Artifact;
-    env?: {name: string, value: string}[];
-    flaky?: boolean;
-    tags?: string[];
-}
-
-interface IlTestRunnerResult extends Rules.Provider {
-    testInfo: Rules.TestInfo;
-    defaultInfo: Rules.DefaultInfo;
-}
-
-const ilTestRunner = Rules.rule<IlTestRunnerAttrs, IlTestRunnerAttrs, Rules.Toolchain>({
-    doc: "Run an IL test DLL via corerun.",
-    kind: "test",
-    resolve: (attrs, _resolver) => attrs,
-    impl: (ctx) => {
-        const corerunPath = Defs.CORE_ROOT_CORERUN.path.toDiagnosticString();
-        const dllName = ctx.args.binary.shortPath;
-
-        const dllPath = ctx.args.binary.path.toDiagnosticString();
-        const envLines = (ctx.args.env || []).map(e => `export "${e.name}=${e.value}"`);
-        const runner = ctx.actions.writeFile(
-            ctx.actions.declareOutput(`${ctx.args.name}.runner.sh`),
-            [
-                "#!/usr/bin/env bash",
-                `# dll-source: ${dllPath}`,
-                "core_root=\"${CORE_ROOT:-${HELIX_CORRELATION_PAYLOAD:-}}\"",
-                "corerun=\"${core_root:+$core_root/corerun}\"",
-                "corerun=\"${corerun:-" + corerunPath + "}\"",
-                ...envLines,
-                `exec "$corerun" "$(dirname "$0")/${dllName}" "$@"`,
-            ]);
-
-        const ti = Rules.scheduleTestRunner(ctx.args.name, Rules.testRunInfo({
-            executable: runner,
-            successExitCodes: [100],
-            env: ctx.args.env,
-            deps: [ctx.args.binary],
-            size: "small",
-            flaky: ctx.args.flaky,
-            tags: ctx.args.tags,
-        }), ctx.runActions);
-
-        return [
-            <IlTestRunnerResult>{
-                kind: "IlTestRunnerResult",
-                testInfo: ti,
-                defaultInfo: Rules.defaultInfo({ files: [] }),
-            },
-        ];
-    },
-});
-
-// ============================================================================
 //  il_coreclr_test public API
 // ============================================================================
 
@@ -179,7 +120,7 @@ export function il_coreclr_test(args: IlCoreClrTestArguments): IlCoreClrTestResu
     const shouldRun = args.run !== false && !taggedManual;
     const testRunnerTarget = !shouldRun
         ? undefined
-        : ilTestRunner({
+        : corerunTestRunner({
             name: `${args.name}_test`,
             binary: ilResult.binary,
             env: args.env,
@@ -187,7 +128,7 @@ export function il_coreclr_test(args: IlCoreClrTestArguments): IlCoreClrTestResu
             tags: args.tags,
         });
     const testResult = testRunnerTarget !== undefined
-        ? Rules.getProvider<IlTestRunnerResult>(testRunnerTarget, "IlTestRunnerResult")
+        ? Rules.getProvider<CorerunTestRunnerResult>(testRunnerTarget, "CorerunTestRunnerResult")
         : undefined;
 
     return {
