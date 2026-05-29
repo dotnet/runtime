@@ -13,7 +13,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 internal sealed class ManagedTypeSource_1 : IManagedTypeSource
 {
     private readonly Target _target;
-    private readonly Dictionary<string, Target.TypeInfo> _typeInfoCache = new();
+    private readonly Dictionary<string, Target.TypeInfo?> _typeInfoCache = new();
     private readonly Dictionary<string, TypeHandle> _typeHandleCache = new();
     private readonly Dictionary<(string Fqn, string FieldName), TargetPointer> _fieldDescCache = new();
     private bool _inSearch;
@@ -40,12 +40,16 @@ internal sealed class ManagedTypeSource_1 : IManagedTypeSource
 
     public bool TryGetTypeInfo(string fullyQualifiedName, out Target.TypeInfo info)
     {
-        if (_typeInfoCache.TryGetValue(fullyQualifiedName, out info))
-            return true;
+        if (_typeInfoCache.TryGetValue(fullyQualifiedName, out Target.TypeInfo? cached))
+        {
+            info = cached ?? default;
+            return cached.HasValue;
+        }
 
         // Re-entrancy guard: if we're already searching for a type and we recurse
         // (e.g., LayoutPair -> ManagedTypeSource -> IData -> LayoutPair), short-circuit
-        // to break the cycle. The outer search will continue and may succeed.
+        // to break the cycle. Do NOT cache the negative result here — the outer search
+        // may legitimately succeed for this same name once the recursion unwinds.
         if (_inSearch)
         {
             info = default;
@@ -56,7 +60,10 @@ internal sealed class ManagedTypeSource_1 : IManagedTypeSource
         try
         {
             if (!TryBuildTypeInfo(fullyQualifiedName, out info))
+            {
+                _typeInfoCache[fullyQualifiedName] = null;
                 return false;
+            }
 
             _typeInfoCache[fullyQualifiedName] = info;
             return true;
@@ -78,10 +85,13 @@ internal sealed class ManagedTypeSource_1 : IManagedTypeSource
     public bool TryGetTypeHandle(string fullyQualifiedName, out TypeHandle typeHandle)
     {
         if (_typeHandleCache.TryGetValue(fullyQualifiedName, out typeHandle))
-            return true;
+            return !typeHandle.IsNull;
 
         if (!TryResolveType(fullyQualifiedName, out typeHandle, out _, out _))
+        {
+            _typeHandleCache[fullyQualifiedName] = new TypeHandle(TargetPointer.Null);
             return false;
+        }
 
         _typeHandleCache[fullyQualifiedName] = typeHandle;
         return true;

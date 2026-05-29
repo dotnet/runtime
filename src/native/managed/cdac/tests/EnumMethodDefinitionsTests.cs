@@ -175,7 +175,7 @@ public unsafe class EnumMethodDefinitionsTests
         fixed (byte* ptr = s_metadataBytes)
         {
             var reader = new MetadataReader(ptr, s_metadataBytes.Length);
-            var emd = new ClrDataModule.EnumMethodDefinitions(reader, flags, TargetPointer.Null);
+            var emd = new ClrDataModule.EnumMethodDefinitions(reader, flags, 0);
             emd.Start(fullName);
 
             int count = 0;
@@ -200,7 +200,7 @@ public unsafe class EnumMethodDefinitionsTests
         fixed (byte* ptr = s_metadataBytes)
         {
             var reader = new MetadataReader(ptr, s_metadataBytes.Length);
-            var emd = new ClrDataModule.EnumMethodDefinitions(reader, 0, TargetPointer.Null);
+            var emd = new ClrDataModule.EnumMethodDefinitions(reader, 0, 0);
 
             Assert.Throws<ArgumentException>(() => emd.Start(fullName));
         }
