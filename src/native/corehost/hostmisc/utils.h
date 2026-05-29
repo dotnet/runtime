@@ -218,6 +218,11 @@ extern "C" {
 // caller-supplied buffer (out_name is set to empty).
 bool utils_get_filename(const pal_char_t* path, pal_char_t* out_name, size_t out_name_len);
 
+// Retrieves the value of a test-only environment variable. Returns NULL when the
+// variable is unset or when the product binary is not stamped as a test build.
+// Caller must free() the returned pointer.
+pal_char_t* utils_test_only_getenv(const pal_char_t* name);
+
 #ifdef __cplusplus
 }
 #endif

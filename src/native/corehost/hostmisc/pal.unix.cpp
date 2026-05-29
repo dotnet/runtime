@@ -495,16 +495,14 @@ bool get_install_location_from_file(const pal::string_t& file_path, bool& file_f
 
 bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
 {
-    //  ***Used only for testing***
-    pal::string_t environment_override;
-    if (test_only_getenv(_X("_DOTNET_TEST_GLOBALLY_REGISTERED_PATH"), &environment_override))
-    {
-        recv->assign(environment_override);
-        return true;
-    }
-    //  ***************************
+    recv->clear();
+    pal::char_t* dir = pal_get_dotnet_self_registered_dir();
+    if (dir == nullptr)
+        return false;
 
-    return pal::get_dotnet_self_registered_dir_for_arch(get_current_arch(), recv);
+    recv->assign(dir);
+    free(dir);
+    return true;
 }
 
 bool pal::get_dotnet_self_registered_dir_for_arch(pal::architecture arch, pal::string_t* recv)
@@ -562,7 +560,13 @@ namespace
 
 bool pal::get_default_installation_dir(pal::string_t* recv)
 {
-    return get_default_installation_dir_for_arch(get_current_arch(), recv);
+    pal::char_t* dir = pal_get_default_installation_dir();
+    if (dir == nullptr)
+        return false;
+
+    recv->assign(dir);
+    free(dir);
+    return true;
 }
 
 bool pal::get_default_installation_dir_for_arch(pal::architecture arch, pal::string_t* recv)
@@ -1156,22 +1160,7 @@ bool pal::is_running_in_wow64()
 
 bool pal::is_emulating_x64()
 {
-    int is_translated_process = 0;
-#if defined(TARGET_OSX)
-    size_t size = sizeof(is_translated_process);
-    if (sysctlbyname("sysctl.proc_translated", &is_translated_process, &size, NULL, 0) == -1)
-    {
-        trace::info(_X("Could not determine whether the current process is running under Rosetta."));
-        if (errno != ENOENT)
-        {
-            trace::info(_X("Call to sysctlbyname failed: %s"), strerror(errno).c_str());
-        }
-
-        return false;
-    }
-#endif
-
-    return is_translated_process == 1;
+    return pal_is_emulating_x64();
 }
 
 bool pal::are_paths_equal_with_normalized_casing(const string_t& path1, const string_t& path2)

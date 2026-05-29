@@ -391,7 +391,13 @@ namespace
 
 bool pal::get_default_installation_dir(pal::string_t* recv)
 {
-    return get_default_installation_dir_for_arch(get_current_arch(), recv);
+    pal::char_t* dir = pal_get_default_installation_dir();
+    if (dir == nullptr)
+        return false;
+
+    recv->assign(dir);
+    free(dir);
+    return true;
 }
 
 bool pal::get_default_installation_dir_for_arch(pal::architecture arch, pal::string_t* recv)
@@ -504,16 +510,14 @@ pal::string_t pal::get_dotnet_self_registered_config_location(pal::architecture 
 
 bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
 {
-    //  ***Used only for testing***
-    pal::string_t environmentOverride;
-    if (test_only_getenv(_X("_DOTNET_TEST_GLOBALLY_REGISTERED_PATH"), &environmentOverride))
-    {
-        recv->assign(environmentOverride);
-        return true;
-    }
-    //  ***************************
+    recv->clear();
+    pal::char_t* dir = pal_get_dotnet_self_registered_dir();
+    if (dir == nullptr)
+        return false;
 
-    return get_dotnet_self_registered_dir_for_arch(get_current_arch(), recv);
+    recv->assign(dir);
+    free(dir);
+    return true;
 }
 
 bool pal::get_dotnet_self_registered_dir_for_arch(pal::architecture arch, pal::string_t* recv)
@@ -1054,44 +1058,9 @@ bool pal::is_running_in_wow64()
     return ::pal_is_running_in_wow64();
 }
 
-typedef BOOL (WINAPI* is_wow64_process2)(
-    HANDLE hProcess,
-    USHORT *pProcessMachine,
-    USHORT *pNativeMachine
-);
-
 bool pal::is_emulating_x64()
 {
-#if defined(TARGET_AMD64)
-    auto kernel32 = LoadLibraryExW(L"kernel32.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
-    if (kernel32 == nullptr)
-    {
-        // Loading kernel32.dll failed, log the error and continue.
-        trace::info(_X("Could not load 'kernel32.dll': %u"), GetLastError());
-        return false;
-    }
-
-    is_wow64_process2 is_wow64_process2_func = (is_wow64_process2)::GetProcAddress(kernel32, "IsWow64Process2");
-    if (is_wow64_process2_func == nullptr)
-    {
-        // Could not find IsWow64Process2.
-        return false;
-    }
-
-    USHORT process_machine;
-    USHORT native_machine;
-    if (!is_wow64_process2_func(GetCurrentProcess(), &process_machine, &native_machine))
-    {
-        // IsWow64Process2 failed. Log the error and continue.
-        trace::info(_X("Call to IsWow64Process2 failed: %u"), GetLastError());
-        return false;
-    }
-
-    // If we are running targeting x64 on a non-x64 machine, we are emulating
-    return native_machine != IMAGE_FILE_MACHINE_AMD64;
-#else
-    return false;
-#endif
+    return pal_is_emulating_x64();
 }
 
 bool pal::are_paths_equal_with_normalized_casing(const string_t& path1, const string_t& path2)

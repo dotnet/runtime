@@ -112,6 +112,11 @@ typedef char pal_char_t;
 
 #endif // _WIN32
 
+#include "configure.h"
+
+// Wide-stringify the value of a macro: _STRINGIFY(FOO) -> _X("<expanded value of FOO>").
+#define _STRINGIFY(s) _X(s)
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -169,6 +174,28 @@ typedef bool (*pal_readdir_callback_t)(const pal_char_t* entry_name, void* ctx);
 // stop; returns false if the directory could not be opened.
 bool pal_readdir_onlydirectories(const pal_char_t* path, pal_readdir_callback_t callback, void* ctx);
 
+// Returns true if the current process is an x64 process running under
+// emulation on a non-x64 host (Windows x64-on-arm64 via WOW64, or macOS
+// x64-on-arm64 via Rosetta). Returns false otherwise.
+bool pal_is_emulating_x64(void);
+
+// Returns the directory containing the globally-registered .NET install for
+// the current architecture, or NULL if no such registration exists. Caller
+// should free() the returned pointer.
+// Honors the test-only env var _DOTNET_TEST_GLOBALLY_REGISTERED_PATH and
+// (on Windows) _DOTNET_TEST_REGISTRY_PATH.
+pal_char_t* pal_get_dotnet_self_registered_dir(void);
+
+// Returns the default install directory of .NET for the current architecture,
+// or NULL on failure. Caller should free() the returned pointer.
+// Honors the test-only env var _DOTNET_TEST_DEFAULT_INSTALL_PATH.
+pal_char_t* pal_get_default_installation_dir(void);
+
+// Returns a display string identifying the location consulted to discover the
+// globally-registered install dir for the current architecture (registry path
+// on Windows, file path on Unix). Caller should free() the returned pointer.
+pal_char_t* pal_get_dotnet_self_registered_config_location(void);
+
 #ifdef __cplusplus
 }
 #endif
@@ -211,8 +238,6 @@ bool pal_readdir_onlydirectories(const pal_char_t* path, pal_readdir_callback_t 
 
 #endif
 
-#include "configure.h"
-
 // When running on a platform that is not supported in RID fallback graph (because it was unknown
 // at the time the SharedFX in question was built), we need to use a reasonable fallback RID to allow
 // consuming the native assets.
@@ -231,8 +256,6 @@ bool pal_readdir_onlydirectories(const pal_char_t* path, pal_readdir_callback_t 
 #define LIB_PREFIX "lib"
 #define LIB_FILE_EXT ".so"
 #endif
-
-#define _STRINGIFY(s) _X(s)
 
 #define LIB_NAME(NAME) LIB_PREFIX NAME
 #define LIB_FILE_NAME(NAME) LIB_PREFIX NAME LIB_FILE_EXT

@@ -538,3 +538,13 @@ bool test_only_getenv(const pal::char_t* name, pal::string_t* recv)
 
     return pal::getenv(name, recv);
 }
+
+extern "C" pal_char_t* utils_test_only_getenv(const pal_char_t* name)
+{
+    pal::string_t value;
+    if (!test_only_getenv(name, &value))
+        return nullptr;
+
+    pal_char_t* dup = pal_strdup(value.c_str());
+    return dup;
+}
