@@ -77,9 +77,11 @@ namespace Microsoft.Win32.SafeHandles
         [SupportedOSPlatform("maccatalyst")]
         public static SafeProcessHandle Open(int processId)
         {
-            if (!TryOpen(processId, out SafeProcessHandle? handle))
+            ValidateOpenArguments(processId);
+
+            if (!TryOpenCore(processId, out SafeProcessHandle? handle, out int lastError))
             {
-                throw new Win32Exception();
+                throw new Win32Exception(lastError);
             }
 
             return handle;
@@ -106,14 +108,18 @@ namespace Microsoft.Win32.SafeHandles
         [SupportedOSPlatform("maccatalyst")]
         public static bool TryOpen(int processId, [NotNullWhen(true)] out SafeProcessHandle? processHandle)
         {
+            ValidateOpenArguments(processId);
+            return TryOpenCore(processId, out processHandle, out _);
+        }
+
+        private static void ValidateOpenArguments(int processId)
+        {
             ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(processId, 0);
 
             if (!ProcessUtils.PlatformSupportsProcessStartAndKill)
             {
                 throw new PlatformNotSupportedException();
             }
-
-            return TryOpenCore(processId, out processHandle);
         }
 
         private static string OpenProcessAccessDeniedMessage(int processId) =>

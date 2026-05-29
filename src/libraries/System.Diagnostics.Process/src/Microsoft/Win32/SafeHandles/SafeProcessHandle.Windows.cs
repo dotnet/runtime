@@ -51,7 +51,7 @@ namespace Microsoft.Win32.SafeHandles
             return Interop.Kernel32.CloseHandle(handle);
         }
 
-        private static bool TryOpenCore(int processId, [NotNullWhen(true)] out SafeProcessHandle? processHandle)
+        private static bool TryOpenCore(int processId, [NotNullWhen(true)] out SafeProcessHandle? processHandle, out int lastError)
         {
             const int desiredAccess = Interop.Advapi32.ProcessOptions.PROCESS_QUERY_LIMITED_INFORMATION
                 | Interop.Advapi32.ProcessOptions.SYNCHRONIZE
@@ -69,10 +69,17 @@ namespace Microsoft.Win32.SafeHandles
                     throw new UnauthorizedAccessException(OpenProcessAccessDeniedMessage(processId));
                 }
 
-                processHandle = null;
-                return false;
+                if (error == Interop.Errors.ERROR_NOT_FOUND || error == Interop.Errors.ERROR_INVALID_PARAMETER)
+                {
+                    lastError = error;
+                    processHandle = null;
+                    return false;
+                }
+
+                throw new Win32Exception(error);
             }
 
+            lastError = 0;
             safeHandle.ProcessId = processId;
             processHandle = safeHandle;
             return true;

@@ -76,7 +76,7 @@ namespace Microsoft.Win32.SafeHandles
             return true;
         }
 
-        private static bool TryOpenCore(int processId, [NotNullWhen(true)] out SafeProcessHandle? processHandle)
+        private static bool TryOpenCore(int processId, [NotNullWhen(true)] out SafeProcessHandle? processHandle, out int lastError)
         {
             int result = Interop.Sys.OpenProcess(processId);
 
@@ -89,10 +89,17 @@ namespace Microsoft.Win32.SafeHandles
                     throw new UnauthorizedAccessException(OpenProcessAccessDeniedMessage(processId));
                 }
 
-                processHandle = null;
-                return false;
+                if (error == Interop.Error.ESRCH || error == Interop.Error.EINVAL)
+                {
+                    lastError = (int)error;
+                    processHandle = null;
+                    return false;
+                }
+
+                throw new Win32Exception((int)error);
             }
 
+            lastError = 0;
             ProcessWaitState.Holder waitStateHolder = new(processId);
             processHandle = new SafeProcessHandle(waitStateHolder);
             return true;
