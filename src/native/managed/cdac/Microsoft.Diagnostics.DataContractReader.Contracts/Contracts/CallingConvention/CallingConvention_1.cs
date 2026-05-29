@@ -34,7 +34,7 @@ internal sealed class CallingConvention_1 : ICallingConvention
 
         if (methodSig.Header.CallingConvention is SignatureCallingConvention.VarArgs)
         {
-            throw new NotImplementedException("VarArgs support not implemented");
+            throw new NotImplementedException("VarArgs calling convention is not yet supported by the cDAC.");
         }
 
         bool hasThis = methodSig.Header.IsInstance;
