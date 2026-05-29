@@ -614,14 +614,6 @@ int32_t AndroidCryptoNative_SSLStreamInitialize(
     int32_t ret = FAIL;
     JNIEnv* env = GetJNIEnv();
 
-    // Assign callback/handle fields up front so that FreeSSLStream() can safely run
-    // its managedContextCleanup() invocation if any of the JNI-call failure paths
-    // below jump to 'exit'.
-    sslStream->managedContextHandle = managedContextHandle;
-    sslStream->streamReader = streamReader;
-    sslStream->streamWriter = streamWriter;
-    sslStream->managedContextCleanup = managedContextCleanup;
-
     jobject sslEngine = NULL;
     if (peerHost)
     {
@@ -672,6 +664,10 @@ int32_t AndroidCryptoNative_SSLStreamInitialize(
         ToGRef(env, (*env)->CallStaticObjectMethod(env, g_ByteBuffer, g_ByteBufferAllocate, packetBufferSize));
     ON_EXCEPTION_PRINT_AND_GOTO(exit);
 
+    sslStream->managedContextHandle = managedContextHandle;
+    sslStream->streamReader = streamReader;
+    sslStream->streamWriter = streamWriter;
+    sslStream->managedContextCleanup = managedContextCleanup;
     ret = SUCCESS;
 
 exit:
