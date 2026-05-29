@@ -4848,6 +4848,13 @@ enum LclAllocCategory : UINT
 //
 unsigned* Compiler::lvaComputeOptimalFrameLayoutOrder(int stkOffs, const UINT* allocOrder)
 {
+    // No locals at all -- nothing to lay out, and we mustn't make zero-sized arena
+    // allocations below.
+    if (lvaCount == 0)
+    {
+        return nullptr;
+    }
+
     // Pre-compute local sizes and total estimated frame size in one pass.
     // These arrays are indexed by lclNum and used throughout to avoid repeated
     // function calls in sort comparators and cost estimation.
