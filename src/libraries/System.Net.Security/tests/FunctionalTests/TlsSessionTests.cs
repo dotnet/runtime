@@ -82,9 +82,14 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        public void TlsContext_RejectsNullOptions()
+        public void TlsContext_NullServerOptions_DefersResolution()
         {
-            Assert.Throws<ArgumentNullException>(() => TlsContext.Create((SslServerAuthenticationOptions)null!));
+            // Null server options are allowed: the server-side session parses the ClientHello
+            // and suspends on NeedsServerOptions so the caller can resolve options via
+            // SetServerOptions (e.g. SNI-driven). Only the client overload rejects null.
+            using TlsContext ctx = TlsContext.Create((SslServerAuthenticationOptions)null!);
+            Assert.True(ctx.IsServer);
+
             Assert.Throws<ArgumentNullException>(() => TlsContext.Create((SslClientAuthenticationOptions)null!));
         }
 
@@ -870,6 +875,13 @@ namespace System.Net.Security.Tests
                 outputLen += n;
             }
 
+            if (status == TlsOperationStatus.NeedsCertificateValidation)
+            {
+                // In-memory helper: defer to the default validation path (which honors
+                // any RemoteCertificateValidationCallback on the underlying options).
+                session.AcceptWithDefaultValidation();
+            }
+
             Assert.NotEqual(TlsOperationStatus.Closed, status);
         }
 
@@ -1077,6 +1089,10 @@ namespace System.Net.Security.Tests
                     switch (status)
                     {
                         case TlsOperationStatus.Complete:
+                            continue;
+
+                        case TlsOperationStatus.NeedsCertificateValidation:
+                            session.AcceptWithDefaultValidation();
                             continue;
 
                         case TlsOperationStatus.WantWrite:

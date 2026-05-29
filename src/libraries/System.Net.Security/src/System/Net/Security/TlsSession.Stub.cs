@@ -50,7 +50,7 @@ namespace System.Net.Security
         public X509Certificate2? GetRemoteCertificate() =>
             throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
 
-        public X509Chain? GetRemoteCertificateChain() =>
+        public X509Certificate2Collection? GetRemoteCertificates() =>
             throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
 
         public SslPolicyErrors AcceptWithDefaultValidation() =>

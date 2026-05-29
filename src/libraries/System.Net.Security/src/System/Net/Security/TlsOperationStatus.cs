@@ -37,8 +37,8 @@ namespace System.Net.Security
         /// <summary>
         /// The peer presented a certificate and the TLS state machine has paused so the
         /// caller can validate it. The caller should retrieve the peer certificate via
-        /// <see cref="TlsSession.GetRemoteCertificate"/> (and optionally the built chain
-        /// via <see cref="TlsSession.GetRemoteCertificateChain"/>), perform validation —
+        /// <see cref="TlsSession.GetRemoteCertificate"/> (and any peer-sent intermediates
+        /// via <see cref="TlsSession.GetRemoteCertificates"/>), perform validation —
         /// including any I/O such as AIA fetch or CRL/OCSP lookup — on any thread, and
         /// then record the result with
         /// <see cref="TlsSession.SetRemoteCertificateValidationResult(System.Net.Security.SslPolicyErrors)"/>.

@@ -724,7 +724,7 @@ namespace System.Net.Security
         public System.Net.Security.TlsOperationStatus Shutdown(System.Span<byte> ciphertext, out int produced) { throw null; }
         public System.Net.Security.TlsOperationStatus DrainPendingOutput(System.Span<byte> ciphertext, out int produced) { throw null; }
         public System.Security.Cryptography.X509Certificates.X509Certificate2? GetRemoteCertificate() { throw null; }
-        public System.Security.Cryptography.X509Certificates.X509Chain? GetRemoteCertificateChain() { throw null; }
+        public System.Security.Cryptography.X509Certificates.X509Certificate2Collection? GetRemoteCertificates() { throw null; }
         public System.Net.Security.SslPolicyErrors AcceptWithDefaultValidation() { throw null; }
         public void SetRemoteCertificateValidationResult(System.Net.Security.SslPolicyErrors errors) { }
         public void SetServerOptions(System.Net.Security.SslServerAuthenticationOptions options) { }

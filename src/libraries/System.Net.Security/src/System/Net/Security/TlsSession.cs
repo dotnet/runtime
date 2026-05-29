@@ -50,7 +50,10 @@ namespace System.Net.Security
         private bool _suppressInternalCertificateValidation;
         private bool _externalValidationPending;
         private bool _externalValidationResolved;
-        private X509Chain? _externalValidationChain;
+        // Intermediate certs the peer sent (chain elements minus the leaf). The platform-built
+        // X509Chain itself is never surfaced to TlsSession callers; AcceptWithDefaultValidation
+        // rebuilds a fresh chain from this collection at validation time.
+        private X509Certificate2Collection? _externalRemoteCertificates;
         private X509Certificate2? _externalPendingCert;
         private Exception? _externalValidationFault;
         private SslClientHelloInfo? _clientHelloInfo;
@@ -165,18 +168,18 @@ namespace System.Net.Security
         }
 
         /// <summary>
-        /// Returns the <see cref="X509Chain"/> the platform built for the peer
-        /// certificate during handshake, or <c>null</c> if no chain was retained.
-        /// Only meaningful while the session is awaiting an external validation result
-        /// (after <see cref="ProcessHandshake"/> returned
-        /// <see cref="TlsOperationStatus.NeedsCertificateValidation"/>). The chain is
-        /// owned by the session and disposed when the session is disposed or when the
-        /// validation result is recorded.
+        /// Returns the intermediate certificates the peer sent alongside its leaf certificate
+        /// (the leaf itself is available via <see cref="GetRemoteCertificate"/>), or <c>null</c>
+        /// if no intermediates were received. Only meaningful while the session is awaiting an
+        /// external validation result (after <see cref="ProcessHandshake"/> returned
+        /// <see cref="TlsOperationStatus.NeedsCertificateValidation"/>). The certificates are
+        /// owned by the session and disposed when the session is disposed or when the validation
+        /// result is recorded; callers that need to retain them must clone the instances.
         /// </summary>
-        public X509Chain? GetRemoteCertificateChain()
+        public X509Certificate2Collection? GetRemoteCertificates()
         {
             ThrowIfDisposed();
-            return _externalValidationChain;
+            return _externalRemoteCertificates;
         }
 
         /// <summary>
@@ -201,23 +204,41 @@ namespace System.Net.Security
                     "AcceptWithDefaultValidation can only be called after ProcessHandshake returned NeedsCertificateValidation.");
             }
 
+            // Build a fresh X509Chain locally and seed it with the peer-sent intermediates.
+            // The chain instance is never exposed to TlsSession callers; once validation is
+            // recorded it is disposed in SetRemoteCertificateValidationResult below.
+            X509Chain chain = new X509Chain();
+            if (_externalRemoteCertificates is { Count: > 0 } intermediates)
+            {
+                chain.ChainPolicy.ExtraStore.AddRange(intermediates);
+            }
+
             ProtocolToken alertToken = default;
-            // Pass _externalPendingCert as the candidate cert and an empty _remoteCertificate slot.
-            // VerifyRemoteCertificateCore assigns the slot to the candidate on success; the renegotiation
-            // shortcut at the top of that method would otherwise dispose our cert if the slot were already
-            // populated with the same instance.
-            bool ok = SslStream.VerifyRemoteCertificateCore(
-                this,
-                _context.Options,
-                _securityContext,
-                ref _remoteCertificate,
-                ref _connectionInfo,
-                _externalPendingCert,
-                _externalValidationChain,
-                trust: null,
-                ref alertToken,
-                out SslPolicyErrors sslPolicyErrors,
-                out _);
+            SslPolicyErrors sslPolicyErrors;
+            bool ok;
+            try
+            {
+                // Pass _externalPendingCert as the candidate cert and an empty _remoteCertificate slot.
+                // VerifyRemoteCertificateCore assigns the slot to the candidate on success; the renegotiation
+                // shortcut at the top of that method would otherwise dispose our cert if the slot were already
+                // populated with the same instance.
+                ok = SslStream.VerifyRemoteCertificateCore(
+                    this,
+                    _context.Options,
+                    _securityContext,
+                    ref _remoteCertificate,
+                    ref _connectionInfo,
+                    _externalPendingCert,
+                    chain,
+                    trust: null,
+                    ref alertToken,
+                    out sslPolicyErrors,
+                    out _);
+            }
+            finally
+            {
+                chain.Dispose();
+            }
 
             // On success VerifyRemoteCertificateCore set _remoteCertificate = _externalPendingCert, so
             // SetRemoteCertificateValidationResult below leaves it alone. On failure we must dispose the
@@ -269,7 +290,7 @@ namespace System.Net.Security
                 _externalPendingCert = null;
             }
 
-            DisposeExternalValidationChain();
+            DisposeExternalRemoteCertificates();
         }
 
         /// <summary>
@@ -339,14 +360,18 @@ namespace System.Net.Security
             }
         }
 
-        private void DisposeExternalValidationChain()
+        private void DisposeExternalRemoteCertificates()
         {
-            X509Chain? chain = _externalValidationChain;
-            _externalValidationChain = null;
-            // Match the inline-validation cleanup in OnHandshakeCompleted: dispose the chain context only,
-            // not individual element certs. The leaf is owned by _remoteCertificate or already disposed via
-            // _externalPendingCert; intermediate elements are platform-built refs we don't own.
-            chain?.Dispose();
+            X509Certificate2Collection? certs = _externalRemoteCertificates;
+            _externalRemoteCertificates = null;
+            if (certs is null)
+            {
+                return;
+            }
+            foreach (X509Certificate2 c in certs)
+            {
+                c.Dispose();
+            }
         }
 
         /// <summary>
@@ -1182,7 +1207,24 @@ namespace System.Net.Security
             X509Chain? chain = null;
             _externalPendingCert = CertificateValidationPal.GetRemoteCertificate(
                 _securityContext, ref chain, _context.Options.CertificateChainPolicy);
-            _externalValidationChain = chain;
+
+            // Snapshot the peer-sent intermediates into a flat collection and dispose the
+            // platform-built chain immediately. The chain instance never escapes the PAL
+            // boundary into TlsSession state or its public surface.
+            if (chain is not null)
+            {
+                if (chain.ChainElements.Count > 1)
+                {
+                    X509Certificate2Collection intermediates = new X509Certificate2Collection();
+                    for (int i = 1; i < chain.ChainElements.Count; i++)
+                    {
+                        intermediates.Add(new X509Certificate2(chain.ChainElements[i].Certificate));
+                    }
+                    _externalRemoteCertificates = intermediates;
+                }
+                chain.Dispose();
+            }
+
             _externalValidationPending = true;
         }
 
@@ -1261,7 +1303,7 @@ namespace System.Net.Security
             }
             _disposed = true;
 
-            DisposeExternalValidationChain();
+            DisposeExternalRemoteCertificates();
             _externalPendingCert?.Dispose();
             _externalPendingCert = null;
 
