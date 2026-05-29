@@ -49,6 +49,6 @@ int32_t AndroidCryptoNative_EcdhDeriveKey(EC_KEY* ourKey, EC_KEY* peerKey, uint8
     ret = SUCCESS;
 
 cleanup:
-    RELEASE_LOCALS_ENV(loc, ReleaseLRef);
+    RELEASE_LOCALS(loc, env);
     return ret;
 }

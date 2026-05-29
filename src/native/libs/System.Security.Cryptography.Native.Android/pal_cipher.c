@@ -178,7 +178,7 @@ ARGS_NON_NULL_ALL static int32_t ReinitializeCipher(CipherCtx* ctx)
     ret = SUCCESS;
 
 cleanup:
-    RELEASE_LOCALS_ENV(loc, ReleaseLRef);
+    RELEASE_LOCALS(loc, env);
     return ret;
 }
 

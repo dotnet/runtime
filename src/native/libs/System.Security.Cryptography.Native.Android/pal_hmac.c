@@ -64,7 +64,7 @@ jobject CryptoNative_HmacCreate(uint8_t* key, int32_t keyLen, intptr_t type)
     success = true;
 
 cleanup:
-    RELEASE_LOCALS_ENV(loc, ReleaseLRef);
+    RELEASE_LOCALS(loc, env);
     if (!success)
     {
         ReleaseGRef(env, macObj);
