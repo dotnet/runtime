@@ -37,6 +37,7 @@ public class MethodTableTests
             (nameof(Constants.Globals.ContinuationMethodTable), rtsBuilder.ContinuationMethodTableGlobalAddress),
             (nameof(Constants.Globals.ContinuationSingletonEEClass), rtsBuilder.ContinuationSingletonEEClassGlobalAddress),
             (nameof(Constants.Globals.ObjectMethodTable), rtsBuilder.ObjectMethodTableGlobalAddress),
+            (nameof(Constants.Globals.MulticastDelegateMethodTable), rtsBuilder.MulticastDelegateMethodTableGlobalAddress),
             (nameof(Constants.Globals.MethodDescAlignment), rtsBuilder.MethodDescAlignment),
             (nameof(Constants.Globals.ArrayBaseSize), rtsBuilder.ArrayBaseSize),
         ];
@@ -135,6 +136,44 @@ public class MethodTableTests
         Assert.Equal(systemStringMethodTablePtr.Value, systemStringTypeHandle.Address.Value);
         Assert.False(contract.IsFreeObjectMethodTable(systemStringTypeHandle));
         Assert.True(contract.IsString(systemStringTypeHandle));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ValidateIsDelegate(MockTarget.Architecture arch)
+    {
+        TargetPointer multicastDelegateMTPtr = default;
+        TargetPointer delegateMTPtr = default;
+        TargetPointer systemObjectMTPtr = default;
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            rtsBuilder =>
+            {
+                systemObjectMTPtr = rtsBuilder.SystemObjectMethodTable.Address;
+
+                MockMethodTable AddSimpleType(string name, ulong parentMT)
+                {
+                    MockEEClass eeClass = rtsBuilder.AddEEClass(name);
+                    MockMethodTable mt = rtsBuilder.AddMethodTable(name);
+                    mt.BaseSize = rtsBuilder.Builder.TargetTestHelpers.ObjectBaseSize;
+                    mt.ParentMethodTable = parentMT;
+                    eeClass.MethodTable = mt.Address;
+                    mt.EEClassOrCanonMT = eeClass.Address;
+                    return mt;
+                }
+
+                MockMethodTable multicastDelegateMT = AddSimpleType("System.MulticastDelegate", systemObjectMTPtr);
+                multicastDelegateMTPtr = multicastDelegateMT.Address;
+                rtsBuilder.SetMulticastDelegateMethodTable(multicastDelegateMT.Address);
+
+                delegateMTPtr = AddSimpleType("MyDelegate", multicastDelegateMT.Address).Address;
+            });
+
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+
+        Assert.True(contract.IsDelegate(contract.GetTypeHandle(delegateMTPtr)));
+        Assert.False(contract.IsDelegate(contract.GetTypeHandle(multicastDelegateMTPtr)));
+        Assert.False(contract.IsDelegate(contract.GetTypeHandle(systemObjectMTPtr)));
     }
 
     [Theory]

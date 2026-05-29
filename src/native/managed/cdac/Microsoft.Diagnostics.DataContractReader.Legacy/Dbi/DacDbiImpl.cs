@@ -3415,7 +3415,39 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int IsDelegate(ulong vmObject, Interop.BOOL* pResult)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.IsDelegate(vmObject, pResult) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (vmObject == 0)
+            {
+                *pResult = Interop.BOOL.FALSE;
+            }
+            else
+            {
+                TargetPointer objectAddress = new TargetPointer(vmObject);
+                TargetPointer mt = _target.Contracts.Object.GetMethodTableAddress(objectAddress);
+                IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+                TypeHandle typeHandle = rts.GetTypeHandle(mt);
+                *pResult = rts.IsDelegate(typeHandle) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            Interop.BOOL pResultLocal;
+            int hrLocal = _legacy.IsDelegate(vmObject, &pResultLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pResult == pResultLocal, $"cDAC: {*pResult}, DAC: {pResultLocal}");
+        }
+#endif
+        return hr;
+    }
 
     public int GetDelegateType(ulong delegateObject, int* delegateType)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetDelegateType(delegateObject, delegateType) : HResults.E_NOTIMPL;
