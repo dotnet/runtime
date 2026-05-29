@@ -63,6 +63,10 @@ namespace NSQuickBytesHelper
 
 void DECLSPEC_NORETURN ThrowHR(HRESULT hr);
 
+#ifndef DACCESS_COMPILE
+inline BOOL IsSuspendEEThread();
+#endif // !DACCESS_COMPILE
+
 template <SIZE_T SIZE, SIZE_T INCREMENT>
 class CQuickMemoryBase
 {
@@ -182,12 +186,56 @@ public:
         _Alloc<TRUE /*bGrow*/, TRUE /*bThrow*/>(iItems);
     }
 
-#ifdef __GNUC__
-    // This makes sure that we will not get an undefined symbol
-    // when building a release version of libcoreclr using LLVM/GCC.
-    __attribute__((used))
-#endif // __GNUC__
-    HRESULT ReSizeNoThrow(SIZE_T iItems);
+    HRESULT ReSizeNoThrow(SIZE_T iItems)
+    {
+#ifdef _DEBUG
+#ifndef DACCESS_COMPILE
+        // Exercise heap for OOM-fault injection purposes
+        // But we can't do this if current thread suspends EE
+        if (!IsSuspendEEThread())
+        {
+            BYTE *pTmp = NEW_NOTHROW(iItems);
+            if (!pTmp)
+            {
+                return E_OUTOFMEMORY;
+            }
+            delete [] pTmp;
+        }
+#endif
+#endif
+
+        if (iItems <= cbTotal)
+        {
+            iSize = iItems;
+            return NOERROR;
+        }
+
+#ifndef DACCESS_COMPILE
+        // not allowed to do allocation if current thread suspends EE
+        if (IsSuspendEEThread())
+            return E_OUTOFMEMORY;
+#endif
+
+        BYTE *pbBuffNew = NEW_NOTHROW(iItems + INCREMENT);
+        if (!pbBuffNew)
+            return E_OUTOFMEMORY;
+
+        if (pbBuff)
+        {
+            memcpy(pbBuffNew, pbBuff, cbTotal);
+            delete [] pbBuff;
+        }
+        else
+        {
+            _ASSERTE(cbTotal == SIZE);
+            memcpy(pbBuffNew, rgData, cbTotal);
+        }
+
+        cbTotal = iItems + INCREMENT;
+        iSize = iItems;
+        pbBuff = pbBuffNew;
+        return NOERROR;
+    }
 
     void Shrink(SIZE_T iItems)
     {
