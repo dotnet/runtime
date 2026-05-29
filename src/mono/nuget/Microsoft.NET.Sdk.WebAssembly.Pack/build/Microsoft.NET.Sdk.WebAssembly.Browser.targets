@@ -680,9 +680,14 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   <!-- Write the boot JSON file for the build.
        This target is incremental: when all inputs (assemblies, static web assets, VFS files,
-       config files, extensions, property stamp) are older than the output, the target is skipped. -->
+       config files, extensions, property stamp) are older than the output, the target is skipped.
+       Skipped during nested publish: the nested publish runs the full Build chain which would
+       create the boot JSON without VFS entries (LinkContentToWwwroot is skipped). If we wrote
+       it here, the outer build's Inputs/Outputs check would find the stale output and skip
+       regeneration, leaving the final boot JSON without VFS content files. -->
   <Target Name="_WriteBuildWasmBootJsonFile"
     DependsOnTargets="_WriteWasmBootJsonBuildPropertyStamp"
+    Condition="'$(WasmBuildingForNestedPublish)' != 'true'"
     Inputs="@(IntermediateAssembly);@(WasmStaticWebAsset);@(_WasmJsModuleCandidatesForBuild);@(_WasmFilesToIncludeInFileSystemStaticWebAsset);@(_WasmJsConfigStaticWebAsset);@(_WasmDotnetJsForBuild);@(WasmBootConfigExtension);$(ProjectRuntimeConfigFilePath);$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath);$(_WebAssemblySdkTasksAssembly);$(IntermediateOutputPath)wasm-bootjson-build.stamp"
     Outputs="$(_WasmBuildBootJsonPath)">
 
@@ -733,8 +738,10 @@ Copyright (c) .NET Foundation. All rights reserved.
   </Target>
 
   <!-- Define the boot config file as a static web asset and create endpoints.
-       This target always runs to ensure items are populated even when _WriteBuildWasmBootJsonFile is skipped. -->
-  <Target Name="_GenerateBuildWasmBootJson" DependsOnTargets="_WriteBuildWasmBootJsonFile">
+       This target always runs to ensure items are populated even when _WriteBuildWasmBootJsonFile is skipped.
+       Skipped during nested publish (same reason as _WriteBuildWasmBootJsonFile). -->
+  <Target Name="_GenerateBuildWasmBootJson" DependsOnTargets="_WriteBuildWasmBootJsonFile"
+    Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
 
     <ItemGroup>
       <!-- Track boot JSON for clean operations even when _WriteBuildWasmBootJsonFile was skipped -->
@@ -1244,5 +1251,12 @@ Copyright (c) .NET Foundation. All rights reserved.
           DestinationFiles="$(_DotnetTypesDestPath)"
           Condition="Exists('$(_DotnetTypesSourcePath)')"
           SkipUnchangedFiles="true" />
+  </Target>
+
+  <!-- When trimming non-exe projects, root the whole intermediate assembly. -->
+  <Target Name="_RootEntireIntermediateAssembly" AfterTargets="PrepareForILLink" BeforeTargets="_RunILLink" Condition="'$(RuntimeIdentifier)' == 'browser-wasm' And '$(OutputType)' == 'Library'">
+    <ItemGroup>
+      <TrimmerRootAssembly Include="$(AssemblyName)" RootMode="all" />
+    </ItemGroup>
   </Target>
 </Project>

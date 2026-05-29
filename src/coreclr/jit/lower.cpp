@@ -1844,6 +1844,8 @@ void Lowering::SplitArgumentBetweenRegistersAndStack(GenTreeCall* call, CallArg*
             m_compiler->gtNewLclFldNode(lcl->GetLclNum(), TYP_STRUCT, lcl->GetLclOffs() + stackSeg.Offset, stackLayout);
         BlockRange().InsertBefore(arg, stackNode);
 
+        m_compiler->lvaSetVarDoNotEnregister(lcl->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
+
         registersNode = m_compiler->gtNewFieldList();
         BlockRange().InsertBefore(arg, registersNode);
 
@@ -3693,80 +3695,6 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
     };
 
     GenTree* callTarget = call->gtControlExpr;
-
-    if (call->IsVirtualStub())
-    {
-        // VSDs go through a resolver instead which skips double validation and
-        // indirection.
-        CallArg* vsdCellArg = call->gtArgs.FindWellKnownArg(WellKnownArg::VirtualStubCell);
-        CallArg* thisArg    = call->gtArgs.GetThisArg();
-
-        assert((vsdCellArg != nullptr) && (thisArg != nullptr));
-        assert(thisArg->GetNode()->OperIs(GT_PUTARG_REG));
-        LIR::Use thisArgUse(BlockRange(), &thisArg->GetNode()->AsOp()->gtOp1, thisArg->GetNode());
-        GenTree* thisArgClone = cloneUse(thisArgUse, true);
-
-        // The VSD cell is not needed for the original call when going through the resolver.
-        // It can be removed without further fixups because it has fixed ABI assignment.
-        call->gtArgs.RemoveUnsafe(vsdCellArg);
-        assert(vsdCellArg->GetNode()->OperIs(GT_PUTARG_REG));
-        // Also PUTARG_REG can be removed.
-        BlockRange().Remove(vsdCellArg->GetNode());
-        // The actual cell we need for the resolver.
-        GenTree* vsdCellArgNode = vsdCellArg->GetNode()->gtGetOp1();
-
-        GenTreeCall* resolve = m_compiler->gtNewHelperCallNode(CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT, TYP_I_IMPL);
-
-        // Use a placeholder for the cell since the cell is already inserted in
-        // LIR.
-        GenTree* vsdCellPlaceholder = m_compiler->gtNewZeroConNode(TYP_I_IMPL);
-        resolve->gtArgs.PushFront(m_compiler,
-                                  NewCallArg::Primitive(vsdCellPlaceholder).WellKnown(WellKnownArg::VirtualStubCell));
-
-        // 'this' arg clone is not inserted, so no need to use a placeholder for that.
-        resolve->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(thisArgClone));
-
-        m_compiler->fgMorphTree(resolve);
-
-        LIR::Range resolveRange = LIR::SeqTree(m_compiler, resolve);
-        GenTree*   resolveFirst = resolveRange.FirstNode();
-        GenTree*   resolveLast  = resolveRange.LastNode();
-        // Resolution comes with a null check, so it must happen after all
-        // arguments are evaluated, hence we insert it right before the call.
-        BlockRange().InsertBefore(call, std::move(resolveRange));
-
-        // Swap out the VSD cell argument.
-        LIR::Use vsdCellUse;
-        bool     gotUse = BlockRange().TryGetUse(vsdCellPlaceholder, &vsdCellUse);
-        assert(gotUse);
-        vsdCellUse.ReplaceWith(vsdCellArgNode);
-        vsdCellPlaceholder->SetUnusedValue();
-
-        // Now we can lower the resolver.
-        LowerRange(resolveFirst, resolveLast);
-
-        // That inserted new PUTARG nodes right before the call, so we need to
-        // legalize the existing call's PUTARG_REG nodes.
-        MovePutArgNodesUpToCall(call);
-
-        // Finally update the call target
-        call->gtCallType    = CT_INDIRECT;
-        call->gtCallMethHnd = NO_METHOD_HANDLE;
-        call->gtFlags &= ~GTF_CALL_VIRT_STUB;
-        call->gtControlExpr = resolve;
-        call->gtCallCookie  = nullptr;
-#ifdef FEATURE_READYTORUN
-        call->gtEntryPoint.addr       = nullptr;
-        call->gtEntryPoint.accessType = IAT_VALUE;
-#endif
-
-        if (callTarget != nullptr)
-        {
-            callTarget->SetUnusedValue();
-        }
-
-        callTarget = resolve;
-    }
 
     if (callTarget == nullptr)
     {
@@ -7535,6 +7463,35 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
 {
     assert(call->IsVirtualStub());
 
+    if (m_compiler->opts.ShouldUseDispatchHelpers() || m_compiler->opts.IsCFGEnabled())
+    {
+        // Convert from VSD indirect call (call [r11]) to a direct call to a
+        // dispatch helper (call RhpInterfaceDispatch).
+        // The dispatch cell is still passed via the VirtualStubCell arg in r11.
+
+        // For CT_INDIRECT calls (shared generic code with dictionary lookup),
+        // gtControlExpr is a tree node in the LIR that computes the dispatch cell address.
+        // We're converting to a direct call, so mark it unused and let DCE
+        // remove it from the LIR.
+        // The VirtualStubCell arg (a deep clone of this tree) still passes
+        // the dispatch cell address in the VSD param register.
+        if (call->gtCallType == CT_INDIRECT)
+        {
+            call->gtControlExpr->SetUnusedValue();
+            call->gtControlExpr = nullptr;
+        }
+
+        CORINFO_CONST_LOOKUP helperLookup = m_compiler->compGetHelperFtn(CORINFO_HELP_INTERFACEDISPATCH_FOR_SLOT);
+        assert(helperLookup.accessType == IAT_VALUE);
+        call->gtCallType          = CT_USER_FUNC;
+        call->gtCallMethHnd       = nullptr;
+        call->gtDirectCallAddress = helperLookup.addr;
+        call->gtFlags &= ~GTF_CALL_VIRT_STUB;
+        call->gtCallMoreFlags &= ~GTF_CALL_M_VIRTSTUB_REL_INDIRECT;
+
+        return nullptr;
+    }
+
     // An x86 JIT which uses full stub dispatch must generate only
     // the following stub dispatch calls:
     //
@@ -8200,8 +8157,11 @@ bool Lowering::TryLowerConstIntUDivOrUMod(GenTreeOp* divMod)
     {
         // If the divisor is greater or equal than 2^(N - 1) then the result is 1
         // iff the dividend is greater or equal than the divisor.
-        if (((type == TYP_INT) && (divisorValue > (UINT32_MAX / 2))) ||
-            ((type == TYP_LONG) && (divisorValue > (UINT64_MAX / 2))))
+        if (((type == TYP_INT) && (divisorValue > (UINT32_MAX / 2)))
+#if defined(TARGET_64BIT)
+            || ((type == TYP_LONG) && (divisorValue > (UINT64_MAX / 2)))
+#endif
+        )
         {
             divMod->ChangeOper(GT_GE);
             divMod->SetUnsigned();
@@ -8491,7 +8451,11 @@ bool Lowering::TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode)
 
     if (isDiv)
     {
-        if ((type == TYP_INT && divisorValue == INT_MIN) || (type == TYP_LONG && divisorValue == INT64_MIN))
+        if ((type == TYP_INT && divisorValue == INT_MIN)
+#if defined(TARGET_64BIT)
+            || (type == TYP_LONG && divisorValue == INT64_MIN)
+#endif
+        )
         {
             // If the divisor is the minimum representable integer value then we can use a compare,
             // the result is 1 iff the dividend equals divisor.
@@ -8931,6 +8895,12 @@ PhaseStatus Lowering::DoPhase()
         // `lvDoNotEnregister` flag before we start reading it.
         // The main reason why this flag is not set is that we are running in minOpts.
         m_compiler->lvSetMinOptsDoNotEnreg();
+    }
+    else
+    {
+        // For many locals we know at this point that we won't enregister them,
+        // so DNER these for the same reasons as above.
+        m_compiler->lvSetVarsDoNotEnreg();
     }
 
     if (m_compiler->opts.OptimizationEnabled() && !m_compiler->opts.IsOSR())
@@ -10166,38 +10136,32 @@ void Lowering::ContainCheckBitCast(GenTreeUnOp* node)
 }
 
 //------------------------------------------------------------------------
-// TryLowerBlockStoreAsGcBulkCopyCall: Lower a block store node as a CORINFO_HELP_BULK_WRITEBARRIER call
+// LowerBlockStoreAsGcBulkCopyCall: Lower a block store node as a CORINFO_HELP_BULK_WRITEBARRIER call
 //
 // Arguments:
-//    blkNode - The block store node to lower
+//    blk - The block store node to lower
 //
-bool Lowering::TryLowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blk)
+void Lowering::LowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blk)
 {
-    if (m_compiler->opts.OptimizationDisabled())
-    {
-        return false;
-    }
+    assert(blk->OperIs(GT_STORE_BLK));
+    assert(blk->GetLayout()->HasGCPtr());
+    assert(!blk->OperIsInitBlkOp());
+    assert(!blk->IsAddressNotOnHeap(m_compiler));
+    assert(!blk->IsVolatile());
+    assert(!blk->Data()->OperIs(GT_IND) || !blk->Data()->AsIndir()->IsVolatile());
 
-    // Replace STORE_BLK (struct copy) with CORINFO_HELP_BULK_WRITEBARRIER which performs
-    // bulk copy for byrefs.
-    const unsigned bulkCopyThreshold = 4;
-    if (!blk->OperIs(GT_STORE_BLK) || blk->OperIsInitBlkOp() || blk->IsVolatile() ||
-        (blk->GetLayout()->GetGCPtrCount() < bulkCopyThreshold))
-    {
-        return false;
-    }
+    // Capture whether the original block store could throw (e.g. NRE from a null address).
 
     GenTree* dest = blk->Addr();
     GenTree* data = blk->Data();
 
+    bool destMayFault = blk->IndirMayFault(m_compiler);
+    bool dataMayFault;
+
     if (data->OperIs(GT_IND))
     {
-        if (data->AsIndir()->IsVolatile())
-        {
-            return false;
-        }
-
         // Drop GT_IND nodes
+        dataMayFault = data->IndirMayFault(m_compiler);
         BlockRange().Remove(data);
         data = data->AsIndir()->Addr();
     }
@@ -10206,6 +10170,7 @@ bool Lowering::TryLowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blk)
         assert(data->OperIs(GT_LCL_VAR, GT_LCL_FLD));
 
         // Convert local to LCL_ADDR
+        dataMayFault       = false;
         unsigned lclOffset = data->AsLclVarCommon()->GetLclOffs();
         data->ChangeOper(GT_LCL_ADDR);
         data->ChangeType(TYP_I_IMPL);
@@ -10270,10 +10235,112 @@ bool Lowering::TryLowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blk)
             LowerNode(nullcheck);
         }
     };
-    wrapWithNullcheck(dest);
-    wrapWithNullcheck(data);
 
-    return true;
+    if (destMayFault)
+    {
+        wrapWithNullcheck(dest);
+    }
+
+    if (dataMayFault)
+    {
+        wrapWithNullcheck(data);
+    }
+}
+
+//------------------------------------------------------------------------
+// LowerCopyBlockStore: Shared lowering of a struct-copy
+//
+// Arguments:
+//    blkNode - The block store node to lower. Must be a copy (non-InitBlk).
+//
+void Lowering::LowerCopyBlockStore(GenTreeBlk* blkNode)
+{
+    assert(blkNode->OperIs(GT_STORE_BLK));
+    assert(!blkNode->OperIsInitBlkOp());
+
+    // For struct copies (containing GC slots) we might want to split the big store into a sequence
+    // of smaller stores.
+
+    GenTree*       src     = blkNode->Data();
+    GenTree*       dstAddr = blkNode->Addr();
+    const unsigned size    = blkNode->Size();
+
+    assert(src->OperIs(GT_IND, GT_LCL_VAR, GT_LCL_FLD));
+    src->SetContained();
+
+    if (src->OperIs(GT_LCL_VAR))
+    {
+        // TODO-1stClassStructs: for now we can't work with STORE_BLOCK source in register.
+        const unsigned srcLclNum = src->AsLclVar()->GetLclNum();
+        m_compiler->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(DoNotEnregisterReason::StoreBlkSrc));
+    }
+
+    ClassLayout* layout    = blkNode->GetLayout();
+    bool         doCpObj   = layout->HasGCPtr();
+    const bool   isNotHeap = blkNode->IsAddressNotOnHeap(m_compiler);
+
+#ifndef TARGET_WASM
+    // x86/x64 has a SIMD-aware Memcpy unroll threshold; SIMD is only usable
+    // when we are not going through the per-slot write-barrier path.
+    const bool     canUseSimd  = !doCpObj || isNotHeap;
+    const unsigned unrollLimit = m_compiler->getUnrollThreshold(Compiler::UnrollKind::Memcpy, canUseSimd);
+#endif
+
+    if (doCpObj && isNotHeap)
+    {
+        // No write barriers are needed if the destination is known to be outside of the GC heap.
+        // If the layout contains a byref, then we know it must live on the stack.
+        doCpObj = false;
+#if !defined(JIT32_GCENCODER) && !defined(TARGET_WASM)
+        if (size <= unrollLimit)
+        {
+            // If the size is small enough to unroll then we need to mark the block as non-interruptible
+            // to actually allow unrolling. The generated code does not report GC references loaded in the
+            // temporary register(s) used for copying. This is not supported for the JIT32_GCENCODER.
+            blkNode->gtBlkOpGcUnsafe = true;
+        }
+#endif
+    }
+
+    if (doCpObj)
+    {
+        // Try to decompose this STORE_BLK into a sequence of independent indirections.
+        // It is faster than the bulk copy for structs with just a few GC slots.
+        if (!TryDecomposeBlockStoreAsIndirs(blkNode))
+        {
+            // Otherwise, use the bulk copy.
+            LowerBlockStoreAsGcBulkCopyCall(blkNode);
+        }
+        return;
+    }
+
+#ifdef TARGET_WASM
+    // Use the wasm `memory.copy` instruction.
+    blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindNativeOpcode;
+    if (src->OperIs(GT_IND) && ((src->gtFlags & GTF_IND_NONFAULTING) == 0))
+    {
+        SetMultiplyUsed(src->AsIndir()->Addr() DEBUGARG("LowerCopyBlockStore source address (indirection)"));
+    }
+
+    if ((blkNode->gtFlags & GTF_IND_NONFAULTING) == 0)
+    {
+        SetMultiplyUsed(dstAddr DEBUGARG("LowerCopyBlockStore destination address"));
+    }
+#else
+    if (size <= unrollLimit)
+    {
+        blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
+        if (src->OperIs(GT_IND))
+        {
+            ContainBlockStoreAddress(blkNode, size, src->AsIndir()->Addr(), src->AsIndir());
+        }
+        ContainBlockStoreAddress(blkNode, size, dstAddr, nullptr);
+        return;
+    }
+
+    // Use memcpy
+    LowerBlockStoreAsHelperCall(blkNode);
+#endif // TARGET_WASM
 }
 
 //------------------------------------------------------------------------
@@ -10437,6 +10504,7 @@ static bool IsStoreCoalescingInvariantNode(Compiler* compiler, GenTree* node, bo
     return node->OperIs(GT_LCL_VAR) && !compiler->lvaVarAddrExposed(node->AsLclVar()->GetLclNum());
 }
 
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
 //------------------------------------------------------------------------
 // TryGetStoreCoalescingConstantBits: get the raw bits for a constant used by store
 //    coalescing.
@@ -10479,6 +10547,7 @@ static bool TryGetStoreCoalescingConstantBits(GenTree* value, uint64_t* bits)
 
     return false;
 }
+#endif // TARGET_XARCH || TARGET_ARM64
 
 //------------------------------------------------------------------------
 // GetLoadStoreCoalescingData: given a STOREIND/IND node, get the data needed to perform
@@ -10815,7 +10884,8 @@ void Lowering::LowerStoreCoalescing(GenTree* node)
             return;
         }
 
-        if ((currData.offset == prevData.offset) && (currData.targetType == prevData.targetType))
+        if ((currData.offset == prevData.offset) && (currData.accessSize >= prevData.accessSize) &&
+            (currData.targetType == prevData.targetType))
         {
             if (m_compiler->gtTreeHasSideEffects(prevData.value, GTF_GLOB_EFFECT) ||
                 m_compiler->gtTreeHasSideEffects(currData.value, GTF_GLOB_EFFECT))
@@ -12107,8 +12177,164 @@ void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
         return;
     }
 
-    LowerBlockStore(blkNode);
+    if (blkNode->OperIsInitBlkOp())
+    {
+        LowerBlockStore(blkNode);
+    }
+    else
+    {
+        LowerCopyBlockStore(blkNode);
+    }
+
     LowerStoreIndirCoalescing(blkNode);
+}
+
+//------------------------------------------------------------------------
+// TryDecomposeBlockStoreAsIndirs: try to lower a struct copy GT_STORE_BLK
+//   that has GC pointers as a sequence of independent indirections.
+//
+// Arguments:
+//   blkNode - the GT_STORE_BLK to potentially decompose.
+//
+// Return value:
+//   true if the node was decomposed (and bashed to a NOP), false otherwise.
+//
+bool Lowering::TryDecomposeBlockStoreAsIndirs(GenTreeBlk* blkNode)
+{
+    assert(blkNode->OperIs(GT_STORE_BLK));
+    assert(!blkNode->OperIsInitBlkOp());
+    assert(blkNode->GetLayout()->HasGCPtr());
+
+    ClassLayout* layout = blkNode->GetLayout();
+    GenTree*     src    = blkNode->Data();
+
+    // Layouts containing GC pointers are required (by the runtime) to have a
+    // pointer-size-multiple total size.
+    assert((layout->GetSize() == (layout->GetSlotCount() * TARGET_POINTER_SIZE)));
+    assert(src->OperIs(GT_IND, GT_LCL_VAR, GT_LCL_FLD));
+
+    // Always decompose for volatile blocks as the bulk helper doesn't support those.
+    if (!(blkNode->IsVolatile() || (src->OperIs(GT_IND) && src->AsIndir()->IsVolatile())))
+    {
+        // More than 3 GC pointers, use the bulk copy helper.
+        // TODO-CQ: find a better heuristic here.
+        if (layout->GetGCPtrCount() >= 4)
+        {
+            return false;
+        }
+
+        // We assume that the bulk helper is also a better option for Tier0/cold blocks.
+        if ((layout->GetGCPtrCount() > 1) &&
+            (!m_compiler->opts.OptimizationEnabled() || ((m_block != nullptr) && (m_block->isRunRarely()))))
+        {
+            return false;
+        }
+    }
+
+    JITDUMP("Decomposing STORE_BLK [%06u] as individual indirections\n", m_compiler->dspTreeID(blkNode));
+
+    // Spill dstAddr (and srcAddr when src is an indirection) into temp locals so
+    // we can compute offset-based addresses multiple times.
+    LIR::Use        dstAddrUse(BlockRange(), &blkNode->Addr(), blkNode);
+    const var_types dstAddrType   = blkNode->Addr()->TypeGet();
+    const unsigned  dstAddrLclNum = dstAddrUse.ReplaceWithLclVar(m_compiler);
+    unsigned        srcAddrLclNum = BAD_VAR_NUM;
+    var_types       srcAddrType   = TYP_UNDEF;
+    unsigned        srcLclNum     = BAD_VAR_NUM;
+    unsigned        srcLclOffs    = 0;
+
+    if (src->OperIs(GT_IND))
+    {
+        LIR::Use srcAddrUse(BlockRange(), &src->AsIndir()->Addr(), src);
+        srcAddrType   = src->AsIndir()->Addr()->TypeGet();
+        srcAddrLclNum = srcAddrUse.ReplaceWithLclVar(m_compiler);
+    }
+    else
+    {
+        srcLclNum  = src->AsLclVarCommon()->GetLclNum();
+        srcLclOffs = src->AsLclVarCommon()->GetLclOffs();
+        m_compiler->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(DoNotEnregisterReason::BlockOp));
+    }
+
+    auto offsetAddr = [&](unsigned lclNum, var_types lclType, unsigned offset) -> GenTree* {
+        GenTree* addr = m_compiler->gtNewLclvNode(lclNum, lclType);
+        if (offset != 0)
+        {
+            addr = m_compiler->gtNewOperNode(GT_ADD, varTypeIsGC(lclType) ? TYP_BYREF : TYP_I_IMPL, addr,
+                                             m_compiler->gtNewIconNode(static_cast<ssize_t>(offset), TYP_I_IMPL));
+        }
+        return addr;
+    };
+
+    const GenTreeFlags dstIndFlags = blkNode->gtFlags & GTF_IND_FLAGS;
+    const GenTreeFlags srcIndFlags = src->OperIs(GT_IND) ? (src->gtFlags & GTF_IND_FLAGS) : GTF_EMPTY;
+
+    auto emitStore = [&](unsigned offset, var_types scalarType, ClassLayout* runLayout) {
+        const var_types valType = (runLayout != nullptr) ? TYP_STRUCT : scalarType;
+
+        GenTree* srcVal;
+        if (src->OperIs(GT_IND))
+        {
+            srcVal = m_compiler->gtNewLoadValueNode(valType, runLayout, offsetAddr(srcAddrLclNum, srcAddrType, offset),
+                                                    srcIndFlags);
+        }
+        else
+        {
+            srcVal = m_compiler->gtNewLclFldNode(srcLclNum, valType, srcLclOffs + offset, runLayout);
+        }
+
+        GenTree* store =
+            m_compiler->gtNewStoreValueNode(valType, runLayout, offsetAddr(dstAddrLclNum, dstAddrType, offset), srcVal,
+                                            dstIndFlags);
+
+        LIR::Range range = LIR::SeqTree(m_compiler, store);
+        GenTree*   first = range.FirstNode();
+        GenTree*   last  = range.LastNode();
+        BlockRange().InsertBefore(blkNode, std::move(range));
+        LowerRange(first, last);
+    };
+
+    const unsigned slots = layout->GetSlotCount();
+
+    for (unsigned i = 0; i < slots;)
+    {
+        if (layout->IsGCPtr(i))
+        {
+            // One STOREIND<gctype> per GC slot. Lowers to ASSIGN_REF /
+            // CHECKED_ASSIGN_REF via the normal write-barrier lowering.
+            emitStore(i * TARGET_POINTER_SIZE, layout->GetGCPtrType(i), nullptr);
+            i++;
+        }
+        else
+        {
+            // Coalesce a contiguous run of non-GC slots into one store: a
+            // single-slot run becomes STOREIND<TYP_I_IMPL>; a wider run becomes
+            // a STORE_BLK with a non-GC layout so the standard block-copy
+            // lowering can use SIMD as appropriate.
+            const unsigned runStart = i;
+            do
+            {
+                i++;
+            } while ((i < slots) && !layout->IsGCPtr(i));
+
+            const unsigned runSlots = i - runStart;
+            ClassLayout*   runLayout =
+                (runSlots > 1) ? m_compiler->typGetBlkLayout(runSlots * TARGET_POINTER_SIZE) : nullptr;
+
+            emitStore(runStart * TARGET_POINTER_SIZE, TYP_I_IMPL, runLayout);
+        }
+    }
+
+    // Remove the now-orphan operand nodes and bash blkNode to a NOP so the
+    // LowerNode driver continues from blkNode->gtNext.
+    BlockRange().Remove(blkNode->Addr());
+    if (src->OperIs(GT_IND))
+    {
+        BlockRange().Remove(src->AsIndir()->Addr());
+    }
+    BlockRange().Remove(src);
+    blkNode->gtBashToNOP();
+    return true;
 }
 
 //------------------------------------------------------------------------

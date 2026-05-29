@@ -644,11 +644,7 @@ RefPosition* LinearScan::addKillForRegs(regMaskTP mask, LsraLocation currentLoc)
     // codegen. Mark these as modified here, so when we do final frame
     // layout, we'll know about all these registers. This is especially
     // important if mask contains callee-saved registers, which affect the
-    // frame size since we need to save/restore them. In the case where we
-    // have a copyBlk with GC pointers, can need to call the
-    // CORINFO_HELP_ASSIGN_BYREF helper, which kills callee-saved RSI and
-    // RDI, if LSRA doesn't assign RSI/RDI, they wouldn't get marked as
-    // modified until codegen, which is too late.
+    // frame size since we need to save/restore them.
     m_compiler->codeGen->regSet.rsSetRegsModified(mask DEBUGARG(true));
 
     RefPosition* pos = newRefPosition((Interval*)nullptr, currentLoc, RefTypeKill, nullptr, mask.getLow());
@@ -877,14 +873,6 @@ regMaskTP LinearScan::getKillSetForBlockStore(GenTreeBlk* blkNode)
     bool isCopyBlk = varTypeIsStruct(blkNode->Data());
     switch (blkNode->gtBlkOpKind)
     {
-        case GenTreeBlk::BlkOpKindCpObjUnroll:
-#ifdef TARGET_XARCH
-        case GenTreeBlk::BlkOpKindCpObjRepInstr:
-#endif // TARGET_XARCH
-            assert(isCopyBlk && blkNode->AsBlk()->GetLayout()->HasGCPtr());
-            killMask = m_compiler->compHelperCallKillSet(CORINFO_HELP_ASSIGN_BYREF);
-            break;
-
 #ifdef TARGET_XARCH
         case GenTreeBlk::BlkOpKindRepInstr:
             if (isCopyBlk)
@@ -4375,11 +4363,7 @@ int LinearScan::BuildReturn(GenTree* tree)
                         break;
                     case TYP_DOUBLE:
                         // We ONLY want the valid double register in the RBM_DOUBLERET mask.
-#ifdef TARGET_AMD64
                         useCandidates = (RBM_DOUBLERET & RBM_ALLDOUBLE).GetFloatRegSet();
-#else
-                    useCandidates = (RBM_DOUBLERET & RBM_ALLDOUBLE).GetFloatRegSet();
-#endif // TARGET_AMD64
                         break;
                     case TYP_LONG:
                         useCandidates = RBM_LNGRET.GetIntRegSet();
