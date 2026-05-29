@@ -530,11 +530,16 @@ namespace System.Formats.Tar.Tests
 
             if (OperatingSystem.IsWindows())
             {
-                // On Windows the sparse-aware extraction path marks the destination file with
-                // FSCTL_SET_SPARSE. NTFS reflects this through the FileAttributes.SparseFile bit.
-                // (FAT/exFAT volumes don't support sparse files; the CI test machines use NTFS.)
-                Assert.True((File.GetAttributes(destinationFile) & FileAttributes.SparseFile) != 0,
-                    "Expected sparse extraction to mark the destination file as sparse on Windows/NTFS.");
+                string? root = Path.GetPathRoot(destinationFile);
+                Assert.NotNull(root);
+
+                if (new DriveInfo(root!).DriveFormat.Equals("NTFS", StringComparison.OrdinalIgnoreCase))
+                {
+                    // On Windows the sparse-aware extraction path marks the destination file with
+                    // FSCTL_SET_SPARSE. NTFS reflects this through the FileAttributes.SparseFile bit.
+                    Assert.True((File.GetAttributes(destinationFile) & FileAttributes.SparseFile) != 0,
+                        "Expected sparse extraction to mark the destination file as sparse on Windows/NTFS.");
+                }
             }
         }
 
