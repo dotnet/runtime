@@ -3202,7 +3202,56 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetPEFileMDInternalRW(vmPEAssembly, pAddrMDInternalRW) : HResults.E_NOTIMPL;
 
     public int AreOptimizationsDisabled(ulong vmModule, uint methodTk, Interop.BOOL* pOptimizationsDisabled)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.AreOptimizationsDisabled(vmModule, methodTk, pOptimizationsDisabled) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (vmModule == 0)
+                throw new ArgumentException("Module pointer cannot be null.", nameof(vmModule));
+
+            if (pOptimizationsDisabled is null)
+                throw new ArgumentException("Output pointer cannot be null.", nameof(pOptimizationsDisabled));
+
+            if ((EcmaMetadataUtils.TokenType)(methodTk & EcmaMetadataUtils.TokenTypeMask) != EcmaMetadataUtils.TokenType.mdtMethodDef)
+                throw new ArgumentException("methodTk must be a MethodDef token.", nameof(methodTk));
+
+            *pOptimizationsDisabled = Interop.BOOL.FALSE;
+            if (_target.Contracts.TryGetContract<IReJIT>(out IReJIT rejit))
+            {
+                ILoader loader = _target.Contracts.Loader;
+                Contracts.ModuleHandle module = loader.GetModuleHandleFromModulePtr(new TargetPointer(vmModule));
+                ModuleLookupTables lookupTables = loader.GetLookupTables(module);
+                TargetPointer methodDesc = loader.GetModuleLookupMapElement(lookupTables.MethodDefToDesc, methodTk, out _);
+
+                if (methodDesc != TargetPointer.Null)
+                {
+                    ICodeVersions codeVersions = _target.Contracts.CodeVersions;
+                    ILCodeVersionHandle ilCodeVersion = codeVersions.GetActiveILCodeVersion(methodDesc);
+                    if (rejit.IsDeoptimized(ilCodeVersion))
+                    {
+                        *pOptimizationsDisabled = Interop.BOOL.TRUE;
+                    }
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacy is not null)
+        {
+            Interop.BOOL localPOptimizationsDisabled;
+            int hrLocal = _legacy.AreOptimizationsDisabled(vmModule, methodTk, &localPOptimizationsDisabled);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pOptimizationsDisabled == localPOptimizationsDisabled);
+        }
+#endif
+
+        return hr;
+    }
 
     public int GetDefinesBitField(uint* pDefines)
     {
