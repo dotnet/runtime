@@ -240,20 +240,21 @@ namespace System.Linq
         private Grouping<TKey, TElement>? GetNullKeyGrouping(bool create)
         {
             Grouping<TKey, TElement>? nullGrouping = _nullKeyGrouping;
-            if (nullGrouping is null)
+            if (nullGrouping is not null)
             {
-                // A custom comparer may already have grouped null-equivalent non-null keys. Old behavior only
-                // merged keys whose hash code was 0, so look for such a grouping before creating a new one.
-                if (_customComparer)
-                {
-                    nullGrouping = FindNullEquivalentGrouping();
-                }
+                return nullGrouping;
+            }
 
-                if (nullGrouping is null && create)
-                {
-                    nullGrouping = CreateGrouping(default!);
-                }
+            // A custom comparer may already have grouped a null-equivalent non-null key. Old behavior only
+            // merged keys whose hash code was 0, so look for such a grouping before creating a new one.
+            if (_customComparer)
+            {
+                nullGrouping = FindNullEquivalentGrouping();
+            }
 
+            if (create)
+            {
+                nullGrouping ??= CreateGrouping(default!);
                 _nullKeyGrouping = nullGrouping;
             }
 
