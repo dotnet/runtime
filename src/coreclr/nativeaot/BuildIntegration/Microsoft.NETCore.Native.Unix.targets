@@ -417,8 +417,14 @@ int main(int argc, char** argv)
       <_AggregateExecutableShimCompilerAndLinkerArg Include="@(LinkerArg)" Condition="'%(LinkerArg.Shim)' == 'true'" />
       <_AggregateExecutableShimCompilerAndLinkerArg Include="-Wl,-rpath,'$ORIGIN'" Condition="'$(_IsApplePlatform)' != 'true'" />
       <_AggregateExecutableShimCompilerAndLinkerArg Include="-Wl,-rpath,@executable_path" Condition="'$(_IsApplePlatform)' == 'true'" />
+
       <!-- binskim warning BA3001 PIE disabled on executable -->
       <_AggregateExecutableShimCompilerAndLinkerArg Include="-pie -Wl,-pie" Condition="'$(_IsApplePlatform)' != 'true' and '$(StaticExecutable)' != 'true' and '$(PositionIndependentExecutable)' != 'false'" />
+      <!-- binskim error BA3003: The stack protector was not found -->
+      <_AggregateExecutableShimCompilerAndLinkerArg Include="--stack-protector-strong" />
+      <!-- binskim error BA3031: X was compiled using Clang but without the SafeStack -->
+      <_AggregateExecutableShimCompilerAndLinkerArg Include="-fsanitize=safe-stack" />
+
 
       <_AggregateExecutableShimNativeLibraryArg Include="-L&quot;$(NativeOutputPath)&quot;" Condition="'$(_IsApplePlatform)' != 'true'" />
       <_AggregateExecutableShimNativeLibraryArg Include="-l:$(NativeBinaryPrefix)$(TargetName)$(NativeBinaryExt)" Condition="'$(_IsApplePlatform)' != 'true'" />

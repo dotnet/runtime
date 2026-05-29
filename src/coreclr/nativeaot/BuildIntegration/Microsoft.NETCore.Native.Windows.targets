@@ -180,6 +180,11 @@ int wmain(int argc, unsigned short** argv)
       <_AggregateExecutableShimCompilerArg Condition="'$(NativeDebugSymbols)' == 'true'" Include="/Z7" />
       <_AggregateExecutableShimCompilerArg Condition="'$(ControlFlowGuard)' == 'Guard'" Include="/guard:cf" />
 
+      <!-- binskim BA2007 X was compiled at too low a warning level -->
+      <_AggregateExecutableShimCompilerArg Include="/W4" />
+      <!-- binskim BA2026 X is a Windows PE that wasn't compiled with recommended Security Development Lifecycle (SDL) checks -->
+      <_AggregateExecutableShimCompilerArg Include="/SDL" />
+
       <_AggregateExecutableShimLinkerArg Include="@(LinkerArg)" Condition="'%(LinkerArg.Shim)' == 'true'" />
       <_AggregateExecutableShimLinkerArg Include="/ENTRY:wmainCRTStartup" />
       <_AggregateExecutableShimLinkerArg Include="/STACK:$(IlcDefaultStackSize)" />
