@@ -4791,6 +4791,15 @@ void CodeGen::genFinalizeFrame()
     }
 #endif // TARGET_ARM
 
+#if defined(TARGET_AMD64)
+    // x64 spike: the secondary frame-pointer register (if reserved) must be saved/restored as a
+    // callee-save, so mark it modified before compCalleeRegsPushed is computed below.
+    if (regSet.rsMaskResvd != RBM_NONE)
+    {
+        regSet.rsSetRegsModified(regSet.rsMaskResvd);
+    }
+#endif // TARGET_AMD64
+
 #ifdef TARGET_ARM64
     if (m_compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && TargetOS::IsApplePlatform)
     {
@@ -5511,9 +5520,8 @@ void CodeGen::genFnProlog()
     }
 #endif // !TARGET_ARM64 && !TARGET_LOONGARCH64 && !TARGET_RISCV64
 
+#if defined(TARGET_AMD64)
     // For x64 OSR we have to finish saving callee saves.
-    //
-#ifdef TARGET_AMD64
     if (inheritsCalleeSaves)
     {
         genOSRSaveRemainingCalleeSavedRegisters();
@@ -5553,6 +5561,22 @@ void CodeGen::genFnProlog()
     // This is the end of the OS-reported prolog for purposes of unwinding
     //
     //-------------------------------------------------------------------------
+
+#if defined(TARGET_AMD64)
+    // x64 spike: establish the secondary frame-pointer register. This runs after the frame pointer
+    // (if any) is established and after SP is final, so both candidate bases are live. It is placed
+    // after the OS-reported prolog because the register was already saved (with its own unwind code)
+    // by genPushCalleeSavedRegisters; this lea merely loads a derived address and needs no unwind
+    // data. The register is excluded from allocation, so it stays live for the method body.
+    if (m_compiler->compSecondFramePtrReg != REG_NA)
+    {
+        const regNumber base = m_compiler->compSecondFramePtrFPbased ? REG_FPBASE : REG_SPBASE;
+        const int       disp = m_compiler->compSecondFramePtrFPbased ? -m_compiler->compSecondFramePtrOffset
+                                                                     : m_compiler->compSecondFramePtrOffset;
+        GetEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, m_compiler->compSecondFramePtrReg, base, disp);
+        regSet.verifyRegUsed(m_compiler->compSecondFramePtrReg);
+    }
+#endif // TARGET_AMD64
 
 #ifdef TARGET_ARM64
     if (m_compiler->compUsesUnknownSizeFrame)

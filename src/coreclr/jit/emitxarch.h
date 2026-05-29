@@ -65,6 +65,9 @@ struct CnsVal
 
 UNATIVE_OFFSET emitInsSize(instrDesc* id, code_t code, bool includeRexPrefixSize);
 UNATIVE_OFFSET emitInsSizeSVCalcDisp(instrDesc* id, code_t code, int var, int dsp);
+#if defined(TARGET_AMD64)
+    bool emitIsSecondFramePtrCandidate(instruction ins, bool EBPbased, int dsp, int* pAdjustedDsp);
+#endif // TARGET_AMD64
 UNATIVE_OFFSET emitInsSizeSV(instrDesc* id, code_t code, int var, int dsp);
 UNATIVE_OFFSET emitInsSizeSV(instrDesc* id, code_t code, int var, int dsp, int val);
 UNATIVE_OFFSET emitInsSizeRR(instrDesc* id, code_t code);

@@ -2588,6 +2588,35 @@ void LinearScan::setFrameType()
     }
 #endif // TARGET_ARMARCH || TARGET_RISCV64
 
+#if defined(TARGET_AMD64)
+    // x64 spike (see JitSecondFramePtr): reserve a callee-saved register to act as a secondary
+    // stack base pointer for large frames, extending cheap disp8 addressing. SuperPMI asmdiffs
+    // showed this is a net code-size win when optimizations are disabled (accurate frame estimate,
+    // no register-pressure cost) but a loss with optimizations on (enregistration makes the
+    // pre-allocation frame estimate a poor predictor and removing a register raises spill
+    // pressure), so restrict it to the optimizations-disabled path. Bail on localloc/OSR to keep
+    // the spike contained. Methods with EH are supported only on RBP frames: funclets re-establish
+    // the secondary pointer from RBP (the establisher frame pointer), so an SP base would not be
+    // recoverable inside a funclet.
+    {
+        const int secondOffset = (int)JitConfig.JitSecondFramePtr();
+        if ((secondOffset != 0) && m_compiler->opts.OptimizationDisabled() &&
+            ((frameType == FT_ESP_FRAME) || (frameType == FT_EBP_FRAME)) && !m_compiler->compLocallocUsed &&
+            !m_compiler->opts.IsOSR() && ((m_compiler->compHndBBtabCount == 0) || (frameType == FT_EBP_FRAME)) &&
+            (m_compiler->lvaFrameSize(Compiler::REGALLOC_FRAME_LAYOUT) > 256))
+        {
+            m_compiler->compSecondFramePtrReg     = REG_OPT_RSVD2;
+            m_compiler->compSecondFramePtrOffset  = secondOffset;
+            m_compiler->compSecondFramePtrFPbased = (frameType == FT_EBP_FRAME);
+            m_compiler->codeGen->regSet.rsMaskResvd |= RBM_OPT_RSVD2;
+            removeMask |= RBM_OPT_RSVD2.GetIntRegSet();
+            JITDUMP("  Reserved REG_OPT_RSVD2 (%s) as secondary frame pointer (%s%s%d)\n",
+                    getRegName(REG_OPT_RSVD2), m_compiler->compSecondFramePtrFPbased ? "RBP" : "RSP",
+                    m_compiler->compSecondFramePtrFPbased ? "-" : "+", secondOffset);
+        }
+    }
+#endif // TARGET_AMD64
+
 #ifdef TARGET_ARM
     if (m_compiler->compLocallocUsed)
     {

@@ -5252,6 +5252,66 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instrDesc* id)
 }
 
 //------------------------------------------------------------------------
+#if defined(TARGET_AMD64)
+//------------------------------------------------------------------------
+// emitIsSecondFramePtrCandidate: Determine whether a stack access should be
+//    redirected through the reserved secondary frame-pointer register (an x64
+//    spike enabled by JitConfig.JitSecondFramePtr).
+//
+// Arguments:
+//    ins         -- the instruction
+//    EBPbased    -- whether the canonical access is frame-pointer (RBP) based
+//    dsp         -- the canonical (full effective) displacement off the base
+//    pAdjustedDsp - [out] the displacement off the secondary register
+//
+// Return Value:
+//    true if the access can use [REG_OPT_RSVD2 + disp8] instead of a disp32
+//    form off the canonical base; false to use the canonical base/displacement.
+//
+// Notes:
+//    Must be deterministic between size estimation and output. Redirects an access whose
+//    canonical displacement does not fit in a disp8 but does once shifted by the secondary
+//    offset, and only when its base (RBP vs RSP) matches the base the secondary register
+//    shadows. Instructions with special displacement/encoding handling (EVEX, APX extended
+//    EVEX, SSE 0F38/0F3A, crc32) are excluded so the simple [reg+disp8] form always applies.
+//
+bool emitter::emitIsSecondFramePtrCandidate(instruction ins, bool EBPbased, int dsp, int* pAdjustedDsp)
+{
+    if (m_compiler->compSecondFramePtrReg == REG_NA)
+    {
+        return false;
+    }
+
+    // Only redirect accesses whose canonical base matches the base the secondary register shadows
+    // (RBP for FP-based frames, RSP otherwise). Mixing bases would compute a wrong displacement.
+    if (EBPbased != m_compiler->compSecondFramePtrFPbased)
+    {
+        return false;
+    }
+
+    if (IsEvexEncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins) || EncodedBySSE38orSSE3A(ins) ||
+        (ins == INS_crc32))
+    {
+        return false;
+    }
+
+    // The secondary register holds (base - offset) for RBP frames (locals at negative offsets) and
+    // (base + offset) for RSP frames (locals at positive offsets); invert accordingly.
+    const int  adjusted = EBPbased ? (dsp + m_compiler->compSecondFramePtrOffset)
+                                    : (dsp - m_compiler->compSecondFramePtrOffset);
+    const bool rawFits  = ((signed char)dsp == (ssize_t)dsp);
+    const bool adjFits  = ((signed char)adjusted == (ssize_t)adjusted);
+
+    if (rawFits || !adjFits)
+    {
+        return false;
+    }
+
+    *pAdjustedDsp = adjusted;
+    return true;
+}
+#endif // TARGET_AMD64
+
 // emitInsSizeSVCalcDisp: Calculate instruction size.
 //
 // Arguments:
@@ -5275,6 +5335,16 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSVCalcDisp(instrDesc* id, code_t code,
 
     adr = m_compiler->lvaFrameAddress(var, &EBPbased);
     dsp = adr + id->idAddr()->iiaLclVar.lvaOffset();
+
+#if defined(TARGET_AMD64)
+    // x64 spike: when the access can be redirected through the secondary frame pointer it uses a
+    // [reg+disp8] form with no SIB byte, regardless of EVEX/zero-disp handling below.
+    int secondDsp;
+    if (emitIsSecondFramePtrCandidate(ins, EBPbased, dsp, &secondDsp))
+    {
+        return size + sizeof(char);
+    }
+#endif // TARGET_AMD64
 
     dspIsZero = (dsp == 0);
 
@@ -15778,7 +15848,20 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     // for stack variables the dsp should never be a reloc
     assert(id->idIsDspReloc() == 0);
 
-    if (EBPbased)
+#if defined(TARGET_AMD64)
+    int secondDsp;
+    if (emitIsSecondFramePtrCandidate(ins, EBPbased, dsp, &secondDsp))
+    {
+        // Redirect through the secondary frame pointer (a low callee-saved register, e.g. RBX):
+        // modrm mod=01, rm=base => low byte 0x40 | (reg & 7); no SIB byte and no REX.B since the
+        // register is < R8 and is not RSP/R12.
+        assert((unsigned)REG_OPT_RSVD2 < 8);
+        dst += emitOutputWord(dst, code | (((0x40 | (REG_OPT_RSVD2 & 0x07))) << 8));
+        dst += emitOutputByte(dst, secondDsp);
+    }
+    else
+#endif // TARGET_AMD64
+        if (EBPbased)
     {
         // EBP-based variable: does the offset fit in a byte?
         if (EncodedBySSE38orSSE3A(ins) || (ins == INS_crc32))
