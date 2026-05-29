@@ -43,6 +43,8 @@ if("${CLI_CMAKE_FALLBACK_OS}" STREQUAL "${CLR_CMAKE_TARGET_OS}")
     add_compile_definitions(FALLBACK_OS_IS_SAME_AS_TARGET_OS)
 endif()
 
+string(TOUPPER "${CLR_CMAKE_TARGET_ARCH}" CLR_CMAKE_TARGET_ARCH_UPPER)
+
 # Find support libraries that we need if they're present on the system.
 find_library(PTHREAD_LIB pthread)
 

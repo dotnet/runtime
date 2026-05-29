@@ -12,15 +12,13 @@
 
 bool file_exists_in_dir(const pal::string_t& dir, const pal::char_t* file_name, pal::string_t* out_file_path)
 {
-    pal::string_t file_path = dir;
-    append_path(&file_path, file_name);
-
-    if (!pal::file_exists(file_path))
+    pal_char_t* file_path = utils_file_exists_in_dir_alloc(dir.c_str(), file_name);
+    if (file_path == nullptr)
         return false;
 
-    if (out_file_path)
-        *out_file_path = file_path;
-
+    if (out_file_path != nullptr)
+        out_file_path->assign(file_path);
+    free(file_path);
     return true;
 }
 
@@ -137,25 +135,13 @@ pal::string_t get_filename(const pal::string_t& path)
 
 pal::string_t get_directory(const pal::string_t& path)
 {
-    pal::string_t ret = path;
-    while (!ret.empty() && ret.back() == DIR_SEPARATOR)
-    {
-        ret.pop_back();
-    }
+    pal_char_t* result = utils_get_directory_alloc(path.c_str());
+    if (result == nullptr)
+        return pal::string_t();
 
-    // Find the last dir separator
-    auto path_sep = ret.find_last_of(DIR_SEPARATOR);
-    if (path_sep == pal::string_t::npos)
-    {
-        return ret + DIR_SEPARATOR;
-    }
-
-    int pos = static_cast<int>(path_sep);
-    while (pos >= 0 && ret[pos] == DIR_SEPARATOR)
-    {
-        pos--;
-    }
-    return ret.substr(0, static_cast<size_t>(pos) + 1) + DIR_SEPARATOR;
+    pal::string_t ret(result);
+    free(result);
+    return ret;
 }
 
 void remove_trailing_dir_separator(pal::string_t* dir)
@@ -323,18 +309,13 @@ void get_framework_locations(const pal::string_t& dotnet_dir, const bool disable
 bool get_file_path_from_env(const pal::char_t* env_key, pal::string_t* recv)
 {
     recv->clear();
-    pal::string_t file_path;
-    if (pal::getenv(env_key, &file_path))
-    {
-        if (pal::fullpath(&file_path))
-        {
-            recv->assign(file_path);
-            return true;
-        }
-        trace::verbose(_X("Did not find [%s] directory [%s]"), env_key, file_path.c_str());
-    }
+    pal_char_t* canonical = utils_get_file_path_from_env(env_key);
+    if (canonical == nullptr)
+        return false;
 
-    return false;
+    recv->assign(canonical);
+    free(canonical);
+    return true;
 }
 
 size_t index_of_non_numeric(const pal::string_t& str, size_t i)
@@ -363,33 +344,18 @@ pal::string_t get_dotnet_root_env_var_for_arch(pal::architecture arch)
 
 bool get_dotnet_root_from_env(pal::string_t* dotnet_root_env_var_name, pal::string_t* recv)
 {
-    pal::string_t env_var_name = get_dotnet_root_env_var_for_arch(get_current_arch());
-    if (get_file_path_from_env(env_var_name.c_str(), recv))
+    const pal_char_t* env_var_name = nullptr;
+    pal_char_t* dotnet_root = nullptr;
+    if (!utils_get_dotnet_root_from_env(&env_var_name, &dotnet_root))
     {
-        *dotnet_root_env_var_name = env_var_name;
-        return true;
+        recv->clear();
+        return false;
     }
 
-#if defined(WIN32)
-    if (pal::is_running_in_wow64())
-    {
-        if (get_file_path_from_env(_X("DOTNET_ROOT(x86)"), recv))
-        {
-            *dotnet_root_env_var_name = _X("DOTNET_ROOT(x86)");
-            return true;
-        }
-    }
-#endif
-
-    // If no architecture-specific environment variable was set
-    // fallback to the default DOTNET_ROOT.
-    if (get_file_path_from_env(DOTNET_ROOT_ENV_VAR, recv))
-    {
-        *dotnet_root_env_var_name = DOTNET_ROOT_ENV_VAR;
-        return true;
-    }
-
-    return false;
+    dotnet_root_env_var_name->assign(env_var_name);
+    recv->assign(dotnet_root);
+    free(dotnet_root);
+    return true;
 }
 
 /**
@@ -547,4 +513,10 @@ extern "C" pal_char_t* utils_test_only_getenv(const pal_char_t* name)
 
     pal_char_t* dup = pal_strdup(value.c_str());
     return dup;
+}
+
+extern "C" pal_char_t* utils_get_download_url(const pal_char_t* framework_name, const pal_char_t* framework_version)
+{
+    pal::string_t url = get_download_url(framework_name, framework_version);
+    return pal_strdup(url.c_str());
 }

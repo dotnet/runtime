@@ -42,6 +42,7 @@
     _X("%s&apphost_version=%s")
 
 #define DOTNET_ROOT_ENV_VAR _X("DOTNET_ROOT")
+#define DOTNET_ROOT_ARCH_ENV_VAR DOTNET_ROOT_ENV_VAR _X("_") _STRINGIFY(CURRENT_ARCH_NAME_UPPER)
 
 #define SDK_DOTNET_DLL _X("dotnet.dll")
 
@@ -213,15 +214,43 @@ size_t to_size_t_dbgchecked(T value)
 extern "C" {
 #endif
 
-// Writes the trailing path component (i.e. text after the last DIR_SEPARATOR)
-// of `path` into `out_name`. Returns false if the result does not fit in the
-// caller-supplied buffer (out_name is set to empty).
+// Write the trailing path component of `path` (the text after the last
+// DIR_SEPARATOR) into out_name. Return false if it does not fit.
 bool utils_get_filename(const pal_char_t* path, pal_char_t* out_name, size_t out_name_len);
 
-// Retrieves the value of a test-only environment variable. Returns NULL when the
-// variable is unset or when the product binary is not stamped as a test build.
-// Caller must free() the returned pointer.
+// Return the value of a test-only environment variable, or NULL when unset
+// or when the product binary is not stamped as a test build. Caller should
+// free() the returned pointer.
 pal_char_t* utils_test_only_getenv(const pal_char_t* name);
+
+// Append `component` to the caller-allocated buffer `path`, inserting a
+// DIR_SEPARATOR between them when needed. Silently no-op on overflow or
+// when `component` is NULL/empty.
+void utils_append_path(pal_char_t* path, size_t path_len, const pal_char_t* component);
+
+// Return <dir>/<file_name> if the file exists, otherwise NULL. Caller should
+// free() the returned pointer.
+pal_char_t* utils_file_exists_in_dir_alloc(const pal_char_t* dir, const pal_char_t* file_name);
+
+// Return the directory portion of `path`, always ending with DIR_SEPARATOR.
+// Caller should free() the returned pointer.
+pal_char_t* utils_get_directory_alloc(const pal_char_t* path);
+
+// Read `env_key` and return the canonicalized value, or NULL if unset or
+// canonicalization fails. Caller should free() the returned pointer.
+pal_char_t* utils_get_file_path_from_env(const pal_char_t* env_key);
+
+// Find the .NET install root from environment variables in priority order:
+//  - DOTNET_ROOT_<ARCH>
+//  - If running Windows WOW64 only, DOTNET_ROOT(x86)
+//  - DOTNET_ROOT
+// Caller should free() out_dotnet_root.
+bool utils_get_dotnet_root_from_env(const pal_char_t** out_env_var_name, pal_char_t** out_dotnet_root);
+
+// Return the download URL for `framework_name` at `framework_version`, or
+// the runtime URL when `framework_name` is NULL or empty. Caller should free()
+// the returned pointer.
+pal_char_t* utils_get_download_url(const pal_char_t* framework_name, const pal_char_t* framework_version);
 
 #ifdef __cplusplus
 }
