@@ -3,16 +3,8 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class CodeHeap : IData<CodeHeap>
+[CdacType(nameof(DataType.CodeHeap))]
+internal sealed partial class CodeHeap : IData<CodeHeap>
 {
-    static CodeHeap IData<CodeHeap>.Create(Target target, TargetPointer address)
-        => new CodeHeap(target, address);
-
-    public CodeHeap(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.CodeHeap);
-        HeapType = target.ReadField<byte>(address, type, nameof(HeapType));
-    }
-
-    public byte HeapType { get; init; }
+    [Field] public byte HeapType { get; }
 }
