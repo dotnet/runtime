@@ -118,7 +118,8 @@ namespace ILCompiler.DependencyAnalysis
         public byte[] GCInfo => _gcInfo;
         public MethodExceptionHandlingInfoNode EHInfo => _ehInfo;
 
-        ObjectNode.ObjectData INodeWithFunclets.EHInfo => throw new NotImplementedException();
+        // TODO-WASM: Appropriately extract funclet kinds from eh clause info
+        public FuncletKind[] GetFuncletKinds() => throw new NotImplementedException();
 
         public ISymbolNode GetAssociatedDataNode(NodeFactory factory)
         {

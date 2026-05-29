@@ -129,75 +129,22 @@ namespace ILCompiler.ObjectWriter
 
         private void RecordFunclets(INodeWithFunclets nodeWithFunclets)
         {
-            if (nodeWithFunclets.FrameInfos.Length <= 1)
+            FuncletKind[] funcletKinds = nodeWithFunclets.GetFuncletKinds();
+            if (funcletKinds.Length < 1)
             {
                 return;
             }
 
+            WasmValueType pointerType = _nodeFactory.Target.PointerSize == 8 ? WasmValueType.I64 : WasmValueType.I32;
             string mangledNodeName = nodeWithFunclets.GetMangledName(_nodeFactory.NameMangler);
 
-            FrameInfo[] frameInfos = nodeWithFunclets.FrameInfos;
-
-            WasmValueType pointerType = _nodeFactory.Target.PointerSize == 8 ? WasmValueType.I64 : WasmValueType.I32;
-
-            FuncletKind[] funcletKinds = GetFuncletKinds(nodeWithFunclets.EHInfo);
-            Debug.Assert(funcletKinds.Length == frameInfos.Length - 1);
-
-            for (int i = 1; i < frameInfos.Length; i++)
+            for (int i = 0; i < funcletKinds.Length; i++)
             {
-                 WasmFuncType funcletSignature = GetFuncletType(funcletKinds[i - 1], pointerType);
-                _uniqueSymbols.Add($"{mangledNodeName}_funclet_{i - 1}", _methodCount);
+                 WasmFuncType funcletSignature = GetFuncletType(funcletKinds[i], pointerType);
+                _uniqueSymbols.Add($"{mangledNodeName}_funclet_{i}", _methodCount);
                 _methodCount++;
                 RegisterStubIndexAndSignature(funcletSignature);
             }
-        }
-
-        enum FuncletKind : byte
-        {
-            CatchOrFilterHandler,
-            Filter,
-            Finally,
-            Fault
-        }
-
-        private static FuncletKind[] GetFuncletKinds(ObjectNode.ObjectData ehInfo)
-        {
-            // EH Clause structure contains 6 uint sized fields 
-            const int ClauseSize = 6 * sizeof(uint);
-            const int FlagsFieldOffset = 0 * sizeof(uint);
-
-            if (ehInfo?.Data is not { Length: > 0 } data)
-                return Array.Empty<FuncletKind>();
-
-            int clauseCount = data.Length / ClauseSize;
-            ArrayBuilder<FuncletKind> funcletKinds = new ArrayBuilder<FuncletKind>(clauseCount);
-            for (int i = 0; i < clauseCount; i++)
-            {
-                int baseOffset = i * ClauseSize;
-                CORINFO_EH_CLAUSE_FLAGS flags = (CORINFO_EH_CLAUSE_FLAGS)BinaryPrimitives.ReadUInt32LittleEndian(
-                    data.AsSpan(baseOffset + FlagsFieldOffset));
-
-                if (flags.HasFlag(CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_FINALLY))
-                {
-                    funcletKinds.Add(FuncletKind.Finally);
-                }
-                else if (flags.HasFlag(CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_FAULT))
-                {
-                    funcletKinds.Add(FuncletKind.Fault);
-                }
-                else if (flags.HasFlag(CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_FILTER))
-                {
-                    // Filters inspire two funclets: a filter funclet and a catch-like handler funclet
-                    funcletKinds.Add(FuncletKind.Filter);
-                    funcletKinds.Add(FuncletKind.CatchOrFilterHandler);
-                }
-                else
-                {
-                    funcletKinds.Add(FuncletKind.CatchOrFilterHandler);
-                }
-            }
-
-            return funcletKinds.ToArray();
         }
 
         private WasmFuncType GetFuncletType(FuncletKind funcletKind, WasmValueType pointerType)

@@ -4,12 +4,12 @@
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
-    /// Interface for nodes that have funclet-level unwind and exception handling metadata.
+    /// Interface for nodes that have attached funclets. On platforms such as Wasm,
+    /// we need to know what kind of funclets are attached to a method in order to emit
+    /// the funclets as separate function definitions.
     /// </summary>
     public interface INodeWithFunclets : ISymbolNode
     {
-        FrameInfo[] FrameInfos { get; }
-
-        ObjectNode.ObjectData EHInfo { get; }
+        public FuncletKind[] GetFuncletKinds();
     }
 }
