@@ -30,7 +30,7 @@ public enum RegMask
 public record GCInfo
 {
     private const uint MINIMUM_SUPPORTED_GCINFO_VERSION = 4;
-    private const uint MAXIMUM_SUPPORTED_GCINFO_VERSION = 4;
+    private const uint MAXIMUM_SUPPORTED_GCINFO_VERSION = 5;
 
     private readonly Target _target;
 
