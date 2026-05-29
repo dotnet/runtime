@@ -27,9 +27,7 @@ namespace System.Threading
     /// When OS provides a compare-and-wait API, such as futex, we use that.
     /// Otherwise we fallback to a heavier, but more portable condvar/mutex implementation.
     /// </summary>
-#pragma warning disable CA1852 // LowLevelThreadBlocker is derived from in some targets
-    internal unsafe class LowLevelThreadBlocker : IDisposable
-#pragma warning restore CA1852
+    internal unsafe struct LowLevelThreadBlocker : IDisposable
     {
         private int* _pState;
 
@@ -47,11 +45,6 @@ namespace System.Threading
 #endif
         }
 
-        ~LowLevelThreadBlocker()
-        {
-            Dispose();
-        }
-
         public void Dispose()
         {
             if (_pState == null)
@@ -65,7 +58,6 @@ namespace System.Threading
 #if USE_MONITOR
             _monitor.Dispose();
 #endif
-            GC.SuppressFinalize(this);
         }
 
 #if USE_MONITOR
