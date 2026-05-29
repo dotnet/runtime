@@ -89,10 +89,10 @@ namespace ILCompiler
                         && comparer.Equals(nsHandle, "System.Runtime.InteropServices"))
                     {
                         EcmaMethod method = module.GetMethod(parent);
+                        bool hasExportName = false;
                         try
                         {
-                            if (method.GetUnmanagedCallersOnlyExportName() != null)
-                                yield return method;
+                            hasExportName = method.GetUnmanagedCallersOnlyExportName() != null;
                         }
                         catch (TypeSystemException)
                         {
@@ -101,6 +101,9 @@ namespace ILCompiler
                             // named argument cannot be resolved, skip the export instead of failing
                             // the compilation during discovery.
                         }
+
+                        if (hasExportName)
+                            yield return method;
                     }
                 }
             }
