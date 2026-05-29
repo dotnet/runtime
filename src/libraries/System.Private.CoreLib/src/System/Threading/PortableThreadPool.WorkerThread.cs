@@ -111,7 +111,7 @@ namespace System.Threading
                         if (!signaled)
                             break;
 
-                        WorkerDoWork(threadPoolInstance, out noSpin);
+                        noSpin = WorkerDoWork(threadPoolInstance);
                     }
 
                     // We've timed out waiting on the semaphore. Time to exit.
@@ -123,8 +123,11 @@ namespace System.Threading
                 }
             }
 
-            private static void WorkerDoWork(PortableThreadPool threadPoolInstance, out bool noSpin)
+            // returns true if the worker should Wait with out spinning.
+            private static bool WorkerDoWork(PortableThreadPool threadPoolInstance)
             {
+                bool noSpin;
+
                 do
                 {
                     // We generally avoid spurious wakes by requesting one thread at a time. We nearly always should see a request.
@@ -145,8 +148,7 @@ namespace System.Threading
                             case ThreadPoolWorkQueue.DispatchResult.ShouldStop:
                                 // We are above goal and this worker is already removed in the counts.
                                 // Chances to be invited back right away are low, so just park.
-                                noSpin = true;
-                                return;
+                                return true;
 
                             default:
                                 // We did some work, but then there was nothing to do.
@@ -168,6 +170,8 @@ namespace System.Threading
                     // back for another try to clear the thread request and do Dispatch - without consuming a signal.
                     // See `TryIncrementProcessingWork` for details about Saturated state.
                 } while (!TryRemoveWorkingWorker(threadPoolInstance));
+
+                return noSpin;
             }
 
             // returns true if the worker is shutting down
