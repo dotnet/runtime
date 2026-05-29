@@ -45,14 +45,14 @@ private:
     bool ConfigurePipeFd(int fd);
     void ClosePipe();
 
-    static void BuildFatalSignalSet(sigset_t* signalSet);
-    static void* ThreadEntry(void* context);
+    void BuildFatalSignalSet(sigset_t* signalSet);
+    static void* WatchdogThreadProc(void* context);
 
     void ThreadLoop();
     bool WaitForCommand(Command expectedCommand, int timeoutMs = CRASH_REPORT_WATCHDOG_INFINITE_TIMEOUT_MS);
     void WriteCommand(Command command);
-    static int GetRemainingTimeoutMs(int64_t deadlineMs);
-    static void Abort();
+    int GetRemainingTimeoutMs(int64_t deadlineMs);
+    void Abort();
 
     int m_timeoutSeconds;
     int m_timeoutMs;

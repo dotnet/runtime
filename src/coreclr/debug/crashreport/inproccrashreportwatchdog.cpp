@@ -19,6 +19,8 @@
 #include <minipal/time.h>
 #include <minipal/thread.h>
 
+#include "pal/signal.hpp"
+
 static constexpr int CRASH_REPORT_WATCHDOG_SECONDS_TO_MILLISECONDS = 1000;
 static constexpr int CRASH_REPORT_WATCHDOG_SIGNAL_EXIT_CODE_OFFSET = 128;
 
@@ -101,7 +103,7 @@ CrashReportWatchdog::Initialize()
     }
 
     pthread_t thread;
-    if (pthread_create(&thread, nullptr, ThreadEntry, this) != 0)
+    if (pthread_create(&thread, nullptr, WatchdogThreadProc, this) != 0)
     {
         (void)pthread_sigmask(SIG_SETMASK, &previousSignalSet, nullptr);
         ClosePipe();
@@ -176,7 +178,7 @@ CrashReportWatchdog::BuildFatalSignalSet(sigset_t* signalSet)
 }
 
 void*
-CrashReportWatchdog::ThreadEntry(void* context)
+CrashReportWatchdog::WatchdogThreadProc(void* context)
 {
     CrashReportWatchdog* watchdog = static_cast<CrashReportWatchdog*>(context);
     if (watchdog != nullptr)
@@ -190,10 +192,6 @@ CrashReportWatchdog::ThreadEntry(void* context)
 void
 CrashReportWatchdog::ThreadLoop()
 {
-    sigset_t signalSet;
-    BuildFatalSignalSet(&signalSet);
-    (void)pthread_sigmask(SIG_BLOCK, &signalSet, nullptr);
-
     // Keep within minipal's portable 15-character limit to avoid truncation.
     (void)minipal_set_thread_name(pthread_self(), ".NET CrashWdg");
 
@@ -309,14 +307,13 @@ CrashReportWatchdog::StopCrashReport()
 void
 CrashReportWatchdog::WriteCommand(Command command)
 {
-    int savedErrno = errno;
     int writeFd = m_pipe[1];
     if (writeFd == -1)
     {
-        errno = savedErrno;
         return;
     }
 
+    int savedErrno = errno;
     char commandValue = static_cast<char>(command);
     while (true)
     {
@@ -353,17 +350,13 @@ CrashReportWatchdog::GetRemainingTimeoutMs(int64_t deadlineMs)
     return static_cast<int>(remainingMs);
 }
 
-// Terminate from the watchdog thread using the default SIGABRT action. The
-// watchdog only gets here after the crash reporter started but did not finish
-// before its configured timeout.
+// Terminate from the watchdog thread after restoring the original SIGABRT
+// handler, matching the normal post-crash-report abort path without trying to
+// create another crash report from the watchdog thread.
 void
 CrashReportWatchdog::Abort()
 {
-    struct sigaction action;
-    memset(&action, 0, sizeof(action));
-    action.sa_handler = SIG_DFL;
-    sigemptyset(&action.sa_mask);
-    (void)sigaction(SIGABRT, &action, nullptr);
+    SEHCleanupSignals(false /* isChildProcess */);
 
     sigset_t signalSet;
     sigemptyset(&signalSet);

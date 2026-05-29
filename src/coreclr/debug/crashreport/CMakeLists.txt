@@ -9,5 +9,6 @@ set(CRASHREPORT_SOURCES
 )
 
 add_library(inproccrashreport OBJECT ${CRASHREPORT_SOURCES})
+target_include_directories(inproccrashreport PRIVATE ${CLR_DIR}/pal/src/include)
 
 target_sources(coreclrpal PRIVATE $<TARGET_OBJECTS:inproccrashreport>)
