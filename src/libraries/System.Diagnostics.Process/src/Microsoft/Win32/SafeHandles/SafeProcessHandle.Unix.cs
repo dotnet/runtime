@@ -76,17 +76,26 @@ namespace Microsoft.Win32.SafeHandles
             return true;
         }
 
-        private static SafeProcessHandle OpenCore(int processId)
+        private static bool TryOpenCore(int processId, [NotNullWhen(true)] out SafeProcessHandle? processHandle)
         {
             int result = Interop.Sys.OpenProcess(processId);
 
             if (result == -1)
             {
-                throw new Win32Exception();
+                Interop.Error error = Interop.Sys.GetLastError();
+
+                if (error == Interop.Error.EPERM)
+                {
+                    throw new UnauthorizedAccessException();
+                }
+
+                processHandle = null;
+                return false;
             }
 
             ProcessWaitState.Holder waitStateHolder = new(processId);
-            return new SafeProcessHandle(waitStateHolder);
+            processHandle = new SafeProcessHandle(waitStateHolder);
+            return true;
         }
 
 

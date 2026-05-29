@@ -76,6 +76,35 @@ namespace Microsoft.Win32.SafeHandles
         [SupportedOSPlatform("maccatalyst")]
         public static SafeProcessHandle Open(int processId)
         {
+            if (!TryOpen(processId, out SafeProcessHandle? handle))
+            {
+                throw new Win32Exception();
+            }
+
+            return handle;
+        }
+
+        /// <summary>
+        /// Attempts to open an existing process by its process ID.
+        /// </summary>
+        /// <param name="processId">The process ID of the process to open.</param>
+        /// <param name="processHandle">When this method returns <see langword="true"/>, contains the <see cref="SafeProcessHandle"/> for the opened process; otherwise, <see langword="null"/>.</param>
+        /// <returns><see langword="true"/> if the process was successfully opened; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="processId"/> is negative or zero.</exception>
+        /// <exception cref="UnauthorizedAccessException">Thrown when the process exists but the caller does not have permissions to open it.</exception>
+        /// <remarks>
+        /// <para>
+        /// This method does not throw when the process does not exist. Instead, it returns <see langword="false"/>.
+        /// </para>
+        /// <para>
+        /// On Windows, if the process has already exited, the method may still succeed and return a valid handle representing the terminated process.
+        /// </para>
+        /// </remarks>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public static bool TryOpen(int processId, [NotNullWhen(true)] out SafeProcessHandle? processHandle)
+        {
             ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(processId, 0);
 
             if (!ProcessUtils.PlatformSupportsProcessStartAndKill)
@@ -83,7 +112,7 @@ namespace Microsoft.Win32.SafeHandles
                 throw new PlatformNotSupportedException();
             }
 
-            return OpenCore(processId);
+            return TryOpenCore(processId, out processHandle);
         }
 
         /// <summary>
