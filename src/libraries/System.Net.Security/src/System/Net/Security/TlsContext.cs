@@ -37,27 +37,6 @@ namespace System.Net.Security
 
         public bool IsServer => _options.IsServer;
 
-        /// <summary>
-        /// When <c>true</c>, <see cref="TlsSession"/> hands the peer certificate back to
-        /// the caller after the handshake completes (via
-        /// <see cref="TlsOperationStatus.NeedsCertificateValidation"/>) instead of running
-        /// validation inside the TLS state machine. The caller is responsible for
-        /// validating the peer certificate — which may involve I/O such as AIA fetching
-        /// or CRL/OCSP lookups — and reporting the result back via
-        /// <see cref="TlsSession.SetRemoteCertificateValidationResult(System.Net.Security.SslPolicyErrors)"/>
-        /// (or <see cref="TlsSession.AcceptWithDefaultValidation"/>).
-        /// </summary>
-        /// <remarks>
-        /// Default is <c>false</c>, in which case validation runs inline (preserving
-        /// existing <see cref="SslStream"/>-compatible behavior). When enabled, any
-        /// <see cref="SslClientAuthenticationOptions.RemoteCertificateValidationCallback"/> set
-        /// on the underlying options is ignored — the caller drives validation entirely.
-        /// On OpenSSL, the peer briefly sees the handshake complete before any rejection
-        /// alert is sent; this is a deliberate trade-off to keep validation outside the
-        /// TLS state machine.
-        /// </remarks>
-        public bool UseExternalCertificateValidation { get; set; }
-
         public static TlsContext Create(SslServerAuthenticationOptions options)
         {
             ArgumentNullException.ThrowIfNull(options);
@@ -70,12 +49,13 @@ namespace System.Net.Security
         /// Creates a client-side TLS context.
         /// </summary>
         /// <remarks>
-        /// By default, <see cref="SslClientAuthenticationOptions.RemoteCertificateValidationCallback"/>
-        /// runs inline on the thread that drives <see cref="TlsSession.ProcessHandshake"/>
-        /// — no async callback variant is supported. Callers that need to perform
-        /// expensive validation (AIA fetch, CRL/OCSP lookup) outside the TLS state
-        /// machine should set <see cref="UseExternalCertificateValidation"/> and drive
-        /// validation in response to <see cref="TlsOperationStatus.NeedsCertificateValidation"/>.
+        /// Peer certificate validation always runs outside the TLS state machine: after the
+        /// handshake reaches the point at which the peer cert is available, <see cref="TlsSession.ProcessHandshake"/>
+        /// returns <see cref="TlsOperationStatus.NeedsCertificateValidation"/> and the caller
+        /// must record a result via <see cref="TlsSession.SetRemoteCertificateValidationResult(System.Net.Security.SslPolicyErrors)"/>
+        /// or <see cref="TlsSession.AcceptWithDefaultValidation"/>. Any
+        /// <see cref="SslClientAuthenticationOptions.RemoteCertificateValidationCallback"/> set on
+        /// <paramref name="options"/> is invoked only by <see cref="TlsSession.AcceptWithDefaultValidation"/>.
         /// </remarks>
         public static TlsContext Create(SslClientAuthenticationOptions options)
         {

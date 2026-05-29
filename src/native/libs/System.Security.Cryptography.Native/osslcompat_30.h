@@ -152,4 +152,6 @@ OSSL_STORE_CTX* OSSL_STORE_open_ex(
 
 X509* SSL_get1_peer_certificate(const SSL* ssl);
 
+int SSL_set_retry_verify(SSL* ssl);
+
 int EC_GROUP_get_field_type(const EC_GROUP *group);

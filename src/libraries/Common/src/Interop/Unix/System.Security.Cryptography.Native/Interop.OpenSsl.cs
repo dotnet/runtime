@@ -688,6 +688,15 @@ internal static partial class Interop
                     return SecurityStatusPalErrorCode.CredentialsNeeded;
                 }
 
+                if (errorCode == Ssl.SslErrorCode.SSL_ERROR_WANT_RETRY_VERIFY)
+                {
+                    // OpenSSL 3.0+ retry-verify: the certificate verification
+                    // callback paused the handshake. The application owns
+                    // certificate validation and must resume the handshake
+                    // (by calling DoSslHandshake again) once it has a verdict.
+                    return SecurityStatusPalErrorCode.NeedsRemoteCertificateValidation;
+                }
+
                 if (errorCode == Ssl.SslErrorCode.SSL_ERROR_SSL && context.CertificateValidationException is Exception ex)
                 {
                     // Clear the OpenSSL error queue since we are using our own
@@ -876,6 +885,23 @@ internal static partial class Interop
 
                 sslHandle = options!.SafeSslHandle as SafeSslHandle;
                 Debug.Assert(sslHandle is not null, "Expected SslAuthenticationOptions.SafeSslHandle to be set by SafeSslHandle.Create");
+
+                // External-validation fast path: when there is no in-callback
+                // validator (e.g. TlsSession owns validation) and the options
+                // asked us to defer, try SSL_set_retry_verify so the handshake
+                // pauses here on OpenSSL 3.0+. If the runtime is older (1.1.x),
+                // accept the cert and let the caller validate after the
+                // handshake completes.
+                if (options.RemoteCertificateValidator is null && options.DeferCertificateValidation)
+                {
+                    if (Ssl.SslSetRetryVerify(sslHandle!) == 1)
+                    {
+                        return -1;
+                    }
+
+                    Ssl.X509StoreCtxSetError(storeCtx, (int)Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_OK);
+                    return 1;
+                }
 
                 // We need to note the number of certs in ExtraStore that were
                 // provided (by the user), we will add more from the received peer

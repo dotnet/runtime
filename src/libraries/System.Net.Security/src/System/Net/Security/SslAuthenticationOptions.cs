@@ -244,6 +244,12 @@ namespace System.Net.Security
             out X509ChainStatusFlags chainStatus);
 
         internal VerifyRemoteCertificateCallback? RemoteCertificateValidator { get; set; }
+
+        // When true, the OpenSSL CertVerifyCallback always defers certificate
+        // validation. On OpenSSL 3.0+ the callback uses SSL_set_retry_verify
+        // to suspend the handshake; on older versions it accepts the cert and
+        // validation runs after the handshake completes. Set by TlsSession.
+        internal bool DeferCertificateValidation { get; set; }
 #endif
 
         public void Dispose()

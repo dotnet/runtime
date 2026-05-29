@@ -35,17 +35,17 @@ namespace System.Net.Security
         WantCredentials = 4,
 
         /// <summary>
-        /// The peer presented a certificate and the caller has opted in to external
-        /// certificate validation (<see cref="TlsContext.UseExternalCertificateValidation"/>).
-        /// The caller should retrieve the peer certificate via
+        /// The peer presented a certificate and the TLS state machine has paused so the
+        /// caller can validate it. The caller should retrieve the peer certificate via
         /// <see cref="TlsSession.GetRemoteCertificate"/> (and optionally the built chain
         /// via <see cref="TlsSession.GetRemoteCertificateChain"/>), perform validation —
         /// including any I/O such as AIA fetch or CRL/OCSP lookup — on any thread, and
         /// then record the result with
-        /// <see cref="TlsSession.SetRemoteCertificateValidationResult(System.Net.Security.SslPolicyErrors)"/>
-        /// or invoke <see cref="TlsSession.AcceptWithDefaultValidation"/> for
-        /// <see cref="SslStream"/>-equivalent default validation. Until the result is
-        /// set, <see cref="TlsSession.Encrypt"/> and <see cref="TlsSession.Decrypt"/> throw.
+        /// <see cref="TlsSession.SetRemoteCertificateValidationResult(System.Net.Security.SslPolicyErrors)"/>.
+        /// Callers that don't need custom validation logic can invoke
+        /// <see cref="TlsSession.AcceptWithDefaultValidation"/> for the equivalent of
+        /// <see cref="SslStream"/>'s default chain build plus user callback. Until the
+        /// result is set, <see cref="TlsSession.Encrypt"/> and <see cref="TlsSession.Decrypt"/> throw.
         /// </summary>
         NeedsCertificateValidation = 5,
     }

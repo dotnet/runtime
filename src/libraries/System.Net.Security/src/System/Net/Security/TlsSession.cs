@@ -48,9 +48,10 @@ namespace System.Net.Security
 
         private bool _isHandshakeComplete;
         private bool _suppressInternalCertificateValidation;
-        private bool _useExternalValidation;
         private bool _externalValidationPending;
+        private bool _externalValidationResolved;
         private X509Chain? _externalValidationChain;
+        private X509Certificate2? _externalPendingCert;
         private Exception? _externalValidationFault;
         private bool _disposed;
         private SslConnectionInfo _connectionInfo;
@@ -69,44 +70,20 @@ namespace System.Net.Security
             ArgumentNullException.ThrowIfNull(context);
 
             TlsSession session = new TlsSession(context);
-            session._useExternalValidation = context.UseExternalCertificateValidation;
 
 #if !TARGET_WINDOWS && !SYSNETSECURITY_NO_OPENSSL
-            if (session._useExternalValidation)
-            {
-                // OpenSSL's CertVerifyCallback must answer synchronously. In external-
-                // validation mode we accept the peer cert unconditionally inside the
-                // callback and surface NeedsCertificateValidation after the handshake
-                // completes, so real validation happens outside the state machine.
-                context.Options.RemoteCertificateValidator = AcceptAllForExternalValidation;
-            }
-            else
-            {
-                // Provide a default cert validation hook so OpenSSL's CertVerifyCallback
-                // can drive the user RemoteCertificateValidationCallback even for a
-                // standalone TlsSession. If SslStream wraps this session (wedge mode),
-                // it sets its own validator first and we leave it untouched.
-                context.Options.RemoteCertificateValidator ??= session.VerifyRemoteCertificate;
-            }
+            // OpenSSL's CertVerifyCallback must answer synchronously, but a TlsSession
+            // always defers peer-cert validation to its caller. On OpenSSL 3.0+ the
+            // callback uses SSL_set_retry_verify to pause the handshake; on 1.1.x it
+            // accepts the cert and validation runs after the handshake completes.
+            // The SslStream wedge sets its own validator on the shared options bag
+            // before calling Create; the callback gives precedence to a non-null
+            // RemoteCertificateValidator, so the wedge path is unaffected.
+            context.Options.DeferCertificateValidation = true;
 #endif
 
             return session;
         }
-
-#pragma warning disable IDE0060 // signature is fixed by SslAuthenticationOptions.VerifyRemoteCertificateCallback
-        private static bool AcceptAllForExternalValidation(
-            X509Certificate2? certificate,
-            X509Chain? chain,
-            SslCertificateTrust? trust,
-            ref ProtocolToken alertToken,
-            out SslPolicyErrors sslPolicyErrors,
-            out X509ChainStatusFlags chainStatus)
-        {
-            sslPolicyErrors = SslPolicyErrors.None;
-            chainStatus = X509ChainStatusFlags.NoError;
-            return true;
-        }
-#pragma warning restore IDE0060
 
         // ── State ─────────────────────────────────────────────────────────
 
@@ -174,6 +151,11 @@ namespace System.Net.Security
                 return _remoteCertificate;
             }
 
+            if (_externalPendingCert is not null)
+            {
+                return _externalPendingCert;
+            }
+
             if (_securityContext == null || _securityContext.IsInvalid)
             {
                 return null;
@@ -184,11 +166,11 @@ namespace System.Net.Security
         /// <summary>
         /// Returns the <see cref="X509Chain"/> the platform built for the peer
         /// certificate during handshake, or <c>null</c> if no chain was retained.
-        /// Only meaningful when
-        /// <see cref="TlsContext.UseExternalCertificateValidation"/> is <c>true</c>
-        /// and the session is awaiting an external validation result. The chain is
-        /// owned by the session and disposed when the session is disposed or when
-        /// the validation result is recorded.
+        /// Only meaningful while the session is awaiting an external validation result
+        /// (after <see cref="ProcessHandshake"/> returned
+        /// <see cref="TlsOperationStatus.NeedsCertificateValidation"/>). The chain is
+        /// owned by the session and disposed when the session is disposed or when the
+        /// validation result is recorded.
         /// </summary>
         public X509Chain? GetRemoteCertificateChain()
         {
@@ -219,19 +201,26 @@ namespace System.Net.Security
             }
 
             ProtocolToken alertToken = default;
+            // Pass _externalPendingCert as the candidate cert and an empty _remoteCertificate slot.
+            // VerifyRemoteCertificateCore assigns the slot to the candidate on success; the renegotiation
+            // shortcut at the top of that method would otherwise dispose our cert if the slot were already
+            // populated with the same instance.
             bool ok = SslStream.VerifyRemoteCertificateCore(
                 this,
                 _context.Options,
                 _securityContext,
                 ref _remoteCertificate,
                 ref _connectionInfo,
-                _remoteCertificate,
+                _externalPendingCert,
                 _externalValidationChain,
                 trust: null,
                 ref alertToken,
                 out SslPolicyErrors sslPolicyErrors,
                 out _);
 
+            // On success VerifyRemoteCertificateCore set _remoteCertificate = _externalPendingCert, so
+            // SetRemoteCertificateValidationResult below leaves it alone. On failure we must dispose the
+            // pending cert ourselves because no one adopted it.
             SetRemoteCertificateValidationResult(ok ? SslPolicyErrors.None : sslPolicyErrors);
             return sslPolicyErrors;
         }
@@ -255,10 +244,28 @@ namespace System.Net.Security
             }
 
             _externalValidationPending = false;
+            _externalValidationResolved = true;
 
-            if (errors != SslPolicyErrors.None)
+            if (errors == SslPolicyErrors.None)
+            {
+                // Caller accepted. Promote the pending cert to the canonical remote-cert slot
+                // (unless AcceptWithDefaultValidation already did so).
+                if (_remoteCertificate is null)
+                {
+                    _remoteCertificate = _externalPendingCert;
+                    _externalPendingCert = null;
+                }
+                else
+                {
+                    // VerifyRemoteCertificateCore adopted the cert into _remoteCertificate. Drop our copy.
+                    _externalPendingCert = null;
+                }
+            }
+            else
             {
                 _externalValidationFault = new AuthenticationException(SR.net_ssl_io_cert_validation);
+                _externalPendingCert?.Dispose();
+                _externalPendingCert = null;
             }
 
             DisposeExternalValidationChain();
@@ -281,19 +288,10 @@ namespace System.Net.Security
         {
             X509Chain? chain = _externalValidationChain;
             _externalValidationChain = null;
-            if (chain is null)
-            {
-                return;
-            }
-
-            // Dispose elements we own (mirrors the cleanup the OpenSSL CertVerifyCallback
-            // does when no user CertValidationDelegate is registered).
-            int elementsCount = chain.ChainElements.Count;
-            for (int i = 0; i < elementsCount; i++)
-            {
-                chain.ChainElements[i].Certificate.Dispose();
-            }
-            chain.Dispose();
+            // Match the inline-validation cleanup in OnHandshakeCompleted: dispose the chain context only,
+            // not individual element certs. The leaf is owned by _remoteCertificate or already disposed via
+            // _externalPendingCert; intermediate elements are platform-built refs we don't own.
+            chain?.Dispose();
         }
 
         /// <summary>
@@ -368,6 +366,14 @@ namespace System.Net.Security
 
             if (_isHandshakeComplete)
             {
+                // Once the caller has resolved external validation, subsequent
+                // ProcessHandshake calls on an already-complete session are a
+                // no-op signal that the handshake is done (one-call window).
+                if (_externalValidationResolved)
+                {
+                    return TlsOperationStatus.Complete;
+                }
+
                 throw new InvalidOperationException("Handshake has already completed.");
             }
 
@@ -468,10 +474,18 @@ namespace System.Net.Security
 
                 bool done = token.Status.ErrorCode == SecurityStatusPalErrorCode.OK;
                 bool needsCredentials = token.Status.ErrorCode == SecurityStatusPalErrorCode.CredentialsNeeded;
+                bool needsCertValidation = token.Status.ErrorCode == SecurityStatusPalErrorCode.NeedsRemoteCertificateValidation;
 
                 if (done)
                 {
                     OnHandshakeCompleted();
+                }
+                else if (needsCertValidation)
+                {
+                    // OpenSSL 3.0+ retry-verify: the handshake paused inside
+                    // the verify callback. Capture the peer cert + chain so the
+                    // caller can validate, then return NeedsCertificateValidation.
+                    CaptureRemoteCertificateForExternalValidation();
                 }
 
                 if (_pendingLength > 0)
@@ -488,6 +502,11 @@ namespace System.Net.Security
                     return _externalValidationPending
                         ? TlsOperationStatus.NeedsCertificateValidation
                         : TlsOperationStatus.Complete;
+                }
+
+                if (needsCertValidation)
+                {
+                    return TlsOperationStatus.NeedsCertificateValidation;
                 }
 
                 if (needsCredentials)
@@ -1046,69 +1065,29 @@ namespace System.Net.Security
                 return;
             }
 
-            if (_useExternalValidation)
+            // If the caller already resolved validation mid-handshake (OpenSSL 3.0+
+            // retry-verify path), don't re-suspend here.
+            if (_externalValidationResolved)
             {
-                // Hand the peer cert + chain back to the caller via
-                // NeedsCertificateValidation. We build the chain here once and retain it
-                // until the caller records a result (or the session is disposed) so the
-                // caller can inspect it on any thread without re-querying the PAL.
-                X509Chain? chain = null;
-                _remoteCertificate = CertificateValidationPal.GetRemoteCertificate(
-                    _securityContext, ref chain, _context.Options.CertificateChainPolicy);
-                _externalValidationChain = chain;
-                _externalValidationPending = true;
                 return;
             }
 
-            {
-                X509Chain? chain = null;
-                try
-                {
-                    X509Certificate2? cert = CertificateValidationPal.GetRemoteCertificate(
-                        _securityContext, ref chain, _context.Options.CertificateChainPolicy);
-                    ProtocolToken alertToken = default;
-                    SslStream.VerifyRemoteCertificateCore(
-                        this,
-                        _context.Options,
-                        _securityContext,
-                        ref _remoteCertificate,
-                        ref _connectionInfo,
-                        cert,
-                        chain,
-                        trust: null,
-                        ref alertToken,
-                        out _,
-                        out _);
-                }
-                finally
-                {
-                    chain?.Dispose();
-                }
-            }
+            CaptureRemoteCertificateForExternalValidation();
         }
 
-        // Invoked by OpenSSL's CertVerifyCallback (via SslAuthenticationOptions.RemoteCertificateValidator)
-        // when this TlsSession owns the validation flow.
-        internal bool VerifyRemoteCertificate(
-            X509Certificate2? certificate,
-            X509Chain? chain,
-            SslCertificateTrust? trust,
-            ref ProtocolToken alertToken,
-            out SslPolicyErrors sslPolicyErrors,
-            out X509ChainStatusFlags chainStatus)
+        // Capture the peer certificate and chain so the caller can perform validation
+        // out of band. Used both when the handshake completes (1.1.x: callback already
+        // accepted) and when the handshake pauses mid-flight via SSL_set_retry_verify
+        // (OpenSSL 3.0+). Keeps the cert in _externalPendingCert (not _remoteCertificate)
+        // so VerifyRemoteCertificateCore's renegotiation shortcut doesn't dispose it
+        // when AcceptWithDefaultValidation runs.
+        private void CaptureRemoteCertificateForExternalValidation()
         {
-            return SslStream.VerifyRemoteCertificateCore(
-                this,
-                _context.Options,
-                _securityContext,
-                ref _remoteCertificate,
-                ref _connectionInfo,
-                certificate,
-                chain,
-                trust,
-                ref alertToken,
-                out sslPolicyErrors,
-                out chainStatus);
+            X509Chain? chain = null;
+            _externalPendingCert = CertificateValidationPal.GetRemoteCertificate(
+                _securityContext, ref chain, _context.Options.CertificateChainPolicy);
+            _externalValidationChain = chain;
+            _externalValidationPending = true;
         }
 
         // Acquire the SafeFreeCredentials the PAL needs for the first ASC/ISC
@@ -1187,6 +1166,8 @@ namespace System.Net.Security
             _disposed = true;
 
             DisposeExternalValidationChain();
+            _externalPendingCert?.Dispose();
+            _externalPendingCert = null;
 
             _securityContext?.Dispose();
             _securityContext = null;

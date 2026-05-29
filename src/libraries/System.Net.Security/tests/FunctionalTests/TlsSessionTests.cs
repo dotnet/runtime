@@ -617,6 +617,227 @@ namespace System.Net.Security.Tests
             }
         }
 
+        // ── External certificate validation ───────────────────────────────
+
+        [Fact]
+        public async Task ClientSession_ExternalCertificateValidation_SuspendsAndAccepts()
+        {
+            using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
+            string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
+
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+            using (clientStream)
+            using (serverStream)
+            using (SslStream serverSsl = new SslStream(serverStream, leaveInnerStreamOpen: false))
+            {
+                using TlsContext ctx = TlsContext.Create(new SslClientAuthenticationOptions
+                {
+                    TargetHost = serverName,
+                    EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                    // Intentionally no RemoteCertificateValidationCallback — caller drives validation externally.
+                });
+                using TlsSession session = TlsSession.Create(ctx);
+
+                Task serverHandshake = serverSsl.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = serverCert,
+                    EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                    ClientCertificateRequired = false,
+                });
+
+                bool suspensionObserved = false;
+                X509Certificate2? observedRemoteCert = null;
+                Task clientHandshake = Task.Run(async () =>
+                {
+                    await DriveHandshakeWithExternalValidationAsync(
+                        session, clientStream,
+                        onSuspend: () =>
+                        {
+                            suspensionObserved = true;
+                            observedRemoteCert = session.GetRemoteCertificate();
+                            session.SetRemoteCertificateValidationResult(SslPolicyErrors.None);
+                        });
+                });
+
+                await Task.WhenAll(clientHandshake, serverHandshake).WaitAsync(TimeSpan.FromSeconds(30));
+
+                Assert.True(suspensionObserved, "Caller never observed NeedsCertificateValidation.");
+                Assert.NotNull(observedRemoteCert);
+                Assert.Equal(serverCert.Thumbprint, observedRemoteCert!.Thumbprint);
+                Assert.True(session.IsHandshakeComplete);
+                Assert.True(serverSsl.IsAuthenticated);
+
+                // After accepting, Encrypt/Decrypt must work normally.
+                byte[] ping = "PING external"u8.ToArray();
+                await WritePlaintextAsync(session, clientStream, ping);
+                byte[] got = new byte[ping.Length];
+                int n = 0;
+                while (n < got.Length)
+                {
+                    int r = await serverSsl.ReadAsync(got.AsMemory(n));
+                    Assert.True(r > 0);
+                    n += r;
+                }
+                Assert.Equal(ping, got);
+
+                observedRemoteCert?.Dispose();
+            }
+        }
+
+        [Fact]
+        public async Task ClientSession_ExternalCertificateValidation_AcceptWithDefaultValidation_FailsOnUntrustedCert()
+        {
+            // The test cert chain isn't installed in the system trust store, so the default
+            // validation policy must report at least RemoteCertificateChainErrors.
+            using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
+            string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
+
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+            using (clientStream)
+            using (serverStream)
+            using (SslStream serverSsl = new SslStream(serverStream, leaveInnerStreamOpen: false))
+            {
+                using TlsContext ctx = TlsContext.Create(new SslClientAuthenticationOptions
+                {
+                    TargetHost = serverName,
+                    EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                });
+                using TlsSession session = TlsSession.Create(ctx);
+
+                Task serverHandshake = serverSsl.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = serverCert,
+                    EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                    ClientCertificateRequired = false,
+                });
+
+                SslPolicyErrors observedErrors = SslPolicyErrors.None;
+                Task clientHandshake = Task.Run(async () =>
+                {
+                    await DriveHandshakeWithExternalValidationAsync(
+                        session, clientStream,
+                        onSuspend: () =>
+                        {
+                            observedErrors = session.AcceptWithDefaultValidation();
+                        });
+                });
+
+                // The server-side handshake will complete (OpenSSL accepted the cert in the
+                // CertVerifyCallback), but the client side rejects post-hoc, so any subsequent
+                // app-data exchange throws on the client.
+                await serverHandshake.WaitAsync(TimeSpan.FromSeconds(30));
+                await clientHandshake.WaitAsync(TimeSpan.FromSeconds(30));
+
+                Assert.NotEqual(SslPolicyErrors.None, observedErrors);
+
+                // Encrypt must now throw because validation reported errors.
+                byte[] plain = "should-fail"u8.ToArray();
+                byte[] ct = new byte[CipherBufSize];
+                Assert.Throws<AuthenticationException>(() =>
+                    session.Encrypt(plain, ct, out _, out _));
+            }
+        }
+
+        [Fact]
+        public void TlsSession_ExternalValidation_SetResultBeforeSuspended_Throws()
+        {
+            using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
+            using TlsContext ctx = TlsContext.Create(new SslServerAuthenticationOptions { ServerCertificate = serverCert });
+            using TlsSession session = TlsSession.Create(ctx);
+
+            Assert.Throws<InvalidOperationException>(() =>
+                session.SetRemoteCertificateValidationResult(SslPolicyErrors.None));
+            Assert.Throws<InvalidOperationException>(() =>
+                session.AcceptWithDefaultValidation());
+        }
+
+        // Like DriveHandshakeAsync but pauses on NeedsCertificateValidation to invoke the supplied callback.
+        // After the callback runs, the handshake is considered complete (IsHandshakeComplete is already true
+        // at the point the suspension is reported on Unix/OpenSSL).
+        private static async Task DriveHandshakeWithExternalValidationAsync(
+            TlsSession session, Stream transport, Action onSuspend)
+        {
+            byte[] netIn = ArrayPool<byte>.Shared.Rent(CipherBufSize);
+            byte[] netOut = ArrayPool<byte>.Shared.Rent(CipherBufSize);
+            int inUsed = 0;
+            bool suspended = false;
+
+            try
+            {
+                while (!suspended && !session.IsHandshakeComplete)
+                {
+                    TlsOperationStatus status = session.ProcessHandshake(
+                        netIn.AsSpan(0, inUsed),
+                        netOut,
+                        out int consumed,
+                        out int produced);
+
+                    if (consumed > 0)
+                    {
+                        if (consumed < inUsed)
+                        {
+                            Buffer.BlockCopy(netIn, consumed, netIn, 0, inUsed - consumed);
+                        }
+                        inUsed -= consumed;
+                    }
+
+                    if (produced > 0)
+                    {
+                        await transport.WriteAsync(netOut.AsMemory(0, produced));
+                        await transport.FlushAsync();
+                    }
+
+                    switch (status)
+                    {
+                        case TlsOperationStatus.NeedsCertificateValidation:
+                            suspended = true;
+                            onSuspend();
+                            break;
+
+                        case TlsOperationStatus.Complete:
+                            continue;
+
+                        case TlsOperationStatus.WantWrite:
+                            await DrainAsync(session, transport, netOut);
+                            continue;
+
+                        case TlsOperationStatus.WantRead:
+                            int r = await transport.ReadAsync(netIn.AsMemory(inUsed));
+                            if (r == 0)
+                            {
+                                throw new IOException("Unexpected EOF during handshake.");
+                            }
+                            inUsed += r;
+                            continue;
+
+                        case TlsOperationStatus.Closed:
+                            throw new IOException("Peer closed connection during handshake.");
+                    }
+                }
+
+                // Flush anything still pending (e.g. server-emitted NewSessionTickets in TLS 1.3
+                // that arrived after the local handshake reached completion).
+                while (session.HasPendingOutput)
+                {
+                    TlsOperationStatus drain = session.DrainPendingOutput(netOut, out int n);
+                    if (n > 0)
+                    {
+                        await transport.WriteAsync(netOut.AsMemory(0, n));
+                        await transport.FlushAsync();
+                    }
+                    if (drain != TlsOperationStatus.WantWrite)
+                    {
+                        break;
+                    }
+                }
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(netIn);
+                ArrayPool<byte>.Shared.Return(netOut);
+            }
+        }
+
         // ── Helpers ────────────────────────────────────────────────────────
 
         private static void StepHandshakeInMemory(

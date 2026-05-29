@@ -18,6 +18,10 @@ c_static_assert(PAL_SSL_ERROR_WANT_READ == SSL_ERROR_WANT_READ);
 c_static_assert(PAL_SSL_ERROR_WANT_WRITE == SSL_ERROR_WANT_WRITE);
 c_static_assert(PAL_SSL_ERROR_SYSCALL == SSL_ERROR_SYSCALL);
 c_static_assert(PAL_SSL_ERROR_ZERO_RETURN == SSL_ERROR_ZERO_RETURN);
+#ifndef SSL_ERROR_WANT_RETRY_VERIFY
+#define SSL_ERROR_WANT_RETRY_VERIFY 12
+#endif
+c_static_assert(PAL_SSL_ERROR_WANT_RETRY_VERIFY == SSL_ERROR_WANT_RETRY_VERIFY);
 c_static_assert(SSL_CTRL_SET_TLSEXT_STATUS_REQ_TYPE == 65);
 c_static_assert(TLSEXT_STATUSTYPE_ocsp == 1);
 
@@ -505,6 +509,20 @@ int32_t CryptoNative_IsSslStateOK(SSL* ssl)
 {
     // No error queue impact.
     return SSL_is_init_finished(ssl);
+}
+
+int32_t CryptoNative_SslSetRetryVerify(SSL* ssl)
+{
+    // OpenSSL 3.0+ only. When available, calling this from inside the certificate
+    // verification callback (and returning -1 from the callback) suspends the
+    // handshake so the application can perform validation asynchronously and then
+    // resume by calling SSL_do_handshake again.
+    if (API_EXISTS(SSL_set_retry_verify))
+    {
+        return SSL_set_retry_verify(ssl);
+    }
+
+    return 0;
 }
 
 X509* CryptoNative_SslGetPeerCertificate(SSL* ssl)

@@ -700,7 +700,6 @@ namespace System.Net.Security
     {
         internal TlsContext() { }
         public bool IsServer { get { throw null; } }
-        public bool UseExternalCertificateValidation { get { throw null; } set { } }
         public static System.Net.Security.TlsContext Create(System.Net.Security.SslServerAuthenticationOptions options) { throw null; }
         public static System.Net.Security.TlsContext Create(System.Net.Security.SslClientAuthenticationOptions options) { throw null; }
         public void Dispose() { }
