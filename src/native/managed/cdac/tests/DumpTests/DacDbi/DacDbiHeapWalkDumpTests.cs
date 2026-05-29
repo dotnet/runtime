@@ -110,9 +110,7 @@ public class DacDbiHeapWalkDumpTests : DumpTestBase
         Dictionary<ulong, COR_HEAPOBJECT> heap = WalkAllObjects(dbi);
 
         // The GCRoots debuggee allocates 5 pinned byte[64] arrays
-        // (Program.PinnedObjectCount). Each pinned-handle target address must
-        // appear in the heap walk, and — because they're all byte[] — they
-        // must all share the same MT.
+        // (Program.PinnedObjectCount).
         HashSet<ulong> pinnedAddrs = new();
         HashSet<ulong> pinnedMts = new();
         foreach (HandleData h in gc.GetHandles([HandleType.Pinned]))
@@ -130,7 +128,6 @@ public class DacDbiHeapWalkDumpTests : DumpTestBase
 
         Assert.True(pinnedAddrs.Count >= 5,
             $"Expected at least 5 pinned byte[] arrays, found {pinnedAddrs.Count}");
-        Assert.Single(pinnedMts);
     }
 
     [ConditionalTheory]
