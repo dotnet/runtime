@@ -1282,7 +1282,7 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
             // address-exposed and has no extraneous defs inside the loop, so
             // reading it in the preheader gives the entry value).
             const unsigned initLcl = iterInfo->IterVar;
-            if (!genActualTypeIsInt(iterInfo->Iterator()->TypeGet()))
+            if (!genActualTypeIsInt(lvaGetDesc(initLcl)))
             {
                 JITDUMP("> NeedsZeroTripGuard: iter var V%02u not compatible with TYP_INT\n", initLcl);
                 return false;
@@ -1304,7 +1304,7 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
         else if (iterInfo->HasInvariantLocalLimit)
         {
             const unsigned limitLcl = iterInfo->VarLimit();
-            if (!genActualTypeIsInt(iterInfo->Limit()->TypeGet()))
+            if (!genActualTypeIsInt(lvaGetDesc(limitLcl)))
             {
                 JITDUMP("> NeedsZeroTripGuard: limit var V%02u not compatible with TYP_INT\n", limitLcl);
                 return false;
@@ -1353,7 +1353,7 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
     {
         // iterVar >= 0
         const unsigned initLcl = iterInfo->IterVar;
-        if (!genActualTypeIsInt(iterInfo->Iterator()->TypeGet()))
+        if (!genActualTypeIsInt(lvaGetDesc(initLcl)))
         {
             JITDUMP("> Init var V%02u not compatible with TYP_INT\n", initLcl);
             return false;
@@ -1393,7 +1393,7 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
     else if (iterInfo->HasInvariantLocalLimit)
     {
         const unsigned limitLcl = iterInfo->VarLimit();
-        if (!genActualTypeIsInt(iterInfo->Limit()->TypeGet()))
+        if (!genActualTypeIsInt(lvaGetDesc(limitLcl)))
         {
             JITDUMP("> Limit var V%02u not compatible with TYP_INT\n", limitLcl);
             return false;
