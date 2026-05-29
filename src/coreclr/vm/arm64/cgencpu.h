@@ -530,6 +530,7 @@ struct HijackArgs
          };
         NEON128 FPReturnValue[4];
     };
+    DWORD64 SpForPacSign;
 };
 
 #endif // __cgencpu_h__
