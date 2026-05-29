@@ -90,7 +90,7 @@ public record GCInfo
         Debug.Assert(relativeOffset >= 0);
         Debug.Assert(relativeOffset <= MethodSize);
 
-        Header = InfoHdr.DecodeHeader(target, ref offset, MethodSize);
+        Header = InfoHdr.DecodeHeader(target, ref offset, MethodSize, (int)gcInfoVersion);
         _infoHdrSize = (uint)(offset.Value - gcInfoAddress.Value);
 
         // Check if we are in the prolog
