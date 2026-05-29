@@ -2474,8 +2474,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 assert(isRMW);
                 assert(!op1->isContained());
 
-                if ((baseType == TYP_ULONG || baseType == TYP_UINT) &&
-                    m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                if (baseType == TYP_ULONG && m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
                 {
                     isRMW = false;
 
