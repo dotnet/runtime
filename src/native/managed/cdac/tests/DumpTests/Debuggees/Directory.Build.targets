@@ -24,6 +24,7 @@
       <_DumpTypeOutput Include="$(MSBuildProjectName)"
                        DumpTypes="$(DumpTypes)"
                        R2RModes="$(R2RModes)"
+                       PublishModes="$(PublishModes)"
                        EnvironmentVariables="$(EnvironmentVariables)"
                        WindowsOnly="$(WindowsOnly)"
                        MacOnly="$(MacOnly)"

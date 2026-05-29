@@ -31,22 +31,28 @@ public abstract class DumpTestBase : IDisposable
     private static readonly string[] RuntimeVersions = ["local", "net10.0"];
 
     /// <summary>
-    /// The set of runtime versions and R2R modes to test against.
+    /// The set of runtime versions, R2R modes, and publish modes to test against.
     /// Each entry produces a separate test invocation via <c>[MemberData]</c>.
-    /// R2R modes are provided by <see cref="GetR2RModes"/>, which currently yields
-    /// both <c>"r2r"</c> and <c>"jit"</c> for each runtime version.
+    /// Missing dumps are auto-skipped via <see cref="SkipTestException"/>.
     /// </summary>
     public static IEnumerable<object[]> TestConfigurations
     {
         get
         {
             string? dumpSource = GetDumpSource();
-            foreach (string r2rMode in GetR2RModes())
+            foreach (string publishMode in GetPublishModes())
             {
-                foreach (string version in RuntimeVersions)
+                foreach (string r2rMode in GetR2RModes())
                 {
-                    if (!IsVersionSkipped(version))
-                        yield return [new TestConfiguration(version, r2rMode, dumpSource)];
+                    foreach (string version in RuntimeVersions)
+                    {
+                        // SingleFile is only supported for local builds
+                        if (publishMode == "singlefile" && version != "local")
+                            continue;
+
+                        if (!IsVersionSkipped(version))
+                            yield return [new TestConfiguration(version, r2rMode, publishMode, dumpSource)];
+                    }
                 }
             }
         }
@@ -95,12 +101,12 @@ public abstract class DumpTestBase : IDisposable
 
         EvaluateSkipAttributes(config, callerName, dumpType);
 
-        string dumpPath = Path.Combine(versionDir, dumpType, config.R2RMode, debuggeeName, $"{debuggeeName}.dmp");
+        string dumpPath = Path.Combine(versionDir, dumpType, config.CompoundDirName, debuggeeName, $"{debuggeeName}.dmp");
 
         if (!File.Exists(dumpPath))
         {
-            if (_dumpInfo is not null && _dumpInfo.IsDumpExpected(debuggeeName, dumpType, config.R2RMode))
-                Assert.Fail($"Expected {config.R2RMode}/{dumpType} dump for {debuggeeName} but not found: {dumpPath}");
+            if (_dumpInfo is not null && _dumpInfo.IsDumpExpected(debuggeeName, dumpType, config.CompoundDirName))
+                Assert.Fail($"Expected {config.CompoundDirName}/{dumpType} dump for {debuggeeName} but not found: {dumpPath}");
 
             throw new SkipTestException($"No {config.R2RMode} dump for {debuggeeName}: {dumpPath}");
         }
@@ -239,6 +245,16 @@ public abstract class DumpTestBase : IDisposable
     {
         yield return "r2r";
         yield return "jit";
+    }
+
+    /// <summary>
+    /// Returns the publish modes to test against. Both modes are always enumerated;
+    /// dumps that don't exist for a given mode are skipped via <see cref="SkipTestException"/>.
+    /// </summary>
+    private static IEnumerable<string> GetPublishModes()
+    {
+        yield return "normal";
+        yield return "singlefile";
     }
 
     /// <summary>

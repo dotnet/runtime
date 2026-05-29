@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <DumpTypes>Heap;Full</DumpTypes>
+    <PublishModes>Normal;SingleFile</PublishModes>
   </PropertyGroup>
 </Project>
