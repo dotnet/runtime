@@ -883,7 +883,7 @@ BYTE FASTCALL encodeHeaderNext(const InfoHdr& header, InfoHdr* state, BYTE& code
         state->isAsync    = header.isAsync;
         codeSet           = 2; // Two byte encoding
         encoding          = header.returnKind | (header.isAsync ? 4 : 0);
-        _ASSERTE(encoding <= SET_RET_KIND_MAX);
+        _ASSERTE(encoding <= SET_RET_KIND_MAX_V5);
         goto DO_RETURN;
     }
 
@@ -956,14 +956,14 @@ BYTE FASTCALL encodeHeaderNext(const InfoHdr& header, InfoHdr* state, BYTE& code
         {
             state->noGCRegionCnt = header.noGCRegionCnt;
             codeSet              = 2;
-            encoding             = (BYTE)(SET_NOGCREGIONS_CNT + header.noGCRegionCnt);
+            encoding             = (BYTE)(SET_NOGCREGIONS_CNT_V5 + header.noGCRegionCnt);
             goto DO_RETURN;
         }
         else if (state->noGCRegionCnt != HAS_NOGCREGIONS)
         {
             state->noGCRegionCnt = HAS_NOGCREGIONS;
             codeSet              = 2;
-            encoding             = FFFF_NOGCREGION_CNT;
+            encoding             = FFFF_NOGCREGION_CNT_V5;
             goto DO_RETURN;
         }
     }
@@ -1571,7 +1571,7 @@ size_t GCInfo::gcInfoBlockHdrSave(
     ReturnKind returnKind = getReturnKind();
     _ASSERTE(IsValidReturnKind(returnKind) && "Return Kind must be valid");
     _ASSERTE(!IsStructReturnKind(returnKind) && "Struct Return Kinds Unexpected for JIT32");
-    _ASSERTE(((int)returnKind <= (int)SET_RET_KIND_MAX) && "ReturnKind has no legal encoding");
+    _ASSERTE(((int)returnKind <= (int)SET_RET_KIND_MAX_V5) && "ReturnKind has no legal encoding");
     header->returnKind = returnKind;
     header->isAsync    = m_compiler->compIsAsync();
 

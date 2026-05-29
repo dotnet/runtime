@@ -29,7 +29,7 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
 
             CodeLength = (int)imageReader.DecodeUnsignedGc(ref offset);
 
-            Header = InfoHdrDecoder.DecodeHeader(imageReader, ref offset, CodeLength);
+            Header = InfoHdrDecoder.DecodeHeader(imageReader, ref offset, CodeLength, version);
 
             NoGCRegions = new NoGcRegionTable(imageReader, Header, ref offset);
 

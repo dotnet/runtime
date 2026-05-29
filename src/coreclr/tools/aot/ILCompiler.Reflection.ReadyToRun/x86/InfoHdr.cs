@@ -296,7 +296,15 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
                                 // encoding here always corresponds to codes in InfoHdrAdjust2 set
                                 if (encoding <= (int)SET_RET_KIND_MAX)
                                 {
-                                    header.ReturnKind = (ReturnKinds)encoding;
+                                    if (version >= 5)
+                                    {
+                                        header.ReturnKind = (ReturnKinds)(encoding & 3);
+                                        header.IsAsync = (encoding & 4) != 0;
+                                    }
+                                    else
+                                    {
+                                        header.ReturnKind = (ReturnKinds)encoding;
+                                    }
                                 }
                                 else if (encoding < (int)FFFF_NOGCREGION_CNT)
                                 {

@@ -99,6 +99,17 @@ PTR_CBYTE FASTCALL decodeHeader(PTR_CBYTE table, UINT32 version, InfoHdr* header
     BYTE nextByte = *table++;
     BYTE encoding = nextByte & 0x7f;
     GetInfoHdr(encoding, header);
+
+#ifdef DECODE_OLD_FORMATS
+    const int SET_RET_KIND_MAX = version >= 5 ? SET_RET_KIND_MAX_V5 : SET_RET_KIND_MAX_V4;
+    const int SET_NOGCREGIONS_CNT = version >= 5 ? SET_NOGCREGIONS_CNT_V5 : SET_NOGCREGIONS_CNT_V4;
+    const int FFFF_NOGCREGION_CNT = version >= 5 ? FFFF_NOGCREGION_CNT_V5 : FFFF_NOGCREGION_CNT_V4; 
+#else
+    const int SET_RET_KIND_MAX = SET_RET_KIND_MAX_V5;
+    const int SET_NOGCREGIONS_CNT = SET_NOGCREGIONS_CNT_V5;
+    const int FFFF_NOGCREGION_CNT = FFFF_NOGCREGION_CNT_V5;
+#endif
+
     while (nextByte & MORE_BYTES_TO_FOLLOW)
     {
         nextByte = *table++;
@@ -207,8 +218,20 @@ PTR_CBYTE FASTCALL decodeHeader(PTR_CBYTE table, UINT32 version, InfoHdr* header
                 // encoding here always corresponds to codes in InfoHdrAdjust2 set
                 if (encoding <= SET_RET_KIND_MAX)
                 {
-                    header->returnKind = (ReturnKind)encoding & 3;
+#ifdef DECODE_OLD_FORMATS
+                    if (version >= 5)
+                    {
+                        header->returnKind = (ReturnKind)(encoding & 3);
+                        header->isAsync = (encoding & 4) != 0;
+                    }
+                    else
+                    {
+                        header->returnKind = (ReturnKind)encoding;
+                    }
+#else
+                    header->returnKind = (ReturnKind)(encoding & 3);
                     header->isAsync = (encoding & 4) != 0;
+#endif
                 }
                 else if (encoding < FFFF_NOGCREGION_CNT)
                 {
