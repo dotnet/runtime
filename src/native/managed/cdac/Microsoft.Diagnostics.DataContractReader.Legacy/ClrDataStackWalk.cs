@@ -212,10 +212,12 @@ public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
                 hrLocal = _legacyImpl.Request(reqCode, inBufferSize, inBuffer, outBufferSize, localOutBufferPtr);
             }
             Debug.ValidateHResult(hr, hrLocal);
-
-            for (int i = 0; i < outBufferSize; i++)
+            if (hr == HResults.S_OK)
             {
-                Debug.Assert(localOutBuffer[i] == outBuffer[i], $"cDAC: {outBuffer[i]:x}, DAC: {localOutBuffer[i]:x}");
+                for (int i = 0; i < outBufferSize; i++)
+                {
+                    Debug.Assert(localOutBuffer[i] == outBuffer[i], $"cDAC: {outBuffer[i]:x}, DAC: {localOutBuffer[i]:x}");
+                }
             }
         }
 #endif
