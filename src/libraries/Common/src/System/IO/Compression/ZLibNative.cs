@@ -348,12 +348,23 @@ namespace System.IO.Compression
 
             public unsafe ErrorCode Deflate(FlushCode flush)
             {
-                EnsureNotDisposed();
-                EnsureState(State.InitializedForDeflate);
-
-                fixed (ZStream* stream = &_zStream)
+                bool refAdded = false;
+                try
                 {
-                    return Interop.ZLib.Deflate(stream, flush);
+                    DangerousAddRef(ref refAdded);
+                    EnsureState(State.InitializedForDeflate);
+
+                    fixed (ZStream* stream = &_zStream)
+                    {
+                        return Interop.ZLib.Deflate(stream, flush);
+                    }
+                }
+                finally
+                {
+                    if (refAdded)
+                    {
+                        DangerousRelease();
+                    }
                 }
             }
 
@@ -395,23 +406,45 @@ namespace System.IO.Compression
 
             public unsafe ErrorCode InflateReset2_(int windowBits)
             {
-                EnsureNotDisposed();
-                EnsureState(State.InitializedForInflate);
-
-                fixed (ZStream* stream = &_zStream)
+                bool refAdded = false;
+                try
                 {
-                    return Interop.ZLib.InflateReset2_(stream, windowBits);
+                    DangerousAddRef(ref refAdded);
+                    EnsureState(State.InitializedForInflate);
+
+                    fixed (ZStream* stream = &_zStream)
+                    {
+                        return Interop.ZLib.InflateReset2_(stream, windowBits);
+                    }
+                }
+                finally
+                {
+                    if (refAdded)
+                    {
+                        DangerousRelease();
+                    }
                 }
             }
 
             public unsafe ErrorCode Inflate(FlushCode flush)
             {
-                EnsureNotDisposed();
-                EnsureState(State.InitializedForInflate);
-
-                fixed (ZStream* stream = &_zStream)
+                bool refAdded = false;
+                try
                 {
-                    return Interop.ZLib.Inflate(stream, flush);
+                    DangerousAddRef(ref refAdded);
+                    EnsureState(State.InitializedForInflate);
+
+                    fixed (ZStream* stream = &_zStream)
+                    {
+                        return Interop.ZLib.Inflate(stream, flush);
+                    }
+                }
+                finally
+                {
+                    if (refAdded)
+                    {
+                        DangerousRelease();
+                    }
                 }
             }
 
