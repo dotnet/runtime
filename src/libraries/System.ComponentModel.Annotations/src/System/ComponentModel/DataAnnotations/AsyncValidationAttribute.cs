@@ -73,6 +73,19 @@ namespace System.ComponentModel.DataAnnotations
             CancellationToken cancellationToken);
 
         /// <summary>
+        ///     Sealed override of <see cref="ValidationAttribute.IsValid(object?)" /> that delegates to the
+        ///     <see cref="ValidationContext" /> overload so that <see cref="AsyncValidationAttribute" /> implementations
+        ///     only need to provide a single synchronous fallback via
+        ///     <see cref="ValidationAttribute.IsValid(object?, ValidationContext)" />.
+        /// </summary>
+        /// <param name="value">The value to validate.</param>
+        /// <returns>
+        ///     <see langword="true" /> if the value is valid; otherwise, <see langword="false" />.
+        /// </returns>
+        public sealed override bool IsValid(object? value)
+            => IsValid(value, null!) == ValidationResult.Success;
+
+        /// <summary>
         ///     Tests whether the given <paramref name="value" /> is valid asynchronously with respect to the current
         ///     validation attribute without throwing a <see cref="ValidationException" />.
         /// </summary>

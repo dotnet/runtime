@@ -38,6 +38,7 @@ namespace System.ComponentModel.DataAnnotations
         protected AsyncValidationAttribute(System.Func<string> errorMessageAccessor) { }
         protected AsyncValidationAttribute(string errorMessage) { }
         public System.Threading.Tasks.Task<System.ComponentModel.DataAnnotations.ValidationResult?> GetValidationResultAsync(object? value, System.ComponentModel.DataAnnotations.ValidationContext validationContext, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public sealed override bool IsValid(object? value) { throw null; }
         protected abstract override System.ComponentModel.DataAnnotations.ValidationResult? IsValid(object? value, System.ComponentModel.DataAnnotations.ValidationContext validationContext);
         protected abstract System.Threading.Tasks.Task<System.ComponentModel.DataAnnotations.ValidationResult?> IsValidAsync(object? value, System.ComponentModel.DataAnnotations.ValidationContext validationContext, System.Threading.CancellationToken cancellationToken);
     }
