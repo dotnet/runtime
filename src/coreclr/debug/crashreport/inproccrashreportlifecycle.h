@@ -162,9 +162,10 @@ private:
     // Creates the directory if missing; succeeds if it already exists as a directory.
     static bool EnsureDirectory(const char* path);
 
-    // Verifies the directory permits create/delete by creating and removing a
-    // hidden probe file. Borrows the (init-time idle) m_tempReportFilePath buffer
-    // rather than placing a second large path buffer on the stack.
+    // Verifies the directory permits create, rename, and delete by exercising a
+    // hidden probe file (rename is the primitive FinishReportFile uses to publish
+    // a completed report). Borrows the (init-time idle) m_tempReportFilePath buffer
+    // for the probe path and uses a transient stack buffer for the rename target.
     bool ProbeDirectoryWritable(const char* path);
 
     // Parses a managed report file name (report-<timestamp>-<pid>[-<suffix>]<ext>),

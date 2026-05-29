@@ -553,14 +553,15 @@ InProcCrashReportLifecycle::EnsureDirectory(const char* path)
 bool
 InProcCrashReportLifecycle::ProbeDirectoryWritable(const char* path)
 {
-    // Borrow the temp-report path buffer as scratch: it is unused until the
-    // crash path calls PrepareReportFile, so reusing it here avoids a second
-    // large path buffer while keeping the probe allocation-free.
+    // Borrow the temp-report path buffer as scratch for the probe path: it is
+    // unused until the crash path calls PrepareReportFile, so reusing it here
+    // keeps the probe off the heap and out of the signal path.
     char* probePath = m_tempReportFilePath;
     probePath[0] = '\0';
     size_t pos = 0;
 
-    // Use a hidden throwaway file to verify the directory allows create/delete.
+    // Use a hidden throwaway file to verify the directory allows create, rename,
+    // and delete (rename is the operation FinishReportFile uses to publish).
     SignalSafeFormatter formatter;
     bool built =
         CrashReportStringUtils::AppendString(probePath, sizeof(m_tempReportFilePath), &pos, path) &&
@@ -574,8 +575,37 @@ InProcCrashReportLifecycle::ProbeDirectoryWritable(const char* path)
         if (fd != -1)
         {
             bool closeSucceeded = close(fd) == 0;
-            bool unlinkSucceeded = unlink(probePath) == 0;
-            writable = closeSucceeded && unlinkSucceeded;
+
+            // Also verify the publish primitive the crash path depends on: a
+            // same-directory rename. Some sandboxes (notably Android and Apple
+            // app-private storage) permit create/delete yet reject other
+            // link/rename operations. Probing it here disables file output up
+            // front with a clear diagnostic instead of silently losing every
+            // report when FinishReportFile cannot publish on the signal path.
+            char committedPath[CRASHREPORT_PATH_BUFFER_SIZE];
+            size_t committedPos = 0;
+            bool committedBuilt =
+                CrashReportStringUtils::AppendString(committedPath, sizeof(committedPath), &committedPos, probePath) &&
+                CrashReportStringUtils::AppendString(committedPath, sizeof(committedPath), &committedPos, ".committed");
+
+            if (committedBuilt)
+            {
+                // Clear any stale probe artifact left by a prior aborted run so the
+                // rename targets a fresh name rather than silently replacing it.
+                unlink(committedPath);
+            }
+
+            if (committedBuilt && rename(probePath, committedPath) == 0)
+            {
+                bool unlinkSucceeded = unlink(committedPath) == 0;
+                writable = closeSucceeded && unlinkSucceeded;
+            }
+            else
+            {
+                // The rename probe failed (or the target path did not fit); remove
+                // the original probe file so no stray artifact is left behind.
+                unlink(probePath);
+            }
         }
     }
 
