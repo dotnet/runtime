@@ -1298,7 +1298,7 @@ bool IsDivByZeroAnIntegerOverflow(PCONTEXT pContext)
         // If this is a different EVEX map, we cannot decode it — treat as not an overflow.
         if ((p0 & 0x07) != 0x04)
         {
-            _ASSERTE(!"Invalid instruction (expected IDIV or DIV)");
+            _ASSERTE(!"Unexpected EVEX map for legacy DIV/IDIV decoding");
             return false;
         }
 
