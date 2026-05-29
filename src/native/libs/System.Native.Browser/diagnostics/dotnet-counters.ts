@@ -3,19 +3,20 @@
 
 import type { DiagnosticCommandOptions } from "../types";
 
-import { commandStopTracing, commandCounters } from "./client-commands";
+import { commandResumeRuntime, commandStopTracing, commandCounters } from "./client-commands";
 import { dotnetLoaderExports, Module } from "./cross-module";
 import { serverSession, setupJsClient } from "./diagnostic-server-js";
 import { IDiagnosticSession } from "./types";
 
-export function collectMetrics(options?: DiagnosticCommandOptions): Promise<Uint8Array[]> {
+export function collectMetrics(options?: DiagnosticCommandOptions, startup?: boolean): Promise<Uint8Array[]> {
     if (!options) options = {};
-    if (!serverSession) {
+    if (!startup && !serverSession) {
         throw new Error("No active JS diagnostic session");
     }
 
     const onClosePromise = dotnetLoaderExports.createPromiseCompletionSource<Uint8Array[]>();
     function onSessionStart(session: IDiagnosticSession): void {
+        session.sendCommand(commandResumeRuntime());
         // stop tracing after period of monitoring
         Module.safeSetTimeout(() => {
             session.sendCommand(commandStopTracing(session.sessionId));
@@ -26,6 +27,6 @@ export function collectMetrics(options?: DiagnosticCommandOptions): Promise<Uint
         skipDownload: options.skipDownload,
         commandOnAdvertise: () => commandCounters(options),
         onSessionStart,
-    });
+    }, startup);
     return onClosePromise.promise;
 }

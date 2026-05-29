@@ -1688,7 +1688,6 @@ void HelperCallProperties::init()
             // TODO-ARM64-Bug?: Can these throw or not?
             case CORINFO_HELP_ASSIGN_REF:
             case CORINFO_HELP_CHECKED_ASSIGN_REF:
-            case CORINFO_HELP_ASSIGN_BYREF:
                 isNoGC = true;
                 FALLTHROUGH;
             case CORINFO_HELP_BULK_WRITEBARRIER:

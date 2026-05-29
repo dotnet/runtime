@@ -894,6 +894,29 @@ internal partial class StackWalk_1 : IStackWalk
         return _eman.GetMethodDesc(codeBlockHandle.Value);
     }
 
+    IEnumerable<StackFrameData> IStackWalk.GetFrames(TargetPointer threadPointer)
+    {
+        ThreadData threadData = _target.Contracts.Thread.GetThreadData(threadPointer);
+        FrameIterator iterator = new FrameIterator(_target, threadData);
+        while (iterator.IsValid())
+        {
+            yield return new StackFrameData(
+                    iterator.CurrentFrameAddress,
+                    iterator.CurrentFrame.Identifier,
+                    iterator.GetCurrentInternalFrameType());
+            iterator.Next();
+        }
+    }
+
+    bool IStackWalk.IsExceptionHandlingHelperInlinedCallFrame(TargetPointer frameAddress) => _frameHelpers.IsExceptionHandlingHelperInlinedCallFrame(frameAddress);
+
+    DebuggerEvalData IStackWalk.GetDebuggerEvalData(TargetPointer funcEvalFrameAddress)
+    {
+        Data.FuncEvalFrame funcEvalFrame = _target.ProcessedData.GetOrAdd<Data.FuncEvalFrame>(funcEvalFrameAddress);
+        Data.DebuggerEval debuggerEval = _target.ProcessedData.GetOrAdd<Data.DebuggerEval>(funcEvalFrame.DebuggerEvalPtr);
+        return new DebuggerEvalData(debuggerEval.MethodToken, debuggerEval.AssemblyPtr);
+    }
+
     private bool IsManaged(TargetPointer ip, [NotNullWhen(true)] out CodeBlockHandle? codeBlockHandle)
     {
         TargetCodePointer codePointer = CodePointerUtils.CodePointerFromAddress(ip, _target);

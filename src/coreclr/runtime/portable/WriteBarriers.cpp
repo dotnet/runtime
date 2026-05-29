@@ -4,22 +4,22 @@
 
 #include <fcall.h>
 
-EXTERN_C FCDECL2(VOID, RhpAssignRef, Object **dst, Object *ref);
-FCIMPL2(VOID, RhpAssignRef, Object **dst, Object *ref)
+EXTERN_C FCDECL2_RAW(VOID, RhpAssignRef, Object **dst, Object *ref);
+FCIMPL2_RAW(VOID, RhpAssignRef, Object **dst, Object *ref)
 {
     PORTABILITY_ASSERT("RhpAssignRef is not yet implemented");
 }
 FCIMPLEND
 
-EXTERN_C FCDECL2(VOID, RhpCheckedAssignRef, Object **dst, Object *ref);
-FCIMPL2(VOID, RhpCheckedAssignRef, Object **dst, Object *ref)
+EXTERN_C FCDECL2_RAW(VOID, RhpCheckedAssignRef, Object **dst, Object *ref);
+FCIMPL2_RAW(VOID, RhpCheckedAssignRef, Object **dst, Object *ref)
 {
     PORTABILITY_ASSERT("RhpCheckedAssignRef is not yet implemented");
 }
 FCIMPLEND
 
-EXTERN_C FCDECL2(VOID, RhpByRefAssignRef, Object **dst, Object *ref);
-FCIMPL2(VOID, RhpByRefAssignRef, Object **dst, Object *ref)
+EXTERN_C FCDECL2_RAW(VOID, RhpByRefAssignRef, Object **dst, Object **ref);
+FCIMPL2_RAW(VOID, RhpByRefAssignRef, Object **dst, Object **ref)
 {
     PORTABILITY_ASSERT("RhpByRefAssignRef is not yet implemented");
 }

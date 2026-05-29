@@ -1227,6 +1227,95 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
         return false;
     }
 
+    // If the loop limit is an array length, compute the underlying ArrIndex
+    // and queue the deref check once up front. Both the optional zero-trip
+    // guard below and the regular limit conditions further down reuse this
+    // single ArrIndex to avoid duplicating the deref entry and allocation.
+    //
+    ArrIndex* limitArrIndex = nullptr;
+    if (iterInfo->HasArrayLengthLimit)
+    {
+        limitArrIndex = new (getAllocator(CMK_LoopClone)) ArrIndex(getAllocator(CMK_LoopClone));
+        if (!iterInfo->ArrLenLimit(this, limitArrIndex))
+        {
+            JITDUMP("> ArrLen not matching\n");
+            return false;
+        }
+
+        LC_Array array(LC_Array::Jagged, limitArrIndex, LC_Array::None);
+        context->EnsureArrayDerefs(loop->GetIndex())->Push(array);
+    }
+
+    // If AnalyzeIteration could not prove the loop condition holds on entry,
+    // emit an explicit runtime entry guard as one of the cloning conditions.
+    // The fast path is then only entered when "init TestOper limit" holds.
+    if (iterInfo->NeedsZeroTripGuard)
+    {
+        LC_Ident initIdent;
+        if (iterInfo->HasConstInit)
+        {
+            if (iterInfo->ConstInitValue < 0)
+            {
+                JITDUMP("> NeedsZeroTripGuard: init %d is invalid\n", iterInfo->ConstInitValue);
+                return false;
+            }
+            initIdent = LC_Ident::CreateConst(static_cast<unsigned>(iterInfo->ConstInitValue));
+        }
+        else
+        {
+            // Init is unknown statically; use the IV local as it stands at the
+            // preheader (the analysis already verified the local is not
+            // address-exposed and has no extraneous defs inside the loop, so
+            // reading it in the preheader gives the entry value).
+            const unsigned initLcl = iterInfo->IterVar;
+            if (!genActualTypeIsInt(lvaGetDesc(initLcl)))
+            {
+                JITDUMP("> NeedsZeroTripGuard: iter var V%02u not compatible with TYP_INT\n", initLcl);
+                return false;
+            }
+            initIdent = LC_Ident::CreateVar(initLcl);
+        }
+
+        LC_Ident limitIdent;
+        if (iterInfo->HasConstLimit)
+        {
+            int limit = iterInfo->ConstLimit();
+            if (limit < 0)
+            {
+                JITDUMP("> NeedsZeroTripGuard: limit %d is invalid\n", limit);
+                return false;
+            }
+            limitIdent = LC_Ident::CreateConst(static_cast<unsigned>(limit));
+        }
+        else if (iterInfo->HasInvariantLocalLimit)
+        {
+            const unsigned limitLcl = iterInfo->VarLimit();
+            if (!genActualTypeIsInt(lvaGetDesc(limitLcl)))
+            {
+                JITDUMP("> NeedsZeroTripGuard: limit var V%02u not compatible with TYP_INT\n", limitLcl);
+                return false;
+            }
+            limitIdent = LC_Ident::CreateVar(limitLcl);
+        }
+        else if (iterInfo->HasArrayLengthLimit)
+        {
+            assert(limitArrIndex != nullptr);
+            limitIdent = LC_Ident::CreateArrAccess(LC_Array(LC_Array::Jagged, limitArrIndex, LC_Array::ArrLen));
+        }
+        else
+        {
+            JITDUMP("> NeedsZeroTripGuard: undetected limit\n");
+            return false;
+        }
+
+        // TestOper() returns the stays-in-loop relop in IV-on-lhs form, already
+        // adjusted for IsReversed and ExitedOnTrue.
+        LC_Condition zeroTrip(iterInfo->TestOper(), LC_Expr(initIdent), LC_Expr(limitIdent),
+                              iterInfo->TestTree->IsUnsigned());
+        context->EnsureConditions(loop->GetIndex())->Push(zeroTrip);
+        JITDUMP("Added zero-trip guard cloning condition\n");
+    }
+
     LC_Ident ident;
     // Init conditions
     if (iterInfo->HasConstInit)
@@ -1311,17 +1400,8 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
     }
     else if (iterInfo->HasArrayLengthLimit)
     {
-        ArrIndex* index = new (getAllocator(CMK_LoopClone)) ArrIndex(getAllocator(CMK_LoopClone));
-        if (!iterInfo->ArrLenLimit(this, index))
-        {
-            JITDUMP("> ArrLen not matching\n");
-            return false;
-        }
-        ident = LC_Ident::CreateArrAccess(LC_Array(LC_Array::Jagged, index, LC_Array::ArrLen));
-
-        // Ensure that this array must be dereference-able, before executing the actual condition.
-        LC_Array array(LC_Array::Jagged, index, LC_Array::None);
-        context->EnsureArrayDerefs(loop->GetIndex())->Push(array);
+        assert(limitArrIndex != nullptr);
+        ident = LC_Ident::CreateArrAccess(LC_Array(LC_Array::Jagged, limitArrIndex, LC_Array::ArrLen));
     }
     else
     {
@@ -2993,7 +3073,7 @@ bool Compiler::optObtainLoopCloningOpts(LoopCloneContext* context)
     {
         JITDUMP("Considering loop " FMT_LP " to clone for optimizations.\n", loop->GetIndex());
         NaturalLoopIterInfo iterInfo;
-        if (loop->AnalyzeIteration(&iterInfo))
+        if (loop->AnalyzeIteration(&iterInfo, /* allowMissingBaseCase */ true))
         {
             context->SetLoopIterInfo(loop->GetIndex(), new (this, CMK_LoopClone) NaturalLoopIterInfo(iterInfo));
         }
