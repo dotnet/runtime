@@ -517,7 +517,7 @@ namespace System.Threading.RateLimiting.Tests
             };
             innerLimiter.IdleDurationImpl = () => TimeSpan.FromMinutes(1);
 
-            await Utils.RunTimerFunc(limiter);
+            await Utils.RunTimerFunc<string, int>(limiter);
 
             // Limiter is disposed when timer runs and sees that IdleDuration is greater than idle limit
             await tcs.Task;
@@ -576,7 +576,7 @@ namespace System.Threading.RateLimiting.Tests
             innerLimiter2.IdleDurationImpl = () => TimeSpan.FromMinutes(1);
 
             // Run Timer
-            var ex = await Assert.ThrowsAsync<AggregateException>(() => Utils.RunTimerFunc(limiter));
+            var ex = await Assert.ThrowsAsync<AggregateException>(() => Utils.RunTimerFunc<string, int>(limiter));
 
             Assert.True(dispose1Called);
             Assert.True(dispose2Called);
@@ -625,7 +625,7 @@ namespace System.Threading.RateLimiting.Tests
             };
             idleLimiter.IdleDurationImpl = () => TimeSpan.FromMinutes(1);
 
-            var ex = await Assert.ThrowsAsync<AggregateException>(() => Utils.RunTimerFunc(limiter));
+            var ex = await Assert.ThrowsAsync<AggregateException>(() => Utils.RunTimerFunc<string, int>(limiter));
             Assert.Single(ex.InnerExceptions);
 
             // Wait for Timer to run again which will see the throwing TryReplenish and an idle limiter it needs to clean-up
@@ -649,7 +649,7 @@ namespace System.Threading.RateLimiting.Tests
 
             limiter.AttemptAcquire("");
 
-            await Utils.RunTimerFunc(limiter);
+            await Utils.RunTimerFunc<string, int>(limiter);
 
             Assert.Equal(1, replenishCallCount);
         }
@@ -675,7 +675,7 @@ namespace System.Threading.RateLimiting.Tests
 
             limiter.AttemptAcquire("");
 
-            await Utils.RunTimerFunc(limiter);
+            await Utils.RunTimerFunc<string, int>(limiter);
 
             Assert.Equal(1, replenishCallCount1);
             Assert.Equal(1, replenishCallCount2);
@@ -701,7 +701,7 @@ namespace System.Threading.RateLimiting.Tests
 
             limiter.AttemptAcquire("");
 
-            var ex = await Assert.ThrowsAsync<AggregateException>(() => Utils.RunTimerFunc(limiter));
+            var ex = await Assert.ThrowsAsync<AggregateException>(() => Utils.RunTimerFunc<string, int>(limiter));
             Assert.Single(ex.InnerExceptions);
             Assert.IsType<AggregateException>(ex.InnerExceptions[0]);
 
@@ -734,7 +734,7 @@ namespace System.Threading.RateLimiting.Tests
             idleLimiter.IdleDurationImpl = () => TimeSpan.FromMinutes(1);
             replenishLimiter.IdleDurationImpl = () => null;
 
-            await Utils.RunTimerFunc(limiter);
+            await Utils.RunTimerFunc<string, int>(limiter);
 
             // Factory should not have been called again — limiter was not evicted
             limiter.AttemptAcquire("");
@@ -768,7 +768,7 @@ namespace System.Threading.RateLimiting.Tests
             innerLimiter1.DisposeAsyncCoreImpl = () => default;
             innerLimiter2.DisposeAsyncCoreImpl = () => default;
 
-            await Utils.RunTimerFunc(limiter);
+            await Utils.RunTimerFunc<string, int>(limiter);
 
             // Factory should be called again on next acquire — limiter was evicted and recreated
             limiter.AttemptAcquire("");

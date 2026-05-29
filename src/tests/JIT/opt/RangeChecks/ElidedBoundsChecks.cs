@@ -204,6 +204,15 @@ public class ElidedBoundsChecks
         return a[0] + b[0] + a[3] + b[1];
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int UnsignedShiftBySignBit(int i)
+    {
+        // X64-NOT: CORINFO_HELP_RNGCHKFAIL
+        // ARM64-NOT: CORINFO_HELP_RNGCHKFAIL
+        ReadOnlySpan<int> vals = [0, 1];
+        return vals[i >>> 31];
+    }
+
     [Fact]
     public static int TestEntryPoint()
     {
@@ -322,6 +331,9 @@ public class ElidedBoundsChecks
         Assert.Throws<IndexOutOfRangeException>(() => TwoArrays(new int[3], b2));
         // b too short for b[1]: must throw IOOB.
         Assert.Throws<IndexOutOfRangeException>(() => TwoArrays(a4, new int[1]));
+
+        if (UnsignedShiftBySignBit(-1) != 1 || UnsignedShiftBySignBit(0) != 0)
+            return 0;
 
         return 100;
     }

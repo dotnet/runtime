@@ -871,9 +871,6 @@ void Compiler::lvaInitVarDsc(LclVarDsc*              varDsc,
         case CORINFO_TYPE_PTR:
         case CORINFO_TYPE_BYREF:
         case CORINFO_TYPE_CLASS:
-        case CORINFO_TYPE_STRING:
-        case CORINFO_TYPE_VAR:
-        case CORINFO_TYPE_REFANY:
             varDsc->lvIsPtr = 1;
             break;
         default:
@@ -1335,6 +1332,32 @@ void Compiler::lvSetMinOptsDoNotEnreg()
     for (unsigned lclNum = 0; lclNum < lvaCount; lclNum++)
     {
         lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::NoRegVars));
+    }
+}
+
+//------------------------------------------------------------------------
+// lvSetVarsDoNotEnreg:
+//   Set locals that we expect to not be enregisterable as DNER, to allow
+//   specific optimizations for these by lowering.
+//
+void Compiler::lvSetVarsDoNotEnreg()
+{
+    for (unsigned lclNum = 0; lclNum < lvaCount; lclNum++)
+    {
+        LclVarDsc* dsc = lvaGetDesc(lclNum);
+        if (dsc->lvDoNotEnregister)
+        {
+            continue;
+        }
+
+        if (dsc->lvTracked && dsc->IsLiveInOutOfHandler() && !IsEHVarARegCandidate(dsc))
+        {
+            lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
+        }
+        else if (varTypeIsStruct(dsc) && !dsc->lvPromoted && !dsc->IsEnregisterableType())
+        {
+            lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::NotRegSizeStruct));
+        }
     }
 }
 
@@ -2265,50 +2288,6 @@ void Compiler::lvaSetHiddenBufferStructArg(unsigned varNum)
     lvaSetVarDoNotEnregister(varNum DEBUGARG(DoNotEnregisterReason::HiddenBufferStructArg));
 }
 
-//------------------------------------------------------------------------
-// lvaSetVarLiveInOutOfHandler: Set the local varNum as being live in and/or out of a handler
-//
-// Arguments:
-//    varNum - the varNum of the local
-//
-void Compiler::lvaSetVarLiveInOutOfHandler(unsigned varNum)
-{
-    LclVarDsc* varDsc = lvaGetDesc(varNum);
-
-    varDsc->lvLiveInOutOfHndlr = 1;
-
-    if (varDsc->lvPromoted)
-    {
-        noway_assert(varTypeIsStruct(varDsc));
-
-        for (unsigned i = varDsc->lvFieldLclStart; i < varDsc->lvFieldLclStart + varDsc->lvFieldCnt; ++i)
-        {
-            noway_assert(lvaTable[i].lvIsStructField);
-            lvaTable[i].lvLiveInOutOfHndlr = 1;
-            // For now, only enregister an EH Var if it is a single def and whose refCnt > 1.
-            if (!lvaEnregEHVars || !lvaTable[i].lvSingleDefRegCandidate || lvaTable[i].lvRefCnt() <= 1)
-            {
-                lvaSetVarDoNotEnregister(i DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
-            }
-        }
-    }
-
-    // For now, only enregister an EH Var if it is a single def and whose refCnt > 1.
-    if (!lvaEnregEHVars || !varDsc->lvSingleDefRegCandidate || varDsc->lvRefCnt() <= 1)
-    {
-        lvaSetVarDoNotEnregister(varNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
-    }
-#ifdef JIT32_GCENCODER
-    else if (lvaKeepAliveAndReportThis() && (varNum == info.compThisArg))
-    {
-        // For the JIT32_GCENCODER, when lvaKeepAliveAndReportThis is true, we must either keep the "this" pointer
-        // in the same register for the entire method, or keep it on the stack. If it is EH-exposed, we can't ever
-        // keep it in a register, since it must also be live on the stack. Therefore, we won't attempt to allocate it.
-        lvaSetVarDoNotEnregister(varNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
-    }
-#endif // JIT32_GCENCODER
-}
-
 /*****************************************************************************
  *
  *  Record that the local var "varNum" should not be enregistered (for one of several reasons.)
@@ -2360,7 +2339,6 @@ void Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregister
             break;
         case DoNotEnregisterReason::LiveInOutOfHandler:
             JITDUMP("live in/out of a handler\n");
-            varDsc->lvLiveInOutOfHndlr = 1;
             break;
         case DoNotEnregisterReason::BlockOp:
             JITDUMP("written/read in a block op\n");
@@ -2388,12 +2366,10 @@ void Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregister
             JITDUMP("it is a decomposed field of a long parameter\n");
             break;
 #endif
-#ifdef JIT32_GCENCODER
         case DoNotEnregisterReason::PinningRef:
             JITDUMP("pinning ref\n");
             assert(varDsc->lvPinned);
             break;
-#endif
         case DoNotEnregisterReason::LclAddrNode:
             JITDUMP("LclAddrVar/Fld takes the address of this node\n");
             break;
@@ -2431,6 +2407,15 @@ void Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregister
             break;
     }
 #endif
+
+    if (varDsc->lvPromoted && !wasAlreadyMarkedDoNotEnreg)
+    {
+        for (unsigned i = 0; i < varDsc->lvFieldCnt; i++)
+        {
+            unsigned fieldLclNum = varDsc->lvFieldLclStart + i;
+            lvaSetVarDoNotEnregister(fieldLclNum DEBUGARG(DoNotEnregisterReason::DepField));
+        }
+    }
 }
 
 //------------------------------------------------------------------------
@@ -3639,7 +3624,7 @@ void Compiler::lvaComputePreciseRefCounts(bool isRecompute, bool setSlotNumbers)
                     // count those in our heuristic for register allocation, since they always
                     // must be stored, so there's no value in enregistering them at defs; only
                     // if there are enough uses to justify it.
-                    if (varDsc->lvTracked && varDsc->lvLiveInOutOfHndlr && !varDsc->lvDoNotEnregister &&
+                    if (varDsc->lvTracked && varDsc->IsLiveInOutOfHandler() && !varDsc->lvDoNotEnregister &&
                         ((node->gtFlags & GTF_VAR_DEF) != 0))
                     {
                         varDsc->incRefCnts(0, this);
@@ -5335,8 +5320,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                 continue;
             }
 
-            if ((lclNum == lvaMonAcquired) || (lclNum == lvaAsyncExecutionContextVar) ||
-                (lclNum == lvaAsyncSynchronizationContextVar))
+            if ((lclNum == lvaMonAcquired) || (lclNum == lvaAsyncThreadObjectVar) ||
+                (lclNum == lvaAsyncExecutionContextVar) || (lclNum == lvaAsyncSynchronizationContextVar))
             {
                 continue;
             }
@@ -5852,7 +5837,7 @@ int Compiler::lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, i
 
 //------------------------------------------------------------------------
 // lvaAllocAsyncContexts:
-//   Allocate stack space for the two async context locals, if present.
+//   Allocate stack space for the thread object and two async context locals, if present.
 //
 // Arguments:
 //   stkOffs - Current stack offset
@@ -5862,6 +5847,18 @@ int Compiler::lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, i
 //
 int Compiler::lvaAllocAsyncContexts(int stkOffs)
 {
+    if (lvaAsyncThreadObjectVar != BAD_VAR_NUM)
+    {
+        stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaAsyncThreadObjectVar,
+                                                   lvaLclStackHomeSize(lvaAsyncThreadObjectVar), stkOffs);
+    }
+    else
+    {
+        // For x86 EnC the VM expects that we always allocate stack space
+        // for this local when contexts were saved.
+        assert((info.compMethodInfo->options & CORINFO_ASYNC_SAVE_CONTEXTS) == 0);
+    }
+
     if (lvaAsyncExecutionContextVar != BAD_VAR_NUM)
     {
         stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaAsyncExecutionContextVar,
@@ -6402,7 +6399,7 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
         {
             printf("V");
         }
-        if (lvaEnregEHVars && varDsc->lvLiveInOutOfHndlr)
+        if (lvaEnregEHVars && varDsc->lvTracked && varDsc->IsLiveInOutOfHandler())
         {
             printf("%c", varDsc->lvSingleDefDisqualifyReason);
         }
@@ -6477,7 +6474,7 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
     {
         printf(" exact");
     }
-    if (varDsc->lvLiveInOutOfHndlr)
+    if (varDsc->lvTracked && varDsc->IsLiveInOutOfHandler())
     {
         printf(" EH-live");
     }
