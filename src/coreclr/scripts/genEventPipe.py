@@ -181,12 +181,28 @@ def generateClrEventPipeWriteEventsImpl(
         "void Init" +
         providerPrettyName +
         "(void)\n{\n")
-    WriteEventImpl.append(
-        "    EventPipeProvider" +
-        providerPrettyName +
-        " = " + createProviderFunc + "(" +
-        providerPrettyName +
-        "Name, " + eventPipeCallbackCastExpr + "(" + callbackName + "));\n")
+    if runtimeFlavor.coreclr:
+        WriteEventImpl.append(
+            "#ifdef FEATURE_EVENT_TRACE\n" +
+            "    EventPipeProvider" +
+            providerPrettyName +
+            " = " + createProviderFunc + "(" +
+            providerPrettyName +
+            "Name, " + eventPipeCallbackCastExpr + "(" + callbackName + "));\n" +
+            "#else\n" +
+            "    EventPipeProvider" +
+            providerPrettyName +
+            " = " + createProviderFunc + "(" +
+            providerPrettyName +
+            "Name, nullptr);\n" +
+            "#endif\n")
+    else:
+        WriteEventImpl.append(
+            "    EventPipeProvider" +
+            providerPrettyName +
+            " = " + createProviderFunc + "(" +
+            providerPrettyName +
+            "Name, " + eventPipeCallbackCastExpr + "(" + callbackName + "));\n")
     for eventNode in eventNodes:
         eventName = eventNode.getAttribute('symbol')
         templateName = eventNode.getAttribute('template')

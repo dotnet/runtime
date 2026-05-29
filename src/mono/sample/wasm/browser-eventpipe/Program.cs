@@ -104,8 +104,6 @@ namespace Sample
         }
     }
 
-
-
     [EventSource(Name = "WasmHello")]
     public class WasmHelloEventSource  : EventSource
     {

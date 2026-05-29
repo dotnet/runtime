@@ -121,6 +121,12 @@ enum EtwGCSettingFlags
 #define ETWFireEvent(EventName) FireEtw##EventName(GetClrInstanceId())
 
 #define ETW_TRACING_INITIALIZED(RegHandle) (TRUE)
+#if defined(HOST_BROWSER) || defined(HOST_WASI)
+#define ETW_EVENT_ENABLED(Context, EventDescriptor) (EventPipeHelper::IsEnabled(Context, EventDescriptor.Level, EventDescriptor.Keyword))
+#define ETW_CATEGORY_ENABLED(Context, Level, Keyword) (EventPipeHelper::IsEnabled(Context, Level, Keyword))
+#define ETW_TRACING_ENABLED(Context, EventDescriptor) (EventEnabled##EventDescriptor())
+#define ETW_TRACING_CATEGORY_ENABLED(Context, Level, Keyword) (EventPipeHelper::IsEnabled(Context, Level, Keyword))
+#else // HOST_BROWSER || HOST_WASI
 #define ETW_EVENT_ENABLED(Context, EventDescriptor) (EventPipeHelper::IsEnabled(Context, EventDescriptor.Level, EventDescriptor.Keyword) || \
         (XplatEventLogger::IsKeywordEnabled(Context, EventDescriptor.Level, EventDescriptor.Keyword)))
 #define ETW_CATEGORY_ENABLED(Context, Level, Keyword) (EventPipeHelper::IsEnabled(Context, Level, Keyword) || \
@@ -128,6 +134,7 @@ enum EtwGCSettingFlags
 #define ETW_TRACING_ENABLED(Context, EventDescriptor) (EventEnabled##EventDescriptor())
 #define ETW_TRACING_CATEGORY_ENABLED(Context, Level, Keyword) (EventPipeHelper::IsEnabled(Context, Level, Keyword) || \
         (XplatEventLogger::IsKeywordEnabled(Context, Level, Keyword)))
+#endif // HOST_BROWSER || HOST_WASI
 #define ETW_PROVIDER_ENABLED(ProviderSymbol) (TRUE)
 #else //defined(FEATURE_PERFTRACING)
 #define ETW_INLINE
@@ -416,7 +423,7 @@ private:
 };
 #endif // defined(FEATURE_PERFTRACING) || defined(FEATURE_EVENTSOURCE_XPLAT)
 
-#if defined(HOST_UNIX) && (defined(FEATURE_EVENT_TRACE) || defined(FEATURE_EVENTSOURCE_XPLAT))
+#if defined(HOST_UNIX) && !defined(HOST_BROWSER) && !defined(HOST_WASI) && (defined(FEATURE_EVENT_TRACE) || defined(FEATURE_EVENTSOURCE_XPLAT))
 
 class XplatEventLoggerController
 {
@@ -557,7 +564,7 @@ public:
 };
 
 
-#endif  // defined(HOST_UNIX) && (defined(FEATURE_EVENT_TRACE) || defined(FEATURE_EVENTSOURCE_XPLAT))
+#endif  // defined(HOST_UNIX) && !defined(HOST_BROWSER) && !defined(HOST_WASI) && (defined(FEATURE_EVENT_TRACE) || defined(FEATURE_EVENTSOURCE_XPLAT))
 
 #if defined(FEATURE_EVENT_TRACE)
 

@@ -79,9 +79,20 @@ add_definitions(-DFEATURE_DEFAULT_INTERFACES)
 if(FEATURE_EVENT_TRACE)
     add_compile_definitions(FEATURE_EVENT_TRACE)
     add_definitions(-DFEATURE_PERFTRACING)
-else(FEATURE_EVENT_TRACE)
+elseif(FEATURE_PERFTRACING)
+    # FEATURE_PERFTRACING without FEATURE_EVENT_TRACE (e.g. browser-wasm):
+    # Add FEATURE_PERFTRACING globally so that qcallentrypoints.cpp and other VM
+    # sources compile EventPipe code paths. ETW-dependent code is separately guarded
+    # by !defined(HOST_BROWSER) checks.
+    add_definitions(-DFEATURE_PERFTRACING)
+    # For cross-component builds (e.g. wasmjit) that don't include vm/eventing/,
+    # create a dummy target so utilcode's add_dependencies doesn't fail.
+    if(CLR_CROSS_COMPONENTS_BUILD)
+        add_custom_target(eventing_headers)
+    endif()
+else()
     add_custom_target(eventing_headers) # add a dummy target to avoid checking for FEATURE_EVENT_TRACE in multiple places
-endif(FEATURE_EVENT_TRACE)
+endif()
 if(FEATURE_GDBJIT)
     add_definitions(-DFEATURE_GDBJIT)
 endif()
