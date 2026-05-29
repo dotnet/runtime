@@ -299,7 +299,6 @@ DebuggerILToNativeMap *DebuggerJitInfo::MapILOffsetToMapEntry(SIZE_T offset, BOO
     //
 
     DebuggerILToNativeMap *mMin = GetSequenceMap();
-    DebuggerILToNativeMap *mMax = mMin + GetSequenceMapCount();
 
     _ASSERTE(m_sequenceMapSorted);
 
@@ -308,7 +307,14 @@ DebuggerILToNativeMap *DebuggerJitInfo::MapILOffsetToMapEntry(SIZE_T offset, BOO
         *exact = FALSE;
     }
 
-    if (mMin == NULL || mMin >= mMax)
+    if (mMin == NULL)
+    {
+        return NULL;
+    }
+
+    DebuggerILToNativeMap *mMax = mMin + GetSequenceMapCount();
+
+    if (mMin >= mMax)
     {
         return NULL;
     }
@@ -594,7 +600,6 @@ SIZE_T DebuggerJitInfo::MapILOffsetToNativeForSetIP(SIZE_T offsetILTo, int funcl
     CONTRACTL_END;
 
     DebuggerILToNativeMap* pMap    = MapILOffsetToMapEntry(offsetILTo, pExact, TRUE);
-    DebuggerILToNativeMap* pMapEnd = GetSequenceMap() + GetSequenceMapCount();
 
     if (pMap == NULL)
     {
@@ -604,6 +609,8 @@ SIZE_T DebuggerJitInfo::MapILOffsetToNativeForSetIP(SIZE_T offsetILTo, int funcl
         }
         return ((SIZE_T)-1);
     }
+
+    DebuggerILToNativeMap* pMapEnd = GetSequenceMap() + GetSequenceMapCount();
 
     _ASSERTE(pMap == m_sequenceMap ||
              (pMap - 1)->ilOffset == (ULONG)ICorDebugInfo::NO_MAPPING ||
