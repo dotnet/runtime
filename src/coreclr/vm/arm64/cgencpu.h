@@ -47,6 +47,8 @@ extern PCODE GetPreStubEntryPoint();
 
 #ifndef DACCESS_COMPILE
 extern "C" void* PacAuthPtr(void* ptr, void* sp);
+extern "C" void* PacSignPtr(void* ptr, void* sp);
+extern "C" void* PacStripPtr(void* ptr);
 #endif
 
 #define STACK_ALIGN_SIZE                        16
@@ -212,7 +214,7 @@ typedef struct _PROFILE_PLATFORM_SPECIFIC_DATA
 
 inline PCODE GetIP(const T_CONTEXT * context) {
     LIMITED_METHOD_DAC_CONTRACT;
-    return (PCODE) context->Pc;
+    return context->Pc;
 }
 
 inline void SetIP(T_CONTEXT *context, PCODE eip) {
