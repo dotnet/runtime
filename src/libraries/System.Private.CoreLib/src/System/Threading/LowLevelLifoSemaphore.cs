@@ -34,7 +34,7 @@ namespace System.Threading
         private sealed class LifoBlockerNode
         {
             internal LifoBlockerNode? _next;
-            internal LowLevelThreadBlocker _blocker;
+            internal LowLevelThreadBlocker _blocker = new LowLevelThreadBlocker();
 
             ~LifoBlockerNode()
             {
