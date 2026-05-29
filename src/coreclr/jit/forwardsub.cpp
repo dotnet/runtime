@@ -949,6 +949,339 @@ bool Compiler::fgForwardSubHasStoreInterference(Statement* defStmt, Statement* n
 }
 
 //------------------------------------------------------------------------
+// Late (SSA-based) Forward Substitution
+//
+// An SSA-based forward substitution that runs while the IR is in SSA form
+// (after VN copy propagation). Using the per-SSA-def use bookkeeping on
+// LclSsaVarDsc, it finds a def with a single same-block use (GetNumUses() == 1
+// && !HasPhiUse() && !HasGlobalUse()) and moves the defined value into that use,
+// deleting the now-dead store. To stay sound it only forwards *pure* values
+// (no GTF_ALL_EFFECT) and bails if a store between the def and the use could
+// overwrite a local the value reads. It is intentionally conservative: structs,
+// small types, local-address forms and a few special opers are skipped.
+//------------------------------------------------------------------------
+
+//------------------------------------------------------------------------
+// optLateForwardSub: run SSA-based forward substitution.
+//
+// Returns:
+//   suitable phase status
+//
+PhaseStatus Compiler::optLateForwardSub()
+{
+    if (!opts.OptimizationEnabled())
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+#if defined(DEBUG)
+    if (JitConfig.JitNoLateForwardSub() > 0)
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+#endif
+
+    if (!fgSsaValid)
+    {
+        JITDUMP("SSA is not valid, skipping late forward sub\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    bool changed = false;
+
+    for (BasicBlock* const block : Blocks())
+    {
+        if ((m_dfsTree != nullptr) && !m_dfsTree->Contains(block))
+        {
+            continue;
+        }
+
+        for (Statement* stmt = block->firstStmt(); stmt != nullptr;)
+        {
+            Statement* const next = stmt->GetNextStmt();
+            if (optLateForwardSubStatement(block, stmt))
+            {
+                changed = true;
+            }
+            stmt = next;
+        }
+    }
+
+    return changed ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+}
+
+//------------------------------------------------------------------------
+// optLateForwardSubStatement: if the root of 'defStmt' is a single-use SSA
+//   store, try to forward substitute its value into its unique same-block use.
+//
+// Arguments:
+//   block   - the block containing defStmt
+//   defStmt - candidate statement
+//
+// Returns:
+//   true if the substitution was performed (def store removed).
+//
+bool Compiler::optLateForwardSubStatement(BasicBlock* block, Statement* defStmt)
+{
+    GenTree* const root = defStmt->GetRootNode();
+    if (!root->OperIs(GT_STORE_LCL_VAR))
+    {
+        return false;
+    }
+
+    GenTreeLclVarCommon* const store = root->AsLclVarCommon();
+    if (store->HasCompositeSsaName())
+    {
+        return false;
+    }
+
+    unsigned const lclNum = store->GetLclNum();
+    unsigned const ssaNum = store->GetSsaNum();
+    if ((ssaNum == SsaConfig::RESERVED_SSA_NUM) || !lvaInSsa(lclNum))
+    {
+        return false;
+    }
+
+    LclVarDsc* const    varDsc = lvaGetDesc(lclNum);
+    LclSsaVarDsc* const defDsc = varDsc->GetPerSsaData(ssaNum);
+
+    // Use the SSA def bookkeeping: exactly one use, not a phi use, no use
+    // outside this block. NumUses may be an over-estimate, which is safe here:
+    // if the real use count is 0 we simply fail to find a use below.
+    //
+    if ((defDsc->GetNumUses() != 1) || defDsc->HasPhiUse() || defDsc->HasGlobalUse())
+    {
+        return false;
+    }
+
+    if (varDsc->lvPinned || varDsc->IsAddressExposed() || lvaIsImplicitByRefLocal(lclNum))
+    {
+        return false;
+    }
+
+    GenTree* value = store->Data();
+
+    // Bail on shapes we do not handle or cannot safely move.
+    //
+    if (value->OperIs(GT_CATCH_ARG, GT_LCLHEAP, GT_ASYNC_CONTINUATION, GT_QMARK, GT_PHI))
+    {
+        return false;
+    }
+
+    if (gtTreeContainsAsyncCall(value))
+    {
+        return false;
+    }
+
+    if (varTypeIsStruct(value) || varTypeIsStruct(store) || varTypeIsSmall(varDsc))
+    {
+        return false;
+    }
+
+    // The forwarded value must be pure.
+    //
+    gtUpdateStmtSideEffects(defStmt);
+    if ((value->gtFlags & GTF_ALL_EFFECT) != 0)
+    {
+        return false;
+    }
+
+    // Collect the locals read by the value (expanded across promotion) so we can
+    // detect a clobbering store between the def and the use.
+    //
+    typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, bool> LocalSet;
+    LocalSet                                                                  readLocals(getAllocator(CMK_ForwardSub));
+
+    struct ReadCollector final : public GenTreeVisitor<ReadCollector>
+    {
+        LocalSet& m_readLocals;
+        bool      m_unsafeRead = false;
+
+        enum
+        {
+            DoPreOrder    = true,
+            DoLclVarsOnly = true
+        };
+
+        ReadCollector(Compiler* compiler, LocalSet& readLocals)
+            : GenTreeVisitor<ReadCollector>(compiler)
+            , m_readLocals(readLocals)
+        {
+        }
+
+        Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTreeLclVarCommon* const lcl = (*use)->AsLclVarCommon();
+
+            // Local address nodes cannot be safely introduced into new contexts
+            // post-morph (local address modes are already canonicalized).
+            //
+            if (lcl->OperIs(GT_LCL_ADDR))
+            {
+                m_unsafeRead = true;
+                return fgWalkResult::WALK_ABORT;
+            }
+
+            if ((lcl->gtFlags & GTF_VAR_DEF) != 0)
+            {
+                return fgWalkResult::WALK_CONTINUE;
+            }
+
+            unsigned const   readLcl = lcl->GetLclNum();
+            LclVarDsc* const dsc     = m_compiler->lvaGetDesc(readLcl);
+
+            // An address-exposed local read is effectively a global reference,
+            // but the GTF_GLOB_REF flag on the node may be stale/missing after
+            // earlier phases (e.g. copy prop). The purity check above can thus
+            // miss it, and the forward scan below only models direct local
+            // stores -- not calls or indirect writes that could clobber such a
+            // local. Bail conservatively.
+            //
+            if (dsc->IsAddressExposed())
+            {
+                m_unsafeRead = true;
+                return fgWalkResult::WALK_ABORT;
+            }
+
+            m_readLocals.Set(readLcl, true, LocalSet::Overwrite);
+            if (dsc->lvIsStructField)
+            {
+                m_readLocals.Set(dsc->lvParentLcl, true, LocalSet::Overwrite);
+            }
+            if (dsc->lvPromoted)
+            {
+                for (unsigned i = 0; i < dsc->lvFieldCnt; i++)
+                {
+                    m_readLocals.Set(dsc->lvFieldLclStart + i, true, LocalSet::Overwrite);
+                }
+            }
+            return fgWalkResult::WALK_CONTINUE;
+        }
+    };
+    ReadCollector rc(this, readLocals);
+    rc.WalkTree(&value, nullptr);
+    if (rc.m_unsafeRead)
+    {
+        return false;
+    }
+
+    // Scan forward (in execution order) from the statement after the def for the
+    // single LCL_VAR use of this SSA name, bailing if a clobbering store to a
+    // local read by the value is executed first.
+    //
+    struct FwdSubScanner final : public GenTreeVisitor<FwdSubScanner>
+    {
+        LocalSet& m_readLocals;
+        unsigned  m_lclNum;
+        unsigned  m_ssaNum;
+        GenTree** m_useSlot   = nullptr;
+        bool      m_interfere = false;
+
+        enum
+        {
+            DoPostOrder       = true,
+            UseExecutionOrder = true
+        };
+
+        FwdSubScanner(Compiler* compiler, LocalSet& readLocals, unsigned lclNum, unsigned ssaNum)
+            : GenTreeVisitor<FwdSubScanner>(compiler)
+            , m_readLocals(readLocals)
+            , m_lclNum(lclNum)
+            , m_ssaNum(ssaNum)
+        {
+        }
+
+        Compiler::fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* const node = *use;
+
+            if (node->OperIsLocalStore())
+            {
+                unsigned const   storeLcl = node->AsLclVarCommon()->GetLclNum();
+                LclVarDsc* const dsc      = m_compiler->lvaGetDesc(storeLcl);
+                bool             found;
+                if (m_readLocals.Lookup(storeLcl, &found) ||
+                    (dsc->lvIsStructField && m_readLocals.Lookup(dsc->lvParentLcl, &found)))
+                {
+                    m_interfere = true;
+                    return fgWalkResult::WALK_ABORT;
+                }
+                if (dsc->lvPromoted)
+                {
+                    for (unsigned i = 0; i < dsc->lvFieldCnt; i++)
+                    {
+                        if (m_readLocals.Lookup(dsc->lvFieldLclStart + i, &found))
+                        {
+                            m_interfere = true;
+                            return fgWalkResult::WALK_ABORT;
+                        }
+                    }
+                }
+                return fgWalkResult::WALK_CONTINUE;
+            }
+
+            if (node->OperIs(GT_LCL_VAR) && ((node->gtFlags & GTF_VAR_DEF) == 0) &&
+                (node->AsLclVarCommon()->GetLclNum() == m_lclNum) && (node->AsLclVarCommon()->GetSsaNum() == m_ssaNum))
+            {
+                m_useSlot = use;
+                return fgWalkResult::WALK_ABORT;
+            }
+
+            return fgWalkResult::WALK_CONTINUE;
+        }
+    };
+
+    Statement* useStmt = nullptr;
+    GenTree**  useSlot = nullptr;
+    for (Statement* stmt = defStmt->GetNextStmt(); stmt != nullptr; stmt = stmt->GetNextStmt())
+    {
+        FwdSubScanner scanner(this, readLocals, lclNum, ssaNum);
+        scanner.WalkTree(stmt->GetRootNodePointer(), nullptr);
+        if (scanner.m_interfere)
+        {
+            return false;
+        }
+        if (scanner.m_useSlot != nullptr)
+        {
+            useStmt = stmt;
+            useSlot = scanner.m_useSlot;
+            break;
+        }
+    }
+
+    // The unique use must be a plain same-block LCL_VAR read we can handle (it
+    // may instead be e.g. a partial-store previous-def link or an LCL_FLD, or
+    // the def may be dead).
+    //
+    if (useStmt == nullptr)
+    {
+        return false;
+    }
+
+    GenTree* const useNode = *useSlot;
+    if (genActualType(useNode) != genActualType(value))
+    {
+        return false;
+    }
+
+    JITDUMP("\nLate fwd sub: V%02u.%u [%06u] -> use [%06u] in " FMT_BB "\n", lclNum, ssaNum, dspTreeID(store),
+            dspTreeID(useNode), block->bbNum);
+
+    *useSlot = value;
+    fgSetStmtSeq(useStmt);
+    gtUpdateStmtSideEffects(useStmt);
+
+    defDsc->SetDefNode(nullptr);
+    fgRemoveStmt(block, defStmt);
+
+    DEBUG_DESTROY_NODE(useNode);
+    DEBUG_DESTROY_NODE(store);
+
+    DISPSTMT(useStmt);
+    return true;
+}
+
+//------------------------------------------------------------------------
 // fgForwardSubUpdateLiveness: correct liveness after performing a forward
 // substitution that added a new sub list of locals in a statement.
 //

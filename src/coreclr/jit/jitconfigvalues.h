@@ -149,10 +149,11 @@ CONFIG_INTEGER(JitMinOptsLvRefCount, "JITMinOptsLvRefcount", DEFAULT_MIN_OPTS_LV
 
 CONFIG_INTEGER(JitNoCSE, "JitNoCSE", 0)
 CONFIG_INTEGER(JitNoCSE2, "JitNoCSE2", 0)
-CONFIG_INTEGER(JitNoForceFallback, "JitNoForceFallback", 0) // Set to non-zero to prevent NOWAY assert testing.
-                                                            // Overrides DOTNET_JitForceFallback and JIT stress
-                                                            // flags.
-CONFIG_INTEGER(JitNoForwardSub, "JitNoForwardSub", 0)       // Disables forward sub
+CONFIG_INTEGER(JitNoForceFallback, "JitNoForceFallback", 0)   // Set to non-zero to prevent NOWAY assert testing.
+                                                              // Overrides DOTNET_JitForceFallback and JIT stress
+                                                              // flags.
+CONFIG_INTEGER(JitNoForwardSub, "JitNoForwardSub", 0)         // Disables forward sub
+CONFIG_INTEGER(JitNoLateForwardSub, "JitNoLateForwardSub", 0) // Disables SSA-based late forward sub
 CONFIG_INTEGER(JitNoHoist, "JitNoHoist", 0)
 CONFIG_INTEGER(JitNoMemoryBarriers, "JitNoMemoryBarriers", 0)   // If 1, don't generate memory barriers
 CONFIG_INTEGER(JitNoStructPromotion, "JitNoStructPromotion", 0) // Disables struct promotion 1 - for all, 2 - for

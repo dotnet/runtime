@@ -7397,6 +7397,10 @@ private:
     bool fgForwardSubHasStoreInterference(Statement* defStmt, Statement* nextStmt, GenTree* nextStmtUse);
     void fgForwardSubUpdateLiveness(GenTree* newSubListFirst, GenTree* newSubListLast);
 
+    // Late (SSA-based) forward substitution.
+    PhaseStatus optLateForwardSub();
+    bool        optLateForwardSubStatement(BasicBlock* block, Statement* defStmt);
+
     enum TypeProducerKind
     {
         TPK_Unknown = 0, // May not be a RuntimeType

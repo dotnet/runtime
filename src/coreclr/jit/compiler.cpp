@@ -4794,6 +4794,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 DoPhase(this, PHASE_VN_COPY_PROP, &Compiler::optVnCopyProp);
             }
 
+            // SSA-based forward substitution (single-def, single-use).
+            //
+            DoPhase(this, PHASE_LATE_FWD_SUB, &Compiler::optLateForwardSub);
+
             if (doBranchOpt)
             {
                 // Optimize redundant branches
