@@ -58,7 +58,5 @@ cleanup:
     ReleaseLRef(env, privateKey);
     ReleaseLRef(env, keyAgreement);
     ReleaseLRef(env, algorithmName);
-    if (ret != SUCCESS)
-        *usedBufferLength = 0;
     return ret;
 }

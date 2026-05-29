@@ -83,8 +83,11 @@ ARGS_NON_NULL_ALL static int32_t ContainsEntryForAlias(
 
 cleanup:
     RELEASE_LOCALS(loc, env);
-    *contains = containsLocal;
-    *flags = flagsLocal;
+    if (ret == SUCCESS)
+    {
+        *contains = containsLocal;
+        *flags = flagsLocal;
+    }
     return ret;
 }
 
