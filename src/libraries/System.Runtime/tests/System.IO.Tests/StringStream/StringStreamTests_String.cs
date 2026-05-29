@@ -72,23 +72,11 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void CanReadPropertyReturnsTrue()
+        public void StreamCapabilities_ReturnsExpectedValues()
         {
             var stream = new StringStream("test", Encoding.UTF8);
             Assert.True(stream.CanRead);
-        }
-
-        [Fact]
-        public void CanSeekPropertyReturnsFalse()
-        {
-            var stream = new StringStream("test", Encoding.UTF8);
             Assert.False(stream.CanSeek);
-        }
-
-        [Fact]
-        public void CanWritePropertyReturnsFalse()
-        {
-            var stream = new StringStream("test", Encoding.UTF8);
             Assert.False(stream.CanWrite);
         }
 
@@ -100,44 +88,15 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void LengthThrowsNotSupportedException()
+        public void UnsupportedOperations_ThrowNotSupportedException()
         {
             var stream = new StringStream("test", Encoding.UTF8);
+
             Assert.Throws<NotSupportedException>(() => stream.Length);
-        }
-
-        [Fact]
-        public void PositionGetThrowsNotSupportedException()
-        {
-            var stream = new StringStream("test", Encoding.UTF8);
             Assert.Throws<NotSupportedException>(() => stream.Position);
-        }
-
-        [Fact]
-        public void PositionSetThrowsNotSupportedException()
-        {
-            var stream = new StringStream("test", Encoding.UTF8);
             Assert.Throws<NotSupportedException>(() => stream.Position = 0);
-        }
-
-        [Fact]
-        public void SeekThrowsNotSupportedException()
-        {
-            var stream = new StringStream("test", Encoding.UTF8);
             Assert.Throws<NotSupportedException>(() => stream.Seek(0, SeekOrigin.Begin));
-        }
-
-        [Fact]
-        public void WriteThrowsNotSupportedException()
-        {
-            var stream = new StringStream("test", Encoding.UTF8);
             Assert.Throws<NotSupportedException>(() => stream.Write(new byte[1], 0, 1));
-        }
-
-        [Fact]
-        public void SetLengthThrowsNotSupportedException()
-        {
-            var stream = new StringStream("test", Encoding.UTF8);
             Assert.Throws<NotSupportedException>(() => stream.SetLength(100));
         }
 

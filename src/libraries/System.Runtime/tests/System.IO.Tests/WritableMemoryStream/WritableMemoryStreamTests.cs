@@ -110,6 +110,7 @@ namespace System.IO.Tests
         {
             byte[] buffer = new byte[100];
             Stream stream = new WritableMemoryStream(buffer);
+            stream.Write(new byte[100]);
 
             // Seek to 10 bytes before end
             long newPosition = stream.Seek(-10, SeekOrigin.End);
@@ -121,18 +122,19 @@ namespace System.IO.Tests
         [Fact]
         public void Write_OverExistingData_ReplacesData()
         {
-            byte[] buffer = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
-            Stream stream = new WritableMemoryStream(new Memory<byte>(buffer));
+            byte[] initialData = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+            byte[] backing = new byte[10];
+            Stream stream = new WritableMemoryStream(new Memory<byte>(backing));
+            stream.Write(initialData, 0, initialData.Length);
 
-            // Overwrite positions 3-5 with new data
             stream.Position = 3;
             stream.Write(new byte[] { 100, 101, 102 }, 0, 3);
 
-            // Verify overwrite
             stream.Position = 0;
             byte[] result = new byte[10];
-            stream.Read(result, 0, 10);
+            int bytesRead = stream.Read(result, 0, 10);
 
+            Assert.Equal(10, bytesRead);
             Assert.Equal(new byte[] { 1, 2, 3, 100, 101, 102, 7, 8, 9, 10 }, result);
         }
 
@@ -201,7 +203,7 @@ namespace System.IO.Tests
             stream.Write(new byte[0], 0, 0);
 
             Assert.Equal(0, stream.Position);
-            Assert.Equal(10, stream.Length);  // Length from initial buffer
+            Assert.Equal(0, stream.Length);
         }
 
         [Fact]
@@ -228,7 +230,10 @@ namespace System.IO.Tests
         {
             byte[] data = new byte[10];
             for (int i = 0; i < 10; i++) data[i] = (byte)i;
-            Stream stream = new WritableMemoryStream(data);
+            byte[] backing = new byte[10];
+            Stream stream = new WritableMemoryStream(backing);
+            stream.Write(data, 0, data.Length);
+            stream.Position = 0;
 
             byte[] buffer1 = new byte[5];
             byte[] buffer2 = new byte[3];
@@ -250,7 +255,10 @@ namespace System.IO.Tests
         public async Task ReadAsync_ArrayBackedMemory_UsesFastPath()
         {
             byte[] data = { 10, 20, 30, 40, 50 };
-            Stream stream = new WritableMemoryStream(data);
+            byte[] backing = new byte[5];
+            Stream stream = new WritableMemoryStream(backing);
+            stream.Write(data, 0, data.Length);
+            stream.Position = 0;
 
             byte[] arrayBuffer = new byte[3];
             Memory<byte> memory = arrayBuffer.AsMemory();

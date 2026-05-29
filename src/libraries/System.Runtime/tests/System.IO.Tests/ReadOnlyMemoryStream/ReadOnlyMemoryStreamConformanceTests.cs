@@ -30,10 +30,10 @@ namespace System.IO.Tests
             return Task.FromResult<Stream?>(new ReadOnlyMemoryStream(data));
         }
 
-        // ReadOnlyMemoryStream does not support write-only mode
+        // Read-only stream does not support write-only mode
         protected override Task<Stream?> CreateWriteOnlyStreamCore(byte[]? initialData) => Task.FromResult<Stream?>(null);
 
-        // ReadOnlyMemoryStream does not support read-write mode
+        // Read-only stream does not support read-write mode
         protected override Task<Stream?> CreateReadWriteStreamCore(byte[]? initialData) => Task.FromResult<Stream?>(null);
     }
 }

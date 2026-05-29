@@ -186,88 +186,28 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void LengthThrowsNotSupportedException()
+        public void UnsupportedOperations_ThrowNotSupportedException()
         {
-            var chars = "test".AsMemory();
-            var stream = new StringStream(chars, Encoding.UTF8);
+            var stream = new StringStream("test".AsMemory(), Encoding.UTF8);
 
             Assert.Throws<NotSupportedException>(() => stream.Length);
-        }
-
-        [Fact]
-        public void PositionGetThrowsNotSupportedException()
-        {
-            var chars = "test".AsMemory();
-            var stream = new StringStream(chars, Encoding.UTF8);
-
             Assert.Throws<NotSupportedException>(() => stream.Position);
-        }
-
-        [Fact]
-        public void PositionSetThrowsNotSupportedException()
-        {
-            var chars = "test".AsMemory();
-            var stream = new StringStream(chars, Encoding.UTF8);
-
             Assert.Throws<NotSupportedException>(() => stream.Position = 0);
-        }
-
-        [Fact]
-        public void SeekThrowsNotSupportedException()
-        {
-            var chars = "test".AsMemory();
-            var stream = new StringStream(chars, Encoding.UTF8);
-
             Assert.Throws<NotSupportedException>(() => stream.Seek(0, SeekOrigin.Begin));
-        }
-
-        [Fact]
-        public void WriteThrowsNotSupportedException()
-        {
-            var chars = "test".AsMemory();
-            var stream = new StringStream(chars, Encoding.UTF8);
-
             Assert.Throws<NotSupportedException>(() => stream.Write(new byte[1], 0, 1));
-        }
-
-        [Fact]
-        public void SetLengthThrowsNotSupportedException()
-        {
-            var chars = "test".AsMemory();
-            var stream = new StringStream(chars, Encoding.UTF8);
-
             Assert.Throws<NotSupportedException>(() => stream.SetLength(100));
         }
 
         [Fact]
-        public void CanReadFalseAfterDispose()
+        public void Dispose_RendersStreamUnreadableAndIsIdempotent()
         {
-            var chars = "test".AsMemory();
-            var stream = new StringStream(chars, Encoding.UTF8);
+            var stream = new StringStream("test".AsMemory(), Encoding.UTF8);
 
             stream.Dispose();
 
             Assert.False(stream.CanRead);
-        }
+            Assert.Throws<ObjectDisposedException>(() => stream.Read(new byte[10], 0, 10));
 
-        [Fact]
-        public void ReadAfterDispose_ThrowsObjectDisposedException()
-        {
-            var chars = "test".AsMemory();
-            var stream = new StringStream(chars, Encoding.UTF8);
-            stream.Dispose();
-
-            byte[] buffer = new byte[10];
-            Assert.Throws<ObjectDisposedException>(() => stream.Read(buffer, 0, 10));
-        }
-
-        [Fact]
-        public void MultipleDispose_DoesNotThrow()
-        {
-            var chars = "test".AsMemory();
-            var stream = new StringStream(chars, Encoding.UTF8);
-
-            stream.Dispose();
             stream.Dispose();
             stream.Dispose();
         }
