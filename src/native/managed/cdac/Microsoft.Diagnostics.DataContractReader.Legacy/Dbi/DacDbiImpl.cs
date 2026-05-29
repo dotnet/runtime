@@ -3425,8 +3425,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             }
             else
             {
-                TargetPointer objectAddress = new TargetPointer(vmObject);
-                TargetPointer mt = _target.Contracts.Object.GetMethodTableAddress(objectAddress);
+                TargetPointer mt = _target.Contracts.Object.GetMethodTableAddress(vmObject);
                 IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
                 TypeHandle typeHandle = rts.GetTypeHandle(mt);
                 *pResult = rts.IsDelegate(typeHandle) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
