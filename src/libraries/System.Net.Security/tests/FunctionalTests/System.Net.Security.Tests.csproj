@@ -37,7 +37,7 @@
     <Compile Include="SslStreamFramingTest.cs" />
     <Compile Include="SslStreamMutualAuthenticationTest.cs" />
     <Compile Include="TlsSessionTests.cs"
-             Condition="'$(TargetPlatformIdentifier)' == 'unix'" />
+             Condition="'$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'windows'" />
     <Compile Include="TransportContextTest.cs" />
     <!-- NegotiateAuthentication Tests -->
     <Compile Include="NegotiateAuthenticationKerberosTest.cs" />

@@ -69,9 +69,9 @@
     <Compile Include="System\Net\Security\TlsContext.cs" />
     <Compile Include="System\Net\Security\TlsOperationStatus.cs" />
     <Compile Include="System\Net\Security\TlsSession.cs"
-             Condition="'$(TargetPlatformIdentifier)' == 'linux' or '$(TargetPlatformIdentifier)' == 'freebsd'" />
+             Condition="'$(TargetPlatformIdentifier)' == 'linux' or '$(TargetPlatformIdentifier)' == 'freebsd' or '$(TargetPlatformIdentifier)' == 'windows'" />
     <Compile Include="System\Net\Security\TlsSession.Stub.cs"
-             Condition="'$(TargetPlatformIdentifier)' != 'linux' and '$(TargetPlatformIdentifier)' != 'freebsd'" />
+             Condition="'$(TargetPlatformIdentifier)' != 'linux' and '$(TargetPlatformIdentifier)' != 'freebsd' and '$(TargetPlatformIdentifier)' != 'windows'" />
     <Compile Include="System\Net\Security\SslStreamCertificateContext.cs" />
     <Compile Include="System\Net\Security\SslConnectionInfo.cs" />
     <Compile Include="System\Net\Security\StreamSizes.cs" />

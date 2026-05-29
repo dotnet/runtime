@@ -18,7 +18,7 @@ using TestCertificates = System.Net.Test.Common.Configuration.Certificates;
 
 namespace System.Net.Security.Tests
 {
-    [PlatformSpecific(TestPlatforms.Linux | TestPlatforms.FreeBSD)]
+    [PlatformSpecific(TestPlatforms.Linux | TestPlatforms.FreeBSD | TestPlatforms.Windows)]
     public class TlsSessionTests
     {
         private const int CipherBufSize = 32 * 1024;

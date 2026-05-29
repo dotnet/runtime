@@ -12,9 +12,10 @@ namespace System.Net.Security
 {
     /// <summary>
     /// Non-blocking TLS state machine wrapper around the existing
-    /// <see cref="SslStreamPal"/>. PoC scope: detached mode only (caller owns I/O),
-    /// Linux-only (OpenSSL). Provides <see cref="ProcessHandshake"/>,
-    /// <see cref="Encrypt"/>, <see cref="Decrypt"/>, and a pending-output queue.
+    /// <see cref="SslStreamPal"/>. PoC scope: detached mode only (caller owns I/O).
+    /// Supported on Linux/FreeBSD (OpenSSL) and Windows (SChannel). Provides
+    /// <see cref="ProcessHandshake"/>, <see cref="Encrypt"/>, <see cref="Decrypt"/>,
+    /// and a pending-output queue.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -50,6 +51,9 @@ namespace System.Net.Security
         private bool _disposed;
         private SslConnectionInfo _connectionInfo;
         private X509Certificate2? _remoteCertificate;
+        private int _headerSize;
+        private int _trailerSize;
+        private int _maxDataSize = MaxRecordPlaintext;
 
         private TlsSession(TlsContext context)
         {
@@ -60,19 +64,15 @@ namespace System.Net.Security
         {
             ArgumentNullException.ThrowIfNull(context);
 
-            if (!OperatingSystem.IsLinux() && !OperatingSystem.IsFreeBSD())
-            {
-                throw new PlatformNotSupportedException(
-                    "TlsSession is currently implemented only on Linux/FreeBSD (OpenSSL).");
-            }
-
             TlsSession session = new TlsSession(context);
 
+#if !TARGET_WINDOWS && !SYSNETSECURITY_NO_OPENSSL
             // Provide a default cert validation hook so OpenSSL's CertVerifyCallback
             // can drive the user RemoteCertificateValidationCallback even for a
             // standalone TlsSession. If SslStream wraps this session (wedge mode),
             // it sets its own validator first and we leave it untouched.
             context.Options.RemoteCertificateValidator ??= session.VerifyRemoteCertificate;
+#endif
 
             return session;
         }
@@ -91,8 +91,34 @@ namespace System.Net.Security
             set => _context.Options.TargetHost = value ?? string.Empty;
         }
 
-        public SslProtocols NegotiatedProtocol =>
-            _isHandshakeComplete ? (SslProtocols)_connectionInfo.Protocol : SslProtocols.None;
+        public SslProtocols NegotiatedProtocol
+        {
+            get
+            {
+                if (!_isHandshakeComplete || _connectionInfo.Protocol == 0)
+                {
+                    return SslProtocols.None;
+                }
+
+                // On Windows (SChannel), the reported protocol value carries
+                // client/server direction bits (SP_PROT_TLS1_2_CLIENT == 0x800,
+                // SP_PROT_TLS1_2_SERVER == 0x400, etc.). Canonicalize to the
+                // managed SslProtocols enum values, matching SslStream.
+                SslProtocols proto = (SslProtocols)_connectionInfo.Protocol;
+                SslProtocols ret = SslProtocols.None;
+#pragma warning disable 0618
+                if ((proto & SslProtocols.Ssl2) != 0) ret |= SslProtocols.Ssl2;
+                if ((proto & SslProtocols.Ssl3) != 0) ret |= SslProtocols.Ssl3;
+#pragma warning restore
+#pragma warning disable SYSLIB0039
+                if ((proto & SslProtocols.Tls) != 0) ret |= SslProtocols.Tls;
+                if ((proto & SslProtocols.Tls11) != 0) ret |= SslProtocols.Tls11;
+#pragma warning restore SYSLIB0039
+                if ((proto & SslProtocols.Tls12) != 0) ret |= SslProtocols.Tls12;
+                if ((proto & SslProtocols.Tls13) != 0) ret |= SslProtocols.Tls13;
+                return ret;
+            }
+        }
 
         [System.CLSCompliant(false)]
         public TlsCipherSuite NegotiatedCipherSuite =>
@@ -191,6 +217,35 @@ namespace System.Net.Security
                 return _pendingLength > 0 ? TlsOperationStatus.WantWrite : TlsOperationStatus.Complete;
             }
 
+            // The PAL state machine — SChannel in particular — must only be handed
+            // complete TLS records. SChannel's PAL wrapper reports consumed=input.Length
+            // when it returns SEC_E_INCOMPLETE_MESSAGE, which would silently swallow
+            // bytes it actually still needs. OpenSSL's BIO accepts partial bytes, but
+            // pre-checking the frame here costs nothing extra and keeps the state
+            // machine identical across platforms.
+            //
+            // The only call that legitimately runs with empty input is the very first
+            // client-side ISC, which produces the ClientHello.
+            bool isInitialClientCall = !_context.IsServer && _securityContext is null;
+            if (!isInitialClientCall)
+            {
+                if (input.Length < TlsFrameHelper.HeaderSize)
+                {
+                    return TlsOperationStatus.WantRead;
+                }
+
+                TlsFrameHeader frameHeader = default;
+                if (!TlsFrameHelper.TryGetFrameHeader(input, ref frameHeader))
+                {
+                    throw new IOException(SR.net_io_decrypt);
+                }
+
+                if (input.Length < frameHeader.Length)
+                {
+                    return TlsOperationStatus.WantRead;
+                }
+            }
+
             ProtocolToken token = default;
             token.RentBuffer = true;
             try
@@ -207,14 +262,6 @@ namespace System.Net.Security
                             _context.Options.CertificateContext is null &&
                             _context.Options.ServerCertSelectionDelegate is not null;
 
-                        if (input.Length == 0)
-                        {
-                            // Defer first PAL call until we have data: empty input would
-                            // otherwise reach AllocateSslHandle and assert when cert
-                            // resolution still owes a CertificateContext.
-                            return TlsOperationStatus.WantRead;
-                        }
-
                         if (needsCertResolution && !ResolveServerCertificateFromClientHello(input))
                         {
                             // Need more bytes to parse the ClientHello (and run the
@@ -222,6 +269,8 @@ namespace System.Net.Security
                             return TlsOperationStatus.WantRead;
                         }
                     }
+
+                    EnsureCredentialsAcquired();
 
                     token = SslStreamPal.AcceptSecurityContext(
                         ref _credentialsHandle,
@@ -232,6 +281,8 @@ namespace System.Net.Security
                 }
                 else
                 {
+                    EnsureCredentialsAcquired();
+
                     string hostName = TargetHostNameHelper.NormalizeHostName(_context.Options.TargetHost);
                     token = SslStreamPal.InitializeSecurityContext(
                         ref _credentialsHandle,
@@ -259,8 +310,7 @@ namespace System.Net.Security
 
                 if (done)
                 {
-                    _isHandshakeComplete = true;
-                    SslStreamPal.QueryContextConnectionInfo(_securityContext!, ref _connectionInfo);
+                    OnHandshakeCompleted();
                 }
 
                 if (_pendingLength > 0)
@@ -282,7 +332,18 @@ namespace System.Net.Security
                     return TlsOperationStatus.WantCredentials;
                 }
 
-                // We made progress but still need more peer data.
+                // SChannel consumes one TLS record per AcceptSecurityContext/
+                // InitializeSecurityContext call (OpenSSL typically consumes the
+                // whole input via the BIO). When the PAL accepted bytes but the
+                // caller still has more buffered, return Complete so the driver
+                // re-enters us with the remainder instead of blocking on a network
+                // read the peer will never satisfy (e.g. server seeing CKE+CCS+
+                // Finished in one TCP read during a TLS 1.2 handshake).
+                if (consumed > 0 && consumed < input.Length)
+                {
+                    return TlsOperationStatus.Complete;
+                }
+
                 return TlsOperationStatus.WantRead;
             }
             finally
@@ -290,8 +351,6 @@ namespace System.Net.Security
                 token.ReleasePayload();
             }
         }
-
-        // ── Encrypt ───────────────────────────────────────────────────────
 
         public TlsOperationStatus Encrypt(
             ReadOnlySpan<byte> plaintext,
@@ -319,7 +378,7 @@ namespace System.Net.Security
                 return TlsOperationStatus.Complete;
             }
 
-            int chunk = Math.Min(plaintext.Length, MaxRecordPlaintext);
+            int chunk = Math.Min(plaintext.Length, _maxDataSize);
             byte[] rented = ArrayPool<byte>.Shared.Rent(chunk);
             try
             {
@@ -328,8 +387,8 @@ namespace System.Net.Security
                 ProtocolToken token = SslStreamPal.EncryptMessage(
                     _securityContext!,
                     new ReadOnlyMemory<byte>(rented, 0, chunk),
-                    0,
-                    0);
+                    _headerSize,
+                    _trailerSize);
 
                 try
                 {
@@ -425,16 +484,26 @@ namespace System.Net.Security
                     return TlsOperationStatus.Complete;
 
                 case SecurityStatusPalErrorCode.ContextExpired:
+                case SecurityStatusPalErrorCode.ContextExpiredError:
                     consumed = frameSize;
                     return TlsOperationStatus.Closed;
 
                 case SecurityStatusPalErrorCode.Renegotiate:
-                    // OpenSSL handles renegotiation transparently inside SSL_read/SSL_write.
-                    // The PAL has already consumed the frame; surface no plaintext and ask
-                    // the caller for more input. Any handshake bytes OpenSSL needs to send
-                    // out will surface on the next Encrypt/Decrypt call.
+                    // SChannel surfaces SEC_I_RENEGOTIATE for two distinct cases:
+                    //  - TLS 1.2 peer-initiated renegotiation (HelloRequest).
+                    //  - TLS 1.3 post-handshake messages (NewSessionTicket,
+                    //    KeyUpdate, post-handshake CertificateRequest).
+                    // In either case the decrypted payload is the inner handshake
+                    // record that must be fed back into ASC/ISC so SChannel can
+                    // update its internal state. If we don't, the next DecryptMessage
+                    // returns SEC_E_CONTEXT_EXPIRED because the context is stuck.
                     consumed = frameSize;
-                    return TlsOperationStatus.WantRead;
+                    ProcessPostHandshakeMessage(_decryptScratch.AsSpan(outOffset, outCount));
+                    // Return Complete (not WantRead): we consumed input bytes but
+                    // produced no plaintext. The caller's loop should re-enter to
+                    // process any remaining buffered ciphertext (e.g. application
+                    // data that arrived in the same TCP segment as the NST).
+                    return TlsOperationStatus.Complete;
 
                 default:
                     throw new IOException(SR.net_io_decrypt, SslStreamPal.GetException(status));
@@ -768,11 +837,55 @@ namespace System.Net.Security
 
             if (token.Status.ErrorCode == SecurityStatusPalErrorCode.OK)
             {
-                _isHandshakeComplete = true;
-                SslStreamPal.QueryContextConnectionInfo(_securityContext!, ref _connectionInfo);
+                OnHandshakeCompleted();
             }
 
             return token;
+        }
+
+        private void OnHandshakeCompleted()
+        {
+            _isHandshakeComplete = true;
+            SslStreamPal.QueryContextConnectionInfo(_securityContext!, ref _connectionInfo);
+            SslStreamPal.QueryContextStreamSizes(_securityContext!, out StreamSizes streamSizes);
+            _headerSize = streamSizes.Header;
+            _trailerSize = streamSizes.Trailer;
+            if (streamSizes.MaximumMessage > 0)
+            {
+                _maxDataSize = Math.Min(streamSizes.MaximumMessage, MaxRecordPlaintext);
+            }
+
+            // Invoke remote-certificate validation callback (mirrors SslStream).
+            // Skip when the peer does not present a certificate AND validation isn't
+            // mandatory (client always validates the server; server only when
+            // ClientCertificateRequired).
+            bool needsValidation = !_context.IsServer || _context.Options.RemoteCertRequired;
+            if (needsValidation)
+            {
+                X509Chain? chain = null;
+                try
+                {
+                    X509Certificate2? cert = CertificateValidationPal.GetRemoteCertificate(
+                        _securityContext, ref chain, _context.Options.CertificateChainPolicy);
+                    ProtocolToken alertToken = default;
+                    SslStream.VerifyRemoteCertificateCore(
+                        this,
+                        _context.Options,
+                        _securityContext,
+                        ref _remoteCertificate,
+                        ref _connectionInfo,
+                        cert,
+                        chain,
+                        trust: null,
+                        ref alertToken,
+                        out _,
+                        out _);
+                }
+                finally
+                {
+                    chain?.Dispose();
+                }
+            }
         }
 
         // Invoked by OpenSSL's CertVerifyCallback (via SslAuthenticationOptions.RemoteCertificateValidator)
@@ -797,6 +910,73 @@ namespace System.Net.Security
                 ref alertToken,
                 out sslPolicyErrors,
                 out chainStatus);
+        }
+
+        // Acquire the SafeFreeCredentials the PAL needs for the first ASC/ISC
+        // call. OpenSSL handles credential acquisition lazily inside the PAL,
+        // but SChannel rejects ASC/ISC with a null credentials handle.
+        //
+        // PoC scope: minimal acquisition path — server requires a pre-set
+        // CertificateContext (or one resolved via ServerCertSelectionDelegate
+        // above), and the client connects anonymously. We don't yet integrate
+        // with SslSessionsCache, the legacy CertSelectionDelegate, or client
+        // certificate selection.
+        private void EnsureCredentialsAcquired()
+        {
+            if (_credentialsHandle is not null)
+            {
+                return;
+            }
+
+            _credentialsHandle = SslStreamPal.AcquireCredentialsHandle(_context.Options, false);
+        }
+
+        // Feed a decrypted post-handshake message (e.g. TLS 1.3 NewSessionTicket
+        // or KeyUpdate) back through ASC/ISC so SChannel updates its internal
+        // state. The PAL may or may not produce a reply token; if it does, stage
+        // it for the caller to send on the next drain.
+        private void ProcessPostHandshakeMessage(ReadOnlySpan<byte> data)
+        {
+            if (data.IsEmpty)
+            {
+                return;
+            }
+
+            ProtocolToken token = default;
+            token.RentBuffer = true;
+            try
+            {
+                if (_context.IsServer)
+                {
+                    token = SslStreamPal.AcceptSecurityContext(
+                        ref _credentialsHandle,
+                        ref _securityContext,
+                        data,
+                        out _,
+                        _context.Options);
+                }
+                else
+                {
+                    string hostName = TargetHostNameHelper.NormalizeHostName(_context.Options.TargetHost);
+                    token = SslStreamPal.InitializeSecurityContext(
+                        ref _credentialsHandle,
+                        ref _securityContext,
+                        hostName,
+                        data,
+                        out _,
+                        _context.Options);
+                }
+
+                if (token.Size > 0)
+                {
+                    Debug.Assert(token.Payload != null);
+                    AppendPending(new ReadOnlySpan<byte>(token.Payload, 0, token.Size));
+                }
+            }
+            finally
+            {
+                token.ReleasePayload();
+            }
         }
 
         public void Dispose()
