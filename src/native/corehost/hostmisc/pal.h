@@ -124,6 +124,13 @@ pal_char_t* pal_get_own_executable_path(void);
 
 bool pal_directory_exists(const pal_char_t* path);
 
+// Returns true if the file or directory exists. Equivalent to pal::file_exists.
+bool pal_file_exists(const pal_char_t* path);
+
+// Returns a heap-allocated, NUL-terminated copy of the given string, or
+// NULL on allocation failure. Caller should free() the returned pointer.
+pal_char_t* pal_strdup(const pal_char_t* str);
+
 // Returns a heap-allocated, NUL-terminated copy of the named environment
 // variable's value, or NULL if the variable is unset or set to the empty
 // string. Caller must free() the returned pointer.
@@ -141,6 +148,26 @@ static inline pal_char_t* pal_strndup(const pal_char_t* src, size_t len)
     }
     return buf;
 }
+
+// Canonicalize a path and verify it exists. Returns a heap-allocated,
+// NUL-terminated canonical path, or NULL on failure. Caller should free()
+// the returned pointer. When skip_error_logging is true, failure-path
+// trace messages are suppressed (used when probing for optional files).
+pal_char_t* pal_fullpath(const pal_char_t* path, bool skip_error_logging);
+
+// Returns true if the current process is a 32-bit process running on a
+// 64-bit Windows OS. Returns false on non-Windows.
+bool pal_is_running_in_wow64(void);
+
+// Callback for pal_readdir_onlydirectories. Receives each directory entry
+// name (just the leaf name, not a full path) and the caller-supplied context.
+// Return true to continue enumeration, false to stop early.
+typedef bool (*pal_readdir_callback_t)(const pal_char_t* entry_name, void* ctx);
+
+// Enumerate immediate subdirectories of path, invoking callback for each.
+// Skips "." and "..". Returns true on full enumeration or callback-requested
+// stop; returns false if the directory could not be opened.
+bool pal_readdir_onlydirectories(const pal_char_t* path, pal_readdir_callback_t callback, void* ctx);
 
 #ifdef __cplusplus
 }

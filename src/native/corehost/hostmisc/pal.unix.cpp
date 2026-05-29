@@ -999,7 +999,16 @@ void pal::enumerate_environment_variables(const std::function<void(const pal::ch
 
 bool pal::fullpath(pal::string_t* path, bool skip_error_logging)
 {
-    return realpath(path, skip_error_logging);
+    if (path->empty())
+        return false;
+
+    pal_char_t* resolved = ::pal_fullpath(path->c_str(), skip_error_logging);
+    if (resolved == nullptr)
+        return false;
+
+    path->assign(resolved);
+    free(resolved);
+    return true;
 }
 
 bool pal::realpath(pal::string_t* path, bool skip_error_logging)
@@ -1027,7 +1036,7 @@ bool pal::realpath(pal::string_t* path, bool skip_error_logging)
 
 bool pal::file_exists(const pal::string_t& path)
 {
-    return (::access(path.c_str(), F_OK) == 0);
+    return ::pal_file_exists(path.c_str());
 }
 
 bool pal::is_directory(const pal::string_t& path)
@@ -1130,12 +1139,19 @@ void pal::readdir_onlydirectories(const pal::string_t& path, const string_t& pat
 
 void pal::readdir_onlydirectories(const pal::string_t& path, std::vector<pal::string_t>* list)
 {
-    ::readdir(path, _X("*"), true, list);
+    assert(list != nullptr);
+    ::pal_readdir_onlydirectories(path.c_str(),
+        [](const pal_char_t* name, void* ctx) -> bool
+        {
+            static_cast<std::vector<pal::string_t>*>(ctx)->emplace_back(name);
+            return true;
+        },
+        list);
 }
 
 bool pal::is_running_in_wow64()
 {
-    return false;
+    return ::pal_is_running_in_wow64();
 }
 
 bool pal::is_emulating_x64()

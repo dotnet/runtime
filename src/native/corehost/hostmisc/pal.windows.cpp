@@ -962,79 +962,20 @@ bool pal::realpath(pal::string_t* path, bool skip_error_logging)
 bool pal::fullpath(string_t* path, bool skip_error_logging)
 {
     if (path->empty())
-    {
         return false;
-    }
 
-    if (LongFile::IsNormalized(*path))
-    {
-        WIN32_FILE_ATTRIBUTE_DATA data;
-        if (GetFileAttributesExW(path->c_str(), GetFileExInfoStandard, &data) != 0)
-        {
-            return true;
-        }
-    }
-
-    char_t buf[MAX_PATH];
-    size_t size = ::GetFullPathNameW(path->c_str(), MAX_PATH, buf, nullptr);
-    if (size == 0)
-    {
-        if (!skip_error_logging)
-        {
-            trace::error(_X("Error resolving full path [%s]"), path->c_str());
-        }
+    pal_char_t* resolved = ::pal_fullpath(path->c_str(), skip_error_logging);
+    if (resolved == nullptr)
         return false;
-    }
 
-    string_t str;
-    if (size < MAX_PATH)
-    {
-        str.assign(buf);
-    }
-    else
-    {
-        str.resize(size + LongFile::UNCExtendedPathPrefix.length(), 0);
-
-        size = ::GetFullPathNameW(path->c_str(), static_cast<uint32_t>(size), (LPWSTR)str.data(), nullptr);
-        assert(size <= str.size());
-
-        if (size == 0)
-        {
-            if (!skip_error_logging)
-            {
-                trace::error(_X("Error resolving full path [%s]"), path->c_str());
-            }
-            return false;
-        }
-
-        const string_t* prefix = &LongFile::ExtendedPrefix;
-        //Check if the resolved path is a UNC. By default we assume relative path to resolve to disk
-        if (str.compare(0, LongFile::UNCPathPrefix.length(), LongFile::UNCPathPrefix) == 0)
-        {
-            prefix = &LongFile::UNCExtendedPathPrefix;
-            str.erase(0, LongFile::UNCPathPrefix.length());
-            size = size - LongFile::UNCPathPrefix.length();
-        }
-
-        str.insert(0, *prefix);
-        str.resize(size + prefix->length());
-        str.shrink_to_fit();
-    }
-
-    WIN32_FILE_ATTRIBUTE_DATA data;
-    if (GetFileAttributesExW(str.c_str(), GetFileExInfoStandard, &data) != 0)
-    {
-        *path = str;
-        return true;
-    }
-
-    return false;
+    path->assign(resolved);
+    free(resolved);
+    return true;
 }
 
 bool pal::file_exists(const string_t& path)
 {
-    string_t tmp(path);
-    return pal::fullpath(&tmp, true);
+    return ::pal_file_exists(path.c_str());
 }
 
 bool pal::is_directory(const pal::string_t& path)
@@ -1098,17 +1039,19 @@ void pal::readdir_onlydirectories(const pal::string_t& path, const string_t& pat
 
 void pal::readdir_onlydirectories(const pal::string_t& path, std::vector<pal::string_t>* list)
 {
-    ::readdir(path, _X("*"), true, list);
+    assert(list != nullptr);
+    ::pal_readdir_onlydirectories(path.c_str(),
+        [](const pal_char_t* name, void* ctx) -> bool
+        {
+            static_cast<std::vector<pal::string_t>*>(ctx)->emplace_back(name);
+            return true;
+        },
+        list);
 }
 
 bool pal::is_running_in_wow64()
 {
-    BOOL fWow64Process = FALSE;
-    if (!IsWow64Process(GetCurrentProcess(), &fWow64Process))
-    {
-        return false;
-    }
-    return (fWow64Process != FALSE);
+    return ::pal_is_running_in_wow64();
 }
 
 typedef BOOL (WINAPI* is_wow64_process2)(
