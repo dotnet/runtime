@@ -694,11 +694,13 @@ namespace System.Net.Security
         WantWrite = 2,
         Closed = 3,
         WantCredentials = 4,
+        NeedsCertificateValidation = 5,
     }
     public sealed partial class TlsContext : System.IDisposable
     {
         internal TlsContext() { }
         public bool IsServer { get { throw null; } }
+        public bool UseExternalCertificateValidation { get { throw null; } set { } }
         public static System.Net.Security.TlsContext Create(System.Net.Security.SslServerAuthenticationOptions options) { throw null; }
         public static System.Net.Security.TlsContext Create(System.Net.Security.SslClientAuthenticationOptions options) { throw null; }
         public void Dispose() { }
@@ -721,6 +723,9 @@ namespace System.Net.Security
         public System.Net.Security.TlsOperationStatus Shutdown(System.Span<byte> ciphertext, out int produced) { throw null; }
         public System.Net.Security.TlsOperationStatus DrainPendingOutput(System.Span<byte> ciphertext, out int produced) { throw null; }
         public System.Security.Cryptography.X509Certificates.X509Certificate2? GetRemoteCertificate() { throw null; }
+        public System.Security.Cryptography.X509Certificates.X509Chain? GetRemoteCertificateChain() { throw null; }
+        public System.Net.Security.SslPolicyErrors AcceptWithDefaultValidation() { throw null; }
+        public void SetRemoteCertificateValidationResult(System.Net.Security.SslPolicyErrors errors) { }
         public System.Security.Cryptography.X509Certificates.X509Certificate2? LocalCertificate { get { throw null; } }
         public System.Security.Authentication.ExtendedProtection.ChannelBinding? GetChannelBinding(System.Security.Authentication.ExtendedProtection.ChannelBindingKind kind) { throw null; }
         public System.Net.Security.TlsOperationStatus RequestClientCertificate(System.Span<byte> ciphertext, out int produced) { throw null; }

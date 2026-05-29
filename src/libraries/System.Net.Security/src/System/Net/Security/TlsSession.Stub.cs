@@ -49,6 +49,15 @@ namespace System.Net.Security
         public X509Certificate2? GetRemoteCertificate() =>
             throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
 
+        public X509Chain? GetRemoteCertificateChain() =>
+            throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
+
+        public SslPolicyErrors AcceptWithDefaultValidation() =>
+            throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
+
+        public void SetRemoteCertificateValidationResult(SslPolicyErrors errors) =>
+            throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
+
         public X509Certificate2? LocalCertificate =>
             throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
 
