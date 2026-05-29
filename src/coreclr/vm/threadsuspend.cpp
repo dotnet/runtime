@@ -4838,13 +4838,7 @@ static bool GetReturnAddressHijackInfo(EECodeInfo *pCodeInfo X86_ARG(ReturnKind 
 {
     X86_ONLY(*hasAsyncRet = false);
     GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
-    if (!pCodeInfo->GetCodeManager()->GetReturnAddressHijackInfo(gcInfoToken X86_ARG(returnKind)))
-        return false;
-
-    MethodDesc* pMD = pCodeInfo->GetMethodDesc();
-    X86_ONLY(*hasAsyncRet = pMD->IsAsyncMethod());
-
-    return true;
+    return pCodeInfo->GetCodeManager()->GetReturnAddressHijackInfo(gcInfoToken X86_ARG(returnKind) X86_ARG(hasAsyncRet));
 }
 
 #ifndef TARGET_UNIX

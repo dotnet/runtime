@@ -78,6 +78,31 @@ namespace ILCompiler.Reflection.ReadyToRun
         public int CodeLength { get; set; }
         public Dictionary<int, List<BaseGcTransition>> Transitions { get; set; }
         public List<List<BaseGcSlot>> LiveSlotsAtSafepoints { get; set; }
+
+        /// <summary>
+        /// GcInfo version is 1 up to ReadyTorun version 1.x.
+        /// GcInfo version is current from  ReadyToRun version 2.0
+        /// </summary>
+        internal static int ReadyToRunVersionToGcInfoVersion(int readyToRunMajorVersion, int readyToRunMinorVersion)
+        {
+            if (readyToRunMajorVersion == 1)
+                return 1;
+
+            // R2R 2.0+ uses GCInfo v2
+            // R2R 9.2+ uses GCInfo v3
+            if (readyToRunMajorVersion < 9 || (readyToRunMajorVersion == 9 && readyToRunMinorVersion < 2))
+                return 2;
+
+            // R2R 11.0+ uses GCInfo v4
+            if (readyToRunMajorVersion < 11)
+                return 3;
+
+            // R2R 21.0+ uses GCInfo v5
+            if (readyToRunMajorVersion < 21)
+                return 4;
+
+            return 5;
+        }
     }
 
     /// <summary>
@@ -509,19 +534,18 @@ namespace ILCompiler.Reflection.ReadyToRun
                 if (GcInfoRva != 0)
                 {
                     int gcInfoOffset = _readyToRunReader.CompositeReader.GetOffset(GcInfoRva);
+                    int gcVersion = BaseGcInfo.ReadyToRunVersionToGcInfoVersion(
+                        _readyToRunReader.ReadyToRunHeader.MajorVersion,
+                        _readyToRunReader.ReadyToRunHeader.MinorVersion);
+
                     if (_readyToRunReader.Machine == Machine.I386)
                     {
-                        _gcInfo = new x86.GcInfo(_readyToRunReader.ImageReader, gcInfoOffset);
+                        _gcInfo = new x86.GcInfo(_readyToRunReader.ImageReader, gcInfoOffset, gcVersion);
                     }
                     else
                     {
                         // Arm, Arm64, LoongArch64 and RISCV64 use the same GcInfo format as Amd64
-                        _gcInfo = new Amd64.GcInfo(
-                            _readyToRunReader.ImageReader,
-                            gcInfoOffset,
-                            _readyToRunReader.Machine,
-                            _readyToRunReader.ReadyToRunHeader.MajorVersion,
-                            _readyToRunReader.ReadyToRunHeader.MinorVersion);
+                        _gcInfo = new Amd64.GcInfo(_readyToRunReader.ImageReader, gcInfoOffset, _readyToRunReader.Machine, gcVersion);
                     }
                 }
             }
