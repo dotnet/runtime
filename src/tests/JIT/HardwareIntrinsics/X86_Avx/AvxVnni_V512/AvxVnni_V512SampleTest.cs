@@ -94,6 +94,27 @@ namespace IntelHardwareIntrinsicTest._AvxVnni_V512
                 Vector512.Create(short.MaxValue),
                 Vector512.Create(short.MaxValue));
             AssertAllLanesEqual(wordSaturated, int.MaxValue);
+
+            // Negative saturation: addend just above int.MinValue plus a large negative
+            // product sum should clamp to int.MinValue (the distinct -ve code path for
+            // VPDPBUSDS / VPDPWSSDS).
+            Vector512<int> negSaturatingAddend = Vector512.Create(int.MinValue + 10);
+
+            // byte form: 255 * -128 = -32640 per pair; 4 pairs per lane = -130560;
+            // addend (int.MinValue + 10) + (-130560) underflows to int.MinValue.
+            Vector512<int> byteSaturatedNeg = AvxVnni.V512.MultiplyWideningAndAddSaturate(
+                negSaturatingAddend,
+                Vector512.Create(byte.MaxValue),
+                Vector512.Create(sbyte.MinValue));
+            AssertAllLanesEqual(byteSaturatedNeg, int.MinValue);
+
+            // word form: short.MinValue * short.MaxValue = -1073709056 per pair;
+            // 2 pairs per lane = -2147418112; addend + that underflows to int.MinValue.
+            Vector512<int> wordSaturatedNeg = AvxVnni.V512.MultiplyWideningAndAddSaturate(
+                negSaturatingAddend,
+                Vector512.Create(short.MinValue),
+                Vector512.Create(short.MaxValue));
+            AssertAllLanesEqual(wordSaturatedNeg, int.MinValue);
         }
 
         private static void AssertAllLanesEqual(Vector512<int> value, int expected)
