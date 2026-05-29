@@ -420,7 +420,7 @@ void BulkStaticsLogger::FireBulkStaticsEvent()
     EventDataDescCreate(&eventData[3], m_buffer, m_used);
 
     ULONG result = EventWrite(Microsoft_Windows_DotNETRuntimeHandle, &GCBulkRootStaticVar, ARRAY_SIZE(eventData), eventData);
-#elif !defined(HOST_BROWSER) && !defined(HOST_WASI)
+#elif defined(FEATURE_EVENTSOURCE_XPLAT)
     ULONG result = FireEtXplatGCBulkRootStaticVar(m_count, appDomain, instance, m_used, m_buffer);
 #else
     ULONG result = ERROR_SUCCESS;
