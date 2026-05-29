@@ -409,7 +409,7 @@ VOID ETW::GCLog::EndMovedReferences(size_t profilingContext, BOOL fAllowProfApiN
 }
 
 #if defined(TARGET_BROWSER)
-extern "C" void SystemJS_DiagnosticServerQueueJob(size_t (*cb)(void*), void* data);
+#include "wasm/entrypoints.h"
 
 static size_t ForceGCForDiagnosticsJob(void* data)
 {
