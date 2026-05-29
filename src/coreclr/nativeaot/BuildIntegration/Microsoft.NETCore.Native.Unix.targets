@@ -422,9 +422,6 @@ int main(int argc, char** argv)
       <_AggregateExecutableShimCompilerAndLinkerArg Include="-pie -Wl,-pie" Condition="'$(_IsApplePlatform)' != 'true' and '$(StaticExecutable)' != 'true' and '$(PositionIndependentExecutable)' != 'false'" />
       <!-- binskim error BA3003: The stack protector was not found -->
       <_AggregateExecutableShimCompilerAndLinkerArg Include="-fstack-protector-strong" />
-      <!-- binskim error BA3031: X was compiled using Clang but without the SafeStack -->
-      <_AggregateExecutableShimCompilerAndLinkerArg Include="-fsanitize=safe-stack" Condition="$(CppCompilerAndLinker.Contains('clang'))" />
-
 
       <_AggregateExecutableShimNativeLibraryArg Include="-L&quot;$(NativeOutputPath)&quot;" Condition="'$(_IsApplePlatform)' != 'true'" />
       <_AggregateExecutableShimNativeLibraryArg Include="-l:$(NativeBinaryPrefix)$(TargetName)$(NativeBinaryExt)" Condition="'$(_IsApplePlatform)' != 'true'" />
