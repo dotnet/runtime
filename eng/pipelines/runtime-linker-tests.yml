@@ -63,7 +63,7 @@ extends:
     - stage: Build
       jobs:
       #
-      # Build and Test ILLink in Release config vertical for Windows, Linux and OSX
+      # Build and Test ILLink with Debug tools in Release config vertical for Windows, Linux and OSX
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -83,9 +83,9 @@ extends:
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
             # Build libs.sfx subset first so that Roslyn analyzer tests can use live ref pack
-            buildArgs: -s libs.sfx -c $(_BuildConfig)
+            buildArgs: -s libs.sfx -c $(_BuildConfig) /p:ToolsConfiguration=Debug
             postBuildSteps:
-            - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch $(archType) $(_osParameter) -s tools.illinktests -test -c $(_BuildConfig) $(crossArg) $(_officialBuildParameter)
+            - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch $(archType) $(_osParameter) -s tools.illinktests -test -c $(_BuildConfig) $(crossArg) $(_officialBuildParameter) /p:ToolsConfiguration=Debug
               displayName: Run ILLink Tests
 
       #
@@ -107,9 +107,11 @@ extends:
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
-            buildArgs: -s clr+libs+tools.illink+host.native -c $(_BuildConfig)
+            buildArgs: -s clr+libs+tools.illink+host.native -c $(_BuildConfig) /p:ToolsConfiguration=Debug
             postBuildSteps:
               - template: /eng/pipelines/libraries/execute-trimming-tests-steps.yml
+                parameters:
+                  extraTestArgs: '/p:ToolsConfiguration=Debug'
 
       #
       # Build Release config vertical for Browser-wasm
@@ -124,7 +126,7 @@ extends:
             testGroup: innerloop
             timeoutInMinutes: 120
             nameSuffix: Runtime_Release
-            buildArgs: -s mono+libs+tools.illink -c $(_BuildConfig) -p:WasmBuildNative=false -p:AotHostArchitecture=x64 -p:AotHostOS=$(_hostedOS)
+            buildArgs: -s mono+libs+tools.illink -c $(_BuildConfig) -p:WasmBuildNative=false -p:AotHostArchitecture=x64 -p:AotHostOS=$(_hostedOS) /p:ToolsConfiguration=Debug
             condition:
               or(
                 eq(variables['isRollingBuild'], true),
@@ -135,5 +137,5 @@ extends:
             postBuildSteps:
               - template: /eng/pipelines/libraries/execute-trimming-tests-steps.yml
                 parameters:
-                    extraTestArgs: '/p:WasmBuildNative=false /p:RuntimeFlavor=Mono'
+                    extraTestArgs: '/p:WasmBuildNative=false /p:RuntimeFlavor=Mono /p:ToolsConfiguration=Debug'
                     runAotTests: false

@@ -375,7 +375,7 @@ PTR_MethodDesc ReadyToRunInfo::GetMethodDescForEntryPointInNativeImage(PCODE ent
         return NULL;
 #endif
 
-    TADDR val = (TADDR)m_entryPointToMethodDescMap.LookupValue(PCODEToPINSTR(entryPoint), (LPVOID)PCODEToPINSTR(entryPoint));
+    TADDR val = (TADDR)m_entryPointToMethodDescMap.LookupValueByUniqueKey(PCODEToPINSTR(entryPoint));
     if (val == (TADDR)INVALIDENTRY)
         return NULL;
 
@@ -394,7 +394,7 @@ bool ReadyToRunInfo::SetMethodDescForEntryPointInNativeImage(PCODE entryPoint, M
     CONTRACTL_END;
 
     CrstHolder ch(&m_Crst);
-    if ((TADDR)m_entryPointToMethodDescMap.LookupValue(PCODEToPINSTR(entryPoint), (LPVOID)PCODEToPINSTR(entryPoint)) == (TADDR)INVALIDENTRY)
+    if ((TADDR)m_entryPointToMethodDescMap.LookupValueByUniqueKey(PCODEToPINSTR(entryPoint)) == (TADDR)INVALIDENTRY)
     {
         m_entryPointToMethodDescMap.InsertValue(PCODEToPINSTR(entryPoint), methodDesc);
         return true;
@@ -1281,6 +1281,14 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     if (ReadyToRunCodeDisabled())
         goto done;
 
+    // Return-dropping async thunks are VM-synthesized. They share the same metadata
+    // token and signature shape as a regular async variant, so the R2R lookup below
+    // would incorrectly bind the thunk to the non-thunk's compiled code and bypass
+    // the virtual dispatch the thunk performs. Crossgen2 does not emit R2R code for
+    // these thunks; fall back to transient IL generation in the prestub.
+    if (pMD->IsReturnDroppingThunk())
+        goto done;
+
     ETW::MethodLog::GetR2RGetEntryPointStart(pMD);
 
     uint offset;
@@ -1367,7 +1375,18 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     }
 
     _ASSERTE(id < m_nRuntimeFunctions);
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     pEntryPoint = dac_cast<TADDR>(GetImage()->GetBase()) + m_pRuntimeFunctions[id].BeginAddress;
+#else
+    // When we have portable entrypoints enabled, the R2R image contains actual entrypoints.
+#ifdef FEATURE_TIERED_COMPILATION
+#error "Portable entry points are not currently supported with tiered compilation, as the interaction between the two is not yet fully worked out."
+#endif
+    PCODE actualEntryPoint;
+    actualEntryPoint = m_pRuntimeFunctions[id].BeginAddress;
+    pEntryPoint = pMD->GetTemporaryEntryPoint();
+    PortableEntryPoint::SetActualCode(pEntryPoint, actualEntryPoint);
+#endif
     m_pCompositeInfo->SetMethodDescForEntryPointInNativeImage(pEntryPoint, pMD);
 
 #ifdef PROFILING_SUPPORTED

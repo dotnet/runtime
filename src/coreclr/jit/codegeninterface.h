@@ -212,6 +212,12 @@ public:
 
     bool IsEmbeddedBroadcastEnabled(instruction ins, GenTree* op);
 #endif // TARGET_XARCH
+#if defined(TARGET_WASM)
+    // On wasm, we store the simd element size in the upper 7 bits of the instruction info.
+    // The lower bit is reserved as an FP flag.
+    static constexpr unsigned InstInfoElemSizeShift = 1;
+    static uint8_t            instSimdElemSize(instruction ins);
+#endif
     //-------------------------------------------------------------------------
     // Liveness-related fields & methods
 public:

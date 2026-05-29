@@ -19,7 +19,6 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 public unsafe class IXCLRDataValueDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "LocalVariables";
-    protected override string DumpType => "full";
 
     // ========== GetSize ==========
 
@@ -538,7 +537,7 @@ public unsafe class IXCLRDataValueDumpTests : DumpTestBase
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
         int totalValues = 0;
 
-        foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread))
+        foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread).Where(ClrDataStackWalk.IsLegacyVisible))
         {
             TargetPointer md = stackWalk.GetMethodDescPtr(dataFrame);
             if (md == TargetPointer.Null)
@@ -731,7 +730,7 @@ public unsafe class IXCLRDataValueDumpTests : DumpTestBase
         IStackWalk stackWalk = Target.Contracts.StackWalk;
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
 
-        foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread))
+        foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread).Where(ClrDataStackWalk.IsLegacyVisible))
         {
             TargetPointer md = stackWalk.GetMethodDescPtr(dataFrame);
             if (md == TargetPointer.Null)

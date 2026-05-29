@@ -31,9 +31,6 @@ namespace ILLink.RoslynAnalyzer
             builder.Add(new RequiresAssemblyFilesAnalyzer());
             builder.Add(new RequiresUnreferencedCodeAnalyzer());
             builder.Add(new RequiresDynamicCodeAnalyzer());
-#if DEBUG
-            builder.Add(new RequiresUnsafeAnalyzer());
-#endif
             return builder.ToImmutable();
         }
 

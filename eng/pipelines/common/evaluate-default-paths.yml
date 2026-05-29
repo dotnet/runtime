@@ -323,7 +323,7 @@ jobs:
       exclude:
       - eng/testing/scenarios/BuildWasiAppsJobsList.txt
       - eng/testing/scenarios/BuildWasmAppsJobsList.txt
-        src/mono/nuget/Microsoft.NET.Runtime.WorkloadTesting.Internal/Sdk/WorkloadTesting.Core.targets
+      - src/mono/nuget/Microsoft.NET.Runtime.WorkloadTesting.Internal/Sdk/WorkloadTesting.Core.targets
       - eng/testing/workloads-browser.targets
       - eng/testing/workloads-testing.targets
       - eng/testing/workloads-wasi.targets
@@ -339,7 +339,6 @@ jobs:
       - src/mono/wasi/testassets/*
       - src/mono/wasi/Wasi.Build.Tests/*
       - src/mono/nuget/Microsoft.NET.Runtime*
-        src/mono/nuget/Microsoft.NET.Sdk.WebAssembly.Pack/*
       - src/mono/nuget/Microsoft.NET.Workload*
       - src/mono/nuget/Microsoft.NETCore.BrowserDebugHost.Transport/*
       - ${{ parameters._const_paths._always_exclude }}

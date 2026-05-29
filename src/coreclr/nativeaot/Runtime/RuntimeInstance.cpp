@@ -39,7 +39,7 @@ uint8_t g_CrashInfoBuffer[MAX_CRASHINFOBUFFER_SIZE] = { 0 };
 
 ThreadStore *   RuntimeInstance::GetThreadStore()
 {
-    return m_pThreadStore;
+    return ThreadStore::s_pThreadStore;
 }
 
 FCIMPL1(uint8_t *, RhGetCrashInfoBuffer, int32_t* pcbMaxSize)
@@ -179,7 +179,6 @@ RuntimeInstance::OsModuleList* RuntimeInstance::GetOsModuleList()
 #ifndef DACCESS_COMPILE
 
 RuntimeInstance::RuntimeInstance() :
-    m_pThreadStore(NULL),
     m_CodeManager(NULL),
     m_conservativeStackReportingEnabled(false),
     m_pUnboxingStubsRegion(NULL)
@@ -188,10 +187,10 @@ RuntimeInstance::RuntimeInstance() :
 
 RuntimeInstance::~RuntimeInstance()
 {
-    if (NULL != m_pThreadStore)
+    if (NULL != ThreadStore::s_pThreadStore)
     {
-        delete m_pThreadStore;
-        m_pThreadStore = NULL;
+        delete ThreadStore::s_pThreadStore;
+        ThreadStore::s_pThreadStore = NULL;
     }
 }
 
@@ -314,11 +313,11 @@ bool RuntimeInstance::Initialize(HANDLE hPalInstance)
     pThreadStore.SuppressRelease();
     pRuntimeInstance.SuppressRelease();
 
-    pRuntimeInstance->m_pThreadStore = pThreadStore;
     pRuntimeInstance->m_hPalInstance = hPalInstance;
 
     ASSERT_MSG(g_pTheRuntimeInstance == NULL, "multi-instances are not supported");
     g_pTheRuntimeInstance = pRuntimeInstance;
+    ThreadStore::s_pThreadStore = pThreadStore;
 
     return true;
 }
@@ -348,28 +347,14 @@ bool RuntimeInstance::ShouldHijackCallsiteForGcStress(uintptr_t CallsiteIP)
 #endif // FEATURE_GC_STRESS
 }
 
-#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
-EXTERN_C void F_CALL_CONV RhpInitialDynamicInterfaceDispatch();
+EXTERN_C void* g_pDispatchCache;
+void* g_pDispatchCache;
 
-FCIMPL2(void *, RhNewInterfaceDispatchCell, MethodTable * pInterface, int32_t slotNumber)
+FCIMPL1(void, RhpRegisterDispatchCache, void* pCache)
 {
-    InterfaceDispatchCell * pCell = new (nothrow) InterfaceDispatchCell[2];
-    if (pCell == NULL)
-        return NULL;
-
-    // Due to the synchronization mechanism used to update this indirection cell we must ensure the cell's alignment is twice that of a pointer.
-    // Fortunately, Windows heap guarantees this alignment.
-    ASSERT(IS_ALIGNED(pCell, 2 * POINTER_SIZE));
-    ASSERT(IS_ALIGNED(pInterface, (InterfaceDispatchCell::IDC_CachePointerMask + 1)));
-
-    pCell[0].m_pStub = (uintptr_t)&RhpInitialDynamicInterfaceDispatch;
-    pCell[0].m_pCache = ((uintptr_t)pInterface) | InterfaceDispatchCell::IDC_CachePointerIsInterfacePointerOrMetadataToken;
-    pCell[1].m_pStub = 0;
-    pCell[1].m_pCache = (uintptr_t)slotNumber;
-
-    return pCell;
+    ASSERT(g_pDispatchCache == NULL);
+    g_pDispatchCache = pCache;
 }
 FCIMPLEND
-#endif // FEATURE_CACHED_INTERFACE_DISPATCH
 
 #endif // DACCESS_COMPILE

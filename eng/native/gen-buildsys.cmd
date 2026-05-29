@@ -20,9 +20,9 @@ if /i "%__Os%" == "browser" (
             echo Error: Should set EMSDK_PATH environment variable pointing to emsdk root.
             exit /B 1
         )
-        set EMSDK_QUIET=1 && call "%__repoRoot%\src\mono\browser\emsdk\emsdk_env"
+        set "EMSDK_QUIET=1" && call "%__repoRoot%\src\mono\browser\emsdk\emsdk_env.cmd"
     ) else (
-        set EMSDK_QUIET=1 && call "%EMSDK_PATH%\emsdk_env"
+        set "EMSDK_QUIET=1" && call "%EMSDK_PATH%\emsdk_env.cmd"
     )
 )
 
@@ -57,6 +57,8 @@ if /i "%__Arch%" == "wasm" (
     )
     if /i "%__Os%" == "browser" (
         set CMakeToolPrefix=emcmake
+        rem Use WASM-specific tryrun cache to speed up CMake configure
+        set __ExtraCmakeParams="-C %__repoRoot%/eng/native/tryrun.browser.cmake" !__ExtraCmakeParams!
     )
     if /i "%__Os%" == "wasi" (
         if "%WASI_SDK_PATH%" == "" (

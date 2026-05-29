@@ -1661,46 +1661,6 @@ static bool impIsTableDrivenHWIntrinsic(NamedIntrinsic intrinsicId, HWIntrinsicC
     return (category != HW_Category_Special) && !HWIntrinsicInfo::HasSpecialImport(intrinsicId);
 }
 
-//------------------------------------------------------------------------
-// isSupportedBaseType
-//
-// Arguments:
-//    intrinsicId - HW intrinsic id
-//    baseJitType - Base JIT type of the intrinsic.
-//
-// Return Value:
-//    returns true if the baseType is supported for given intrinsic.
-//
-static bool isSupportedBaseType(NamedIntrinsic intrinsic, CorInfoType baseJitType)
-{
-    if (baseJitType == CORINFO_TYPE_UNDEF)
-    {
-        return false;
-    }
-
-    var_types baseType = JitType2PreciseVarType(baseJitType);
-
-    // We don't actually check the intrinsic outside of the false case as we expect
-    // the exposed managed signatures are either generic and support all types
-    // or they are explicit and support the type indicated.
-
-    if (varTypeIsArithmetic(baseType))
-    {
-        return true;
-    }
-
-#ifdef DEBUG
-    CORINFO_InstructionSet isa = HWIntrinsicInfo::lookupIsa(intrinsic);
-#ifdef TARGET_XARCH
-    assert((isa == InstructionSet_Vector512) || (isa == InstructionSet_Vector256) || (isa == InstructionSet_Vector128));
-#endif // TARGET_XARCH
-#ifdef TARGET_ARM64
-    assert((isa == InstructionSet_Vector64) || (isa == InstructionSet_Vector128));
-#endif // TARGET_ARM64
-#endif // DEBUG
-    return false;
-}
-
 static bool isSupportedBaseType(NamedIntrinsic intrinsic, var_types baseType)
 {
     if (baseType == TYP_UNDEF)
@@ -2344,15 +2304,15 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                         // We want to be able to differentiate between them so lets
                         // just track the aux type as a ptr or undefined, depending
 
-                        CorInfoType auxiliaryType = CORINFO_TYPE_UNDEF;
+                        var_types auxiliaryType = TYP_UNKNOWN;
 
                         if (!varTypeIsSIMD(op1))
                         {
-                            auxiliaryType = CORINFO_TYPE_PTR;
+                            auxiliaryType = TYP_U_IMPL;
                             retNode->gtFlags |= (GTF_EXCEPT | GTF_GLOB_REF);
                         }
 
-                        retNode->AsHWIntrinsic()->SetAuxiliaryJitType(auxiliaryType);
+                        retNode->AsHWIntrinsic()->SetAuxiliaryType(auxiliaryType);
                         break;
                     }
 
@@ -2372,7 +2332,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                     case NI_Sve_ConvertToUInt64:
                         // Save the base type of return SIMD. It is used to contain this intrinsic inside
                         // ConditionalSelect.
-                        retNode->AsHWIntrinsic()->SetAuxiliaryJitType(getBaseJitTypeOfSIMDType(sig->retTypeSigClass));
+                        retNode->AsHWIntrinsic()->SetAuxiliaryType(getBaseTypeOfSIMDType(sig->retTypeSigClass));
                         break;
                     default:
                         break;
@@ -2407,12 +2367,12 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                     case NI_AdvSimd_AddWideningUpper:
                     case NI_AdvSimd_SubtractWideningUpper:
                         assert(varTypeIsSIMD(op1->TypeGet()));
-                        retNode->AsHWIntrinsic()->SetAuxiliaryJitType(getBaseJitTypeOfSIMDType(sigReader.op1ClsHnd));
+                        retNode->AsHWIntrinsic()->SetAuxiliaryType(getBaseTypeOfSIMDType(sigReader.op1ClsHnd));
                         break;
 
                     case NI_AdvSimd_Arm64_AddSaturateScalar:
                         assert(varTypeIsSIMD(op2->TypeGet()));
-                        retNode->AsHWIntrinsic()->SetAuxiliaryJitType(getBaseJitTypeOfSIMDType(sigReader.op2ClsHnd));
+                        retNode->AsHWIntrinsic()->SetAuxiliaryType(getBaseTypeOfSIMDType(sigReader.op2ClsHnd));
                         break;
 
                     case NI_ArmBase_Arm64_MultiplyHigh:
@@ -2447,13 +2407,33 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                     case NI_Sve_CreateWhileLessThanOrEqualMaskUInt16:
                     case NI_Sve_CreateWhileLessThanOrEqualMaskUInt32:
                     case NI_Sve_CreateWhileLessThanOrEqualMaskUInt64:
-                        retNode->AsHWIntrinsic()->SetAuxiliaryJitType(sigReader.op1JitType);
+                    case NI_Sve2_CreateWhileGreaterThanMaskByte:
+                    case NI_Sve2_CreateWhileGreaterThanMaskDouble:
+                    case NI_Sve2_CreateWhileGreaterThanMaskInt16:
+                    case NI_Sve2_CreateWhileGreaterThanMaskInt32:
+                    case NI_Sve2_CreateWhileGreaterThanMaskInt64:
+                    case NI_Sve2_CreateWhileGreaterThanMaskSByte:
+                    case NI_Sve2_CreateWhileGreaterThanMaskSingle:
+                    case NI_Sve2_CreateWhileGreaterThanMaskUInt16:
+                    case NI_Sve2_CreateWhileGreaterThanMaskUInt32:
+                    case NI_Sve2_CreateWhileGreaterThanMaskUInt64:
+                    case NI_Sve2_CreateWhileGreaterThanOrEqualMaskByte:
+                    case NI_Sve2_CreateWhileGreaterThanOrEqualMaskDouble:
+                    case NI_Sve2_CreateWhileGreaterThanOrEqualMaskInt16:
+                    case NI_Sve2_CreateWhileGreaterThanOrEqualMaskInt32:
+                    case NI_Sve2_CreateWhileGreaterThanOrEqualMaskInt64:
+                    case NI_Sve2_CreateWhileGreaterThanOrEqualMaskSByte:
+                    case NI_Sve2_CreateWhileGreaterThanOrEqualMaskSingle:
+                    case NI_Sve2_CreateWhileGreaterThanOrEqualMaskUInt16:
+                    case NI_Sve2_CreateWhileGreaterThanOrEqualMaskUInt32:
+                    case NI_Sve2_CreateWhileGreaterThanOrEqualMaskUInt64:
+                        retNode->AsHWIntrinsic()->SetAuxiliaryType(JitType2PreciseVarType(sigReader.op1JitType));
                         break;
 
                     case NI_Sve_ShiftLeftLogical:
                     case NI_Sve_ShiftRightArithmetic:
                     case NI_Sve_ShiftRightLogical:
-                        retNode->AsHWIntrinsic()->SetAuxiliaryJitType(getBaseJitTypeOfSIMDType(sigReader.op2ClsHnd));
+                        retNode->AsHWIntrinsic()->SetAuxiliaryType(getBaseTypeOfSIMDType(sigReader.op2ClsHnd));
                         break;
 
                     default:
@@ -2500,7 +2480,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                     case NI_AVX2_GatherVector128:
                     case NI_AVX2_GatherVector256:
                         assert(varTypeIsSIMD(op2->TypeGet()));
-                        retNode->AsHWIntrinsic()->SetAuxiliaryJitType(getBaseJitTypeOfSIMDType(sigReader.op2ClsHnd));
+                        retNode->AsHWIntrinsic()->SetAuxiliaryType(getBaseTypeOfSIMDType(sigReader.op2ClsHnd));
                         break;
 
 #elif defined(TARGET_ARM64)
@@ -2543,8 +2523,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                         assert(varTypeIsSIMD(op3->TypeGet()));
                         if (numArgs == 3)
                         {
-                            retNode->AsHWIntrinsic()->SetAuxiliaryJitType(
-                                getBaseJitTypeOfSIMDType(sigReader.op3ClsHnd));
+                            retNode->AsHWIntrinsic()->SetAuxiliaryType(getBaseTypeOfSIMDType(sigReader.op3ClsHnd));
                         }
                         break;
 #endif
@@ -2568,8 +2547,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                         assert(varTypeIsSIMD(op3->TypeGet()));
                         if (numArgs == 4)
                         {
-                            retNode->AsHWIntrinsic()->SetAuxiliaryJitType(
-                                getBaseJitTypeOfSIMDType(sigReader.op3ClsHnd));
+                            retNode->AsHWIntrinsic()->SetAuxiliaryType(getBaseTypeOfSIMDType(sigReader.op3ClsHnd));
                         }
                         break;
 #endif

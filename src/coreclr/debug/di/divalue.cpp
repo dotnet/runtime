@@ -460,7 +460,7 @@ HRESULT CordbValue::InternalCreateHandle(CorDebugHandleType      handleType,
                           m_appdomain->GetADToken());
 
     CORDB_ADDRESS addr = GetValueHome() != NULL ? GetValueHome()->GetAddress() : (CORDB_ADDRESS)NULL;
-    event.CreateHandle.objectToken = CORDB_ADDRESS_TO_PTR(addr);
+    event.CreateHandle.objectToken = addr;
     event.CreateHandle.handleType = handleType;
 
     // Note: two-way event here...
@@ -2440,6 +2440,46 @@ HRESULT CordbObjectValue::GetMonitorEventWaitList(ICorDebugThreadEnum **ppThread
                                                         ppThreadEnum);
 }
 
+namespace
+{
+    struct ExceptionStackFrameAccumulator
+    {
+        CQuickArrayList<DacExceptionCallStackData> frames;
+        HRESULT                                    hrError;
+    };
+
+    void ExceptionStackFrameCallback(
+        VMPTR_AppDomain vmAppDomain,
+        VMPTR_Assembly vmAssembly,
+        CORDB_ADDRESS ip,
+        mdMethodDef methodDef,
+        BOOL isLastForeignExceptionFrame,
+        CALLBACK_DATA pUserData)
+    {
+        ExceptionStackFrameAccumulator *acc =
+            reinterpret_cast<ExceptionStackFrameAccumulator*>(pUserData);
+
+        if (FAILED(acc->hrError))
+            return;
+
+        DacExceptionCallStackData frame;
+        frame.vmAppDomain = vmAppDomain;
+        frame.vmAssembly = vmAssembly;
+        frame.ip = ip;
+        frame.methodDef = methodDef;
+        frame.isLastForeignExceptionFrame = isLastForeignExceptionFrame;
+
+        HRESULT hr = S_OK;
+        EX_TRY
+        {
+            acc->frames.Push(frame);
+        }
+        EX_CATCH_HRESULT(hr);
+        if (FAILED(hr))
+            acc->hrError = hr;
+    }
+}
+
 HRESULT CordbObjectValue::EnumerateExceptionCallStack(ICorDebugExceptionObjectCallStackEnum** ppCallStackEnum)
 {
     if (!ppCallStackEnum)
@@ -2458,20 +2498,25 @@ HRESULT CordbObjectValue::EnumerateExceptionCallStack(ICorDebugExceptionObjectCa
     VMPTR_Object vmObj;
     IfFailThrow(pDAC->GetObject(objAddr, &vmObj));
 
-    DacDbiArrayList<DacExceptionCallStackData> dacStackFrames;
+    ExceptionStackFrameAccumulator acc;
+    acc.hrError = S_OK;
 
-    IfFailThrow(pDAC->GetStackFramesFromException(vmObj, &dacStackFrames));
-    int stackFramesLength = dacStackFrames.Count();
+    HRESULT hrEnum = pDAC->EnumerateStackFramesFromException(vmObj, &ExceptionStackFrameCallback, &acc);
+    if (SUCCEEDED(hrEnum) && FAILED(acc.hrError))
+        hrEnum = acc.hrError;
+    IfFailThrow(hrEnum);
+
+    int stackFramesLength = (int)acc.frames.Size();
 
     if (stackFramesLength > 0)
     {
         pStackFrames = new CorDebugExceptionObjectStackFrame[stackFramesLength];
         for (int index = 0; index < stackFramesLength; ++index)
         {
-            DacExceptionCallStackData& currentDacFrame = dacStackFrames[index];
+            DacExceptionCallStackData& currentDacFrame = acc.frames[index];
             CorDebugExceptionObjectStackFrame& currentStackFrame = pStackFrames[index];
 
-            CordbAppDomain* pAppDomain = GetProcess()->LookupOrCreateAppDomain(currentDacFrame.vmAppDomain);
+            CordbAppDomain* pAppDomain = GetProcess()->GetAppDomain();
             CordbModule* pModule = pAppDomain->LookupOrCreateModule(currentDacFrame.vmAssembly);
 
             hr = pModule->QueryInterface(IID_ICorDebugModule, reinterpret_cast<void**>(&currentStackFrame.pModule));
@@ -2675,7 +2720,7 @@ HRESULT CordbObjectValue::GetTargetHelper(ICorDebugReferenceValue **ppTarget)
     }
 
     RSLockHolder lockHolder(GetProcess()->GetProcessLock());
-    RSSmartPtr<CordbAppDomain> pCordbAppDomForTarget(GetProcess()->LookupOrCreateAppDomain(pAppDomainOfTarget));
+    RSSmartPtr<CordbAppDomain> pCordbAppDomForTarget(GetProcess()->GetAppDomain());
     RSSmartPtr<CordbReferenceValue> targetObjRefVal(CordbValue::CreateHeapReferenceValue(pCordbAppDomForTarget, pDelegateTargetObj));
     *ppTarget = static_cast<ICorDebugReferenceValue*>(targetObjRefVal.GetValue());
     targetObjRefVal->ExternalAddRef();
@@ -2802,6 +2847,16 @@ HRESULT CordbObjectValue::GetCachedInterfaceTypes(
 #endif
 }
 
+#if defined(FEATURE_COMINTEROP)
+namespace
+{
+    void RcwInterfacePointerCallback(CORDB_ADDRESS itfPtr, CALLBACK_DATA pUserData)
+    {
+        CallbackAccumulator<CORDB_ADDRESS>::From(pUserData)->Push(itfPtr);
+    }
+}
+#endif // FEATURE_COMINTEROP
+
 HRESULT CordbObjectValue::GetCachedInterfacePointers(
                         BOOL bIInspectableOnly,
                         ULONG32 celt,
@@ -2825,25 +2880,29 @@ HRESULT CordbObjectValue::GetCachedInterfacePointers(
     HRESULT hr = S_OK;
     ULONG32 cItfs = 0;
 
-    // retrieve interface types
+    CallbackAccumulator<CORDB_ADDRESS> acc;
 
-    CORDB_ADDRESS objAddr = m_valueHome.GetAddress();
-
-    DacDbiArrayList<CORDB_ADDRESS> dacItfPtrs;
-    EX_TRY
+    // The RCW interface pointer cache only holds non-IInspectable interfaces, so when the caller
+    // asks for IInspectable-only pointers the result is always empty.
+    if (!bIInspectableOnly)
     {
-        IDacDbiInterface* pDAC = GetProcess()->GetDAC();
-        VMPTR_Object vmObj;
-        IfFailThrow(pDAC->GetObject(objAddr, &vmObj));
+        CORDB_ADDRESS objAddr = m_valueHome.GetAddress();
 
-        // retrieve type info from LS
-        IfFailThrow(pDAC->GetRcwCachedInterfacePointers(vmObj, bIInspectableOnly, &dacItfPtrs));
+        EX_TRY
+        {
+            IDacDbiInterface* pDAC = GetProcess()->GetDAC();
+            VMPTR_Object vmObj;
+            IfFailThrow(pDAC->GetObject(objAddr, &vmObj));
+
+            IfFailThrow(pDAC->EnumerateRcwCachedInterfacePointers(vmObj, &RcwInterfacePointerCallback, &acc));
+        }
+        EX_CATCH_HRESULT(hr);
+        IfFailRet(hr);
+        IfFailRet(acc.hrError);
     }
-    EX_CATCH_HRESULT(hr);
-    IfFailRet(hr);
 
     // synthesize CordbType instances
-    cItfs = (ULONG32)dacItfPtrs.Count();
+    cItfs = (ULONG32)acc.items.Size();
 
     if (pcEltFetched != NULL && ptrs == NULL)
     {
@@ -2859,7 +2918,7 @@ HRESULT CordbObjectValue::GetCachedInterfacePointers(
     if (ptrs != NULL && *pcEltFetched > 0)
     {
         for (ULONG32 i = 0; i < *pcEltFetched; ++i)
-            ptrs[i] = dacItfPtrs[i];
+            ptrs[i] = acc.items[i];
     }
 
     return (*pcEltFetched == celt ? S_OK : S_FALSE);

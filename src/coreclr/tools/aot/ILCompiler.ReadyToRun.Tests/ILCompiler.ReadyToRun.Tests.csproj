@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../ILCompiler.Reflection.ReadyToRun/ILCompiler.Reflection.ReadyToRun.csproj" />
+    <ProjectReference Include="../crossgen2/crossgen2_inbuild.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
   <!-- Test case source files are embedded as resources so we can compile them with Roslyn at test time.
