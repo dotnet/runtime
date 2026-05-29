@@ -2066,6 +2066,11 @@ BOOL DebuggerController::AddBindAndActivateILReplicaPatch(DebuggerControllerPatc
             BOOL   fExact;
             SIZE_T offsetNative = it.Current(&fExact);
 
+            if (offsetNative == ((SIZE_T)-1))
+            {
+                continue;
+            }
+
             // We special case offset 0, which is when a breakpoint is set
             // at the beginning of a method that hasn't been jitted yet.  In
             // that case it's possible that offset 0 has been optimized out,
