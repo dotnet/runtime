@@ -10,6 +10,7 @@ using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 
+using ILCompiler.ObjectWriter;
 using Microsoft.NET.WebAssembly.Webcil;
 
 namespace ILCompiler.Reflection.ReadyToRun
@@ -294,17 +295,8 @@ namespace ILCompiler.Reflection.ReadyToRun
 
         private static uint ReadLebU32(ReadOnlySpan<byte> data, ref int offset)
         {
-            uint result = 0;
-            int shift = 0;
-            byte b;
-            do
-            {
-                if (offset >= data.Length)
-                    return result;
-                b = data[offset++];
-                result |= (uint)(b & 0x7F) << shift;
-                shift += 7;
-            } while ((b & 0x80) != 0);
+            uint result = (uint)DwarfHelper.ReadULEB128(data.Slice(offset), out int bytesRead);
+            offset += bytesRead;
             return result;
         }
 

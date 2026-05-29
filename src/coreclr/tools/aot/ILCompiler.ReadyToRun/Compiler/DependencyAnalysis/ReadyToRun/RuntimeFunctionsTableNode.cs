@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 
+using ILCompiler.ObjectWriter;
 using Internal.Text;
 using Internal.TypeSystem;
 
@@ -105,33 +106,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         }
 
         /// <summary>
-        /// Decode a ULEB128 value from a byte array starting at the given offset.
-        /// Returns the decoded value and advances the offset past the encoded bytes.
-        /// </summary>
-        private static uint DecodeULEB128(byte[] data, ref int offset)
-        {
-            uint result = 0;
-            int shift = 0;
-            while (offset < data.Length)
-            {
-                byte b = data[offset++];
-                result |= (uint)(b & 0x7F) << shift;
-                if ((b & 0x80) == 0)
-                    break;
-                shift += 7;
-            }
-            return result;
-        }
-
-        /// <summary>
         /// Read the virtual IP count from a WASM unwind blob.
         /// The blob format is: ULEB128(frameSize) followed by ULEB128(virtualIPCount).
         /// </summary>
         private static uint GetVirtualIPCountFromUnwindBlob(byte[] blobData)
         {
             int offset = 0;
-            DecodeULEB128(blobData, ref offset); // skip frame size
-            return DecodeULEB128(blobData, ref offset) * 2; // Multiply by 2 to force all virtual IPs to be an even number.
+            DwarfHelper.ReadULEB128(blobData.AsSpan(offset), out int bytesRead); // skip frame size
+            offset += bytesRead;
+            return (uint)DwarfHelper.ReadULEB128(blobData.AsSpan(offset), out _) * 2; // Multiply by 2 to force all virtual IPs to be an even number.
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
