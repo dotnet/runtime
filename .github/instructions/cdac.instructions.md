@@ -26,7 +26,7 @@ The DacDbi COM interface is **internal and unstable**.
 - **MUST NOT** request fallback paths, conditional reads, or versioning
   shims for missing descriptors on the grounds of "supporting older dumps".
 
-## Exception types
+## Exception types (ALL branches)
 
 When porting `HRESULT`-returning APIs to throw exceptions, the following mappings **MUST** be accepted:
 - `ArgumentException` → for `E_INVALIDARG`
