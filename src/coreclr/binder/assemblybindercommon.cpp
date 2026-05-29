@@ -273,9 +273,8 @@ namespace BINDER_SPACE
         //   * Framework-dependent single-file app: In systemDirectory, beside coreclr.dll
         //   * Self-contained single-file app: Within the single-file bundle.
         //   * Host explicitly provided directory: In the directory set via the
-        //     SYSTEM_CORELIB_DIRECTORY runtime property. Used by hosts (e.g. mobile platforms)
-        //     where CoreCLR is statically linked into the host and CoreLib is not located
-        //     beside it.
+        //     SYSTEM_CORELIB_DIRECTORY runtime property. Used by hosts where SPCL is not located
+        //     in the same directory as coreclr.
         //
         //   CoreLib path (sCoreLib):
         //   * Absolute path when looking for a file on disk
@@ -294,11 +293,7 @@ namespace BINDER_SPACE
         // the default lookup beside coreclr and the bundle extraction path fallback.
         bool hasHostProvidedDirectory = HostInformation::GetProperty(HOST_PROPERTY_SYSTEM_CORELIB_DIRECTORY, sCoreLib)
             && !sCoreLib.IsEmpty();
-        if (hasHostProvidedDirectory)
-        {
-            pathSource = BinderTracing::PathSource::ApplicationAssemblies;
-        }
-        else
+        if (!hasHostProvidedDirectory)
         {
             sCoreLib.Set(systemDirectory);
         }

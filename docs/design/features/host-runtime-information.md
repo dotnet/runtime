@@ -80,7 +80,7 @@ List of directory paths corresponding to shared store paths and additional probi
 
 `SYSTEM_CORELIB_DIRECTORY`
 
-Absolute path to the directory containing `System.Private.CoreLib.dll`. When set, the runtime loads `System.Private.CoreLib` from this directory instead of looking for it beside `coreclr`. This is intended for hosts (for example, mobile platforms) where CoreCLR is statically linked into the host executable and `System.Private.CoreLib.dll` is not placed alongside it. When set, no fallback search is performed - if the file cannot be loaded from the specified directory, startup fails.
+Absolute path to the directory containing `System.Private.CoreLib.dll`. When set, the runtime loads `System.Private.CoreLib` from this directory instead of looking for it beside `coreclr`. This is intended for hosts where `System.Private.CoreLib.dll` is not placed alongside `coreclr`. For hosts providing an assembly probe extension, a valid probe result takes precedence over this property. Otherwise, when this property is set, no fallback search is performed - if the file cannot be loaded from the specified directory, startup fails.
 
 ### Single-file
 
