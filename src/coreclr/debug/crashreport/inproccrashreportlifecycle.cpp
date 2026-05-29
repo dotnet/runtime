@@ -12,6 +12,7 @@
 #include <limits.h>
 #include <new>
 #include <signal.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -343,9 +344,22 @@ InProcCrashReportLifecycle::FinishReportFile(
         return;
     }
 
-    if (succeeded && reportFilePath != nullptr && reportFilePath[0] != '\0')
+    // Publish the completed report by renaming the temp file to its final name.
+    // rename is POSIX async-signal-safe and, unlike link, is permitted in the
+    // app-private storage sandboxes on Android and Apple mobile platforms, where
+    // hard links are rejected with EPERM. Temp and final share m_reportDirectory,
+    // so this is an atomic same-directory metadata operation. The access check
+    // best-effort preserves the "never overwrite a completed report" invariant
+    // that link's EEXIST gave us; the final name is collision-resistant by
+    // construction (PrepareReportFile probes and retries suffixes), so the
+    // residual TOCTOU window is benign. On any failure the temp is removed so no
+    // partial report is left behind.
+    if (succeeded && reportFilePath != nullptr && reportFilePath[0] != '\0' &&
+        access(reportFilePath, F_OK) != 0 &&
+        rename(m_tempReportFilePath, reportFilePath) == 0)
     {
-        (void)link(m_tempReportFilePath, reportFilePath);
+        m_tempReportFilePath[0] = '\0';
+        return;
     }
 
     unlink(m_tempReportFilePath);

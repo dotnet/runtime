@@ -44,7 +44,7 @@ fixed-slot rotation contract. (See Apple's developer documentation on acquiring
 crash reports and diagnostic logs.)
 
 **Takeaways that shaped this design.** Borrow Android's robust mechanics —
-default of 32, temp-file-then-link commit, bounded retention — but improve on the
+default of 32, temp-file-then-commit, bounded retention — but improve on the
 fixed-slot model by encoding the crash time in the filename (so ordering does not
 depend on fragile `mtime`), and accept that on iOS the runtime, not the OS, owns
 this app-local directory.
@@ -117,12 +117,16 @@ Invoked from the signal handler; must be async-signal-safe and allocation-free:
   integer formatting, no `snprintf`/`std::string`);
 - `open` the temp with `O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC` (exclusive create
   so a collision never truncates an existing report; `O_CLOEXEC` avoids fd leaks);
-- on success `link` the temp to the final name then `unlink` the temp; the old
-  precomputed candidates are unlinked separately. Deletion is *intentional only*:
-  completed reports are removed by retention, never by the write path overwriting.
+- on success `rename` the temp to the final name; the old precomputed candidates
+  are unlinked separately. `rename` is a same-directory atomic commit and, unlike
+  `link`, is permitted in the Android/iOS app-private storage sandboxes (hard
+  links there are rejected with `EPERM`, which would silently lose every report).
+  A best-effort `access(final, F_OK)` check before the rename preserves the
+  exclusive-create intent. Deletion is *intentional only*: completed reports are
+  removed by retention, never by the write path overwriting.
 
 Because the final report is a *new* file (not a replacement), there can briefly be
-`N+1` completed reports between link and candidate deletion.
+`N+1` completed reports between commit and candidate deletion.
 
 ## Retention model
 
@@ -150,8 +154,13 @@ directory enumeration and sorting are not signal-safe.
   test mistake must never silently erase a completed report.
 - **Init-time candidate caching in fixed buffers.** Keeps the crash path
   signal-safe and free of malloc/heap state that may be corrupted at crash time.
-- **`link` + `unlink` commit (not `rename`).** Both are POSIX async-signal-safe;
-  `rename` is not formally on the AS-safe list across bionic/Darwin.
+- **Same-directory `rename` commit (not `link` + `unlink`).** `rename` is POSIX
+  async-signal-safe (per `signal-safety(7)`) and is the portable atomic-publish
+  primitive. Hard links via `link` are rejected with `EPERM` in the Android and
+  Apple mobile app-private storage sandboxes, which would silently lose every
+  report — the precise failure this feature exists to prevent. A best-effort
+  `access(final, F_OK)` guard keeps the exclusive-create intent; the final name is
+  collision-resistant by construction, so the residual TOCTOU window is benign.
 - **pid in temp name + liveness-gated stale cleanup.** Lets multiple processes
   share a root without deleting each other's in-flight temp files.
 

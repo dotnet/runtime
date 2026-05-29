@@ -59,9 +59,9 @@ public:
         size_t reportFilePathSize,
         int* fd);
 
-    // Finalizes the report opened by PrepareReportFile: on success links the temp
-    // file to its final reportFilePath, then removes the temp file in all cases.
-    // Runs on the crash/signal path: allocation-free and signal-safe.
+    // Finalizes the report opened by PrepareReportFile: on success renames the temp
+    // file to its final reportFilePath, otherwise removes the temp file. Runs on the
+    // crash/signal path: allocation-free and signal-safe.
     void FinishReportFile(
         bool succeeded,
         const char* reportFilePath);
