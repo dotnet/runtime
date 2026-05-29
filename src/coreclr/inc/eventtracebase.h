@@ -121,12 +121,7 @@ enum EtwGCSettingFlags
 #define ETWFireEvent(EventName) FireEtw##EventName(GetClrInstanceId())
 
 #define ETW_TRACING_INITIALIZED(RegHandle) (TRUE)
-#if defined(HOST_BROWSER) || defined(HOST_WASI)
-#define ETW_EVENT_ENABLED(Context, EventDescriptor) (EventPipeHelper::IsEnabled(Context, EventDescriptor.Level, EventDescriptor.Keyword))
-#define ETW_CATEGORY_ENABLED(Context, Level, Keyword) (EventPipeHelper::IsEnabled(Context, Level, Keyword))
-#define ETW_TRACING_ENABLED(Context, EventDescriptor) (EventEnabled##EventDescriptor())
-#define ETW_TRACING_CATEGORY_ENABLED(Context, Level, Keyword) (EventPipeHelper::IsEnabled(Context, Level, Keyword))
-#else // HOST_BROWSER || HOST_WASI
+#if defined(FEATURE_EVENTSOURCE_XPLAT)
 #define ETW_EVENT_ENABLED(Context, EventDescriptor) (EventPipeHelper::IsEnabled(Context, EventDescriptor.Level, EventDescriptor.Keyword) || \
         (XplatEventLogger::IsKeywordEnabled(Context, EventDescriptor.Level, EventDescriptor.Keyword)))
 #define ETW_CATEGORY_ENABLED(Context, Level, Keyword) (EventPipeHelper::IsEnabled(Context, Level, Keyword) || \
@@ -134,7 +129,12 @@ enum EtwGCSettingFlags
 #define ETW_TRACING_ENABLED(Context, EventDescriptor) (EventEnabled##EventDescriptor())
 #define ETW_TRACING_CATEGORY_ENABLED(Context, Level, Keyword) (EventPipeHelper::IsEnabled(Context, Level, Keyword) || \
         (XplatEventLogger::IsKeywordEnabled(Context, Level, Keyword)))
-#endif // HOST_BROWSER || HOST_WASI
+#else // FEATURE_EVENTSOURCE_XPLAT
+#define ETW_EVENT_ENABLED(Context, EventDescriptor) (EventPipeHelper::IsEnabled(Context, EventDescriptor.Level, EventDescriptor.Keyword))
+#define ETW_CATEGORY_ENABLED(Context, Level, Keyword) (EventPipeHelper::IsEnabled(Context, Level, Keyword))
+#define ETW_TRACING_ENABLED(Context, EventDescriptor) (EventEnabled##EventDescriptor())
+#define ETW_TRACING_CATEGORY_ENABLED(Context, Level, Keyword) (EventPipeHelper::IsEnabled(Context, Level, Keyword))
+#endif // FEATURE_EVENTSOURCE_XPLAT
 #define ETW_PROVIDER_ENABLED(ProviderSymbol) (TRUE)
 #else //defined(FEATURE_PERFTRACING)
 #define ETW_INLINE
@@ -255,16 +255,11 @@ struct ProfilingScanContext;
 extern UINT32 g_nClrInstanceId;
 
 #define GetClrInstanceId()  (static_cast<UINT16>(g_nClrInstanceId))
-#if defined(HOST_UNIX) && (defined(FEATURE_EVENT_TRACE) || defined(FEATURE_EVENTSOURCE_XPLAT))
+#if defined(HOST_UNIX) && defined(FEATURE_EVENT_TRACE)
 #define KEYWORDZERO 0x0
-
-#define DEF_LTTNG_KEYWORD_ENABLED 1
-#ifdef FEATURE_EVENT_TRACE
 #include "clrproviders.h"
-#endif // FEATURE_EVENT_TRACE
 #include "clrconfig.h"
-
-#endif // defined(HOST_UNIX) && (defined(FEATURE_EVENT_TRACE) || defined(FEATURE_EVENTSOURCE_XPLAT))
+#endif // defined(HOST_UNIX) && defined(FEATURE_EVENT_TRACE)
 
 #if defined(FEATURE_PERFTRACING) || defined(FEATURE_EVENTSOURCE_XPLAT)
 
@@ -423,7 +418,7 @@ private:
 };
 #endif // defined(FEATURE_PERFTRACING) || defined(FEATURE_EVENTSOURCE_XPLAT)
 
-#if defined(HOST_UNIX) && !defined(HOST_BROWSER) && !defined(HOST_WASI) && (defined(FEATURE_EVENT_TRACE) || defined(FEATURE_EVENTSOURCE_XPLAT))
+#if defined(FEATURE_EVENTSOURCE_XPLAT)
 
 class XplatEventLoggerController
 {
@@ -564,7 +559,7 @@ public:
 };
 
 
-#endif  // defined(HOST_UNIX) && !defined(HOST_BROWSER) && !defined(HOST_WASI) && (defined(FEATURE_EVENT_TRACE) || defined(FEATURE_EVENTSOURCE_XPLAT))
+#endif  // defined(FEATURE_EVENTSOURCE_XPLAT)
 
 #if defined(FEATURE_EVENT_TRACE)
 
