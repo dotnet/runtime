@@ -4840,6 +4840,9 @@ void STDCALL OnHijackWorker(HijackArgs * pArgs)
     // authenticates the return address on demand for stackwalk/GC, but
     // OnHijackTripThread will later return via the saved LR in HijackArgs.
     pArgs->ReturnAddress = (size_t)thread->m_pvHJRetAddr;
+#if defined(TARGET_ARM64)
+    pArgs->SpForPacSign = (size_t)thread->m_pSpForPacSign;
+#endif // TARGET_ARM64
 
     // Build a frame so that stack crawling can proceed from here back to where
     // we will resume execution.
