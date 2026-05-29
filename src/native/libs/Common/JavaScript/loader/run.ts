@@ -125,6 +125,23 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
         const satelliteResourcesPromise = loaderConfig.loadAllSatelliteResources && resources.satelliteResources
             ? fetchSatelliteAssemblies(Object.keys(resources.satelliteResources))
             : Promise.resolve();
+
+        // Add appsettings files to VFS for download
+        if (loaderConfig.appsettings) {
+            for (const configUrl of loaderConfig.appsettings) {
+                const lastSlash = configUrl.lastIndexOf("/");
+                const configFileName = lastSlash >= 0 ? configUrl.substring(lastSlash + 1) : configUrl;
+                if (configFileName === "appsettings.json" || configFileName === `appsettings.${loaderConfig.applicationEnvironment}.json`) {
+                    resources.vfs!.push({
+                        name: configUrl,
+                        virtualPath: configFileName,
+                        cache: "no-cache",
+                        useCredentials: true,
+                    } as any);
+                }
+            }
+        }
+
         const vfsPromise = forEachResource(resources.vfs, fetchVfs);
 
         // WASM-TODO: also check that the debugger is linked in and check feature flags
