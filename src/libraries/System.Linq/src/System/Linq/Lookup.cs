@@ -135,7 +135,9 @@ namespace System.Linq
 #pragma warning disable CS8714 // Nullability of type argument doesn't match 'notnull' constraint.
             _groupings = new Dictionary<TKey, Grouping<TKey, TElement>>(comparer);
 #pragma warning restore CS8714
-            _customComparer = comparer is not null;
+            // Even if a comparer was supplied, it might still be the default; only a non-default comparer
+            // can equate null with a non-null key, so only then must null keys be routed through it.
+            _customComparer = comparer is not null && !comparer.Equals(EqualityComparer<TKey>.Default);
         }
 
         public int Count => _count;
