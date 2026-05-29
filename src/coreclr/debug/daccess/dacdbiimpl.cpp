@@ -3492,9 +3492,9 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetDelegateTargetObject(
     return hr;
 }
 
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetStackFramesFromException(VMPTR_Object vmObject, DacDbiArrayList<DacExceptionCallStackData>* pDacStackFrames)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateStackFramesFromException(VMPTR_Object vmObject, FP_EXCEPTION_STACK_FRAME_CALLBACK fpCallback, CALLBACK_DATA pUserData)
 {
-    if (pDacStackFrames == NULL)
+    if (fpCallback == NULL)
         return E_POINTER;
 
     DD_ENTER_MAY_THROW;
@@ -3522,28 +3522,25 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetStackFramesFromException(VMPTR
 
         INT32 dacStackFramesLength = stackFramesData.cElements;
 
-        if (dacStackFramesLength > 0)
+        AppDomain* pDomain = AppDomain::GetCurrentDomain();
+        _ASSERTE(pDomain != NULL);
+
+        VMPTR_AppDomain vmAppDomain = VMPTR_AppDomain::NullPtr();
+        vmAppDomain.SetHostPtr(pDomain);
+
+        for (INT32 index = 0; index < dacStackFramesLength; ++index)
         {
-            pDacStackFrames->Alloc(dacStackFramesLength);
+            DebugStackTrace::Element const& currentElement = stackFramesData.pElements[index];
 
-            for (INT32 index = 0; index < dacStackFramesLength; ++index)
-            {
-                DebugStackTrace::Element const& currentElement = stackFramesData.pElements[index];
-                DacExceptionCallStackData& currentFrame = (*pDacStackFrames)[index];
+            Module* pModule = currentElement.pFunc->GetModule();
+            Assembly* pAssembly = pModule->GetAssembly();
+            _ASSERTE(pAssembly != NULL);
 
-                AppDomain* pDomain = AppDomain::GetCurrentDomain();
-                _ASSERTE(pDomain != NULL);
+            VMPTR_Assembly vmAssembly = VMPTR_Assembly::NullPtr();
+            vmAssembly.SetHostPtr(pAssembly);
 
-                Module* pModule = currentElement.pFunc->GetModule();
-                Assembly* pAssembly = pModule->GetAssembly();
-                _ASSERTE(pAssembly != NULL);
-
-                currentFrame.vmAppDomain.SetHostPtr(pDomain);
-                currentFrame.vmAssembly.SetHostPtr(pAssembly);
-                currentFrame.ip = currentElement.ip;
-                currentFrame.methodDef = currentElement.pFunc->GetMemberDef();
-                currentFrame.isLastForeignExceptionFrame = (currentElement.flags & STEF_LAST_FRAME_FROM_FOREIGN_STACK_TRACE) != 0;
-            }
+            BOOL isLastForeignExceptionFrame = (currentElement.flags & STEF_LAST_FRAME_FROM_FOREIGN_STACK_TRACE) != 0;
+            fpCallback(vmAppDomain, vmAssembly, currentElement.ip, currentElement.pFunc->GetMemberDef(), isLastForeignExceptionFrame, pUserData);
         }
     }
     EX_CATCH_HRESULT(hr);

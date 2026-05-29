@@ -135,12 +135,6 @@
 #define REG_WRITE_BARRIER_SRC          REG_T4
 #define RBM_WRITE_BARRIER_SRC          RBM_T4
 
-#define REG_WRITE_BARRIER_DST_BYREF    REG_T3
-#define RBM_WRITE_BARRIER_DST_BYREF    RBM_T3
-
-#define REG_WRITE_BARRIER_SRC_BYREF    REG_T5
-#define RBM_WRITE_BARRIER_SRC_BYREF    RBM_T5
-
 #define RBM_CALLEE_TRASH_NOGC          (RBM_T0|RBM_T1|RBM_T2|RBM_T4|RBM_T6|RBM_DEFAULT_HELPER_CALL_TARGET)
 
 // Registers killed by CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
@@ -148,13 +142,6 @@
 
 // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
 #define RBM_CALLEE_GCTRASH_WRITEBARRIER       RBM_CALLEE_TRASH_NOGC
-
-// Registers killed by CORINFO_HELP_ASSIGN_BYREF.
-#define RBM_CALLEE_TRASH_WRITEBARRIER_BYREF   (RBM_WRITE_BARRIER_DST_BYREF | RBM_WRITE_BARRIER_SRC_BYREF | RBM_CALLEE_TRASH_NOGC)
-
-// Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_BYREF.
-// Note that t3 and t5 are still valid byref pointers after this helper call, despite their value being changed.
-#define RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF RBM_CALLEE_TRASH_NOGC
 
 // GenericPInvokeCalliHelper VASigCookie Parameter
 #define REG_PINVOKE_COOKIE_PARAM          REG_T3

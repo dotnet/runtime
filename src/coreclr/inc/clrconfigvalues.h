@@ -577,6 +577,7 @@ RETAIL_CONFIG_STRING_INFO(INTERNAL_DbgMiniDumpName, W("DbgMiniDumpName"), "Crash
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_DbgMiniDumpType, W("DbgMiniDumpType"), 0, "Crash dump type: 1 normal, 2 withheap, 3 triage, 4 full")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_CreateDumpDiagnostics, W("CreateDumpDiagnostics"), 0, "Enable crash dump generation diagnostic logging")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_CrashReportBeforeSignalChaining, W("CrashReportBeforeSignalChaining"), 0, "Enable crash report generation before chaining to previous signal handler")
+RETAIL_CONFIG_DWORD_INFO_EX(INTERNAL_CrashReportFrameLimitPerThread, W("CrashReportFrameLimitPerThread"), 32, "Maximum number of managed stack frames per thread to emit in the in-proc crash report's compact log; 0 disables the limit; remaining frames are summarized as '... +N more frames'", CLRConfig::LookupOptions::ParseIntegerAsBase10)
 
 ///
 /// R2R
