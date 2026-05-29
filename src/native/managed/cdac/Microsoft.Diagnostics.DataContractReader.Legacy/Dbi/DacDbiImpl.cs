@@ -1744,10 +1744,85 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int GetClassInfo(ulong thExact, nint pData)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetClassInfo(thExact, pData) : HResults.E_NOTIMPL;
+    {
+        int hr = LegacyFallbackHelper.CanFallback() && _legacy is not null
+            ? _legacy.GetClassInfo(thExact, pData)
+            : HResults.E_NOTIMPL;
+#if DEBUG
+        // Validate that the cDAC computes the same total field count as the legacy DAC
+        // (which now includes EnC-added fields via the new IEditAndContinue contract).
+        // ClassInfo layout (matches native dacdbistructures.h):
+        //   SIZE_T                     m_objectSize;             // offset 0
+        //   DacDbiArrayList<FieldData> m_fieldList;              // T* m_pList; int m_nEntries;
+        // So m_nEntries lives at offset (2 * IntPtr.Size) within ClassInfo.
+        if (hr == HResults.S_OK && pData != 0)
+        {
+            int legacyCount = *(int*)(pData + 2 * sizeof(nint));
+            ValidateTotalFieldCountForDbi(new TargetPointer(thExact), legacyCount);
+        }
+#endif
+        return hr;
+    }
 
     public int GetInstantiationFieldInfo(ulong vmAssembly, ulong vmTypeHandle, ulong vmExactMethodTable, nint pFieldList, nuint* pObjectSize)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetInstantiationFieldInfo(vmAssembly, vmTypeHandle, vmExactMethodTable, pFieldList, pObjectSize) : HResults.E_NOTIMPL;
+    {
+        int hr = LegacyFallbackHelper.CanFallback() && _legacy is not null
+            ? _legacy.GetInstantiationFieldInfo(vmAssembly, vmTypeHandle, vmExactMethodTable, pFieldList, pObjectSize)
+            : HResults.E_NOTIMPL;
+#if DEBUG
+        // DacDbiArrayList<FieldData> layout:
+        //   FieldData * m_pList;     // offset 0
+        //   int         m_nEntries;  // offset IntPtr.Size
+        if (hr == HResults.S_OK && pFieldList != 0)
+        {
+            int legacyCount = *(int*)(pFieldList + sizeof(nint));
+            // GetInstantiationFieldInfo uses vmExactMethodTable as the "approximate" type for
+            // GetTotalFieldCount (matches native: GetTypeHandles uses vmThApprox for thApprox).
+            ValidateTotalFieldCountForDbi(new TargetPointer(vmExactMethodTable), legacyCount);
+        }
+#endif
+        return hr;
+    }
+
+#if DEBUG
+    // Mirrors native DacDbiInterfaceImpl::GetTotalFieldCount, including EnC-added fields
+    // sourced from the new IEditAndContinue contract.
+    private void ValidateTotalFieldCountForDbi(TargetPointer mtPtr, int legacyCount)
+    {
+        try
+        {
+            IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+            TypeHandle th = rts.GetTypeHandle(mtPtr);
+            if (rts.IsTypeDesc(th))
+                return;
+
+            // Introduced instance fields = total instance fields - parent's instance fields.
+            uint ifCount = rts.GetNumInstanceFields(th);
+            TargetPointer parentMT = rts.GetParentMethodTable(th);
+            if (parentMT != TargetPointer.Null)
+            {
+                TypeHandle parentTh = rts.GetTypeHandle(parentMT);
+                ifCount -= rts.GetNumInstanceFields(parentTh);
+            }
+            uint sfCount = rts.GetNumStaticFields(th);
+
+            // EnC-added fields (only present when EnC is enabled on the module and the
+            // target was compiled with FEATURE_METADATA_UPDATER; otherwise the enumeration
+            // is empty).
+            IEditAndContinue enc = _target.Contracts.EditAndContinue;
+            int encInstance = enc.EnumerateAddedFieldDescs(th, staticFields: false).Count();
+            int encStatic = enc.EnumerateAddedFieldDescs(th, staticFields: true).Count();
+
+            uint cdacCount = ifCount + sfCount + (uint)encInstance + (uint)encStatic;
+            Debug.Assert((uint)legacyCount == cdacCount, $"cDAC field count: {cdacCount}, DAC: {legacyCount}");
+        }
+        catch (System.Exception)
+        {
+            // Validation is best-effort; do not fail the legacy path if cDAC contracts cannot
+            // walk the target (e.g., paged-out memory or missing optional descriptors).
+        }
+    }
+#endif
 
     public int TypeHandleToExpandedTypeInfo(AreValueTypesBoxed boxed, ulong vmTypeHandle, DebuggerIPCE_ExpandedTypeData* pTypeInfo)
     {
