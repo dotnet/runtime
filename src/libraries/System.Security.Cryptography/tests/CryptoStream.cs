@@ -37,7 +37,7 @@ namespace System.Security.Cryptography.Tests
         public override Task ReadWrite_Success_Large(ReadWriteMode mode, int writeSize, bool startWithFlush) => base.ReadWrite_Success_Large(mode, writeSize, startWithFlush);
 
         [Theory]
-        [MemberData(nameof(ReadWrite_Success_MemberData), MemberType = typeof(ConnectedStreamConformanceTests))]
+        [MemberData(nameof(ConnectedStreamConformanceTests.ReadWrite_Success_MemberData), MemberType = typeof(ConnectedStreamConformanceTests))]
         [DynamicDependency(nameof(ConnectedStreamConformanceTests.ReadWrite_Success_MemberData), typeof(ConnectedStreamConformanceTests))]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
