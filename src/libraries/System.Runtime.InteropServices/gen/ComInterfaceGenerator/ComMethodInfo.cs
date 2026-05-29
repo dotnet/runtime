@@ -13,17 +13,17 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 namespace Microsoft.Interop
 {
     /// <summary>
-    /// Represents a method that has been determined to be a COM interface method. Only contains info immediately available from an IMethodSymbol and MethodDeclarationSyntax.
+    /// Represents a method that has been determined to be a COM interface method. Only contains info immediately available from an IMethodSymbol and the user-declared member syntax (a <see cref="MethodDeclarationSyntax"/> for ordinary methods, or a <see cref="PropertyDeclarationSyntax"/> for property accessors).
     /// </summary>
     internal sealed record ComMethodInfo
     {
-        public MethodDeclarationSyntax? Syntax { get; init; }
+        public MemberDeclarationSyntax? Syntax { get; init; }
         public string MethodName { get; init; }
         public SequenceEqualImmutableArray<AttributeInfo> Attributes { get; init; }
         public bool IsUserDefinedShadowingMethod { get; init; }
 
         private ComMethodInfo(
-            MethodDeclarationSyntax syntax,
+            MemberDeclarationSyntax? syntax,
             string methodName,
             SequenceEqualImmutableArray<AttributeInfo> attributes,
             bool isUserDefinedShadowingMethod)
@@ -49,14 +49,14 @@ namespace Microsoft.Interop
 
                 switch (member)
                 {
-                    case { Kind: SymbolKind.Property }:
-                        methods.Add(DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From(member.CreateDiagnosticInfo(GeneratorDiagnostics.InstancePropertyDeclaredInInterface, member.Name, data.ifaceSymbol.ToDisplayString())));
+                    case IPropertySymbol property:
+                        AddPropertyAccessorInfos(methods, data.ifaceContext, data.ifaceSymbol, property, ct);
                         break;
                     case { Kind: SymbolKind.Event }:
                         methods.Add(DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From(member.CreateDiagnosticInfo(GeneratorDiagnostics.InstanceEventDeclaredInInterface, member.Name, data.ifaceSymbol.ToDisplayString())));
                         break;
-                    case IMethodSymbol { MethodKind: MethodKind.Ordinary }:
-                        methods.Add(CalculateMethodInfo(data.ifaceContext, (IMethodSymbol)member, ct));
+                    case IMethodSymbol { MethodKind: MethodKind.Ordinary } method:
+                        methods.Add(CalculateMethodInfo(data.ifaceContext, method, ct));
                         break;
                 }
             }
@@ -151,6 +151,158 @@ namespace Microsoft.Interop
             bool shadowsBaseMethod = comMethodDeclaringSyntax.Modifiers.Any(SyntaxKind.NewKeyword);
             var comMethodInfo = new ComMethodInfo(comMethodDeclaringSyntax, method.Name, attributeInfos.MoveToImmutable().ToSequenceEqual(), shadowsBaseMethod);
             return DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From((comMethodInfo, method));
+        }
+
+        /// <summary>
+        /// Adds one <see cref="ComMethodInfo"/> per accessor (get first, then set) for a property declared on a
+        /// <c>[GeneratedComInterface]</c>-attributed interface, or a single diagnostic if the property's
+        /// declaration shape is not supported by source-generated COM.
+        /// </summary>
+        /// <remarks>
+        /// Phase 1 only accepts bare auto-property accessors: <c>T Name { get; set; }</c>, <c>{ get; }</c>, or
+        /// <c>{ set; }</c>, optionally with accessor-level accessibility modifiers (e.g. <c>private set</c>).
+        /// All other shapes (indexers, expression-bodied properties, accessor bodies, auto-property initializers,
+        /// any modifier on the property declaration itself, and <c>init</c> accessors) currently produce the
+        /// <see cref="GeneratorDiagnostics.InstancePropertyDeclaredInInterface"/> diagnostic. Each of these is
+        /// tracked as a follow-up.
+        /// </remarks>
+        private static void AddPropertyAccessorInfos(
+            ImmutableArray<DiagnosticOr<(ComMethodInfo, IMethodSymbol)>>.Builder methods,
+            ComInterfaceInfo ifaceContext,
+            INamedTypeSymbol ifaceSymbol,
+            IPropertySymbol property,
+            CancellationToken ct)
+        {
+            ct.ThrowIfCancellationRequested();
+
+            // For externally-defined contexts, mirror the ordinary-method fast path: emit ComMethodInfos with no
+            // declaring syntax and rely on the source-side compilation to validate the property shape.
+            if (ifaceContext.IsExternallyDefined)
+            {
+                AddExternallyDefinedAccessor(methods, property.GetMethod);
+                AddExternallyDefinedAccessor(methods, property.SetMethod);
+                return;
+            }
+
+            Location interfaceLocation = ifaceContext.Declaration.GetLocation();
+            Location? propertyLocationInAttributedInterfaceDeclaration = null;
+            foreach (var propertyLocation in property.Locations)
+            {
+                if (propertyLocation.SourceTree == interfaceLocation.SourceTree
+                    && interfaceLocation.SourceSpan.Contains(propertyLocation.SourceSpan))
+                {
+                    propertyLocationInAttributedInterfaceDeclaration = propertyLocation;
+                    break;
+                }
+            }
+
+            if (propertyLocationInAttributedInterfaceDeclaration is null)
+            {
+                methods.Add(DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From(
+                    DiagnosticInfo.Create(GeneratorDiagnostics.MethodNotDeclaredInAttributedInterface, property.Locations.FirstOrDefault(), property.ToDisplayString())));
+                return;
+            }
+
+            PropertyDeclarationSyntax? propertyDeclaringSyntax = null;
+            foreach (var declaringSyntaxReference in property.DeclaringSyntaxReferences)
+            {
+                if (declaringSyntaxReference.GetSyntax(ct) is PropertyDeclarationSyntax candidate
+                    && candidate.GetLocation().SourceSpan.Contains(propertyLocationInAttributedInterfaceDeclaration.SourceSpan))
+                {
+                    propertyDeclaringSyntax = candidate;
+                    break;
+                }
+            }
+            if (propertyDeclaringSyntax is null)
+            {
+                // Either no PropertyDeclarationSyntax was found (e.g. indexer with IndexerDeclarationSyntax)
+                // or the syntax tree doesn't cover the located position. Fall back to the generic
+                // unsupported-property diagnostic so the user gets a clear "this isn't supported" signal.
+                methods.Add(DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From(
+                    property.CreateDiagnosticInfo(GeneratorDiagnostics.InstancePropertyDeclaredInInterface, property.Name, ifaceSymbol.ToDisplayString())));
+                return;
+            }
+
+            DiagnosticInfo? shapeDiagnostic = GetDiagnosticIfUnsupportedPropertyShape(propertyDeclaringSyntax, property, ifaceSymbol);
+            if (shapeDiagnostic is not null)
+            {
+                methods.Add(DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From(shapeDiagnostic));
+                return;
+            }
+
+            // Emit one ComMethodInfo per accessor, in vtable slot order (get first, then set), matching the
+            // CCW vtable layout produced by the built-in CLR for a [ComVisible] interface.
+            AddPropertyAccessor(methods, propertyDeclaringSyntax, property.GetMethod);
+            AddPropertyAccessor(methods, propertyDeclaringSyntax, property.SetMethod);
+        }
+
+        private static void AddExternallyDefinedAccessor(
+            ImmutableArray<DiagnosticOr<(ComMethodInfo, IMethodSymbol)>>.Builder methods,
+            IMethodSymbol? accessor)
+        {
+            if (accessor is null)
+            {
+                return;
+            }
+
+            methods.Add(DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From((
+                new ComMethodInfo(null, accessor.Name, accessor.GetAttributes().Select(AttributeInfo.From).ToImmutableArray().ToSequenceEqual(), isUserDefinedShadowingMethod: false),
+                accessor)));
+        }
+
+        private static void AddPropertyAccessor(
+            ImmutableArray<DiagnosticOr<(ComMethodInfo, IMethodSymbol)>>.Builder methods,
+            PropertyDeclarationSyntax propertyDeclaringSyntax,
+            IMethodSymbol? accessor)
+        {
+            if (accessor is null)
+            {
+                return;
+            }
+
+            var attributes = accessor.GetAttributes();
+            var attributeInfos = ImmutableArray.CreateBuilder<AttributeInfo>(attributes.Length);
+            foreach (var attr in attributes)
+            {
+                attributeInfos.Add(AttributeInfo.From(attr));
+            }
+
+            var comMethodInfo = new ComMethodInfo(propertyDeclaringSyntax, accessor.Name, attributeInfos.MoveToImmutable().ToSequenceEqual(), isUserDefinedShadowingMethod: false);
+            methods.Add(DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From((comMethodInfo, accessor)));
+        }
+
+        private static DiagnosticInfo? GetDiagnosticIfUnsupportedPropertyShape(PropertyDeclarationSyntax propertyDeclaringSyntax, IPropertySymbol property, INamedTypeSymbol ifaceSymbol)
+        {
+            if (property.IsIndexer
+                || propertyDeclaringSyntax.Modifiers.Count > 0
+                || propertyDeclaringSyntax.ExpressionBody is not null
+                || propertyDeclaringSyntax.Initializer is not null
+                || HasUnsupportedAccessorShape(propertyDeclaringSyntax.AccessorList))
+            {
+                return property.CreateDiagnosticInfo(GeneratorDiagnostics.InstancePropertyDeclaredInInterface, property.Name, ifaceSymbol.ToDisplayString());
+            }
+
+            return null;
+
+            static bool HasUnsupportedAccessorShape(AccessorListSyntax? accessorList)
+            {
+                if (accessorList is null)
+                {
+                    return false;
+                }
+
+                foreach (var accessor in accessorList.Accessors)
+                {
+                    if (accessor.Body is not null
+                        || accessor.ExpressionBody is not null
+                        || accessor.Keyword.IsKind(SyntaxKind.InitKeyword))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
         }
     }
 }

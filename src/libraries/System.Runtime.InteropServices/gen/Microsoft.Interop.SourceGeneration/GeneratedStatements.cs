@@ -69,6 +69,21 @@ namespace Microsoft.Interop
             }
         }
 
+        /// <summary>
+        /// Create the standard set of generated statements for an unmanaged-to-managed stub whose
+        /// managed-side invocation is a property accessor. For a getter the body assigns the property
+        /// read into the return identifier (<c>__retVal = propertyAccess</c>); for a setter it assigns
+        /// the single managed parameter into the property (<c>propertyAccess = value</c>).
+        /// </summary>
+        public static GeneratedStatements CreateForProperty(BoundGenerators marshallers, StubIdentifierContext context, ExpressionSyntax propertyAccess, bool isSetter)
+        {
+            GeneratedStatements statements = Create(marshallers, context);
+            return statements with
+            {
+                InvokeStatement = GenerateStatementForProperty(marshallers, context with { CurrentStage = StubIdentifierContext.Stage.Invoke }, propertyAccess, isSetter)
+            };
+        }
+
         private static ImmutableArray<StatementSyntax> GenerateStatementsForStubContext(BoundGenerators marshallers, StubIdentifierContext context)
         {
             ImmutableArray<StatementSyntax>.Builder statementsToUpdate = ImmutableArray.CreateBuilder<StatementSyntax>();
@@ -147,6 +162,35 @@ namespace Microsoft.Interop
                         SyntaxKind.SimpleAssignmentExpression,
                         IdentifierName(context.GetIdentifiers(marshallers.ManagedReturnMarshaller.TypeInfo).managed),
                         invoke));
+        }
+
+        private static ExpressionStatementSyntax GenerateStatementForProperty(BoundGenerators marshallers, StubIdentifierContext context, ExpressionSyntax propertyAccess, bool isSetter)
+        {
+            if (context.CurrentStage != StubIdentifierContext.Stage.Invoke)
+            {
+                throw new ArgumentException("CurrentStage must be Invoke");
+            }
+
+            if (isSetter)
+            {
+                // Setter: assign the single managed parameter into the property.
+                //   propertyAccess = <managedValueIdentifier>;
+                IBoundMarshallingGenerator valueParameterMarshaller = marshallers.ManagedParameterMarshallers.Single();
+                ExpressionSyntax valueExpression = valueParameterMarshaller.AsManagedArgument(context).Expression;
+                return ExpressionStatement(
+                    AssignmentExpression(
+                        SyntaxKind.SimpleAssignmentExpression,
+                        propertyAccess,
+                        valueExpression));
+            }
+
+            // Getter: assign the property read into the managed return identifier.
+            //   <managedReturnIdentifier> = propertyAccess;
+            return ExpressionStatement(
+                AssignmentExpression(
+                    SyntaxKind.SimpleAssignmentExpression,
+                    IdentifierName(context.GetIdentifiers(marshallers.ManagedReturnMarshaller.TypeInfo).managed),
+                    propertyAccess));
         }
 
         private static ImmutableArray<CatchClauseSyntax> GenerateCatchClauseForManagedException(BoundGenerators marshallers, StubIdentifierContext context)

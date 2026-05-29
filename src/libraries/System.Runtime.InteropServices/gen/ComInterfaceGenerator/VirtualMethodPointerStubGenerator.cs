@@ -20,7 +20,7 @@ namespace Microsoft.Interop
         internal const string VirtualMethodTableIdentifier = "__vtable";
         internal const string VirtualMethodTarget = "__target";
 
-        public static (MethodDeclarationSyntax, ImmutableArray<DiagnosticInfo>) GenerateManagedToNativeStub(
+        public static (MemberDeclarationSyntax, ImmutableArray<DiagnosticInfo>) GenerateManagedToNativeStub(
             SourceAvailableIncrementalMethodStubGenerationContext methodStub,
             Func<EnvironmentFlags, MarshalDirection, IMarshallingGeneratorResolver> generatorResolverCreator)
         {
@@ -85,12 +85,28 @@ namespace Microsoft.Interop
             // with no additional decorators.
             Debug.Assert(methodStub.TypeKeyOwner.Syntax is NameSyntax);
 
-            return (
-                PrintGeneratedSource(
+            MemberDeclarationSyntax stubDeclaration;
+            if (methodStub.MemberKind is StubMemberKind.PropertyGetter or StubMemberKind.PropertySetter)
+            {
+                // Emit a property declaration containing only the relevant accessor (get or set) with the
+                // stub body inline. The writer is responsible for merging the get and set halves of a single
+                // property's accessor pair into one PropertyDeclarationSyntax before output.
+                stubDeclaration = PrintPropertyAccessorStub(
+                    methodStub,
+                    code)
+                    .WithExplicitInterfaceSpecifier(ExplicitInterfaceSpecifier((NameSyntax)methodStub.TypeKeyOwner.Syntax));
+            }
+            else
+            {
+                stubDeclaration = PrintGeneratedSource(
                     methodStub.StubMethodSyntaxTemplate,
                     methodStub.SignatureContext,
                     code)
-                    .WithExplicitInterfaceSpecifier(ExplicitInterfaceSpecifier((NameSyntax)methodStub.TypeKeyOwner.Syntax)),
+                    .WithExplicitInterfaceSpecifier(ExplicitInterfaceSpecifier((NameSyntax)methodStub.TypeKeyOwner.Syntax));
+            }
+
+            return (
+                stubDeclaration,
                 methodStub.Diagnostics.Array.AddRange(diagnostics.Diagnostics));
         }
 
@@ -125,9 +141,36 @@ namespace Microsoft.Interop
                 .WithBody(stubCode);
         }
 
+        private static PropertyDeclarationSyntax PrintPropertyAccessorStub(
+            SourceAvailableIncrementalMethodStubGenerationContext methodStub,
+            BlockSyntax stubCode)
+        {
+            Debug.Assert(methodStub.MemberKind is StubMemberKind.PropertyGetter or StubMemberKind.PropertySetter);
+            bool isSetter = methodStub.MemberKind is StubMemberKind.PropertySetter;
+
+            // For a getter, the stub return type is the property's value type and the parameter list is empty.
+            // For a setter, the stub return type is void and the parameter list is a single 'value' parameter
+            // matching the property's value type — but in C# property syntax that parameter is implicit and
+            // its type is taken from the property declaration, so we drop it here.
+            TypeSyntax propertyType = isSetter
+                ? methodStub.SignatureContext.StubParameters.Single().Type!
+                : methodStub.SignatureContext.StubReturnType;
+
+            SyntaxKind accessorKind = isSetter
+                ? SyntaxKind.SetAccessorDeclaration
+                : SyntaxKind.GetAccessorDeclaration;
+
+            AccessorDeclarationSyntax accessor = AccessorDeclaration(accessorKind)
+                .WithBody(stubCode);
+
+            return PropertyDeclaration(propertyType, Identifier(methodStub.TemplateName))
+                .WithAccessorList(
+                    AccessorList(SingletonList(accessor)));
+        }
+
         private const string ManagedThisParameterIdentifier = "@this";
 
-        public static (MethodDeclarationSyntax, ImmutableArray<DiagnosticInfo>) GenerateNativeToManagedStub(
+        public static (MemberDeclarationSyntax, ImmutableArray<DiagnosticInfo>) GenerateNativeToManagedStub(
             SourceAvailableIncrementalMethodStubGenerationContext methodStub,
             Func<EnvironmentFlags, MarshalDirection, IMarshallingGeneratorResolver> generatorResolverCreator)
         {
@@ -141,10 +184,24 @@ namespace Microsoft.Interop
                 diagnostics,
                 generatorResolverCreator(methodStub.EnvironmentFlags, MarshalDirection.UnmanagedToManaged));
 
-            BlockSyntax code = stubGenerator.GenerateStubBody(
-                MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+            BlockSyntax code;
+            if (methodStub.MemberKind is StubMemberKind.PropertyGetter or StubMemberKind.PropertySetter)
+            {
+                // Property accessors must invoke the managed implementation via property syntax.
+                ExpressionSyntax propertyAccess = MemberAccessExpression(
+                    SyntaxKind.SimpleMemberAccessExpression,
                     IdentifierName(ManagedThisParameterIdentifier),
-                    IdentifierName(methodStub.StubMethodSyntaxTemplate.Identifier)));
+                    IdentifierName(methodStub.TemplateName));
+                code = stubGenerator.GenerateStubBodyForProperty(propertyAccess, isSetter: methodStub.MemberKind is StubMemberKind.PropertySetter);
+            }
+            else
+            {
+                Debug.Assert(methodStub.MemberKind is StubMemberKind.Method);
+                code = stubGenerator.GenerateStubBody(
+                    MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                        IdentifierName(ManagedThisParameterIdentifier),
+                        IdentifierName(methodStub.StubMethodSyntaxTemplate.Identifier)));
+            }
 
             (ParameterListSyntax unmanagedParameterList, TypeSyntax returnType, _) = stubGenerator.GenerateAbiMethodSignatureData();
 

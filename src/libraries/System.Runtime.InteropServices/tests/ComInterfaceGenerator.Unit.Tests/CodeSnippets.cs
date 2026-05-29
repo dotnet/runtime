@@ -638,7 +638,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             }
             """;
 
-        public string InterfaceWithPropertiesAndEvents => $$"""
+        public string InterfaceWithEvents => $$"""
             using System;
             using System.Runtime.CompilerServices;
             using System.Runtime.InteropServices;
@@ -650,13 +650,40 @@ namespace ComInterfaceGenerator.Unit.Tests
             {{GeneratedComInterface()}}
             partial interface INativeAPI
             {
-                int {|#0:Property|} { get; set; }
-
-                public static int StaticProperty { get; set; }
-
-                event EventHandler {|#1:Event|};
+                event EventHandler {|#0:Event|};
 
                 public static event EventHandler StaticEvent;
+            }
+
+            {{_attributeProvider.AdditionalUserRequiredInterfaces("INativeAPI")}}
+
+            interface IOtherInterface
+            {
+                event EventHandler Event;
+
+                public static event EventHandler StaticEvent;
+            }
+            """;
+
+        public string InterfaceWithProperties => $$"""
+            using System;
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+
+            [assembly:DisableRuntimeMarshalling]
+
+            {{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
+            {{GeneratedComInterface()}}
+            partial interface INativeAPI
+            {
+                int ReadWrite { get; set; }
+
+                int ReadOnly { get; }
+
+                int WriteOnly { set; }
+
+                public static int StaticProperty { get; set; }
             }
 
             {{_attributeProvider.AdditionalUserRequiredInterfaces("INativeAPI")}}
@@ -666,10 +693,6 @@ namespace ComInterfaceGenerator.Unit.Tests
                 int Property { get; set; }
 
                 public static int StaticProperty { get; set; }
-
-                event EventHandler Event;
-
-                public static event EventHandler StaticEvent;
             }
             """;
 

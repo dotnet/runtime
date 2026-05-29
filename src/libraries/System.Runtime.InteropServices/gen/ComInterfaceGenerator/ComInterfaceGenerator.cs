@@ -341,14 +341,26 @@ namespace Microsoft.Interop
                 owningInterfaceInfo.Type,
                 declaringType,
                 generatorDiagnostics.Diagnostics.ToSequenceEqualImmutableArray(),
-                ComInterfaceDispatchMarshallingInfo.Instance);
+                ComInterfaceDispatchMarshallingInfo.Instance,
+                ClassifyMemberKind(symbol));
         }
 
-        internal static IncrementalMethodStubGenerationContext CalculateStubInformation(MethodDeclarationSyntax? syntax, IMethodSymbol symbol, int index, StubEnvironment environment, ComInterfaceInfo owningInterface, CancellationToken ct)
+        private static StubMemberKind ClassifyMemberKind(IMethodSymbol symbol) => symbol.MethodKind switch
         {
-            ISignatureDiagnosticLocations locations = syntax is null
-                ? NoneSignatureDiagnosticLocations.Instance
-                : new MethodSignatureDiagnosticLocations(syntax);
+            MethodKind.PropertyGet => StubMemberKind.PropertyGetter,
+            MethodKind.PropertySet => StubMemberKind.PropertySetter,
+            _ => StubMemberKind.Method,
+        };
+
+        internal static IncrementalMethodStubGenerationContext CalculateStubInformation(MemberDeclarationSyntax? syntax, IMethodSymbol symbol, int index, StubEnvironment environment, ComInterfaceInfo owningInterface, CancellationToken ct)
+        {
+            ISignatureDiagnosticLocations locations = syntax switch
+            {
+                null => NoneSignatureDiagnosticLocations.Instance,
+                MethodDeclarationSyntax methodSyntax => new MethodSignatureDiagnosticLocations(methodSyntax),
+                PropertyDeclarationSyntax propertySyntax => CreatePropertyAccessorDiagnosticLocations(propertySyntax, symbol),
+                _ => throw new UnreachableException(),
+            };
 
             var sourcelessStubInformation = CalculateSharedStubInformation(
                 symbol,
@@ -362,11 +374,24 @@ namespace Microsoft.Interop
                 return sourcelessStubInformation;
 
             var containingSyntaxContext = new ContainingSyntaxContext(syntax);
-            var methodSyntaxTemplate = new ContainingSyntax(
-                new SyntaxTokenList(syntax.Modifiers.Where(static m => !m.IsKind(SyntaxKind.NewKeyword) && !m.IsKind(SyntaxKind.PartialKeyword) && !m.IsKind(SyntaxKind.VirtualKeyword))).StripAccessibilityModifiers(),
-                SyntaxKind.MethodDeclaration,
-                syntax.Identifier,
-                syntax.TypeParameterList);
+            ContainingSyntax methodSyntaxTemplate = syntax switch
+            {
+                MethodDeclarationSyntax methodSyntax => new ContainingSyntax(
+                    new SyntaxTokenList(methodSyntax.Modifiers.Where(static m => !m.IsKind(SyntaxKind.NewKeyword) && !m.IsKind(SyntaxKind.PartialKeyword) && !m.IsKind(SyntaxKind.VirtualKeyword))).StripAccessibilityModifiers(),
+                    SyntaxKind.MethodDeclaration,
+                    methodSyntax.Identifier,
+                    methodSyntax.TypeParameterList),
+                // Property accessors are emitted as plain methods named e.g. 'get_Foo' / 'set_Foo'.
+                // Phase 1 disallows property-declaration modifiers, so we deliberately drop them here.
+                PropertyDeclarationSyntax => new ContainingSyntax(
+                    TokenList(),
+                    SyntaxKind.MethodDeclaration,
+                    Identifier(symbol.Name),
+                    typeParameters: null),
+                _ => throw new UnreachableException(),
+            };
+
+            StubMemberKind memberKind = ClassifyMemberKind(symbol);
 
             return new SourceAvailableIncrementalMethodStubGenerationContext(
                 sourcelessStubInformation.SignatureContext,
@@ -380,7 +405,20 @@ namespace Microsoft.Interop
                 sourcelessStubInformation.TypeKeyOwner,
                 sourcelessStubInformation.DeclaringType,
                 sourcelessStubInformation.Diagnostics,
-                ComInterfaceDispatchMarshallingInfo.Instance);
+                ComInterfaceDispatchMarshallingInfo.Instance,
+                memberKind);
+        }
+
+        // For a property accessor, the user-visible source location is the property's identifier.
+        // The getter has no managed parameters; the setter has the implicit 'value' parameter which we report at
+        // the property identifier (it has no source location of its own).
+        private static MethodSignatureDiagnosticLocations CreatePropertyAccessorDiagnosticLocations(PropertyDeclarationSyntax propertySyntax, IMethodSymbol accessor)
+        {
+            Location identifierLocation = propertySyntax.Identifier.GetLocation();
+            ImmutableArray<Location> parameterLocations = accessor.MethodKind is MethodKind.PropertySet
+                ? ImmutableArray.Create(identifierLocation)
+                : ImmutableArray<Location>.Empty;
+            return new MethodSignatureDiagnosticLocations(accessor.Name, parameterLocations, identifierLocation);
         }
 
         private static MarshalDirection GetDirectionFromOptions(ComInterfaceOptions options)
@@ -561,12 +599,47 @@ namespace Microsoft.Interop
                 writer.WriteLine('}');
             }
 
+            PropertyDeclarationSyntax? bufferedGetter = null;
             foreach (ComMethodContext declaredMethod in data.DeclaredMethods)
             {
                 if (declaredMethod.ManagedToUnmanagedStub is GeneratedStubCodeContext managedToUnmanagedContext)
                 {
-                    writer.InnerWriter.WriteLine();
-                    writer.WriteMultilineNode(managedToUnmanagedContext.Stub.Node.NormalizeWhitespace());
+                    MemberDeclarationSyntax node = managedToUnmanagedContext.Stub.Node;
+                    if (node is PropertyDeclarationSyntax propertyDecl)
+                    {
+                        // Property accessor stubs arrive one per accessor (get then set when both exist).
+                        // Merge consecutive get+set halves of the same property into a single property
+                        // declaration before emitting, so the resulting code is a valid explicit
+                        // interface property implementation.
+                        bool isGetter = propertyDecl.AccessorList!.Accessors[0].Kind() is SyntaxKind.GetAccessorDeclaration;
+                        if (isGetter)
+                        {
+                            FlushBufferedPropertyGetter(writer, ref bufferedGetter);
+                            bufferedGetter = propertyDecl;
+                        }
+                        else if (bufferedGetter is not null
+                            && bufferedGetter.Identifier.Text == propertyDecl.Identifier.Text
+                            && (bufferedGetter.ExplicitInterfaceSpecifier?.Name.ToString() ?? string.Empty)
+                                == (propertyDecl.ExplicitInterfaceSpecifier?.Name.ToString() ?? string.Empty))
+                        {
+                            PropertyDeclarationSyntax merged = MergePropertyAccessors(bufferedGetter, propertyDecl);
+                            writer.InnerWriter.WriteLine();
+                            writer.WriteMultilineNode(merged.NormalizeWhitespace());
+                            bufferedGetter = null;
+                        }
+                        else
+                        {
+                            FlushBufferedPropertyGetter(writer, ref bufferedGetter);
+                            writer.InnerWriter.WriteLine();
+                            writer.WriteMultilineNode(propertyDecl.NormalizeWhitespace());
+                        }
+                    }
+                    else
+                    {
+                        FlushBufferedPropertyGetter(writer, ref bufferedGetter);
+                        writer.InnerWriter.WriteLine();
+                        writer.WriteMultilineNode(node.NormalizeWhitespace());
+                    }
                 }
 
                 if (declaredMethod.UnmanagedToManagedStub is GeneratedStubCodeContext unmanagedToManagedContext &&
@@ -576,6 +649,7 @@ namespace Microsoft.Interop
                     writer.WriteMultilineNode(unmanagedToManagedContext.Stub.Node.NormalizeWhitespace());
                 }
             }
+            FlushBufferedPropertyGetter(writer, ref bufferedGetter);
 
             foreach (ComMethodContext inheritedStub in data.InheritedMethods)
             {
@@ -584,7 +658,16 @@ namespace Microsoft.Interop
                     continue;
                 }
 
-                MethodDeclarationSyntax preparedNode = shadowImplementationContextContext.Stub.Node
+                // Inherited property accessors require the same merge-into-property treatment as declared
+                // ones, plus rewriting the explicit interface specifier to the derived interface. That is
+                // not implemented in the Phase 1 PoC; skip emission for now so the rest of the surface still
+                // compiles. Inherited properties are tracked as a follow-up.
+                if (shadowImplementationContextContext.Stub.Node is not MethodDeclarationSyntax methodNode)
+                {
+                    continue;
+                }
+
+                MethodDeclarationSyntax preparedNode = methodNode
                     .WithExplicitInterfaceSpecifier(
                         ExplicitInterfaceSpecifier(ParseName(data.Interface.Info.Type.FullTypeName)))
                     .NormalizeWhitespace();
@@ -600,6 +683,14 @@ namespace Microsoft.Interop
                     continue;
                 }
 
+                // Phase 1 skips emitting the inherited unreachable forwarder for property accessors;
+                // see the inherited-shadow loop above for context. The discriminator lives on the base
+                // context, so this pattern doesn't need to narrow to the source-available subtype.
+                if (inheritedStub.GenerationContext is { MemberKind: StubMemberKind.PropertyGetter or StubMemberKind.PropertySetter })
+                {
+                    continue;
+                }
+
                 writer.InnerWriter.WriteLine();
                 writer.Write($"{inheritedStub.GenerationContext.SignatureContext.StubReturnType} {inheritedStub.OriginalDeclaringInterface.Info.Type.FullTypeName}.{inheritedStub.MethodInfo.MethodName}");
                 writer.Write($"({string.Join(", ", inheritedStub.GenerationContext.SignatureContext.StubParameters.Select(p => p.NormalizeWhitespace().ToString()))})");
@@ -608,6 +699,27 @@ namespace Microsoft.Interop
 
             writer.Indent--;
             writer.WriteLine('}');
+        }
+
+        private static void FlushBufferedPropertyGetter(IndentedTextWriter writer, ref PropertyDeclarationSyntax? bufferedGetter)
+        {
+            if (bufferedGetter is null)
+            {
+                return;
+            }
+            writer.InnerWriter.WriteLine();
+            writer.WriteMultilineNode(bufferedGetter.NormalizeWhitespace());
+            bufferedGetter = null;
+        }
+
+        private static PropertyDeclarationSyntax MergePropertyAccessors(
+            PropertyDeclarationSyntax getter,
+            PropertyDeclarationSyntax setter)
+        {
+            var combined = new List<AccessorDeclarationSyntax>(2);
+            combined.AddRange(getter.AccessorList!.Accessors);
+            combined.AddRange(setter.AccessorList!.Accessors);
+            return getter.WithAccessorList(AccessorList(List(combined)));
         }
 
         private static void WriteIUnknownDerivedOriginalInterfacePart(IndentedTextWriter writer, ComInterfaceAndMethodsContext data)

@@ -31,13 +31,10 @@ namespace ComInterfaceGenerator.Unit.Tests
                     .WithLocation(0)
                     .WithArguments("IComInterface2")
             } };
-            yield return new object[] { ID(), codeSnippets.InterfaceWithPropertiesAndEvents, new[]
+            yield return new object[] { ID(), codeSnippets.InterfaceWithEvents, new[]
             {
-               VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.InstancePropertyDeclaredInInterface)
-                   .WithLocation(0)
-                   .WithArguments("Property", "INativeAPI"),
                VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.InstanceEventDeclaredInInterface)
-                   .WithLocation(1)
+                   .WithLocation(0)
                    .WithArguments("Event", "INativeAPI"),
             } };
 

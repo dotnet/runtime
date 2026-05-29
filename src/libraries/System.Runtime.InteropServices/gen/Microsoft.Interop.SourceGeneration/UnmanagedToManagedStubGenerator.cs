@@ -53,6 +53,30 @@ namespace Microsoft.Interop
                 _marshallers,
                 StubCodeContext.DefaultNativeToManagedStub,
                 _context, methodToInvoke);
+            return BuildBodyFromStatements(statements);
+        }
+
+        /// <summary>
+        /// Generate the method body of the unmanaged-to-managed ComWrappers-based stub for a property
+        /// accessor. The natural <c>methodToInvoke(args)</c> shape doesn't apply — for a getter the
+        /// body assigns the property read into the return slot (<c>retVal = propertyAccess</c>) and
+        /// for a setter it assigns the value parameter into the property (<c>propertyAccess = value</c>).
+        /// </summary>
+        /// <param name="propertyAccess">Member-access expression naming the managed-side property
+        /// (e.g., <c>@this.Foo</c>).</param>
+        /// <param name="isSetter">True if this stub is the property setter; false for the getter.</param>
+        public BlockSyntax GenerateStubBodyForProperty(ExpressionSyntax propertyAccess, bool isSetter)
+        {
+            GeneratedStatements statements = GeneratedStatements.CreateForProperty(
+                _marshallers,
+                _context,
+                propertyAccess,
+                isSetter);
+            return BuildBodyFromStatements(statements);
+        }
+
+        private BlockSyntax BuildBodyFromStatements(GeneratedStatements statements)
+        {
             Debug.Assert(statements.CleanupCalleeAllocated.IsEmpty);
 
             bool shouldInitializeVariables =
