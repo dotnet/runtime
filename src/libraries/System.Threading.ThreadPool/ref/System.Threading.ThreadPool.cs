@@ -77,6 +77,45 @@ namespace System.Threading
 #endif
         public static System.Threading.RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(System.Threading.WaitHandle waitObject, System.Threading.WaitOrTimerCallback callBack, object? state, uint millisecondsTimeOutInterval, bool executeOnlyOnce) { throw null; }
     }
+    public sealed partial class UnixHandleAsyncContext
+    {
+        internal UnixHandleAsyncContext() { }
+        public static bool IsSupported { get { throw null; } }
+        public bool InlineCompletions { get { throw null; } set { } }
+        public bool IsReadReady(out int observedSequenceNumber) { throw null; }
+        public bool IsWriteReady(out int observedSequenceNumber) { throw null; }
+        public System.Threading.UnixHandleAsyncContext.AsyncResult ReadAsync(System.Threading.UnixHandleAsyncContext.Operation operation, int observedSequenceNumber, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public System.Threading.UnixHandleAsyncContext.AsyncResult WriteAsync(System.Threading.UnixHandleAsyncContext.Operation operation, int observedSequenceNumber, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public System.Threading.UnixHandleAsyncContext.SyncResult ReadSync(System.Threading.UnixHandleAsyncContext.Operation operation, int observedSequenceNumber, int timeout) { throw null; }
+        public System.Threading.UnixHandleAsyncContext.SyncResult WriteSync(System.Threading.UnixHandleAsyncContext.Operation operation, int observedSequenceNumber, int timeout) { throw null; }
+        public bool AbortAndDispose() { throw null; }
+        public enum AsyncResult
+        {
+            Pending = 0,
+            Completed = 1,
+            Aborted = 2,
+        }
+        public enum OnCompletedResult
+        {
+            Completed = 1,
+            Aborted = 2,
+            Canceled = 3,
+        }
+        public enum SyncResult
+        {
+            Completed = 1,
+            Aborted = 2,
+            TimedOut = 4,
+        }
+        public abstract partial class Operation : System.Threading.IThreadPoolWorkItem
+        {
+            protected Operation() { }
+            protected internal abstract bool TryCompleteOperation(System.Runtime.InteropServices.SafeHandle handle);
+            protected internal abstract void OnCompleted(System.Threading.UnixHandleAsyncContext.OnCompletedResult result);
+            protected virtual void ExecuteThreadPoolWorkItem() { }
+            void System.Threading.IThreadPoolWorkItem.Execute() { }
+        }
+    }
     public delegate void WaitCallback(object? state);
     public delegate void WaitOrTimerCallback(object? state, bool timedOut);
 }

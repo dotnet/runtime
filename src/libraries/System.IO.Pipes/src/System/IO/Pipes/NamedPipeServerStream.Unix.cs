@@ -100,8 +100,6 @@ namespace System.IO.Pipes
 
         private void HandleAcceptedSocket(Socket acceptedSocket)
         {
-            var serverHandle = new SafePipeHandle(acceptedSocket);
-
             try
             {
                 if (IsCurrentUserOnly)
@@ -109,7 +107,7 @@ namespace System.IO.Pipes
                     uint serverEUID = Interop.Sys.GetEUid();
 
                     uint peerID;
-                    if (Interop.Sys.GetPeerID(serverHandle, out peerID) == -1)
+                    if (Interop.Sys.GetPeerID(acceptedSocket.SafeHandle, out peerID) == -1)
                     {
                         throw CreateExceptionForLastError(_instance?.PipeName);
                     }
@@ -120,14 +118,16 @@ namespace System.IO.Pipes
                     }
                 }
 
-                ConfigureSocket(acceptedSocket, serverHandle, _direction, _inBufferSize, _outBufferSize, _inheritability);
+                ConfigureSocket(acceptedSocket, _direction, _inBufferSize, _outBufferSize, _inheritability);
             }
             catch
             {
-                serverHandle.Dispose();
                 acceptedSocket.Dispose();
                 throw;
             }
+
+            // Transfer ownership of the fd from the Socket to SafePipeHandle.
+            var serverHandle = new SafePipeHandle(acceptedSocket);
 
             InitializeHandle(serverHandle, isExposed: false, isAsync: (_options & PipeOptions.Asynchronous) != 0);
             State = PipeState.Connected;
@@ -158,7 +158,7 @@ namespace System.IO.Pipes
         {
             CheckWriteOperations();
 
-            SafeHandle? handle = InternalHandle?.PipeSocketHandle;
+            SafeHandle? handle = InternalHandle;
             if (handle == null)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_PipeHandleNotSet);
@@ -179,7 +179,7 @@ namespace System.IO.Pipes
             {
                 CheckPipePropertyOperations();
                 if (!CanRead) throw new NotSupportedException(SR.NotSupported_UnreadableStream);
-                return InternalHandle?.PipeSocket.ReceiveBufferSize ?? _inBufferSize;
+                return InternalHandle?.GetSocketBufferSize(SocketOptionName.ReceiveBuffer) ?? _inBufferSize;
             }
         }
 
@@ -189,7 +189,7 @@ namespace System.IO.Pipes
             {
                 CheckPipePropertyOperations();
                 if (!CanWrite) throw new NotSupportedException(SR.NotSupported_UnwritableStream);
-                return InternalHandle?.PipeSocket.SendBufferSize ?? _outBufferSize;
+                return InternalHandle?.GetSocketBufferSize(SocketOptionName.SendBuffer) ?? _outBufferSize;
             }
         }
 
@@ -197,7 +197,7 @@ namespace System.IO.Pipes
         public void RunAsClient(PipeStreamImpersonationWorker impersonationWorker)
         {
             CheckWriteOperations();
-            SafeHandle? handle = InternalHandle?.PipeSocketHandle;
+            SafeHandle? handle = InternalHandle;
             if (handle == null)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_PipeHandleNotSet);
