@@ -48,7 +48,7 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [MemberData(nameof(ConnectedStreamConformanceTests.CopyToAsync_AllDataCopied_MemberData), MemberType = typeof(ConnectedStreamConformanceTests))]
         [DynamicDependency(nameof(ConnectedStreamConformanceTests.CopyToAsync_AllDataCopied_MemberData), typeof(ConnectedStreamConformanceTests))]
-        [SkipOnPlatform(TestPlatforms.LinuxBionic | TestPlatforms.iOS | TestPlatforms.tvOS, "Mobile platforms block binding to UNIX sockets")]
+        [SkipOnPlatform(TestPlatforms.Android | TestPlatforms.iOS | TestPlatforms.tvOS, "Mobile platforms block binding to UNIX sockets")]
         public override Task CopyToAsync_AllDataCopied(int byteCount, bool useAsync) =>
             base.CopyToAsync_AllDataCopied(byteCount, useAsync);
 
