@@ -162,17 +162,7 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <ItemGroup>
       <_AggregateExecutableReferencePath>
-        <ShimSourceCode><![CDATA[#if defined(_M_IX86)
-#define AGGREGATE_EXE_SHIM_STRINGIFY(s) #s
-#define AGGREGATE_EXE_SHIM_ALTNAME(_method) AGGREGATE_EXE_SHIM_STRINGIFY(/alternatename:_##_method=_method)
-#define AGGREGATE_EXE_SHIM_ENTRYPOINT(_name) \
-    __pragma(comment(linker, AGGREGATE_EXE_SHIM_ALTNAME(_name))) \
-    extern int __cdecl _name(int, unsigned short**);
-#else
-#define AGGREGATE_EXE_SHIM_ENTRYPOINT(_name) extern int _name(int, unsigned short**);
-#endif
-
-AGGREGATE_EXE_SHIM_ENTRYPOINT(%(_AggregateExecutableReferencePath.EntryPointSymbol))
+        <ShimSourceCode><![CDATA[extern int __stdcall %(_AggregateExecutableReferencePath.EntryPointSymbol)(int, unsigned short**);
 
 int wmain(int argc, unsigned short** argv)
 {
