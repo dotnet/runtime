@@ -627,7 +627,8 @@ if (CLR_CMAKE_HOST_UNIX OR CLR_CMAKE_HOST_WASI)
       # For OSX-Arm64, LSE instructions are enabled by default
       add_definitions(-DLSE_INSTRUCTIONS_ENABLED_BY_DEFAULT)
       add_compile_options(-mcpu=apple-m1)
-    endif(CLR_CMAKE_HOST_UNIX_ARM64)
+    endif()
+  endif()
 
   if(NOT CLR_CMAKE_HOST_BROWSER AND NOT CLR_CMAKE_HOST_WASI)
     check_c_compiler_flag(-fstack-protector-strong COMPILER_SUPPORTS_F_STACK_PROTECTOR_STRONG)
