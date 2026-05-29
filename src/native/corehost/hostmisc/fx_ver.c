@@ -44,30 +44,10 @@ bool c_fx_ver_is_empty(const c_fx_ver_t* ver)
 
 pal_char_t* c_fx_ver_as_str(const c_fx_ver_t* ver, pal_char_t* out_str, size_t out_str_len)
 {
-    bool has_pre = ver->pre != NULL && ver->pre[0] != _X('\0');
-    bool has_build = ver->build != NULL && ver->build[0] != _X('\0');
-
-    if (has_pre && has_build)
-    {
-        pal_str_printf(out_str, out_str_len, _X("%d.%d.%d") _X("%s") _X("%s"),
-            ver->major, ver->minor, ver->patch, ver->pre, ver->build);
-    }
-    else if (has_pre)
-    {
-        pal_str_printf(out_str, out_str_len, _X("%d.%d.%d") _X("%s"),
-            ver->major, ver->minor, ver->patch, ver->pre);
-    }
-    else if (has_build)
-    {
-        pal_str_printf(out_str, out_str_len, _X("%d.%d.%d") _X("%s"),
-            ver->major, ver->minor, ver->patch, ver->build);
-    }
-    else
-    {
-        pal_str_printf(out_str, out_str_len, _X("%d.%d.%d"),
-            ver->major, ver->minor, ver->patch);
-    }
-
+    pal_str_printf(out_str, out_str_len, _X("%d.%d.%d%s%s"),
+        ver->major, ver->minor, ver->patch,
+        ver->pre ? ver->pre : _X(""),
+        ver->build ? ver->build : _X(""));
     return out_str;
 }
 
@@ -234,16 +214,13 @@ static bool parse_internal(const pal_char_t* ver_str, c_fx_ver_t* out_ver, bool 
     const pal_char_t* pre_start = pat_start + pat_non_numeric;
     const pal_char_t* build_start = pal_strchr(pre_start, _X('+'));
 
-    pal_char_t* pre_buf = NULL;
     size_t pre_len = (build_start != NULL)
         ? (size_t)(build_start - pre_start)
         : pal_strlen(pre_start);
 
-    pre_buf = (pal_char_t*)malloc((pre_len + 1) * sizeof(pal_char_t));
+    pal_char_t* pre_buf = pal_strndup(pre_start, pre_len);
     if (pre_buf == NULL)
         return false;
-    memcpy(pre_buf, pre_start, pre_len * sizeof(pal_char_t));
-    pre_buf[pre_len] = _X('\0');
 
     if (!valid_identifiers(pre_buf))
     {
@@ -254,14 +231,12 @@ static bool parse_internal(const pal_char_t* ver_str, c_fx_ver_t* out_ver, bool 
     pal_char_t* build_buf = NULL;
     if (build_start != NULL)
     {
-        size_t build_len = pal_strlen(build_start);
-        build_buf = (pal_char_t*)malloc((build_len + 1) * sizeof(pal_char_t));
+        build_buf = pal_strndup(build_start, pal_strlen(build_start));
         if (build_buf == NULL)
         {
             free(pre_buf);
             return false;
         }
-        memcpy(build_buf, build_start, (build_len + 1) * sizeof(pal_char_t));
 
         if (!valid_identifiers(build_buf))
         {

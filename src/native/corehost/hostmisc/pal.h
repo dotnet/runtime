@@ -129,6 +129,19 @@ bool pal_directory_exists(const pal_char_t* path);
 // string. Caller must free() the returned pointer.
 pal_char_t* pal_getenv(const pal_char_t* name);
 
+// Duplicate the first `len` pal_char_t characters of `src` into a
+// heap-allocated, NUL-terminated buffer. Returns NULL on allocation failure.
+static inline pal_char_t* pal_strndup(const pal_char_t* src, size_t len)
+{
+    pal_char_t* buf = (pal_char_t*)malloc((len + 1) * sizeof(pal_char_t));
+    if (buf != NULL)
+    {
+        memcpy(buf, src, len * sizeof(pal_char_t));
+        buf[len] = _X('\0');
+    }
+    return buf;
+}
+
 #ifdef __cplusplus
 }
 #endif

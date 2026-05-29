@@ -356,20 +356,6 @@ void trace_error_v(const pal_char_t* format, va_list args)
     int count = pal_strlen_vprintf(format, args);
     if (count < 0)
     {
-        // Format failed. Emit a fallback to stderr/error_writer rather than
-        // dropping the error entirely, matching the C++ implementation where
-        // such failures propagated as exceptions visible to the caller.
-        const pal_char_t fallback[] = _X("Trace error: failed to format message");
-        trace_lock_acquire();
-        if (g_error_writer == NULL)
-        {
-            trace_err_print_line(fallback);
-        }
-        else
-        {
-            g_error_writer(fallback);
-        }
-        trace_lock_release();
         va_end(trace_args);
         va_end(dup_args);
         return;
@@ -378,17 +364,6 @@ void trace_error_v(const pal_char_t* format, va_list args)
     pal_char_t* buffer = (pal_char_t*)malloc((size_t)(count + 1) * sizeof(pal_char_t));
     if (buffer == NULL)
     {
-        const pal_char_t fallback[] = _X("Trace error: out of memory while formatting message");
-        trace_lock_acquire();
-        if (g_error_writer == NULL)
-        {
-            trace_err_print_line(fallback);
-        }
-        else
-        {
-            g_error_writer(fallback);
-        }
-        trace_lock_release();
         va_end(trace_args);
         va_end(dup_args);
         return;

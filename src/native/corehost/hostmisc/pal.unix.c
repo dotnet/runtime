@@ -32,9 +32,5 @@ pal_char_t* pal_getenv(const pal_char_t* name)
     if (result == NULL || result[0] == '\0')
         return NULL;
 
-    size_t needed = strlen(result) + 1;
-    pal_char_t* dup = (pal_char_t*)malloc(needed * sizeof(pal_char_t));
-    if (dup != NULL)
-        memcpy(dup, result, needed);
-    return dup;
+    return strdup(result);
 }
