@@ -52,12 +52,20 @@ safe-outputs:
     max: 1
     allowed-files:
       - ".github/workflows/ci-failure-scan.md"
+    protected-files:
+      policy: blocked
+      exclude:
+        - .github/
     labels: [agentic-workflows]
     allowed-labels: [agentic-workflows]
   push-to-pull-request-branch:
     max: 1
     allowed-files:
       - ".github/workflows/ci-failure-scan.md"
+    protected-files:
+      policy: blocked
+      exclude:
+        - .github/
   update-pull-request:
     max: 1
   create-issue:
@@ -65,6 +73,7 @@ safe-outputs:
     labels: [agentic-workflows]
     allowed-labels: [agentic-workflows]
   update-issue:
+    target: "*"
     max: 1
   noop:
     report-as-issue: false
@@ -162,17 +171,64 @@ Hard rules: no comments on issues/PRs, no edits outside `.github/workflows/ci-fa
 
    Collect the full universe of `[ci-scan]` issues and PRs (open + closed) since `window_start` via `gh search issues` / `gh search prs` with `created:>=<window_start>`. This produces a list of issue/PR numbers and metadata; do NOT read bodies with `gh`.
 
-   For metrics that require body content (`top_pipelines`), fetch the bodies of the discovered items through the `github` MCP `issue_read get` / `pull_request_read get` tool, one per item, respecting `min-integrity: approved`. Skip `[Filtered]` items.
+   For metrics that require body or comment content (rejection-keyword detection, maintainer-touch signal), fetch through the `github` MCP `issue_read get`, `pull_request_read get`, and the corresponding comments tools, one per item, respecting `min-integrity: approved`. Skip `[Filtered]` items.
 
-   Compute these KPIs:
+   Compute these KPIs.
 
-   - `issues_total`, `issues_open`, `issues_closed`
-   - `closed_last_7d`, `closed_last_30d`
-   - `median_time_to_close_30d` (hours; from `createdAt` to `closedAt` for issues closed in last 30d)
-   - `p90_time_to_close_30d`
-   - `pct_closed_as_not_planned` (state_reason `not_planned` / total closed) — proxy for false positives flagged by maintainers
-   - `prs_total`, `prs_merged`, `prs_closed_unmerged`
-   - `top_pipelines` (top 3 `definition_id` values appearing in issue bodies fetched via the `github` MCP tool per the step above; if a fetched body is `[Filtered]`, count it under `integrity_filtered_pipelines` and exclude from the top 3)
+   ### A) Acceptance classification (primary)
+
+   Each artifact (issue or PR) is classified into exactly one of three buckets. Evaluate the rules in order; the first matching rule wins.
+
+   - **Accepted** — PR merged; OR issue closed with `state_reason: completed`; OR issue still open and >= 7 days old AND touched by a MEMBER/OWNER (commented, labeled, assigned, milestoned, or linked from another issue/PR).
+   - **Rejected** — PR closed unmerged; OR issue closed with `state_reason` in `{not_planned, duplicate}`; OR ANY MEMBER/OWNER comment on the artifact matches (case-insensitive) one of: `don't disable`, `do not disable`, `do not mute`, `please don't`, `false positive`, `fix forward`, `fix-forward`, `investigation in progress`, `will investigate`, `stop filing`, `noise`, `not a real failure`, `flaky test`.
+   - **Pending** — every other artifact (no Accepted or Rejected rule has matched yet, e.g. a young untouched issue or an older open issue with only non-rejection maintainer activity). Excluded from the rate.
+
+   Compute the classification over both the 30-day and 90-day rolling windows from `now`. For each window emit:
+
+   - `accepted_n`, `rejected_n`, `pending_n`.
+   - `acceptance_rate = accepted_n / (accepted_n + rejected_n)`. Emit as `n/a` when `accepted_n + rejected_n < 10`.
+   - `acceptance_lower_bound` — Wilson score 95% lower bound on the same numerator/denominator (only when N >= 10). Use this for any single-number summary so 5/5 (N=5) does not read as 100% better than 50/55 (N=55).
+
+   ### B) Environment / scanner activity (volume)
+
+   Source CI failure counts from the scanner's own agent logs over the window. Step 1 (latest 10 runs) and Step 2 (tallies for the latest 2) are sized for the rubric-scoring path and do NOT cover 30 days, the prior-7d comparison period, or anything beyond the most recent two tallies — this section MUST enumerate scanner runs independently. Paginate `ci-failure-scan.lock.yml` runs created in the last 30 days and download the tally for each (reuse the Step 2 `awk` extractor; skip downloads when the tally file already exists from Step 2). The signature tuple is `(pipeline_definition_id, job_or_test_name, normalized_error_fingerprint)` as the scanner already produces it for filing.
+
+   ```bash
+   SINCE_30D=$(date -u -d '30 days ago' +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -v-30d +%Y-%m-%dT%H:%M:%SZ)
+   gh api --paginate \
+     "/repos/dotnet/runtime/actions/workflows/ci-failure-scan.lock.yml/runs?per_page=100&created=>=${SINCE_30D}" \
+     | jq -r '.workflow_runs[] | "\(.id) \(.created_at)"' \
+     | tee /tmp/gh-aw/agent/runs_30d.txt
+   while read -r RUN_ID RUN_CREATED; do
+     OUT="/tmp/gh-aw/agent/tally_${RUN_ID}.txt"
+     test -s "$OUT" && continue
+     gh run view "$RUN_ID" --log \
+       | awk '/^\| pipeline \|/{flag=1} flag && /^\|/{print; next} flag{exit}' \
+       > "$OUT"
+   done < /tmp/gh-aw/agent/runs_30d.txt
+   ```
+
+   Bucket each tally row by its source run's `created_at` into `last 7d`, `prior 7d` (the 7-day window ending 7 days ago), and `last 30d`. Sum failure counts within each bucket; de-duplicate signature tuples within each bucket before counting distinct signatures.
+
+   - `ci_failures_7d`, `ci_failures_30d` — total failure observations across all pipelines the scanner monitors.
+   - `ci_failures_delta_pct` — `(ci_failures_7d / ci_failures_prev_7d) - 1`, formatted as a signed percentage. Use the 7-day window ending 7 days ago as the prior period. Emit as `—` if either window has < 20 failures (too few to call a spike).
+   - `distinct_signatures_7d`, `distinct_signatures_30d` — count of distinct signature tuples observed in the window.
+   - `top_failing_pipelines_7d` — top 3 `pipeline_definition_id` values by failure count in the last 7d, with their counts.
+   - `kbes_created_7d`, `kbes_closed_7d`, `kbes_created_30d`, `kbes_closed_30d` — issues created/closed by the scanner in each window (titles prefixed `[ci-scan]`).
+   - `prs_created_7d`, `prs_merged_7d`, `prs_closed_unmerged_7d`, and the matching 30d trio — PRs created by the scanner in each window.
+
+   ### C) Coverage and latency
+
+   - `coverage_30d = kbes_created_30d / distinct_signatures_30d`. Emit as `n/a` when `distinct_signatures_30d < 10`. A drop here means the scanner is missing repeated failures.
+   - `time_to_kbe_median_30d`, `time_to_kbe_p90_30d` — for each signature first observed in the window that did get a KBE filed, hours between first observation and the KBE's `createdAt`. Skip signatures with no KBE.
+
+   ### D) Diagnostics
+
+   Drill-down counts (last 30d) — surface them so rubric findings have quantitative grounding, do not headline them:
+
+   - `complaint_count` — MEMBER/OWNER comments on scanner artifacts matching the rejection-keyword set in section A.
+   - `duplicate_count` — issues closed with `state_reason: duplicate` or labeled `duplicate`.
+   - `scanner_pr_ci_fail_count` — PRs whose most recent commit had any required-status check report `failure`/`error` before maintainer review (proxy for "should the pre-emit checklist have caught it").
 
    Emit a body with this exact shape (regenerate every tick):
 
@@ -182,49 +238,50 @@ Hard rules: no comments on issues/PRs, no edits outside `.github/workflows/ci-fa
 
    ## Snapshot — <UTC timestamp>
 
+   Primary metric: **scanner artifact acceptance rate** = accepted / (accepted + rejected), measured over a rolling window. Pending artifacts (no accepted/rejected rule has matched yet) are excluded from the denominator.
+
+   | window | accepted | rejected | pending | acceptance | Wilson 95% lower |
+   |---|---|---|---|---|---|
+   | last 30d | <a30> | <r30> | <p30> | <pct30 or `n/a (<n><10)`> | <wilson30 or `—`> |
+   | last 90d | <a90> | <r90> | <p90> | <pct90 or `n/a (<n><10)`> | <wilson90 or `—`> |
+
+   ### CI environment
+
+   | metric | 7d | 30d |
+   |---|---|---|
+   | Failures observed | <ci_failures_7d> (Δ <ci_failures_delta_pct> vs prior 7d) | <ci_failures_30d> |
+   | Distinct signatures | <distinct_signatures_7d> | <distinct_signatures_30d> |
+   | Top failing pipelines (7d) | <name1> (<n1>), <name2> (<n2>), <name3> (<n3>) | — |
+
+   ### Scanner activity
+
+   | artifact | 7d created | 7d resolved | 30d created | 30d resolved |
+   |---|---|---|---|---|
+   | KBE issues | <kbes_created_7d> | <kbes_closed_7d> | <kbes_created_30d> | <kbes_closed_30d> |
+   | Test-disable PRs | <prs_created_7d> | merged <prs_merged_7d>, closed <prs_closed_unmerged_7d> | <prs_created_30d> | merged <prs_merged_30d>, closed <prs_closed_unmerged_30d> |
+
+   ### Coverage and latency (30d)
+
    | metric | value |
    |---|---|
-   | Window | <window_start> -> now (<N> days) |
-   | Issues filed | <issues_total> (open <issues_open>, closed <issues_closed>) |
-   | Closed last 7d / 30d | <closed_last_7d> / <closed_last_30d> |
-   | Median time-to-close (30d) | <h>h |
-   | P90 time-to-close (30d) | <h>h |
-   | Closed as `not planned` | <pct>% (proxy for false-positive rate) |
-   | PRs filed | <prs_total> (merged <prs_merged>, closed-unmerged <prs_closed_unmerged>) |
-   | Top pipelines | <name1> (<n1>), <name2> (<n2>), <name3> (<n3>) |
+   | Coverage (KBEs filed / distinct signatures) | <coverage_30d or `n/a (<n><10)`> |
+   | Time to KBE (median / P90) | <ttk_med>h / <ttk_p90>h |
 
-   ## Weekly volume (last 12 weeks)
+   ### Diagnostics (30d)
 
-   ```mermaid
-   xychart-beta
-       title "[ci-scan] issues filed vs closed per ISO week"
-       x-axis [<w1>, <w2>, ..., <w12>]
-       y-axis "count" 0 --> <max>
-       bar [<filed_w1>, ..., <filed_w12>]
-       line [<closed_w1>, ..., <closed_w12>]
-   ```
-
-   ## Median time-to-close (last 12 weeks)
-
-   ```mermaid
-   xychart-beta
-       title "median hours from created to closed, per ISO week"
-       x-axis [<w1>, ..., <w12>]
-       y-axis "hours" 0 --> <max>
-       line [<med_w1>, ..., <med_w12>]
-   ```
-
-   <details>
-   <summary>Raw weekly buckets (last 12 weeks)</summary>
-
-   | iso-week | filed | closed | median-hrs |
-   |---|---|---|---|
-   | <w1> | <n> | <n> | <h> |
-   ...
-   </details>
-
-   The raw weekly buckets table MUST be windowed to the same 12 weeks the mermaid charts use — emit at most 12 rows. Older buckets are dropped on each regeneration; this is intentional (the tracker body is a current snapshot, not a permanent ledger).
+   | signal | count |
+   |---|---|
+   | Maintainer complaint comments | <complaint_count> |
+   | Duplicate KBEs | <duplicate_count> |
+   | Scanner PRs failing CI before review | <scanner_pr_ci_fail_count> |
    ````
+
+   Suppression rules:
+
+   - If both windows have `accepted + rejected < 10`, replace the acceptance-rate table with the line `Insufficient data: <n> graded artifacts in the last 90 days; need at least 10 before reporting a rate.` Still print the other tables.
+   - If `distinct_signatures_30d < 10`, omit the coverage row (do not emit a misleading ratio).
+   - Do NOT emit charts (mermaid or otherwise). Rates over small N look like signal when they are noise.
+   - Do NOT emit historical weekly buckets. The body is a current snapshot.
 
    If the tracker exists -> emit one `update_issue` with the new body. If not -> emit one `create_issue` titled `[ci-scan-feedback] KPI Tracker`. Either way, this step ALWAYS fires (never call `noop` for the tracker — a daily snapshot is the point).
 
