@@ -36,6 +36,12 @@
 #pragma clang diagnostic ignored "-Wjump-misses-init"
 #endif
 
+#ifdef DEBUG
+#define DEBUGNOTRETURN __attribute__((noreturn))
+#else
+#define DEBUGNOTRETURN
+#endif
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // LowLevelMonitor - Represents a non-recursive mutex and condition
 
@@ -259,6 +265,7 @@ void SystemNative_LowLevelFutex_WakeByAddressSingle(int32_t* address)
 }
 #else// TARGET_LINUX
 
+DEBUGNOTRETURN
 void SystemNative_LowLevelFutex_WaitOnAddress(int32_t* address, int32_t comparand)
 {
     (void)address; // unused
@@ -267,6 +274,7 @@ void SystemNative_LowLevelFutex_WaitOnAddress(int32_t* address, int32_t comparan
     errno = ENOTSUP;
 }
 
+DEBUGNOTRETURN
 int32_t SystemNative_LowLevelFutex_WaitOnAddressTimeout(int32_t* address, int32_t comparand, int32_t timeoutMilliseconds)
 {
     (void)address; // unused
@@ -276,6 +284,7 @@ int32_t SystemNative_LowLevelFutex_WaitOnAddressTimeout(int32_t* address, int32_
     return false;
 }
 
+DEBUGNOTRETURN
 void SystemNative_LowLevelFutex_WakeByAddressSingle(int32_t* address)
 {
     (void)address; // unused
