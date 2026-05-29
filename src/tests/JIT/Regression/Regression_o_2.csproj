@@ -11,7 +11,7 @@
     <Compile Include="JitBlue\Runtime_105558\Runtime_105558.cs" />
     <Compile Include="JitBlue\Runtime_105565\Runtime_105565.cs" />
     <Compile Include="JitBlue\Runtime_105618\Runtime_105618.cs" />
-    <Compile Include="JitBlue\Runtime_105619\Runtime_105619.cs" Condition="!('$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'minifullaot')" />
+    <Compile Include="JitBlue\Runtime_105619\Runtime_105619.cs" />
     <Compile Include="JitBlue\Runtime_105620\Runtime_105620.cs" />
     <Compile Include="JitBlue\Runtime_105623\Runtime_105623.cs" />
     <Compile Include="JitBlue\Runtime_105624\Runtime_105624.cs" />
