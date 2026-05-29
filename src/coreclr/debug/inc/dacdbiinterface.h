@@ -1602,6 +1602,11 @@ public:
                                ArgInfoList *   pArgInfo,
                                VMPTR_TypeHandle * pVmTypeHandle) = 0;
 
+    // Callback invoked for each type parameter enumerated by EnumerateMethodDescParams or
+    // EnumerateTypeHandleParams. The callback must not throw. Implementations typically push
+    // the value into an accumulator stashed in pUserData.
+    typedef void (*FP_TYPEPARAM_CALLBACK)(DebuggerIPCE_ExpandedTypeData * pTypeData, CALLBACK_DATA pUserData);
+
     //
     // Retrieve the generic type params for a given MethodDesc.  This function is specifically
     // for stackwalking because it requires the generic type token on the stack.
@@ -1610,19 +1615,20 @@ public:
     //    vmMethodDesc  - the method in question
     //    genericsToken - the generic type token in the stack frame owned by the method
     //    pcGenericClassTypeParams - [out]
-    //    pGenericTypeParams - [out]
+    //    fpCallback - [in]
+    //    pUserData  - [in]
     //
     //    pcGenericClassTypeParams - out parameter; returns the number of type parameters for the class
     //                               containing the method in question; must not be NULL
-    //    pGenericTypeParams       - out parameter; returns an array of type parameters and
-    //                               the count of the total number of type parameters; must not be NULL
+    //    fpCallback - callback invoked once per type parameter, in order: class type parameters first
+    //                 then method type parameters; must not be NULL
+    //    pUserData  - opaque user data passed through to the callback
     //
     // Notes:
-    //    The memory for the array is allocated by this function on the Dbi heap.
-    //    The caller is responsible for releasing it.
+    //    The callback must not throw.
     //
 
-    virtual HRESULT STDMETHODCALLTYPE GetMethodDescParams(VMPTR_MethodDesc vmMethodDesc, GENERICS_TYPE_TOKEN genericsToken, OUT UINT32 * pcGenericClassTypeParams, OUT TypeParamsList * pGenericTypeParams) = 0;
+    virtual HRESULT STDMETHODCALLTYPE EnumerateMethodDescParams(VMPTR_MethodDesc vmMethodDesc, GENERICS_TYPE_TOKEN genericsToken, OUT UINT32 * pcGenericClassTypeParams, FP_TYPEPARAM_CALLBACK fpCallback, CALLBACK_DATA pUserData) = 0;
 
     // Get the target field address of a thread local static.
     // Arguments:
@@ -1669,20 +1675,16 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetEnCHangingFieldInfo(const EnCHangingFieldInfo * pEnCFieldInfo, OUT FieldData * pFieldData, OUT BOOL * pfStatic) = 0;
 
 
-    // GetTypeHandleParams gets the necessary data for a type handle, i.e. its
+    // EnumerateTypeHandleParams gets the necessary data for a type handle, i.e. its
     // type parameters, e.g. "String" and "List<int>" from the type handle
     // for "Dict<String,List<int>>", and sends it back to the right side.
     // Arguments:
     //    input:  vmTypeHandle - type handle for the type
-    //    output: pParams      - list of instances of DebuggerIPCE_ExpandedTypeData,
-    //                           one for each type parameter. These will be used on the
-    //                           RS to build up an instantiation which will allow
-    //                           building an instance of CordbType for the top-level
-    //                           type. The memory for this list is allocated on the dbi
-    //                           heap in this function.
+    //            fpCallback   - callback invoked once per type parameter (must not be NULL)
+    //            pUserData    - opaque user data passed through to the callback
     // This will not fail except for OOM
 
-    virtual HRESULT STDMETHODCALLTYPE GetTypeHandleParams(VMPTR_TypeHandle vmTypeHandle, OUT TypeParamsList * pParams) = 0;
+    virtual HRESULT STDMETHODCALLTYPE EnumerateTypeHandleParams(VMPTR_TypeHandle vmTypeHandle, FP_TYPEPARAM_CALLBACK fpCallback, CALLBACK_DATA pUserData) = 0;
 
     // GetSimpleType
     // gets the metadata token and assembly corresponding to a simple type
