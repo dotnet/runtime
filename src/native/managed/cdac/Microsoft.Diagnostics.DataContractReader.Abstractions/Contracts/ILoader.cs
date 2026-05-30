@@ -6,15 +6,7 @@ using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-public readonly struct ModuleHandle
-{
-    public ModuleHandle(TargetPointer address)
-    {
-        Address = address;
-    }
-
-    public TargetPointer Address { get; }
-}
+public readonly record struct ModuleHandle(TargetPointer Address);
 
 [Flags]
 public enum ModuleFlags
