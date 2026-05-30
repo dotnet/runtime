@@ -663,12 +663,14 @@ def main(main_args):
             # crossgen2 RVA-static layout matches the wasm target. That dll is produced
             # by the browser_wasm_win build in superpmi-collect-pipeline.yml and
             # downloaded into artifacts/bin/coreclr/browser.wasm.Release/ by the
-            # collect job. For any other target_arch the host-arch release CoreLib is
-            # the right input.
+            # collect job. The wasm corelib build emits the managed assembly under an
+            # 'IL' subdirectory (artifacts/bin/coreclr/browser.wasm.Release/IL/), not
+            # at the root of the configuration directory like native builds do. For any
+            # other target_arch the host-arch release CoreLib is the right input.
             if coreclr_args.target_arch == "wasm":
                 corelib_src_dir = os.path.join(
                     coreclr_args.source_directory, "artifacts", "bin", "coreclr",
-                    "browser.wasm.Release")
+                    "browser.wasm.Release", "IL")
             else:
                 corelib_src_dir = coreclr_args.release_core_root_directory
             corelib_src = os.path.join(corelib_src_dir, "System.Private.CoreLib.dll")
