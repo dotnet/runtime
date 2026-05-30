@@ -21,6 +21,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     private readonly TargetPointer _objectMethodTablePointer;
     private readonly TargetPointer _continuationMethodTablePointer;
     private readonly TargetPointer _continuationSingletonEEClassPointer;
+    private readonly TargetPointer _multicastDelegateMethodTablePointer;
     private readonly ulong _methodDescAlignment;
     private readonly TypeValidation _typeValidation;
     private readonly MethodValidation _methodValidation;
@@ -425,6 +426,8 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             target.ReadGlobalPointer(Constants.Globals.ContinuationMethodTable));
         _continuationSingletonEEClassPointer = target.ReadPointer(
             target.ReadGlobalPointer(Constants.Globals.ContinuationSingletonEEClass));
+        _multicastDelegateMethodTablePointer = target.ReadPointer(
+            target.ReadGlobalPointer(Constants.Globals.MulticastDelegateMethodTable));
         _methodDescAlignment = target.ReadGlobal<ulong>(Constants.Globals.MethodDescAlignment);
         _typeValidation = new TypeValidation(target, _continuationMethodTablePointer, _continuationSingletonEEClassPointer);
         _methodValidation = new MethodValidation(target, _methodDescAlignment);
@@ -928,6 +931,15 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
         MethodTable methodTable = _methodTables[typeHandle.Address];
         return methodTable.Flags.GetFlag(MethodTableFlags_1.WFLAGS_HIGH.Category_Mask) == MethodTableFlags_1.WFLAGS_HIGH.Category_Primitive;
+    }
+
+    public bool IsDelegate(TypeHandle typeHandle)
+    {
+        if (!typeHandle.IsMethodTable())
+            return false;
+
+        TargetPointer parentMT = GetParentMethodTable(typeHandle);
+        return parentMT == _multicastDelegateMethodTablePointer;
     }
 
     // return true if the TypeHandle represents an array, and set the rank to either 0 (if the type is not an array), or the rank number if it is.
