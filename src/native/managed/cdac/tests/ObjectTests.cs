@@ -320,7 +320,6 @@ public unsafe class ObjectTests
                     target: TestTarget,
                     methodPtr: TestMethodPtr,
                     methodPtrAux: 0,
-                    invocationList: 0,
                     invocationCount: 0);
             });
 
@@ -350,7 +349,6 @@ public unsafe class ObjectTests
                     target: 0,
                     methodPtr: TestMethodPtr,
                     methodPtrAux: TestMethodPtrAux,
-                    invocationList: 0,
                     invocationCount: 0);
             });
 
@@ -368,7 +366,6 @@ public unsafe class ObjectTests
     {
         const ulong TestMethodTable = 0x00000000_10000200;
         const ulong TestMethodPtr = 0x00000000_aaaa0000;
-        const ulong TestInvocationList = 0x00000000_cccc0000;
         const ulong TestInvocationCount = 3;
         TargetPointer delegateAddress = default;
 
@@ -381,7 +378,6 @@ public unsafe class ObjectTests
                     target: 0,
                     methodPtr: TestMethodPtr,
                     methodPtrAux: 0,
-                    invocationList: TestInvocationList,
                     invocationCount: TestInvocationCount);
             });
 

@@ -327,7 +327,7 @@ internal partial class MockDescriptors
             return fragment.Address;
         }
 
-        internal ulong AddDelegateObject(ulong methodTable, ulong target, ulong methodPtr, ulong methodPtrAux, ulong invocationList, ulong invocationCount)
+        internal ulong AddDelegateObject(ulong methodTable, ulong target, ulong methodPtr, ulong methodPtrAux, ulong invocationCount)
         {
             MockMemorySpace.HeapFragment fragment = ManagedObjectAllocator.Allocate((uint)DelegateLayout.Size, $"Delegate : MT = '{methodTable}'");
             MockDelegateObjectData mockDelegate = DelegateLayout.Create(fragment);
