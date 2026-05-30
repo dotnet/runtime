@@ -1482,57 +1482,42 @@ namespace Internal.JitInterface
                 info->resolvedTokenDevirtualizedUnboxedMethod = default(CORINFO_RESOLVED_TOKEN);
             }
 
-            bool isArrayInterfaceDevirtualization = objType.IsArray && decl.OwningType.IsInterface;
-            bool isGenericVirtual = decl.HasInstantiation;
-            bool isGenericDim = impl.OwningType.IsInterface && !impl.IsAbstract && impl.RequiresInstMethodTableArg();
+            if (!impl.AcquiresInstMethodTableFromThis())
+            {
+                if (originalImpl.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
+                {
+                    // If we end up with a shared MethodTable that is not exact,
+                    // we can't devirtualize since it's not possible to compute the instantiation argument even as a runtime lookup.
+                    info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                    return false;
+                }
 
-            if ((isGenericVirtual || isGenericDim) && originalImpl.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
-            {
-                // If we end up with a shared MethodTable that is not exact,
-                // we can't devirtualize since it's not possible to compute the instantiation argument even as a runtime lookup.
-                info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
-                return false;
-            }
-
-            if (isGenericDim)
-            {
-#if READYTORUN
-                info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.TypeDictionary, originalImpl.OwningType));
-#else
-                info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ConstructedTypeSymbol(originalImpl.OwningType));
-#endif
-            }
-            else if ((isArrayInterfaceDevirtualization || isGenericVirtual) && impl.IsSharedByGenericInstantiations)
-            {
-                // We are dealing with a generic virtual method whose owning type is exact.
-                // If the method is not exact, a runtime lookup would be required.
-                bool requiresRuntimeLookup = originalImpl.IsSharedByGenericInstantiations;
-                if (requiresRuntimeLookup)
+                if (originalImpl.IsSharedByGenericInstantiations)
                 {
                     // TODO: Support for runtime lookup
                     info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
                     return false;
                 }
+            }
 
-                if (impl.RequiresInstMethodDescArg())
-                {
+            if (impl.RequiresInstMethodDescArg())
+            {
 #if READYTORUN
-                    MethodWithToken originalImplWithToken = new MethodWithToken(originalImpl, methodWithTokenImpl.Token, null, false, null, null);
-                    info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.MethodDictionary, originalImplWithToken));
+                MethodWithToken originalImplWithToken = new MethodWithToken(originalImpl, methodWithTokenImpl.Token, null, false, null, null);
+                info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.MethodDictionary, originalImplWithToken));
 
 #else
-                    info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.MethodGenericDictionary(originalImpl));
+                info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.MethodGenericDictionary(originalImpl));
 #endif
-                }
-                else
-                {
+            }
+            else if (impl.RequiresInstMethodTableArg())
+            {
 #if READYTORUN
-                    info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.TypeDictionary, originalImpl.OwningType));
+                info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.TypeDictionary, originalImpl.OwningType));
 
 #else
-                    info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ConstructedTypeSymbol(originalImpl.OwningType));
+                info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ConstructedTypeSymbol(originalImpl.OwningType));
 #endif
-                }
             }
 
 #if READYTORUN
@@ -1549,7 +1534,7 @@ namespace Internal.JitInterface
 #endif
             info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_SUCCESS;
             info->devirtualizedMethod = ObjectToHandle(impl);
-            info->tokenLookupContext = (isArrayInterfaceDevirtualization || isGenericVirtual) ? contextFromMethod(originalImpl) : contextFromType(owningType);
+            info->tokenLookupContext = impl.RequiresInstMethodDescArg() ? contextFromMethod(originalImpl) : contextFromType(owningType);
 
             return true;
 
