@@ -2369,13 +2369,13 @@ void CodeGen::genCodeForPhysReg(GenTreePhysReg* tree)
     WasmProduceReg(tree);
 }
 
-static bool getOffsetForPossiblyContainedAddress(Compiler *comp, GenTree *addr, int *varx, int *offs)
+static bool getOffsetForPossiblyContainedAddress(Compiler* comp, GenTree* addr, int* varx, int* offs)
 {
     if (addr->OperIs(GT_PARTIALLY_CONTAINED_LCL_ADDR))
     {
-        GenTreeLclFld * lclFld = addr->gtGetOp1()->AsLclFld();
-        *varx = lclFld->GetLclNum();
-        *offs = lclFld->GetLclOffs();
+        GenTreeLclFld* lclFld = addr->gtGetOp1()->AsLclFld();
+        *varx                 = lclFld->GetLclNum();
+        *offs                 = lclFld->GetLclOffs();
         return true;
     }
     else
@@ -2396,9 +2396,9 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
 {
     assert(tree->OperIs(GT_IND));
 
-    var_types   type      = tree->TypeGet();
-    instruction ins       = ins_Load(type);
-    GenTree*    addr      = tree->Addr();
+    var_types   type = tree->TypeGet();
+    instruction ins  = ins_Load(type);
+    GenTree*    addr = tree->Addr();
 
     genConsumeAddress(addr);
 
@@ -2449,8 +2449,8 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
     }
     else // A normal store, not a WriteBarrier store
     {
-        var_types   type      = tree->TypeGet();
-        instruction ins       = ins_Store(type);
+        var_types   type = tree->TypeGet();
+        instruction ins  = ins_Store(type);
 
         // TODO-WASM: Memory barriers
 

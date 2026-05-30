@@ -446,8 +446,9 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
     // TODO-WASM-CQ: contain suitable LEAs here. Take note of the fact that for this to be correct we must prove the
     // LEA doesn't overflow. It will involve creating a new frontend node to represent "nuw" (offset) addition.
 
-    GenTree * addr = indirNode->Addr();
-    if (addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), indirNode->Size() DEBUGARG(true /* disableAssertion */)))
+    GenTree* addr = indirNode->Addr();
+    if (addr->OperIs(GT_LCL_ADDR) &&
+        IsContainableLclAddr(addr->AsLclFld(), indirNode->Size() DEBUGARG(true /* disableAssertion */)))
     {
         // An indir through a lcl_addr should never have a multiply-used address since it doesn't need a null check
         //  and can't fault. If it does, this transform is incorrect.

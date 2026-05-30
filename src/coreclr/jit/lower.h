@@ -570,7 +570,8 @@ public:
         return false;
     }
 
-    bool IsContainableLclAddr(GenTreeLclFld* lclAddr, unsigned accessSize DEBUGARG(bool disableAssertion = false)) const;
+    bool IsContainableLclAddr(GenTreeLclFld*      lclAddr,
+                              unsigned accessSize DEBUGARG(bool disableAssertion = false)) const;
 
 #ifdef TARGET_ARM64
     bool IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childNode) const;
