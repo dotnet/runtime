@@ -3348,7 +3348,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetDelegateFunctionData(
 
     TADDR targetMethodPtr = (TADDR)NULL;
     VMPTR_MethodDesc pMD;
-    if (pDelObj->GetMethodPtrAux() != NULL)
+    if (pDelObj->GetMethodPtrAux())
     {
         targetMethodPtr = PCODEToPINSTR(pDelObj->GetMethodPtrAux());
     }
@@ -3387,7 +3387,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetDelegateTargetObject(
         return CORDBG_E_UNSUPPORTED_DELEGATE;
     }
 
-    if (pDelObj->GetMethodPtrAux() == NULL)
+    if (pDelObj->GetMethodPtrAux() == (PCODE)NULL)
     {
         // closed delegate
         PTR_Object pRemoteTargetObj = OBJECTREFToObject(pDelObj->GetTarget());
