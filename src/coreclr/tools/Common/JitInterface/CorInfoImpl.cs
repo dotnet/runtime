@@ -1513,25 +1513,32 @@ namespace Internal.JitInterface
                     info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
                     return false;
                 }
-#if READYTORUN
-                MethodWithToken originalImplWithToken = new MethodWithToken(originalImpl, methodWithTokenImpl.Token, null, false, null, null);
-                info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.MethodHandle, originalImplWithToken));
-#else
+
                 if (originalImpl.HasInstantiation)
                 {
+#if READYTORUN
+                    MethodWithToken originalImplWithToken = new MethodWithToken(originalImpl, methodWithTokenImpl.Token, null, false, null, null);
+                    info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.MethodDictionary, originalImplWithToken));
+
+#else
                     info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.MethodGenericDictionary(originalImpl));
+#endif
                 }
                 else
                 {
+#if READYTORUN
+                    info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.TypeDictionary, originalImpl.OwningType));
+
+#else
                     info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ConstructedTypeSymbol(originalImpl.OwningType));
-                }
 #endif
+                }
             }
 
 #if READYTORUN
-            // Testing has not shown that concerns about virtual matching are significant
-            // Only generate verification for builds with the stress mode enabled
-            if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout)
+                // Testing has not shown that concerns about virtual matching are significant
+                // Only generate verification for builds with the stress mode enabled
+                if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout)
             {
                 if (!methodWithTokenDecl.Method.OwningType.IsValueType || !methodWithTokenImpl.Method.OwningType.IsValueType)
                 {
