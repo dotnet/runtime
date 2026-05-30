@@ -1514,7 +1514,7 @@ namespace Internal.JitInterface
                     return false;
                 }
 
-                if (originalImpl.HasInstantiation)
+                if (impl.IsSharedByGenericMethodInstantiations)
                 {
 #if READYTORUN
                     MethodWithToken originalImplWithToken = new MethodWithToken(originalImpl, methodWithTokenImpl.Token, null, false, null, null);

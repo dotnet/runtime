@@ -70,6 +70,26 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
+        /// Gets a value indicating whether this is a shared method body.
+        /// Similar to <see cref="IsSharedByGenericInstantiations"/> but this doesn't consider the owning type's generic instantiation.
+        /// </summary>
+        public bool IsSharedByGenericMethodInstantiations
+        {
+            get
+            {
+                foreach (TypeDesc type in Instantiation)
+                {
+                    if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Gets a value indicating whether this is a canonical method that will only become concrete
         /// at runtime (after supplying the generic context).
         /// </summary>
