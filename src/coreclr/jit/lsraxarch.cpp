@@ -2481,17 +2481,15 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     SingleTypeRegSet apxAwareRegCandidates =
                         ForceLowGprForApxIfNeeded(op2, RBM_NONE, canHWIntrinsicUseApxRegs);
 
-                    // mulx always use EDX, if one operand is contained, specify other op with fixed EDX register
-                    srcCount = BuildOperandUses(op1, op2->isContained() ? SRBM_EDX : apxAwareRegCandidates);
+                    // mulx always use EDX for one of the registers
+                    srcCount = BuildOperandUses(op1, SRBM_EDX);
                     srcCount += BuildOperandUses(op2, apxAwareRegCandidates);
 
                     // result in any register
                     SingleTypeRegSet apxAwareDestCandidates =
                         ForceLowGprForApxIfNeeded(intrinsicTree, RBM_NONE, canHWIntrinsicUseApxRegs);
 
-                    // We don't really need to place any result in EDX, but this seems to be a better way of killing
-                    // the register than to specify a unconditional constraint on the use
-                    BuildDef(intrinsicTree, op2->isContained() ? apxAwareDestCandidates : SRBM_EDX, 0);
+                    BuildDef(intrinsicTree, apxAwareDestCandidates, 0);
                     BuildDef(intrinsicTree, apxAwareDestCandidates, 1);
                 }
                 else // Signed multiply or normal unsigned multiply in one operand form
