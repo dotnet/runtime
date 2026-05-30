@@ -5,54 +5,43 @@ using System.Diagnostics;
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class ReadyToRunInfo : IData<ReadyToRunInfo>
+[CdacType(nameof(DataType.ReadyToRunInfo))]
+internal sealed partial class ReadyToRunInfo : IData<ReadyToRunInfo>
 {
-    static ReadyToRunInfo IData<ReadyToRunInfo>.Create(Target target, TargetPointer address)
-        => new ReadyToRunInfo(target, address);
+    [Field] public TargetPointer CompositeInfo { get; }
+    [Field] public TargetPointer ReadyToRunHeader { get; }
+    [Field] public uint NumRuntimeFunctions { get; }
+    [Field] public uint NumHotColdMap { get; }
+    [Field] public TargetPointer DelayLoadMethodCallThunks { get; }
+    [Field] public TargetPointer DebugInfoSection { get; }
+    [Field] public TargetPointer ExceptionInfoSection { get; }
+    [Field] public TargetPointer LoadedImageBase { get; }
+    [Field] public TargetPointer Composite { get; }
+    [Field] public uint NumImportSections { get; }
 
-    public ReadyToRunInfo(Target target, TargetPointer address)
+    public TargetPointer RuntimeFunctions { get; private set; }
+    public TargetPointer HotColdMap { get; private set; }
+    public TargetPointer ImportSections { get; private set; }
+    public TargetPointer EntryPointToMethodDescMap { get; private set; }
+
+    partial void OnInit(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.ReadyToRunInfo);
 
-        CompositeInfo = target.ReadPointerField(address, type, nameof(CompositeInfo));
-
-        ReadyToRunHeader = target.ReadPointerField(address, type, nameof(ReadyToRunHeader));
-
-        NumRuntimeFunctions = target.ReadField<uint>(address, type, nameof(NumRuntimeFunctions));
         RuntimeFunctions = NumRuntimeFunctions > 0
             ? target.ReadPointerField(address, type, nameof(RuntimeFunctions))
             : TargetPointer.Null;
 
-        NumHotColdMap = target.ReadField<uint>(address, type, nameof(NumHotColdMap));
         Debug.Assert(NumHotColdMap % 2 == 0, "Hot/cold map should have an even number of entries (pairs of hot/cold runtime function indexes)");
         HotColdMap = NumHotColdMap > 0
             ? target.ReadPointerField(address, type, nameof(HotColdMap))
             : TargetPointer.Null;
 
-        DelayLoadMethodCallThunks = target.ReadPointerField(address, type, nameof(DelayLoadMethodCallThunks));
-        DebugInfoSection = target.ReadPointerField(address, type, nameof(DebugInfoSection));
-        ExceptionInfoSection = target.ReadPointerField(address, type, nameof(ExceptionInfoSection));
+        ImportSections = NumImportSections > 0
+            ? target.ReadPointer(address + (ulong)type.Fields[nameof(ImportSections)].Offset)
+            : TargetPointer.Null;
 
         // Map is from the composite info pointer (set to itself for non-multi-assembly composite images)
         EntryPointToMethodDescMap = CompositeInfo + (ulong)type.Fields[nameof(EntryPointToMethodDescMap)].Offset;
-        LoadedImageBase = target.ReadPointerField(address, type, nameof(LoadedImageBase));
-        Composite = target.ReadPointerField(address, type, nameof(Composite));
     }
-
-    internal TargetPointer CompositeInfo { get; }
-
-    public TargetPointer ReadyToRunHeader { get; }
-
-    public uint NumRuntimeFunctions { get; }
-    public TargetPointer RuntimeFunctions { get; }
-
-    public uint NumHotColdMap { get; }
-    public TargetPointer HotColdMap { get; }
-
-    public TargetPointer DelayLoadMethodCallThunks { get; }
-    public TargetPointer DebugInfoSection { get; }
-    public TargetPointer ExceptionInfoSection { get; }
-    public TargetPointer EntryPointToMethodDescMap { get; }
-    public TargetPointer LoadedImageBase { get; }
-    public TargetPointer Composite { get; }
 }

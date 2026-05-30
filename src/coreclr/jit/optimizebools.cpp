@@ -1659,7 +1659,8 @@ PhaseStatus Compiler::optOptimizeBools()
                 // trigger or not
                 // else if ((compOpportunisticallyDependsOn(InstructionSet_APX) || JitConfig.JitEnableApxIfConv()) &&
                 // optBoolsDsc.optOptimizeCompareChainCondBlock())
-                else if (JitConfig.EnableApxConditionalChaining() && !optSwitchDetectAndConvert(b1, true, &ccmpVec) &&
+                else if (canUseApxEvexEncoding() && JitConfig.EnableApxConditionalChaining() &&
+                         !optSwitchDetectAndConvert(b1, true, &ccmpVec) &&
                          optBoolsDsc.optOptimizeCompareChainCondBlock())
                 {
                     // The optimization will have merged b1 and b2. Retry the loop so that

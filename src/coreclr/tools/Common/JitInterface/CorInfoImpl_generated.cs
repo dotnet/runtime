@@ -194,6 +194,7 @@ namespace Internal.JitInterface
                 s_callbacks.getPgoInstrumentationResults = &_getPgoInstrumentationResults;
                 s_callbacks.allocPgoInstrumentationBySchema = &_allocPgoInstrumentationBySchema;
                 s_callbacks.recordCallSite = &_recordCallSite;
+                s_callbacks.recordWasmManagedCallSig = &_recordWasmManagedCallSig;
                 s_callbacks.recordRelocation = &_recordRelocation;
                 s_callbacks.getRelocTypeHint = &_getRelocTypeHint;
                 s_callbacks.getExpectedTargetArchitecture = &_getExpectedTargetArchitecture;
@@ -376,6 +377,7 @@ namespace Internal.JitInterface
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, PgoInstrumentationSchema**, uint*, byte**, PgoSource*, bool*, HRESULT> getPgoInstrumentationResults;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, PgoInstrumentationSchema*, uint, byte**, HRESULT> allocPgoInstrumentationBySchema;
             public delegate* unmanaged<IntPtr, IntPtr*, uint, CORINFO_SIG_INFO*, CORINFO_METHOD_STRUCT_*, void> recordCallSite;
+            public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_SIG_INFO*, void> recordWasmManagedCallSig;
             public delegate* unmanaged<IntPtr, IntPtr*, void*, void*, void*, CorInfoReloc, int, void> recordRelocation;
             public delegate* unmanaged<IntPtr, IntPtr*, void*, CorInfoReloc> getRelocTypeHint;
             public delegate* unmanaged<IntPtr, IntPtr*, uint> getExpectedTargetArchitecture;
@@ -2943,6 +2945,20 @@ namespace Internal.JitInterface
             try
             {
                 _this.recordCallSite(instrOffset, callSig, methodHandle);
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static void _recordWasmManagedCallSig(IntPtr thisHandle, IntPtr* ppException, CORINFO_SIG_INFO* callSig)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                _this.recordWasmManagedCallSig(callSig);
             }
             catch (Exception ex)
             {

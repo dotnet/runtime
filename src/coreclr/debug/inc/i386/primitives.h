@@ -108,14 +108,12 @@ inline LPVOID CORDbgGetFP(DT_CONTEXT* context)
     return (LPVOID)(UINT_PTR)context->Ebp;
 }
 
-// compare the EIP, ESP, and EBP
 inline BOOL CompareControlRegisters(const DT_CONTEXT * pCtx1, const DT_CONTEXT * pCtx2)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
     if ((pCtx1->Eip == pCtx2->Eip) &&
-        (pCtx1->Esp == pCtx2->Esp) &&
-        (pCtx1->Ebp == pCtx2->Ebp))
+        (pCtx1->Esp == pCtx2->Esp))
     {
         return TRUE;
     }
