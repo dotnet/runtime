@@ -1410,7 +1410,36 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         };
 
     public int GetStackParameterSize(ulong controlPC, uint* pRetVal)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetStackParameterSize(controlPC, pRetVal) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (pRetVal == null)
+                throw new ArgumentNullException(nameof(pRetVal));
+
+            *pRetVal = 0;
+            IExecutionManager eman = _target.Contracts.ExecutionManager;
+            if (eman.GetCodeBlockHandle(new TargetCodePointer(controlPC)) is not CodeBlockHandle cbh)
+                throw new InvalidOperationException($"No code block found for controlPC 0x{controlPC:x}");
+
+            *pRetVal = eman.GetStackParameterSize(cbh);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            uint retValLocal;
+            int hrLocal = _legacy.GetStackParameterSize(controlPC, &retValLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pRetVal == retValLocal, $"cDAC: {*pRetVal}, DAC: {retValLocal}");
+        }
+#endif
+        return hr;
+    }
 
     public int GetFramePointer(nuint pSFIHandle, ulong* pRetVal)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetFramePointer(pSFIHandle, pRetVal) : HResults.E_NOTIMPL;
@@ -1987,7 +2016,44 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int IsExceptionObject(ulong vmObject, Interop.BOOL* pResult)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.IsExceptionObject(vmObject, pResult) : HResults.E_NOTIMPL;
+    {
+        *pResult = Interop.BOOL.FALSE;
+        int hr = HResults.S_OK;
+        try
+        {
+            IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+            TargetPointer objectAddress = new TargetPointer(vmObject);
+            TargetPointer parentMT = _target.Contracts.Object.GetMethodTableAddress(objectAddress);
+            TargetPointer exceptionMT = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.ExceptionMethodTable));
+
+            while (parentMT != TargetPointer.Null)
+            {
+                if (parentMT == exceptionMT)
+                {
+                    *pResult = Interop.BOOL.TRUE;
+                    break;
+                }
+
+                TypeHandle typeHandle = rts.GetTypeHandle(parentMT);
+                parentMT = rts.GetParentMethodTable(typeHandle);
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            Interop.BOOL resultLocal;
+            int hrLocal = _legacy.IsExceptionObject(vmObject, &resultLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pResult == resultLocal, $"cDAC: {*pResult}, DAC: {resultLocal}");
+        }
+#endif
+        return hr;
+    }
 
     public int GetStackFramesFromException(ulong vmObject, nint pDacStackFrames)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetStackFramesFromException(vmObject, pDacStackFrames) : HResults.E_NOTIMPL;

@@ -117,6 +117,10 @@ public abstract class ContractRegistry
     /// </summary>
     public virtual IConditionalWeakTable ConditionalWeakTable => GetContract<IConditionalWeakTable>();
     /// <summary>
+    /// Gets an instance of the ManagedTypeSource contract for the target.
+    /// </summary>
+    public virtual IManagedTypeSource ManagedTypeSource => GetContract<IManagedTypeSource>();
+    /// <summary>
     /// Gets an instance of the AuxiliarySymbols contract for the target.
     /// </summary>
     public virtual IAuxiliarySymbols AuxiliarySymbols => GetContract<IAuxiliarySymbols>();
