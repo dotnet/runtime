@@ -2369,19 +2369,21 @@ void CodeGen::genCodeForPhysReg(GenTreePhysReg* tree)
     WasmProduceReg(tree);
 }
 
-static cnsval_ssize_t getOffsetForPossiblyContainedAddress(Compiler *comp, GenTree *addr)
+static bool getOffsetForPossiblyContainedAddress(Compiler *comp, GenTree *addr, int *varx, int *offs)
 {
     if (addr->OperIs(GT_PARTIALLY_CONTAINED_LCL_ADDR))
     {
         GenTreeLclFld * lclFld = addr->gtGetOp1()->AsLclFld();
-        bool FPBased;
-        int  lclOffset = comp->lvaFrameAddress(lclFld->GetLclNum(), &FPBased);
-        cnsval_ssize_t offset = lclOffset + lclFld->GetLclOffs();
-        noway_assert(offset >= 0); // WASM address modes are unsigned.
-        return offset;
+        *varx = lclFld->GetLclNum();
+        *offs = lclFld->GetLclOffs();
+        return true;
     }
-
-    return 0;
+    else
+    {
+        *varx = 0;
+        *offs = 0;
+        return false;
+    }
 }
 
 //------------------------------------------------------------------------
@@ -2402,7 +2404,15 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
 
     // TODO-WASM: Memory barriers
 
-    GetEmitter()->emitIns_I(ins, emitActualTypeSize(type), getOffsetForPossiblyContainedAddress(m_compiler, addr));
+    int varx, offs;
+    if (getOffsetForPossiblyContainedAddress(m_compiler, addr, &varx, &offs))
+    {
+        GetEmitter()->emitIns_S(ins, emitActualTypeSize(type), varx, offs);
+    }
+    else
+    {
+        GetEmitter()->emitIns_I(ins, emitActualTypeSize(type), 0);
+    }
 
     WasmProduceReg(tree);
 }
@@ -2434,6 +2444,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
     GCInfo::WriteBarrierForm writeBarrierForm = gcInfo.gcIsWriteBarrierCandidate(tree);
     if (writeBarrierForm != GCInfo::WBF_NoBarrier)
     {
+        assert(!addr->OperIs(GT_PARTIALLY_CONTAINED_LCL_ADDR));
         genGCWriteBarrier(tree, writeBarrierForm);
     }
     else // A normal store, not a WriteBarrier store
@@ -2443,7 +2454,16 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
 
         // TODO-WASM: Memory barriers
 
-        GetEmitter()->emitIns_I(ins, emitActualTypeSize(type), getOffsetForPossiblyContainedAddress(m_compiler, addr));
+        int varx, offs;
+
+        if (getOffsetForPossiblyContainedAddress(m_compiler, addr, &varx, &offs))
+        {
+            GetEmitter()->emitIns_S(ins, emitActualTypeSize(type), varx, offs);
+        }
+        else
+        {
+            GetEmitter()->emitIns_I(ins, emitActualTypeSize(type), 0);
+        }
     }
 
     genUpdateLife(tree);
