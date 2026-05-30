@@ -51,10 +51,10 @@ ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         ; figures out that this came from a WriteBarrier and correctly maps it back
         ; to the managed method which called the WriteBarrier (see setup in
         ; InitializeExceptionHandling, vm\exceptionhandling.cpp).
-        mov     [rcx], rdx
+        mov     [r11], rdx
 
         ; Update the write watch table if necessary
-        mov     rax, rcx
+        mov     rax, r11
         mov     r8, 0F0F0F0F0F0F0F0F0h
         shr     rax, 0Ch ; SoftwareWriteWatch::AddressToTableByteIndexShift
         NOP_2_BYTE ; padding for alignment of constant
@@ -83,22 +83,22 @@ ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         mov     rax, 0F0F0F0F0F0F0F0F0h
 
         ; Touch the card table entry, if not already dirty.
-        shr     rcx, 0Bh
-        cmp     byte ptr [rcx + rax], 0FFh
+        shr     r11, 0Bh
+        cmp     byte ptr [r11 + rax], 0FFh
         jne     UpdateCardTable
         REPRET
 
     UpdateCardTable:
-        mov     byte ptr [rcx + rax], 0FFh
+        mov     byte ptr [r11 + rax], 0FFh
 ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
         mov     rax, 0F0F0F0F0F0F0F0F0h
-        shr     rcx, 0Ah
-        cmp     byte ptr [rcx + rax], 0FFh
+        shr     r11, 0Ah
+        cmp     byte ptr [r11 + rax], 0FFh
         jne     UpdateCardBundleTable
         REPRET
 
     UpdateCardBundleTable:
-        mov     byte ptr [rcx + rax], 0FFh
+        mov     byte ptr [r11 + rax], 0FFh
 endif
         ret
 
@@ -130,6 +130,19 @@ endif
         NOP_3_BYTE
         NOP_3_BYTE
 
+        ; Extra padding so the JIT_WriteBarrier buffer is at least as large as
+        ; WriteWatch_Bit_Region64 after the r11 convention grew that template
+        ; more than the WriteWatch_PostGrow64 body used here (BTS rewrite plus
+        ; three alignment pads).
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+
 else
         ; JIT_WriteBarrier_PostGrow64
 
@@ -137,7 +150,7 @@ else
         ; figures out that this came from a WriteBarrier and correctly maps it back
         ; to the managed method which called the WriteBarrier (see setup in
         ; InitializeExceptionHandling, vm\exceptionhandling.cpp).
-        mov     [rcx], rdx
+        mov     [r11], rdx
 
         NOP_3_BYTE ; padding for alignment of constant
 
@@ -165,28 +178,55 @@ else
         mov     rax, 0F0F0F0F0F0F0F0F0h
 
         ; Touch the card table entry, if not already dirty.
-        shr     rcx, 0Bh
-        cmp     byte ptr [rcx + rax], 0FFh
+        shr     r11, 0Bh
+        cmp     byte ptr [r11 + rax], 0FFh
         jne     UpdateCardTable
         REPRET
 
     UpdateCardTable:
-        mov     byte ptr [rcx + rax], 0FFh
+        mov     byte ptr [r11 + rax], 0FFh
 ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+        ; Extra 6-byte pad to keep the next movabs immediate 8-byte aligned
+        ; after r11-based byte ops grew vs the original rcx-based ones.
+        NOP_3_BYTE
+        NOP_3_BYTE
         mov     rax, 0F0F0F0F0F0F0F0F0h
-        shr     rcx, 0Ah
-        cmp     byte ptr [rcx + rax], 0FFh
+        shr     r11, 0Ah
+        cmp     byte ptr [r11 + rax], 0FFh
         jne     UpdateCardBundleTable
         REPRET
 
     UpdateCardBundleTable:
-        mov     byte ptr [rcx + rax], 0FFh
+        mov     byte ptr [r11 + rax], 0FFh
 endif
         ret
 
     align 16
     Exit:
         REPRET
+
+        ; Padding so the JIT_WriteBarrier buffer is at least as large as the
+        ; largest fast template after the r11 convention growth.
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
 endif
 
     ; make sure this is bigger than any of the others

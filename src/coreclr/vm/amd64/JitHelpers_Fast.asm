@@ -69,22 +69,23 @@ JIT_WriteBarrier_Loc:
 ; it needs to have it's card updated
 ;
 ; void JIT_CheckedWriteBarrier(Object** dst, Object* src)
+; Custom calling convention: dst is in R11 (NOT RCX). RCX is preserved.
 LEAF_ENTRY JIT_CheckedWriteBarrier, _TEXT
 
         ; When WRITE_BARRIER_CHECK is defined _NotInHeap will write the reference
         ; but if it isn't then it will just return.
         ;
         ; See if this is in GCHeap
-        cmp     rcx, [g_lowest_address]
+        cmp     r11, [g_lowest_address]
         jb      NotInHeap
-        cmp     rcx, [g_highest_address]
+        cmp     r11, [g_highest_address]
         jnb     NotInHeap
 
         jmp     QWORD PTR [JIT_WriteBarrier_Loc]
 
     NotInHeap:
         ; See comment above about possible AV
-        mov     [rcx], rdx
+        mov     [r11], rdx
         ret
 LEAF_END_MARKED JIT_CheckedWriteBarrier, _TEXT
 

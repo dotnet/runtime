@@ -40,7 +40,7 @@ LEAF_ENTRY JIT_WriteBarrier_PreGrow64, _TEXT
         ; figures out that this came from a WriteBarrier and correctly maps it back
         ; to the managed method which called the WriteBarrier (see setup in
         ; InitializeExceptionHandling, vm\exceptionhandling.cpp).
-        mov     [rcx], rdx
+        mov     [r11], rdx
 
         NOP_3_BYTE ; padding for alignment of constant
 
@@ -59,24 +59,29 @@ PATCH_LABEL JIT_WriteBarrier_PreGrow64_Patch_Label_CardTable
         mov     rax, 0F0F0F0F0F0F0F0F0h
 
         ; Touch the card table entry, if not already dirty.
-        shr     rcx, 0Bh
-        cmp     byte ptr [rcx + rax], 0FFh
+        shr     r11, 0Bh
+        cmp     byte ptr [r11 + rax], 0FFh
         jne     UpdateCardTable
         REPRET
 
     UpdateCardTable:
-        mov     byte ptr [rcx + rax], 0FFh
+        mov     byte ptr [r11 + rax], 0FFh
 ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
-        shr     rcx, 0Ah
+        shr     r11, 0Ah
+        ; Extra 6-byte pad: the r11-based byte ops above grew vs the original
+        ; rcx-based ones (REX.B prefix). Restore 8-byte alignment of the next
+        ; movabs immediate.
+        NOP_3_BYTE
+        NOP_3_BYTE
         NOP_2_BYTE ; padding for alignment of constant
 PATCH_LABEL JIT_WriteBarrier_PreGrow64_Patch_Label_CardBundleTable
         mov     rax, 0F0F0F0F0F0F0F0F0h
-        cmp     byte ptr [rcx + rax], 0FFh
+        cmp     byte ptr [r11 + rax], 0FFh
         jne     UpdateCardBundleTable
         REPRET
 
     UpdateCardBundleTable:
-        mov     byte ptr [rcx + rax], 0FFh
+        mov     byte ptr [r11 + rax], 0FFh
 endif
         ret
 
@@ -93,7 +98,7 @@ LEAF_ENTRY JIT_WriteBarrier_PostGrow64, _TEXT
         ; figures out that this came from a WriteBarrier and correctly maps it back
         ; to the managed method which called the WriteBarrier (see setup in
         ; InitializeExceptionHandling, vm\exceptionhandling.cpp).
-        mov     [rcx], rdx
+        mov     [r11], rdx
 
         NOP_3_BYTE ; padding for alignment of constant
 
@@ -123,24 +128,28 @@ PATCH_LABEL JIT_WriteBarrier_PostGrow64_Patch_Label_CardTable
         mov     rax, 0F0F0F0F0F0F0F0F0h
 
         ; Touch the card table entry, if not already dirty.
-        shr     rcx, 0Bh
-        cmp     byte ptr [rcx + rax], 0FFh
+        shr     r11, 0Bh
+        cmp     byte ptr [r11 + rax], 0FFh
         jne     UpdateCardTable
         REPRET
 
     UpdateCardTable:
-        mov     byte ptr [rcx + rax], 0FFh
+        mov     byte ptr [r11 + rax], 0FFh
 ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
-        shr     rcx, 0Ah
+        shr     r11, 0Ah
+        ; Extra 6-byte pad to keep the next movabs immediate 8-byte aligned
+        ; after r11-based byte ops grew vs the original rcx-based ones.
+        NOP_3_BYTE
+        NOP_3_BYTE
         NOP_2_BYTE ; padding for alignment of constant
 PATCH_LABEL JIT_WriteBarrier_PostGrow64_Patch_Label_CardBundleTable
         mov     rax, 0F0F0F0F0F0F0F0F0h
-        cmp     byte ptr [rcx + rax], 0FFh
+        cmp     byte ptr [r11 + rax], 0FFh
         jne     UpdateCardBundleTable
         REPRET
 
     UpdateCardBundleTable:
-        mov     byte ptr [rcx + rax], 0FFh
+        mov     byte ptr [r11 + rax], 0FFh
 endif
         ret
 
@@ -165,32 +174,36 @@ LEAF_ENTRY JIT_WriteBarrier_SVR64, _TEXT
         ; figures out that this came from a WriteBarrier and correctly maps it back
         ; to the managed method which called the WriteBarrier (see setup in
         ; InitializeExceptionHandling, vm\exceptionhandling.cpp).
-        mov     [rcx], rdx
+        mov     [r11], rdx
 
         NOP_3_BYTE ; padding for alignment of constant
 
 PATCH_LABEL JIT_WriteBarrier_SVR64_PatchLabel_CardTable
         mov     rax, 0F0F0F0F0F0F0F0F0h
 
-        shr     rcx, 0Bh
+        shr     r11, 0Bh
 
-        cmp     byte ptr [rcx + rax], 0FFh
+        cmp     byte ptr [r11 + rax], 0FFh
         jne     UpdateCardTable
         REPRET
 
     UpdateCardTable:
-        mov     byte ptr [rcx + rax], 0FFh
+        mov     byte ptr [r11 + rax], 0FFh
 ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
-        shr     rcx, 0Ah
+        shr     r11, 0Ah
+        ; Extra 6-byte pad to keep the next movabs immediate 8-byte aligned
+        ; after r11-based byte ops grew vs the original rcx-based ones.
+        NOP_3_BYTE
+        NOP_3_BYTE
         NOP_2_BYTE ; padding for alignment of constant
 PATCH_LABEL JIT_WriteBarrier_SVR64_PatchLabel_CardBundleTable
         mov     rax, 0F0F0F0F0F0F0F0F0h
-        cmp     byte ptr [rcx + rax], 0FFh
+        cmp     byte ptr [r11 + rax], 0FFh
         jne     UpdateCardBundleTable
         REPRET
 
     UpdateCardBundleTable:
-        mov     byte ptr [rcx + rax], 0FFh
+        mov     byte ptr [r11 + rax], 0FFh
 endif
         ret
 LEAF_END_MARKED JIT_WriteBarrier_SVR64, _TEXT
@@ -202,24 +215,29 @@ LEAF_ENTRY JIT_WriteBarrier_Byte_Region64, _TEXT
         ; figures out that this came from a WriteBarrier and correctly maps it back
         ; to the managed method which called the WriteBarrier (see setup in
         ; InitializeExceptionHandling, vm\exceptionhandling.cpp).
-        mov     [rcx], rdx
+        mov     [r11], rdx
 
-        mov     r8, rcx
+        mov     r8, r11
 
 PATCH_LABEL JIT_WriteBarrier_Byte_Region64_Patch_Label_RegionToGeneration
         mov     rax, 0F0F0F0F0F0F0F0F0h
 
 PATCH_LABEL JIT_WriteBarrier_Byte_Region64_Patch_Label_RegionShrDest
-        shr     rcx, 16h ; compute region index
+        shr     r11, 16h ; compute region index
 
         ; Check whether the region we're storing into is gen 0 - nothing to do in this case
-        cmp     byte ptr [rcx + rax], 0
+        cmp     byte ptr [r11 + rax], 0
         jne     NotGen0
         REPRET
 
         NOP_2_BYTE ; padding for alignment of constant
 
     NotGen0:
+        ; Extra 7-byte pad: r11-based byte op above grew vs the original rcx
+        ; one (REX.B prefix). Restore 8-byte alignment of the next movabs imm.
+        NOP_3_BYTE
+        NOP_3_BYTE
+        nop
 PATCH_LABEL JIT_WriteBarrier_Byte_Region64_Patch_Label_Lower
         mov     r9, 0F0F0F0F0F0F0F0F0h
         cmp     rdx, r9
@@ -235,12 +253,17 @@ PATCH_LABEL JIT_WriteBarrier_Byte_Region64_Patch_Label_Upper
 PATCH_LABEL JIT_WriteBarrier_Byte_Region64_Patch_Label_RegionShrSrc
         shr     rdx, 16h ; compute region index
         mov     dl, [rdx + rax]
-        cmp     dl, [rcx + rax]
+        cmp     dl, [r11 + rax]
         jb      isOldToYoung
         REPRET
         nop
 
     IsOldToYoung:
+        ; Extra 7-byte pad: r11-based byte op above grew vs the original rcx
+        ; one (REX.B prefix). Restore 8-byte alignment of the next movabs imm.
+        NOP_3_BYTE
+        NOP_3_BYTE
+        nop
 PATCH_LABEL JIT_WriteBarrier_Byte_Region64_Patch_Label_CardTable
         mov     rax, 0F0F0F0F0F0F0F0F0h
 
@@ -272,24 +295,29 @@ LEAF_ENTRY JIT_WriteBarrier_Bit_Region64, _TEXT
         ; figures out that this came from a WriteBarrier and correctly maps it back
         ; to the managed method which called the WriteBarrier (see setup in
         ; InitializeExceptionHandling, vm\exceptionhandling.cpp).
-        mov     [rcx], rdx
+        mov     [r11], rdx
 
-        mov     r8, rcx
+        mov     r8, r11
 
 PATCH_LABEL JIT_WriteBarrier_Bit_Region64_Patch_Label_RegionToGeneration
         mov     rax, 0F0F0F0F0F0F0F0F0h
 
 PATCH_LABEL JIT_WriteBarrier_Bit_Region64_Patch_Label_RegionShrDest
-        shr     rcx, 16h ; compute region index
+        shr     r11, 16h ; compute region index
 
         ; Check whether the region we're storing into is gen 0 - nothing to do in this case
-        cmp     byte ptr [rcx + rax], 0
+        cmp     byte ptr [r11 + rax], 0
         jne     NotGen0
         REPRET
 
         NOP_2_BYTE ; padding for alignment of constant
 
     NotGen0:
+        ; Extra 7-byte pad: r11-based byte op above grew vs the original rcx
+        ; one (REX.B prefix). Restore 8-byte alignment of the next movabs imm.
+        NOP_3_BYTE
+        NOP_3_BYTE
+        nop
 PATCH_LABEL JIT_WriteBarrier_Bit_Region64_Patch_Label_Lower
         mov     r9, 0F0F0F0F0F0F0F0F0h
         cmp     rdx, r9
@@ -305,21 +333,28 @@ PATCH_LABEL JIT_WriteBarrier_Bit_Region64_Patch_Label_Upper
 PATCH_LABEL JIT_WriteBarrier_Bit_Region64_Patch_Label_RegionShrSrc
         shr     rdx, 16h ; compute region index
         mov     dl, [rdx + rax]
-        cmp     dl, [rcx + rax]
+        cmp     dl, [r11 + rax]
         jb      isOldToYoung
         REPRET
         nop
 
     IsOldToYoung:
+        ; Extra 7-byte pad: r11-based byte op above grew vs the original rcx
+        ; one (REX.B prefix). Restore 8-byte alignment of the next movabs imm.
+        NOP_3_BYTE
+        NOP_3_BYTE
+        nop
 PATCH_LABEL JIT_WriteBarrier_Bit_Region64_Patch_Label_CardTable
         mov     rax, 0F0F0F0F0F0F0F0F0h
 
-        mov     ecx, r8d
+        ; Compute the bit mask `1 << ((r8 >> 8) & 7)` without touching CL/RCX
+        ; (RCX is preserved under the custom write-barrier convention).
+        mov     r10d, r8d
         shr     r8, 0Bh
-        shr     ecx, 8
-        and     ecx, 7
-        mov     dl, 1
-        shl     dl, cl
+        shr     r10d, 8
+        and     r10d, 7
+        xor     edx, edx
+        bts     edx, r10d
         test    byte ptr [r8 + rax], dl
         je      UpdateCardTable
         REPRET
@@ -328,6 +363,11 @@ PATCH_LABEL JIT_WriteBarrier_Bit_Region64_Patch_Label_CardTable
         lock or byte ptr [r8 + rax], dl
 
 ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+        ; Extra 4-byte pad to restore 8-byte alignment of the next movabs imm
+        ; after the BTS replacement above grew the section by 4 bytes vs the
+        ; original `mov dl,1; shl dl,cl` sequence.
+        NOP_2_BYTE
+        NOP_2_BYTE
 PATCH_LABEL JIT_WriteBarrier_Bit_Region64_Patch_Label_CardBundleTable
         mov     rax, 0F0F0F0F0F0F0F0F0h
         shr     r8, 0Ah
@@ -360,10 +400,10 @@ LEAF_ENTRY JIT_WriteBarrier_WriteWatch_PreGrow64, _TEXT
         ; figures out that this came from a WriteBarrier and correctly maps it back
         ; to the managed method which called the WriteBarrier (see setup in
         ; InitializeExceptionHandling, vm\exceptionhandling.cpp).
-        mov     [rcx], rdx
+        mov     [r11], rdx
 
         ; Update the write watch table if necessary
-        mov     rax, rcx
+        mov     rax, r11
 PATCH_LABEL JIT_WriteBarrier_WriteWatch_PreGrow64_Patch_Label_WriteWatchTable
         mov     r8, 0F0F0F0F0F0F0F0F0h
         shr     rax, 0Ch ; SoftwareWriteWatch::AddressToTableByteIndexShift
@@ -381,27 +421,31 @@ PATCH_LABEL JIT_WriteBarrier_WriteWatch_PreGrow64_Patch_Label_Lower
         jb      Exit
 
         ; Touch the card table entry, if not already dirty.
-        shr     rcx, 0Bh
+        shr     r11, 0Bh
         NOP_2_BYTE ; padding for alignment of constant
 PATCH_LABEL JIT_WriteBarrier_WriteWatch_PreGrow64_Patch_Label_CardTable
         mov     rax, 0F0F0F0F0F0F0F0F0h
-        cmp     byte ptr [rcx + rax], 0FFh
+        cmp     byte ptr [r11 + rax], 0FFh
         jne     UpdateCardTable
         REPRET
 
     UpdateCardTable:
-        mov     byte ptr [rcx + rax], 0FFh
+        mov     byte ptr [r11 + rax], 0FFh
 ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+        ; Extra 6-byte pad to keep the next movabs immediate 8-byte aligned
+        ; after r11-based byte ops grew vs the original rcx-based ones.
+        NOP_3_BYTE
+        NOP_3_BYTE
         NOP_2_BYTE ; padding for alignment of constant
 PATCH_LABEL JIT_WriteBarrier_WriteWatch_PreGrow64_Patch_Label_CardBundleTable
         mov     rax, 0F0F0F0F0F0F0F0F0h
-        shr     rcx, 0Ah
-        cmp     byte ptr [rcx + rax], 0FFh
+        shr     r11, 0Ah
+        cmp     byte ptr [r11 + rax], 0FFh
         jne     UpdateCardBundleTable
         REPRET
 
     UpdateCardBundleTable:
-        mov     byte ptr [rcx + rax], 0FFh
+        mov     byte ptr [r11 + rax], 0FFh
 endif
         ret
 
@@ -425,10 +469,10 @@ LEAF_ENTRY JIT_WriteBarrier_WriteWatch_PostGrow64, _TEXT
         ; figures out that this came from a WriteBarrier and correctly maps it back
         ; to the managed method which called the WriteBarrier (see setup in
         ; InitializeExceptionHandling, vm\exceptionhandling.cpp).
-        mov     [rcx], rdx
+        mov     [r11], rdx
 
         ; Update the write watch table if necessary
-        mov     rax, rcx
+        mov     rax, r11
 PATCH_LABEL JIT_WriteBarrier_WriteWatch_PostGrow64_Patch_Label_WriteWatchTable
         mov     r8, 0F0F0F0F0F0F0F0F0h
         shr     rax, 0Ch ; SoftwareWriteWatch::AddressToTableByteIndexShift
@@ -461,24 +505,28 @@ PATCH_LABEL JIT_WriteBarrier_WriteWatch_PostGrow64_Patch_Label_CardTable
         mov     rax, 0F0F0F0F0F0F0F0F0h
 
         ; Touch the card table entry, if not already dirty.
-        shr     rcx, 0Bh
-        cmp     byte ptr [rcx + rax], 0FFh
+        shr     r11, 0Bh
+        cmp     byte ptr [r11 + rax], 0FFh
         jne     UpdateCardTable
         REPRET
 
     UpdateCardTable:
-        mov     byte ptr [rcx + rax], 0FFh
+        mov     byte ptr [r11 + rax], 0FFh
 ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
-        shr     rcx, 0Ah
+        shr     r11, 0Ah
+        ; Extra 6-byte pad to keep the next movabs immediate 8-byte aligned
+        ; after r11-based byte ops grew vs the original rcx-based ones.
+        NOP_3_BYTE
+        NOP_3_BYTE
         NOP_2_BYTE ; padding for alignment of constant
 PATCH_LABEL JIT_WriteBarrier_WriteWatch_PostGrow64_Patch_Label_CardBundleTable
         mov     rax, 0F0F0F0F0F0F0F0F0h
-        cmp     byte ptr [rcx + rax], 0FFh
+        cmp     byte ptr [r11 + rax], 0FFh
         jne     UpdateCardBundleTable
         REPRET
 
     UpdateCardBundleTable:
-        mov     byte ptr [rcx + rax], 0FFh
+        mov     byte ptr [r11 + rax], 0FFh
 endif
         ret
 
@@ -511,10 +559,10 @@ LEAF_ENTRY JIT_WriteBarrier_WriteWatch_SVR64, _TEXT
         ; figures out that this came from a WriteBarrier and correctly maps it back
         ; to the managed method which called the WriteBarrier (see setup in
         ; InitializeExceptionHandling, vm\exceptionhandling.cpp).
-        mov     [rcx], rdx
+        mov     [r11], rdx
 
         ; Update the write watch table if necessary
-        mov     rax, rcx
+        mov     rax, r11
 PATCH_LABEL JIT_WriteBarrier_WriteWatch_SVR64_PatchLabel_WriteWatchTable
         mov     r8, 0F0F0F0F0F0F0F0F0h
         shr     rax, 0Ch ; SoftwareWriteWatch::AddressToTableByteIndexShift
@@ -527,24 +575,24 @@ PATCH_LABEL JIT_WriteBarrier_WriteWatch_SVR64_PatchLabel_CardTable
         mov     byte ptr [rax], 0FFh
 
     CheckCardTable:
-        shr     rcx, 0Bh
-        cmp     byte ptr [rcx + r9], 0FFh
+        shr     r11, 0Bh
+        cmp     byte ptr [r11 + r9], 0FFh
         jne     UpdateCardTable
         REPRET
 
     UpdateCardTable:
-        mov     byte ptr [rcx + r9], 0FFh
+        mov     byte ptr [r11 + r9], 0FFh
 ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
         nop ; padding for alignment of constant
 PATCH_LABEL JIT_WriteBarrier_WriteWatch_SVR64_PatchLabel_CardBundleTable
         mov     rax, 0F0F0F0F0F0F0F0F0h
-        shr     rcx, 0Ah
-        cmp     byte ptr [rcx + rax], 0FFh
+        shr     r11, 0Ah
+        cmp     byte ptr [r11 + rax], 0FFh
         jne     UpdateCardBundleTable
         REPRET
 
     UpdateCardBundleTable:
-        mov     byte ptr [rcx + rax], 0FFh
+        mov     byte ptr [r11 + rax], 0FFh
 endif
         ret
 LEAF_END_MARKED JIT_WriteBarrier_WriteWatch_SVR64, _TEXT
@@ -558,17 +606,17 @@ LEAF_ENTRY JIT_WriteBarrier_WriteWatch_Byte_Region64, _TEXT
         ; figures out that this came from a WriteBarrier and correctly maps it back
         ; to the managed method which called the WriteBarrier (see setup in
         ; InitializeExceptionHandling, vm\exceptionhandling.cpp).
-        mov     [rcx], rdx
+        mov     [r11], rdx
 
         ; Update the write watch table if necessary
-        mov     rax, rcx
+        mov     rax, r11
 PATCH_LABEL JIT_WriteBarrier_WriteWatch_Byte_Region64_Patch_Label_WriteWatchTable
         mov     r8, 0F0F0F0F0F0F0F0F0h
         shr     rax, 0Ch ; SoftwareWriteWatch::AddressToTableByteIndexShift
         add     rax, r8
-        mov     r8, rcx
+        mov     r8, r11
 PATCH_LABEL JIT_WriteBarrier_WriteWatch_Byte_Region64_Patch_Label_RegionShrDest
-        shr     rcx, 16h ; compute region index
+        shr     r11, 16h ; compute region index
         cmp     byte ptr [rax], 0h
         jne     JIT_WriteBarrier_WriteWatch_Byte_Region64_Patch_Label_RegionToGeneration
         mov     byte ptr [rax], 0FFh
@@ -577,7 +625,7 @@ PATCH_LABEL JIT_WriteBarrier_WriteWatch_Byte_Region64_Patch_Label_RegionToGenera
         mov     rax, 0F0F0F0F0F0F0F0F0h
 
         ; Check whether the region we're storing into is gen 0 - nothing to do in this case
-        cmp     byte ptr [rcx + rax], 0
+        cmp     byte ptr [r11 + rax], 0
         jne     NotGen0
         REPRET
 
@@ -586,6 +634,11 @@ PATCH_LABEL JIT_WriteBarrier_WriteWatch_Byte_Region64_Patch_Label_RegionToGenera
         NOP_2_BYTE ; padding for alignment of constant
 
     NotGen0:
+        ; Extra 7-byte pad: r11-based byte op above grew vs the original rcx
+        ; one (REX.B prefix). Restore 8-byte alignment of the next movabs imm.
+        NOP_3_BYTE
+        NOP_3_BYTE
+        nop
 PATCH_LABEL JIT_WriteBarrier_WriteWatch_Byte_Region64_Patch_Label_Lower
         mov     r9, 0F0F0F0F0F0F0F0F0h
         cmp     rdx, r9
@@ -601,12 +654,17 @@ PATCH_LABEL JIT_WriteBarrier_WriteWatch_Byte_Region64_Patch_Label_Upper
 PATCH_LABEL JIT_WriteBarrier_WriteWatch_Byte_Region64_Patch_Label_RegionShrSrc
         shr     rdx, 16h ; compute region index
         mov     dl, [rdx + rax]
-        cmp     dl, [rcx + rax]
+        cmp     dl, [r11 + rax]
         jb      isOldToYoung
         REPRET
         nop
 
     IsOldToYoung:
+        ; Extra 7-byte pad: r11-based byte op above grew vs the original rcx
+        ; one (REX.B prefix). Restore 8-byte alignment of the next movabs imm.
+        NOP_3_BYTE
+        NOP_3_BYTE
+        nop
 PATCH_LABEL JIT_WriteBarrier_WriteWatch_Byte_Region64_Patch_Label_CardTable
         mov     rax, 0F0F0F0F0F0F0F0F0h
 
@@ -638,17 +696,17 @@ LEAF_ENTRY JIT_WriteBarrier_WriteWatch_Bit_Region64, _TEXT
         ; figures out that this came from a WriteBarrier and correctly maps it back
         ; to the managed method which called the WriteBarrier (see setup in
         ; InitializeExceptionHandling, vm\exceptionhandling.cpp).
-        mov     [rcx], rdx
+        mov     [r11], rdx
 
         ; Update the write watch table if necessary
-        mov     rax, rcx
+        mov     rax, r11
 PATCH_LABEL JIT_WriteBarrier_WriteWatch_Bit_Region64_Patch_Label_WriteWatchTable
         mov     r8, 0F0F0F0F0F0F0F0F0h
         shr     rax, 0Ch ; SoftwareWriteWatch::AddressToTableByteIndexShift
         add     rax, r8
-        mov     r8, rcx
+        mov     r8, r11
 PATCH_LABEL JIT_WriteBarrier_WriteWatch_Bit_Region64_Patch_Label_RegionShrDest
-        shr     rcx, 16h ; compute region index
+        shr     r11, 16h ; compute region index
         cmp     byte ptr [rax], 0h
         jne     JIT_WriteBarrier_WriteWatch_Bit_Region64_Patch_Label_RegionToGeneration
         mov     byte ptr [rax], 0FFh
@@ -657,7 +715,7 @@ PATCH_LABEL JIT_WriteBarrier_WriteWatch_Bit_Region64_Patch_Label_RegionToGenerat
         mov     rax, 0F0F0F0F0F0F0F0F0h
 
         ; Check whether the region we're storing into is gen 0 - nothing to do in this case
-        cmp     byte ptr [rcx + rax], 0
+        cmp     byte ptr [r11 + rax], 0
         jne     NotGen0
         REPRET
 
@@ -666,6 +724,11 @@ PATCH_LABEL JIT_WriteBarrier_WriteWatch_Bit_Region64_Patch_Label_RegionToGenerat
         NOP_2_BYTE ; padding for alignment of constant
 
     NotGen0:
+        ; Extra 7-byte pad: r11-based byte op above grew vs the original rcx
+        ; one (REX.B prefix). Restore 8-byte alignment of the next movabs imm.
+        NOP_3_BYTE
+        NOP_3_BYTE
+        nop
 PATCH_LABEL JIT_WriteBarrier_WriteWatch_Bit_Region64_Patch_Label_Lower
         mov     r9, 0F0F0F0F0F0F0F0F0h
         cmp     rdx, r9
@@ -681,21 +744,28 @@ PATCH_LABEL JIT_WriteBarrier_WriteWatch_Bit_Region64_Patch_Label_Upper
 PATCH_LABEL JIT_WriteBarrier_WriteWatch_Bit_Region64_Patch_Label_RegionShrSrc
         shr     rdx, 16h ; compute region index
         mov     dl, [rdx + rax]
-        cmp     dl, [rcx + rax]
+        cmp     dl, [r11 + rax]
         jb      isOldToYoung
         REPRET
         nop
 
     IsOldToYoung:
+        ; Extra 7-byte pad: r11-based byte op above grew vs the original rcx
+        ; one (REX.B prefix). Restore 8-byte alignment of the next movabs imm.
+        NOP_3_BYTE
+        NOP_3_BYTE
+        nop
 PATCH_LABEL JIT_WriteBarrier_WriteWatch_Bit_Region64_Patch_Label_CardTable
         mov     rax, 0F0F0F0F0F0F0F0F0h
 
-        mov     ecx, r8d
+        ; Compute the bit mask `1 << ((r8 >> 8) & 7)` without touching CL/RCX
+        ; (RCX is preserved under the custom write-barrier convention).
+        mov     r10d, r8d
         shr     r8, 0Bh
-        shr     ecx, 8
-        and     ecx, 7
-        mov     dl, 1
-        shl     dl, cl
+        shr     r10d, 8
+        and     r10d, 7
+        xor     edx, edx
+        bts     edx, r10d
         test    byte ptr [r8 + rax], dl
         je      UpdateCardTable
         REPRET
@@ -703,6 +773,11 @@ PATCH_LABEL JIT_WriteBarrier_WriteWatch_Bit_Region64_Patch_Label_CardTable
     UpdateCardTable:
         lock or byte ptr [r8 + rax], dl
 ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+        ; Extra 4-byte pad to restore 8-byte alignment of the next movabs imm
+        ; after the BTS replacement above grew the section by 4 bytes vs the
+        ; original `mov dl,1; shl dl,cl` sequence.
+        NOP_2_BYTE
+        NOP_2_BYTE
 PATCH_LABEL JIT_WriteBarrier_WriteWatch_Bit_Region64_Patch_Label_CardBundleTable
         mov     rax, 0F0F0F0F0F0F0F0F0h
         shr     r8, 0Ah

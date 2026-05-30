@@ -83,23 +83,28 @@ LOCAL_LABEL(\BASENAME\()_UpdateShadowHeap_Done_\REFREG):
 #endif // WRITE_BARRIER_CHECK
 
 // There are several different helpers used depending on which register holds the object reference. Since all
-// the helpers have identical structure we use a macro to define this structure. Two arguments are taken, the
-// name of the register that points to the location to be updated and the name of the register that holds the
-// object reference (this should be in upper case as it's used in the definition of the name of the helper).
-.macro DEFINE_UNCHECKED_WRITE_BARRIER_CORE BASENAME, REFREG
+// the helpers have identical structure we use a macro to define this structure. Three arguments are taken:
+// the basename of the generated labels, the register that holds the object reference (this should be in upper
+// case as it's used in the definition of the name of the helper), and the register that holds the destination
+// address. The destination defaults to RDI (the legacy AOT contract used by the interlocked helpers); the
+// CORINFO_HELP_ASSIGN_REF helpers pass R11 to match the JIT's custom write-barrier calling convention which
+// preserves RDI (the 'this' register on SysV-x64).
+.macro DEFINE_UNCHECKED_WRITE_BARRIER_CORE BASENAME, REFREG, DESTREG
 
     // Update the shadow copy of the heap with the same value just written to the same heap. (A no-op unless
     // we're in a debug build and write barrier checking has been enabled).
-    UPDATE_GC_SHADOW \BASENAME, \REFREG, rdi
+    UPDATE_GC_SHADOW \BASENAME, \REFREG, \DESTREG
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    mov     r11, [C_VAR(g_write_watch_table)]
-    cmp     r11, 0x0
+    // Use R9 (callee-trash, unused by every helper that expands this macro) for the WWT pointer,
+    // because R11 may be live as DESTREG under the JIT WB calling convention for RhpAssignRef.
+    mov     r9, [C_VAR(g_write_watch_table)]
+    cmp     r9, 0x0
     je      LOCAL_LABEL(\BASENAME\()_CheckCardTable_\REFREG)
 
-    mov     r10, rdi
+    mov     r10, \DESTREG
     shr     r10, 0xC // SoftwareWriteWatch::AddressToTableByteIndexShift
-    add     r10, r11
+    add     r10, r9
     cmp     byte ptr [r10], 0x0
     jne     LOCAL_LABEL(\BASENAME\()_CheckCardTable_\REFREG)
     mov     byte ptr [r10], 0xFF
@@ -118,22 +123,22 @@ LOCAL_LABEL(\BASENAME\()_CheckCardTable_\REFREG):
     // track this write. The location address is translated into an offset in the card table bitmap. We set
     // an entire byte in the card table since it's quicker than messing around with bitmasks and we only write
     // the byte if it hasn't already been done since writes are expensive and impact scaling.
-    shr     rdi, 0x0B
+    shr     \DESTREG, 0x0B
     mov     r10, [C_VAR(g_card_table)]
-    cmp     byte ptr [rdi + r10], 0x0FF
+    cmp     byte ptr [\DESTREG + r10], 0x0FF
     je      LOCAL_LABEL(\BASENAME\()_NoBarrierRequired_\REFREG)
 
 // We get here if it's necessary to update the card table.
-    mov     byte ptr [rdi + r10], 0xFF
+    mov     byte ptr [\DESTREG + r10], 0xFF
 
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
-    // Shift rdi by 0x0A more to get the card bundle byte (we shifted by 0x0B already)
-    shr     rdi, 0x0A
-    add     rdi, [C_VAR(g_card_bundle_table)]
-    cmp     byte ptr [rdi], 0xFF
+    // Shift DESTREG by 0x0A more to get the card bundle byte (we shifted by 0x0B already)
+    shr     \DESTREG, 0x0A
+    add     \DESTREG, [C_VAR(g_card_bundle_table)]
+    cmp     byte ptr [\DESTREG], 0xFF
     je      LOCAL_LABEL(\BASENAME\()_NoBarrierRequired_\REFREG)
 
-    mov     byte ptr [rdi], 0xFF
+    mov     byte ptr [\DESTREG], 0xFF
 #endif
 
 LOCAL_LABEL(\BASENAME\()_NoBarrierRequired_\REFREG):
@@ -141,11 +146,9 @@ LOCAL_LABEL(\BASENAME\()_NoBarrierRequired_\REFREG):
 
 .endm
 
-// There are several different helpers used depending on which register holds the object reference. Since all
-// the helpers have identical structure we use a macro to define this structure. One argument is taken, the
-// name of the register that will hold the object reference (this should be in upper case as it's used in the
-// definition of the name of the helper).
-.macro DEFINE_UNCHECKED_WRITE_BARRIER REFREG, EXPORT_REG_NAME
+// Generates a helper of the form RhpAssignRef<EXPORT_REG_NAME>. REFREG holds the object reference; DESTREG
+// holds the destination address.
+.macro DEFINE_UNCHECKED_WRITE_BARRIER REFREG, EXPORT_REG_NAME, DESTREG
 
 // Define a helper with a name of the form RhpAssignRefEAX etc. (along with suitable calling standard
 // decoration). The location to be updated is in DESTREG. The object reference that will be assigned into that
@@ -164,16 +167,17 @@ LEAF_ENTRY RhpAssignRef\EXPORT_REG_NAME, _TEXT
 
     // Write the reference into the location. Note that we rely on the fact that no GC can occur between here
     // and the card table update we may perform below.
-    mov     qword ptr [rdi], \REFREG
+    mov     qword ptr [\DESTREG], \REFREG
 
-    DEFINE_UNCHECKED_WRITE_BARRIER_CORE RhpAssignRef, \REFREG
+    DEFINE_UNCHECKED_WRITE_BARRIER_CORE RhpAssignRef, \REFREG, \DESTREG
 
 LEAF_END RhpAssignRef\EXPORT_REG_NAME, _TEXT
 .endm
 
 // One day we might have write barriers for all the possible argument registers but for now we have
-// just one write barrier that assumes the input register is RSI.
-DEFINE_UNCHECKED_WRITE_BARRIER RSI, ESI
+// just one write barrier that assumes the input register is RSI. The CORINFO_HELP_ASSIGN_REF JIT calling
+// convention passes the destination in R11.
+DEFINE_UNCHECKED_WRITE_BARRIER RSI, ESI, r11
 
 //
 // Define the helpers used to implement the write barrier required when writing an object reference into a
@@ -182,16 +186,16 @@ DEFINE_UNCHECKED_WRITE_BARRIER RSI, ESI
 // collection.
 //
 
-.macro DEFINE_CHECKED_WRITE_BARRIER_CORE BASENAME, REFREG
+.macro DEFINE_CHECKED_WRITE_BARRIER_CORE BASENAME, REFREG, DESTREG
 
     // The location being updated might not even lie in the GC heap (a handle or stack location for instance),
     // in which case no write barrier is required.
-    cmp     rdi, [C_VAR(g_lowest_address)]
+    cmp     \DESTREG, [C_VAR(g_lowest_address)]
     jb      LOCAL_LABEL(\BASENAME\()_NoBarrierRequired_\REFREG)
-    cmp     rdi, [C_VAR(g_highest_address)]
+    cmp     \DESTREG, [C_VAR(g_highest_address)]
     jae     LOCAL_LABEL(\BASENAME\()_NoBarrierRequired_\REFREG)
 
-    DEFINE_UNCHECKED_WRITE_BARRIER_CORE \BASENAME, \REFREG
+    DEFINE_UNCHECKED_WRITE_BARRIER_CORE \BASENAME, \REFREG, \DESTREG
 
 .endm
 
@@ -199,7 +203,7 @@ DEFINE_UNCHECKED_WRITE_BARRIER RSI, ESI
 // the helpers have identical structure we use a macro to define this structure. One argument is taken, the
 // name of the register that will hold the object reference (this should be in upper case as it's used in the
 // definition of the name of the helper).
-.macro DEFINE_CHECKED_WRITE_BARRIER REFREG, EXPORT_REG_NAME
+.macro DEFINE_CHECKED_WRITE_BARRIER REFREG, EXPORT_REG_NAME, DESTREG
 
 // Define a helper with a name of the form RhpCheckedAssignRefEAX etc. (along with suitable calling standard
 // decoration). The location to be updated is always in RDI. The object reference that will be assigned into
@@ -218,23 +222,24 @@ LEAF_ENTRY RhpCheckedAssignRef\EXPORT_REG_NAME, _TEXT
 
     // Write the reference into the location. Note that we rely on the fact that no GC can occur between here
     // and the card table update we may perform below.
-    mov     qword ptr [rdi], \REFREG
+    mov     qword ptr [\DESTREG], \REFREG
 
-    DEFINE_CHECKED_WRITE_BARRIER_CORE RhpCheckedAssignRef, \REFREG
+    DEFINE_CHECKED_WRITE_BARRIER_CORE RhpCheckedAssignRef, \REFREG, \DESTREG
 
 LEAF_END RhpCheckedAssignRef\EXPORT_REG_NAME, _TEXT
 .endm
 
 // One day we might have write barriers for all the possible argument registers but for now we have
-// just one write barrier that assumes the input register is RSI.
-DEFINE_CHECKED_WRITE_BARRIER RSI, ESI
+// just one write barrier that assumes the input register is RSI. The CORINFO_HELP_CHECKED_ASSIGN_REF JIT
+// calling convention passes the destination in R11.
+DEFINE_CHECKED_WRITE_BARRIER RSI, ESI, r11
 
 LEAF_ENTRY RhpCheckedLockCmpXchg, _TEXT
     mov             rax, rdx
     lock cmpxchg    [rdi], rsi
     jne             LOCAL_LABEL(RhpCheckedLockCmpXchg_NoBarrierRequired_RSI)
 
-    DEFINE_CHECKED_WRITE_BARRIER_CORE RhpCheckedLockCmpXchg, RSI
+    DEFINE_CHECKED_WRITE_BARRIER_CORE RhpCheckedLockCmpXchg, RSI, rdi
 
 LEAF_END RhpCheckedLockCmpXchg, _TEXT
 
@@ -245,7 +250,7 @@ LEAF_ENTRY RhpCheckedXchg, _TEXT
     mov             rax, rsi
     xchg            [rdi], rax
 
-    DEFINE_CHECKED_WRITE_BARRIER_CORE RhpCheckedXchg, RSI
+    DEFINE_CHECKED_WRITE_BARRIER_CORE RhpCheckedXchg, RSI, rdi
 
 LEAF_END RhpCheckedXchg, _TEXT
 

@@ -91,23 +91,28 @@ endm
 endif ; WRITE_BARRIER_CHECK
 
 ;; There are several different helpers used depending on which register holds the object reference. Since all
-;; the helpers have identical structure we use a macro to define this structure. Two arguments are taken, the
-;; name of the register that points to the location to be updated and the name of the register that holds the
-;; object reference (this should be in upper case as it's used in the definition of the name of the helper).
-DEFINE_UNCHECKED_WRITE_BARRIER_CORE macro BASENAME, REFREG
+;; the helpers have identical structure we use a macro to define this structure. Three arguments are taken: the
+;; basename of the generated labels, the register that holds the object reference (this should be in upper
+;; case as it's used in the definition of the name of the helper), and the register that holds the destination
+;; address. The destination defaults to RCX (the legacy AOT contract used by the interlocked helpers); the
+;; CORINFO_HELP_ASSIGN_REF helpers pass R11 to match the JIT's custom write-barrier calling convention which
+;; preserves RCX (the 'this' register on Win-x64).
+DEFINE_UNCHECKED_WRITE_BARRIER_CORE macro BASENAME, REFREG, DESTREG
 
     ;; Update the shadow copy of the heap with the same value just written to the same heap. (A no-op unless
     ;; we're in a debug build and write barrier checking has been enabled).
-    UPDATE_GC_SHADOW BASENAME, REFREG, rcx
+    UPDATE_GC_SHADOW BASENAME, REFREG, DESTREG
 
 ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    mov     r11, [g_write_watch_table]
-    cmp     r11, 0
+    ;; Use R9 (callee-trash, unused by every helper that expands this macro) for the WWT pointer,
+    ;; because R11 may be live as DESTREG under the JIT WB calling convention for RhpAssignRef.
+    mov     r9, [g_write_watch_table]
+    cmp     r9, 0
     je      &BASENAME&_CheckCardTable_&REFREG&
 
-    mov     r10, rcx
+    mov     r10, DESTREG
     shr     r10, 0Ch ;; SoftwareWriteWatch::AddressToTableByteIndexShift
-    add     r10, r11
+    add     r10, r9
     cmp     byte ptr [r10], 0
     jne     &BASENAME&_CheckCardTable_&REFREG&
     mov     byte ptr [r10], 0FFh
@@ -126,22 +131,22 @@ endif
     ;; track this write. The location address is translated into an offset in the card table bitmap. We set
     ;; an entire byte in the card table since it's quicker than messing around with bitmasks and we only write
     ;; the byte if it hasn't already been done since writes are expensive and impact scaling.
-    shr     rcx, 0Bh
+    shr     DESTREG, 0Bh
     mov     r10, [g_card_table]
-    cmp     byte ptr [rcx + r10], 0FFh
+    cmp     byte ptr [DESTREG + r10], 0FFh
     je      &BASENAME&_NoBarrierRequired_&REFREG&
 
     ;; We get here if it's necessary to update the card table.
-    mov     byte ptr [rcx + r10], 0FFh
+    mov     byte ptr [DESTREG + r10], 0FFh
 
 ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
-    ;; Shift rcx by 0Ah more to get the card bundle byte (we shifted by 0x0B already)
-    shr     rcx, 0Ah
-    add     rcx, [g_card_bundle_table]
-    cmp     byte ptr [rcx], 0FFh
+    ;; Shift DESTREG by 0Ah more to get the card bundle byte (we shifted by 0x0B already)
+    shr     DESTREG, 0Ah
+    add     DESTREG, [g_card_bundle_table]
+    cmp     byte ptr [DESTREG], 0FFh
     je      &BASENAME&_NoBarrierRequired_&REFREG&
 
-    mov     byte ptr [rcx], 0FFh
+    mov     byte ptr [DESTREG], 0FFh
 endif
 
 &BASENAME&_NoBarrierRequired_&REFREG&:
@@ -149,15 +154,9 @@ endif
 
 endm
 
-;; There are several different helpers used depending on which register holds the object reference. Since all
-;; the helpers have identical structure we use a macro to define this structure. One argument is taken, the
-;; name of the register that will hold the object reference (this should be in upper case as it's used in the
-;; definition of the name of the helper).
-DEFINE_UNCHECKED_WRITE_BARRIER macro REFREG, EXPORT_REG_NAME
-
-;; Define a helper with a name of the form RhpAssignRefEAX etc. (along with suitable calling standard
-;; decoration). The location to be updated is in DESTREG. The object reference that will be assigned into that
-;; location is in one of the other general registers determined by the value of REFREG.
+;; Generates a helper of the form RhpAssignRef<EXPORT_REG_NAME>. REFREG holds the object reference; DESTREG
+;; holds the destination address.
+DEFINE_UNCHECKED_WRITE_BARRIER macro REFREG, EXPORT_REG_NAME, DESTREG
 
 ;; WARNING: Code in EHHelpers.cpp makes assumptions about write barrier code, in particular:
 ;; - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen on the first instruction
@@ -172,16 +171,17 @@ LEAF_ENTRY RhpAssignRef&EXPORT_REG_NAME&, _TEXT
 
     ;; Write the reference into the location. Note that we rely on the fact that no GC can occur between here
     ;; and the card table update we may perform below.
-    mov     qword ptr [rcx], REFREG
+    mov     qword ptr [DESTREG], REFREG
 
-    DEFINE_UNCHECKED_WRITE_BARRIER_CORE RhpAssignRef, REFREG
+    DEFINE_UNCHECKED_WRITE_BARRIER_CORE RhpAssignRef, REFREG, DESTREG
 
 LEAF_END RhpAssignRef&EXPORT_REG_NAME&, _TEXT
 endm
 
 ;; One day we might have write barriers for all the possible argument registers but for now we have
-;; just one write barrier that assumes the input register is RDX.
-DEFINE_UNCHECKED_WRITE_BARRIER RDX, EDX
+;; just one write barrier that assumes the input register is RDX. The destination register is R11 to match
+;; the JIT's custom write-barrier calling convention.
+DEFINE_UNCHECKED_WRITE_BARRIER RDX, EDX, r11
 
 ;;
 ;; Define the helpers used to implement the write barrier required when writing an object reference into a
@@ -190,28 +190,22 @@ DEFINE_UNCHECKED_WRITE_BARRIER RDX, EDX
 ;; collection.
 ;;
 
-DEFINE_CHECKED_WRITE_BARRIER_CORE macro BASENAME, REFREG
+DEFINE_CHECKED_WRITE_BARRIER_CORE macro BASENAME, REFREG, DESTREG
 
     ;; The location being updated might not even lie in the GC heap (a handle or stack location for instance),
     ;; in which case no write barrier is required.
-    cmp     rcx, [g_lowest_address]
+    cmp     DESTREG, [g_lowest_address]
     jb      &BASENAME&_NoBarrierRequired_&REFREG&
-    cmp     rcx, [g_highest_address]
+    cmp     DESTREG, [g_highest_address]
     jae     &BASENAME&_NoBarrierRequired_&REFREG&
 
-    DEFINE_UNCHECKED_WRITE_BARRIER_CORE BASENAME, REFREG
+    DEFINE_UNCHECKED_WRITE_BARRIER_CORE BASENAME, REFREG, DESTREG
 
 endm
 
-;; There are several different helpers used depending on which register holds the object reference. Since all
-;; the helpers have identical structure we use a macro to define this structure. One argument is taken, the
-;; name of the register that will hold the object reference (this should be in upper case as it's used in the
-;; definition of the name of the helper).
-DEFINE_CHECKED_WRITE_BARRIER macro REFREG, EXPORT_REG_NAME
-
-;; Define a helper with a name of the form RhpCheckedAssignRefEAX etc. (along with suitable calling standard
-;; decoration). The location to be updated is always in RCX. The object reference that will be assigned into
-;; that location is in one of the other general registers determined by the value of REFREG.
+;; Generates a helper of the form RhpCheckedAssignRef<EXPORT_REG_NAME>. REFREG holds the object reference;
+;; DESTREG holds the destination address.
+DEFINE_CHECKED_WRITE_BARRIER macro REFREG, EXPORT_REG_NAME, DESTREG
 
 ;; WARNING: Code in EHHelpers.cpp makes assumptions about write barrier code, in particular:
 ;; - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen on the first instruction
@@ -226,23 +220,24 @@ LEAF_ENTRY RhpCheckedAssignRef&EXPORT_REG_NAME&, _TEXT
 
     ;; Write the reference into the location. Note that we rely on the fact that no GC can occur between here
     ;; and the card table update we may perform below.
-    mov     qword ptr [rcx], REFREG
+    mov     qword ptr [DESTREG], REFREG
 
-    DEFINE_CHECKED_WRITE_BARRIER_CORE RhpCheckedAssignRef, REFREG
+    DEFINE_CHECKED_WRITE_BARRIER_CORE RhpCheckedAssignRef, REFREG, DESTREG
 
 LEAF_END RhpCheckedAssignRef&EXPORT_REG_NAME&, _TEXT
 endm
 
 ;; One day we might have write barriers for all the possible argument registers but for now we have
-;; just one write barrier that assumes the input register is RDX.
-DEFINE_CHECKED_WRITE_BARRIER RDX, EDX
+;; just one write barrier that assumes the input register is RDX. The destination register is R11 to match
+;; the JIT's custom write-barrier calling convention.
+DEFINE_CHECKED_WRITE_BARRIER RDX, EDX, r11
 
 LEAF_ENTRY RhpCheckedLockCmpXchg, _TEXT
     mov             rax, r8
     lock cmpxchg    [rcx], rdx
     jne             RhpCheckedLockCmpXchg_NoBarrierRequired_RDX
 
-    DEFINE_CHECKED_WRITE_BARRIER_CORE RhpCheckedLockCmpXchg, RDX
+    DEFINE_CHECKED_WRITE_BARRIER_CORE RhpCheckedLockCmpXchg, RDX, rcx
 
 LEAF_END RhpCheckedLockCmpXchg, _TEXT
 
@@ -253,7 +248,7 @@ LEAF_ENTRY RhpCheckedXchg, _TEXT
     mov             rax, rdx
     xchg            [rcx], rax
 
-    DEFINE_CHECKED_WRITE_BARRIER_CORE RhpCheckedXchg, RDX
+    DEFINE_CHECKED_WRITE_BARRIER_CORE RhpCheckedXchg, RDX, rcx
 
 LEAF_END RhpCheckedXchg, _TEXT
 

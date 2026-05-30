@@ -19,19 +19,19 @@ LEAF_ENTRY JIT_WriteBarrier_Debug, _TEXT
         je      NoShadow
 
         // If we end up outside of the heap don't corrupt random memory
-        mov     r10, rdi
-        PREPARE_EXTERNAL_VAR g_lowest_address, r11
-        sub     r10, [r11]
+        mov     r10, r11
+        PREPARE_EXTERNAL_VAR g_lowest_address, r9
+        sub     r10, [r9]
         jb      NoShadow
 
         // Check that our adjusted destination is somewhere in the shadow gc
         add     r10, [rax]
-        PREPARE_EXTERNAL_VAR g_GCShadowEnd, r11
-        cmp     r10, [r11]
+        PREPARE_EXTERNAL_VAR g_GCShadowEnd, r9
+        cmp     r10, [r9]
         jnb     NoShadow
 
         // Write ref into real GC// see comment below about possibility of AV
-        mov     [rdi], rsi
+        mov     [r11], rsi
         // Write ref into shadow GC
         mov     [r10], rsi
 
@@ -40,12 +40,12 @@ LEAF_ENTRY JIT_WriteBarrier_Debug, _TEXT
         mfence
 
         // Check that GC/ShadowGC values match
-        mov     r11, [rdi]
+        mov     r9, [r11]
         mov     rax, [r10]
-        cmp     rax, r11
+        cmp     rax, r9
         je      DoneShadow
-        movabs  r11, INVALIDGCVALUE
-        mov     [r10], r11
+        movabs  r9, INVALIDGCVALUE
+        mov     [r10], r9
 
         jmp     DoneShadow
 
@@ -59,7 +59,7 @@ LEAF_ENTRY JIT_WriteBarrier_Debug, _TEXT
         // figures out that this came from a WriteBarrier and correctly maps it back
         // to the managed method which called the WriteBarrier (see setup in
         // InitializeExceptionHandling, vm\exceptionhandling.cpp).
-        mov     [rdi], rax
+        mov     [r11], rax
 
 #ifdef WRITE_BARRIER_CHECK
     // If we had a shadow GC then we already wrote to the real GC at the same time
@@ -72,10 +72,10 @@ LEAF_ENTRY JIT_WriteBarrier_Debug, _TEXT
         PREPARE_EXTERNAL_VAR g_sw_ww_enabled_for_gc_heap, r10
         cmp     byte ptr [r10], 0x0
         je      CheckCardTable_Debug
-        mov     r10, rdi
+        mov     r10, r11
         shr     r10, 0xC // SoftwareWriteWatch::AddressToTableByteIndexShift
-        PREPARE_EXTERNAL_VAR g_write_watch_table, r11
-        add     r10, qword ptr [r11]
+        PREPARE_EXTERNAL_VAR g_write_watch_table, r9
+        add     r10, qword ptr [r9]
         cmp     byte ptr [r10], 0x0
         jne     CheckCardTable_Debug
         mov     byte ptr [r10], 0xFF
@@ -92,35 +92,35 @@ LEAF_ENTRY JIT_WriteBarrier_Debug, _TEXT
 
         // Check if we need to update the card table
         // Calc pCardByte
-        shr     rdi, 0x0B
+        shr     r11, 0x0B
 
         PREPARE_EXTERNAL_VAR g_card_table, r10
         mov     r10, [r10]
 
         // Check if this card is dirty
-        cmp     byte ptr [rdi + r10], 0xFF
+        cmp     byte ptr [r11 + r10], 0xFF
 
         jne     UpdateCardTable_Debug
         REPRET
 
     UpdateCardTable_Debug:
-        mov     byte ptr [rdi + r10], 0xFF
+        mov     byte ptr [r11 + r10], 0xFF
 
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
-        // Shift rdi by 0x0A more to get the card bundle byte (we shifted by 0x0B already)
-        shr     rdi, 0x0A
+        // Shift r11 by 0x0A more to get the card bundle byte (we shifted by 0x0B already)
+        shr     r11, 0x0A
 
         PREPARE_EXTERNAL_VAR g_card_bundle_table, r10
-        add     rdi, [r10]
+        add     r11, [r10]
 
         // Check if this bundle byte is dirty
-        cmp     byte ptr [rdi], 0xFF
+        cmp     byte ptr [r11], 0xFF
 
         jne     UpdateCardBundle_Debug
         REPRET
 
     UpdateCardBundle_Debug:
-        mov     byte ptr [rdi], 0xFF
+        mov     byte ptr [r11], 0xFF
 #endif
 
         ret

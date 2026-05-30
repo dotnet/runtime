@@ -182,23 +182,28 @@
 
 // AMD64 write barrier ABI (see vm\amd64\JitHelpers_Fast.asm, vm\amd64\JitHelpers_Fast.S):
 // CORINFO_HELP_ASSIGN_REF (JIT_WriteBarrier), CORINFO_HELP_CHECKED_ASSIGN_REF (JIT_CheckedWriteBarrier):
-//     The usual amd64 calling convention is observed.
-//     TODO-CQ: could this be optimized?
+//     Custom calling convention: dst is passed in R11 (NOT REG_ARG_0). The "this"-equivalent
+//     register on each ABI (RCX on Win-x64, RDI on SysV) is preserved by the helpers, so the
+//     JIT can keep its contents live across the call.
 //
 
-#define REG_WRITE_BARRIER_DST          REG_ARG_0
-#define RBM_WRITE_BARRIER_DST          RBM_ARG_0
+#define REG_WRITE_BARRIER_DST          REG_R11
+#define RBM_WRITE_BARRIER_DST          RBM_R11
 
 #define REG_WRITE_BARRIER_SRC          REG_ARG_1
 #define RBM_WRITE_BARRIER_SRC          RBM_ARG_1
 
 #define RBM_CALLEE_TRASH_NOGC        RBM_CALLEE_TRASH
 
-// Registers killed by CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
-#define RBM_CALLEE_TRASH_WRITEBARRIER         RBM_CALLEE_TRASH_NOGC
-
-// Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
-#define RBM_CALLEE_GCTRASH_WRITEBARRIER       RBM_CALLEE_TRASH_NOGC
+#ifdef UNIX_AMD64_ABI
+// RDI (REG_ARG_0 on SysV) is preserved by the helper so it stays out of the kill set.
+#define RBM_CALLEE_TRASH_WRITEBARRIER         (RBM_CALLEE_TRASH_NOGC & ~RBM_RDI)
+#define RBM_CALLEE_GCTRASH_WRITEBARRIER       (RBM_CALLEE_TRASH_NOGC & ~RBM_RDI)
+#else // !UNIX_AMD64_ABI
+// RCX (REG_ARG_0 on Win-x64) is preserved by the helper so it stays out of the kill set.
+#define RBM_CALLEE_TRASH_WRITEBARRIER         (RBM_CALLEE_TRASH_NOGC & ~RBM_RCX)
+#define RBM_CALLEE_GCTRASH_WRITEBARRIER       (RBM_CALLEE_TRASH_NOGC & ~RBM_RCX)
+#endif // !UNIX_AMD64_ABI
 
 // We have two register classifications
 // * callee trash: aka     volatile or caller saved
