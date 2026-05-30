@@ -91,7 +91,7 @@ bool IsSideEffectBarrier(Compiler* comp, GenTree* node, bool blockHasEHSuccs)
             return false;
         }
         LclVarDsc const* const dsc = comp->lvaGetDesc(node->AsLclVarCommon());
-        return !dsc->lvTracked || dsc->lvLiveInOutOfHndlr;
+        return !dsc->lvTracked || dsc->IsLiveInOutOfHandler();
     }
 
     return false;
