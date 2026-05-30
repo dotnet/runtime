@@ -9414,26 +9414,24 @@ void Compiler::impTransformDevirtualizedCall(GenTreeCall*            call,
             }
         }
     }
-    else
+
+    if (instParam == nullptr && dcInfo->pMethSig->hasTypeArg())
     {
-        if (dcInfo->pMethSig->hasTypeArg())
+        if (((SIZE_T)dcInfo->tokenLookupContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD)
         {
-            if (((SIZE_T)dcInfo->tokenLookupContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD)
-            {
-                CORINFO_METHOD_HANDLE exactMethodHandle =
-                    (CORINFO_METHOD_HANDLE)((SIZE_T)dcInfo->tokenLookupContext & ~CORINFO_CONTEXTFLAGS_MASK);
+            CORINFO_METHOD_HANDLE exactMethodHandle =
+                (CORINFO_METHOD_HANDLE)((SIZE_T)dcInfo->tokenLookupContext & ~CORINFO_CONTEXTFLAGS_MASK);
 
-                instParam = getLookupTree(dcInfo->pInstParamLookup, GTF_ICON_METHOD_HDL, exactMethodHandle);
-            }
-            else
-            {
-                assert(((SIZE_T)dcInfo->tokenLookupContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS);
+            instParam = getLookupTree(dcInfo->pInstParamLookup, GTF_ICON_METHOD_HDL, exactMethodHandle);
+        }
+        else
+        {
+            assert(((SIZE_T)dcInfo->tokenLookupContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS);
 
-                CORINFO_CLASS_HANDLE exactClassHandle =
-                    (CORINFO_CLASS_HANDLE)((SIZE_T)dcInfo->tokenLookupContext & ~CORINFO_CONTEXTFLAGS_MASK);
+            CORINFO_CLASS_HANDLE exactClassHandle =
+                (CORINFO_CLASS_HANDLE)((SIZE_T)dcInfo->tokenLookupContext & ~CORINFO_CONTEXTFLAGS_MASK);
 
-                instParam = getLookupTree(dcInfo->pInstParamLookup, GTF_ICON_CLASS_HDL, exactClassHandle);
-            }
+            instParam = getLookupTree(dcInfo->pInstParamLookup, GTF_ICON_CLASS_HDL, exactClassHandle);
         }
     }
 
