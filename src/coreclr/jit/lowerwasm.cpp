@@ -447,7 +447,7 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
     // LEA doesn't overflow. It will involve creating a new frontend node to represent "nuw" (offset) addition.
 
     GenTree * addr = indirNode->Addr();
-    if (addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), indirNode->Size()))
+    if (addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), indirNode->Size() DEBUGARG(true /* disableAssertion */)))
     {
         // An indir through a lcl_addr should never have a multiply-used address since it doesn't need a null check
         //  and can't fault. If it does, this transform is incorrect.
