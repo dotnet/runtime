@@ -370,7 +370,7 @@ public unsafe partial interface IDacDbiInterface
     int GetModuleData(ulong vmModule, DacDbiModuleInfo* pData);
 
     [PreserveSig]
-    int GetModuleForAssembly(ulong vmAssembly, ulong* pModule);
+    int GetModuleForAssembly(ulong vmAssembly, ulong* pModule, Interop.BOOL* pIsModuleLoaded);
 
     [PreserveSig]
     int GetAddressType(ulong address, int* pRetVal);
@@ -383,9 +383,6 @@ public unsafe partial interface IDacDbiInterface
 
     [PreserveSig]
     int EnumerateAssembliesInAppDomain(ulong vmAppDomain, delegate* unmanaged<ulong, nint, void> fpCallback, nint pUserData);
-
-    [PreserveSig]
-    int EnumerateModulesInAssembly(ulong vmAssembly, nint fpCallback, nint pUserData);
 
     [PreserveSig]
     int RequestSyncAtEvent();
@@ -553,7 +550,8 @@ public unsafe partial interface IDacDbiInterface
     int GetExactTypeHandle(nint pTypeData, nint pArgInfo, ulong* pVmTypeHandle);
 
     [PreserveSig]
-    int GetMethodDescParams(ulong vmMethodDesc, ulong genericsToken, uint* pcGenericClassTypeParams, nint pGenericTypeParams);
+    int EnumerateMethodDescParams(ulong vmMethodDesc, ulong genericsToken, uint* pcGenericClassTypeParams,
+        delegate* unmanaged<DebuggerIPCE_ExpandedTypeData*, nint, void> fpCallback, nint pUserData);
 
     [PreserveSig]
     int GetThreadStaticAddress(ulong vmField, ulong vmRuntimeThread, ulong* pRetVal);
@@ -565,7 +563,8 @@ public unsafe partial interface IDacDbiInterface
     int GetEnCHangingFieldInfo(nint pEnCFieldInfo, nint pFieldData, Interop.BOOL* pfStatic);
 
     [PreserveSig]
-    int GetTypeHandleParams(ulong vmTypeHandle, nint pParams);
+    int EnumerateTypeHandleParams(ulong vmTypeHandle,
+        delegate* unmanaged<DebuggerIPCE_ExpandedTypeData*, nint, void> fpCallback, nint pUserData);
 
     [PreserveSig]
     int GetSimpleType(int simpleType, uint* pMetadataToken, ulong* pVmModule);
@@ -574,7 +573,7 @@ public unsafe partial interface IDacDbiInterface
     int IsExceptionObject(ulong vmObject, Interop.BOOL* pResult);
 
     [PreserveSig]
-    int GetStackFramesFromException(ulong vmObject, nint pDacStackFrames);
+    int EnumerateStackFramesFromException(ulong vmObject, /*FP_EXCEPTION_STACK_FRAME_CALLBACK*/ delegate* unmanaged<ulong, ulong, ulong, uint, Interop.BOOL, nint, void> fpCallback, nint pUserData);
 
     [PreserveSig]
     int IsRcw(ulong vmObject, Interop.BOOL* pResult);

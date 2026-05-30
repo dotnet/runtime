@@ -154,4 +154,37 @@ public class ReJITTests
 
         Assert.Equal(expectedRejitIds, rejitIds);
     }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void IsDeoptimized_Synthetic(MockTarget.Architecture arch)
+    {
+        ReJITContractContext context = CreateReJITContract(arch, _ => { });
+        ILCodeVersionHandle synthetic = ILCodeVersionHandle.CreateSynthetic(new TargetPointer(0x100), 100);
+        Assert.False(context.ReJIT.IsDeoptimized(synthetic));
+    }
+
+    public static IEnumerable<object[]> ArchWithDeoptimized()
+    {
+        foreach (object[] stdArch in new MockTarget.StdArch())
+        {
+            yield return [stdArch[0], true];
+            yield return [stdArch[0], false];
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(ArchWithDeoptimized))]
+    public void IsDeoptimized_Explicit(MockTarget.Architecture arch, bool deoptimized)
+    {
+        ILCodeVersionHandle explicitHandle = ILCodeVersionHandle.Invalid;
+        ReJITContractContext context = CreateReJITContract(
+            arch,
+            rejitBuilder =>
+            {
+                var node = rejitBuilder.AddExplicitILCodeVersionNode(1, MockReJITBuilder.RejitFlags.kStateActive, deoptimized: deoptimized);
+                explicitHandle = ILCodeVersionHandle.CreateExplicit(node.Address);
+            });
+        Assert.Equal(deoptimized, context.ReJIT.IsDeoptimized(explicitHandle));
+    }
 }

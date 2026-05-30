@@ -1725,9 +1725,9 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
         return NO_ASSERTION_INDEX;
     }
 
-    VNFunc   relopFunc = relopFuncApp.m_func;
-    ValueNum op1VN     = relopFuncApp.m_args[0];
-    ValueNum op2VN     = relopFuncApp.m_args[1];
+    VNFunc   relopFunc = relopFuncApp.GetFunc();
+    ValueNum op1VN     = relopFuncApp.GetArg(0);
+    ValueNum op2VN     = relopFuncApp.GetArg(1);
 
     if ((genActualType(vnStore->TypeOfVN(op1VN)) != TYP_INT) || (genActualType(vnStore->TypeOfVN(op2VN)) != TYP_INT))
     {
@@ -2888,10 +2888,10 @@ GenTree* Compiler::optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, G
         // Last chance - propagate VNF_PtrToLoc(lcl, offset) as GT_LCL_ADDR node
         VNFuncApp funcApp;
         if (((tree->gtFlags & GTF_SIDE_EFFECT) == 0) && vnStore->GetVNFunc(vnCns, &funcApp) &&
-            (funcApp.m_func == VNF_PtrToLoc))
+            (funcApp.FuncIs(VNF_PtrToLoc)))
         {
-            unsigned lcl  = (unsigned)vnStore->CoercedConstantValue<size_t>(funcApp.m_args[0]);
-            unsigned offs = (unsigned)vnStore->CoercedConstantValue<size_t>(funcApp.m_args[1]);
+            unsigned lcl  = (unsigned)vnStore->CoercedConstantValue<size_t>(funcApp.GetArg(0));
+            unsigned offs = (unsigned)vnStore->CoercedConstantValue<size_t>(funcApp.GetArg(1));
             return gtNewLclAddrNode(lcl, offs, tree->TypeGet());
         }
 
@@ -4270,7 +4270,7 @@ AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP as
         {
             VNFuncApp funcApp;
             if (vnStore->GetVNFunc(vnStore->VNConservativeNormalValue(op1->gtVNPair), &funcApp) &&
-                (funcApp.m_func == VNF_InvariantNonNullLoad) && (curAssertion.GetOp1().GetVN() == funcApp.m_args[0]))
+                (funcApp.FuncIs(VNF_InvariantNonNullLoad)) && (curAssertion.GetOp1().GetVN() == funcApp.GetArg(0)))
             {
                 return assertionIndex;
             }
@@ -4440,8 +4440,8 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
             // relopVN's operands differ from the physical op1 and op2 due to optimization passes.
             VNFuncApp relopFuncApp;
             if (vnStore->IsVNRelop(relopVN, &relopFuncApp) &&
-                (((relopFuncApp.m_args[0] == op1VN) && (relopFuncApp.m_args[1] == op2VN)) ||
-                 ((relopFuncApp.m_args[0] == op2VN) && (relopFuncApp.m_args[1] == op1VN))))
+                (((relopFuncApp.GetArg(0) == op1VN) && (relopFuncApp.GetArg(1) == op2VN)) ||
+                 ((relopFuncApp.GetArg(0) == op2VN) && (relopFuncApp.GetArg(1) == op1VN))))
             {
                 // VNs match - we'll find nothing new by looking at individual operand ranges.
             }
@@ -5223,23 +5223,23 @@ static GCInfo::WriteBarrierForm GetWriteBarrierForm(Compiler* comp, ValueNum vn)
     VNFuncApp funcApp;
     if (vnStore->GetVNFunc(vnStore->VNNormalValue(vn), &funcApp))
     {
-        if (funcApp.m_func == VNF_PtrToArrElem)
+        if (funcApp.FuncIs(VNF_PtrToArrElem))
         {
             // Check whether the array is on the heap
-            ValueNum arrayVN = funcApp.m_args[1];
+            ValueNum arrayVN = funcApp.GetArg(1);
             return GetWriteBarrierForm(comp, arrayVN);
         }
-        if (funcApp.m_func == VNF_PtrToLoc)
+        if (funcApp.FuncIs(VNF_PtrToLoc))
         {
             // Pointer to a local
             return GCInfo::WriteBarrierForm::WBF_NoBarrier;
         }
-        if ((funcApp.m_func == VNF_PtrToStatic) && vnStore->IsVNHandle(funcApp.m_args[0], GTF_ICON_STATIC_BOX_PTR))
+        if ((funcApp.FuncIs(VNF_PtrToStatic)) && vnStore->IsVNHandle(funcApp.GetArg(0), GTF_ICON_STATIC_BOX_PTR))
         {
             // Boxed static - always on the heap
             return GCInfo::WriteBarrierForm::WBF_BarrierUnchecked;
         }
-        if (funcApp.m_func == VNF_ADD)
+        if (funcApp.FuncIs(VNF_ADD))
         {
             // Check arguments of the GT_ADD
             // To make it conservative, we require one of the arguments to be a constant, e.g.:
@@ -5250,13 +5250,13 @@ static GCInfo::WriteBarrierForm GetWriteBarrierForm(Compiler* comp, ValueNum vn)
             // Because "addressOfLocal + nativeIntVariable" could be in fact a pointer to the heap.
             // if "nativeIntVariable == addressWithinHeap - addressOfLocal".
             //
-            if (vnStore->IsVNConstantNonHandle(funcApp.m_args[0]))
+            if (vnStore->IsVNConstantNonHandle(funcApp.GetArg(0)))
             {
-                return GetWriteBarrierForm(comp, funcApp.m_args[1]);
+                return GetWriteBarrierForm(comp, funcApp.GetArg(1));
             }
-            if (vnStore->IsVNConstantNonHandle(funcApp.m_args[1]))
+            if (vnStore->IsVNConstantNonHandle(funcApp.GetArg(1)))
             {
-                return GetWriteBarrierForm(comp, funcApp.m_args[0]);
+                return GetWriteBarrierForm(comp, funcApp.GetArg(0));
             }
         }
     }
@@ -5479,23 +5479,23 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
     };
 
     // First, check if we have arr[arr.Length - cns] when we know arr.Length is >= cns.
-    VNFuncApp funcApp;
-    if (vnStore->GetVNFunc(vnCurIdx, &funcApp) && (funcApp.m_func == VNF_ADD))
+    ValueNum add0, add1;
+    if (vnStore->IsVNBinFunc(vnCurIdx, VNF_ADD, &add0, &add1))
     {
-        if (!vnStore->IsVNInt32Constant(funcApp.m_args[1]))
+        if (!vnStore->IsVNInt32Constant(add1))
         {
             // Normalize constants to be on the right side
-            std::swap(funcApp.m_args[0], funcApp.m_args[1]);
+            std::swap(add0, add1);
         }
 
-        if ((funcApp.m_args[0] == vnCurLen) && vnStore->IsVNInt32Constant(funcApp.m_args[1]))
+        if ((add0 == vnCurLen) && vnStore->IsVNInt32Constant(add1))
         {
             Range rng = RangeCheck::GetRangeFromAssertions(this, vnCurLen, assertions);
             // Lower known limit of ArrLen:
             const int lenLowerLimit = rng.LowerLimit().GetConstant();
 
             // Negative delta in the array access (ArrLen + -CNS)
-            const int delta = vnStore->GetConstantInt32(funcApp.m_args[1]);
+            const int delta = vnStore->GetConstantInt32(add1);
             if ((lenLowerLimit > 0) && (delta < 0) && (delta > INT_MIN) && (lenLowerLimit >= -delta))
             {
                 return dropBoundsCheck(INDEBUG("a[a.Length-cns] when a.Length is known to be >= cns"));

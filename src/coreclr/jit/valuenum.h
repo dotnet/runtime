@@ -182,9 +182,36 @@ VNFunc GetVNFuncForNode(GenTree* node);
 // "m_func" to the first "m_arity" (<= 4) argument values in "m_args."
 struct VNFuncApp
 {
+private:
     VNFunc    m_func;
     unsigned  m_arity;
     ValueNum* m_args;
+
+    friend class ValueNumStore;
+
+public:
+    VNFuncApp(VNFunc func = VNF_COUNT)
+        : m_func(func)
+        , m_arity(0)
+        , m_args(nullptr)
+    {
+    }
+
+    VNFunc GetFunc() const
+    {
+        return m_func;
+    }
+
+    unsigned GetArity() const
+    {
+        return m_arity;
+    }
+
+    ValueNum GetArg(unsigned index) const
+    {
+        assert(index < m_arity);
+        return m_args[index];
+    }
 
     bool FuncIs(VNFunc func) const
     {
@@ -197,7 +224,7 @@ struct VNFuncApp
         return FuncIs(func) || FuncIs(rest...);
     }
 
-    bool Equals(const VNFuncApp& funcApp)
+    bool Equals(const VNFuncApp& funcApp) const
     {
         if (m_func != funcApp.m_func)
         {
@@ -755,7 +782,7 @@ public:
     bool VNHasExc(ValueNum vn)
     {
         VNFuncApp funcApp;
-        return GetVNFunc(vn, &funcApp) && funcApp.m_func == VNF_ValWithExc;
+        return GetVNFunc(vn, &funcApp) && funcApp.FuncIs(VNF_ValWithExc);
     }
 
     // If vn "excSet" is "VNForEmptyExcSet()" we just return "vn"

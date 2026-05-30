@@ -192,6 +192,18 @@ CDAC_TYPE_SIZE(sizeof(ArrayBase))
 CDAC_TYPE_FIELD(Array, T_UINT32, m_NumComponents, cdac_data<ArrayBase>::m_NumComponents)
 CDAC_TYPE_END(Array)
 
+CDAC_TYPE_BEGIN(StackTraceArrayHeader)
+CDAC_TYPE_SIZE(cdac_data<StackTraceArray>::HeaderSize)
+CDAC_TYPE_FIELD(StackTraceArrayHeader, T_UINT32, Size, cdac_data<StackTraceArray>::Size)
+CDAC_TYPE_END(StackTraceArrayHeader)
+
+CDAC_TYPE_BEGIN(StackTraceElement)
+CDAC_TYPE_SIZE(sizeof(StackTraceElement))
+CDAC_TYPE_FIELD(StackTraceElement, T_POINTER, Ip, offsetof(StackTraceElement, ip))
+CDAC_TYPE_FIELD(StackTraceElement, T_POINTER, MethodDesc, offsetof(StackTraceElement, pFunc))
+CDAC_TYPE_FIELD(StackTraceElement, T_INT32, Flags, offsetof(StackTraceElement, flags))
+CDAC_TYPE_END(StackTraceElement)
+
 CDAC_TYPE_BEGIN(InteropSyncBlockInfo)
 CDAC_TYPE_INDETERMINATE(InteropSyncBlockInfo)
 #ifdef FEATURE_COMINTEROP
@@ -986,6 +998,7 @@ CDAC_TYPE_FIELD(ILCodeVersionNode, T_NUINT, VersionId, cdac_data<ILCodeVersionNo
 CDAC_TYPE_FIELD(ILCodeVersionNode, T_POINTER, Next, cdac_data<ILCodeVersionNode>::Next)
 CDAC_TYPE_FIELD(ILCodeVersionNode, T_UINT32, RejitState, cdac_data<ILCodeVersionNode>::RejitState)
 CDAC_TYPE_FIELD(ILCodeVersionNode, T_POINTER, ILAddress, cdac_data<ILCodeVersionNode>::ILAddress)
+CDAC_TYPE_FIELD(ILCodeVersionNode, T_UINT32, Deoptimized, cdac_data<ILCodeVersionNode>::Deoptimized)
 CDAC_TYPE_END(ILCodeVersionNode)
 #endif // FEATURE_CODE_VERSIONING
 
@@ -1540,6 +1553,7 @@ CDAC_GLOBAL(FieldOffsetBigRVA, T_UINT32, FIELD_OFFSET_BIG_RVA)
 CDAC_GLOBAL(FieldOffsetDynamicRVA, T_UINT32, FIELD_OFFSET_DYNAMIC_RVA)
 CDAC_GLOBAL_POINTER(ClrNotificationArguments, &::g_clrNotificationArguments)
 CDAC_GLOBAL_POINTER(ArrayBoundsZero, cdac_data<ArrayBase>::ArrayBoundsZero)
+CDAC_GLOBAL_POINTER(CanonMethodTable, &::g_pCanonMethodTableClass)
 CDAC_GLOBAL_POINTER(ContinuationMethodTable, &::g_pContinuationClassIfSubTypeCreated)
 CDAC_GLOBAL_POINTER(ContinuationSingletonEEClass, &::g_singletonContinuationEEClass)
 CDAC_GLOBAL_POINTER(ExceptionMethodTable, &::g_pExceptionClass)
