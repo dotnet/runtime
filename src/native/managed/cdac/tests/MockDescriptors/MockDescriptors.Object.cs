@@ -146,7 +146,6 @@ internal sealed class MockDelegateObjectData : TypedView
     public const string TargetFieldName = "Target";
     public const string MethodPtrFieldName = "MethodPtr";
     public const string MethodPtrAuxFieldName = "MethodPtrAux";
-    public const string InvocationListFieldName = "InvocationList";
     public const string InvocationCountFieldName = "InvocationCount";
 
     public static Layout<MockDelegateObjectData> CreateLayout(MockTarget.Architecture architecture)
@@ -157,7 +156,6 @@ internal sealed class MockDelegateObjectData : TypedView
             .AddPointerField(TargetFieldName)
             .AddPointerField(MethodPtrFieldName)
             .AddPointerField(MethodPtrAuxFieldName)
-            .AddPointerField(InvocationListFieldName)
             .AddNUIntField(InvocationCountFieldName)
             .Build<MockDelegateObjectData>();
     }
@@ -184,12 +182,6 @@ internal sealed class MockDelegateObjectData : TypedView
     {
         get => ReadPointerField(MethodPtrAuxFieldName);
         set => WritePointerField(MethodPtrAuxFieldName, value);
-    }
-
-    public ulong InvocationList
-    {
-        get => ReadPointerField(InvocationListFieldName);
-        set => WritePointerField(InvocationListFieldName, value);
     }
 
     public ulong InvocationCount
@@ -343,7 +335,6 @@ internal partial class MockDescriptors
             mockDelegate.Target = target;
             mockDelegate.MethodPtr = methodPtr;
             mockDelegate.MethodPtrAux = methodPtrAux;
-            mockDelegate.InvocationList = invocationList;
             mockDelegate.InvocationCount = invocationCount;
             return fragment.Address;
         }

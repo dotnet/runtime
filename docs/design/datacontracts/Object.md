@@ -181,7 +181,7 @@ TargetPointer GetSyncBlockAddress(TargetPointer address)
 DelegateInfo GetDelegateInfo(TargetPointer address)
 {
     return new DelegateInfo(
-        Target:          target.ReadPointer(address + /* Delegate::_target offset */),
+        Target:          target.ReadPointer(address + /* Delegate::Target offset */),
         MethodPtr:       target.ReadCodePointer(address + /* Delegate::MethodPtr offset */),
         MethodPtrAux:    target.ReadCodePointer(address + /* Delegate::MethodPtrAux offset */),
         InvocationCount: target.ReadNUInt(address + /* Delegate::InvocationCount offset */));

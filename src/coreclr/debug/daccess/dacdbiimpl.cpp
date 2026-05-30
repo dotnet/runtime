@@ -3336,14 +3336,14 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetDelegateFunctionData(
     IsDelegate(delegateObject, &fIsDelegate);
     if (!fIsDelegate)
     {
-        return E_FAIL;
+        return CORDBG_E_UNSUPPORTED_DELEGATE;
     }
 
     HRESULT hr = S_OK;
     PTR_DelegateObject pDelObj = dac_cast<PTR_DelegateObject>(delegateObject.GetDacPtr());
     if (pDelObj->GetInvocationCount())
     {
-        return E_FAIL;
+        return CORDBG_E_UNSUPPORTED_DELEGATE;
     }
 
     TADDR targetMethodPtr = (TADDR)NULL;

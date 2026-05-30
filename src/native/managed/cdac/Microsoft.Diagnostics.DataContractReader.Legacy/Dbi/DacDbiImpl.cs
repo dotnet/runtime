@@ -3646,10 +3646,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             }
             else
             {
-                TargetPointer mt = _target.Contracts.Object.GetMethodTableAddress(vmObject);
-                IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-                TypeHandle typeHandle = rts.GetTypeHandle(mt);
-                *pResult = rts.IsDelegate(typeHandle) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+                *pResult = IsDelegateHelper(vmObject) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
             }
         }
         catch (System.Exception ex)
@@ -3672,21 +3669,21 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     public int GetDelegateFunctionData(ulong delegateObject, ulong* ppFunctionAssembly, uint* pMethodDef)
     {
         int hr = HResults.S_OK;
-        ulong functionAssembly = 0;
-        uint methodDef = 0;
         try
         {
             if (ppFunctionAssembly == null)
                 throw new ArgumentNullException(nameof(ppFunctionAssembly));
             if (pMethodDef == null)
                 throw new ArgumentNullException(nameof(pMethodDef));
+            if (!IsDelegateHelper(delegateObject))
+                throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_UNSUPPORTED_DELEGATE)!;
 
             DelegateInfo delegateInfo = _target.Contracts.Object.GetDelegateInfo(new TargetPointer(delegateObject));
 
             // Multicast/wrapper/special-sig delegates are not supported by this API.
             if (delegateInfo.InvocationCount.Value != 0)
             {
-                throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+                throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_UNSUPPORTED_DELEGATE)!;
             }
 
             // Open delegate uses methodPtrAux; closed delegate uses methodPtr.
@@ -3695,7 +3692,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 : delegateInfo.MethodPtr;
 
             IExecutionManager eman = _target.Contracts.ExecutionManager;
-            TargetPointer methodDescPtr  = eman.NonVirtualEntry2MethodDesc(targetMethodPtr);
+            TargetPointer methodDescPtr = eman.NonVirtualEntry2MethodDesc(targetMethodPtr);
 
             if (methodDescPtr == TargetPointer.Null)
             {
@@ -3704,16 +3701,13 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
             MethodDescHandle mdHandle = rts.GetMethodDescHandle(methodDescPtr);
-            methodDef = rts.GetMethodToken(mdHandle);
+            *pMethodDef = rts.GetMethodToken(mdHandle);
 
             TargetPointer mtPtr = rts.GetMethodTable(mdHandle);
             TypeHandle typeHandle = rts.GetTypeHandle(mtPtr);
             TargetPointer modulePtr = rts.GetModule(typeHandle);
             Contracts.ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
-            functionAssembly = _target.Contracts.Loader.GetAssembly(moduleHandle).Value;
-
-            *ppFunctionAssembly = functionAssembly;
-            *pMethodDef = methodDef;
+            *ppFunctionAssembly = _target.Contracts.Loader.GetAssembly(moduleHandle).Value;
         }
         catch (System.Exception ex)
         {
@@ -3743,13 +3737,13 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             if (ppTargetObj == null)
                 throw new ArgumentNullException(nameof(ppTargetObj));
+            if (!IsDelegateHelper(delegateObject))
+                throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_UNSUPPORTED_DELEGATE)!;
 
-            ulong targetObj = 0;
             DelegateInfo delegateInfo = _target.Contracts.Object.GetDelegateInfo(new TargetPointer(delegateObject));
-
             if (delegateInfo.InvocationCount.Value != 0)
             {
-                throw Marshal.GetExceptionForHR(HResults.CorDbgHResults.CORDBG_E_UNSUPPORTED_DELEGATE)!;
+                throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_UNSUPPORTED_DELEGATE)!;
             }
 
             if (delegateInfo.MethodPtrAux == TargetCodePointer.Null)
@@ -3757,7 +3751,11 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 // Closed delegate: return the bound target object reference.
                 *ppTargetObj = delegateInfo.Target.Value;
             }
-            // else: open delegate has no bound target; targetObj stays 0.
+            else
+            {
+                // Open delegate: return 0 to indicate no bound target object.
+                *ppTargetObj = 0;
+            }
         }
         catch (System.Exception ex)
         {
@@ -3774,6 +3772,14 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         }
 #endif
         return hr;
+    }
+
+    private bool IsDelegateHelper(ulong vmObject)
+    {
+        TargetPointer mt = _target.Contracts.Object.GetMethodTableAddress(vmObject);
+        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+        TypeHandle typeHandle = rts.GetTypeHandle(mt);
+        return rts.IsDelegate(typeHandle);
     }
 
     public int IsModuleMapped(ulong pModule, Interop.BOOL* isModuleMapped)
