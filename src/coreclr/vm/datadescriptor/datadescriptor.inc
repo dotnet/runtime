@@ -332,6 +332,8 @@ CDAC_TYPE_FIELD(LoaderAllocator, T_POINTER, DynamicHelpersStubHeap, cdac_data<Lo
 #endif // defined(FEATURE_READYTORUN) && defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS)
 CDAC_TYPE_FIELD(LoaderAllocator, T_POINTER, VirtualCallStubManager, cdac_data<LoaderAllocator>::VirtualCallStubManager)
 CDAC_TYPE_FIELD(LoaderAllocator, TYPE(ObjectHandle), ObjectHandle, cdac_data<LoaderAllocator>::ObjectHandle)
+CDAC_TYPE_FIELD(LoaderAllocator, T_BOOL, IsCollectible, cdac_data<LoaderAllocator>::IsCollectible)
+CDAC_TYPE_FIELD(LoaderAllocator, T_UINT64, CreationNumber, cdac_data<LoaderAllocator>::CreationNumber)
 CDAC_TYPE_END(LoaderAllocator)
 
 CDAC_TYPE_BEGIN(LoaderHeap)
