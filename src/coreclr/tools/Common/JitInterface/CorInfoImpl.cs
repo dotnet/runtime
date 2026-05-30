@@ -1502,6 +1502,12 @@ namespace Internal.JitInterface
 
             if (impl.RequiresInstMethodDescArg())
             {
+                if (unboxingStub)
+                {
+                    // Bail out for now. We need an unboxing stub that points to an instantiated method.
+                    info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                    return false;
+                }
 #if READYTORUN
                 MethodWithToken originalImplWithToken = new MethodWithToken(originalImpl, methodWithTokenImpl.Token, null, false, null, null);
                 info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.MethodDictionary, originalImplWithToken));
