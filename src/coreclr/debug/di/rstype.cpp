@@ -1651,6 +1651,32 @@ HRESULT CordbType::InitStringOrObjectClass(BOOL fForceInit)
 // Returns:
 //    S_OK on success.
 //-----------------------------------------------------------------------------
+namespace
+{
+    struct FieldDataAccumulator
+    {
+        CQuickArrayList<FieldData> fields;
+        HRESULT                    hrError;
+    };
+
+    void FieldDataCallback(FieldData *pFieldData, CALLBACK_DATA pUserData)
+    {
+        FieldDataAccumulator *acc = reinterpret_cast<FieldDataAccumulator*>(pUserData);
+
+        if (FAILED(acc->hrError))
+            return;
+
+        HRESULT hr = S_OK;
+        EX_TRY
+        {
+            acc->fields.Push(*pFieldData);
+        }
+        EX_CATCH_HRESULT(hr);
+        if (FAILED(hr))
+            acc->hrError = hr;
+    }
+}
+
 HRESULT CordbType::InitInstantiationFieldInfo(BOOL fForceInit)
 {
     HRESULT hr = S_OK;
@@ -1704,11 +1730,23 @@ HRESULT CordbType::InitInstantiationFieldInfo(BOOL fForceInit)
             // this may be called multiple times. Each call will discard previous values in m_fieldList and reinitialize
             // the list with updated information
             RSLockHolder lockHolder(pProcess->GetProcessLock());
-            IfFailThrow(pProcess->GetDAC()->GetInstantiationFieldInfo(m_pClass->GetModule()->GetRuntimeAssembly(),
+
+            FieldDataAccumulator acc;
+            acc.hrError = S_OK;
+
+            HRESULT hrEnum = pProcess->GetDAC()->EnumerateInstantiationFields(
+                                                          m_pClass->GetModule()->GetRuntimeAssembly(),
                                                           m_typeHandleExact,
                                                           typeHandleApprox,
-                                                          &m_fieldList,
-                                                          &m_objectSize));
+                                                          &m_objectSize,
+                                                          &FieldDataCallback,
+                                                          &acc);
+            if (SUCCEEDED(hrEnum) && FAILED(acc.hrError))
+                hrEnum = acc.hrError;
+            IfFailThrow(hrEnum);
+
+            int fieldCount = (int)acc.fields.Size();
+            m_fieldList.Init(fieldCount > 0 ? &acc.fields[0] : NULL, fieldCount);
         }
     }
     EX_CATCH_HRESULT(hr);

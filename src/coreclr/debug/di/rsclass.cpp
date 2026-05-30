@@ -741,6 +741,32 @@ HRESULT CordbClass::GetThisType(const Instantiation * pInst, CordbType ** ppResu
 // Note:
 //   Throws CORDBG_E_CLASS_NOT_LOADED on failure
 //-----------------------------------------------------------------------------
+namespace
+{
+    struct FieldDataAccumulator
+    {
+        CQuickArrayList<FieldData> fields;
+        HRESULT                    hrError;
+    };
+
+    void FieldDataCallback(FieldData *pFieldData, CALLBACK_DATA pUserData)
+    {
+        FieldDataAccumulator *acc = reinterpret_cast<FieldDataAccumulator*>(pUserData);
+
+        if (FAILED(acc->hrError))
+            return;
+
+        HRESULT hr = S_OK;
+        EX_TRY
+        {
+            acc->fields.Push(*pFieldData);
+        }
+        EX_CATCH_HRESULT(hr);
+        if (FAILED(hr))
+            acc->hrError = hr;
+    }
+}
+
 void CordbClass::Init(ClassLoadLevel desiredLoadLevel)
 {
     INTERNAL_SYNC_API_ENTRY(this->GetProcess());
@@ -784,7 +810,19 @@ void CordbClass::Init(ClassLoadLevel desiredLoadLevel)
         // full info load level
         if(desiredLoadLevel == FullInfo)
         {
-            IfFailThrow(pDac->GetClassInfo(vmTypeHandle, &m_classInfo));
+            FieldDataAccumulator acc;
+            acc.hrError = S_OK;
+
+            HRESULT hrEnum = pDac->EnumerateClassFields(vmTypeHandle,
+                                                        &m_classInfo.m_objectSize,
+                                                        &FieldDataCallback,
+                                                        &acc);
+            if (SUCCEEDED(hrEnum) && FAILED(acc.hrError))
+                hrEnum = acc.hrError;
+            IfFailThrow(hrEnum);
+
+            int fieldCount = (int)acc.fields.Size();
+            m_classInfo.m_fieldList.Init(fieldCount > 0 ? &acc.fields[0] : NULL, fieldCount);
 
             BOOL fGotUnallocatedStatic = GotUnallocatedStatic(&m_classInfo.m_fieldList);
 
