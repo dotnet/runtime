@@ -340,6 +340,8 @@ CDAC_TYPE_FIELD(LoaderAllocator, T_POINTER, DynamicHelpersStubHeap, cdac_data<Lo
 #endif // defined(FEATURE_READYTORUN) && defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS)
 CDAC_TYPE_FIELD(LoaderAllocator, T_POINTER, VirtualCallStubManager, cdac_data<LoaderAllocator>::VirtualCallStubManager)
 CDAC_TYPE_FIELD(LoaderAllocator, TYPE(ObjectHandle), ObjectHandle, cdac_data<LoaderAllocator>::ObjectHandle)
+CDAC_TYPE_FIELD(LoaderAllocator, T_BOOL, IsCollectible, cdac_data<LoaderAllocator>::IsCollectible)
+CDAC_TYPE_FIELD(LoaderAllocator, T_UINT64, CreationNumber, cdac_data<LoaderAllocator>::CreationNumber)
 CDAC_TYPE_END(LoaderAllocator)
 
 CDAC_TYPE_BEGIN(LoaderHeap)
@@ -1006,6 +1008,7 @@ CDAC_TYPE_FIELD(ILCodeVersionNode, T_NUINT, VersionId, cdac_data<ILCodeVersionNo
 CDAC_TYPE_FIELD(ILCodeVersionNode, T_POINTER, Next, cdac_data<ILCodeVersionNode>::Next)
 CDAC_TYPE_FIELD(ILCodeVersionNode, T_UINT32, RejitState, cdac_data<ILCodeVersionNode>::RejitState)
 CDAC_TYPE_FIELD(ILCodeVersionNode, T_POINTER, ILAddress, cdac_data<ILCodeVersionNode>::ILAddress)
+CDAC_TYPE_FIELD(ILCodeVersionNode, T_UINT32, Deoptimized, cdac_data<ILCodeVersionNode>::Deoptimized)
 CDAC_TYPE_END(ILCodeVersionNode)
 #endif // FEATURE_CODE_VERSIONING
 
@@ -1565,6 +1568,7 @@ CDAC_GLOBAL_POINTER(ContinuationMethodTable, &::g_pContinuationClassIfSubTypeCre
 CDAC_GLOBAL_POINTER(ContinuationSingletonEEClass, &::g_singletonContinuationEEClass)
 CDAC_GLOBAL_POINTER(ExceptionMethodTable, &::g_pExceptionClass)
 CDAC_GLOBAL_POINTER(FreeObjectMethodTable, &::g_pFreeObjectMethodTable)
+CDAC_GLOBAL_POINTER(MulticastDelegateMethodTable, &::g_pMulticastDelegateClass)
 CDAC_GLOBAL_POINTER(ObjectMethodTable, &::g_pObjectClass)
 CDAC_GLOBAL_POINTER(ObjectArrayMethodTable, &::g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT])
 CDAC_GLOBAL_POINTER(StringMethodTable, &::g_pStringClass)

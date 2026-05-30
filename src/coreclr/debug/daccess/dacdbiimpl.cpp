@@ -4071,7 +4071,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetSymbolsBuffer(VMPTR_Module vmM
 
 
 
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetModuleForAssembly(VMPTR_Assembly vmAssembly, OUT VMPTR_Module * pModule)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetModuleForAssembly(VMPTR_Assembly vmAssembly, OUT VMPTR_Module * pModule, OUT BOOL * pIsModuleLoaded)
 {
     DD_ENTER_MAY_THROW;
 
@@ -4081,8 +4081,26 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetModuleForAssembly(VMPTR_Assemb
 
         _ASSERTE(pModule != NULL);
 
+        // Initialize out params up front so callers don't observe stale/uninitialized
+        // values if we throw below.
+        *pModule = VMPTR_Module::NullPtr();
+        if (pIsModuleLoaded != NULL)
+        {
+            *pIsModuleLoaded = FALSE;
+        }
+
         Assembly * pAssembly = vmAssembly.GetDacPtr();
+        if (pAssembly == NULL)
+        {
+            ThrowHR(E_INVALIDARG);
+        }
+
         pModule->SetHostPtr(pAssembly->GetModule());
+
+        if (pIsModuleLoaded != NULL)
+        {
+            *pIsModuleLoaded = pAssembly->IsLoaded() ? TRUE : FALSE;
+        }
     }
     EX_CATCH_HRESULT(hr);
     return hr;
@@ -4135,7 +4153,8 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetModuleData(VMPTR_Module vmModu
 }
 
 
-// Enumerate all Assemblies in an appdomain.
+// Implementation of IDacDbiInterface::EnumerateAssembliesInAppDomain.
+// Enumerate all the assemblies in the appdomain.
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateAssembliesInAppDomain(VMPTR_AppDomain vmAppDomain, FP_ASSEMBLY_ENUMERATION_CALLBACK fpCallback, CALLBACK_DATA pUserData)
 {
     DD_ENTER_MAY_THROW;
@@ -4149,9 +4168,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateAssembliesInAppDomain(VM
         // Iterate through all Assemblies (including shared) in the appdomain.
         AppDomain::AssemblyIterator iterator;
 
-        // If the containing appdomain is unloading, then don't enumerate any assemblies
-        // in the domain. This is to enforce rules at code:IDacDbiInterface#Enumeration.
-        // See comment in code:DacDbiInterfaceImpl::EnumerateModulesInAssembly code for details.
         AppDomain * pAppDomain = vmAppDomain.GetDacPtr();
 
         if (pAppDomain == nullptr)
@@ -4170,30 +4186,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateAssembliesInAppDomain(VM
 
             fpCallback(vmAssembly, pUserData);
         }
-    }
-    EX_CATCH_HRESULT(hr);
-    return hr;
-}
-
-// Implementation of IDacDbiInterface::EnumerateModulesInAssembly,
-// Enumerate all the modules (non-resource) in an assembly.
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateModulesInAssembly(VMPTR_Assembly vmAssembly, FP_MODULE_ENUMERATION_CALLBACK fpCallback, CALLBACK_DATA pUserData)
-{
-    DD_ENTER_MAY_THROW;
-
-    HRESULT hr = S_OK;
-    EX_TRY
-    {
-
-        _ASSERTE(fpCallback != NULL);
-
-        Assembly * pAssembly = vmAssembly.GetDacPtr();
-
-        // If assembly isn't yet loaded, just return
-        if (!pAssembly->IsLoaded())
-            return hr;
-
-        fpCallback(vmAssembly, pUserData);
     }
     EX_CATCH_HRESULT(hr);
     return hr;
