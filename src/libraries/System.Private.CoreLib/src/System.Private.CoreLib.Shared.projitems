@@ -2461,7 +2461,7 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.FTruncate.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.FTruncate.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Futex.cs">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Futex.cs" Condition="'$(TargetsLinux)' == 'true' or '$(TargetsAndroid)' == 'true'" >
       <Link>Common\Interop\Unix\System.Native\Interop.Futex.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetCpuUtilization.cs">
@@ -2698,7 +2698,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\RuntimeInformation.Unix.cs" Condition="'$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\StandardOleMarshalObject.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\SecureString.Unix.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelFutex.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelFutex.Unix.cs" Condition="'$(TargetsLinux)' == 'true' or '$(TargetsAndroid)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelMonitor.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Thread.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\TimerQueue.Unix.cs" Condition="'$(FeaturePortableTimer)' == 'true'" />
