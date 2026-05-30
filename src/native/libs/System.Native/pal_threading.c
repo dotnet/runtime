@@ -23,7 +23,7 @@
 #undef _XOPEN_SOURCE
 #endif
 
-#if defined(TARGET_LINUX)
+#if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
 #include <linux/futex.h>      /* Definition of FUTEX_* constants */
 #include <sys/syscall.h>      /* Definition of SYS_* constants */
 #include <unistd.h>           /* Declaration of syscall */
@@ -228,7 +228,7 @@ void SystemNative_LowLevelMonitor_Signal_Release(LowLevelMonitor* monitor)
     assert(error == 0);
 }
 
-#if defined(TARGET_LINUX)
+#if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
 void SystemNative_LowLevelFutex_WaitOnAddress(int32_t* address, int32_t comparand)
 {
     syscall(SYS_futex, address, FUTEX_WAIT_PRIVATE, comparand, NULL, NULL, 0);
@@ -257,7 +257,7 @@ void SystemNative_LowLevelFutex_WakeByAddressSingle(int32_t* address)
 {
     syscall(SYS_futex, address, FUTEX_WAKE_PRIVATE, 1, NULL, NULL, 0);
 }
-#else// TARGET_LINUX
+#else// defined(TARGET_LINUX) || defined(TARGET_ANDROID)
 
 __attribute__((noreturn))
 void SystemNative_LowLevelFutex_WaitOnAddress(int32_t* address, int32_t comparand)
@@ -287,7 +287,7 @@ void SystemNative_LowLevelFutex_WakeByAddressSingle(int32_t* address)
     abort();
 }
 
-#endif  // TARGET_LINUX
+#endif  // defined(TARGET_LINUX) || defined(TARGET_ANDROID)
 
 int32_t SystemNative_CreateThread(uintptr_t stackSize, void *(*startAddress)(void*), void *parameter)
 {
