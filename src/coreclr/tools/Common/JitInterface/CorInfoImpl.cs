@@ -1536,9 +1536,9 @@ namespace Internal.JitInterface
             }
 
 #if READYTORUN
-                // Testing has not shown that concerns about virtual matching are significant
-                // Only generate verification for builds with the stress mode enabled
-                if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout)
+            // Testing has not shown that concerns about virtual matching are significant
+            // Only generate verification for builds with the stress mode enabled
+            if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout)
             {
                 if (!methodWithTokenDecl.Method.OwningType.IsValueType || !methodWithTokenImpl.Method.OwningType.IsValueType)
                 {
