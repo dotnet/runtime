@@ -57,7 +57,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 offsets[frameInfoIndex] = offset;
                 offset += deduplicatedResult._methodNode.FrameInfos[frameInfoIndex].BlobData.Length;
-                offset += (-offset & 3); // 4-alignment for the personality routine
+                if (factory.Target.Architecture != TargetArchitecture.Wasm32)
+                {
+                    offset += (-offset & 3); // 4-alignment for the personality routine
+                }
                 if (factory.Target.Architecture != TargetArchitecture.X86)
                 {
                     offset += sizeof(uint); // personality routine
@@ -65,7 +68,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 if (frameInfoIndex == 0 && deduplicatedResult._methodNode.GCInfo != null)
                 {
                     offset += deduplicatedResult._methodNode.GCInfo.Length;
-                    offset += (-offset & 3); // 4-alignment after GC info in 1st funclet
+                    if (factory.Target.Architecture != TargetArchitecture.Wasm32)
+                    {
+                        offset += (-offset & 3); // 4-alignment after GC info in 1st funclet
+                    }
                 }
             }
 
@@ -79,7 +85,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     if (blobData != null)
                     {
                         offset += blobData.Length;
-                        offset += (-offset & 3); // 4-alignment for the personality routine
+                        if (factory.Target.Architecture != TargetArchitecture.Wasm32)
+                        {
+                            offset += (-offset & 3); // 4-alignment for the personality routine
+                        }
                         if (factory.Target.Architecture != TargetArchitecture.X86)
                         {
                             offset += sizeof(uint); // personality routine
@@ -267,9 +276,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 if (item.Bytes != null)
                 {
                     dataBuilder.EmitBytes(item.Bytes);
-                    // Maintain 4-alignment for the next unwind / GC info block
-                    int align4Pad = -item.Bytes.Length & 3;
-                    dataBuilder.EmitZeros(align4Pad);
+                    if (factory.Target.Architecture != TargetArchitecture.Wasm32)
+                    {
+                        // Maintain 4-alignment for the personality routine
+                        int align4Pad = -item.Bytes.Length & 3;
+                        dataBuilder.EmitZeros(align4Pad);
+                    }
                 }
                 else
                 {
