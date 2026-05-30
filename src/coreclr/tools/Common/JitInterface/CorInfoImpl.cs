@@ -1502,9 +1502,11 @@ namespace Internal.JitInterface
                 info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ConstructedTypeSymbol(originalImpl.OwningType));
 #endif
             }
-            else if ((isArrayInterfaceDevirtualization || isGenericVirtual) && impl.IsSharedByGenericMethodInstantiations)
+            else if ((isArrayInterfaceDevirtualization || isGenericVirtual) && impl.IsSharedByGenericInstantiations)
             {
-                bool requiresRuntimeLookup = originalImpl.IsSharedByGenericMethodInstantiations;
+                // We are dealing with a generic virtual method whose owning type is exact.
+                // If the method is not exact, a runtime lookup would be required.
+                bool requiresRuntimeLookup = originalImpl.IsSharedByGenericInstantiations;
                 if (requiresRuntimeLookup)
                 {
                     // TODO: Support for runtime lookup

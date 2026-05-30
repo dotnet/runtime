@@ -8869,6 +8869,8 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
                 return false;
             }
 
+            // We are dealing with a generic virtual method whose owning type is exact.
+            // If the method is not exact, a runtime lookup would be required.
             const bool requiresRuntimeLookup = TypeHandle::IsCanonicalSubtypeInstantiation(pDevirtMD->GetMethodInstantiation());
             if (requiresRuntimeLookup)
             {
