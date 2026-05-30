@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using SharedTypes.ComInterfaces;
@@ -288,6 +289,57 @@ namespace ComInterfaceGenerator.Tests
             Assert.True(TrackedIntMarshaller.UnmanagedToManagedCount > 0, "Tracked marshaller was not invoked on the getter return path.");
             Assert.True(AlternateIntMarshaller.ManagedToUnmanagedCount > 0, "Property-level fallback marshaller was not invoked on the setter value path.");
             Assert.True(AlternateIntMarshaller.UnmanagedToManagedCount > 0, "Property-level fallback marshaller was not invoked on the setter value path.");
+        }
+
+        // -------------------------------------------------------------------------
+        // Shadow-property attribute propagation. A derived [GeneratedComInterface]
+        // emits `new T Prop { get => ((Base)this).Prop; set => ((Base)this).Prop = value; }`
+        // for each property inherited from a base [GeneratedComInterface]. User-defined
+        // property-level attributes are propagated onto the shadow header so they remain
+        // visible via reflection on the derived interface type. Marshalling attributes
+        // ([MarshalUsing], [MarshalAs]) are intentionally stripped from the shadow because
+        // it is a pure forwarder and the underlying base accessor already carries the
+        // marshalling semantics.
+        // -------------------------------------------------------------------------
+
+        private static PropertyInfo GetDerivedShadowProperty(string propertyName)
+        {
+            PropertyInfo? shadow = typeof(IShadowAttributePropagationDerived).GetProperty(
+                propertyName,
+                BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            Assert.NotNull(shadow);
+            return shadow!;
+        }
+
+        [Fact]
+        public void DerivedShadowProperty_PropagatesUserPropertyAttribute()
+        {
+            PropertyInfo shadow = GetDerivedShadowProperty(nameof(IShadowAttributePropagationBase.MarkedValue));
+
+            ShadowAttributeMarkerAttribute? marker = shadow.GetCustomAttribute<ShadowAttributeMarkerAttribute>(inherit: false);
+
+            Assert.NotNull(marker);
+            Assert.Equal(7, marker!.Tag);
+        }
+
+        [Fact]
+        public void DerivedShadowProperty_OmitsPropertyLevelMarshalUsingAttribute()
+        {
+            PropertyInfo shadow = GetDerivedShadowProperty(nameof(IShadowAttributePropagationBase.MarshalledValue));
+
+            Assert.Empty(shadow.GetCustomAttributes(typeof(MarshalUsingAttribute), inherit: false));
+        }
+
+        [Fact]
+        public void DerivedShadowProperty_KeepsUserAttributesAndStripsMarshallingAttributes()
+        {
+            PropertyInfo shadow = GetDerivedShadowProperty(nameof(IShadowAttributePropagationBase.MarkedAndMarshalledValue));
+
+            ShadowAttributeMarkerAttribute? marker = shadow.GetCustomAttribute<ShadowAttributeMarkerAttribute>(inherit: false);
+            Assert.NotNull(marker);
+            Assert.Equal(13, marker!.Tag);
+
+            Assert.Empty(shadow.GetCustomAttributes(typeof(MarshalUsingAttribute), inherit: false));
         }
     }
 }

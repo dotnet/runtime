@@ -775,7 +775,7 @@ namespace Microsoft.Interop
 
                 // Buffered getter state for merging consecutive get+set pairs into one property
                 // declaration.
-                (string? PropName, string? DeclaringType, string? PropType) pendingGetter = default;
+                (string? PropName, string? DeclaringType, string? PropType, SequenceEqualImmutableArray<AttributeInfo> PropAttrs) pendingGetter = default;
 
                 foreach (ComMethodContext shadow in shadowingMethods)
                 {
@@ -791,21 +791,18 @@ namespace Microsoft.Interop
                         string propType = (isSetter
                             ? sigContext.StubParameters.Single().Type!
                             : sigContext.StubReturnType).NormalizeWhitespace().ToString();
-
-                        // Phase 1 strict surface disallows per-accessor attributes; in practice the
-                        // accessor IMethodSymbol carries no attributes for our supported shapes, so we
-                        // skip per-accessor attribute emission on the merged property header. Per-
-                        // accessor attribute propagation is tracked as a follow-up.
+                        SequenceEqualImmutableArray<AttributeInfo> propAttrs = shadow.MethodInfo.AssociatedAttributes;
 
                         if (!isSetter)
                         {
                             FlushPendingGetter(writer, ref pendingGetter);
-                            pendingGetter = (propName, declaringType, propType);
+                            pendingGetter = (propName, declaringType, propType, propAttrs);
                             continue;
                         }
 
                         if (pendingGetter.PropName == propName && pendingGetter.DeclaringType == declaringType)
                         {
+                            EmitPropertyAttributes(writer, pendingGetter.PropAttrs);
                             writer.WriteLine($"new {propType} {propName}");
                             writer.WriteLine('{');
                             writer.Indent++;
@@ -818,6 +815,7 @@ namespace Microsoft.Interop
                         }
 
                         FlushPendingGetter(writer, ref pendingGetter);
+                        EmitPropertyAttributes(writer, propAttrs);
                         writer.WriteLine($"new {propType} {propName}");
                         writer.WriteLine('{');
                         writer.Indent++;
@@ -828,6 +826,11 @@ namespace Microsoft.Interop
                     }
 
                     FlushPendingGetter(writer, ref pendingGetter);
+
+                    // AssociatedAttributes is currently populated only for property accessors; ordinary
+                    // method stubs must not carry any. If this fires, a new producer is feeding the field
+                    // for a non-property member and the emitter needs to decide how to consume it.
+                    Debug.Assert(shadow.MethodInfo.AssociatedAttributes.Array.IsEmpty);
 
                     foreach (AttributeListSyntax additionalAttr in sigContext.AdditionalAttributes)
                     {
@@ -850,12 +853,13 @@ namespace Microsoft.Interop
                 writer.Indent--;
                 writer.WriteLine('}');
 
-                static void FlushPendingGetter(IndentedTextWriter writer, ref (string? PropName, string? DeclaringType, string? PropType) pending)
+                static void FlushPendingGetter(IndentedTextWriter writer, ref (string? PropName, string? DeclaringType, string? PropType, SequenceEqualImmutableArray<AttributeInfo> PropAttrs) pending)
                 {
                     if (pending.PropName is null)
                     {
                         return;
                     }
+                    EmitPropertyAttributes(writer, pending.PropAttrs);
                     writer.WriteLine($"new {pending.PropType} {pending.PropName}");
                     writer.WriteLine('{');
                     writer.Indent++;
@@ -863,6 +867,24 @@ namespace Microsoft.Interop
                     writer.Indent--;
                     writer.WriteLine('}');
                     pending = default;
+                }
+
+                static void EmitPropertyAttributes(IndentedTextWriter writer, SequenceEqualImmutableArray<AttributeInfo> attrs)
+                {
+                    // The derived-interface property shadow is a pure C# forwarder: its accessors are
+                    // `get => ((Base)this).Prop;` / `set => ((Base)this).Prop = value;`, with no COM call
+                    // and therefore no marshalling. Marshalling attributes declared on the source property
+                    // are intentionally suppressed here so the shadow only carries semantically-meaningful
+                    // user attributes (e.g. attributes used for documentation, tooling, or reflection).
+                    foreach (AttributeInfo attrInfo in attrs)
+                    {
+                        if (attrInfo.Type is "global::" + TypeNames.MarshalUsingAttribute
+                            or "global::" + TypeNames.System_Runtime_InteropServices_MarshalAsAttribute)
+                        {
+                            continue;
+                        }
+                        writer.WriteLine($"[{attrInfo.Type}({string.Join(", ", attrInfo.Arguments)})]");
+                    }
                 }
             });
         }

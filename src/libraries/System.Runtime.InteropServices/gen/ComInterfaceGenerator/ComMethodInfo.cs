@@ -20,18 +20,28 @@ namespace Microsoft.Interop
         public MemberDeclarationSyntax? Syntax { get; init; }
         public string MethodName { get; init; }
         public SequenceEqualImmutableArray<AttributeInfo> Attributes { get; init; }
+        /// <summary>
+        /// Attributes associated with this method that come from a related symbol rather than the method
+        /// itself (for example, attributes declared on the source <see cref="IPropertySymbol"/> when this
+        /// method is a property accessor).
+        /// </summary>
+        public SequenceEqualImmutableArray<AttributeInfo> AssociatedAttributes { get; init; }
         public bool IsUserDefinedShadowingMethod { get; init; }
 
         private ComMethodInfo(
             MemberDeclarationSyntax? syntax,
             string methodName,
             SequenceEqualImmutableArray<AttributeInfo> attributes,
-            bool isUserDefinedShadowingMethod)
+            bool isUserDefinedShadowingMethod,
+            SequenceEqualImmutableArray<AttributeInfo> associatedAttributes = default)
         {
             Syntax = syntax;
             MethodName = methodName;
             Attributes = attributes;
             IsUserDefinedShadowingMethod = isUserDefinedShadowingMethod;
+            AssociatedAttributes = associatedAttributes.Array.IsDefault
+                ? ImmutableArray<AttributeInfo>.Empty.ToSequenceEqual()
+                : associatedAttributes;
         }
 
         /// <summary>
@@ -94,7 +104,7 @@ namespace Microsoft.Interop
             if (ifaceContext.IsExternallyDefined)
             {
                 return DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From((
-                    new ComMethodInfo(null, method.Name, method.GetAttributes().Select(AttributeInfo.From).ToImmutableArray().ToSequenceEqual(), false),
+                    new ComMethodInfo(null, method.Name, CreateAttributeInfoArray(method.GetAttributes()), false),
                     method));
             }
 
@@ -141,15 +151,10 @@ namespace Microsoft.Interop
                 return DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From(diag);
             }
 
-            var attributes = method.GetAttributes();
-            var attributeInfos = ImmutableArray.CreateBuilder<AttributeInfo>(attributes.Length);
-            foreach (var attr in attributes)
-            {
-                attributeInfos.Add(AttributeInfo.From(attr));
-            }
+            var attributeInfos = CreateAttributeInfoArray(method.GetAttributes());
 
             bool shadowsBaseMethod = comMethodDeclaringSyntax.Modifiers.Any(SyntaxKind.NewKeyword);
-            var comMethodInfo = new ComMethodInfo(comMethodDeclaringSyntax, method.Name, attributeInfos.MoveToImmutable().ToSequenceEqual(), shadowsBaseMethod);
+            var comMethodInfo = new ComMethodInfo(comMethodDeclaringSyntax, method.Name, attributeInfos, shadowsBaseMethod);
             return DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From((comMethodInfo, method));
         }
 
@@ -246,7 +251,12 @@ namespace Microsoft.Interop
             }
 
             methods.Add(DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From((
-                new ComMethodInfo(null, accessor.Name, accessor.GetAttributes().Select(AttributeInfo.From).ToImmutableArray().ToSequenceEqual(), isUserDefinedShadowingMethod: false),
+                new ComMethodInfo(
+                    null,
+                    accessor.Name,
+                    CreateAttributeInfoArray(accessor.GetAttributes()),
+                    isUserDefinedShadowingMethod: false,
+                    GetAssociatedAttributesForPropertyAccessor(accessor)),
                 accessor)));
         }
 
@@ -260,15 +270,39 @@ namespace Microsoft.Interop
                 return;
             }
 
-            var attributes = accessor.GetAttributes();
-            var attributeInfos = ImmutableArray.CreateBuilder<AttributeInfo>(attributes.Length);
-            foreach (var attr in attributes)
+            methods.Add(DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From((
+                new ComMethodInfo(
+                    propertyDeclaringSyntax,
+                    accessor.Name,
+                    CreateAttributeInfoArray(accessor.GetAttributes()),
+                    isUserDefinedShadowingMethod: false,
+                    GetAssociatedAttributesForPropertyAccessor(accessor)),
+                accessor)));
+        }
+
+        private static SequenceEqualImmutableArray<AttributeInfo> GetAssociatedAttributesForPropertyAccessor(IMethodSymbol accessor)
+        {
+            if (accessor.AssociatedSymbol is not IPropertySymbol property)
             {
-                attributeInfos.Add(AttributeInfo.From(attr));
+                return ImmutableArray<AttributeInfo>.Empty.ToSequenceEqual();
             }
 
-            var comMethodInfo = new ComMethodInfo(propertyDeclaringSyntax, accessor.Name, attributeInfos.MoveToImmutable().ToSequenceEqual(), isUserDefinedShadowingMethod: false);
-            methods.Add(DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From((comMethodInfo, accessor)));
+            return CreateAttributeInfoArray(property.GetAttributes());
+        }
+
+        private static SequenceEqualImmutableArray<AttributeInfo> CreateAttributeInfoArray(ImmutableArray<AttributeData> attributes)
+        {
+            if (attributes.IsDefaultOrEmpty)
+            {
+                return ImmutableArray<AttributeInfo>.Empty.ToSequenceEqual();
+            }
+
+            var builder = ImmutableArray.CreateBuilder<AttributeInfo>(attributes.Length);
+            foreach (var attr in attributes)
+            {
+                builder.Add(AttributeInfo.From(attr));
+            }
+            return builder.MoveToImmutable().ToSequenceEqual();
         }
 
         private static DiagnosticInfo? GetDiagnosticIfUnsupportedPropertyShape(PropertyDeclarationSyntax propertyDeclaringSyntax, IPropertySymbol property, INamedTypeSymbol ifaceSymbol)
