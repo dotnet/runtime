@@ -501,6 +501,7 @@ CDAC_TYPE_FIELD(EEClass, T_UINT16, NumInstanceFields, cdac_data<EEClass>::NumIns
 CDAC_TYPE_FIELD(EEClass, T_UINT16, NumStaticFields, cdac_data<EEClass>::NumStaticFields)
 CDAC_TYPE_FIELD(EEClass, T_UINT16, NumThreadStaticFields, cdac_data<EEClass>::NumThreadStaticFields)
 CDAC_TYPE_FIELD(EEClass, T_UINT16, NumNonVirtualSlots, cdac_data<EEClass>::NumNonVirtualSlots)
+CDAC_TYPE_FIELD(EEClass, T_UINT8, BaseSizePadding, cdac_data<EEClass>::BaseSizePadding)
 CDAC_TYPE_END(EEClass)
 
 CDAC_TYPE_BEGIN(GenericsDictInfo)

@@ -521,6 +521,8 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     public uint GetBaseSize(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (uint)0 : _methodTables[typeHandle.Address].Flags.BaseSize;
 
+    public byte GetBaseSizePadding(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (byte)0 : GetClassData(typeHandle).BaseSizePadding;
+
     public uint GetComponentSize(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (uint)0 : _methodTables[typeHandle.Address].Flags.ComponentSize;
 
     public TargetPointer GetClassPointer(TypeHandle typeHandle)

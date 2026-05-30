@@ -1743,83 +1743,325 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
-    public int GetClassInfo(ulong thExact, nint pData)
+    public int EnumerateClassFields(ulong thExact, nuint* pObjectSize, delegate* unmanaged<FieldData*, void*, void> fpCallback, nint pUserData)
     {
-        int hr = LegacyFallbackHelper.CanFallback() && _legacy is not null
-            ? _legacy.GetClassInfo(thExact, pData)
-            : HResults.E_NOTIMPL;
+        nuint cdacObjectSize = 0;
 #if DEBUG
-        // Validate that the cDAC computes the same total field count as the legacy DAC
-        // (which now includes EnC-added fields via the new IEditAndContinue contract).
-        // ClassInfo layout (matches native dacdbistructures.h):
-        //   SIZE_T                     m_objectSize;             // offset 0
-        //   DacDbiArrayList<FieldData> m_fieldList;              // T* m_pList; int m_nEntries;
-        // So m_nEntries lives at offset (2 * IntPtr.Size) within ClassInfo.
-        if (hr == HResults.S_OK && pData != 0)
-        {
-            int legacyCount = *(int*)(pData + 2 * sizeof(nint));
-            ValidateTotalFieldCountForDbi(new TargetPointer(thExact), legacyCount);
-        }
+        List<FieldData>? cdacFields = _legacy is not null ? new() : null;
 #endif
-        return hr;
-    }
-
-    public int GetInstantiationFieldInfo(ulong vmAssembly, ulong vmTypeHandle, ulong vmExactMethodTable, nint pFieldList, nuint* pObjectSize)
-    {
-        int hr = LegacyFallbackHelper.CanFallback() && _legacy is not null
-            ? _legacy.GetInstantiationFieldInfo(vmAssembly, vmTypeHandle, vmExactMethodTable, pFieldList, pObjectSize)
-            : HResults.E_NOTIMPL;
-#if DEBUG
-        // DacDbiArrayList<FieldData> layout:
-        //   FieldData * m_pList;     // offset 0
-        //   int         m_nEntries;  // offset IntPtr.Size
-        if (hr == HResults.S_OK && pFieldList != 0)
-        {
-            int legacyCount = *(int*)(pFieldList + sizeof(nint));
-            // GetInstantiationFieldInfo uses vmExactMethodTable as the "approximate" type for
-            // GetTotalFieldCount (matches native: GetTypeHandles uses vmThApprox for thApprox).
-            ValidateTotalFieldCountForDbi(new TargetPointer(vmExactMethodTable), legacyCount);
-        }
-#endif
-        return hr;
-    }
-
-#if DEBUG
-    // Mirrors native DacDbiInterfaceImpl::GetTotalFieldCount, including EnC-added fields
-    // sourced from the new IEditAndContinue contract.
-    private void ValidateTotalFieldCountForDbi(TargetPointer mtPtr, int legacyCount)
-    {
+        int hr = HResults.S_OK;
         try
         {
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-            TypeHandle th = rts.GetTypeHandle(mtPtr);
-            if (rts.IsTypeDesc(th))
-                return;
+            TypeHandle thExactHandle = rts.GetTypeHandle(new TargetPointer(thExact));
+            // Native semantics: thApprox is the same VMPTR_TypeHandle that was passed in.
+            // GetTypeHandles also throws CORDBG_E_CLASS_NOT_LOADED if vmThApprox is null.
+            if (thExactHandle.IsNull)
+                throw new global::System.Runtime.InteropServices.COMException(null, unchecked((int)0x80131309)); // CORDBG_E_CLASS_NOT_LOADED
 
-            // Introduced instance fields = total instance fields - parent's instance fields.
-            uint ifCount = rts.GetNumInstanceFields(th);
-            TargetPointer parentMT = rts.GetParentMethodTable(th);
-            if (parentMT != TargetPointer.Null)
+            TypeHandle thApprox = thExactHandle;
+
+            // For Generic classes the object size only comes through with an instantiated type.
+            // EnumerateClassFields is the !fIsInstantiatedType path of native InitClassData, so
+            // open generics report 0.
+            cdacObjectSize = 0;
+            if (rts.GetInstantiation(thApprox).Length == 0)
             {
-                TypeHandle parentTh = rts.GetTypeHandle(parentMT);
-                ifCount -= rts.GetNumInstanceFields(parentTh);
+                uint baseSize = rts.GetBaseSize(thApprox);
+                byte padding = rts.GetBaseSizePadding(thApprox);
+                cdacObjectSize = (nuint)(baseSize - padding);
             }
-            uint sfCount = rts.GetNumStaticFields(th);
 
-            // EnC-added fields (only present when EnC is enabled on the module and the
-            // target was compiled with FEATURE_METADATA_UPDATER; otherwise the enumeration
-            // is empty).
-            IEditAndContinue enc = _target.Contracts.EditAndContinue;
-            int encInstance = enc.EnumerateAddedFieldDescs(th, staticFields: false).Count();
-            int encStatic = enc.EnumerateAddedFieldDescs(th, staticFields: true).Count();
-
-            uint cdacCount = ifCount + sfCount + (uint)encInstance + (uint)encStatic;
-            Debug.Assert((uint)legacyCount == cdacCount, $"cDAC field count: {cdacCount}, DAC: {legacyCount}");
+            CollectFieldsForDbi(rts, thExactHandle, thApprox, fpCallback, pUserData
+#if DEBUG
+                , cdacFields
+#endif
+                );
         }
-        catch (System.Exception)
+        catch (System.Exception ex)
         {
-            // Validation is best-effort; do not fail the legacy path if cDAC contracts cannot
-            // walk the target (e.g., paged-out memory or missing optional descriptors).
+            hr = ex.HResult;
+        }
+
+        if (hr == HResults.S_OK && pObjectSize != null)
+            *pObjectSize = cdacObjectSize;
+
+#if DEBUG
+        if (_legacy is not null)
+        {
+            ValidateEnumerateClassFieldsAgainstLegacy(thExact, cdacObjectSize, cdacFields, hr);
+        }
+#endif
+        return hr;
+    }
+
+    public int EnumerateInstantiationFields(ulong vmAssembly, ulong vmThExact, ulong vmThApprox, nuint* pObjectSize, delegate* unmanaged<FieldData*, void*, void> fpCallback, nint pUserData)
+    {
+        nuint cdacObjectSize = 0;
+#if DEBUG
+        List<FieldData>? cdacFields = _legacy is not null ? new() : null;
+#endif
+        int hr = HResults.S_OK;
+        try
+        {
+            IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+            TypeHandle thExactHandle = rts.GetTypeHandle(new TargetPointer(vmThExact));
+            TypeHandle thApproxHandle = rts.GetTypeHandle(new TargetPointer(vmThApprox));
+            if (thApproxHandle.IsNull)
+                throw new global::System.Runtime.InteropServices.COMException(null, unchecked((int)0x80131309)); // CORDBG_E_CLASS_NOT_LOADED
+
+            // Native: *pObjectSize = thApprox.GetMethodTable()->GetNumInstanceFieldBytes();
+            uint baseSize = rts.GetBaseSize(thApproxHandle);
+            byte padding = rts.GetBaseSizePadding(thApproxHandle);
+            cdacObjectSize = (nuint)(baseSize - padding);
+
+            CollectFieldsForDbi(rts, thExactHandle, thApproxHandle, fpCallback, pUserData
+#if DEBUG
+                , cdacFields
+#endif
+                );
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        if (hr == HResults.S_OK && pObjectSize != null)
+            *pObjectSize = cdacObjectSize;
+
+#if DEBUG
+        if (_legacy is not null)
+        {
+            ValidateEnumerateInstantiationFieldsAgainstLegacy(vmAssembly, vmThExact, vmThApprox, cdacObjectSize, cdacFields, hr);
+        }
+#endif
+        return hr;
+    }
+
+    // Mirrors native DacDbiInterfaceImpl::CollectFields. Iterates the regular FieldDescs first
+    // (in EncApproxFieldDescIterator order: introduced instance fields, then static fields),
+    // then EnC-added instance fields, then EnC-added static fields.
+    private void CollectFieldsForDbi(
+        IRuntimeTypeSystem rts,
+        TypeHandle thExact,
+        TypeHandle thApprox,
+        delegate* unmanaged<FieldData*, void*, void> fpCallback,
+        nint pUserData
+#if DEBUG
+        , List<FieldData>? cdacFields
+#endif
+        )
+    {
+        TargetPointer gcStaticsBase = TargetPointer.Null;
+        TargetPointer nonGCStaticsBase = TargetPointer.Null;
+        if (!thExact.IsNull && !rts.IsCollectible(thExact))
+        {
+            gcStaticsBase = rts.GetGCStaticsBasePointer(thExact);
+            nonGCStaticsBase = rts.GetNonGCStaticsBasePointer(thExact);
+        }
+
+        foreach (TargetPointer fdPtr in rts.GetFieldDescList(thApprox))
+            EmitFieldData(rts, fdPtr, gcStaticsBase, nonGCStaticsBase, fpCallback, pUserData
+#if DEBUG
+                , cdacFields
+#endif
+                );
+
+        IEditAndContinue enc = _target.Contracts.EditAndContinue;
+        foreach (TargetPointer fdPtr in enc.EnumerateAddedFieldDescs(thApprox, staticFields: false))
+            EmitFieldData(rts, fdPtr, gcStaticsBase, nonGCStaticsBase, fpCallback, pUserData
+#if DEBUG
+                , cdacFields
+#endif
+                );
+        foreach (TargetPointer fdPtr in enc.EnumerateAddedFieldDescs(thApprox, staticFields: true))
+            EmitFieldData(rts, fdPtr, gcStaticsBase, nonGCStaticsBase, fpCallback, pUserData
+#if DEBUG
+                , cdacFields
+#endif
+                );
+    }
+
+    // Mirrors native DacDbiInterfaceImpl::ComputeFieldData for one FieldDesc and then invokes the
+    // user callback.
+    private void EmitFieldData(
+        IRuntimeTypeSystem rts,
+        TargetPointer fdPtr,
+        TargetPointer gcStaticsBase,
+        TargetPointer nonGCStaticsBase,
+        delegate* unmanaged<FieldData*, void*, void> fpCallback,
+        nint pUserData
+#if DEBUG
+        , List<FieldData>? cdacFields
+#endif
+        )
+    {
+        bool isStatic = rts.IsFieldDescStatic(fdPtr);
+        CorElementType type = rts.GetFieldDescType(fdPtr);
+        bool isPrimitive = IsPrimitiveType(type);
+
+        FieldData fd = default;
+        fd.m_fldMetadataToken = rts.GetFieldDescMemberDef(fdPtr);
+        fd.m_fFldIsStatic = isStatic ? (byte)1 : (byte)0;
+        fd.m_fFldIsPrimitive = isPrimitive ? (byte)1 : (byte)0;
+        fd.m_fldSignatureCache = 0;
+        fd.m_fldSignatureCacheSize = 0;
+
+        bool isEnCNew = rts.IsFieldDescEnCNew(fdPtr);
+        if (isEnCNew)
+        {
+            // Mirrors native: storage not yet available; carry the FieldDesc pointer through
+            // m_vmFieldDesc but leave all "is" flags false.
+            fd.m_vmFieldDesc = fdPtr.Value;
+            fd.m_fFldStorageAvailable = Interop.BOOL.FALSE;
+            fd.m_fFldIsTLS = 0;
+            fd.m_fFldIsRVA = 0;
+            fd.m_fFldIsCollectibleStatic = 0;
+        }
+        else
+        {
+            fd.m_fFldStorageAvailable = Interop.BOOL.TRUE;
+            fd.m_vmFieldDesc = fdPtr.Value;
+
+            bool isTLS = rts.IsFieldDescThreadStatic(fdPtr);
+            bool isRVA = rts.IsFieldDescRVA(fdPtr);
+            bool isCollectibleStatic = false;
+            if (isStatic)
+            {
+                TargetPointer enclosingMT = rts.GetMTOfEnclosingClass(fdPtr);
+                if (enclosingMT != TargetPointer.Null)
+                {
+                    TypeHandle enclosingTh = rts.GetTypeHandle(enclosingMT);
+                    isCollectibleStatic = rts.IsCollectible(enclosingTh);
+                }
+            }
+
+            fd.m_fFldIsTLS = isTLS ? (byte)1 : (byte)0;
+            fd.m_fFldIsRVA = isRVA ? (byte)1 : (byte)0;
+            fd.m_fFldIsCollectibleStatic = isCollectibleStatic ? (byte)1 : (byte)0;
+
+            if (isStatic)
+            {
+                if (isRVA)
+                {
+                    // RVA statics are addressed via the field desc; cDAC's
+                    // GetFieldDescStaticAddress takes the RVA branch internally when isRVA is set.
+                    TargetPointer addr = rts.GetFieldDescStaticAddress(fdPtr, unboxValueTypes: false);
+                    fd.m_pFldStaticAddress = addr.Value;
+                }
+                else if (isTLS || isCollectibleStatic)
+                {
+                    // Special static; queried out-of-band by the consumer.
+                }
+                else
+                {
+                    TargetPointer baseAddr = isPrimitive ? nonGCStaticsBase : gcStaticsBase;
+                    if (baseAddr == TargetPointer.Null)
+                    {
+                        fd.m_pFldStaticAddress = 0;
+                    }
+                    else
+                    {
+                        // Mirror native: base + pFD->GetOffset(). The cDAC offset accessor
+                        // requires a FieldDefinition (for RVA fields); for normal statics we
+                        // can use the FieldDesc DWord2 offset bits directly. Use
+                        // GetFieldDescStaticAddress only for the RVA branch above; for normal
+                        // statics, build the address from the static base + raw offset.
+                        uint offset = GetFieldDescRawOffset(fdPtr);
+                        fd.m_pFldStaticAddress = (baseAddr + offset).Value;
+                    }
+                }
+            }
+            else
+            {
+                // instance: store the offset
+                uint offset = GetFieldDescRawOffset(fdPtr);
+                fd.m_fldInstanceOffset = offset;
+            }
+        }
+
+#if DEBUG
+        cdacFields?.Add(fd);
+#endif
+        fpCallback(&fd, (void*)pUserData);
+    }
+
+    // Reads the raw DWord2 offset bits of a FieldDesc, equivalent to native
+    // FieldDesc::GetOffset()/FieldDesc::GetOffset_NoLogging when the offset is not a packed RVA
+    // sentinel. Used for normal (non-RVA, non-EnC-new) field addressing.
+    private uint GetFieldDescRawOffset(TargetPointer fdPtr)
+    {
+        Data.FieldDesc fieldDesc = _target.ProcessedData.GetOrAdd<Data.FieldDesc>(fdPtr);
+        // OffsetMask matches FieldDescFlags2.OffsetMask used inside RuntimeTypeSystem_1.
+        return fieldDesc.DWord2 & 0x07FFFFFFu;
+    }
+
+    // Mirrors CorTypeInfo::IsPrimitiveType_NoThrow (cortypeinfo.h): VOID..R8, plus I and U.
+    private static bool IsPrimitiveType(CorElementType type)
+    {
+        return (type >= CorElementType.Void && type <= CorElementType.R8)
+            || type == CorElementType.I
+            || type == CorElementType.U;
+    }
+
+#if DEBUG
+    [UnmanagedCallersOnly]
+    private static void CollectFieldDataCallback(FieldData* data, void* pUserData)
+    {
+        GCHandle handle = GCHandle.FromIntPtr((nint)pUserData);
+        ((List<FieldData>)handle.Target!).Add(*data);
+    }
+
+    private void ValidateEnumerateClassFieldsAgainstLegacy(ulong thExact, nuint cdacObjectSize, List<FieldData>? cdacFields, int hr)
+    {
+        Debug.Assert(_legacy is not null);
+        List<FieldData> dacFields = new();
+        GCHandle dacHandle = GCHandle.Alloc(dacFields);
+        nuint dacObjectSize = 0;
+        int hrLocal = _legacy!.EnumerateClassFields(thExact, &dacObjectSize, (delegate* unmanaged<FieldData*, void*, void>)&CollectFieldDataCallback, GCHandle.ToIntPtr(dacHandle));
+        dacHandle.Free();
+        Debug.ValidateHResult(hr, hrLocal);
+        if (hr == HResults.S_OK)
+        {
+            Debug.Assert(cdacObjectSize == dacObjectSize, $"EnumerateClassFields object size mismatch - cDAC: {cdacObjectSize}, DAC: {dacObjectSize}");
+            AssertFieldListsEqual(cdacFields, dacFields, "EnumerateClassFields");
+        }
+    }
+
+    private void ValidateEnumerateInstantiationFieldsAgainstLegacy(ulong vmAssembly, ulong vmThExact, ulong vmThApprox, nuint cdacObjectSize, List<FieldData>? cdacFields, int hr)
+    {
+        Debug.Assert(_legacy is not null);
+        List<FieldData> dacFields = new();
+        GCHandle dacHandle = GCHandle.Alloc(dacFields);
+        nuint dacObjectSize = 0;
+        int hrLocal = _legacy!.EnumerateInstantiationFields(vmAssembly, vmThExact, vmThApprox, &dacObjectSize, (delegate* unmanaged<FieldData*, void*, void>)&CollectFieldDataCallback, GCHandle.ToIntPtr(dacHandle));
+        dacHandle.Free();
+        Debug.ValidateHResult(hr, hrLocal);
+        if (hr == HResults.S_OK)
+        {
+            Debug.Assert(cdacObjectSize == dacObjectSize, $"EnumerateInstantiationFields object size mismatch - cDAC: {cdacObjectSize}, DAC: {dacObjectSize}");
+            AssertFieldListsEqual(cdacFields, dacFields, "EnumerateInstantiationFields");
+        }
+    }
+
+    private static void AssertFieldListsEqual(List<FieldData>? cdacFields, List<FieldData> dacFields, string label)
+    {
+        Debug.Assert(cdacFields!.Count == dacFields.Count, $"{label} field count mismatch - cDAC: {cdacFields!.Count}, DAC: {dacFields.Count}");
+        int n = Math.Min(cdacFields!.Count, dacFields.Count);
+        for (int i = 0; i < n; i++)
+        {
+            FieldData c = cdacFields![i];
+            FieldData d = dacFields[i];
+            Debug.Assert(c.m_fldMetadataToken == d.m_fldMetadataToken, $"{label} field[{i}] m_fldMetadataToken mismatch - cDAC: 0x{c.m_fldMetadataToken:x}, DAC: 0x{d.m_fldMetadataToken:x}");
+            Debug.Assert(c.m_fFldStorageAvailable == d.m_fFldStorageAvailable, $"{label} field[{i}] m_fFldStorageAvailable mismatch - cDAC: {c.m_fFldStorageAvailable}, DAC: {d.m_fFldStorageAvailable}");
+            Debug.Assert(c.m_fFldIsStatic == d.m_fFldIsStatic, $"{label} field[{i}] m_fFldIsStatic mismatch - cDAC: {c.m_fFldIsStatic}, DAC: {d.m_fFldIsStatic}");
+            Debug.Assert(c.m_fFldIsRVA == d.m_fFldIsRVA, $"{label} field[{i}] m_fFldIsRVA mismatch - cDAC: {c.m_fFldIsRVA}, DAC: {d.m_fFldIsRVA}");
+            Debug.Assert(c.m_fFldIsTLS == d.m_fFldIsTLS, $"{label} field[{i}] m_fFldIsTLS mismatch - cDAC: {c.m_fFldIsTLS}, DAC: {d.m_fFldIsTLS}");
+            Debug.Assert(c.m_fFldIsPrimitive == d.m_fFldIsPrimitive, $"{label} field[{i}] m_fFldIsPrimitive mismatch - cDAC: {c.m_fFldIsPrimitive}, DAC: {d.m_fFldIsPrimitive}");
+            Debug.Assert(c.m_fFldIsCollectibleStatic == d.m_fFldIsCollectibleStatic, $"{label} field[{i}] m_fFldIsCollectibleStatic mismatch - cDAC: {c.m_fFldIsCollectibleStatic}, DAC: {d.m_fFldIsCollectibleStatic}");
+            Debug.Assert(c.m_fldInstanceOffset == d.m_fldInstanceOffset, $"{label} field[{i}] m_fldInstanceOffset mismatch - cDAC: 0x{c.m_fldInstanceOffset:x}, DAC: 0x{d.m_fldInstanceOffset:x}");
+            Debug.Assert(c.m_pFldStaticAddress == d.m_pFldStaticAddress, $"{label} field[{i}] m_pFldStaticAddress mismatch - cDAC: 0x{c.m_pFldStaticAddress:x}, DAC: 0x{d.m_pFldStaticAddress:x}");
+            Debug.Assert(c.m_vmFieldDesc == d.m_vmFieldDesc, $"{label} field[{i}] m_vmFieldDesc mismatch - cDAC: 0x{c.m_vmFieldDesc:x}, DAC: 0x{d.m_vmFieldDesc:x}");
         }
     }
 #endif
