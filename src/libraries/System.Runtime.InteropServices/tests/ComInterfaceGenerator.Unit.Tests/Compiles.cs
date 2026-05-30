@@ -353,6 +353,8 @@ namespace ComInterfaceGenerator.Unit.Tests
             yield return new object[] { ID(), codeSnippets.DerivedComInterfaceTypeWithUnsafeBaseMethod };
             yield return new object[] { ID(), codeSnippets.InterfaceWithProperties };
             yield return new object[] { ID(), codeSnippets.DerivedInterfaceWithNewProperty };
+            yield return new object[] { ID(), codeSnippets.InterfaceWithDefaultImplementedMethod };
+            yield return new object[] { ID(), codeSnippets.InterfaceWithDefaultImplementedProperty };
         }
 
         public static IEnumerable<object[]> ManagedToUnmanagedComInterfaceSnippetsToCompile()

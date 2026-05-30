@@ -877,6 +877,21 @@
         <target state="translated">A configuração especificada "MarshalAsAttribute" para o valor retornado do método "{1}" não tem suporte do P/Invokes gerado pela origem. Se a configuração especificada for necessária, use "DllImport" no lugar.</target>
         <note />
       </trans-unit>
+      <trans-unit id="MarshalAttributeOnDefaultImplementedComInterfaceMemberDescription">
+        <source>Marshalling attributes such as 'MarshalUsing' and 'MarshalAs' on a default-implemented (body-bearing) member of a source-generated COM interface have no effect. Default implementations are pure managed code that bypasses the COM marshalling pipeline and does not get a generated stub.</source>
+        <target state="new">Marshalling attributes such as 'MarshalUsing' and 'MarshalAs' on a default-implemented (body-bearing) member of a source-generated COM interface have no effect. Default implementations are pure managed code that bypasses the COM marshalling pipeline and does not get a generated stub.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshalAttributeOnDefaultImplementedComInterfaceMemberMessage">
+        <source>The marshalling attribute on the default-implemented member '{0}' on interface '{1}' will be ignored because default implementations do not generate COM marshalling code</source>
+        <target state="new">The marshalling attribute on the default-implemented member '{0}' on interface '{1}' will be ignored because default implementations do not generate COM marshalling code</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshalAttributeOnDefaultImplementedComInterfaceMemberTitle">
+        <source>Marshalling attribute on a default-implemented member of a source-generated COM interface has no effect</source>
+        <target state="new">Marshalling attribute on a default-implemented member of a source-generated COM interface has no effect</target>
+        <note />
+      </trans-unit>
       <trans-unit id="MarshalModeMustBeValidEnumValue">
         <source>The 'marshalMode' argument of 'CustomMarshallerAttribute' must be a valid enum value of 'MarshalMode'.</source>
         <target state="translated">O argumento 'marshalMode' de 'CustomMarshallerAttribute' deve ser um valor de enumeração válido de 'MarshalMode'.</target>
@@ -1010,6 +1025,21 @@
       <trans-unit id="PreferExplicitInOutAttributesOnArrays">
         <source>It is recommended to use explicit '[In]' and '[Out]' attributes on array parameters.</source>
         <target state="translated">É recomendável usar atributos '[In]' e '[Out]' explícitos nos parâmetros de matriz.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PropertyAccessorsMustBeAllOrNothingDescription">
+        <source>On a source-generated COM interface, a property is either fully abstract (no accessor bodies, treated as a COM property occupying vtable slots) or fully default-implemented (every accessor has a body, treated as managed-only code that bypasses COM marshalling). Mixing the two shapes within a single property is not supported.</source>
+        <target state="new">On a source-generated COM interface, a property is either fully abstract (no accessor bodies, treated as a COM property occupying vtable slots) or fully default-implemented (every accessor has a body, treated as managed-only code that bypasses COM marshalling). Mixing the two shapes within a single property is not supported.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PropertyAccessorsMustBeAllOrNothingMessage">
+        <source>The property '{0}' on interface '{1}' mixes abstract and default-implemented accessors. Either all accessors must have bodies or none must have bodies.</source>
+        <target state="new">The property '{0}' on interface '{1}' mixes abstract and default-implemented accessors. Either all accessors must have bodies or none must have bodies.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PropertyAccessorsMustBeAllOrNothingTitle">
+        <source>Property accessors on a source-generated COM interface must either all have bodies or none have bodies</source>
+        <target state="new">Property accessors on a source-generated COM interface must either all have bodies or none have bodies</target>
         <note />
       </trans-unit>
       <trans-unit id="RequiresAllowUnsafeBlocksDescriptionCom">

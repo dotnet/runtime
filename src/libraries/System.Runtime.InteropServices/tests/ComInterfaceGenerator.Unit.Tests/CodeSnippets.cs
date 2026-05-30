@@ -800,6 +800,116 @@ namespace ComInterfaceGenerator.Unit.Tests
             {{_attributeProvider.AdditionalUserRequiredInterfaces("INativeAPI")}}
             """;
 
+        public string InterfaceWithDefaultImplementedMethod => $$"""
+            using System;
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+
+            [assembly:DisableRuntimeMarshalling]
+
+            {{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
+            {{GeneratedComInterface()}}
+            partial interface INativeAPI
+            {
+                int Plain();
+
+                int Defaulted() { return 42; }
+
+                int Expression() => 7;
+
+                sealed int SealedDefaulted() => 11;
+            }
+
+            {{_attributeProvider.AdditionalUserRequiredInterfaces("INativeAPI")}}
+            """;
+
+        public string InterfaceWithDefaultImplementedProperty => $$"""
+            using System;
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+
+            [assembly:DisableRuntimeMarshalling]
+
+            {{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
+            {{GeneratedComInterface()}}
+            partial interface INativeAPI
+            {
+                int Plain { get; set; }
+
+                int ExpressionBodied => 42;
+
+                int Wrapper { get { return 1; } set { _ = value; } }
+
+                int GetterOnlyWrapper { get { return 7; } }
+            }
+
+            {{_attributeProvider.AdditionalUserRequiredInterfaces("INativeAPI")}}
+            """;
+
+        public string InterfaceWithPropertyMixedAccessorBodies => $$"""
+            using System;
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+
+            [assembly:DisableRuntimeMarshalling]
+
+            {{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
+            {{GeneratedComInterface()}}
+            partial interface INativeAPI
+            {
+                int {|#0:Mixed|} { get; set { _ = value; } }
+            }
+
+            {{_attributeProvider.AdditionalUserRequiredInterfaces("INativeAPI")}}
+            """;
+
+        public string InterfaceWithMarshalAttributeOnDefaultImplementedMethod => $$"""
+            using System;
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+
+            [assembly:DisableRuntimeMarshalling]
+
+            {{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
+            {{GeneratedComInterface()}}
+            partial interface INativeAPI
+            {
+                [return: {|#0:MarshalUsing(ConstantElementCount = 1)|}]
+                int[] DefaultedMethod([{|#1:MarshalAs(UnmanagedType.I4)|}] int value) => new int[] { value };
+            }
+
+            {{_attributeProvider.AdditionalUserRequiredInterfaces("INativeAPI")}}
+            """;
+
+        public string InterfaceWithMarshalAttributeOnDefaultImplementedProperty => $$"""
+            using System;
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+
+            [assembly:DisableRuntimeMarshalling]
+
+            {{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
+            {{GeneratedComInterface()}}
+            partial interface INativeAPI
+            {
+                [{|#0:MarshalUsing(typeof(IntMarshaller))|}]
+                int Defaulted { get => 1; set { _ = value; } }
+            }
+
+            internal static class IntMarshaller
+            {
+                public static int ConvertToManaged(int value) => value;
+                public static int ConvertToUnmanaged(int value) => value;
+            }
+
+            {{_attributeProvider.AdditionalUserRequiredInterfaces("INativeAPI")}}
+            """;
+
         public string ForwarderWithPreserveSigAndRefKind(string refKind) => $$"""
             using System;
             using System.Runtime.CompilerServices;

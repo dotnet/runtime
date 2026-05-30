@@ -66,46 +66,89 @@ namespace Microsoft.Interop
                         methods.Add(DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From(member.CreateDiagnosticInfo(GeneratorDiagnostics.InstanceEventDeclaredInInterface, member.Name, data.ifaceSymbol.ToDisplayString())));
                         break;
                     case IMethodSymbol { MethodKind: MethodKind.Ordinary } method:
-                        methods.Add(CalculateMethodInfo(data.ifaceContext, method, ct));
+                        AddMethodInfo(methods, data.ifaceContext, data.ifaceSymbol, method, ct);
                         break;
                 }
             }
             return methods.ToImmutable().ToSequenceEqual();
         }
 
-        private static DiagnosticInfo? GetDiagnosticIfInvalidMethodForGeneration(MethodDeclarationSyntax comMethodDeclaringSyntax, IMethodSymbol method)
+        /// <summary>
+        /// Outcome of analyzing the user-declared shape of a method or property on a
+        /// <c>[GeneratedComInterface]</c>-attributed interface.
+        /// </summary>
+        private enum MemberShapeOutcome
         {
-            // Verify the method has no generic types or defined implementation
-            // and is not marked static or sealed
+            /// <summary>The member is abstract and should be emitted as a COM ABI vtable slot.</summary>
+            ComAbi,
+            /// <summary>
+            /// The member has a default implementation (body) and must NOT be assigned a vtable slot.
+            /// The user-supplied body runs purely on the managed side; the member is invisible to the
+            /// COM marshalling pipeline.
+            /// </summary>
+            DefaultImplementation,
+            /// <summary>The member is malformed; emit the accompanying diagnostic and skip emission.</summary>
+            Error,
+        }
+
+        private static MemberShapeOutcome AnalyzeMethodShape(
+            MethodDeclarationSyntax comMethodDeclaringSyntax,
+            IMethodSymbol method,
+            out DiagnosticInfo? diagnostic)
+        {
+            diagnostic = null;
+
+            // A method with any body (block or expression) is treated as a default implementation
+            // (DIM) and is intentionally NOT assigned a vtable slot. Generic and sealed DIMs are
+            // accepted as well because the C# language already enforces the valid combinations.
+            if (comMethodDeclaringSyntax.Body is not null || comMethodDeclaringSyntax.ExpressionBody is not null)
+            {
+                return MemberShapeOutcome.DefaultImplementation;
+            }
+
+            // For non-DIM methods (the COM ABI path), generic methods and sealed methods are not supported.
             if (comMethodDeclaringSyntax.TypeParameterList is not null
-                || comMethodDeclaringSyntax.Body is not null
                 || comMethodDeclaringSyntax.Modifiers.Any(SyntaxKind.SealedKeyword))
             {
-                return DiagnosticInfo.Create(GeneratorDiagnostics.InvalidAttributedMethodSignature, comMethodDeclaringSyntax.Identifier.GetLocation(), method.Name);
+                diagnostic = DiagnosticInfo.Create(GeneratorDiagnostics.InvalidAttributedMethodSignature, comMethodDeclaringSyntax.Identifier.GetLocation(), method.Name);
+                return MemberShapeOutcome.Error;
             }
 
             // Verify the method does not have a ref return
             if (method.ReturnsByRef || method.ReturnsByRefReadonly)
             {
-                return DiagnosticInfo.Create(GeneratorDiagnostics.ReturnConfigurationNotSupported, comMethodDeclaringSyntax.Identifier.GetLocation(), "ref return", method.ToDisplayString());
+                diagnostic = DiagnosticInfo.Create(GeneratorDiagnostics.ReturnConfigurationNotSupported, comMethodDeclaringSyntax.Identifier.GetLocation(), "ref return", method.ToDisplayString());
+                return MemberShapeOutcome.Error;
             }
 
-            return null;
+            return MemberShapeOutcome.ComAbi;
         }
 
-        private static DiagnosticOr<(ComMethodInfo, IMethodSymbol)> CalculateMethodInfo(ComInterfaceInfo ifaceContext, IMethodSymbol method, CancellationToken ct)
+        private static void AddMethodInfo(
+            ImmutableArray<DiagnosticOr<(ComMethodInfo, IMethodSymbol)>>.Builder methods,
+            ComInterfaceInfo ifaceContext,
+            INamedTypeSymbol ifaceSymbol,
+            IMethodSymbol method,
+            CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
             Debug.Assert(method is { IsStatic: false, MethodKind: MethodKind.Ordinary });
 
             // For externally-defined contexts, we only need minimal information about the method
-            // to ensure that we have the right offsets for inheriting vtable types.
-            // Skip all validation as that will be done when that type is compiled.
+            // to ensure that we have the right offsets for inheriting vtable types. Default-implemented
+            // members in another assembly do not occupy vtable slots; rely on IMethodSymbol.IsAbstract
+            // (which is false for DIMs in metadata) to distinguish.
             if (ifaceContext.IsExternallyDefined)
             {
-                return DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From((
+                if (!method.IsAbstract)
+                {
+                    return;
+                }
+
+                methods.Add(DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From((
                     new ComMethodInfo(null, method.Name, CreateAttributeInfoArray(method.GetAttributes()), false),
-                    method));
+                    method)));
+                return;
             }
 
             // We only support methods that are defined in the same partial interface definition as the
@@ -126,7 +169,8 @@ namespace Microsoft.Interop
 
             if (methodLocationInAttributedInterfaceDeclaration is null)
             {
-                return DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From(DiagnosticInfo.Create(GeneratorDiagnostics.MethodNotDeclaredInAttributedInterface, method.Locations.FirstOrDefault(), method.ToDisplayString()));
+                methods.Add(DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From(DiagnosticInfo.Create(GeneratorDiagnostics.MethodNotDeclaredInAttributedInterface, method.Locations.FirstOrDefault(), method.ToDisplayString())));
+                return;
             }
 
             // Find the matching declaration syntax
@@ -142,20 +186,25 @@ namespace Microsoft.Interop
             }
             if (comMethodDeclaringSyntax is null)
             {
-                return DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From(DiagnosticInfo.Create(GeneratorDiagnostics.CannotAnalyzeMethodPattern, method.Locations.FirstOrDefault(), method.ToDisplayString()));
+                methods.Add(DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From(DiagnosticInfo.Create(GeneratorDiagnostics.CannotAnalyzeMethodPattern, method.Locations.FirstOrDefault(), method.ToDisplayString())));
+                return;
             }
 
-            var diag = GetDiagnosticIfInvalidMethodForGeneration(comMethodDeclaringSyntax, method);
-            if (diag is not null)
+            switch (AnalyzeMethodShape(comMethodDeclaringSyntax, method, out var diag))
             {
-                return DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From(diag);
+                case MemberShapeOutcome.Error:
+                    methods.Add(DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From(diag!));
+                    return;
+                case MemberShapeOutcome.DefaultImplementation:
+                    EmitMarshalAttributeWarningsForMethod(methods, method, method.Name, ifaceSymbol);
+                    return;
             }
 
             var attributeInfos = CreateAttributeInfoArray(method.GetAttributes());
 
             bool shadowsBaseMethod = comMethodDeclaringSyntax.Modifiers.Any(SyntaxKind.NewKeyword);
             var comMethodInfo = new ComMethodInfo(comMethodDeclaringSyntax, method.Name, attributeInfos, shadowsBaseMethod);
-            return DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From((comMethodInfo, method));
+            methods.Add(DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From((comMethodInfo, method)));
         }
 
         /// <summary>
@@ -164,12 +213,17 @@ namespace Microsoft.Interop
         /// declaration shape is not supported by source-generated COM.
         /// </summary>
         /// <remarks>
-        /// Phase 1 only accepts bare auto-property accessors: <c>T Name { get; set; }</c>, <c>{ get; }</c>, or
-        /// <c>{ set; }</c>, optionally with accessor-level accessibility modifiers (e.g. <c>private set</c>).
-        /// All other shapes (indexers, expression-bodied properties, accessor bodies, auto-property initializers,
-        /// any modifier on the property declaration itself, and <c>init</c> accessors) currently produce the
-        /// <see cref="GeneratorDiagnostics.InstancePropertyDeclaredInInterface"/> diagnostic. Each of these is
-        /// tracked as a follow-up.
+        /// <para>
+        /// An abstract property (no accessor bodies) is mapped to one or two consecutive vtable slots
+        /// (getter first, then setter) using the same rules built-in COM uses for <c>[ComVisible(true)]</c>
+        /// interfaces.
+        /// </para>
+        /// <para>
+        /// A property whose accessors all carry bodies is treated as a default implementation (DIM)
+        /// and is NOT assigned a vtable slot — the user-supplied body runs purely on the managed side
+        /// and is invisible to the COM marshalling pipeline. Mixing the two shapes within a single
+        /// property is reported as <see cref="GeneratorDiagnostics.PropertyAccessorsMustBeAllOrNothing"/>.
+        /// </para>
         /// </remarks>
         private static void AddPropertyAccessorInfos(
             ImmutableArray<DiagnosticOr<(ComMethodInfo, IMethodSymbol)>>.Builder methods,
@@ -180,8 +234,9 @@ namespace Microsoft.Interop
         {
             ct.ThrowIfCancellationRequested();
 
-            // For externally-defined contexts, mirror the ordinary-method fast path: emit ComMethodInfos with no
-            // declaring syntax and rely on the source-side compilation to validate the property shape.
+            // For externally-defined contexts, mirror the ordinary-method fast path: emit ComMethodInfos
+            // only for abstract accessors. Default-implemented accessors in another assembly do not
+            // occupy vtable slots, so we must not count them when computing inheritance offsets.
             if (ifaceContext.IsExternallyDefined)
             {
                 AddExternallyDefinedAccessor(methods, property.GetMethod);
@@ -231,11 +286,14 @@ namespace Microsoft.Interop
                 return;
             }
 
-            DiagnosticInfo? shapeDiagnostic = GetDiagnosticIfUnsupportedPropertyShape(propertyDeclaringSyntax, property, ifaceSymbol);
-            if (shapeDiagnostic is not null)
+            switch (AnalyzePropertyShape(propertyDeclaringSyntax, property, ifaceSymbol, out var shapeDiagnostic))
             {
-                methods.Add(DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From(shapeDiagnostic));
-                return;
+                case MemberShapeOutcome.Error:
+                    methods.Add(DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From(shapeDiagnostic!));
+                    return;
+                case MemberShapeOutcome.DefaultImplementation:
+                    EmitMarshalAttributeWarningsForProperty(methods, property, ifaceSymbol);
+                    return;
             }
 
             bool shadowsBaseProperty = propertyDeclaringSyntax.Modifiers.Any(SyntaxKind.NewKeyword);
@@ -250,7 +308,7 @@ namespace Microsoft.Interop
             ImmutableArray<DiagnosticOr<(ComMethodInfo, IMethodSymbol)>>.Builder methods,
             IMethodSymbol? accessor)
         {
-            if (accessor is null)
+            if (accessor is null || !accessor.IsAbstract)
             {
                 return;
             }
@@ -311,8 +369,14 @@ namespace Microsoft.Interop
             return builder.MoveToImmutable().ToSequenceEqual();
         }
 
-        private static DiagnosticInfo? GetDiagnosticIfUnsupportedPropertyShape(PropertyDeclarationSyntax propertyDeclaringSyntax, IPropertySymbol property, INamedTypeSymbol ifaceSymbol)
+        private static MemberShapeOutcome AnalyzePropertyShape(
+            PropertyDeclarationSyntax propertyDeclaringSyntax,
+            IPropertySymbol property,
+            INamedTypeSymbol ifaceSymbol,
+            out DiagnosticInfo? diagnostic)
         {
+            diagnostic = null;
+
             foreach (var modifier in propertyDeclaringSyntax.Modifiers)
             {
                 switch (modifier.Kind())
@@ -326,45 +390,149 @@ namespace Microsoft.Interop
                         continue;
                     case SyntaxKind.ExternKeyword:
                     case SyntaxKind.RequiredKeyword:
-                        return property.CreateDiagnosticInfo(
+                        diagnostic = property.CreateDiagnosticInfo(
                             GeneratorDiagnostics.InvalidPropertyDeclarationOnGeneratedComInterface,
                             property.Name, ifaceSymbol.ToDisplayString(), modifier.ValueText);
+                        return MemberShapeOutcome.Error;
                     default:
-                        return property.CreateDiagnosticInfo(
+                        diagnostic = property.CreateDiagnosticInfo(
                             GeneratorDiagnostics.InstancePropertyDeclaredInInterface,
                             property.Name, ifaceSymbol.ToDisplayString());
+                        return MemberShapeOutcome.Error;
                 }
             }
 
-            if (propertyDeclaringSyntax.ExpressionBody is not null
-                || propertyDeclaringSyntax.Initializer is not null)
+            // Auto-property initializers are not legal on interface instance properties at the C# level;
+            // they should never reach this point. Defensive check retained from earlier diagnostic.
+            if (propertyDeclaringSyntax.Initializer is not null)
             {
-                return property.CreateDiagnosticInfo(
+                diagnostic = property.CreateDiagnosticInfo(
                     GeneratorDiagnostics.InstancePropertyDeclaredInInterface,
                     property.Name, ifaceSymbol.ToDisplayString());
+                return MemberShapeOutcome.Error;
             }
 
+            // Disallow `init` accessors before deciding DIM-vs-ABI: an `init` accessor is conceptually a
+            // setter, but `init`-vs-`set` has no meaningful representation in a COM vtable, so it isn't
+            // supported regardless of whether the accessor has a body.
             if (propertyDeclaringSyntax.AccessorList is { } accessorList)
             {
                 foreach (var accessor in accessorList.Accessors)
                 {
                     if (accessor.Keyword.IsKind(SyntaxKind.InitKeyword))
                     {
-                        return property.CreateDiagnosticInfo(
+                        diagnostic = property.CreateDiagnosticInfo(
                             GeneratorDiagnostics.InvalidPropertyDeclarationOnGeneratedComInterface,
                             property.Name, ifaceSymbol.ToDisplayString(), "init");
-                    }
-
-                    if (accessor.Body is not null || accessor.ExpressionBody is not null)
-                    {
-                        return property.CreateDiagnosticInfo(
-                            GeneratorDiagnostics.InstancePropertyDeclaredInInterface,
-                            property.Name, ifaceSymbol.ToDisplayString());
+                        return MemberShapeOutcome.Error;
                     }
                 }
             }
 
-            return null;
+            // An expression-bodied property (`T Foo => …;`) is a single-getter default implementation
+            // and is treated as a DIM.
+            if (propertyDeclaringSyntax.ExpressionBody is not null)
+            {
+                return MemberShapeOutcome.DefaultImplementation;
+            }
+
+            // Look at the per-accessor bodies. All-with-bodies → DIM, none-with-bodies → COM ABI,
+            // mixed → error. We require the user to commit to one shape per property to avoid the
+            // confusion of a property whose getter is in the vtable but whose setter isn't (or
+            // vice versa) — that would silently change marshalling semantics on a per-accessor basis.
+            if (propertyDeclaringSyntax.AccessorList is { } al)
+            {
+                int accessorCount = 0;
+                int accessorsWithBody = 0;
+                foreach (var accessor in al.Accessors)
+                {
+                    accessorCount++;
+                    if (accessor.Body is not null || accessor.ExpressionBody is not null)
+                    {
+                        accessorsWithBody++;
+                    }
+                }
+
+                if (accessorCount > 0 && accessorsWithBody > 0 && accessorsWithBody < accessorCount)
+                {
+                    diagnostic = property.CreateDiagnosticInfo(
+                        GeneratorDiagnostics.PropertyAccessorsMustBeAllOrNothing,
+                        property.Name, ifaceSymbol.ToDisplayString());
+                    return MemberShapeOutcome.Error;
+                }
+
+                if (accessorCount > 0 && accessorsWithBody == accessorCount)
+                {
+                    return MemberShapeOutcome.DefaultImplementation;
+                }
+            }
+
+            return MemberShapeOutcome.ComAbi;
+        }
+
+        private static void EmitMarshalAttributeWarningsForMethod(
+            ImmutableArray<DiagnosticOr<(ComMethodInfo, IMethodSymbol)>>.Builder methods,
+            IMethodSymbol method,
+            string memberName,
+            INamedTypeSymbol ifaceSymbol)
+        {
+            foreach (var attribute in method.GetAttributes())
+            {
+                TryAddMarshalAttributeWarning(methods, attribute, memberName, ifaceSymbol);
+            }
+
+            foreach (var attribute in method.GetReturnTypeAttributes())
+            {
+                TryAddMarshalAttributeWarning(methods, attribute, memberName, ifaceSymbol);
+            }
+
+            foreach (var parameter in method.Parameters)
+            {
+                foreach (var attribute in parameter.GetAttributes())
+                {
+                    TryAddMarshalAttributeWarning(methods, attribute, memberName, ifaceSymbol);
+                }
+            }
+        }
+
+        private static void EmitMarshalAttributeWarningsForProperty(
+            ImmutableArray<DiagnosticOr<(ComMethodInfo, IMethodSymbol)>>.Builder methods,
+            IPropertySymbol property,
+            INamedTypeSymbol ifaceSymbol)
+        {
+            foreach (var attribute in property.GetAttributes())
+            {
+                TryAddMarshalAttributeWarning(methods, attribute, property.Name, ifaceSymbol);
+            }
+
+            if (property.GetMethod is { } getter)
+            {
+                EmitMarshalAttributeWarningsForMethod(methods, getter, property.Name, ifaceSymbol);
+            }
+
+            if (property.SetMethod is { } setter)
+            {
+                EmitMarshalAttributeWarningsForMethod(methods, setter, property.Name, ifaceSymbol);
+            }
+        }
+
+        private static void TryAddMarshalAttributeWarning(
+            ImmutableArray<DiagnosticOr<(ComMethodInfo, IMethodSymbol)>>.Builder methods,
+            AttributeData attribute,
+            string memberName,
+            INamedTypeSymbol ifaceSymbol)
+        {
+            string? attrName = attribute.AttributeClass?.ToDisplayString();
+            if (attrName != TypeNames.MarshalUsingAttribute
+                && attrName != TypeNames.System_Runtime_InteropServices_MarshalAsAttribute)
+            {
+                return;
+            }
+
+            methods.Add(DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From(
+                attribute.CreateDiagnosticInfo(
+                    GeneratorDiagnostics.MarshalAttributeOnDefaultImplementedComInterfaceMember,
+                    memberName, ifaceSymbol.ToDisplayString())));
         }
     }
 }

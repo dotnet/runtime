@@ -337,6 +337,28 @@ namespace Microsoft.Interop
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(SR.IndexerNotSupportedOnGeneratedComInterfaceDescription)));
 
+        /// <inheritdoc cref="SR.PropertyAccessorsMustBeAllOrNothingMessage"/>
+        public static readonly DiagnosticDescriptor PropertyAccessorsMustBeAllOrNothing =
+            DiagnosticDescriptorHelper.Create(
+                Ids.MemberWillNotBeSourceGenerated,
+                GetResourceString(nameof(SR.PropertyAccessorsMustBeAllOrNothingTitle)),
+                GetResourceString(nameof(SR.PropertyAccessorsMustBeAllOrNothingMessage)),
+                Category,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.PropertyAccessorsMustBeAllOrNothingDescription)));
+
+        /// <inheritdoc cref="SR.MarshalAttributeOnDefaultImplementedComInterfaceMemberMessage"/>
+        public static readonly DiagnosticDescriptor MarshalAttributeOnDefaultImplementedComInterfaceMember =
+            DiagnosticDescriptorHelper.Create(
+                Ids.MemberWillNotBeSourceGenerated,
+                GetResourceString(nameof(SR.MarshalAttributeOnDefaultImplementedComInterfaceMemberTitle)),
+                GetResourceString(nameof(SR.MarshalAttributeOnDefaultImplementedComInterfaceMemberMessage)),
+                Category,
+                DiagnosticSeverity.Warning,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.MarshalAttributeOnDefaultImplementedComInterfaceMemberDescription)));
+
         /// <inheritdoc cref="SR.InstanceEventDeclaredInInterfaceMessage"/>
         public static readonly DiagnosticDescriptor InstanceEventDeclaredInInterface =
             DiagnosticDescriptorHelper.Create(

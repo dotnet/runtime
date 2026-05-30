@@ -67,6 +67,31 @@ namespace ComInterfaceGenerator.Unit.Tests
                    .WithArguments("InitOnly", "INativeAPI", "init"),
             } };
 
+            yield return new object[] { ID(), codeSnippets.InterfaceWithPropertyMixedAccessorBodies, new[]
+            {
+               VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.PropertyAccessorsMustBeAllOrNothing)
+                   .WithLocation(0)
+                   .WithArguments("Mixed", "INativeAPI"),
+               DiagnosticResult.CompilerError("CS0525").WithSpan(12, 9, 12, 14),
+            } };
+
+            yield return new object[] { ID(), codeSnippets.InterfaceWithMarshalAttributeOnDefaultImplementedMethod, new[]
+            {
+               VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.MarshalAttributeOnDefaultImplementedComInterfaceMember)
+                   .WithLocation(0)
+                   .WithArguments("DefaultedMethod", "INativeAPI"),
+               VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.MarshalAttributeOnDefaultImplementedComInterfaceMember)
+                   .WithLocation(1)
+                   .WithArguments("DefaultedMethod", "INativeAPI"),
+            } };
+
+            yield return new object[] { ID(), codeSnippets.InterfaceWithMarshalAttributeOnDefaultImplementedProperty, new[]
+            {
+               VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.MarshalAttributeOnDefaultImplementedComInterfaceMember)
+                   .WithLocation(0)
+                   .WithArguments("Defaulted", "INativeAPI"),
+            } };
+
             yield return new object[] { ID(), codeSnippets.DerivedComInterfaceTypeMismatchInWrappers, new[]
             {
                VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.InvalidOptionsOnInterface)
