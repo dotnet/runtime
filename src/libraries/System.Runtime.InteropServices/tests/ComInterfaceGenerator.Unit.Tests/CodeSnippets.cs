@@ -683,6 +683,12 @@ namespace ComInterfaceGenerator.Unit.Tests
 
                 int WriteOnly { set; }
 
+                public int Public { get; set; }
+
+                internal int Internal { get; set; }
+
+                unsafe int* Pointer { get; set; }
+
                 public static int StaticProperty { get; set; }
             }
 
@@ -694,6 +700,104 @@ namespace ComInterfaceGenerator.Unit.Tests
 
                 public static int StaticProperty { get; set; }
             }
+            """;
+
+        public string DerivedInterfaceWithNewProperty => $$"""
+            using System;
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+
+            [assembly:DisableRuntimeMarshalling]
+
+            {{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
+            {{GeneratedComInterface()}}
+            partial interface IBase
+            {
+                int Shadowed { get; set; }
+            }
+
+            {{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
+            {{GeneratedComInterface()}}
+            partial interface IDerived : IBase
+            {
+                new int Shadowed { get; set; }
+            }
+
+            {{_attributeProvider.AdditionalUserRequiredInterfaces("IBase")}}
+            {{_attributeProvider.AdditionalUserRequiredInterfaces("IDerived")}}
+            """;
+
+        public string InterfaceWithIndexer => $$"""
+            using System;
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+
+            [assembly:DisableRuntimeMarshalling]
+
+            {{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
+            {{GeneratedComInterface()}}
+            partial interface INativeAPI
+            {
+                int {|#0:this|}[int i] { get; set; }
+            }
+
+            {{_attributeProvider.AdditionalUserRequiredInterfaces("INativeAPI")}}
+            """;
+
+        public string InterfaceWithExternProperty => $$"""
+            using System;
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+
+            [assembly:DisableRuntimeMarshalling]
+
+            {{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
+            {{GeneratedComInterface()}}
+            partial interface INativeAPI
+            {
+                extern int {|#0:Extern|} { get; set; }
+            }
+
+            {{_attributeProvider.AdditionalUserRequiredInterfaces("INativeAPI")}}
+            """;
+
+        public string InterfaceWithRequiredProperty => $$"""
+            using System;
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+
+            [assembly:DisableRuntimeMarshalling]
+
+            {{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
+            {{GeneratedComInterface()}}
+            partial interface INativeAPI
+            {
+                required int {|#0:Required|} { get; set; }
+            }
+
+            {{_attributeProvider.AdditionalUserRequiredInterfaces("INativeAPI")}}
+            """;
+
+        public string InterfaceWithInitProperty => $$"""
+            using System;
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+
+            [assembly:DisableRuntimeMarshalling]
+
+            {{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
+            {{GeneratedComInterface()}}
+            partial interface INativeAPI
+            {
+                int {|#0:InitOnly|} { get; init; }
+            }
+
+            {{_attributeProvider.AdditionalUserRequiredInterfaces("INativeAPI")}}
             """;
 
         public string ForwarderWithPreserveSigAndRefKind(string refKind) => $$"""

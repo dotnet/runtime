@@ -517,6 +517,21 @@
         <target state="translated">在未受控對受控呼叫中，從 VARIANT 封送處理為 'in' 參數的物件將不會傳播回更新的結果，即使 VARIANT 是 VT_BYREF 變數亦然。使用 'ref' 參數而非 'in' 參數，以將更新的值傳播回呼叫者。</target>
         <note />
       </trans-unit>
+      <trans-unit id="IndexerNotSupportedOnGeneratedComInterfaceDescription">
+        <source>Source-generated COM interfaces do not currently support indexer properties.</source>
+        <target state="new">Source-generated COM interfaces do not currently support indexer properties.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IndexerNotSupportedOnGeneratedComInterfaceMessage">
+        <source>The indexer on interface '{0}' is not supported on source-generated COM interfaces</source>
+        <target state="new">The indexer on interface '{0}' is not supported on source-generated COM interfaces</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IndexerNotSupportedOnGeneratedComInterfaceTitle">
+        <source>Indexer properties are not supported on source-generated COM interfaces</source>
+        <target state="new">Indexer properties are not supported on source-generated COM interfaces</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InstanceEventDeclaredInInterfaceDescription">
         <source>Events are not a concept in COM, so no interop code will be source generated for instance events on source-generated COM interfaces.</source>
         <target state="translated">事件不是 COM 中的概念，因此不會為來源產生的 COM 介面上的執行個體事件來源產生 Interop 程式碼。</target>
@@ -705,6 +720,21 @@
       <trans-unit id="InvalidOptionsOnInterfaceMessage">
         <source>The specified 'ComInterfaceOptions' on '{0}' are invalid. {1}</source>
         <target state="translated">'{0}' 上指定的 'ComInterfaceOptions' 無效。{1}</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidPropertyDeclarationOnGeneratedComInterfaceDescription">
+        <source>Source-generated COM interface properties do not support the 'static', 'extern', 'required', or 'init' modifiers/accessors.</source>
+        <target state="new">Source-generated COM interface properties do not support the 'static', 'extern', 'required', or 'init' modifiers/accessors.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidPropertyDeclarationOnGeneratedComInterfaceMessage">
+        <source>The property '{0}' on interface '{1}' uses '{2}', which is not supported on a source-generated COM interface property</source>
+        <target state="new">The property '{0}' on interface '{1}' uses '{2}', which is not supported on a source-generated COM interface property</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidPropertyDeclarationOnGeneratedComInterfaceTitle">
+        <source>Property uses an unsupported modifier or accessor for a source-generated COM interface</source>
+        <target state="new">Property uses an unsupported modifier or accessor for a source-generated COM interface</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidSignaturesInMarshallerShapeTitle">

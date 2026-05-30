@@ -221,10 +221,13 @@ namespace Microsoft.Interop
             if (propertyDeclaringSyntax is null)
             {
                 // Either no PropertyDeclarationSyntax was found (e.g. indexer with IndexerDeclarationSyntax)
-                // or the syntax tree doesn't cover the located position. Fall back to the generic
-                // unsupported-property diagnostic so the user gets a clear "this isn't supported" signal.
-                methods.Add(DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From(
-                    property.CreateDiagnosticInfo(GeneratorDiagnostics.InstancePropertyDeclaredInInterface, property.Name, ifaceSymbol.ToDisplayString())));
+                // or the syntax tree doesn't cover the located position. Emit the indexer-specific diagnostic
+                // when we can confirm it's an indexer; otherwise fall back to the generic unsupported-property
+                // signal so the user gets a clear "this isn't supported" message.
+                DiagnosticInfo fallback = property.IsIndexer
+                    ? property.CreateDiagnosticInfo(GeneratorDiagnostics.IndexerNotSupportedOnGeneratedComInterface, ifaceSymbol.ToDisplayString())
+                    : property.CreateDiagnosticInfo(GeneratorDiagnostics.InstancePropertyDeclaredInInterface, property.Name, ifaceSymbol.ToDisplayString());
+                methods.Add(DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From(fallback));
                 return;
             }
 
@@ -235,10 +238,12 @@ namespace Microsoft.Interop
                 return;
             }
 
+            bool shadowsBaseProperty = propertyDeclaringSyntax.Modifiers.Any(SyntaxKind.NewKeyword);
+
             // Emit one ComMethodInfo per accessor, in vtable slot order (get first, then set), matching the
             // CCW vtable layout produced by the built-in CLR for a [ComVisible] interface.
-            AddPropertyAccessor(methods, propertyDeclaringSyntax, property.GetMethod);
-            AddPropertyAccessor(methods, propertyDeclaringSyntax, property.SetMethod);
+            AddPropertyAccessor(methods, propertyDeclaringSyntax, property.GetMethod, shadowsBaseProperty);
+            AddPropertyAccessor(methods, propertyDeclaringSyntax, property.SetMethod, shadowsBaseProperty);
         }
 
         private static void AddExternallyDefinedAccessor(
@@ -263,7 +268,8 @@ namespace Microsoft.Interop
         private static void AddPropertyAccessor(
             ImmutableArray<DiagnosticOr<(ComMethodInfo, IMethodSymbol)>>.Builder methods,
             PropertyDeclarationSyntax propertyDeclaringSyntax,
-            IMethodSymbol? accessor)
+            IMethodSymbol? accessor,
+            bool isUserDefinedShadowingMethod)
         {
             if (accessor is null)
             {
@@ -275,7 +281,7 @@ namespace Microsoft.Interop
                     propertyDeclaringSyntax,
                     accessor.Name,
                     CreateAttributeInfoArray(accessor.GetAttributes()),
-                    isUserDefinedShadowingMethod: false,
+                    isUserDefinedShadowingMethod,
                     GetAssociatedAttributesForPropertyAccessor(accessor)),
                 accessor)));
         }
@@ -307,36 +313,58 @@ namespace Microsoft.Interop
 
         private static DiagnosticInfo? GetDiagnosticIfUnsupportedPropertyShape(PropertyDeclarationSyntax propertyDeclaringSyntax, IPropertySymbol property, INamedTypeSymbol ifaceSymbol)
         {
-            if (property.IsIndexer
-                || propertyDeclaringSyntax.Modifiers.Count > 0
-                || propertyDeclaringSyntax.ExpressionBody is not null
-                || propertyDeclaringSyntax.Initializer is not null
-                || HasUnsupportedAccessorShape(propertyDeclaringSyntax.AccessorList))
+            foreach (var modifier in propertyDeclaringSyntax.Modifiers)
             {
-                return property.CreateDiagnosticInfo(GeneratorDiagnostics.InstancePropertyDeclaredInInterface, property.Name, ifaceSymbol.ToDisplayString());
+                switch (modifier.Kind())
+                {
+                    case SyntaxKind.PublicKeyword:
+                    case SyntaxKind.PrivateKeyword:
+                    case SyntaxKind.ProtectedKeyword:
+                    case SyntaxKind.InternalKeyword:
+                    case SyntaxKind.UnsafeKeyword:
+                    case SyntaxKind.NewKeyword:
+                        continue;
+                    case SyntaxKind.ExternKeyword:
+                    case SyntaxKind.RequiredKeyword:
+                        return property.CreateDiagnosticInfo(
+                            GeneratorDiagnostics.InvalidPropertyDeclarationOnGeneratedComInterface,
+                            property.Name, ifaceSymbol.ToDisplayString(), modifier.ValueText);
+                    default:
+                        return property.CreateDiagnosticInfo(
+                            GeneratorDiagnostics.InstancePropertyDeclaredInInterface,
+                            property.Name, ifaceSymbol.ToDisplayString());
+                }
+            }
+
+            if (propertyDeclaringSyntax.ExpressionBody is not null
+                || propertyDeclaringSyntax.Initializer is not null)
+            {
+                return property.CreateDiagnosticInfo(
+                    GeneratorDiagnostics.InstancePropertyDeclaredInInterface,
+                    property.Name, ifaceSymbol.ToDisplayString());
+            }
+
+            if (propertyDeclaringSyntax.AccessorList is { } accessorList)
+            {
+                foreach (var accessor in accessorList.Accessors)
+                {
+                    if (accessor.Keyword.IsKind(SyntaxKind.InitKeyword))
+                    {
+                        return property.CreateDiagnosticInfo(
+                            GeneratorDiagnostics.InvalidPropertyDeclarationOnGeneratedComInterface,
+                            property.Name, ifaceSymbol.ToDisplayString(), "init");
+                    }
+
+                    if (accessor.Body is not null || accessor.ExpressionBody is not null)
+                    {
+                        return property.CreateDiagnosticInfo(
+                            GeneratorDiagnostics.InstancePropertyDeclaredInInterface,
+                            property.Name, ifaceSymbol.ToDisplayString());
+                    }
+                }
             }
 
             return null;
-
-            static bool HasUnsupportedAccessorShape(AccessorListSyntax? accessorList)
-            {
-                if (accessorList is null)
-                {
-                    return false;
-                }
-
-                foreach (var accessor in accessorList.Accessors)
-                {
-                    if (accessor.Body is not null
-                        || accessor.ExpressionBody is not null
-                        || accessor.Keyword.IsKind(SyntaxKind.InitKeyword))
-                    {
-                        return true;
-                    }
-                }
-
-                return false;
-            }
         }
     }
 }

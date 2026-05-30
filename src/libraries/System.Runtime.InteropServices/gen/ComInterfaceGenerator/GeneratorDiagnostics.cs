@@ -315,6 +315,28 @@ namespace Microsoft.Interop
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(SR.InstancePropertyDeclaredInInterfaceDescription)));
 
+        /// <inheritdoc cref="SR.InvalidPropertyDeclarationOnGeneratedComInterfaceMessage"/>
+        public static readonly DiagnosticDescriptor InvalidPropertyDeclarationOnGeneratedComInterface =
+            DiagnosticDescriptorHelper.Create(
+                Ids.MemberWillNotBeSourceGenerated,
+                GetResourceString(nameof(SR.InvalidPropertyDeclarationOnGeneratedComInterfaceTitle)),
+                GetResourceString(nameof(SR.InvalidPropertyDeclarationOnGeneratedComInterfaceMessage)),
+                Category,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.InvalidPropertyDeclarationOnGeneratedComInterfaceDescription)));
+
+        /// <inheritdoc cref="SR.IndexerNotSupportedOnGeneratedComInterfaceMessage"/>
+        public static readonly DiagnosticDescriptor IndexerNotSupportedOnGeneratedComInterface =
+            DiagnosticDescriptorHelper.Create(
+                Ids.MemberWillNotBeSourceGenerated,
+                GetResourceString(nameof(SR.IndexerNotSupportedOnGeneratedComInterfaceTitle)),
+                GetResourceString(nameof(SR.IndexerNotSupportedOnGeneratedComInterfaceMessage)),
+                Category,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.IndexerNotSupportedOnGeneratedComInterfaceDescription)));
+
         /// <inheritdoc cref="SR.InstanceEventDeclaredInInterfaceMessage"/>
         public static readonly DiagnosticDescriptor InstanceEventDeclaredInInterface =
             DiagnosticDescriptorHelper.Create(

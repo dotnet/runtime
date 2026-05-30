@@ -25,8 +25,15 @@ namespace ComInterfaceGenerator.Tests
             var impl = new Properties();
             var cw = new StrategyBasedComWrappers();
             var comPtr = cw.GetOrCreateComInterfaceForObject(impl, CreateComInterfaceFlags.None);
-            var comObject = cw.GetOrCreateObjectForComInstance(comPtr, CreateObjectFlags.None);
-            return (impl, (IProperties)comObject);
+            try
+            {
+                var comObject = cw.GetOrCreateObjectForComInstance(comPtr, CreateObjectFlags.None);
+                return (impl, (IProperties)comObject);
+            }
+            finally
+            {
+                Marshal.Release(comPtr);
+            }
         }
 
         [Fact]
@@ -110,8 +117,15 @@ namespace ComInterfaceGenerator.Tests
         private static IProperties CreateRcwOverNativeShim()
         {
             var cw = new StrategyBasedComWrappers();
-            void* nativePtr = NewProperties();
-            return (IProperties)cw.GetOrCreateObjectForComInstance((nint)nativePtr, CreateObjectFlags.None);
+            nint nativePtr = (nint)NewProperties();
+            try
+            {
+                return (IProperties)cw.GetOrCreateObjectForComInstance(nativePtr, CreateObjectFlags.None);
+            }
+            finally
+            {
+                Marshal.Release(nativePtr);
+            }
         }
 
         [Fact]
@@ -173,8 +187,15 @@ namespace ComInterfaceGenerator.Tests
             var impl = new PropertyMarshalling();
             var cw = new StrategyBasedComWrappers();
             var comPtr = cw.GetOrCreateComInterfaceForObject(impl, CreateComInterfaceFlags.None);
-            var comObject = cw.GetOrCreateObjectForComInstance(comPtr, CreateObjectFlags.None);
-            return (impl, (IPropertyMarshalling)comObject);
+            try
+            {
+                var comObject = cw.GetOrCreateObjectForComInstance(comPtr, CreateObjectFlags.None);
+                return (impl, (IPropertyMarshalling)comObject);
+            }
+            finally
+            {
+                Marshal.Release(comPtr);
+            }
         }
 
         [Fact]

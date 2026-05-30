@@ -19,8 +19,15 @@ namespace ComInterfaceGenerator.Tests
             var impl = new DerivedProperties();
             var cw = new StrategyBasedComWrappers();
             var comPtr = cw.GetOrCreateComInterfaceForObject(impl, CreateComInterfaceFlags.None);
-            var comObject = cw.GetOrCreateObjectForComInstance(comPtr, CreateObjectFlags.None);
-            return (impl, (IDerivedProperties)comObject);
+            try
+            {
+                var comObject = cw.GetOrCreateObjectForComInstance(comPtr, CreateObjectFlags.None);
+                return (impl, (IDerivedProperties)comObject);
+            }
+            finally
+            {
+                Marshal.Release(comPtr);
+            }
         }
 
         // -------------------------------------------------------------------------
@@ -189,8 +196,15 @@ namespace ComInterfaceGenerator.Tests
         private static IDerivedProperties CreateRcwOverNativeShim()
         {
             var cw = new StrategyBasedComWrappers();
-            void* nativePtr = NewDerivedProperties();
-            return (IDerivedProperties)cw.GetOrCreateObjectForComInstance((nint)nativePtr, CreateObjectFlags.None);
+            nint nativePtr = (nint)NewDerivedProperties();
+            try
+            {
+                return (IDerivedProperties)cw.GetOrCreateObjectForComInstance(nativePtr, CreateObjectFlags.None);
+            }
+            finally
+            {
+                Marshal.Release(nativePtr);
+            }
         }
 
         [Fact]
@@ -280,6 +294,122 @@ namespace ComInterfaceGenerator.Tests
             // which the shim shares state with the derived vtable's inherited slot.
             Assert.Equal(4321, baseRcw.IntProperty);
             Assert.Equal(4321, derivedRcw.IntProperty);
+        }
+
+        // -------------------------------------------------------------------------
+        // User-defined `new`-keyword property shadowing — mirrors the IHide method
+        // pattern for properties. A derived [GeneratedComInterface] that declares
+        // `new int Shadowed { get; set; }` should get its own fresh vtable slots
+        // for the get/set accessors, independent of the inherited base slots.
+        // The CCW class differentiates the two via explicit interface implementations
+        // (IPropertyShadowingBase.Shadowed vs IPropertyShadowingDerived.Shadowed),
+        // so reads/writes through each interface route to a distinct backing field.
+        // -------------------------------------------------------------------------
+
+        private static (PropertyShadowingImpl Impl, IPropertyShadowingDerived Rcw) CreatePropertyShadowingRcwAroundCcw()
+        {
+            var impl = new PropertyShadowingImpl();
+            var cw = new StrategyBasedComWrappers();
+            var comPtr = cw.GetOrCreateComInterfaceForObject(impl, CreateComInterfaceFlags.None);
+            try
+            {
+                var comObject = cw.GetOrCreateObjectForComInstance(comPtr, CreateObjectFlags.None);
+                return (impl, (IPropertyShadowingDerived)comObject);
+            }
+            finally
+            {
+                Marshal.Release(comPtr);
+            }
+        }
+
+        [Fact]
+        public void NewShadow_DerivedAccessor_RoutesToDerivedSlot()
+        {
+            (PropertyShadowingImpl impl, IPropertyShadowingDerived rcw) = CreatePropertyShadowingRcwAroundCcw();
+
+            rcw.Shadowed = 42;
+
+            Assert.Equal(42, rcw.Shadowed);
+            Assert.Equal(42, impl.DerivedShadowedSink);
+            Assert.Equal(0, impl.BaseShadowedSink);
+        }
+
+        [Fact]
+        public void NewShadow_BaseAccessor_RoutesToBaseSlot()
+        {
+            (PropertyShadowingImpl impl, IPropertyShadowingDerived rcw) = CreatePropertyShadowingRcwAroundCcw();
+            IPropertyShadowingBase baseRcw = (IPropertyShadowingBase)rcw;
+
+            baseRcw.Shadowed = 99;
+
+            Assert.Equal(99, baseRcw.Shadowed);
+            Assert.Equal(99, impl.BaseShadowedSink);
+            Assert.Equal(0, impl.DerivedShadowedSink);
+        }
+
+        [Fact]
+        public void NewShadow_SlotsAreIndependent()
+        {
+            (PropertyShadowingImpl impl, IPropertyShadowingDerived rcw) = CreatePropertyShadowingRcwAroundCcw();
+            IPropertyShadowingBase baseRcw = (IPropertyShadowingBase)rcw;
+
+            baseRcw.Shadowed = 7;
+            rcw.Shadowed = 13;
+
+            Assert.Equal(7, baseRcw.Shadowed);
+            Assert.Equal(13, rcw.Shadowed);
+            Assert.Equal(7, impl.BaseShadowedSink);
+            Assert.Equal(13, impl.DerivedShadowedSink);
+        }
+
+        [Fact]
+        public void NewShadow_InheritedNonShadowedProperty_SharesSingleSlot()
+        {
+            (PropertyShadowingImpl impl, IPropertyShadowingDerived rcw) = CreatePropertyShadowingRcwAroundCcw();
+            IPropertyShadowingBase baseRcw = (IPropertyShadowingBase)rcw;
+
+            baseRcw.NotShadowed = 100;
+            Assert.Equal(100, baseRcw.NotShadowed);
+            Assert.Equal(100, rcw.NotShadowed);
+
+            rcw.NotShadowed = 200;
+            Assert.Equal(200, baseRcw.NotShadowed);
+            Assert.Equal(200, rcw.NotShadowed);
+            Assert.Equal(200, impl.NotShadowed);
+        }
+
+        [Fact]
+        public unsafe void NewShadow_DerivedVtable_AppendsFreshSlotsForShadowedProperty()
+        {
+            IIUnknownDerivedDetails baseInterfaceDetails =
+                StrategyBasedComWrappers.DefaultIUnknownInterfaceDetailsStrategy.GetIUnknownDerivedDetails(typeof(IPropertyShadowingBase).TypeHandle);
+            IIUnknownDerivedDetails derivedInterfaceDetails =
+                StrategyBasedComWrappers.DefaultIUnknownInterfaceDetailsStrategy.GetIUnknownDerivedDetails(typeof(IPropertyShadowingDerived).TypeHandle);
+
+            int numBaseAccessors = typeof(IPropertyShadowingBase).GetMethods().Length;
+            int numBaseSlots = 3 + numBaseAccessors;
+
+            var baseVtable = new ReadOnlySpan<nint>(baseInterfaceDetails.ManagedVirtualMethodTable, numBaseSlots);
+            var derivedInheritedRange = new ReadOnlySpan<nint>(derivedInterfaceDetails.ManagedVirtualMethodTable, numBaseSlots);
+
+            Assert.True(baseVtable.SequenceEqual(derivedInheritedRange));
+
+            (PropertyShadowingImpl impl, IPropertyShadowingDerived rcw) = CreatePropertyShadowingRcwAroundCcw();
+            var (thisPtr, derivedVtable) = ((IUnmanagedVirtualMethodTableProvider)rcw).GetVirtualMethodTableInfoForKey(typeof(IPropertyShadowingDerived));
+
+            int derivedSetSlot = numBaseSlots + 1;
+            int derivedGetSlot = numBaseSlots;
+
+            int sentinel = 12345;
+            int hr = ((delegate* unmanaged[MemberFunction]<void*, int, int>)derivedVtable[derivedSetSlot])(thisPtr, sentinel);
+            Assert.Equal(0, hr);
+            Assert.Equal(sentinel, impl.DerivedShadowedSink);
+            Assert.Equal(0, impl.BaseShadowedSink);
+
+            int readBack;
+            hr = ((delegate* unmanaged[MemberFunction]<void*, int*, int>)derivedVtable[derivedGetSlot])(thisPtr, &readBack);
+            Assert.Equal(0, hr);
+            Assert.Equal(sentinel, readBack);
         }
     }
 }
