@@ -238,8 +238,6 @@ protected:
     TreeLifeUpdater<true>* treeLifeUpdater;
 
 public:
-    bool            genUseOptimizedWriteBarriers(GCInfo::WriteBarrierForm wbf);
-    bool            genUseOptimizedWriteBarriers(GenTreeStoreInd* store);
     CorInfoHelpFunc genWriteBarrierHelperForWriteBarrierForm(GCInfo::WriteBarrierForm wbf);
 
 #ifdef DEBUG

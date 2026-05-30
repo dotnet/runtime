@@ -40,13 +40,6 @@
 #define MAX_MULTIREG_COUNT            2  // Maximum number of registers defined by a single instruction (including calls).
                                            // This is also the maximum number of registers for a MultiReg node.
 
-#ifdef FEATURE_USE_ASM_GC_WRITE_BARRIERS
-#define NOGC_WRITE_BARRIERS      1       // We have specialized WriteBarrier JIT Helpers that DO-NOT trash the
-                                         // RBM_CALLEE_TRASH registers
-#else
-#define NOGC_WRITE_BARRIERS      0       // Do not modify this -- modify the definition above.  (If we're not using
-                                         // ASM barriers we definitely don't have NOGC barriers).
-#endif
 #define USER_ARGS_COME_LAST      0
 #define TARGET_POINTER_SIZE      4       // equal to sizeof(void*) and the managed pointer size in bytes for this
                                          // target
@@ -188,11 +181,12 @@
 // x86 write barrier ABI (see vm\i386\jithelp.asm, vm\i386\jithelp.S):
 // CORINFO_HELP_ASSIGN_REF (JIT_WriteBarrier), CORINFO_HELP_CHECKED_ASSIGN_REF (JIT_CheckedWriteBarrier):
 //     On entry:
-//       edx: the destination address (object reference written here)
-//       For optimized write barriers, one of eax, ecx, ebx, esi, or edi contains the source (object to write).
-//       (There is a separate write barrier for each of these source options.)
+//       ecx: the destination address (object reference written here)
+//       edx: the object reference (RHS of the assignment)
 //     On exit:
-//       edx: trashed
+//       eax, edx: trashed
+//     (See RBM_CALLEE_TRASH_WRITEBARRIER below: only eax and edx are clobbered;
+//      all callee-saved registers and ecx are preserved across the call.)
 //
 
 #define REG_WRITE_BARRIER_DST          REG_ARG_0
@@ -201,20 +195,9 @@
 #define REG_WRITE_BARRIER_SRC          REG_ARG_1
 #define RBM_WRITE_BARRIER_SRC          RBM_ARG_1
 
-#if NOGC_WRITE_BARRIERS
-#define REG_OPTIMIZED_WRITE_BARRIER_DST   REG_EDX
-#define RBM_OPTIMIZED_WRITE_BARRIER_DST   RBM_EDX
-
-// We don't allow using ebp as a source register. Maybe we should only prevent this for ETW_EBP_FRAMED
-// (but that is always set right now).
-#define RBM_OPTIMIZED_WRITE_BARRIER_SRC   (RBM_EAX|RBM_ECX|RBM_EBX|RBM_ESI|RBM_EDI)
-#endif // NOGC_WRITE_BARRIERS
-
 #define RBM_CALLEE_TRASH_NOGC    RBM_EDX
 
 // Registers killed by CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
-// Note that x86 normally emits an optimized (source-register-specific) write barrier, but can emit
-// a call to a "general" write barrier.
 
 #ifdef FEATURE_USE_ASM_GC_WRITE_BARRIERS
 #define RBM_CALLEE_TRASH_WRITEBARRIER         (RBM_EAX | RBM_EDX)

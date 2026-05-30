@@ -61,7 +61,6 @@
                                          // MAX_MULTIREG_COUNT - 1.
 #endif // !UNIX_AMD64_ABI
 
-#define NOGC_WRITE_BARRIERS      0       // We DO-NOT have specialized WriteBarrier JIT Helpers that DO-NOT trash the RBM_CALLEE_TRASH registers
 #define USER_ARGS_COME_LAST      1
 #define TARGET_POINTER_SIZE      8       // equal to sizeof(void*) and the managed pointer size in bytes for this target
 #ifdef    UNIX_AMD64_ABI

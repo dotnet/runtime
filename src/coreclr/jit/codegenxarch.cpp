@@ -5325,11 +5325,6 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
         // Consume both registers so that any copies of interfering registers are taken care of.
         genConsumeOperands(tree);
 
-        if (genEmitOptimizedGCWriteBarrier(writeBarrierForm, addr, data))
-        {
-            return;
-        }
-
         // At this point, we should not have any interference.
         // That is, 'data' must not be in REG_WRITE_BARRIER_DST, as that is where 'addr' must go.
         noway_assert(data->GetRegNum() != REG_WRITE_BARRIER_DST);
@@ -5666,99 +5661,6 @@ void CodeGen::genCodeForSwap(GenTreeOp* tree)
     // It will also dump the updates.
     gcInfo.gcMarkRegPtrVal(oldOp2Reg, type1);
     gcInfo.gcMarkRegPtrVal(oldOp1Reg, type2);
-}
-
-//------------------------------------------------------------------------
-// genEmitOptimizedGCWriteBarrier: Generate write barrier store using the optimized
-// helper functions.
-//
-// Arguments:
-//    writeBarrierForm - the write barrier form to use
-//    addr - the address at which to do the store
-//    data - the data to store
-//
-// Return Value:
-//    true if an optimized write barrier form was used, false if not. If this
-//    function returns false, the caller must emit a "standard" write barrier.
-
-bool CodeGen::genEmitOptimizedGCWriteBarrier(GCInfo::WriteBarrierForm writeBarrierForm, GenTree* addr, GenTree* data)
-{
-    assert(writeBarrierForm != GCInfo::WBF_NoBarrier);
-
-#if defined(TARGET_X86) && NOGC_WRITE_BARRIERS
-    if (!genUseOptimizedWriteBarriers(writeBarrierForm))
-    {
-        return false;
-    }
-
-    const static int regToHelper[2][8] = {
-        // If the target is known to be in managed memory
-        {
-            CORINFO_HELP_ASSIGN_REF_EAX, // EAX
-            CORINFO_HELP_ASSIGN_REF_ECX, // ECX
-            -1,                          // EDX (always the target address)
-            CORINFO_HELP_ASSIGN_REF_EBX, // EBX
-            -1,                          // ESP
-            CORINFO_HELP_ASSIGN_REF_EBP, // EBP
-            CORINFO_HELP_ASSIGN_REF_ESI, // ESI
-            CORINFO_HELP_ASSIGN_REF_EDI, // EDI
-        },
-
-        // Don't know if the target is in managed memory
-        {
-            CORINFO_HELP_CHECKED_ASSIGN_REF_EAX, // EAX
-            CORINFO_HELP_CHECKED_ASSIGN_REF_ECX, // ECX
-            -1,                                  // EDX (always the target address)
-            CORINFO_HELP_CHECKED_ASSIGN_REF_EBX, // EBX
-            -1,                                  // ESP
-            CORINFO_HELP_CHECKED_ASSIGN_REF_EBP, // EBP
-            CORINFO_HELP_CHECKED_ASSIGN_REF_ESI, // ESI
-            CORINFO_HELP_CHECKED_ASSIGN_REF_EDI, // EDI
-        },
-    };
-
-    noway_assert(regToHelper[0][REG_EAX] == CORINFO_HELP_ASSIGN_REF_EAX);
-    noway_assert(regToHelper[0][REG_ECX] == CORINFO_HELP_ASSIGN_REF_ECX);
-    noway_assert(regToHelper[0][REG_EBX] == CORINFO_HELP_ASSIGN_REF_EBX);
-    noway_assert(regToHelper[0][REG_ESP] == -1);
-    noway_assert(regToHelper[0][REG_EBP] == CORINFO_HELP_ASSIGN_REF_EBP);
-    noway_assert(regToHelper[0][REG_ESI] == CORINFO_HELP_ASSIGN_REF_ESI);
-    noway_assert(regToHelper[0][REG_EDI] == CORINFO_HELP_ASSIGN_REF_EDI);
-
-    noway_assert(regToHelper[1][REG_EAX] == CORINFO_HELP_CHECKED_ASSIGN_REF_EAX);
-    noway_assert(regToHelper[1][REG_ECX] == CORINFO_HELP_CHECKED_ASSIGN_REF_ECX);
-    noway_assert(regToHelper[1][REG_EBX] == CORINFO_HELP_CHECKED_ASSIGN_REF_EBX);
-    noway_assert(regToHelper[1][REG_ESP] == -1);
-    noway_assert(regToHelper[1][REG_EBP] == CORINFO_HELP_CHECKED_ASSIGN_REF_EBP);
-    noway_assert(regToHelper[1][REG_ESI] == CORINFO_HELP_CHECKED_ASSIGN_REF_ESI);
-    noway_assert(regToHelper[1][REG_EDI] == CORINFO_HELP_CHECKED_ASSIGN_REF_EDI);
-
-    regNumber reg = data->GetRegNum();
-    noway_assert((reg != REG_ESP) && (reg != REG_OPTIMIZED_WRITE_BARRIER_DST));
-
-    // Generate the following code:
-    //            lea     edx, addr
-    //            call    write_barrier_helper_reg
-
-    // addr goes in REG_OPTIMIZED_WRITE_BARRIER_DST
-    genCopyRegIfNeeded(addr, REG_OPTIMIZED_WRITE_BARRIER_DST);
-
-    unsigned tgtAnywhere = 0;
-    if (writeBarrierForm != GCInfo::WBF_BarrierUnchecked)
-    {
-        tgtAnywhere = 1;
-    }
-
-    // Here we might want to call a modified version of genGCWriteBarrier() to get the benefit
-    // of the FEATURE_COUNT_GC_WRITE_BARRIERS code. For now, just emit the helper call directly.
-    genEmitHelperCall(regToHelper[tgtAnywhere][reg],
-                      0,           // argSize
-                      EA_PTRSIZE); // retSize
-
-    return true;
-#else  // !defined(TARGET_X86) || !NOGC_WRITE_BARRIERS
-    return false;
-#endif // !defined(TARGET_X86) || !NOGC_WRITE_BARRIERS
 }
 
 // Produce code for a GT_CALL node

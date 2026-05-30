@@ -1270,7 +1270,6 @@ protected:
                                       regNumber     targetReg,
                                       GenTreeIndir* indir,
                                       bool*         needsBarrier);
-    bool        genEmitOptimizedGCWriteBarrier(GCInfo::WriteBarrierForm writeBarrierForm, GenTree* addr, GenTree* data);
     GenTree*    getCallTarget(const GenTreeCall* call, CORINFO_METHOD_HANDLE* methHnd);
     regNumber   getCallIndirectionCellReg(GenTreeCall* call);
     void        genCall(GenTreeCall* call);

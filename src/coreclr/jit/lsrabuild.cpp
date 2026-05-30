@@ -677,20 +677,9 @@ regMaskTP LinearScan::getKillSetForStoreInd(GenTreeStoreInd* tree)
     GCInfo::WriteBarrierForm writeBarrierForm = m_compiler->codeGen->gcInfo.gcIsWriteBarrierCandidate(tree);
     if (writeBarrierForm != GCInfo::WBF_NoBarrier)
     {
-        if (m_compiler->codeGen->genUseOptimizedWriteBarriers(writeBarrierForm))
-        {
-            // We can't determine the exact helper to be used at this point, because it depends on
-            // the allocated register for the `data` operand. However, all the (x86) optimized
-            // helpers have the same kill set: EDX. And note that currently, only x86 can return
-            // `true` for genUseOptimizedWriteBarriers().
-            killMask = RBM_CALLEE_TRASH_NOGC;
-        }
-        else
-        {
-            // Figure out which helper we're going to use, and then get the kill set for that helper.
-            CorInfoHelpFunc helper = m_compiler->codeGen->genWriteBarrierHelperForWriteBarrierForm(writeBarrierForm);
-            killMask               = m_compiler->compHelperCallKillSet(helper);
-        }
+        // Figure out which helper we're going to use, and then get the kill set for that helper.
+        CorInfoHelpFunc helper = m_compiler->codeGen->genWriteBarrierHelperForWriteBarrierForm(writeBarrierForm);
+        killMask               = m_compiler->compHelperCallKillSet(helper);
     }
     return killMask;
 }
@@ -4541,20 +4530,6 @@ int LinearScan::BuildGCWriteBarrier(GenTree* tree)
     assert(!addr->isContained() && !src->isContained());
     SingleTypeRegSet addrCandidates = RBM_WRITE_BARRIER_DST.GetIntRegSet();
     SingleTypeRegSet srcCandidates  = RBM_WRITE_BARRIER_SRC.GetIntRegSet();
-
-#if defined(TARGET_X86) && NOGC_WRITE_BARRIERS
-
-    bool useOptimizedWriteBarrierHelper = m_compiler->codeGen->genUseOptimizedWriteBarriers(tree->AsStoreInd());
-    if (useOptimizedWriteBarrierHelper)
-    {
-        // Special write barrier:
-        // op1 (addr) goes into REG_OPTIMIZED_WRITE_BARRIER_DST (rdx) and
-        // op2 (src) goes into any int register.
-        addrCandidates = RBM_OPTIMIZED_WRITE_BARRIER_DST.GetIntRegSet();
-        srcCandidates  = RBM_OPTIMIZED_WRITE_BARRIER_SRC.GetIntRegSet();
-    }
-
-#endif // defined(TARGET_X86) && NOGC_WRITE_BARRIERS
 
     BuildUse(addr, addrCandidates);
     BuildUse(src, srcCandidates);

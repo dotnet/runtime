@@ -37,7 +37,6 @@
 #define MAX_MULTIREG_COUNT            2  // Maximum number of registers defined by a single instruction (including calls).
                                          // This is also the maximum number of registers for a MultiReg node.
 
-#define NOGC_WRITE_BARRIERS      0       // No specialized WriteBarrier JIT Helpers
 #define USER_ARGS_COME_LAST      1
 #ifdef TARGET_WASM32
 #define TARGET_POINTER_SIZE      4       // equal to sizeof(void*) and the managed pointer size in bytes for this target

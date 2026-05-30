@@ -925,23 +925,6 @@ regMaskTP Compiler::compHelperCallKillSet(CorInfoHelpFunc helper)
         case CORINFO_HELP_PROF_FCN_TAILCALL:
             return RBM_PROFILER_TAILCALL_TRASH;
 
-#ifdef TARGET_X86
-        case CORINFO_HELP_ASSIGN_REF_EAX:
-        case CORINFO_HELP_ASSIGN_REF_ECX:
-        case CORINFO_HELP_ASSIGN_REF_EBX:
-        case CORINFO_HELP_ASSIGN_REF_EBP:
-        case CORINFO_HELP_ASSIGN_REF_ESI:
-        case CORINFO_HELP_ASSIGN_REF_EDI:
-
-        case CORINFO_HELP_CHECKED_ASSIGN_REF_EAX:
-        case CORINFO_HELP_CHECKED_ASSIGN_REF_ECX:
-        case CORINFO_HELP_CHECKED_ASSIGN_REF_EBX:
-        case CORINFO_HELP_CHECKED_ASSIGN_REF_EBP:
-        case CORINFO_HELP_CHECKED_ASSIGN_REF_ESI:
-        case CORINFO_HELP_CHECKED_ASSIGN_REF_EDI:
-            return RBM_EDX;
-#endif
-
         case CORINFO_HELP_STOP_FOR_GC:
             return RBM_STOP_FOR_GC_TRASH;
 
@@ -2663,55 +2646,6 @@ void CodeGen::genReportEHClauses(EHClauseInfo* clauses)
     }
 }
 
-#ifndef TARGET_WASM
-
-//----------------------------------------------------------------------
-// genUseOptimizedWriteBarriers: Determine if an optimized write barrier
-// helper should be used.
-//
-// Arguments:
-//   wbf - The WriteBarrierForm of the write (GT_STOREIND) that is happening.
-//
-// Return Value:
-//   true if an optimized write barrier helper should be used, false otherwise.
-//   Note: only x86 implements register-specific source optimized write
-//   barriers currently.
-//
-bool CodeGenInterface::genUseOptimizedWriteBarriers(GCInfo::WriteBarrierForm wbf)
-{
-#if defined(TARGET_X86) && NOGC_WRITE_BARRIERS
-    return true;
-#else
-    return false;
-#endif
-}
-
-//----------------------------------------------------------------------
-// genUseOptimizedWriteBarriers: Determine if an optimized write barrier
-// helper should be used.
-//
-// This has the same functionality as the version of
-// genUseOptimizedWriteBarriers that takes a WriteBarrierForm, but avoids
-// determining what the required write barrier form is, if possible.
-//
-// Arguments:
-//   store - the GT_STOREIND node
-//
-// Return Value:
-//   true if an optimized write barrier helper should be used, false otherwise.
-//   Note: only x86 implements register-specific source optimized write
-//   barriers currently.
-//
-bool CodeGenInterface::genUseOptimizedWriteBarriers(GenTreeStoreInd* store)
-{
-#if defined(TARGET_X86) && NOGC_WRITE_BARRIERS
-    return true;
-#else
-    return false;
-#endif
-}
-#endif // !TARGET_WASM
-
 //----------------------------------------------------------------------
 // genWriteBarrierHelperForWriteBarrierForm: Given a write barrier form
 // return the corresponding helper.
@@ -2721,9 +2655,6 @@ bool CodeGenInterface::genUseOptimizedWriteBarriers(GenTreeStoreInd* store)
 //
 // Return Value:
 //   Write barrier helper to use.
-//
-// Note: do not call this function to get an optimized write barrier helper (e.g.,
-// for x86).
 //
 CorInfoHelpFunc CodeGenInterface::genWriteBarrierHelperForWriteBarrierForm(GCInfo::WriteBarrierForm wbf)
 {
