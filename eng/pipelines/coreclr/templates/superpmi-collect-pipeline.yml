@@ -12,9 +12,9 @@ extends:
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: checked
-          # TEMPORARY: wasm-only SPMI collection. Disable other build/collect matrix entries
-          # by setting platforms to an empty list so platform-matrix.yml emits no jobs.
-          platforms: []
+          platforms:
+          - windows_x64
+          - linux_x64
           jobParameters:
             testGroup: outerloop
             buildArgs: -s clr+libs+libs.tests -rc $(_BuildConfig) -c Release /p:ArchiveTests=true
@@ -47,8 +47,10 @@ extends:
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: checked
-          # TEMPORARY: wasm-only SPMI collection.
-          platforms: []
+          platforms:
+          - windows_x86
+          - windows_arm64
+          - osx_arm64
           jobParameters:
             testGroup: outerloop
             buildArgs: -s clr+libs+libs.tests -rc $(_BuildConfig) -c Release /p:ArchiveTests=true
@@ -87,8 +89,9 @@ extends:
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: checked
-          # TEMPORARY: wasm-only SPMI collection.
-          platforms: []
+          platforms:
+          - linux_arm
+          - linux_arm64
           jobParameters:
             testGroup: outerloop
             buildArgs: -s clr+libs+libs.tests -rc $(_BuildConfig) -c Release /p:ArchiveTests=true
@@ -132,11 +135,9 @@ extends:
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: release
-          # TEMPORARY: wasm-only SPMI collection — only windows_x64 release build is
-          # needed (consumed by the corelib_wasm collection job below). Restore
-          # `- linux_x64` when re-enabling the full matrix.
           platforms:
           - windows_x64
+          - linux_x64
           jobParameters:
             testGroup: outerloop
             # Build clr.wasmjit on x64 hosts so the wasm cross-targeting JIT
@@ -196,8 +197,10 @@ extends:
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: release
-          # TEMPORARY: wasm-only SPMI collection.
-          platforms: []
+          platforms:
+          - windows_x86
+          - windows_arm64
+          - osx_arm64
           jobParameters:
             testGroup: outerloop
             buildArgs: -s clr+libs+libs.tests -rc $(_BuildConfig) -c Release /p:ArchiveTests=true
@@ -236,8 +239,9 @@ extends:
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: release
-          # TEMPORARY: wasm-only SPMI collection.
-          platforms: []
+          platforms:
+          - linux_arm
+          - linux_arm64
           jobParameters:
             testGroup: outerloop
             buildArgs: -s clr+libs+libs.tests -rc $(_BuildConfig) -c Release /p:ArchiveTests=true
@@ -281,15 +285,23 @@ extends:
         parameters:
           jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
           buildConfig: checked
-          # TEMPORARY: wasm-only SPMI collection.
-          platforms: []
+          platforms:
+          - CoreClrTestBuildHost # Either osx_x64 or linux_x64
+          jobParameters:
+            testGroup: outerloop
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
           buildConfig: checked
-          # TEMPORARY: wasm-only SPMI collection.
-          platforms: []
+          platforms:
+          - osx_arm64
+          - linux_arm
+          - linux_arm64
+          - linux_x64
+          - windows_x64
+          - windows_x86
+          - windows_arm64
           helixQueueGroup: ci
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           jobParameters:
@@ -302,8 +314,14 @@ extends:
         parameters:
           jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
           buildConfig: checked
-          # TEMPORARY: wasm-only SPMI collection.
-          platforms: []
+          platforms:
+          - osx_arm64
+          - linux_arm
+          - linux_arm64
+          - linux_x64
+          - windows_x64
+          - windows_x86
+          - windows_arm64
           helixQueueGroup: ci
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           jobParameters:
@@ -337,8 +355,14 @@ extends:
         parameters:
           jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
           buildConfig: checked
-          # TEMPORARY: wasm-only SPMI collection.
-          platforms: []
+          platforms:
+          - osx_arm64
+          - linux_arm
+          - linux_arm64
+          - linux_x64
+          - windows_x64
+          - windows_x86
+          - windows_arm64
           helixQueueGroup: ci
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           jobParameters:
@@ -351,8 +375,14 @@ extends:
         parameters:
           jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
           buildConfig: checked
-          # TEMPORARY: wasm-only SPMI collection.
-          platforms: []
+          platforms:
+          - osx_arm64
+          - linux_arm
+          - linux_arm64
+          - linux_x64
+          - windows_x64
+          - windows_x86
+          - windows_arm64
           helixQueueGroup: ci
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           jobParameters:
@@ -365,8 +395,14 @@ extends:
         parameters:
           jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
           buildConfig: checked
-          # TEMPORARY: wasm-only SPMI collection.
-          platforms: []
+          platforms:
+          - osx_arm64
+          - linux_arm
+          - linux_arm64
+          - linux_x64
+          - windows_x64
+          - windows_x86
+          - windows_arm64
           helixQueueGroup: ci
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           jobParameters:
@@ -379,8 +415,14 @@ extends:
         parameters:
           jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
           buildConfig: checked
-          # TEMPORARY: wasm-only SPMI collection.
-          platforms: []
+          platforms:
+          - osx_arm64
+          - linux_arm
+          - linux_arm64
+          - linux_x64
+          - windows_x64
+          - windows_x86
+          - windows_arm64
           helixQueueGroup: ci
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           jobParameters:
@@ -396,8 +438,14 @@ extends:
         parameters:
           jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
           buildConfig: checked
-          # TEMPORARY: wasm-only SPMI collection.
-          platforms: []
+          platforms:
+          - osx_arm64
+          - linux_arm
+          - linux_arm64
+          - linux_x64
+          - windows_x64
+          - windows_x86
+          - windows_arm64
           helixQueueGroup: superpmi
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           jobParameters:
@@ -410,8 +458,11 @@ extends:
         parameters:
           jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
           buildConfig: checked
-          # TEMPORARY: wasm-only SPMI collection.
-          platforms: []
+          platforms:
+          - linux_arm64
+          - linux_x64
+          - windows_x64
+          - windows_arm64
           helixQueueGroup: ci
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           jobParameters:
@@ -428,8 +479,14 @@ extends:
         parameters:
           jobTemplate: /eng/pipelines/libraries/run-test-job.yml
           buildConfig: Release
-          # TEMPORARY: wasm-only SPMI collection.
-          platforms: []
+          platforms:
+          - osx_arm64
+          - linux_arm
+          - linux_arm64
+          - linux_x64
+          - windows_x64
+          - windows_x86
+          - windows_arm64
           helixQueueGroup: superpmi
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           jobParameters:
@@ -455,8 +512,14 @@ extends:
         parameters:
           jobTemplate: /eng/pipelines/libraries/run-test-job.yml
           buildConfig: Release
-          # TEMPORARY: wasm-only SPMI collection.
-          platforms: []
+          platforms:
+          - osx_arm64
+          - linux_arm
+          - linux_arm64
+          - linux_x64
+          - windows_x64
+          - windows_x86
+          - windows_arm64
           helixQueueGroup: superpmi
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           jobParameters:
@@ -481,8 +544,12 @@ extends:
         parameters:
           jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
           buildConfig: checked
-          # TEMPORARY: wasm-only SPMI collection.
-          platforms: []
+          platforms:
+          - osx_arm64
+          - linux_arm64
+          - linux_x64
+          - windows_x64
+          - windows_arm64
           helixQueueGroup: ci
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           jobParameters:
