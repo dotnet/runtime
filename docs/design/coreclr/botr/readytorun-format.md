@@ -982,20 +982,6 @@ enum ReadyToRunHelper
     // Deprecated/legacy
     //
 
-    // JIT32 x86-specific write barriers
-    READYTORUN_HELPER_WriteBarrier_EAX          = 0x100,
-    READYTORUN_HELPER_WriteBarrier_EBX          = 0x101,
-    READYTORUN_HELPER_WriteBarrier_ECX          = 0x102,
-    READYTORUN_HELPER_WriteBarrier_ESI          = 0x103,
-    READYTORUN_HELPER_WriteBarrier_EDI          = 0x104,
-    READYTORUN_HELPER_WriteBarrier_EBP          = 0x105,
-    READYTORUN_HELPER_CheckedWriteBarrier_EAX   = 0x106,
-    READYTORUN_HELPER_CheckedWriteBarrier_EBX   = 0x107,
-    READYTORUN_HELPER_CheckedWriteBarrier_ECX   = 0x108,
-    READYTORUN_HELPER_CheckedWriteBarrier_ESI   = 0x109,
-    READYTORUN_HELPER_CheckedWriteBarrier_EDI   = 0x10A,
-    READYTORUN_HELPER_CheckedWriteBarrier_EBP   = 0x10B,
-
     // JIT32 x86-specific exception handling
     READYTORUN_HELPER_EndCatch                  = 0x110,
 };

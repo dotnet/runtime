@@ -1078,16 +1078,6 @@ void InitThreadManager()
         // can jump to it.
 #ifdef TARGET_X86
         JIT_WriteBarrierEAX_Loc = GetWriteBarrierCodeLocation((void*)JIT_WriteBarrierEAX);
-
-#define X86_WRITE_BARRIER_REGISTER(reg) \
-    SetJitHelperFunction(CORINFO_HELP_ASSIGN_REF_##reg, GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier##reg)); \
-    SetAuxiliarySymbol(GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier##reg), "JIT_WriteBarrier" #reg); \
-    ETW::MethodLog::StubInitialized((ULONGLONG)GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier##reg), W("@WriteBarrier" #reg));
-
-        ENUM_X86_WRITE_BARRIER_REGISTERS()
-
-#undef X86_WRITE_BARRIER_REGISTER
-
 #else // TARGET_X86
         JIT_WriteBarrier_Loc = GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier);
 #endif // TARGET_X86
@@ -1115,9 +1105,7 @@ void InitThreadManager()
     }
     else
     {
-#ifdef TARGET_X86
-        JIT_WriteBarrierEAX_Loc = (void*)RhpAssignRefEAX;
-#else
+#ifndef TARGET_X86
         JIT_WriteBarrier_Loc = (void*)RhpAssignRef;
 #endif
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)

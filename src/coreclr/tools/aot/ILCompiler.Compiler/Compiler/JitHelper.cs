@@ -79,42 +79,6 @@ namespace ILCompiler
                 case ReadyToRunHelper.BulkWriteBarrier:
                     methodDesc = context.GetCoreLibEntryPoint("System"u8, "Buffer"u8, "BulkMoveWithWriteBarrier"u8, null);
                     break;
-                case ReadyToRunHelper.WriteBarrier_EAX:
-                    mangledName = "RhpAssignRefEAX";
-                    break;
-                case ReadyToRunHelper.WriteBarrier_EBX:
-                    mangledName = "RhpAssignRefEBX";
-                    break;
-                case ReadyToRunHelper.WriteBarrier_ECX:
-                    mangledName = "RhpAssignRefECX";
-                    break;
-                case ReadyToRunHelper.WriteBarrier_EDI:
-                    mangledName = "RhpAssignRefEDI";
-                    break;
-                case ReadyToRunHelper.WriteBarrier_ESI:
-                    mangledName = "RhpAssignRefESI";
-                    break;
-                case ReadyToRunHelper.WriteBarrier_EBP:
-                    mangledName = "RhpAssignRefEBP";
-                    break;
-                case ReadyToRunHelper.CheckedWriteBarrier_EAX:
-                    mangledName = "RhpCheckedAssignRefEAX";
-                    break;
-                case ReadyToRunHelper.CheckedWriteBarrier_EBX:
-                    mangledName = "RhpCheckedAssignRefEBX";
-                    break;
-                case ReadyToRunHelper.CheckedWriteBarrier_ECX:
-                    mangledName = "RhpCheckedAssignRefECX";
-                    break;
-                case ReadyToRunHelper.CheckedWriteBarrier_EDI:
-                    mangledName = "RhpCheckedAssignRefEDI";
-                    break;
-                case ReadyToRunHelper.CheckedWriteBarrier_ESI:
-                    mangledName = "RhpCheckedAssignRefESI";
-                    break;
-                case ReadyToRunHelper.CheckedWriteBarrier_EBP:
-                    mangledName = "RhpCheckedAssignRefEBP";
-                    break;
                 case ReadyToRunHelper.Box:
                 case ReadyToRunHelper.Box_Nullable:
                     methodDesc = context.GetCoreLibEntryPoint("System.Runtime"u8, "RuntimeExports"u8, "RhBox"u8, null);

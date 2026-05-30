@@ -78,37 +78,6 @@ void STDCALL JIT_TailCallHelper(Thread * pThread)
 }
 #endif // FEATURE_HIJACK
 
-#define NUM_WRITE_BARRIERS 6
-
-static const BYTE c_rgWriteBarrierRegs[NUM_WRITE_BARRIERS] = {
-    0, // EAX
-    1, // ECX
-    3, // EBX
-    6, // ESI
-    7, // EDI
-    5, // EBP
-};
-
-static const void * const c_rgWriteBarriers[NUM_WRITE_BARRIERS] = {
-    (void *)JIT_WriteBarrierEAX,
-    (void *)JIT_WriteBarrierECX,
-    (void *)JIT_WriteBarrierEBX,
-    (void *)JIT_WriteBarrierESI,
-    (void *)JIT_WriteBarrierEDI,
-    (void *)JIT_WriteBarrierEBP,
-};
-
-#ifdef WRITE_BARRIER_CHECK
-static const void * const c_rgDebugWriteBarriers[NUM_WRITE_BARRIERS] = {
-    (void *)JIT_DebugWriteBarrierEAX,
-    (void *)JIT_DebugWriteBarrierECX,
-    (void *)JIT_DebugWriteBarrierEBX,
-    (void *)JIT_DebugWriteBarrierESI,
-    (void *)JIT_DebugWriteBarrierEDI,
-    (void *)JIT_DebugWriteBarrierEBP,
-};
-#endif // WRITE_BARRIER_CHECK
-
 /*********************************************************************/
 // Initialize the part of the JIT helpers that require very little of
 // EE infrastructure to be in place.
@@ -123,57 +92,49 @@ void InitJITWriteBarrierHelpers()
     _ASSERTE_ALL_BUILDS((BYTE*)JIT_WriteBarrierGroup_End - (BYTE*)JIT_WriteBarrierGroup < (ptrdiff_t)minipal_getpagesize());
     _ASSERTE_ALL_BUILDS((BYTE*)JIT_PatchedWriteBarrierGroup_End - (BYTE*)JIT_PatchedWriteBarrierGroup < (ptrdiff_t)minipal_getpagesize());
 
-    // Copy the write barriers to their final resting place.
+    // Copy the write barrier to its final resting place.
     if (IsWriteBarrierCopyEnabled())
     {
-        for (int iBarrier = 0; iBarrier < NUM_WRITE_BARRIERS; iBarrier++)
-        {
-            BYTE * pfunc = (BYTE *) JIT_WriteBarrierReg_PreGrow;
+        BYTE * pfunc = (BYTE *) JIT_WriteBarrierReg_PreGrow;
 
-            BYTE * pBuf = GetWriteBarrierCodeLocation((BYTE *)c_rgWriteBarriers[iBarrier]);
-            int reg = c_rgWriteBarrierRegs[iBarrier];
+        BYTE * pBuf = GetWriteBarrierCodeLocation((BYTE *)JIT_WriteBarrierEAX);
 
-            BYTE * pBufRW = pBuf;
-            ExecutableWriterHolderNoLog<BYTE> barrierWriterHolder;
-            barrierWriterHolder.AssignExecutableWriterHolder(pBuf, 34);
-            pBufRW = barrierWriterHolder.GetRW();
+        ExecutableWriterHolderNoLog<BYTE> barrierWriterHolder;
+        barrierWriterHolder.AssignExecutableWriterHolder(pBuf, 34);
+        BYTE * pBufRW = barrierWriterHolder.GetRW();
 
-            memcpy(pBufRW, pfunc, 34);
+        memcpy(pBufRW, pfunc, 34);
 
-            // assert the copied code ends in a ret to make sure we got the right length
-            _ASSERTE(pBuf[33] == 0xC3);
+        // assert the copied code ends in a ret to make sure we got the right length
+        _ASSERTE(pBuf[33] == 0xC3);
 
-            // We need to adjust registers in a couple of instructions
-            // It would be nice to have the template contain all zeroes for
-            // the register fields (corresponding to EAX), but that doesn't
-            // work because then we get a smaller encoding for the compares
-            // that only works for EAX but not the other registers.
-            // So we always have to clear the register fields before updating them.
+        // The template uses ECX as the source register (encoding 1) because the
+        // EAX-specific short encodings would not survive register patching when
+        // we still supported other source registers. We now only emit the EAX
+        // variant, but the template hasn't been rewritten yet, so we still need
+        // to patch the source-register field of the first two instructions to
+        // encode EAX (encoding 0).
 
-            // First instruction to patch is a mov [edx], reg
+        // First instruction to patch is a mov [edx], reg
+        _ASSERTE(pBuf[0] == 0x89);
+        // Clear the reg field (bits 3..5) of the ModR/M byte. EAX = 0, so we
+        // don't need to OR anything back in.
+        pBufRW[1] &= 0xc7;
 
-            _ASSERTE(pBuf[0] == 0x89);
-            // Update the reg field (bits 3..5) of the ModR/M byte of this instruction
-            pBufRW[1] &= 0xc7;
-            pBufRW[1] |= reg << 3;
-
-            // Second instruction to patch is cmp reg, imm32 (low bound)
-
-            _ASSERTE(pBuf[2] == 0x81);
-            // Here the lowest three bits in ModR/M field are the register
-            pBufRW[3] &= 0xf8;
-            pBufRW[3] |= reg;
+        // Second instruction to patch is cmp reg, imm32 (low bound)
+        _ASSERTE(pBuf[2] == 0x81);
+        // Clear the lowest three bits of the ModR/M field; EAX = 0.
+        pBufRW[3] &= 0xf8;
 
 #ifdef WRITE_BARRIER_CHECK
-            // Don't do the fancy optimization just jump to the old one
-            // Use the slow one for write barrier checks build because it has some good asserts
-            if (g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_BARRIERCHECK) {
-                pfunc = &pBufRW[0];
-                *pfunc++ = 0xE9;                // JMP c_rgDebugWriteBarriers[iBarrier]
-                *((DWORD*) pfunc) = (BYTE*) c_rgDebugWriteBarriers[iBarrier] - (&pBuf[1] + sizeof(DWORD));
-            }
-#endif // WRITE_BARRIER_CHECK
+        // Don't do the fancy optimization just jump to the old one
+        // Use the slow one for write barrier checks build because it has some good asserts
+        if (g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_BARRIERCHECK) {
+            pfunc = &pBufRW[0];
+            *pfunc++ = 0xE9;                // JMP JIT_DebugWriteBarrierEAX
+            *((DWORD*) pfunc) = (BYTE*) JIT_DebugWriteBarrierEAX - (&pBuf[1] + sizeof(DWORD));
         }
+#endif // WRITE_BARRIER_CHECK
 
 #ifndef CODECOVERAGE
         ValidateWriteBarrierHelpers();
@@ -279,14 +240,12 @@ int StompWriteBarrierEphemeral(bool /* isRuntimeSuspended */)
 #endif // WRITE_BARRIER_CHECK
 
     // Update the lower bound.
-    for (int iBarrier = 0; iBarrier < NUM_WRITE_BARRIERS; iBarrier++)
     {
-        BYTE * pBuf = GetWriteBarrierCodeLocation((BYTE *)c_rgWriteBarriers[iBarrier]);
+        BYTE * pBuf = GetWriteBarrierCodeLocation((BYTE *)JIT_WriteBarrierEAX);
 
-        BYTE * pBufRW = pBuf;
         ExecutableWriterHolderNoLog<BYTE> barrierWriterHolder;
         barrierWriterHolder.AssignExecutableWriterHolder(pBuf, 42);
-        pBufRW = barrierWriterHolder.GetRW();
+        BYTE * pBufRW = barrierWriterHolder.GetRW();
 
         // assert there is in fact a cmp r/m32, imm32 there
         _ASSERTE(pBuf[2] == 0x81);
@@ -348,17 +307,14 @@ int StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
     bool bWriteBarrierIsPreGrow = WriteBarrierIsPreGrow();
     bool bStompWriteBarrierEphemeral = false;
 
-    for (int iBarrier = 0; iBarrier < NUM_WRITE_BARRIERS; iBarrier++)
     {
-        BYTE * pBuf = GetWriteBarrierCodeLocation((BYTE *)c_rgWriteBarriers[iBarrier]);
-        int reg = c_rgWriteBarrierRegs[iBarrier];
+        BYTE * pBuf = GetWriteBarrierCodeLocation((BYTE *)JIT_WriteBarrierEAX);
 
         size_t *pfunc;
 
-        BYTE * pBufRW = pBuf;
         ExecutableWriterHolderNoLog<BYTE> barrierWriterHolder;
         barrierWriterHolder.AssignExecutableWriterHolder(pBuf, 42);
-        pBufRW = barrierWriterHolder.GetRW();
+        BYTE * pBufRW = barrierWriterHolder.GetRW();
 
         // Check if we are still using the pre-grow version of the write barrier.
         if (bWriteBarrierIsPreGrow)
@@ -378,33 +334,21 @@ int StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
                 // assert the copied code ends in a ret to make sure we got the right length
                 _ASSERTE(pBuf[41] == 0xC3);
 
-                // We need to adjust registers in a couple of instructions
-                // It would be nice to have the template contain all zeroes for
-                // the register fields (corresponding to EAX), but that doesn't
-                // work because then we get a smaller encoding for the compares
-                // that only works for EAX but not the other registers
-                // So we always have to clear the register fields before updating them.
+                // The template uses ECX as the source register; patch the
+                // source-register field of the three register-using instructions
+                // to encode EAX (the only variant we emit now).
 
                 // First instruction to patch is a mov [edx], reg
-
                 _ASSERTE(pBuf[0] == 0x89);
-                // Update the reg field (bits 3..5) of the ModR/M byte of this instruction
                 pBufRW[1] &= 0xc7;
-                pBufRW[1] |= reg << 3;
 
                 // Second instruction to patch is cmp reg, imm32 (low bound)
-
                 _ASSERTE(pBuf[2] == 0x81);
-                // Here the lowest three bits in ModR/M field are the register
                 pBufRW[3] &= 0xf8;
-                pBufRW[3] |= reg;
 
                 // Third instruction to patch is another cmp reg, imm32 (high bound)
-
                 _ASSERTE(pBuf[10] == 0x81);
-                // Here the lowest three bits in ModR/M field are the register
                 pBufRW[11] &= 0xf8;
-                pBufRW[11] |= reg;
 
                 bStompWriteBarrierEphemeral = true;
                 // What we're trying to update is the offset field of a

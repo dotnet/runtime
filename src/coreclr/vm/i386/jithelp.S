@@ -234,19 +234,9 @@ LEAF_END JIT_\name, _TEXT
 // *******************************************************************************
 //  Write barrier wrappers with fcall calling convention
 //
-
-// Only define these if we're using the ASM GC write barriers; if this flag is not defined,
-// we'll use C++ versions of these write barriers.
-UniversalWriteBarrierHelper CheckedWriteBarrier
-UniversalWriteBarrierHelper WriteBarrier
 #endif // FEATURE_USE_ASM_GC_WRITE_BARRIERS
 
 WriteBarrierHelper EAX
-WriteBarrierHelper EBX
-WriteBarrierHelper ECX
-WriteBarrierHelper ESI
-WriteBarrierHelper EDI
-WriteBarrierHelper EBP
 
 // This is the first function outside the "keep together range". Used by BBT scripts.
 LEAF_ENTRY JIT_WriteBarrierGroup_End, _TEXT
@@ -495,11 +485,14 @@ LEAF_END JIT_WriteBarrier\rg, _TEXT
 .endm
 
 PatchedWriteBarrierHelper EAX
-PatchedWriteBarrierHelper EBX
-PatchedWriteBarrierHelper ECX
-PatchedWriteBarrierHelper ESI
-PatchedWriteBarrierHelper EDI
-PatchedWriteBarrierHelper EBP
+
+#ifdef FEATURE_USE_ASM_GC_WRITE_BARRIERS
+// The universal-ABI trampoline for the write barrier lives inside the
+// "patched" code region so that GetWriteBarrierCodeLocation translates its
+// address into the copy. The trampoline's relative jmp to JIT_WriteBarrierEAX
+// is preserved across the copy because both functions are in the same region.
+UniversalWriteBarrierHelper WriteBarrier
+#endif // FEATURE_USE_ASM_GC_WRITE_BARRIERS
 
 // This is the first function outside the "keep together range". Used by BBT scripts.
 LEAF_ENTRY JIT_PatchedWriteBarrierGroup_End, _TEXT

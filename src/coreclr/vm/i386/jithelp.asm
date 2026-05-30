@@ -297,19 +297,7 @@ PUBLIC @JIT_&name&@8
 @JIT_&name&@8 ENDP
 ENDM
 
-ifdef FEATURE_USE_ASM_GC_WRITE_BARRIERS
-; Only define these if we're using the ASM GC write barriers; if this flag is not defined,
-; we'll use C++ versions of these write barriers.
-UniversalWriteBarrierHelper <CheckedWriteBarrier>
-UniversalWriteBarrierHelper <WriteBarrier>
-endif
-
 WriteBarrierHelper <EAX>
-WriteBarrierHelper <EBX>
-WriteBarrierHelper <ECX>
-WriteBarrierHelper <ESI>
-WriteBarrierHelper <EDI>
-WriteBarrierHelper <EBP>
 
 ; This is the first function outside the "keep together range". Used by BBT scripts.
 PUBLIC _JIT_WriteBarrierGroup_End@0
@@ -905,11 +893,14 @@ _JIT_WriteBarrier&rg&@0 ENDP
 ENDM
 
 PatchedWriteBarrierHelper <EAX>
-PatchedWriteBarrierHelper <EBX>
-PatchedWriteBarrierHelper <ECX>
-PatchedWriteBarrierHelper <ESI>
-PatchedWriteBarrierHelper <EDI>
-PatchedWriteBarrierHelper <EBP>
+
+ifdef FEATURE_USE_ASM_GC_WRITE_BARRIERS
+; The universal-ABI trampoline for the write barrier lives inside the
+; "patched" code region so that GetWriteBarrierCodeLocation translates its
+; address into the copy. The trampoline's relative jmp to _JIT_WriteBarrierEAX@0
+; is preserved across the copy because both functions are in the same region.
+UniversalWriteBarrierHelper <WriteBarrier>
+endif
 
 PUBLIC _JIT_PatchedWriteBarrierGroup_End@0
 _JIT_PatchedWriteBarrierGroup_End@0 PROC

@@ -223,26 +223,16 @@ EXTERN_C FCDECL2_VV(UINT64, JIT_LRsz, UINT64 num, int shift);
 
 #ifdef TARGET_X86
 
-#define ENUM_X86_WRITE_BARRIER_REGISTERS() \
-    X86_WRITE_BARRIER_REGISTER(EAX) \
-    X86_WRITE_BARRIER_REGISTER(ECX) \
-    X86_WRITE_BARRIER_REGISTER(EBX) \
-    X86_WRITE_BARRIER_REGISTER(ESI) \
-    X86_WRITE_BARRIER_REGISTER(EDI) \
-    X86_WRITE_BARRIER_REGISTER(EBP)
-
 extern "C"
 {
 
 // JIThelp.asm/JIThelp.s
-#define X86_WRITE_BARRIER_REGISTER(reg) \
-    void STDCALL JIT_DebugWriteBarrier##reg(); \
-    void STDCALL JIT_WriteBarrier##reg(); \
-    void FASTCALL RhpAssignRef##reg(Object**, Object*); \
-    void FASTCALL RhpCheckedAssignRef##reg(Object**, Object*);
-
-    ENUM_X86_WRITE_BARRIER_REGISTERS()
-#undef X86_WRITE_BARRIER_REGISTER
+// The only per-source-register x86 write barrier helper still kept in the
+// runtime is the EAX variant, which is the target of the universal trampoline
+// (@JIT_WriteBarrier@8). It is patched at runtime by InitJITWriteBarrierHelpers
+// and updated by StompWriteBarrierEphemeral / StompWriteBarrierResize.
+    void STDCALL JIT_DebugWriteBarrierEAX();
+    void STDCALL JIT_WriteBarrierEAX();
 
     void STDCALL JIT_WriteBarrierGroup();
     void STDCALL JIT_WriteBarrierGroup_End();

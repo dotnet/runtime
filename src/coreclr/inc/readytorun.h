@@ -19,10 +19,10 @@
 //  src/coreclr/nativeaot/Runtime/inc/ModuleHeaders.h
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
-#define READYTORUN_MAJOR_VERSION 19
+#define READYTORUN_MAJOR_VERSION 20
 #define READYTORUN_MINOR_VERSION 0x0000
 
-#define MINIMUM_READYTORUN_MAJOR_VERSION 19
+#define MINIMUM_READYTORUN_MAJOR_VERSION 20
 
 // R2R Version 2.1 adds the InliningInfo section
 // R2R Version 2.2 adds the ProfileDataInfo section
@@ -59,6 +59,7 @@
 // R2R Version 18.6 adds READYTORUN_FIXUP_InjectStringThunks for mapping strings to pregenerated code thunks
 // R2R Version 18.7 adds READYTORUN_HELPER_R2RToInterpreter
 // R2R Version 19 removes the READYTORUN_HELPER_ByRefWriteBarrier helper
+// R2R Version 20 removes the per-source-register x86 write barrier helpers (READYTORUN_HELPER_(Checked)WriteBarrier_E[reg])
 
 struct READYTORUN_CORE_HEADER
 {
@@ -466,20 +467,6 @@ enum ReadyToRunHelper
     //
     // Deprecated/legacy
     //
-
-    // JIT32 x86-specific write barriers
-    READYTORUN_HELPER_WriteBarrier_EAX          = 0x100,
-    READYTORUN_HELPER_WriteBarrier_EBX          = 0x101,
-    READYTORUN_HELPER_WriteBarrier_ECX          = 0x102,
-    READYTORUN_HELPER_WriteBarrier_ESI          = 0x103,
-    READYTORUN_HELPER_WriteBarrier_EDI          = 0x104,
-    READYTORUN_HELPER_WriteBarrier_EBP          = 0x105,
-    READYTORUN_HELPER_CheckedWriteBarrier_EAX   = 0x106,
-    READYTORUN_HELPER_CheckedWriteBarrier_EBX   = 0x107,
-    READYTORUN_HELPER_CheckedWriteBarrier_ECX   = 0x108,
-    READYTORUN_HELPER_CheckedWriteBarrier_ESI   = 0x109,
-    READYTORUN_HELPER_CheckedWriteBarrier_EDI   = 0x10A,
-    READYTORUN_HELPER_CheckedWriteBarrier_EBP   = 0x10B,
 
     // JIT32 x86-specific exception handling
     READYTORUN_HELPER_EndCatch                  = 0x110, // Unused since READYTORUN_MAJOR_VERSION 14.0

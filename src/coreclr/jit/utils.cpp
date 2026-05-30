@@ -1670,20 +1670,6 @@ void HelperCallProperties::init()
                 nonNullReturn = true;
                 break;
 
-#ifdef TARGET_X86
-            case CORINFO_HELP_ASSIGN_REF_EAX:
-            case CORINFO_HELP_ASSIGN_REF_ECX:
-            case CORINFO_HELP_ASSIGN_REF_EBX:
-            case CORINFO_HELP_ASSIGN_REF_EBP:
-            case CORINFO_HELP_ASSIGN_REF_ESI:
-            case CORINFO_HELP_ASSIGN_REF_EDI:
-            case CORINFO_HELP_CHECKED_ASSIGN_REF_EAX:
-            case CORINFO_HELP_CHECKED_ASSIGN_REF_ECX:
-            case CORINFO_HELP_CHECKED_ASSIGN_REF_EBX:
-            case CORINFO_HELP_CHECKED_ASSIGN_REF_EBP:
-            case CORINFO_HELP_CHECKED_ASSIGN_REF_ESI:
-            case CORINFO_HELP_CHECKED_ASSIGN_REF_EDI:
-#endif
             // GC Write barrier support
             // TODO-ARM64-Bug?: Can these throw or not?
             case CORINFO_HELP_ASSIGN_REF:

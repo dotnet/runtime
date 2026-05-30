@@ -2023,44 +2023,6 @@ namespace ILCompiler.Reflection.ReadyToRun
                 // Deprecated/legacy
                 //
 
-                // JIT32 x86-specific write barriers
-                case ReadyToRunHelper.WriteBarrier_EAX:
-                    builder.Append("WRITE_BARRIER_EAX");
-                    break;
-                case ReadyToRunHelper.WriteBarrier_EBX:
-                    builder.Append("WRITE_BARRIER_EBX");
-                    break;
-                case ReadyToRunHelper.WriteBarrier_ECX:
-                    builder.Append("WRITE_BARRIER_ECX");
-                    break;
-                case ReadyToRunHelper.WriteBarrier_ESI:
-                    builder.Append("WRITE_BARRIER_ESI");
-                    break;
-                case ReadyToRunHelper.WriteBarrier_EDI:
-                    builder.Append("WRITE_BARRIER_EDI");
-                    break;
-                case ReadyToRunHelper.WriteBarrier_EBP:
-                    builder.Append("WRITE_BARRIER_EBP");
-                    break;
-                case ReadyToRunHelper.CheckedWriteBarrier_EAX:
-                    builder.Append("CHECKED_WRITE_BARRIER_EAX");
-                    break;
-                case ReadyToRunHelper.CheckedWriteBarrier_EBX:
-                    builder.Append("CHECKED_WRITE_BARRIER_EBX");
-                    break;
-                case ReadyToRunHelper.CheckedWriteBarrier_ECX:
-                    builder.Append("CHECKED_WRITE_BARRIER_ECX");
-                    break;
-                case ReadyToRunHelper.CheckedWriteBarrier_ESI:
-                    builder.Append("CHECKED_WRITE_BARRIER_ESI");
-                    break;
-                case ReadyToRunHelper.CheckedWriteBarrier_EDI:
-                    builder.Append("CHECKED_WRITE_BARRIER_EDI");
-                    break;
-                case ReadyToRunHelper.CheckedWriteBarrier_EBP:
-                    builder.Append("CHECKED_WRITE_BARRIER_EBP");
-                    break;
-
                 // JIT32 x86-specific exception handling
                 case ReadyToRunHelper.EndCatch:
                     builder.Append("END_CATCH");

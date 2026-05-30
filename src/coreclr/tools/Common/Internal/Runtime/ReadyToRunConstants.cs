@@ -344,20 +344,6 @@ namespace Internal.ReadyToRunConstants
         MonitorEnter                = 0xF8,
         MonitorExit                 = 0xF9,
 
-        // JIT32 x86-specific write barriers
-        WriteBarrier_EAX            = 0x100,
-        WriteBarrier_EBX            = 0x101,
-        WriteBarrier_ECX            = 0x102,
-        WriteBarrier_ESI            = 0x103,
-        WriteBarrier_EDI            = 0x104,
-        WriteBarrier_EBP            = 0x105,
-        CheckedWriteBarrier_EAX     = 0x106,
-        CheckedWriteBarrier_EBX     = 0x107,
-        CheckedWriteBarrier_ECX     = 0x108,
-        CheckedWriteBarrier_ESI     = 0x109,
-        CheckedWriteBarrier_EDI     = 0x10A,
-        CheckedWriteBarrier_EBP     = 0x10B,
-
         // JIT32 x86-specific exception handling
         EndCatch                    = 0x110,
 
