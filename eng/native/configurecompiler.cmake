@@ -631,10 +631,7 @@ if (CLR_CMAKE_HOST_UNIX OR CLR_CMAKE_HOST_WASI)
   endif()
 
   if(NOT CLR_CMAKE_HOST_BROWSER AND NOT CLR_CMAKE_HOST_WASI)
-    check_c_compiler_flag(-fstack-protector-strong COMPILER_SUPPORTS_F_STACK_PROTECTOR_STRONG)
-    if (COMPILER_SUPPORTS_F_STACK_PROTECTOR_STRONG)
-      add_compile_options(-fstack-protector-strong)
-    endif()
+    add_compile_options(-fstack-protector-strong)
   endif()
 
   # Suppress warnings-as-errors in release branches to reduce servicing churn
