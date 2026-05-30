@@ -33248,6 +33248,12 @@ bool GenTreeLclFld::IsOffsetMisaligned() const
 
 bool GenTree::IsInvariant() const
 {
+#ifdef TARGET_WASM
+    if (OperIs(GT_PARTIALLY_CONTAINED_LCL_ADDR))
+    {
+        return true;
+    }
+#endif
     return OperIsConst() || OperIs(GT_LCL_ADDR) || OperIs(GT_FTN_ADDR);
 }
 
