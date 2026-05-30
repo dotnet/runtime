@@ -5066,12 +5066,6 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
         Statement*  m_stmt;
     };
 
-    // Test
-    jitstd::vector<PredInfo> v(getAllocator(CMK_ArrayStack));
-    std::partition(v.begin(), v.end(), [](PredInfo a) {
-        return true;
-    });
-
     ArrayStack<PredInfo>    predInfo(getAllocator(CMK_ArrayStack));
     ArrayStack<PredInfo>    matchedPredInfo(getAllocator(CMK_ArrayStack));
     ArrayStack<BasicBlock*> retryBlocks(getAllocator(CMK_ArrayStack));
