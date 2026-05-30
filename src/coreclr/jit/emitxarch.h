@@ -66,6 +66,9 @@ struct CnsVal
 UNATIVE_OFFSET emitInsSize(instrDesc* id, code_t code, bool includeRexPrefixSize);
 UNATIVE_OFFSET emitInsSizeSVCalcDisp(instrDesc* id, code_t code, int var, int dsp);
 #if defined(TARGET_AMD64)
+// Set once per method in emitBegFN: true only when codegen reserved a secondary frame pointer. Lets the
+// per-stack-access fast path skip the candidate check (and its codeGen deref) in the common case.
+bool emitSecondFramePtrActive;
 bool emitIsSecondFramePtrCandidate(instruction ins, bool EBPbased, int dsp, int* pAdjustedDsp);
 #endif // TARGET_AMD64
 UNATIVE_OFFSET emitInsSizeSV(instrDesc* id, code_t code, int var, int dsp);

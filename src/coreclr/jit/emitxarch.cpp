@@ -5338,7 +5338,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSVCalcDisp(instrDesc* id, code_t code,
     // A redirected access uses a [reg+disp8] form with no SIB byte, regardless of the EVEX/zero-disp
     // handling below.
     int secondDsp;
-    if (emitIsSecondFramePtrCandidate(ins, EBPbased, dsp, &secondDsp))
+    if (emitSecondFramePtrActive && emitIsSecondFramePtrCandidate(ins, EBPbased, dsp, &secondDsp))
     {
         return size + sizeof(char);
     }
@@ -12327,7 +12327,7 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm, instruc
     // the logical reference as a trailing comment.
     bool secondRedirected = false;
     int  secondDsp        = 0;
-    if ((m_compiler->lvaDoneFrameLayout == Compiler::FINAL_FRAME_LAYOUT) && asmfm)
+    if (emitSecondFramePtrActive && (m_compiler->lvaDoneFrameLayout == Compiler::FINAL_FRAME_LAYOUT) && asmfm)
     {
         bool bEBPcand    = false;
         int  rawDsp      = m_compiler->lvaFrameAddress(varx, &bEBPcand) + disp;
@@ -15914,7 +15914,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
 #if defined(TARGET_AMD64)
     int secondDsp;
-    if (emitIsSecondFramePtrCandidate(ins, EBPbased, dsp, &secondDsp))
+    if (emitSecondFramePtrActive && emitIsSecondFramePtrCandidate(ins, EBPbased, dsp, &secondDsp))
     {
         // Redirect through the secondary frame pointer (a low callee-saved register, e.g. RBX):
         // modrm mod=01, rm=base => low byte 0x40 | (reg & 7); no SIB byte and no REX.B since the
