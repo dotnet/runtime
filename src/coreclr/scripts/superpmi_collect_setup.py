@@ -652,18 +652,31 @@ def main(main_args):
                 raise RuntimeError("Collection 'smoke_tests' is only available for 'nativeaot' collections.")
 
         if coreclr_args.collection_name == "corelib":
-            # corelib is a single-assembly crossgen2 collection over the release-built
+            # corelib is a single-assembly crossgen2 collection over a release-built
             # System.Private.CoreLib.dll. Build a custom one-file input directory so the
             # partitioning logic produces exactly one helix partition. The references
             # crossgen2 needs are resolved out of the release Core_Root that's already
             # part of the correlation payload (see run_crossgen2 in superpmi.py, which
             # passes -r:<core_root>\System.*.dll etc.).
-            corelib_src = os.path.join(coreclr_args.release_core_root_directory, "System.Private.CoreLib.dll")
+            #
+            # For target_arch == 'wasm' we need the browser/wasm-flavored CoreLib so the
+            # crossgen2 RVA-static layout matches the wasm target. That dll is produced
+            # by the browser_wasm_win build in superpmi-collect-pipeline.yml and
+            # downloaded into artifacts/bin/coreclr/browser.wasm.Release/ by the
+            # collect job. For any other target_arch the host-arch release CoreLib is
+            # the right input.
+            if coreclr_args.target_arch == "wasm":
+                corelib_src_dir = os.path.join(
+                    coreclr_args.source_directory, "artifacts", "bin", "coreclr",
+                    "browser.wasm.Release")
+            else:
+                corelib_src_dir = coreclr_args.release_core_root_directory
+            corelib_src = os.path.join(corelib_src_dir, "System.Private.CoreLib.dll")
             if not os.path.isfile(corelib_src):
                 raise RuntimeError("Cannot find System.Private.CoreLib.dll at " + corelib_src)
             corelib_input_dir = os.path.join(workitem_payload_directory, "corelib_input")
             os.makedirs(corelib_input_dir, exist_ok=True)
-            copy_files(coreclr_args.release_core_root_directory, corelib_input_dir, [corelib_src])
+            copy_files(corelib_src_dir, corelib_input_dir, [corelib_src])
             coreclr_args.input_directory = corelib_input_dir
 
         partition_files(coreclr_args.input_directory, input_artifacts, coreclr_args.max_size, exclude_directories,

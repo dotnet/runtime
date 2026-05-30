@@ -168,6 +168,30 @@ extends:
                   testGroup: outerloop
             disableComponentGovernance: true # No shipping artifacts produced by this pipeline
 
+      # Release build of System.Private.CoreLib.dll targeting browser/wasm, hosted on
+      # Windows x64. Produces artifacts/bin/coreclr/browser.wasm.Release/System.Private.CoreLib.dll,
+      # which is the assembly the corelib_wasm SPMI collection runs crossgen2 over.
+      # We only need the managed CoreLib here, so build the minimal clr.corelib subset.
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: Release
+          platforms:
+          - browser_wasm_win
+          jobParameters:
+            buildArgs: -s clr.corelib -c Release
+            timeoutInMinutes: 120
+            postBuildSteps:
+              - template: /eng/pipelines/common/upload-artifact-step.yml
+                parameters:
+                  rootFolder: $(Build.SourcesDirectory)/artifacts/bin
+                  includeRootFolder: false
+                  archiveType: $(archiveType)
+                  archiveExtension: $(archiveExtension)
+                  tarCompression: $(tarCompression)
+                  artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+            disableComponentGovernance: true # No shipping artifacts produced by this pipeline
+
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
