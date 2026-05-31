@@ -2481,9 +2481,12 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     SingleTypeRegSet apxAwareRegCandidates =
                         ForceLowGprForApxIfNeeded(op2, RBM_NONE, canHWIntrinsicUseApxRegs);
 
-                    // mulx always use EDX for one of the registers
-                    srcCount = BuildOperandUses(op1, SRBM_EDX);
-                    srcCount += BuildOperandUses(op2, apxAwareRegCandidates);
+                    // mulx always use EDX for one of the register.
+                    // If one operand is contained (memory operation), then the other must be EDX.
+                    // Otherwise we prefer second operand since it is more likely to be reused in multiple calls and
+                    // gives more improvements (according to superpmi data).
+                    srcCount = BuildOperandUses(op1, op2->isContained() ? SRBM_EDX : apxAwareRegCandidates);
+                    srcCount += BuildOperandUses(op2, op2->isContained() ? apxAwareRegCandidates : SRBM_EDX);
 
                     // result in any register
                     SingleTypeRegSet apxAwareDestCandidates =
