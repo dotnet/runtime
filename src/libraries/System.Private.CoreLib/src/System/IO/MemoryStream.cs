@@ -44,7 +44,6 @@ namespace System.IO
         public MemoryStream(int capacity)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(capacity);
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(capacity, MemStreamMaxLength);
 
             _buffer = capacity != 0 ? new byte[capacity] : [];
             _capacity = capacity;
@@ -311,7 +310,7 @@ namespace System.IO
                 ArgumentOutOfRangeException.ThrowIfNegative(value);
                 EnsureNotClosed();
 
-                if (value > MemStreamMaxLength - _origin)
+                if (value > int.MaxValue - _origin)
                     throw new ArgumentOutOfRangeException(nameof(value), SR.Format(SR.ArgumentOutOfRange_StreamLength, Array.MaxLength));
                 _position = _origin + (int)value;
             }
@@ -524,7 +523,7 @@ namespace System.IO
 
         private long SeekCore(long offset, int loc)
         {
-            if (offset > MemStreamMaxLength - loc)
+            if (offset > int.MaxValue - loc)
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.Format(SR.ArgumentOutOfRange_StreamLength, Array.MaxLength));
             int tempPosition = unchecked(loc + (int)offset);
             if (unchecked(loc + offset) < _origin || tempPosition < _origin)
@@ -547,14 +546,14 @@ namespace System.IO
         //
         public override void SetLength(long value)
         {
-            if (value < 0 || value > MemStreamMaxLength)
+            if (value < 0 || value > int.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(value), SR.Format(SR.ArgumentOutOfRange_StreamLength, Array.MaxLength));
 
             EnsureWriteable();
 
             // Origin wasn't publicly exposed above.
             Debug.Assert(MemStreamMaxLength == Array.MaxLength);  // Check parameter validation logic in this method if this fails.
-            if (value > (MemStreamMaxLength - _origin))
+            if (value > (int.MaxValue - _origin))
                 throw new ArgumentOutOfRangeException(nameof(value), SR.Format(SR.ArgumentOutOfRange_StreamLength, Array.MaxLength));
 
             int newLength = _origin + (int)value;
