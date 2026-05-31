@@ -37,6 +37,16 @@ cached mapping table).
 | runtime-coreclr libraries-pgo | |
 | runtime-coreclr pgostress | |
 | runtime-coreclr jit-cfg | Sat-Sun 22:00 UTC | Control flow guard. |
+| runtime-coreclr gc-simulator | Daily 11:00 UTC | |
+| gc-standalone | Daily 5:00 UTC | ADO name: gc-standalone |
+| runtime-coreclr crossgen2 | Daily 6:00 UTC | |
+| runtime-coreclr r2r | Daily 5:00 UTC | |
+| runtime-coreclr r2r-extra | Sun-Mon 2:00 UTC | |
+| runtime-interpreter | Mon-Wed-Fri 13:00 UTC | ADO name: runtime-interpreter |
+| runtime-libraries-interpreter | Mon-Wed-Fri 13:00 UTC | ADO name: runtime-libraries-interpreter |
+| runtime-nativeaot-outerloop | 2x daily 9:00, 21:00 UTC | |
+| runtime-diagnostics | Daily | |
+| runtime-coreclr outerloop | Daily | |
 
 ## Cached Definition ID Mapping
 
@@ -70,4 +80,14 @@ entries via the AzDO Definitions API, and adds new rows here.
 | runtime-coreclr jitstress-isas-avx512 | 235 | |
 | runtime-coreclr superpmi-collect | — | **Private — skip** |
 | runtime-coreclr jitrollingbuild | — | **Private — skip** |
+| runtime-coreclr gc-simulator | 123 | |
+| gc-standalone | 146 | ADO name differs from display name |
+| runtime-coreclr crossgen2 | 124 | |
+| runtime-coreclr r2r | 120 | |
+| runtime-coreclr r2r-extra | 114 | |
+| runtime-interpreter | 316 | ADO name differs from display name |
+| runtime-libraries-interpreter | 330 | ADO name differs from display name |
+| runtime-nativeaot-outerloop | 265 | |
+| runtime-diagnostics | 309 | |
+| runtime-coreclr outerloop | 108 | |
 
