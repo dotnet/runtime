@@ -293,8 +293,57 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
         // Do we need to do it in two steps R -> I -> smallType?
         if (varTypeIsSmall(dstType))
         {
+            // For non-overflow casts of float/double -> smallType, clamp the float
+            // source to [smallMin, smallMax] before the R -> int conversion so that
+            // the truncating CAST(smallType <- int) produces saturating results,
+            // consistent with the saturating float/double -> int behavior introduced
+            // in .NET 9 (https://learn.microsoft.com/dotnet/core/compatibility/jit/9.0/fp-to-integer).
+            //
+            // We model the clamp as MinNative(smallMax, MaxNative(smallMin, x)).
+            // On xarch / Arm64 this lowers to a pair of scalar min/max instructions
+            // (e.g. maxss/minss, fmax/fmin) which propagate NaN, after which the
+            // saturating R -> int cast maps NaN -> 0 (always in range).
+            //
+            // Overflow-checked casts must NOT be clamped here: the outer
+            // CAST_OVF(smallType <- int) is responsible for throwing OverflowException
+            // when the value is out of range.
+#ifdef FEATURE_HW_INTRINSICS
+            if (!tree->gtOverflow())
+            {
+                double smallMin;
+                double smallMax;
+                switch (dstType)
+                {
+                    case TYP_BYTE:
+                        smallMin = INT8_MIN;
+                        smallMax = INT8_MAX;
+                        break;
+                    case TYP_UBYTE:
+                        smallMin = 0;
+                        smallMax = UINT8_MAX;
+                        break;
+                    case TYP_SHORT:
+                        smallMin = INT16_MIN;
+                        smallMax = INT16_MAX;
+                        break;
+                    case TYP_USHORT:
+                        smallMin = 0;
+                        smallMax = UINT16_MAX;
+                        break;
+                    default:
+                        unreached();
+                }
+
+                oper = gtNewSimdMinMaxNativeNode(srcType, gtNewDconNode(smallMin, srcType), oper, srcType,
+                                                 /* simdSize */ 0, /* isMax */ true);
+                oper = gtNewSimdMinMaxNativeNode(srcType, gtNewDconNode(smallMax, srcType), oper, srcType,
+                                                 /* simdSize */ 0, /* isMax */ false);
+            }
+#endif // FEATURE_HW_INTRINSICS
+
             oper = gtNewCastNodeL(TYP_INT, oper, /* fromUnsigned */ false, TYP_INT);
             oper->gtFlags |= (tree->gtFlags & (GTF_OVERFLOW | GTF_EXCEPT));
+
             tree->AsCast()->CastOp() = oper;
             // We must not mistreat the original cast, which was from a floating point type,
             // as from an unsigned type, since we now have a TYP_INT node for the source and

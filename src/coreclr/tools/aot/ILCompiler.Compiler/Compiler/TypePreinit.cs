@@ -918,10 +918,10 @@ namespace ILCompiler
                                         context.Target.PointerSize == 8 ? ValueTypeValue.FromInt64((long)(ulong)val) : ValueTypeValue.FromInt32((int)(uint)val));
                                     break;
                                 case ILOpcode.conv_i1:
-                                    stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((sbyte)val));
+                                    stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((sbyte)(int)Math.Clamp(double.IsNaN(val) ? 0 : val, sbyte.MinValue, sbyte.MaxValue)));
                                     break;
                                 case ILOpcode.conv_i2:
-                                    stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((short)val));
+                                    stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((short)(int)Math.Clamp(double.IsNaN(val) ? 0 : val, short.MinValue, short.MaxValue)));
                                     break;
                                 case ILOpcode.conv_i4:
                                     stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((int)val));
@@ -930,10 +930,10 @@ namespace ILCompiler
                                     stack.Push(StackValueKind.Int64, ValueTypeValue.FromInt64((long)val));
                                     break;
                                 case ILOpcode.conv_u1:
-                                    stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((byte)val));
+                                    stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((byte)(int)Math.Clamp(double.IsNaN(val) ? 0 : val, byte.MinValue, byte.MaxValue)));
                                     break;
                                 case ILOpcode.conv_u2:
-                                    stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((ushort)val));
+                                    stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((ushort)(int)Math.Clamp(double.IsNaN(val) ? 0 : val, ushort.MinValue, ushort.MaxValue)));
                                     break;
                                 case ILOpcode.conv_u4:
                                     stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((int)(uint)val));
