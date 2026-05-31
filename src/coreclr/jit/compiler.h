@@ -2606,6 +2606,8 @@ enum class FieldKindForVN
 
 typedef JitHashTable<CORINFO_FIELD_HANDLE, JitPtrKeyFuncs<struct CORINFO_FIELD_STRUCT_>, FieldKindForVN> FieldHandleSet;
 
+typedef JitHashTable<CORINFO_FIELD_HANDLE, JitPtrKeyFuncs<struct CORINFO_FIELD_STRUCT_>, bool> CctorFinalStaticFieldSet;
+
 typedef JitHashTable<CORINFO_CLASS_HANDLE, JitPtrKeyFuncs<struct CORINFO_CLASS_STRUCT_>, bool> ClassHandleSet;
 
 // Represents a distillation of the useful side effects that occur inside a loop.
@@ -6561,6 +6563,8 @@ public:
     bool fgVNBasedIntrinsicExpansionForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
     bool fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
 
+    PhaseStatus fgPromoteCctorAllocsToFrozenHeap();
+
     PhaseStatus fgLateCastExpansion();
     bool fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
 
@@ -8097,6 +8101,10 @@ public:
     }
 
     unsigned optMethodFlags = 0;
+
+    // Static-readonly fields written from this method's stsfld; used by the
+    // cctor frozen-heap promotion phase. nullptr unless populated.
+    CctorFinalStaticFieldSet* m_cctorFinalStaticFields = nullptr;
 
     bool doesMethodHaveNoReturnCalls()
     {

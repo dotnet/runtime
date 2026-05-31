@@ -98,6 +98,7 @@ CompPhaseNameMacro(PHASE_EARLY_PROP,                 "Early Value Propagation", 
 CompPhaseNameMacro(PHASE_OPTIMIZE_INDUCTION_VARIABLES, "Optimize Induction Variables", false, -1, false)
 CompPhaseNameMacro(PHASE_VALUE_NUMBER,               "Do value numbering",             false, -1, false)
 CompPhaseNameMacro(PHASE_OPTIMIZE_INDEX_CHECKS,      "Optimize index checks",          false, -1, false)
+CompPhaseNameMacro(PHASE_PROMOTE_CCTOR_ALLOCS,       "Promote cctor allocations to frozen heap", false, -1, false)
 CompPhaseNameMacro(PHASE_OPTIMIZE_VALNUM_CSES,       "Optimize Valnum CSEs",           false, -1, false)
 CompPhaseNameMacro(PHASE_VN_COPY_PROP,               "VN based copy prop",             false, -1, false)
 CompPhaseNameMacro(PHASE_VN_BASED_INTRINSIC_EXPAND,  "VN based intrinsic expansion",   false, -1, false)
