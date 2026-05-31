@@ -70,4 +70,29 @@
       <ReferenceCopyLocalPaths Include="@(MonoRuntimeFiles)" />
     </ItemGroup>
   </Target>
+
+  <!--
+    Generate a catalog (.cat) file covering all .js files in the runtime pack.
+    The .js files are customer-modifiable runtime/toolchain files that cannot be
+    directly Authenticode-signed. The .cat provides integrity verification without
+    preventing modification. Only runs on Windows (makecat.exe is a Windows SDK tool)
+    and only for browser-wasm packs which contain .js files.
+  -->
+  <Target Name="GenerateCatalogFiles" AfterTargets="AddMonoRuntimeFiles"
+          Condition="$([MSBuild]::IsOSPlatform('Windows')) and '$(RuntimeIdentifier)' == 'browser-wasm' and '$(MonoObjDir)' != ''">
+    <PropertyGroup>
+      <_CatOutputPath>$(ArtifactsObjDir)mono-pack\mono-runtime-js.cat</_CatOutputPath>
+      <_ErrorIfMakecatNotFound Condition="'$(ContinuousIntegrationBuild)' == 'true' or '$(OfficialBuild)' == 'true'">-ErrorIfMakecatNotFound</_ErrorIfMakecatNotFound>
+    </PropertyGroup>
+
+    <Exec Command="powershell.exe -NoProfile -ExecutionPolicy Bypass -Command &quot;&amp; '$(RepoRoot)eng\generate-catalog.ps1' -RootPath '$(MonoObjDir)' -CatOutputPath '$(_CatOutputPath)' -WindowsSdkDir '$(WindowsSdkDir)' $(_ErrorIfMakecatNotFound)&quot;" StandardOutputImportance="High" />
+
+    <ItemGroup Condition="Exists('$(_CatOutputPath)')">
+      <ReferenceCopyLocalPaths Include="$(_CatOutputPath)">
+        <TargetPath>runtimes/$(RuntimeIdentifier)/native/mono-runtime-js.cat</TargetPath>
+        <ExcludeFromDataFiles>true</ExcludeFromDataFiles>
+      </ReferenceCopyLocalPaths>
+    </ItemGroup>
+    <Message Condition="Exists('$(_CatOutputPath)')" Importance="High" Text="Generated catalog file: $(_CatOutputPath)" />
+  </Target>
 </Project>
