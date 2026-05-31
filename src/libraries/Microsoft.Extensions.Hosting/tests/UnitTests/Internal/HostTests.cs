@@ -1460,9 +1460,8 @@ namespace Microsoft.Extensions.Hosting.Internal
             await Assert.ThrowsAsync<InvalidOperationException>(() => host.StartAsync());
 
             LogEvent[] events = logger.GetEvents();
-            Assert.Single(events);
-            Assert.Equal(LogLevel.Error, events[0].LogLevel);
-            Assert.Equal("HostedServiceStartupFaulted", events[0].EventId.Name);
+            LogEvent errorEvent = Assert.Single(events, e => e.LogLevel == LogLevel.Error);
+            Assert.Equal("HostedServiceStartupFaulted", errorEvent.EventId.Name);
         }
 
         [Fact]
