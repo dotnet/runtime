@@ -14,14 +14,14 @@ internal partial interface IResourceManager
         [MarshalAs(UnmanagedType.Interface)] ITransaction pTransaction,
         [MarshalAs(UnmanagedType.Interface)] ITransactionResourceAsync pRes,
         out Guid pUOW,
-        out OletxTransactionIsolationLevel pisoLevel,
+        out Interop.Xolehlp.OletxTransactionIsolationLevel pisoLevel,
         [MarshalAs(UnmanagedType.Interface)] out ITransactionEnlistmentAsync ppEnlist);
 
     internal void Reenlist(
         [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] byte[] pPrepInfo,
         uint cbPrepInfom,
         uint lTimeout,
-        out OletxXactStat pXactStat);
+        out Interop.Xolehlp.OletxXactStat pXactStat);
 
     void ReenlistmentComplete();
 
