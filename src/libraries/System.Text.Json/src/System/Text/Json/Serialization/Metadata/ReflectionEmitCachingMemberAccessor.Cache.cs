@@ -14,16 +14,16 @@ namespace System.Text.Json.Serialization.Metadata
         private sealed class Cache<TKey> where TKey : notnull
         {
             private int _evictLock;
-            private long _lastEvictedTicks; // timestamp of latest eviction operation.
-            private readonly long _evictionIntervalTicks; // min timespan needed to trigger a new evict operation.
-            private readonly long _slidingExpirationTicks; // max timespan allowed for cache entries to remain inactive.
+            private long _lastEvictedTimestamp; // Stopwatch timestamp of the latest eviction operation.
+            private readonly TimeSpan _evictionInterval; // min duration needed to trigger a new evict operation.
+            private readonly TimeSpan _slidingExpiration; // max duration allowed for cache entries to remain inactive.
             private readonly ConcurrentDictionary<TKey, CacheEntry> _cache = new();
 
             public Cache(TimeSpan slidingExpiration, TimeSpan evictionInterval)
             {
-                _slidingExpirationTicks = slidingExpiration.Ticks;
-                _evictionIntervalTicks = evictionInterval.Ticks;
-                _lastEvictedTicks = DateTime.UtcNow.Ticks;
+                _slidingExpiration = slidingExpiration;
+                _evictionInterval = evictionInterval;
+                _lastEvictedTimestamp = Stopwatch.GetTimestamp();
             }
 
             public TValue GetOrAdd<TValue>(TKey key, Func<TKey, TValue> valueFactory) where TValue : class?
@@ -36,17 +36,17 @@ namespace System.Text.Json.Serialization.Metadata
 #else
                     key => new(valueFactory(key)));
 #endif
-                long utcNowTicks = DateTime.UtcNow.Ticks;
-                Volatile.Write(ref entry.LastUsedTicks, utcNowTicks);
+                long nowTimestamp = Stopwatch.GetTimestamp();
+                Volatile.Write(ref entry.LastUsedTimestamp, nowTimestamp);
 
-                if (utcNowTicks - Volatile.Read(ref _lastEvictedTicks) >= _evictionIntervalTicks)
+                if (Stopwatch.GetElapsedTime(Volatile.Read(ref _lastEvictedTimestamp), nowTimestamp) >= _evictionInterval)
                 {
                     if (Interlocked.CompareExchange(ref _evictLock, 1, 0) == 0)
                     {
-                        if (utcNowTicks - _lastEvictedTicks >= _evictionIntervalTicks)
+                        if (Stopwatch.GetElapsedTime(_lastEvictedTimestamp, nowTimestamp) >= _evictionInterval)
                         {
-                            EvictStaleCacheEntries(utcNowTicks);
-                            Volatile.Write(ref _lastEvictedTicks, utcNowTicks);
+                            EvictStaleCacheEntries(nowTimestamp);
+                            Volatile.Write(ref _lastEvictedTimestamp, nowTimestamp);
                         }
 
                         Volatile.Write(ref _evictLock, 0);
@@ -59,14 +59,14 @@ namespace System.Text.Json.Serialization.Metadata
             public void Clear()
             {
                 _cache.Clear();
-                _lastEvictedTicks = DateTime.UtcNow.Ticks;
+                _lastEvictedTimestamp = Stopwatch.GetTimestamp();
             }
 
-            private void EvictStaleCacheEntries(long utcNowTicks)
+            private void EvictStaleCacheEntries(long nowTimestamp)
             {
                 foreach (KeyValuePair<TKey, CacheEntry> kvp in _cache)
                 {
-                    if (utcNowTicks - Volatile.Read(ref kvp.Value.LastUsedTicks) >= _slidingExpirationTicks)
+                    if (Stopwatch.GetElapsedTime(Volatile.Read(ref kvp.Value.LastUsedTimestamp), nowTimestamp) >= _slidingExpiration)
                     {
                         _cache.TryRemove(kvp.Key, out _);
                     }
@@ -76,7 +76,7 @@ namespace System.Text.Json.Serialization.Metadata
             private sealed class CacheEntry
             {
                 public readonly object? Value;
-                public long LastUsedTicks;
+                public long LastUsedTimestamp;
 
                 public CacheEntry(object? value)
                 {
