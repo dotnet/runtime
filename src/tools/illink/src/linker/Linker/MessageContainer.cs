@@ -293,7 +293,8 @@ namespace Mono.Linker
         public string ToMSBuildString()
         {
             const string originApp = Constants.ILLink;
-            string origin = Origin?.ToString() ?? originApp;
+            string origin = Origin?.ToString()
+                ?? $"{originApp} "; // extra space for MSBuild sake: https://github.com/dotnet/runtime/issues/118788
 
             StringBuilder sb = new StringBuilder();
             sb.Append(origin).Append(':');
