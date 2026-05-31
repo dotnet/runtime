@@ -600,7 +600,15 @@ void Lowering::ContainCheckDivOrMod(GenTreeOp* node)
 //
 void Lowering::ContainCheckShiftRotate(GenTreeOp* node)
 {
-    _ASSERTE(!"NYI");
+    GenTree* shiftBy = node->gtOp2;
+    assert(node->OperIsShiftOrRotate());
+
+    // If shift amount is a constant, we can contain it (use immediate form)
+    if (shiftBy->IsCnsIntOrI())
+    {
+        MakeSrcContained(node, shiftBy);
+    }
+    // Otherwise, shift amount must be in a register (not contained)
 }
 
 //------------------------------------------------------------------------

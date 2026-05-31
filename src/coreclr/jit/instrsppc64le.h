@@ -45,6 +45,16 @@ INST(ori,   	  "ori",   	  0, 	  D_FORM,   	0x60000000)
 INST(oris,  	  "oris",  	  0, 	  D_FORM,   	0x64000000)
 INST(sldi,  	  "sldi",  	  0, 	  MD_FORM,  	0x78000000)  // rldicr
 INST(srdi,        "srdi",         0,      MD_FORM,      0x78000002)  // rldicl - Shift Right Doubleword Immediate
+INST(sld,         "sld",          0,      X_FORM,       0x7C000036)  // Shift Left Doubleword
+INST(srd,         "srd",          0,      X_FORM,       0x7C000436)  // Shift Right Doubleword
+INST(srad,        "srad",         0,      X_FORM,       0x7C000634)  // Shift Right Algebraic Doubleword
+INST(slw,         "slw",          0,      X_FORM,       0x7C000030)  // Shift Left Word
+INST(srw,         "srw",          0,      X_FORM,       0x7C000430)  // Shift Right Word
+INST(sraw,        "sraw",         0,      X_FORM,       0x7C000630)  // Shift Right Algebraic Word
+INST(sradi,       "sradi",        0,      MD_FORM,      0x7C000674)  // Shift Right Algebraic Doubleword Immediate
+INST(slwi,        "slwi",         0,      M_FORM,       0x54000000)  // Shift Left Word Immediate (rlwinm)
+INST(srwi,        "srwi",         0,      M_FORM,       0x54000000)  // Shift Right Word Immediate (rlwinm)
+INST(srawi,       "srawi",        0,      X_FORM,       0x7C000670)  // Shift Right Algebraic Word Immediate
 INST(andi,        "andi.",        0,      D_FORM,       0x70000000)  // AND Immediate (with record bit)
 INST(cmpw,	  "cmpw",	  0,	  X_FORM,	0x7C000000) // cmp with L=0
 INST(cmpd,        "cmpd",          0,      X_FORM,       0x7C200000) // cmp with L=1

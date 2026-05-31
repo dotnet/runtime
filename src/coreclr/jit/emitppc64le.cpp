@@ -1119,6 +1119,19 @@ void emitter::emitIns_R_R_R(instruction ins,
             assert(size == EA_4BYTE || size == EA_8BYTE);
             break;
 
+	// Shift instructions (register-based)
+        case INS_sld:
+        case INS_srd:
+        case INS_srad:
+        case INS_slw:
+        case INS_srw:
+        case INS_sraw:
+            assert(isGeneralRegister(reg1));
+            assert(isGeneralRegister(reg2));
+            assert(isGeneralRegister(reg3));
+            assert(size == EA_4BYTE || size == EA_8BYTE);
+            break;
+	        
         default:
             NYI("emitIns_R_R_R - unsupported instruction");
             return;
@@ -1171,7 +1184,15 @@ void emitter::emitIns_R_R_R(instruction ins,
     case INS_orc:
         fmt = IF_RR_2A;  // Use RR_2A format for 3-register logical operations
         break;
-
+    // Shift instructions (X-form)
+    case INS_sld:
+    case INS_srd:
+    case INS_srad:
+    case INS_slw:
+    case INS_srw:
+    case INS_sraw:
+        fmt = IF_RR_2A; 
+	break;    
     default:
         	assert(!"Unexpected instruction in emitIns_R_R_R");
         	break;
@@ -1563,6 +1584,48 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
        case INS_srdi:
            // srdi rA, rS, n (pseudo-op: rldicl)
            ppc_srdi (dstRW, id->idReg1(), id->idReg2(), emitGetInsSC(id));
+           break;
+       
+        // Register-based shifts
+	case INS_sld:
+    	   ppc_sld(dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+           break;
+
+	case INS_srd:
+           ppc_srd(dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+           break;
+
+	case INS_srad:
+           ppc_srad(dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+           break;
+
+        case INS_slw:
+    	   ppc_slw(dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+           break;
+
+	case INS_srw:
+    	   ppc_srw(dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+    	   break;
+
+	case INS_sraw:
+    	   ppc_sraw(dstRW, id->idReg1(), id->idReg2(), id->idReg3());
+    	   break;
+
+	// Immediate-based shifts
+	case INS_sradi:
+    	   ppc_sradi(dstRW, id->idReg1(), id->idReg2(), emitGetInsSC(id));
+   	   break;
+
+	case INS_slwi:
+   	   ppc_slwi(dstRW, id->idReg1(), id->idReg2(), emitGetInsSC(id));
+   	   break;
+
+	case INS_srwi:
+    	   ppc_srwi(dstRW, id->idReg1(), id->idReg2(), emitGetInsSC(id));
+   	   break;
+
+	case INS_srawi:
+    	   ppc_srawi(dstRW, id->idReg1(), id->idReg2(), emitGetInsSC(id));
            break;
 
        case INS_cmpw:

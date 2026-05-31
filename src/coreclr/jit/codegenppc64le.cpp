@@ -398,6 +398,14 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genConsumeOperands(treeNode->AsOp());
             genCodeForBinary(treeNode->AsOp());
             break;
+        
+	case GT_LSH:
+	case GT_RSH:
+	case GT_RSZ:
+	case GT_ROR:
+    	    genConsumeOperands(treeNode->AsOp());
+            genCodeForShift(treeNode);
+    	    break;
 
 	case GT_NOT:
             genConsumeRegs(treeNode->gtGetOp1());
@@ -1595,8 +1603,93 @@ void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
 //
 void CodeGen::genCodeForShift(GenTree* tree)
 {
-    //_ASSERTE("!NYI");
-    abort();
+    assert(tree->OperIs(GT_LSH, GT_RSH, GT_RSZ, GT_ROR));
+    
+    var_types   targetType = tree->TypeGet();
+    genTreeOps  oper       = tree->OperGet();
+    instruction ins        = INS_invalid;
+    emitAttr    size       = emitActualTypeSize(targetType);
+    
+    GenTree* operand = tree->gtGetOp1();
+    GenTree* shiftBy = tree->gtGetOp2();
+    
+    regNumber targetReg  = tree->GetRegNum();
+    regNumber operandReg = operand->GetRegNum();
+    
+    // Determine if this is 32-bit or 64-bit operation
+    bool is64Bit = (size == EA_8BYTE);
+    
+    if (shiftBy->IsCnsIntOrI())
+    {
+        // Immediate shift amount
+        ssize_t shiftAmount = shiftBy->AsIntCon()->IconValue();
+        
+        // Mask shift amount (PowerPC masks automatically, but be explicit)
+        shiftAmount &= (is64Bit ? 63 : 31);
+        
+        // Select appropriate immediate instruction
+        switch (oper)
+        {
+            case GT_LSH:
+                ins = is64Bit ? INS_sldi : INS_slwi;
+                break;
+                
+            case GT_RSH:
+                // Arithmetic right shift (sign-extending)
+                ins = is64Bit ? INS_sradi : INS_srawi;
+                break;
+                
+            case GT_RSZ:
+                // Logical right shift (zero-extending)
+                ins = is64Bit ? INS_srdi : INS_srwi;
+                break;
+                
+            case GT_ROR:
+                abort();
+                break;
+                
+            default:
+                unreached();
+        }
+        
+        // Emit: targetReg = operandReg SHIFT shiftAmount
+        GetEmitter()->emitIns_R_R_I(ins, size, targetReg, operandReg, shiftAmount);
+    }
+    else
+    {
+        // Register-based shift amount
+        regNumber shiftReg = shiftBy->GetRegNum();
+        
+        // Select appropriate register instruction
+        switch (oper)
+        {
+            case GT_LSH:
+                ins = is64Bit ? INS_sld : INS_slw;
+                break;
+                
+            case GT_RSH:
+                // Arithmetic right shift (sign-extending)
+                ins = is64Bit ? INS_srad : INS_sraw;
+                break;
+                
+            case GT_RSZ:
+                // Logical right shift (zero-extending)
+                ins = is64Bit ? INS_srd : INS_srw;
+                break;
+                
+            case GT_ROR:
+                abort();
+		break;
+                
+            default:
+                unreached();
+        }
+        
+        // Emit: targetReg = operandReg SHIFT shiftReg
+        GetEmitter()->emitIns_R_R_R(ins, size, targetReg, operandReg, shiftReg);
+    }
+    
+    genProduceReg(tree);
 }
 
 //------------------------------------------------------------------------

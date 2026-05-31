@@ -51,6 +51,19 @@
 #define ppc_sldi(c,A,S,n)  ppc_rldicr(c, A, S, n, 63 - (n))
 #define ppc_srdi(c,A,S,n)  ppc_rldicl(c, A, S, 64 - (n), (n))
 
+// Register-based shift instructions (X-form)
+#define ppc_sld(c,A,S,B)   ppc_emit32(c, (31 << 26) | ((S) << 21) | ((A) << 16) | ((B) << 11) | (27 << 1) | 0)
+#define ppc_srd(c,A,S,B)   ppc_emit32(c, (31 << 26) | ((S) << 21) | ((A) << 16) | ((B) << 11) | (539 << 1) | 0)
+#define ppc_srad(c,A,S,B)  ppc_emit32(c, (31 << 26) | ((S) << 21) | ((A) << 16) | ((B) << 11) | (794 << 1) | 0)
+#define ppc_slw(c,A,S,B)   ppc_emit32(c, (31 << 26) | ((S) << 21) | ((A) << 16) | ((B) << 11) | (24 << 1) | 0)
+#define ppc_srw(c,A,S,B)   ppc_emit32(c, (31 << 26) | ((S) << 21) | ((A) << 16) | ((B) << 11) | (536 << 1) | 0)
+#define ppc_sraw(c,A,S,B)  ppc_emit32(c, (31 << 26) | ((S) << 21) | ((A) << 16) | ((B) << 11) | (792 << 1) | 0)
+// Additional immediate shifts
+#define ppc_sradi(c,A,S,n) ppc_emit32(c, (31 << 26) | ((S) << 21) | ((A) << 16) | (((n) & 0x1f) << 11) | (((n) & 0x20) >> 4) | (413 << 1) | 0)
+#define ppc_slwi(c,A,S,n)  ppc_emit32(c, (21 << 26) | ((S) << 21) | ((A) << 16) | ((n) << 11) | (0 << 6) | ((31-(n)) << 1) | 0)
+#define ppc_srwi(c,A,S,n)  ppc_emit32(c, (21 << 26) | ((S) << 21) | ((A) << 16) | ((32-(n)) << 11) | ((n) << 6) | (31 << 1) | 0)
+#define ppc_srawi(c,A,S,n) ppc_emit32(c, (31 << 26) | ((S) << 21) | ((A) << 16) | ((n) << 11) | (824 << 1) | 0)
+
 // Compare instructions
 #define ppc_cmp(c,cfrD,L,A,B)   ppc_emit32(c, (31 << 26) | ((cfrD) << 23) | (0 << 22) | ((L) << 21) | ((A) << 16) | ((B) << 11) | (0 << 1) | 0)
 #define ppc_cmpi(c,cfrD,L,A,B)  ppc_emit32(c, (11 << 26) | (cfrD << 23) | (0 << 22) | (L << 21) | (A << 16) | (uint16_t)(B))
