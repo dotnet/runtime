@@ -783,25 +783,29 @@ __HelperNakedFuncName SETS "$helper":CC:"Naked"
         EPILOG_BRANCH_REG x9
     NESTED_END
 
-    IMPORT JIT_PatchpointWorkerWorkerWithPolicy
+#endif ; FEATURE_TIERED_COMPILATION
 
-    NESTED_ENTRY JIT_Patchpoint
-        PROLOG_WITH_TRANSITION_BLOCK
+#ifdef FEATURE_ON_STACK_REPLACEMENT
 
-        add     x0, sp, #__PWTB_TransitionBlock ; TransitionBlock *
-        bl      JIT_PatchpointWorkerWorkerWithPolicy
+    IMPORT g_pPatchpoint
 
-        EPILOG_WITH_TRANSITION_BLOCK_RETURN
-    NESTED_END
-
-    // first arg register holds iloffset, which needs to be moved to the second register, and the first register filled with NULL
-    LEAF_ENTRY JIT_PatchpointForced
-        mov x1, x0
-        mov x0, #0
-        b JIT_Patchpoint
+    LEAF_ENTRY JIT_Patchpoint
+        mov     x2, lr
+        ldr     x9, =g_pPatchpoint
+        ldr     x9, [x9]
+        br      x9
     LEAF_END
 
-#endif ; FEATURE_TIERED_COMPILATION
+    LEAF_ENTRY JIT_PatchpointForced
+        mov     x1, x0
+        mov     x0, #0
+        mov     x2, lr
+        ldr     x9, =g_pPatchpoint
+        ldr     x9, [x9]
+        br      x9
+    LEAF_END
+
+#endif ; FEATURE_ON_STACK_REPLACEMENT
 
     LEAF_ENTRY  JIT_ValidateIndirectCall
         ret lr

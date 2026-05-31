@@ -21,6 +21,9 @@ extern CallInterpreterFuncletWorker:proc
 endif
 
 extern g_pPollGC:QWORD
+ifdef FEATURE_ON_STACK_REPLACEMENT
+extern g_pPatchpoint:QWORD
+endif
 extern g_TrapReturningThreads:DWORD
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -365,25 +368,25 @@ NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT
         TAILJMP_RAX
 NESTED_END OnCallCountThresholdReachedStub, _TEXT
 
-extern JIT_PatchpointWorkerWorkerWithPolicy:proc
+endif ; FEATURE_TIERED_COMPILATION
 
-NESTED_ENTRY JIT_Patchpoint, _TEXT
-        PROLOG_WITH_TRANSITION_BLOCK
+ifdef FEATURE_ON_STACK_REPLACEMENT
 
-        lea     rcx, [rsp + __PWTB_TransitionBlock] ; TransitionBlock *
-        call    JIT_PatchpointWorkerWorkerWithPolicy
+LEAF_ENTRY JIT_Patchpoint, _TEXT
+        mov     r8, [rsp]
+        mov     rax, g_pPatchpoint
+        TAILJMP_RAX
+LEAF_END JIT_Patchpoint, _TEXT
 
-        EPILOG_WITH_TRANSITION_BLOCK_RETURN
-NESTED_END JIT_Patchpoint, _TEXT
-
-; first arg register holds iloffset, which needs to be moved to the second register, and the first register filled with NULL
 LEAF_ENTRY JIT_PatchpointForced, _TEXT
-        mov rdx, rcx
-        xor rcx, rcx
-        jmp JIT_Patchpoint
+        mov     rdx, rcx
+        xor     ecx, ecx
+        mov     r8, [rsp]
+        mov     rax, g_pPatchpoint
+        TAILJMP_RAX
 LEAF_END JIT_PatchpointForced, _TEXT
 
-endif ; FEATURE_TIERED_COMPILATION
+endif ; FEATURE_ON_STACK_REPLACEMENT
 
 LEAF_ENTRY JIT_PollGC, _TEXT
     cmp [g_TrapReturningThreads], 0

@@ -146,20 +146,24 @@ NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT, NoHandler
         TAILJMP_RAX
 NESTED_END OnCallCountThresholdReachedStub, _TEXT
 
-NESTED_ENTRY JIT_Patchpoint, _TEXT, NoHandler
-        PROLOG_WITH_TRANSITION_BLOCK
+#endif // FEATURE_TIERED_COMPILATION
 
-        lea     rdi, [rsp + __PWTB_TransitionBlock] // TransitionBlock *
-        call    C_FUNC(JIT_PatchpointWorkerWorkerWithPolicy)
+#ifdef FEATURE_ON_STACK_REPLACEMENT
 
-        EPILOG_WITH_TRANSITION_BLOCK_RETURN
-NESTED_END JIT_Patchpoint, _TEXT
+LEAF_ENTRY JIT_Patchpoint, _TEXT
+        mov     rdx, [rsp]
+        PREPARE_EXTERNAL_VAR g_pPatchpoint, rax
+        mov     rax, [rax]
+        TAILJMP_RAX
+LEAF_END JIT_Patchpoint, _TEXT
 
-// first arg register holds iloffset, which needs to be moved to the second register, and the first register filled with NULL
 LEAF_ENTRY JIT_PatchpointForced, _TEXT
-        mov rsi, rdi
-        xor rdi, rdi
-        jmp C_FUNC(JIT_Patchpoint)
+        mov     rsi, rdi
+        xor     edi, edi
+        mov     rdx, [rsp]
+        PREPARE_EXTERNAL_VAR g_pPatchpoint, rax
+        mov     rax, [rax]
+        TAILJMP_RAX
 LEAF_END JIT_PatchpointForced, _TEXT
 
-#endif // FEATURE_TIERED_COMPILATION
+#endif // FEATURE_ON_STACK_REPLACEMENT

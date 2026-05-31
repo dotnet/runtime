@@ -550,6 +550,12 @@ namespace System.Threading
             static void PollGCWorker() => PollGCInternal();
         }
 
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Patchpoint")]
+        private static unsafe partial IntPtr PatchpointInternal(int* counter, int ilOffset, IntPtr resumeIP);
+
+        private static unsafe IntPtr Patchpoint(int* counter, int ilOffset, IntPtr resumeIP)
+            => PatchpointInternal(counter, ilOffset, resumeIP);
+
 #if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
         internal WaitSubsystem.ThreadWaitInfo WaitInfo
         {
