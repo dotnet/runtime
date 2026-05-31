@@ -105,55 +105,13 @@ namespace System.Numerics.Tensors
             public static T Invoke(T x, T y) => T.Min(x, y);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y)
-            {
-#if !NET
-                if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
-                {
-                    return Vector128.ConditionalSelect(
-                        Vector128.LessThan(x, y) | IsNaN(x) | (Vector128.Equals(x, y) & IsNegative(x)),
-                        x,
-                        y
-                    );
-                }
-#endif
-
-                return Vector128.Min(x, y);
-            }
+            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y) => Vector128.Min(x, y);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y)
-            {
-#if !NET
-                if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
-                {
-                    return Vector256.ConditionalSelect(
-                        Vector256.LessThan(x, y) | IsNaN(x) | (Vector256.Equals(x, y) & IsNegative(x)),
-                        x,
-                        y
-                    );
-                }
-#endif
-
-                return Vector256.Min(x, y);
-            }
+            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y) => Vector256.Min(x, y);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y)
-            {
-#if !NET
-                if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
-                {
-                    return Vector512.ConditionalSelect(
-                        Vector512.LessThan(x, y) | IsNaN(x) | (Vector512.Equals(x, y) & IsNegative(x)),
-                        x,
-                        y
-                    );
-                }
-#endif
-
-                return Vector512.Min(x, y);
-            }
+            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y) => Vector512.Min(x, y);
 
             public static T Invoke(Vector128<T> x) => HorizontalAggregate<T, MinOperator<T>>(x);
             public static T Invoke(Vector256<T> x) => HorizontalAggregate<T, MinOperator<T>>(x);

@@ -47,9 +47,9 @@ namespace System.Numerics.Tensors
         {
             public static bool Vectorizable => true;
             public static bool Invoke(T x) => T.IsPositive(x);
-            public static Vector128<T> Invoke(Vector128<T> x) => IsPositive<T>(x);
-            public static Vector256<T> Invoke(Vector256<T> x) => IsPositive<T>(x);
-            public static Vector512<T> Invoke(Vector512<T> x) => IsPositive<T>(x);
+            public static Vector128<T> Invoke(Vector128<T> x) => Vector128.IsPositive<T>(x);
+            public static Vector256<T> Invoke(Vector256<T> x) => Vector256.IsPositive<T>(x);
+            public static Vector512<T> Invoke(Vector512<T> x) => Vector512.IsPositive<T>(x);
         }
     }
 }
