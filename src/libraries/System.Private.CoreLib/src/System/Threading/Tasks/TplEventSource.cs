@@ -193,8 +193,7 @@ namespace System.Threading.Tasks
             int OriginatingTaskSchedulerID, int OriginatingTaskID,  // PFX_COMMON_EVENT_HEADER
             int TaskID, int CreatingTaskID, int TaskCreationOptions, int appDomain = DefaultAppDomainID)
         {
-            // IsEnabled() call is an inlined quick check that makes this very fast when provider is off
-            if (IsEnabled() && IsEnabled(EventLevel.Informational, Keywords.TaskTransfer | Keywords.Tasks))
+            if (IsEnabled(EventLevel.Informational, Keywords.TaskTransfer | Keywords.Tasks))
             {
                 unsafe
                 {
@@ -265,7 +264,7 @@ namespace System.Threading.Tasks
             int OriginatingTaskSchedulerID, int OriginatingTaskID,  // PFX_COMMON_EVENT_HEADER
             int TaskID, bool IsExceptional)
         {
-            if (IsEnabled() && IsEnabled(EventLevel.Informational, Keywords.Tasks))
+            if (IsEnabled(EventLevel.Informational, Keywords.Tasks))
             {
                 unsafe
                 {
@@ -310,7 +309,7 @@ namespace System.Threading.Tasks
             int OriginatingTaskSchedulerID, int OriginatingTaskID,  // PFX_COMMON_EVENT_HEADER
             int TaskID, TaskWaitBehavior Behavior, int ContinueWithTaskID)
         {
-            if (IsEnabled() && IsEnabled(EventLevel.Informational, Keywords.TaskTransfer | Keywords.Tasks))
+            if (IsEnabled(EventLevel.Informational, Keywords.TaskTransfer | Keywords.Tasks))
             {
                 unsafe
                 {
@@ -358,7 +357,7 @@ namespace System.Threading.Tasks
             int TaskID)
         {
             // Log an event if indicated.
-            if (IsEnabled() && IsEnabled(EventLevel.Verbose, Keywords.Tasks))
+            if (IsEnabled(EventLevel.Verbose, Keywords.Tasks))
                 WriteEvent(TASKWAITEND_ID, OriginatingTaskSchedulerID, OriginatingTaskID, TaskID);
         }
 
@@ -371,7 +370,7 @@ namespace System.Threading.Tasks
         public void TaskWaitContinuationComplete(int TaskID)
         {
             // Log an event if indicated.
-            if (IsEnabled() && IsEnabled(EventLevel.Verbose, Keywords.TaskStops))
+            if (IsEnabled(EventLevel.Verbose, Keywords.TaskStops))
                 WriteEvent(TASKWAITCONTINUATIONCOMPLETE_ID, TaskID);
         }
 
@@ -384,7 +383,7 @@ namespace System.Threading.Tasks
         public void TaskWaitContinuationStarted(int TaskID)
         {
             // Log an event if indicated.
-            if (IsEnabled() && IsEnabled(EventLevel.Verbose, Keywords.Tasks))
+            if (IsEnabled(EventLevel.Verbose, Keywords.Tasks))
                 WriteEvent(TASKWAITCONTINUATIONSTARTED_ID, TaskID);
         }
 
@@ -402,7 +401,7 @@ namespace System.Threading.Tasks
             int OriginatingTaskSchedulerID, int OriginatingTaskID,  // PFX_COMMON_EVENT_HEADER
             int ContinueWithTaskId)
         {
-            if (IsEnabled() && IsEnabled(EventLevel.Informational, Keywords.TaskTransfer | Keywords.Tasks))
+            if (IsEnabled(EventLevel.Informational, Keywords.TaskTransfer | Keywords.Tasks))
             {
                 unsafe
                 {
@@ -433,7 +432,7 @@ namespace System.Threading.Tasks
          Level = EventLevel.Informational, Keywords = Keywords.AsyncCausalityOperation)]
         public void TraceOperationBegin(int TaskID, string OperationName, long RelatedContext)
         {
-            if (IsEnabled() && IsEnabled(EventLevel.Informational, Keywords.AsyncCausalityOperation))
+            if (IsEnabled(EventLevel.Informational, Keywords.AsyncCausalityOperation))
             {
                 unsafe
                 {
@@ -461,7 +460,7 @@ namespace System.Threading.Tasks
          Level = EventLevel.Informational, Keywords = Keywords.AsyncCausalityRelation)]
         public void TraceOperationRelation(int TaskID, CausalityRelation Relation)
         {
-            if (IsEnabled() && IsEnabled(EventLevel.Informational, Keywords.AsyncCausalityRelation))
+            if (IsEnabled(EventLevel.Informational, Keywords.AsyncCausalityRelation))
                 WriteEvent(TRACEOPERATIONRELATION_ID, TaskID, (int)Relation);                // optimized overload for this exists
         }
 
@@ -469,7 +468,7 @@ namespace System.Threading.Tasks
          Level = EventLevel.Informational, Keywords = Keywords.AsyncCausalityOperation)]
         public void TraceOperationEnd(int TaskID, AsyncCausalityStatus Status)
         {
-            if (IsEnabled() && IsEnabled(EventLevel.Informational, Keywords.AsyncCausalityOperation))
+            if (IsEnabled(EventLevel.Informational, Keywords.AsyncCausalityOperation))
                 WriteEvent(TRACEOPERATIONSTOP_ID, TaskID, (int)Status);                     // optimized overload for this exists
         }
 
@@ -477,28 +476,16 @@ namespace System.Threading.Tasks
          Level = EventLevel.Informational, Keywords = Keywords.AsyncCausalitySynchronousWork)]
         public void TraceSynchronousWorkBegin(int TaskID, CausalitySynchronousWork Work)
         {
-            if (IsEnabled() && IsEnabled(EventLevel.Informational, Keywords.AsyncCausalitySynchronousWork))
+            if (IsEnabled(EventLevel.Informational, Keywords.AsyncCausalitySynchronousWork))
                 WriteEvent(TRACESYNCHRONOUSWORKSTART_ID, TaskID, (int)Work);               // optimized overload for this exists
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-                   Justification = EventSourceSuppressMessage)]
         [Event(TRACESYNCHRONOUSWORKSTOP_ID, Version = 1,
          Level = EventLevel.Informational, Keywords = Keywords.AsyncCausalitySynchronousWork)]
         public void TraceSynchronousWorkEnd(CausalitySynchronousWork Work)
         {
-            if (IsEnabled() && IsEnabled(EventLevel.Informational, Keywords.AsyncCausalitySynchronousWork))
-            {
-                unsafe
-                {
-                    EventData* eventPayload = stackalloc EventData[1];
-                    eventPayload[0].Size = sizeof(int);
-                    eventPayload[0].DataPointer = ((IntPtr)(&Work));
-                    eventPayload[0].Reserved = 0;
-
-                    WriteEventCore(TRACESYNCHRONOUSWORKSTOP_ID, 1, eventPayload);
-                }
-            }
+            if (IsEnabled(EventLevel.Informational, Keywords.AsyncCausalitySynchronousWork))
+                WriteEvent(TRACESYNCHRONOUSWORKSTOP_ID, (int)Work);
         }
 
         [NonEvent]
@@ -544,7 +531,7 @@ namespace System.Threading.Tasks
         public void IncompleteAsyncMethod(IAsyncStateMachineBox stateMachineBox)
         {
             Diagnostics.Debug.Assert(stateMachineBox != null);
-            if (IsEnabled() && IsEnabled(EventLevel.Warning, Keywords.AsyncMethod))
+            if (IsEnabled(EventLevel.Warning, Keywords.AsyncMethod))
             {
                 IAsyncStateMachine stateMachine = stateMachineBox.GetStateMachineObject();
                 if (stateMachine != null)
