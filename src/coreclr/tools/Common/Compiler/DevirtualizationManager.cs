@@ -148,13 +148,9 @@ namespace ILCompiler
                                 return null;
 
                             case DefaultInterfaceMethodResolution.DefaultImplementation:
-                                if (dimMethod.OwningType.HasInstantiation || (declMethod != defaultInterfaceDispatchDeclMethod))
+                                if (declMethod != defaultInterfaceDispatchDeclMethod)
                                 {
-                                    // If we devirtualized into a default interface method on a generic type, we should actually return an
-                                    // instantiating stub but this is not happening.
-                                    // Making this work is tracked by https://github.com/dotnet/runtime/issues/9588
-
-                                    // In addition, we fail here for variant default interface dispatch
+                                    // Fail for variant default interface dispatch
                                     devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_DIM;
                                     return null;
                                 }
@@ -217,13 +213,6 @@ namespace ILCompiler
                         impl = null;
                     }
                 }
-            }
-
-            if (impl != null && impl.HasInstantiation && impl.GetCanonMethodTarget(CanonicalFormKind.Specific).IsCanonicalMethod(CanonicalFormKind.Specific))
-            {
-                // We don't support devirtualization of shared generic virtual methods yet.
-                devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
-                impl = null;
             }
 
             return impl;

@@ -8762,15 +8762,6 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
             info->detail = CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP;
             return false;
         }
-
-        // If we devirtualized into a default interface method on a generic type, we should actually return an
-        // instantiating stub but this is not happening.
-        // Making this work is tracked by https://github.com/dotnet/runtime/issues/9588
-        if (pDevirtMD->GetMethodTable()->IsInterface() && pDevirtMD->HasClassInstantiation())
-        {
-            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_DIM;
-            return false;
-        }
     }
     else
     {
@@ -8835,10 +8826,19 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
 
     if (pApproxMT->IsInterface())
     {
-        // As noted above, we can't yet handle generic interfaces
-        // with default methods.
-        _ASSERTE(!pDevirtMD->HasClassInstantiation());
+        if (pDevirtMD->HasClassInstantiation())
+        {
+            if (TypeHandle::IsCanonicalSubtypeInstantiation(pDevirtMD->GetClassInstantiation()))
+            {
+                // If we end up with a shared MethodTable that is not exact,
+                // we can't devirtualize since it's not possible to compute the instantiation argument even as a runtime lookup.
+                info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                return false;
+            }
 
+            info->instParamLookup.constLookup.handle = (CORINFO_GENERIC_HANDLE)pExactMT;
+            info->instParamLookup.constLookup.accessType = IAT_VALUE;
+        }
     }
     else if (pBaseMT->IsInterface() && pObjMT->IsArray())
     {
@@ -8855,10 +8855,29 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         MethodDesc* pPrimaryMD = pDevirtMD;
         pDevirtMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
             pPrimaryMD, pExactMT, pExactMT->IsValueType() && !pPrimaryMD->IsStatic(), pBaseMD->GetMethodInstantiation(), true);
+
         if (pDevirtMD->IsSharedByGenericMethodInstantiations())
         {
-            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
-            return false;
+            pDevirtMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
+                pPrimaryMD, pExactMT, pExactMT->IsValueType() && !pPrimaryMD->IsStatic(), pBaseMD->GetMethodInstantiation(), false);
+
+            if (TypeHandle::IsCanonicalSubtypeInstantiation(pDevirtMD->GetClassInstantiation()))
+            {
+                // If we end up with a shared MethodTable that is not exact,
+                // we can't devirtualize since it's not possible to compute the instantiation argument even as a runtime lookup.
+                info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                return false;
+            }
+
+            // We are dealing with a generic virtual method whose owning type is exact.
+            // If the method is not exact, a runtime lookup would be required.
+            const bool requiresRuntimeLookup = TypeHandle::IsCanonicalSubtypeInstantiation(pDevirtMD->GetMethodInstantiation());
+            if (requiresRuntimeLookup)
+            {
+                // TODO: Support for runtime lookup
+                info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                return false;
+            }
         }
 
         isGenericVirtual = true;
@@ -8873,12 +8892,13 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         }
 
         info->tokenLookupContext = MAKE_METHODCONTEXT((CORINFO_METHOD_HANDLE) pDevirtMD);
-        pDevirtMD = pDevirtMD->IsInstantiatingStub() ? pDevirtMD->GetWrappedMethodDesc() : pDevirtMD;
     }
     else
     {
         info->tokenLookupContext = MAKE_CLASSCONTEXT((CORINFO_CLASS_HANDLE) pExactMT);
     }
+
+    pDevirtMD = pDevirtMD->IsInstantiatingStub() ? pDevirtMD->GetWrappedMethodDesc() : pDevirtMD;
 
     // Success! Pass back the results.
     //
