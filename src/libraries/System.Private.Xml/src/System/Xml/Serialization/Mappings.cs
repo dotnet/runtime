@@ -209,6 +209,7 @@ namespace System.Xml.Serialization
 
     internal sealed class TextAccessor : Accessor
     {
+        internal char? Separator { get; set; }
     }
 
     internal sealed class XmlnsAccessor : Accessor
@@ -230,6 +231,8 @@ namespace System.Xml.Serialization
             get { return _isList; }
             set { _isList = value; }
         }
+
+        internal char? Separator { get; set; }
 
         internal void CheckSpecial()
         {

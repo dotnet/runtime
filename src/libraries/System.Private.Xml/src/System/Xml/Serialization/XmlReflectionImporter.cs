@@ -1613,6 +1613,11 @@ namespace System.Xml.Serialization
                     CheckForm(attribute.Form, ns != attribute.Namespace);
                     attribute.Mapping = ImportTypeMapping(_modelScope.GetTypeModel(targetType), ns, ImportContext.Attribute, a.XmlAttribute.DataType, null, isList, false, limiter);
                     attribute.IsList = isList;
+                    if (a.XmlAttribute.Separator != '\0')
+                    {
+                        ValidateAttributeSeparatorChar(a.XmlAttribute.Separator, accessorName);
+                        attribute.Separator = a.XmlAttribute.Separator;
+                    }
                     attribute.Default = GetDefaultValue(model.FieldTypeDesc, model.FieldType, a);
                     attribute.Any = (a.XmlAnyAttribute != null);
                     if (attribute.Form == XmlSchemaForm.Qualified && attribute.Namespace != ns)
@@ -1636,6 +1641,15 @@ namespace System.Xml.Serialization
                         text.Mapping = ImportTypeMapping(_modelScope.GetTypeModel(targetType), ns, ImportContext.Text, a.XmlText.DataType, null, true, false, limiter);
                         if (!(text.Mapping is SpecialMapping) && targetTypeDesc != _typeScope.GetTypeDesc(typeof(string)))
                             throw new InvalidOperationException(SR.Format(SR.XmlIllegalArrayTextAttribute, accessorName));
+
+                        if (a.XmlText.Separator != '\0')
+                        {
+                            ValidateTextSeparatorChar(a.XmlText.Separator, accessorName);
+                            if (text.Mapping is SpecialMapping)
+                                throw new InvalidOperationException(SR.Format(SR.XmlIllegalArrayTextSeparator, accessorName));
+
+                            text.Separator = a.XmlText.Separator;
+                        }
 
                         accessor.Text = text;
                     }
@@ -2259,6 +2273,20 @@ namespace System.Xml.Serialization
         private static void CheckForm(XmlSchemaForm form, bool isQualified)
         {
             if (isQualified && form == XmlSchemaForm.Unqualified) throw new InvalidOperationException(SR.XmlInvalidFormUnqualified);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void ValidateTextSeparatorChar(char separator, string memberName)
+        {
+            if (!XmlCharType.IsTextChar(separator))
+                throw new InvalidOperationException(SR.Format(SR.XmlInvalidTextSeparatorChar, memberName));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void ValidateAttributeSeparatorChar(char separator, string memberName)
+        {
+            if (!XmlCharType.IsAttributeValueChar(separator))
+                throw new InvalidOperationException(SR.Format(SR.XmlInvalidAttributeSeparatorChar, memberName));
         }
 
         private static void CheckNullable(bool isNullable, TypeDesc typeDesc, TypeMapping? mapping)

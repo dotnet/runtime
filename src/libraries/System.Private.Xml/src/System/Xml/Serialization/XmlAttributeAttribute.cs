@@ -18,6 +18,7 @@ namespace System.Xml.Serialization
         private string? _ns;
         private string? _dataType;
         private XmlSchemaForm _form = XmlSchemaForm.None;
+        private char _separator;
 
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
@@ -96,6 +97,18 @@ namespace System.Xml.Serialization
         {
             get { return _form; }
             set { _form = value; }
+        }
+
+        /// <summary>Gets or sets the separator character used when serializing an array as an XML attribute value list.</summary>
+        /// <remarks>
+        /// When set to the default value of <c>'\0'</c> (null character), the space character is used as separator,
+        /// preserving the existing behavior for <see cref="XmlAttributeAttribute"/> on array-typed members.
+        /// Set to a non-default value to override the separator.
+        /// </remarks>
+        public char Separator
+        {
+            get { return _separator; }
+            set { _separator = value; }
         }
     }
 }
