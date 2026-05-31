@@ -61,6 +61,8 @@ namespace ILCompiler.ObjectWriter
         private readonly uint _cpuType;
         private readonly uint _cpuSubType;
         private readonly List<MachSection> _sections = new();
+        private readonly List<SymbolDefinition> _temporaryLabels = new();
+        private uint _temporaryLabelsBaseIndex;
 
         // Symbol table
         private readonly Dictionary<Utf8String, uint> _symbolNameToIndex = new();
@@ -482,10 +484,35 @@ namespace ILCompiler.ObjectWriter
                         // subtraction and the PC offset is baked into the addend.
                         // On x64, ld64 requires X86_64_RELOC_SUBTRACTOR + X86_64_RELOC_UNSIGNED
                         // for DWARF .eh_frame section.
+
+                        // Apple ld-prime linker needs a quirk where we restrict the addend to
+                        // signed 20-bit integer. We generate a temporary label every time the
+                        // addend would overflow and adjust the addend to be relative to that label.
+                        const int signedAddendBitWidth = 20;
+                        const int signedAddendShift = (sizeof(long) * 8) - signedAddendBitWidth;
+                        var temporaryLabelOffset = _sections[sectionIndex].TemporaryLabelOffset;
+                        var temporaryLabelIndex = _sections[sectionIndex].TemporaryLabelIndex;
+                        addend -= offset - temporaryLabelOffset;
+                        if (addend != ((addend << signedAddendShift) >> signedAddendShift))
+                        {
+                            addend += offset - temporaryLabelOffset;
+                            _temporaryLabels.Add(new SymbolDefinition(sectionIndex, offset, 0, false));
+                            _sections[sectionIndex].TemporaryLabelOffset = temporaryLabelOffset = offset;
+                            _sections[sectionIndex].TemporaryLabelIndex = temporaryLabelIndex = (uint)_temporaryLabels.Count;
+                        }
+
+                        Debug.Assert(addend >= int.MinValue && addend <= int.MaxValue);
                         BinaryPrimitives.WriteInt32LittleEndian(
                             data,
                             BinaryPrimitives.ReadInt32LittleEndian(data) +
-                            (int)(addend - offset));
+                            (int)addend);
+
+                        // The SymbolicRelocation.Addend field is repurposed to carry the
+                        // 1-based temporary label index (0 means no temporary label). This
+                        // avoids introducing a side table and is consumed by
+                        // EmitRelocationsX64/EmitRelocationsArm64 when building the
+                        // subtractor relocation pair.
+                        addend = temporaryLabelIndex;
                     }
                     else
                     {
@@ -497,8 +524,8 @@ namespace ILCompiler.ObjectWriter
                                 BinaryPrimitives.ReadInt32LittleEndian(data) +
                                 (int)addend);
                         }
+                        addend = 0;
                     }
-                    addend = 0;
                     break;
 
                 default:
@@ -524,6 +551,23 @@ namespace ILCompiler.ObjectWriter
             // We already emitted symbols for all non-debug sections in EmitSectionsAndLayout,
             // these symbols are local and we need to account for them.
             uint symbolIndex = (uint)_symbolTable.Count;
+            _temporaryLabelsBaseIndex = symbolIndex;
+            Utf8StringBuilder temporaryLabelNameBuilder = new Utf8StringBuilder();
+            foreach (SymbolDefinition definition in _temporaryLabels)
+            {
+                temporaryLabelNameBuilder.Clear();
+                temporaryLabelNameBuilder.Append("ltemp"u8).Append((int)(symbolIndex - _temporaryLabelsBaseIndex));
+                MachSection section = _sections[definition.SectionIndex];
+                _symbolTable.Add(new MachSymbol
+                {
+                    Name = temporaryLabelNameBuilder.ToUtf8String(),
+                    Section = section,
+                    Value = section.VirtualAddress + (ulong)definition.Value,
+                    Descriptor = N_NO_DEAD_STRIP,
+                    Type = N_SECT,
+                });
+                symbolIndex++;
+            }
             _dySymbolTable.LocalSymbolsIndex = 0;
             _dySymbolTable.LocalSymbolsCount = symbolIndex;
 
@@ -658,11 +702,20 @@ namespace ILCompiler.ObjectWriter
                 }
                 else if (symbolicRelocation.Type == IMAGE_REL_BASED_RELPTR32 && IsEhFrameSection(sectionIndex))
                 {
+                    // Addend is used to encode the temporary label index for ld-prime quirk. See
+                    // EmitRelocation for details.
+                    Debug.Assert(symbolicRelocation.Addend == 0 || symbolicRelocation.Addend <= _temporaryLabels.Count);
+                    uint baseSymbolIndex =
+                        symbolicRelocation.Addend != 0 ?
+                        (uint)(_temporaryLabelsBaseIndex + symbolicRelocation.Addend - 1) :
+                        (uint)sectionIndex;
+                    Debug.Assert(baseSymbolIndex < (uint)_symbolTable.Count);
+
                     sectionRelocations.Add(
                         new MachRelocation
                         {
                             Address = (int)symbolicRelocation.Offset,
-                            SymbolOrSectionIndex = (uint)sectionIndex,
+                            SymbolOrSectionIndex = baseSymbolIndex,
                             Length = 4,
                             RelocationType = X86_64_RELOC_SUBTRACTOR,
                             IsExternal = true,
@@ -821,12 +874,21 @@ namespace ILCompiler.ObjectWriter
                 }
                 else if (symbolicRelocation.Type == IMAGE_REL_BASED_RELPTR32)
                 {
+                    // Addend is used to encode the temporary label index for ld-prime quirk. See
+                    // EmitRelocation for details.
+                    Debug.Assert(symbolicRelocation.Addend == 0 || symbolicRelocation.Addend <= _temporaryLabels.Count);
+                    uint baseSymbolIndex =
+                        symbolicRelocation.Addend != 0 ?
+                        (uint)(_temporaryLabelsBaseIndex + symbolicRelocation.Addend - 1) :
+                        (uint)sectionIndex;
+                    Debug.Assert(baseSymbolIndex < _symbolTable.Count);
+
                     // This one is tough... needs to be represented by ARM64_RELOC_SUBTRACTOR + ARM64_RELOC_UNSIGNED.
                     sectionRelocations.Add(
                         new MachRelocation
                         {
                             Address = (int)symbolicRelocation.Offset,
-                            SymbolOrSectionIndex = (uint)sectionIndex,
+                            SymbolOrSectionIndex = baseSymbolIndex,
                             Length = 4,
                             RelocationType = ARM64_RELOC_SUBTRACTOR,
                             IsExternal = true,
@@ -974,6 +1036,13 @@ namespace ILCompiler.ObjectWriter
             public IList<MachRelocation> Relocations => relocationCollection ??= new List<MachRelocation>();
             public Stream Stream => dataStream;
             public byte SectionIndex { get; set; }
+
+            // Variables used for tracking a temporary label created within the section
+            // for the purpose of creating relocations with smaller addends. The emitted
+            // addends are relative to the last temporary label instead of the section
+            // start.
+            public long TemporaryLabelOffset { get; set; }
+            public uint TemporaryLabelIndex { get; set; }
 
             public static int HeaderSize => 80; // 64-bit section
 
