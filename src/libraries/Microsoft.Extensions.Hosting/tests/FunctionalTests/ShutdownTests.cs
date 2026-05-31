@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.ComponentModel;
 using System.Diagnostics;
-using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting.IntegrationTesting;
@@ -16,6 +16,7 @@ namespace Microsoft.AspNetCore.Hosting.FunctionalTests
 {
     public class ShutdownTests
     {
+        private const int SIGINT = 2;
         private static readonly string StartedMessage = "Started";
         private static readonly string CompletionMessage = "Stopping firing\n" +
                                                             "Stopping end\n" +
@@ -50,11 +51,7 @@ namespace Microsoft.AspNetCore.Hosting.FunctionalTests
                 builder.AddXunit(_output);
             });
 
-            // TODO refactor deployers to not depend on source code
-            // see https://github.com/dotnet/extensions/issues/1697 and https://github.com/dotnet/aspnetcore/issues/10268
-#pragma warning disable 0618
-            var applicationPath = string.Empty; // disabled for now
-#pragma warning restore 0618
+            string applicationPath = AppContext.BaseDirectory;
 
             Version version = Environment.Version;
             var deploymentParameters = new DeploymentParameters(
@@ -62,11 +59,13 @@ namespace Microsoft.AspNetCore.Hosting.FunctionalTests
                 RuntimeFlavor.CoreClr,
                 RuntimeArchitecture.x64)
             {
+                ApplicationName = "Microsoft.Extensions.Hosting.TestApp",
                 TargetFramework = $"net{version.Major}.{version.Minor}",
                 ApplicationType = ApplicationType.Portable,
                 PublishApplicationBeforeDeployment = true,
                 StatusMessagesEnabled = false
             };
+            deploymentParameters.ApplicationPublisher = new ExistingOutputApplicationPublisher(applicationPath);
 
             deploymentParameters.EnvironmentVariables["DOTNET_STARTMECHANIC"] = shutdownMechanic;
 
@@ -132,16 +131,10 @@ namespace Microsoft.AspNetCore.Hosting.FunctionalTests
 
         private static void SendSIGINT(int processId)
         {
-            var startInfo = new ProcessStartInfo
+            if (kill(processId, SIGINT) != 0)
             {
-                FileName = "kill",
-                Arguments = processId.ToString(),
-                RedirectStandardOutput = true,
-                UseShellExecute = false
-            };
-
-            var process = Process.Start(startInfo);
-            WaitForExitOrKill(process);
+                throw new Win32Exception(Marshal.GetLastWin32Error());
+            }
         }
 
         private static void WaitForExitOrKill(Process process)
@@ -154,5 +147,28 @@ namespace Microsoft.AspNetCore.Hosting.FunctionalTests
 
             Assert.Equal(0, process.ExitCode);
         }
+
+        private sealed class ExistingOutputApplicationPublisher : ApplicationPublisher
+        {
+            public ExistingOutputApplicationPublisher(string applicationPath)
+                : base(applicationPath)
+            {
+            }
+
+            public override Task<PublishedApplication> Publish(DeploymentParameters deploymentParameters, ILogger logger)
+                => Task.FromResult<PublishedApplication>(new BorrowedPublishedApplication(ApplicationPath, logger));
+
+            // Wraps a path that is borrowed (not owned) from the test output directory.
+            // Dispose is intentionally a no-op to prevent deleting AppContext.BaseDirectory.
+            private sealed class BorrowedPublishedApplication : PublishedApplication
+            {
+                public BorrowedPublishedApplication(string path, ILogger logger) : base(path, logger) { }
+
+                public override void Dispose() { }
+            }
+        }
+
+        [DllImport("libc", SetLastError = true)]
+        private static extern int kill(int pid, int sig);
     }
 }

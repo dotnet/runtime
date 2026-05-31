@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -41,11 +42,19 @@ namespace Microsoft.Extensions.Internal
 
         private static void GetAllChildIdsUnix(int parentId, ISet<int> children, TimeSpan timeout)
         {
-            RunProcessAndWaitForExit(
-                "pgrep",
-                $"-P {parentId}",
-                timeout,
-                out var stdout);
+            string stdout;
+            try
+            {
+                RunProcessAndWaitForExit(
+                    "pgrep",
+                    $"-P {parentId}",
+                    timeout,
+                    out stdout);
+            }
+            catch (Win32Exception)
+            {
+                return;
+            }
 
             if (!string.IsNullOrEmpty(stdout))
             {
@@ -72,11 +81,29 @@ namespace Microsoft.Extensions.Internal
 
         private static void KillProcessUnix(int processId, TimeSpan timeout)
         {
-            RunProcessAndWaitForExit(
-                "kill",
-                $"-TERM {processId}",
-                timeout,
-                out var stdout);
+            try
+            {
+                using (Process process = Process.GetProcessById(processId))
+                {
+                    process.Kill();
+                    if (!process.WaitForExit((int)timeout.TotalMilliseconds))
+                    {
+                        throw new TimeoutException($"Process {processId} did not exit within the allotted timeout of {timeout}.");
+                    }
+                }
+            }
+            catch (ArgumentException)
+            {
+                // Ignore if process has already exited.
+            }
+            catch (InvalidOperationException)
+            {
+                // Ignore if process has already exited.
+            }
+            catch (Win32Exception)
+            {
+                // Ignore permission or process-not-found errors.
+            }
         }
 
         private static void RunProcessAndWaitForExit(string fileName, string arguments, TimeSpan timeout, out string stdout)
