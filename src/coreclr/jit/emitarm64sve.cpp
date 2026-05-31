@@ -4012,6 +4012,7 @@ void emitter::emitInsSve_R_R_R(instruction     ins,
             assert(isPredicateRegister(reg1)); // MMMM
             assert(isPredicateRegister(reg2)); // gggg
             assert(isPredicateRegister(reg3)); // NNNN
+            opt = INS_OPTS_SCALABLE_B;
             fmt = IF_SVE_DC_3A;
             break;
 
@@ -6306,11 +6307,15 @@ void emitter::emitInsSve_R_R_R_R(instruction     ins,
             }
             else
             {
-                assert(opt == INS_OPTS_SCALABLE_B);
+                assert(insOptsScalable(opt));
                 assert(isPredicateRegister(reg1)); // dddd
                 assert(isPredicateRegister(reg2)); // gggg
                 assert(isPredicateRegister(reg3)); // nnnn
                 assert(isPredicateRegister(reg4)); // mmmm
+                // We support all lane arrangements, although we require byte arrangement for the
+                // encoding as there is only one encoding. This operation is bitwise, so it will
+                // preserve other lane arrangements anyway.
+                opt = INS_OPTS_SCALABLE_B;
                 fmt = IF_SVE_CZ_4A;
             }
             break;
