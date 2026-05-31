@@ -1372,6 +1372,24 @@ namespace System.Runtime.Intrinsics
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T Pow(T left, T right)
+        {
+            if (typeof(T) == typeof(double))
+            {
+                return (T)(object)double.Pow((double)(object)left, (double)(object)right);
+            }
+            else if (typeof(T) == typeof(float))
+            {
+                return (T)(object)float.Pow((float)(object)left, (float)(object)right);
+            }
+            else
+            {
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+                return default!;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T MultiplyAddEstimate(T left, T right, T addend)
         {
             if (typeof(T) == typeof(double))

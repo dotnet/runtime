@@ -372,6 +372,40 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
         }
 #endif // TARGET_XARCH
 
+#if defined(TARGET_ARM64)
+        case NI_Vector64_CreateGeometricSequence:
+#endif // TARGET_ARM64
+        case NI_Vector128_CreateGeometricSequence:
+#if defined(TARGET_XARCH)
+        case NI_Vector256_CreateGeometricSequence:
+        case NI_Vector512_CreateGeometricSequence:
+#endif // TARGET_XARCH
+        {
+            assert(operandCount == 2);
+
+            GenTree* op1 = operands[0];
+            GenTree* op2 = operands[1];
+
+            if (op2->OperIsConst())
+            {
+#if defined(TARGET_ARM64)
+                bool canGenerate = !varTypeIsLong(simdBaseType) || op1->OperIsConst() || (simdSize == 8);
+#elif defined(TARGET_XARCH)
+                bool canGenerate = op1->OperIsConst() || (simdSize != 32) || !varTypeIsIntegral(simdBaseType) ||
+                                   m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2);
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+
+                if (canGenerate)
+                {
+                    result =
+                        m_compiler->gtNewSimdCreateGeometricSequenceNode(retType, op1, op2, simdBaseType, simdSize);
+                }
+            }
+            break;
+        }
+
         case NI_Vector128_Shuffle:
         case NI_Vector128_ShuffleNative:
         case NI_Vector128_ShuffleNativeFallback:
