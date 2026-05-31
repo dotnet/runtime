@@ -25,6 +25,7 @@
     <Compile Include="$(SharedOpenSourcePath)System\IO\Compression\ZipBlocks.FieldLengths.cs" />
     <Compile Include="$(SharedOpenSourcePath)System\IO\Compression\ZipBlocks.FieldLocations.cs" />
     <Compile Include="$(SharedOpenSourcePath)System\IO\Compression\ZipCustomStreams.cs" />
+    <Compile Include="$(CommonPath)System\IO\SubReadStream.cs" Link="Common\System\IO\SubReadStream.cs" />
     <Compile Include="$(SharedOpenSourcePath)System\IO\Compression\ZipHelper.cs" />
     <Compile Include="$(SharedOpenSourcePath)System\IO\Compression\ZipHelper.Async.cs" />
 
