@@ -12,7 +12,6 @@
 #include "dasmenum.hpp"
 #include "formattype.h"
 #include "dis.h"
-#include "resource.h"
 #include "ilformatter.h"
 #include "outstring.h"
 

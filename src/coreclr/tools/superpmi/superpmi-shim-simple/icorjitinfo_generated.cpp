@@ -7,9 +7,7 @@
 
 #include "standardpch.h"
 #include "icorjitinfo.h"
-#include "superpmi-shim-simple.h"
 #include "icorjitcompiler.h"
-#include "spmiutil.h"
 
 
 bool interceptor_ICJI::isIntrinsic(

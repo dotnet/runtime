@@ -7,7 +7,6 @@
 #include "daccess.h"
 #include "PalLimitedContext.h"
 #include "CommonMacros.inl"
-#include "volatile.h"
 #include "Pal.h"
 #include "rhassert.h"
 
