@@ -2434,5 +2434,182 @@ namespace System.IO.Compression.Tests
             Assert.Throws<ObjectDisposedException>(() => entry.Open(FileAccess.Read));
             await Assert.ThrowsAsync<ObjectDisposedException>(() => entry.OpenAsync(FileAccess.Read));
         }
+
+        [Fact]
+        public static void Zip64ExtraField_NegativeUncompressedSize_DoesNotCauseHarm()
+        {
+            // Validation for IO-021: a ZIP64 extra field encodes the uncompressed size as
+            // 0xFFFF_FFFF_FFFF_FFFF, which is observed as -1L. This malformed metadata must
+            // not lead to memory corruption, buffer over-read, infinite loop, or other
+            // harmful behavior. The archive should continue to handle the entry safely.
+            byte[] zipArchive = CreateZipWithNegativeZip64UncompressedSize();
+
+            using ZipArchive archive = new ZipArchive(new MemoryStream(zipArchive), ZipArchiveMode.Read);
+            Assert.Equal(1, archive.Entries.Count);
+            ZipArchiveEntry entry = archive.Entries[0];
+
+            // The negative value propagates as-is to the entry's Length property.
+            // This is observable but not by itself harmful.
+            Assert.Equal(-1L, entry.Length);
+            Assert.Equal(0L, entry.CompressedLength);
+
+            // Attempting to actually read the data must fail safely — either by throwing
+            // InvalidDataException, or by returning zero bytes (matching the actual stored
+            // data). It must NOT crash, hang, allocate based on the negative size, or read
+            // past the end of the underlying stream.
+            try
+            {
+                using Stream s = entry.Open();
+                byte[] buffer = new byte[1024];
+                int totalRead = 0;
+                int read;
+                while ((read = s.Read(buffer, 0, buffer.Length)) > 0)
+                {
+                    totalRead += read;
+                    // Guard against the negative size being misinterpreted as a huge unsigned
+                    // length that would let the read loop run forever.
+                    Assert.True(totalRead <= 1024 * 1024, "Read returned more data than the archive contains.");
+                }
+                Assert.Equal(0, totalRead);
+            }
+            catch (InvalidDataException)
+            {
+                // Acceptable: downstream code rejects the malformed entry on Open/Read.
+            }
+
+            // Re-open and confirm enumerating Entries again is still safe.
+            using ZipArchive archive2 = new ZipArchive(new MemoryStream(zipArchive), ZipArchiveMode.Read);
+            foreach (ZipArchiveEntry e in archive2.Entries)
+            {
+                Assert.Equal("test.txt", e.FullName);
+            }
+        }
+
+        private static byte[] CreateZipWithNegativeZip64UncompressedSize()
+        {
+            // Create a minimal ZIP with Zip64 extra field containing negative UncompressedSize (-1)
+            // Structure:
+            // - Local file header with Zip64 extra field
+            // - Empty file data
+            // - Central directory header with Zip64 extra field
+            // - End of central directory record
+
+            using (MemoryStream ms = new MemoryStream())
+            {
+                static void WriteUInt16(Stream stream, ushort value)
+                {
+                    Span<byte> buffer = stackalloc byte[2];
+                    BinaryPrimitives.WriteUInt16LittleEndian(buffer, value);
+                    stream.Write(buffer);
+                }
+
+                static void WriteUInt32(Stream stream, uint value)
+                {
+                    Span<byte> buffer = stackalloc byte[4];
+                    BinaryPrimitives.WriteUInt32LittleEndian(buffer, value);
+                    stream.Write(buffer);
+                }
+
+                static void WriteInt64(Stream stream, long value)
+                {
+                    Span<byte> buffer = stackalloc byte[8];
+                    BinaryPrimitives.WriteInt64LittleEndian(buffer, value);
+                    stream.Write(buffer);
+                }
+
+                // Local File Header
+                const uint localFileHeaderSig = 0x04034b50;
+                const ushort versionNeeded = 45; // ZIP64 requires version 4.5+
+                const ushort generalPurposeBitFlag = 0;
+                const ushort compressionMethod = 0; // No compression
+                const ushort lastModFileTime = 0;
+                const ushort lastModFileDate = 0;
+                const uint crc32 = 0;
+                const uint compressedSize = 0xFFFFFFFF; // Indicates Zip64 extra field
+                const uint uncompressedSize = 0xFFFFFFFF; // Indicates Zip64 extra field
+                const string fileName = "test.txt";
+                byte[] fileNameBytes = Encoding.UTF8.GetBytes(fileName);
+
+                // Zip64 extra field:
+                // Tag (2 bytes) = 1, Size (2 bytes) = 16 (for 2 x 8-byte fields), UncompressedSize (8 bytes), CompressedSize (8 bytes)
+                const ushort zip64Tag = 1;
+                const ushort zip64Size = 16; // 8 bytes for uncompressed + 8 bytes for compressed
+                long zip64UncompressedSize = -1; // 0xFFFFFFFFFFFFFFFF in two's complement
+                long zip64CompressedSize = 0;
+
+                // Write local file header
+                WriteUInt32(ms, localFileHeaderSig);
+                WriteUInt16(ms, versionNeeded);
+                WriteUInt16(ms, generalPurposeBitFlag);
+                WriteUInt16(ms, compressionMethod);
+                WriteUInt16(ms, lastModFileTime);
+                WriteUInt16(ms, lastModFileDate);
+                WriteUInt32(ms, crc32);
+                WriteUInt32(ms, compressedSize);
+                WriteUInt32(ms, uncompressedSize);
+                WriteUInt16(ms, (ushort)fileNameBytes.Length);
+
+                // Extra field length = 4 (tag + size) + 16 (zip64 data)
+                WriteUInt16(ms, (ushort)(4 + zip64Size));
+
+                // Write filename
+                ms.Write(fileNameBytes, 0, fileNameBytes.Length);
+
+                // Write Zip64 extra field
+                WriteUInt16(ms, zip64Tag);
+                WriteUInt16(ms, zip64Size);
+                WriteInt64(ms, zip64UncompressedSize); // Negative value!
+                WriteInt64(ms, zip64CompressedSize);
+
+                // No file data
+                long centralDirectoryOffset = ms.Position;
+
+                // Central Directory File Header
+                const uint centralDirSig = 0x02014b50;
+                const ushort versionMadeBy = 45;
+
+                WriteUInt32(ms, centralDirSig);
+                WriteUInt16(ms, versionMadeBy);
+                WriteUInt16(ms, versionNeeded);
+                WriteUInt16(ms, generalPurposeBitFlag);
+                WriteUInt16(ms, compressionMethod);
+                WriteUInt16(ms, lastModFileTime);
+                WriteUInt16(ms, lastModFileDate);
+                WriteUInt32(ms, crc32);
+                WriteUInt32(ms, compressedSize);
+                WriteUInt32(ms, uncompressedSize);
+                WriteUInt16(ms, (ushort)fileNameBytes.Length);
+                WriteUInt16(ms, (ushort)(4 + zip64Size)); // Extra field length
+                WriteUInt16(ms, 0); // File comment length
+                WriteUInt16(ms, 0); // Disk number start
+                WriteUInt16(ms, 0); // Internal file attributes
+                WriteUInt32(ms, 0); // External file attributes
+                WriteUInt32(ms, 0); // Relative offset of local header
+
+                // Write filename
+                ms.Write(fileNameBytes, 0, fileNameBytes.Length);
+
+                // Write Zip64 extra field
+                WriteUInt16(ms, zip64Tag);
+                WriteUInt16(ms, zip64Size);
+                WriteInt64(ms, zip64UncompressedSize);
+                WriteInt64(ms, zip64CompressedSize);
+
+                long centralDirSize = ms.Position - centralDirectoryOffset;
+
+                // End of Central Directory Record
+                const uint endCentralDirSig = 0x06054b50;
+                WriteUInt32(ms, endCentralDirSig);
+                WriteUInt16(ms, 0); // Disk number
+                WriteUInt16(ms, 0); // Disk with central directory
+                WriteUInt16(ms, 1); // Number of entries on this disk
+                WriteUInt16(ms, 1); // Total number of entries
+                WriteUInt32(ms, (uint)centralDirSize);
+                WriteUInt32(ms, (uint)centralDirectoryOffset);
+                WriteUInt16(ms, 0); // Comment length
+
+                return ms.ToArray();
+            }
+        }
     }
 }
