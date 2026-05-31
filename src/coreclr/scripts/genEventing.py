@@ -439,12 +439,15 @@ def generateClrallEvents(eventNodes, allTemplates, target_cpp, runtimeFlavor, is
 
                 if runtimeFlavor.coreclr or write_xplatheader or runtimeFlavor.nativeaot:
                     if not is_host_windows:
-                        # native AOT does not support non-windows eventing other than via event pipe
+                        # native AOT and browser/wasi do not support non-windows eventing other than via event pipe
                         if not runtimeFlavor.nativeaot:
-                            clrallEvents.append(" || (XplatEventLogger" +
+                            clrallEvents.append("\n#if !defined(HOST_BROWSER) && !defined(HOST_WASI)\n")
+                            clrallEvents.append("    || (XplatEventLogger" +
                             ("::" if target_cpp else "_") +
                             "IsEventLoggingEnabled() && EventXplatEnabled" +
-                            eventName + "());}\n\n")
+                            eventName + "())\n")
+                            clrallEvents.append("#endif // !HOST_BROWSER && !HOST_WASI\n")
+                            clrallEvents.append(";}\n\n")
                         else:
                             clrallEvents.append(";}\n\n")
                     else:
@@ -534,8 +537,12 @@ def generateClrallEvents(eventNodes, allTemplates, target_cpp, runtimeFlavor, is
             fnbody.append("ActivityId,RelatedActivityId);\n")
 
             if runtimeFlavor.coreclr or write_xplatheader:
+                if not is_host_windows:
+                    fnbody.append("#if !defined(HOST_BROWSER) && !defined(HOST_WASI)\n")
                 fnbody.append(lindent)
                 fnbody.append("status &= FireEtXplat" + eventName + "(" + ''.join(line) + ");\n")
+                if not is_host_windows:
+                    fnbody.append("#endif // !HOST_BROWSER && !HOST_WASI\n")
 
             if runtimeFlavor.nativeaot:
                 if providerName == "Microsoft-Windows-DotNETRuntime" or providerName == "Microsoft-Windows-DotNETRuntimePrivate" or providerName == "Microsoft-Windows-DotNETRuntimeRundown":
@@ -865,11 +872,18 @@ typedef struct _DOTNET_TRACE_CONTEXT
     dotnet_trace_context_typedef_unix = """
 #if !defined(DOTNET_TRACE_CONTEXT_DEF)
 #define DOTNET_TRACE_CONTEXT_DEF
+#if defined(HOST_BROWSER) || defined(HOST_WASI)
+typedef struct _DOTNET_TRACE_CONTEXT
+{
+    EVENTPIPE_TRACE_CONTEXT EventPipeProvider;
+} DOTNET_TRACE_CONTEXT, *PDOTNET_TRACE_CONTEXT;
+#else
 typedef struct _DOTNET_TRACE_CONTEXT
 {
     EVENTPIPE_TRACE_CONTEXT EventPipeProvider;
     PLTTNG_TRACE_CONTEXT LttngProvider;
 } DOTNET_TRACE_CONTEXT, *PDOTNET_TRACE_CONTEXT;
+#endif
 #endif // DOTNET_TRACE_CONTEXT_DEF
 """
 
@@ -894,7 +908,9 @@ typedef struct _EVENT_DESCRIPTOR
 """)
             if not is_host_windows and not runtimeFlavor.nativeaot:
                 Clrproviders.write(eventpipe_trace_context_typedef)  # define EVENTPIPE_TRACE_CONTEXT
+                Clrproviders.write("#if !defined(HOST_BROWSER) && !defined(HOST_WASI)\n")
                 Clrproviders.write(lttng_trace_context_typedef)  # define LTTNG_TRACE_CONTEXT
+                Clrproviders.write("#endif // !HOST_BROWSER && !HOST_WASI\n")
                 Clrproviders.write(dotnet_trace_context_typedef_unix + "\n")
 
             allProviders = []
@@ -910,7 +926,9 @@ typedef struct _EVENT_DESCRIPTOR
                     eventpipeProviderCtxName = providerSymbol + "_EVENTPIPE_Context"
                     Clrproviders.write('__attribute__((weak)) EVENTPIPE_TRACE_CONTEXT ' + eventpipeProviderCtxName + ' = { W("' + providerName + '"), 0, false, 0 };\n')
                     lttngProviderCtxName = providerSymbol + "_LTTNG_Context"
+                    Clrproviders.write('#if !defined(HOST_BROWSER) && !defined(HOST_WASI)\n')
                     Clrproviders.write('__attribute__((weak)) LTTNG_TRACE_CONTEXT ' + lttngProviderCtxName + ' = { W("' + providerName + '"), 0, false, 0 };\n')
+                    Clrproviders.write('#endif // !HOST_BROWSER && !HOST_WASI\n')
 
                 Clrproviders.write("// Keywords\n");
                 for keywordNode in providerNode.getElementsByTagName('keyword'):
@@ -934,10 +952,12 @@ typedef struct _EVENT_DESCRIPTOR
 
             # define and initialize runtime providers' DOTNET_TRACE_CONTEXT depending on the platform
             if not is_host_windows and not runtimeFlavor.nativeaot:
+                Clrproviders.write('#if !defined(HOST_BROWSER) && !defined(HOST_WASI)\n')
                 Clrproviders.write('#define NB_PROVIDERS ' + str(nbProviders) + '\n')
                 Clrproviders.write(('constexpr ' if target_cpp else 'static const ') + 'LTTNG_TRACE_CONTEXT * ALL_LTTNG_PROVIDERS_CONTEXT[NB_PROVIDERS] = { ')
                 Clrproviders.write(', '.join(allProviders))
                 Clrproviders.write(' };\n')
+                Clrproviders.write('#endif // !HOST_BROWSER && !HOST_WASI\n')
 
 
     clreventpipewriteevents = os.path.join(incDir, "clreventpipewriteevents.h")
