@@ -190,6 +190,9 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetVerifyPeer")]
         internal static partial void SslSetVerifyPeer(SafeSslHandle ssl, [MarshalAs(UnmanagedType.Bool)] bool failIfNoPeerCert);
 
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetRetryVerify")]
+        internal static partial int SslSetRetryVerify(SafeSslHandle ssl);
+
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetData")]
         internal static partial IntPtr SslGetData(IntPtr ssl);
 
@@ -381,6 +384,7 @@ internal static partial class Interop
             SSL_ERROR_WANT_X509_LOOKUP = 4,
             SSL_ERROR_SYSCALL = 5,
             SSL_ERROR_ZERO_RETURN = 6,
+            SSL_ERROR_WANT_RETRY_VERIFY = 12,
 
             // NOTE: this SslErrorCode value doesn't exist in OpenSSL, but
             // we use it to distinguish when a renegotiation is pending.
@@ -450,6 +454,10 @@ namespace Microsoft.Win32.SafeHandles
             handle._isServer = options.IsServer;
             handle._authOptionsHandle = new WeakGCHandle<SslAuthenticationOptions>(options);
             Interop.Ssl.SslSetData(handle, WeakGCHandle<SslAuthenticationOptions>.ToIntPtr(handle._authOptionsHandle));
+
+            // CertVerifyCallback needs the SafeSslHandle to stash a
+            // CertificateValidationException; expose it via the options.
+            options.SafeSslHandle = handle;
 
             // SslSetBio will transfer ownership of the BIO handles to the SSL context
             try

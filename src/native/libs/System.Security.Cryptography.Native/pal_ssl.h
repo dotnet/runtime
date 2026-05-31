@@ -112,6 +112,7 @@ typedef enum
     PAL_SSL_ERROR_WANT_WRITE = 3,
     PAL_SSL_ERROR_SYSCALL = 5,
     PAL_SSL_ERROR_ZERO_RETURN = 6,
+    PAL_SSL_ERROR_WANT_RETRY_VERIFY = 12,
 } SslErrorCode;
 
 // the function pointer definition for the callback used in SslCtxSetAlpnSelectCb
@@ -415,6 +416,12 @@ PALEXPORT X509NameStack* CryptoNative_SslGetClientCAList(SSL* ssl);
 Shims the SSL_set_verify method.
 */
 PALEXPORT void CryptoNative_SslSetVerifyPeer(SSL* ssl, int32_t failIfNoPeerCert);
+
+/*
+Shims SSL_set_retry_verify (OpenSSL 3.0+). Returns 1 on success, 0 if the
+symbol is unavailable (e.g. on OpenSSL 1.1.x).
+*/
+PALEXPORT int32_t CryptoNative_SslSetRetryVerify(SSL* ssl);
 
 /*
 Shims SSL_set_ex_data to attach application context.

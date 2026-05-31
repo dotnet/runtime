@@ -225,6 +225,31 @@ namespace System.Net.Security
 
 #if !TARGET_WINDOWS && !SYSNETSECURITY_NO_OPENSSL
         internal SslStream? SslStream { get; set; }
+
+        // Set by SafeSslHandle.Create so OpenSSL's CertVerifyCallback can stash
+        // a CertificateValidationException on the handle when validation fails.
+        // Typed as the base SafeHandle so this file compiles in test projects
+        // that don't include the OpenSSL interop sources.
+        internal System.Runtime.InteropServices.SafeHandle? SafeSslHandle { get; set; }
+
+        // Hook invoked by OpenSSL's CertVerifyCallback to drive remote
+        // certificate validation. Set by SslStream and by standalone TlsSession
+        // so both flows share the same callback plumbing.
+        internal delegate bool VerifyRemoteCertificateCallback(
+            X509Certificate2? certificate,
+            X509Chain? chain,
+            SslCertificateTrust? trust,
+            ref ProtocolToken alertToken,
+            out SslPolicyErrors sslPolicyErrors,
+            out X509ChainStatusFlags chainStatus);
+
+        internal VerifyRemoteCertificateCallback? RemoteCertificateValidator { get; set; }
+
+        // When true, the OpenSSL CertVerifyCallback always defers certificate
+        // validation. On OpenSSL 3.0+ the callback uses SSL_set_retry_verify
+        // to suspend the handshake; on older versions it accepts the cert and
+        // validation runs after the handshake completes. Set by TlsSession.
+        internal bool DeferCertificateValidation { get; set; }
 #endif
 
         public void Dispose()
