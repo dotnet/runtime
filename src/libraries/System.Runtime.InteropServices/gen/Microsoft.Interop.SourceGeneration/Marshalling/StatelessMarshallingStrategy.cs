@@ -581,15 +581,9 @@ namespace Microsoft.Interop
                     if (countInfo is NoCountInfo && MarshallerHelpers.GetMarshalDirection(TypeInfo, CodeContext) == MarshalDirection.ManagedToUnmanaged)
                     {
                         // When marshalling from managed to unmanaged, we may not have count info.
-                        // For now, just set <numElements> to 0.
-                        // See https://github.com/dotnet/runtime/issues/93423 for a tracking issue.
-
-                        // <numElements> = 0;
-                        yield return ExpressionStatement(
-                            AssignmentExpression(
-                                SyntaxKind.SimpleAssignmentExpression,
-                                IdentifierName(numElementsIdentifier),
-                                LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(0))));
+                        // Use the managed collection's length to determine the number of elements to clean up.
+                        // <numElements> = <GetManagedValuesSource>.Length;
+                        yield return elementsMarshalling.GenerateNumElementsAssignmentFromManagedValuesSource(context);
                     }
                     else
                     {
