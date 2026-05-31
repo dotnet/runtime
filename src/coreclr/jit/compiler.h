@@ -3868,6 +3868,7 @@ public:
     bool gtComplexityExceeds(GenTree* tree, unsigned limit, TFunc getComplexity);
 
     GenTree* gtReverseCond(GenTree* tree);
+    bool     gtTryReverseCond(GenTree* tree);
 
     static bool gtHasRef(GenTree* tree, unsigned lclNum);
 
