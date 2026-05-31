@@ -24,7 +24,7 @@ list(APPEND HEADERS
     ${CMAKE_CURRENT_LIST_DIR}/../roll_forward_option.h
     ${CMAKE_CURRENT_LIST_DIR}/../fx_definition.h
     ${CMAKE_CURRENT_LIST_DIR}/../fx_reference.h
-    ${CMAKE_CURRENT_LIST_DIR}/../fxr/fx_ver.h
+    ${CMAKE_CURRENT_LIST_DIR}/../hostmisc/fx_ver.h
     ${CMAKE_CURRENT_LIST_DIR}/../version_compatibility_range.h
     ${CMAKE_CURRENT_LIST_DIR}/../runtime_config.h
     ${CMAKE_CURRENT_LIST_DIR}/../bundle/info.h

@@ -5,27 +5,31 @@ include(configure.cmake)
 
 # CMake does not recommend using globbing since it messes with the freshness checks
 set(SOURCES
-    ${CMAKE_CURRENT_LIST_DIR}/trace.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/fx_ver.c
+    ${CMAKE_CURRENT_LIST_DIR}/trace.c
+    ${CMAKE_CURRENT_LIST_DIR}/utils.c
     ${CMAKE_CURRENT_LIST_DIR}/utils.cpp
     ${CMAKE_CURRENT_LIST_DIR}/../fxr/fx_ver.cpp
 )
 
 set(HEADERS
+    ${CMAKE_CURRENT_LIST_DIR}/fx_ver.h
     ${CMAKE_CURRENT_LIST_DIR}/trace.h
     ${CMAKE_CURRENT_LIST_DIR}/utils.h
     ${CMAKE_CURRENT_LIST_DIR}/pal.h
     ${CMAKE_CURRENT_LIST_DIR}/../error_codes.h
-    ${CMAKE_CURRENT_LIST_DIR}/../fxr/fx_ver.h
 )
 
 if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND SOURCES
+        ${CMAKE_CURRENT_LIST_DIR}/pal.windows.c
         ${CMAKE_CURRENT_LIST_DIR}/pal.windows.cpp
         ${CMAKE_CURRENT_LIST_DIR}/longfile.windows.cpp)
     list(APPEND HEADERS
         ${CMAKE_CURRENT_LIST_DIR}/longfile.h)
 else()
     list(APPEND SOURCES
+        ${CMAKE_CURRENT_LIST_DIR}/pal.unix.c
         ${CMAKE_CURRENT_LIST_DIR}/pal.unix.cpp)
 endif()
 
@@ -53,12 +57,21 @@ endif()
 
 add_library(hostmisc STATIC ${SOURCES})
 target_link_libraries(hostmisc PUBLIC hostmisc_interface)
+if(NOT CLR_CMAKE_TARGET_BROWSER)
+    # The browser-wasm corehost build does not add the minipal subdirectory
+    # (libminipal symbols are pulled in from the CoreCLR-built libminipal.a in
+    # the final link). Only link the minipal target where it actually exists.
+    target_link_libraries(hostmisc PUBLIC minipal)
+endif()
 if (MSVC)
     target_sources(hostmisc PRIVATE ${HEADERS})
 endif()
 
 add_library(hostmisc_public OBJECT ${SOURCES})
 target_link_libraries(hostmisc_public PUBLIC hostmisc_interface)
+if(NOT CLR_CMAKE_TARGET_BROWSER)
+    target_link_libraries(hostmisc_public PUBLIC minipal_objects)
+endif()
 set_target_properties(hostmisc_public PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
 
 add_library(hostmisc::public ALIAS hostmisc_public)
