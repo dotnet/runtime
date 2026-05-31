@@ -3517,6 +3517,21 @@ void ObjectAllocator::CheckForGuardedAllocationOrCopy(BasicBlock* block,
             RecordAppearance(lclNum, block, stmt, use);
         }
     }
+    else if (!data->IsIntegralConst(0))
+    {
+        // Store into a tracked enumerator local from an unrecognized source
+        // (e.g. a virtual GetEnumerator call that did not devirtualize, into
+        // a local Roslyn shares between two enumerator scopes). Record it so
+        // CheckCanClone's multiple-defs check bails out of unsafe cloning.
+        // Null/zero stores are skipped: the inliner emits these as GC cleanup
+        // of dead temps. See https://github.com/dotnet/runtime/issues/127075.
+        //
+        unsigned pseudoIndex = BAD_VAR_NUM;
+        if (m_EnumeratorLocalToPseudoIndexMap.TryGetValue(lclNum, &pseudoIndex))
+        {
+            RecordAppearance(lclNum, block, stmt, use);
+        }
+    }
 }
 
 //------------------------------------------------------------------------------
