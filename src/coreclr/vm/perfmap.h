@@ -36,6 +36,7 @@ private:
     // Indicate current stub granularity rules
     static bool s_GroupStubsOfSameType;
     static bool s_IndividualAllocationStubReporting;
+    static bool s_EmitDebugInfo;
 
     // Set to true if an error is encountered when writing to the file.
     static unsigned s_StubsMapped;
