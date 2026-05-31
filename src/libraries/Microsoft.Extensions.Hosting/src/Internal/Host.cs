@@ -96,9 +96,17 @@ namespace Microsoft.Extensions.Hosting.Internal
                     _hostedServices ??= Services.GetRequiredService<IEnumerable<IHostedService>>();
                     _hostedLifecycleServices = GetHostLifecycles(_hostedServices);
 
-                    // Call startup validators.
-                    IStartupValidator? validator = Services.GetService<IStartupValidator>();
-                    validator?.Validate();
+                    // Call startup validators (prefer async if available).
+                    IAsyncStartupValidator? asyncValidator = Services.GetService<IAsyncStartupValidator>();
+                    if (asyncValidator is not null)
+                    {
+                        await asyncValidator.ValidateAsync(cancellationToken).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        IStartupValidator? validator = Services.GetService<IStartupValidator>();
+                        validator?.Validate();
+                    }
                 }
                 catch (Exception ex)
                 {
