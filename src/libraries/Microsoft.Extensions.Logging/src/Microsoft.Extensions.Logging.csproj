@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.1;netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <DependencyOnlyTargetFrameworks>$(NetFrameworkWithValueTuple)</DependencyOnlyTargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
     <IsPackable>true</IsPackable>
     <PackageDescription>Logging infrastructure default implementation for Microsoft.Extensions.Logging.</PackageDescription>
@@ -35,7 +36,7 @@
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.AsyncInterfaces\src\Microsoft.Bcl.AsyncInterfaces.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetFrameworkMinimum)'">
     <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" />
   </ItemGroup>
 
