@@ -51,13 +51,12 @@ jobs:
 
         preBuildSteps:
           # Download single threaded runtime packs, and tasks needed to build WBT
-          - task: DownloadBuildArtifacts@0
+          - task: DownloadPipelineArtifact@2
             displayName: Download built nugets for singlethreaded runtime
             inputs:
               buildType: current
               artifactName: 'BuildArtifacts_browser_wasm_$(_hostedOs)_Release_CoreCLR'
-              downloadType: single
-              downloadPath: '$(Build.SourcesDirectory)/artifacts'
+              targetPath: '$(Build.SourcesDirectory)/artifacts/BuildArtifacts_browser_wasm_$(_hostedOs)_Release_CoreCLR'
 
           - task: CopyFiles@2
             displayName: Copy single threaded assets
@@ -67,7 +66,7 @@ jobs:
               CleanTargetFolder: false
 
           # Download for multi-threaded
-          # - task: DownloadBuildArtifacts@0
+          # - task: DownloadPipelineArtifact@2
           #   displayName: Download built nugets for multi-threaded runtime
           #   inputs:
           #     buildType: current
@@ -84,13 +83,12 @@ jobs:
           #     CleanTargetFolder: false
 
           # Download WBT - TODO-WASM: This points to "mono" build, altough 
-          - task: DownloadBuildArtifacts@0
+          - task: DownloadPipelineArtifact@2
             displayName: Download Wasm.Build.Tests
             inputs:
               buildType: current
               artifactName: WasmBuildTests_$(_hostedOs)_CoreCLR
-              downloadType: single
-              downloadPath: '$(Build.SourcesDirectory)/artifacts'
+              targetPath: '$(Build.SourcesDirectory)/artifacts/WasmBuildTests_$(_hostedOs)_CoreCLR'
 
           - task: CopyFiles@2
             displayName: Copy Wasm.Build.Tests archive
