@@ -5934,6 +5934,8 @@ public:
 
     PhaseStatus fgInline();
 
+    PhaseStatus fgPostInlineNoReturnCleanup();
+
     PhaseStatus fgResolveGDVs();
 
     PhaseStatus fgRemoveEmptyTry();

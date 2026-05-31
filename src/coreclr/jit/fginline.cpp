@@ -2532,3 +2532,121 @@ bool Compiler::fgNeedReturnSpillTemp()
     assert(compIsForInlining());
     return (lvaInlineeReturnSpillTemp != BAD_VAR_NUM);
 }
+
+//------------------------------------------------------------------------
+// fgPostInlineNoReturnCleanup: Trim dead code that follows no-return calls
+//   exposed by inlining.
+//
+// Returns:
+//    PhaseStatus indicating whether anything was modified.
+//
+// Notes:
+//   For each block, find the first no-return call in execution order, drop
+//   the statements that follow, and convert the block to BBJ_THROW. Calls
+//   under a GT_QMARK are conditional and ignored.
+//
+PhaseStatus Compiler::fgPostInlineNoReturnCleanup()
+{
+    if (!doesMethodHaveNoReturnCalls())
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    class NoReturnCallFinder final : public GenTreeVisitor<NoReturnCallFinder>
+    {
+    public:
+        enum
+        {
+            DoPreOrder        = true,
+            UseExecutionOrder = true,
+        };
+
+        GenTreeCall* m_result = nullptr;
+
+        NoReturnCallFinder(Compiler* comp)
+            : GenTreeVisitor<NoReturnCallFinder>(comp)
+        {
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* const tree = *use;
+            if (tree->OperIs(GT_QMARK))
+            {
+                return WALK_SKIP_SUBTREES;
+            }
+            if (tree->IsCall() && tree->AsCall()->IsNoReturn())
+            {
+                m_result = tree->AsCall();
+                return WALK_ABORT;
+            }
+            return WALK_CONTINUE;
+        }
+    };
+
+    bool modified = false;
+
+    for (BasicBlock* const block : Blocks())
+    {
+        if (block->KindIs(BBJ_THROW))
+        {
+            continue;
+        }
+
+        Statement*   trimStmt  = nullptr;
+        GenTreeCall* noRetCall = nullptr;
+
+        for (Statement* const stmt : block->Statements())
+        {
+            // Skip any statement that has no calls.
+            //
+            if ((stmt->GetRootNode()->gtFlags & GTF_CALL) == 0)
+            {
+                continue;
+            }
+
+            NoReturnCallFinder finder(this);
+            finder.WalkTree(stmt->GetRootNodePointer(), nullptr);
+            if (finder.m_result != nullptr)
+            {
+                trimStmt  = stmt;
+                noRetCall = finder.m_result;
+                break;
+            }
+        }
+
+        if (trimStmt == nullptr)
+        {
+            continue;
+        }
+
+        JITDUMP("\nfgPostInlineNoReturnCleanup: " FMT_BB " contains no-return call [%06u]; trimming\n", block->bbNum,
+                dspTreeID(noRetCall));
+
+        // Split off any side effects that precede the call, then remove
+        // statements in the block after the throw.
+        //
+        if (trimStmt->GetRootNode() != noRetCall)
+        {
+            Statement* firstNewStmt = nullptr;
+            GenTree**  callUse      = nullptr;
+            gtSplitTree(block, trimStmt, noRetCall, &firstNewStmt, &callUse);
+
+            trimStmt->SetRootNode(noRetCall);
+            gtUpdateStmtSideEffects(trimStmt);
+        }
+
+        while (block->lastStmt() != trimStmt)
+        {
+            fgRemoveStmt(block, block->lastStmt());
+        }
+
+        // fgConvertBBToThrowBB updates preds, profile weights, and consistency.
+        //
+        fgConvertBBToThrowBB(block);
+
+        modified = true;
+    }
+
+    return modified ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+}
