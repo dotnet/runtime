@@ -399,6 +399,11 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForBinary(treeNode->AsOp());
             break;
 
+	case GT_NOT:
+            genConsumeRegs(treeNode->gtGetOp1());
+	    genCodeForNOT(treeNode->AsOp());
+            break;
+
 	default:
 	    printf("ERROR: Unhandled tree node operation: %s (oper=%d)\n",
                    GenTree::OpName(treeNode->gtOper), treeNode->gtOper);
@@ -431,13 +436,14 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
                  oper == GT_AND || oper == GT_OR || oper == GT_XOR);
 
           GenTree* op1 = treeNode->gtGetOp1();
-          GenTree* op2 = treeNode->gtGetOp2();
+	  GenTree* op2 = treeNode->gtGetOp2();
 
-          regNumber op1reg = op1->GetRegNum();
-          regNumber op2reg = op2->GetRegNum();
+	  regNumber op1reg = op1->GetRegNum();
+	  regNumber op2reg = op2->GetRegNum();
 
           instruction ins;
           emitAttr    attr = emitActualTypeSize(treeNode);
+
 
           // PowerPC64LE instruction selection based on operation and type
           if (varTypeIsFloating(targetType))
@@ -551,22 +557,51 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
 		    }
 		    break;
 
-                case GT_AND:
+                 case GT_AND:
                     // and: bitwise AND
-                    ins = INS_and_ins;
-                    emit->emitIns_R_R_R(ins, attr, targetReg, op1reg, op2reg);
+                    if (isImmediate)
+                    {
+                        ssize_t imm = op2->AsIntConCommon()->IconValue();
+                        ins = INS_andi;
+                        emit->emitIns_R_R_I(ins, attr, targetReg, op1reg, imm);
+                    }
+                    else
+                    {
+                        ins = INS_and_ins;
+                        emit->emitIns_R_R_R(ins, attr, targetReg, op1reg, op2reg);
+                    }
                     break;
+
 
                 case GT_OR:
                     // or: bitwise OR
-                    ins = INS_or_ins;
-                    emit->emitIns_R_R_R(ins, attr, targetReg, op1reg, op2reg);
+                    if (isImmediate)
+                    {
+                        ssize_t imm = op2->AsIntConCommon()->IconValue();
+                        ins = INS_ori;
+                        emit->emitIns_R_R_I(ins, attr, targetReg, op1reg, imm);
+                    }
+                    else
+                    {
+                        ins = INS_or_ins;
+                        emit->emitIns_R_R_R(ins, attr, targetReg, op1reg, op2reg);
+                    }
                     break;
 
-                case GT_XOR:
+
+		case GT_XOR:
                     // xor: bitwise XOR
-                    ins = INS_xor_ins;
-                    emit->emitIns_R_R_R(ins, attr, targetReg, op1reg, op2reg);
+                    if (isImmediate)
+                    {
+                        ssize_t imm = op2->AsIntConCommon()->IconValue();
+                        ins = INS_xori;
+                        emit->emitIns_R_R_I(ins, attr, targetReg, op1reg, imm);
+                    }
+                    else
+                    {
+                        ins = INS_xor_ins;
+                        emit->emitIns_R_R_R(ins, attr, targetReg, op1reg, op2reg);
+                    }
                     break;
 
 		default:
@@ -576,6 +611,30 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
 
           genProduceReg(treeNode);
 }
+
+//------------------------------------------------------------------------
+// genCodeForNOT: Generate code for GT_NOT (bitwise NOT)
+//
+// Arguments:
+//    treeNode - tree node (GT_NOT)
+//
+void CodeGen::genCodeForNOT(GenTreeOp* treeNode)
+{
+    assert(treeNode->OperIs(GT_NOT));
+    
+    regNumber targetReg = treeNode->GetRegNum();
+    GenTree*  op1       = treeNode->gtGetOp1();
+    regNumber op1reg    = op1->GetRegNum();  // Already consumed by genConsumeOperands()
+    
+    emitAttr attr = emitActualTypeSize(treeNode);
+    
+    // PowerPC implements NOT as NOR with itself: ~A = A NOR A
+    GetEmitter()->emitIns_R_R_R(INS_nor, attr, targetReg, op1reg, op1reg);
+    
+    genProduceReg(treeNode);
+}
+
+
 
 //---------------------------------------------------------------------
 // genSetGSSecurityCookie: Set the "GS" security cookie in the prolog.

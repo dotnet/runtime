@@ -1551,6 +1551,11 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
            ppc_andi (dstRW, id->idReg1(), id->idReg2(), emitGetInsSC(id));
            break;
 
+       case INS_xori:
+           // xori rA, rS, UIMM (XOR Immediate)
+           ppc_xori (dstRW, id->idReg1(), id->idReg2(), emitGetInsSC(id));
+           break;	   
+
        case INS_sldi:
            // sldi rA, rS, n (pseudo-op: rldicr)
            ppc_sldi (dstRW, id->idReg1(), id->idReg2(), emitGetInsSC(id));
@@ -1849,6 +1854,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
        default:
            _ASSERTE(!"NYI");
+
     }
 
     dst = dstRW - writeableOffset;

@@ -796,6 +796,7 @@ protected:
 #endif
     void genCodeForTreeNode(GenTree* treeNode);
     void genCodeForBinary(GenTreeOp* treeNode);
+    void genCodeForNOT(GenTreeOp* treeNode);
 
 #if defined(TARGET_X86)
     void genCodeForLongUMod(GenTreeOp* node);

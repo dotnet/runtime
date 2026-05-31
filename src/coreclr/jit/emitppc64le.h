@@ -35,6 +35,7 @@
 #define ppc_mr(c,a,s)      ppc_or     (c, a, s, s)
 #define ppc_ori(c,S,A,ui)  ppc_emit32 (c, (24 << 26) | ((S) << 21) | ((A) << 16) | (uint16_t)(ui))
 #define ppc_oris(c,S,A,ui) ppc_emit32 (c, (25 << 26) | ((S) << 21) | ((A) << 16) | (uint16_t)(ui))
+#define ppc_xori(c,A,S,ui) ppc_emit32 (c, (26 << 26) | ((S) << 21) | ((A) << 16) | (uint16_t)(ui))
 #define ppc_andi(c,A,S,ui) ppc_emit32 (c, (28 << 26) | ((S) << 21) | ((A) << 16) | (uint16_t)(ui))
 #define ppc_nop(c)         ppc_ori    (c, 0, 0, 0)
 

@@ -638,7 +638,13 @@ int LinearScan::BuildNode(GenTree* tree)
                   assert(dstCount == 1);
                   BuildDef(tree);
                   break;
-
+              
+	      case GT_NOT:
+                 // Unary NOT operation - only one source operand
+                 srcCount = BuildOperandUses(tree->gtGetOp1(), RBM_NONE);
+                 assert(dstCount == 1);
+                 BuildDef(tree);
+                 break;
               case GT_MUL:
                   if (tree->gtOverflow())
                   {
