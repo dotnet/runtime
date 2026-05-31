@@ -9,6 +9,7 @@ parameters:
   scenarios: ['WasmTestOnChrome']
   shouldContinueOnError: false
   shouldRunSmokeOnly: false
+  useHelixMonitor: false
 
 jobs:
 
@@ -99,3 +100,4 @@ jobs:
             testRunNamePrefixSuffix: Mono_$(_BuildConfig)
             extraHelixArguments: /p:BrowserHost=$(_hostedOs) $(_wasmRunSmokeTestsOnlyArg) ${{ parameters.extraHelixArguments }}
             scenarios: ${{ parameters.scenarios }}
+            useHelixMonitor: ${{ parameters.useHelixMonitor }}
