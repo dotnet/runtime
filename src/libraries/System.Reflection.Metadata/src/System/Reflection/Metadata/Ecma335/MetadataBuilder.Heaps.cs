@@ -43,9 +43,9 @@ namespace System.Reflection.Metadata.Ecma335
         private int _stringHeapCapacity = 4 * 1024;
 
         // #Blob heap
-        private readonly BlobDictionary _blobs = new BlobDictionary(1024);
+        private readonly BlobDictionary _blobs;
+        private readonly HeapBlobBuilder _blobBuilder = new HeapBlobBuilder(1024);
         private readonly int _blobHeapStartOffset;
-        private int _blobHeapSize;
 
         // #GUID heap
         private readonly Dictionary<Guid, GuidHandle> _guids = new Dictionary<Guid, GuidHandle>();
@@ -117,8 +117,8 @@ namespace System.Reflection.Metadata.Ecma335
             // beginning of the delta blob.
             _userStringBuilder.WriteByte(0);
 
-            _blobs.GetOrAdd(ReadOnlySpan<byte>.Empty, ImmutableArray<byte>.Empty, default, out _);
-            _blobHeapSize = 1;
+            _blobs = new BlobDictionary(_blobBuilder, 32);
+            _ = _blobs.GetOrAdd((ReadOnlySpan<byte>)[], default);
 
             // When EnC delta is applied #US, #String and #Blob heaps are appended.
             // Thus indices of strings and blobs added to this generation are offset
@@ -151,8 +151,7 @@ namespace System.Reflection.Metadata.Ecma335
             switch (heap)
             {
                 case HeapIndex.Blob:
-                    // Not useful to set capacity.
-                    // By the time the blob heap is serialized we know the exact size we need.
+                    _blobBuilder.SetCapacity(byteCount);
                     break;
 
                 case HeapIndex.Guid:
@@ -192,12 +191,7 @@ namespace System.Reflection.Metadata.Ecma335
                 Throw.ArgumentNull(nameof(value));
             }
 
-            if (value.TryGetSpan(out ReadOnlySpan<byte> buffer))
-            {
-                return GetOrAddBlob(buffer);
-            }
-
-            return GetOrAddBlob(value.ToImmutableArray());
+            return GetOrAddBlobImpl(value);
         }
 
         /// <summary>
@@ -216,17 +210,34 @@ namespace System.Reflection.Metadata.Ecma335
             return GetOrAddBlob(new ReadOnlySpan<byte>(value));
         }
 
-        private BlobHandle GetOrAddBlob(ReadOnlySpan<byte> value, ImmutableArray<byte> immutableValue = default)
+        private BlobHandle GetOrAddBlob(ReadOnlySpan<byte> value) => GetOrAddBlobImpl(value);
+
+#if NET
+        private BlobHandle GetOrAddBlobImpl<T>(T value)
+            where T : notnull, allows ref struct
         {
-            BlobHandle nextHandle = BlobHandle.FromOffset(_blobHeapStartOffset + _blobHeapSize);
-            BlobHandle handle = _blobs.GetOrAdd(value, immutableValue, nextHandle, out bool exists);
-            if (!exists)
-            {
-                _blobHeapSize += BlobWriterImpl.GetCompressedIntegerSize(value.Length) + value.Length;
-            }
+            BlobHandle nextHandle = BlobHandle.FromOffset(_blobHeapStartOffset + _blobBuilder.Count);
+            BlobHandle handle = _blobs.GetOrAdd(value, nextHandle);
 
             return handle;
         }
+#else
+        private BlobHandle GetOrAddBlobImpl(ReadOnlySpan<byte> value)
+        {
+            BlobHandle nextHandle = BlobHandle.FromOffset(_blobHeapStartOffset + _blobBuilder.Count);
+            BlobHandle handle = _blobs.GetOrAdd(value, nextHandle);
+
+            return handle;
+        }
+
+        private BlobHandle GetOrAddBlobImpl(BlobBuilder value)
+        {
+            BlobHandle nextHandle = BlobHandle.FromOffset(_blobHeapStartOffset + _blobBuilder.Count);
+            BlobHandle handle = _blobs.GetOrAdd(value, nextHandle);
+
+            return handle;
+        }
+#endif
 
         /// <summary>
         /// Adds specified blob to Blob heap, if it's not there already.
@@ -241,7 +252,7 @@ namespace System.Reflection.Metadata.Ecma335
                 Throw.ArgumentNull(nameof(value));
             }
 
-            return GetOrAddBlob(value.AsSpan(), value);
+            return GetOrAddBlob(value.AsSpan());
         }
 
         /// <summary>
@@ -607,33 +618,11 @@ namespace System.Reflection.Metadata.Ecma335
             WriteAligned(stringHeap, builder);
             WriteAligned(_userStringBuilder, builder);
             WriteAligned(_guidBuilder, builder);
-            WriteAlignedBlobHeap(builder);
-        }
-
-        private void WriteAlignedBlobHeap(BlobBuilder builder)
-        {
-            int alignment = BitArithmetic.Align(_blobHeapSize, 4) - _blobHeapSize;
-
-            var writer = new BlobWriter(builder.ReserveBytes(_blobHeapSize + alignment));
-
-            // Perf consideration: With large heap the following loop may cause a lot of cache misses
-            // since the order of entries in _blobs dictionary depends on the hash of the array values,
-            // which is not correlated to the heap index. If we observe such issue we should order
-            // the entries by heap position before running this loop.
-
-            int startOffset = _blobHeapStartOffset;
-            foreach (var entry in _blobs)
-            {
-                int heapOffset = entry.Value.Value.GetHeapOffset();
-                var blob = entry.Value.Key;
-
-                writer.Offset = (heapOffset == 0) ? 0 : heapOffset - startOffset;
-                writer.WriteCompressedInteger(blob.Length);
-                writer.WriteBytes(blob);
-            }
-
-            writer.Offset = _blobHeapSize;
-            writer.WriteBytes(0, alignment);
+            // FinishWritingSegments will invalidate the segments in the dictionary,
+            // so we need to clear it first.
+            _blobs.Clear();
+            _blobBuilder.FinishWritingSegments();
+            WriteAligned(_blobBuilder, builder);
         }
 
         private static void WriteAligned(BlobBuilder source, BlobBuilder target)
