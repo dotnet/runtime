@@ -187,12 +187,12 @@ namespace System.Numerics
                     {
                         if ((p & 1) == 1)
                         {
-                            UInt128 prod = (UInt128)(ulong)result * (ulong)value;
+                            UInt128 prod = Math.BigMul(result, value);
                             result = (nuint)(ulong)(prod % (ulong)modulus);
                         }
 
                         {
-                            UInt128 sq = (UInt128)(ulong)value * (ulong)value;
+                            UInt128 sq = Math.BigMul(value, value);
                             value = (nuint)(ulong)(sq % (ulong)modulus);
                         }
                     }
@@ -231,13 +231,13 @@ namespace System.Numerics
                 {
                     if ((power & 1) == 1)
                     {
-                        UInt128 prod = (UInt128)(ulong)result * (ulong)value;
+                        UInt128 prod = Math.BigMul(result, value);
                         result = (nuint)(ulong)(prod % (ulong)modulus);
                     }
 
                     if (power != 1)
                     {
-                        UInt128 sq = (UInt128)(ulong)value * (ulong)value;
+                        UInt128 sq = Math.BigMul(value, value);
                         value = (nuint)(ulong)(sq % (ulong)modulus);
                     }
                 }
@@ -684,19 +684,20 @@ namespace System.Numerics
             {
                 nuint m = value[i] * n0inv;
                 nuint carry = 0;
+                Span<nuint> v2 = value.Slice(i, k);
 
-                for (int j = 0; j < k; j++)
+                for (int j = 0; j < v2.Length; j++)
                 {
                     if (nint.Size == 8)
                     {
-                        UInt128 p = (UInt128)m * modulus[j] + value[i + j] + carry;
-                        value[i + j] = (nuint)(ulong)p;
+                        UInt128 p = Math.BigMul(m, modulus[j]) + v2[j] + carry;
+                        v2[j] = (nuint)(ulong)p;
                         carry = (nuint)(ulong)(p >> 64);
                     }
                     else
                     {
-                        ulong p = (ulong)m * modulus[j] + value[i + j] + carry;
-                        value[i + j] = (uint)p;
+                        ulong p = (ulong)m * modulus[j] + v2[j] + carry;
+                        v2[j] = (uint)p;
                         carry = (uint)(p >> 32);
                     }
                 }

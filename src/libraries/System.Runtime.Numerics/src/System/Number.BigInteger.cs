@@ -545,23 +545,9 @@ namespace System
             {
                 nuint carry = addValue;
 
-                if (nint.Size == 8)
+                for (int i = 0; i < bits.Length; i++)
                 {
-                    for (int i = 0; i < bits.Length; i++)
-                    {
-                        UInt128 p = (UInt128)bits[i] * multiplier + carry;
-                        bits[i] = (nuint)(ulong)p;
-                        carry = (nuint)(ulong)(p >> 64);
-                    }
-                }
-                else
-                {
-                    for (int i = 0; i < bits.Length; i++)
-                    {
-                        ulong p = (ulong)multiplier * bits[i] + carry;
-                        bits[i] = (uint)p;
-                        carry = (uint)(p >> 32);
-                    }
+                    carry = BigIntegerCalculator.MulAdd(bits[i], multiplier, carry, out bits[i]);
                 }
 
                 return carry;
@@ -1490,23 +1476,9 @@ namespace System
                 {
                     nuint multiplier = UInt32PowersOfTen[remainingTrailingZeroCount];
                     nuint carry = 0;
-                    if (nint.Size == 8)
+                    for (int i = 0; i < bits2.Length; i++)
                     {
-                        for (int i = 0; i < bits2.Length; i++)
-                        {
-                            UInt128 p = (UInt128)multiplier * bits2[i] + carry;
-                            bits2[i] = (nuint)(ulong)p;
-                            carry = (nuint)(ulong)(p >> 64);
-                        }
-                    }
-                    else
-                    {
-                        for (int i = 0; i < bits2.Length; i++)
-                        {
-                            ulong p = (ulong)multiplier * bits2[i] + carry;
-                            bits2[i] = (uint)p;
-                            carry = (uint)(p >> 32);
-                        }
+                        carry = BigIntegerCalculator.MulAdd(bits2[i], multiplier, carry, out bits2[i]);
                     }
 
                     if (carry != 0)
