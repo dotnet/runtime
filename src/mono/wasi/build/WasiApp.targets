@@ -27,7 +27,8 @@
       _GetWasiGenerateAppBundleDependencies;
       _WasiGenerateAppBundle;
       _GenerateRunWasmtimeScript;
-      _WasmGenerateNodeScripts;
+      <!-- NOTE: Currently, Node.js does not support preview2, so the generation of the execution script is stopped -->
+      <!-- _WasmGenerateNodeScripts; -->
     </WasmGenerateAppBundleDependsOn>
 
     <WasiWriteRspForLinkingDependsOn>
