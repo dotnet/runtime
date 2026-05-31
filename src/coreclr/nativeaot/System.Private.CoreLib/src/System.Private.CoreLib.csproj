@@ -46,6 +46,20 @@
     <Features>$(Features);runtime-async=on</Features>
   </PropertyGroup>
 
+  <!-- Mirror the runtime-async support predicate from src/libraries/Directory.Build.targets so the
+       BypassReadyToRun attributes on the MethodImpl.Async helpers can be conditioned on it. -->
+  <PropertyGroup Condition="'$(RuntimeAsyncSupported)' == ''">
+    <RuntimeAsyncSupported Condition="'$(TargetOS)' != 'browser'
+      and '$(TargetOS)' != 'wasi'
+      and '$(TargetOS)' != 'android'
+      and '$(TargetsAppleMobile)' != 'true'
+      and '$(RuntimeFlavor)' != 'Mono'">true</RuntimeAsyncSupported>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <DefineConstants Condition="'$(RuntimeAsyncSupported)' == 'true'">$(DefineConstants);RUNTIME_ASYNC_SUPPORTED</DefineConstants>
+  </PropertyGroup>
+
   <!-- Sources -->
   <ItemGroup>
     <Compile Include="$(CompilerCommonPath)\Internal\Runtime\DehydratedData.cs">
