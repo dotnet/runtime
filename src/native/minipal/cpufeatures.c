@@ -750,6 +750,11 @@ int minipal_getcpufeatures(void)
         {
             result |= RiscV64IntrinsicConstants_Zbs;
         }
+
+        if (pairs[0].value & RISCV_HWPROBE_EXT_ZICOND)
+        {
+            result |= RiscV64IntrinsicConstants_Zicond;
+        }
     }
 
 #endif // HAVE_HWPROBE_H

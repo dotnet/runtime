@@ -458,6 +458,25 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = BuildCmp(tree);
             break;
 
+        case GT_SELECT:
+        {
+            GenTreeConditional* sel = tree->AsConditional();
+            srcCount                = BuildOperandUses(sel->gtCond);
+            srcCount += BuildOperandUses(sel->gtOp1);
+            srcCount += BuildOperandUses(sel->gtOp2);
+            // The branchless lowering needs a temp only when both arms occupy a
+            // register; when either is contained as REG_ZERO, codegen collapses to
+            // a single czero with no merge step.
+            if (!sel->gtOp1->isContained() && !sel->gtOp2->isContained())
+            {
+                buildInternalIntRegisterDefForNode(tree);
+            }
+            assert(dstCount == 1);
+            BuildDef(tree);
+            buildInternalRegisterUses();
+        }
+        break;
+
         case GT_CKFINITE:
             srcCount = 1;
             assert(dstCount == 1);
