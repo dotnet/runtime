@@ -7,6 +7,7 @@ using Xunit;
 
 public class Test_FastTailCallInlining
 {
+    [SkipOnCoreClr("This test is sensitive to JIT optimizations.", RuntimeTestModes.AnyJitOptimizationStress)]
     [Theory]
     [InlineData(2)]
     public static void A(int i)

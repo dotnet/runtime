@@ -9,4 +9,7 @@
   <ItemGroup>
     <Compile Include="CgStress1.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

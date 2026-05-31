@@ -13,6 +13,7 @@
   .ver 0:0:0:0
 }
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 .imagebase 0x00400000
 .file alignment 0x00000200
 .subsystem 0x0003
@@ -209,6 +210,14 @@
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
     )
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.SkipOnCoreClrAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.RuntimeTestModes) = {
+      string('This test is too slow under GCStress=3. See https://github.com/dotnet/runtime/issues/50615.')
+      int32(0xC0) // AnyGCStress
+    }
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.SkipOnPlatformAttribute::.ctor(valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestPlatforms, string) = {
+      int32(0x400) // TestPlatforms.Browser
+      string('Threading is not supported on browser-wasm without multithreading.')
+    }
     .entrypoint
     .maxstack  5
     .locals init (class cs1 V_0,

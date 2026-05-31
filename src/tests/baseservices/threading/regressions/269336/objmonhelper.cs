@@ -9,6 +9,7 @@ public class ObjMonHelper {
 	const string FailMsg = @"Monitor.Enter appears to have mistaken a hash code in an object header for
 a valid lock owned by the current thread.";
 
+	[SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
 	[Fact]
 	public static int TestEntryPoint() {
 		var ok = true;

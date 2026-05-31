@@ -1,11 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for GCStressIncompatible -->
+    <!-- Needed for GC measurement accuracy: test captures GC indices and asserts no ephemeral GC
+         occurred between measurements; other tests in a merged runner can trigger ephemeral GCs,
+         violating that assumption. -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
-  </PropertyGroup>
-  <PropertyGroup>
     <DebugType>PdbOnly</DebugType>
-    <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="GetGCMemoryInfo.cs" />

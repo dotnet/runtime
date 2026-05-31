@@ -78,6 +78,8 @@
     <TargetsBrowserOnCoreCLR>false</TargetsBrowserOnCoreCLR>
     <TargetsBrowserOnCoreCLR Condition="'$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'">true</TargetsBrowserOnCoreCLR>
     <TargetsMobile Condition="'$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'">false</TargetsMobile>
+    <!-- Double the timeout for browser-wasm: more tests are now merged into shared runners -->
+    <_TimeoutPerTestCollectionInMinutes Condition="'$(TargetsBrowserOnCoreCLR)' == 'true'">246</_TimeoutPerTestCollectionInMinutes>
     <MobileAppBundleDirName Condition="'$(TargetsMobile)' == 'true' and '$(TargetsBrowser)' != 'true'">AppBundle</MobileAppBundleDirName>
     <MobileAppBundleDirName Condition="'$(TargetsBrowserOnMono)' == 'true'">wwwroot</MobileAppBundleDirName>
   </PropertyGroup>

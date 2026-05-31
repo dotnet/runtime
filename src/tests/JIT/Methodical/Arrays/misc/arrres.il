@@ -157,6 +157,10 @@
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00
       )
+      .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.SkipOnCoreClrAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.RuntimeTestModes) = {
+        string('This test is sensitive to JIT optimizations.')
+        int32(0x11E) // AnyJitOptimizationStress
+      }
       .entrypoint
       .maxstack  4
       .locals (int32 V_0,

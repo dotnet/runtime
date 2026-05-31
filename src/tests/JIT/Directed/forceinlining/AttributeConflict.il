@@ -7,6 +7,7 @@
   .ver 4:0:0:0
 }
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 
 .assembly extern System.Console
 {
@@ -655,6 +656,10 @@
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
     )
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.SkipOnCoreClrAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.RuntimeTestModes) = {
+      string('This test is sensitive to JIT optimizations.')
+      int32(0x11E) // AnyJitOptimizationStress
+    }
     .entrypoint
     // Code size       190 (0xbe)
     .maxstack  4

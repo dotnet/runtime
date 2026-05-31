@@ -1,10 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <CLRTestPriority>1</CLRTestPriority>
-    <!-- Needed for GCStressIncompatible -->
+    <!-- Needed for NativeAotIncompatible, ProjectReference CopyToOutputDirectory, and Process.Start -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <!-- Temporarily disabled due to https://github.com/dotnet/runtime/issues/80356 -->
-    <GCStressIncompatible>true</GCStressIncompatible>
     <!-- Test expects corerun -->
     <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>

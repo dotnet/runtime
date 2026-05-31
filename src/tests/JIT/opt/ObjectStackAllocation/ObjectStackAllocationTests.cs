@@ -126,6 +126,7 @@ namespace ObjectStackAllocation
         static int methodResult = 100;
 
         [ActiveIssue("needs triage", TestRuntimes.Mono)]
+        [SkipOnCoreClr("This test is sensitive to JIT optimizations.", RuntimeTestModes.AnyJitOptimizationStress)]
         [Fact]
         public static int TestEntryPoint()
         {

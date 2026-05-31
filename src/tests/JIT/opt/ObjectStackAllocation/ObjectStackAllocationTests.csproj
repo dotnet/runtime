@@ -5,7 +5,6 @@
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <DebugType>None</DebugType>
     <Optimize>True</Optimize>
-    <JitOptimizationSensitive>true</JitOptimizationSensitive>
     <!-- Interpreter does not support object stack allocation -->
     <InterpreterIncompatible>true</InterpreterIncompatible>
   </PropertyGroup>

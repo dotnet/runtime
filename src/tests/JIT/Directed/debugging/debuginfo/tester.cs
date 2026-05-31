@@ -22,6 +22,7 @@ public unsafe class DebugInfoTest
 {
     [ActiveIssue("Just-in-time compilation test", typeof(Utilities), nameof(Utilities.IsNativeAot))]
     [ActiveIssue("Tests coreclr JIT's debug info generation", TestRuntimes.Mono)]
+    [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
     [Fact]
     public static unsafe int TestEntryPoint()
     {
