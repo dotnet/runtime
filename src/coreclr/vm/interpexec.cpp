@@ -287,21 +287,23 @@ void InvokeUnmanagedMethodWithTransition(UnmanagedMethodWithTransitionParam *pPa
 }
 
 NOINLINE
-void InvokeUnmanagedCalliWithTransition(PCODE ftn, InterpreterCalliCookie cookie, int8_t *stack, InterpMethodContextFrame *pFrame, int8_t *pArgs, int8_t *pRet)
+void InvokeUnmanagedCalliWithTransition(UnmanagedCalliWithTransitionParam *pParam)
 {
     CONTRACTL
     {
         THROWS;
         MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer((void*)ftn));
-        PRECONDITION(CheckPointer(cookie));
+        PRECONDITION(CheckPointer((void*)pParam->ftn));
+        PRECONDITION(CheckPointer(pParam->cookie));
     }
     CONTRACTL_END
+
+    InterpMethodContextFrame *pFrame = pParam->pFrame;
 
     InlinedCallFrame inlinedCallFrame;
     inlinedCallFrame.m_pCallerReturnAddress = (TADDR)pFrame->ip;
     inlinedCallFrame.m_pCallSiteSP = pFrame;
-    inlinedCallFrame.m_pCalleeSavedFP = (TADDR)stack;
+    inlinedCallFrame.m_pCalleeSavedFP = (TADDR)pParam->stack;
     inlinedCallFrame.m_pThread = GetThread();
     inlinedCallFrame.m_Datum = NULL;
     inlinedCallFrame.Push();
@@ -310,10 +312,10 @@ void InvokeUnmanagedCalliWithTransition(PCODE ftn, InterpreterCalliCookie cookie
 #ifdef PROFILING_SUPPORTED
         if (CORProfilerTrackTransitions() && !pFrame->startIp->Method->methodHnd->IsILStub() && !pFrame->startIp->Method->methodHnd->IsPInvoke())
         {
-            ProfilerManagedToUnmanagedTransitionMD(pFrame->startIp->Method->methodHnd, COR_PRF_TRANSITION_CALL);
+            ProfilerManagedToUnmanagedTransitionMD(pParam->pFrame->startIp->Method->methodHnd, COR_PRF_TRANSITION_CALL);
         }
 #endif
-        InvokeUnmanagedCalli(ftn, cookie, pArgs, pRet);
+        InvokeUnmanagedCalli(pParam->ftn, pParam->cookie, pParam->pArgs, pParam->pRet);
 #ifdef PROFILING_SUPPORTED
         if (CORProfilerTrackTransitions() && !pFrame->startIp->Method->methodHnd->IsILStub() && !pFrame->startIp->Method->methodHnd->IsPInvoke())
         {
@@ -3180,7 +3182,8 @@ SWITCH_OPCODE:
                         }
                         else
                         {
-                            InvokeUnmanagedCalliWithTransition(calliFunctionPointer, cookie, stack, pFrame, callArgsAddress, returnValueAddress);
+                            UnmanagedCalliWithTransitionParam param = { calliFunctionPointer, cookie, stack, pFrame, callArgsAddress, returnValueAddress };
+                            InvokeUnmanagedCalliWithTransition(&param);
                         }
                     }
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
