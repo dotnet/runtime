@@ -2588,6 +2588,70 @@ void LinearScan::setFrameType()
     }
 #endif // TARGET_ARMARCH || TARGET_RISCV64
 
+#if defined(TARGET_AMD64)
+    // Consider reserving a callee-saved register as a secondary stack base pointer holding
+    // (primaryBase +/- offset), so far locals in a large frame can use cheap disp8 addressing
+    // (see JitSecondFramePtr).
+    {
+        const int secondFramePtrOffset = (int)JitConfig.JitSecondFramePtr();
+
+        // Only a win with optimizations disabled: with opts on, enregistration makes the pre-layout
+        // frame estimate a poor predictor and removing a register from allocation raises spill pressure.
+        const bool optDisabled = m_compiler->opts.OptimizationDisabled();
+
+        // We need a single base register (RBP or RSP) that is fixed for the whole method body. Other
+        // frame types (e.g. double-aligned) are not handled.
+        const bool haveFixedBase = (frameType == FT_EBP_FRAME) || (frameType == FT_ESP_FRAME);
+
+        // With EH we require an RBP frame: filter funclets re-establish the pointer from RBP (the
+        // establisher frame pointer), so an RSP base would not be recoverable inside a funclet.
+        const bool ehCompatible = (m_compiler->compHndBBtabCount == 0) || (frameType == FT_EBP_FRAME);
+
+        // OSR reuses the Tier0 frame with a bespoke callee-save/SP setup the secondary-pointer prolog
+        // does not handle. OSR is normally optimized, so optDisabled already excludes it; this guard only
+        // matters under stress modes that force MinOpts on an OSR method.
+        const bool notOsr = !m_compiler->opts.IsOSR();
+
+        // The frame must be large enough that some local can fall outside the primary disp8 window.
+        // x64 has no REGALLOC-time layout to consult, so rather than run a full lvaFrameSize pass just to
+        // gate this (opt-disabled-only) reservation, estimate the local area cheaply: locals sit above the
+        // outgoing-arg space, so sum that plus the stack-home sizes until the window is exceeded. The estimate
+        // need not be exact (it omits temps/callee-saves): genSecondFramePtrIsProfitable re-checks with FINAL
+        // offsets and cancels the reservation if no local lands in the secondary band.
+        auto frameLikelyLargeEnough = [this]() -> bool {
+            unsigned size = m_compiler->lvaOutgoingArgSpaceSize;
+            for (unsigned lclNum = 0; lclNum < m_compiler->lvaCount; lclNum++)
+            {
+                size += m_compiler->lvaLclStackHomeSize(lclNum);
+                if (size > 256)
+                {
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        if ((secondFramePtrOffset != 0) && optDisabled && haveFixedBase && ehCompatible && notOsr &&
+            frameLikelyLargeEnough())
+        {
+            // Reserve the register only as a candidate: remove it from allocation now, but defer the
+            // real decision -- does any local land in the secondary disp8 band -- to genFinalizeFrame
+            // (genSecondFramePtrIsProfitable), which can still cancel the reservation. The REGALLOC-layout
+            // offsets available here are unreliable (base-register flag not yet set, offsets inflated by
+            // an over-estimated callee-save area) so cannot drive the band test.
+            const bool wantFPbased                        = (frameType == FT_EBP_FRAME);
+            m_compiler->codeGen->genSecondFramePtrReg     = REG_OPT_RSVD2;
+            m_compiler->codeGen->genSecondFramePtrOffset  = secondFramePtrOffset;
+            m_compiler->codeGen->genSecondFramePtrFPbased = wantFPbased;
+            m_compiler->codeGen->regSet.rsMaskResvd |= RBM_OPT_RSVD2;
+            removeMask |= RBM_OPT_RSVD2.GetIntRegSet();
+            JITDUMP("  Reserved REG_OPT_RSVD2 (%s) as candidate secondary frame pointer (%s%s%d)\n",
+                    getRegName(REG_OPT_RSVD2), wantFPbased ? "RBP" : "RSP", wantFPbased ? "-" : "+",
+                    secondFramePtrOffset);
+        }
+    }
+#endif // TARGET_AMD64
+
 #ifdef TARGET_ARM
     if (m_compiler->compLocallocUsed)
     {

@@ -282,6 +282,16 @@ public:
         m_cgFrameRequired = value;
     }
 
+#ifdef TARGET_AMD64
+    // Secondary stack base pointer (see JitSecondFramePtr). When set, this callee-saved register holds
+    // (primaryBase +/- genSecondFramePtrOffset) and addresses far locals with a disp8 displacement;
+    // REG_NA means off. genSecondFramePtrFPbased tells whether it shadows RBP (locals at negative
+    // offsets) or RSP (positive); only accesses on that base are redirected.
+    regNumber genSecondFramePtrReg     = REG_NA;
+    int       genSecondFramePtrOffset  = 0;
+    bool      genSecondFramePtrFPbased = false;
+#endif // TARGET_AMD64
+
 #if !HAS_FIXED_REGISTER_SET
 
     void SetStackPointerReg(unsigned funcletIndex, regNumber reg);
