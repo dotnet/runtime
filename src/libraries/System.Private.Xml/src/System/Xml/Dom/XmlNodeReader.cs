@@ -40,6 +40,7 @@ namespace System.Xml
         //variables for roll back the moves
         private int _nLogLevel;
         private int _nLogAttrInd;
+        private XmlNodeType _logNodeType;
         private bool _bLogOnAttrVal;
         private readonly bool _bCreatedOnAttribute;
 
@@ -73,6 +74,7 @@ namespace System.Xml
             _curNode = node;
             _logNode = node;
             XmlNodeType nt = _curNode.NodeType;
+            _logNodeType = nt;
             if (nt == XmlNodeType.Attribute)
             {
                 _elemNode = null;
@@ -547,22 +549,24 @@ namespace System.Xml
             throw new ArgumentOutOfRangeException(nameof(attributeIndex)); //for other senario, AttributeCount is 0, i has to be out of range
         }
 
-        public void LogMove(int level)
+        public void LogMove(int level, XmlNodeType nt)
         {
             _logNode = _curNode;
             _nLogLevel = level;
             _nLogAttrInd = _nAttrInd;
+            _logNodeType = nt;
             _logAttrIndex = _attrIndex;
             _bLogOnAttrVal = _bOnAttrVal;
         }
 
         //The function has to be used in pair with ResetMove when the operation fails after LogMove() is
         //    called because it relies on the values of nOrigLevel, logNav and nOrigAttrInd to be accurate.
-        public void RollBackMove(ref int level)
+        public void RollBackMove(ref int level, ref XmlNodeType nt)
         {
             _curNode = _logNode;
             level = _nLogLevel;
             _nAttrInd = _nLogAttrInd;
+            nt = _logNodeType;
             _attrIndex = _logAttrIndex;
             _bOnAttrVal = _bLogOnAttrVal;
         }
@@ -600,7 +604,7 @@ namespace System.Xml
 
         public void ResetMove(ref int level, ref XmlNodeType nt)
         {
-            LogMove(level);
+            LogMove(level, nt);
             if (_bCreatedOnAttribute)
                 return;
             if (_nAttrInd != -1)
@@ -1368,7 +1372,7 @@ namespace System.Xml
                 return false;
             _readerNav.ResetMove(ref _curDepth, ref _nodeType);
             if (_readerNav.MoveToAttribute(name))
-            { //, ref curDepth ) ) {
+            {
                 _curDepth++;
                 _nodeType = _readerNav.NodeType;
                 if (_bInReadBinary)
@@ -1377,7 +1381,7 @@ namespace System.Xml
                 }
                 return true;
             }
-            _readerNav.RollBackMove(ref _curDepth);
+            _readerNav.RollBackMove(ref _curDepth, ref _nodeType);
             return false;
         }
 
@@ -1389,7 +1393,7 @@ namespace System.Xml
             _readerNav.ResetMove(ref _curDepth, ref _nodeType);
             string ns = namespaceURI ?? string.Empty;
             if (_readerNav.MoveToAttribute(name, ns))
-            { //, ref curDepth ) ) {
+            {
                 _curDepth++;
                 _nodeType = _readerNav.NodeType;
                 if (_bInReadBinary)
@@ -1398,7 +1402,7 @@ namespace System.Xml
                 }
                 return true;
             }
-            _readerNav.RollBackMove(ref _curDepth);
+            _readerNav.RollBackMove(ref _curDepth, ref _nodeType);
             return false;
         }
 
@@ -1423,7 +1427,7 @@ namespace System.Xml
             }
             catch
             {
-                _readerNav.RollBackMove(ref _curDepth);
+                _readerNav.RollBackMove(ref _curDepth, ref _nodeType);
                 throw;
             }
             _curDepth++;
@@ -1447,7 +1451,7 @@ namespace System.Xml
                 }
                 return true;
             }
-            _readerNav.RollBackMove(ref _curDepth);
+            _readerNav.RollBackMove(ref _curDepth, ref _nodeType);
             return false;
         }
 
@@ -1456,7 +1460,7 @@ namespace System.Xml
         {
             if (!IsInReadingStates() || _nodeType == XmlNodeType.EndElement)
                 return false;
-            _readerNav.LogMove(_curDepth);
+            _readerNav.LogMove(_curDepth, _nodeType);
             _readerNav.ResetToAttribute(ref _curDepth);
             if (_readerNav.MoveToNextAttribute(ref _curDepth))
             {
@@ -1467,7 +1471,7 @@ namespace System.Xml
                 }
                 return true;
             }
-            _readerNav.RollBackMove(ref _curDepth);
+            _readerNav.RollBackMove(ref _curDepth, ref _nodeType);
             return false;
         }
 
@@ -1476,7 +1480,7 @@ namespace System.Xml
         {
             if (!IsInReadingStates())
                 return false;
-            _readerNav.LogMove(_curDepth);
+            _readerNav.LogMove(_curDepth, _nodeType);
             _readerNav.ResetToAttribute(ref _curDepth);
             if (_readerNav.MoveToElement())
             {
@@ -1488,7 +1492,7 @@ namespace System.Xml
                 }
                 return true;
             }
-            _readerNav.RollBackMove(ref _curDepth);
+            _readerNav.RollBackMove(ref _curDepth, ref _nodeType);
             return false;
         }
 
