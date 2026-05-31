@@ -45,6 +45,12 @@ public interface ICILVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <return>The visitor result.</return>
 	Result VisitDottedName([NotNull] CILParser.DottedNameContext context);
 	/// <summary>
+	/// Visit a parse tree produced by <see cref="CILParser.dottedNamePart"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitDottedNamePart([NotNull] CILParser.DottedNamePartContext context);
+	/// <summary>
 	/// Visit a parse tree produced by <see cref="CILParser.compQstring"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
@@ -110,6 +116,12 @@ public interface ICILVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
 	Result VisitLanguageDecl([NotNull] CILParser.LanguageDeclContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="CILParser.languageString"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitLanguageString([NotNull] CILParser.LanguageStringContext context);
 	/// <summary>
 	/// Visit a parse tree produced by <see cref="CILParser.typelist"/>.
 	/// </summary>
@@ -610,6 +622,18 @@ public interface ICILVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <return>The visitor result.</return>
 	Result VisitBound([NotNull] CILParser.BoundContext context);
 	/// <summary>
+	/// Visit a parse tree produced by <see cref="CILParser.nativeInt"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitNativeInt([NotNull] CILParser.NativeIntContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="CILParser.nativeUint"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitNativeUint([NotNull] CILParser.NativeUintContext context);
+	/// <summary>
 	/// Visit a parse tree produced by <see cref="CILParser.secDecl"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
@@ -1030,11 +1054,11 @@ public interface ICILVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <return>The visitor result.</return>
 	Result VisitBytes([NotNull] CILParser.BytesContext context);
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="CILParser.hexbytes"/>.
+	/// Visit a parse tree produced by <see cref="CILParser.hexbyte"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	Result VisitHexbytes([NotNull] CILParser.HexbytesContext context);
+	Result VisitHexbyte([NotNull] CILParser.HexbyteContext context);
 	/// <summary>
 	/// Visit a parse tree produced by <see cref="CILParser.fieldInit"/>.
 	/// </summary>

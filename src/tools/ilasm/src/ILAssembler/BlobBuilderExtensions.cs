@@ -85,7 +85,11 @@ namespace ILAssembler
 
         public static void WriteTypeEntity(this BlobBuilder builder, EntityRegistry.TypeEntity entity)
         {
-            if (entity is EntityRegistry.FakeTypeEntity fakeEntity)
+            if (entity is EntityRegistry.TypeReferenceEntity typeRef)
+            {
+                builder.WriteCompressedInteger(CodedIndex.TypeDefOrRefOrSpec(typeRef.PseudoHandle));
+            }
+            else if (entity is EntityRegistry.FakeTypeEntity fakeEntity)
             {
                 builder.WriteCompressedInteger(CodedIndex.TypeDefOrRefOrSpec(fakeEntity.TypeSignatureHandle));
             }
