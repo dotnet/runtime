@@ -10,6 +10,7 @@ using System.IO.Pipes;
 using System.Linq;
 using System.Net;
 using System.Reflection;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
@@ -192,16 +193,26 @@ namespace System.Diagnostics.Tests
             const string PosixSignalRegistrationCreatedMessage = "PosixSignalRegistration created.";
             const string PosixSignalHandlerStartedMessage = "PosixSignalRegistration handler started.";
             const string PosixSignalHandlerDisposedMessage = "PosixSignalRegistration disposed.";
-            const int UnterminatedExitCode = -1;
+            const int UnterminatedExitCode = 1;
 
-            var remoteInvokeOptions = new RemoteInvokeOptions { CheckExitCode = false };
+            // Process operations timeout cascading:
+            // WaitInMS * 1: Remote process wait for first signal that unregisters the exercised signal handler
+            // WaitInMS * 2: Remote process may additionally wait for a second signal that should terminate it
+            // WaitInMS * 3: RemoteExecutor timeout, leaving slack for process startup, signal delivery, and teardown
+
+            var remoteInvokeOptions = new RemoteInvokeOptions { CheckExitCode = false, TimeOut = WaitInMS * 3 };
             remoteInvokeOptions.StartInfo.RedirectStandardOutput = true;
             if (OperatingSystem.IsWindows())
             {
                 remoteInvokeOptions.StartInfo.CreateNewProcessGroup = true;
+                remoteInvokeOptions.CheckExitCode = true;
+                remoteInvokeOptions.ExpectedExitCode = unchecked((int)0xC000013A); // STATUS_CONTROL_C_EXIT
             }
 
-            using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(
+            bool remoteHandleDisposeAttempted = false;
+            ExceptionDispatchInfo testException = null;
+            ExceptionDispatchInfo disposeException = null;
+            RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(
                 (signalStr) =>
                 {
                     PosixSignal expectedSignal = Enum.Parse<PosixSignal>(signalStr);
@@ -238,7 +249,6 @@ namespace System.Diagnostics.Tests
                 arg: $"{signal}",
                 remoteInvokeOptions);
 
-
             try
             {
                 AssertRemoteProcessStandardOutputLine(remoteHandle, PosixSignalRegistrationCreatedMessage, WaitInMS);
@@ -260,25 +270,46 @@ namespace System.Diagnostics.Tests
                     SendSignal(signal, remoteHandle.Process);
                 }
 
-                Assert.True(remoteHandle.Process.WaitForExit(WaitInMS));
-                Assert.True(remoteHandle.Process.StandardOutput.EndOfStream);
+                // For Windows, we prefer more feature rich termination and status checking in remoteHandle.Dispose()
+                // However on other platforms, exit code is platform dependent, so we check manually.
+                if (!OperatingSystem.IsWindows())
+                {
+                    Assert.True(remoteHandle.Process.WaitForExit(WaitInMS));
 
-                if (OperatingSystem.IsWindows())
-                {
-                    Assert.Equal(unchecked((int)0xC000013A), remoteHandle.Process.ExitCode); // STATUS_CONTROL_C_EXIT
-                }
-                else
-                {
-                    // Signal numbers are platform dependent, so we can't check exact exit code
                     Assert.NotEqual(0, remoteHandle.Process.ExitCode);
                     Assert.NotEqual(UnterminatedExitCode, remoteHandle.Process.ExitCode);
+                    Assert.NotEqual(RemoteExecutor.SuccessExitCode, remoteHandle.Process.ExitCode);
                 }
+
+                remoteHandleDisposeAttempted = true;
+                remoteHandle.Dispose();
+            }
+            catch (Exception ex)
+            {
+                testException = ExceptionDispatchInfo.Capture(ex);
             }
             finally
             {
-                // If sending the signal fails or process did not exit on its own, we want to kill the process ASAP
-                // to prevent RemoteExecutor's timeout from hiding it.
-                remoteHandle.Process.Kill();
+                if (!remoteHandleDisposeAttempted)
+                {
+                    try
+                    {
+                        remoteHandle.Dispose();
+                    }
+                    catch (Exception ex)
+                    {
+                        disposeException = ExceptionDispatchInfo.Capture(ex);
+                    }
+                }
+            }
+            // test exception is more important, exception at dispose could be consequence of it
+            if (testException is not null)
+            {
+                testException.Throw();
+            }
+            if (disposeException is not null)
+            {
+                disposeException.Throw();
             }
         }
 
