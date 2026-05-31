@@ -1187,44 +1187,6 @@ public:
 
 }; // class LclVarDsc
 
-enum class SymbolicIntegerValue : int32_t
-{
-    LongMin,
-    IntMin,
-    ShortMin,
-    ByteMin,
-    Zero,
-    One,
-    ByteMax,
-    UByteMax,
-    ShortMax,
-    UShortMax,
-    ArrayLenMax,
-    IntMax,
-    UIntMax,
-    LongMax,
-};
-
-inline constexpr bool operator>(SymbolicIntegerValue left, SymbolicIntegerValue right)
-{
-    return static_cast<int32_t>(left) > static_cast<int32_t>(right);
-}
-
-inline constexpr bool operator>=(SymbolicIntegerValue left, SymbolicIntegerValue right)
-{
-    return static_cast<int32_t>(left) >= static_cast<int32_t>(right);
-}
-
-inline constexpr bool operator<(SymbolicIntegerValue left, SymbolicIntegerValue right)
-{
-    return static_cast<int32_t>(left) < static_cast<int32_t>(right);
-}
-
-inline constexpr bool operator<=(SymbolicIntegerValue left, SymbolicIntegerValue right)
-{
-    return static_cast<int32_t>(left) <= static_cast<int32_t>(right);
-}
-
 // Represents an integral range useful for reasoning about integral casts.
 // It uses a symbolic representation for lower and upper bounds so
 // that it can efficiently handle integers of all sizes on all hosts.
@@ -1250,25 +1212,25 @@ inline constexpr bool operator<=(SymbolicIntegerValue left, SymbolicIntegerValue
 class IntegralRange
 {
 private:
-    SymbolicIntegerValue m_lowerBound;
-    SymbolicIntegerValue m_upperBound;
+    int64_t m_lowerBound;
+    int64_t m_upperBound;
 
 public:
     IntegralRange() = default;
 
-    IntegralRange(SymbolicIntegerValue lowerBound, SymbolicIntegerValue upperBound)
+    IntegralRange(int64_t lowerBound, int64_t upperBound)
         : m_lowerBound(lowerBound)
         , m_upperBound(upperBound)
     {
         assert(lowerBound <= upperBound);
     }
 
-    SymbolicIntegerValue GetLowerBound() const
+    int64_t GetLowerBound() const
     {
         return m_lowerBound;
     }
 
-    SymbolicIntegerValue GetUpperBound() const
+    int64_t GetUpperBound() const
     {
         return m_upperBound;
     }
@@ -1282,7 +1244,7 @@ public:
 
     bool IsNonNegative() const
     {
-        return m_lowerBound >= SymbolicIntegerValue::Zero;
+        return m_lowerBound >= 0;
     }
 
     bool Equals(IntegralRange other) const
@@ -1290,9 +1252,8 @@ public:
         return (m_lowerBound == other.m_lowerBound) && (m_upperBound == other.m_upperBound);
     }
 
-    static int64_t              SymbolicToRealValue(SymbolicIntegerValue value);
-    static SymbolicIntegerValue LowerBoundForType(var_types type);
-    static SymbolicIntegerValue UpperBoundForType(var_types type);
+    static int64_t LowerBoundForType(var_types type);
+    static int64_t UpperBoundForType(var_types type);
 
     static IntegralRange ForType(var_types type)
     {
