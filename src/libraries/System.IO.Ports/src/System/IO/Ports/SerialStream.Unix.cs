@@ -787,11 +787,13 @@ namespace System.IO.Ports
                 {
                     Interop.ErrorInfo lastError = Interop.Sys.GetLastErrorInfo();
 
-                    // ignore EWOULDBLOCK since we handle timeout elsewhere
-                    if (lastError.Error != Interop.Error.EWOULDBLOCK)
+                    if (lastError.Error == Interop.Error.EWOULDBLOCK)
                     {
-                        readRequest.Complete(Interop.GetIOException(lastError));
+                        // no data available right now, signal caller to stop draining
+                        return -1;
                     }
+
+                    readRequest.Complete(Interop.GetIOException(lastError));
                 }
                 else if (numBytes > 0)
                 {
@@ -820,9 +822,13 @@ namespace System.IO.Ports
                 {
                     Interop.ErrorInfo lastError = Interop.Sys.GetLastErrorInfo();
 
-                    // ignore EWOULDBLOCK since we handle timeout elsewhere
-                    // numBytes == 0 means that there might be an error
-                    if (lastError.Error != Interop.Error.SUCCESS && lastError.Error != Interop.Error.EWOULDBLOCK)
+                    if (lastError.Error == Interop.Error.EWOULDBLOCK)
+                    {
+                        // write buffer full right now, signal caller to stop draining
+                        return -1;
+                    }
+
+                    if (lastError.Error != Interop.Error.SUCCESS)
                     {
                         r.Complete(Interop.GetIOException(lastError));
                     }
@@ -850,7 +856,12 @@ namespace System.IO.Ports
             while (TryPeekNextRequest(out SerialStreamIORequest r))
             {
                 int ret = op(r);
-                Debug.Assert(ret >= 0);
+
+                if (ret < 0)
+                {
+                    // EWOULDBLOCK — no data available right now, propagate to caller
+                    return -1;
+                }
 
                 if (r.IsCompleted)
                 {
@@ -947,9 +958,9 @@ namespace System.IO.Ports
                 else
                 {
                     Interop.PollEvents events = PollEvents(1,
-                                                               pollReadEvents: hasPendingReads,
-                                                               pollWriteEvents: hasPendingWrites,
-                                                               out Interop.ErrorInfo? error);
+                                                            pollReadEvents: hasPendingReads,
+                                                            pollWriteEvents: hasPendingWrites,
+                                                            out Interop.ErrorInfo? error);
 
                     if (error.HasValue)
                     {
@@ -967,13 +978,23 @@ namespace System.IO.Ports
 
                     if (events.HasFlag(Interop.PollEvents.POLLIN))
                     {
-                        int bytesRead = DoIORequest(_readQueue, _readQueueLock, _processReadDelegate);
-                        _totalBytesRead += bytesRead;
+                        // drain all requests that have data ready right now
+                        // without paying another 1ms poll cost per request
+                        while (!IsReadQueueEmpty())
+                        {
+                            int bytesRead = DoIORequest(_readQueue, _readQueueLock, _processReadDelegate);
+                            if (bytesRead <= 0) break; // 0 = queue empty, -1 = EWOULDBLOCK
+                            _totalBytesRead += bytesRead;
+                        }
                     }
 
                     if (events.HasFlag(Interop.PollEvents.POLLOUT))
                     {
-                        DoIORequest(_writeQueue, _writeQueueLock, _processWriteDelegate);
+                        // flush as many pending write requests as possible
+                        while (!IsWriteQueueEmpty())
+                        {
+                            if (DoIORequest(_writeQueue, _writeQueueLock, _processWriteDelegate) <= 0) break;
+                        }
                     }
                 }
 
