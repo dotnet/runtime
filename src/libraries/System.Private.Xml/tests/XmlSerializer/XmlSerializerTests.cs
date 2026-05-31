@@ -2702,6 +2702,30 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
         Assert.True(!weakRef.IsAlive);
     }
 
+#if !XMLSERIALIZERGENERATORTESTS
+    // The Generator tests only cover pre-generated serializers that are based on the types in SerializableAssembly.dll.
+    // For this test, we're testing a scenario where one of those types is used inside a generic container - aka, List<SerializationType>.
+    // Since 'List<>' is *not* defined in SerializableAssembly.dll, the pre-generated serializers do not include serializers for List<SerializationType>,
+    // Therefore, this test is excluded from the Generator tests.
+    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/95928", typeof(PlatformDetection), nameof(PlatformDetection.IsReadyToRunCompiled))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
+    [InlineData("List")]
+    [InlineData("Array")]
+    public static void Xml_CollectibleTypeInGenericContainer(string containerKind)
+    {
+        ExecuteCollectibleContainerAndUnload("SerializableAssembly.dll", "SerializationTypes.SimpleType", containerKind, out var weakRef);
+
+        for (int i = 0; weakRef.IsAlive && i < 10; i++)
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
+        Assert.True(!weakRef.IsAlive);
+    }
+#endif
+
     [Fact]
     public static void ValidateXElement()
     {
@@ -2874,6 +2898,69 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
         var rtobj = SerializeAndDeserialize(obj, null, () => serializer, true);
         Assert.NotNull(rtobj);
         Assert.True(rtobj.Equals(obj));
+
+        alc.Unload();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ExecuteCollectibleContainerAndUnload(string assemblyfile, string typename, string containerKind, out WeakReference wref)
+    {
+        var fullPath = Path.GetFullPath(assemblyfile);
+        var alc = new TestAssemblyLoadContext("XmlSerializerTests", true, fullPath);
+        wref = new WeakReference(alc);
+
+        var asm = alc.LoadFromAssemblyPath(fullPath);
+        var baseType = asm.GetType(typename);
+        Assert.Equal(alc, AssemblyLoadContext.GetLoadContext(baseType.Assembly));
+        Assert.NotEqual(alc, AssemblyLoadContext.Default);
+
+        Type type;
+        object obj;
+        switch (containerKind)
+        {
+            case "List":
+                type = typeof(List<>).MakeGenericType(baseType);
+                // The type is collectible because it has a collectible type argument, but its
+                // Assembly is in the default ALC since that's where List<> is defined.
+                Assert.True(type.IsCollectible);
+                Assert.Equal(AssemblyLoadContext.Default, AssemblyLoadContext.GetLoadContext(type.Assembly));
+
+                obj = Activator.CreateInstance(type);
+                object listItem = Activator.CreateInstance(baseType);
+                baseType.GetProperty("P1").SetValue(listItem, "test");
+                baseType.GetProperty("P2").SetValue(listItem, 42);
+                type.GetMethod("Add").Invoke(obj, [listItem]);
+                break;
+
+            case "Array":
+                type = baseType.MakeArrayType();
+                Assert.True(type.IsCollectible);
+
+                var array = Array.CreateInstance(baseType, 1);
+                object arrayItem = Activator.CreateInstance(baseType);
+                baseType.GetProperty("P1").SetValue(arrayItem, "test");
+                baseType.GetProperty("P2").SetValue(arrayItem, 42);
+                array.SetValue(arrayItem, 0);
+                obj = array;
+                break;
+
+            default:
+                throw new ArgumentException($"Unknown container kind: {containerKind}");
+        }
+
+        XmlSerializer serializer = new XmlSerializer(type);
+        using var ms = new MemoryStream();
+        serializer.Serialize(ms, obj);
+        ms.Position = 0;
+        var rtobj = serializer.Deserialize(ms);
+        Assert.NotNull(rtobj);
+
+        if (rtobj is Array rtArray)
+            Assert.Equal(1, rtArray.Length);
+        else if (rtobj is ICollection rtCollection)
+            Assert.Equal(1, rtCollection.Count);
+        else
+            Assert.Fail($"Expected deserialized object to be an Array or ICollection, but got {rtobj.GetType()}.");
 
         alc.Unload();
     }
