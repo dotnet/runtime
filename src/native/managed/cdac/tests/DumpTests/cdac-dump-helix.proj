@@ -110,8 +110,12 @@
           Include="set &quot;DOTNET_ReadyToRun=%(_Debuggee.R2RValue)&quot;" />
       <_HelixCommandLines Condition="'$(TargetOS)' == 'windows' AND '%(_Debuggee.EnvironmentVariables)' != ''"
           Include="set &quot;$([System.String]::new('%(_Debuggee.EnvironmentVariables)').Replace(';', '&quot; %26 set &quot;'))&quot;" />
-      <_HelixCommandLines Condition="'$(TargetOS)' == 'windows'"
+      <!-- Normal publish: run via dotnet exec -->
+      <_HelixCommandLines Condition="'$(TargetOS)' == 'windows' AND '%(_Debuggee.IsSingleFile)' != 'true'"
           Include="%25HELIX_CORRELATION_PAYLOAD%25\dotnet.exe exec %25HELIX_WORKITEM_PAYLOAD%25\debuggees\%(_Debuggee.Identity)\%(_Debuggee.Identity).dll" />
+      <!-- SingleFile publish: run the bundled exe directly -->
+      <_HelixCommandLines Condition="'$(TargetOS)' == 'windows' AND '%(_Debuggee.IsSingleFile)' == 'true'"
+          Include="%25HELIX_WORKITEM_PAYLOAD%25\debuggees\%(_Debuggee.Identity)-singlefile\%(_Debuggee.Identity).exe" />
       <_HelixCommandLines Condition="'$(TargetOS)' == 'windows' AND '%(_Debuggee.EnvironmentVariables)' != ''"
           Include="endlocal" />
       <!-- Unix: create dir, run debuggee with inline env vars -->
@@ -119,8 +123,14 @@
           Include="mkdir -p $HELIX_WORKITEM_PAYLOAD/dumps/local/%(_Debuggee.DumpDir)/%(_Debuggee.R2RDir)/%(_Debuggee.Identity)" />
       <_HelixCommandLines Condition="'$(TargetOS)' != 'windows'"
           Include="echo &quot;  Generating dump for %(_Debuggee.Identity) (%(_Debuggee.DumpDir)/%(_Debuggee.R2RDir))...&quot;" />
-      <_HelixCommandLines Condition="'$(TargetOS)' != 'windows'"
+      <!-- Normal publish: run via dotnet exec -->
+      <_HelixCommandLines Condition="'$(TargetOS)' != 'windows' AND '%(_Debuggee.IsSingleFile)' != 'true'"
           Include="$([System.String]::new('%(_Debuggee.EnvironmentVariables)').Replace(';', ' ')) DOTNET_DbgMiniDumpType=%(_Debuggee.MiniDumpType) DOTNET_DbgMiniDumpName=$HELIX_WORKITEM_PAYLOAD/dumps/local/%(_Debuggee.DumpDir)/%(_Debuggee.R2RDir)/%(_Debuggee.Identity)/%(_Debuggee.Identity).dmp DOTNET_ReadyToRun=%(_Debuggee.R2RValue) $HELIX_CORRELATION_PAYLOAD/dotnet exec $HELIX_WORKITEM_PAYLOAD/debuggees/%(_Debuggee.Identity)/%(_Debuggee.Identity).dll || true" />
+      <!-- SingleFile publish: chmod +x and run the bundled exe directly -->
+      <_HelixCommandLines Condition="'$(TargetOS)' != 'windows' AND '%(_Debuggee.IsSingleFile)' == 'true'"
+          Include="chmod +x $HELIX_WORKITEM_PAYLOAD/debuggees/%(_Debuggee.Identity)-singlefile/%(_Debuggee.Identity)" />
+      <_HelixCommandLines Condition="'$(TargetOS)' != 'windows' AND '%(_Debuggee.IsSingleFile)' == 'true'"
+          Include="$([System.String]::new('%(_Debuggee.EnvironmentVariables)').Replace(';', ' ')) DOTNET_DbgMiniDumpType=%(_Debuggee.MiniDumpType) DOTNET_DbgMiniDumpName=$HELIX_WORKITEM_PAYLOAD/dumps/local/%(_Debuggee.DumpDir)/%(_Debuggee.R2RDir)/%(_Debuggee.Identity)/%(_Debuggee.Identity).dmp DOTNET_ReadyToRun=%(_Debuggee.R2RValue) $HELIX_WORKITEM_PAYLOAD/debuggees/%(_Debuggee.Identity)-singlefile/%(_Debuggee.Identity) || true" />
     </ItemGroup>
   </Target>
 

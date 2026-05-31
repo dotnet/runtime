@@ -129,6 +129,7 @@ internal sealed class ClrMdDumpHost : IDisposable
     /// </summary>
     public ulong FindContractDescriptorAddress()
     {
+        // First pass: check known runtime module names (fast path for normal deployments).
         foreach (ModuleInfo module in _dataTarget.DataReader.EnumerateModules())
         {
             string? fileName = module.FileName;
@@ -143,20 +144,37 @@ internal sealed class ClrMdDumpHost : IDisposable
             if (!IsRuntimeModule(name))
                 continue;
 
-            ulong address = module.GetExportSymbolAddress("DotNetRuntimeContractDescriptor");
+            ulong address = TryGetContractDescriptor(module);
             if (address != 0)
-            {
-                // ClrMD may return addresses with spurious upper bits on 32-bit targets
-                // (observed on ARM32 ELF). Mask to the target's pointer size.
-                // https://github.com/microsoft/clrmd/issues/1407
-                if (_dataTarget.DataReader.PointerSize == 4)
-                    address &= 0xFFFF_FFFF;
-
                 return address;
-            }
         }
 
-        throw new InvalidOperationException("Could not find DotNetRuntimeContractDescriptor export in any runtime module in the dump.");
+        // Second pass: scan all modules. In single-file bundles the runtime is
+        // embedded in the apphost, so the module name is the app exe (e.g.,
+        // "BasicThreads.exe") rather than "coreclr.dll".
+        foreach (ModuleInfo module in _dataTarget.DataReader.EnumerateModules())
+        {
+            ulong address = TryGetContractDescriptor(module);
+            if (address != 0)
+                return address;
+        }
+
+        throw new InvalidOperationException("Could not find DotNetRuntimeContractDescriptor export in any module in the dump.");
+    }
+
+    private ulong TryGetContractDescriptor(ModuleInfo module)
+    {
+        ulong address = module.GetExportSymbolAddress("DotNetRuntimeContractDescriptor");
+        if (address != 0)
+        {
+            // ClrMD may return addresses with spurious upper bits on 32-bit targets
+            // (observed on ARM32 ELF). Mask to the target's pointer size.
+            // https://github.com/microsoft/clrmd/issues/1407
+            if (_dataTarget.DataReader.PointerSize == 4)
+                address &= 0xFFFF_FFFF;
+        }
+
+        return address;
     }
 
     private string? FindFileOnDisk(string modulePath)

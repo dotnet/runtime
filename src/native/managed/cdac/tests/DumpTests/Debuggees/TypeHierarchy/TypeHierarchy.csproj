@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <PublishModes>Normal;SingleFile</PublishModes>
   </PropertyGroup>
 </Project>

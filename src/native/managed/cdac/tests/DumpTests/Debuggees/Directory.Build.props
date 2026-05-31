@@ -19,6 +19,12 @@
          Jit runs with DOTNET_ReadyToRun=0 to force JIT compilation.
          Binaries are always compiled with R2R; this controls runtime behavior only. -->
     <R2RModes Condition="'$(R2RModes)' == ''">R2R</R2RModes>
+    <!-- Default publish mode for dump generation. Override per-debuggee csproj as needed.
+         Supported values: "Normal", "SingleFile", or "Normal;SingleFile" for both.
+         Normal is a framework-dependent publish (run via testhost).
+         SingleFile is a self-contained single-file publish (bundled apphost).
+         SingleFile is cross-producted with R2RModes, e.g. singlefile-r2r, singlefile-jit. -->
+    <PublishModes Condition="'$(PublishModes)' == ''">Normal</PublishModes>
     <!-- Set to true in a debuggee csproj to exclude it from non-Windows platforms. -->
     <WindowsOnly Condition="'$(WindowsOnly)' == ''">false</WindowsOnly>
   </PropertyGroup>
