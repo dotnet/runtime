@@ -3604,6 +3604,17 @@ GenTree* Compiler::optCopyAssertionProp(const AssertionDsc&  curAssertion,
         }
     }
 
+    // Don't propagate a promoted struct local for whole-struct LCL_VAR uses.
+    // The substituted GT_LCL_VAR of a promoted local has restricted legal
+    // contexts (see Lowering::CheckNode); morph will not necessarily set
+    // those up post-propagation (e.g. when the use appears as a FIELD_LIST
+    // entry).
+    //
+    if (tree->OperIs(GT_LCL_VAR) && varTypeIsStruct(tree) && copyVarDsc->lvPromoted && !copyVarDsc->lvDoNotEnregister)
+    {
+        return nullptr;
+    }
+
     tree->SetLclNum(copyLclNum);
 
     // The copied var also needs multi-reg, if set
