@@ -1621,6 +1621,8 @@ ep_rt_diagnostics_command_line_get (void)
 	// This function needs to handle freeing the string in order to make it consistent with Mono's version.
 	// There is a rare chance this may be called on multiple threads, so we attempt to always return the newest value
 	// and conservatively leak the old value if it changed. This is extremely rare and should only leak 1 string.
+    // On non-Windows platforms, when called in prior to SaveManagedCommandLine, the result contains the path to
+    // executable only without arguments, which differs from the documentation of ProcessInfo ipc command.
 	extern ep_char8_t *volatile _ep_rt_coreclr_diagnostics_cmd_line;
 
 	ep_char8_t *old_cmd_line = _ep_rt_coreclr_diagnostics_cmd_line;
