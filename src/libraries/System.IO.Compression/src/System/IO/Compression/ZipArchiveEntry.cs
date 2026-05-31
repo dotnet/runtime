@@ -481,8 +481,9 @@ namespace System.IO.Compression
             {
                 // this means we have never opened it before
 
-                // if _uncompressedSize > int.MaxValue, it's still okay, because MemoryStream will just
-                // grow as data is copied into it
+                // OpenInUpdateMode validates that _uncompressedSize fits in [0, Array.MaxLength]
+                // via ThrowIfNotOpenable before reaching this code, so the (int) cast is safe
+                // and the capacity hint is bounded by MemoryStream's maximum.
                 _storedUncompressedData = new MemoryStream((int)_uncompressedSize);
 
                 if (_originallyInArchive)
@@ -999,6 +1000,18 @@ namespace System.IO.Compression
                         message = SR.EntryTooLarge;
                         return false;
                     }
+                }
+
+                // The uncompressed data is loaded into a MemoryStream, which is backed by a
+                // single byte[] and therefore cannot grow beyond Array.MaxLength. Reject
+                // up front rather than failing later from the MemoryStream constructor with
+                // a misleading argument-out-of-range exception (caused by the unchecked
+                // (int) cast in GetUncompressedData wrapping a long > int.MaxValue to a
+                // negative value).
+                if ((ulong)_uncompressedSize > (ulong)Array.MaxLength)
+                {
+                    message = SR.EntryTooLarge;
+                    return false;
                 }
             }
 

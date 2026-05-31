@@ -115,8 +115,9 @@ public partial class ZipArchiveEntry
         {
             // this means we have never opened it before
 
-            // if _uncompressedSize > int.MaxValue, it's still okay, because MemoryStream will just
-            // grow as data is copied into it
+            // OpenInUpdateModeAsync validates that _uncompressedSize fits in [0, Array.MaxLength]
+            // via ThrowIfNotOpenableAsync before reaching this code, so the (int) cast is safe
+            // and the capacity hint is bounded by MemoryStream's maximum.
             _storedUncompressedData = new MemoryStream((int)_uncompressedSize);
 
             if (_originallyInArchive)
