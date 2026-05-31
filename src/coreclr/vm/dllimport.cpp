@@ -6016,6 +6016,7 @@ EXTERN_C void* PInvokeImportWorker(PInvokeMethodDesc* pMD)
     }
     CONTRACTL_END;
 
+    INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(GetThread()->GetFrame());
     INSTALL_MANAGED_EXCEPTION_DISPATCHER;
     // this function is called by CLR to native assembly stubs which are called by
     // managed code as a result, we need an unwind and continue handler to translate
@@ -6026,6 +6027,7 @@ EXTERN_C void* PInvokeImportWorker(PInvokeMethodDesc* pMD)
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
 
     return pMD->GetPInvokeTarget();
 }

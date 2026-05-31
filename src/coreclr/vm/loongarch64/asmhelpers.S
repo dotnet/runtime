@@ -435,7 +435,7 @@ NESTED_END StubDispatchFixupStub, _TEXT
 //
 // $t2 = UMEntryThunkData*
 //
-NESTED_ENTRY TheUMEntryPrestub, _TEXT, UnhandledExceptionHandlerUnix
+NESTED_ENTRY TheUMEntryPrestub, _TEXT, NoHandler
 
     // Save arguments and return address
     //                            $fp,$ra

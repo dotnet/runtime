@@ -950,6 +950,61 @@ static VOID UpdateContextForPropagationCallback(
     UpdateContextForPropagationCallback(ex.ManagedToNativeExceptionCallback, ex.ManagedToNativeExceptionCallbackContext, startContext);
 }
 
+#ifndef HOST_WASM
+
+VOID DECLSPEC_NORETURN RethrowResumeAfterCatchExceptionSkipManagedFrames(const ResumeAfterCatchException& ex, CONTEXT *pContext)
+{
+#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
+    TADDR targetSSP = GetSSPForFrameOnCurrentStack(GetIP(pContext));
+#else
+    TADDR targetSSP = 0;
+#endif
+
+    while (ExecutionManager::IsManagedCode(GetIP(pContext)))
+    {
+        Thread::VirtualUnwindCallFrame(pContext);
+#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
+        targetSSP += 8;
+#endif
+    }
+
+    TADDR resumeSP;
+    TADDR resumeIP;
+    ex.GetResumeContext(&resumeSP, &resumeIP);
+    _ASSERTE(resumeSP != 0 && resumeIP != 0);
+
+    ExecuteFunctionBelowContext((PCODE)ThrowResumeAfterCatchException, pContext, targetSSP, resumeSP, resumeIP);
+}
+
+VOID DECLSPEC_NORETURN RethrowResumeAfterCatchException(const ResumeAfterCatchException& ex, Frame *pFrame)
+{
+    // The frame should have been popped already
+    _ASSERTE(pFrame->PtrNextFrame() == NULL);
+
+    REGDISPLAY rd = {};
+    T_CONTEXT context = {};
+    context.ContextFlags = CONTEXT_FULL;
+    FillRegDisplay(&rd, &context);
+    pFrame->UpdateRegDisplay(&rd, FALSE /* updateFloats */);
+
+    if (!ExecutionManager::IsManagedCode(GetIP(rd.pCurrentContext)))
+    {
+        // Native caller (interpreter stubs)
+        throw;
+    }
+
+    EECodeInfo codeInfo(GetIP(rd.pCurrentContext));
+    if (codeInfo.IsInterpretedCode())
+    {
+        // PInvoke called from the interpreted code
+        throw;
+    }
+
+    RethrowResumeAfterCatchExceptionSkipManagedFrames(ex, rd.pCurrentContext);
+}
+
+#endif // HOST_WASM
+
 extern void* g_hostingApiReturnAddress;
 
 VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHardwareException)
@@ -1447,6 +1502,7 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
             exInfo.TakeExceptionPointersOwnership(ex);
         }
 
+        INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT(fef.GetExceptionContext());
         // m_exception is GC-reported via ExInfo chain scanning in ScanStackRoots.
         // Do NOT also GCPROTECT it - reporting the same location twice corrupts
         // the GC's relocation logic (see clr-code-guide.md §2.1.5).
@@ -1458,6 +1514,7 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
         throwHwEx.InvokeDirect(exceptionCode, &exInfo);
 
         DispatchExSecondPass(&exInfo);
+        UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT;
 
         UNREACHABLE();
     }
