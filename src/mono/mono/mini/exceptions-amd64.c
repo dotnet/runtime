@@ -258,12 +258,26 @@ mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 
 	amd64_mov_reg_reg (code, AMD64_R11, AMD64_ARG_REG1, 8);
 
-	/* Restore all registers except %rip and %r11 */
+	/* Restore all general registers except %rip and %r11 */
 	gregs_offset = MONO_STRUCT_OFFSET (MonoContext, gregs);
 	for (i = 0; i < AMD64_NREG; ++i) {
 		if (i != AMD64_RIP && i != AMD64_RSP && i != AMD64_R8 && i != AMD64_R9 && i != AMD64_R10 && i != AMD64_R11)
 			amd64_mov_reg_membase (code, i, AMD64_R11, gregs_offset + (i * 8), 8);
 	}
+
+#ifdef AMD64_CALLEE_SAVED_XREGS
+	/* Restore all callee saved XMM registers */
+	int fregs_offset = MONO_STRUCT_OFFSET (MonoContext, fregs);
+	for (i = 0; i < AMD64_XMM_NREG; ++i) {
+		if (AMD64_IS_CALLEE_SAVED_XREG (i)) {
+#if defined(MONO_HAVE_SIMD_REG)
+			amd64_movdqu_reg_membase (code, i, AMD64_R11, fregs_offset + (i * sizeof (MonoContextSimdReg)));
+#else
+			amd64_movsd_reg_membase (code, i, AMD64_R11, fregs_offset + (i * sizeof (double)));
+#endif
+		}
+	}
+#endif
 
 	/*
 	 * The context resides on the stack, in the stack frame of the
@@ -467,7 +481,11 @@ get_throw_trampoline (MonoTrampInfo **info, gboolean rethrow, gboolean corlib, g
 	MonoJumpInfo *ji = NULL;
 	GSList *unwind_ops = NULL;
 	int i, stack_size, arg_offsets [16], ctx_offset, regs_offset;
+#ifdef AMD64_CALLEE_SAVED_XREGS
+	const int kMaxCodeSize = 300;
+#else
 	const int kMaxCodeSize = 256;
+#endif
 
 #ifdef TARGET_WIN32
 	const int dummy_stack_space = 6 * sizeof (target_mgreg_t);	/* Windows expects stack space allocated for all 6 dummy args. */
@@ -517,6 +535,20 @@ get_throw_trampoline (MonoTrampInfo **info, gboolean rethrow, gboolean corlib, g
 	/* Save IP */
 	amd64_mov_reg_membase (code, AMD64_RAX, AMD64_RSP, stack_size, sizeof (target_mgreg_t));
 	amd64_mov_membase_reg (code, AMD64_RSP, regs_offset + (AMD64_RIP * sizeof (target_mgreg_t)), AMD64_RAX, sizeof (target_mgreg_t));
+
+#ifdef AMD64_CALLEE_SAVED_XREGS
+	int fregs_offset = ctx_offset + MONO_STRUCT_OFFSET (MonoContext, fregs);
+	for (i = 0; i < AMD64_XMM_NREG; ++i) {
+		if (AMD64_IS_CALLEE_SAVED_XREG (i)) {
+#if defined(MONO_HAVE_SIMD_REG)
+			amd64_movdqu_membase_reg (code, AMD64_RSP, fregs_offset + (i * sizeof (MonoContextSimdReg)), i);
+#else
+			amd64_movsd_membase_reg (code, AMD64_RSP, fregs_offset + (i * sizeof (double)), i);
+#endif
+		}
+	}
+#endif
+
 	/* Set arg1 == ctx */
 	amd64_lea_membase (code, AMD64_RAX, AMD64_RSP, ctx_offset);
 	amd64_mov_membase_reg (code, AMD64_RSP, arg_offsets [0], AMD64_RAX, sizeof (target_mgreg_t));
@@ -617,6 +649,75 @@ mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
 }
 #endif /* !DISABLE_JIT */
 
+#if defined(AMD64_CALLEE_SAVED_XREGS) && defined(TARGET_WIN32)
+
+static gboolean
+unwind_llvm_frame_win64 (
+	gpointer ip,
+	mono_unwind_reg_t *regs,
+	int nregs,
+	gboolean readonly_regs,
+	host_mgreg_t **save_locations,
+	int save_locations_len)
+{
+	gboolean result = FALSE;
+	DWORD64 address = (DWORD64)ip;
+	DWORD64 image_base = 0;
+	UNWIND_HISTORY_TABLE entry = { 0 };
+
+	if (RtlLookupFunctionEntry(address, &image_base, &entry)) {
+		for (DWORD i = 0; i < entry.Count; i++) {
+			DWORD64 start = entry.Entry[i].ImageBase + entry.Entry[i].FunctionEntry->BeginAddress;
+			DWORD64 end = entry.Entry[i].ImageBase + entry.Entry[i].FunctionEntry->EndAddress;
+			DWORD64 start_offset = address - start;
+			UNWIND_INFO* unwind_info_address = (UNWIND_INFO*)(entry.Entry[i].ImageBase + entry.Entry[i].FunctionEntry->UnwindInfoAddress);
+			guint8 *fixed_stack_loc = NULL;
+
+			if (!unwind_info_address->FrameRegister) {
+				g_assert (nregs > AMD64_RSP);
+				fixed_stack_loc = (guint8 *)(regs [AMD64_RSP]);
+			} else {
+				g_assert (nregs > unwind_info_address->FrameRegister);
+				fixed_stack_loc = (guint8 *)((guint8 *)(regs [unwind_info_address->FrameRegister]) - (unwind_info_address->FrameOffset * 16));
+			}
+
+			g_assert (fixed_stack_loc);
+
+			if (start <= address && end >= address) {
+				for (guchar j = 0; j < unwind_info_address->CountOfCodes; j++) {
+					if (start_offset > unwind_info_address->UnwindCode[j].CodeOffset) {
+						if (unwind_info_address->UnwindCode[j].UnwindOp == UWOP_SAVE_XMM128 || unwind_info_address->UnwindCode[j].UnwindOp == UWOP_SAVE_XMM128_FAR) {
+							int reg = AMD64_NREG + unwind_info_address->UnwindCode[j].OpInfo;
+							guint8 *offset = fixed_stack_loc;
+							if (unwind_info_address->UnwindCode[j].UnwindOp == UWOP_SAVE_XMM128) {
+								g_assert (j + 1 < unwind_info_address->CountOfCodes);
+								offset = offset + unwind_info_address->UnwindCode[j+1].FrameOffset * 16;
+								j += 1;
+							}
+							if (unwind_info_address->UnwindCode[j].UnwindOp == UWOP_SAVE_XMM128_FAR) {
+								g_assert (j + 2 < unwind_info_address->CountOfCodes);
+								offset = offset + (((guint)(unwind_info_address->UnwindCode[j+1].FrameOffset << 16)) | ((guint)unwind_info_address->UnwindCode[j+2].FrameOffset));
+								j += 2;
+							}
+
+							if (!readonly_regs && regs && (reg < nregs))
+								regs [reg] = GUINT64_TO_HMREG (*(guint64*)(offset));
+
+							if (save_locations && (reg < save_locations_len) && !save_locations [reg])
+								save_locations [reg] = (host_mgreg_t *)offset;
+						}
+					}
+				}
+			}
+		}
+
+		result = TRUE;
+	}
+
+	return result;
+}
+#endif
+
 /*
  * mono_arch_unwind_frame:
  *
@@ -641,7 +742,14 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls,
 	*new_ctx = *ctx;
 
 	if (ji != NULL) {
-		host_mgreg_t regs [MONO_MAX_IREGS + 1];
+#ifdef AMD64_CALLEE_SAVED_XREGS
+		host_mgreg_t *restored_regs [AMD64_NREG + AMD64_XMM_NREG];
+#else
+		host_mgreg_t *restored_regs [AMD64_NREG];
+#endif
+
+		const int restored_regs_len = G_N_ELEMENTS (restored_regs);
+
 		guint8 *cfa;
 		guint32 unwind_info_len;
 		guint8 *unwind_info;
@@ -665,19 +773,34 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls,
 		if (ji->has_arch_eh_info)
 			epilog = (guint8*)ji->code_start + ji->code_size - mono_jinfo_get_epilog_size (ji);
 
-		for (i = 0; i < AMD64_NREG; ++i)
-			regs [i] = new_ctx->gregs [i];
-
 		gboolean success = mono_unwind_frame (unwind_info, unwind_info_len, (guint8 *)ji->code_start,
 						   (guint8*)ji->code_start + ji->code_size,
-						   (guint8 *)ip, epilog ? &epilog : NULL, regs, MONO_MAX_IREGS + 1,
-						   save_locations, MONO_MAX_IREGS, &cfa);
+						   (guint8 *)ip, epilog ? &epilog : NULL,
+						   new_ctx->gregs, AMD64_NREG, TRUE,
+						   restored_regs, restored_regs_len, &cfa);
+
+#if defined(AMD64_CALLEE_SAVED_XREGS) && defined(TARGET_WIN32)
+		if (ji->from_llvm)
+			success &= unwind_llvm_frame_win64 ((guint8 *)ip, new_ctx->gregs, AMD64_NREG, TRUE, restored_regs, restored_regs_len);
+#endif
 
 		if (!success)
 			return FALSE;
 
-		for (i = 0; i < AMD64_NREG; ++i)
-			new_ctx->gregs [i] = regs [i];
+		for (i = 0; i < AMD64_NREG; ++i) {
+			if (i < restored_regs_len && restored_regs [i])
+				new_ctx->gregs [i] = *(restored_regs [i]);
+		}
+
+#ifdef AMD64_CALLEE_SAVED_XREGS
+		for (i = 0; i < AMD64_XMM_NREG; ++i) {
+			if (AMD64_NREG + i < restored_regs_len && restored_regs [AMD64_NREG + i])
+				memcpy (&(new_ctx->fregs [i]), restored_regs [AMD64_NREG + i], sizeof (new_ctx->fregs [0]));
+		}
+#endif
+
+		if (save_locations)
+			memcpy (save_locations, restored_regs, MONO_MAX_IREGS * sizeof (restored_regs [0]));
 
 		/* The CFA becomes the new SP value */
 		new_ctx->gregs [AMD64_RSP] = (host_mgreg_t)(gsize)cfa;
