@@ -58,58 +58,107 @@ namespace Microsoft.Extensions.Configuration
             IFileInfo? file = Source.FileProvider?.GetFileInfo(Source.Path ?? string.Empty);
             if (file == null || !file.Exists)
             {
-                if (Source.Optional || reload) // Always optional on reload
-                {
-                    Data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
-                }
-                else
-                {
-                    var error = new StringBuilder(SR.Format(SR.Error_FileNotFound, Source.Path));
-                    if (!string.IsNullOrEmpty(file?.PhysicalPath))
-                    {
-                        error.Append(SR.Format(SR.Error_ExpectedPhysicalPath, file.PhysicalPath));
-                    }
-                    HandleException(ExceptionDispatchInfo.Capture(new FileNotFoundException(error.ToString())));
-                }
+                HandleLoadingNonExisting(reload, file);
+                return;
             }
-            else
-            {
-                static Stream OpenRead(IFileInfo fileInfo)
-                {
-                    if (fileInfo.PhysicalPath != null)
-                    {
-                        // The default physical file info assumes asynchronous IO which results in unnecessary overhead
-                        // especially since the configuration system is synchronous. This uses the same settings
-                        // and disables async IO.
-                        return new FileStream(
-                            fileInfo.PhysicalPath,
-                            FileMode.Open,
-                            FileAccess.Read,
-                            FileShare.ReadWrite,
-                            bufferSize: 1,
-                            FileOptions.SequentialScan);
-                    }
 
-                    return fileInfo.CreateReadStream();
+            static Stream OpenRead(IFileInfo fileInfo)
+            {
+                if (fileInfo.PhysicalPath != null)
+                {
+                    // The default physical file info assumes asynchronous IO which results in unnecessary overhead
+                    // especially since the configuration system is synchronous. This uses the same settings
+                    // and disables async IO.
+                    return new FileStream(
+                        fileInfo.PhysicalPath,
+                        FileMode.Open,
+                        FileAccess.Read,
+                        FileShare.ReadWrite,
+                        bufferSize: 1,
+                        FileOptions.SequentialScan);
                 }
 
-                using Stream stream = OpenRead(file);
+                return fileInfo.CreateReadStream();
+            }
+
+            Stream stream;
+            try
+            {
+                stream = OpenRead(file);
+            }
+            catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException)
+            {
+                // assuming file was deleted in meantime, we already checked existence at the beginning once
+                HandleLoadingNonExisting(reload, file, ex is DirectoryNotFoundException);
+                return;
+            }
+            catch (Exception ex)
+            {
+                // IO error on file open, preserve existing Data
+                HandleException(ExceptionDispatchInfo.Capture(ex));
+                return;
+            }
+
+            bool updated = false;
+
+            using (stream)
+            {
                 try
                 {
                     Load(stream);
+                    updated = true;
                 }
                 catch (Exception ex)
                 {
                     if (reload)
                     {
-                        Data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+                        ClearData();
+                        updated = true;
                     }
-                    var exception = new InvalidDataException(SR.Format(SR.Error_FailedToLoad, file.PhysicalPath), ex);
-                    HandleException(ExceptionDispatchInfo.Capture(exception));
+                    string filePath = file.PhysicalPath ?? Source.Path ?? file.Name;
+                    var wrapped = new InvalidDataException(SR.Format(SR.Error_FailedToLoad, filePath), ex);
+                    HandleException(ExceptionDispatchInfo.Capture(wrapped));
                 }
             }
-            // REVIEW: Should we raise this in the base as well / instead?
-            OnReload();
+
+            if (updated)
+            {
+                OnReload();
+            }
+        }
+
+        /// <summary>
+        /// Handles a missing configuration file during the initial load or a reload.
+        /// </summary>
+        /// <param name="reload"><see langword="true"/> when the provider is reloading after a change notification;
+        /// <see langword="false"/> when loading for first time.</param>
+        /// <param name="file">The file information returned by the <see cref="FileConfigurationSource.FileProvider"/>,
+        /// or <see langword="null"/> if no file information is available.</param>
+        /// <param name="directoryException">Determines if <see cref="FileNotFoundException"/> or
+        /// <see cref="DirectoryNotFoundException"/> is thrown on error.</param>
+        private void HandleLoadingNonExisting(bool reload, IFileInfo? file, bool directoryException = false)
+        {
+            if (Source.Optional || reload) // Always optional on reload
+            {
+                ClearData();
+                OnReload();
+            }
+            else
+            {
+                var error = new StringBuilder(SR.Format(SR.Error_FileNotFound, Source.Path ?? file?.Name));
+                if (!string.IsNullOrEmpty(file?.PhysicalPath))
+                {
+                    error.Append(SR.Format(SR.Error_ExpectedPhysicalPath, file.PhysicalPath));
+                }
+                if (!directoryException)
+                {
+                    HandleException(ExceptionDispatchInfo.Capture(new FileNotFoundException(error.ToString())));
+                }
+                else
+                {
+                    HandleException(ExceptionDispatchInfo.Capture(new DirectoryNotFoundException(error.ToString())));
+                }
+            }
         }
 
         /// <summary>
@@ -122,6 +171,9 @@ namespace Microsoft.Extensions.Configuration
         /// <exception cref="InvalidDataException">An exception was thrown by the concrete implementation of the
         /// <see cref="Load()"/> method. Use the source <see cref="FileConfigurationSource.OnLoadException"/> callback
         /// if you need more control over the exception.</exception>
+        /// <exception cref="IOException">An I/O error occurred when opening the file. Other exceptions from the
+        /// underlying file provider may also be thrown. Use the source <see cref="FileConfigurationSource.OnLoadException"/>
+        /// callback if you need more control over the exception.</exception>
         public override void Load()
         {
             Load(reload: false);
@@ -150,6 +202,11 @@ namespace Microsoft.Extensions.Configuration
             {
                 info.Throw();
             }
+        }
+
+        private void ClearData()
+        {
+            Data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         }
 
         /// <inheritdoc />
