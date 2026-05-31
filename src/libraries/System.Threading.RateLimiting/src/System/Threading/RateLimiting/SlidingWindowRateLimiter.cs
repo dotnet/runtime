@@ -293,7 +293,7 @@ namespace System.Threading.RateLimiting
                     return;
                 }
 
-                if (RateLimiterHelper.GetElapsedTime(_lastReplenishmentTick, nowTicks) < ReplenishmentPeriod && !_options.AutoReplenishment)
+                if (Stopwatch.GetElapsedTime(_lastReplenishmentTick, nowTicks) < ReplenishmentPeriod && !_options.AutoReplenishment)
                 {
                     return;
                 }
