@@ -953,6 +953,49 @@ namespace System.Threading.Tests
             }
         }
 
+        [ConditionalFact(typeof(MutexTests), nameof(IsRemoteExecutorAndCrossProcessNamedMutexSupported))]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void NamedMutex_ConcurrentCreation_NoIOException()
+        {
+            // Exercises the TOCTOU race window in SharedMemoryHelpers.CreateOrOpenFile where
+            // one process sees ENOENT then another creates the file, causing the first to get
+            // EEXIST on the exclusive create. Multiple processes creating the same named mutex
+            // concurrently should succeed without IOException.
+            ThreadTestHelpers.RunTestInBackgroundThread(() =>
+            {
+                const int ProcessCount = 5;
+                const int Iterations = 10;
+
+                for (int iter = 0; iter < Iterations; iter++)
+                {
+                    string mutexName = Guid.NewGuid().ToString("N");
+
+                    var remotes = new IDisposable[ProcessCount];
+                    try
+                    {
+                        for (int i = 0; i < ProcessCount; i++)
+                        {
+                            remotes[i] = RemoteExecutor.Invoke(
+                                static (name) =>
+                                {
+                                    using var mutex = new Mutex(
+                                        name,
+                                        new NamedWaitHandleOptions { CurrentSessionOnly = true });
+                                },
+                                mutexName);
+                        }
+                    }
+                    finally
+                    {
+                        foreach (var remote in remotes)
+                        {
+                            remote?.Dispose();
+                        }
+                    }
+                }
+            });
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void NamedMutex_OtherEvent_NotCompatible()
