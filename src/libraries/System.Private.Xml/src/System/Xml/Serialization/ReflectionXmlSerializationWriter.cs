@@ -152,6 +152,22 @@ namespace System.Xml.Serialization
 
         private void WriteArrayItems(ElementAccessor[] elements, TextAccessor? text, ChoiceIdentifierAccessor? choice, object o, object? choiceSources)
         {
+            Array? choiceArray = choiceSources as Array;
+
+            if (o is Array array)
+            {
+                IEnumerator e = array.GetEnumerator();
+                int c = 0;
+                while (e.MoveNext())
+                {
+                    object ai = e.Current;
+                    object? choiceSource = choiceArray?.GetValue(c++);
+                    WriteElements(ai, choiceSource, elements, text, choice, true, true);
+                }
+
+                return;
+            }
+
             var arr = o as IList;
 
             if (arr != null)
@@ -159,7 +175,7 @@ namespace System.Xml.Serialization
                 for (int i = 0; i < arr.Count; i++)
                 {
                     object? ai = arr[i];
-                    var choiceSource = ((Array?)choiceSources)?.GetValue(i);
+                    object? choiceSource = choiceArray?.GetValue(i);
                     WriteElements(ai, choiceSource, elements, text, choice, true, true);
                 }
             }
@@ -175,7 +191,7 @@ namespace System.Xml.Serialization
                     while (e.MoveNext())
                     {
                         object ai = e.Current;
-                        var choiceSource = ((Array?)choiceSources)?.GetValue(c++);
+                        object? choiceSource = choiceArray?.GetValue(c++);
                         WriteElements(ai, choiceSource, elements, text, choice, true, true);
                     }
                 }
