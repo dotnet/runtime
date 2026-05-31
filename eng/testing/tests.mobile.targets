@@ -126,7 +126,7 @@
           Condition="'$(TestFramework)' == 'xunit'">
     <ItemGroup>
       <_runnerFilesToPublish Include="$(AndroidTestRunnerDir)*" Condition="'$(TargetOS)' == 'android'" />
-      <_runnerFilesToPublish Include="$(AppleTestRunnerDir)*" Condition="'$(TargetOS)' == 'maccatalyst' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator'" />
+      <_runnerFilesToPublish Include="$(AppleTestRunnerDir)*" Condition="('$(TargetOS)' == 'maccatalyst' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator') and '$(TestNativeAot)' != 'true'" />
       <_runnerFilesToPublish Include="$(WasmTestRunnerDir)*" Condition="'$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'wasi'" />
 
       <!-- Remove runner files that already exist in ResolvedFileToPublish to avoid double publishing -->
