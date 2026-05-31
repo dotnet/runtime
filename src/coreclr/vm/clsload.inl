@@ -61,8 +61,8 @@ inline PTR_Module ClassLoader::ComputeLoaderModuleForParamType(TypeHandle paramT
 inline void AccessCheckOptions::Initialize(
     AccessCheckType      accessCheckType,
     BOOL                 throwIfTargetIsInaccessible,
-    MethodTable *        pTargetMT,
-    MethodDesc *         pTargetMethod,
+    TargetTypeForAccessCheck* pTargetType,
+    TargetMethodForAccessCheck* pTargetMethod,
     FieldDesc *          pTargetField)
 {
     CONTRACTL
@@ -84,7 +84,7 @@ inline void AccessCheckOptions::Initialize(
 
     m_accessCheckType = accessCheckType;
     m_fThrowIfTargetIsInaccessible = throwIfTargetIsInaccessible;
-    m_pTargetMT = pTargetMT;
+    m_pTargetType = pTargetType;
     m_pTargetMethod = pTargetMethod;
     m_pTargetField = pTargetField;
 }
@@ -95,7 +95,7 @@ inline AccessCheckOptions::AccessCheckOptions(
     AccessCheckType      accessCheckType,
     DynamicResolver *    pAccessContext,
     BOOL                 throwIfTargetIsInaccessible,
-    MethodTable *        pTargetMT) :
+    TargetTypeForAccessCheck * pTargetType) :
     m_pAccessContext(pAccessContext)
 {
     WRAPPER_NO_CONTRACT;
@@ -103,7 +103,7 @@ inline AccessCheckOptions::AccessCheckOptions(
     Initialize(
         accessCheckType,
         throwIfTargetIsInaccessible,
-        pTargetMT,
+        pTargetType,
         NULL,
         NULL);
 }
@@ -112,7 +112,7 @@ inline AccessCheckOptions::AccessCheckOptions(
     AccessCheckType      accessCheckType,
     DynamicResolver *    pAccessContext,
     BOOL                 throwIfTargetIsInaccessible,
-    MethodDesc *         pTargetMethod) :
+    TargetMethodForAccessCheck* pTargetMethod) :
     m_pAccessContext(pAccessContext)
 {
     WRAPPER_NO_CONTRACT;

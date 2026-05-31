@@ -1552,19 +1552,18 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
         //
         //If the field we found is owned by a generic type, you have to go back to the signature and reload.
         //Otherwise we filled in !0.
-        TypeHandle fieldTypeForSecurity = TypeHandle(pResolvedToken->hClass);
+        TargetTypeForAccessCheck fieldTypeForSecurity(TypeHandle(pResolvedToken->hClass));
+        TargetInstantiationForAccessCheck targetTypeInstantiation;
+        SigTypeContext typeContext;
         if (pResolvedToken->pTypeSpec != NULL)
         {
-            SigTypeContext typeContext;
             SigTypeContext::InitTypeContext(pCallerForSecurity, &typeContext);
-
             SigPointer sigptr(pResolvedToken->pTypeSpec, pResolvedToken->cbTypeSpec);
 
-            Module* targetModule = GetModule(pResolvedToken->tokenScope);
-            fieldTypeForSecurity = sigptr.GetTypeHandleThrowing(targetModule, &typeContext);
+            targetTypeInstantiation = TargetInstantiationForAccessCheck(sigptr, &typeContext, GetModule(pResolvedToken->tokenScope));
+            fieldTypeForSecurity = TargetTypeForAccessCheck(TypeHandle(pResolvedToken->hClass), &targetTypeInstantiation);
 
-            // typeHnd can be a variable type
-            if (fieldTypeForSecurity.GetMethodTable() == NULL)
+            if (fieldTypeForSecurity.IsGenericVariable())
             {
                 COMPlusThrowHR(COR_E_BADIMAGEFORMAT, BFA_METHODDEF_PARENT_NO_MEMBERS);
             }
@@ -1600,7 +1599,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
 
             BOOL canAccess = ClassLoader::CanAccess(
                 &accessContext,
-                fieldTypeForSecurity.GetMethodTable(),
+                fieldTypeForSecurity,
                 fieldTypeForSecurity.GetAssembly(),
                 fieldAttribs,
                 NULL,
@@ -4836,14 +4835,16 @@ CorInfoIsAccessAllowedResult CEEInfo::canAccessClass(
     MethodDesc * pCallerForSecurity = GetMethodForSecurity(callerHandle);
     TypeHandle callerTypeForSecurity = TypeHandle(pCallerForSecurity->GetMethodTable());
 
-    TypeHandle pCalleeForSecurity = TypeHandle(pResolvedToken->hClass);
+    TargetTypeForAccessCheck pCalleeForSecurity(TypeHandle(pResolvedToken->hClass));
+    SigTypeContext typeContext;
+    TargetInstantiationForAccessCheck targetTypeInstantiation;
     if (pResolvedToken->pTypeSpec != NULL)
     {
-        SigTypeContext typeContext;
         SigTypeContext::InitTypeContext(pCallerForSecurity, &typeContext);
-
         SigPointer sigptr(pResolvedToken->pTypeSpec, pResolvedToken->cbTypeSpec);
-        pCalleeForSecurity = sigptr.GetTypeHandleThrowing(GetModule(pResolvedToken->tokenScope), &typeContext);
+
+        targetTypeInstantiation = TargetInstantiationForAccessCheck(sigptr, &typeContext, GetModule(pResolvedToken->tokenScope));
+        pCalleeForSecurity = TargetTypeForAccessCheck(TypeHandle(pResolvedToken->hClass), &targetTypeInstantiation);
     }
 
     while (pCalleeForSecurity.HasTypeParam())
@@ -4871,13 +4872,13 @@ CorInfoIsAccessAllowedResult CEEInfo::canAccessClass(
         AccessCheckOptions accessCheckOptions(accessCheckType,
                                               NULL,
                                               FALSE /*throw on error*/,
-                                              pCalleeForSecurity.GetMethodTable());
+                                              &pCalleeForSecurity);
 
         _ASSERTE(pCallerForSecurity != NULL && callerTypeForSecurity != NULL);
         AccessCheckContext accessContext(pCallerForSecurity, callerTypeForSecurity.GetMethodTable());
 
         BOOL canAccessType = ClassLoader::CanAccessClass(&accessContext,
-                                                         pCalleeForSecurity.GetMethodTable(),
+                                                         pCalleeForSecurity,
                                                          pCalleeForSecurity.GetAssembly(),
                                                          accessCheckOptions);
 
@@ -4892,7 +4893,7 @@ CorInfoIsAccessAllowedResult CEEInfo::canAccessClass(
         pAccessHelper->numArgs = 2;
 
         pAccessHelper->args[0].Set(CORINFO_METHOD_HANDLE(pCallerForSecurity));
-        pAccessHelper->args[1].Set(CORINFO_CLASS_HANDLE(pCalleeForSecurity.AsPtr()));
+        pAccessHelper->args[1].Set(CORINFO_CLASS_HANDLE(pCalleeForSecurity.GetTypeHandleForThrow().AsPtr()));
     }
 
     EE_TO_JIT_TRANSITION();
@@ -5390,16 +5391,18 @@ void CEEInfo::getCallInfo(
     {
         //Our type system doesn't always represent the target exactly with the MethodDesc.  In all cases,
         //carry around the parent MethodTable for both Caller and Callee.
-        TypeHandle calleeTypeForSecurity = TypeHandle(pResolvedToken->hClass);
-        MethodDesc * pCalleeForSecurity = pMD;
+        TargetTypeForAccessCheck calleeTypeForSecurity(TypeHandle(pResolvedToken->hClass));
+        TargetMethodForAccessCheck calleeForSecurity(pMD);
 
         MethodDesc * pCallerForSecurity = GetMethodForSecurity(callerHandle); //Should this be the open MD?
+        TargetInstantiationForAccessCheck targetTypeInstantiation;
+        TargetInstantiationForAccessCheck targetMethodInstantiation;
+        SigTypeContext typeContext;
 
         if (pCallerForSecurity->HasClassOrMethodInstantiation())
         {
             _ASSERTE(!IsDynamicScope(pResolvedToken->tokenScope));
 
-            SigTypeContext typeContext;
             SigTypeContext::InitTypeContext(pCallerForSecurity, &typeContext);
             _ASSERTE(!typeContext.IsEmpty());
 
@@ -5413,28 +5416,28 @@ void CEEInfo::getCallInfo(
             if (pResolvedToken->pTypeSpec != NULL)
             {
                 SigPointer sigptr(pResolvedToken->pTypeSpec, pResolvedToken->cbTypeSpec);
-                calleeTypeForSecurity = sigptr.GetTypeHandleThrowing(GetModule(pResolvedToken->tokenScope), &typeContext);
+                targetTypeInstantiation = TargetInstantiationForAccessCheck(sigptr, &typeContext, GetModule(pResolvedToken->tokenScope));
+                calleeTypeForSecurity = TargetTypeForAccessCheck(TypeHandle(pResolvedToken->hClass), &targetTypeInstantiation);
 
+                CorElementType elemType;
+                IfFailThrow(sigptr.GetElemType(&elemType));
                 // typeHnd can be a variable type
-                if (calleeTypeForSecurity.GetMethodTable() == NULL)
+                if (elemType == ELEMENT_TYPE_VAR || elemType == ELEMENT_TYPE_MVAR)
                 {
                     COMPlusThrowHR(COR_E_BADIMAGEFORMAT, BFA_METHODDEF_PARENT_NO_MEMBERS);
                 }
             }
 
-            if (pCalleeForSecurity->IsArray())
+            if (pMD->IsArray())
             {
                 // FindOrCreateAssociatedMethodDesc won't remap array method desc because of array base type
                 // is not part of instantiation. We have to special case it.
-                pCalleeForSecurity = calleeTypeForSecurity.GetMethodTable()->GetParallelMethodDesc(pCalleeForSecurity);
+                calleeForSecurity = TargetMethodForAccessCheck(calleeTypeForSecurity.GetTypeHandleForThrow().GetMethodTable()->GetParallelMethodDesc(pMD));
             }
             else if (pResolvedToken->pMethodSpec != NULL)
             {
-                uint32_t nGenericMethodArgs = 0;
-                CQuickBytes qbGenericMethodArgs;
-                TypeHandle *genericMethodArgs = NULL;
-
                 SigPointer sp(pResolvedToken->pMethodSpec, pResolvedToken->cbMethodSpec);
+                targetMethodInstantiation = TargetInstantiationForAccessCheck(sp, &typeContext, GetModule(pResolvedToken->tokenScope));
 
                 BYTE etype;
                 IfFailThrow(sp.GetByte(&etype));
@@ -5442,28 +5445,11 @@ void CEEInfo::getCallInfo(
                 // Load the generic method instantiation
                 THROW_BAD_FORMAT_MAYBE(etype == (BYTE)IMAGE_CEE_CS_CALLCONV_GENERICINST, 0, GetModule(pResolvedToken->tokenScope));
 
-                IfFailThrow(sp.GetData(&nGenericMethodArgs));
-
-                DWORD cbAllocSize = 0;
-                if (!ClrSafeInt<DWORD>::multiply(nGenericMethodArgs, sizeof(TypeHandle), cbAllocSize))
-                {
-                    COMPlusThrowHR(COR_E_OVERFLOW);
-                }
-
-                genericMethodArgs = reinterpret_cast<TypeHandle *>(qbGenericMethodArgs.AllocThrows(cbAllocSize));
-
-                for (uint32_t i = 0; i < nGenericMethodArgs; i++)
-                {
-                    genericMethodArgs[i] = sp.GetTypeHandleThrowing(GetModule(pResolvedToken->tokenScope), &typeContext);
-                    _ASSERTE (!genericMethodArgs[i].IsNull());
-                    IfFailThrow(sp.SkipExactlyOne());
-                }
-
-                pCalleeForSecurity = MethodDesc::FindOrCreateAssociatedMethodDesc(pMD, calleeTypeForSecurity.GetMethodTable(), FALSE, Instantiation(genericMethodArgs, nGenericMethodArgs), FALSE);
+                calleeForSecurity = TargetMethodForAccessCheck(pMD, &targetMethodInstantiation, &calleeTypeForSecurity);
             }
             else if (pResolvedToken->pTypeSpec != NULL)
             {
-                pCalleeForSecurity = MethodDesc::FindOrCreateAssociatedMethodDesc(pMD, calleeTypeForSecurity.GetMethodTable(), FALSE, Instantiation(), TRUE);
+                calleeForSecurity = TargetMethodForAccessCheck(pMD, &calleeTypeForSecurity);
             }
         }
 
@@ -5490,16 +5476,17 @@ void CEEInfo::getCallInfo(
             AccessCheckOptions accessCheckOptions(accessCheckType,
                                                   NULL,
                                                   FALSE,
-                                                  pCalleeForSecurity);
+                                                  &calleeForSecurity
+                                                  );
 
             _ASSERTE(pCallerForSecurity != NULL && callerTypeForSecurity != NULL);
             AccessCheckContext accessContext(pCallerForSecurity, callerTypeForSecurity.GetMethodTable());
 
             canAccessMethod = ClassLoader::CanAccess(&accessContext,
-                                                     calleeTypeForSecurity.GetMethodTable(),
+                                                     calleeTypeForSecurity,
                                                      calleeTypeForSecurity.GetAssembly(),
-                                                     pCalleeForSecurity->GetAttrs(),
-                                                     pCalleeForSecurity,
+                                                     pMD->GetAttrs(),
+                                                     &calleeForSecurity,
                                                      accessCheckOptions
                                                     );
 
@@ -5507,23 +5494,23 @@ void CEEInfo::getCallInfo(
             // (for instance an array), we need to ensure that we also have access to the type parameter.
             if (canAccessMethod && calleeTypeForSecurity.HasTypeParam())
             {
-                TypeHandle typeParam = calleeTypeForSecurity.GetTypeParam();
+                TargetTypeForAccessCheck typeParam = calleeTypeForSecurity.GetTypeParam();
                 while (typeParam.HasTypeParam())
                 {
                     typeParam = typeParam.GetTypeParam();
                 }
 
-                _ASSERTE(pCallerForSecurity != NULL && callerTypeForSecurity != NULL);
-                AccessCheckContext accessContext(pCallerForSecurity, callerTypeForSecurity.GetMethodTable());
+                // No access check is needed for Var, MVar, or FnPtr.
+                if (!typeParam.IsNull() && !typeParam.IsGenericVariable())
+                {
+                    _ASSERTE(pCallerForSecurity != NULL && callerTypeForSecurity != NULL);
+                    AccessCheckContext accessContext(pCallerForSecurity, callerTypeForSecurity.GetMethodTable());
 
-                MethodTable* pTypeParamMT = typeParam.GetMethodTable();
-
-                // No access check is need for Var, MVar, or FnPtr.
-                if (pTypeParamMT != NULL)
                     canAccessMethod = ClassLoader::CanAccessClass(&accessContext,
-                                                                  pTypeParamMT,
-                                                                  typeParam.GetAssembly(),
-                                                                  accessCheckOptions);
+                                                                typeParam,
+                                                                typeParam.GetAssembly(),
+                                                                accessCheckOptions);
+                }
             }
 
             pResult->accessAllowed = canAccessMethod ? CORINFO_ACCESS_ALLOWED : CORINFO_ACCESS_ILLEGAL;
@@ -5534,7 +5521,7 @@ void CEEInfo::getCallInfo(
                 pResult->callsiteCalloutHelper.numArgs = 2;
 
                 pResult->callsiteCalloutHelper.args[0].Set(CORINFO_METHOD_HANDLE(pCallerForSecurity));
-                pResult->callsiteCalloutHelper.args[1].Set(CORINFO_METHOD_HANDLE(pCalleeForSecurity));
+                pResult->callsiteCalloutHelper.args[1].Set(CORINFO_METHOD_HANDLE(calleeForSecurity.GetMethodDescForThrow()));
             }
         }
     }
@@ -13338,10 +13325,12 @@ static TADDR UnsafeJitFunctionWorker(
     }
     if (doAccessCheck)
     {
+        TargetMethodForAccessCheck methodForSecurity(pMethodForSecurity);
+        TargetTypeForAccessCheck ownerTargetTypeForSecurity(ownerTypeForSecurity);
         AccessCheckOptions accessCheckOptions(accessCheckType,
                                             NULL,
                                             TRUE /*Throw on error*/,
-                                            pMethodForSecurity);
+                                            &methodForSecurity);
 
         AccessCheckContext accessContext(pMethodForSecurity, ownerTypeForSecurity.GetMethodTable());
 
@@ -13352,10 +13341,10 @@ static TADDR UnsafeJitFunctionWorker(
         // associated with a TypeDesc (Array, Ptr, Ref, or FnPtr). That doesn't make any sense, but we will
         // just do an access check from a NULL context which means only public types are accessible.
         if (!ClassLoader::CanAccess(&accessContext,
-                                    ownerTypeForSecurity.GetMethodTable(),
-                                    ownerTypeForSecurity.GetAssembly(),
+                                    ownerTargetTypeForSecurity,
+                                    ownerTargetTypeForSecurity.GetAssembly(),
                                     pMethodForSecurity->GetAttrs(),
-                                    pMethodForSecurity,
+                                    &methodForSecurity,
                                     accessCheckOptions))
         {
             EX_THROW(EEMethodException, (pMethodForSecurity));
