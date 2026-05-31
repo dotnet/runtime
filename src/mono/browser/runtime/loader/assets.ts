@@ -186,6 +186,17 @@ export async function mono_download_assets (): Promise<void> {
 
         const instantiate = async (downloadPromise: Promise<AssetEntryInternal>) => {
             const asset = await downloadPromise;
+            const headersOnly = skipBufferByAssetTypes[asset.behavior];
+
+            if (headersOnly) {
+                if (asset.behavior === "symbols") {
+                    await runtimeHelpers.instantiate_symbols_asset(asset);
+                    cleanupAsset(asset);
+                }
+                ++loaderHelpers.actual_downloaded_assets_count;
+                return;
+            }
+
             if (asset.buffer) {
                 if (!skipInstantiateByAssetTypes[asset.behavior]) {
                     mono_assert(asset.buffer && typeof asset.buffer === "object", "asset buffer must be array-like or buffer-like or promise of these");
@@ -202,24 +213,12 @@ export async function mono_download_assets (): Promise<void> {
                     runtimeHelpers.instantiate_asset(asset, url, data);
                 }
             } else {
-                const headersOnly = skipBufferByAssetTypes[asset.behavior];
-                if (!headersOnly) {
-                    mono_assert(asset.isOptional, "Expected asset to have the downloaded buffer");
-                    if (!skipDownloadsByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset)) {
-                        loaderHelpers.expected_downloaded_assets_count--;
-                    }
-                    if (!skipInstantiateByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset)) {
-                        loaderHelpers.expected_instantiated_assets_count--;
-                    }
-                } else {
-                    if (asset.behavior === "symbols") {
-                        await runtimeHelpers.instantiate_symbols_asset(asset);
-                        cleanupAsset(asset);
-                    }
-
-                    if (skipBufferByAssetTypes[asset.behavior]) {
-                        ++loaderHelpers.actual_downloaded_assets_count;
-                    }
+                mono_assert(asset.isOptional, "Expected asset to have the downloaded buffer");
+                if (!skipDownloadsByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset)) {
+                    loaderHelpers.expected_downloaded_assets_count--;
+                }
+                if (!skipInstantiateByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset)) {
+                    loaderHelpers.expected_instantiated_assets_count--;
                 }
             }
         };
@@ -529,9 +528,7 @@ async function start_asset_download_sources (asset: AssetEntryInternal): Promise
                 ok: true,
                 arrayBuffer: () => buffer,
                 json: () => JSON.parse(new TextDecoder("utf-8").decode(buffer)),
-                text: () => {
-                    throw new Error("NotImplementedException");
-                },
+                text: () => new TextDecoder("utf-8").decode(buffer),
                 headers: {
                     get: () => undefined,
                 }
