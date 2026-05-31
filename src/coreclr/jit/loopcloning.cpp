@@ -176,7 +176,7 @@ GenTree* LC_Ident::ToGenTree(Compiler* comp, BasicBlock* bb)
             return comp->gtNewIconHandleNode((size_t)clsHnd, GTF_ICON_CLASS_HDL);
         case IndirOfLocal:
         {
-            GenTree* addr = comp->gtNewLclvNode(lclNum, TYP_REF);
+            GenTree* addr = comp->gtNewLclvNode(lclNum, comp->lvaTable[lclNum].lvType);
             if (indirOffs == 0)
             {
                 return comp->gtNewMethodTableLookup(addr);
@@ -247,6 +247,17 @@ GenTree* LC_Condition::ToGenTree(Compiler* comp, BasicBlock* bb, bool invert)
 {
     GenTree* op1Tree = op1.ToGenTree(comp, bb);
     GenTree* op2Tree = op2.ToGenTree(comp, bb);
+
+    // Null guards use a TYP_REF null constant, but the local's type may have been
+    // changed from TYP_REF to a non-GC type (e.g. TYP_LONG) by earlier phases.
+    // Recast the zero constant to match the other operand's type so the comparison
+    // is well-typed; null (0) is valid for any pointer-sized type.
+    if (op2Tree->IsIntegralConst(0) && varTypeIsGC(op2Tree->TypeGet()) && !varTypeIsGC(op1Tree->TypeGet()) &&
+        varTypeIsI(op1Tree->TypeGet()))
+    {
+        op2Tree->gtType = op1Tree->TypeGet();
+    }
+
     assert(genTypeSize(genActualType(op1Tree->TypeGet())) == genTypeSize(genActualType(op2Tree->TypeGet())));
 
     GenTree* result = comp->gtNewOperNode(invert ? GenTree::ReverseRelop(oper) : oper, TYP_INT, op1Tree, op2Tree);
@@ -991,8 +1002,8 @@ void LC_ArrayDeref::DeriveLevelConditions(JitExpandArrayStack<JitExpandArrayStac
     if (level == 0)
     {
         // For level 0, just push (a != null).
-        (*conds)[level]->Push(
-            LC_Condition(GT_NE, LC_Expr(LC_Ident::CreateVar(Lcl())), LC_Expr(LC_Ident::CreateNull())));
+        (*conds)[level]->Push(LC_Condition(GT_NE, LC_Expr(LC_Ident::CreateVar(Lcl(), array.arrIndex->arrType)),
+                                           LC_Expr(LC_Ident::CreateNull())));
     }
     else
     {
@@ -1002,7 +1013,7 @@ void LC_ArrayDeref::DeriveLevelConditions(JitExpandArrayStack<JitExpandArrayStac
         LC_Array arrLen = array;
         arrLen.oper     = LC_Array::ArrLen;
         arrLen.dim      = level - 1;
-        (*conds)[level * 2 - 1]->Push(LC_Condition(GT_LT, LC_Expr(LC_Ident::CreateVar(Lcl())),
+        (*conds)[level * 2 - 1]->Push(LC_Condition(GT_LT, LC_Expr(LC_Ident::CreateVar(Lcl(), TYP_INT)),
                                                    LC_Expr(LC_Ident::CreateArrAccess(arrLen)), /*unsigned*/ true));
 
         // Push condition (a[i] != null)
@@ -1138,10 +1149,11 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
 
             case LcOptInfo::LcTypeTest:
             {
-                LcTypeTestOptInfo* ttInfo      = optInfo->AsLcTypeTestOptInfo();
-                LC_Ident           objDeref    = LC_Ident::CreateIndirOfLocal(ttInfo->lclNum, 0);
-                LC_Ident           methodTable = LC_Ident::CreateClassHandle(ttInfo->clsHnd);
-                LC_Condition       cond(GT_EQ, LC_Expr(objDeref), LC_Expr(methodTable));
+                LcTypeTestOptInfo* ttInfo = optInfo->AsLcTypeTestOptInfo();
+                LC_Ident           objDeref =
+                    LC_Ident::CreateIndirOfLocal(ttInfo->lclNum, 0, ttInfo->methodTableIndir->Addr()->TypeGet());
+                LC_Ident     methodTable = LC_Ident::CreateClassHandle(ttInfo->clsHnd);
+                LC_Condition cond(GT_EQ, LC_Expr(objDeref), LC_Expr(methodTable));
                 context->EnsureObjDerefs(loop->GetIndex())->Push(objDeref);
                 context->EnsureConditions(loop->GetIndex())->Push(cond);
                 break;
@@ -1151,7 +1163,8 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
             {
                 LcMethodAddrTestOptInfo* test = optInfo->AsLcMethodAddrTestOptInfo();
                 LC_Ident                 objDeref =
-                    LC_Ident::CreateIndirOfLocal(test->delegateLclNum, eeGetEEInfo()->offsetOfDelegateFirstTarget);
+                    LC_Ident::CreateIndirOfLocal(test->delegateLclNum, eeGetEEInfo()->offsetOfDelegateFirstTarget,
+                                                 test->delegateAddressIndir->Addr()->TypeGet());
                 LC_Ident methAddr;
                 if (test->isSlot)
                 {
@@ -1273,7 +1286,7 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
                 JITDUMP("> NeedsZeroTripGuard: iter var V%02u not compatible with TYP_INT\n", initLcl);
                 return false;
             }
-            initIdent = LC_Ident::CreateVar(initLcl);
+            initIdent = LC_Ident::CreateVar(initLcl, iterInfo->Iterator()->TypeGet());
         }
 
         LC_Ident limitIdent;
@@ -1295,7 +1308,7 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
                 JITDUMP("> NeedsZeroTripGuard: limit var V%02u not compatible with TYP_INT\n", limitLcl);
                 return false;
             }
-            limitIdent = LC_Ident::CreateVar(limitLcl);
+            limitIdent = LC_Ident::CreateVar(limitLcl, iterInfo->Limit()->TypeGet());
         }
         else if (iterInfo->HasArrayLengthLimit)
         {
@@ -1348,12 +1361,13 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
         LC_Condition geZero;
         if (isIncreasingLoop)
         {
-            geZero = LC_Condition(GT_GE, LC_Expr(LC_Ident::CreateVar(initLcl)), LC_Expr(LC_Ident::CreateConst(0u)));
+            geZero = LC_Condition(GT_GE, LC_Expr(LC_Ident::CreateVar(initLcl, iterInfo->Iterator()->TypeGet())),
+                                  LC_Expr(LC_Ident::CreateConst(0u)));
         }
         else
         {
             // For decreasing loop, the init value needs to be checked against the array length
-            ident  = LC_Ident::CreateVar(initLcl);
+            ident  = LC_Ident::CreateVar(initLcl, iterInfo->Iterator()->TypeGet());
             geZero = LC_Condition(GT_GE, LC_Expr(ident), LC_Expr(LC_Ident::CreateConst(0u)));
         }
         context->EnsureConditions(loop->GetIndex())->Push(geZero);
@@ -1388,12 +1402,13 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
         if (isIncreasingLoop)
         {
             // For increasing loop, thelimit value needs to be checked against the array length
-            ident  = LC_Ident::CreateVar(limitLcl);
+            ident  = LC_Ident::CreateVar(limitLcl, iterInfo->Limit()->TypeGet());
             geZero = LC_Condition(GT_GE, LC_Expr(ident), LC_Expr(LC_Ident::CreateConst(0u)));
         }
         else
         {
-            geZero = LC_Condition(GT_GE, LC_Expr(LC_Ident::CreateVar(limitLcl)), LC_Expr(LC_Ident::CreateConst(0u)));
+            geZero = LC_Condition(GT_GE, LC_Expr(LC_Ident::CreateVar(limitLcl, iterInfo->Limit()->TypeGet())),
+                                  LC_Expr(LC_Ident::CreateConst(0u)));
         }
 
         context->EnsureConditions(loop->GetIndex())->Push(geZero);
@@ -1702,7 +1717,7 @@ bool Compiler::optComputeDerefConditions(FlowGraphNaturalLoop* loop, LoopCloneCo
             // ObjDeref array has indir(lcl), we want lcl.
             //
             LC_Ident& mtIndirIdent = (*objDeref)[i];
-            LC_Ident  ident        = LC_Ident::CreateVar(mtIndirIdent.LclNum());
+            LC_Ident  ident        = LC_Ident::CreateVar(mtIndirIdent.LclNum(), mtIndirIdent.lclType);
             (*levelCond)[0]->Push(LC_Condition(GT_NE, LC_Expr(ident), LC_Expr(LC_Ident::CreateNull())));
         }
     }
@@ -2361,7 +2376,8 @@ bool Compiler::optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsN
 
     if (lhsNum == BAD_VAR_NUM)
     {
-        result->arrLcl = arrLcl;
+        result->arrLcl  = arrLcl;
+        result->arrType = arrBndsChk->GetArrayLength()->gtGetOp1()->TypeGet();
     }
     result->indLcls.Push(indLcl);
     result->bndsChks.Push(tree);
