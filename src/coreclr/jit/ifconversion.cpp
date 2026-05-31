@@ -662,8 +662,7 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
             return n->OperIs(GT_LCL_VAR);
         };
         auto isSmallImm = [](GenTree* n) {
-            return n->IsIntegralConst() && (n->AsIntConCommon()->IntegralValue() >= -2048) &&
-                   (n->AsIntConCommon()->IntegralValue() <= 2047);
+            return n->IsIntegralConst() && emitter::isValidSimm12(n->AsIntConCommon()->IntegralValue());
         };
 
         if ((isLocalNoOp(selTrue) && isSmallImm(selFalse)) || (isSmallImm(selTrue) && isLocalNoOp(selFalse)))

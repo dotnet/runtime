@@ -1290,27 +1290,47 @@ void Lowering::ContainCheckSelect(GenTreeOp* node)
 
     GenTreeConditional* sel = node->AsConditional();
 
-    // czero.{eqz,nez} encode both polarities, so reversed relops (GE/LE and unsigned
-    // EQ/NE-with-zero) that would otherwise emit slt+xori can have the trailing xori
-    // dropped by swapping the SELECT arms and using the un-reversed compare directly.
+    // czero already compares its register operand with zero, so the various relop+xori
+    // sequences that genCodeForCompare would emit are redundant when the SELECT's cond
+    // is itself a comparison.
     GenTree* cond = sel->gtCond;
     if (cond->OperIsCompare())
     {
         GenTreeOp* relop = cond->AsOp();
-        genTreeOps oper  = relop->OperGet();
-        // genCodeForCompare reverses GE/LE into LT/GT and emits a trailing xori; it
-        // also rewrites unsigned EQ(x,0)/NE(x,0) into LE/GT and reverses again. Both
-        // patterns end up materializing the negation as xori reg, reg, 1.
-        bool relopIsReversed = oper == GT_GE || oper == GT_LE;
-        if (!relopIsReversed && relop->OperIs(GT_EQ, GT_NE))
+
+        // SELECT(EQ(x,0), T, F) -> SELECT(x, F, T) and SELECT(NE(x,0), T, F) -> SELECT(x, T, F):
+        // czero with x as the predicate is equivalent to comparing x against zero.
+        if (relop->OperIs(GT_EQ, GT_NE))
         {
             GenTree* relopOp2 = relop->gtGetOp2();
-            relopIsReversed   = oper == GT_EQ && relopOp2->IsIntegralConst(0) && relopOp2->isContained();
+            if (relopOp2->IsIntegralConst(0) && relopOp2->isContained())
+            {
+                sel->gtCond = relop->gtGetOp1();
+                if (relop->OperIs(GT_EQ))
+                {
+                    std::swap(sel->gtOp1, sel->gtOp2);
+                }
+                BlockRange().Remove(relopOp2);
+                BlockRange().Remove(relop);
+                DEBUG_DESTROY_NODE(relopOp2);
+                DEBUG_DESTROY_NODE(relop);
+            }
         }
-        LIR::Use condUse;
-        if (relopIsReversed && BlockRange().TryGetUse(cond, &condUse) && (condUse.User() == sel))
+        // genCodeForCompare reverses GE/LE into LT/GT and emits a trailing xori 1.
+        // czero.{eqz,nez} encode both polarities directly, so swap SELECT arms and
+        // use the un-reversed compare to drop the xori.
+        else if (relop->OperIs(GT_GE, GT_LE))
         {
-            relop->SetOper(GenTree::ReverseRelop(oper));
+            relop->SetOper(GenTree::ReverseRelop(relop->OperGet()));
+            std::swap(sel->gtOp1, sel->gtOp2);
+        }
+        // Floating-point unordered comparisons emit the ordered compare + xori 1.
+        // Mirror what LowerJTrue does: reverse the FP relop and clear NAN_UN, swapping
+        // SELECT arms to preserve semantics.
+        else if (varTypeIsFloating(relop->gtGetOp1()) && (relop->gtFlags & GTF_RELOP_NAN_UN) != 0)
+        {
+            relop->ChangeOper(GenTree::ReverseRelop(relop->OperGet()));
+            relop->gtFlags &= ~GTF_RELOP_NAN_UN;
             std::swap(sel->gtOp1, sel->gtOp2);
         }
     }
@@ -1319,14 +1339,14 @@ void Lowering::ContainCheckSelect(GenTreeOp* node)
     {
         GenTree* xorLhs = cond->AsOp()->gtGetOp1();
         GenTree* xorRhs = cond->AsOp()->gtGetOp2();
-        LIR::Use condUse;
-        if (xorRhs->IsIntegralConst(1) && xorLhs->OperIsCompare() && BlockRange().TryGetUse(cond, &condUse) &&
-            (condUse.User() == sel))
+        if (xorRhs->IsIntegralConst(1) && xorLhs->OperIsCompare())
         {
             sel->gtCond = xorLhs;
             std::swap(sel->gtOp1, sel->gtOp2);
             BlockRange().Remove(xorRhs);
             BlockRange().Remove(cond);
+            DEBUG_DESTROY_NODE(xorRhs);
+            DEBUG_DESTROY_NODE(cond);
         }
     }
 

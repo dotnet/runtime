@@ -464,7 +464,13 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount                = BuildOperandUses(sel->gtCond);
             srcCount += BuildOperandUses(sel->gtOp1);
             srcCount += BuildOperandUses(sel->gtOp2);
-            buildInternalIntRegisterDefForNode(tree);
+            // The branchless lowering needs a temp only when both arms occupy a
+            // register; when either is contained as REG_ZERO, codegen collapses to
+            // a single czero with no merge step.
+            if (!sel->gtOp1->isContained() && !sel->gtOp2->isContained())
+            {
+                buildInternalIntRegisterDefForNode(tree);
+            }
             assert(dstCount == 1);
             BuildDef(tree);
             buildInternalRegisterUses();
