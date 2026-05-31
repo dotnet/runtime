@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace System.Linq
 {
@@ -74,8 +75,14 @@ namespace System.Linq
     [DebuggerTypeProxy(typeof(SystemLinq_LookupDebugView<,>))]
     public partial class Lookup<TKey, TElement> : ILookup<TKey, TElement>
     {
-        private readonly IEqualityComparer<TKey> _comparer;
-        private Grouping<TKey, TElement>[] _groupings;
+        // Null keys are not supported by Dictionary, so they are handled separately via _nullKeyGrouping.
+#pragma warning disable CS8714 // Nullability of type argument doesn't match 'notnull' constraint.
+        private readonly Dictionary<TKey, Grouping<TKey, TElement>> _groupings;
+#pragma warning restore CS8714
+        // True when a custom comparer was supplied. The default comparer never considers null equal to a
+        // non-null key, but a custom comparer might, so null keys must then be routed through the comparer.
+        private readonly bool _customComparer;
+        private Grouping<TKey, TElement>? _nullKeyGrouping;
         internal Grouping<TKey, TElement>? _lastGrouping;
         private int _count;
 
@@ -125,8 +132,12 @@ namespace System.Linq
 
         private protected Lookup(IEqualityComparer<TKey>? comparer)
         {
-            _comparer = comparer ?? EqualityComparer<TKey>.Default;
-            _groupings = new Grouping<TKey, TElement>[7];
+#pragma warning disable CS8714 // Nullability of type argument doesn't match 'notnull' constraint.
+            _groupings = new Dictionary<TKey, Grouping<TKey, TElement>>(comparer);
+#pragma warning restore CS8714
+            // Even if a comparer was supplied, it might still be the default; only a non-default comparer
+            // can equate null with a non-null key, so only then must null keys be routed through it.
+            _customComparer = comparer is not null && !comparer.Equals(EqualityComparer<TKey>.Default);
         }
 
         public int Count => _count;
@@ -195,67 +206,102 @@ namespace System.Linq
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-        private int InternalGetHashCode(TKey key)
-        {
-            // Handle comparer implementations that throw when passed null
-            return (key is null) ? 0 : _comparer.GetHashCode(key) & 0x7FFFFFFF;
-        }
-
         internal Grouping<TKey, TElement>? GetGrouping(TKey key, bool create)
         {
-            int hashCode = InternalGetHashCode(key);
-            for (Grouping<TKey, TElement>? g = _groupings[(uint)hashCode % _groupings.Length]; g is not null; g = g._hashNext)
+            // Dictionary<TKey, TValue> does not support null keys, so they are tracked separately.
+            if (key is null)
             {
-                if (g._hashCode == hashCode && _comparer.Equals(g._key, key))
+                return GetNullKeyGrouping(create);
+            }
+
+            // A custom comparer may consider a non-null key equal to null. The historical implementation
+            // hashed null to 0 and routed equality through the comparer, so a non-null key merged with the
+            // null grouping only when its own hash code (masked to non-negative) was also 0. Preserve that
+            // exact behavior so this remains non-breaking, while never passing null to a comparer's GetHashCode.
+            if (_nullKeyGrouping is not null && _customComparer)
+            {
+                IEqualityComparer<TKey> comparer = _groupings.Comparer;
+                if ((comparer.GetHashCode(key) & 0x7FFFFFFF) == 0 && comparer.Equals(default, key))
                 {
-                    return g;
+                    return _nullKeyGrouping;
                 }
             }
 
             if (create)
             {
-                if (_count == _groupings.Length)
-                {
-                    Resize();
-                }
+#pragma warning disable CS8714 // Nullability of type argument doesn't match 'notnull' constraint. The null case is handled above.
+                ref Grouping<TKey, TElement>? grouping = ref CollectionsMarshal.GetValueRefOrAddDefault(_groupings, key, out _);
+#pragma warning restore CS8714
+                return grouping ??= CreateGrouping(key);
+            }
 
-                int index = hashCode % _groupings.Length;
-                Grouping<TKey, TElement> g = new Grouping<TKey, TElement>(key, hashCode);
-                g._hashNext = _groupings[index];
-                _groupings[index] = g;
-                if (_lastGrouping is null)
-                {
-                    g._next = g;
-                }
-                else
-                {
-                    g._next = _lastGrouping._next;
-                    _lastGrouping._next = g;
-                }
+            _groupings.TryGetValue(key, out Grouping<TKey, TElement>? g);
+            return g;
+        }
 
-                _lastGrouping = g;
-                _count++;
-                return g;
+        private Grouping<TKey, TElement>? GetNullKeyGrouping(bool create)
+        {
+            Grouping<TKey, TElement>? nullGrouping = _nullKeyGrouping;
+            if (nullGrouping is not null)
+            {
+                return nullGrouping;
+            }
+
+            // A custom comparer may already have grouped a null-equivalent non-null key. Old behavior only
+            // merged keys whose hash code was 0, so look for such a grouping before creating a new one.
+            if (_customComparer)
+            {
+                nullGrouping = FindNullEquivalentGrouping();
+            }
+
+            if (create)
+            {
+                nullGrouping ??= CreateGrouping(default!);
+                _nullKeyGrouping = nullGrouping;
+            }
+
+            return nullGrouping;
+        }
+
+        private Grouping<TKey, TElement>? FindNullEquivalentGrouping()
+        {
+            IEqualityComparer<TKey> comparer = _groupings.Comparer;
+            Grouping<TKey, TElement>? g = _lastGrouping;
+            if (g is not null)
+            {
+                do
+                {
+                    g = g._next!;
+                    TKey existingKey = g._key;
+                    if (existingKey is not null &&
+                        (comparer.GetHashCode(existingKey) & 0x7FFFFFFF) == 0 &&
+                        comparer.Equals(existingKey, default))
+                    {
+                        return g;
+                    }
+                }
+                while (g != _lastGrouping);
             }
 
             return null;
         }
 
-        private void Resize()
+        private Grouping<TKey, TElement> CreateGrouping(TKey key)
         {
-            int newSize = checked((_count * 2) + 1);
-            Grouping<TKey, TElement>[] newGroupings = new Grouping<TKey, TElement>[newSize];
-            Grouping<TKey, TElement> g = _lastGrouping!;
-            do
+            Grouping<TKey, TElement> g = new Grouping<TKey, TElement>(key);
+            if (_lastGrouping is null)
             {
-                g = g._next!;
-                int index = g._hashCode % newSize;
-                g._hashNext = newGroupings[index];
-                newGroupings[index] = g;
+                g._next = g;
             }
-            while (g != _lastGrouping);
+            else
+            {
+                g._next = _lastGrouping._next;
+                _lastGrouping._next = g;
+            }
 
-            _groupings = newGroupings;
+            _lastGrouping = g;
+            _count++;
+            return g;
         }
     }
 

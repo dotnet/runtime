@@ -354,16 +354,13 @@ namespace System.Linq
     internal sealed class Grouping<TKey, TElement> : IGrouping<TKey, TElement>, IList<TElement>
     {
         internal readonly TKey _key;
-        internal readonly int _hashCode;
         internal TElement[] _elements;
         internal int _count;
-        internal Grouping<TKey, TElement>? _hashNext;
         internal Grouping<TKey, TElement>? _next;
 
-        internal Grouping(TKey key, int hashCode)
+        internal Grouping(TKey key)
         {
             _key = key;
-            _hashCode = hashCode;
             _elements = new TElement[1];
         }
 
