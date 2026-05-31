@@ -40,8 +40,9 @@ jobs:
      - 'build_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_'
      - ${{ if eq(parameters.collectionName, 'coreclr_tests') }}:
         - 'coreclr_common_test_build_p1_AnyOS_AnyCPU_${{parameters.buildConfig }}'
-     # The corelib_wasm collection consumes a browser/wasm-built System.Private.CoreLib.dll,
-     # produced by the browser_wasm_win Release build in superpmi-collect-pipeline.yml.
+     # For the corelib crossgen2 collection targeting browser/wasm we also need a
+     # browser/wasm-built System.Private.CoreLib.dll, produced by the browser_wasm_win
+     # Release build.
      - ${{ if and(eq(parameters.collectionName, 'corelib'), eq(parameters.targetArch, 'wasm')) }}:
         - 'build_browser_wasm_windows_Release_'
 
@@ -77,17 +78,16 @@ jobs:
         cleanUnpackFolder: false
         overwriteExistingFiles: true
 
-    # Download browser/wasm build artifacts for the corelib_wasm collection. The
-    # browser_wasm_win Release build produces artifacts/bin/coreclr/browser.wasm.Release/
-    # System.Private.CoreLib.dll, which superpmi_collect_setup.py copies into the
-    # collection input directory so crossgen2 runs over the wasm-flavored CoreLib.
+    # For the corelib crossgen2 collection targeting browser/wasm, also download the
+    # browser/wasm-built runtime artifacts. The wasm-built System.Private.CoreLib.dll
+    # under artifacts/bin/coreclr/browser.wasm.Release/ is what crossgen2 will compile.
     - ${{ if and(eq(parameters.collectionName, 'corelib'), eq(parameters.targetArch, 'wasm')) }}:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
           artifactFileName: 'BuildArtifacts_browser_wasm_Release$(archiveExtension)'
           artifactName: BuildArtifacts_browser_wasm_Release
-          displayName: 'Browser/wasm runtime build artifacts'
+          displayName: 'browser/wasm Release runtime build artifacts'
           cleanUnpackFolder: false
           overwriteExistingFiles: true
 

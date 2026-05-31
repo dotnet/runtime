@@ -121,7 +121,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // First, emit the actual EH records in sequence and store map from methods to the EH record symbols
             for (int index = 0; index < _methodNodes.Count; index++)
             {
-                exceptionInfoLookupBuilder.EmitReloc(_methodNodes[index], RelocType.IMAGE_REL_BASED_ADDR32NB);
+                exceptionInfoLookupBuilder.EmitReloc(_methodNodes[index], RelocType.IMAGE_REL_BASED_ADDR32NB, -factory.Target.CodeDelta);
                 exceptionInfoLookupBuilder.EmitReloc(_ehInfoNode, RelocType.IMAGE_REL_BASED_ADDR32NB, _ehInfoOffsets[index]);
             }
 

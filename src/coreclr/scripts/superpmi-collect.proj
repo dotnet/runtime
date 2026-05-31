@@ -147,7 +147,7 @@
 
   <!-- For crossgen2 collections, pass the target OS/arch to superpmi.py so it cross-targets.
        For other collection types this is a no-op (target defaults to host). -->
-  <PropertyGroup Condition=" '$(CollectionType)' == 'crossgen2' ">
+  <PropertyGroup Condition=" '$(CollectionType)' == 'crossgen2' and '$(TargetOS)' != '' and '$(TargetArchitecture)' != '' ">
     <TargetArgs>-target_os $(TargetOS) -target_arch $(TargetArchitecture)</TargetArgs>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(CollectionType)' != 'crossgen2' ">

@@ -83,8 +83,8 @@ namespace ILCompiler
             // that would cause the entire image to be invalidated.
             bool isVectorTOptimistic = true;
 
-            TargetArchitecture targetArchitecture = Get(_command.TargetArchitecture);
-            TargetOS targetOS = Get(_command.TargetOS);
+            (TargetArchitecture targetArchitecture, TargetOS targetOS, TargetAbi targetAbi) =
+                Helpers.GetTargetSpec(Get(_command.TargetArchitecture), Get(_command.TargetOS));
             bool allowOptimistic = _command.OptimizationMode != OptimizationMode.PreferSize;
 
             if (targetOS is TargetOS.iOS or TargetOS.tvOS or TargetOS.iOSSimulator or TargetOS.tvOSSimulator or TargetOS.MacCatalyst or TargetOS.Browser)
@@ -100,7 +100,7 @@ namespace ILCompiler
                 allowOptimistic: allowOptimistic,
                 isReadyToRun: true);
             SharedGenericsMode genericsMode = SharedGenericsMode.CanonicalReferenceTypes;
-            var targetDetails = new TargetDetails(targetArchitecture, targetOS, Crossgen2RootCommand.IsArmel ? TargetAbi.NativeAotArmel : TargetAbi.NativeAot, instructionSetSupport.GetVectorTSimdVector());
+            var targetDetails = new TargetDetails(targetArchitecture, targetOS, targetAbi, instructionSetSupport.GetVectorTSimdVector());
 
             ConfigureImageBase(targetDetails);
 

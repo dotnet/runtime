@@ -526,13 +526,15 @@ def main(main_args):
       print('Copying checked {} -> {}'.format(jitname, core_root_dst_directory))
       copy_files(coreclr_args.core_root_directory, core_root_dst_directory, [os.path.join(coreclr_args.core_root_directory, jitname)])
     elif coreclr_args.collection_name == "corelib":
-      # For the corelib crossgen2 collection (e.g. wasm), use the release Core_Root.
-      # System.Private.CoreLib.dll is release-built (it's what crossgen2 consumes), so we
-      # want crossgen2.exe, the framework references, and the cross-targeting JIT to all
-      # match. The wasm cross-targeting JIT (clrjit_universal_wasm_x64.dll) is expected to
-      # be present in the release Core_Root after building with `clr.wasmjit`.
+      # For the corelib crossgen2 collection (e.g. wasm), use the release Core_Root
+      # for the host (crossgen2, framework refs) and overlay the checked JIT so that
+      # SPMI collections include JIT asserts.  System.Private.CoreLib.dll itself is
+      # release-built (it's what crossgen2 consumes).
       print('Copying {} -> {}'.format(coreclr_args.release_core_root_directory, core_root_dst_directory))
       copy_directory(coreclr_args.release_core_root_directory, core_root_dst_directory, verbose_output=True, match_func=acceptable_copy)
+      jitname = determine_jit_name(coreclr_args.platform, coreclr_args.target_os, coreclr_args.arch, coreclr_args.target_arch)
+      print('Copying checked {} -> {}'.format(jitname, core_root_dst_directory))
+      copy_files(coreclr_args.core_root_directory, core_root_dst_directory, [os.path.join(coreclr_args.core_root_directory, jitname)])
     else:
       print('Copying {} -> {}'.format(coreclr_args.core_root_directory, core_root_dst_directory))
       copy_directory(coreclr_args.core_root_directory, core_root_dst_directory, verbose_output=True, match_func=acceptable_copy)
@@ -652,33 +654,21 @@ def main(main_args):
                 raise RuntimeError("Collection 'smoke_tests' is only available for 'nativeaot' collections.")
 
         if coreclr_args.collection_name == "corelib":
-            # corelib is a single-assembly crossgen2 collection over a release-built
-            # System.Private.CoreLib.dll. Build a custom one-file input directory so the
-            # partitioning logic produces exactly one helix partition. The references
-            # crossgen2 needs are resolved out of the release Core_Root that's already
-            # part of the correlation payload (see run_crossgen2 in superpmi.py, which
-            # passes -r:<core_root>\System.*.dll etc.).
-            #
-            # For target_arch == 'wasm' we need the browser/wasm-flavored CoreLib so the
-            # crossgen2 RVA-static layout matches the wasm target. That dll is produced
-            # by the browser_wasm_win build in superpmi-collect-pipeline.yml and
-            # downloaded into artifacts/bin/coreclr/browser.wasm.Release/ by the
-            # collect job. The wasm corelib build emits the managed assembly under an
-            # 'IL' subdirectory (artifacts/bin/coreclr/browser.wasm.Release/IL/), not
-            # at the root of the configuration directory like native builds do. For any
-            # other target_arch the host-arch release CoreLib is the right input.
-            if coreclr_args.target_arch == "wasm":
-                corelib_src_dir = os.path.join(
-                    coreclr_args.source_directory, "artifacts", "bin", "coreclr",
-                    "browser.wasm.Release", "IL")
-            else:
-                corelib_src_dir = coreclr_args.release_core_root_directory
-            corelib_src = os.path.join(corelib_src_dir, "System.Private.CoreLib.dll")
+            # corelib is a single-assembly crossgen2 collection over a pre-built
+            # System.Private.CoreLib.dll. The YAML routes InputDirectory to:
+            #   - the wasm-built corelib bin dir (artifacts/bin/coreclr/browser.wasm.Release/IL)
+            #     for wasm cross-target collections, or
+            #   - the host release Core_Root for non-cross-target collections.
+            # Build a custom one-file input directory so the partitioning logic produces
+            # exactly one helix partition. The references crossgen2 needs are resolved
+            # out of the release Core_Root that's part of the correlation payload (see
+            # run_crossgen2 in superpmi.py, which passes -r:<core_root>\System.*.dll etc.).
+            corelib_src = os.path.join(coreclr_args.input_directory, "System.Private.CoreLib.dll")
             if not os.path.isfile(corelib_src):
                 raise RuntimeError("Cannot find System.Private.CoreLib.dll at " + corelib_src)
             corelib_input_dir = os.path.join(workitem_payload_directory, "corelib_input")
             os.makedirs(corelib_input_dir, exist_ok=True)
-            copy_files(corelib_src_dir, corelib_input_dir, [corelib_src])
+            copy_files(coreclr_args.input_directory, corelib_input_dir, [corelib_src])
             coreclr_args.input_directory = corelib_input_dir
 
         partition_files(coreclr_args.input_directory, input_artifacts, coreclr_args.max_size, exclude_directories,

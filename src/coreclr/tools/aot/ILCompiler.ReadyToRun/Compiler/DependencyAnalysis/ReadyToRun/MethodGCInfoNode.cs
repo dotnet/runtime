@@ -145,7 +145,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 {
                     if (other.Bytes == null)
                         return false;
-                    
+
                     return Bytes.SequenceEqual(other.Bytes);
                 }
                 else
@@ -170,7 +170,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             const byte UNW_FLAG_UHANDLER = 2;
             const byte UNW_FLAG_CHAININFO = 4;
             const byte FlagsShift = 3;
-            
+
             for (int frameInfoIndex = 0; frameInfoIndex < numFrameInfos; frameInfoIndex++)
             {
                 FrameInfo frameInfo = (frameInfoIndex >= numHotFrameInfos) ?
@@ -189,7 +189,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     yield return new GCInfoComponent(header);
                     yield return new GCInfoComponent(_methodNode, 0);
                     yield return new GCInfoComponent(_methodNode, _methodNode.Size);
-                    // TODO: Is this correct? 
+                    // TODO: Is this correct?
                     yield return new GCInfoComponent(factory.RuntimeFunctionsGCInfo, this.OffsetFromBeginningOfArray);
                 }
                 else
@@ -212,7 +212,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     {
                         bool isFilterFunclet = (frameInfo.Flags & FrameInfoFlags.Filter) != 0;
                         ISymbolNode personalityRoutine = (isFilterFunclet ? factory.FilterFuncletPersonalityRoutine : factory.PersonalityRoutine);
-                        yield return new GCInfoComponent(personalityRoutine, factory.Target.CodeDelta);
+                        yield return new GCInfoComponent(personalityRoutine, 0);
                     }
 
                     if (frameInfoIndex == 0 && _methodNode.GCInfo != null)

@@ -1777,7 +1777,7 @@ HRESULT ProfToEEInterfaceImpl::IsArrayClass(
         // Fill in the type if they want it
         if (pBaseElemType != NULL)
         {
-            *pBaseElemType = th.GetArrayElementTypeHandle().GetVerifierCorElementType();
+            *pBaseElemType = th.GetArrayElementTypeHandle().GetInternalCorElementType();
         }
 
         // If this is an array of classes and they wish to have the base type
