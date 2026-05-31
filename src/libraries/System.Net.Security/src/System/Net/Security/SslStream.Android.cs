@@ -1,24 +1,28 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Diagnostics;
-using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
-using System.Threading;
 
 namespace System.Net.Security
 {
     public partial class SslStream
     {
-        private JavaProxy.RemoteCertificateValidationResult VerifyRemoteCertificate()
+        private JavaProxy.RemoteCertificateValidationResult VerifyRemoteCertificate(bool chainTrustedByPlatform)
         {
+            SslPolicyErrors sslPolicyErrors = SslPolicyErrors.None;
+            if (ShouldRespectPlatformValidation() && !chainTrustedByPlatform)
+            {
+                sslPolicyErrors = SslPolicyErrors.RemoteCertificateChainErrors;
+            }
+
             ProtocolToken alertToken = default;
+
             var isValid = VerifyRemoteCertificate(
                 _sslAuthenticationOptions.CertificateContext?.Trust,
                 ref alertToken,
-                out SslPolicyErrors sslPolicyErrors,
+                ref sslPolicyErrors,
                 out X509ChainStatusFlags chainStatus);
 
             return new()
@@ -28,6 +32,15 @@ namespace System.Net.Security
                 ChainStatus = chainStatus,
                 AlertToken = alertToken,
             };
+        }
+
+        private bool ShouldRespectPlatformValidation()
+        {
+            // Android platform trust is part of default/callback-only validation, but explicit
+            // managed custom trust stays managed-authoritative and is not projected into Android.
+            return _sslAuthenticationOptions.CertificateChainPolicy is not null
+                ? _sslAuthenticationOptions.CertificateChainPolicy.TrustMode != X509ChainTrustMode.CustomRootTrust
+                : _sslAuthenticationOptions.CertificateContext?.Trust is null;
         }
 
         private bool TryGetRemoteCertificateValidationResult(out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus, ref ProtocolToken alertToken, out bool isValid)
@@ -79,7 +92,7 @@ namespace System.Net.Security
             }
 
             [UnmanagedCallersOnly]
-            private static unsafe bool VerifyRemoteCertificate(IntPtr sslStreamProxyHandle)
+            private static unsafe bool VerifyRemoteCertificate(IntPtr sslStreamProxyHandle, int chainTrustedByPlatform)
             {
                 var proxy = (JavaProxy?)GCHandle.FromIntPtr(sslStreamProxyHandle).Target;
                 Debug.Assert(proxy is not null);
@@ -87,7 +100,7 @@ namespace System.Net.Security
 
                 try
                 {
-                    proxy.ValidationResult = proxy._sslStream.VerifyRemoteCertificate();
+                    proxy.ValidationResult = proxy._sslStream.VerifyRemoteCertificate(chainTrustedByPlatform != 0);
                     return proxy.ValidationResult.IsValid;
                 }
                 catch (Exception exception)
