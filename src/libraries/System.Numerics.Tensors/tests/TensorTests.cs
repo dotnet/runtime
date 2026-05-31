@@ -1353,6 +1353,45 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Fact]
+        public static void TensorResizeWithStartTests()
+        {
+            Tensor<int> t0 = Tensor.Create([1, 2, 3, 4, 5, 6], start: 2, lengths: [4], strides: []);
+            Tensor<int> t1 = Tensor.Resize(t0, [4]);
+            Assert.Equal([4], t1.Lengths);
+            Assert.Equal(3, t1[0]);
+            Assert.Equal(4, t1[1]);
+            Assert.Equal(5, t1[2]);
+            Assert.Equal(6, t1[3]);
+
+            t1 = Tensor.Resize(t0, [6]);
+            Assert.Equal([6], t1.Lengths);
+            Assert.Equal(3, t1[0]);
+            Assert.Equal(4, t1[1]);
+            Assert.Equal(5, t1[2]);
+            Assert.Equal(6, t1[3]);
+            Assert.Equal(0, t1[4]);
+            Assert.Equal(0, t1[5]);
+
+            t1 = Tensor.Resize(t0, [2]);
+            Assert.Equal([2], t1.Lengths);
+            Assert.Equal(3, t1[0]);
+            Assert.Equal(4, t1[1]);
+
+            t1 = Tensor.Resize(t0, [1, 1]);
+            Assert.Equal([1, 1], t1.Lengths);
+            Assert.Equal(3, t1[0, 0]);
+
+            t1 = Tensor.Resize(t0, [2, 3]);
+            Assert.Equal([2, 3], t1.Lengths);
+            Assert.Equal(3, t1[0, 0]);
+            Assert.Equal(4, t1[0, 1]);
+            Assert.Equal(5, t1[0, 2]);
+            Assert.Equal(6, t1[1, 0]);
+            Assert.Equal(0, t1[1, 1]);
+            Assert.Equal(0, t1[1, 2]);
+        }
+
+        [Fact]
         public static void TensorSplitTests()
         {
             Tensor<int> t0 = Tensor.Create(Enumerable.Range(0, 8).ToArray(), lengths: [2, 2, 2]);
