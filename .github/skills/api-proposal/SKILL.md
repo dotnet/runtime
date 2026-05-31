@@ -312,8 +312,6 @@ Present the complete draft to the user for review. Iterate based on feedback bef
 
 ### Phase 5: Publish
 
-> **AI-generated content disclosure:** When posting any content to GitHub (issue body, PR body, comments) under a user's credentials — i.e., the account is **not** a dedicated "copilot" or "bot" account/app — prepend a concise, visible note (e.g. a `> [!NOTE]` alert) indicating the content was AI/Copilot-generated. This applies to the initial proposal, iteration updates, and any follow-up comments posted on the user's behalf. Skip this if the user explicitly asks you to omit it.
-
 #### Step 1: Push and capture commit URL
 
 Commit prototype changes and push the branch to the user's fork (default) or ask for an alternative remote. Capture the commit URL for inclusion in the proposal (e.g., `https://github.com/<owner>/<repo>/commit/<sha>`).
