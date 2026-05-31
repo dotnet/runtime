@@ -10,7 +10,10 @@
 #include "peassembly.h"
 #include <clrconfignocache.h>
 #include <minipal/guid.h>
+#include <errno.h>
+#include <limits.h>
 #include <new>
+#include <stdlib.h>
 
 #ifdef FEATURE_INPROC_CRASHREPORT
 
@@ -587,6 +590,43 @@ CrashReportEnumerateThreads(
     }
 }
 
+// This runs during configuration, not from the crash signal path. It uses
+// strtol because TryAsInteger parses into DWORD via strtoul and cannot
+// represent the -1 unlimited-retention sentinel for this lifecycle setting.
+static
+int32_t
+GetCrashReportMaxFileCount()
+{
+    int32_t maxFileCount = CRASHREPORT_DEFAULT_MAX_FILE_COUNT;
+
+    CLRConfigNoCache maxFileCountCfg = CLRConfigNoCache::Get("CrashReportMaxFileCount", /*noprefix*/ false, &getenv);
+    if (!maxFileCountCfg.IsSet())
+    {
+        return maxFileCount;
+    }
+
+    const char* maxFileCountString = maxFileCountCfg.AsString();
+    if (maxFileCountString == nullptr)
+    {
+        return maxFileCount;
+    }
+
+    errno = 0;
+    char* end = nullptr;
+    long configuredMaxFileCount = strtol(maxFileCountString, &end, 10);
+    if (end != maxFileCountString && *end == '\0' && errno != ERANGE &&
+        configuredMaxFileCount >= CRASHREPORT_UNLIMITED_FILE_COUNT && configuredMaxFileCount <= INT32_MAX)
+    {
+        maxFileCount = static_cast<int32_t>(configuredMaxFileCount);
+    }
+    else
+    {
+        InProcCrashReportLogInitializationFailure(".NET crash report using default CrashReportMaxFileCount: invalid configured value");
+    }
+
+    return maxFileCount;
+}
+
 void
 CrashReportConfigure()
 {
@@ -612,11 +652,22 @@ CrashReportConfigure()
         return;
     }
 
-    CLRConfigNoCache dmpNameCfg = CLRConfigNoCache::Get("DbgMiniDumpName", /*noprefix*/ false, &getenv);
-    const char* dumpName = dmpNameCfg.IsSet() ? dmpNameCfg.AsString() : nullptr;
+    CLRConfigNoCache crashReportRootPathCfg = CLRConfigNoCache::Get("CrashReportRootPath", /*noprefix*/ false, &getenv);
+    const char* crashReportRootPath = crashReportRootPathCfg.IsSet() ? crashReportRootPathCfg.AsString() : nullptr;
+    bool lifecycleRootConfigured = crashReportRootPath != nullptr && crashReportRootPath[0] != '\0';
 
     InProcCrashReporterSettings settings = {};
-    settings.reportPath = dumpName;
+    if (lifecycleRootConfigured)
+    {
+        settings.lifecycleRootPath = crashReportRootPath;
+        settings.maxFileCount = GetCrashReportMaxFileCount();
+    }
+    else
+    {
+        CLRConfigNoCache dmpNameCfg = CLRConfigNoCache::Get("DbgMiniDumpName", /*noprefix*/ false, &getenv);
+        settings.reportPath = dmpNameCfg.IsSet() ? dmpNameCfg.AsString() : nullptr;
+    }
+
     settings.isManagedThreadCallback = CrashReportIsCurrentThreadManaged;
     settings.walkStackCallback = CrashReportWalkStack;
     settings.enumerateThreadsCallback = CrashReportEnumerateThreads;
