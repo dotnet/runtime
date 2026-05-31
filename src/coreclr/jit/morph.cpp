@@ -10462,7 +10462,7 @@ void Compiler::fgPushConstantsRight(GenTreeOp* tree)
 }
 
 //------------------------------------------------------------------------
-// fgOptimizeCommutativeArithmetic: Optimizes commutative operations.
+// fgOptimizeCommutativeArithmetic: Optimizes commutative arithemtic.
 //
 // Arguments:
 //   tree - the unchecked GT_ADD/GT_MUL/GT_OR/GT_XOR/GT_AND tree to optimize.
