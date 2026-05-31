@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.DotNet.Helix.Sdk" DefaultTargets="Test">
   <PropertyGroup>
+    <HelixBaseUri>https://helix.int-dot.net/</HelixBaseUri>
     <EnableXUnitReporter>true</EnableXUnitReporter>
     <Creator>$(_Creator)</Creator>
     <HelixAccessToken>$(_HelixAccessToken)</HelixAccessToken>
