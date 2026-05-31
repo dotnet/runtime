@@ -391,6 +391,8 @@ void CodeGen::genLclHeap(GenTree* tree)
     GenTree* size = tree->AsOp()->gtOp1;
     noway_assert((genActualType(size->gtType) == TYP_INT) || (genActualType(size->gtType) == TYP_I_IMPL));
 
+    bool const initMem = m_compiler->gtMustZeroLocalloc(tree);
+
     // Result of localloc will be returned in regCnt.
     // Also it used as temporary register in code generation
     // for storing allocation size
@@ -476,7 +478,7 @@ void CodeGen::genLclHeap(GenTree* tree)
 
             goto ALLOC_DONE;
         }
-        else if (!m_compiler->info.compInitMem && (amount < m_compiler->eeGetPageSize())) // must be < not <=
+        else if (!initMem && (amount < m_compiler->eeGetPageSize())) // must be < not <=
         {
             // Since the size is less than a page, simply adjust the SP value.
             // The SP might already be in the guard page, must touch it BEFORE
@@ -500,7 +502,7 @@ void CodeGen::genLclHeap(GenTree* tree)
     }
 
     // Allocation
-    if (m_compiler->info.compInitMem)
+    if (initMem)
     {
         // At this point 'regCnt' is set to the total number of bytes to localloc.
         // Since we have to zero out the allocated memory AND ensure that the stack pointer is always valid

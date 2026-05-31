@@ -2801,6 +2801,12 @@ PhaseStatus Compiler::fgExpandStackArrayAllocations()
     //
     bool modified = false;
 
+    // Lazily-allocated TYP_I_IMPL local that accumulates the per-invocation
+    // total bytes of conditional (localloc) stack allocations. Initialized
+    // on first use by fgExpandStackArrayAllocation.
+    //
+    unsigned frameRunningTotalLclNum = BAD_VAR_NUM;
+
     for (BasicBlock* const block : Blocks())
     {
         for (Statement* const stmt : block->Statements())
@@ -2817,7 +2823,7 @@ PhaseStatus Compiler::fgExpandStackArrayAllocations()
                     continue;
                 }
 
-                if (fgExpandStackArrayAllocation(block, stmt, tree->AsCall()))
+                if (fgExpandStackArrayAllocation(block, stmt, tree->AsCall(), frameRunningTotalLclNum))
                 {
                     // If we expand, we split the statement's tree
                     // so will be done with this statment.
@@ -2846,7 +2852,18 @@ PhaseStatus Compiler::fgExpandStackArrayAllocations()
 // Returns:
 //    true if a runtime lookup was found and expanded.
 //
-bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, GenTreeCall* call)
+// Remarks:
+//    For arrays whose size was large or not known during stack allocation analysis,
+//    the allocation expands into a runtime check followed by localloc (if small)
+//    or heapalloc (if big).
+//
+//    For known sized arrays, we assume upstream analysis has limited size to
+//    something reasonable, and the allocation is into fixed local storage.
+//
+bool Compiler::fgExpandStackArrayAllocation(BasicBlock*  block,
+                                            Statement*   stmt,
+                                            GenTreeCall* call,
+                                            unsigned&    frameRunningTotalLclNum)
 {
     if (!call->IsHelperCall())
     {
@@ -2871,17 +2888,44 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
             return false;
     }
 
-    // If this is a local array, the new helper will have an arg for the array's address
+    // If this is a local array, the new helper will have an arg for the array's address or an arg
+    // for the array element size
     //
     CallArg* const stackLocalAddressArg = call->gtArgs.FindWellKnownArg(WellKnownArg::StackArrayLocal);
+    CallArg* const elemSizeArg          = call->gtArgs.FindWellKnownArg(WellKnownArg::StackArrayElemSize);
 
-    if (stackLocalAddressArg == nullptr)
+    if ((stackLocalAddressArg == nullptr) && (elemSizeArg == nullptr))
     {
         return false;
     }
 
-    JITDUMP("Expanding new array helper for stack allocated array at [%06d] in " FMT_BB ":\n", dspTreeID(call),
-            block->bbNum);
+    // If we have an elem size arg, this is intended to be a localloc/heapalloc
+    //
+    // Note we may have figured out the array length after we did the
+    // escape analysis (that is, lengthArg might be a constant), so we
+    // could possibly change this from a localloc to a fixed alloc,
+    // if we could show that was sound.
+    //
+    bool const isLocAlloc = (elemSizeArg != nullptr);
+    bool const isAlign8   = isLocAlloc && (helper == CORINFO_HELP_NEWARR_1_ALIGN8);
+
+    // The localloc/heapalloc dispatch path needs to store the heap-fallback
+    // call result into the same local that consumes the original call's
+    // result. If the result is unused (e.g. DCE removed the consumer),
+    // skip the expansion and let later phases drop the dead call.
+    //
+    if (isLocAlloc)
+    {
+        GenTree* const stmtRoot = stmt->GetRootNode();
+        if (!(stmtRoot->OperIs(GT_STORE_LCL_VAR) && (stmtRoot->AsLclVarCommon()->Data() == call)))
+        {
+            JITDUMP("Skipping localloc dispatch for [%06d]: call result is unused\n", dspTreeID(call));
+            return false;
+        }
+    }
+
+    JITDUMP("Expanding new array helper for stack allocated array at [%06d] %sin " FMT_BB ":\n", dspTreeID(call),
+            isLocAlloc ? " into localloc " : "", block->bbNum);
     DISPTREE(call);
     JITDUMP("\n");
 
@@ -2898,24 +2942,321 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
         }
     }
 
-    GenTree* const stackLocalAddress = stackLocalAddressArg->GetNode();
+    GenTree* lengthArg         = call->gtArgs.GetArgByIndex(lengthArgIndex)->GetNode();
+    GenTree* stackLocalAddress = nullptr;
+
+    // Temps holding the once-evaluated length and method-table args for the
+    // localloc path. Used by both the dispatch path and the header init,
+    // so declared at function scope.
+    //
+    unsigned lengthTemp = BAD_VAR_NUM;
+    unsigned typeTemp   = BAD_VAR_NUM;
+
+    // If we have a localloc, compute (at runtime) overall size, and check length
+    // against a threshold. If over, heap allocate.
+    //
+    if (isLocAlloc)
+    {
+        assert(elemSizeArg != nullptr);
+        assert(stackLocalAddressArg == nullptr);
+        GenTree* const elemSize = elemSizeArg->GetNode();
+        assert(elemSize->IsCnsIntOrI());
+
+        // Spill the length and method-table args to fresh temps so all
+        // downstream consumers (size compute, runtime check, header
+        // init, heap-fallback call) reference a temp use instead of
+        // cloning the original (possibly side-effecting / non-clonable)
+        // expressions. Replace the call's arg slots with a temp use so
+        // the original expressions live in exactly one place.
+        //
+        {
+            GenTree*&      lengthArgRef = call->gtArgs.GetArgByIndex(lengthArgIndex)->NodeRef();
+            GenTree* const origLength   = lengthArgRef;
+            lengthTemp                  = lvaGrabTemp(true DEBUGARG("stack array length"));
+            lvaTable[lengthTemp].lvType = genActualType(origLength);
+
+            GenTree* const   lengthSpill     = gtNewStoreLclVarNode(lengthTemp, origLength);
+            Statement* const lengthSpillStmt = fgNewStmtFromTree(lengthSpill);
+            gtUpdateStmtSideEffects(lengthSpillStmt);
+            fgInsertStmtBefore(block, stmt, lengthSpillStmt);
+
+            lengthArgRef = gtNewLclVarNode(lengthTemp);
+            lengthArg    = lengthArgRef;
+        }
+        {
+            GenTree*&      typeArgRef = call->gtArgs.GetArgByIndex(typeArgIndex)->NodeRef();
+            GenTree* const origType   = typeArgRef;
+            typeTemp                  = lvaGrabTemp(true DEBUGARG("stack array method table"));
+            lvaTable[typeTemp].lvType = genActualType(origType);
+
+            GenTree* const   typeSpill     = gtNewStoreLclVarNode(typeTemp, origType);
+            Statement* const typeSpillStmt = fgNewStmtFromTree(typeSpill);
+            gtUpdateStmtSideEffects(typeSpillStmt);
+            fgInsertStmtBefore(block, stmt, typeSpillStmt);
+
+            typeArgRef = gtNewLclVarNode(typeTemp);
+        }
+
+        unsigned const locallocTemp   = lvaGrabTemp(true DEBUGARG("localloc stack address"));
+        lvaTable[locallocTemp].lvType = TYP_I_IMPL;
+
+        GenTree* const arrayLength = gtNewLclVarNode(lengthTemp);
+        GenTree* const baseSize    = gtNewIconNode(OFFSETOF__CORINFO_Array__data, TYP_I_IMPL);
+        GenTree* const payloadSize = gtNewOperNode(GT_MUL, TYP_I_IMPL, elemSize, arrayLength);
+        GenTree*       totalSize   = gtNewOperNode(GT_ADD, TYP_I_IMPL, baseSize, payloadSize);
+
+        unsigned const elemSizeValue = (unsigned)elemSize->AsIntCon()->IconValue();
+
+        if ((elemSizeValue % TARGET_POINTER_SIZE) != 0)
+        {
+            // Round size up to TARGET_POINTER_SIZE.
+            // size = (size + TPS - 1) & ~(TPS - 1)
+            //
+            GenTree* const roundSize  = gtNewIconNode(TARGET_POINTER_SIZE - 1, TYP_I_IMPL);
+            GenTree* const biasedSize = gtNewOperNode(GT_ADD, TYP_I_IMPL, totalSize, roundSize);
+            GenTree* const mask       = gtNewIconNode(TARGET_POINTER_SIZE - 1, TYP_I_IMPL);
+            GenTree* const invMask    = gtNewOperNode(GT_NOT, TYP_I_IMPL, mask);
+            GenTree* const paddedSize = gtNewOperNode(GT_AND, TYP_I_IMPL, biasedSize, invMask);
+
+            totalSize = paddedSize;
+        }
+
+#ifndef TARGET_64BIT
+        if (isAlign8)
+        {
+            // For Align8, allocate an extra TARGET_POINTER_SIZED (4) bytes so
+            // we can fix alignment below.
+            //
+            GenTree* const alignSize = gtNewIconNode(4, TYP_I_IMPL);
+            totalSize                = gtNewOperNode(GT_ADD, TYP_I_IMPL, totalSize, alignSize);
+        }
+#endif
+
+        // We will need total size twice, so spill it to a local
+        //
+        unsigned const totalSizeTemp   = lvaGrabTemp(false DEBUGARG("lcl/heap alloc size"));
+        lvaTable[totalSizeTemp].lvType = TYP_I_IMPL;
+        GenTree* const totalSizeStore  = gtNewStoreLclVarNode(totalSizeTemp, totalSize);
+
+        Statement* const totalSizeStmt = fgNewStmtFromTree(totalSizeStore);
+        gtUpdateStmtSideEffects(totalSizeStmt);
+        fgInsertStmtBefore(block, stmt, totalSizeStmt);
+
+        // Check the length against a JIT-time-precomputed safe upper bound,
+        // using an unsigned compare so that negative lengths (which signed
+        // would treat as "small") are routed to the heap-fallback helper. The
+        // helper validates length and raises OverflowException for negatives
+        // or when (length * elemSize) overflows.
+        //
+        // maxSafeLength is the largest length for which:
+        //   base + payload (+ optional align8 pad) <= stackLimit
+        // and for which no intermediate I_IMPL multiply/add can wrap.
+        //
+        size_t const stackLimit = (size_t)(unsigned)JitConfig.JitObjectStackAllocationSize();
+        size_t const baseBytes  = (size_t)OFFSETOF__CORINFO_Array__data;
+#ifndef TARGET_64BIT
+        size_t const align8Pad = isAlign8 ? 4 : 0;
+#else
+        size_t const align8Pad = 0;
+#endif
+        size_t maxSafeLength = 0;
+        if (stackLimit > baseBytes + align8Pad)
+        {
+            assert(elemSizeValue > 0);
+            maxSafeLength = (stackLimit - baseBytes - align8Pad) / elemSizeValue;
+            // The pointer-size round-up below can add up to (TPS - 1) bytes;
+            // trim one element to absorb that slack.
+            if (((elemSizeValue % TARGET_POINTER_SIZE) != 0) && (maxSafeLength > 0))
+            {
+                maxSafeLength--;
+            }
+        }
+
+        GenTree* const  lengthForCheck = gtNewLclVarNode(lengthTemp);
+        var_types const lengthType     = genActualType(lengthForCheck);
+        GenTree* const  lengthLimit    = gtNewIconNode((ssize_t)maxSafeLength, lengthType);
+        GenTree* const  lengthCompare  = gtNewOperNode(GT_GT, TYP_INT, lengthForCheck, lengthLimit);
+        lengthCompare->gtFlags |= GTF_UNSIGNED;
+
+        // Lazily allocate the per-frame running-total local, and insert an
+        // explicit zero-init store at the top of fgFirstBB. Independent of
+        // compInitMem and prolog zero-init policy.
+        //
+        if (frameRunningTotalLclNum == BAD_VAR_NUM)
+        {
+            frameRunningTotalLclNum                  = lvaGrabTemp(false DEBUGARG("stack alloc frame running total"));
+            lvaTable[frameRunningTotalLclNum].lvType = TYP_I_IMPL;
+
+            GenTree* const   zeroInit     = gtNewStoreLclVarNode(frameRunningTotalLclNum, gtNewIconNode(0, TYP_I_IMPL));
+            Statement* const zeroInitStmt = fgNewStmtFromTree(zeroInit);
+            fgInsertStmtAtBeg(fgFirstBB, zeroInitStmt);
+
+            JITDUMP("Created stack alloc frame running total V%02u, zero-init at " FMT_BB "\n", frameRunningTotalLclNum,
+                    fgFirstBB->bbNum);
+        }
+
+        // Build the second check: running + totalSize > frameLimit (unsigned).
+        // Note: when the length check fails the totalSize value computed in
+        // the temp is irrelevant; OR'ing the two compares preserves correct
+        // dispatch (the length check forces heap regardless of the second).
+        //
+        size_t const   frameLimit      = (size_t)(unsigned)JitConfig.JitObjectStackAllocationFrameSize();
+        GenTree* const runningForCheck = gtNewLclVarNode(frameRunningTotalLclNum);
+        GenTree* const totalSizeForSum = gtNewLclVarNode(totalSizeTemp);
+        GenTree* const newRunningTotal = gtNewOperNode(GT_ADD, TYP_I_IMPL, runningForCheck, totalSizeForSum);
+        GenTree* const frameLimitNode  = gtNewIconNode((ssize_t)frameLimit, TYP_I_IMPL);
+        GenTree* const frameCompare    = gtNewOperNode(GT_GT, TYP_INT, newRunningTotal, frameLimitNode);
+        frameCompare->gtFlags |= GTF_UNSIGNED;
+
+        // Combine the two compares. JTRUE requires a relop child, so wrap
+        // the OR with NE 0.
+        //
+        GenTree* const combinedOr       = gtNewOperNode(GT_OR, TYP_INT, lengthCompare, frameCompare);
+        GenTree* const combinedCond     = gtNewOperNode(GT_NE, TYP_INT, combinedOr, gtNewIconNode(0, TYP_INT));
+        GenTree* const runtimeSizeCheck = gtNewOperNode(GT_JTRUE, TYP_VOID, combinedCond);
+
+        Statement* const runtimeSizeCheckStmt = fgNewStmtFromTree(runtimeSizeCheck);
+        gtUpdateStmtSideEffects(runtimeSizeCheckStmt);
+        fgInsertStmtBefore(block, stmt, runtimeSizeCheckStmt);
+
+        // Split block after the call, and insert blocks for the localloc and the heap alloc
+        //
+        BasicBlock* const remainderBlock = fgSplitBlockAfterStatement(block, stmt);
+        BasicBlock* const locallocBlock  = fgNewBBafter(BBJ_ALWAYS, block, /* extendRegion */ true);
+        BasicBlock* const heapallocBlock = fgNewBBafter(BBJ_ALWAYS, locallocBlock, /* extendRegion */ true);
+
+        // Wire up new flow.... assume (for now) localloc is more likely
+        //
+        FlowEdge* const blockRemainderEdge = fgGetPredForBlock(remainderBlock, block);
+        fgRemoveRefPred(blockRemainderEdge);
+
+        FlowEdge* const locallocInEdge  = fgAddRefPred(locallocBlock, block);
+        FlowEdge* const locallocOutEdge = fgAddRefPred(remainderBlock, locallocBlock);
+
+        locallocInEdge->setLikelihood(0.8);
+        locallocBlock->inheritWeightPercentage(block, 80);
+        locallocOutEdge->setLikelihood(1.0);
+        locallocBlock->SetTargetEdge(locallocOutEdge);
+
+        FlowEdge* const heapallocInEdge  = fgAddRefPred(heapallocBlock, block);
+        FlowEdge* const heapallocOutEdge = fgAddRefPred(remainderBlock, heapallocBlock);
+
+        heapallocInEdge->setLikelihood(0.2);
+        heapallocBlock->inheritWeightPercentage(block, 20);
+        heapallocOutEdge->setLikelihood(1.0);
+        heapallocBlock->SetTargetEdge(heapallocOutEdge);
+
+        block->SetCond(heapallocInEdge, locallocInEdge);
+
+        // Now fill in the heapalloc block.
+        //
+        // Create a helper call just like call, but without the extra arguments
+        //
+        GenTreeCall* newCall = gtNewCallNode(CT_HELPER, call->gtCallMethHnd, call->TypeGet());
+
+        newCall->gtArgs.PushBack(this, NewCallArg::Primitive(gtNewLclVarNode(typeTemp)));
+        newCall->gtArgs.PushBack(this, NewCallArg::Primitive(gtNewLclVarNode(lengthTemp)));
+        newCall->gtFlags = call->gtFlags;
+#if defined(FEATURE_READYTORUN)
+        newCall->setEntryPoint(call->gtEntryPoint);
+#endif // FEATURE_READYTORUN
+        newCall = fgMorphArgs(newCall);
+
+        // We expect *callUse's user to be a local store.
+        //
+        assert((*callUse)->gtNext->OperIs(GT_STORE_LCL_VAR));
+        unsigned const   useLclNum      = (*callUse)->gtNext->AsLclVarCommon()->GetLclNum();
+        GenTree* const   heapAllocStore = gtNewStoreLclVarNode(useLclNum, newCall);
+        Statement* const heapAllocStmt  = fgNewStmtFromTree(heapAllocStore);
+
+        gtUpdateStmtSideEffects(heapAllocStmt);
+        fgInsertStmtAtBeg(heapallocBlock, heapAllocStmt);
+
+        // Fill in the first part of the localloc block
+        //
+        fgUnlinkStmt(block, stmt);
+        fgInsertStmtAtBeg(locallocBlock, stmt);
+
+        GenTree* const totalSizeForAlloc = gtNewLclVarNode(totalSizeTemp);
+        GenTree* const locallocNode      = gtNewOperNode(GT_LCLHEAP, TYP_I_IMPL, totalSizeForAlloc);
+
+        // Allocation might fail. Codegen must zero the allocation
+        //
+        locallocNode->gtFlags |= (GTF_EXCEPT | GTF_LCLHEAP_MUSTINIT);
+
+        GenTree* const   locallocStore = gtNewStoreLclVarNode(locallocTemp, locallocNode);
+        Statement* const locallocStmt  = fgNewStmtFromTree(locallocStore);
+
+        gtUpdateStmtSideEffects(locallocStmt);
+        fgInsertStmtBefore(locallocBlock, stmt, locallocStmt);
+
+        // Update the per-frame running total. Only the localloc path
+        // consumes frame space, so do it here and not on the heap path.
+        //
+        GenTree* const   runningOld   = gtNewLclVarNode(frameRunningTotalLclNum);
+        GenTree* const   totalSizeAdd = gtNewLclVarNode(totalSizeTemp);
+        GenTree* const   runningSum   = gtNewOperNode(GT_ADD, TYP_I_IMPL, runningOld, totalSizeAdd);
+        GenTree* const   runningStore = gtNewStoreLclVarNode(frameRunningTotalLclNum, runningSum);
+        Statement* const runningStmt  = fgNewStmtFromTree(runningStore);
+        gtUpdateStmtSideEffects(runningStmt);
+        fgInsertStmtBefore(locallocBlock, locallocStmt, runningStmt);
+
+        // Array address is the result of the localloc
+        //
+        stackLocalAddress = gtNewLclVarNode(locallocTemp);
+        compLocallocUsed  = true;
+
+#ifndef TARGET_64BIT
+        if (isAlign8)
+        {
+            // For Align8, adjust address to be suitably aligned.
+            // Addr = (Localloc + 4) & ~7;
+            //
+            GenTree* const alignSize      = gtNewIconNode(4, TYP_I_IMPL);
+            GenTree* const biasedAddress  = gtNewOperNode(GT_ADD, TYP_I_IMPL, stackLocalAddress, alignSize);
+            GenTree* const alignMaskInv   = gtNewIconNode(-8, TYP_I_IMPL);
+            GenTree* const alignedAddress = gtNewOperNode(GT_AND, TYP_I_IMPL, biasedAddress, alignMaskInv);
+
+            stackLocalAddress = alignedAddress;
+        }
+#endif
+
+        // We now require a frame pointer
+        //
+        codeGen->setFramePointerRequired(true);
+
+        // Update block so code below finishes initializing the localloc array
+        // in the localloc block.
+        //
+        block = locallocBlock;
+    }
+    else
+    {
+        assert(elemSizeArg == nullptr);
+        assert(stackLocalAddressArg != nullptr);
+
+        // Array address is the block local we created earlier
+        //
+        stackLocalAddress = stackLocalAddressArg->GetNode();
+    }
 
     // Initialize the array method table pointer.
     //
-    GenTree* const   mt      = call->gtArgs.GetArgByIndex(typeArgIndex)->GetNode();
-    GenTree* const   mtStore = gtNewStoreValueNode(TYP_I_IMPL, stackLocalAddress, mt);
-    Statement* const mtStmt  = fgNewStmtFromTree(mtStore);
+    GenTree* const   mt        = call->gtArgs.GetArgByIndex(typeArgIndex)->GetNode();
+    GenTree* const   mtToStore = isLocAlloc ? gtNewLclVarNode(typeTemp) : mt;
+    GenTree* const   mtStore   = gtNewStoreValueNode(TYP_I_IMPL, stackLocalAddress, mtToStore);
+    Statement* const mtStmt    = fgNewStmtFromTree(mtStore);
 
     fgInsertStmtBefore(block, stmt, mtStmt);
 
     // Initialize the array length.
     //
-    GenTree* const   lengthArg     = call->gtArgs.GetArgByIndex(lengthArgIndex)->GetNode();
-    GenTree* const   lengthArgInt  = fgOptimizeCast(gtNewCastNode(TYP_INT, lengthArg, false, TYP_INT));
-    GenTree* const   lengthAddress = gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(stackLocalAddress),
-                                                   gtNewIconNode(OFFSETOF__CORINFO_Array__length, TYP_I_IMPL));
-    GenTree* const   lengthStore   = gtNewStoreValueNode(TYP_INT, lengthAddress, lengthArgInt);
-    Statement* const lenStmt       = fgNewStmtFromTree(lengthStore);
+    GenTree* const   arrayLengthToStore = isLocAlloc ? gtNewLclVarNode(lengthTemp) : lengthArg;
+    GenTree* const   lengthArgInt       = fgOptimizeCast(gtNewCastNode(TYP_INT, arrayLengthToStore, false, TYP_INT));
+    GenTree* const   lengthAddress      = gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(stackLocalAddress),
+                                                        gtNewIconNode(OFFSETOF__CORINFO_Array__length, TYP_I_IMPL));
+    GenTree* const   lengthStore        = gtNewStoreValueNode(TYP_INT, lengthAddress, lengthArgInt);
+    Statement* const lenStmt            = fgNewStmtFromTree(lengthStore);
 
     fgInsertStmtBefore(block, stmt, lenStmt);
 

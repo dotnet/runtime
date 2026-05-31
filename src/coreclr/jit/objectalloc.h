@@ -149,6 +149,7 @@ class ObjectAllocator final : public Phase
             , m_allocType(allocType)
             , m_onHeapReason(nullptr)
             , m_bashCall(false)
+            , m_definitelyStackPointing(true)
         {
         }
 
@@ -159,6 +160,12 @@ class ObjectAllocator final : public Phase
         ObjectAllocationType const m_allocType;
         const char*                m_onHeapReason;
         bool                       m_bashCall;
+        // True if a successful stack-allocation of this candidate yields a local that
+        // definitely points at stack memory. False when the morph leaves a runtime
+        // heap fallback in place (e.g. the localloc/heapalloc split for runtime-sized
+        // arrays); in that case the local is only possibly stack-pointing and must
+        // remain GC-reportable.
+        bool m_definitelyStackPointing;
     };
 
     typedef SmallHashTable<unsigned int, unsigned int, 8U> LocalToLocalMap;
@@ -184,6 +191,8 @@ class ObjectAllocator final : public Phase
     BitSetShortLongRep* m_ConnGraphAdjacencyMatrix;
     unsigned int        m_StackAllocMaxSize;
     unsigned            m_stackAllocationCount;
+    bool                m_UseLocalloc;
+    bool                m_UseLocallocInLoop;
 
     // Info for conditionally-escaping locals
     LocalToLocalMap m_EnumeratorLocalToPseudoIndexMap;
@@ -213,7 +222,8 @@ public:
                                   ssize_t              length,
                                   unsigned int*        blockSize,
                                   const char**         reason,
-                                  bool                 preliminaryCheck = false);
+                                  bool                 preliminaryCheck = false,
+                                  bool                 lengthKnown      = true);
 
     static GenTree* IsGuard(BasicBlock* block, GuardInfo* info);
 
@@ -265,6 +275,8 @@ private:
                                                unsigned int         blockSize,
                                                BasicBlock*          block,
                                                Statement*           stmt);
+    void         MorphNewArrNodeIntoLocAlloc(
+                GenTreeCall* newArr, CORINFO_CLASS_HANDLE clsHnd, GenTree* length, BasicBlock* block, Statement* stmt);
     struct BuildConnGraphVisitorCallbackData;
     void AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsigned int lclNum, BasicBlock* block);
     void UpdateAncestorTypes(

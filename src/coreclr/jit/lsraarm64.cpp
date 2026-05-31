@@ -1212,7 +1212,7 @@ int LinearScan::BuildNode(GenTree* tree)
             else
             {
                 srcCount = 1;
-                if (!m_compiler->info.compInitMem)
+                if (!m_compiler->gtMustZeroLocalloc(tree))
                 {
                     buildInternalIntRegisterDefForNode(tree);
                     buildInternalIntRegisterDefForNode(tree);
