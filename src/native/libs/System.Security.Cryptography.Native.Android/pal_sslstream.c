@@ -30,8 +30,6 @@ struct ApplicationProtocolData_t
     int32_t length;
 };
 
-ARGS_NON_NULL(1) static uint16_t* AllocateString(JNIEnv* env, jstring source);
-
 ARGS_NON_NULL_ALL static PAL_SSLStreamStatus DoHandshake(JNIEnv* env, SSLStream* sslStream);
 ARGS_NON_NULL_ALL static PAL_SSLStreamStatus DoWrap(JNIEnv* env, SSLStream* sslStream, int* handshakeStatus, int* bytesConsumed);
 ARGS_NON_NULL_ALL static PAL_SSLStreamStatus DoUnwrap(JNIEnv* env, SSLStream* sslStream, int* handshakeStatus);
@@ -1158,20 +1156,4 @@ bool AndroidCryptoNative_SSLStreamShutdown(SSLStream* sslStream)
 
     PAL_SSLStreamStatus status = Close(env, sslStream);
     return status == SSLStreamStatus_Closed;
-}
-
-static uint16_t* AllocateString(JNIEnv* env, jstring source)
-{
-    if (source == NULL)
-        return NULL;
-
-    // Length with null terminator
-    jsize len = (*env)->GetStringLength(env, source);
-
-    // +1 for null terminator.
-    uint16_t* buffer = xmalloc(sizeof(uint16_t) * (size_t)(len + 1));
-    buffer[len] = '\0';
-
-    (*env)->GetStringRegion(env, source, 0, len, (jchar*)buffer);
-    return buffer;
 }
