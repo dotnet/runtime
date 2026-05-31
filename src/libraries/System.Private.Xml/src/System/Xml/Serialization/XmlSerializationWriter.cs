@@ -463,7 +463,14 @@ namespace System.Xml.Serialization
                 Debug.Assert(!span.Slice(0, charsWritten).ContainsAny(escapeChars), "Primitive value contains illegal xml char.");
 #endif
                 //all the primitive types except string and XmlQualifiedName writes to the buffer
-                _w.WriteRaw(_primitivesBuffer, 0, charsWritten);
+                if (_w is XmlWellFormedWriter wellFormedWriter)
+                {
+                    wellFormedWriter.WriteRaw(_primitivesBuffer.AsSpan(0, charsWritten));
+                }
+                else
+                {
+                    _w.WriteRaw(_primitivesBuffer, 0, charsWritten);
+                }
             }
             else
             {
