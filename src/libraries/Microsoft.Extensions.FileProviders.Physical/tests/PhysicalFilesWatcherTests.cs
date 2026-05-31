@@ -619,17 +619,23 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
 
             using var physicalFilesWatcher = CreateWatcher(rootPath, useActivePolling);
 
-            // On some platforms (e.g., Linux) the FSW does not fire OnError when the watched directory
-            // is deleted (see https://github.com/dotnet/runtime/issues/126295), so we cannot wait
-            // for the token to fire. Instead, wait briefly and then re-register after deleting the directory.
-            physicalFilesWatcher.CreateFileChangeToken("file.txt");
+            // When using a real FileSystemWatcher, deleting the watched directory fires OnError
+            // which causes the token to fire. With polling there is no FSW, so we just wait briefly.
+            IChangeToken initialToken = physicalFilesWatcher.CreateFileChangeToken("file.txt");
+
             Directory.Delete(rootPath, recursive: true);
-            await Task.Delay(WaitTimeForTokenToFire);
+
+            if (useActivePolling)
+            {
+                await Task.Delay(WaitTimeForTokenToFire);
+            }
+            else
+            {
+                await WhenChanged(initialToken);
+            }
 
             // Re-watch the same file — root is now missing, so this goes through PendingCreationWatcher where available
-            IChangeToken token = physicalFilesWatcher.CreateFileChangeToken("file.txt");
-
-            Task changed = WhenChanged(token);
+            Task changed = WhenChanged(physicalFilesWatcher.CreateFileChangeToken("file.txt"));
 
             // Recreate the root — token must not fire yet
             Directory.CreateDirectory(rootPath);
