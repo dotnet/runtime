@@ -791,6 +791,26 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
         dstVarDsc->SetIsMultiRegDest();
     }
 
+    // A GT_LCL_VAR read of a promoted (non-DNER) SIMD local does not
+    // satisfy the post-lowering invariant in Lowering::CheckNode unless the
+    // use sits in a context that the lowering phase repairs (e.g. multi-reg-dest
+    // STORE_LCL_VAR or directly under a GT_RETURN). A GT_FIELD_LIST entry is
+    // not one of those contexts, so block the substitution.
+    //
+    if (fwdSubNode->OperIs(GT_LCL_VAR) && varTypeIsSIMD(fwdSubNode))
+    {
+        LclVarDsc* const fwdSubVarDsc = lvaGetDesc(fwdSubNode->AsLclVar());
+        if (fwdSubVarDsc->lvPromoted && !fwdSubVarDsc->lvDoNotEnregister)
+        {
+            GenTree* const parentNode = fsv.GetParentNode();
+            if ((parentNode != nullptr) && parentNode->OperIs(GT_FIELD_LIST))
+            {
+                JITDUMP(" promoted SIMD lcl var, parent is FIELD_LIST\n");
+                return false;
+            }
+        }
+    }
+
     // If a method returns a multi-reg type, only forward sub locals,
     // and ensure the local and operand have the required markup.
     // (see eg impFixupStructReturnType).
