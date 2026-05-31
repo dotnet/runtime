@@ -84,19 +84,17 @@ WRITE_BARRIER_ENTRY JIT_CheckedWriteBarrier
         //
         // See if this is in GCHeap
         PREPARE_EXTERNAL_VAR g_lowest_address, rax
-        cmp     rdi, [rax]
-        // jb      LOCAL_LABEL(NotInHeap)
-        .byte 0x72, 0x12
+        cmp     r11, [rax]
+        .byte 0x72, LOCAL_LABEL(NotInHeap) - . - 1
         PREPARE_EXTERNAL_VAR g_highest_address, rax
-        cmp     rdi, [rax]
+        cmp     r11, [rax]
 
-        // jnb     LOCAL_LABEL(NotInHeap)
-        .byte 0x73, 0x06
+        .byte 0x73, LOCAL_LABEL(NotInHeap) - . - 1
         jmp     [rip + C_FUNC(JIT_WriteBarrier_Loc)]
 
     LOCAL_LABEL(NotInHeap):
         // See comment above about possible AV
-        mov     [rdi], rsi
+        mov     [r11], rsi
         ret
 WRITE_BARRIER_END JIT_CheckedWriteBarrier
 
@@ -127,63 +125,58 @@ WRITE_BARRIER_ENTRY JIT_WriteBarrier
         // figures out that this came from a WriteBarrier and correctly maps it back
         // to the managed method which called the WriteBarrier (see setup in
         // InitializeExceptionHandling, vm\exceptionhandling.cpp).
-        mov     [rdi], rsi
+        mov     [r11], rsi
 
         // Update the write watch table if necessary
-        mov     rax, rdi
+        mov     rax, r11
         movabs  r10, 0xF0F0F0F0F0F0F0F0
         shr     rax, 0xC // SoftwareWriteWatch::AddressToTableByteIndexShift
         NOP_2_BYTE // padding for alignment of constant
-        movabs  r11, 0xF0F0F0F0F0F0F0F0
+        movabs  r9, 0xF0F0F0F0F0F0F0F0
         add     rax, r10
         cmp     byte ptr [rax], 0x0
-        .byte 0x75, 0x06
-        // jne     LOCAL_LABEL(CheckCardTable)
+        .byte 0x75, LOCAL_LABEL(CheckCardTable) - . - 1
         mov     byte ptr [rax], 0xFF
 
         NOP_3_BYTE // padding for alignment of constant
 
         // Check the lower and upper ephemeral region bounds
     LOCAL_LABEL(CheckCardTable):
-        cmp     rsi, r11
-        .byte 0x72,0x3D
-        // jb      LOCAL_LABEL(Exit)
+        cmp     rsi, r9
+        .byte 0x72, LOCAL_LABEL(Exit) - . - 1
 
         NOP_3_BYTE // padding for alignment of constant
 
         movabs  r10, 0xF0F0F0F0F0F0F0F0
 
         cmp     rsi, r10
-        .byte 0x73,0x2B
-        // jae     LOCAL_LABEL(Exit)
+        .byte 0x73, LOCAL_LABEL(Exit) - . - 1
 
         nop // padding for alignment of constant
 
         movabs  rax, 0xF0F0F0F0F0F0F0F0
 
         // Touch the card table entry, if not already dirty.
-        shr     rdi, 0x0B
-        cmp     byte ptr [rdi + rax], 0xFF
-        .byte 0x75, 0x02
-        // jne     LOCAL_LABEL(UpdateCardTable)
+        shr     r11, 0x0B
+        cmp     byte ptr [r11 + rax], 0xFF
+        .byte 0x75, LOCAL_LABEL(UpdateCardTable) - . - 1
         REPRET
 
     LOCAL_LABEL(UpdateCardTable):
-        mov     byte ptr [rdi + rax], 0xFF
+        mov     byte ptr [r11 + rax], 0xFF
 
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
         NOP_2_BYTE // padding for alignment of constant
-        shr     rdi, 0x0A
+        shr     r11, 0x0A
 
         movabs  rax, 0xF0F0F0F0F0F0F0F0
-        cmp     byte ptr [rdi + rax], 0xFF
+        cmp     byte ptr [r11 + rax], 0xFF
 
-        .byte 0x75, 0x02
-        // jne     LOCAL_LABEL(UpdateCardBundle_WriteWatch_PostGrow64)
+        .byte 0x75, LOCAL_LABEL(UpdateCardBundle_WriteWatch_PostGrow64) - . - 1
         REPRET
 
     LOCAL_LABEL(UpdateCardBundle_WriteWatch_PostGrow64):
-        mov     byte ptr [rdi + rax], 0xFF
+        mov     byte ptr [r11 + rax], 0xFF
 #endif
 
         ret
@@ -223,7 +216,7 @@ WRITE_BARRIER_ENTRY JIT_WriteBarrier
         // figures out that this came from a WriteBarrier and correctly maps it back
         // to the managed method which called the WriteBarrier (see setup in
         // InitializeExceptionHandling, vm\exceptionhandling.cpp).
-        mov     [rdi], rsi
+        mov     [r11], rsi
 
         NOP_3_BYTE // padding for alignment of constant
 
@@ -237,30 +230,27 @@ WRITE_BARRIER_ENTRY JIT_WriteBarrier
 
         // Check the lower and upper ephemeral region bounds
         cmp     rsi, rax
-        // jb      LOCAL_LABEL(Exit)
-        .byte 0x72, 0x36
+        .byte 0x72, LOCAL_LABEL(Exit) - . - 1
 
         nop // padding for alignment of constant
 
         movabs  r8, 0xF0F0F0F0F0F0F0F0
 
         cmp     rsi, r8
-        // jae     LOCAL_LABEL(Exit)
-        .byte 0x73, 0x26
+        .byte 0x73, LOCAL_LABEL(Exit) - . - 1
 
         nop // padding for alignment of constant
 
         movabs  rax, 0xF0F0F0F0F0F0F0F0
 
         // Touch the card table entry, if not already dirty.
-        shr     rdi, 0Bh
-        cmp     byte ptr [rdi + rax], 0FFh
-        .byte 0x75, 0x02
-        // jne     LOCAL_LABEL(UpdateCardTable)
+        shr     r11, 0Bh
+        cmp     byte ptr [r11 + rax], 0FFh
+        .byte 0x75, LOCAL_LABEL(UpdateCardTable) - . - 1
         REPRET
 
     LOCAL_LABEL(UpdateCardTable):
-        mov     byte ptr [rdi + rax], 0FFh
+        mov     byte ptr [r11 + rax], 0FFh
 
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
         NOP_6_BYTE // padding for alignment of constant
@@ -268,16 +258,15 @@ WRITE_BARRIER_ENTRY JIT_WriteBarrier
         movabs  rax, 0xF0F0F0F0F0F0F0F0
 
         // Touch the card bundle, if not already dirty.
-        // rdi is already shifted by 0xB, so shift by 0xA more
-        shr     rdi, 0x0A
-        cmp     byte ptr [rdi + rax], 0FFh
+        // r11 is already shifted by 0xB, so shift by 0xA more
+        shr     r11, 0x0A
+        cmp     byte ptr [r11 + rax], 0FFh
 
-        .byte 0x75, 0x02
-        // jne     LOCAL_LABEL(UpdateCardBundle)
+        .byte 0x75, LOCAL_LABEL(UpdateCardBundle) - . - 1
         REPRET
 
     LOCAL_LABEL(UpdateCardBundle):
-        mov     byte ptr [rdi + rax], 0FFh
+        mov     byte ptr [r11 + rax], 0FFh
 #endif
 
         ret

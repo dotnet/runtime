@@ -46,6 +46,7 @@ ifdef _DEBUG
 ; needs to be updated
 ;
 ; void JIT_WriteBarrier_Debug(Object** dst, Object* src)
+; Custom calling convention: dst is in R11 (NOT RCX). RCX is preserved.
 LEAF_ENTRY JIT_WriteBarrier_Debug, _TEXT
 
 ifdef WRITE_BARRIER_CHECK
@@ -55,7 +56,7 @@ ifdef WRITE_BARRIER_CHECK
         je      NoShadow
 
         ; If we end up outside of the heap don't corrupt random memory
-        mov     r10, rcx
+        mov     r10, r11
         sub     r10, [g_lowest_address]
         jb      NoShadow
 
@@ -65,7 +66,7 @@ ifdef WRITE_BARRIER_CHECK
         jnb     NoShadow
 
         ; Write ref into real GC; see comment below about possibility of AV
-        mov     [rcx], rdx
+        mov     [r11], rdx
         ; Write ref into shadow GC
         mov     [r10], rdx
 
@@ -74,12 +75,12 @@ ifdef WRITE_BARRIER_CHECK
         mfence
 
         ; Check that GC/ShadowGC values match
-        mov     r11, [rcx]
+        mov     r8, [r11]
         mov     rax, [r10]
-        cmp     rax, r11
+        cmp     rax, r8
         je      DoneShadow
-        mov     r11, INVALIDGCVALUE
-        mov     [r10], r11
+        mov     r8, INVALIDGCVALUE
+        mov     [r10], r8
 
         jmp     DoneShadow
 
@@ -93,7 +94,7 @@ endif
         ; figures out that this came from a WriteBarrier and correctly maps it back
         ; to the managed method which called the WriteBarrier (see setup in
         ; InitializeExceptionHandling, vm\exceptionhandling.cpp).
-        mov     [rcx], rax
+        mov     [r11], rax
 
 ifdef WRITE_BARRIER_CHECK
     ; If we had a shadow GC then we already wrote to the real GC at the same time
@@ -105,7 +106,7 @@ ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         ; Update the write watch table if necessary
         cmp     byte ptr [g_sw_ww_enabled_for_gc_heap], 0h
         je      CheckCardTable
-        mov     r10, rcx
+        mov     r10, r11
         shr     r10, 0Ch ; SoftwareWriteWatch::AddressToTableByteIndexShift
         add     r10, qword ptr [g_write_watch_table]
         cmp     byte ptr [r10], 0h
@@ -122,26 +123,26 @@ endif
 
         ; Check if we need to update the card table
         ; Calc pCardByte
-        shr     rcx, 0Bh
-        add     rcx, [g_card_table]
+        shr     r11, 0Bh
+        add     r11, [g_card_table]
 
         ; Check if this card is dirty
-        cmp     byte ptr [rcx], 0FFh
+        cmp     byte ptr [r11], 0FFh
         jne     UpdateCardTable
         REPRET
 
     UpdateCardTable:
-        mov     byte ptr [rcx], 0FFh
+        mov     byte ptr [r11], 0FFh
 ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
-        sub     rcx, [g_card_table]
-        shr     rcx, 0Ah
-        add     rcx, [g_card_bundle_table]
-        cmp     byte ptr [rcx], 0FFh
+        sub     r11, [g_card_table]
+        shr     r11, 0Ah
+        add     r11, [g_card_bundle_table]
+        cmp     byte ptr [r11], 0FFh
         jne     UpdateCardBundleTable
         REPRET
 
     UpdateCardBundleTable:
-        mov     byte ptr [rcx], 0FFh
+        mov     byte ptr [r11], 0FFh
 endif
         ret
 
