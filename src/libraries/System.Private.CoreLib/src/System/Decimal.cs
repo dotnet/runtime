@@ -446,10 +446,10 @@ namespace System
         //
         public override bool Equals([NotNullWhen(true)] object? value) =>
             value is decimal other &&
-            DecCalc.VarDecCmp(in this, in other) == 0;
+            DecCalc.Equals(in this, in other);
 
         public bool Equals(decimal value) =>
-            DecCalc.VarDecCmp(in this, in value) == 0;
+            DecCalc.Equals(in this, in value);
 
         // Returns the hash code for this Decimal.
         //
@@ -460,7 +460,7 @@ namespace System
         //
         public static bool Equals(decimal d1, decimal d2)
         {
-            return DecCalc.VarDecCmp(in d1, in d2) == 0;
+            return DecCalc.Equals(in d1, in d2);
         }
 
         // Rounds a Decimal to an integer value. The Decimal argument is rounded
@@ -1006,10 +1006,10 @@ namespace System
         }
 
         /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Equality(TSelf, TOther)" />
-        public static bool operator ==(decimal d1, decimal d2) => DecCalc.VarDecCmp(in d1, in d2) == 0;
+        public static bool operator ==(decimal d1, decimal d2) => DecCalc.Equals(in d1, in d2);
 
         /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Inequality(TSelf, TOther)" />
-        public static bool operator !=(decimal d1, decimal d2) => DecCalc.VarDecCmp(in d1, in d2) != 0;
+        public static bool operator !=(decimal d1, decimal d2) => !DecCalc.Equals(in d1, in d2);
 
         /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThan(TSelf, TOther)" />
         public static bool operator <(decimal d1, decimal d2) => DecCalc.VarDecCmp(in d1, in d2) < 0;
@@ -1177,7 +1177,6 @@ namespace System
             {
                 BinaryPrimitives.WriteUInt32BigEndian(destination, _hi32);
                 BinaryPrimitives.WriteUInt64BigEndian(destination.Slice(sizeof(uint)), _lo64);
-
                 bytesWritten = sizeof(uint) + sizeof(ulong);
                 return true;
             }
@@ -1195,7 +1194,6 @@ namespace System
             {
                 BinaryPrimitives.WriteUInt64LittleEndian(destination, _lo64);
                 BinaryPrimitives.WriteUInt32LittleEndian(destination.Slice(sizeof(ulong)), _hi32);
-
                 bytesWritten = sizeof(ulong) + sizeof(uint);
                 return true;
             }
@@ -1349,9 +1347,7 @@ namespace System
         /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
         public static bool IsCanonical(decimal value)
         {
-            uint scale = (byte)(value._flags >> ScaleShift);
-
-            if (scale == 0)
+            if ((value._flags & ScaleMask) == 0)
             {
                 // We have an exact integer represented with no trailing zero
                 return true;
@@ -1360,13 +1356,16 @@ namespace System
             // We have some value where some fractional part is specified. So,
             // if the least significant digit is 0, then we are not canonical
 
-            if (value._hi32 == 0)
+            ulong tmp = value._lo64;
+            if (value._hi32 != 0)
             {
-                return (value._lo64 % 10) != 0;
+                // For 96-bit mod-10 reduction first do upper-64 remainder then fold in low-32
+                tmp = ((ulong)value._hi32 << 32) | (tmp >> 32);
+                tmp %= 10;
+                tmp = (tmp << 32) | (uint)value._lo64;
             }
 
-            var significand = new UInt128(value._hi32, value._lo64);
-            return (significand % 10U) != 0U;
+            return (tmp % 10) != 0;
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsComplexNumber(TSelf)" />
@@ -1401,7 +1400,7 @@ namespace System
         static bool INumberBase<decimal>.IsNegativeInfinity(decimal value) => false;
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsNormal(TSelf)" />
-        static bool INumberBase<decimal>.IsNormal(decimal value) => value != 0;
+        static bool INumberBase<decimal>.IsNormal(decimal value) => (value._hi32 | value._lo64) != 0;
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsOddInteger(TSelf)" />
         public static bool IsOddInteger(decimal value)
@@ -1423,20 +1422,19 @@ namespace System
         static bool INumberBase<decimal>.IsSubnormal(decimal value) => false;
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsZero(TSelf)" />
-        static bool INumberBase<decimal>.IsZero(decimal value) => (value == 0);
+        static bool INumberBase<decimal>.IsZero(decimal value) => (value._hi32 | value._lo64) == 0;
 
         /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitude(TSelf, TSelf)" />
         public static decimal MaxMagnitude(decimal x, decimal y)
         {
-            decimal ax = Abs(x);
-            decimal ay = Abs(y);
+            int c = DecCalc.VarDecCmp(Abs(x), Abs(y));
 
-            if (ax > ay)
+            if (c > 0)
             {
                 return x;
             }
 
-            if (ax == ay)
+            if (c == 0)
             {
                 return IsNegative(x) ? y : x;
             }
@@ -1450,15 +1448,14 @@ namespace System
         /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitude(TSelf, TSelf)" />
         public static decimal MinMagnitude(decimal x, decimal y)
         {
-            decimal ax = Abs(x);
-            decimal ay = Abs(y);
+            int c = DecCalc.VarDecCmp(Abs(x), Abs(y));
 
-            if (ax < ay)
+            if (c < 0)
             {
                 return x;
             }
 
-            if (ax == ay)
+            if (c == 0)
             {
                 return IsNegative(x) ? x : y;
             }
@@ -1598,7 +1595,7 @@ namespace System
             else if (typeof(TOther) == typeof(UInt128))
             {
                 UInt128 actualValue = (UInt128)(object)value;
-                result = (actualValue >= new UInt128(0x0000_0000_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)) ? MaxValue : (decimal)actualValue;
+                result = actualValue.Upper > uint.MaxValue ? MaxValue : (decimal)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(nuint))
