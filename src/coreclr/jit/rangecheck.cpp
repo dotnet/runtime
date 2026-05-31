@@ -14,12 +14,21 @@
 //
 PhaseStatus Compiler::rangeCheckPhase()
 {
-    if (!doesMethodHaveBoundsChecks() || (fgSsaPassesCompleted == 0))
+    if ((!doesMethodHaveBoundsChecks() && !doesMethodHaveUModByConstUInt16Candidate()) || (fgSsaPassesCompleted == 0))
     {
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    const bool madeChanges = GetRangeCheck()->OptimizeRangeChecks();
+    RangeCheck* rc          = GetRangeCheck();
+    bool        madeChanges = false;
+    if (doesMethodHaveBoundsChecks())
+    {
+        madeChanges = rc->OptimizeRangeChecks();
+    }
+    if (doesMethodHaveUModByConstUInt16Candidate())
+    {
+        madeChanges |= rc->TryMarkUModUInt16Operands();
+    }
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
@@ -2404,6 +2413,90 @@ bool RangeCheck::OptimizeRangeChecks()
             {
                 m_compiler->gtSetStmtInfo(stmt);
                 m_compiler->fgSetStmtSeq(stmt);
+                madeChanges = true;
+            }
+        }
+    }
+
+    return madeChanges;
+}
+
+//------------------------------------------------------------------------
+// TryMarkUModUInt16Operands: detect GT_MOD/GT_UMOD nodes where the divisor is
+//   a positive uint16 constant and the dividend is provably in uint16 range.
+//   Such nodes are converted to GT_UMOD (if signed) and tagged with
+//   GTF_UMOD_UINT16_OPERANDS so that lowering can emit a cheaper FastMod
+//   sequence specialized for 16-bit operands.
+//
+// Return Value:
+//    True if any node was modified.
+//
+bool RangeCheck::TryMarkUModUInt16Operands()
+{
+    bool madeChanges = false;
+
+    for (BasicBlock* const block : m_compiler->Blocks())
+    {
+        for (Statement* const stmt : block->Statements())
+        {
+            for (GenTree* const tree : stmt->TreeList())
+            {
+                if (!tree->OperIs(GT_MOD, GT_UMOD))
+                {
+                    continue;
+                }
+
+                if ((tree->gtFlags & GTF_UMOD_UINT16_OPERANDS) != 0)
+                {
+                    continue;
+                }
+
+                if (!tree->TypeIs(TYP_INT, TYP_LONG))
+                {
+                    continue;
+                }
+
+                GenTree* divisor = tree->gtGetOp2();
+                if (!divisor->IsCnsIntOrI())
+                {
+                    continue;
+                }
+
+                ssize_t divisorValue = divisor->AsIntCon()->IconValue();
+                if ((divisorValue <= 0) || !FitsIn<uint16_t>(divisorValue))
+                {
+                    continue;
+                }
+
+                GenTree* dividend = tree->gtGetOp1();
+
+                bool dividendFitsUint16 =
+                    IntegralRange::ForType(TYP_USHORT).Contains(IntegralRange::ForNode(dividend, m_compiler));
+
+                if (!dividendFitsUint16 && (m_compiler->vnStore != nullptr))
+                {
+                    // Fall back to a richer VN-/assertion-based range analysis.
+                    Range range = Range(Limit(Limit::keUndef));
+                    if (TryGetRange(block, dividend, &range) && range.IsConstantRange())
+                    {
+                        const int lower    = range.LowerLimit().GetConstant();
+                        const int upper    = range.UpperLimit().GetConstant();
+                        dividendFitsUint16 = (lower >= 0) && (upper <= UINT16_MAX);
+                    }
+                }
+
+                if (!dividendFitsUint16)
+                {
+                    continue;
+                }
+
+                JITDUMP("Marking [%06u] as a uint16 UMOD candidate\n", Compiler::dspTreeID(tree));
+
+                if (tree->OperIs(GT_MOD))
+                {
+                    tree->SetOper(GT_UMOD);
+                }
+                tree->gtFlags |= GTF_UMOD_UINT16_OPERANDS;
                 madeChanges = true;
             }
         }

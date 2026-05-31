@@ -7415,11 +7415,44 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
             else if (tree->OperIs(GT_MOD) && op2->IsIntegralConst() && !op2->IsIntegralConstAbsPow2())
 #endif
             {
+#ifdef TARGET_64BIT
+                // If the divisor is a positive uint16 constant and the dividend
+                // is statically provable as uint16, lower can emit a cheaper
+                // FastMod sequence specialized for 16-bit operands. Convert MOD
+                // to UMOD here so lowering picks it up, and skip the SUB-MUL-DIV
+                // rewrite below.
+                if (!opts.MinOpts() && op2->IsCnsIntOrI())
+                {
+                    ssize_t modDivisor = op2->AsIntCon()->IconValue();
+                    if ((modDivisor > 0) && FitsIn<uint16_t>(modDivisor) &&
+                        IntegralRange::ForType(TYP_USHORT).Contains(IntegralRange::ForNode(op1, this)))
+                    {
+                        if (tree->OperIs(GT_MOD))
+                        {
+                            tree->SetOper(GT_UMOD);
+                        }
+                        break;
+                    }
+                }
+#endif // TARGET_64BIT
+
                 // Transformation: a % b = a - (a / b) * b;
                 tree = fgMorphModToSubMulDiv(tree->AsOp());
                 op1  = tree->AsOp()->gtOp1;
                 op2  = tree->AsOp()->gtOp2;
             }
+#if defined(TARGET_64BIT) && !defined(TARGET_ARM64)
+            else if (!opts.MinOpts() && tree->OperIs(GT_MOD, GT_UMOD) && !op2->IsIntegralConst() &&
+                     ((typ == TYP_INT) || (typ == TYP_LONG)) &&
+                     IntegralRange::ForType(TYP_USHORT).Contains(IntegralRange::ForNode(op1, this)))
+            {
+                // The dividend structurally fits in uint16 but the divisor
+                // hasn't folded yet (e.g. a span length computed from an RVA
+                // static). Let the range check phase re-examine such nodes
+                // after VN/CSE in case the divisor becomes a uint16 constant.
+                setMethodHasUModByConstUInt16Candidate();
+            }
+#endif // TARGET_64BIT && !TARGET_ARM64
             break;
 
         USE_HELPER_FOR_ARITH:
