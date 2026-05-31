@@ -760,6 +760,14 @@ namespace System.Net
                     case Interop.NetSecurityNative.Status.GSS_S_BAD_MECH:
                     case Interop.NetSecurityNative.Status.GSS_S_UNAVAILABLE:
                         return NegotiateAuthenticationStatusCode.Unsupported;
+                    case Interop.NetSecurityNative.Status.GSS_S_FAILURE:
+                        // KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN - server principal is unknown in the KDC
+                        // This is the same error code value in both MIT and Heimdal Kerberos (com_err base for "krb5" table)
+                        if ((uint)exception.MinorStatus == 0x96C73A07u)
+                        {
+                            return NegotiateAuthenticationStatusCode.TargetUnknown;
+                        }
+                        return NegotiateAuthenticationStatusCode.GenericFailure;
                     case Interop.NetSecurityNative.Status.GSS_S_NO_CONTEXT:
                     default:
                         return NegotiateAuthenticationStatusCode.GenericFailure;
