@@ -8486,5 +8486,13 @@ namespace JIT.HardwareIntrinsics.Arm
 
             return sum;
         }
+
+        private static ulong RotateLeft1(ulong op) => (op << 1) | (op >> 63);
+
+        public static ulong BitwiseRotateLeftBy1AndXor(ulong op1, ulong op2)
+            => op1 ^ RotateLeft1(op2);
+
+        public static long BitwiseRotateLeftBy1AndXor(long op1, long op2)
+            => op1 ^ unchecked((long)RotateLeft1((ulong)op2));
     }
 }

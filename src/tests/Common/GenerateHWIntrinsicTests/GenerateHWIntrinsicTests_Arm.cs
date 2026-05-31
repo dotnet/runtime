@@ -106,6 +106,8 @@ class GenerateHWIntrinsicTests_Arm
         ProcessInputs(BaseTests.Crc32Inputs);
         ProcessInputs(SveTests.SveInputs);
         ProcessInputs(Sve2Tests.Sve2Inputs);
+        ProcessInputs(AdvSimdTests.Sha3Inputs);
+        ProcessInputs(SveTests.SveSha3Inputs);
 
         void ProcessInputs(TestGroup testGroup)
         {

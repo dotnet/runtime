@@ -1239,9 +1239,21 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     break;
 
                 case 3:
-                    assert(!hasImmediateOperand);
 
-                    GetEmitter()->emitIns_R_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, op3Reg, opt);
+                    if (hasImmediateOperand)
+                    {
+                        assert(!isRMW);
+                        HWIntrinsicImmOpHelper helper(this, intrin.op3, node);
+                        for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
+                        {
+                            const int imm = helper.ImmValue();
+                            GetEmitter()->emitIns_R_R_R_I(ins, emitSize, targetReg, op1Reg, op2Reg, imm, opt);
+                        }
+                    }
+                    else
+                    {
+                        GetEmitter()->emitIns_R_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, op3Reg, opt);
+                    }
                     break;
 
                 default:
@@ -2114,6 +2126,11 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_ArmBase_Arm64_MultiplyLongSub:
                 assert(opt == INS_OPTS_NONE);
                 GetEmitter()->emitIns_R_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, op3Reg);
+                break;
+
+            case NI_Sha3_BitwiseClearXor:
+            case NI_Sha3_Xor:
+                GetEmitter()->emitIns_R_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, op3Reg, INS_OPTS_16B);
                 break;
 
             case NI_Sve_ConvertMaskToVector:
