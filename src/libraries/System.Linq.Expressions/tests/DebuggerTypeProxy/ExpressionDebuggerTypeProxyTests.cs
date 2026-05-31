@@ -163,6 +163,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/122617", TestPlatforms.Android)]
         [ConditionalTheory, MemberData(nameof(OnePerType))]
         public void ThrowOnNullToCtor(object sourceObject)
         {
