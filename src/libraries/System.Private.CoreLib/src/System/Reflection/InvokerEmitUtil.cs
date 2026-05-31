@@ -16,7 +16,11 @@ namespace System.Reflection
         internal delegate object? InvokeFunc_ObjSpanArgs(object? obj, Span<object?> arguments);
         internal delegate object? InvokeFunc_Obj4Args(object? obj, object? arg1, object? arg2, object? arg3, object? arg4);
 
+#if MONO
         public static InvokeFunc_Obj4Args CreateInvokeDelegate_Obj4Args(MethodBase method, bool backwardsCompat)
+#else
+        public static InvokeFunc_Obj4Args CreateInvokeDelegate_Obj4Args(MethodBase method)
+#endif
         {
             Debug.Assert(!method.ContainsGenericParameters);
 
@@ -77,13 +81,21 @@ namespace System.Reflection
                 }
             }
 
+#if MONO
             EmitCallAndReturnHandling(il, method, emitNew, backwardsCompat);
+#else
+            EmitCallAndReturnHandling(il, method, emitNew);
+#endif
 
             // Create the delegate; it is also compiled at this point due to restrictedSkipVisibility=true.
             return (InvokeFunc_Obj4Args)dm.CreateDelegate(typeof(InvokeFunc_Obj4Args), target: null);
         }
 
+#if MONO
         public static InvokeFunc_ObjSpanArgs CreateInvokeDelegate_ObjSpanArgs(MethodBase method, bool backwardsCompat)
+#else
+        public static InvokeFunc_ObjSpanArgs CreateInvokeDelegate_ObjSpanArgs(MethodBase method)
+#endif
         {
             Debug.Assert(!method.ContainsGenericParameters);
 
@@ -134,13 +146,21 @@ namespace System.Reflection
                 }
             }
 
+#if MONO
             EmitCallAndReturnHandling(il, method, emitNew, backwardsCompat);
+#else
+            EmitCallAndReturnHandling(il, method, emitNew);
+#endif
 
             // Create the delegate; it is also compiled at this point due to restrictedSkipVisibility=true.
             return (InvokeFunc_ObjSpanArgs)dm.CreateDelegate(typeof(InvokeFunc_ObjSpanArgs), target: null);
         }
 
+#if MONO
         public static InvokeFunc_RefArgs CreateInvokeDelegate_RefArgs(MethodBase method, bool backwardsCompat)
+#else
+        public static InvokeFunc_RefArgs CreateInvokeDelegate_RefArgs(MethodBase method)
+#endif
         {
             Debug.Assert(!method.ContainsGenericParameters);
 
@@ -170,6 +190,81 @@ namespace System.Reflection
                 }
             }
 
+#if !MONO
+            if (emitNew)
+            {
+                Debug.Assert(method is RuntimeConstructorInfo);
+
+                // Constructor invoke has two behaviors:
+                // 1) obj == null: allocate and run ctor (normal constructor invoke)
+                // 2) obj != null: run ctor on existing instance and return null
+                Label allocateAndInvoke = il.DefineLabel();
+                Label done = il.DefineLabel();
+
+                il.Emit(OpCodes.Ldarg_1);
+                il.Emit(OpCodes.Brfalse, allocateAndInvoke);
+
+                il.Emit(OpCodes.Ldarg_1);
+                if (method.DeclaringType!.IsValueType)
+                {
+                    il.Emit(OpCodes.Unbox, method.DeclaringType);
+                }
+
+                // Push the arguments from byref storage.
+                ReadOnlySpan<ParameterInfo> ctorParameters = method.GetParametersAsSpan();
+                for (int i = 0; i < ctorParameters.Length; i++)
+                {
+                    il.Emit(OpCodes.Ldarg_2);
+                    if (i != 0)
+                    {
+                        il.Emit(OpCodes.Ldc_I4, i * IntPtr.Size);
+                        il.Emit(OpCodes.Add);
+                    }
+
+                    il.Emit(OpCodes.Ldfld, Methods.ByReferenceOfByte_Value());
+
+                    RuntimeType parameterType = (RuntimeType)ctorParameters[i].ParameterType;
+                    if (!parameterType.IsByRef)
+                    {
+                        il.Emit(OpCodes.Ldobj, parameterType.IsPointer || parameterType.IsFunctionPointer ? typeof(IntPtr) : parameterType);
+                    }
+                }
+
+                il.Emit(OpCodes.Call, (ConstructorInfo)method);
+                il.Emit(OpCodes.Ldnull);
+                il.Emit(OpCodes.Br, done);
+
+                il.MarkLabel(allocateAndInvoke);
+
+                // Push the arguments from byref storage.
+                for (int i = 0; i < ctorParameters.Length; i++)
+                {
+                    il.Emit(OpCodes.Ldarg_2);
+                    if (i != 0)
+                    {
+                        il.Emit(OpCodes.Ldc_I4, i * IntPtr.Size);
+                        il.Emit(OpCodes.Add);
+                    }
+
+                    il.Emit(OpCodes.Ldfld, Methods.ByReferenceOfByte_Value());
+
+                    RuntimeType parameterType = (RuntimeType)ctorParameters[i].ParameterType;
+                    if (!parameterType.IsByRef)
+                    {
+                        il.Emit(OpCodes.Ldobj, parameterType.IsPointer || parameterType.IsFunctionPointer ? typeof(IntPtr) : parameterType);
+                    }
+                }
+
+                EmitCallAndReturnHandling(il, method, emitNew);
+
+                il.MarkLabel(done);
+                il.Emit(OpCodes.Ret);
+
+                // Create the delegate; it is also compiled at this point due to restrictedSkipVisibility=true.
+                return (InvokeFunc_RefArgs)dm.CreateDelegate(typeof(InvokeFunc_RefArgs), target: null);
+            }
+#endif
+
             // Push the arguments.
             ReadOnlySpan<ParameterInfo> parameters = method.GetParametersAsSpan();
             for (int i = 0; i < parameters.Length; i++)
@@ -190,7 +285,11 @@ namespace System.Reflection
                 }
             }
 
+#if MONO
             EmitCallAndReturnHandling(il, method, emitNew, backwardsCompat);
+#else
+            EmitCallAndReturnHandling(il, method, emitNew);
+#endif
 
             // Create the delegate; it is also compiled at this point due to restrictedSkipVisibility=true.
             return (InvokeFunc_RefArgs)dm.CreateDelegate(typeof(InvokeFunc_RefArgs), target: null);
@@ -205,19 +304,26 @@ namespace System.Reflection
             il.Emit(OpCodes.Ldobj, parameterType);
         }
 
+#if MONO
         private static void EmitCallAndReturnHandling(ILGenerator il, MethodBase method, bool emitNew, bool backwardsCompat)
+#else
+        private static void EmitCallAndReturnHandling(ILGenerator il, MethodBase method, bool emitNew)
+#endif
         {
+#if MONO
             // For CallStack reasons, don't inline target method.
             // Mono interpreter does not support\need this.
             if (backwardsCompat && RuntimeFeature.IsDynamicCodeCompiled)
             {
-#if MONO
                 il.Emit(OpCodes.Call, Methods.DisableInline());
+            }
 #else
+            if (RuntimeFeature.IsDynamicCodeCompiled)
+            {
                 il.Emit(OpCodes.Call, Methods.NextCallReturnAddress());
                 il.Emit(OpCodes.Pop);
-#endif
             }
+#endif
 
             // Invoke the method.
             if (emitNew)

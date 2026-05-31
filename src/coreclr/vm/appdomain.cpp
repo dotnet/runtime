@@ -1228,7 +1228,8 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
     }
 
     /* List of types that should be skipped to identify true caller */
-    static const BinderClassID reflectionInvocationTypes[] = {
+    static const BinderClassID reflectionInvocationTypes[] =
+    {
         CLASS__METHOD,
         CLASS__METHOD_BASE,
         CLASS__METHOD_INFO,
@@ -1256,6 +1257,8 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
         CLASS__DELEGATE,
         CLASS__MULTICAST_DELEGATE,
         CLASS__METHODBASEINVOKER,
+        CLASS__INSTANCE_CALLI_HELPER,
+        CLASS__INTRINSIC_INVOKE_HELPER,
         CLASS__INITHELPERS,
         CLASS__STATICSHELPERS,
     };

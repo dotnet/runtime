@@ -302,16 +302,16 @@ namespace System.Reflection
         #region Pseudo Custom Attribute Constructor
         internal RuntimeCustomAttributeData(Attribute attribute)
         {
-           if (attribute is DllImportAttribute dllImportAttribute)
-               Init(dllImportAttribute);
-           else if (attribute is FieldOffsetAttribute fieldOffsetAttribute)
-               Init(fieldOffsetAttribute);
-           else if (attribute is MarshalAsAttribute marshalAsAttribute)
-               Init(marshalAsAttribute);
-           else if (attribute is TypeForwardedToAttribute typeForwardedToAttribute)
-               Init(typeForwardedToAttribute);
-           else
-               Init(attribute);
+            if (attribute is DllImportAttribute dllImportAttribute)
+                Init(dllImportAttribute);
+            else if (attribute is FieldOffsetAttribute fieldOffsetAttribute)
+                Init(fieldOffsetAttribute);
+            else if (attribute is MarshalAsAttribute marshalAsAttribute)
+                Init(marshalAsAttribute);
+            else if (attribute is TypeForwardedToAttribute typeForwardedToAttribute)
+                Init(typeForwardedToAttribute);
+            else
+                Init(attribute);
         }
         private void Init(DllImportAttribute dllImport)
         {
@@ -849,24 +849,24 @@ namespace System.Reflection
                     arg.StringValue = parser.GetString();
                     break;
                 case CustomAttributeEncoding.Array:
-                {
-                    arg.ArrayValue = null;
-                    int len = parser.GetI4();
-                    if (len != -1) // indicates array is null - ECMA-335 II.23.3.
                     {
-                        attributeType = new CustomAttributeType(
-                            attributeType.EncodedArrayType,
-                            CustomAttributeEncoding.Undefined, // Array type
-                            attributeType.EncodedEnumType,
-                            attributeType.EnumType);
-                        arg.ArrayValue = new CustomAttributeEncodedArgument[len];
-                        for (int i = 0; i < len; ++i)
+                        arg.ArrayValue = null;
+                        int len = parser.GetI4();
+                        if (len != -1) // indicates array is null - ECMA-335 II.23.3.
                         {
-                            arg.ArrayValue[i] = ParseCustomAttributeValue(ref parser, attributeType, module);
+                            attributeType = new CustomAttributeType(
+                                attributeType.EncodedArrayType,
+                                CustomAttributeEncoding.Undefined, // Array type
+                                attributeType.EncodedEnumType,
+                                attributeType.EnumType);
+                            arg.ArrayValue = new CustomAttributeEncodedArgument[len];
+                            for (int i = 0; i < len; ++i)
+                            {
+                                arg.ArrayValue[i] = ParseCustomAttributeValue(ref parser, attributeType, module);
+                            }
                         }
+                        break;
                     }
-                    break;
-                }
                 default:
                     throw new BadImageFormatException();
             }
@@ -1856,6 +1856,87 @@ namespace System.Reflection
             allowMultiple = allowMultipleLocal != 0;
             inherited = inheritedLocal != 0;
             return result != 0;
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe void InvokeCustomAttributeCtor(NativeCtorInvokeContract* pContract, object* pResult, Exception* pException)
+        {
+            try
+            {
+                object?[]? parameters = *pContract->CtorArgs;
+                object? ctorObject = *pContract->CtorMethod;
+
+                int argCount = pContract->ArgCount;
+                if (argCount < 0 || parameters is null || parameters.Length != argCount)
+                {
+                    throw new TargetParameterCountException(SR.Arg_ParmCnt);
+                }
+
+                RuntimeConstructorInfo? ctor = ctorObject as RuntimeConstructorInfo;
+                if (ctor is null)
+                {
+                    if (ctorObject is not System.IRuntimeMethodInfo methodInfo ||
+                        RuntimeType.GetMethodBase(methodInfo) is not RuntimeConstructorInfo resolvedCtor)
+                    {
+                        throw new InvalidOperationException("Invalid custom attribute constructor.");
+                    }
+
+                    ctor = resolvedCtor;
+                }
+
+                ReadOnlySpan<ParameterInfo> ctorParameters = default;
+                bool needCtorParameters = false;
+
+                for (int i = 0; i < argCount; i++)
+                {
+                    object? arg = parameters[i];
+
+                    if (ReferenceEquals(arg, DBNull.Value) || ReferenceEquals(arg, Missing.Value))
+                    {
+                        parameters[i] = null;
+                        continue;
+                    }
+
+                    if (arg is not null && arg.GetType() == typeof(object))
+                    {
+                        if (!needCtorParameters)
+                        {
+                            ctorParameters = ctor.GetParametersAsSpan();
+                            needCtorParameters = true;
+                        }
+
+                        if ((uint)i < (uint)ctorParameters.Length && ctorParameters[i].ParameterType == typeof(object))
+                        {
+                            // Native custom-attribute parsing can represent object-typed null as a plain object instance.
+                            parameters[i] = null;
+                        }
+                    }
+                }
+
+                MethodBaseInvoker invoker = ctor.Invoker;
+                object? result = argCount switch
+                {
+                    0 => invoker.InvokeWithNoArgs(obj: null, BindingFlags.DoNotWrapExceptions),
+                    1 => invoker.InvokeWithOneArg(obj: null, BindingFlags.DoNotWrapExceptions, binder: null, parameters, culture: null),
+                    2 or 3 or 4 => invoker.InvokeWithFewArgs(obj: null, BindingFlags.DoNotWrapExceptions, binder: null, parameters, culture: null),
+                    _ => invoker.InvokeWithManyArgs(obj: null, BindingFlags.DoNotWrapExceptions, binder: null, parameters, culture: null),
+                };
+
+                *pResult = result!;
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private unsafe struct NativeCtorInvokeContract
+        {
+            public object[]* CtorArgs;
+            public int ArgCount;
+            public object* CtorMethod;
+            public object* CtorDeclaringType;
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "CustomAttribute_CreateCustomAttributeInstance")]
