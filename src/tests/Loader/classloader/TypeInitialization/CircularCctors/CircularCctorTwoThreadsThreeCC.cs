@@ -86,6 +86,8 @@ public class Coordinator
     public readonly Thread Thread;
     private static readonly Barrier s_barrier = new (3);
 
+    public Coordinator() { }
+
     private Coordinator(bool xThenY, SlotConstants threadTag)
     {
         var t = new Thread(() => {
