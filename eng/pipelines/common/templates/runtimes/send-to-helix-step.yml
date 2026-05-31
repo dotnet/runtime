@@ -18,6 +18,7 @@ parameters:
   timeoutPerTestInMinutes: ''
   runCrossGen2: ''
   compositeBuildMode: false
+  crossgen2OutputFormat: ''
   helixProjectArguments: ''
   extraHelixArguments: ''
   runInUnloadableContext: ''
@@ -56,6 +57,7 @@ steps:
       _HelixType: ${{ parameters.helixType }}
       _RunCrossGen2: ${{ parameters.runCrossGen2 }}
       _CompositeBuildMode: ${{ parameters.compositeBuildMode }}
+      _CrossGen2OutputFormat: ${{ parameters.crossgen2OutputFormat }}
       _RunInUnloadableContext: ${{ parameters.runInUnloadableContext }}
       _RunInterpreter: ${{ parameters.runInterpreter }}
       _TieringTest: ${{ parameters.tieringTest }}

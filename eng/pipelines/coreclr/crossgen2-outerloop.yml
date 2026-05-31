@@ -80,6 +80,23 @@ extends:
             liveLibrariesBuildConfig: Release
             unifiedArtifactsName: Checked_CoreCLR_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
 
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          buildConfig: checked
+          platforms:
+          - osx_arm64
+          - osx_x64
+          jobParameters:
+            testGroup: outerloop
+            readyToRun: true
+            compositeBuildMode: true
+            crossgen2OutputFormat: macho
+            displayNameArgs: R2R_Composite_MachO
+            liveLibrariesBuildConfig: Release
+            unifiedArtifactsName: Checked_CoreCLR_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+
       # Outerloop testing in non-composite mode
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
