@@ -5846,23 +5846,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetHandleAddressFromVmHandle(VMPT
     return hr;
 }
 
-// Create a TargetBuffer which describes the location of the object
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetObjectContents(VMPTR_Object obj, OUT TargetBuffer * pRetVal)
-{
-    DD_ENTER_MAY_THROW;
-
-    HRESULT hr = S_OK;
-    EX_TRY
-    {
-        PTR_Object objPtr = obj.GetDacPtr();
-
-        _ASSERTE(objPtr->GetSize() <= 0xffffffff);
-        *pRetVal = TargetBuffer(PTR_TO_TADDR(objPtr), (ULONG)objPtr->GetSize());
-    }
-    EX_CATCH_HRESULT(hr);
-    return hr;
-}
-
 // ============================================================================
 // functions to get information about objects referenced via an instance of CordbReferenceValue or
 // CordbHandleValue

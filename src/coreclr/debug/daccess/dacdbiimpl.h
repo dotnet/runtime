@@ -819,9 +819,6 @@ protected:
     // Get the target address from a VMPTR_OBJECTHANDLE, i.e., the handle address
     HRESULT STDMETHODCALLTYPE GetHandleAddressFromVmHandle(VMPTR_OBJECTHANDLE vmHandle, OUT CORDB_ADDRESS * pRetVal);
 
-    // Gets the target address of an VMPTR of an Object
-    HRESULT STDMETHODCALLTYPE GetObjectContents(VMPTR_Object obj, OUT TargetBuffer * pRetVal);
-
     // Create a VMPTR_OBJECTHANDLE from a CORDB_ADDRESS pointing to an object handle
     HRESULT STDMETHODCALLTYPE GetVmObjectHandle(CORDB_ADDRESS handleAddress, OUT VMPTR_OBJECTHANDLE * pRetVal);
 
