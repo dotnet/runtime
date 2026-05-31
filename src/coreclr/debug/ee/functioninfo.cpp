@@ -299,49 +299,56 @@ DebuggerILToNativeMap *DebuggerJitInfo::MapILOffsetToMapEntry(SIZE_T offset, BOO
     //
 
     DebuggerILToNativeMap *mMin = GetSequenceMap();
-    DebuggerILToNativeMap *mMax = mMin + GetSequenceMapCount();
 
     _ASSERTE(m_sequenceMapSorted);
-    _ASSERTE( mMin < mMax ); //otherwise we have no code
 
     if (exact)
     {
         *exact = FALSE;
     }
 
-    if (mMin)
+    if (mMin == NULL)
     {
-        while (mMin + 1 < mMax)
-        {
-            _ASSERTE(mMin>=m_sequenceMap);
-            DebuggerILToNativeMap *mMid = mMin + ((mMax - mMin)>>1);
-            _ASSERTE(mMid>=m_sequenceMap);
-
-            if (offset == mMid->ilOffset)
-            {
-                if (exact)
-                {
-                    *exact = TRUE;
-                }
-                ADJUST_MAP_ENTRY(mMid, fWantFirst);
-                return mMid;
-            }
-            else if (offset < mMid->ilOffset && mMid->ilOffset != (ULONG) ICorDebugInfo::PROLOG)
-            {
-                mMax = mMid;
-            }
-            else
-            {
-                mMin = mMid;
-            }
-        }
-
-        if (exact && offset == mMin->ilOffset)
-        {
-            *exact = TRUE;
-        }
-        ADJUST_MAP_ENTRY(mMin, fWantFirst);
+        return NULL;
     }
+
+    DebuggerILToNativeMap *mMax = mMin + GetSequenceMapCount();
+
+    if (mMin >= mMax)
+    {
+        return NULL;
+    }
+
+    while (mMin + 1 < mMax)
+    {
+        _ASSERTE(mMin>=m_sequenceMap);
+        DebuggerILToNativeMap *mMid = mMin + ((mMax - mMin)>>1);
+        _ASSERTE(mMid>=m_sequenceMap);
+
+        if (offset == mMid->ilOffset)
+        {
+            if (exact)
+            {
+                *exact = TRUE;
+            }
+            ADJUST_MAP_ENTRY(mMid, fWantFirst);
+            return mMid;
+        }
+        else if (offset < mMid->ilOffset && mMid->ilOffset != (ULONG) ICorDebugInfo::PROLOG)
+        {
+            mMax = mMid;
+        }
+        else
+        {
+            mMin = mMid;
+        }
+    }
+
+    if (exact && offset == mMin->ilOffset)
+    {
+        *exact = TRUE;
+    }
+    ADJUST_MAP_ENTRY(mMin, fWantFirst);
     return mMin;
 }
 
@@ -365,6 +372,13 @@ DebuggerJitInfo::NativeOffset DebuggerJitInfo::MapILOffsetToNative(DebuggerJitIn
     NativeOffset resultOffset;
 
     DebuggerILToNativeMap *map = MapILOffsetToMapEntry(ilOffset.m_ilOffset, &(resultOffset.m_fExact));
+
+    if (map == NULL)
+    {
+        resultOffset.m_fExact       = FALSE;
+        resultOffset.m_nativeOffset = ((SIZE_T)-1);
+        return resultOffset;
+    }
 
     // See if we want the map entry for the parent.
     if (ilOffset.m_funcletIndex <= PARENT_METHOD_INDEX)
@@ -586,6 +600,16 @@ SIZE_T DebuggerJitInfo::MapILOffsetToNativeForSetIP(SIZE_T offsetILTo, int funcl
     CONTRACTL_END;
 
     DebuggerILToNativeMap* pMap    = MapILOffsetToMapEntry(offsetILTo, pExact, TRUE);
+
+    if (pMap == NULL)
+    {
+        if (pExact != NULL)
+        {
+            *pExact = FALSE;
+        }
+        return ((SIZE_T)-1);
+    }
+
     DebuggerILToNativeMap* pMapEnd = GetSequenceMap() + GetSequenceMapCount();
 
     _ASSERTE(pMap == m_sequenceMap ||
@@ -1272,6 +1296,11 @@ ICorDebugInfo::SourceTypes DebuggerJitInfo::GetSrcTypeFromILOffset(SIZE_T ilOffs
 
     BOOL exact = FALSE;
     DebuggerILToNativeMap *pMap = MapILOffsetToMapEntry(ilOffset, &exact);
+
+    if (pMap == NULL)
+    {
+        return ICorDebugInfo::SOURCE_TYPE_INVALID;
+    }
 
     LOG((LF_CORDB, LL_INFO100000, "DJI::GSTFILO: for il 0x%x, got entry 0x%p,"
         "(il 0x%x) nat 0x%x to 0x%x, SourceTypes 0x%x, exact:%x\n", ilOffset, pMap,
