@@ -291,19 +291,14 @@ public:
 
     HRESULT STDMETHODCALLTYPE IsDelegate(VMPTR_Object vmObject, OUT BOOL * pResult);
 
-    HRESULT STDMETHODCALLTYPE GetDelegateType(VMPTR_Object delegateObject, DelegateType *delegateType);
-
     HRESULT STDMETHODCALLTYPE GetDelegateFunctionData(
-        DelegateType delegateType,
         VMPTR_Object delegateObject,
         OUT VMPTR_Assembly *ppFunctionAssembly,
         OUT mdMethodDef *pMethodDef);
 
     HRESULT STDMETHODCALLTYPE GetDelegateTargetObject(
-        DelegateType delegateType,
         VMPTR_Object delegateObject,
-        OUT VMPTR_Object *ppTargetObj,
-        OUT VMPTR_AppDomain *ppTargetAppDomain);
+        OUT VMPTR_Object *ppTargetObj);
 
     HRESULT STDMETHODCALLTYPE IsModuleMapped(VMPTR_Module pModule, OUT BOOL *isModuleMapped);
 
