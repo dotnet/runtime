@@ -983,10 +983,21 @@ namespace System.Data
                                 break;
                             }
 
-                            if ((bool)vLeft)
+                            if (vLeft is bool)
                             {
-                                value = true;
-                                break;
+                                if ((bool)vLeft)
+                                {
+                                    value = true;
+                                    break;
+                                }
+                            }
+                            else
+                            {
+                                if (((SqlBoolean)vLeft).IsTrue)
+                                {
+                                    value = true;
+                                    break;
+                                }
                             }
                         }
 
