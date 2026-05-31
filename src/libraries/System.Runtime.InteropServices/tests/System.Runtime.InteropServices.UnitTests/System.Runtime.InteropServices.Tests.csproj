@@ -144,7 +144,6 @@
     <Compile Include="System\Runtime\InteropServices\Marshal\Common\CommonTypes.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\Common\COMWrappersImpl.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\Common\CommonTypes.Windows.cs" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
-    <Compile Include="System\Runtime\InteropServices\Marshal\Common\Variant.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\ReadWrite\ByteTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\ReadWrite\Int16Tests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\ReadWrite\Int32Tests.cs" />
