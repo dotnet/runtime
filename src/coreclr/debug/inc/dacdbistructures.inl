@@ -571,6 +571,7 @@ NativeCodeFunctionData::NativeCodeFunctionData(Debugger_JITFuncData * source)
 
     // copy the other function information
     isInstantiatedGeneric = source->isInstantiatedGeneric;
+    isInterpreted = FALSE;
     vmNativeCodeMethodDescToken = source->vmNativeCodeMethodDescToken;
 }
 
@@ -586,6 +587,7 @@ inline
 void NativeCodeFunctionData::Clear()
 {
     isInstantiatedGeneric =  FALSE;
+    isInterpreted = FALSE;
     encVersion = CorDB_DEFAULT_ENC_FUNCTION_VERSION;
     for (CodeBlobRegion region = kHot; region < MAX_REGIONS; ++region)
     {

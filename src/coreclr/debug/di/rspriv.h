@@ -5781,7 +5781,8 @@ class CordbNativeCode : public CordbCode,
 public:
     CordbNativeCode(CordbFunction * pFunction,
                     const NativeCodeFunctionData * pJitData,
-                    BOOL fIsInstantiatedGeneric);
+                    BOOL fIsInstantiatedGeneric,
+                    BOOL fIsInterpreted);
 #ifdef _DEBUG
     const char * DbgGetName() { return "CordbNativeCode"; };
 #endif // _DEBUG
@@ -5852,6 +5853,11 @@ public:
     // Worker function for GetReturnValueLiveOffset.
     HRESULT GetReturnValueLiveOffsetImpl(Instantiation *currentInstantiation, ULONG32 ILoffset, ULONG32 bufferSize, ULONG32 *pFetched, ULONG32 *pOffsets);
 
+#ifdef FEATURE_INTERPRETER
+    // Returns the FP-relative offset of an interpreter call's destination var.
+    HRESULT GetInterpreterCallDvarOffset(ULONG32 ILoffset, ULONG32 postCallNativeOffset, int32_t* pDvarOffset);
+#endif
+
     // get total size of the code including both hot and cold regions
     ULONG32 GetSize();
 
@@ -5885,6 +5891,13 @@ public:
     {
         return m_fIsInstantiatedGeneric != 0;
     }
+
+#ifdef FEATURE_INTERPRETER
+    BOOL IsInterpreted()
+    {
+        return m_fIsInterpreted != 0;
+    }
+#endif
 
     // Determine whether we have initialized the native variable and
     // sequence point offsets
@@ -5939,6 +5952,9 @@ private:
     bool                     m_fCodeAvailable;          // true iff the code has been jitted but not pitched
 
     bool                     m_fIsInstantiatedGeneric;  // true iff this is an instantiated generic
+#ifdef FEATURE_INTERPRETER
+    bool                     m_fIsInterpreted;          // true iff compiled by the CoreCLR interpreter
+#endif
 
     // information in the following two classes tracks native offsets and is initialized on demand.
 
