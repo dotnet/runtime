@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="src/ildasm/ildasm.csproj" />
+  <Project Path="src/ILDisassembler/ILDisassembler.csproj" />
+  <Project Path="tests/ILDisassembler.Tests/ILDisassembler.Tests.csproj" />
+</Solution>

@@ -9,6 +9,7 @@ pr:
     - src/coreclr/ilasm/*
     - src/coreclr/ildasm/*
     - src/tools/ilasm/*
+    - src/tools/ildasm/*
 
 schedules:
 - cron: "0 19 * * 6"
