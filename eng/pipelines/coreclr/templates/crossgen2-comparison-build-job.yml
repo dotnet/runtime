@@ -119,6 +119,17 @@ jobs:
         displayName: Create directories
         failOnStderr: true
 
+    # Pre-initialize the dotnet CLI so that sdk.txt is populated before the
+    # parallel crossgen2 fan-out. Without this, 236 parallel dotnet.cmd
+    # invocations race to create artifacts/toolset/sdk.txt, and some may
+    # read it before it exists, producing a "dotnet.exe not found" error.
+    - ${{ if ne(parameters.osGroup, 'windows') }}:
+      - script: $(Build.SourcesDirectory)/dotnet.sh --version
+        displayName: Pre-initialize dotnet CLI
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
+      - script: $(Build.SourcesDirectory)\dotnet.cmd --version
+        displayName: Pre-initialize dotnet CLI
+
     # Create baseline output on the host (x64) machine
     - task: PythonScript@0
       displayName: Create cross-platform crossgen baseline
