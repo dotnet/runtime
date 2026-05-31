@@ -19,6 +19,7 @@ pr:
       - src/native/libs/System.Net.Security.Native/*
       - src/libraries/System.Net.Http/*
       - src/libraries/System.Net.Security/*
+      - src/libraries/System.Net.Requests/*
 
 variables:
   - template: ../variables.yml
@@ -63,12 +64,14 @@ extends:
             docker exec linuxclient bash -c '/repo/build.sh -subset clr+libs -runtimeconfiguration release -ci /p:NativeOptimizationDataSupported=false'
             docker exec linuxclient bash -c '/repo/dotnet.sh build $(containerLibrariesRoot)/System.Net.Http/tests/EnterpriseTests/System.Net.Http.Enterprise.Tests.csproj'
             docker exec linuxclient bash -c '/repo/dotnet.sh build $(containerLibrariesRoot)/System.Net.Security/tests/EnterpriseTests/System.Net.Security.Enterprise.Tests.csproj'
+            docker exec linuxclient bash -c '/repo/dotnet.sh build $(containerLibrariesRoot)/System.Net.Requests/tests/EnterpriseTests/System.Net.Requests.Enterprise.Tests.csproj'
           displayName: Build product sources
 
         - bash: |
             docker exec linuxclient bash -c 'if [ -f /erc/resolv.conf.ORI ]; then cp -f /erc/resolv.conf.ORI /etc/resolv.conf; fi'
             docker exec linuxclient $(containerRunTestsCommand) $(containerLibrariesRoot)/System.Net.Http/tests/EnterpriseTests/System.Net.Http.Enterprise.Tests.csproj
             docker exec linuxclient $(containerRunTestsCommand) $(containerLibrariesRoot)/System.Net.Security/tests/EnterpriseTests/System.Net.Security.Enterprise.Tests.csproj
+            docker exec linuxclient $(containerRunTestsCommand) $(containerLibrariesRoot)/System.Net.Requests/tests/EnterpriseTests/System.Net.Requests.Enterprise.Tests.csproj
           displayName: Build and run tests
 
         - bash: |
