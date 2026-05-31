@@ -358,7 +358,7 @@ namespace System.Diagnostics
                     }
 
                     // Skip EDI boundary for async
-                    if (sf.IsLastFrameFromForeignExceptionStackTrace && !isAsync)
+                    if (sf.IsLastFrameFromForeignExceptionStackTrace && !isAsync && (mb.MethodImplementationFlags & MethodImplAttributes.Async) == 0)
                     {
                         sb.AppendLine();
                         // Passing default for Exception_EndStackTraceFromPreviousThrow in case SR.UsingResourceKeys is set.
