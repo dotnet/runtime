@@ -13,8 +13,11 @@ PAL_SslProtocol AndroidCryptoNative_SSLGetSupportedProtocols(void)
     // SSLParameters params = context.getDefaultSSLParameters();
     // String[] protocols = params.getProtocols();
     loc[context] = (*env)->CallStaticObjectMethod(env, g_sslCtxClass, g_sslCtxGetDefaultMethod);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     loc[params] = (*env)->CallObjectMethod(env, loc[context], g_sslCtxGetDefaultSslParamsMethod);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     loc[protocols] = (*env)->CallObjectMethod(env, loc[params], g_SSLParametersGetProtocols);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     const char tlsv1[] = "TLSv1";
     size_t tlsv1Len = (sizeof(tlsv1) / sizeof(*tlsv1)) - 1;
@@ -48,6 +51,7 @@ PAL_SslProtocol AndroidCryptoNative_SSLGetSupportedProtocols(void)
         (*env)->DeleteLocalRef(env, protocol);
     }
 
+cleanup:
     RELEASE_LOCALS(loc, env);
     return supported;
 }
