@@ -48,3 +48,23 @@ jobs:
       #     parameters:
       #       creator: dotnet-bot
       #       testRunNamePrefixSuffix: Mono_$(_BuildConfig)_LinuxBionic
+
+#
+# Build the NativeAOT runtime pack for Android Linux with Bionic libc arm32
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: coreclr
+    isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+    isLinuxBionicOnlyBuild: ${{ parameters.isLinuxBionicOnlyBuild }}
+    platforms:
+      - linux_bionic_arm
+    jobParameters:
+      runtimeFlavor: coreclr
+      testGroup: innerloop
+      nameSuffix: NativeAOT_RuntimePack
+      buildArgs: -s clr.nativeaotruntime+clr.nativeaotlibs+libs+packs -c $(_BuildConfig) /p:DotNetBuildAllRuntimePacks=true /p:RuntimeFlavor=coreclr
+      timeoutInMinutes: 240

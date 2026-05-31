@@ -67,7 +67,7 @@
                       RuntimeFrameworkName="$(LocalFrameworkOverrideName)"
                       LatestRuntimeFrameworkVersion="$(ProductVersion)"
                       RuntimePackNamePatterns="$(LocalFrameworkOverrideName).Runtime.NativeAOT.**RID**"
-                      RuntimePackRuntimeIdentifiers="ios-arm64;iossimulator-arm64;iossimulator-x64;tvos-arm64;tvossimulator-arm64;tvossimulator-x64;maccatalyst-arm64;maccatalyst-x64;linux-bionic-arm64;linux-bionic-x64;osx-arm64;osx-x64"
+                      RuntimePackRuntimeIdentifiers="ios-arm64;iossimulator-arm64;iossimulator-x64;tvos-arm64;tvossimulator-arm64;tvossimulator-x64;maccatalyst-arm64;maccatalyst-x64;linux-bionic-arm;linux-bionic-arm64;linux-bionic-x64;osx-arm64;osx-x64"
                       RuntimePackLabels="NativeAOT"
                       Condition="'$(UseLocalTargetingRuntimePack)' == 'true' and ('@(KnownRuntimePack)' == '' or '@(KnownRuntimePack->WithMetadataValue('Identity', 'Microsoft.NETCore.App')->WithMetadataValue('RuntimePackLabels', 'NativeAOT')->AnyHaveMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))' != 'true')" />
     <KnownILCompilerPack Include="Microsoft.DotNet.ILCompiler"
