@@ -335,6 +335,7 @@ public readonly struct DebugVarInfo
     public uint StartOffset { get; init; }
     public uint EndOffset { get; init; }
     public uint VarNumber { get; init; }
+    public uint ReturnValueILOffset { get; init; }
     public DebugVarLocKind Kind { get; init; }
     public bool IsByRef { get; init; }
     public uint Register { get; init; }
@@ -352,7 +353,8 @@ IEnumerable<DebugVarInfo> GetMethodVarInfo(TargetCodePointer pCode, out uint cod
 Additional constants (Version 2):
 | Constant Name | Meaning | Value |
 | --- | --- | --- |
-| `MAX_ILNUM` | Bias for adjusted encoding of variable numbers | `0xfffffffc` (-4) |
+| `MAX_ILNUM` | Bias for adjusted encoding of variable numbers | `0xfffffffb` (-5) |
+| `CALL_RETURN_ILNUM` | A sentinel variable number indicating this variable home stores a call return value | `0xfffffffb` (-5) |
 | `VLT_REG` | Variable is in a register | `0` |
 | `VLT_REG_BYREF` | Address of the variable is in a register | `1` |
 | `VLT_REG_FP` | Variable is in an FP register | `2` |
@@ -372,7 +374,11 @@ Additional constants (Version 2):
 Each variable entry in the Vars section is nibble-encoded as follows:
 
 1. `startOffset` — encoded unsigned 32-bit integer
-2. `endOffset` — encoded as delta from `startOffset` (unsigned)
+2. `endOffset` or `returnValueILOffset` depending on the following `varNumber` 
+
+If varNumber == CALL_RETURN_ILNUM: `returnValueILOffset` encoded as unsigned 32-bit integer. `EndOffset` is implicitly `StartOffset+1`. `ReturnValueILOffset` identifies the offset of the IL call instruction whose return value is stored in this home.
+If varNumber != CALL_RETURN_ILNUM: `endOffset` encoded as delta from `startOffset` (unsigned). `ReturnValueILOffset` is implicitly zero though it is unused and meaningless in this case.
+
 3. `varNumber` — encoded as adjusted unsigned (`value - MAX_ILNUM`)
 4. `VarLocType` — encoded unsigned 32-bit integer
 5. Location fields depend on the `VarLocType`:
