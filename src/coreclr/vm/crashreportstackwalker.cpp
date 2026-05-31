@@ -8,9 +8,12 @@
 #include "dbginterface.h"
 #include "method.hpp"
 #include "peassembly.h"
+#include <errno.h>
 #include <clrconfignocache.h>
+#include <limits>
 #include <minipal/guid.h>
 #include <new>
+#include <stdlib.h>
 
 #ifdef FEATURE_INPROC_CRASHREPORT
 
@@ -88,6 +91,10 @@ GetCrashReportFrameLimitPerThread()
 }
 
 static void BuildTypeName(LPUTF8 buffer, size_t bufferSize, LPCUTF8 namespaceName, LPCUTF8 className);
+static bool TryParseCrashReportConfigurationInteger(CLRConfigNoCache config, int minValue, int maxValue, int* value);
+// Parses configuration during CrashReportConfigure initialization. This is not
+// async-signal-safe and must not be called from the crash-reporting path.
+static int GetCrashReportTimeoutSeconds();
 
 static
 void
@@ -617,6 +624,7 @@ CrashReportConfigure()
 
     InProcCrashReporterSettings settings = {};
     settings.reportPath = dumpName;
+    settings.timeoutSeconds = GetCrashReportTimeoutSeconds();
     settings.isManagedThreadCallback = CrashReportIsCurrentThreadManaged;
     settings.walkStackCallback = CrashReportWalkStack;
     settings.enumerateThreadsCallback = CrashReportEnumerateThreads;
@@ -626,6 +634,66 @@ CrashReportConfigure()
     // Initialize the reporter and register the PAL signal-path callback last
     // so PAL only observes the reporter after all VM callbacks are wired in.
     InProcCrashReportInitialize(settings);
+}
+
+static
+bool
+TryParseCrashReportConfigurationInteger(CLRConfigNoCache config, int minValue, int maxValue, int* value)
+{
+    _ASSERTE(minValue <= maxValue);
+    _ASSERTE(value != nullptr);
+
+    if (!config.IsSet())
+    {
+        return false;
+    }
+
+    const char* configString = config.AsString();
+    if (configString == nullptr)
+    {
+        return false;
+    }
+
+    errno = 0;
+    char* end = nullptr;
+    long parsedValue = strtol(configString, &end, 10);
+    if (end == configString ||
+        *end != '\0' ||
+        errno == ERANGE ||
+        parsedValue < minValue ||
+        parsedValue > maxValue)
+    {
+        return false;
+    }
+
+    *value = static_cast<int>(parsedValue);
+    return true;
+}
+
+// Parses configuration during CrashReportConfigure initialization. This is not
+// async-signal-safe and must not be called from the crash-reporting path.
+// DOTNET_CrashReportTimeoutSeconds is a seconds-based watchdog knob: unset,
+// unparseable, negative, or out-of-range values use the default; 0 disables the
+// watchdog; and positive in-range values configure a fixed timeout. Use
+// CLRConfigNoCache so Android-hosted apps can set DOTNET_* values after PAL
+// initialization but before crash-report configuration.
+static int
+GetCrashReportTimeoutSeconds()
+{
+    // Keep the default conservative: successful reports can be large, while 0
+    // remains available to disable the watchdog for diagnostics.
+    static constexpr int DefaultTimeoutSeconds = 30;
+    static constexpr int TimeoutSecondsToMilliseconds = 1000;
+    static constexpr int MaxTimeoutSeconds = std::numeric_limits<int>::max() / TimeoutSecondsToMilliseconds;
+
+    int timeoutSeconds;
+    CLRConfigNoCache timeoutCfg = CLRConfigNoCache::Get("CrashReportTimeoutSeconds", /*noprefix*/ false, &getenv);
+    if (!TryParseCrashReportConfigurationInteger(timeoutCfg, 0, MaxTimeoutSeconds, &timeoutSeconds))
+    {
+        return DefaultTimeoutSeconds;
+    }
+
+    return timeoutSeconds;
 }
 
 #endif // FEATURE_INPROC_CRASHREPORT
