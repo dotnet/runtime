@@ -28,6 +28,11 @@ namespace System.Net.Security
         // due to handshake failures.
         internal const bool CanGenerateCustomAlerts = true;
 
+        internal static bool CanGenerateCustomAlertsForContext(SafeDeleteContext? _)
+        {
+            return CanGenerateCustomAlerts;
+        }
+
         public static void VerifyPackageInfo()
         {
         }
