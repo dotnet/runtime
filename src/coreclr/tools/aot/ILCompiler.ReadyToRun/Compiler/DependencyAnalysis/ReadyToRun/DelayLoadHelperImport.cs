@@ -27,11 +27,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public ReadyToRunHelper HelperId => _helper;
 
         public DelayLoadHelperImport(
-            NodeFactory factory, 
-            ImportSectionNode importSectionNode, 
-            ReadyToRunHelper helper, 
-            Signature instanceSignature, 
-            bool useVirtualCall = false, 
+            NodeFactory factory,
+            ImportSectionNode importSectionNode,
+            ReadyToRunHelper helper,
+            Signature instanceSignature,
+            bool useVirtualCall = false,
             bool useJumpableStub = false,
             MethodDesc callingMethod = null)
             : base(importSectionNode, instanceSignature, callingMethod)
@@ -87,7 +87,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 // This needs to be an empty target pointer since it will be filled in with Module*
                 // when loaded by CoreCLR
                 dataBuilder.EmitReloc(_delayLoadHelper,
-                    factory.Target.PointerSize == 4 ? RelocType.IMAGE_REL_BASED_HIGHLOW : RelocType.IMAGE_REL_BASED_DIR64, factory.Target.CodeDelta);
+                    factory.Target.PointerSize == 4 ? RelocType.IMAGE_REL_BASED_HIGHLOW : RelocType.IMAGE_REL_BASED_DIR64);
             }
             else
             {

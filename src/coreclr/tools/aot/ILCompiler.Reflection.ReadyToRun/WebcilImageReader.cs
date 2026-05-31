@@ -28,7 +28,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         private readonly CorFlags _corFlags;
         private readonly DirectoryEntry _managedNativeHeaderDirectory;
 
-        public Machine Machine => Machine.I386; // Webcil doesn't encode machine type; wasm targets use a placeholder
+        public Machine Machine => WasmMachine.Wasm32; // Webcil doesn't encode machine type; wasm targets use a placeholder
         public OperatingSystem OperatingSystem => OperatingSystem.Unknown;
         public ulong ImageBase => 0;
 

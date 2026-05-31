@@ -1538,6 +1538,11 @@ void Compiler::optDebugCheckAssertion(const AssertionDsc& assertion) const
         case O1K_VN:
             assert(!optLocalAssertionProp);
             break;
+
+        case O1K_LCLVAR:
+            assert(optLocalAssertionProp);
+            break;
+
         default:
             break;
     }
@@ -1720,9 +1725,9 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
         return NO_ASSERTION_INDEX;
     }
 
-    VNFunc   relopFunc = relopFuncApp.m_func;
-    ValueNum op1VN     = relopFuncApp.m_args[0];
-    ValueNum op2VN     = relopFuncApp.m_args[1];
+    VNFunc   relopFunc = relopFuncApp.GetFunc();
+    ValueNum op1VN     = relopFuncApp.GetArg(0);
+    ValueNum op2VN     = relopFuncApp.GetArg(1);
 
     if ((genActualType(vnStore->TypeOfVN(op1VN)) != TYP_INT) || (genActualType(vnStore->TypeOfVN(op2VN)) != TYP_INT))
     {
@@ -2386,24 +2391,58 @@ AssertionIndex Compiler::optAssertionIsSubrange(GenTree* tree, IntegralRange ran
     return NO_ASSERTION_INDEX;
 }
 
-/**********************************************************************************
- *
- * Given a "tree" that is usually arg1 of a isinst/cast kind of GT_CALL (a class
- * handle), and "methodTableArg" which is a const int (a class handle), then search
- * if there is an assertion in "assertions", that asserts the equality of the two
- * class handles and then returns the index of the assertion. If one such assertion
- * could not be found, then it returns NO_ASSERTION_INDEX.
- *
- */
-AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTableArg, ASSERT_VALARG_TP assertions)
+//------------------------------------------------------------------------
+// optAssertionVNIsSubtype: see if a VN is known to be a subtype of castTo
+//    using the given assertion set, VN-level type info, and assertions that
+//    reach via PHI definitions.
+//
+// Arguments:
+//   objVN      - VN to check
+//   castToVN   - VN representing the type handle being cast to.
+//   assertions - set of live assertions
+//   budget     - limits the depth of recursion when chasing assertions across
+//                phi-def reaching VNs.
+//
+// Return Value:
+//   True if the VN is known to be a subtype of castTo.
+//
+bool Compiler::optAssertionVNIsSubtype(ValueNum objVN, ValueNum castToVN, ASSERT_VALARG_TP assertions, int budget)
 {
+    if ((budget <= 0) || (objVN == ValueNumStore::NoVN))
+    {
+        return false;
+    }
+
+    bool isExact;
+    bool isNonNull;
+
+    CORINFO_CLASS_HANDLE castTo;
+    if (!vnStore->IsVNTypeHandle(castToVN, &castTo))
+    {
+        return false;
+    }
+    assert(castTo != NO_CLASS_HANDLE);
+
+    // First, try the VN's version of gtGetClassHandle over the vn itself, e.g. vn being
+    // Jit_NewObj(MyClass) while we're trying to prove "Jit_NewObj(MyClass) is MyClass".
+    CORINFO_CLASS_HANDLE castFromVN = vnStore->GetObjectType(objVN, &isExact, &isNonNull);
+    if ((castFromVN != NO_CLASS_HANDLE) &&
+        (info.compCompHnd->compareTypesForCast(castFromVN, castTo) == TypeCompareState::Must))
+    {
+        return true;
+    }
+
+    // Now look through assertions directly on the VN.
+    // We're looking for "vn is (exactly/subtype) cls" assertions that can help us prove the cast.
     BitVecOps::Iter iter(apTraits, assertions);
     unsigned        bvIndex = 0;
     while (iter.NextElem(&bvIndex))
     {
         AssertionIndex const index        = GetAssertionIndex(bvIndex);
         const AssertionDsc&  curAssertion = optGetAssertion(index);
-        if (!curAssertion.KindIs(OAK_EQUAL) || !curAssertion.GetOp1().KindIs(O1K_SUBTYPE, O1K_EXACT_TYPE))
+
+        if (!curAssertion.KindIs(OAK_EQUAL) || !curAssertion.GetOp1().KindIs(O1K_SUBTYPE, O1K_EXACT_TYPE) ||
+            (curAssertion.GetOp1().GetVN() != objVN))
         {
             // TODO-CQ: We might benefit from OAK_NOT_EQUAL assertion as well, e.g.:
             // if (obj is not MyClass) // obj is known to be never of MyClass class
@@ -2414,27 +2453,28 @@ AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTab
             continue;
         }
 
-        if ((curAssertion.GetOp1().GetVN() != vnStore->VNConservativeNormalValue(tree->gtVNPair) ||
-             !curAssertion.GetOp2().KindIs(O2K_CONST_INT)))
+        // Extract CORINFO_CLASS_HANDLE from curAssertion.GetOp2()
+        CORINFO_CLASS_HANDLE cls;
+        if (!vnStore->IsVNTypeHandle(curAssertion.GetOp2().GetVN(), &cls))
         {
             continue;
         }
 
-        ssize_t      methodTableVal = 0;
-        GenTreeFlags iconFlags      = GTF_EMPTY;
-        if (!optIsTreeKnownIntValue(!optLocalAssertionProp, methodTableArg, &methodTableVal, &iconFlags))
+        // Now we have "objVN is (exactly/subtype) cls" assertion.
+        // We want to see if this implies "objVN is (exactly/subtype) castTo".
+        if (info.compCompHnd->compareTypesForCast(cls, castTo) == TypeCompareState::Must)
         {
-            continue;
-        }
-
-        if (curAssertion.GetOp2().GetIntConstant() == methodTableVal)
-        {
-            // TODO-CQ: if they don't match, we might still be able to prove that the result is foldable via
-            // compareTypesForCast.
-            return index;
+            // The assertion implies the cast is always successful.
+            return true;
         }
     }
-    return NO_ASSERTION_INDEX;
+
+    // For PHI-defs, walk reaching assertions/VNs and recursively check.
+    return optVisitReachingAssertions(objVN,
+                                      [this, castToVN, budget](ValueNum reachingVN, ASSERT_TP reachingAssertions) {
+        return optAssertionVNIsSubtype(reachingVN, castToVN, reachingAssertions, budget - 1) ? AssertVisit::Continue
+                                                                                             : AssertVisit::Abort;
+    }) == AssertVisit::Continue;
 }
 
 //------------------------------------------------------------------------------
@@ -2455,8 +2495,9 @@ GenTree* Compiler::optVNBasedFoldExpr_Call_Memcmp(GenTreeCall* call)
     CallArg* arg2   = call->gtArgs.GetUserArgByIndex(1);
     CallArg* lenArg = call->gtArgs.GetUserArgByIndex(2);
 
-    ValueNum lenVN = vnStore->VNConservativeNormalValue(lenArg->GetNode()->gtVNPair);
-    if (!vnStore->IsVNConstant(lenVN))
+    ValueNum lenVN = optConservativeNormalVN(lenArg->GetNode());
+    size_t   len;
+    if (!vnStore->IsVNIntegralConstant(lenVN, &len))
     {
         // See if arguments are the same - in that case we can optimize to constant true
         ValueNum arg1VN = optConservativeNormalVN(arg1->GetNode());
@@ -2470,8 +2511,6 @@ GenTree* Compiler::optVNBasedFoldExpr_Call_Memcmp(GenTreeCall* call)
         JITDUMP("...length is not a constant - bail out.\n");
         return nullptr;
     }
-
-    const size_t len = vnStore->CoercedConstantValue<size_t>(lenVN);
 
     // SequenceEqual(..., len == 0) => true, and does not dereference pointers
     if (len == 0)
@@ -2849,10 +2888,10 @@ GenTree* Compiler::optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, G
         // Last chance - propagate VNF_PtrToLoc(lcl, offset) as GT_LCL_ADDR node
         VNFuncApp funcApp;
         if (((tree->gtFlags & GTF_SIDE_EFFECT) == 0) && vnStore->GetVNFunc(vnCns, &funcApp) &&
-            (funcApp.m_func == VNF_PtrToLoc))
+            (funcApp.FuncIs(VNF_PtrToLoc)))
         {
-            unsigned lcl  = (unsigned)vnStore->CoercedConstantValue<size_t>(funcApp.m_args[0]);
-            unsigned offs = (unsigned)vnStore->CoercedConstantValue<size_t>(funcApp.m_args[1]);
+            unsigned lcl  = (unsigned)vnStore->CoercedConstantValue<size_t>(funcApp.GetArg(0));
+            unsigned offs = (unsigned)vnStore->CoercedConstantValue<size_t>(funcApp.GetArg(1));
             return gtNewLclAddrNode(lcl, offs, tree->TypeGet());
         }
 
@@ -3665,9 +3704,12 @@ GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeL
         {
             break;
         }
-        // See if the variable is equal to a constant or another variable.
+
         const AssertionDsc& curAssertion = optGetAssertion(assertionIndex);
-        if (!curAssertion.CanPropLclVar())
+
+        // We need an equality assertion for either a copy prop or a constant prop.
+        if (!curAssertion.CanPropLclVar() ||
+            !(curAssertion.GetOp2().IsConstant() || curAssertion.GetOp2().KindIs(O2K_LCLVAR_COPY)))
         {
             continue;
         }
@@ -4241,7 +4283,7 @@ AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP as
         {
             VNFuncApp funcApp;
             if (vnStore->GetVNFunc(vnStore->VNConservativeNormalValue(op1->gtVNPair), &funcApp) &&
-                (funcApp.m_func == VNF_InvariantNonNullLoad) && (curAssertion.GetOp1().GetVN() == funcApp.m_args[0]))
+                (funcApp.FuncIs(VNF_InvariantNonNullLoad)) && (curAssertion.GetOp1().GetVN() == funcApp.GetArg(0)))
             {
                 return assertionIndex;
             }
@@ -4411,8 +4453,8 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
             // relopVN's operands differ from the physical op1 and op2 due to optimization passes.
             VNFuncApp relopFuncApp;
             if (vnStore->IsVNRelop(relopVN, &relopFuncApp) &&
-                (((relopFuncApp.m_args[0] == op1VN) && (relopFuncApp.m_args[1] == op2VN)) ||
-                 ((relopFuncApp.m_args[0] == op2VN) && (relopFuncApp.m_args[1] == op1VN))))
+                (((relopFuncApp.GetArg(0) == op1VN) && (relopFuncApp.GetArg(1) == op2VN)) ||
+                 ((relopFuncApp.GetArg(0) == op2VN) && (relopFuncApp.GetArg(1) == op1VN))))
             {
                 // VNs match - we'll find nothing new by looking at individual operand ranges.
             }
@@ -5194,23 +5236,23 @@ static GCInfo::WriteBarrierForm GetWriteBarrierForm(Compiler* comp, ValueNum vn)
     VNFuncApp funcApp;
     if (vnStore->GetVNFunc(vnStore->VNNormalValue(vn), &funcApp))
     {
-        if (funcApp.m_func == VNF_PtrToArrElem)
+        if (funcApp.FuncIs(VNF_PtrToArrElem))
         {
             // Check whether the array is on the heap
-            ValueNum arrayVN = funcApp.m_args[1];
+            ValueNum arrayVN = funcApp.GetArg(1);
             return GetWriteBarrierForm(comp, arrayVN);
         }
-        if (funcApp.m_func == VNF_PtrToLoc)
+        if (funcApp.FuncIs(VNF_PtrToLoc))
         {
             // Pointer to a local
             return GCInfo::WriteBarrierForm::WBF_NoBarrier;
         }
-        if ((funcApp.m_func == VNF_PtrToStatic) && vnStore->IsVNHandle(funcApp.m_args[0], GTF_ICON_STATIC_BOX_PTR))
+        if ((funcApp.FuncIs(VNF_PtrToStatic)) && vnStore->IsVNHandle(funcApp.GetArg(0), GTF_ICON_STATIC_BOX_PTR))
         {
             // Boxed static - always on the heap
             return GCInfo::WriteBarrierForm::WBF_BarrierUnchecked;
         }
-        if (funcApp.m_func == VNF_ADD)
+        if (funcApp.FuncIs(VNF_ADD))
         {
             // Check arguments of the GT_ADD
             // To make it conservative, we require one of the arguments to be a constant, e.g.:
@@ -5221,13 +5263,13 @@ static GCInfo::WriteBarrierForm GetWriteBarrierForm(Compiler* comp, ValueNum vn)
             // Because "addressOfLocal + nativeIntVariable" could be in fact a pointer to the heap.
             // if "nativeIntVariable == addressWithinHeap - addressOfLocal".
             //
-            if (vnStore->IsVNConstantNonHandle(funcApp.m_args[0]))
+            if (vnStore->IsVNConstantNonHandle(funcApp.GetArg(0)))
             {
-                return GetWriteBarrierForm(comp, funcApp.m_args[1]);
+                return GetWriteBarrierForm(comp, funcApp.GetArg(1));
             }
-            if (vnStore->IsVNConstantNonHandle(funcApp.m_args[1]))
+            if (vnStore->IsVNConstantNonHandle(funcApp.GetArg(1)))
             {
-                return GetWriteBarrierForm(comp, funcApp.m_args[0]);
+                return GetWriteBarrierForm(comp, funcApp.GetArg(0));
             }
         }
     }
@@ -5374,11 +5416,12 @@ GenTree* Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCal
             CallArg* objCallArg    = call->gtArgs.GetArgByIndex(1);
             GenTree* castToArg     = castToCallArg->GetNode();
             GenTree* objArg        = objCallArg->GetNode();
+            ValueNum objVN         = optConservativeNormalVN(objArg);
+            ValueNum castToVN      = optConservativeNormalVN(castToArg);
 
-            const unsigned index = optAssertionIsSubtype(objArg, castToArg, assertions);
-            if (index != NO_ASSERTION_INDEX)
+            if (optAssertionVNIsSubtype(objVN, castToVN, assertions))
             {
-                JITDUMP("\nDid VN based subtype prop for index #%02u in " FMT_BB ":\n", index, compCurBB->bbNum);
+                JITDUMP("\nDid VN based subtype prop in " FMT_BB ":\n", compCurBB->bbNum);
                 DISPTREE(call);
 
                 // if castObjArg is not simple, we replace the arg with a temp assignment and
@@ -5449,23 +5492,23 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
     };
 
     // First, check if we have arr[arr.Length - cns] when we know arr.Length is >= cns.
-    VNFuncApp funcApp;
-    if (vnStore->GetVNFunc(vnCurIdx, &funcApp) && (funcApp.m_func == VNF_ADD))
+    ValueNum add0, add1;
+    if (vnStore->IsVNBinFunc(vnCurIdx, VNF_ADD, &add0, &add1))
     {
-        if (!vnStore->IsVNInt32Constant(funcApp.m_args[1]))
+        if (!vnStore->IsVNInt32Constant(add1))
         {
             // Normalize constants to be on the right side
-            std::swap(funcApp.m_args[0], funcApp.m_args[1]);
+            std::swap(add0, add1);
         }
 
-        if ((funcApp.m_args[0] == vnCurLen) && vnStore->IsVNInt32Constant(funcApp.m_args[1]))
+        if ((add0 == vnCurLen) && vnStore->IsVNInt32Constant(add1))
         {
             Range rng = RangeCheck::GetRangeFromAssertions(this, vnCurLen, assertions);
             // Lower known limit of ArrLen:
             const int lenLowerLimit = rng.LowerLimit().GetConstant();
 
             // Negative delta in the array access (ArrLen + -CNS)
-            const int delta = vnStore->GetConstantInt32(funcApp.m_args[1]);
+            const int delta = vnStore->GetConstantInt32(add1);
             if ((lenLowerLimit > 0) && (delta < 0) && (delta > INT_MIN) && (lenLowerLimit >= -delta))
             {
                 return dropBoundsCheck(INDEBUG("a[a.Length-cns] when a.Length is known to be >= cns"));

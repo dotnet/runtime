@@ -46,6 +46,9 @@ CDAC_TYPE_FIELD(Thread, T_POINTER, CachedStackLimit, cdac_data<Thread>::CachedSt
 CDAC_TYPE_FIELD(Thread, T_POINTER, ExceptionTracker, cdac_data<Thread>::ExceptionTracker)
 CDAC_TYPE_FIELD(Thread, T_UINT32, DebuggerControlledThreadState, cdac_data<Thread>::DebuggerControlledThreadState)
 CDAC_TYPE_FIELD(Thread, T_POINTER, DebuggerFilterContext, cdac_data<Thread>::DebuggerFilterContext)
+#ifdef TARGET_WINDOWS
+CDAC_TYPE_FIELD(Thread, T_POINTER, ThreadHandle, cdac_data<Thread>::ThreadHandle)
+#endif // TARGET_WINDOWS
 CDAC_TYPE_FIELD(Thread, TYPE(ObjectHandle), ExposedObject, cdac_data<Thread>::ExposedObject)
 CDAC_TYPE_FIELD(Thread, TYPE(ObjectHandle), LastThrownObject, cdac_data<Thread>::LastThrownObject)
 CDAC_TYPE_FIELD(Thread, T_UINT32, LastThrownObjectIsUnhandled, cdac_data<Thread>::LastThrownObjectIsUnhandled)
@@ -189,6 +192,18 @@ CDAC_TYPE_SIZE(sizeof(ArrayBase))
 CDAC_TYPE_FIELD(Array, T_UINT32, m_NumComponents, cdac_data<ArrayBase>::m_NumComponents)
 CDAC_TYPE_END(Array)
 
+CDAC_TYPE_BEGIN(StackTraceArrayHeader)
+CDAC_TYPE_SIZE(cdac_data<StackTraceArray>::HeaderSize)
+CDAC_TYPE_FIELD(StackTraceArrayHeader, T_UINT32, Size, cdac_data<StackTraceArray>::Size)
+CDAC_TYPE_END(StackTraceArrayHeader)
+
+CDAC_TYPE_BEGIN(StackTraceElement)
+CDAC_TYPE_SIZE(sizeof(StackTraceElement))
+CDAC_TYPE_FIELD(StackTraceElement, T_POINTER, Ip, offsetof(StackTraceElement, ip))
+CDAC_TYPE_FIELD(StackTraceElement, T_POINTER, MethodDesc, offsetof(StackTraceElement, pFunc))
+CDAC_TYPE_FIELD(StackTraceElement, T_INT32, Flags, offsetof(StackTraceElement, flags))
+CDAC_TYPE_END(StackTraceElement)
+
 CDAC_TYPE_BEGIN(InteropSyncBlockInfo)
 CDAC_TYPE_INDETERMINATE(InteropSyncBlockInfo)
 #ifdef FEATURE_COMINTEROP
@@ -317,6 +332,8 @@ CDAC_TYPE_FIELD(LoaderAllocator, T_POINTER, DynamicHelpersStubHeap, cdac_data<Lo
 #endif // defined(FEATURE_READYTORUN) && defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS)
 CDAC_TYPE_FIELD(LoaderAllocator, T_POINTER, VirtualCallStubManager, cdac_data<LoaderAllocator>::VirtualCallStubManager)
 CDAC_TYPE_FIELD(LoaderAllocator, TYPE(ObjectHandle), ObjectHandle, cdac_data<LoaderAllocator>::ObjectHandle)
+CDAC_TYPE_FIELD(LoaderAllocator, T_BOOL, IsCollectible, cdac_data<LoaderAllocator>::IsCollectible)
+CDAC_TYPE_FIELD(LoaderAllocator, T_UINT64, CreationNumber, cdac_data<LoaderAllocator>::CreationNumber)
 CDAC_TYPE_END(LoaderAllocator)
 
 CDAC_TYPE_BEGIN(LoaderHeap)
@@ -983,6 +1000,7 @@ CDAC_TYPE_FIELD(ILCodeVersionNode, T_NUINT, VersionId, cdac_data<ILCodeVersionNo
 CDAC_TYPE_FIELD(ILCodeVersionNode, T_POINTER, Next, cdac_data<ILCodeVersionNode>::Next)
 CDAC_TYPE_FIELD(ILCodeVersionNode, T_UINT32, RejitState, cdac_data<ILCodeVersionNode>::RejitState)
 CDAC_TYPE_FIELD(ILCodeVersionNode, T_POINTER, ILAddress, cdac_data<ILCodeVersionNode>::ILAddress)
+CDAC_TYPE_FIELD(ILCodeVersionNode, T_UINT32, Deoptimized, cdac_data<ILCodeVersionNode>::Deoptimized)
 CDAC_TYPE_END(ILCodeVersionNode)
 #endif // FEATURE_CODE_VERSIONING
 
@@ -1067,6 +1085,8 @@ CDAC_TYPE_BEGIN(DebuggerEval)
 CDAC_TYPE_SIZE(sizeof(DebuggerEval))
 CDAC_TYPE_FIELD(DebuggerEval, EXTERN_TYPE(Context), TargetContext, offsetof(DebuggerEval, m_context))
 CDAC_TYPE_FIELD(DebuggerEval, T_BOOL, EvalUsesHijack, offsetof(DebuggerEval, m_evalUsesHijack))
+CDAC_TYPE_FIELD(DebuggerEval, T_UINT32, MethodToken, offsetof(DebuggerEval, m_methodToken))
+CDAC_TYPE_FIELD(DebuggerEval, T_POINTER, AssemblyPtr, offsetof(DebuggerEval, m_pAssembly))
 CDAC_TYPE_END(DebuggerEval)
 #endif // DEBUGGING_SUPPORTED
 
@@ -1535,9 +1555,12 @@ CDAC_GLOBAL(FieldOffsetBigRVA, T_UINT32, FIELD_OFFSET_BIG_RVA)
 CDAC_GLOBAL(FieldOffsetDynamicRVA, T_UINT32, FIELD_OFFSET_DYNAMIC_RVA)
 CDAC_GLOBAL_POINTER(ClrNotificationArguments, &::g_clrNotificationArguments)
 CDAC_GLOBAL_POINTER(ArrayBoundsZero, cdac_data<ArrayBase>::ArrayBoundsZero)
+CDAC_GLOBAL_POINTER(CanonMethodTable, &::g_pCanonMethodTableClass)
 CDAC_GLOBAL_POINTER(ContinuationMethodTable, &::g_pContinuationClassIfSubTypeCreated)
+CDAC_GLOBAL_POINTER(ContinuationSingletonEEClass, &::g_singletonContinuationEEClass)
 CDAC_GLOBAL_POINTER(ExceptionMethodTable, &::g_pExceptionClass)
 CDAC_GLOBAL_POINTER(FreeObjectMethodTable, &::g_pFreeObjectMethodTable)
+CDAC_GLOBAL_POINTER(MulticastDelegateMethodTable, &::g_pMulticastDelegateClass)
 CDAC_GLOBAL_POINTER(ObjectMethodTable, &::g_pObjectClass)
 CDAC_GLOBAL_POINTER(ObjectArrayMethodTable, &::g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT])
 CDAC_GLOBAL_POINTER(StringMethodTable, &::g_pStringClass)
@@ -1626,6 +1649,7 @@ CDAC_GLOBAL_CONTRACT(Exception, c1)
 CDAC_GLOBAL_CONTRACT(ExecutionManager, c2)
 CDAC_GLOBAL_CONTRACT(GCInfo, c1)
 CDAC_GLOBAL_CONTRACT(Loader, c1)
+CDAC_GLOBAL_CONTRACT(ManagedTypeSource, c1)
 CDAC_GLOBAL_CONTRACT(Notifications, c1)
 #ifdef FEATURE_OBJCMARSHAL
 CDAC_GLOBAL_CONTRACT(ObjectiveCMarshal, c1)

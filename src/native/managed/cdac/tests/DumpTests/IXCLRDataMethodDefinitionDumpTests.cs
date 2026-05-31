@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Linq;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
@@ -197,7 +198,7 @@ public unsafe class IXCLRDataMethodDefinitionDumpTests : DumpTestBase
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
 
-        foreach (IStackDataFrameHandle frame in stackWalk.CreateStackWalk(crashingThread))
+        foreach (IStackDataFrameHandle frame in stackWalk.CreateStackWalk(crashingThread).Where(ClrDataStackWalk.IsLegacyVisible))
         {
             TargetPointer methodDescPtr = stackWalk.GetMethodDescPtr(frame);
             if (methodDescPtr == TargetPointer.Null)
@@ -231,10 +232,8 @@ public unsafe class IXCLRDataMethodDefinitionDumpTests : DumpTestBase
 
         TargetPointer systemAssembly = loader.GetSystemAssembly();
         Contracts.ModuleHandle coreLibModule = loader.GetModuleHandleFromAssemblyPtr(systemAssembly);
-        TypeHandle listTypeDef = rts.GetTypeByNameAndModule(
-            "List`1",
-            "System.Collections.Generic",
-            coreLibModule);
+        TypeHandle listTypeDef = Target.Contracts.ManagedTypeSource.GetTypeHandle(
+            "System.Collections.Generic.List`1");
         Assert.True(listTypeDef.Address != 0, "Could not find List<> type definition in CoreLib");
 
         TargetPointer modulePtr = rts.GetModule(listTypeDef);
