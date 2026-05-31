@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
@@ -616,6 +617,137 @@ namespace System.Threading.Tests
 
             semaphore.Release(totalWaiters / 2);
             Task.WaitAll(tasks);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        public static async Task WaitAsync_AvailableWaitHandle_ConcurrentInit_StaysConsistent()
+        {
+            // The race only fires during the first AvailableWaitHandle access on a given semaphore
+            // (after init, m_waitHandle is non-null and the WaitAsync fast path is excluded). Use a
+            // fresh semaphore per iteration so each iteration is a real attempt at the race.
+            const int Iterations = 1_000;
+
+            for (int i = 0; i < Iterations; i++)
+            {
+                var sem = new SemaphoreSlim(1, 1);
+                Task accessor = Task.Run(() => sem.AvailableWaitHandle);
+
+                await sem.WaitAsync();
+                await accessor;
+
+                // Count is 0; the handle must not be signaled.
+                Assert.False(sem.AvailableWaitHandle.WaitOne(0));
+
+                sem.Release();
+                sem.Dispose();
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        public static async Task WaitAsync_ConcurrentFastPath_NeverUnderflows()
+        {
+            const int Threads = 16, Iterations = 1_000;
+            var sem = new SemaphoreSlim(1, 1);
+
+            await Task.WhenAll(Enumerable.Range(0, Threads).Select(_ => Task.Run(async () =>
+            {
+                for (int i = 0; i < Iterations; i++)
+                {
+                    if (await sem.WaitAsync(0))
+                        sem.Release();
+                }
+            })));
+
+            // Every successful WaitAsync(0) is paired with a Release; final count must be exactly 1.
+            Assert.Equal(1, sem.CurrentCount);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        public static async Task WaitCore_ConcurrentWithWaitAsyncFastPath_CountNeverCorrupted()
+        {
+            // Stresses the CAS loop in WaitCore, which exists because the lock-free WaitAsync
+            // fast path can decrement m_currentCount without holding the lock.
+            const int Workers = 8, Iterations = 500;
+            var sem = new SemaphoreSlim(1, 1);
+            var tasks = new Task[Workers * 2];
+
+            for (int i = 0; i < Workers; i++)
+            {
+                tasks[i] = Task.Run(() =>
+                {
+                    for (int j = 0; j < Iterations; j++)
+                    {
+                        sem.Wait();
+                        sem.Release();
+                    }
+                });
+            }
+            for (int i = Workers; i < Workers * 2; i++)
+            {
+                tasks[i] = Task.Run(async () =>
+                {
+                    for (int j = 0; j < Iterations; j++)
+                    {
+                        await sem.WaitAsync();
+                        sem.Release();
+                    }
+                });
+            }
+
+            await Task.WhenAll(tasks);
+            Assert.Equal(1, sem.CurrentCount);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        public static async Task Release_BulkRelease_ConcurrentWithFastPath_CountStaysCorrect()
+        {
+            const int Workers = 8, Iterations = 500;
+            const int TotalPermits = Workers * Iterations;
+            var sem = new SemaphoreSlim(0);
+
+            Task[] consumers = Enumerable.Range(0, Workers).Select(_ => Task.Run(async () =>
+            {
+                for (int i = 0; i < Iterations; i++)
+                {
+                    await sem.WaitAsync();
+                }
+            })).ToArray();
+
+            Task producer = Task.Run(() =>
+            {
+                int remaining = TotalPermits;
+                while (remaining >= 2)
+                {
+                    sem.Release(2);
+                    remaining -= 2;
+                }
+                if (remaining > 0)
+                {
+                    sem.Release();
+                }
+            });
+
+            await Task.WhenAll(consumers);
+            await producer;
+            Assert.Equal(0, sem.CurrentCount);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        public static async Task WaitAsync_CancellationDuringFastPath_NoCountCorruption()
+        {
+            const int Iterations = 10_000;
+            var sem = new SemaphoreSlim(1, 1);
+
+            for (int i = 0; i < Iterations; i++)
+            {
+                using var cts = new CancellationTokenSource();
+                Task t = sem.WaitAsync(cts.Token);
+                cts.Cancel();
+                try { await t; sem.Release(); }
+                catch (OperationCanceledException) { }
+            }
+
+            Assert.Equal(1, sem.CurrentCount);
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
