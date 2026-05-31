@@ -742,6 +742,40 @@ namespace System.Runtime.Intrinsics
             }
         }
 
+        /// <inheritdoc cref="Vector256.Acos(Vector256{double})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<double> Acos(Vector512<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.AcosDouble<Vector512<double>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector256.Acos(vector._lower),
+                    Vector256.Acos(vector._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector256.Acos(Vector256{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<float> Acos(Vector512<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.AcosSingle<Vector512<float>, Vector512<int>, Vector512<double>, Vector512<long>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector256.Acos(vector._lower),
+                    Vector256.Acos(vector._upper)
+                );
+            }
+        }
+
         /// <inheritdoc cref="Vector256.Cos(Vector256{double})" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<double> Cos(Vector512<double> vector)
