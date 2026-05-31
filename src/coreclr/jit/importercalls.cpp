@@ -6197,31 +6197,84 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                 break;
             }
 #endif // !TARGET_64BIT
+#if defined(FEATURE_HW_INTRINSICS)
+            impPopStack();
 
-            if (varTypeIsSigned(baseType))
+            GenTree* op1Dup = nullptr;
+
+            if (!varTypeIsUnsigned(JitType2PreciseVarType(baseJitType)))
             {
-                // TODO-CQ: We should insert the `if (value < 0) { throw }` handling
-                break;
+                op1 = impCloneExpr(op1, &op1Dup, CHECK_SPILL_ALL, nullptr DEBUGARG("Cloning op1 for Log2"));
+                assert(op1Dup != nullptr);
+
+                // We will insert a qmark below that is the first use
+                std::swap(op1, op1Dup);
             }
 
-#if defined(FEATURE_HW_INTRINSICS)
-            GenTree* lzcnt = impPrimitiveNamedIntrinsic(NI_PRIMITIVE_LeadingZeroCount, clsHnd, method, sig, mustExpand);
+            // The 0->0 contract is fulfilled by setting the LSB to 1.
+            // Log(1) is 0, and setting the LSB for values > 1 does not change the log2 result.
+            op1 = gtNewOperNode(GT_OR, baseType, op1, gtNewIconNode(1, baseType));
 
-            if (lzcnt != nullptr)
+            bool isLzcnt = true;
+            bool isLong  = varTypeIsLong(baseType);
+
+#if defined(TARGET_XARCH)
+            if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
+            {
+                hwintrinsic = varTypeIsLong(baseType) ? NI_AVX2_X64_LeadingZeroCount : NI_AVX2_LeadingZeroCount;
+                result      = gtNewScalarHWIntrinsicNode(baseType, op1, hwintrinsic);
+            }
+            else
+            {
+                hwintrinsic = varTypeIsLong(baseType) ? NI_X86Base_X64_BitScanReverse : NI_X86Base_BitScanReverse;
+                result      = gtNewScalarHWIntrinsicNode(baseType, op1, hwintrinsic);
+                isLzcnt     = false;
+            }
+#elif defined(TARGET_ARM64)
+            hwintrinsic = varTypeIsLong(baseType) ? NI_ArmBase_Arm64_LeadingZeroCount : NI_ArmBase_LeadingZeroCount;
+            result      = gtNewScalarHWIntrinsicNode(TYP_INT, op1, hwintrinsic);
+            baseType    = TYP_INT;
+#else
+#error Unsupported platform
+#endif
+
+            if (isLzcnt)
             {
                 GenTree* icon;
 
-                if (varTypeIsLong(retType))
+                if (isLong)
                 {
-                    icon = gtNewLconNode(63);
+                    if (varTypeIsLong(baseType))
+                    {
+                        icon = gtNewLconNode(63);
+                    }
+                    else
+                    {
+                        icon = gtNewIconNode(63);
+                    }
                 }
                 else
                 {
-                    icon = gtNewIconNode(31, retType);
+                    icon = gtNewIconNode(31);
                 }
 
-                result   = gtNewOperNode(GT_XOR, retType, lzcnt, icon);
-                baseType = retType;
+                result = gtNewOperNode(GT_XOR, baseType, result, icon);
+            }
+
+            if (op1Dup != nullptr)
+            {
+                // result = (value < 0) ? throw new ArgumentOutOfRangeException() : log2(value);
+                assert(!varTypeIsUnsigned(JitType2PreciseVarType(baseJitType)));
+
+                GenTree* fallback =
+                    gtNewMustThrowException(CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION, baseType, NO_CLASS_HANDLE);
+                GenTree* cond = gtNewOperNode(GT_LT, TYP_INT, op1Dup, gtNewZeroConNode(isLong ? TYP_LONG : TYP_INT));
+                GenTreeColon* colon = gtNewColonNode(baseType, fallback, result);
+                GenTree*      qmark = gtNewQmarkNode(baseType, cond, colon);
+
+                unsigned tmp = lvaGrabTemp(true DEBUGARG("Grabbing temp for Log2 Qmark"));
+                impStoreToTemp(tmp, qmark, CHECK_SPILL_NONE);
+                result = gtNewLclvNode(tmp, baseType);
             }
 #endif // FEATURE_HW_INTRINSICS
 
