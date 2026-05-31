@@ -29,6 +29,18 @@ namespace Mono.Linker
                 return;
 
             _context.Annotations.Mark(module, reason, origin);
+            MarkExportedTypeTarget(exportedType, origin);
+        }
+
+        public void MarkExportedTypeTarget(ExportedType exportedType, in MessageOrigin origin)
+        {
+            if (_context.TryResolve(exportedType) is not TypeDefinition type)
+                return;
+
+            _context.Annotations.Mark(type, new DependencyInfo(DependencyKind.ExportedType, exportedType), origin);
+
+            if (_context.Annotations.TryGetPreservedMembers(exportedType, out TypePreserveMembers members))
+                _context.Annotations.SetMembersPreserve(type, members);
         }
 
         public void MarkForwardedScope(TypeReference typeReference, in MessageOrigin origin)
