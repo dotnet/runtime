@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Threading;
 
 namespace System.Diagnostics
 {
@@ -20,6 +21,8 @@ namespace System.Diagnostics
     /// </summary>
     public sealed class ActivityListener : IDisposable
     {
+        private bool _disposed;
+
         /// <summary>
         /// Construct a new <see cref="ActivityListener"/> object to start listening to the <see cref="Activity"/> events.
         /// </summary>
@@ -58,8 +61,29 @@ namespace System.Diagnostics
         public SampleActivity<ActivityContext>? Sample { get; set; }
 
         /// <summary>
+        /// Re-evaluates <see cref="ShouldListenTo"/> against every registered <see cref="ActivitySource"/>, attaching this
+        /// listener to sources that now match and detaching from sources that no longer match. Call this after mutating
+        /// <see cref="ShouldListenTo"/> or any state captured by its callback (for example, when configuration changes
+        /// alter the rules used by the predicate). If the listener has not yet been registered, it is registered as part
+        /// of the refresh; calling this on a disposed listener has no effect.
+        /// </summary>
+        public void RefreshSources()
+        {
+            if (Volatile.Read(ref _disposed))
+            {
+                return;
+            }
+
+            ActivitySource.ResetSourceFilters(this);
+        }
+
+        /// <summary>
         /// Dispose will unregister this <see cref="ActivityListener"/> object from listening to <see cref="Activity"/> events.
         /// </summary>
-        public void Dispose() => ActivitySource.DetachListener(this);
+        public void Dispose()
+        {
+            Volatile.Write(ref _disposed, true);
+            ActivitySource.DetachListener(this);
+        }
     }
 }

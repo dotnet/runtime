@@ -9,17 +9,18 @@ using System.Threading;
 namespace System.Diagnostics
 {
     [DebuggerDisplay("Name = {Name}")]
-    public sealed class ActivitySource : IDisposable
+    public class ActivitySource : IDisposable
     {
         private static readonly SynchronizedList<ActivitySource> s_activeSources = new SynchronizedList<ActivitySource>();
         private static readonly SynchronizedList<ActivityListener> s_allListeners = new SynchronizedList<ActivityListener>();
+        private static readonly SynchronizedList<ActivityListener> s_disposedListeners = new SynchronizedList<ActivityListener>();
         private SynchronizedList<ActivityListener>? _listeners;
 
         /// <summary>
         /// Construct an ActivitySource object with the input name
         /// </summary>
         /// <param name="name">The name of the ActivitySource object</param>
-        public ActivitySource(string name) : this(name, version: "", tags: null, telemetrySchemaUrl: null) {}
+        public ActivitySource(string name) : this(name, version: "", tags: null, scope: null, telemetrySchemaUrl: null) {}
 
         /// <summary>
         /// Construct an ActivitySource object with the input name
@@ -27,7 +28,7 @@ namespace System.Diagnostics
         /// <param name="name">The name of the ActivitySource object</param>
         /// <param name="version">The version of the component publishing the tracing info.</param>
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public ActivitySource(string name, string? version = "") : this(name, version, tags: null, telemetrySchemaUrl: null) {}
+        public ActivitySource(string name, string? version = "") : this(name, version, tags: null, scope: null, telemetrySchemaUrl: null) {}
 
         /// <summary>
         /// Construct an ActivitySource object with the input name
@@ -35,18 +36,19 @@ namespace System.Diagnostics
         /// <param name="name">The name of the ActivitySource object</param>
         /// <param name="version">The version of the component publishing the tracing info.</param>
         /// <param name="tags">The optional ActivitySource tags.</param>
-        public ActivitySource(string name, string? version = "", IEnumerable<KeyValuePair<string, object?>>? tags = default) : this(name, version, tags, telemetrySchemaUrl: null) {}
+        public ActivitySource(string name, string? version = "", IEnumerable<KeyValuePair<string, object?>>? tags = default) : this(name, version, tags, scope: null, telemetrySchemaUrl: null) {}
 
         /// <summary>
         /// Initialize a new instance of the ActivitySource object using the <see cref="ActivitySourceOptions" />.
         /// </summary>
         /// <param name="options">The <see cref="ActivitySourceOptions" /> object to use for initializing the ActivitySource object.</param>
-        public ActivitySource(ActivitySourceOptions options) : this((options ?? throw new ArgumentNullException(nameof(options))).Name, options.Version, options.Tags, options.TelemetrySchemaUrl) {}
+        public ActivitySource(ActivitySourceOptions options) : this((options ?? throw new ArgumentNullException(nameof(options))).Name, options.Version, options.Tags, options.Scope, options.TelemetrySchemaUrl) {}
 
-        private ActivitySource(string name, string? version, IEnumerable<KeyValuePair<string, object?>>? tags, string? telemetrySchemaUrl)
+        private ActivitySource(string name, string? version, IEnumerable<KeyValuePair<string, object?>>? tags, object? scope, string? telemetrySchemaUrl)
         {
             Name = name ?? throw new ArgumentNullException(nameof(name));
             Version = version;
+            Scope = scope;
             TelemetrySchemaUrl = telemetrySchemaUrl;
 
             // Sorting the tags to make sure the tags are always in the same order.
@@ -92,6 +94,11 @@ namespace System.Diagnostics
         public IEnumerable<KeyValuePair<string, object?>>? Tags { get; }
 
         /// <summary>
+        /// Returns the ActivitySource scope object.
+        /// </summary>
+        public object? Scope { get; }
+
+        /// <summary>
         /// Returns the telemetry schema URL associated with the ActivitySource.
         /// </summary>
         public string? TelemetrySchemaUrl { get; }
@@ -105,7 +112,9 @@ namespace System.Diagnostics
         public bool HasListeners()
         {
             SynchronizedList<ActivityListener>? listeners = _listeners;
-            return listeners != null && listeners.Count > 0;
+            return listeners != null
+                && !ReferenceEquals(listeners, s_disposedListeners)
+                && listeners.Count > 0;
         }
 
         /// <summary>
@@ -204,12 +213,14 @@ namespace System.Diagnostics
         private Activity? CreateActivity(string name, ActivityKind kind, ActivityContext context, string? parentId, IEnumerable<KeyValuePair<string, object?>>? tags,
                                             IEnumerable<ActivityLink>? links, DateTimeOffset startTime, bool startIt = true, ActivityIdFormat idFormat = ActivityIdFormat.Unknown)
         {
-            // _listeners can get assigned to null in Dispose.
+            // _listeners can get assigned to the disposed sentinel in Dispose.
             SynchronizedList<ActivityListener>? listeners = _listeners;
             if (listeners == null || listeners.Count == 0)
             {
                 return null;
             }
+
+            Debug.Assert(!ReferenceEquals(listeners, s_disposedListeners));
 
             Activity? activity = null;
             ActivityTagsCollection? samplerTags;
@@ -335,9 +346,11 @@ namespace System.Diagnostics
         /// <summary>
         /// Dispose the ActivitySource object and remove the current instance from the global list. empty the listeners list too.
         /// </summary>
-        public void Dispose()
+        public void Dispose() => Dispose(true);
+
+        protected virtual void Dispose(bool disposing)
         {
-            _listeners = null;
+            Interlocked.Exchange(ref _listeners, s_disposedListeners);
             s_activeSources.Remove(this);
         }
 
@@ -351,42 +364,103 @@ namespace System.Diagnostics
 
             if (s_allListeners.AddIfNotExist(listener))
             {
-                s_activeSources.EnumWithAction((source, obj) => {
-                    var shouldListenTo = ((ActivityListener)obj).ShouldListenTo;
-                    if (shouldListenTo != null && shouldListenTo(source))
-                    {
-                        source.AddListener((ActivityListener)obj);
-                    }
-                }, listener);
+                try
+                {
+                    s_activeSources.EnumWithAction((source, obj) => {
+                        var shouldListenTo = ((ActivityListener)obj).ShouldListenTo;
+                        if (shouldListenTo != null && shouldListenTo(source))
+                        {
+                            source.AddListener((ActivityListener)obj);
+                        }
+                    }, listener);
+                }
+                catch
+                {
+                    s_allListeners.Remove(listener);
+                    s_activeSources.EnumWithAction((source, obj) => source.RemoveListener((ActivityListener)obj), listener);
+                    throw;
+                }
             }
+        }
+
+        /// <summary>
+        /// Resets source filters for the <see cref="ActivityListener"/> object to start or stop listening to the <see cref="Activity"/> events based on the listener configuration.
+        /// </summary>
+        /// <param name="listener">The <see cref="ActivityListener"/> instance whose configuration, in particular its <see cref="ActivityListener.ShouldListenTo"/> callback, determines which <see cref="ActivitySource"/> instances it should listen to.</param>
+        internal static void ResetSourceFilters(ActivityListener listener)
+        {
+            ArgumentNullException.ThrowIfNull(listener);
+
+            s_allListeners.AddIfNotExist(listener);
+
+            s_activeSources.EnumWithAction((source, obj) => {
+                var ls = (ActivityListener)obj;
+                if (ls.ShouldListenTo?.Invoke(source) ?? false)
+                {
+                    source.AddListener(ls);
+                }
+                else
+                {
+                    source.RemoveListener(ls);
+                }
+            }, listener);
         }
 
         internal delegate void Function<T, TParent>(T item, ref ActivityCreationOptions<TParent> data, ref ActivitySamplingResult samplingResult, ref ActivityCreationOptions<ActivityContext> dataWithContext);
 
         internal void AddListener(ActivityListener listener)
         {
-            if (_listeners == null)
+            SynchronizedList<ActivityListener>? listeners = Volatile.Read(ref _listeners);
+            if (ReferenceEquals(listeners, s_disposedListeners))
             {
-                Interlocked.CompareExchange(ref _listeners, new SynchronizedList<ActivityListener>(), null);
+                return;
             }
 
-            _listeners.AddIfNotExist(listener);
+            if (listeners is null)
+            {
+                SynchronizedList<ActivityListener> newListeners = new SynchronizedList<ActivityListener>();
+                listeners = Interlocked.CompareExchange(ref _listeners, newListeners, null);
+                if (listeners is null)
+                {
+                    newListeners.AddIfNotExist(listener);
+                    return;
+                }
+
+                if (ReferenceEquals(listeners, s_disposedListeners))
+                {
+                    return;
+                }
+            }
+
+            listeners.AddIfNotExist(listener);
+        }
+
+        internal void RemoveListener(ActivityListener listener)
+        {
+            SynchronizedList<ActivityListener>? listeners = Volatile.Read(ref _listeners);
+            if (listeners is null || ReferenceEquals(listeners, s_disposedListeners))
+            {
+                return;
+            }
+
+            listeners.Remove(listener);
         }
 
         internal static void DetachListener(ActivityListener listener)
         {
             s_allListeners.Remove(listener);
-            s_activeSources.EnumWithAction((source, obj) => source._listeners?.Remove((ActivityListener) obj), listener);
+            s_activeSources.EnumWithAction((source, obj) => source.RemoveListener((ActivityListener)obj), listener);
         }
 
         internal void NotifyActivityStart(Activity activity)
         {
             Debug.Assert(activity != null);
 
-            // _listeners can get assigned to null in Dispose.
+            // _listeners can get assigned to the disposed sentinel in Dispose.
             SynchronizedList<ActivityListener>? listeners = _listeners;
             if (listeners != null && listeners.Count > 0)
             {
+                Debug.Assert(!ReferenceEquals(listeners, s_disposedListeners));
                 listeners.EnumWithAction((listener, obj) => listener.ActivityStarted?.Invoke((Activity)obj), activity);
             }
         }
@@ -395,10 +469,11 @@ namespace System.Diagnostics
         {
             Debug.Assert(activity != null);
 
-            // _listeners can get assigned to null in Dispose.
+            // _listeners can get assigned to the disposed sentinel in Dispose.
             SynchronizedList<ActivityListener>? listeners = _listeners;
             if (listeners != null && listeners.Count > 0)
             {
+                Debug.Assert(!ReferenceEquals(listeners, s_disposedListeners));
                 listeners.EnumWithAction((listener, obj) => listener.ActivityStopped?.Invoke((Activity)obj), activity);
             }
         }
@@ -407,10 +482,11 @@ namespace System.Diagnostics
         {
             Debug.Assert(activity != null);
 
-            // _listeners can get assigned to null in Dispose.
+            // _listeners can get assigned to the disposed sentinel in Dispose.
             SynchronizedList<ActivityListener>? listeners = _listeners;
             if (listeners != null && listeners.Count > 0)
             {
+                Debug.Assert(!ReferenceEquals(listeners, s_disposedListeners));
                 listeners.EnumWithExceptionNotification(activity, exception, ref tags);
             }
         }
