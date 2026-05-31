@@ -627,7 +627,7 @@ namespace System.Text.Json
             _totalConsumed = prevTotalConsumed;
             consumed = default;
             _currentPosition = copy;
-            throw GetInvalidLiteralMultiSegment(readSoFar.Slice(0, written).ToArray());
+            throw GetInvalidLiteralMultiSegment(readSoFar.Slice(0, written));
         }
 
         private static int FindMismatch(ReadOnlySpan<byte> span, ReadOnlySpan<byte> literal)
@@ -654,7 +654,7 @@ namespace System.Text.Json
             return indexOfFirstMismatch;
         }
 
-        private JsonException GetInvalidLiteralMultiSegment(ReadOnlySpan<byte> span)
+        private JsonException GetInvalidLiteralMultiSegment(scoped ReadOnlySpan<byte> span)
         {
             byte firstByte = span[0];
 

@@ -1181,7 +1181,9 @@ namespace System.Text.Json
             return false;
         }
 
-        private void ThrowInvalidLiteral(ReadOnlySpan<byte> span)
+        private void ThrowInvalidLiteral(ReadOnlySpan<byte> span) => throw GetInvalidLiteral(span);
+
+        private JsonException GetInvalidLiteral(ReadOnlySpan<byte> span)
         {
             byte firstByte = span[0];
 
@@ -1199,7 +1201,7 @@ namespace System.Text.Json
                     resource = ExceptionResource.ExpectedNull;
                     break;
             }
-            ThrowHelper.ThrowJsonReaderException(ref this, resource, bytes: span);
+            return ThrowHelper.GetJsonReaderException(ref this, resource, nextByte: default, bytes: span);
         }
 
         private bool ConsumeNumber()

@@ -67,7 +67,7 @@ namespace System.Text.Json
         /// </remarks>
         public void WriteBase64String(ReadOnlySpan<char> propertyName, ReadOnlySpan<byte> bytes)
         {
-            JsonWriterHelper.ValidatePropertyNameLength(propertyName);
+            JsonWriterHelper.ValidateProperty(propertyName);
 
             WriteBase64Escape(propertyName, bytes);
 
@@ -91,7 +91,7 @@ namespace System.Text.Json
         /// </remarks>
         public void WriteBase64String(ReadOnlySpan<byte> utf8PropertyName, ReadOnlySpan<byte> bytes)
         {
-            JsonWriterHelper.ValidatePropertyNameLength(utf8PropertyName);
+            JsonWriterHelper.ValidateProperty(utf8PropertyName);
 
             WriteBase64Escape(utf8PropertyName, bytes);
 
