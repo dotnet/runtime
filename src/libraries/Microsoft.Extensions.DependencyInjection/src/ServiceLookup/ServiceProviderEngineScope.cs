@@ -93,8 +93,20 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 else
                 {
                     _disposables ??= new List<object>();
+                    bool alreadyCaptured = false;
+                    for (int i = 0; i < _disposables.Count; i++)
+                    {
+                        if (ReferenceEquals(_disposables[i], service))
+                        {
+                            alreadyCaptured = true;
+                            break;
+                        }
+                    }
 
-                    _disposables.Add(service);
+                    if (!alreadyCaptured)
+                    {
+                        _disposables.Add(service);
+                    }
                 }
             }
 
