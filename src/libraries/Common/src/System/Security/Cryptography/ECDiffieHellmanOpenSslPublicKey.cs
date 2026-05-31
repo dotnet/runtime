@@ -8,7 +8,7 @@ namespace System.Security.Cryptography
 {
     internal sealed class ECDiffieHellmanOpenSslPublicKey : ECDiffieHellmanPublicKey
     {
-        private ECOpenSsl? _key;
+        private SafeEvpPKeyHandle? _key;
 
         internal ECDiffieHellmanOpenSslPublicKey(SafeEvpPKeyHandle pkeyHandle)
         {
@@ -17,27 +17,12 @@ namespace System.Security.Cryptography
             if (pkeyHandle.IsInvalid)
                 throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(pkeyHandle));
 
-            // If ecKey is valid it has already been up-ref'd, so we can just use this handle as-is.
-            SafeEcKeyHandle key = Interop.Crypto.EvpPkeyGetEcKey(pkeyHandle);
-
-            if (key == null || key.IsInvalid)
-            {
-                key?.Dispose();
-
-                // This may happen when EVP_PKEY was created by provider and getting EC_KEY is not possible.
-                // Since you cannot mix EC_KEY and EVP_PKEY params API we need to export and re-import the public key.
-                ECParameters ecParams = ECOpenSsl.ExportParameters(pkeyHandle, includePrivateParameters: false);
-                _key = new ECOpenSsl(ecParams);
-            }
-            else
-            {
-                _key = new ECOpenSsl(key);
-            }
+            _key = pkeyHandle.DuplicateHandle();
         }
 
         internal ECDiffieHellmanOpenSslPublicKey(ECParameters parameters)
         {
-            _key = new ECOpenSsl(parameters);
+            _key = ECOpenSsl.ImportECKey(parameters, out _);
         }
 
 #pragma warning disable 0672 // Member overrides an obsolete member.
@@ -60,14 +45,38 @@ namespace System.Security.Cryptography
         public override ECParameters ExportParameters() =>
             ECOpenSsl.ExportParameters(GetKey(), includePrivateParameters: false);
 
-        internal bool HasCurveName => Interop.Crypto.EcKeyHasCurveName(GetKey());
+        internal bool HasCurveName => Interop.Crypto.EvpPKeyHasCurveName(GetKey());
+
+        internal bool HasExplicitEncoding
+        {
+            get
+            {
+                ThrowIfDisposed();
+                return Interop.Crypto.EvpPKeyEcHasExplicitEncoding(GetKey());
+            }
+        }
 
         internal int KeySize
         {
             get
             {
                 ThrowIfDisposed();
-                return _key.KeySize;
+
+                int keySize = Interop.Crypto.EvpPKeyGetEcFieldDegree(_key);
+
+                if (keySize != 0)
+                {
+                    return keySize;
+                }
+
+                // Fallback for EC_KEY-backed handles: get size via EC_KEY.
+                using (SafeEcKeyHandle? ecKey = Interop.Crypto.EvpPkeyGetEcKey(_key))
+                {
+                    if (ecKey is not null && !ecKey.IsInvalid)
+                        return Interop.Crypto.EcKeyGetSize(ecKey);
+                }
+
+                throw new CryptographicException(SR.Cryptography_InvalidHandle);
             }
         }
 
@@ -84,8 +93,7 @@ namespace System.Security.Cryptography
 
         internal SafeEvpPKeyHandle DuplicateKeyHandle()
         {
-            SafeEcKeyHandle currentKey = GetKey();
-            return Interop.Crypto.CreateEvpPkeyFromEcKey(currentKey);
+            return GetKey().DuplicateHandle();
         }
 
         [MemberNotNull(nameof(_key))]
@@ -94,10 +102,10 @@ namespace System.Security.Cryptography
             ObjectDisposedException.ThrowIf(_key is null, this);
         }
 
-        private SafeEcKeyHandle GetKey()
+        private SafeEvpPKeyHandle GetKey()
         {
             ThrowIfDisposed();
-            return _key.Value;
+            return _key;
         }
     }
 }
