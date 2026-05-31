@@ -16,6 +16,7 @@
 #define DONOT_DEFINE_ETW_CALLBACK
 #include "eventtracebase.h"
 #include "minipal/time.h"
+#include <dn-memmap.h>
 
  #if !defined(STRESS_LOG_READONLY)
 #ifdef HOST_WINDOWS
@@ -181,9 +182,9 @@ void ReplacePid(LPCWSTR original, LPWSTR replaced, size_t replacedLength)
 }
 
 #ifdef MEMORY_MAPPED_STRESSLOG
-static LPVOID CreateMemoryMappedFile(LPWSTR logFilename, size_t maxBytesTotal)
+static LPVOID CreateMemoryMappedFile(LPWSTR logFilename, uint32_t maxBytesTotal)
 {
-    if (maxBytesTotal < sizeof(StressLog::StressLogHeader))
+    if ((size_t)maxBytesTotal < sizeof(StressLog::StressLogHeader))
     {
         return nullptr;
     }
@@ -191,27 +192,9 @@ static LPVOID CreateMemoryMappedFile(LPWSTR logFilename, size_t maxBytesTotal)
     WCHAR logFilenameReplaced[MAX_PATH];
     ReplacePid(logFilename, logFilenameReplaced, MAX_PATH);
 
-    HandleHolder hFile = WszCreateFile(logFilenameReplaced,
-        GENERIC_READ | GENERIC_WRITE,
-        FILE_SHARE_READ,
-        NULL,                 // default security descriptor
-        CREATE_ALWAYS,
-        FILE_ATTRIBUTE_NORMAL,
-        NULL);
-
-    if (hFile == INVALID_HANDLE_VALUE)
-    {
-        return nullptr;
-    }
-
-    size_t fileSize = maxBytesTotal;
-    HandleHolder hMap = CreateFileMapping(hFile, NULL, PAGE_READWRITE, (DWORD)(fileSize >> 32), (DWORD)fileSize, NULL);
-    if (hMap == NULL)
-    {
-        return nullptr;
-    }
-
-    return MapViewOfFileEx(hMap, FILE_MAP_ALL_ACCESS, 0, 0, fileSize, MEMORY_MAPPED_STRESSLOG_BASE_ADDRESS);
+    // The memory map will be released at process exit
+    MemoryMappedFile* mmap = MemoryMappedFile::OpenRW(logFilename, maxBytesTotal, MEMORY_MAPPED_STRESSLOG_BASE_ADDRESS);
+    return mmap ? mmap->Address() : nullptr;
 }
 #endif //MEMORY_MAPPED_STRESSLOG
 
@@ -267,7 +250,7 @@ void StressLog::Initialize(unsigned facilities, unsigned level, unsigned maxByte
     StressLogChunk::s_memoryMapped = false;
     if (logFilename != nullptr)
     {
-        theLog.hMapView = CreateMemoryMappedFile(logFilename, maxBytesTotal);
+        theLog.hMapView = CreateMemoryMappedFile(logFilename, (uint32_t)maxBytesTotal);
         if (theLog.hMapView != nullptr)
         {
             StressLogChunk::s_memoryMapped = true;
