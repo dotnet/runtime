@@ -56,6 +56,7 @@ private:
     GenTree* TrySelectToCnsOpCond(GenTreeConditional* select);
     GenTree* TrySelectToLclOpCond(GenTreeConditional* select);
     GenTree* TrySelectToCondOpLcl(GenTreeConditional* select);
+    GenTree* TrySelectToBitwiseOp(GenTreeConditional* select);
 
 #ifdef DEBUG
     void IfConvertDump();
@@ -721,6 +722,20 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
 //
 GenTree* OptIfConversionDsc::TryOptimizeSelect(GenTreeConditional* select)
 {
+    // Canonicalize
+    if (select->gtCond->OperIsCompare())
+    {
+        // SELECT(cnd, cns, op) -> SELECT(cnd, op, cns)
+        if (select->gtOp1->OperIsConst() && !select->gtOp2->OperIsConst())
+        {
+            if (m_compiler->gtCanSwapOrder(select->gtOp1, select->gtOp2))
+            {
+                std::swap(select->gtOp1, select->gtOp2);
+                select->gtCond = m_compiler->gtReverseCond(select->gtCond);
+            }
+        }
+    }
+
     GenTree* opt = TrySelectToCnsOpCond(select);
     if (opt != nullptr)
     {
@@ -734,6 +749,12 @@ GenTree* OptIfConversionDsc::TryOptimizeSelect(GenTreeConditional* select)
     }
 
     opt = TrySelectToCondOpLcl(select);
+    if (opt != nullptr)
+    {
+        return opt;
+    }
+
+    opt = TrySelectToBitwiseOp(select);
     if (opt != nullptr)
     {
         return opt;
@@ -964,6 +985,46 @@ GenTree* OptIfConversionDsc::TrySelectToCondOpLcl(GenTreeConditional* select)
     }
 #endif // TARGET_RISCV64
     return nullptr;
+}
+
+//-----------------------------------------------------------------------------
+// TrySelectToBitwiseOp: Try to optimize:
+// SELECT(x !=  3,  x > 3, 1) -> (x ==  3) | (x >  3)
+// SELECT(x == 13, y == 4, 0) -> (x == 13) & (y == 4)
+//
+// Arguments:
+//     select - The SELECT node
+//
+// Return Value:
+//     Optimized node, otherwise nullptr.
+//
+GenTree* OptIfConversionDsc::TrySelectToBitwiseOp(GenTreeConditional* select)
+{
+    GenTree* cond       = select->gtCond;
+    GenTree* trueInput  = select->gtOp1;
+    GenTree* falseInput = select->gtOp2;
+
+    if (!cond->OperIsCompare() || !trueInput->OperIsCompare() || !falseInput->IsIntegralConst())
+    {
+        return nullptr;
+    }
+
+    int64_t    trueVal = falseInput->AsIntConCommon()->IntegralValue();
+    genTreeOps bitOp   = (trueVal == 1) ? GT_OR : ((trueVal == 0) ? GT_AND : GT_NONE);
+    if (bitOp == GT_NONE)
+    {
+        return nullptr;
+    }
+
+    if (bitOp == GT_OR)
+    {
+        // Need to reverse for OR because of:
+        // SELECT(x != 3, x > 3, 1) -> (x == 3) | (x > 3)
+        cond = m_compiler->gtReverseCond(cond);
+    }
+
+    GenTree* bitwiseOp = m_compiler->gtNewOperNode(bitOp, select->TypeGet(), cond, trueInput);
+    return m_compiler->gtFoldExpr(bitwiseOp);
 }
 
 //-----------------------------------------------------------------------------
