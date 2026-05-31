@@ -28,6 +28,7 @@
     <Compile Include="System\Buffers\ReadOnlySequence.cs" />
     <Compile Include="System\Buffers\ReadOnlySequenceDebugView.cs" />
     <Compile Include="System\Buffers\ReadOnlySequenceSegment.cs" />
+    <Compile Include="System\Buffers\ReadOnlySequenceStream.cs" />
     <Compile Include="System\Buffers\ReadOnlySequence.Helpers.cs" />
     <Compile Include="System\Buffers\SequenceReader.cs" />
     <Compile Include="System\Buffers\SequenceReader.Search.cs" />
