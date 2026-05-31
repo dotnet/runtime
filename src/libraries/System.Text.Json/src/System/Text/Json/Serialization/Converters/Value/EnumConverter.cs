@@ -304,9 +304,26 @@ namespace System.Text.Json.Serialization.Converters
         {
 #if NET
             Dictionary<string, EnumFieldInfo>.AlternateLookup<ReadOnlySpan<char>> lookup = _enumFieldInfoIndex.GetAlternateLookup<ReadOnlySpan<char>>();
-            ReadOnlySpan<char> rest = source;
 #else
             Dictionary<string, EnumFieldInfo> lookup = _enumFieldInfoIndex;
+#endif
+
+            if (!s_isFlagsEnum)
+            {
+                if (lookup.TryGetValue(source, out EnumFieldInfo? firstResult) &&
+                    firstResult.GetMatchingField(source) is EnumFieldInfo match)
+                {
+                    result = ConvertFromUInt64(match.Key);
+                    return true;
+                }
+
+                result = default;
+                return false;
+            }
+
+#if NET
+            ReadOnlySpan<char> rest = source;
+#else
             ReadOnlySpan<char> rest = source.AsSpan();
 #endif
             ulong key = 0;
@@ -589,11 +606,13 @@ namespace System.Text.Json.Serialization.Converters
                 name = namingPolicy.ConvertName(name);
             }
 
-            if (string.IsNullOrEmpty(name) || char.IsWhiteSpace(name[0]) || char.IsWhiteSpace(name[name.Length - 1]) ||
-                (s_isFlagsEnum && name.Contains(',')))
+            if (name is null ||
+                (name.Length > 0 && (char.IsWhiteSpace(name[0]) || char.IsWhiteSpace(name[name.Length - 1]))) ||
+                (s_isFlagsEnum && (name.Length == 0 || name.Contains(','))))
             {
-                // Reject null or empty strings or strings with leading or trailing whitespace.
-                // In the case of flags additionally reject strings containing commas.
+                // Reject null strings or strings with leading or trailing whitespace.
+                // In the case of flags additionally reject empty strings or strings containing commas,
+                // both of which would introduce ambiguity in flag value parsing and formatting.
                 ThrowHelper.ThrowInvalidOperationException_UnsupportedEnumIdentifier(typeof(T), name);
             }
 
