@@ -329,6 +329,11 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
     PVOID* args, // An array of byrefs
     QCall::ObjectHandleOnStack pSig,
     BOOL fConstructor,
+    PVOID pRawThisByRef, // Optional: when non-null, used as the 'this' byref directly,
+                         // bypassing the box->UnBox path. Caller is responsible for keeping
+                         // the pointed-to memory alive and GC-reported (e.g. via a
+                         // ProtectValueClassFrame) for byref-like receivers, which cannot be
+                         // represented as a managed `object`.
     QCall::ObjectHandleOnStack result)
 {
     QCALL_CONTRACT;
@@ -496,7 +501,14 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
     if (!pMeth->IsStatic() && !fCtorOfVariableSizedObject) {
         PVOID pThisPtr;
 
-        if (fConstructor)
+        if (pRawThisByRef != NULL)
+        {
+            // Caller (e.g. native func-eval) supplied a raw byref for 'this'. Used for
+            // byref-like receivers, which have no `object` representation. The pointed-to
+            // memory must be kept GC-reported by the caller for the duration of the call.
+            pThisPtr = pRawThisByRef;
+        }
+        else if (fConstructor)
         {
             // Copy "this" pointer: only unbox if type is value type and method is not unboxing stub
             if (ownerType.IsValueType() && !pMeth->IsUnboxingStub()) {
