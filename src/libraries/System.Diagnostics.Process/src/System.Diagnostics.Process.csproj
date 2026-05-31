@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-freebsd;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-maccatalyst;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent)-illumos;$(NetCoreAppCurrent)-solaris;$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-freebsd;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-maccatalyst;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent)-illumos;$(NetCoreAppCurrent)-solaris;$(NetCoreAppCurrent)-haiku;$(NetCoreAppCurrent)</TargetFrameworks>
     <DefineConstants>$(DefineConstants);FEATURE_REGISTRY</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
@@ -403,10 +403,24 @@
              Link="Common\Interop\SunOS\procfs\Interop.ProcFs.GetThreadInfoById.cs" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'haiku'">
+    <Compile Include="System\Diagnostics\Process.Haiku.cs" />
+    <Compile Include="System\Diagnostics\ProcessManager.Haiku.cs" />
+    <Compile Include="System\Diagnostics\ProcessThread.Haiku.cs" />
+    <Compile Include="$(CommonPath)Interop\Haiku\Interop.Image.cs"
+             Link="Common\Interop\Haiku\Interop.Image.cs" />
+    <Compile Include="$(CommonPath)Interop\Haiku\Interop.OS.cs"
+             Link="Common\Interop\Haiku\Interop.OS.cs" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos'">
     <Compile Include="System\Diagnostics\Process.iOS.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.iOS.cs" />
     <Compile Include="System\Diagnostics\ProcessThread.iOS.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <SupportedPlatform Include="Haiku"/>
   </ItemGroup>
 
   <ItemGroup>
