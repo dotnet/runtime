@@ -15,6 +15,7 @@ parameters:
   crossBuild: false
   isOfficialBuild: false
   useNativeAOTRuntime: false
+  useBxl: false
 
 ### Build managed test components (native components are getting built as part
 ### of the product build job).
@@ -66,7 +67,10 @@ jobs:
       - ${{ each variable in parameters.variables }}:
         - ${{ variable }}
       - name: liveRuntimeBuildParams
-        value: 'libs+clr.iltools -c Release -ci'
+        ${{ if eq(parameters.useBxl, true) }}:
+          value: 'clr+libs+clr.iltools -lc Release -rc Checked -ci'
+        ${{ else }}:
+          value: 'libs+clr.iltools -c Release -ci'
 
       - name: runtimeFlavorArgs
         value: ''
@@ -111,8 +115,21 @@ jobs:
         displayName: Disk Usage before Build
 
     # Build managed test components
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)Managed allTargets skipnative skipgeneratelayout $(buildConfig) $(archType) $(runtimeFlavorArgs) $(crossArg) $(priorityArg) $(testFilterArg) ci /p:TargetOS=AnyOS
-      displayName: Build managed test components
+    - ${{ if eq(parameters.useBxl, true) }}:
+      # BXL: Generate Core_Root layout, then compile tests via BuildXL
+      - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(buildConfig) $(archType) generatelayoutonly
+        displayName: Generate CORE_ROOT for BXL
+
+      - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) -bxl $(buildConfig) $(archType)
+        displayName: Build tests via BuildXL
+
+      # Stage BXL outputs for Helix
+      - script: $(Build.SourcesDirectory)/eng/bxl/prepare-helix-payload.sh --output $(Build.SourcesDirectory)/artifacts/tests/bxl-helix-staging --chunks 30
+        displayName: Prepare BXL Helix payload
+
+    - ${{ else }}:
+      - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)Managed allTargets skipnative skipgeneratelayout $(buildConfig) $(archType) $(runtimeFlavorArgs) $(crossArg) $(priorityArg) $(testFilterArg) ci /p:TargetOS=AnyOS
+        displayName: Build managed test components
 
     - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos') }}:
       - script: |
@@ -120,26 +137,49 @@ jobs:
           df -h
         displayName: Disk Usage after Build
 
-    # Zip and publish managed test components
-    - template: /eng/pipelines/common/upload-artifact-step.yml
-      parameters:
-        rootFolder: '$(binTestsPath)/AnyOS.$(archType).$(buildConfigUpper)'
-        includeRootFolder: false
-        archiveExtension: '.tar.gz'
-        archiveType: tar
-        tarCompression: gz
-        artifactName: $(managedGenericTestArtifactName)
-        displayName: 'managed test components (generic)'
+    # Zip and publish test components
+    - ${{ if eq(parameters.useBxl, true) }}:
+      # BXL: Upload the staged Helix payload chunks + Core_Root
+      - template: /eng/pipelines/common/upload-artifact-step.yml
+        parameters:
+          rootFolder: '$(Build.SourcesDirectory)/artifacts/tests/bxl-helix-staging'
+          includeRootFolder: false
+          archiveExtension: '.tar.gz'
+          archiveType: tar
+          tarCompression: gz
+          artifactName: 'BxlHelixPayload_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfigUpper)'
+          displayName: 'BXL Helix payload'
+
+      - template: /eng/pipelines/common/upload-artifact-step.yml
+        parameters:
+          rootFolder: '$(binTestsPath)/$(osGroup).$(archType).$(buildConfigUpper)/Tests/Core_Root'
+          includeRootFolder: false
+          archiveExtension: '.tar.gz'
+          archiveType: tar
+          tarCompression: gz
+          artifactName: 'BxlCoreRoot_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfigUpper)'
+          displayName: 'BXL Core_Root'
+
+    - ${{ else }}:
+      - template: /eng/pipelines/common/upload-artifact-step.yml
+        parameters:
+          rootFolder: '$(binTestsPath)/AnyOS.$(archType).$(buildConfigUpper)'
+          includeRootFolder: false
+          archiveExtension: '.tar.gz'
+          archiveType: tar
+          tarCompression: gz
+          artifactName: $(managedGenericTestArtifactName)
+          displayName: 'managed test components (generic)'
 
 
-    # Publish .packages/microsoft.net.sdk.il needed for traversing
-    # test projects during the copynativeonly command in run test job.
-    - template: /eng/pipelines/common/upload-artifact-step.yml
-      parameters:
-        rootFolder: $(microsoftNetSdkIlFolderPath)
-        includeRootFolder: false
-        archiveType: tar
-        tarCompression: gz
-        archiveExtension: '.tar.gz'
-        artifactName: $(microsoftNetSdkIlArtifactName)
-        displayName: 'Microsoft.NET.Sdk.IL package'
+      # Publish .packages/microsoft.net.sdk.il needed for traversing
+      # test projects during the copynativeonly command in run test job.
+      - template: /eng/pipelines/common/upload-artifact-step.yml
+        parameters:
+          rootFolder: $(microsoftNetSdkIlFolderPath)
+          includeRootFolder: false
+          archiveType: tar
+          tarCompression: gz
+          archiveExtension: '.tar.gz'
+          artifactName: $(microsoftNetSdkIlArtifactName)
+          displayName: 'Microsoft.NET.Sdk.IL package'

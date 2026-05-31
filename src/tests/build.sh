@@ -4,6 +4,11 @@ build_Tests()
 {
     echo "${__MsgPrefix}Building Tests..."
 
+    if [[ "$__UseBxl" -eq 1 ]]; then
+        build_Tests_WithBxl
+        return
+    fi
+
     __ProjectFilesDir="$__TestDir"
 
     if [[ -f  "${__TestBinDir}/build_info.json" ]]; then
@@ -133,6 +138,210 @@ build_Tests()
     fi
 }
 
+resolve_bxl_test_path() {
+    local input_path="$1"
+    local resolved_path=
+
+    if [[ "$input_path" = /* ]]; then
+        resolved_path="$(realpath -m "$input_path")"
+    else
+        resolved_path="$(realpath -m "$__TestDir/$input_path")"
+    fi
+
+    if [[ ! -e "$resolved_path" ]]; then
+        echo "${__ErrMsgPrefix}${__MsgPrefix}BuildXL path does not exist: $input_path" >&2
+        return 1
+    fi
+
+    if [[ "$resolved_path" != "$__TestDir" && "$resolved_path" != "$__TestDir/"* ]]; then
+        echo "${__ErrMsgPrefix}${__MsgPrefix}BuildXL paths must stay under $__TestDir: $input_path" >&2
+        return 1
+    fi
+
+    printf '%s\n' "$resolved_path"
+}
+
+find_bxl_spec_for_path() {
+    local input_path="$1"
+    local resolved_path=
+    local probe_dir=
+
+    if ! resolved_path="$(resolve_bxl_test_path "$input_path")"; then
+        return 1
+    fi
+    if [[ -d "$resolved_path" ]]; then
+        probe_dir="$resolved_path"
+    else
+        probe_dir="$(dirname "$resolved_path")"
+    fi
+
+    while [[ "$probe_dir" == "$__TestDir" || "$probe_dir" == "$__TestDir/"* ]]; do
+        if [[ -f "$probe_dir/BUILD.dsc" ]]; then
+            printf '%s\n' "$probe_dir/BUILD.dsc"
+            return
+        fi
+
+        if [[ "$probe_dir" == "$__TestDir" ]]; then
+            break
+        fi
+
+        probe_dir="$(dirname "$probe_dir")"
+    done
+
+    echo "${__ErrMsgPrefix}${__MsgPrefix}No BUILD.dsc found for BuildXL path: $input_path" >&2
+    return 1
+}
+
+append_bxl_filter_term() {
+    local expression="$1"
+
+    if [[ -z "$expression" ]]; then
+        return
+    fi
+
+    if [[ -z "$__BxlFilterExpression" ]]; then
+        __BxlFilterExpression="$expression"
+    else
+        __BxlFilterExpression="(${__BxlFilterExpression})or(${expression})"
+    fi
+}
+
+append_bxl_encoded_spec_filters() {
+    local encoded_values="$1"
+    local mode="$2"
+    local decoded_values=
+    local item=
+    local resolved_path=
+    local spec_path=
+
+    decoded_values="${encoded_values//%3B/$'\n'}"
+
+    while IFS= read -r item; do
+        [[ -n "$item" ]] || continue
+
+        case "$mode" in
+            test|dir)
+                if ! spec_path="$(find_bxl_spec_for_path "$item")"; then
+                    exit 1
+                fi
+                append_bxl_filter_term "spec='${spec_path}'"
+                ;;
+            tree)
+                if ! resolved_path="$(resolve_bxl_test_path "$item")"; then
+                    exit 1
+                fi
+                append_bxl_filter_term "spec='${resolved_path}/*'"
+                ;;
+        esac
+    done <<< "$decoded_values"
+}
+
+build_bxl_selector_filter() {
+    __BxlFilterExpression=
+    append_bxl_encoded_spec_filters "$__BuildTestProject" "test"
+    append_bxl_encoded_spec_filters "$__BuildTestDir" "dir"
+    append_bxl_encoded_spec_filters "$__BuildTestTree" "tree"
+}
+
+validate_bxl_build_configuration() {
+    if [[ "$__TargetOS" != "linux" ]]; then
+        echo "${__ErrMsgPrefix}${__MsgPrefix}BuildXL test flow currently supports only -os linux."
+        exit 1
+    fi
+
+    if [[ "$__TargetArch" != "x64" ]]; then
+        echo "${__ErrMsgPrefix}${__MsgPrefix}BuildXL test flow currently supports only x64."
+        exit 1
+    fi
+
+    if [[ "$__BuildType" != "Checked" ]]; then
+        echo "${__ErrMsgPrefix}${__MsgPrefix}BuildXL test flow currently supports only Checked runtime configuration."
+        exit 1
+    fi
+
+    if [[ "$__RuntimeFlavor" != "coreclr" ]]; then
+        echo "${__ErrMsgPrefix}${__MsgPrefix}BuildXL test flow currently supports only CoreCLR."
+        exit 1
+    fi
+
+    if [[ "$__CrossBuild" == 1 ]]; then
+        echo "${__ErrMsgPrefix}${__MsgPrefix}BuildXL test flow does not support cross-build test execution."
+        exit 1
+    fi
+
+    if [[ "$__SkipManaged" == 1 ]]; then
+        echo "${__ErrMsgPrefix}${__MsgPrefix}BuildXL test flow cannot skip managed test compilation."
+        exit 1
+    fi
+
+    if [[ "$__CopyNativeTestBinaries" == 1 || "$__GenerateLayoutOnly" == 1 || "$__SkipGenerateLayout" == 1 ]]; then
+        echo "${__ErrMsgPrefix}${__MsgPrefix}BuildXL test flow does not support native-copy or layout-only modes."
+        exit 1
+    fi
+
+    if [[ -n "$__TestBuildMode" || -n "$__CompositeBuildMode" || -n "$__CreatePerfmap" ]]; then
+        echo "${__ErrMsgPrefix}${__MsgPrefix}BuildXL test flow does not support crossgen2, composite, nativeaot, or perfmap test modes."
+        exit 1
+    fi
+
+    if [[ "$__SkipRestorePackages" == 1 || ${#__UnprocessedBuildArgs[@]} -ne 0 ]]; then
+        echo "${__ErrMsgPrefix}${__MsgPrefix}BuildXL test flow does not accept restore-skipping or direct MSBuild arguments."
+        exit 1
+    fi
+}
+
+validate_bxl_core_root() {
+    local bxl_core_root="$__RepoRootDir/artifacts/tests/coreclr/linux.x64.Checked/Tests/Core_Root"
+
+    if [[ -x "$bxl_core_root/corerun" && -x "$bxl_core_root/ilasm" ]]; then
+        return
+    fi
+
+    echo "${__ErrMsgPrefix}${__MsgPrefix}BuildXL test flow requires a Checked Core_Root at:" >&2
+    echo "    $bxl_core_root" >&2
+    echo "${__ErrMsgPrefix}${__MsgPrefix}Generate it with the normal CoreCLR test setup first:" >&2
+    echo "    ./build.sh clr+libs+clr.iltools -lc Release -rc Checked" >&2
+    echo "    src/tests/build.sh checked x64 generatelayoutonly" >&2
+    exit 1
+}
+
+run_bxl_command() {
+    local command="$1"
+
+    if [[ -n "$__BxlFilterExpression" ]]; then
+        BXL_FILTER_APPEND="$__BxlFilterExpression" bash "$__RepoRootDir/bxl.sh" "$command"
+    else
+        bash "$__RepoRootDir/bxl.sh" "$command"
+    fi
+}
+
+build_Tests_WithBxl() {
+    validate_bxl_build_configuration
+    validate_bxl_core_root
+    build_bxl_selector_filter
+
+    if [[ "$__RebuildTests" -ne 0 && -d "$__RepoRootDir/Out" ]]; then
+        echo "Removing BuildXL output dir: $__RepoRootDir/Out"
+        rm -rf "$__RepoRootDir/Out"
+    fi
+
+    echo "__TargetOS: ${__TargetOS}"
+    echo "__TargetArch: ${__TargetArch}"
+    echo "__BuildType: ${__BuildType}"
+
+    if [[ -n "$__BxlFilterExpression" ]]; then
+        echo "BuildXL filter: ${__BxlFilterExpression}"
+    fi
+
+    echo "Building tests via BuildXL"
+    run_bxl_command "build"
+
+    if [[ "$?" -ne 0 ]]; then
+        echo "${__ErrMsgPrefix}${__MsgPrefix}BuildXL test build failed. See Out/Logs/BuildXL.Dev.log for details."
+        exit 1
+    fi
+}
+
 usage_list=()
 usage_list+=("All arguments are optional and the '-' prefix is optional. The options are:")
 usage_list+=("")
@@ -162,6 +371,7 @@ usage_list+=("-allTargets - Build managed tests for all target platforms (includ
 usage_list+=("-use-bootstrap - Use artifacts produced by the bootstrap subset for local targeting, runtime, and apphost packs.")
 usage_list+=("")
 usage_list+=("-runtests - Run tests after building them.")
+usage_list+=("-bxl - Build tests via the BuildXL-backed flow (Linux x64 Checked CoreCLR with Release libraries only).")
 usage_list+=("-mono, -excludemonofailures - Build the tests for the Mono runtime honoring mono-specific issues.")
 usage_list+=("-coreclr - Build tests targeting the CoreCLR runtime (default; opposite of -mono/-excludemonofailures).")
 usage_list+=("-mono_aot - Use Mono AOT mode.")
@@ -273,6 +483,10 @@ handle_arguments_local() {
             __RunTests=1
             ;;
 
+        bxl|-bxl)
+            __UseBxl=1
+            ;;
+
         skiprestorepackages|-skiprestorepackages)
             __SkipRestorePackages=1
             ;;
@@ -375,6 +589,8 @@ __Priority=0
 __Mono=0
 __MonoAot=0
 __MonoFullAot=0
+__UseBxl=0
+__BxlFilterExpression=
 __BuildLogRootName="TestBuild"
 CORE_ROOT=
 EnableNativeSanitizers=
@@ -453,24 +669,53 @@ if [[ "$?" -ne 0 ]]; then
 fi
 
 echo "${__MsgPrefix}Test build successful."
-echo "${__MsgPrefix}Test binaries are available at ${__TestBinDir}"
+if [[ "$__UseBxl" -eq 1 ]]; then
+    echo "${__MsgPrefix}BuildXL outputs are available under ${__RepoRootDir}/Out"
+else
+    echo "${__MsgPrefix}Test binaries are available at ${__TestBinDir}"
+fi
 
 if [[ "$__RunTests" -ne 0 ]]; then
+    exitCode=0
 
     echo "Run Tests..."
 
-    nextCommand="$__TestDir/run.sh --testRootDir=$__TestBinDir"
+    if [[ "$__UseBxl" -eq 1 ]]; then
+        nextCommand="$__TestDir/run.sh --bxl"
+        if [[ -n "$__BxlFilterExpression" ]]; then
+            nextCommand="$nextCommand \"--bxl-filter=${__BxlFilterExpression}\""
+        fi
+        nextCommand="$nextCommand checked x64"
+    else
+        nextCommand="$__TestDir/run.sh --testRootDir=$__TestBinDir"
+    fi
     echo "$nextCommand"
     eval $nextCommand
+    exitCode=$?
+
+    if [[ "$exitCode" -ne 0 ]]; then
+        exit "$exitCode"
+    fi
 
     echo "Tests run successful."
 else
-    echo "To run all the tests use:"
-    echo ""
-    echo "    src/tests/run.sh $__BuildType"
-    echo ""
-    echo "To run a single test use:"
-    echo ""
-    echo "    bash ${__TestBinDir}/__TEST_PATH__/__TEST_NAME__.sh -coreroot=${CORE_ROOT}"
-    echo ""
+    if [[ "$__UseBxl" -eq 1 ]]; then
+        echo "To run the BuildXL-backed tests use:"
+        echo ""
+        echo "    src/tests/run.sh --bxl checked x64"
+        echo ""
+        echo "To run a BuildXL-backed subtree use:"
+        echo ""
+        echo "    src/tests/run.sh --bxl checked x64 --tree=JIT/Regression"
+        echo ""
+    else
+        echo "To run all the tests use:"
+        echo ""
+        echo "    src/tests/run.sh $__BuildType"
+        echo ""
+        echo "To run a single test use:"
+        echo ""
+        echo "    bash ${__TestBinDir}/__TEST_PATH__/__TEST_NAME__.sh -coreroot=${CORE_ROOT}"
+        echo ""
+    fi
 fi
