@@ -107,6 +107,17 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        public void CopyToOverflowValidation()
+        {
+            IImmutableDictionary<string, int> map = this.GetEmptyImmutableDictionary<string, int>().Add("a", 1);
+            IDictionary<string, int> builder = this.GetBuilder(map);
+
+            var collection = (ICollection)builder;
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => collection.CopyTo(new object[5], int.MaxValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => collection.CopyTo(new object[5], -1));
+        }
+
+        [Fact]
         public void IsReadOnly()
         {
             IDictionary<string, int> builder = this.GetBuilder<string, int>();

@@ -306,8 +306,7 @@ namespace System.Collections.Immutable
             internal void CopyTo(T[] array, int arrayIndex)
             {
                 Requires.NotNull(array, nameof(array));
-                Requires.Range(arrayIndex >= 0, nameof(arrayIndex));
-                Requires.Range(array.Length >= arrayIndex + this.Count, nameof(arrayIndex));
+                Requires.Range(arrayIndex >= 0 && (uint)(arrayIndex + this.Count) <= (uint)array.Length, nameof(arrayIndex));
                 foreach (T item in this)
                 {
                     array[arrayIndex++] = item;
@@ -320,8 +319,7 @@ namespace System.Collections.Immutable
             internal void CopyTo(Array array, int arrayIndex)
             {
                 Requires.NotNull(array, nameof(array));
-                Requires.Range(arrayIndex >= 0, nameof(arrayIndex));
-                Requires.Range(array.Length >= arrayIndex + this.Count, nameof(arrayIndex));
+                Requires.Range(arrayIndex >= 0 && (uint)(arrayIndex + this.Count) <= (uint)array.Length, nameof(arrayIndex));
 
                 foreach (T item in this)
                 {

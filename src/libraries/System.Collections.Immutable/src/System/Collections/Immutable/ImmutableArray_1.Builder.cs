@@ -798,8 +798,7 @@ namespace System.Collections.Immutable
                     return -1;
                 }
 
-                Requires.Range(startIndex >= 0 && startIndex <= this.Count, nameof(startIndex));
-                Requires.Range(count >= 0 && (uint)(startIndex + count) <= (uint)this.Count, nameof(count));
+                Requires.ValidateRange(startIndex, count, this.Count, nameof(startIndex));
 
                 equalityComparer ??= EqualityComparer<T>.Default;
                 if (equalityComparer == EqualityComparer<T>.Default)
@@ -1002,8 +1001,7 @@ namespace System.Collections.Immutable
             {
                 // Don't rely on Array.Sort's argument validation since our internal array may exceed
                 // the bounds of the publicly addressable region.
-                Requires.Range(index >= 0, nameof(index));
-                Requires.Range(count >= 0 && index + count <= this.Count, nameof(count));
+                Requires.ValidateRange(index, count, this.Count);
 
                 if (count > 1)
                 {
