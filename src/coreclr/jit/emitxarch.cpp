@@ -5287,19 +5287,21 @@ bool emitter::emitIsSecondFramePtrCandidate(instruction ins, bool EBPbased, int 
         return false;
     }
 
-    if (IsEvexEncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins) || EncodedBySSE38orSSE3A(ins) ||
-        (ins == INS_crc32))
-    {
-        return false;
-    }
-
     // The secondary register holds (base - offset) for RBP frames (locals at negative offsets) and
-    // (base + offset) for RSP frames (locals at positive offsets); invert accordingly.
+    // (base + offset) for RSP frames (locals at positive offsets); invert accordingly. Test the band
+    // first: it rejects the common in-window access cheaply, before the costlier instruction-class checks.
     const int adjusted = EBPbased ? (dsp + codeGen->genSecondFramePtrOffset) : (dsp - codeGen->genSecondFramePtrOffset);
     const bool rawFits = ((signed char)dsp == (ssize_t)dsp);
     const bool adjFits = ((signed char)adjusted == (ssize_t)adjusted);
 
     if (rawFits || !adjFits)
+    {
+        return false;
+    }
+
+    // Instructions with special displacement/encoding handling cannot use the plain [reg+disp8] form.
+    if (IsEvexEncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins) || EncodedBySSE38orSSE3A(ins) ||
+        (ins == INS_crc32))
     {
         return false;
     }
