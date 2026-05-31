@@ -1,57 +1,128 @@
 # cDAC Stack Reference Walking — Known Issues
 
 This document tracks known gaps between the cDAC's stack reference enumeration
-and the legacy DAC's `GetStackReferences`.
+and the legacy DAC / runtime's GC stack scanning.
 
 ## Current Test Results
 
-Using `DOTNET_CdacStress` with cDAC-vs-DAC comparison:
+### Unit tests: 1374/1374 pass
 
-| Mode | Non-EH debuggees (6) | ExceptionHandling |
-|------|-----------------------|-------------------|
-| INSTR (0x4 + GCStress=0x4, step=10) | 0 failures | 0-2 failures |
-| ALLOC+UNIQUE (0x101) | 0 failures | 4 failures |
-| Walk comparison (0x20, IP+SP) | 0 mismatches | N/A |
+### ALLOC+WALK+USE_DAC (0x61) — Stack walk frame comparison
+**7/7 debuggees: 100% clean (zero WALK_FAIL) when tested**
 
-## Known Issue: cDAC Cannot Unwind Through Native Frames
+### ALLOC+REFS+USE_DAC (0x51) — Three-way GC ref comparison
 
-**Severity**: Low — only affects live-process stress testing during active
-exception first-pass dispatch. Does not affect dump analysis where the thread
-is suspended with a consistent Frame chain.
+| Debuggee | Result | Notes |
+|----------|--------|-------|
+| BasicAlloc | 0 failures | |
+| Comprehensive | 0 failures | |
+| DeepStack | 0 failures | |
+| Generics | 0 failures | |
+| MultiThread | 0 failures | |
+| PInvoke | 0 failures | Windows only |
+| DynamicMethods | 0 failures | |
+| StructScenarios | 0 failures | |
+| ExceptionHandling | 0 failures | Fixed via ExecutionAborted |
 
-**Pattern**: `cDAC < DAC` (cDAC reports 4 refs, DAC reports 10-13).
-ExceptionHandling debuggee only, 4 deterministic occurrences per run.
+## Issue 1: ELEMENT_TYPE_INTERNAL in PromoteCallerStack (instruction-level stress only)
 
-**Root cause**: The cDAC's `AMD64Unwinder.Unwind` (and equivalents for other
-architectures) can only unwind **managed** frames — it checks
-`ExecutionManager.GetCodeBlockHandle(IP)` first and returns false if the IP
-is not in a managed code range. This means it cannot unwind through native
-runtime frames (allocation helpers, EH dispatch code, etc.).
+**Affected**: Explicit Frames whose method signature contains `ELEMENT_TYPE_INTERNAL` (0x21)
+**Frequency**: ~3 per 25K verifications (0.01%)
+**Root cause**: IDENTIFIED — follow-up fix needed
 
-When the allocation stress point fires during exception first-pass dispatch:
+**Where it happens**: `FrameIterator.PromoteCallerStack()` in
+`src/native/managed/cdac/.../Contracts/StackWalk/FrameHandling/FrameIterator.cs`
+(around line 604). This is the fallback path used when a Frame's GCRefMap is
+unavailable and we must decode the method signature to determine which caller
+arguments are GC references.
 
-1. The thread's `m_pFrame` is `FRAME_TOP` (no explicit Frames in the chain
-   because the InlinedCallFrame/SoftwareExceptionFrame have been popped or
-   not yet pushed at that point in the EH dispatch sequence)
-2. The initial IP is in native code (allocation helper)
-3. The cDAC attempts to unwind through native frames but
-   `GetCodeBlockHandle` returns null for native IPs → unwind fails
-4. With no Frames and no ability to unwind, the walk stops early
+**Pattern**: The DAC reports 1 ref from an explicit Frame that the cDAC fails to scan.
+The `PromoteCallerStack` fallback decodes the method signature using
+`System.Reflection.Metadata.SignatureDecoder`, which only handles standard ECMA-335
+type codes. Runtime-internal signatures (generated for IL stubs, marshalling stubs,
+unsafe accessors, etc.) may contain `ELEMENT_TYPE_INTERNAL` (0x21), which encodes a
+raw pointer-sized `TypeHandle` directly in the signature blob. The SRM decoder doesn't
+recognize this type code and throws `BadImageFormatException`.
 
-The legacy DAC's `DacStackReferenceWalker::WalkStack` succeeds because
-`StackWalkFrames` calls `VirtualUnwindToFirstManagedCallFrame` which uses
-OS-level unwind (`RtlVirtualUnwind` on Windows, `PAL_VirtualUnwind` on Unix)
-that can unwind ANY native frame using PE `.pdata`/`.xdata` sections.
+```
+System.BadImageFormatException: Unexpected SignatureTypeCode: (0x21).
+   at SignatureDecoder`2.DecodeType(BlobReader&, Boolean, Int32)
+   at SignatureDecoder`2.DecodeGenericTypeInstance(BlobReader&)
+   at FrameIterator.PromoteCallerStack(...)
+   at FrameIterator.GcScanRoots(...)
+```
 
-**Possible fixes**:
-1. **Ensure Frames are always available** — change the runtime to keep
-   an explicit Frame pushed during allocation points within EH dispatch.
-   The cDAC cannot do OS-level native unwind (it operates on dumps where
-   `RtlVirtualUnwind` is not available). The Frame chain is the only
-   mechanism the cDAC has for transitioning through native code to reach
-   managed frames. If `m_pFrame = FRAME_TOP` when the IP is native, the
-   cDAC cannot proceed.
-2. **Accept as known limitation** — these failures only occur during
-   live-process stress testing at a narrow window during EH first-pass
-   dispatch. In dumps, the exception state is frozen and the Frame chain
-   is consistent.
+The exception is caught by the per-frame exception handler in `WalkStackReferences()`
+(`StackWalk_1.cs`, around line 245), which silently swallows it and continues the
+walk — causing the Frame's GC refs to be unreported.
+
+**How the DAC handles it**: The native DAC uses `MetaSig` + `ArgIterator`
+(`frames.cpp:1520-1596`) instead of the SRM decoder. `MetaSig` natively understands
+`ELEMENT_TYPE_INTERNAL` — it reads the embedded TypeHandle pointer and follows it to
+determine the actual type for GC classification.
+
+**How the Legacy cDAC handles it**: `SigFormat.cs` (line 157-175) already handles
+`ELEMENT_TYPE_INTERNAL` by reading the pointer-sized TypeHandle, resolving it via
+`RuntimeTypeSystem.GetTypeHandle()`, and checking `GetSignatureCorElementType()`.
+
+**Current workaround**: A `catch (BadImageFormatException)` in `PromoteCallerStack`
+returns without reporting refs for the frame.
+
+**Follow-up fix**: Replace the SRM `SignatureDecoder` usage with a custom signature
+walker that:
+1. Pre-processes the signature bytes, handling `ELEMENT_TYPE_INTERNAL` (0x21) by
+   reading the pointer-sized TypeHandle and resolving through `RuntimeTypeSystem`
+   (following the pattern in `SigFormat.cs:157-175`)
+2. Delegates standard ECMA-335 type codes to the existing `GcSignatureTypeProvider`
+3. Handles `ELEMENT_TYPE_CMOD_INTERNAL` (0x22) similarly if encountered
+
+## IsFirst not preserved for skipped frames (FIXED)
+
+Previously ~4 per 25K failures at instruction-level stress. The cDAC's
+`AdvanceIsFirst` was updating `IsFirst` for `SW_SKIPPED_FRAME` based on the
+Frame's resumable attribute, but the native walker does NOT modify `isFirst`
+in the `SFITER_SKIPPED_FRAME_FUNCTION` path (stackwalk.cpp:2086-2128). Fixed
+by making `AdvanceIsFirst` skip the `IsFirst` update for `SW_SKIPPED_FRAME`.
+
+## EH ThrowHelper (FIXED)
+
+Previously 8-9 failures per run. Fixed by detecting `SoftwareExceptionFrame`
+and `FaultingExceptionFrame` as interrupted frames and setting `ExecutionAborted`
+flag, matching native `CrawlFrame::GetCodeManagerFlags`.
+
+## Allocation-level stress results
+
+At allocation-level stress (`DOTNET_CdacStress=0x51`, the default):
+- All 9 debuggees pass 100% (0 failures across ~45K total verifications)
+
+## Instruction-level stress results
+
+At instruction-level stress (`DOTNET_GCStress=0x4 + DOTNET_CdacStress=0x54`):
+- Comprehensive: 25,512 pass / 3 fail (99.988%)
+  - 0 FRAME_DIFF (fixed via IsFirst skipped-frame preservation)
+  - 3 FRAME_DAC_ONLY (ELEMENT_TYPE_INTERNAL in PromoteCallerStack — follow-up)
+
+## Future work
+
+- Investigate the GcInfo safe-point bitmap decoding difference for QCall frames
+- Replace `fprintf`-based stress logging in `cdacstress.cpp` with a more
+  structured mechanism (e.g., ETW events or StressLog) for better tooling
+  integration and reduced I/O overhead during stress runs.
+
+## Log Format
+
+The stress log uses structured per-frame output with method name resolution:
+
+```
+[PASS] Thread=0x... IP=0x... cDAC=N DAC=N RT=M
+[FAIL] Thread=0x... IP=0x... cDAC=N DAC=M RT=M
+  [COMPARE cDAC-vs-DAC]
+    [FRAME_DIFF] Source=0x... (MethodName): cDAC=X DAC=Y
+      [cDAC_ONLY] Addr=0x... Obj=0x... Flags=0x...
+      [DAC_ONLY] Addr=0x... Obj=0x... Flags=0x...
+    [FRAME_cDAC_ONLY] Source=0x... (MethodName): cDAC=X
+    [FRAME_DAC_ONLY] Source=0x... (<frame 0x...>): DAC=Y
+  [RT_DIFF] cDAC=N RT=M (cDAC matches DAC but differs from RT)
+  [STACK_TRACE] (cDAC=N DAC=M RT=M)
+    #i MethodName (cDAC=X DAC=Y) [<-- MISMATCH]
+```
