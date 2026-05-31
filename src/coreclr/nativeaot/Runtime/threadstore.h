@@ -74,7 +74,7 @@ typedef DPTR(ThreadStore) PTR_ThreadStore;
 
 template<> struct cdac_data<ThreadStore>
 {
-    static constexpr size_t FirstThreadLink = offsetof(ThreadStore, m_ThreadList);
+    static constexpr size_t FirstThreadLink = offsetof(ThreadStore, m_ThreadList) + offsetof(SList<Thread>, m_pHead);
 };
 
 ThreadStore * GetThreadStore();
