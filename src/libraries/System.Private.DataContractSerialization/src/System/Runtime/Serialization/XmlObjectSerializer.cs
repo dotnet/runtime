@@ -363,6 +363,10 @@ namespace System.Runtime.Serialization
             {
                 throw XmlObjectSerializer.CreateSerializationException(GetTypeInfoError(SR.ErrorDeserializing, GetDeserializeType(), ex), ex);
             }
+            catch (ArgumentException ex)
+            {
+                throw XmlObjectSerializer.CreateSerializationException(GetTypeInfoError(SR.ErrorDeserializing, GetDeserializeType(), ex), ex);
+            }
         }
 
         [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
@@ -380,6 +384,10 @@ namespace System.Runtime.Serialization
                 throw XmlObjectSerializer.CreateSerializationException(GetTypeInfoError(SR.ErrorIsStartObject, GetDeserializeType(), ex), ex);
             }
             catch (FormatException ex)
+            {
+                throw XmlObjectSerializer.CreateSerializationException(GetTypeInfoError(SR.ErrorIsStartObject, GetDeserializeType(), ex), ex);
+            }
+            catch (ArgumentException ex)
             {
                 throw XmlObjectSerializer.CreateSerializationException(GetTypeInfoError(SR.ErrorIsStartObject, GetDeserializeType(), ex), ex);
             }
