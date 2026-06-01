@@ -2412,10 +2412,6 @@ ExecuteCodes:
             }
 
             HANDLE_PAC(&ContextRecord->Lr, ContextRecord->Sp);
-
-            //
-            // TODO: Implement support for UnwindFlags RTL_VIRTUAL_UNWIND2_VALIDATE_PAC.
-            //
         }
 
         //
