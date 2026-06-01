@@ -6205,7 +6205,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
 
             if (!varTypeIsUnsigned(JitType2PreciseVarType(baseJitType)))
             {
-                op1 = impCloneExpr(op1, &op1Dup, CHECK_SPILL_ALL, nullptr DEBUGARG("Cloning op1 for Log2"));
+                op1 = impCloneExpr(op1, &op1Dup, CHECK_SPILL_ALL, nullptr DEBUGARG("Cloning op1 for signed Log2"));
                 assert(op1Dup != nullptr);
 
                 // We will insert a qmark below that is the first use
@@ -6279,10 +6279,11 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                 // the JIT.
 
                 assert(!varTypeIsUnsigned(JitType2PreciseVarType(baseJitType)));
+                op1 = impCloneExpr(op1Dup, &op1Dup, CHECK_SPILL_ALL, nullptr DEBUGARG("Cloning op1 for signed Log2"));
 
                 GenTree* fallback =
-                    new (this, GT_INTRINSIC) GenTreeIntrinsic(retType, op1, intrinsic, method R2RARG(*entryPoint));
-                GenTree* cond = gtNewOperNode(GT_LT, TYP_INT, op1Dup, gtNewZeroConNode(isLong ? TYP_LONG : TYP_INT));
+                    new (this, GT_INTRINSIC) GenTreeIntrinsic(retType, op1Dup, intrinsic, method R2RARG(*entryPoint));
+                GenTree*      cond  = gtNewOperNode(GT_LT, TYP_INT, op1, gtNewZeroConNode(isLong ? TYP_LONG : TYP_INT));
                 GenTreeColon* colon = gtNewColonNode(retType, fallback, result);
                 GenTreeQmark* qmark = gtNewQmarkNode(retType, cond, colon);
 
