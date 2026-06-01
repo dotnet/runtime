@@ -91,17 +91,6 @@
 void ERR_put_error(int32_t lib, int32_t func, int32_t reason, const char* file, int32_t line);
 #endif
 
-// OpenSSL 3.0+ exposes SSL_set_retry_verify via <openssl/ssl.h>. We resolve it
-// through the lightup function-pointer table, so undefine the header macro and
-// forward-declare it as a real function so the LIGHTUP_FUNCTION machinery and
-// the SSL_set_retry_verify_ptr alias compile cleanly on both 1.1.x and 3.0+.
-#ifdef SSL_set_retry_verify
-#undef SSL_set_retry_verify
-#endif
-#if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0_RTM
-int SSL_set_retry_verify(SSL* ssl);
-#endif
-
 // The value -1 has the correct meaning on 1.0.x, but the constant wasn't named.
 #ifndef RSA_PSS_SALTLEN_DIGEST
 #define RSA_PSS_SALTLEN_DIGEST -1
@@ -747,7 +736,6 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(SSL_set_cipher_list) \
     LIGHTUP_FUNCTION(SSL_set_ciphersuites) \
     REQUIRED_FUNCTION(SSL_set_connect_state) \
-    LIGHTUP_FUNCTION(SSL_set_retry_verify) \
     REQUIRED_FUNCTION(SSL_set_ex_data) \
     REQUIRED_FUNCTION(SSL_set_options) \
     REQUIRED_FUNCTION(SSL_set_session) \
@@ -1316,7 +1304,6 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define SSL_set_cipher_list SSL_set_cipher_list_ptr
 #define SSL_set_ciphersuites SSL_set_ciphersuites_ptr
 #define SSL_set_connect_state SSL_set_connect_state_ptr
-#define SSL_set_retry_verify SSL_set_retry_verify_ptr
 #define SSL_set_ex_data SSL_set_ex_data_ptr
 #define SSL_set_options SSL_set_options_ptr
 #define SSL_set_session SSL_set_session_ptr

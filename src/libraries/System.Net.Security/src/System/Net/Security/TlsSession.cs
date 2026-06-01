@@ -75,17 +75,6 @@ namespace System.Net.Security
 
             TlsSession session = new TlsSession(context);
 
-#if !TARGET_WINDOWS && !SYSNETSECURITY_NO_OPENSSL
-            // OpenSSL's CertVerifyCallback must answer synchronously, but a TlsSession
-            // always defers peer-cert validation to its caller. On OpenSSL 3.0+ the
-            // callback uses SSL_set_retry_verify to pause the handshake; on 1.1.x it
-            // accepts the cert and validation runs after the handshake completes.
-            // The SslStream wedge sets its own validator on the shared options bag
-            // before calling Create; the callback gives precedence to a non-null
-            // RemoteCertificateValidator, so the wedge path is unaffected.
-            context.Options.DeferCertificateValidation = true;
-#endif
-
             return session;
         }
 
@@ -339,11 +328,6 @@ namespace System.Net.Security
             }
 
             _context.ApplyServerOptions(options);
-#if !TARGET_WINDOWS && !SYSNETSECURITY_NO_OPENSSL
-            // Preserve the retry-verify suspension semantics that TlsSession.Create
-            // would have configured up front had server options been available then.
-            _context.Options.DeferCertificateValidation = true;
-#endif
             _clientHelloInfo = null;
         }
 
@@ -583,9 +567,10 @@ namespace System.Net.Security
                 }
                 else if (needsCertValidation)
                 {
-                    // OpenSSL 3.0+ retry-verify: the handshake paused inside
-                    // the verify callback. Capture the peer cert + chain so the
-                    // caller can validate, then return NeedsCertificateValidation.
+                    // PAL paused mid-handshake awaiting external certificate validation.
+                    // Capture the peer cert + chain so the caller can validate, then return
+                    // NeedsCertificateValidation. Not used by the current OpenSSL or SChannel
+                    // paths but kept as a generic suspension hook.
                     CaptureRemoteCertificateForExternalValidation();
                 }
 
@@ -1170,8 +1155,9 @@ namespace System.Net.Security
                 return;
             }
 
-            // If the caller already resolved validation mid-handshake (OpenSSL 3.0+
-            // retry-verify path), don't re-suspend here.
+            // If the caller already resolved validation via a prior suspension
+            // (defensive — current OpenSSL/SChannel paths only suspend once via
+            // the post-handshake hook below), don't re-suspend here.
             if (_externalValidationResolved)
             {
                 return;
@@ -1181,9 +1167,7 @@ namespace System.Net.Security
         }
 
         // Capture the peer certificate and chain so the caller can perform validation
-        // out of band. Used both when the handshake completes (1.1.x: callback already
-        // accepted) and when the handshake pauses mid-flight via SSL_set_retry_verify
-        // (OpenSSL 3.0+). Keeps the cert in _externalPendingCert (not _remoteCertificate)
+        // out of band. Keeps the cert in _externalPendingCert (not _remoteCertificate)
         // so VerifyRemoteCertificateCore's renegotiation shortcut doesn't dispose it
         // when AcceptWithDefaultValidation runs.
         private void CaptureRemoteCertificateForExternalValidation()

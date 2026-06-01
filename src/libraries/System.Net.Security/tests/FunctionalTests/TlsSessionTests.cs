@@ -756,26 +756,39 @@ namespace System.Net.Security.Tests
                 session.AcceptWithDefaultValidation());
         }
 
-        // Like DriveHandshakeAsync but pauses on NeedsCertificateValidation to invoke the supplied callback.
-        // After the callback runs, the handshake is considered complete (IsHandshakeComplete is already true
-        // at the point the suspension is reported on Unix/OpenSSL).
+        // Like DriveHandshakeAsync but pauses on NeedsCertificateValidation to invoke the supplied
+        // callback. The suspension is reported post-hoc: IsHandshakeComplete is already true on the
+        // TLS state machine (TLS records have been exchanged), but Encrypt/Decrypt block until the
+        // caller posts a verdict via SetRemoteCertificateValidationResult / AcceptWithDefaultValidation.
         private static async Task DriveHandshakeWithExternalValidationAsync(
             TlsSession session, Stream transport, Action onSuspend)
         {
             byte[] netIn = ArrayPool<byte>.Shared.Rent(CipherBufSize);
             byte[] netOut = ArrayPool<byte>.Shared.Rent(CipherBufSize);
             int inUsed = 0;
-            bool suspended = false;
 
             try
             {
-                while (!suspended && !session.IsHandshakeComplete)
+                while (!session.IsHandshakeComplete)
                 {
-                    TlsOperationStatus status = session.ProcessHandshake(
-                        netIn.AsSpan(0, inUsed),
-                        netOut,
-                        out int consumed,
-                        out int produced);
+                    TlsOperationStatus status;
+                    int consumed;
+                    int produced;
+                    try
+                    {
+                        status = session.ProcessHandshake(
+                            netIn.AsSpan(0, inUsed),
+                            netOut,
+                            out consumed,
+                            out produced);
+                    }
+                    catch (AuthenticationException)
+                    {
+                        // External validator rejected the peer certificate; the session is
+                        // permanently faulted. Treat this as a terminal handshake state so the
+                        // caller can assert on the resulting Encrypt/Decrypt behavior.
+                        return;
+                    }
 
                     if (consumed > 0)
                     {
@@ -795,9 +808,8 @@ namespace System.Net.Security.Tests
                     switch (status)
                     {
                         case TlsOperationStatus.NeedsCertificateValidation:
-                            suspended = true;
                             onSuspend();
-                            break;
+                            continue;
 
                         case TlsOperationStatus.Complete:
                             continue;

@@ -511,20 +511,6 @@ int32_t CryptoNative_IsSslStateOK(SSL* ssl)
     return SSL_is_init_finished(ssl);
 }
 
-int32_t CryptoNative_SslSetRetryVerify(SSL* ssl)
-{
-    // OpenSSL 3.0+ only. When available, calling this from inside the certificate
-    // verification callback (and returning -1 from the callback) suspends the
-    // handshake so the application can perform validation asynchronously and then
-    // resume by calling SSL_do_handshake again.
-    if (API_EXISTS(SSL_set_retry_verify))
-    {
-        return SSL_set_retry_verify(ssl);
-    }
-
-    return 0;
-}
-
 X509* CryptoNative_SslGetPeerCertificate(SSL* ssl)
 {
     X509* cert = SSL_get1_peer_certificate(ssl);

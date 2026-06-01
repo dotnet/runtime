@@ -190,9 +190,6 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetVerifyPeer")]
         internal static partial void SslSetVerifyPeer(SafeSslHandle ssl, [MarshalAs(UnmanagedType.Bool)] bool failIfNoPeerCert);
 
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetRetryVerify")]
-        internal static partial int SslSetRetryVerify(SafeSslHandle ssl);
-
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetData")]
         internal static partial IntPtr SslGetData(IntPtr ssl);
 

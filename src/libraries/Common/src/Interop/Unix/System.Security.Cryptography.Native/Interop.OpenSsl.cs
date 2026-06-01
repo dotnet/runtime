@@ -886,19 +886,12 @@ internal static partial class Interop
                 sslHandle = options!.SafeSslHandle as SafeSslHandle;
                 Debug.Assert(sslHandle is not null, "Expected SslAuthenticationOptions.SafeSslHandle to be set by SafeSslHandle.Create");
 
-                // External-validation fast path: when there is no in-callback
-                // validator (e.g. TlsSession owns validation) and the options
-                // asked us to defer, try SSL_set_retry_verify so the handshake
-                // pauses here on OpenSSL 3.0+. If the runtime is older (1.1.x),
-                // accept the cert and let the caller validate after the
-                // handshake completes.
-                if (options.RemoteCertificateValidator is null && options.DeferCertificateValidation)
+                // No in-callback validator (TlsSession path): accept the certificate
+                // here so the TLS handshake completes, then surface the peer cert to
+                // the caller via NeedsCertificateValidation on the next ProcessHandshake.
+                // Any subsequent Encrypt/Decrypt blocks until the caller posts a verdict.
+                if (options.RemoteCertificateValidator is null)
                 {
-                    if (Ssl.SslSetRetryVerify(sslHandle!) == 1)
-                    {
-                        return -1;
-                    }
-
                     Ssl.X509StoreCtxSetError(storeCtx, (int)Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_OK);
                     return 1;
                 }
