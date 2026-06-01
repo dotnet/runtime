@@ -3294,7 +3294,7 @@ public:
 #if defined(TARGET_ARM64)
     GenTreeVecCon* gtNewSimdVconNode(var_types type, var_types baseType, SimdScalableKind kind, uint64_t index, uint64_t step = 0);
 
-    inline GenTreeVecCon* gtNewSimdVconNode(var_types type, simdscalable_t* con)
+    inline GenTreeVecCon* gtNewSimdVconNode(var_types type, const simdscalable_t* con)
     {
         return gtNewSimdVconNode(type, con->gtSimdScalableBaseType, con->gtSimdScalableKind, con->gtSimdScalableIndex, con->gtSimdScalableStep);
     }
