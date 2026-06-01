@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using static System.Runtime.CompilerServices.AsyncInstrumentation;
 using static System.Runtime.CompilerServices.AsyncProfiler;
 
 namespace System.Runtime.CompilerServices
@@ -32,16 +33,23 @@ namespace System.Runtime.CompilerServices
         [ThreadStatic]
         internal static unsafe AsyncTaskDispatcherInfo* t_current;
 
+        public static bool InstrumentCheckPoint
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => AsyncInstrumentation.IsSupported && AsyncInstrumentation.ActiveFlags != AsyncInstrumentation.Flags.Disabled;
+        }
+
         internal static bool IsSuspended => t_current != null && t_current->Dispatcher is { Suspended: true };
 
-        internal static unsafe AsyncTaskDispatcher? SuspendAsyncContext()
+        internal static unsafe AsyncTaskDispatcher? SuspendAsyncContext(AsyncInstrumentation.Flags flags)
         {
             AsyncTaskDispatcherInfo* current = AsyncTaskDispatcherInfo.t_current;
             if (current != null && current->Dispatcher is AsyncTaskDispatcher activeDispatcher)
             {
                 Debug.Assert(!activeDispatcher.Suspended);
                 activeDispatcher.Suspended = true;
-                if (AsyncInstrumentation.IsEnabled.SuspendAsyncContext(AsyncInstrumentation.SyncActiveFlags()))
+
+                if (AsyncInstrumentation.IsEnabled.SuspendAsyncContext(flags))
                 {
                     AsyncProfiler.SuspendAsyncContext.Suspend(activeDispatcher, ref current->AsyncProfilerInfo);
                 }
@@ -61,12 +69,15 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        internal static unsafe void ResumeAsyncMethod()
+        internal static unsafe void ResumeAsyncMethod(AsyncInstrumentation.Flags flags)
         {
             AsyncTaskDispatcherInfo* current = t_current;
             if (current != null && current->Dispatcher is AsyncTaskDispatcher activeDispatcher)
             {
-                AsyncProfiler.ResumeAsyncMethod.Resume(activeDispatcher, ref current->AsyncProfilerInfo);
+                if ((AsyncInstrumentation.IsEnabled.ResumeAsyncContext(flags) && activeDispatcher.ContinuationChainChanged) || AsyncInstrumentation.IsEnabled.ResumeAsyncMethod(flags))
+                {
+                    AsyncProfiler.ResumeAsyncMethod.Resume(activeDispatcher, ref current->AsyncProfilerInfo);
+                }
             }
         }
 
@@ -119,15 +130,16 @@ namespace System.Runtime.CompilerServices
             }
         }
 
+        internal bool ContinuationChainChanged => LastContinuation?.DiagnosticContinuationObject != null;
+
         /// <summary>
         /// Creates a new dispatcher for the given box. If a dispatcher is already active on the
         /// current thread (mid-chain yield), marks the current frame as suspended and emit a suspend event.
         /// </summary>
         internal static AsyncTaskDispatcher Create(IAsyncStateMachineBox box)
         {
-            Debug.WriteLine($"[AsyncTaskDispatcher.Create] Thread={Environment.CurrentManagedThreadId}, box={box.GetType().Name}, tid={Environment.CurrentManagedThreadId}");
-
-            AsyncTaskDispatcher? activeDispatcher = AsyncTaskDispatcherInfo.SuspendAsyncContext();
+            AsyncInstrumentation.Flags flags = AsyncInstrumentation.SyncActiveFlags();
+            AsyncTaskDispatcher? activeDispatcher = AsyncTaskDispatcherInfo.SuspendAsyncContext(flags);
             if (activeDispatcher != null)
             {
                 Debug.WriteLine($"[AsyncTaskDispatcher.MoveNext] Suspended Id={activeDispatcher.ContextId}, tid={Environment.CurrentManagedThreadId}");

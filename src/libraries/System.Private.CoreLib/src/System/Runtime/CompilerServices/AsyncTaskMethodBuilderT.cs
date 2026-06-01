@@ -354,17 +354,20 @@ namespace System.Runtime.CompilerServices
             {
                 Debug.Assert(!IsCompleted);
 
-                AsyncInstrumentation.Flags flags = AsyncInstrumentation.SyncActiveFlags();
-                if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
+                if (AsyncTaskDispatcherInfo.InstrumentCheckPoint)
                 {
-                    if (AsyncInstrumentation.IsEnabled.ResumeAsyncContext(flags) || AsyncInstrumentation.IsEnabled.ResumeAsyncMethod(flags))
+                    AsyncInstrumentation.Flags flags = AsyncInstrumentation.SyncActiveFlags();
+                    if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
                     {
-                        Debug.WriteLine($"[AsyncTaskMethodBuilder.MoveNext] method={GetType().Name}, tid={Environment.CurrentManagedThreadId}");
-                        AsyncTaskDispatcherInfo.ResumeAsyncMethod();
+                        if (AsyncInstrumentation.IsEnabled.ResumeAsyncContext(flags) || AsyncInstrumentation.IsEnabled.ResumeAsyncMethod(flags))
+                        {
+                            Debug.WriteLine($"[AsyncTaskMethodBuilder.MoveNext] method={GetType().Name}, tid={Environment.CurrentManagedThreadId}");
+                            AsyncTaskDispatcherInfo.ResumeAsyncMethod(flags);
+                        }
                     }
-                }
 
-                Debug.Assert(!AsyncTaskDispatcherInfo.IsSuspended);
+                    Debug.Assert(!AsyncTaskDispatcherInfo.IsSuspended);
+                }
 
                 bool loggingOn = TplEventSource.Log.IsEnabled();
                 if (loggingOn)
