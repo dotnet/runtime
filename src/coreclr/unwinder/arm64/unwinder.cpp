@@ -33,7 +33,6 @@
 
 #if !defined(DACCESS_COMPILE)
 extern "C" void* PacAuthPtr(void* ptr, void* sp);
-extern "C" void* PacStripPtr(void* ptr);
 #endif // !defined(DACCESS_COMPILE)
 
 #ifdef HOST_UNIX
@@ -257,11 +256,10 @@ do {                                                                            
 
 #endif // !defined(DEBUGGER_UNWIND)
 
-// Macros for handling pointer authentication (PAC) bits.
+// Macros for stripping pointer authentication (PAC) bits.
 #if !defined(DACCESS_COMPILE)
 
 #define HANDLE_PAC(pointer, sp)    RtlHandlePacOnline(pointer, sp)
-#define STRIP_PAC(pointer)         RtlStripPacOnline(pointer)
 
 FORCEINLINE
 VOID RtlHandlePacOnline(_Inout_ PULONG64 Pointer, _In_ ULONG64 Sp)
@@ -270,9 +268,9 @@ VOID RtlHandlePacOnline(_Inout_ PULONG64 Pointer, _In_ ULONG64 Sp)
 
 Routine Description:
 
-   This routine authenticates an ARM64 pointer using the supplied stack pointer
-   as the modifier. Hence this should only be called when authenticating a
-   pointer at runtime (not debugger).
+   This routine authenticates an ARM64 pointer authenticated with PACIASP
+   using the supplied stack pointer as the modifier. Hence this should only
+   be called when authenticating a pointer at runtime (not debugger).
 
 Arguments:
 
@@ -289,22 +287,15 @@ Return Value:
 {
     *Pointer = (ULONG64)PacAuthPtr((void *)(*Pointer), (void *)Sp);
 }
-
-FORCEINLINE
-VOID RtlStripPacOnline(_Inout_ PULONG64 Pointer)
-{
-    *Pointer = (ULONG64)PacStripPtr((void *)(*Pointer));
-}
-
 #else
 
-#define HANDLE_PAC(pointer, sp)    RtlStripPacManual(pointer)
-#define STRIP_PAC(pointer)         RtlStripPacManual(pointer)
+#define HANDLE_PAC(pointer, sp)    RtlStripPacManual(pointer, sp)
 
 FORCEINLINE
 VOID
 RtlStripPacManual(
-    _Inout_ PULONG64 Pointer
+    _Inout_ PULONG64 Pointer,
+    _In_ ULONG64 Sp
     )
 /*++
 
@@ -328,6 +319,7 @@ Return Value:
 
 --*/
 {
+    UNREFERENCED_PARAMETER(Sp);
     *Pointer &= 0x0000FFFFFFFFFFFF;
     return;
 }
@@ -1795,6 +1787,8 @@ Return Value:
     ULONG UnwindIndex;
     ULONG UnwindWords;
 
+    UNREFERENCED_PARAMETER(UnwindFlags);
+
     //
     // Unless a special frame is encountered, assume that any unwinding
     // will return us to the return address of a call and set the flag
@@ -2417,11 +2411,11 @@ ExecuteCodes:
                 *UnwindParams->SpForPacSign = ContextRecord->Sp;
             }
 
-            if ((UnwindFlags & RTL_VIRTUAL_UNWIND2_VALIDATE_PAC) != 0) {
-                HANDLE_PAC(&ContextRecord->Lr, ContextRecord->Sp);
-            } else {
-                STRIP_PAC(&ContextRecord->Lr);
-            }
+            HANDLE_PAC(&ContextRecord->Lr, ContextRecord->Sp);
+
+            //
+            // TODO: Implement support for UnwindFlags RTL_VIRTUAL_UNWIND2_VALIDATE_PAC.
+            //
         }
 
         //
@@ -2939,7 +2933,7 @@ RtlVirtualUnwindWithSpForPacSign(
                                 NULL,
                                 &HandlerRoutine,
                                 (PULONG_PTR)SpForPacSign,
-                                RTL_VIRTUAL_UNWIND2_VALIDATE_PAC);
+                                0);
 
     if (!NT_SUCCESS(Status)) {
         ContextRecord->Pc = 0;
