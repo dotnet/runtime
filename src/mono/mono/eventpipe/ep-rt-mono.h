@@ -637,6 +637,25 @@ ep_rt_config_value_get_enable_stackwalk (void)
 	return value_uint32_t != 0;
 }
 
+static
+inline
+uint32_t
+ep_rt_config_value_get_sampling_rate (void)
+{
+	uint32_t value_uint32_t = 0;
+	gchar *value = g_getenv ("DOTNET_EventPipeThreadSamplingRate");
+	if (!value)
+		value = g_getenv ("COMPlus_EventPipeThreadSamplingRate");
+	if (value) {
+		gchar *endptr = NULL;
+		guint64 parsed = strtoull (value, &endptr, 10);
+		if (endptr != value && *endptr == '\0' && value [0] != '-' && parsed <= G_MAXUINT32)
+			value_uint32_t = (uint32_t)parsed;
+	}
+	g_free (value);
+	return value_uint32_t;
+}
+
 /*
  * EventPipeSampleProfiler.
  */
