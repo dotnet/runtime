@@ -59,7 +59,7 @@ extern "C" BOOL QCALLTYPE ObjCMarshal_TryInitializeReferenceTracker(
 
 namespace
 {
-    void* TaggedMemoryForObjectHelper(
+    void* GetTaggedMemoryForObject(
         _In_ QCall::ObjectHandleOnStack obj,
         _Out_ size_t* memInSizeT)
     {
@@ -108,7 +108,7 @@ extern "C" void* QCALLTYPE ObjCMarshal_CreateReferenceTrackingHandle(
     // Switch to Cooperative mode since object references
     // are being manipulated.
     GCX_COOP();
-    taggedMemoryLocal = TaggedMemoryForObjectHelper(obj, &memInSizeTLocal);
+    taggedMemoryLocal = GetTaggedMemoryForObject(obj, &memInSizeTLocal);
     instHandle = GetAppDomain()->CreateTypedHandle(obj.Get(), HNDTYPE_REFCOUNTED);
 
     END_QCALL;
@@ -135,7 +135,7 @@ extern "C" void QCALLTYPE ObjCMarshal_GetOrCreateReferenceTrackingMemory(
     // Switch to Cooperative mode since object references
     // are being manipulated.
     GCX_COOP();
-    taggedMemoryLocal = TaggedMemoryForObjectHelper(obj, &memInSizeTLocal);
+    taggedMemoryLocal = GetTaggedMemoryForObject(obj, &memInSizeTLocal);
 
     END_QCALL;
 

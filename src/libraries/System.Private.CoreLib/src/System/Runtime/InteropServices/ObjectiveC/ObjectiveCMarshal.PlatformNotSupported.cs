@@ -110,7 +110,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
         /// will be passed the memory returned from this function.
         /// The memory it points at is defined by the length in the <see cref="Span{IntPtr}"/> and
         /// will be zeroed out. It will be available until <paramref name="obj"/> is collected by the GC.
-        /// The returned memory can be used for any purpose by the caller of this function and usable
+        /// The returned memory can be used for any purpose by the caller of this function and is usable
         /// during the "Is Referenced" callback.
         ///
         /// Calling this function multiple times with the same <paramref name="obj"/> will
