@@ -116,6 +116,12 @@ NUMBER_OF_FAILED_TESTS=0
 # Read PAL tests names from the $PAL_TEST_LIST file and run them one by one.
 while read TEST_NAME
 do
+  # Skip tests known to hang on specific platforms (https://github.com/dotnet/runtime/issues/122345)
+  if [ "$(uname -s)" = "Darwin" ] && [ "$(uname -m)" = "arm64" ] && [ "$TEST_NAME" = "exception_handling/pal_sxs/test1/paltest_pal_sxs_test1" ]; then
+    echo "Skipping $TEST_NAME on macOS arm64 (dotnet/runtime#122345)"
+    continue
+  fi
+
   # Remove stdout/stderr file if it exists
   rm -f $PAL_OUT_FILE
 
