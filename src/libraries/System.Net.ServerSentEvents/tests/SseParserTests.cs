@@ -1050,6 +1050,42 @@ namespace System.Net.ServerSentEvents.Tests
             public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
             public override void SetLength(long value) => throw new NotSupportedException();
             public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+        private sealed class InfiniteLineStream : Stream
+        {
+            private ReadOnlyMemory<byte> _initialData;
+
+            public InfiniteLineStream(string initialData)
+            {
+                _initialData = Encoding.UTF8.GetBytes(initialData);
+            }
+
+            public override bool CanRead => true;
+            public override bool CanSeek => false;
+            public override bool CanWrite => false;
+            public override long Length => throw new NotSupportedException();
+            public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+            public override void Flush() { }
+
+            public override int Read(Span<byte> buffer)
+            {
+                if (!_initialData.IsEmpty)
+                {
+                    int toCopy = Math.Min(buffer.Length, _initialData.Length);
+                    _initialData.Span[..toCopy].CopyTo(buffer);
+                    _initialData = _initialData[toCopy..];
+                    return toCopy;
+                }
+
+                buffer.Fill((byte)'y');
+                return buffer.Length;
+            }
+
+            public override int Read(byte[] buffer, int offset, int count) =>
+                Read(buffer.AsSpan(offset, count));
+
+            public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+            public override void SetLength(long value) => throw new NotSupportedException();
+            public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
         }
 
         [JsonSerializable(typeof(Book))]
