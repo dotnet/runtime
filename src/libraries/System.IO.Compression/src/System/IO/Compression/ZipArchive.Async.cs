@@ -239,6 +239,12 @@ public partial class ZipArchive : IDisposable, IAsyncDisposable
                     {
                         break;
                     }
+
+                    ZipArchiveEntry lastEntry = _entries[_entries.Count - 1];
+                    if (lastEntry.IsEncrypted)
+                    {
+                        await lastEntry.ReadEncryptionSaltIfNeededAsync(cancellationToken).ConfigureAwait(false);
+                    }
                 }
 
                 ReadCentralDirectoryEndOfOuterLoopWork(ref currPosition, sizedFileBuffer.Span);
