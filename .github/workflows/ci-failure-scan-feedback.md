@@ -171,9 +171,9 @@ Hard rules: no comments on issues/PRs, no edits outside `.github/workflows/ci-fa
 
    Collect the full universe of `[ci-scan]` issues and PRs (open + closed) since `window_start` via `gh search issues` / `gh search prs` with `created:>=<window_start>`. This produces a list of issue/PR numbers and metadata; do NOT read bodies with `gh`. Cache the list to `/tmp/gh-aw/agent/artifacts.json` so later sections do not re-query.
 
-   For metrics that need MEMBER/OWNER comment content (rejection-keyword detection, outage signal "Same KBE re-filed after maintainer close"), fetch through the `github` MCP `issue_read get`, `pull_request_read get`, and the corresponding comments tools, one per item, respecting `min-integrity: approved`. Skip `[Filtered]` items.
+   For metrics that need MEMBER/OWNER comment content (rejection-keyword detection, re-file outage signal), fetch through the `github` MCP `issue_read get`, `pull_request_read get`, and the corresponding comments tools, one per item, respecting `min-integrity: approved`. Skip `[Filtered]` items.
 
-   Compute these KPIs. Keep it simple: counts and one quality ratio. No Wilson scoring, no time-to-KBE, no coverage ratio, no tally-extraction — these turned out to be n/a most ticks and added noise.
+   Compute these KPIs. The shape below is deliberately small: raw counts, one quality ratio, a fixed set of outage signals. Do not re-introduce Wilson scoring, time-to-KBE, coverage ratios, or tally-extraction; they were dropped because they came back `n/a` most ticks and added noise.
 
    ### A) Activity (7d and 30d)
 
@@ -183,7 +183,7 @@ Hard rules: no comments on issues/PRs, no edits outside `.github/workflows/ci-fa
    - `closed_good` — issues closed with `state_reason: completed`; PRs merged.
    - `closed_wrong` — issues closed with `state_reason` in `{not_planned, duplicate}`; PRs closed without merge.
 
-   ### B) Quality (30d only — 7d is too noisy)
+   ### B) Quality (30d only; 7d sample is too small to trust)
 
    - `total_30d = opened_issues_30d + opened_prs_30d`.
    - `wrong_30d = closed_wrong_issues_30d + closed_wrong_prs_30d`.
@@ -193,9 +193,9 @@ Hard rules: no comments on issues/PRs, no edits outside `.github/workflows/ci-fa
 
    ### C) Outage signals
 
-   These reflect the health of the **CI being monitored**, not the scanner workflow itself. Each signal has a fixed threshold and renders as 🔴 when tripped (any window), otherwise 🟢. A maintainer scanning the tracker should see at a glance whether CI is degraded.
+   These reflect the health of the **CI being monitored**, not the scanner workflow itself. Each signal has a fixed threshold and renders as 🔴 when tripped (any window), otherwise 🟢.
 
-   Source data comes from the cached artifact list (`[ci-scan]` issues opened by the scanner are proxies for distinct stable failure signatures in CI). Parse the leg/pipeline name from each KBE's body via the `Impact on platforms` or `Build error leg` line; cache to `/tmp/gh-aw/agent/artifact_pipelines.tsv`.
+   Source data comes from the cached artifact list; `[ci-scan]` KBE issues are proxies for distinct stable failure signatures in CI. Parse the leg or pipeline name from each KBE body via the `Impact on platforms` or `Build error leg` line; cache to `/tmp/gh-aw/agent/artifact_pipelines.tsv`.
 
    | signal | source | threshold |
    |---|---|---|
@@ -242,14 +242,14 @@ Hard rules: no comments on issues/PRs, no edits outside `.github/workflows/ci-fa
    | KBE re-filed after maintainer close | any in 7d | <refile_24h> | <refile_7d> | <icon> |
    | Wrong-closure rate (30d) | >= 30% with N>=10 | — | <wrong_rate_30d_pct> | <icon> |
 
-   When status is 🔴, append a `details:` line beneath the table for that row pointing at the offending artifact(s) (e.g. `details: refile signal — #128793 re-filed #128737`; `details: multi-pipeline — runtime-coreclr, runtime-extra-platforms, runtime-interpreter all red on 2026-06-01`). Maintainers scanning the tracker should be able to jump straight to the offender without scrolling logs.
+   When status is 🔴, append a `details:` line beneath the table for that row naming the offending artifacts (for example, `details: refile signal: #128793 re-filed #128737`, or `details: multi-pipeline: runtime-coreclr, runtime-extra-platforms, runtime-interpreter all red on 2026-06-01`) so a maintainer can jump straight to the source without grepping logs.
    ````
 
    Suppression rules:
 
    - If `total_30d < 10`, the Quality table's `rate` column reads `n/a (<n><10)` for `wrong_rate_30d`; all other rows still render with raw counts.
-   - Outage signals always render — even when there is no data, an explicit 🟢 carries information.
-   - Do NOT emit charts (mermaid or otherwise). Counts plus a status icon are the design.
+   - Outage signals always render. An explicit 🟢 with no data still carries information.
+   - Do NOT emit charts (mermaid or otherwise).
    - Do NOT emit historical weekly buckets. The body is a current snapshot.
 
    If the tracker exists -> emit one `update_issue` with the new body. If not -> emit one `create_issue` titled `[ci-scan-feedback] KPI Tracker`. Either way, this step ALWAYS fires (never call `noop` for the tracker — a daily snapshot is the point).
