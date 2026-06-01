@@ -79,6 +79,9 @@ public interface IThread : IContract
     TargetPointer GetCurrentExceptionHandle(TargetPointer threadPointer) => throw new NotImplementedException();
     byte[] GetWatsonBuckets(TargetPointer threadPointer) => throw new NotImplementedException();
     byte[] GetContext(TargetPointer threadPointer, ThreadContextSource contextSource, uint contextFlags) => throw new NotImplementedException();
+    bool GetInteropDebuggingHijacked(TargetPointer thread) => throw new NotImplementedException();
+    TargetPointer GetDebuggerFilterContext(TargetPointer thread) => throw new NotImplementedException();
+    TargetPointer GetRedirectedContext(TargetPointer thread) => throw new NotImplementedException();
 }
 
 public readonly struct Thread : IThread

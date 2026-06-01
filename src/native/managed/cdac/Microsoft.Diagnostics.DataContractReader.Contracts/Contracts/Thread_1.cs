@@ -370,4 +370,29 @@ internal readonly struct Thread_1 : IThread
         context.Clear();
         return context.GetBytes();
     }
+
+    bool IThread.GetInteropDebuggingHijacked(TargetPointer threadPointer)
+    {
+        Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadPointer);
+        return thread.InteropDebuggingHijacked != 0;
+    }
+
+    TargetPointer IThread.GetDebuggerFilterContext(TargetPointer threadPointer)
+    {
+        Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadPointer);
+        return thread.DebuggerFilterContext;
+    }
+
+    TargetPointer IThread.GetRedirectedContext(TargetPointer threadPointer)
+    {
+        ThreadData threadData = ((IThread)this).GetThreadData(threadPointer);
+        FrameIterator iterator = new FrameIterator(_target, threadData);
+        if (iterator.IsValid() && iterator.GetCurrentFrameType() == FrameType.RedirectedThreadFrame)
+        {
+            Data.ResumableFrame rf = _target.ProcessedData.GetOrAdd<Data.ResumableFrame>(iterator.CurrentFrameAddress);
+            return rf.TargetContextPtr;
+        }
+
+        return TargetPointer.Null;
+    }
 }

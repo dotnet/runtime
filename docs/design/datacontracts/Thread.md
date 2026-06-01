@@ -421,5 +421,26 @@ byte[] IThread.GetContext(TargetPointer threadPointer, ThreadContextSource conte
     // return a zeroed context.
 }
 
+bool GetInteropDebuggingHijacked(TargetPointer thread)
+{
+    return thread.InteropDebuggingHijacked != 0;
+}
+
+TargetPointer GetDebuggerFilterContext(TargetPointer thread)
+{
+    return thread.DebuggerFilterContext;
+}
+
+TargetPointer GetRedirectedContext(TargetPointer thread)
+{
+    FrameIterator iterator = new FrameIterator(thread);
+    if (iterator.IsValid() && iterator.GetCurrentFrameType() == FrameType.RedirectedThreadFrame)
+    {
+        ResumableFrame rf = ReadResumableFrame(iterator.CurrentFrameAddress);
+        return rf.TargetContextPtr;
+    }
+    return TargetPointer.Null;
+}
+
 ```
 
