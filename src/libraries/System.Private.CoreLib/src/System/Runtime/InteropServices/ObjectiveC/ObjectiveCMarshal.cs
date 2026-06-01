@@ -101,7 +101,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
         /// return a new handle each time but the same tagged memory will be returned. The
         /// tagged memory is only guaranteed to be zero initialized on the first call.
         ///
-        /// The tagged memory returned is the same as the memory returned from <see cref="GetOrCreateTaggedMemory" />.
+        /// The tagged memory returned is the same as the memory returned from <see cref="GetOrCreateReferenceTrackingMemory" />.
         ///
         /// The caller is responsible for freeing the returned <see cref="GCHandle"/>.
         /// </remarks>
@@ -129,15 +129,15 @@ namespace System.Runtime.InteropServices.ObjectiveC
         }
 
         /// <summary>
-        /// Request a pointer to memory tagged for the supplied object.
+        /// Request a pointer to referenced tracking memory for the supplied object.
         /// </summary>
-        /// <param name="obj">The object whose tagged memory to return.</param>
-        /// <returns>A pointer to memory tagged to the object.</returns>
+        /// <param name="obj">The object whose tracking memory to return.</param>
+        /// <returns>A pointer to tracking memory on the object.</returns>
         /// <exception cref="InvalidOperationException">Thrown if the ObjectiveCMarshal API has not been initialized.</exception>
         /// <remarks>
-        /// The <see cref="Initialize" /> function must be called prior to calling this function.
+        /// The Initialize() must be called prior to calling this function.
         ///
-        /// The <paramref name="obj"/> parameter must have a type in its hierarchy marked with
+        /// The <paramref name="obj"/> must have a type in its hierarchy marked with
         /// <see cref="ObjectiveCTrackedTypeAttribute"/>.
         ///
         /// The "Is Referenced" callback passed to <see cref="Initialize" />
@@ -148,16 +148,16 @@ namespace System.Runtime.InteropServices.ObjectiveC
         /// during the "Is Referenced" callback.
         ///
         /// Calling this function multiple times with the same <paramref name="obj"/> will
-        /// return the same tagged memory. It is only guaranteed to be zero initialized on
-        /// the first call.
+        /// return the same tracking memory. It is only guaranteed to be zero initialized on
+        /// the first call of this or <see cref="CreateReferenceTrackingHandle" />.
         ///
-        /// The return value is the same as the tagged memory returned from <see cref="CreateReferenceTrackingHandle" />.
+        /// The return value is the same as the tracking memory returned from <see cref="CreateReferenceTrackingHandle" />.
         /// </remarks>
-        public static Span<IntPtr> GetOrCreateTaggedMemory(object obj)
+        public static Span<IntPtr> GetOrCreateReferenceTrackingMemory(object obj)
         {
             ArgumentNullException.ThrowIfNull(obj);
 
-            GetOrCreateTaggedMemoryInternal(
+            GetOrCreateReferenceTrackingMemoryInternal(
 #if NATIVEAOT
                 obj,
 #else

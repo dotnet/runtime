@@ -63,7 +63,7 @@ extern "C" void* QCALLTYPE ObjCMarshal_CreateReferenceTrackingHandle(
     _Out_ int* memInSizeT,
     _Outptr_ void** mem);
 
-extern "C" void QCALLTYPE ObjCMarshal_GetOrCreateTaggedMemory(
+extern "C" void QCALLTYPE ObjCMarshal_GetOrCreateReferenceTrackingMemory(
     _In_ QCall::ObjectHandleOnStack obj,
     _Out_ int* memInSizeT,
     _Outptr_ void** mem);

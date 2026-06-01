@@ -39,8 +39,8 @@ namespace System.Runtime.InteropServices.ObjectiveC
             out int memInSizeT,
             out IntPtr mem);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjCMarshal_GetOrCreateTaggedMemory")]
-        private static partial void GetOrCreateTaggedMemoryInternal(
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjCMarshal_GetOrCreateReferenceTrackingMemory")]
+        private static partial void GetOrCreateReferenceTrackingMemoryInternal(
             ObjectHandleOnStack obj,
             out int memInSizeT,
             out IntPtr mem);

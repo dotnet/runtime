@@ -76,7 +76,7 @@ namespace ObjectiveCMarshalAPI
             Assert.Throws<ArgumentNullException>(
                 () =>
                 {
-                    ObjectiveCMarshal.GetOrCreateTaggedMemory(null);
+                    ObjectiveCMarshal.GetOrCreateReferenceTrackingMemory(null);
                 });
         }
 
@@ -204,7 +204,7 @@ namespace ObjectiveCMarshalAPI
             Assert.Throws<InvalidOperationException>(
                 () =>
                 {
-                    ObjectiveCMarshal.GetOrCreateTaggedMemory(new Base());
+                    ObjectiveCMarshal.GetOrCreateReferenceTrackingMemory(new Base());
                 });
         }
 
@@ -449,13 +449,13 @@ namespace ObjectiveCMarshalAPI
             Assert.Throws<InvalidOperationException>(
                 () =>
                 {
-                    ObjectiveCMarshal.GetOrCreateTaggedMemory(new AttributedNoFinalizer());
+                    ObjectiveCMarshal.GetOrCreateReferenceTrackingMemory(new AttributedNoFinalizer());
                 });
 
             var obj = new Base();
 
             // Validate length matches CreateReferenceTrackingHandle contract.
-            Span<IntPtr> memFromGet = ObjectiveCMarshal.GetOrCreateTaggedMemory(obj);
+            Span<IntPtr> memFromGet = ObjectiveCMarshal.GetOrCreateReferenceTrackingMemory(obj);
             Assert.Equal(2, memFromGet.Length);
 
             // Memory should be zero-initialized on first call.
@@ -463,7 +463,7 @@ namespace ObjectiveCMarshalAPI
             Assert.Equal(IntPtr.Zero, memFromGet[1]);
 
             // Multiple calls return the same memory.
-            Span<IntPtr> memFromGet2 = ObjectiveCMarshal.GetOrCreateTaggedMemory(obj);
+            Span<IntPtr> memFromGet2 = ObjectiveCMarshal.GetOrCreateReferenceTrackingMemory(obj);
             fixed (void* p1 = memFromGet)
             fixed (void* p2 = memFromGet2)
                 Assert.Equal((IntPtr)p1, (IntPtr)p2);
@@ -475,10 +475,10 @@ namespace ObjectiveCMarshalAPI
                 Assert.Equal((IntPtr)p1, (IntPtr)p2);
             h.Free();
 
-            // GetOrCreateTaggedMemory after CreateReferenceTrackingHandle also returns the same memory.
+            // GetOrCreateReferenceTrackingMemory after CreateReferenceTrackingHandle also returns the same memory.
             var obj2 = new Base();
             GCHandle h2 = ObjectiveCMarshal.CreateReferenceTrackingHandle(obj2, out Span<IntPtr> memFromCreate2);
-            Span<IntPtr> memFromGetAfter = ObjectiveCMarshal.GetOrCreateTaggedMemory(obj2);
+            Span<IntPtr> memFromGetAfter = ObjectiveCMarshal.GetOrCreateReferenceTrackingMemory(obj2);
             fixed (void* p1 = memFromCreate2)
             fixed (void* p2 = memFromGetAfter)
                 Assert.Equal((IntPtr)p1, (IntPtr)p2);

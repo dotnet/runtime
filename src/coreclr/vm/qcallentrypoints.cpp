@@ -441,7 +441,7 @@ static const Entry s_QCall[] =
     DllImportEntry(ObjCMarshal_TrySetGlobalMessageSendCallback)
     DllImportEntry(ObjCMarshal_TryInitializeReferenceTracker)
     DllImportEntry(ObjCMarshal_CreateReferenceTrackingHandle)
-    DllImportEntry(ObjCMarshal_GetOrCreateTaggedMemory)
+    DllImportEntry(ObjCMarshal_GetOrCreateReferenceTrackingMemory)
 #endif
 #if defined(FEATURE_JAVAMARSHAL)
     DllImportEntry(JavaMarshal_Initialize)

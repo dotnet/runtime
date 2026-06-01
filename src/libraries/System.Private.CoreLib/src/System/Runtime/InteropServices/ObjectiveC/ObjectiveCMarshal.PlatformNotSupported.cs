@@ -94,7 +94,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
             out Span<IntPtr> taggedMemory)
             => throw new PlatformNotSupportedException();
 
-        public static Span<IntPtr> GetOrCreateTaggedMemory(object obj)
+        public static Span<IntPtr> GetOrCreateReferenceTrackingMemory(object obj)
             => throw new PlatformNotSupportedException();
 
         /// <summary>

@@ -126,12 +126,12 @@ namespace System.Runtime.InteropServices.ObjectiveC
             out int memInSizeT,
             out IntPtr mem)
         {
-            // Rely on GetOrCreateTaggedMemoryInternal for state checking.
-            GetOrCreateTaggedMemoryInternal(obj, out memInSizeT, out mem);
+            // Rely on GetOrCreateReferenceTrackingMemoryInternal for state checking.
+            GetOrCreateReferenceTrackingMemoryInternal(obj, out memInSizeT, out mem);
             return RuntimeImports.RhHandleAllocRefCounted(obj);
         }
 
-        private static void GetOrCreateTaggedMemoryInternal(
+        private static void GetOrCreateReferenceTrackingMemoryInternal(
             object obj,
             out int memInSizeT,
             out IntPtr mem)
