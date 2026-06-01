@@ -8201,7 +8201,7 @@ public:
     //               ReadProcessMemory.
     virtual
     void CreateInternalValue(CordbType *       pType,
-                             SIZE_T            offset,
+                             CORDB_ADDRESS     offset,
                              void *            localAddress,
                              ULONG32           size,
                              ICorDebugValue ** ppValue) = 0;
@@ -8265,7 +8265,7 @@ public:
     // creates an ICDValue for a field or array element or for the value type of a boxed object
     virtual
     void CreateInternalValue(CordbType *       pType,
-                                SIZE_T            offset,
+                                CORDB_ADDRESS     offset,
                                 void *            localAddress,
                                 ULONG32           size,
                                 ICorDebugValue ** ppValue);
@@ -8318,7 +8318,7 @@ public:
     // creates an ICDValue for a field or array element or for the value type of a boxed object
     virtual
     void CreateInternalValue(CordbType *       pType,
-                             SIZE_T            offset,
+                             CORDB_ADDRESS     offset,
                              void *            localAddress,
                              ULONG32           size,
                              ICorDebugValue ** ppValue);
@@ -8385,7 +8385,7 @@ public:
     // creates an ICDValue for a field or array element or for the value type of a boxed object
     virtual
     void CreateInternalValue(CordbType *       pType,
-                             SIZE_T            offset,
+                             CORDB_ADDRESS     offset,
                              void *            localAddress,
                              ULONG32           size,
                              ICorDebugValue ** ppValue);

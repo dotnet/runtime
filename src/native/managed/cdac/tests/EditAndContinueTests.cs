@@ -48,7 +48,7 @@ public class EditAndContinueTests
         rts.Setup(r => r.GetModule(It.Is<TypeHandle>(th => th.Address == mtPtr))).Returns(modulePtr);
 
         var loader = new Mock<ILoader>();
-        ModuleHandle moduleHandle = new ModuleHandle(modulePtr);
+        Contracts.ModuleHandle moduleHandle = new Contracts.ModuleHandle(modulePtr);
         loader.Setup(l => l.GetModuleHandleFromModulePtr(modulePtr)).Returns(moduleHandle);
         loader.Setup(l => l.GetFlags(moduleHandle)).Returns(flags);
 

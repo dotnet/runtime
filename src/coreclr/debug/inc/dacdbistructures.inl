@@ -682,7 +682,7 @@ void FieldData::SetStaticAddress(CORDB_ADDRESS addr)
 
 // Get the offset of a field
 inline
-SIZE_T FieldData::GetInstanceOffset()
+CORDB_ADDRESS FieldData::GetInstanceOffset()
 {
     _ASSERTE(!m_fFldIsStatic);
     _ASSERTE(!m_fFldIsRVA);
@@ -694,7 +694,7 @@ SIZE_T FieldData::GetInstanceOffset()
 
 // Get the static address for a field
 inline
-TADDR FieldData::GetStaticAddress()
+CORDB_ADDRESS FieldData::GetStaticAddress()
 {
     _ASSERTE(m_fFldIsStatic);
     _ASSERTE(!m_fFldIsTLS);

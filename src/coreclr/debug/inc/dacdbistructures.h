@@ -672,11 +672,11 @@ public:
     // If this is an instance field, return its offset
     // Note that this offset is always a real offset (possibly larger than 22 bits), which isn't
     // necessarily the same as the overloaded FieldDesc.dwOffset field.
-    SIZE_T  GetInstanceOffset();
+    CORDB_ADDRESS  GetInstanceOffset();
 
     // If this is a "normal" static, get its absolute address
     // TLS and context-specific statics are "special".
-    TADDR GetStaticAddress();
+    CORDB_ADDRESS GetStaticAddress();
 
 //
 // Data members
