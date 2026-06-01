@@ -1273,6 +1273,7 @@ namespace Internal.JitInterface
             if (!_compilation.CanInline(MethodBeingCompiled, method))
                 return false;
 
+
             MethodIL methodIL = method.IsUnboxingThunk() ? null : AsyncVersionMethodIL.GetWrappedIfAsyncVersion(method, _compilation);
             return Get_CORINFO_METHOD_INFO(method, methodIL, info);
         }
