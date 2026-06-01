@@ -1,6 +1,6 @@
 ---
 name: "CI Outer-Loop Failure Scanner — Feedback"
-description: "Periodic tick that reads the latest ci-failure-scan runs and maintainer feedback on the issues/PRs it produced, scores them against a quality rubric, and proposes targeted edits to ci-failure-scan.md as a single draft PR."
+description: "Periodic tick that reads the latest ci-failure-scan runs and maintainer feedback on the issues/PRs it produced, scores them against a quality rubric, and proposes targeted edits to ci-failure-scan.md or shared/create-kbe.instructions.md as a single draft PR."
 
 permissions:
   contents: read
@@ -52,6 +52,7 @@ safe-outputs:
     max: 1
     allowed-files:
       - ".github/workflows/ci-failure-scan.md"
+      - ".github/workflows/shared/create-kbe.instructions.md"
     protected-files:
       policy: blocked
       exclude:
@@ -62,6 +63,7 @@ safe-outputs:
     max: 1
     allowed-files:
       - ".github/workflows/ci-failure-scan.md"
+      - ".github/workflows/shared/create-kbe.instructions.md"
     protected-files:
       policy: blocked
       exclude:
@@ -88,9 +90,9 @@ network:
 
 # CI Failure Scanner — Feedback
 
-You evaluate the [`CI Outer-Loop Failure Scanner`](ci-failure-scan.md), maintain a single KPI tracker issue with a running window of metrics, and propose targeted edits to its prompt so the next run produces tighter, more actionable artifacts. You run read-only; the only write paths are against `.github/workflows/ci-failure-scan.md` and the tracker issue body.
+You evaluate the [`CI Outer-Loop Failure Scanner`](ci-failure-scan.md), maintain a single KPI tracker issue with a running window of metrics, and propose targeted edits to its prompt/instructions so the next run produces tighter, more actionable artifacts. You run read-only; the only write paths are against `.github/workflows/ci-failure-scan.md`, `.github/workflows/shared/create-kbe.instructions.md`, and the tracker issue body.
 
-Hard rules: no comments on issues/PRs, no edits outside `.github/workflows/ci-failure-scan.md`, max 1 PR + 1 tracker issue open at a time. Reading issue/PR bodies and comments (the user-supplied content the integrity gate exists to filter) MUST go through the `github` MCP tool with `min-integrity: approved`; `[Filtered]` results are skipped (record the count, do not chase them). `gh` calls are allowed for workflow-run metadata (`gh api .../actions/...`, `gh run view --log`) and for enumerating this workflow's own artifacts (finding the `[ci-scan-feedback]` PR/tracker by title or repository-owned label), but NOT for reading maintainer-supplied content — do not use `gh issue view`, `gh pr view`, or `gh api /repos/.../comments` to substitute for the integrity-gated reads.
+Hard rules: no comments on issues/PRs, no edits outside `.github/workflows/ci-failure-scan.md` and `.github/workflows/shared/create-kbe.instructions.md`, max 1 PR + 1 tracker issue open at a time. Reading issue/PR bodies and comments (the user-supplied content the integrity gate exists to filter) MUST go through the `github` MCP tool with `min-integrity: approved`; `[Filtered]` results are skipped (record the count, do not chase them). `gh` calls are allowed for workflow-run metadata (`gh api .../actions/...`, `gh run view --log`) and for enumerating this workflow's own artifacts (finding the `[ci-scan-feedback]` PR/tracker by title or repository-owned label), but NOT for reading maintainer-supplied content — do not use `gh issue view`, `gh pr view`, or `gh api /repos/.../comments` to substitute for the integrity-gated reads.
 
 ## Steps
 
@@ -129,7 +131,7 @@ Hard rules: no comments on issues/PRs, no edits outside `.github/workflows/ci-fa
    - For a sample of in-scope KBEs, cross-check the signature against the cited failing log (`gh run view <id> --log-failed | head -300` or the AzDO/Helix URL in the body) and flag PASS-line collisions or paraphrased signatures.
    - Skip-reason vocabulary stability: any tally row using a `skipped:` reason NOT in the Step 6 'Recognized values' list in `ci-failure-scan.md` is flagged as `unknown-skip-reason: <verbatim string>`. The recognized values list is the source of truth; the feedback PR should propose adding new reasons there before they start appearing in tallies.
 
-5. Translate each failure mode into a targeted edit to `.github/workflows/ci-failure-scan.md`. Prefer rule-shaped edits (tighten Step 4.2, extend Step 4.7's phrase list, add a Bad/Good row, narrow KBE check 7) over wholesale rewrites. Read the file first; reuse the existing voice and section structure.
+5. Translate each failure mode into a targeted edit to whichever file owns the rule: `.github/workflows/ci-failure-scan.md` for scanner behavior or `.github/workflows/shared/create-kbe.instructions.md` for KBE authoring guidance. Prefer rule-shaped edits (tighten Step 4.2, extend Step 4.7's phrase list, add a Bad/Good row, narrow KBE check 7) over wholesale rewrites. Read the target file first; reuse the existing voice and section structure.
 
 6. Emit changes. Check for an existing open `[ci-scan-feedback]` PR first:
 
