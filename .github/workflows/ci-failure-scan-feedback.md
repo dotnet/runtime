@@ -171,39 +171,44 @@ Hard rules: no comments on issues/PRs, no edits outside `.github/workflows/ci-fa
 
    Collect the full universe of `[ci-scan]` issues and PRs (open + closed) since `window_start` via `gh search issues` / `gh search prs` with `created:>=<window_start>`. This produces a list of issue/PR numbers and metadata; do NOT read bodies with `gh`. Cache the list to `/tmp/gh-aw/agent/artifacts.json` so later sections do not re-query.
 
+   `gh search issues --json` and `gh search prs --json` already return `state`, `stateReason`, `labels`, `mergedAt`, `closedAt`, and `author` for each result; that metadata is sufficient for the activity and quality counts below. Only fetch through the integrity-gated `github` MCP when you actually need body or comment text.
+
    For metrics that need MEMBER/OWNER comment content (rejection-keyword detection, re-file outage signal), fetch through the `github` MCP `issue_read get`, `pull_request_read get`, and the corresponding comments tools, one per item, respecting `min-integrity: approved`. Skip `[Filtered]` items.
 
    Compute these KPIs. The shape below is deliberately small: raw counts, one quality ratio, a fixed set of outage signals. Do not re-introduce Wilson scoring, time-to-KBE, coverage ratios, or tally-extraction; they were dropped because they came back `n/a` most ticks and added noise.
 
-   ### A) Activity (7d and 30d)
+   ### A) Activity (last 7d)
 
-   For each window count, splitting issues from PRs:
+   For each artifact type (issues, PRs), count:
 
-   - `opened` — artifacts created in the window.
-   - `closed_good` — issues closed with `state_reason: completed`; PRs merged.
-   - `closed_wrong` — issues closed with `state_reason` in `{not_planned, duplicate}`; PRs closed without merge.
+   - `opened` — artifacts created in the last 7d.
+   - `closed_good` — issues closed in the last 7d with `state_reason: completed`; PRs merged in the last 7d.
+   - `closed_wrong` — issues closed in the last 7d with `state_reason` in `{not_planned, duplicate}`; PRs closed without merge in the last 7d.
 
-   ### B) Quality (30d only; 7d sample is too small to trust)
+   ### B) Quality (closure cohort, last 30d)
 
-   - `total_30d = opened_issues_30d + opened_prs_30d`.
-   - `wrong_30d = closed_wrong_issues_30d + closed_wrong_prs_30d`.
-   - `wrong_rate_30d = wrong_30d / total_30d`. Emit as `n/a` when `total_30d < 10`.
-   - `complaints_30d` — count of MEMBER/OWNER comments on in-scope artifacts matching (case-insensitive): `don't disable`, `do not disable`, `do not mute`, `please don't`, `false positive`, `fix forward`, `fix-forward`, `investigation in progress`, `will investigate`, `stop filing`, `noise`, `not a real failure`, `flaky test`.
-   - `duplicates_30d` — issues closed with `state_reason: duplicate` OR carrying a `duplicate` label.
+   The quality rate is closure-based, not creation-based: a wrong closure of an old item still counts against this period's quality. This avoids the cross-cohort denominator bug where rate could exceed 100% if computed against opens.
+
+   - `closed_good_30d = i_good_30d + p_merged_30d`.
+   - `closed_wrong_30d = i_wrong_30d + p_unmerged_30d`.
+   - `closed_30d = closed_good_30d + closed_wrong_30d`.
+   - `wrong_rate_30d = closed_wrong_30d / closed_30d`. Emit as `n/a` when `closed_30d < 10`.
+   - `complaints_30d` — count of MEMBER/OWNER comments on in-scope artifacts (open or closed) matching (case-insensitive): `don't disable`, `do not disable`, `do not mute`, `please don't`, `false positive`, `fix forward`, `fix-forward`, `investigation in progress`, `will investigate`, `stop filing`, `noise`, `not a real failure`, `flaky test`.
+   - `duplicates_30d` — issues closed in the last 30d with `state_reason: duplicate` OR carrying a `duplicate` label.
 
    ### C) Outage signals
 
-   These reflect the health of the **CI being monitored**, not the scanner workflow itself. Each signal has a fixed threshold and renders as 🔴 when tripped (any window), otherwise 🟢.
+   These reflect the health of the **CI being monitored**, not the scanner workflow itself. Each signal has a fixed threshold and renders as 🔴 when tripped, otherwise 🟢.
 
-   Source data comes from the cached artifact list; `[ci-scan]` KBE issues are proxies for distinct stable failure signatures in CI. Parse the leg or pipeline name from each KBE body via the `Impact on platforms` or `Build error leg` line; cache to `/tmp/gh-aw/agent/artifact_pipelines.tsv`.
+   Source data comes from the cached artifact list; `[ci-scan]` KBE issues are proxies for distinct stable failure signatures in CI. For each KBE issue, fetch the body via the `github` MCP and grep for the line `Build error leg or test failing: <value>` (this is the only place the KBE template carries leg information; older `Impact on platforms` lines are not present in templates emitted after #128440). The value is `<AzDO leg name>-<assembly or test name>` where the separator is the LAST `-` in the value: split on the last hyphen and treat the left side as the leg. Cache `(issue_number, leg)` rows to `/tmp/gh-aw/agent/artifact_legs.tsv`. Signals count distinct legs, not pipelines (the KBE body does not capture the AzDO pipeline definition id reliably).
 
    | signal | source | threshold |
    |---|---|---|
    | New-KBE burst | count of `[ci-scan]` KBE issues created per day in the last 7d | any day > 2x trailing 30d daily median (min absolute count 3 to avoid noise) |
    | Build-break spike | count of `[ci-scan] Build break:` issues created per 24h | >= 2 in any 24h window in the last 7d |
-   | Multi-pipeline outage | distinct pipeline / leg names across KBEs created in the last 24h | >= 3 distinct pipelines |
+   | Multi-leg outage | distinct leg names (parsed per above) across KBEs created in the last 24h | >= 3 distinct legs |
    | KBE re-filed after maintainer close | for each `[ci-scan]` KBE issue opened in the last 7d, search `is:issue is:closed -is:open in:title "<test-name-stem>" closed:>=<14d-ago>` and check whether any closed predecessor exists with a MEMBER/OWNER comment matching the keyword set in section B | any in the last 7d |
-   | Wrong-closure rate | section B's `wrong_rate_30d` | >= 30% with `total_30d >= 10` |
+   | Wrong-closure rate | section B's `wrong_rate_30d` | >= 30% with `closed_30d >= 10` |
 
    Emit a body with this exact shape (regenerate every tick):
 
@@ -227,8 +232,8 @@ Hard rules: no comments on issues/PRs, no edits outside `.github/workflows/ci-fa
 
    | metric | count | rate |
    |---|---|---|
-   | Total artifacts opened | <total_30d> | — |
-   | Wrong closures | <wrong_30d> | <wrong_rate_30d_pct or `n/a (<total_30d><10)`> |
+   | Total closures | <closed_30d> | — |
+   | Wrong closures | <closed_wrong_30d> | <wrong_rate_30d_pct or `n/a (<closed_30d><10)`> |
    | Maintainer rejection comments | <complaints_30d> | — |
    | Duplicate KBEs | <duplicates_30d> | — |
 
@@ -238,16 +243,16 @@ Hard rules: no comments on issues/PRs, no edits outside `.github/workflows/ci-fa
    |---|---|---|---|---|
    | New-KBE burst | day > 2x trailing 30d median (min 3) | <new_kbe_24h> / median <median_daily_kbe_30d> | peak day <peak_kbe_7d> | <🔴 or 🟢> |
    | Build-break spike | >= 2 in any 24h | <bb_24h> | <bb_7d> | <icon> |
-   | Multi-pipeline outage | >= 3 distinct pipelines in 24h | <pipelines_24h> distinct | <pipelines_peak_7d> distinct (peak day) | <icon> |
+   | Multi-leg outage | >= 3 distinct legs in 24h | <legs_24h> distinct | <legs_peak_7d> distinct (peak day) | <icon> |
    | KBE re-filed after maintainer close | any in 7d | <refile_24h> | <refile_7d> | <icon> |
-   | Wrong-closure rate (30d) | >= 30% with N>=10 | — | <wrong_rate_30d_pct> | <icon> |
+   | Wrong-closure rate (30d) | >= 30% with `closed_30d >= 10` | — | <wrong_rate_30d_pct> | <icon> |
 
-   When status is 🔴, append a `details:` line beneath the table for that row naming the offending artifacts (for example, `details: refile signal: #128793 re-filed #128737`, or `details: multi-pipeline: runtime-coreclr, runtime-extra-platforms, runtime-interpreter all red on 2026-06-01`) so a maintainer can jump straight to the source without grepping logs.
+   When status is 🔴, append a `details:` line beneath the table for that row naming the offending artifacts (for example, `details: refile signal: #128793 re-filed #128737`, or `details: multi-leg: runtime-coreclr outerloop linux x64 checked, runtime-extra-platforms windows x86 release, runtime-interpreter linux x64 checked all red on 2026-06-01`) so a maintainer can jump straight to the source without grepping logs.
    ````
 
    Suppression rules:
 
-   - If `total_30d < 10`, the Quality table's `rate` column reads `n/a (<n><10)` for `wrong_rate_30d`; all other rows still render with raw counts.
+   - If `closed_30d < 10`, the Quality table's `rate` column reads `n/a (<n><10)` for `wrong_rate_30d`; all other rows still render with raw counts.
    - Outage signals always render. An explicit 🟢 with no data still carries information.
    - Do NOT emit charts (mermaid or otherwise).
    - Do NOT emit historical weekly buckets. The body is a current snapshot.
