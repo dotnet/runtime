@@ -881,15 +881,15 @@ public:
         TransitionBlock* pTransitionBlock = (TransitionBlock*)GetTransitionBlock();
         if (pTransitionBlock != NULL)
         {
-            if (pTransitionBlock->m_ReturnAddress != 0)
+            if ((pTransitionBlock->m_ReturnAddress != 0) && (pTransitionBlock->m_StackPointer != 0))
             {
+                // If the TransitionBlock is setup with both a return address and a stack pointer, then we can trust the stack pointer value,
+                // and it corresponds into the R2R unwind stack
                 return pTransitionBlock->m_StackPointer;
             }
         }
-        return 0;
-#else
-        return GetTransitionBlock() + sizeof(TransitionBlock);
 #endif
+        return GetTransitionBlock() + sizeof(TransitionBlock);
     }
 
     BOOL NeedsUpdateRegDisplay_Impl()
