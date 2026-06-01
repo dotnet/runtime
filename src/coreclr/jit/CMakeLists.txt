@@ -168,6 +168,7 @@ set( JIT_SOURCES
   optimizer.cpp
   patchpoint.cpp
   phase.cpp
+  constantmaskreuse.cpp
   promotion.cpp
   promotiondecomposition.cpp
   promotionliveness.cpp
@@ -338,6 +339,7 @@ set( JIT_HEADERS
   compilerbitsettraits.hpp
   compmemkind.h
   compphases.h
+  constantmaskreuse.h
   handlekinds.h
   dataflow.h
   debuginfo.h
