@@ -438,7 +438,7 @@ public:
         {
             ActivateAllKeywordsOfAllProviders();
         }
-#ifdef FEATURE_EVENT_TRACE
+#if defined(FEATURE_EVENT_TRACE) && defined(HOST_UNIX)
         else
         {
             LTTNG_TRACE_CONTEXT *provider = GetProvider(providerName);
@@ -455,7 +455,7 @@ public:
 
     static void ActivateAllKeywordsOfAllProviders()
     {
-#ifdef FEATURE_EVENT_TRACE
+#if defined(FEATURE_EVENT_TRACE) && defined(HOST_UNIX)
         for (LTTNG_TRACE_CONTEXT * const provider : ALL_LTTNG_PROVIDERS_CONTEXT)
         {
             provider->EnabledKeywordsBitmask = (ULONGLONG)(-1);
@@ -466,7 +466,7 @@ public:
     }
 
 private:
-#ifdef FEATURE_EVENT_TRACE
+#if defined(FEATURE_EVENT_TRACE) && defined(HOST_UNIX)
     static LTTNG_TRACE_CONTEXT * const GetProvider(LPCWSTR providerName)
     {
         auto length = u16_strlen(providerName);
@@ -492,7 +492,7 @@ public:
         return configEventLogging.val(CLRConfig::EXTERNAL_EnableEventLog);
     }
 
-#ifdef FEATURE_EVENT_TRACE
+#if defined(FEATURE_EVENT_TRACE) && defined(HOST_UNIX)
     inline static bool IsProviderEnabled(DOTNET_TRACE_CONTEXT providerCtx)
     {
         return providerCtx.LttngProvider->IsEnabled;
