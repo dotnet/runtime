@@ -16,7 +16,6 @@ namespace System.Net.Security
     {
         private TlsSession() { }
 
-        public bool IsServer => throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
         public bool IsHandshakeComplete => throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
         public bool HasPendingOutput => throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
         public string? TargetHostName
@@ -36,7 +35,6 @@ namespace System.Net.Security
         public static TlsSession Create(TlsContext context, SafeSocketHandle socket) =>
             throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
 
-        public bool IsSocketBound => throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
         public SafeSocketHandle? Socket => throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
 
         public TlsOperationStatus Handshake() =>
@@ -76,6 +74,9 @@ namespace System.Net.Security
             throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
 
         public void SetServerOptions(SslServerAuthenticationOptions options) =>
+            throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
+
+        public void SetClientCertificateContext(SslStreamCertificateContext context) =>
             throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
 
         public X509Certificate2? LocalCertificate =>

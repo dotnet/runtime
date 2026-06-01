@@ -54,6 +54,9 @@ namespace System.Net.Security
         private bool _suppressInternalCertificateValidation;
         private bool _externalValidationPending;
         private bool _externalValidationResolved;
+        // Set by SetClientCertificateContext after a WantCredentials suspension; consumed by
+        // the next ProcessHandshake to allow an empty-input re-entry past the frame guard.
+        private bool _resumeAfterCredentials;
         // Intermediate certs the peer sent (chain elements minus the leaf). The platform-built
         // X509Chain itself is never surfaced to TlsSession callers; AcceptWithDefaultValidation
         // rebuilds a fresh chain from this collection at validation time.
@@ -106,8 +109,6 @@ namespace System.Net.Security
             return session;
         }
 
-        public bool IsSocketBound => _socket is not null;
-
         public SafeSocketHandle? Socket => _socketHandle;
         public static TlsSession Create(TlsContext context)
         {
@@ -119,8 +120,6 @@ namespace System.Net.Security
         }
 
         // ── State ─────────────────────────────────────────────────────────
-
-        public bool IsServer => _context.IsServer;
 
         public bool IsHandshakeComplete => _isHandshakeComplete;
 
@@ -372,6 +371,38 @@ namespace System.Net.Security
             _clientHelloInfo = null;
         }
 
+        /// <summary>
+        /// Client-side only. Supplies the certificate context the session should send
+        /// in response to the server's CertificateRequest. Intended to resolve a session
+        /// suspended on <see cref="TlsOperationStatus.WantCredentials"/>: callers that need
+        /// to fetch a certificate from an out-of-process source (e.g. a key vault) do so
+        /// outside the session, then resume the handshake with another call to
+        /// <see cref="ProcessHandshake"/> (with empty input). May also be called before
+        /// the first <see cref="ProcessHandshake"/> to seed the client credential when the
+        /// <see cref="TlsContext"/> was created without one.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown on a server-side session.
+        /// </exception>
+        public void SetClientCertificateContext(SslStreamCertificateContext context)
+        {
+            ArgumentNullException.ThrowIfNull(context);
+            ThrowIfDisposed();
+
+            if (_context.IsServer)
+            {
+                throw new InvalidOperationException("SetClientCertificateContext can only be called on a client-side session.");
+            }
+
+            _options.CertificateContext = context;
+
+            // Drop the cached credentials handle (acquired without a client cert) so the
+            // next ProcessHandshake re-acquires with the supplied context.
+            _context.CredentialsHandle?.Dispose();
+            _context.CredentialsHandle = null;
+            _resumeAfterCredentials = true;
+        }
+
         private void ThrowIfPendingExternalValidation()
         {
             if (_externalValidationFault is not null)
@@ -503,9 +534,12 @@ namespace System.Net.Security
             // machine identical across platforms.
             //
             // The only call that legitimately runs with empty input is the very first
-            // client-side ISC, which produces the ClientHello.
+            // client-side ISC, which produces the ClientHello, or a client resume after
+            // SetClientCertificateContext resolved a prior WantCredentials suspension.
             bool isInitialClientCall = !_context.IsServer && _securityContext is null;
-            if (!isInitialClientCall)
+            bool isCredentialResume = _resumeAfterCredentials;
+            _resumeAfterCredentials = false;
+            if (!isInitialClientCall && !isCredentialResume)
             {
                 if (input.Length < TlsFrameHelper.HeaderSize)
                 {
@@ -593,7 +627,9 @@ namespace System.Net.Security
                     AppendPending(new ReadOnlySpan<byte>(token.Payload, 0, token.Size));
                 }
 
-                if (token.Failed)
+                if (token.Failed &&
+                    token.Status.ErrorCode != SecurityStatusPalErrorCode.CredentialsNeeded &&
+                    token.Status.ErrorCode != SecurityStatusPalErrorCode.NeedsRemoteCertificateValidation)
                 {
                     throw new AuthenticationException(SR.net_auth_SSPI, token.GetException());
                 }

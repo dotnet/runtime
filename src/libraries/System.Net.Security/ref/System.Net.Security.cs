@@ -708,7 +708,6 @@ namespace System.Net.Security
     public sealed partial class TlsSession : System.IDisposable
     {
         internal TlsSession() { }
-        public bool IsServer { get { throw null; } }
         public bool IsHandshakeComplete { get { throw null; } }
         public bool HasPendingOutput { get { throw null; } }
         public string? TargetHostName { get { throw null; } set { } }
@@ -719,7 +718,6 @@ namespace System.Net.Security
         public System.Net.Security.SslApplicationProtocol NegotiatedApplicationProtocol { get { throw null; } }
         public static System.Net.Security.TlsSession Create(System.Net.Security.TlsContext context) { throw null; }
         public static System.Net.Security.TlsSession Create(System.Net.Security.TlsContext context, System.Net.Sockets.SafeSocketHandle socket) { throw null; }
-        public bool IsSocketBound { get { throw null; } }
         public System.Net.Sockets.SafeSocketHandle? Socket { get { throw null; } }
         public System.Net.Security.TlsOperationStatus Handshake() { throw null; }
         public System.Net.Security.TlsOperationStatus Read(System.Span<byte> buffer, out int bytesRead) { throw null; }
@@ -734,6 +732,7 @@ namespace System.Net.Security
         public System.Net.Security.SslPolicyErrors AcceptWithDefaultValidation() { throw null; }
         public void SetRemoteCertificateValidationResult(System.Net.Security.SslPolicyErrors errors) { }
         public void SetServerOptions(System.Net.Security.SslServerAuthenticationOptions options) { }
+        public void SetClientCertificateContext(System.Net.Security.SslStreamCertificateContext context) { }
         public System.Security.Cryptography.X509Certificates.X509Certificate2? LocalCertificate { get { throw null; } }
         public System.Security.Authentication.ExtendedProtection.ChannelBinding? GetChannelBinding(System.Security.Authentication.ExtendedProtection.ChannelBindingKind kind) { throw null; }
         public System.Net.Security.TlsOperationStatus RequestClientCertificate(System.Span<byte> ciphertext, out int bytesWritten) { throw null; }

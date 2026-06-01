@@ -212,6 +212,127 @@ namespace System.Net.Security.Tests
             }
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows))]
+        public async Task ClientSession_WantCredentials_SetClientCertificateContext_ResumesHandshake()
+        {
+            // Server (SslStream) demands a client certificate. The client TlsContext is
+            // created without one, so ProcessHandshake must surface WantCredentials when
+            // the CertificateRequest arrives. Supplying an SslStreamCertificateContext via
+            // SetClientCertificateContext and re-entering ProcessHandshake with empty input
+            // must resume the handshake to completion and deliver the cert to the server.
+            // SChannel resolves client credentials up-front via AcquireCredentialsHandle
+            // and never surfaces CredentialsNeeded; this flow is OpenSSL-only.
+            using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
+            using X509Certificate2 clientCert = TestCertificates.GetClientCertificate();
+            string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
+
+            X509Certificate2? observedClientCert = null;
+
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+            using (clientStream)
+            using (serverStream)
+            using (SslStream serverSsl = new SslStream(serverStream, leaveInnerStreamOpen: false))
+            {
+                Task serverHandshake = serverSsl.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = serverCert,
+                    EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                    ClientCertificateRequired = true,
+                    RemoteCertificateValidationCallback = (s, c, ch, e) =>
+                    {
+                        observedClientCert = c as X509Certificate2;
+                        return true;
+                    },
+                });
+
+                using TlsContext ctx = TlsContext.Create(new SslClientAuthenticationOptions
+                {
+                    TargetHost = serverName,
+                    EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                    RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
+                });
+                using TlsSession session = TlsSession.Create(ctx);
+
+                int wantCredentialsCount = 0;
+                Task clientHandshake = Task.Run(async () =>
+                {
+                    byte[] netIn = ArrayPool<byte>.Shared.Rent(CipherBufSize);
+                    byte[] netOut = ArrayPool<byte>.Shared.Rent(CipherBufSize);
+                    int inUsed = 0;
+                    try
+                    {
+                        while (!session.IsHandshakeComplete)
+                        {
+                            TlsOperationStatus status = session.ProcessHandshake(
+                                netIn.AsSpan(0, inUsed),
+                                netOut,
+                                out int consumed,
+                                out int produced);
+
+                            if (consumed > 0)
+                            {
+                                if (consumed < inUsed)
+                                {
+                                    Buffer.BlockCopy(netIn, consumed, netIn, 0, inUsed - consumed);
+                                }
+                                inUsed -= consumed;
+                            }
+
+                            if (produced > 0)
+                            {
+                                await clientStream.WriteAsync(netOut.AsMemory(0, produced));
+                                await clientStream.FlushAsync();
+                            }
+
+                            switch (status)
+                            {
+                                case TlsOperationStatus.Complete:
+                                    continue;
+
+                                case TlsOperationStatus.NeedsCertificateValidation:
+                                    session.AcceptWithDefaultValidation();
+                                    continue;
+
+                                case TlsOperationStatus.WantCredentials:
+                                    wantCredentialsCount++;
+                                    session.SetClientCertificateContext(
+                                        SslStreamCertificateContext.Create(clientCert, additionalCertificates: null));
+                                    continue;
+
+                                case TlsOperationStatus.WantWrite:
+                                    await DrainAsync(session, clientStream, netOut);
+                                    continue;
+
+                                case TlsOperationStatus.WantRead:
+                                    int r = await clientStream.ReadAsync(netIn.AsMemory(inUsed));
+                                    if (r == 0)
+                                    {
+                                        throw new IOException("Unexpected EOF during handshake.");
+                                    }
+                                    inUsed += r;
+                                    continue;
+
+                                case TlsOperationStatus.Closed:
+                                    throw new IOException("Peer closed connection during handshake.");
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        ArrayPool<byte>.Shared.Return(netIn);
+                        ArrayPool<byte>.Shared.Return(netOut);
+                    }
+                });
+
+                await Task.WhenAll(clientHandshake, serverHandshake).WaitAsync(TimeSpan.FromSeconds(30));
+
+                Assert.True(session.IsHandshakeComplete);
+                Assert.Equal(1, wantCredentialsCount);
+                Assert.NotNull(observedClientCert);
+                Assert.Equal(clientCert.Thumbprint, observedClientCert!.Thumbprint);
+            }
+        }
+
         [Fact]
         public async Task ServerSession_OptionalClientCert_NoCertSent_HandshakeCompletesWithoutValidatorCall()
         {
@@ -1376,7 +1497,6 @@ namespace System.Net.Security.Tests
                 ClientCertificateRequired = false,
             });
             using TlsSession session = TlsSession.Create(ctx, serverHandle);
-            Assert.True(session.IsSocketBound);
             Assert.Same(serverHandle, session.Socket);
 
             using SslStream clientSsl = new SslStream(new NetworkStream(clientUnderlying, ownsSocket: false), leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate);
