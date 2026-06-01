@@ -598,28 +598,6 @@ LOCAL_LABEL(stackProbe_loop):
     LEAF_END_MARKED \name, _TEXT
     .endm
 
-    .macro JIT_BYREFWRITEBARRIER name, mp, post
-    LEAF_ENTRY \name, _TEXT
-        START_WRITE_BARRIER \name
-        .if(\mp)
-            dmb
-        .endif
-
-        ldr r2, [r1]
-        str r2, [r0]
-        CHECK_GC_HEAP_RANGE \name, r0, 1f
-        UPDATE_GC_SHADOW \name, r0, r2
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-        UPDATE_WRITE_WATCH_TABLE \name, r0, \mp, r12
-#endif
-        UPDATE_CARD_TABLE \name, r0, r2, \mp, \post, r2
-1:
-        add r0, #4
-        add r1, #4
-        bx lr
-    LEAF_END_MARKED \name, _TEXT
-    .endm
-
     .macro JIT_WRITEBARRIER_DESCRIPTOR name
 1:
         .word \name-1b
@@ -645,11 +623,6 @@ LOCAL_LABEL(stackProbe_loop):
     JIT_CHECKEDWRITEBARRIER_MP JIT_CheckedWriteBarrier_MP_Pre,  0
     JIT_CHECKEDWRITEBARRIER_MP JIT_CheckedWriteBarrier_MP_Post, 1
 
-    JIT_BYREFWRITEBARRIER JIT_ByRefWriteBarrier_SP_Pre,  0, 0
-    JIT_BYREFWRITEBARRIER JIT_ByRefWriteBarrier_SP_Post, 0, 1
-    JIT_BYREFWRITEBARRIER JIT_ByRefWriteBarrier_MP_Pre,  1, 0
-    JIT_BYREFWRITEBARRIER JIT_ByRefWriteBarrier_MP_Post, 1, 1
-
 //    .section .clrwb, "d"
 g_rgWriteBarrierDescriptors:
 
@@ -662,11 +635,6 @@ g_rgWriteBarrierDescriptors:
     JIT_WRITEBARRIER_DESCRIPTOR JIT_CheckedWriteBarrier_SP_Post
     JIT_WRITEBARRIER_DESCRIPTOR JIT_CheckedWriteBarrier_MP_Pre
     JIT_WRITEBARRIER_DESCRIPTOR JIT_CheckedWriteBarrier_MP_Post
-
-    JIT_WRITEBARRIER_DESCRIPTOR JIT_ByRefWriteBarrier_SP_Pre
-    JIT_WRITEBARRIER_DESCRIPTOR JIT_ByRefWriteBarrier_SP_Post
-    JIT_WRITEBARRIER_DESCRIPTOR JIT_ByRefWriteBarrier_MP_Pre
-    JIT_WRITEBARRIER_DESCRIPTOR JIT_ByRefWriteBarrier_MP_Post
 
     // Sentinel value
     .word 0

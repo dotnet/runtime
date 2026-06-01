@@ -56,7 +56,7 @@ UnixNativeCodeManager::UnixNativeCodeManager(TADDR moduleBase,
       m_pClasslibFunctions(pClasslibFunctions), m_nClasslibFunctions(nClasslibFunctions)
 {
     // Cache the location of unwind sections
-    libunwind::LocalAddressSpace::sThisAddressSpace.findUnwindSections(
+    UnwindHelpers::FindUnwindSections(
         (uintptr_t)pvManagedCodeStartRange, m_UnwindInfoSections);
 }
 

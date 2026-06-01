@@ -416,6 +416,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             {{_attributeProvider.AdditionalUserRequiredInterfaces("INativeAPI")}}
             """;
 
+#pragma warning disable IL2057 // https://github.com/dotnet/runtime/issues/126862
         public string BasicReturnTypeCustomExceptionHandling(string typeName, string customExceptionType, string preDeclaration = "") => $$"""
             using System.Runtime.CompilerServices;
             using System.Runtime.InteropServices;
@@ -431,6 +432,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             }
             {{_attributeProvider.AdditionalUserRequiredInterfaces("INativeAPI")}}
             """;
+#pragma warning restore IL2057
 
         public string DerivedComInterfaceTypeWithShadowingMethod => $$"""
             using System.Runtime.CompilerServices;
