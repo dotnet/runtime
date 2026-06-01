@@ -129,7 +129,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
         }
 
         /// <summary>
-        /// Request a pointer to referenced tracking memory for the supplied object.
+        /// Request a pointer to reference tracking memory for the supplied object.
         /// </summary>
         /// <param name="obj">The object whose tracking memory to return.</param>
         /// <returns>A pointer to tracking memory on the object.</returns>
