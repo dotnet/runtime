@@ -10349,6 +10349,96 @@ void Lowering::LowerCopyBlockStore(GenTreeBlk* blkNode)
 #endif // TARGET_WASM
 }
 
+#ifndef TARGET_WASM
+//------------------------------------------------------------------------
+// LowerInitBlockStore: Shared lowering of a block init store (memset).
+//
+// Arguments:
+//    blkNode - The block store node to lower. Must be an init (not copy).
+//
+void Lowering::LowerInitBlockStore(GenTreeBlk* blkNode)
+{
+    assert(blkNode->OperIsInitBlkOp());
+
+#ifdef TARGET_XARCH
+    TryCreateAddrMode(blkNode->Addr(), false, blkNode);
+#endif
+
+    GenTree*       dstAddr = blkNode->Addr();
+    GenTree*       src     = blkNode->Data();
+    const unsigned size    = blkNode->Size();
+
+    if (src->OperIs(GT_INIT_VAL))
+    {
+        src->SetContained();
+        src = src->AsUnOp()->gtGetOp1();
+    }
+
+#ifdef TARGET_ARM64
+    // On arm64 SIMD stores guarantee 8-byte atomicity when data is 8-byte aligned
+    const bool canUseSimd = true;
+#else
+    const bool canUseSimd = !blkNode->IsOnHeapAndContainsReferences();
+#endif
+
+    if (src->OperIs(GT_CNS_INT) && (size <= m_compiler->getUnrollThreshold(Compiler::UnrollKind::Memset, canUseSimd)))
+    {
+        // The fill value of an initblk is interpreted to hold a value of (unsigned int8)
+        ssize_t fill = src->AsIntCon()->IconValue() & 0xFF;
+
+        bool useSimdFill = false;
+
+#ifdef TARGET_XARCH
+        useSimdFill = canUseSimd && (size >= XMM_REGSIZE_BYTES);
+#endif
+
+        if (useSimdFill)
+        {
+            // We're going to use SIMD (and only SIMD - we don't want to occupy a GPR register
+            // with a fill value just to handle the remainder when we can do that with
+            // an overlapped SIMD load).
+            src->SetContained();
+        }
+        else if (fill == 0)
+        {
+#if FEATURE_HAS_ZERO_REG
+            // We can use the hardware zero register as the contained source.
+            src->SetContained();
+#endif
+        }
+#ifdef TARGET_64BIT
+        else if (size >= REGSIZE_BYTES)
+        {
+            fill *= 0x0101010101010101LL;
+            src->gtType = TYP_LONG;
+        }
+#endif
+        else
+        {
+            fill *= 0x01010101;
+        }
+
+        blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
+        src->AsIntCon()->SetIconValue(fill);
+        ContainBlockStoreAddress(blkNode, size, dstAddr, nullptr);
+        return;
+    }
+
+    if (blkNode->IsZeroingGcPointersOnHeap())
+    {
+        blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindLoop;
+#if FEATURE_HAS_ZERO_REG
+        // We can use the hardware zero register as the contained source.
+        src->SetContained();
+#endif
+    }
+    else
+    {
+        LowerBlockStoreAsHelperCall(blkNode);
+    }
+}
+#endif // !TARGET_WASM
+
 //------------------------------------------------------------------------
 // LowerBlockStoreAsHelperCall: Lower a block store node as a memset/memcpy call
 //
@@ -12185,7 +12275,7 @@ void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
 
     if (blkNode->OperIsInitBlkOp())
     {
-        LowerBlockStore(blkNode);
+        LowerInitBlockStore(blkNode);
     }
     else
     {
