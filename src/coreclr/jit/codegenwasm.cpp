@@ -2667,7 +2667,6 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         // RhpCheckedAssignRef
         HELPER_SIG(CORINFO_HELP_CHECKED_ASSIGN_REF, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I,
                    CORINFO_WASM_TYPE_I);
-        // RhpByRefAssignRef: Not implemented on Wasm, omitted
         // RhBulkMoveWithWriteBarrier
         HELPER_SIG(CORINFO_HELP_BULK_WRITEBARRIER, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I,
                    CORINFO_WASM_TYPE_I, CORINFO_WASM_TYPE_I);
@@ -3223,8 +3222,6 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
             emit->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(destReg));
             emit->emitIns_I(INS_I_const, EA_PTRSIZE, destOffset);
             emit->emitIns(INS_I_add);
-            // Do an I_load here instead of I_const + I_add because we're using the (Object **, Object *) write barrier,
-            //  not the (Object **, Object **) BYREF write barrier used on other architectures.
             emit->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(srcReg));
             emit->emitIns_I(INS_I_load, EA_PTRSIZE, srcOffset);
             // NOTE: This helper's signature omits SP/PEP so all we need on the stack is dst and ref.
@@ -3684,6 +3681,20 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize, unsigned prologSize, un
     GcInfoEncoder* gcInfoEncoder  = new (m_compiler, CMK_GC)
         GcInfoEncoder(m_compiler->info.compCompHnd, m_compiler->info.compMethodInfo, allowZeroAlloc, NOMEM);
     assert(gcInfoEncoder != nullptr);
+
+    // Find the max Virtual IP.
+    //
+    unsigned maxVirtualIP = 0;
+    for (FuncInfoDsc* const func : m_compiler->Funcs())
+    {
+        maxVirtualIP = max(maxVirtualIP, func->endVirtualIP);
+    }
+
+    // Runtime wants us to report twice the actual Virtual IP range as code size.
+    // Use 1 as the prolog size.
+    //
+    codeSize   = 2 * maxVirtualIP;
+    prologSize = 1;
 
     // Follow the code pattern of the x86 gc info encoder (genCreateAndStoreGCInfoJIT32).
     gcInfo.gcInfoBlockHdrSave(gcInfoEncoder, codeSize, prologSize);

@@ -403,10 +403,21 @@ byte[] IThread.GetContext(TargetPointer threadPointer, ThreadContextSource conte
         return bytes;
     }
 
-    // Fall back to the OS thread context
+    // Try to read the OS thread context from the data target
     ulong osId = target.ReadNUInt(threadPointer + /* Thread::OSId offset */);
-    target.GetThreadContext(osId, contextFlags, bytes);
-    return bytes;
+    if (target.TryGetThreadContext(osId, contextFlags, bytes))
+        return bytes;
+
+    // Derive a context from the explicit Frame chain stored in the Thread (sufficient for managed
+    // debugging stack walks). Walk the Frame chain and pick the first
+    // frame that yields a usable context:
+    //   * If it is an InterpreterFrame, fill the context from the top
+    //     InterpMethodContextFrame.
+    //   * Otherwise, update the context from the frame and accept it when both
+    //     StackPointer and InstructionPointer are non-zero. Mark the resulting
+    //     context flags as full so callers know SP/PC/FP are valid.
+    // If no frame supplies a usable context (thread is not running managed code),
+    // return a zeroed context.
 }
 
 ```
