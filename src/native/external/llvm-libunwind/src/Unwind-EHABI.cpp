@@ -443,10 +443,11 @@ _Unwind_VRS_Interpret(_Unwind_Context *context, const uint32_t *data,
   return _URC_CONTINUE_UNWIND;
 }
 
-// The C++ exception dispatch functions below depend on __unw_step and other
-// public API functions from libunwind.cpp which are guarded out when
-// _LIBUNWIND_NATIVEAOT is defined. NativeAOT does not use these - it only
-// uses _Unwind_VRS_Interpret above.
+// The C++ exception dispatch functions in the two #if !defined(_LIBUNWIND_NATIVEAOT)
+// blocks below depend on __unw_step and other public API functions from libunwind.cpp
+// which are guarded out when _LIBUNWIND_NATIVEAOT is defined. NativeAOT does not use
+// these - it only uses _Unwind_VRS_Interpret above, which depends on
+// _Unwind_VRS_Get/Set/Pop defined between the two guard blocks.
 #if !defined(_LIBUNWIND_NATIVEAOT)
 
 extern "C" _LIBUNWIND_EXPORT _Unwind_Reason_Code
@@ -891,6 +892,8 @@ _Unwind_GetLanguageSpecificData(struct _Unwind_Context *context) {
   return result;
 }
 
+#endif // !defined(_LIBUNWIND_NATIVEAOT)
+
 // Only used in _LIBUNWIND_TRACE_API, which is a no-op when assertions are
 // disabled.
 [[gnu::unused]] static uint64_t
@@ -1153,6 +1156,8 @@ _Unwind_VRS_Pop(_Unwind_Context *context, _Unwind_VRS_RegClass regclass,
   }
   _LIBUNWIND_ABORT("unsupported register class");
 }
+
+#if !defined(_LIBUNWIND_NATIVEAOT)
 
 /// Not used by C++.
 /// Unwinds stack, calling "stop" function at each frame.
