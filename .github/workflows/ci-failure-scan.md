@@ -231,6 +231,14 @@ test -f /tmp/gh-aw/agent/filed.tsv && cut -f1 /tmp/gh-aw/agent/filed.tsv | grep 
 printf '%s\t%s\n' "$key" "aw_<id>" >> /tmp/gh-aw/agent/filed.tsv                              # after emit
 ```
 
+**Cross-definition dedup (check second).** The same failure signature is frequently reported across multiple pipeline definitions in one run (e.g. the Crossgen2 OOM `HugeArray1.dll` signature surfaced under definition 108 and definition 124 and was filed twice: dotnet/runtime#128697 was closed as a duplicate of dotnet/runtime#128531). A KBE matches on signature text regardless of which pipeline definition produced it, so do NOT file a second KBE for a signature already filed this run under a different `definition_id`. After the exact-key check above misses, also check the definition-independent key `<queue>|<stress_mode>|<signature_norm>`. On match, record `skipped: cross-def dup of filed-issue #aw_<id> (def <other_definition_id>)` and stop. Append this key too after every Branch A emission. Cross-definition dedup applies to KBE filing (Branch A); a distinct test-disable PR per definition is still allowed when the same KBE legitimately fails on multiple pipelines.
+
+```bash
+xkey="<queue>|<stress_mode>|${signature_norm}"
+test -f /tmp/gh-aw/agent/filed.tsv && cut -f1 /tmp/gh-aw/agent/filed.tsv | grep -Fq "|${xkey}"  # cross-def dup if exit 0
+printf '%s\t%s\n' "$xkey" "aw_<id>" >> /tmp/gh-aw/agent/filed.tsv                                 # after emit
+```
+
 #### Step 4.1 — Load the matching skill
 
 | Pipeline category | Skill |
@@ -261,7 +269,8 @@ Record the same outcomes described there:
 
 Read the candidate KBE / tracker body + the latest 5 comments (not just the most recent). Also read the body + latest 5 comments of ANY issue referenced in the KBE body (e.g. `refs #<n>`, `Tracking: dotnet/runtime#<n>`) — maintainer signals on the root-cause issue override the KBE. Skip the test-disable (record `-> skipped: do-not-disable on issue #<n>`) if ANY of:
 
-- Body or recent comment from any `MEMBER`/`OWNER` mentions one of (case-insensitive): `please don't disable`, `do not mute`, `do not disable`, `keep failing`, `investigation in progress`, `fix-forward`, `fix forward`, `should be supported`, `will investigate`, `wait for #`, `landing in #`.
+- Body or recent comment from any `MEMBER`/`OWNER` mentions one of (case-insensitive): `please don't disable`, `do not mute`, `do not disable`, `keep failing`, `investigation in progress`, `fix-forward`, `fix forward`, `should be supported`, `will investigate`, `wait for #`, `landing in #`, `trying to understand`, `without disabling`, `i'm fixing`, `i am fixing`, `understand the problem`, `root cause`.
+- Heuristic catch-all: any `MEMBER`/`OWNER` comment expressing investigation or fix-forward intent, even when no exact phrase above matches. Treat first-person statements about understanding, diagnosing, or fixing the failure (e.g. "I'm looking into this", "we should understand why", "I'd rather fix the pipeline than mute") as a do-not-disable signal. When the comment reads as a maintainer choosing to investigate rather than mute, skip the test-disable.
 - Issue carries a label semantically equivalent to "do not mute" (verify the label exists in `dotnet/runtime` before relying on it; do not invent labels).
 - Most recent area-owner comment within the last 14 days opposes disabling on procedural grounds.
 
