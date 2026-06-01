@@ -4,6 +4,7 @@
 using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography.X509Certificates;
+using System.Collections.Generic;
 using System.Net.Sockets;
 
 namespace System.Net.Security
@@ -77,6 +78,9 @@ namespace System.Net.Security
             throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
 
         public void SetClientCertificateContext(SslStreamCertificateContext context) =>
+            throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
+
+        public IReadOnlyList<string>? GetAcceptableIssuers() =>
             throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
 
         public X509Certificate2? LocalCertificate =>

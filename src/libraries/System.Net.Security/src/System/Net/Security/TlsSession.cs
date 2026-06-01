@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Sockets;
@@ -401,6 +402,28 @@ namespace System.Net.Security
             _context.CredentialsHandle?.Dispose();
             _context.CredentialsHandle = null;
             _resumeAfterCredentials = true;
+        }
+
+        /// <summary>
+        /// Client-side only. Returns the distinguished names of the certificate authorities
+        /// the server listed in its TLS 1.2 <c>CertificateRequest</c> or TLS 1.3
+        /// <c>certificate_authorities</c> extension. Intended to be called while the session
+        /// is suspended on <see cref="TlsOperationStatus.WantCredentials"/> so the caller can
+        /// pick a client certificate that chains to one of the listed CAs. Returns
+        /// <see langword="null"/> when no security context exists yet, when the peer sent no
+        /// hints, or on a server-side session.
+        /// </summary>
+        public IReadOnlyList<string>? GetAcceptableIssuers()
+        {
+            ThrowIfDisposed();
+
+            if (_context.IsServer || _securityContext is null)
+            {
+                return null;
+            }
+
+            string[] issuers = CertificateValidationPal.GetRequestCertificateAuthorities(_securityContext);
+            return issuers.Length == 0 ? null : issuers;
         }
 
         private void ThrowIfPendingExternalValidation()

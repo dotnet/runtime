@@ -39,6 +39,12 @@ namespace System.Net.Security
 
         internal SslAuthenticationOptions Options => _options;
 
+        // Internal accessor for the obsolete EncryptionPolicy carried in options. Not exposed
+        // publicly: a brand-new type should not re-publish a SYSLIB0040-obsolete concept. The
+        // setting is honored at handshake time via the options bag; internal consumers that
+        // need to introspect it (e.g. SslStream when re-platformed on TlsSession) read it here.
+        internal EncryptionPolicy EncryptionPolicy => _options.EncryptionPolicy;
+
         // True when sessions should reuse the context's options bag directly (wedge mode).
         // False when each session must take a private clone before mutating any field.
         internal bool ShareOptions => _shareOptions;

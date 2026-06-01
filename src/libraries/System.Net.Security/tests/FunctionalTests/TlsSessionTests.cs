@@ -302,6 +302,12 @@ namespace System.Net.Security.Tests
 
                                 case TlsOperationStatus.WantCredentials:
                                     wantCredentialsCount++;
+                                    // GetAcceptableIssuers should not throw while suspended on WantCredentials.
+                                    // The server in this test does not configure SslCertificateTrust, so the
+                                    // returned list is platform-dependent: OpenSSL omits the CA hints entirely
+                                    // (null), SChannel may surface an empty hint set (null per our contract).
+                                    IReadOnlyList<string>? issuers = session.GetAcceptableIssuers();
+                                    Assert.True(issuers is null || issuers.Count > 0);
                                     session.SetClientCertificateContext(
                                         SslStreamCertificateContext.Create(clientCert, additionalCertificates: null));
                                     continue;

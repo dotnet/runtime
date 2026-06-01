@@ -733,6 +733,7 @@ namespace System.Net.Security
         public void SetRemoteCertificateValidationResult(System.Net.Security.SslPolicyErrors errors) { }
         public void SetServerOptions(System.Net.Security.SslServerAuthenticationOptions options) { }
         public void SetClientCertificateContext(System.Net.Security.SslStreamCertificateContext context) { }
+        public System.Collections.Generic.IReadOnlyList<string>? GetAcceptableIssuers() { throw null; }
         public System.Security.Cryptography.X509Certificates.X509Certificate2? LocalCertificate { get { throw null; } }
         public System.Security.Authentication.ExtendedProtection.ChannelBinding? GetChannelBinding(System.Security.Authentication.ExtendedProtection.ChannelBindingKind kind) { throw null; }
         public System.Net.Security.TlsOperationStatus RequestClientCertificate(System.Span<byte> ciphertext, out int bytesWritten) { throw null; }
