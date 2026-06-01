@@ -83,6 +83,8 @@ The .NET Foundation licenses this file to you under the MIT license.
     <NativeObject>$(NativeIntermediateOutputPath)$(TargetName)$(NativeObjectExt)</NativeObject>
     <NativeBinary>$(NativeOutputPath)$(NativeBinaryPrefix)$(TargetName)$(NativeBinaryExt)</NativeBinary>
     <NativeImportLibrary Condition="'$(NativeImportLibrary)' == '' and '$(_targetOS)' == 'win' and '$(NativeLib)' == 'Shared'">$(NativeOutputPath)$(NativeBinaryPrefix)$(TargetName)$(LibFileExt)</NativeImportLibrary>
+    <_LinkNativeOutputs>$(NativeBinary)</_LinkNativeOutputs>
+    <_LinkNativeOutputs Condition="'$(_targetOS)' == 'win' and '$(NativeLib)' == 'Shared' and '$(NativeImportLibrary)' != ''">$(NativeBinary);$(NativeImportLibrary)</_LinkNativeOutputs>
     <NativeExecutableExt Condition="'$(NativeExecutableExt)' == '' and '$(_targetOS)' == 'win'">.exe</NativeExecutableExt>
     <NativeExecutableExt Condition="'$(NativeExecutableExt)' == ''"></NativeExecutableExt>
     <IlcExportUnmanagedEntrypoints Condition="'$(IlcExportUnmanagedEntrypoints)' == '' and '$(NativeLib)' == 'Shared'">true</IlcExportUnmanagedEntrypoints>
@@ -375,11 +377,6 @@ The .NET Foundation licenses this file to you under the MIT license.
       Inputs="$(NativeObject);@(NativeLibrary)"
       Outputs="$(_LinkNativeOutputs)"
       DependsOnTargets="$(LinkNativeDependsOn)">
-
-    <PropertyGroup>
-      <_LinkNativeOutputs>$(NativeBinary)</_LinkNativeOutputs>
-      <_LinkNativeOutputs Condition="'$(_targetOS)' == 'win' and '$(NativeLib)' == 'Shared' and '$(NativeImportLibrary)' != ''">$(NativeBinary);$(NativeImportLibrary)</_LinkNativeOutputs>
-    </PropertyGroup>
 
     <ItemGroup>
       <CustomLinkerArg Include="&quot;$(NativeObject)&quot;" />
