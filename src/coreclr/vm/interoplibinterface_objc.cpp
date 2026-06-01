@@ -67,7 +67,7 @@ namespace
         {
             THROWS;
             GC_TRIGGERS;
-            MODE_PREEMPTIVE;
+            MODE_COOPERATIVE;
             PRECONDITION(CheckPointer(memInSizeT));
         }
         CONTRACTL_END;
@@ -76,23 +76,15 @@ namespace
         if (!g_ReferenceTrackerInitialized)
             COMPlusThrow(kInvalidOperationException, W("InvalidOperation_ObjectiveCMarshalNotInitialized"));
 
-        void* taggedMemoryLocal;
+        // The object's type must be marked appropriately and with a finalizer.
+        if (!obj.Get()->GetMethodTable()->IsTrackedReferenceWithFinalizer())
+            COMPlusThrow(kInvalidOperationException, W("InvalidOperation_ObjectiveCTypeNoFinalizer"));
 
-        // Switch to Cooperative mode since object references
-        // are being manipulated.
-        {
-            GCX_COOP();
-
-            // The object's type must be marked appropriately and with a finalizer.
-            if (!obj.Get()->GetMethodTable()->IsTrackedReferenceWithFinalizer())
-                COMPlusThrow(kInvalidOperationException, W("InvalidOperation_ObjectiveCTypeNoFinalizer"));
-
-            // Initialize the syncblock for this instance.
-            SyncBlock* syncBlock = obj.Get()->GetSyncBlock();
-            InteropSyncBlockInfo* interopInfo = syncBlock->GetInteropInfo();
-            taggedMemoryLocal = interopInfo->EnsureTaggedMemoryAllocated(memInSizeT);
-            _ASSERTE(taggedMemoryLocal != NULL);
-        }
+        // Initialize the syncblock for this instance.
+        SyncBlock* syncBlock = obj.Get()->GetSyncBlock();
+        InteropSyncBlockInfo* interopInfo = syncBlock->GetInteropInfo();
+        void* taggedMemoryLocal = interopInfo->EnsureTaggedMemoryAllocated(memInSizeT);
+        _ASSERTE(taggedMemoryLocal != NULL);
 
         return taggedMemoryLocal;
     }
@@ -113,12 +105,11 @@ extern "C" void* QCALLTYPE ObjCMarshal_CreateReferenceTrackingHandle(
 
     BEGIN_QCALL;
 
+    // Switch to Cooperative mode since object references
+    // are being manipulated.
+    GCX_COOP();
     taggedMemoryLocal = TaggedMemoryForObjectHelper(obj, &memInSizeTLocal);
-
-    {
-        GCX_COOP();
-        instHandle = GetAppDomain()->CreateTypedHandle(obj.Get(), HNDTYPE_REFCOUNTED);
-    }
+    instHandle = GetAppDomain()->CreateTypedHandle(obj.Get(), HNDTYPE_REFCOUNTED);
 
     END_QCALL;
 
@@ -141,6 +132,9 @@ extern "C" void QCALLTYPE ObjCMarshal_GetOrCreateReferenceTrackingMemory(
 
     BEGIN_QCALL;
 
+    // Switch to Cooperative mode since object references
+    // are being manipulated.
+    GCX_COOP();
     taggedMemoryLocal = TaggedMemoryForObjectHelper(obj, &memInSizeTLocal);
 
     END_QCALL;
