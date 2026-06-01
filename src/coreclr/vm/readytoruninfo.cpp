@@ -1397,6 +1397,9 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     _ASSERTE(id < m_nRuntimeFunctions);
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
     pEntryPoint = dac_cast<TADDR>(GetImage()->GetBase()) + RUNTIME_FUNCTION__BeginAddress(&m_pRuntimeFunctions[id]);
+#ifdef TARGET_ARM
+    pEntryPoint |= THUMB_CODE;
+#endif // TARGET_ARM
     m_pCompositeInfo->SetMethodDescForEntryPointInNativeImage(pEntryPoint, pMD);
 #else
     // When we have portable entrypoints enabled, the R2R image contains actual entrypoints.
