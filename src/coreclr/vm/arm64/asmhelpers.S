@@ -167,9 +167,7 @@ NESTED_END OnHijackTripThread, _TEXT
     LEAF_END PacStripPtr, _TEXT
 
 // void* PacSignPtr(void *, void *);
-// This function signs the input pointer using x1 as salt.
-// To avoid failing on non-PAC enabled machines, we use pacia1716 which signs lr explicitly.
-// Thus we need to move input in lr, sign it and then copy it back to the result register.
+// This function signs the input pointer using x1 as salt. It is a no-op on non-PAC enabled machines.
 .arch_extension pauth
     LEAF_ENTRY PacSignPtr, _TEXT
         mov x17, x0
@@ -180,9 +178,7 @@ NESTED_END OnHijackTripThread, _TEXT
     LEAF_END PacSignPtr, _TEXT
 
 // void* PacAuthPtr(void *, void *);
-// This function authenticates the input signed-pointer using x1 as salt.
-// To avoid failing on non-PAC enabled machines, we use pacia1716 which authenticates lr explicitly.
-// Thus we need to move input in lr, authenticate it and then copy it back to the result register.
+// This function authenticates the input signed-pointer using x1 as salt. It is a no-op on non-PAC enabled machines.
 .arch_extension pauth
     LEAF_ENTRY PacAuthPtr, _TEXT
         mov x17, x0
