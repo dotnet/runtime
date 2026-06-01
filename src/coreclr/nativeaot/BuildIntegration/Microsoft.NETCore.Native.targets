@@ -210,6 +210,7 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <Error Condition="'@(_AggregateExecutableReferencePath)' != '' and '$(OutputType)' != 'Library'" Text="IncludeInAggregateExecutable requires OutputType=Library." />
     <Error Condition="'@(_AggregateExecutableReferencePath)' != '' and '$(NativeLib)' != 'Shared'" Text="IncludeInAggregateExecutable requires NativeLib=Shared." />
+    <Error Condition="'@(_AggregateExecutableReferencePath)' != '' and '$(EnablePreviewFeatures)' != 'true'" Text="IncludeInAggregateExecutable requires EnablePreviewFeatures=true." />
   </Target>
 
   <!--

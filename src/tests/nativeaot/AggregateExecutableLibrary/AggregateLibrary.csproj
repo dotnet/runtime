@@ -15,6 +15,7 @@
     <CLRTestRunFile Condition="'$(TargetsWindows)' == 'true'">native/ValidatorExe.exe</CLRTestRunFile>
     <CLRTestRunFile Condition="'$(TargetsWindows)' != 'true'">./native/ValidatorExe</CLRTestRunFile>
     <SkipInferOutputType>true</SkipInferOutputType>
+    <EnablePreviewFeatures>true</EnablePreviewFeatures>
     <!-- warning CS2008: No source files specified -->
     <NoWarn>$(NoWarn);CS2008</NoWarn>
   </PropertyGroup>
