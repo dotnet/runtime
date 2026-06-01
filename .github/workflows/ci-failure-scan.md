@@ -264,6 +264,7 @@ Read the candidate KBE / tracker body + the latest 5 comments (not just the most
 - Body or recent comment from any `MEMBER`/`OWNER` mentions one of (case-insensitive): `please don't disable`, `do not mute`, `do not disable`, `keep failing`, `investigation in progress`, `fix-forward`, `fix forward`, `should be supported`, `will investigate`, `wait for #`, `landing in #`.
 - Issue carries a label semantically equivalent to "do not mute" (verify the label exists in `dotnet/runtime` before relying on it; do not invent labels).
 - Most recent area-owner comment within the last 14 days opposes disabling on procedural grounds.
+- A prior `[ci-scan]` test-disable PR for the same test (or same KBE `#<n>`) was **closed without merge** by a `MEMBER`/`OWNER` in the last 30 days. Search `is:pr is:closed -is:merged "<test-name>" "[ci-scan]"` and `is:pr is:closed -is:merged "#<n>" "[ci-scan]"`; for each hit, fetch the PR and check (a) the `closed` event actor's association and (b) any `MEMBER`/`OWNER` comment for the keywords above. A maintainer close of a prior test-disable PR is itself a do-not-disable signal; re-filing requires fresh evidence such as a new maintainer comment on the KBE greenlighting the disable, or a clearly different failure signature. Record `-> skipped: do-not-disable, prior PR #<n> closed by @<maintainer>`.
 
 When in doubt -> skip the test-disable and let the next run revisit.
 
