@@ -3209,11 +3209,19 @@ NoSpecialCase:
         FALLTHROUGH;
 
     case MethodDescSlot:
+    case DevirtualizedMethodDescSlot:
     case MethodEntrySlot:
     case DispatchStubAddrSlot:
         {
             // Encode containing type
-            if (pResolvedToken->pTypeSpec != NULL)
+           if (entryKind == DevirtualizedMethodDescSlot)
+            {
+                // For shared GVM devirtualization use the devirtualized method owner type from pTemplateMD.
+                _ASSERTE(pTemplateMD != NULL);
+                sigBuilder.AppendElementType(ELEMENT_TYPE_INTERNAL);
+                sigBuilder.AppendPointer(pTemplateMD->GetMethodTable());
+            }
+            else if (pResolvedToken->pTypeSpec != NULL)
             {
                 SigPointer sigptr(pResolvedToken->pTypeSpec, pResolvedToken->cbTypeSpec);
                 sigptr.ConvertToInternalExactlyOne(pModule, NULL, &sigBuilder);
@@ -8888,13 +8896,26 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
 
         if (TypeHandle::IsCanonicalSubtypeInstantiation(pInstantiatedMD->GetMethodInstantiation()))
         {
-            // TODO: Support for runtime lookup
-            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
-            return false;
+            if (info->pResolvedTokenVirtualMethod == nullptr)
+            {
+                info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                return false;
+            }
+
+            ComputeRuntimeLookupForSharedGenericToken(
+                DevirtualizedMethodDescSlot,
+                info->pResolvedTokenVirtualMethod,
+                nullptr,
+                pInstantiatedMD->IsUnboxingStub() ? pInstantiatedMD->GetWrappedMethodDesc() : pInstantiatedMD,
+                m_pMethodBeingCompiled,
+                &info->instParamLookup);
         }
 
-        info->instParamLookup.constLookup.handle = (CORINFO_GENERIC_HANDLE) pInstantiatedMD;
-        info->instParamLookup.constLookup.accessType = IAT_VALUE;
+        if (!info->instParamLookup.lookupKind.needsRuntimeLookup)
+        {
+            info->instParamLookup.constLookup.handle = (CORINFO_GENERIC_HANDLE)pInstantiatedMD;
+            info->instParamLookup.constLookup.accessType = IAT_VALUE;
+        }
     }
     else if (pInstArgMD->RequiresInstMethodTableArg())
     {

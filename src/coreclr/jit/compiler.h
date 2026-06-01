@@ -8103,7 +8103,8 @@ public:
                                          bool                    isInterface,
                                          CORINFO_METHOD_HANDLE   baseMethod,
                                          CORINFO_CLASS_HANDLE    baseClass,
-                                         CORINFO_CONTEXT_HANDLE* pContextHandle);
+                                         CORINFO_CONTEXT_HANDLE* pContextHandle,
+                                         CORINFO_RESOLVED_TOKEN* pResolvedToken);
 
     bool isCompatibleMethodGDV(GenTreeCall* call, CORINFO_METHOD_HANDLE gdvTarget);
 
