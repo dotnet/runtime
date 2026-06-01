@@ -211,17 +211,17 @@ jobs:
       #runProfile: 'v8'
       #onlySanityCheck: true
 
-- ${{ if and(ne(parameters.isRollingBuild, true), ne(parameters.excludeOptional, true)) }}:
-  # Disabled: https://github.com/dotnet/runtime/issues/128772
-  # - template: /eng/pipelines/common/templates/wasm-library-tests.yml
-  #   parameters:
-  #     platforms:
-  #       - wasi_wasm
-  #       - wasi_wasm_win
-  #     extraBuildArgs: /p:EnableAggressiveTrimming=true /p:RunWasmSamples=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-  #     # always run for wasm only pipelines
-  #     alwaysRun: ${{ parameters.isWasmOnlyBuild }}
-  #     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-  #     isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
-  #     scenarios:
-  #       - normal
+# Disabled: https://github.com/dotnet/runtime/issues/128772
+# - ${{ if and(ne(parameters.isRollingBuild, true), ne(parameters.excludeOptional, true)) }}:
+#   - template: /eng/pipelines/common/templates/wasm-library-tests.yml
+#     parameters:
+#       platforms:
+#         - wasi_wasm
+#         - wasi_wasm_win
+#       extraBuildArgs: /p:EnableAggressiveTrimming=true /p:RunWasmSamples=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+#       # always run for wasm only pipelines
+#       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+#       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+#       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+#       scenarios:
+#         - normal
