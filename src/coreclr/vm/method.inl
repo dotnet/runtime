@@ -178,7 +178,34 @@ inline bool MethodDesc::IsDiagnosticsHidden()
     //   tolerate if the runtime-implemented frame is missing because they can still see the managed target method.
 
     WRAPPER_NO_CONTRACT;
-    return IsILStub() || IsAsyncThunkMethod() || IsWrapperStub();
+    if (IsILStub())
+    {
+        return true;
+    }
+
+    if (IsAsyncThunkMethod())
+    {
+        if (IsReturnDroppingThunk())
+        {
+            return true;
+        }
+
+        if (!IsAsyncVariantMethod())
+        {
+            // Task-wrapping thunk for user async method
+            return true;
+        }
+
+        // This is an async version of a user sync method. These have user's
+        // IL, so they should not be hidden.
+    }
+
+    if (IsWrapperStub())
+    {
+        return true;
+    }
+
+    return false;
 }
 
 inline BOOL MethodDesc::IsQCall()
