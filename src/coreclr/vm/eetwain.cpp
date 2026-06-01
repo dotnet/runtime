@@ -812,9 +812,7 @@ size_t EECodeManager::GetCallerSp( PREGDISPLAY  pRD )
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
-    // Don't add usage of this field.  This is only temporary.
-    // See ExInfo::InitializeCrawlFrame() for more information.
-    if (!pRD->IsCallerSPValid)
+    if (!pRD->IsCallerContextValid)
     {
         ExecutionManager::GetDefaultCodeManager()->EnsureCallerContextIsValid(pRD, NULL);
     }
@@ -882,7 +880,6 @@ void EECodeManager::LightUnwindStackFrame(PREGDISPLAY pRD, EECodeInfo* pCodeInfo
     {
         SyncRegDisplayToCurrentContext(pRD);
         pRD->IsCallerContextValid = FALSE;
-        pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
     }
 #else
     PORTABILITY_ASSERT("EECodeManager::LightUnwindStackFrame is not implemented on this platform.");
@@ -2149,7 +2146,6 @@ bool InterpreterCodeManager::UnwindStackFrame(PREGDISPLAY     pRD,
 
     SyncRegDisplayToCurrentContext(pRD);
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid = FALSE;
 
     return true;
 }
