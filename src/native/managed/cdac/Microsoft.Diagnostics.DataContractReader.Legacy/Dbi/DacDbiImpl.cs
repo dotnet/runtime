@@ -1196,7 +1196,60 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetNativeCodeSequencePointsAndVarInfo(vmMethodDesc, startAddress, fCodeAvailable, pNativeVarData, pSequencePoints) : HResults.E_NOTIMPL;
 
     public int GetManagedStoppedContext(ulong vmThread, ulong* pRetVal)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetManagedStoppedContext(vmThread, pRetVal) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        *pRetVal = 0;
+        try
+        {
+            TargetPointer threadPointer = new TargetPointer(vmThread);
+            Target.TypeInfo threadType = _target.GetTypeInfo(DataType.Thread);
+            uint hijacked = _target.ReadField<uint>(threadPointer, threadType, "InteropDebuggingHijacked");
+
+            if (hijacked == 0)
+            {
+                TargetPointer filterContext = _target.ReadPointerField(threadPointer, threadType, "DebuggerFilterContext");
+                if (filterContext != TargetPointer.Null)
+                {
+                    *pRetVal = filterContext.Value;
+                }
+                else
+                {
+                    ThreadData threadData = _target.Contracts.Thread.GetThreadData(threadPointer);
+                    TargetPointer topFrame = threadData.Frame;
+                    ulong frameTop = _target.PointerSize == 8 ? ulong.MaxValue : uint.MaxValue;
+                    if (topFrame.Value != frameTop)
+                    {
+                        TargetPointer frameIdentifier = _target.ReadPointer(topFrame);
+                        _target.TryReadGlobalPointer("RedirectedThreadFrameIdentifier", out TargetPointer? redirectedId);
+                        if (redirectedId is not null && frameIdentifier == redirectedId)
+                        {
+                            Target.TypeInfo rfType = _target.GetTypeInfo(DataType.ResumableFrame);
+                            TargetPointer contextPtr = _target.ReadPointerField(topFrame, rfType, "TargetContextPtr");
+                            if (contextPtr != TargetPointer.Null)
+                            {
+                                *pRetVal = contextPtr.Value;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            ulong pRetValLocal;
+            int hrLocal = _legacy.GetManagedStoppedContext(vmThread, &pRetValLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pRetVal == pRetValLocal, $"cDAC: {*pRetVal}, DAC: {pRetValLocal}");
+        }
+#endif
+        return hr;
+    }
 
     public int CreateStackWalk(ulong vmThread, nint pInternalContextBuffer, nuint* ppSFIHandle)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.CreateStackWalk(vmThread, pInternalContextBuffer, ppSFIHandle) : HResults.E_NOTIMPL;

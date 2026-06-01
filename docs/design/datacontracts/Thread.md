@@ -131,6 +131,7 @@ The contract additionally depends on these data descriptors
 | `Thread` | `LinkNext` | Pointer to get next thread |
 | `Thread` | `ExceptionTracker` | Pointer to exception tracking information |
 | `Thread` | `DebuggerFilterContext` | Pointer to the debugger filter context for the thread |
+| `Thread` | `InteropDebuggingHijacked` | Whether the thread has been hijacked for interop debugging |
 | `Thread` | `RuntimeThreadLocals` | Pointer to some thread-local storage |
 | `Thread` | `ThreadLocalDataPtr` | Pointer to thread local data structure |
 | `Thread` | `ThreadHandle` | OS thread handle (optional, Windows only; readers should expect `TargetPointer.Null` on non-Windows targets) |
@@ -421,3 +422,4 @@ byte[] IThread.GetContext(TargetPointer threadPointer, ThreadContextSource conte
 }
 
 ```
+

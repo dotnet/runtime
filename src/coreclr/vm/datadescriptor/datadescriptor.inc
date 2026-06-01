@@ -46,6 +46,7 @@ CDAC_TYPE_FIELD(Thread, T_POINTER, CachedStackLimit, cdac_data<Thread>::CachedSt
 CDAC_TYPE_FIELD(Thread, T_POINTER, ExceptionTracker, cdac_data<Thread>::ExceptionTracker)
 CDAC_TYPE_FIELD(Thread, T_UINT32, DebuggerControlledThreadState, cdac_data<Thread>::DebuggerControlledThreadState)
 CDAC_TYPE_FIELD(Thread, T_POINTER, DebuggerFilterContext, cdac_data<Thread>::DebuggerFilterContext)
+CDAC_TYPE_FIELD(Thread, T_UINT32, InteropDebuggingHijacked, cdac_data<Thread>::InteropDebuggingHijacked)
 #ifdef TARGET_WINDOWS
 CDAC_TYPE_FIELD(Thread, T_POINTER, ThreadHandle, cdac_data<Thread>::ThreadHandle)
 #endif // TARGET_WINDOWS
