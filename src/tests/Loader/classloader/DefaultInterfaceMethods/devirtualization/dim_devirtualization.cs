@@ -4,7 +4,7 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Xunit;
 
-public static class Program
+public class Program
 {
     [Fact]
     public static void TestEntryPoint()
