@@ -134,8 +134,8 @@ namespace System.Diagnostics.Tests
                     ref unused_SecAttrs,
                     bInheritHandles: true,
                     Interop.Kernel32.EXTENDED_STARTUPINFO_PRESENT,
-                    args.EnvironmentVariables,
-                    (char*)null,
+                    (char*)args.EnvironmentVariables,
+                    null,
                     &startupInfoEx,
                     &processInfo
                 );
