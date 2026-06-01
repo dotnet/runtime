@@ -24,6 +24,10 @@ internal static class Entrypoints
     {
         try
         {
+            if (handle == null)
+                return HResults.E_INVALIDARG;
+            *handle = IntPtr.Zero;
+
             // Build the allocVirtual delegate if the caller provided a callback
             ContractDescriptorTarget.AllocVirtualDelegate allocDelegate = (ulong size, out ulong allocatedAddress) =>
             {
@@ -116,9 +120,13 @@ internal static class Entrypoints
     {
         try
         {
+            if (obj == null)
+                return HResults.E_INVALIDARG;
+            *obj = IntPtr.Zero;
+
             Target? target = GCHandle.FromIntPtr(handle).Target as Target;
             if (target == null)
-                return -1;
+                return HResults.E_INVALIDARG;
 
             object? legacyImpl = legacyImplPtr != IntPtr.Zero
                 ? ComInterfaceMarshaller<ISOSDacInterface>.ConvertToManaged((void*)legacyImplPtr)
