@@ -1977,6 +1977,15 @@ private:
 private:
     // put only things here that can be protected with GCPROTECT
     I1ARRAYREF m_array;
+
+    friend struct ::cdac_data<StackTraceArray>;
+};
+
+template<>
+struct cdac_data<StackTraceArray>
+{
+    static constexpr size_t Size = offsetof(StackTraceArray::ArrayHeader, m_size);
+    static constexpr size_t HeaderSize = sizeof(StackTraceArray::ArrayHeader);
 };
 
 #ifdef FEATURE_COLLECTIBLE_TYPES

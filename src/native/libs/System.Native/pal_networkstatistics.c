@@ -379,7 +379,7 @@ int32_t SystemNative_GetActiveTcpConnectionInfos(NativeTcpConnectionInformation*
         free(buffer);
         size_t tmpEstimatedSize;
         if (!multiply_s(estimatedSize, (size_t)2, &tmpEstimatedSize) ||
-            (buffer = (uint8_t*)malloc(estimatedSize * sizeof(uint8_t))) == NULL)
+            (buffer = (uint8_t*)malloc(tmpEstimatedSize * sizeof(uint8_t))) == NULL)
         {
             errno = ENOMEM;
             return -1;
@@ -493,7 +493,7 @@ int32_t SystemNative_GetActiveUdpListeners(IPEndPointInfo* infos, int32_t* infoC
         free(buffer);
         size_t tmpEstimatedSize;
         if (!multiply_s(estimatedSize, (size_t)2, &tmpEstimatedSize) ||
-            (buffer = (uint8_t*)malloc(estimatedSize * sizeof(uint8_t))) == NULL)
+            (buffer = (uint8_t*)malloc(tmpEstimatedSize * sizeof(uint8_t))) == NULL)
         {
             errno = ENOMEM;
             return -1;

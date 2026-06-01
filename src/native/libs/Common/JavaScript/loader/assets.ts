@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { JsModuleExports, JsAsset, AssemblyAsset, WasmAsset, IcuAsset, EmscriptenModuleInternal, WebAssemblyBootResourceType, AssetEntryInternal, PromiseCompletionSource, LoadBootResourceCallback, InstantiateWasmSuccessCallback, SymbolsAsset, AssetBehaviors } from "./types";
+import type { JsModuleExports, JsAsset, AssemblyAsset, WasmAsset, IcuAsset, EmscriptenModuleInternal, WebAssemblyBootResourceType, AssetEntryInternal, PromiseCompletionSource, LoadBootResourceCallback, InstantiateWasmSuccessCallback, SymbolsAsset, AssetBehaviors, VfsAsset } from "./types";
 
 import { dotnetAssert, dotnetLogger, dotnetInternals, dotnetBrowserHostExports, dotnetUpdateInternals, Module, dotnetDiagnosticsExports, dotnetNativeBrowserExports, dotnetApi } from "./cross-module";
 import { ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB, browserVirtualAppBase } from "./per-module";
@@ -31,6 +31,11 @@ export const wasmMemoryPromiseController = createPromiseCompletionSource<WebAsse
 export const nativeModulePromiseController = createPromiseCompletionSource<EmscriptenModuleInternal>(() => {
     dotnetUpdateInternals(dotnetInternals);
 });
+
+function sanitizeUrl(url: string): string {
+    const qIdx = url.indexOf("?");
+    return qIdx >= 0 ? url.substring(0, qIdx) : url;
+}
 
 export async function loadDotnetModule(asset: JsAsset): Promise<JsModuleExports> {
     return loadJSModule(asset);
@@ -532,6 +537,7 @@ async function loadResourceFetch(asset: AssetEntryInternal): Promise<Response> {
         }
     }
 
+    dotnetLogger.debug(`Attempting to download '${sanitizeUrl(asset.resolvedUrl!)}'`);
     return fetchLike(asset.resolvedUrl!, fetchOptions, expectedContentType);
 }
 
@@ -611,7 +617,7 @@ const leaveAfterInstantiation: { [key: string]: number | undefined } = {
 
 // Fetches all data resources into the browser HTTP cache without loading them into memory.
 // JS modules get <link rel="prefetch"> hints instead of fetch() since they use import().
-export async function prefetchAllResources(): Promise<void> {
+export async function prefetchAllResources(extraVfs?: VfsAsset[]): Promise<void> {
     const resources = loaderConfig.resources;
     if (!resources) return;
 
@@ -633,6 +639,7 @@ export async function prefetchAllResources(): Promise<void> {
     if (resources.assembly) resources.assembly.forEach(a => enqueueAsset(a, "assembly"));
     if (resources.coreVfs) resources.coreVfs.forEach(a => enqueueAsset(a, "vfs"));
     if (resources.vfs) resources.vfs.forEach(a => enqueueAsset(a, "vfs"));
+    if (extraVfs) extraVfs.forEach(a => enqueueAsset(a, "vfs"));
     if (resources.icu) resources.icu.forEach(a => enqueueAsset(a, "icu"));
     if (resources.wasmNative) resources.wasmNative.forEach(a => enqueueAsset(a, "dotnetwasm"));
     if (resources.corePdb) resources.corePdb.forEach(a => enqueueAsset(a, "pdb"));

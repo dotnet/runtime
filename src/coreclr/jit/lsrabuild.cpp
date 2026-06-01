@@ -644,11 +644,7 @@ RefPosition* LinearScan::addKillForRegs(regMaskTP mask, LsraLocation currentLoc)
     // codegen. Mark these as modified here, so when we do final frame
     // layout, we'll know about all these registers. This is especially
     // important if mask contains callee-saved registers, which affect the
-    // frame size since we need to save/restore them. In the case where we
-    // have a copyBlk with GC pointers, can need to call the
-    // CORINFO_HELP_ASSIGN_BYREF helper, which kills callee-saved RSI and
-    // RDI, if LSRA doesn't assign RSI/RDI, they wouldn't get marked as
-    // modified until codegen, which is too late.
+    // frame size since we need to save/restore them.
     m_compiler->codeGen->regSet.rsSetRegsModified(mask DEBUGARG(true));
 
     RefPosition* pos = newRefPosition((Interval*)nullptr, currentLoc, RefTypeKill, nullptr, mask.getLow());
@@ -872,45 +868,11 @@ regMaskTP LinearScan::getKillSetForCall(GenTreeCall* call)
 regMaskTP LinearScan::getKillSetForBlockStore(GenTreeBlk* blkNode)
 {
     assert(blkNode->OperIsStoreBlk());
-    regMaskTP killMask = RBM_NONE;
 
-    bool isCopyBlk = varTypeIsStruct(blkNode->Data());
-    switch (blkNode->gtBlkOpKind)
-    {
-        case GenTreeBlk::BlkOpKindCpObjUnroll:
-#ifdef TARGET_XARCH
-        case GenTreeBlk::BlkOpKindCpObjRepInstr:
-#endif // TARGET_XARCH
-            assert(isCopyBlk && blkNode->AsBlk()->GetLayout()->HasGCPtr());
-            killMask = m_compiler->compHelperCallKillSet(CORINFO_HELP_ASSIGN_BYREF);
-            break;
-
-#ifdef TARGET_XARCH
-        case GenTreeBlk::BlkOpKindRepInstr:
-            if (isCopyBlk)
-            {
-                // rep movs kills RCX, RDI and RSI
-                killMask.AddGprRegs(SRBM_RCX | SRBM_RDI | SRBM_RSI DEBUG_ARG(RBM_ALLINT));
-            }
-            else
-            {
-                // rep stos kills RCX and RDI.
-                // (Note that the Data() node, if not constant, will be assigned to
-                // RCX, but it's find that this kills it, as the value is not available
-                // after this node in any case.)
-                killMask.AddGprRegs(SRBM_RDI | SRBM_RCX DEBUG_ARG(RBM_ALLINT));
-            }
-            break;
-#endif
-        case GenTreeBlk::BlkOpKindUnrollMemmove:
-        case GenTreeBlk::BlkOpKindUnroll:
-        case GenTreeBlk::BlkOpKindLoop:
-        case GenTreeBlk::BlkOpKindInvalid:
-            // for these 'gtBlkOpKind' kinds, we leave 'killMask' = RBM_NONE
-            break;
-    }
-
-    return killMask;
+    // After removing BlkOpKindRepInstr, the remaining block-store kinds
+    // (BlkOpKindUnroll, BlkOpKindUnrollMemmove, BlkOpKindLoop, BlkOpKindInvalid)
+    // don't kill any fixed registers; helper calls handle their own kill sets.
+    return RBM_NONE;
 }
 
 #ifdef FEATURE_HW_INTRINSICS
@@ -4375,11 +4337,7 @@ int LinearScan::BuildReturn(GenTree* tree)
                         break;
                     case TYP_DOUBLE:
                         // We ONLY want the valid double register in the RBM_DOUBLERET mask.
-#ifdef TARGET_AMD64
                         useCandidates = (RBM_DOUBLERET & RBM_ALLDOUBLE).GetFloatRegSet();
-#else
-                    useCandidates = (RBM_DOUBLERET & RBM_ALLDOUBLE).GetFloatRegSet();
-#endif // TARGET_AMD64
                         break;
                     case TYP_LONG:
                         useCandidates = RBM_LNGRET.GetIntRegSet();

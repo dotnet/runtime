@@ -2254,7 +2254,7 @@ InteropMethodTableData *LoaderAllocator::LookupComInteropData(MethodTable *pMT)
     CrstHolder holder(&m_InteropDataCrst);
 
     // Lookup
-    InteropMethodTableData *pData = (InteropMethodTableData*)m_interopDataHash.LookupValue((UPTR)pMT, (LPVOID)NULL);
+    InteropMethodTableData *pData = (InteropMethodTableData*)m_interopDataHash.LookupValueByUniqueKey((UPTR)pMT);
 
     // Not there...
     if (pData == (InteropMethodTableData*)INVALIDENTRY)
@@ -2274,7 +2274,7 @@ BOOL LoaderAllocator::InsertComInteropData(MethodTable* pMT, InteropMethodTableD
     CrstHolder holder(&m_InteropDataCrst);
 
     // Check to see that it's not already in there
-    InteropMethodTableData *pDupData = (InteropMethodTableData*)m_interopDataHash.LookupValue((UPTR)pMT, (LPVOID)NULL);
+    InteropMethodTableData *pDupData = (InteropMethodTableData*)m_interopDataHash.LookupValueByUniqueKey((UPTR)pMT);
     if (pDupData != (InteropMethodTableData*)INVALIDENTRY)
         return FALSE;
 
