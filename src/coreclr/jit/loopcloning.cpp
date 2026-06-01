@@ -3089,6 +3089,147 @@ bool Compiler::optLoopCloningEnabled()
 }
 
 //------------------------------------------------------------------------
+// optCloningHeuristic: Decide whether a loop cloning candidate
+//   should actually be cloned, based on a per-call benefit
+//   estimate vs a cost estimate.
+//
+//   The per-call ratio is
+//
+//       (cycles saved per method call) / (duplicated body nodes)
+//
+//   and the loop is cloned only if that ratio is at least the configured
+//   threshold JitCloneLoopsMinPerCallRatio. Higher threshold values are
+//   stricter and reject more candidates (fewer clones); setting the
+//   threshold to 0 disables the gate and the helper returns true without
+//   doing any analysis.
+//
+// Arguments:
+//   loop     - the loop under consideration
+//   context  - the loop cloning context (must contain a non-empty
+//              LcOptInfo list for this loop)
+//
+// Return Value:
+//   true if the loop should be cloned, false if it should be rejected.
+//
+bool Compiler::optCloningHeuristic(FlowGraphNaturalLoop* loop, LoopCloneContext* context)
+{
+    // When the gate is disabled, accept the candidate without any further
+    // work.
+    //
+    const weight_t minPerCallRatio = (weight_t)JitConfig.JitCloneLoopsMinPerCallRatio();
+    if (minPerCallRatio <= 0.0)
+    {
+        return true;
+    }
+
+    JitExpandArrayStack<LcOptInfo*>* optInfos = context->GetLoopOptInfo(loop->GetIndex());
+    assert(optInfos != nullptr);
+    if (optInfos->Size() == 0)
+    {
+        return false;
+    }
+
+    //
+    // Part 1: benefit estimate.
+    //
+    // Sum cycles saved per call across all opt-infos, weighted by the
+    // bbWeight of the check block so PGO hot blocks are valued higher.
+    // Per-block cycle figures are 2.0 for array/span bounds checks and
+    // 3.0 for the GDV-style tests.
+    //
+    BasicBlock* const header         = loop->GetHeader();
+    const weight_t    headerWeight   = header->getBBWeight(this);
+    weight_t          benefitPerCall = 0.0;
+
+    for (unsigned i = 0; i < optInfos->Size(); i++)
+    {
+        LcOptInfo* const info = optInfos->Get(i);
+        weight_t         cyclesSaved;
+        BasicBlock*      checkBlock = nullptr;
+        switch (info->GetOptType())
+        {
+            case LcOptInfo::LcJaggedArray:
+                cyclesSaved = 2.0;
+                checkBlock  = info->AsLcJaggedArrayOptInfo()->arrIndex.useBlock;
+                break;
+            case LcOptInfo::LcSpan:
+                cyclesSaved = 2.0;
+                checkBlock  = info->AsLcSpanOptInfo()->spanIndex.useBlock;
+                break;
+            case LcOptInfo::LcMdArray:
+                cyclesSaved = 3.0;
+                break;
+            case LcOptInfo::LcTypeTest:
+                cyclesSaved = 3.0;
+                checkBlock  = info->AsLcTypeTestOptInfo()->block;
+                break;
+            case LcOptInfo::LcMethodAddrTest:
+                cyclesSaved = 3.0;
+                checkBlock  = info->AsLcMethodAddrTestOptInfo()->block;
+                break;
+            default:
+                cyclesSaved = 0.0;
+                break;
+        }
+        weight_t absWeight = (checkBlock != nullptr) ? checkBlock->getBBWeight(this) : headerWeight;
+        if (absWeight < 0.0)
+        {
+            absWeight = 0.0;
+        }
+        benefitPerCall += cyclesSaved * absWeight;
+    }
+
+    //
+    // Part 2: cost estimate.
+    //
+    // Cost is the number of tree nodes that would be duplicated by cloning.
+    // Bound the walker by min(sizeLimit, ceil(benefit / minPerCallRatio) + 1):
+    //   - sizeLimit (matches the earlier JitCloneLoopsSizeLimit check) is
+    //     defensive; by construction the body is already <= sizeLimit here.
+    //   - The PerCallRatio-derived cap lets the walker short-circuit as
+    //     soon as the body grows large enough that the gate must fail.
+    //
+    const int      sizeLimit = JitConfig.JitCloneLoopsSizeLimit();
+    unsigned       bodyCap   = (sizeLimit >= 0) ? (unsigned)sizeLimit : UINT_MAX;
+    const weight_t bodyMaxW  = benefitPerCall / minPerCallRatio;
+    // +1 so the walker counts up to bodyMax (passes) and stops at bodyMax+1 (fails).
+    unsigned bodyMax = (bodyMaxW >= (weight_t)UINT_MAX) ? UINT_MAX : (unsigned)bodyMaxW;
+    if (bodyMax < UINT_MAX)
+    {
+        bodyMax++;
+    }
+    if (bodyMax < bodyCap)
+    {
+        bodyCap = bodyMax;
+    }
+
+    int  bodyNodes  = 0;
+    auto countNodes = [&bodyNodes](GenTree* tree) -> unsigned {
+        bodyNodes++;
+        return 1;
+    };
+    if (optLoopComplexityExceeds(loop, bodyCap, countNodes))
+    {
+        // Walker exceeded the cap, so the gate must fail.
+        JITDUMP(FMT_LP " rejected by cloning heuristic: body exceeds cap %u\n", loop->GetIndex(), bodyCap);
+        return false;
+    }
+    if (bodyNodes <= 0)
+    {
+        return false;
+    }
+
+    const weight_t perCallRatio = benefitPerCall / (weight_t)bodyNodes;
+    if (perCallRatio < minPerCallRatio)
+    {
+        JITDUMP(FMT_LP " rejected by cloning heuristic: PerCallRatio=%f < threshold=%f\n", loop->GetIndex(),
+                perCallRatio, minPerCallRatio);
+        return false;
+    }
+    return true;
+}
+
+//------------------------------------------------------------------------
 // optCloneLoops: Implements loop cloning optimization.
 //
 // Identify loop cloning opportunities, derive loop cloning conditions,
@@ -3182,6 +3323,13 @@ PhaseStatus Compiler::optCloneLoops()
     {
         if (context.GetLoopOptInfo(loop->GetIndex()) != nullptr)
         {
+            if (!optCloningHeuristic(loop, &context))
+            {
+                Metrics.LoopsRejectedForInsufficientBenefit++;
+                context.CancelLoopOptInfo(loop->GetIndex());
+                continue;
+            }
+
             Metrics.LoopsCloned++;
             context.OptimizeConditions(loop->GetIndex() DEBUGARG(verbose));
             context.OptimizeBlockConditions(loop->GetIndex() DEBUGARG(verbose));
