@@ -1279,6 +1279,7 @@ bool IsDivByZeroAnIntegerOverflow(PCONTEXT pContext)
     BYTE code = SkipPrefixes(&ip, &hasOpSizePrefix);
 
 #ifdef TARGET_AMD64
+    // Details on REX2 and promoted EVEX can be found in Intel Advanced Performance Extensions (APX) Architecture specification 3.1.2.
     // The EVEX prefix (0x62) can encode legacy IDIV/DIV in APX map 4.
     // EVEX format: 0x62 P0 P1 P2 opcode ModRM ...
     //   P0[7:5] = ~R3:~X3:~B3 (inverted register extension bits)
