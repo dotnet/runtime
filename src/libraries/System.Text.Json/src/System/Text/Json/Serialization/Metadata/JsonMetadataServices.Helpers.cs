@@ -15,7 +15,7 @@ namespace System.Text.Json.Serialization.Metadata
         private static JsonTypeInfo<T> CreateCore<T>(JsonConverter converter, JsonSerializerOptions options)
         {
             var typeInfo = new JsonTypeInfo<T>(converter, options);
-            typeInfo.PopulatePolymorphismMetadata();
+            PopulatePolymorphismMetadata(typeInfo, polymorphismOptions: null, typeClassifierFactory: null);
             typeInfo.MapInterfaceTypesToCallbacks();
 
             // Plug in any converter configuration -- should be run last.
@@ -56,7 +56,9 @@ namespace System.Text.Json.Serialization.Metadata
             typeInfo.ConstructorAttributeProviderFactory = objectInfo.ConstructorAttributeProviderFactory;
             typeInfo.SerializeHandler = objectInfo.SerializeHandler;
             typeInfo.NumberHandling = objectInfo.NumberHandling;
-            typeInfo.PopulatePolymorphismMetadata();
+
+            PopulatePolymorphismMetadata(typeInfo, objectInfo.PolymorphismOptions, objectInfo.TypeClassifierFactory);
+
             typeInfo.MapInterfaceTypesToCallbacks();
 
             // Plug in any converter configuration -- should be run last.
@@ -91,7 +93,7 @@ namespace System.Text.Json.Serialization.Metadata
             typeInfo.CreateObjectWithArgs = createObjectWithArgs;
             typeInfo.AddMethodDelegate = addFunc;
             typeInfo.SetCreateObjectIfCompatible(collectionInfo.ObjectCreator);
-            typeInfo.PopulatePolymorphismMetadata();
+            PopulatePolymorphismMetadata(typeInfo, collectionInfo.PolymorphismOptions, collectionInfo.TypeClassifierFactory);
             typeInfo.MapInterfaceTypesToCallbacks();
 
             // Plug in any converter configuration -- should be run last.
@@ -111,6 +113,36 @@ namespace System.Text.Json.Serialization.Metadata
             return objectInfo.SerializeHandler != null
                 ? new JsonMetadataServicesConverter<T>(converter)
                 : converter;
+        }
+
+        private static void PopulatePolymorphismMetadata(
+            JsonTypeInfo typeInfo,
+            JsonPolymorphismOptions? polymorphismOptions,
+            JsonTypeClassifierFactory? typeClassifierFactory)
+        {
+            if (polymorphismOptions is null)
+            {
+                // Older versions of the source generator do not populate polymorphism options,
+                // so attempt to populate it from attributes at runtime.
+                polymorphismOptions = JsonPolymorphismOptions.CreateFromAttributeDeclarations(typeInfo.Type, out _);
+                typeClassifierFactory = null;
+            }
+            else if (polymorphismOptions.IsEmpty)
+            {
+                // An empty options instance indicates no polymorphism metadata was provided at compile time.
+                polymorphismOptions = null;
+                typeClassifierFactory = null;
+            }
+
+            if (polymorphismOptions is not null)
+            {
+                typeInfo.SetPolymorphismOptions(polymorphismOptions);
+                if (typeClassifierFactory is not null || typeInfo.Options.TypeClassifiers.Count > 0)
+                {
+                    typeInfo.TypeClassifierFactory = typeClassifierFactory;
+                    typeInfo.TypeClassifierResolutionPending = true;
+                }
+            }
         }
 
         private static void PopulateParameterInfoValues(JsonTypeInfo typeInfo, Func<JsonParameterInfoValues[]?>? paramFactory)

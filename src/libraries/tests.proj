@@ -669,7 +669,6 @@
     <!-- Timeouts -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Collections.Concurrent\tests\System.Collections.Concurrent.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.HttpListener\tests\System.Net.HttpListener.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.Tests\System.Text.Json.Tests.csproj" />
 
     <!-- Not supported on Apple mobile -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ComponentModel.Composition\tests\System.ComponentModel.Composition.Tests.csproj" />
@@ -836,7 +835,7 @@
     <ProjectReference
       Include="$(RepoRoot)src\tests\Common\XUnitLogChecker\XUnitLogChecker.csproj"
       Targets="Publish"
-      AdditionalProperties="%(AdditionalProperties);_IsPublishing=true;Configuration=Release;PublishDir=$(XUnitLogCheckerLibrariesOutDir);ROOTFS_DIR=$(ROOTFS_DIR);RuntimeIdentifier=$(TargetRid)" />
+      AdditionalProperties="%(AdditionalProperties);_IsPublishing=true;Configuration=Release;CoreCLRConfiguration=$(CoreCLRConfiguration);LibrariesConfiguration=$(LibrariesConfiguration);TasksConfiguration=$(TasksConfiguration);ToolsConfiguration=$(ToolsConfiguration);PublishDir=$(XUnitLogCheckerLibrariesOutDir);ROOTFS_DIR=$(ROOTFS_DIR);RuntimeIdentifier=$(TargetRid);UseBootstrap=$(UseBootstrap)" />
   </ItemGroup>
 
   <Target Name="GenerateMergedCoverageReport"

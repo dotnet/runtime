@@ -3055,7 +3055,11 @@ void AppDomain::GetParentAssemblyChain(Assembly *pStartAssembly, SString &chain,
 
         StackSString parentName;
         pParent->GetDisplayName(parentName);
+#ifdef TARGET_UNIX
         chain.Append(W("\n --> "));
+#else
+        chain.Append(W("\r\n --> "));
+#endif
         chain.Append(parentName);
 
         if (pParent->IsSystem())

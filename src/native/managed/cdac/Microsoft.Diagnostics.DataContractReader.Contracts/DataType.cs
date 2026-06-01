@@ -97,6 +97,8 @@ public enum DataType
     InterpMethod,
     InterpMethodContextFrame,
     Array,
+    StackTraceArrayHeader,
+    StackTraceElement,
     SyncBlock,
     SyncTableEntry,
     ObjectHeader,
@@ -181,6 +183,7 @@ public enum DataType
     ComInterfaceEntry,
     InternalComInterfaceDispatch,
     AuxiliarySymbolInfo,
+    VASigCookie,
     CodeRangeMapRangeList,
 
     /* GC Data Types */
