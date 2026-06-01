@@ -2440,6 +2440,46 @@ HRESULT CordbObjectValue::GetMonitorEventWaitList(ICorDebugThreadEnum **ppThread
                                                         ppThreadEnum);
 }
 
+namespace
+{
+    struct ExceptionStackFrameAccumulator
+    {
+        CQuickArrayList<DacExceptionCallStackData> frames;
+        HRESULT                                    hrError;
+    };
+
+    void ExceptionStackFrameCallback(
+        VMPTR_AppDomain vmAppDomain,
+        VMPTR_Assembly vmAssembly,
+        CORDB_ADDRESS ip,
+        mdMethodDef methodDef,
+        BOOL isLastForeignExceptionFrame,
+        CALLBACK_DATA pUserData)
+    {
+        ExceptionStackFrameAccumulator *acc =
+            reinterpret_cast<ExceptionStackFrameAccumulator*>(pUserData);
+
+        if (FAILED(acc->hrError))
+            return;
+
+        DacExceptionCallStackData frame;
+        frame.vmAppDomain = vmAppDomain;
+        frame.vmAssembly = vmAssembly;
+        frame.ip = ip;
+        frame.methodDef = methodDef;
+        frame.isLastForeignExceptionFrame = isLastForeignExceptionFrame;
+
+        HRESULT hr = S_OK;
+        EX_TRY
+        {
+            acc->frames.Push(frame);
+        }
+        EX_CATCH_HRESULT(hr);
+        if (FAILED(hr))
+            acc->hrError = hr;
+    }
+}
+
 HRESULT CordbObjectValue::EnumerateExceptionCallStack(ICorDebugExceptionObjectCallStackEnum** ppCallStackEnum)
 {
     if (!ppCallStackEnum)
@@ -2458,17 +2498,22 @@ HRESULT CordbObjectValue::EnumerateExceptionCallStack(ICorDebugExceptionObjectCa
     VMPTR_Object vmObj;
     IfFailThrow(pDAC->GetObject(objAddr, &vmObj));
 
-    DacDbiArrayList<DacExceptionCallStackData> dacStackFrames;
+    ExceptionStackFrameAccumulator acc;
+    acc.hrError = S_OK;
 
-    IfFailThrow(pDAC->GetStackFramesFromException(vmObj, &dacStackFrames));
-    int stackFramesLength = dacStackFrames.Count();
+    HRESULT hrEnum = pDAC->EnumerateStackFramesFromException(vmObj, &ExceptionStackFrameCallback, &acc);
+    if (SUCCEEDED(hrEnum) && FAILED(acc.hrError))
+        hrEnum = acc.hrError;
+    IfFailThrow(hrEnum);
+
+    int stackFramesLength = (int)acc.frames.Size();
 
     if (stackFramesLength > 0)
     {
         pStackFrames = new CorDebugExceptionObjectStackFrame[stackFramesLength];
         for (int index = 0; index < stackFramesLength; ++index)
         {
-            DacExceptionCallStackData& currentDacFrame = dacStackFrames[index];
+            DacExceptionCallStackData& currentDacFrame = acc.frames[index];
             CorDebugExceptionObjectStackFrame& currentStackFrame = pStackFrames[index];
 
             CordbAppDomain* pAppDomain = GetProcess()->GetAppDomain();

@@ -1,10 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
+using System.Reflection.PortableExecutable;
 using ILCompiler.ReadyToRun.Tests.TestCasesRunner;
 using ILCompiler.Reflection.ReadyToRun;
 using Internal.ReadyToRunConstants;
+using Internal.Runtime;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -54,6 +57,147 @@ public class R2RTestSuites
             Assert.True(R2RAssert.HasCrossModuleInlinedMethod(reader, "TestGetValue", "GetValue", out diag), diag);
             Assert.True(R2RAssert.HasCrossModuleInlinedMethod(reader, "TestGetString", "GetString", out diag), diag);
             Assert.True(R2RAssert.HasCrossModuleInliningInfo(reader, out diag), diag);
+        }
+    }
+
+    [Fact]
+    public void WasmWebcilModule()
+    {
+        var wasmWebcilModule = new CompiledAssembly
+        {
+            AssemblyName = nameof(WasmWebcilModule),
+            SourceResourceNames = ["Webcil/WasmWebcilModule.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(WasmWebcilModule),
+            [
+                new(nameof(WasmWebcilModule), [new CrossgenAssembly(wasmWebcilModule)])
+                {
+                    OutputFileExtension = ".wasm",
+                    AdditionalArgs =
+                    {
+                        "--targetarch",
+                        "wasm",
+                        "--targetos",
+                        "browser",
+                    },
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            var webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
+            Assert.True(webcilReader.IsWasmWrapped);
+            Assert.Equal(WasmMachine.Wasm32, reader.Machine);
+            Assert.True(R2RAssert.GetAllMethods(reader).Exists(method =>
+                method.SignatureString.Contains("AddIntegers", StringComparison.Ordinal)));
+        }
+    }
+
+    [Fact]
+    public void RuntimeFunctionsSectionSizeExcludesSentinel()
+    {
+        var lib = new CompiledAssembly
+        {
+            AssemblyName = nameof(RuntimeFunctionsSectionSizeExcludesSentinel),
+            SourceResourceNames = ["ThumbBit/HotColdSplitting.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(RuntimeFunctionsSectionSizeExcludesSentinel),
+            [
+                new(nameof(RuntimeFunctionsSectionSizeExcludesSentinel), [new CrossgenAssembly(lib)])
+                {
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            Assert.True(reader.ReadyToRunHeader.Sections.TryGetValue(
+                ReadyToRunSectionType.RuntimeFunctions, out ReadyToRunSection section));
+
+            // The header entry records the runtime-functions table size *excluding* the trailing
+            // 0xffffffff sentinel word. Each entry is 12 bytes on x64 and 8 bytes on other targets.
+            int entrySize = reader.Machine == Machine.Amd64 ? 12 : 8;
+            Assert.True(section.Size > 0, "RuntimeFunctions section should not be empty");
+            Assert.True(
+                section.Size % entrySize == 0,
+                $"RuntimeFunctions section size {section.Size} is not a multiple of entry size {entrySize} (machine: {reader.Machine}); remainder {section.Size % entrySize} suggests the trailing sentinel was included.");
+        }
+    }
+
+    [Fact]
+    public void ArmThumbBitRelocationTargets()
+    {
+        var inlineableLib = new CompiledAssembly
+        {
+            AssemblyName = "InlineableLib",
+            SourceResourceNames = ["CrossModuleInlining/Dependencies/InlineableLib.cs"],
+        };
+        var exceptionHandling = new CompiledAssembly
+        {
+            AssemblyName = nameof(ArmThumbBitRelocationTargets),
+            SourceResourceNames = ["CrossModuleInlining/ExceptionHandling.cs"],
+            References = [inlineableLib],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(ArmThumbBitRelocationTargets),
+            [
+                new(nameof(ArmThumbBitRelocationTargets),
+                [
+                    new CrossgenAssembly(exceptionHandling),
+                    new CrossgenAssembly(inlineableLib) { Kind = Crossgen2InputKind.Reference },
+                ])
+                {
+                    Options = [Crossgen2Option.TargetArchArm],
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            string diag;
+            Assert.True(R2RAssert.HasExpectedArmThumbBitTargets(reader, out diag), diag);
+        }
+    }
+
+    [Fact]
+    public void ArmThumbBitHotColdRuntimeFunctions()
+    {
+        var hotColdSplitting = new CompiledAssembly
+        {
+            AssemblyName = nameof(ArmThumbBitHotColdRuntimeFunctions),
+            SourceResourceNames = ["ThumbBit/HotColdSplitting.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(ArmThumbBitHotColdRuntimeFunctions),
+            [
+                new(nameof(ArmThumbBitHotColdRuntimeFunctions), [new CrossgenAssembly(hotColdSplitting)])
+                {
+                    Options =
+                    [
+                        Crossgen2Option.TargetArchArm,
+                        Crossgen2Option.Optimize,
+                        Crossgen2Option.HotColdSplitting,
+                    ],
+                    AdditionalArgs =
+                    [
+                        "--codegenopt",
+                        "JitStressProcedureSplitting=1",
+                    ],
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            string diag;
+            Assert.True(R2RAssert.HasExpectedArmHotColdRuntimeFunctionTargets(reader, out diag), diag);
         }
     }
 
