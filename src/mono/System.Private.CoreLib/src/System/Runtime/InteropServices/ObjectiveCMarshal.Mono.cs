@@ -34,7 +34,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
             out int memInSizeT,
             out IntPtr mem) => throw new NotImplementedException();
 
-        private static void GetOrCreateTaggedMemoryInternal(
+        private static void GetOrCreateReferenceTrackingMemoryInternal(
             ObjectHandleOnStack obj,
             out int memInSizeT,
             out IntPtr mem) => throw new NotImplementedException();
