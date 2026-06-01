@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.IO;
+using System.Net.Sockets;
 using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography.X509Certificates;
@@ -67,6 +68,14 @@ namespace System.Net.Security
         private int _trailerSize;
         private int _maxDataSize = MaxRecordPlaintext;
 
+        // Socket-bound mode (optional). When set, the session performs its own
+        // non-blocking I/O via Handshake/Read/Write. The session takes ownership
+        // of the supplied socket handle and disposes it with the session.
+        private SafeSocketHandle? _socketHandle;
+        private Socket? _socket;
+        private byte[]? _socketInBuf;
+        private int _socketInUsed;
+
         private TlsSession(TlsContext context)
         {
             _context = context;
@@ -75,6 +84,31 @@ namespace System.Net.Security
             _hasServerOptions = context.TemplateHasServerOptions;
         }
 
+
+        /// <summary>
+        /// Creates a socket-bound session that drives its own ciphertext I/O on the
+        /// supplied socket via <see cref="Handshake"/>, <see cref="Read"/>, and
+        /// <see cref="Write"/>. The socket must be configured as non-blocking;
+        /// behavior with a blocking socket is unspecified.
+        /// </summary>
+        /// <remarks>
+        /// The session takes ownership of <paramref name="socket"/> and disposes
+        /// it when the session is disposed.
+        /// </remarks>
+        public static TlsSession Create(TlsContext context, SafeSocketHandle socket)
+        {
+            ArgumentNullException.ThrowIfNull(context);
+            ArgumentNullException.ThrowIfNull(socket);
+
+            TlsSession session = new TlsSession(context);
+            session._socketHandle = socket;
+            session._socket = new Socket(socket);
+            return session;
+        }
+
+        public bool IsSocketBound => _socket is not null;
+
+        public SafeSocketHandle? Socket => _socketHandle;
         public static TlsSession Create(TlsContext context)
         {
             ArgumentNullException.ThrowIfNull(context);
@@ -1269,6 +1303,340 @@ namespace System.Net.Security
             }
         }
 
+        // ── Socket-bound I/O ─────────────────────────────────────────────
+        //
+        // These methods are only valid when the session was created via
+        // Create(TlsContext, SafeSocketHandle). They drive ciphertext on the
+        // bound non-blocking socket and translate WouldBlock into WantRead/
+        // WantWrite back to the caller so a select/epoll/IOCP-like loop can
+        // schedule the next attempt.
+
+        private const int SocketScratchSize = MaxRecordPlaintext + 256;
+
+        private void ThrowIfNotSocketBound()
+        {
+            if (_socket is null)
+            {
+                throw new InvalidOperationException("Session is not socket-bound.");
+            }
+        }
+
+        // Drains any TLS bytes that we previously failed to fully send into the
+        // socket. Returns true if pending output is now empty, false if the
+        // socket would block (WantWrite should be surfaced).
+        private bool TryDrainPendingToSocket(out SocketError lastError)
+        {
+            lastError = SocketError.Success;
+            while (_pendingLength > 0)
+            {
+                int sent = _socket!.Send(
+                    new ReadOnlySpan<byte>(_pending!, _pendingOffset, _pendingLength),
+                    SocketFlags.None,
+                    out SocketError err);
+                lastError = err;
+                if (sent > 0)
+                {
+                    _pendingOffset += sent;
+                    _pendingLength -= sent;
+                    if (_pendingLength == 0)
+                    {
+                        _pendingOffset = 0;
+                        return true;
+                    }
+                    continue;
+                }
+                return false;
+            }
+            return true;
+        }
+
+        public TlsOperationStatus Handshake()
+        {
+            ThrowIfDisposed();
+            ThrowIfNotSocketBound();
+
+            if (_isHandshakeComplete && !_externalValidationPending && !_externalValidationResolved)
+            {
+                return TlsOperationStatus.Complete;
+            }
+
+            _socketInBuf ??= ArrayPool<byte>.Shared.Rent(SocketScratchSize);
+            byte[] scratch = ArrayPool<byte>.Shared.Rent(SocketScratchSize);
+            try
+            {
+                while (true)
+                {
+                    if (_pendingLength > 0)
+                    {
+                        if (!TryDrainPendingToSocket(out SocketError drainErr))
+                        {
+                            if (drainErr == SocketError.WouldBlock)
+                            {
+                                return TlsOperationStatus.WantWrite;
+                            }
+                            throw new SocketException((int)drainErr);
+                        }
+                    }
+
+                    TlsOperationStatus status = ProcessHandshake(
+                        new ReadOnlySpan<byte>(_socketInBuf, 0, _socketInUsed),
+                        scratch,
+                        out int consumed,
+                        out int produced);
+
+                    if (consumed > 0)
+                    {
+                        int remaining = _socketInUsed - consumed;
+                        if (remaining > 0)
+                        {
+                            Buffer.BlockCopy(_socketInBuf, consumed, _socketInBuf, 0, remaining);
+                        }
+                        _socketInUsed = remaining;
+                    }
+
+                    if (produced > 0)
+                    {
+                        int offset = 0;
+                        while (offset < produced)
+                        {
+                            int sent = _socket!.Send(
+                                new ReadOnlySpan<byte>(scratch, offset, produced - offset),
+                                SocketFlags.None,
+                                out SocketError sendErr);
+                            if (sent > 0)
+                            {
+                                offset += sent;
+                                continue;
+                            }
+                            if (sendErr == SocketError.WouldBlock)
+                            {
+                                // Stash the unsent tail so the next call resumes the drain.
+                                AppendPending(new ReadOnlySpan<byte>(scratch, offset, produced - offset));
+                                return TlsOperationStatus.WantWrite;
+                            }
+                            throw new SocketException((int)sendErr);
+                        }
+                    }
+
+                    switch (status)
+                    {
+                        case TlsOperationStatus.Complete:
+                            return TlsOperationStatus.Complete;
+
+                        case TlsOperationStatus.WantRead:
+                            if (_socketInUsed >= _socketInBuf.Length)
+                            {
+                                // Should not happen with conservative scratch sizing, but guard.
+                                Array.Resize(ref _socketInBuf, _socketInBuf.Length * 2);
+                            }
+                            int received = _socket!.Receive(
+                                _socketInBuf.AsSpan(_socketInUsed),
+                                SocketFlags.None,
+                                out SocketError recvErr);
+                            if (received > 0)
+                            {
+                                _socketInUsed += received;
+                                continue;
+                            }
+                            if (recvErr == SocketError.WouldBlock)
+                            {
+                                return TlsOperationStatus.WantRead;
+                            }
+                            if (received == 0)
+                            {
+                                return TlsOperationStatus.Closed;
+                            }
+                            throw new SocketException((int)recvErr);
+
+                        case TlsOperationStatus.WantWrite:
+                            // Output is staged; loop drains it on next iteration.
+                            continue;
+
+                        default:
+                            return status;
+                    }
+                }
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(scratch);
+            }
+        }
+
+        public TlsOperationStatus Read(Span<byte> buffer, out int bytesRead)
+        {
+            ThrowIfDisposed();
+            ThrowIfNotSocketBound();
+            bytesRead = 0;
+
+            if (!_isHandshakeComplete)
+            {
+                throw new InvalidOperationException("Handshake has not yet completed.");
+            }
+
+            _socketInBuf ??= ArrayPool<byte>.Shared.Rent(SocketScratchSize);
+
+            while (true)
+            {
+                if (_socketInUsed > 0)
+                {
+                    TlsOperationStatus status = Decrypt(
+                        new ReadOnlySpan<byte>(_socketInBuf, 0, _socketInUsed),
+                        buffer,
+                        out int consumed,
+                        out int produced);
+
+                    if (consumed > 0)
+                    {
+                        int remaining = _socketInUsed - consumed;
+                        if (remaining > 0)
+                        {
+                            Buffer.BlockCopy(_socketInBuf, consumed, _socketInBuf, 0, remaining);
+                        }
+                        _socketInUsed = remaining;
+                    }
+
+                    bytesRead = produced;
+
+                    if (status == TlsOperationStatus.Complete && produced > 0)
+                    {
+                        return TlsOperationStatus.Complete;
+                    }
+                    if (status == TlsOperationStatus.Closed)
+                    {
+                        return TlsOperationStatus.Closed;
+                    }
+                    if (status == TlsOperationStatus.Complete && produced == 0)
+                    {
+                        // Post-handshake message consumed; loop to try more.
+                        continue;
+                    }
+                    if (status != TlsOperationStatus.WantRead)
+                    {
+                        return status;
+                    }
+                    // WantRead: fall through to socket recv.
+                }
+
+                if (_socketInUsed >= _socketInBuf.Length)
+                {
+                    Array.Resize(ref _socketInBuf, _socketInBuf.Length * 2);
+                }
+                int received = _socket!.Receive(
+                    _socketInBuf.AsSpan(_socketInUsed),
+                    SocketFlags.None,
+                    out SocketError recvErr);
+                if (received > 0)
+                {
+                    _socketInUsed += received;
+                    continue;
+                }
+                if (recvErr == SocketError.WouldBlock)
+                {
+                    return TlsOperationStatus.WantRead;
+                }
+                if (received == 0)
+                {
+                    return TlsOperationStatus.Closed;
+                }
+                throw new SocketException((int)recvErr);
+            }
+        }
+
+        public TlsOperationStatus Write(ReadOnlySpan<byte> buffer, out int bytesWritten)
+        {
+            ThrowIfDisposed();
+            ThrowIfNotSocketBound();
+            bytesWritten = 0;
+
+            if (!_isHandshakeComplete)
+            {
+                throw new InvalidOperationException("Handshake has not yet completed.");
+            }
+
+            // Drain any previously stashed ciphertext first.
+            if (_pendingLength > 0)
+            {
+                if (!TryDrainPendingToSocket(out SocketError drainErr))
+                {
+                    if (drainErr == SocketError.WouldBlock)
+                    {
+                        return TlsOperationStatus.WantWrite;
+                    }
+                    throw new SocketException((int)drainErr);
+                }
+            }
+
+            if (buffer.IsEmpty)
+            {
+                return TlsOperationStatus.Complete;
+            }
+
+            byte[] scratch = ArrayPool<byte>.Shared.Rent(SocketScratchSize);
+            try
+            {
+                int totalConsumed = 0;
+                while (totalConsumed < buffer.Length)
+                {
+                    TlsOperationStatus encStatus = Encrypt(
+                        buffer.Slice(totalConsumed),
+                        scratch,
+                        out int consumed,
+                        out int produced);
+
+                    totalConsumed += consumed;
+
+                    if (produced > 0)
+                    {
+                        int offset = 0;
+                        while (offset < produced)
+                        {
+                            int sent = _socket!.Send(
+                                new ReadOnlySpan<byte>(scratch, offset, produced - offset),
+                                SocketFlags.None,
+                                out SocketError sendErr);
+                            if (sent > 0)
+                            {
+                                offset += sent;
+                                continue;
+                            }
+                            if (sendErr == SocketError.WouldBlock)
+                            {
+                                AppendPending(new ReadOnlySpan<byte>(scratch, offset, produced - offset));
+                                bytesWritten = totalConsumed;
+                                return TlsOperationStatus.WantWrite;
+                            }
+                            throw new SocketException((int)sendErr);
+                        }
+                    }
+
+                    if (encStatus == TlsOperationStatus.WantWrite)
+                    {
+                        // Pending output owed; resume next call.
+                        bytesWritten = totalConsumed;
+                        return TlsOperationStatus.WantWrite;
+                    }
+                    if (encStatus != TlsOperationStatus.Complete)
+                    {
+                        bytesWritten = totalConsumed;
+                        return encStatus;
+                    }
+                    if (consumed == 0)
+                    {
+                        // Nothing more to do (shouldn't happen with non-empty buffer).
+                        break;
+                    }
+                }
+
+                bytesWritten = totalConsumed;
+                return TlsOperationStatus.Complete;
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(scratch);
+            }
+        }
+
         public void Dispose()
         {
             if (_disposed)
@@ -1284,6 +1652,11 @@ namespace System.Net.Security
             _securityContext?.Dispose();
             _securityContext = null;
 
+            // Disposes the underlying SafeSocketHandle as well (ownership transferred at Create).
+            _socket?.Dispose();
+            _socket = null;
+            _socketHandle = null;
+
             if (_ownsOptions)
             {
                 _options.Dispose();
@@ -1298,6 +1671,11 @@ namespace System.Net.Security
             {
                 ArrayPool<byte>.Shared.Return(_decryptScratch);
                 _decryptScratch = null;
+            }
+            if (_socketInBuf != null)
+            {
+                ArrayPool<byte>.Shared.Return(_socketInBuf);
+                _socketInBuf = null;
             }
         }
     }

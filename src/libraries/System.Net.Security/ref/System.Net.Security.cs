@@ -718,6 +718,12 @@ namespace System.Net.Security
         public System.Net.Security.TlsCipherSuite NegotiatedCipherSuite { get { throw null; } }
         public System.Net.Security.SslApplicationProtocol NegotiatedApplicationProtocol { get { throw null; } }
         public static System.Net.Security.TlsSession Create(System.Net.Security.TlsContext context) { throw null; }
+        public static System.Net.Security.TlsSession Create(System.Net.Security.TlsContext context, System.Net.Sockets.SafeSocketHandle socket) { throw null; }
+        public bool IsSocketBound { get { throw null; } }
+        public System.Net.Sockets.SafeSocketHandle? Socket { get { throw null; } }
+        public System.Net.Security.TlsOperationStatus Handshake() { throw null; }
+        public System.Net.Security.TlsOperationStatus Read(System.Span<byte> buffer, out int bytesRead) { throw null; }
+        public System.Net.Security.TlsOperationStatus Write(System.ReadOnlySpan<byte> buffer, out int bytesWritten) { throw null; }
         public System.Net.Security.TlsOperationStatus ProcessHandshake(System.ReadOnlySpan<byte> input, System.Span<byte> output, out int bytesConsumed, out int bytesWritten) { throw null; }
         public System.Net.Security.TlsOperationStatus Encrypt(System.ReadOnlySpan<byte> plaintext, System.Span<byte> ciphertext, out int bytesConsumed, out int bytesWritten) { throw null; }
         public System.Net.Security.TlsOperationStatus Decrypt(System.ReadOnlySpan<byte> ciphertext, System.Span<byte> plaintext, out int bytesConsumed, out int bytesWritten) { throw null; }

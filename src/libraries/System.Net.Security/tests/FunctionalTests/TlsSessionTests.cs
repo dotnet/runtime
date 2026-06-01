@@ -1346,5 +1346,127 @@ namespace System.Net.Security.Tests
                 }
             }
         }
+
+        [Fact]
+        public async Task SocketBoundSession_HandshakeAndPingPong_Succeeds()
+        {
+            using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
+            string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
+
+            using Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+            listener.Listen(1);
+            int port = ((IPEndPoint)listener.LocalEndPoint!).Port;
+
+            using Socket clientUnderlying = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            Task connect = clientUnderlying.ConnectAsync(IPAddress.Loopback, port);
+            Socket serverSocket = await listener.AcceptAsync();
+            await connect;
+
+            // Configure as non-blocking; TlsSession contract requires it.
+            serverSocket.Blocking = false;
+
+            // Hand the raw handle to TlsSession; it takes ownership.
+            SafeSocketHandle serverHandle = serverSocket.SafeHandle;
+
+            using TlsContext ctx = TlsContext.Create(new SslServerAuthenticationOptions
+            {
+                ServerCertificate = serverCert,
+                EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                ClientCertificateRequired = false,
+            });
+            using TlsSession session = TlsSession.Create(ctx, serverHandle);
+            Assert.True(session.IsSocketBound);
+            Assert.Same(serverHandle, session.Socket);
+
+            using SslStream clientSsl = new SslStream(new NetworkStream(clientUnderlying, ownsSocket: false), leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate);
+            Task clientHandshake = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+            {
+                TargetHost = serverName,
+                EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
+            });
+
+            Task serverHandshake = Task.Run(async () =>
+            {
+                while (true)
+                {
+                    TlsOperationStatus s = session.Handshake();
+                    if (s == TlsOperationStatus.Complete)
+                    {
+                        return;
+                    }
+                    if (s == TlsOperationStatus.NeedsCertificateValidation)
+                    {
+                        session.AcceptWithDefaultValidation();
+                        continue;
+                    }
+                    if (s == TlsOperationStatus.WantRead || s == TlsOperationStatus.WantWrite)
+                    {
+                        // Simple poll-based scheduler; tests run on loopback so this is cheap.
+                        await Task.Delay(5);
+                        continue;
+                    }
+                    throw new InvalidOperationException($"Unexpected handshake status: {s}");
+                }
+            });
+
+            await Task.WhenAll(clientHandshake, serverHandshake).WaitAsync(TimeSpan.FromSeconds(30));
+            Assert.True(session.IsHandshakeComplete);
+
+            // Client → server ping
+            byte[] ping = "PING"u8.ToArray();
+            Task clientWrite = clientSsl.WriteAsync(ping).AsTask();
+            byte[] received = new byte[ping.Length];
+            int got = 0;
+            while (got < received.Length)
+            {
+                TlsOperationStatus rs = session.Read(received.AsSpan(got), out int n);
+                if (n > 0)
+                {
+                    got += n;
+                    continue;
+                }
+                if (rs == TlsOperationStatus.WantRead)
+                {
+                    await Task.Delay(5);
+                    continue;
+                }
+                Assert.Fail($"Unexpected read status: {rs}");
+            }
+            await clientWrite;
+            Assert.Equal(ping, received);
+
+            // Server → client pong
+            byte[] pong = "PONG"u8.ToArray();
+            int sent = 0;
+            while (sent < pong.Length)
+            {
+                TlsOperationStatus ws = session.Write(pong.AsSpan(sent), out int n);
+                sent += n;
+                if (ws == TlsOperationStatus.Complete)
+                {
+                    continue;
+                }
+                if (ws == TlsOperationStatus.WantWrite)
+                {
+                    await Task.Delay(5);
+                    continue;
+                }
+                Assert.Fail($"Unexpected write status: {ws}");
+            }
+
+            byte[] back = new byte[pong.Length];
+            int r = 0;
+            while (r < back.Length)
+            {
+                int n = await clientSsl.ReadAsync(back.AsMemory(r));
+                Assert.True(n > 0);
+                r += n;
+            }
+            Assert.Equal(pong, back);
+
+            // Cleanup: session owns serverHandle and will close it on dispose.
+        }
     }
 }

@@ -4,6 +4,7 @@
 using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography.X509Certificates;
+using System.Net.Sockets;
 
 namespace System.Net.Security
 {
@@ -30,6 +31,21 @@ namespace System.Net.Security
         public SslApplicationProtocol NegotiatedApplicationProtocol => throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
 
         public static TlsSession Create(TlsContext context) =>
+            throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
+
+        public static TlsSession Create(TlsContext context, SafeSocketHandle socket) =>
+            throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
+
+        public bool IsSocketBound => throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
+        public SafeSocketHandle? Socket => throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
+
+        public TlsOperationStatus Handshake() =>
+            throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
+
+        public TlsOperationStatus Read(Span<byte> buffer, out int bytesRead) =>
+            throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
+
+        public TlsOperationStatus Write(ReadOnlySpan<byte> buffer, out int bytesWritten) =>
             throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
 
         public TlsOperationStatus ProcessHandshake(ReadOnlySpan<byte> input, Span<byte> output, out int bytesConsumed, out int bytesWritten) =>
