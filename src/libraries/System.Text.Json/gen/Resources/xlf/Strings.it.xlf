@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
   <file datatype="xml" source-language="en" target-language="it" original="../Strings.resx">
     <body>
@@ -54,12 +54,12 @@
       </trans-unit>
       <trans-unit id="InaccessibleJsonIncludePropertiesNotSupportedFormat">
         <source>The member '{0}.{1}' has been annotated with the JsonIncludeAttribute but is not visible to the source generator.</source>
-        <target state="new">The member '{0}.{1}' has been annotated with the JsonIncludeAttribute but is not visible to the source generator.</target>
+        <target state="translated">Il membro ' {0}.{1}' è stato annotato con JsonIncludeAttribute ma non è visibile al generatore di origine.</target>
         <note />
       </trans-unit>
       <trans-unit id="InaccessibleJsonIncludePropertiesNotSupportedTitle">
         <source>Inaccessible properties annotated with the JsonIncludeAttribute are not supported in source generation mode.</source>
-        <target state="new">Inaccessible properties annotated with the JsonIncludeAttribute are not supported in source generation mode.</target>
+        <target state="translated">Le proprietà inaccessibili annotate con JsonIncludeAttribute non sono supportate nella modalità di generazione di origine.</target>
         <note />
       </trans-unit>
       <trans-unit id="JsonConverterAttributeInvalidTypeMessageFormat">
@@ -74,12 +74,12 @@
       </trans-unit>
       <trans-unit id="JsonIgnoreConditionAlwaysInvalidOnTypeFormat">
         <source>The type '{0}' has been annotated with 'JsonIgnoreAttribute' using 'JsonIgnoreCondition.Always' which is not valid on type declarations. The attribute will be ignored.</source>
-        <target state="new">The type '{0}' has been annotated with 'JsonIgnoreAttribute' using 'JsonIgnoreCondition.Always' which is not valid on type declarations. The attribute will be ignored.</target>
+        <target state="translated">Il tipo '{0}' è stato annotato con 'JsonIgnoreAttribute' usando 'JsonIgnoreCondition.Always', che non è valido nelle dichiarazioni di tipo. L'attributo verrà ignorato.</target>
         <note />
       </trans-unit>
       <trans-unit id="JsonIgnoreConditionAlwaysInvalidOnTypeTitle">
         <source>'JsonIgnoreCondition.Always' is not valid on type-level 'JsonIgnoreAttribute' annotations.</source>
-        <target state="new">'JsonIgnoreCondition.Always' is not valid on type-level 'JsonIgnoreAttribute' annotations.</target>
+        <target state="translated">'JsonIgnoreCondition.Always' non è valido nelle annotazioni 'JsonIgnoreAttribute' a livello di tipo.</target>
         <note />
       </trans-unit>
       <trans-unit id="JsonSerializableAttributeOnNonContextTypeMessageFormat">
@@ -154,23 +154,24 @@
       </trans-unit>
       <trans-unit id="UnionCaseTypesNotClassifiableMessageFormat">
         <source>Union type '{0}': {1}. Set JsonUnionAttribute.TypeClassifier to provide a custom classifier that can disambiguate.</source>
-        <target state="new">Union type '{0}': {1}. Set JsonUnionAttribute.TypeClassifier to provide a custom classifier that can disambiguate.</target>
+        <target state="translated">Tipo di union '{0}': {1}. Impostare JsonUnionAttribute.TypeClassifier per specificare un classificatore personalizzato in grado di evitare le ambiguità.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnionCaseTypesNotClassifiableTitle">
         <source>Union case types cannot be unambiguously classified by JSON value type.</source>
-        <target state="new">Union case types cannot be unambiguously classified by JSON value type.</target>
+        <target state="translated">Non è possibile classificare i tipi di case union in modo inequivocabile in base al tipo di valore JSON.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnionTypeShapeNotSupportedMessageFormat">
         <source>Union type '{0}' does not match the C# union shape convention: it must declare at least one public single-parameter case constructor and a public instance property named 'Value' with type 'object'.</source>
-        <target state="new">Union type '{0}' does not match the C# union shape convention: it must declare at least one public single-parameter case constructor and a public instance property named 'Value' with type 'object'.</target>
+        <target state="translated">Il tipo di union '{0}' non corrisponde alla convenzione C# per la forma dei tipi di union: deve dichiarare almeno un costruttore di case pubblico con singolo parametro e una proprietà di istanza pubblica denominata 'Value' con tipo 'object'.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnionTypeShapeNotSupportedTitle">
         <source>Union type shape is not a valid C# union.</source>
-        <target state="new">Union type shape is not a valid C# union.</target>
+        <target state="translated">La forma del tipo di union non è un union C# valido.</target>
         <note />
-      </trans-unit>    </body>
+      </trans-unit>
+    </body>
   </file>
 </xliff>

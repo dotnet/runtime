@@ -268,6 +268,84 @@ public unsafe class DacDbiImplTests
         return new DacDbiImpl(target, legacyObj: null);
     }
 
+    private static (DacDbiImpl DacDbi, TestPlaceholderTarget Target) CreateDacDbiWithExceptionMT(
+        MockTarget.Architecture arch,
+        TargetPointer exceptionMT,
+        Mock<IObject> mockObject,
+        Mock<IRuntimeTypeSystem> mockRts)
+    {
+        var builder = new TestPlaceholderTarget.Builder(arch);
+        var allocator = builder.MemoryBuilder.CreateAllocator(0x0030_0000, 0x0030_1000);
+        var globalFragment = allocator.Allocate((ulong)(arch.Is64Bit ? 8 : 4), "ExceptionMethodTable");
+        new TargetTestHelpers(arch).WritePointer(globalFragment.Data, exceptionMT.Value);
+        builder.AddGlobals((Constants.Globals.ExceptionMethodTable, globalFragment.Address));
+        builder.AddMockContract(mockObject);
+        builder.AddMockContract(mockRts);
+        var target = builder.Build();
+        var dacDbi = new DacDbiImpl(target, legacyObj: null);
+        return (dacDbi, target);
+    }
+
+    public static IEnumerable<object[]> IsExceptionObjectData()
+    {
+        foreach (var arch in new MockTarget.StdArch())
+        {
+            // Exact exception type
+            yield return new object[] { arch[0], 0, true };
+            // Derived exception type
+            yield return new object[] { arch[0], 1, true };
+            // Deeply derived exception type
+            yield return new object[] { arch[0], 2, true };
+            // Non-exception type (no parent)
+            yield return new object[] { arch[0], 0, false };
+            // Non-exception type (with parent)
+            yield return new object[] { arch[0], 1, false };
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(IsExceptionObjectData))]
+    public void IsExceptionObject(MockTarget.Architecture arch, int inheritanceDepth, bool isException)
+    {
+        TargetPointer exceptionMT = new(0x1000);
+        TargetPointer objectAddr = new(0x5000);
+
+        var intermediateMTs = new TargetPointer[inheritanceDepth];
+        for (int i = 0; i < inheritanceDepth; i++)
+            intermediateMTs[i] = new TargetPointer((ulong)(0x2000 + i * 0x1000));
+
+        TargetPointer objectMT = inheritanceDepth == 0 && isException
+            ? exceptionMT
+            : intermediateMTs.Length > 0 ? intermediateMTs[0] : new TargetPointer(0x2000);
+
+        var mockObject = new Mock<IObject>();
+        mockObject.Setup(o => o.GetMethodTableAddress(objectAddr)).Returns(objectMT);
+
+        var mockRts = new Mock<IRuntimeTypeSystem>();
+        if (intermediateMTs.Length == 0 && !isException)
+        {
+            mockRts.Setup(r => r.GetTypeHandle(objectMT)).Returns(new TypeHandle(objectMT));
+            mockRts.Setup(r => r.GetParentMethodTable(new TypeHandle(objectMT))).Returns(TargetPointer.Null);
+        }
+        for (int i = 0; i < intermediateMTs.Length; i++)
+        {
+            TargetPointer current = intermediateMTs[i];
+            TargetPointer parent = i + 1 < intermediateMTs.Length
+                ? intermediateMTs[i + 1]
+                : isException ? exceptionMT : TargetPointer.Null;
+
+            mockRts.Setup(r => r.GetTypeHandle(current)).Returns(new TypeHandle(current));
+            mockRts.Setup(r => r.GetParentMethodTable(new TypeHandle(current))).Returns(parent);
+        }
+
+        var (dacDbi, _) = CreateDacDbiWithExceptionMT(arch, exceptionMT, mockObject, mockRts);
+
+        Interop.BOOL result;
+        int hr = dacDbi.IsExceptionObject(objectAddr.Value, &result);
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(isException ? Interop.BOOL.TRUE : Interop.BOOL.FALSE, result);
+    }
+
     [UnmanagedCallersOnly]
     private static unsafe void CollectAssemblyCallback(ulong value, nint pUserData)
     {
@@ -557,4 +635,103 @@ public unsafe class DacDbiImplTests
     }
 
     private delegate void GetStackLimitDataCallback(TargetPointer threadPointer, out TargetPointer stackBase, out TargetPointer stackLimit, out TargetPointer frameAddress);
+
+    private const uint MdtMethodDef = 0x06000000;
+
+    private static DacDbiImpl CreateDacDbiWithMockContracts(
+        MockTarget.Architecture arch,
+        Mock<ILoader> mockLoader,
+        Mock<ICodeVersions> mockCodeVersions,
+        Mock<IReJIT> mockReJIT)
+    {
+        var target = new TestPlaceholderTarget.Builder(arch)
+            .UseReader((_, _) => -1)
+            .AddMockContract(mockLoader)
+            .AddMockContract(mockCodeVersions)
+            .AddMockContract(mockReJIT)
+            .Build();
+        return new DacDbiImpl(target, legacyObj: null);
+    }
+
+    private static Mock<ILoader> SetupMockLoader(TargetPointer modulePtr, uint methodTk, TargetPointer methodDesc)
+    {
+        var mockLoader = new Mock<ILoader>();
+        var moduleHandle = new Contracts.ModuleHandle(modulePtr);
+        var lookupTables = new ModuleLookupTables { MethodDefToDesc = new TargetPointer(0x4000) };
+        mockLoader.Setup(l => l.GetModuleHandleFromModulePtr(modulePtr)).Returns(moduleHandle);
+        mockLoader.Setup(l => l.GetLookupTables(moduleHandle)).Returns(lookupTables);
+        mockLoader.Setup(l => l.GetModuleLookupMapElement(lookupTables.MethodDefToDesc, methodTk, out It.Ref<TargetNUInt>.IsAny))
+            .Returns(methodDesc);
+        return mockLoader;
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void AreOptimizationsDisabled_NullOutput_ReturnsError(MockTarget.Architecture arch)
+    {
+        var dacDbi = CreateDacDbiWithMockContracts(
+            arch, new Mock<ILoader>(), new Mock<ICodeVersions>(), new Mock<IReJIT>());
+        int hr = dacDbi.AreOptimizationsDisabled(0x1000, MdtMethodDef | 1, null);
+        Assert.NotEqual(System.HResults.S_OK, hr);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void AreOptimizationsDisabled_InvalidToken_ReturnsError(MockTarget.Architecture arch)
+    {
+        var dacDbi = CreateDacDbiWithMockContracts(
+            arch, new Mock<ILoader>(), new Mock<ICodeVersions>(), new Mock<IReJIT>());
+        Interop.BOOL result;
+        int hr = dacDbi.AreOptimizationsDisabled(0x1000, 0x01000001, &result);
+        Assert.NotEqual(System.HResults.S_OK, hr);
+    }
+
+    public static IEnumerable<object[]> ArchWithDeoptimized()
+    {
+        foreach (object[] stdArch in new MockTarget.StdArch())
+        {
+            yield return [stdArch[0], true];
+            yield return [stdArch[0], false];
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(ArchWithDeoptimized))]
+    public void AreOptimizationsDisabled_WithMethodDesc(MockTarget.Architecture arch, bool deoptimized)
+    {
+        TargetPointer modulePtr = new(0x1000);
+        uint methodTk = MdtMethodDef | 1;
+        TargetPointer methodDesc = new(0x2000);
+        var ilCodeVersion = ILCodeVersionHandle.CreateExplicit(new TargetPointer(0x3000));
+
+        Mock<ILoader> mockLoader = SetupMockLoader(modulePtr, methodTk, methodDesc);
+
+        var mockCodeVersions = new Mock<ICodeVersions>();
+        mockCodeVersions.Setup(cv => cv.GetActiveILCodeVersion(methodDesc)).Returns(ilCodeVersion);
+
+        var mockReJIT = new Mock<IReJIT>();
+        mockReJIT.Setup(r => r.IsDeoptimized(ilCodeVersion)).Returns(deoptimized);
+
+        var dacDbi = CreateDacDbiWithMockContracts(arch, mockLoader, mockCodeVersions, mockReJIT);
+        Interop.BOOL result;
+        int hr = dacDbi.AreOptimizationsDisabled(modulePtr.Value, methodTk, &result);
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(deoptimized ? Interop.BOOL.TRUE : Interop.BOOL.FALSE, result);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void AreOptimizationsDisabled_NullMethodDesc_ReturnsFalse(MockTarget.Architecture arch)
+    {
+        TargetPointer modulePtr = new(0x1000);
+        uint methodTk = MdtMethodDef | 1;
+
+        Mock<ILoader> mockLoader = SetupMockLoader(modulePtr, methodTk, TargetPointer.Null);
+
+        var dacDbi = CreateDacDbiWithMockContracts(arch, mockLoader, new Mock<ICodeVersions>(), new Mock<IReJIT>());
+        Interop.BOOL result;
+        int hr = dacDbi.AreOptimizationsDisabled(modulePtr.Value, methodTk, &result);
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(Interop.BOOL.FALSE, result);
+    }
 }
