@@ -373,8 +373,13 @@ The .NET Foundation licenses this file to you under the MIT license.
 
   <Target Name="LinkNative"
       Inputs="$(NativeObject);@(NativeLibrary)"
-      Outputs="$(NativeBinary)"
+      Outputs="$(_LinkNativeOutputs)"
       DependsOnTargets="$(LinkNativeDependsOn)">
+
+    <PropertyGroup>
+      <_LinkNativeOutputs>$(NativeBinary)</_LinkNativeOutputs>
+      <_LinkNativeOutputs Condition="'$(_targetOS)' == 'win' and '$(NativeLib)' == 'Shared' and '$(NativeImportLibrary)' != ''">$(NativeBinary);$(NativeImportLibrary)</_LinkNativeOutputs>
+    </PropertyGroup>
 
     <ItemGroup>
       <CustomLinkerArg Include="&quot;$(NativeObject)&quot;" />
