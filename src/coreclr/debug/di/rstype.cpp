@@ -1373,7 +1373,10 @@ HRESULT CordbType::InstantiateFromTypeHandle(CordbAppDomain * pAppDomain,
         TypeParamsList params;
         {
             RSLockHolder lockHolder(pProcess->GetProcessLock());
-            IfFailThrow(pProcess->GetDAC()->GetTypeHandleParams(vmTypeHandle, &params));
+            CallbackAccumulator<DebuggerIPCE_ExpandedTypeData> acc;
+            IfFailThrow(pProcess->GetDAC()->EnumerateTypeHandleParams(vmTypeHandle, &CallbackAccumulator<DebuggerIPCE_ExpandedTypeData>::PushCallback, &acc));
+            IfFailThrow(acc.hrError);
+            params.Init(acc.items.Ptr(), (int)acc.items.Size());
         }
 
         // convert the parameter type information to a list of CordbTypeInstances (one for each parameter)
