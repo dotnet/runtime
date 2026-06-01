@@ -1152,12 +1152,12 @@ namespace System.Net.Security
             }
 
             // Invoke remote-certificate validation callback (mirrors SslStream).
-            // Skip when the peer does not present a certificate AND validation isn't
-            // mandatory (client always validates the server; server only when
-            // ClientCertificateRequired).
-            bool needsValidation = !_suppressInternalCertificateValidation &&
-                (!_context.IsServer || _options.RemoteCertRequired);
-            if (!needsValidation)
+            // Client: always validate the server cert.
+            // Server: always suspend so the caller's RemoteCertificateValidationCallback runs
+            // (it must see optional client certs and the no-cert case alike — only the
+            // RemoteCertificateNotAvailable error is suppressed in VerifyRemoteCertificateCore
+            // when there is no user callback and RemoteCertRequired is false).
+            if (_suppressInternalCertificateValidation)
             {
                 return;
             }

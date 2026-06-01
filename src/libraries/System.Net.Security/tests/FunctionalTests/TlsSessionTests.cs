@@ -213,6 +213,52 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        public async Task ServerSession_OptionalClientCert_NoCertSent_HandshakeCompletesWithoutValidatorCall()
+        {
+            // Server: ClientCertificateRequired = false. In a standard handshake the server
+            // never sends a CertificateRequest so the client cannot send a Certificate; the
+            // peer-cert verify callback never fires. The handshake must complete without
+            // invoking the user validator (no cert is exchanged) and GetRemoteCertificate
+            // must return null. This guards against accidentally suspending for validation
+            // when there is nothing to validate.
+            using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
+            string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
+
+            int validatorCalls = 0;
+
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+            using (clientStream)
+            using (serverStream)
+            using (SslStream clientSsl = new SslStream(clientStream, leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate))
+            {
+                using TlsContext ctx = TlsContext.Create(new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = serverCert,
+                    EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                    ClientCertificateRequired = false,
+                    RemoteCertificateValidationCallback = (s, c, ch, e) =>
+                    {
+                        Interlocked.Increment(ref validatorCalls);
+                        return true;
+                    },
+                });
+                using TlsSession session = TlsSession.Create(ctx);
+
+                Task clientHandshake = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+                {
+                    TargetHost = serverName,
+                    EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                });
+                Task serverHandshake = DriveHandshakeAsync(session, serverStream);
+                await Task.WhenAll(clientHandshake, serverHandshake).WaitAsync(TimeSpan.FromSeconds(30));
+
+                Assert.True(session.IsHandshakeComplete);
+                Assert.Equal(0, validatorCalls);
+                Assert.Null(session.GetRemoteCertificate());
+            }
+        }
+
+        [Fact]
         public async Task ServerSession_ChannelBinding_MatchesSslStreamClient()
         {
             using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
