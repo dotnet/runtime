@@ -4606,21 +4606,26 @@ public static partial class DataContractSerializerTests
         Assert.Throws<System.Runtime.Serialization.SerializationException>(() => { dcs.ReadObject(reader); });
     }
 
-    [Fact]
-    public static void DCS_ReadObject_MalformedPrefix_EmptyLocalName_ThrowsSerializationException()
+    [Theory]
+    [InlineData("<s:")]
+    [InlineData("<s:1")]
+    public static void DCS_ReadObject_MalformedPrefix_InvalidLocalName_ThrowsSerializationException(string malformedElement)
     {
-        // Regression for https://github.com/dotnet/runtime/issues/1409
-        // Uses the original repro payload that triggers an empty local-name via an unfinished prefixed element.
-        string xml = @"<Program.Obj xmlns=""http://schemas.datacontract.org/2004/07/CoreFX.Fuzz""><s:";
-        byte[] bytes = Encoding.UTF8.GetBytes(xml);
-        using (MemoryStream stream = new MemoryStream(bytes))
-        {
-            var serializer = new DataContractSerializer(typeof(CoreFX.Fuzz.Program.Obj));
-            var ex = Assert.Throws<SerializationException>(() => serializer.ReadObject(stream));
-            Assert.NotNull(ex.InnerException);
-            Assert.IsType<ArgumentException>(ex.InnerException);
-            Assert.Equal("name", ((ArgumentException)ex.InnerException).ParamName);
-        }
+        var serializer = new DataContractSerializer(typeof(MalformedPrefixObject));
+
+        SerializationException ex = Assert.Throws<SerializationException>(() => serializer.ReadObject(CreateMalformedPrefixStream(malformedElement)));
+        Assert.IsType<XmlException>(ex.InnerException);
+    }
+
+    private static MemoryStream CreateMalformedPrefixStream(string malformedElement)
+    {
+        string xml = $@"<Program.Obj xmlns=""http://schemas.datacontract.org/2004/07/CoreFX.Fuzz"">{malformedElement}";
+        return new MemoryStream(Encoding.UTF8.GetBytes(xml));
+    }
+
+    [DataContract(Name = "Program.Obj", Namespace = "http://schemas.datacontract.org/2004/07/CoreFX.Fuzz")]
+    private sealed class MalformedPrefixObject
+    {
     }
 
     private static T DeserializeString<T>(string stringToDeserialize, bool shouldReportDeserializationExceptions = true, DataContractSerializerSettings settings = null, Func<DataContractSerializer> serializerFactory = null)
@@ -4678,15 +4683,5 @@ public static partial class DataContractSerializerTests
         var deserializedDesktopObject = DeserializeString<T>(desktopPayload, settings: settings);
         Assert.NotNull(deserializedDesktopObject);
         SerializationTestTypes.ComparisonHelper.CompareRecursively(value, deserializedDesktopObject);
-    }
-}
-
-// Test helper type
-namespace CoreFX.Fuzz
-{
-    public class Program
-    {
-        [DataContract]
-        public class Obj { }
     }
 }
