@@ -26,13 +26,18 @@
 #include <sanitizer/asan_interface.h>
 #endif
 
-#if !defined(_LIBUNWIND_NATIVEAOT)
-
 #if !defined(__USING_SJLJ_EXCEPTIONS__) && !defined(__wasm__)
 #include "AddressSpace.hpp"
 #include "UnwindCursor.hpp"
 
 using namespace libunwind;
+
+// The singleton, cursor initialization, and most __unw_* functions are
+// excluded from NativeAOT. The register accessors (__unw_get/set_reg,
+// __unw_get/set_fpreg, __unw_save_vfp_as_X) are kept unconditional because
+// they are called by _Unwind_VRS_Get/Set/Pop (Unwind-EHABI.cpp) which in
+// turn are called by _Unwind_VRS_Interpret on ARM32 NativeAOT managed frames.
+#if !defined(_LIBUNWIND_NATIVEAOT)
 
 /// internal object to represent this processes address space
 LocalAddressSpace LocalAddressSpace::sThisAddressSpace;
@@ -95,6 +100,8 @@ _LIBUNWIND_HIDDEN int __unw_init_local(unw_cursor_t *cursor,
   return UNW_ESUCCESS;
 }
 _LIBUNWIND_WEAK_ALIAS(__unw_init_local, unw_init_local)
+
+#endif // !defined(_LIBUNWIND_NATIVEAOT)
 
 /// Get value of specified register at cursor position in stack frame.
 _LIBUNWIND_HIDDEN int __unw_get_reg(unw_cursor_t *cursor, unw_regnum_t regNum,
@@ -222,6 +229,8 @@ _LIBUNWIND_HIDDEN int __unw_set_fpreg(unw_cursor_t *cursor, unw_regnum_t regNum,
   return UNW_EBADREG;
 }
 _LIBUNWIND_WEAK_ALIAS(__unw_set_fpreg, unw_set_fpreg)
+
+#if !defined(_LIBUNWIND_NATIVEAOT)
 
 /// Get location of specified register at cursor position in stack frame.
 _LIBUNWIND_HIDDEN int __unw_get_save_loc(unw_cursor_t *cursor, int regNum,
@@ -353,6 +362,8 @@ _LIBUNWIND_EXPORT uintptr_t __unw_get_data_rel_base(unw_cursor_t *cursor) {
 _LIBUNWIND_WEAK_ALIAS(__unw_get_data_rel_base, unw_get_data_rel_base)
 #endif
 
+#endif // !defined(_LIBUNWIND_NATIVEAOT)
+
 #ifdef __arm__
 // Save VFP registers d0-d15 using FSTMIADX instead of FSTMIADD
 _LIBUNWIND_HIDDEN void __unw_save_vfp_as_X(unw_cursor_t *cursor) {
@@ -364,6 +375,7 @@ _LIBUNWIND_HIDDEN void __unw_save_vfp_as_X(unw_cursor_t *cursor) {
 _LIBUNWIND_WEAK_ALIAS(__unw_save_vfp_as_X, unw_save_vfp_as_X)
 #endif
 
+#if !defined(_LIBUNWIND_NATIVEAOT)
 
 #if defined(_LIBUNWIND_SUPPORT_DWARF_UNWIND)
 /// SPI: walks cached DWARF entries
@@ -465,7 +477,11 @@ _LIBUNWIND_HIDDEN const char *__unw_strerror(int error_code) {
 }
 _LIBUNWIND_WEAK_ALIAS(__unw_strerror, unw_strerror)
 
+#endif // !defined(_LIBUNWIND_NATIVEAOT)
+
 #endif // !defined(__USING_SJLJ_EXCEPTIONS__) && !defined(__wasm__)
+
+#if !defined(_LIBUNWIND_NATIVEAOT)
 
 #ifdef __APPLE__
 
