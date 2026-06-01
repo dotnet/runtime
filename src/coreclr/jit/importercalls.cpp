@@ -7007,9 +7007,9 @@ void Compiler::impSetupAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned pref
         // Validate that below code won't override the handling
         assert((prefixFlags & PREFIX_IS_TASK_AWAIT) == 0);
 
-        m_nextAwaitIsTail = false;
         asyncInfo.IsTailAwait =
             inlCall->GetAsyncInfo().IsTailAwait && (m_nextAwaitIsTail || (call->gtReturnType == info.compRetType));
+        m_nextAwaitIsTail = false;
     }
     else
     {
