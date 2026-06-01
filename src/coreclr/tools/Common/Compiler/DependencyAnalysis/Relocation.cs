@@ -3,7 +3,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Formats.Tar;
 using ILCompiler.ObjectWriter;
 
 namespace ILCompiler.DependencyAnalysis
