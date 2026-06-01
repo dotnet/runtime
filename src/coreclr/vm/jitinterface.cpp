@@ -8856,7 +8856,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         pDevirtMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
             pPrimaryMD, pExactMT, pExactMT->IsValueType() && !pPrimaryMD->IsStatic(), pBaseMD->GetMethodInstantiation(), true);
 
-        if (pDevirtMD->IsSharedByGenericMethodInstantiations())
+        if (TypeHandle::IsCanonicalSubtypeInstantiation(pDevirtMD->GetMethodInstantiation()))
         {
             pDevirtMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
                 pPrimaryMD, pExactMT, pExactMT->IsValueType() && !pPrimaryMD->IsStatic(), pBaseMD->GetMethodInstantiation(), false);
