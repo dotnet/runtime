@@ -108,20 +108,21 @@ jobs:
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
 
   # Wasi - run only smoke tests by default
-  - template: /eng/pipelines/common/templates/wasm-library-tests.yml
-    parameters:
-      platforms:
-        - wasi_wasm
-        - wasi_wasm_win
-      nameSuffix: '_Smoke'
-      extraBuildArgs: /p:EnableAggressiveTrimming=true /p:RunWasmSamples=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-      shouldRunSmokeOnly: true
-      # ignore test failures for runtime-extra-platforms, but not when this
-      # is run as part of a wasm specific pipeline like runtime-wasm
-      shouldContinueOnError: ${{ not(parameters.isWasmOnlyBuild) }}
-      alwaysRun: ${{ variables.isRollingBuild }}
-      scenarios:
-        - WasmTestOnWasmtime
+  # Disabled: https://github.com/dotnet/runtime/issues/128772
+  # - template: /eng/pipelines/common/templates/wasm-library-tests.yml
+  #   parameters:
+  #     platforms:
+  #       - wasi_wasm
+  #       - wasi_wasm_win
+  #     nameSuffix: '_Smoke'
+  #     extraBuildArgs: /p:EnableAggressiveTrimming=true /p:RunWasmSamples=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+  #     shouldRunSmokeOnly: true
+  #     # ignore test failures for runtime-extra-platforms, but not when this
+  #     # is run as part of a wasm specific pipeline like runtime-wasm
+  #     shouldContinueOnError: ${{ not(parameters.isWasmOnlyBuild) }}
+  #     alwaysRun: ${{ variables.isRollingBuild }}
+  #     scenarios:
+  #       - WasmTestOnWasmtime
 
   # Hybrid Globalization tests
   - template: /eng/pipelines/common/templates/wasm-library-tests.yml
@@ -186,14 +187,15 @@ jobs:
         - browser_wasm_win
       extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
 
-  - template: /eng/pipelines/common/templates/simple-wasm-build-tests.yml
-    parameters:
-      platforms:
-        - wasi_wasm
-        - wasi_wasm_win
-      extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+  # Disabled: https://github.com/dotnet/runtime/issues/128772
+  # - template: /eng/pipelines/common/templates/simple-wasm-build-tests.yml
+  #   parameters:
+  #     platforms:
+  #       - wasi_wasm
+  #       - wasi_wasm_win
+  #     extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+  #     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+  #     isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
 
   - template: /eng/pipelines/common/templates/wasm-runtime-tests.yml
     parameters:
@@ -209,16 +211,17 @@ jobs:
       #runProfile: 'v8'
       #onlySanityCheck: true
 
-- ${{ if and(ne(parameters.isRollingBuild, true), ne(parameters.excludeOptional, true)) }}:
-  - template: /eng/pipelines/common/templates/wasm-library-tests.yml
-    parameters:
-      platforms:
-        - wasi_wasm
-        - wasi_wasm_win
-      extraBuildArgs: /p:EnableAggressiveTrimming=true /p:RunWasmSamples=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-      # always run for wasm only pipelines
-      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
-      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
-      scenarios:
-        - normal
+# Disabled: https://github.com/dotnet/runtime/issues/128772
+# - ${{ if and(ne(parameters.isRollingBuild, true), ne(parameters.excludeOptional, true)) }}:
+#   - template: /eng/pipelines/common/templates/wasm-library-tests.yml
+#     parameters:
+#       platforms:
+#         - wasi_wasm
+#         - wasi_wasm_win
+#       extraBuildArgs: /p:EnableAggressiveTrimming=true /p:RunWasmSamples=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+#       # always run for wasm only pipelines
+#       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+#       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+#       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+#       scenarios:
+#         - normal
