@@ -744,6 +744,59 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        public async Task ClientSession_ExternalValidation_SetResultWithErrors_FaultsSession()
+        {
+            // Standalone-mode regression: when the caller explicitly rejects via
+            // SetRemoteCertificateValidationResult with non-None errors, subsequent
+            // session operations (Encrypt and Decrypt) must throw AuthenticationException,
+            // regardless of whether the underlying chain itself would have validated.
+            using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
+            string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
+
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+            using (clientStream)
+            using (serverStream)
+            using (SslStream serverSsl = new SslStream(serverStream, leaveInnerStreamOpen: false))
+            {
+                using TlsContext ctx = TlsContext.Create(new SslClientAuthenticationOptions
+                {
+                    TargetHost = serverName,
+                    EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                });
+                using TlsSession session = TlsSession.Create(ctx);
+
+                Task serverHandshake = serverSsl.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = serverCert,
+                    EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                    ClientCertificateRequired = false,
+                });
+
+                Task clientHandshake = Task.Run(async () =>
+                {
+                    await DriveHandshakeWithExternalValidationAsync(
+                        session, clientStream,
+                        onSuspend: () =>
+                        {
+                            session.SetRemoteCertificateValidationResult(SslPolicyErrors.RemoteCertificateNameMismatch);
+                        });
+                });
+
+                await serverHandshake.WaitAsync(TimeSpan.FromSeconds(30));
+                await clientHandshake.WaitAsync(TimeSpan.FromSeconds(30));
+
+                byte[] plain = "rejected"u8.ToArray();
+                byte[] ct = new byte[CipherBufSize];
+                Assert.Throws<AuthenticationException>(() =>
+                    session.Encrypt(plain, ct, out _, out _));
+
+                byte[] pt = new byte[CipherBufSize];
+                Assert.Throws<AuthenticationException>(() =>
+                    session.Decrypt(ct, pt, out _, out _));
+            }
+        }
+
+        [Fact]
         public void TlsSession_ExternalValidation_SetResultBeforeSuspended_Throws()
         {
             using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
