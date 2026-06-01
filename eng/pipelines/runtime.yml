@@ -1166,8 +1166,10 @@ extends:
                     eq(variables['isRollingBuild'], true))
 
       #
-      # iOS devices - Full AOT + AggressiveTrimming to reduce size
+      # iOS simulators - Full AOT + AggressiveTrimming to reduce size
       # Build the whole product using Mono and run libraries tests
+      # Temporarily switched from ios_arm64 (devices) to iossimulator_arm64 due to
+      # device queue infrastructure failure: https://github.com/dotnet/runtime/issues/125135
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -1176,7 +1178,7 @@ extends:
           buildConfig: Release
           runtimeFlavor: mono
           platforms:
-            - ios_arm64
+            - iossimulator_arm64
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
@@ -1212,8 +1214,10 @@ extends:
                     eq(variables['isRollingBuild'], true))
 
       #
-      # iOS devices
+      # iOS simulators
       # Build the whole product using Native AOT and run libraries tests
+      # Temporarily switched from ios_arm64 (devices) to iossimulator_arm64 due to
+      # device queue infrastructure failure: https://github.com/dotnet/runtime/issues/125135
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -1222,7 +1226,7 @@ extends:
           buildConfig: Release
           runtimeFlavor: coreclr
           platforms:
-            - ios_arm64
+            - iossimulator_arm64
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
@@ -1255,8 +1259,10 @@ extends:
                     eq(variables['isRollingBuild'], true))
 
       #
-      # iOS devices
+      # iOS simulators
       # Build the whole product using CoreCLR and run libraries tests
+      # Temporarily switched from ios_arm64 (devices) to iossimulator_arm64 due to
+      # device queue infrastructure failure: https://github.com/dotnet/runtime/issues/125135
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -1265,7 +1271,7 @@ extends:
           buildConfig: Release
           runtimeFlavor: coreclr
           platforms:
-            - ios_arm64
+            - iossimulator_arm64
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange

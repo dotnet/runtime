@@ -280,6 +280,13 @@ public struct DebuggerIPCE_ExpandedTypeData
     [FieldOffset(8)] public ulong NaryTypeData_typeHandle;       // VMPTR_TypeHandle
 }
 
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct ArgInfoList
+{
+    public DebuggerIPCE_BasicTypeData* m_pList;
+    public int m_nEntries;
+}
+
 public enum DynamicMethodType
 {
     kNone = 0,
@@ -547,7 +554,7 @@ public unsafe partial interface IDacDbiInterface
     int GetApproxTypeHandle(nint pTypeData, ulong* pRetVal);
 
     [PreserveSig]
-    int GetExactTypeHandle(nint pTypeData, nint pArgInfo, ulong* pVmTypeHandle);
+    int GetExactTypeHandle(DebuggerIPCE_ExpandedTypeData* pTypeData, ArgInfoList* pArgInfo, ulong* pVmTypeHandle);
 
     [PreserveSig]
     int EnumerateMethodDescParams(ulong vmMethodDesc, ulong genericsToken, uint* pcGenericClassTypeParams,
