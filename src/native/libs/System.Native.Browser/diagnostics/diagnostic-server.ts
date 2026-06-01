@@ -90,12 +90,11 @@ export function connectDSRouter(url: string): void {
 }
 
 export function initializeDS() {
-    /* WASM-TODO, do this only when <EnableDiagnostics>true</EnableDiagnostics>
     const loaderConfig = dotnetApi.getConfig();
     const diagnosticPorts = "DOTNET_DiagnosticPorts";
-    if (!loaderConfig.environmentVariables![diagnosticPorts]) {
+    loaderConfig.environmentVariables ??= {};
+    if (loaderConfig.environmentVariables![diagnosticPorts] === undefined) {
         loaderConfig.environmentVariables![diagnosticPorts] = "js://ready";
     }
-    */
     initializeJsClient();
 }

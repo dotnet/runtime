@@ -129,7 +129,6 @@ namespace Internal.JitInterface
         CORINFO_HELP_ASSIGN_REF,        // universal helpers with F_CALL_CONV calling convention
         CORINFO_HELP_CHECKED_ASSIGN_REF,
 
-        CORINFO_HELP_ASSIGN_BYREF,
         CORINFO_HELP_BULK_WRITEBARRIER,
 
         /* Accessing fields */

@@ -42,7 +42,7 @@ internal struct MethodTableFlags_1
         Category_ElementType_Mask = 0x000E0000,
         Category_ValueType = 0x00040000,
         Category_Nullable = 0x00050000,
-        Category_PrimitiveValueType = 0x00060000,
+        Category_Primitive = 0x00060000,
         Category_TruePrimitive = 0x00070000,
         Category_Interface = 0x000C0000,
         Collectible = 0x00200000, // GC depends on this bit.

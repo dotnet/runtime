@@ -1406,9 +1406,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
 
     GenTree* srcAddrOrFill = nullptr;
 
-    SingleTypeRegSet dstAddrRegMask = RBM_NONE;
-    SingleTypeRegSet srcRegMask     = RBM_NONE;
-    SingleTypeRegSet sizeRegMask    = RBM_NONE;
+    SingleTypeRegSet srcRegMask = RBM_NONE;
 
     RefPosition* internalIntDef = nullptr;
 #ifdef TARGET_X86
@@ -1470,12 +1468,6 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
             }
             break;
 
-            case GenTreeBlk::BlkOpKindRepInstr:
-                dstAddrRegMask = SRBM_RDI;
-                srcRegMask     = SRBM_RAX;
-                sizeRegMask    = SRBM_RCX;
-                break;
-
             case GenTreeBlk::BlkOpKindLoop:
                 // Needed for offsetReg
                 buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
@@ -1495,17 +1487,6 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
 
         switch (blkNode->gtBlkOpKind)
         {
-            case GenTreeBlk::BlkOpKindCpObjRepInstr:
-                // We need the size of the contiguous Non-GC-region to be in RCX to call rep movsq.
-                sizeRegMask = SRBM_RCX;
-                FALLTHROUGH;
-
-            case GenTreeBlk::BlkOpKindCpObjUnroll:
-                // The srcAddr must be in a register. If it was under a GT_IND, we need to subsume all of its sources.
-                dstAddrRegMask = SRBM_RDI;
-                srcRegMask     = SRBM_RSI;
-                break;
-
             case GenTreeBlk::BlkOpKindUnroll:
             {
                 unsigned regSize   = m_compiler->roundDownSIMDSize(size);
@@ -1595,28 +1576,9 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
             }
             break;
 
-            case GenTreeBlk::BlkOpKindRepInstr:
-                dstAddrRegMask = SRBM_RDI;
-                srcRegMask     = SRBM_RSI;
-                sizeRegMask    = SRBM_RCX;
-                break;
-
             default:
                 unreached();
         }
-
-        if ((srcAddrOrFill == nullptr) && (srcRegMask != RBM_NONE))
-        {
-            // This is a local source; we'll use a temp register for its address.
-            assert(src->isContained() && src->OperIs(GT_LCL_VAR, GT_LCL_FLD));
-            buildInternalIntRegisterDefForNode(blkNode, srcRegMask);
-        }
-    }
-
-    if (sizeRegMask != RBM_NONE)
-    {
-        // Reserve a temp register for the block size argument.
-        buildInternalIntRegisterDefForNode(blkNode, sizeRegMask);
     }
 
     int useCount = 0;
@@ -1624,7 +1586,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
     if (!dstAddr->isContained())
     {
         useCount++;
-        BuildUse(dstAddr, ForceLowGprForApxIfNeeded(dstAddr, dstAddrRegMask, getEvexIsSupported()));
+        BuildUse(dstAddr, ForceLowGprForApxIfNeeded(dstAddr, RBM_NONE, getEvexIsSupported()));
     }
     else if (dstAddr->OperIsAddrMode())
     {
@@ -2038,14 +2000,14 @@ int LinearScan::BuildIntrinsic(GenTree* tree)
     }
     else
     {
-        tgtPrefUse = BuildUse(op1, BuildEvexIncompatibleMask(op1));
+        tgtPrefUse = BuildUse(op1);
         srcCount   = 1;
     }
     if (internalFloatDef != nullptr)
     {
         buildInternalRegisterUses();
     }
-    BuildDef(tree, BuildEvexIncompatibleMask(tree));
+    BuildDef(tree);
     return srcCount;
 }
 
@@ -2469,6 +2431,30 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                         ForceLowGprForApxIfNeeded(op3, RBM_NONE, canHWIntrinsicUseApxRegs);
                     srcCount += BuildOperandUses(op3, apxAwareRegCandidates);
                 }
+
+                // result put in EAX and EDX
+                BuildDef(intrinsicTree, SRBM_EAX, 0);
+                BuildDef(intrinsicTree, SRBM_EDX, 1);
+
+                buildUses = false;
+                break;
+            }
+
+            case NI_X86Base_X64_BigMul:
+            {
+                assert(numArgs == 2);
+                assert(dstCount == 2);
+                assert(isRMW);
+                assert(!op1->isContained());
+
+                SingleTypeRegSet apxAwareRegCandidates =
+                    ForceLowGprForApxIfNeeded(op1, RBM_NONE, canHWIntrinsicUseApxRegs);
+
+                // mulEAX always uses EAX; if one operand is contained, force the other op into EAX.
+                // Otherwise don't force any register: the second parameter may already happen to be in EAX,
+                // in which case codegen will use it as the implicit operand.
+                srcCount = BuildOperandUses(op1, op2->isContained() ? SRBM_EAX : apxAwareRegCandidates);
+                srcCount += BuildOperandUses(op2, apxAwareRegCandidates);
 
                 // result put in EAX and EDX
                 BuildDef(intrinsicTree, SRBM_EAX, 0);
@@ -3022,9 +3008,11 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     }
     else
     {
-        // Currently dstCount = 2 is only used for DivRem, which has special constraints and is handled above
+        // Currently dstCount = 2 is only used for DivRem and BigMul, which have special constraints and are handled
+        // above
         assert((dstCount == 0) ||
-               ((dstCount == 2) && ((intrinsicId == NI_X86Base_DivRem) || (intrinsicId == NI_X86Base_X64_DivRem))));
+               ((dstCount == 2) && ((intrinsicId == NI_X86Base_DivRem) || (intrinsicId == NI_X86Base_X64_DivRem) ||
+                                    (intrinsicId == NI_X86Base_X64_BigMul))));
     }
 
     *pDstCount = dstCount;

@@ -1,84 +1,42 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts.GCHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class GCHeapSVR : IData<GCHeapSVR>, IGCHeap
+[CdacType(nameof(DataType.GCHeap))]
+internal sealed partial class GCHeapSVR : IData<GCHeapSVR>, IGCHeap
 {
-    static GCHeapSVR IData<GCHeapSVR>.Create(Target target, TargetPointer address) => new GCHeapSVR(target, address);
-    public GCHeapSVR(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.GCHeap);
+    // Fields only exist in background GC builds
+    [Field] public TargetPointer? MarkArray { get; }
+    [Field] public TargetPointer? NextSweepObj { get; }
+    [Field] public TargetPointer? BackgroundMinSavedAddr { get; }
+    [Field] public TargetPointer? BackgroundMaxSavedAddr { get; }
+    [Field] public TargetPointer AllocAllocated { get; }
+    [Field] public TargetPointer EphemeralHeapSegment { get; }
+    [Field] public TargetPointer CardTable { get; }
+    [Field] public TargetPointer FinalizeQueue { get; }
 
-        // Fields only exist in background GC builds
-        if (type.Fields.ContainsKey(nameof(MarkArray)))
-            MarkArray = target.ReadPointerField(address, type, nameof(MarkArray));
-        if (type.Fields.ContainsKey(nameof(NextSweepObj)))
-            NextSweepObj = target.ReadPointerField(address, type, nameof(NextSweepObj));
-        if (type.Fields.ContainsKey(nameof(BackgroundMinSavedAddr)))
-            BackgroundMinSavedAddr = target.ReadPointerField(address, type, nameof(BackgroundMinSavedAddr));
-        if (type.Fields.ContainsKey(nameof(BackgroundMaxSavedAddr)))
-            BackgroundMaxSavedAddr = target.ReadPointerField(address, type, nameof(BackgroundMaxSavedAddr));
-        AllocAllocated = target.ReadPointerField(address, type, nameof(AllocAllocated));
-        EphemeralHeapSegment = target.ReadPointerField(address, type, nameof(EphemeralHeapSegment));
-        CardTable = target.ReadPointerField(address, type, nameof(CardTable));
-        FinalizeQueue = target.ReadPointerField(address, type, nameof(FinalizeQueue));
-        GenerationTable = address + (ulong)type.Fields[nameof(GenerationTable)].Offset;
-
-        // Fields only exist in segment GC builds with background GC
-        if (type.Fields.ContainsKey(nameof(SavedSweepEphemeralSeg)))
-            SavedSweepEphemeralSeg = target.ReadPointerField(address, type, nameof(SavedSweepEphemeralSeg));
-        if (type.Fields.ContainsKey(nameof(SavedSweepEphemeralStart)))
-            SavedSweepEphemeralStart = target.ReadPointerField(address, type, nameof(SavedSweepEphemeralStart));
-
-        OomData = target.ProcessedData.GetOrAdd<OomHistory>(address + (ulong)type.Fields[nameof(OomData)].Offset);
-
-        InternalRootArray = target.ReadPointerField(address, type, nameof(InternalRootArray));
-        InternalRootArrayIndex = target.ReadNUIntField(address, type, nameof(InternalRootArrayIndex));
-        HeapAnalyzeSuccess = target.ReadField<int>(address, type, nameof(HeapAnalyzeSuccess)) != 0;
-
-        InterestingData = address + (ulong)type.Fields[nameof(InterestingData)].Offset;
-        CompactReasons = address + (ulong)type.Fields[nameof(CompactReasons)].Offset;
-        ExpandMechanisms = address + (ulong)type.Fields[nameof(ExpandMechanisms)].Offset;
-        InterestingMechanismBits = address + (ulong)type.Fields[nameof(InterestingMechanismBits)].Offset;
-
-        if (type.Fields.ContainsKey(nameof(FreeableSohSegment)))
-            FreeableSohSegment = target.ReadPointerField(address, type, nameof(FreeableSohSegment));
-        if (type.Fields.ContainsKey(nameof(FreeableUohSegment)))
-            FreeableUohSegment = target.ReadPointerField(address, type, nameof(FreeableUohSegment));
-        if (type.Fields.ContainsKey(nameof(FreeRegions)))
-            FreeRegions = address + (ulong)type.Fields[nameof(FreeRegions)].Offset;
-    }
-
-    public TargetPointer? MarkArray { get; }
-    public TargetPointer? NextSweepObj { get; }
-    public TargetPointer? BackgroundMinSavedAddr { get; }
-    public TargetPointer? BackgroundMaxSavedAddr { get; }
-    public TargetPointer AllocAllocated { get; }
-    public TargetPointer EphemeralHeapSegment { get; }
-    public TargetPointer CardTable { get; }
-    public TargetPointer FinalizeQueue { get; }
+    [FieldAddress]
     public TargetPointer GenerationTable { get; }
 
-    public TargetPointer? SavedSweepEphemeralSeg { get; }
-    public TargetPointer? SavedSweepEphemeralStart { get; }
+    // Fields only exist in segment GC builds with background GC
+    [Field] public TargetPointer? SavedSweepEphemeralSeg { get; }
+    [Field] public TargetPointer? SavedSweepEphemeralStart { get; }
 
-    public OomHistory OomData { get; }
+    [Field] public OomHistory OomData { get; }
 
-    public TargetPointer InternalRootArray { get; }
-    public TargetNUInt InternalRootArrayIndex { get; }
-    public bool HeapAnalyzeSuccess { get; }
+    [Field] public TargetPointer InternalRootArray { get; }
+    [Field] public TargetNUInt InternalRootArrayIndex { get; }
+    [Field(UnderlyingBoolType = typeof(int))] public bool HeapAnalyzeSuccess { get; }
 
-    public TargetPointer InterestingData { get; }
-    public TargetPointer CompactReasons { get; }
-    public TargetPointer ExpandMechanisms { get; }
-    public TargetPointer InterestingMechanismBits { get; }
+    [FieldAddress] public TargetPointer InterestingData { get; }
+    [FieldAddress] public TargetPointer CompactReasons { get; }
+    [FieldAddress] public TargetPointer ExpandMechanisms { get; }
+    [FieldAddress] public TargetPointer InterestingMechanismBits { get; }
 
-    public TargetPointer? FreeableSohSegment { get; }
-    public TargetPointer? FreeableUohSegment { get; }
-    public TargetPointer? FreeRegions { get; }
+    [Field] public TargetPointer? FreeableSohSegment { get; }
+    [Field] public TargetPointer? FreeableUohSegment { get; }
+    [Field] public TargetPointer? FreeRegions { get; }
 }

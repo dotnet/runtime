@@ -38,7 +38,9 @@ void CodeGenInterface::setFramePointerRequiredEH(bool value)
 {
     m_cgFramePointerRequired = value;
 
-#ifndef JIT32_GCENCODER
+#if defined(JIT32_GCENCODER) || defined(TARGET_WASM)
+    // No impact on GC reporting for x86 or Wasm
+#else
     if (value)
     {
         // EnumGcRefs will only enumerate slots in aborted frames
@@ -55,7 +57,7 @@ void CodeGenInterface::setFramePointerRequiredEH(bool value)
 
         m_cgInterruptible = true;
     }
-#endif // JIT32_GCENCODER
+#endif // defined(JIT32_GCENCODER) || defined(TARGET_WASM)
 }
 
 #if HAS_FIXED_REGISTER_SET
@@ -913,9 +915,6 @@ regMaskTP Compiler::compHelperCallKillSet(CorInfoHelpFunc helper)
         case CORINFO_HELP_ASSIGN_REF:
         case CORINFO_HELP_CHECKED_ASSIGN_REF:
             return RBM_CALLEE_TRASH_WRITEBARRIER;
-
-        case CORINFO_HELP_ASSIGN_BYREF:
-            return RBM_CALLEE_TRASH_WRITEBARRIER_BYREF;
 
         case CORINFO_HELP_PROF_FCN_ENTER:
             return RBM_PROFILER_ENTER_TRASH;
@@ -2322,7 +2321,8 @@ void CodeGen::genEmitMachineCode()
     trackedStackPtrsContig = false;
 #else
     // We try to allocate GC pointers contiguously on the stack except for some special cases.
-    trackedStackPtrsContig = !m_compiler->opts.compDbgEnC && (m_compiler->lvaAsyncExecutionContextVar == BAD_VAR_NUM) &&
+    trackedStackPtrsContig = !m_compiler->opts.compDbgEnC && (m_compiler->lvaAsyncThreadObjectVar == BAD_VAR_NUM) &&
+                             (m_compiler->lvaAsyncExecutionContextVar == BAD_VAR_NUM) &&
                              (m_compiler->lvaAsyncSynchronizationContextVar == BAD_VAR_NUM);
 
 #ifdef TARGET_ARM
