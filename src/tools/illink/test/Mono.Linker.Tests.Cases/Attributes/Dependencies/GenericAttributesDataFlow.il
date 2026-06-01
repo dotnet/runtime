@@ -11,6 +11,7 @@
 
 .namespace Mono.Linker.Tests.Cases.Attributes.Dependencies
 {
+  // A generic attribute whose type parameter requires DynamicallyAccessedMemberTypes.PublicMethods.
   .class public auto ansi beforefieldinit DynamicallyAccessedMembersGenericAttribute`1<T>
     extends [System.Runtime]System.Attribute
   {
@@ -29,7 +30,12 @@
     }
   }
 
-  .class public auto ansi beforefieldinit DynamicallyAccessedMembersGenericClass`1<T>
+  // The attribute is applied with the class's own generic parameter as the generic argument. This
+  // construct cannot be expressed in C# (CS8968: an attribute type argument cannot use type
+  // parameters), so it is provided in IL. The trimmer must analyze the generic-argument data flow of
+  // the attribute without crashing and warn (IL2091) because the unannotated generic argument does
+  // not satisfy the attribute's PublicMethods requirement.
+  .class public auto ansi beforefieldinit ClassWithUnannotatedTypeParameter`1<T>
     extends [System.Runtime]System.Object
   {
     .custom instance void class Mono.Linker.Tests.Cases.Attributes.Dependencies.DynamicallyAccessedMembersGenericAttribute`1<!T>::'.ctor'() = (01 00 00 00)
