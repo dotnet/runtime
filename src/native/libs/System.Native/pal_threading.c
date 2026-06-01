@@ -281,8 +281,10 @@ int32_t SystemNative_LowLevelFutex_WaitOnAddressTimeout(int32_t* address, int32_
     (void)comparand; // unused
     (void)timeoutMilliseconds; // unused
     assert_msg(false, "Futex is not supported on this platform", 0);
+#ifndef DEBUG
     // trivial implementation of Wait always wakes spuriously.
     return 1;
+#endif
 }
 
 DEBUGNOTRETURN
