@@ -749,7 +749,7 @@ namespace System.Net.Sockets
             SocketError errorCode;
             int observedSequenceNumber;
             AsyncContext.IsWriteReady(out observedSequenceNumber);
-#if SYSTEM_NET_SOCKETS_APPLE_PLATFROM
+#if SYSTEM_NET_SOCKETS_APPLE_PLATFORM
             if (SocketPal.TryStartConnect(_socket, socketAddress, out errorCode, buffer.Span, _socket.TfoEnabled, out sentBytes))
 #else
             if (SocketPal.TryStartConnect(_socket, socketAddress, out errorCode, buffer.Span, false, out sentBytes)) // In Linux, we can figure it out as needed inside PAL.

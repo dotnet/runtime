@@ -176,10 +176,6 @@ namespace System.Net.Sockets
 
             if (IsInvalid)
             {
-                // CloseAsIs musn't wait for a release.
-                TryOwnClose();
-
-                // Mark handle as invalid, so it won't be released.
                 SetHandleAsInvalid();
             }
         }
