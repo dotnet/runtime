@@ -46,6 +46,8 @@ internal class GcScanner
         IGCInfoHandle handle = _gcInfo.DecodePlatformSpecificGCInfo(gcInfoAddr, gcVersion);
 
         uint stackBaseRegister = _gcInfo.GetStackBaseRegister(handle);
+        uint scratchAreaSize = _gcInfo.GetSizeOfStackParameterArea(handle);
+        bool filterScratchStackSlots = !options.IsActiveFrame;
         TargetPointer? callerSP = null;
         uint offsetToUse = relOffsetOverride ?? (uint)relativeOffset.Value;
 
@@ -86,6 +88,19 @@ internal class GcScanner
                 };
 
                 TargetPointer addr = new(baseAddr.Value + (ulong)(long)slot.SpOffset);
+
+                // Mirror native IsScratchStackSlot (gcinfodecoder.cpp, post-PR #119446 unified form):
+                // for non-leaf frames, drop any stack slot whose resolved address lies in the
+                // outgoing/scratch area [SP, SP + SizeOfStackOutgoingAndScratchArea). This applies
+                // to all stack base kinds (GC_SP_REL, GC_FRAMEREG_REL, GC_CALLER_SP_REL) because
+                // the filter is address-based, not offset-based.
+                if (filterScratchStackSlots && scratchAreaSize > 0)
+                {
+                    ulong sp = context.StackPointer.Value;
+                    if (addr.Value >= sp && addr.Value < sp + scratchAreaSize)
+                        continue;
+                }
+
                 GcScanSlotLocation loc = new(reg, slot.SpOffset, true);
                 scanContext.GCEnumCallback(addr, scanFlags, loc);
             }
