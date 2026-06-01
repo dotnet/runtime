@@ -259,31 +259,38 @@ void SystemNative_LowLevelFutex_WakeByAddressSingle(int32_t* address)
 }
 #else// defined(TARGET_LINUX) || defined(TARGET_ANDROID)
 
-__attribute__((noreturn))
+#ifdef DEBUG 
+#define DEBUGNOTRETURN __attribute__((noreturn)) 
+#else 
+#define DEBUGNOTRETURN 
+#endif
+
+DEBUGNOTRETURN
 void SystemNative_LowLevelFutex_WaitOnAddress(int32_t* address, int32_t comparand)
 {
     (void)address; // unused
     (void)comparand; // unused
     assert_msg(false, "Futex is not supported on this platform", 0);
-    abort();
+    // trivial implementation of Wait always wakes spuriously.
 }
 
-__attribute__((noreturn))
+DEBUGNOTRETURN
 int32_t SystemNative_LowLevelFutex_WaitOnAddressTimeout(int32_t* address, int32_t comparand, int32_t timeoutMilliseconds)
 {
     (void)address; // unused
     (void)comparand; // unused
     (void)timeoutMilliseconds; // unused
     assert_msg(false, "Futex is not supported on this platform", 0);
-    abort();
+    // trivial implementation of Wait always wakes spuriously.
+    return 1;
 }
 
-__attribute__((noreturn))
+DEBUGNOTRETURN
 void SystemNative_LowLevelFutex_WakeByAddressSingle(int32_t* address)
 {
     (void)address; // unused
     assert_msg(false, "Futex is not supported on this platform", 0);
-    abort();
+    // trivial implementation of Wake does nothing.
 }
 
 #endif  // defined(TARGET_LINUX) || defined(TARGET_ANDROID)
