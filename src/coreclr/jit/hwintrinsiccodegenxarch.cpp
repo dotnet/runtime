@@ -3831,7 +3831,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
 //
 // Arguments:
 //    node        - The hardware intrinsic node
-//    instOptions - The options used to when generating the instruction.
+//    instOptions - The options used when generating the instruction.
 //
 // Notes:
 //    Callers are responsible for calling genConsumeMultiOpOperands and
