@@ -7427,7 +7427,7 @@ bool LinearScan::CanSkipUpperVectorSave(RefPosition* refPosition, Interval* lclV
 
     // PROF_HOOK preserves upper halves of q0-q7, LSRA must be told explicitly that saving these is not needed
     // So skip the save if reg is assigned, ref is a PROF_HOOK, kill set does not contain reg, and reg is not
-    // a upper-half-only-called saved reg
+    // a upper-half-only-callee saved reg
     return (lclVarInterval->physReg != REG_NA) && (refPosition->treeNode != nullptr) &&
            refPosition->treeNode->OperIs(GT_PROF_HOOK) &&
            !getKillSetForProfilerHook().IsRegNumInMask(lclVarInterval->physReg) &&
