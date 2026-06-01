@@ -8,9 +8,21 @@ namespace System.ComponentModel.DataAnnotations
 {
     /// <summary>
     ///     Provides a way for an object to be validated asynchronously.
-    ///     Inherits from <see cref="IValidatableObject"/>. Implementors must provide both
-    ///     <see cref="IValidatableObject.Validate"/> and <see cref="ValidateAsync"/>.
     /// </summary>
+    /// <remarks>
+    ///     When an object implements <see cref="IAsyncValidatableObject"/>, the asynchronous
+    ///     <see cref="Validator"/> APIs (such as
+    ///     <see cref="Validator.TryValidateObjectAsync(object, ValidationContext, System.Collections.Generic.ICollection{ValidationResult}?, System.Threading.CancellationToken)"/>)
+    ///     invoke only <see cref="ValidateAsync"/>; <see cref="IValidatableObject.Validate"/>
+    ///     is not called on the async path. The synchronous <see cref="Validator"/>
+    ///     APIs continue to invoke <see cref="IValidatableObject.Validate"/>.
+    ///     <para>
+    ///         Implementors should provide a synchronous fallback in
+    ///         <see cref="IValidatableObject.Validate"/> for compatibility with callers that
+    ///         do not use the async APIs, or throw <see cref="InvalidOperationException"/>
+    ///         if no synchronous implementation is feasible.
+    ///     </para>
+    /// </remarks>
     public interface IAsyncValidatableObject : IValidatableObject
     {
         /// <summary>
@@ -26,6 +38,12 @@ namespace System.ComponentModel.DataAnnotations
         ///     An <see cref="IAsyncEnumerable{T}" /> that yields <see cref="ValidationResult" /> instances
         ///     as each validation check completes.
         /// </returns>
+        /// <remarks>
+        ///     Implementors should also provide a synchronous implementation of
+        ///     <see cref="IValidatableObject.Validate"/> for compatibility with callers that
+        ///     do not use the async APIs, or throw <see cref="InvalidOperationException"/>
+        ///     if no synchronous implementation is feasible.
+        /// </remarks>
         IAsyncEnumerable<ValidationResult> ValidateAsync(
             ValidationContext validationContext,
             CancellationToken cancellationToken = default);
