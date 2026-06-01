@@ -441,9 +441,9 @@ namespace ObjectiveCMarshalAPI
             GC.KeepAlive(delThrowException);
         }
 
-        static unsafe void Validate_GetOrCreateReferenceTrackingMemory_Scenario()
+        static unsafe void Validate_ReferenceTrackingMemory_Scenario()
         {
-            Console.WriteLine($"Running {nameof(Validate_GetOrCreateReferenceTrackingMemory_Scenario)}...");
+            Console.WriteLine($"Running {nameof(Validate_ReferenceTrackingMemory_Scenario)}...");
 
             // Type attributed but no finalizer.
             Assert.Throws<InvalidOperationException>(
@@ -510,7 +510,8 @@ namespace ObjectiveCMarshalAPI
                 Validate_PreInitialize_Scenario();
 
                 InitializeObjectiveCMarshal();
-                Validate_GetOrCreateReferenceTrackingMemory_Scenario();
+                Validate_ReferenceTracking_Scenario();
+                Validate_ReferenceTrackingMemory_Scenario();
 
                 Validate_Initialize_FailsOnSecondAttempt();
             }

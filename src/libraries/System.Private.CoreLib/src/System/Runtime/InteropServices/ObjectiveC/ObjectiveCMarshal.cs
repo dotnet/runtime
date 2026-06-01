@@ -129,10 +129,10 @@ namespace System.Runtime.InteropServices.ObjectiveC
         }
 
         /// <summary>
-        /// Request a pointer to reference tracking memory for the supplied object.
+        /// Gets reference tracking memory for the supplied object.
         /// </summary>
         /// <param name="obj">The object whose tracking memory to return.</param>
-        /// <returns>A pointer to tracking memory on the object.</returns>
+        /// <returns>A span of tracking memory associated with <paramref name="obj"/>.</returns>
         /// <exception cref="InvalidOperationException">Thrown if the ObjectiveCMarshal API has not been initialized.</exception>
         /// <remarks>
         /// The Initialize() must be called prior to calling this function.
