@@ -206,6 +206,12 @@ namespace System.IO.Ports
             _lastTotalBytesAvailable = TotalBytesAvailable;
         }
 
+#pragma warning disable CA1822
+        internal void OnRaiseCharsEventSkipped()
+        {
+        }
+#pragma warning restore CA1822
+
         private void FinishPendingIORequests(Interop.ErrorInfo? error = null)
         {
             lock (_readQueueLock)

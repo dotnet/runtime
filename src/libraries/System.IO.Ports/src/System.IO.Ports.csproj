@@ -146,8 +146,6 @@ System.IO.Ports.SerialPort</PackageDescription>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' and $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))">
     <Compile Include="System\IO\Ports\SafeSerialDeviceHandle.UnixAsyncContext.cs" />
     <Compile Include="System\IO\Ports\SerialStream.UnixAsyncContext.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Poll.cs"
-             Link="Common\Interop\Unix\System.Native\Interop.Poll.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' and !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))">
     <Compile Include="System\IO\Ports\SerialStream.UnixPollLoop.cs" />

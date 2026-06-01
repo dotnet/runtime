@@ -552,9 +552,13 @@ namespace System.IO.Ports
             }
         }
 
+
+#pragma warning disable CA1822
         internal void OnRaiseCharsEventSkipped()
         {
         }
+#pragma warning restore CA1822
+
 
         // Fills comStat structure from an unmanaged function
         // to determine the number of bytes waiting in the serial driver's internal transmit buffer.
