@@ -53,7 +53,7 @@ Data descriptors used:
 | `SyncBlock` | `HashCode` | Hash code stored in the sync block |
 | `Delegate` | `Target` | Bound `this` reference for closed delegates |
 | `Delegate` | `MethodPtr` | Primary method pointer |
-| `Delegate` | `MethodPtrAux` | Auxiliary method pointer (open/wrapper delegates) |
+| `Delegate` | `MethodPtrAux` | Auxiliary method pointer |
 | `Delegate` | `InvocationCount` | Invocation count (non-zero for multicast/wrapper/unmanaged/special delegates) |
 
 Global variables used:
@@ -189,7 +189,7 @@ DelegateInfo GetDelegateInfo(TargetPointer address)
     Data.Delegate del = new Data.Delegate(target, address);
 
     // Classify the delegate from its invocation count and auxiliary pointer.
-    DelegateType delegateType = del.InvocationCount.Value switch
+    DelegateType delegateType = target.ReadNInt(address + /* Delegate::InvocationCount offset */) switch
     {
         0  => del.MethodPtrAux == TargetCodePointer.Null
                 ? DelegateType.Closed
@@ -203,8 +203,8 @@ DelegateInfo GetDelegateInfo(TargetPointer address)
     // For Unknown do not provide any info.
     (TargetPointer targetObject, TargetCodePointer targetMethodPtr) = delegateType switch
     {
-        DelegateType.Closed => (del.Target, del.MethodPtr),
-        DelegateType.Open   => (TargetPointer.Null, del.MethodPtrAux),
+        DelegateType.Closed => (target.ReadPointer(address + /* Delegate::Target offset */), target.ReadPointer(address + /* Delegate::MethodPtr offset */)),
+        DelegateType.Open   => (TargetPointer.Null, target.ReadPointer(address + /* Delegate::MethodPtrAux offset */)),
         _                   => (TargetPointer.Null, TargetCodePointer.Null),
     };
 
