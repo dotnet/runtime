@@ -280,6 +280,13 @@ public struct DebuggerIPCE_ExpandedTypeData
     [FieldOffset(8)] public ulong NaryTypeData_typeHandle;       // VMPTR_TypeHandle
 }
 
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct ArgInfoList
+{
+    public DebuggerIPCE_BasicTypeData* m_pList;
+    public int m_nEntries;
+}
+
 public enum DynamicMethodType
 {
     kNone = 0,
@@ -370,7 +377,7 @@ public unsafe partial interface IDacDbiInterface
     int GetModuleData(ulong vmModule, DacDbiModuleInfo* pData);
 
     [PreserveSig]
-    int GetModuleForAssembly(ulong vmAssembly, ulong* pModule);
+    int GetModuleForAssembly(ulong vmAssembly, ulong* pModule, Interop.BOOL* pIsModuleLoaded);
 
     [PreserveSig]
     int GetAddressType(ulong address, int* pRetVal);
@@ -383,9 +390,6 @@ public unsafe partial interface IDacDbiInterface
 
     [PreserveSig]
     int EnumerateAssembliesInAppDomain(ulong vmAppDomain, delegate* unmanaged<ulong, nint, void> fpCallback, nint pUserData);
-
-    [PreserveSig]
-    int EnumerateModulesInAssembly(ulong vmAssembly, nint fpCallback, nint pUserData);
 
     [PreserveSig]
     int RequestSyncAtEvent();
@@ -550,10 +554,11 @@ public unsafe partial interface IDacDbiInterface
     int GetApproxTypeHandle(nint pTypeData, ulong* pRetVal);
 
     [PreserveSig]
-    int GetExactTypeHandle(nint pTypeData, nint pArgInfo, ulong* pVmTypeHandle);
+    int GetExactTypeHandle(DebuggerIPCE_ExpandedTypeData* pTypeData, ArgInfoList* pArgInfo, ulong* pVmTypeHandle);
 
     [PreserveSig]
-    int GetMethodDescParams(ulong vmMethodDesc, ulong genericsToken, uint* pcGenericClassTypeParams, nint pGenericTypeParams);
+    int EnumerateMethodDescParams(ulong vmMethodDesc, ulong genericsToken, uint* pcGenericClassTypeParams,
+        delegate* unmanaged<DebuggerIPCE_ExpandedTypeData*, nint, void> fpCallback, nint pUserData);
 
     [PreserveSig]
     int GetThreadStaticAddress(ulong vmField, ulong vmRuntimeThread, ulong* pRetVal);
@@ -565,7 +570,8 @@ public unsafe partial interface IDacDbiInterface
     int GetEnCHangingFieldInfo(nint pEnCFieldInfo, nint pFieldData, Interop.BOOL* pfStatic);
 
     [PreserveSig]
-    int GetTypeHandleParams(ulong vmTypeHandle, nint pParams);
+    int EnumerateTypeHandleParams(ulong vmTypeHandle,
+        delegate* unmanaged<DebuggerIPCE_ExpandedTypeData*, nint, void> fpCallback, nint pUserData);
 
     [PreserveSig]
     int GetSimpleType(int simpleType, uint* pMetadataToken, ulong* pVmModule);

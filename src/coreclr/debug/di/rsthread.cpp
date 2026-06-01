@@ -7658,14 +7658,16 @@ void CordbJITILFrame::LoadGenericArgs()
     IDacDbiInterface * pDAC = GetProcess()->GetDAC();
 
     UINT32 cGenericClassTypeParams = 0;
-    DacDbiArrayList<DebuggerIPCE_ExpandedTypeData> rgGenericTypeParams;
+    CallbackAccumulator<DebuggerIPCE_ExpandedTypeData> acc;
 
-    IfFailThrow(pDAC->GetMethodDescParams(m_nativeFrame->GetNativeCode()->GetVMNativeCodeMethodDescToken(),
+    IfFailThrow(pDAC->EnumerateMethodDescParams(m_nativeFrame->GetNativeCode()->GetVMNativeCodeMethodDescToken(),
                               m_frameParamsToken,
                               &cGenericClassTypeParams,
-                              &rgGenericTypeParams));
+                              &CallbackAccumulator<DebuggerIPCE_ExpandedTypeData>::PushCallback,
+                              &acc));
+    IfFailThrow(acc.hrError);
 
-    UINT32 cTotalGenericTypeParams = rgGenericTypeParams.Count();
+    UINT32 cTotalGenericTypeParams = (UINT32)acc.items.Size();
 
     NewInterfaceArrayHolder<CordbType> ppGenericArgs(
         new CordbType *[cTotalGenericTypeParams](),
@@ -7676,7 +7678,7 @@ void CordbJITILFrame::LoadGenericArgs()
         // creates a CordbType object for the generic argument
         CordbType *newType;
         IfFailThrow(CordbType::TypeDataToType(GetCurrentAppDomain(),
-                                              &(rgGenericTypeParams[i]),
+                                              &(acc.items[i]),
                                               &newType));
 
         // We add a ref as the instantiation will be stored away in the
@@ -11520,7 +11522,7 @@ void CordbAsyncFrame::LoadGenericArgs()
     IDacDbiInterface * pDAC = GetProcess()->GetDAC();
 
     UINT32 cGenericClassTypeParams = 0;
-    DacDbiArrayList<DebuggerIPCE_ExpandedTypeData> rgGenericTypeParams;
+    CallbackAccumulator<DebuggerIPCE_ExpandedTypeData> acc;
 
     UINT32 genericArgIndex;
     HRESULT result = pDAC->GetGenericArgTokenIndex(
@@ -11552,12 +11554,14 @@ void CordbAsyncFrame::LoadGenericArgs()
         genericTypeParam = resolvedToken;
     }
 
-    IfFailThrow(pDAC->GetMethodDescParams(m_vmMethodDesc,
+    IfFailThrow(pDAC->EnumerateMethodDescParams(m_vmMethodDesc,
                               genericTypeParam,
                               &cGenericClassTypeParams,
-                              &rgGenericTypeParams));
+                              &CallbackAccumulator<DebuggerIPCE_ExpandedTypeData>::PushCallback,
+                              &acc));
+    IfFailThrow(acc.hrError);
 
-    UINT32 cTotalGenericTypeParams = rgGenericTypeParams.Count();
+    UINT32 cTotalGenericTypeParams = (UINT32)acc.items.Size();
 
     NewInterfaceArrayHolder<CordbType> ppGenericArgs(
         new CordbType *[cTotalGenericTypeParams](),
@@ -11568,7 +11572,7 @@ void CordbAsyncFrame::LoadGenericArgs()
         // creates a CordbType object for the generic argument
         CordbType *newType;
         IfFailThrow(CordbType::TypeDataToType(m_pAppDomain,
-                                              &(rgGenericTypeParams[i]),
+                                              &(acc.items[i]),
                                               &newType));
 
         // We add a ref as the instantiation will be stored away in the

@@ -159,6 +159,9 @@ For each row in the pipeline table below:
 | runtime-coreclr r2r | 120 | |
 | runtime-coreclr gc-simulator | 123 | |
 | runtime-coreclr crossgen2 | 124 | |
+| runtime-coreclr crossgen2 outerloop | 134 | |
+| runtime-coreclr crossgen2-composite | 136 | |
+| runtime-coreclr crossgen2-composite gcstress | 141 | Weekends |
 | runtime-jit-experimental | 137 | OSR / partial compilation |
 | runtime-coreclr libraries-jitstress | 138 | |
 | runtime-coreclr ilasm | 140 | |
@@ -250,6 +253,15 @@ Follow exactly these sections from `.github/workflows/shared/create-kbe.instruct
 3. `<a id="search-existing-prs"></a>` / `## Search for existing PRs already handling the failure`
 4. `<a id="verify-embedded-issues"></a>` / `## Verify every embedded issue number exists`
 
+When searching, account for the fact that the same signature can be filed in
+different `ErrorMessage` representations. A KBE recorded in `<a id="kbe-array-form"></a>`
+multi-line array form will not surface from a single-substring search, and vice
+versa. Before concluding "no existing KBE", also search each individual array
+element / log line of the signature on its own (not just the joined form), and
+search the most distinctive single substring even when you intend to file the
+array form. If any of these variant-form searches surfaces a candidate, treat it
+as `existing-kbe` rather than filing a duplicate.
+
 Record the same outcomes described there:
 
 - `existing-kbe #<n>`
@@ -259,11 +271,12 @@ Record the same outcomes described there:
 
 #### Step 4.7 — Confirm a test-disable is welcome on the candidate issue
 
-Read the candidate KBE / tracker body + the latest 5 comments (not just the most recent). Skip the test-disable (record `-> skipped: do-not-disable on issue #<n>`) if ANY of:
+Read the candidate KBE / tracker body + the latest 5 comments (not just the most recent). Also read the body + latest 5 comments of ANY issue referenced in the KBE body (e.g. `refs #<n>`, `Tracking: dotnet/runtime#<n>`) — maintainer signals on the root-cause issue override the KBE. Skip the test-disable (record `-> skipped: do-not-disable on issue #<n>`) if ANY of:
 
 - Body or recent comment from any `MEMBER`/`OWNER` mentions one of (case-insensitive): `please don't disable`, `do not mute`, `do not disable`, `keep failing`, `investigation in progress`, `fix-forward`, `fix forward`, `should be supported`, `will investigate`, `wait for #`, `landing in #`.
 - Issue carries a label semantically equivalent to "do not mute" (verify the label exists in `dotnet/runtime` before relying on it; do not invent labels).
 - Most recent area-owner comment within the last 14 days opposes disabling on procedural grounds.
+- A prior `[ci-scan]` test-disable PR for the same test (or same KBE `#<n>`) was **closed without merge** within the last 30 days. Search `is:pr is:closed -is:merged "<test-name>" "[ci-scan]" closed:>=<30-days-ago>` and `is:pr is:closed -is:merged "#<n>" "[ci-scan]" closed:>=<30-days-ago>` (compute `<30-days-ago>` as the ISO date 30 days before the scan run). For each hit, fetch the PR comments and skip if any commenter with `authorAssociation` `MEMBER` or `OWNER` used any of the keywords listed above. The combination of a maintainer pushback comment plus a non-merge close is the do-not-disable signal; the closer does not need to be the same maintainer. Re-filing requires fresh evidence such as a new maintainer comment on the KBE greenlighting the disable, or a clearly different failure signature. Record `-> skipped: do-not-disable, prior PR #<n> closed without merge after maintainer pushback`.
 
 When in doubt -> skip the test-disable and let the next run revisit.
 
@@ -289,11 +302,15 @@ No meta / aggregate / outage issues. Every KBE is keyed to a single `(definition
 
 **Branch A — No existing KBE; signature is stable.**
 
-Stable means >= 2 occurrences in the ~10-build window, OR a build break that fails all legs of the current build (block-everyone severity that warrants filing on first sight). Emit one `create_issue` using exactly the shared new-KBE template from `.github/workflows/shared/create-kbe.instructions.md` section `<a id="new-kbe-template"></a>` / `## New-KBE template`, including whichever of `<a id="literal-kbe-template"></a>` / `### KBE issue body - literal substring match`, `<a id="regex-kbe-template"></a>` / `### KBE issue body - regex match`, or `<a id="kbe-array-form"></a>` / `### KBE multi-line array form` fits the signature. Apply both `Known Build Error` and `blocking-clean-ci` labels so the org project auto-add rule picks it up; do NOT try to mutate the project from this workflow. Append to the same-run dedup cache (Step 4.0) after emission.
+Stable means >= 2 occurrences across >= 2 distinct builds in the ~10-build window, OR a build break that fails all legs of the current build (block-everyone severity that warrants filing on first sight). Multiple legs, retries, or work items of the SAME build (same build id) count as a single occurrence, not two — a one-off failure that appears in only one build is NOT stable; record `skipped: < 2 occurrences and not blocking` and let the next run revisit. Emit one `create_issue` using exactly the shared new-KBE template from `.github/workflows/shared/create-kbe.instructions.md` section `<a id="new-kbe-template"></a>` / `## New-KBE template`, including whichever of `<a id="literal-kbe-template"></a>` / `### KBE issue body - literal substring match`, `<a id="regex-kbe-template"></a>` / `### KBE issue body - regex match`, or `<a id="kbe-array-form"></a>` / `### KBE multi-line array form` fits the signature. Apply both `Known Build Error` and `blocking-clean-ci` labels so the org project auto-add rule picks it up; do NOT try to mutate the project from this workflow. Append to the same-run dedup cache (Step 4.0) after emission.
+
+**Match-count gate.** Reject the emit if the body lacks `<!-- ci-scan-match-count: <N> hits in failure.log -->` with `N >= 1`. Treat an absent marker as `N=0` and record the same skip reason check #7 of the shared instructions uses: `skipped: signature did not match failure.log (N=<count>)`. Rationale, log-source caveats, and native-assert handling live in check #7.
 
 If the shared KBE lookup flow recorded `linked-tracker #<tracker>`, cross-link it as `Tracking: dotnet/runtime#<tracker>` in the KBE body. Test-disable PR is deferred to the next run.
 
 **Branch B — Existing KBE; no test-disable PR; test-disable is welcome (Step 4.7 clean).**
+
+Before emitting, re-confirm the linked KBE is still `open`. If it has been closed (fixed, not planned, or duplicate), do NOT emit a test-disable PR against it — an orphaned PR referencing a closed KBE has no tracking issue to gate its revert. Record `skipped: linked KBE #<n> is closed` and stop for this signature; the next run will re-evaluate via Step 4.2 and may file a fresh KBE through Branch A if the failure still recurs. Do not fall through to Branch A this run (Step 5's one-outcome-per-signature rule).
 
 Emit one `create_pull_request` using the Test-disable PR template. Diff <= 5 lines; only test annotations or csproj flags. Body MUST include `Linked KBE: #<n>` as a top-level line plus the Step 4.8 four-question block.
 
@@ -387,6 +404,7 @@ Allowed test-disable mechanisms:
 - `[SkipOnPlatform(TestPlatforms.<plat>, "<reason>")]` — platform-specific failures.
 - `[ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.<helper>))]` — narrow via existing helpers.
 - `[ActiveIssue("https://github.com/dotnet/runtime/issues/<N>", TestPlatforms.<plat>)]` — reference the KBE.
+- `[ActiveIssue("https://github.com/dotnet/runtime/issues/<N>", TestPlatforms.<plat>, TargetFrameworkMonikers.<tfm>, TestRuntimes.<rt>)]` — full 4-parameter overload. The positional order is `(string issue, TestPlatforms platforms = Any, TargetFrameworkMonikers framework = Any, TestRuntimes runtimes = Any)`. Do NOT place a `TestRuntimes` value in the `TargetFrameworkMonikers` slot.
 - JIT/GC stress: `[ActiveIssue("...", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsStressTest))]` or `<GCStressIncompatible>true</GCStressIncompatible>` at the csproj level.
 
 Scope rule (mandatory): condition must be AS NARROW AS the observed failure scope.
@@ -398,6 +416,12 @@ Scope rule (mandatory): condition must be AS NARROW AS the observed failure scop
 | Only one stress mode | `<GCStressIncompatible>true</GCStressIncompatible>` (all stress modes) | Add stress-mode predicate via the failing variant |
 
 In the PR `Reasoning` section, list the exact set of failing legs (definition + queue + stress mode) that justifies the chosen condition.
+
+Pre-emit compile-validation checklist for test-disable PRs:
+
+1. Verify the `[ActiveIssue]` overload matches the constructor signature above (no `TestRuntimes` in `TargetFrameworkMonikers` slot).
+2. Verify the test project builds: `dotnet build` in the test directory must succeed.
+3. If build fails due to type mismatch, fix before emitting.
 
 Sanitize every log excerpt in issue and PR bodies using
 `.github/workflows/shared/create-kbe.instructions.md` section

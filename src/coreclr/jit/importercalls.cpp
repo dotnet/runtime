@@ -5203,7 +5203,11 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
     if (mustExpand && (retNode == nullptr))
     {
+#ifdef TARGET_WASM
+        NYI_WASM("Unhandled must expand intrinsic");
+#else
         assert(!"Unhandled must expand intrinsic, throwing PlatformNotSupportedException");
+#endif
         return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
     }
 
@@ -6283,7 +6287,12 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
             hwintrinsic = varTypeIsLong(baseType) ? NI_X86Base_X64_PopCount : NI_X86Base_PopCount;
             result      = gtNewScalarHWIntrinsicNode(baseType, op1, hwintrinsic);
 #elif defined(TARGET_ARM64)
-            // TODO-ARM64-CQ: PopCount should be handled as an intrinsic for non-constant cases
+            impPopStack();
+
+            compFloatingPointUsed = true;
+            result                = new (this, GT_INTRINSIC)
+                GenTreeIntrinsic(TYP_INT, op1, NI_PRIMITIVE_PopCount, nullptr R2RARG(CORINFO_CONST_LOOKUP{IAT_VALUE}));
+            baseType = TYP_INT;
 #endif // TARGET_*
 #endif // FEATURE_HW_INTRINSICS
 
@@ -6489,12 +6498,9 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
             // Pop the value from the stack
             impPopStack();
 
-            hwintrinsic = varTypeIsLong(baseType) ? NI_ArmBase_Arm64_ReverseElementBits : NI_ArmBase_ReverseElementBits;
-            op1         = gtNewScalarHWIntrinsicNode(baseType, op1, hwintrinsic);
-
-            hwintrinsic = varTypeIsLong(baseType) ? NI_ArmBase_Arm64_LeadingZeroCount : NI_ArmBase_LeadingZeroCount;
-            result      = gtNewScalarHWIntrinsicNode(TYP_INT, op1, hwintrinsic);
-            baseType    = TYP_INT;
+            result   = new (this, GT_INTRINSIC) GenTreeIntrinsic(TYP_INT, op1, NI_PRIMITIVE_TrailingZeroCount,
+                                                                 nullptr R2RARG(CORINFO_CONST_LOOKUP{IAT_VALUE}));
+            baseType = TYP_INT;
 #endif // TARGET_*
 #endif // FEATURE_HW_INTRINSICS
 
@@ -8618,6 +8624,8 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
         case NI_System_Math_Round:
         case NI_System_Math_Sqrt:
         case NI_System_Math_Truncate:
+        case NI_PRIMITIVE_PopCount:
+        case NI_PRIMITIVE_TrailingZeroCount:
             return true;
 
         default:

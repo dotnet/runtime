@@ -2681,7 +2681,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetExactTypeHandle(DebuggerIPCE_E
 
 // Retrieve the generic type params for a given MethodDesc.  This function is specifically
 // for stackwalking because it requires the generic type token on the stack.
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetMethodDescParams(VMPTR_MethodDesc vmMethodDesc, GENERICS_TYPE_TOKEN genericsToken, OUT UINT32 * pcGenericClassTypeParams, OUT TypeParamsList * pGenericTypeParams)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateMethodDescParams(VMPTR_MethodDesc vmMethodDesc, GENERICS_TYPE_TOKEN genericsToken, OUT UINT32 * pcGenericClassTypeParams, FP_TYPEPARAM_CALLBACK fpCallback, CALLBACK_DATA pUserData)
 {
     DD_ENTER_MAY_THROW;
 
@@ -2694,7 +2694,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetMethodDescParams(VMPTR_MethodD
             ThrowHR(E_INVALIDARG);
         }
 
-        _ASSERTE((pcGenericClassTypeParams != NULL) && (pGenericTypeParams != NULL));
+        _ASSERTE((pcGenericClassTypeParams != NULL) && (fpCallback != NULL));
 
         MethodDesc * pMD = vmMethodDesc.GetDacPtr();
 
@@ -2739,9 +2739,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetMethodDescParams(VMPTR_MethodD
         _ASSERTE((classInst.IsEmpty())  == (cGenericClassTypeParams  == 0));
         _ASSERTE((methodInst.IsEmpty()) == (cGenericMethodTypeParams == 0));
 
-        // allocate memory for the return array
-        pGenericTypeParams->Alloc(cTotalGenericTypeParams);
-
         for (UINT32 i = 0; i < cTotalGenericTypeParams; i++)
         {
             // Retrieve the current type parameter depending on the index.
@@ -2755,6 +2752,8 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetMethodDescParams(VMPTR_MethodD
                 thCurrent = methodInst[i - cGenericClassTypeParams];
             }
 
+            DebuggerIPCE_ExpandedTypeData entry;
+
             // There is the possibility that we'll get this far with a dump and not fail, but still
             // not be able to get full info for a particular param.
             EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY_WITH_HANDLER
@@ -2762,7 +2761,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetMethodDescParams(VMPTR_MethodD
                 // Fill in the struct using the TypeHandle of the current type parameter if we can.
                 IfFailThrow(TypeHandleToExpandedTypeInfo(NoValueTypeBoxing,
                                                          (CORDB_ADDRESS)thCurrent.AsTAddr(),
-                                                         &((*pGenericTypeParams)[i])));
+                                                         &entry));
             }
             EX_CATCH_ALLOW_DATATARGET_MISSING_MEMORY_WITH_HANDLER
             {
@@ -2770,9 +2769,11 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetMethodDescParams(VMPTR_MethodD
                 TypeHandle thCanon = TypeHandle(g_pCanonMethodTableClass);
                 IfFailThrow(TypeHandleToExpandedTypeInfo(NoValueTypeBoxing,
                                                          (CORDB_ADDRESS)thCanon.AsTAddr(),
-                                                         &((*pGenericTypeParams)[i])));
+                                                         &entry));
             }
             EX_END_CATCH_ALLOW_DATATARGET_MISSING_MEMORY_WITH_HANDLER
+
+            fpCallback(&entry, pUserData);
         }
     }
     EX_CATCH_HRESULT(hr);
@@ -3169,37 +3170,35 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetCollectibleTypeStaticAddress(V
     return hr;
 }
 
-// DacDbi API: GetTypeHandleParams
+// DacDbi API: EnumerateTypeHandleParams
 // - gets the necessary data for a type handle, i.e. its type parameters, e.g. "String" and "List<int>" from the type handle
-//   for "Dict<String,List<int>>", and sends it back to the right side.
-// - pParams is allocated and initialized by this function
+//   for "Dict<String,List<int>>", and sends it back to the right side via the callback.
 // - This should not fail except for OOM
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetTypeHandleParams(VMPTR_TypeHandle vmTypeHandle, OUT TypeParamsList * pParams)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateTypeHandleParams(VMPTR_TypeHandle vmTypeHandle, FP_TYPEPARAM_CALLBACK fpCallback, CALLBACK_DATA pUserData)
 {
     DD_ENTER_MAY_THROW
 
     HRESULT hr = S_OK;
     EX_TRY
     {
+        _ASSERTE(fpCallback != NULL);
 
         TypeHandle typeHandle = TypeHandle::FromPtr(vmTypeHandle.GetDacPtr());
-        LOG((LF_CORDB, LL_INFO10000, "D::GTHP: getting type parameters for 0x%08x 0x%0x8.\n",
-             vmAppDomain.GetDacPtr(), typeHandle.AsPtr()));
+        LOG((LF_CORDB, LL_INFO10000, "D::ETHP: enumerating type parameters for 0x%p.\n", typeHandle.AsPtr()));
 
+        unsigned int count = typeHandle.GetNumGenericArgs();
+        Instantiation inst = typeHandle.GetInstantiation();
 
-        // Find the class given its type handle.
-        _ASSERTE(pParams->IsEmpty());
-        pParams->Alloc(typeHandle.GetNumGenericArgs());
-
-        // collect type information for each type parameter
-        for (unsigned int i = 0; i < pParams->Count(); ++i)
+        for (unsigned int i = 0; i < count; ++i)
         {
+            DebuggerIPCE_ExpandedTypeData entry;
             IfFailThrow(TypeHandleToExpandedTypeInfo(NoValueTypeBoxing,
-                                                     (CORDB_ADDRESS)typeHandle.GetInstantiation()[i].AsTAddr(),
-                                                     &((*pParams)[i])));
+                                                     (CORDB_ADDRESS)inst[i].AsTAddr(),
+                                                     &entry));
+            fpCallback(&entry, pUserData);
         }
 
-        LOG((LF_CORDB, LL_INFO10000, "D::GTHP: sending  result"));
+        LOG((LF_CORDB, LL_INFO10000, "D::ETHP: sending result"));
     }
     EX_CATCH_HRESULT(hr);
     return hr;
@@ -4163,7 +4162,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetSymbolsBuffer(VMPTR_Module vmM
 
 
 
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetModuleForAssembly(VMPTR_Assembly vmAssembly, OUT VMPTR_Module * pModule)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetModuleForAssembly(VMPTR_Assembly vmAssembly, OUT VMPTR_Module * pModule, OUT BOOL * pIsModuleLoaded)
 {
     DD_ENTER_MAY_THROW;
 
@@ -4173,8 +4172,26 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetModuleForAssembly(VMPTR_Assemb
 
         _ASSERTE(pModule != NULL);
 
+        // Initialize out params up front so callers don't observe stale/uninitialized
+        // values if we throw below.
+        *pModule = VMPTR_Module::NullPtr();
+        if (pIsModuleLoaded != NULL)
+        {
+            *pIsModuleLoaded = FALSE;
+        }
+
         Assembly * pAssembly = vmAssembly.GetDacPtr();
+        if (pAssembly == NULL)
+        {
+            ThrowHR(E_INVALIDARG);
+        }
+
         pModule->SetHostPtr(pAssembly->GetModule());
+
+        if (pIsModuleLoaded != NULL)
+        {
+            *pIsModuleLoaded = pAssembly->IsLoaded() ? TRUE : FALSE;
+        }
     }
     EX_CATCH_HRESULT(hr);
     return hr;
@@ -4227,7 +4244,8 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetModuleData(VMPTR_Module vmModu
 }
 
 
-// Enumerate all Assemblies in an appdomain.
+// Implementation of IDacDbiInterface::EnumerateAssembliesInAppDomain.
+// Enumerate all the assemblies in the appdomain.
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateAssembliesInAppDomain(VMPTR_AppDomain vmAppDomain, FP_ASSEMBLY_ENUMERATION_CALLBACK fpCallback, CALLBACK_DATA pUserData)
 {
     DD_ENTER_MAY_THROW;
@@ -4241,9 +4259,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateAssembliesInAppDomain(VM
         // Iterate through all Assemblies (including shared) in the appdomain.
         AppDomain::AssemblyIterator iterator;
 
-        // If the containing appdomain is unloading, then don't enumerate any assemblies
-        // in the domain. This is to enforce rules at code:IDacDbiInterface#Enumeration.
-        // See comment in code:DacDbiInterfaceImpl::EnumerateModulesInAssembly code for details.
         AppDomain * pAppDomain = vmAppDomain.GetDacPtr();
 
         if (pAppDomain == nullptr)
@@ -4262,30 +4277,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateAssembliesInAppDomain(VM
 
             fpCallback(vmAssembly, pUserData);
         }
-    }
-    EX_CATCH_HRESULT(hr);
-    return hr;
-}
-
-// Implementation of IDacDbiInterface::EnumerateModulesInAssembly,
-// Enumerate all the modules (non-resource) in an assembly.
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateModulesInAssembly(VMPTR_Assembly vmAssembly, FP_MODULE_ENUMERATION_CALLBACK fpCallback, CALLBACK_DATA pUserData)
-{
-    DD_ENTER_MAY_THROW;
-
-    HRESULT hr = S_OK;
-    EX_TRY
-    {
-
-        _ASSERTE(fpCallback != NULL);
-
-        Assembly * pAssembly = vmAssembly.GetDacPtr();
-
-        // If assembly isn't yet loaded, just return
-        if (!pAssembly->IsLoaded())
-            return hr;
-
-        fpCallback(vmAssembly, pUserData);
     }
     EX_CATCH_HRESULT(hr);
     return hr;
@@ -6339,7 +6330,7 @@ CORDB_ADDRESS DacHeapWalker::HeapStart = 0;
 CORDB_ADDRESS DacHeapWalker::HeapEnd = ~0;
 
 DacHeapWalker::DacHeapWalker()
-    : mThreadCount(0), mAllocInfo(0), mHeapCount(0), mHeaps(0),
+    : mAllocContextCount(0), mAllocInfo(0), mHeapCount(0), mHeaps(0),
         mCurrObj(0), mCurrSize(0), mCurrMT(0),
         mCurrHeap(0), mCurrSeg(0), mStart((TADDR)HeapStart), mEnd((TADDR)HeapEnd)
 {
@@ -6378,43 +6369,24 @@ HRESULT DacHeapWalker::Next(CORDB_ADDRESS *pValue, CORDB_ADDRESS *pMT, ULONG64 *
     if (pSize)
         *pSize = (ULONG64)mCurrSize;
 
-    HRESULT hr = MoveToNextObject();
-    return FAILED(hr) ? hr : S_OK;
-}
+    mCurrObj += mCurrSize;
 
-
-
-HRESULT DacHeapWalker::MoveToNextObject()
-{
-    do
-    {
-        // Move to the next object
-        mCurrObj += mCurrSize;
-
-        // Check to see if we are in the correct bounds.
-        bool isGen0 = IsRegionGCEnabled() ? (mHeaps[mCurrHeap].Segments[mCurrSeg].Generation == 0) :
+    bool isGen0 = IsRegionGCEnabled() ? (mHeaps[mCurrHeap].Segments[mCurrSeg].Generation == 0) :
                                    (mHeaps[mCurrHeap].Gen0Start <= mCurrObj && mHeaps[mCurrHeap].Gen0End > mCurrObj);
+    if (isGen0)
+        CheckAllocAndSegmentRange();
 
-        if (isGen0)
-            CheckAllocAndSegmentRange();
+    if (mCurrObj >= mHeaps[mCurrHeap].Segments[mCurrSeg].End || mCurrObj > mEnd)
+    {
+        return AdvanceToNextValidSegment();
+    }
 
-        // Check to see if we've moved off the end of a segment
-        if (mCurrObj >= mHeaps[mCurrHeap].Segments[mCurrSeg].End || mCurrObj > mEnd)
-        {
-            HRESULT hr = NextSegment();
-            if (FAILED(hr) || hr == S_FALSE)
-                return hr;
-        }
+    if (!mCache.ReadMT(mCurrObj, &mCurrMT) || !GetSize(mCurrMT, mCurrSize))
+    {
+        (void)AdvanceToNextValidSegment();
+        return E_FAIL;
+    }
 
-        // Get the method table pointer
-        if (!mCache.ReadMT(mCurrObj, &mCurrMT))
-            return E_FAIL;
-
-        if (!GetSize(mCurrMT, mCurrSize))
-            return E_FAIL;
-    } while (mCurrObj < mStart);
-
-    _ASSERTE(mStart <= mCurrObj && mCurrObj <= mEnd);
     return S_OK;
 }
 
@@ -6465,14 +6437,17 @@ bool DacHeapWalker::GetSize(TADDR tMT, size_t &size)
 }
 
 
-HRESULT DacHeapWalker::NextSegment()
+HRESULT DacHeapWalker::AdvanceToNextValidSegment()
 {
+    HRESULT hr = S_OK;
     mCurrObj = 0;
     mCurrMT = 0;
     mCurrSize = 0;
 
+    bool gotValidStart = false;
     do
     {
+        // If we run out of segments entirely, we're done.
         do
         {
             mCurrSeg++;
@@ -6483,10 +6458,19 @@ HRESULT DacHeapWalker::NextSegment()
 
                 if (mCurrHeap >= mHeapCount)
                 {
-                    return S_FALSE;
+                    // If we accumulated an E_FAIL while trying
+                    // to skip a corrupt segment, propagate it so the caller
+                    // knows the walk didn't end cleanly.
+                    return (hr == S_OK) ? S_FALSE : hr;
                 }
             }
         } while (mHeaps[mCurrHeap].Segments[mCurrSeg].Start >= mHeaps[mCurrHeap].Segments[mCurrSeg].End);
+
+        if ((mHeaps[mCurrHeap].Segments[mCurrSeg].Start > mEnd)
+            || (mHeaps[mCurrHeap].Segments[mCurrSeg].End < mStart))
+        {
+            continue;
+        }
 
         mCurrObj = mHeaps[mCurrHeap].Segments[mCurrSeg].Start;
 
@@ -6496,25 +6480,26 @@ HRESULT DacHeapWalker::NextSegment()
         if (isGen0)
             CheckAllocAndSegmentRange();
 
-        if (!mCache.ReadMT(mCurrObj, &mCurrMT))
+        gotValidStart = mCache.ReadMT(mCurrObj, &mCurrMT) && GetSize(mCurrMT, mCurrSize);
+        if (!gotValidStart)
         {
-            return E_FAIL;
+            mCurrObj = 0;
+            mCurrMT = 0;
+            mCurrSize = 0;
+            // Remember that we skipped over corruption so callers can distinguish
+            // "advanced cleanly" (S_OK) from "advanced past a target-read failure.
+            hr = E_FAIL;
         }
+    } while (!gotValidStart);
 
-        if (!GetSize(mCurrMT, mCurrSize))
-        {
-            return E_FAIL;
-        }
-    } while((mHeaps[mCurrHeap].Segments[mCurrSeg].Start > mEnd) || (mHeaps[mCurrHeap].Segments[mCurrSeg].End < mStart));
-
-    return S_OK;
+    return hr;
 }
 
 void DacHeapWalker::CheckAllocAndSegmentRange()
 {
     const size_t MinObjSize = sizeof(TADDR)*3;
 
-    for (int i = 0; i < mThreadCount; ++i)
+    for (int i = 0; i < mAllocContextCount; ++i)
         if (mCurrObj == mAllocInfo[i].Ptr)
         {
             mCurrObj = mAllocInfo[i].Limit + Align(MinObjSize);
@@ -6566,9 +6551,10 @@ HRESULT DacHeapWalker::Init(CORDB_ADDRESS start, CORDB_ADDRESS end)
         {
             mAllocInfo[j].Ptr = (CORDB_ADDRESS)globalCtx.alloc_ptr;
             mAllocInfo[j].Limit = (CORDB_ADDRESS)globalCtx.alloc_limit;
+            j++;
         }
 
-        mThreadCount = j;
+        mAllocContextCount = j;
     }
 
 #ifdef FEATURE_SVR_GC
@@ -6606,7 +6592,7 @@ HRESULT DacHeapWalker::Reset(CORDB_ADDRESS start, CORDB_ADDRESS end)
 
     // it's possible the first segment is empty
     if (mCurrObj >= mHeaps[0].Segments[0].End)
-        hr = MoveToNextObject();
+        hr = AdvanceToNextValidSegment();
 
     if (!mCache.ReadMT(mCurrObj, &mCurrMT))
         return E_FAIL;
@@ -6615,7 +6601,7 @@ HRESULT DacHeapWalker::Reset(CORDB_ADDRESS start, CORDB_ADDRESS end)
         return E_FAIL;
 
     if (mCurrObj < mStart || mCurrObj > mEnd)
-        hr = MoveToNextObject();
+        hr = AdvanceToNextValidSegment();
 
     return hr;
 }
@@ -6870,9 +6856,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::WalkHeap(HeapWalkHandle handle,
     {
         hr = walk->Next(&addr, &mt, &size);
 
-        if (FAILED(hr))
-            break;
-
+        // On a FAILED return Next() still has a valid prior object.
         if (mt != freeMT)
         {
             objects[i].address = addr;
@@ -6881,6 +6865,9 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::WalkHeap(HeapWalkHandle handle,
             objects[i].size = size;
             i++;
         }
+
+        if (FAILED(hr))
+            break;
     }
 
     if (SUCCEEDED(hr))

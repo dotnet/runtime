@@ -32,11 +32,13 @@ public static class Constants
         public const string RecommendedReaderVersion = nameof(RecommendedReaderVersion);
 
         public const string ContinuationMethodTable = nameof(ContinuationMethodTable);
+        public const string CanonMethodTable = nameof(CanonMethodTable);
         public const string ContinuationSingletonEEClass = nameof(ContinuationSingletonEEClass);
         public const string ExceptionMethodTable = nameof(ExceptionMethodTable);
         public const string FreeObjectMethodTable = nameof(FreeObjectMethodTable);
         public const string ObjectMethodTable = nameof(ObjectMethodTable);
         public const string ObjectArrayMethodTable = nameof(ObjectArrayMethodTable);
+        public const string MulticastDelegateMethodTable = nameof(MulticastDelegateMethodTable);
         public const string StringMethodTable = nameof(StringMethodTable);
 
         public const string MiniMetaDataBuffAddress = nameof(MiniMetaDataBuffAddress);
