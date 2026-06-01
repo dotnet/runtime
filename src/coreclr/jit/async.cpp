@@ -1975,10 +1975,12 @@ bool AsyncTransformation::IsReusableSuspension(const AsyncState*          state,
         }
     }
 
+    // There can still be disagreement on saving a local here if it has its
+    // default value on one path and was assigned a non-default value on the
+    // other path. Do a final layout check to catch that and all other possible
+    // cases.
     if (!ContinuationLayoutBuilder::Equals(*layoutBuilder, *state->Layout))
     {
-        // TODO: We would expect liveness to match in tail positions here. But
-        // sometimes that isn't the case -- why not?
         return false;
     }
 
