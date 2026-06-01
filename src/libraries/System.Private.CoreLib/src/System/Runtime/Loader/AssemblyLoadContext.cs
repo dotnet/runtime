@@ -872,7 +872,7 @@ namespace System.Runtime.Loader
             {
                 return (RuntimeAssembly?)parentALC.LoadFromAssemblyPath(assemblyPath);
             }
-            catch (IOException)
+            catch (FileNotFoundException)
             {
                 return null;
             }
