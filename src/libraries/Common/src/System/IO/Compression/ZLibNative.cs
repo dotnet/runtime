@@ -363,7 +363,7 @@ namespace System.IO.Compression
                 }
             }
 
-            public unsafe ErrorCode DeflateEnd()
+            private unsafe ErrorCode DeflateEnd()
             {
                 EnsureState(State.InitializedForDeflate);
 
@@ -442,7 +442,7 @@ namespace System.IO.Compression
                 }
             }
 
-            public unsafe ErrorCode InflateEnd()
+            private unsafe ErrorCode InflateEnd()
             {
                 EnsureState(State.InitializedForInflate);
 
