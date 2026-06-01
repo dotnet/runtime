@@ -230,8 +230,8 @@ namespace System.Formats.Tar
         // - Metadata typeflag entries (Extended Attributes and Global Extended Attributes in PAX, LongLink and LongPath in GNU)
         //   will get all the data section read and the stream pointer positioned at the beginning of the next header.
         // - Block, Character, Directory, Fifo, HardLink and SymbolicLink typeflag entries have no data section so the archive stream pointer will be positioned at the beginning of the next header.
-                    // - All other typeflag entries with a data section will generate a SubReadStream wrapping the data section.
-                    //   When the archive stream is seekable, the SubReadStream is seekable too.
+        // - All other typeflag entries with a data section will generate a SubReadStream wrapping the data section.
+        //   When the archive stream is seekable, the SubReadStream is seekable too.
         internal void ProcessDataBlock(Stream archiveStream, bool copyData)
         {
             bool skipBlockAlignmentPadding = true;

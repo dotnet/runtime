@@ -33,7 +33,7 @@ namespace System.IO
             }
             ArgumentOutOfRangeException.ThrowIfNegative(startPosition);
             ArgumentOutOfRangeException.ThrowIfNegative(maxLength);
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(startPosition, long.MaxValue - maxLength, nameof(startPosition));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(startPosition, long.MaxValue - maxLength);
 
             _startInSuperStream = startPosition;
             _positionInSuperStream = startPosition;
@@ -111,13 +111,19 @@ namespace System.IO
             else if (bytesToDiscard > 0)
             {
                 byte[] buffer = ArrayPool<byte>.Shared.Rent((int)Math.Min(MaxAdvanceBufferLength, bytesToDiscard));
-                while (bytesToDiscard > 0)
+                try
                 {
-                    int currentLengthToRead = (int)Math.Min(MaxAdvanceBufferLength, bytesToDiscard);
-                    _superStream.ReadExactly(buffer.AsSpan(0, currentLengthToRead));
-                    bytesToDiscard -= currentLengthToRead;
+                    while (bytesToDiscard > 0)
+                    {
+                        int currentLengthToRead = (int)Math.Min(MaxAdvanceBufferLength, bytesToDiscard);
+                        _superStream.ReadExactly(buffer.AsSpan(0, currentLengthToRead));
+                        bytesToDiscard -= currentLengthToRead;
+                    }
                 }
-                ArrayPool<byte>.Shared.Return(buffer);
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(buffer);
+                }
             }
         }
 
@@ -132,13 +138,19 @@ namespace System.IO
             else if (bytesToDiscard > 0)
             {
                 byte[] buffer = ArrayPool<byte>.Shared.Rent((int)Math.Min(MaxAdvanceBufferLength, bytesToDiscard));
-                while (bytesToDiscard > 0)
+                try
                 {
-                    int currentLengthToRead = (int)Math.Min(MaxAdvanceBufferLength, bytesToDiscard);
-                    await _superStream.ReadExactlyAsync(buffer, 0, currentLengthToRead, cancellationToken).ConfigureAwait(false);
-                    bytesToDiscard -= currentLengthToRead;
+                    while (bytesToDiscard > 0)
+                    {
+                        int currentLengthToRead = (int)Math.Min(MaxAdvanceBufferLength, bytesToDiscard);
+                        await _superStream.ReadExactlyAsync(buffer, 0, currentLengthToRead, cancellationToken).ConfigureAwait(false);
+                        bytesToDiscard -= currentLengthToRead;
+                    }
                 }
-                ArrayPool<byte>.Shared.Return(buffer);
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(buffer);
+                }
             }
         }
 
@@ -196,20 +208,12 @@ namespace System.IO
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return Task.FromCanceled<int>(cancellationToken);
-            }
             ValidateBufferArguments(buffer, offset, count);
             return ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
 
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return ValueTask.FromCanceled<int>(cancellationToken);
-            }
             ThrowIfDisposed();
             ThrowIfCantRead();
             ThrowIfBeyondEndOfStream();
