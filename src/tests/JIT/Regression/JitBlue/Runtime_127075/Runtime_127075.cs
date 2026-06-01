@@ -13,8 +13,14 @@ public class Runtime_127075
     public sealed class A : I;
     public sealed class B : I;
 
-    private static readonly I[] s_tailItems = [new B(), new B()];
-    private static readonly IReadOnlyCollection<I> s_tail = s_tailItems;
+    // Roslyn lowers this collection literal stored to IReadOnlyCollection<I>
+    // into a `new <>z__ReadOnlyArray<I>(new I[]{...})` wrapper. The wrapper's
+    // GetEnumerator() does NOT devirtualize even under PGO (the array element
+    // type is inexact), so it stays as a virtual call. That is what triggered
+    // the bug: the second loop's enumerator local store was hidden from
+    // conditional escape analysis.
+    //
+    private static readonly IReadOnlyCollection<I> s_tail = [new B(), new B()];
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static I[] Combine(IReadOnlyCollection<I> head)
@@ -29,14 +35,15 @@ public class Runtime_127075
         for (int i = 0; i < 300; i++)
         {
             I[] result = Combine(head);
-            Assert.Equal(head.Length + s_tailItems.Length, result.Length);
+            Assert.Equal(head.Length + s_tail.Count, result.Length);
             for (int j = 0; j < head.Length; j++)
             {
                 Assert.Same(head[j], result[j]);
             }
-            for (int j = 0; j < s_tailItems.Length; j++)
+            int k = head.Length;
+            foreach (I t in s_tail)
             {
-                Assert.Same(s_tailItems[j], result[head.Length + j]);
+                Assert.Same(t, result[k++]);
             }
             Thread.Sleep(1);
         }
