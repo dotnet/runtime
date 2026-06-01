@@ -212,8 +212,10 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows))]
-        public async Task ClientSession_WantCredentials_SetClientCertificateContext_ResumesHandshake()
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows))]
+        [InlineData(SslProtocols.Tls12)]
+        [InlineData(SslProtocols.Tls13)]
+        public async Task ClientSession_WantCredentials_SetClientCertificateContext_ResumesHandshake(SslProtocols protocol)
         {
             // Server (SslStream) demands a client certificate. The client TlsContext is
             // created without one, so ProcessHandshake must surface WantCredentials when
@@ -222,6 +224,9 @@ namespace System.Net.Security.Tests
             // must resume the handshake to completion and deliver the cert to the server.
             // SChannel resolves client credentials up-front via AcquireCredentialsHandle
             // and never surfaces CredentialsNeeded; this flow is OpenSSL-only.
+            //
+            // AllowTlsResume is disabled on both peers so a session cached by a sibling
+            // parallel test cannot let this client resume and skip the CertificateRequest.
             using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
             using X509Certificate2 clientCert = TestCertificates.GetClientCertificate();
             string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
@@ -236,7 +241,8 @@ namespace System.Net.Security.Tests
                 Task serverHandshake = serverSsl.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
                 {
                     ServerCertificate = serverCert,
-                    EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                    EnabledSslProtocols = protocol,
+                    AllowTlsResume = false,
                     ClientCertificateRequired = true,
                     RemoteCertificateValidationCallback = (s, c, ch, e) =>
                     {
@@ -248,7 +254,8 @@ namespace System.Net.Security.Tests
                 using TlsContext ctx = TlsContext.Create(new SslClientAuthenticationOptions
                 {
                     TargetHost = serverName,
-                    EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                    EnabledSslProtocols = protocol,
+                    AllowTlsResume = false,
                     RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
                 });
                 using TlsSession session = TlsSession.Create(ctx);
@@ -336,16 +343,17 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task ServerSession_OptionalClientCert_NoCertSent_HandshakeCompletesWithoutValidatorCall()
         {
-            // Server: ClientCertificateRequired = false. In a standard handshake the server
-            // never sends a CertificateRequest so the client cannot send a Certificate; the
-            // peer-cert verify callback never fires. The handshake must complete without
-            // invoking the user validator (no cert is exchanged) and GetRemoteCertificate
-            // must return null. This guards against accidentally suspending for validation
-            // when there is nothing to validate.
+            // Server: ClientCertificateRequired = false, client sends no certificate.
+            // Matches SslStream semantics: when a user RemoteCertificateValidationCallback is
+            // supplied, it is invoked once with a null certificate and RemoteCertificateNotAvailable
+            // so the caller can decide whether to accept the anonymous client. GetRemoteCertificate
+            // returns null because no peer certificate was exchanged.
             using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
             string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
 
             int validatorCalls = 0;
+            X509Certificate? observedCert = null;
+            SslPolicyErrors observedErrors = SslPolicyErrors.None;
 
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
             using (clientStream)
@@ -360,6 +368,8 @@ namespace System.Net.Security.Tests
                     RemoteCertificateValidationCallback = (s, c, ch, e) =>
                     {
                         Interlocked.Increment(ref validatorCalls);
+                        observedCert = c;
+                        observedErrors = e;
                         return true;
                     },
                 });
@@ -374,7 +384,9 @@ namespace System.Net.Security.Tests
                 await Task.WhenAll(clientHandshake, serverHandshake).WaitAsync(TimeSpan.FromSeconds(30));
 
                 Assert.True(session.IsHandshakeComplete);
-                Assert.Equal(0, validatorCalls);
+                Assert.Equal(1, validatorCalls);
+                Assert.Null(observedCert);
+                Assert.Equal(SslPolicyErrors.RemoteCertificateNotAvailable, observedErrors);
                 Assert.Null(session.GetRemoteCertificate());
             }
         }
@@ -611,6 +623,9 @@ namespace System.Net.Security.Tests
                 switch (status)
                 {
                     case TlsOperationStatus.Complete:
+                        continue;
+                    case TlsOperationStatus.NeedsCertificateValidation:
+                        session.AcceptWithDefaultValidation();
                         continue;
                     case TlsOperationStatus.WantWrite:
                         DrainPending(session, socket, netOut);
