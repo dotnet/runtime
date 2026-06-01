@@ -151,6 +151,7 @@ internal sealed class MockILCodeVersionNode : TypedView
     private const string NextFieldName = "Next";
     private const string RejitStateFieldName = "RejitState";
     private const string ILAddressFieldName = "ILAddress";
+    private const string DeoptimizedFieldName = "Deoptimized";
 
     public static Layout<MockILCodeVersionNode> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("ILCodeVersionNode", architecture)
@@ -158,6 +159,7 @@ internal sealed class MockILCodeVersionNode : TypedView
             .AddPointerField(NextFieldName)
             .AddUInt32Field(RejitStateFieldName)
             .AddPointerField(ILAddressFieldName)
+            .AddUInt32Field(DeoptimizedFieldName)
             .Build<MockILCodeVersionNode>();
 
     public ulong VersionId
@@ -176,6 +178,12 @@ internal sealed class MockILCodeVersionNode : TypedView
     {
         get => ReadUInt32Field(RejitStateFieldName);
         set => WriteUInt32Field(RejitStateFieldName, value);
+    }
+
+    public uint Deoptimized
+    {
+        get => ReadUInt32Field(DeoptimizedFieldName);
+        set => WriteUInt32Field(DeoptimizedFieldName, value);
     }
 }
 
@@ -305,12 +313,13 @@ internal sealed class MockCodeVersionsBuilder
         => ILCodeVersioningStateLayout.Create(
             _codeVersionsAllocator.Allocate((ulong)ILCodeVersioningStateLayout.Size, "ILCodeVersioningState"));
 
-    public MockILCodeVersionNode AddILCodeVersionNode(ulong versionId, uint rejitFlags)
+    public MockILCodeVersionNode AddILCodeVersionNode(ulong versionId, uint rejitFlags, bool deoptimized = false)
     {
         MockILCodeVersionNode node = ILCodeVersionNodeLayout.Create(
             _codeVersionsAllocator.Allocate((ulong)ILCodeVersionNodeLayout.Size, "ILCodeVersionNode"));
         node.VersionId = versionId;
         node.RejitState = rejitFlags;
+        node.Deoptimized = deoptimized ? 1u : 0u;
         node.Next = 0;
 
         return node;

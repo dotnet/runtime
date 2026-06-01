@@ -74,6 +74,7 @@ using InProcCrashReportModuleInfoCallback = bool (*)(
 struct InProcCrashReporterSettings
 {
     const char* reportPath;
+    int timeoutSeconds;
     InProcCrashReportIsManagedThreadCallback isManagedThreadCallback;
     InProcCrashReportWalkStackCallback walkStackCallback;
     InProcCrashReportEnumerateThreadsCallback enumerateThreadsCallback;
