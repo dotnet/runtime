@@ -20,7 +20,8 @@ namespace System.Net.Security
     {
         private readonly SslAuthenticationOptions _options;
         private readonly bool _ownsOptions;
-        private bool _hasServerOptions;
+        private readonly bool _shareOptions;
+        private readonly bool _templateHasServerOptions;
 
         // Credential handle is owned by TlsContext so it can be shared across multiple
         // TlsSession instances. In wedge mode (WrapShared) SslStream owns the lifetime
@@ -28,28 +29,30 @@ namespace System.Net.Security
         // storage that SslStream and TlsSession both read/write via ref.
         internal SafeFreeCredentials? CredentialsHandle;
 
-        private TlsContext(SslAuthenticationOptions options, bool ownsOptions, bool hasServerOptions)
+        private TlsContext(SslAuthenticationOptions options, bool ownsOptions, bool shareOptions, bool templateHasServerOptions)
         {
             _options = options;
             _ownsOptions = ownsOptions;
-            _hasServerOptions = hasServerOptions;
+            _shareOptions = shareOptions;
+            _templateHasServerOptions = templateHasServerOptions;
         }
 
         internal SslAuthenticationOptions Options => _options;
 
-        // Server-only. False if the context was created with null options and
-        // SetServerOptions has not yet been called on a session.
-        internal bool HasServerOptions => _hasServerOptions;
+        // True when sessions should reuse the context's options bag directly (wedge mode).
+        // False when each session must take a private clone before mutating any field.
+        internal bool ShareOptions => _shareOptions;
 
-        // Applies user-supplied server options to the deferred bag. Called from
-        // TlsSession.SetServerOptions once the caller has inspected the ClientHello.
-        internal void ApplyServerOptions(SslServerAuthenticationOptions options)
-        {
-            Debug.Assert(_options.IsServer);
-            Debug.Assert(!_hasServerOptions);
-            _options.UpdateOptions(options);
-            _hasServerOptions = true;
-        }
+        // True if the template was constructed with non-null server options. Sessions seed
+        // their own per-session HasServerOptions from this and flip it in SetServerOptions.
+        internal bool TemplateHasServerOptions => _templateHasServerOptions;
+
+        // Returns a per-session options bag. For normal contexts each call returns a fresh
+        // clone of the template so session-scoped mutations (TargetHost, SafeSslHandle,
+        // resolved server cert, ...) don't leak between sessions. In wedge mode the bag is
+        // owned by SslStream and we hand it out by reference.
+        internal SslAuthenticationOptions CreateSessionOptions()
+            => _shareOptions ? _options : _options.Clone();
 
         public bool IsServer => _options.IsServer;
 
@@ -71,11 +74,11 @@ namespace System.Net.Security
             if (options is null)
             {
                 bag.IsServer = true;
-                return new TlsContext(bag, ownsOptions: true, hasServerOptions: false);
+                return new TlsContext(bag, ownsOptions: true, shareOptions: false, templateHasServerOptions: false);
             }
 
             bag.UpdateOptions(options);
-            return new TlsContext(bag, ownsOptions: true, hasServerOptions: true);
+            return new TlsContext(bag, ownsOptions: true, shareOptions: false, templateHasServerOptions: true);
         }
 
         /// <summary>
@@ -95,7 +98,7 @@ namespace System.Net.Security
             ArgumentNullException.ThrowIfNull(options);
             SslAuthenticationOptions bag = new SslAuthenticationOptions();
             bag.UpdateOptions(options);
-            return new TlsContext(bag, ownsOptions: true, hasServerOptions: false);
+            return new TlsContext(bag, ownsOptions: true, shareOptions: false, templateHasServerOptions: false);
         }
 
         // Used by SslStream's TlsSession wedge: share the existing options bag so
@@ -104,7 +107,7 @@ namespace System.Net.Security
         internal static TlsContext WrapShared(SslAuthenticationOptions sharedOptions)
         {
             Debug.Assert(sharedOptions != null);
-            return new TlsContext(sharedOptions, ownsOptions: false, hasServerOptions: sharedOptions.IsServer);
+            return new TlsContext(sharedOptions, ownsOptions: false, shareOptions: true, templateHasServerOptions: sharedOptions.IsServer);
         }
 
         public void Dispose()

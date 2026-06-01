@@ -38,6 +38,9 @@ namespace System.Net.Security
         internal const int MaxRecordPlaintext = 16354;
 
         private readonly TlsContext _context;
+        private readonly SslAuthenticationOptions _options;
+        private readonly bool _ownsOptions;
+        private bool _hasServerOptions;
         private SafeDeleteSslContext? _securityContext;
 
         private byte[]? _pending;
@@ -67,6 +70,9 @@ namespace System.Net.Security
         private TlsSession(TlsContext context)
         {
             _context = context;
+            _ownsOptions = !context.ShareOptions;
+            _options = context.CreateSessionOptions();
+            _hasServerOptions = context.TemplateHasServerOptions;
         }
 
         public static TlsSession Create(TlsContext context)
@@ -88,8 +94,8 @@ namespace System.Net.Security
 
         public string? TargetHostName
         {
-            get => _context.Options.TargetHost;
-            set => _context.Options.TargetHost = value ?? string.Empty;
+            get => _options.TargetHost;
+            set => _options.TargetHost = value ?? string.Empty;
         }
 
         public SslProtocols NegotiatedProtocol
@@ -213,7 +219,7 @@ namespace System.Net.Security
                 // populated with the same instance.
                 ok = SslStream.VerifyRemoteCertificateCore(
                     this,
-                    _context.Options,
+                    _options,
                     _securityContext,
                     ref _remoteCertificate,
                     ref _connectionInfo,
@@ -318,7 +324,7 @@ namespace System.Net.Security
             {
                 throw new InvalidOperationException("SetServerOptions can only be called on a server-side session.");
             }
-            if (_context.HasServerOptions)
+            if (_hasServerOptions)
             {
                 throw new InvalidOperationException("Server options were already supplied when the TlsContext was created.");
             }
@@ -327,7 +333,8 @@ namespace System.Net.Security
                 throw new InvalidOperationException("SetServerOptions can only be called after ProcessHandshake returned NeedsServerOptions.");
             }
 
-            _context.ApplyServerOptions(options);
+            _options.UpdateOptions(options);
+            _hasServerOptions = true;
             _clientHelloInfo = null;
         }
 
@@ -373,7 +380,7 @@ namespace System.Net.Security
                 ThrowIfDisposed();
                 if (_context.IsServer)
                 {
-                    return _context.Options.CertificateContext?.TargetCertificate;
+                    return _options.CertificateContext?.TargetCertificate;
                 }
 
                 if (_securityContext == null || _securityContext.IsInvalid)
@@ -386,7 +393,7 @@ namespace System.Net.Security
                     return null;
                 }
 
-                return _context.Options.CertificateContext?.TargetCertificate;
+                return _options.CertificateContext?.TargetCertificate;
             }
         }
 
@@ -498,7 +505,7 @@ namespace System.Net.Security
                         // Deferred options: parse ClientHello and suspend so the caller can
                         // supply server options via SetServerOptions. Leave input unconsumed
                         // (consumed = 0); the caller re-feeds the same bytes after resuming.
-                        if (!_context.HasServerOptions)
+                        if (!_hasServerOptions)
                         {
                             SslClientHelloInfo? parsed = TryParseClientHello(input);
                             if (parsed is null)
@@ -511,8 +518,8 @@ namespace System.Net.Security
                         }
 
                         bool needsCertResolution =
-                            _context.Options.CertificateContext is null &&
-                            _context.Options.ServerCertSelectionDelegate is not null;
+                            _options.CertificateContext is null &&
+                            _options.ServerCertSelectionDelegate is not null;
 
                         if (needsCertResolution && !ResolveServerCertificateFromClientHello(input))
                         {
@@ -529,20 +536,20 @@ namespace System.Net.Security
                         ref _securityContext,
                         input,
                         out bytesConsumed,
-                        _context.Options);
+                        _options);
                 }
                 else
                 {
                     EnsureCredentialsAcquired();
 
-                    string hostName = TargetHostNameHelper.NormalizeHostName(_context.Options.TargetHost);
+                    string hostName = TargetHostNameHelper.NormalizeHostName(_options.TargetHost);
                     token = SslStreamPal.InitializeSecurityContext(
                         ref _context.CredentialsHandle,
                         ref _securityContext,
                         hostName,
                         input,
                         out bytesConsumed,
-                        _context.Options);
+                        _options);
                 }
 
                 // Stage any handshake bytes the PAL produced.
@@ -819,7 +826,7 @@ namespace System.Net.Security
                 ProtocolToken token = SslStreamPal.Renegotiate(
                     ref _context.CredentialsHandle,
                     ref _securityContext!,
-                    _context.Options);
+                    _options);
                 try
                 {
                     if (token.Failed)
@@ -892,18 +899,18 @@ namespace System.Net.Security
                             ref _securityContext,
                             ReadOnlySpan<byte>.Empty,
                             out _,
-                            _context.Options);
+                            _options);
                     }
                     else
                     {
-                        string hostName = TargetHostNameHelper.NormalizeHostName(_context.Options.TargetHost);
+                        string hostName = TargetHostNameHelper.NormalizeHostName(_options.TargetHost);
                         token = SslStreamPal.InitializeSecurityContext(
                             ref _context.CredentialsHandle,
                             ref _securityContext,
                             hostName,
                             ReadOnlySpan<byte>.Empty,
                             out _,
-                            _context.Options);
+                            _options);
                     }
 
                     if (token.Size > 0)
@@ -1046,16 +1053,16 @@ namespace System.Net.Security
 
             if (!string.IsNullOrEmpty(frameInfo.TargetName))
             {
-                _context.Options.TargetHost = frameInfo.TargetName;
+                _options.TargetHost = frameInfo.TargetName;
             }
 
-            ServerCertificateSelectionCallback? selector = _context.Options.ServerCertSelectionDelegate;
-            if (selector is null || _context.Options.CertificateContext is not null)
+            ServerCertificateSelectionCallback? selector = _options.ServerCertSelectionDelegate;
+            if (selector is null || _options.CertificateContext is not null)
             {
                 return true;
             }
 
-            X509Certificate? selected = selector(this, _context.Options.TargetHost);
+            X509Certificate? selected = selector(this, _options.TargetHost);
             if (selected is null)
             {
                 throw new AuthenticationException(SR.net_ssl_io_no_server_cert);
@@ -1067,7 +1074,7 @@ namespace System.Net.Security
                 throw new AuthenticationException(SR.net_ssl_io_no_server_cert);
             }
 
-            _context.Options.SetCertificateContextFromCert(withKey);
+            _options.SetCertificateContextFromCert(withKey);
             return true;
         }
 
@@ -1110,18 +1117,18 @@ namespace System.Net.Security
                     ref _securityContext,
                     input,
                     out bytesConsumed,
-                    _context.Options);
+                    _options);
             }
             else
             {
-                string hostName = TargetHostNameHelper.NormalizeHostName(_context.Options.TargetHost);
+                string hostName = TargetHostNameHelper.NormalizeHostName(_options.TargetHost);
                 token = SslStreamPal.InitializeSecurityContext(
                     ref _context.CredentialsHandle,
                     ref _securityContext,
                     hostName,
                     input,
                     out bytesConsumed,
-                    _context.Options);
+                    _options);
             }
 
             if (token.Status.ErrorCode == SecurityStatusPalErrorCode.OK)
@@ -1149,7 +1156,7 @@ namespace System.Net.Security
             // mandatory (client always validates the server; server only when
             // ClientCertificateRequired).
             bool needsValidation = !_suppressInternalCertificateValidation &&
-                (!_context.IsServer || _context.Options.RemoteCertRequired);
+                (!_context.IsServer || _options.RemoteCertRequired);
             if (!needsValidation)
             {
                 return;
@@ -1174,7 +1181,7 @@ namespace System.Net.Security
         {
             X509Chain? chain = null;
             _externalPendingCert = CertificateValidationPal.GetRemoteCertificate(
-                _securityContext, ref chain, _context.Options.CertificateChainPolicy);
+                _securityContext, ref chain, _options.CertificateChainPolicy);
 
             // Snapshot the peer-sent intermediates into a flat collection and dispose the
             // platform-built chain immediately. The chain instance never escapes the PAL
@@ -1211,7 +1218,7 @@ namespace System.Net.Security
                 return;
             }
 
-            _context.CredentialsHandle = SslStreamPal.AcquireCredentialsHandle(_context.Options, false);
+            _context.CredentialsHandle = SslStreamPal.AcquireCredentialsHandle(_options, false);
         }
 
         // Feed a decrypted post-handshake message (e.g. TLS 1.3 NewSessionTicket
@@ -1236,18 +1243,18 @@ namespace System.Net.Security
                         ref _securityContext,
                         data,
                         out _,
-                        _context.Options);
+                        _options);
                 }
                 else
                 {
-                    string hostName = TargetHostNameHelper.NormalizeHostName(_context.Options.TargetHost);
+                    string hostName = TargetHostNameHelper.NormalizeHostName(_options.TargetHost);
                     token = SslStreamPal.InitializeSecurityContext(
                         ref _context.CredentialsHandle,
                         ref _securityContext,
                         hostName,
                         data,
                         out _,
-                        _context.Options);
+                        _options);
                 }
 
                 if (token.Size > 0)
@@ -1276,6 +1283,11 @@ namespace System.Net.Security
 
             _securityContext?.Dispose();
             _securityContext = null;
+
+            if (_ownsOptions)
+            {
+                _options.Dispose();
+            }
 
             if (_pending != null)
             {

@@ -193,16 +193,50 @@ namespace System.Net.Security
             OwnsCertificateContext = true;
         }
 
+        // Shallow copy of the configuration carried by this bag. Per-handle/per-stream
+        // state (SafeSslHandle, SslStream, RemoteCertificateValidator) is intentionally
+        // not propagated, and the clone does not take ownership of CertificateContext
+        // even if the source did.
+        internal SslAuthenticationOptions Clone()
+        {
+            SslAuthenticationOptions copy = new SslAuthenticationOptions
+            {
+                AllowRenegotiation = AllowRenegotiation,
+                TargetHost = TargetHost,
+                ClientCertificates = ClientCertificates,
+                ApplicationProtocols = ApplicationProtocols,
+                IsServer = IsServer,
+                CertificateContext = CertificateContext,
+                OwnsCertificateContext = false,
+                EnabledSslProtocols = EnabledSslProtocols,
+                CertificateRevocationCheckMode = CertificateRevocationCheckMode,
+                EncryptionPolicy = EncryptionPolicy,
+                RemoteCertRequired = RemoteCertRequired,
+                CheckCertName = CheckCertName,
+                CertValidationDelegate = CertValidationDelegate,
+                CertSelectionDelegate = CertSelectionDelegate,
+                ServerCertSelectionDelegate = ServerCertSelectionDelegate,
+                CipherSuitesPolicy = CipherSuitesPolicy,
+                UserState = UserState,
+                ServerOptionDelegate = ServerOptionDelegate,
+                CertificateChainPolicy = CertificateChainPolicy,
+                AllowTlsResume = AllowTlsResume,
+                AllowRsaPssPadding = AllowRsaPssPadding,
+                AllowRsaPkcs1Padding = AllowRsaPkcs1Padding,
+            };
+            return copy;
+        }
+
         internal bool AllowRenegotiation { get; set; }
         internal string TargetHost { get; set; }
         internal X509CertificateCollection? ClientCertificates { get; set; }
         internal List<SslApplicationProtocol>? ApplicationProtocols { get; set; }
         internal bool IsServer { get; set; }
         internal bool IsClient => !IsServer;
-        internal SslStreamCertificateContext? CertificateContext { get; private set; }
+        internal SslStreamCertificateContext? CertificateContext { get; set; }
         // If true, the certificate context was created by the SslStream and
         // certificates inside should be disposed when no longer needed.
-        internal bool OwnsCertificateContext { get; private set; }
+        internal bool OwnsCertificateContext { get; set; }
         internal SslProtocols EnabledSslProtocols { get; set; }
         internal X509RevocationMode CertificateRevocationCheckMode { get; set; }
         internal EncryptionPolicy EncryptionPolicy { get; set; }
