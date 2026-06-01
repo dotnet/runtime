@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { JsModuleExports, EmscriptenModuleInternal, JsAsset, PromiseCompletionSource } from "./types";
+import type { JsModuleExports, EmscriptenModuleInternal, JsAsset, PromiseCompletionSource, Assets } from "./types";
 
 import { dotnetAssert, dotnetInternals, dotnetBrowserHostExports, Module } from "./cross-module";
 import { exit, runtimeState } from "./exit";
@@ -96,6 +96,8 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
             modulesAfterConfigLoadedCache = modulesAfterConfigLoadedPromises;
         }
 
+        addAppsettingsToVfs(resources);
+
         // HTTP cache only path: just fetch all resources into browser cache and discard
         if (downloadOnly && httpCacheOnly) {
             await prefetchAllResources();
@@ -125,22 +127,6 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
         const satelliteResourcesPromise = loaderConfig.loadAllSatelliteResources && resources.satelliteResources
             ? fetchSatelliteAssemblies(Object.keys(resources.satelliteResources))
             : Promise.resolve();
-
-        // Add appsettings files to VFS for download
-        if (loaderConfig.appsettings) {
-            for (const configUrl of loaderConfig.appsettings) {
-                const lastSlash = configUrl.lastIndexOf("/");
-                const configFileName = lastSlash >= 0 ? configUrl.substring(lastSlash + 1) : configUrl;
-                if (configFileName === "appsettings.json" || configFileName === `appsettings.${loaderConfig.applicationEnvironment}.json`) {
-                    resources.vfs!.push({
-                        name: configUrl,
-                        virtualPath: configFileName,
-                        cache: "no-cache",
-                        useCredentials: true,
-                    } as any);
-                }
-            }
-        }
 
         const vfsPromise = forEachResource(resources.vfs, fetchVfs);
 
@@ -252,4 +238,25 @@ function normalizeCollection<T>(collection: T[] | undefined): T[] {
         return [];
     }
     return collection;
+}
+
+function addAppsettingsToVfs(resources: Assets): void {
+    if (!loaderConfig.appsettings) {
+        return;
+    }
+    if (!resources.vfs) {
+        resources.vfs = [];
+    }
+    for (const configUrl of loaderConfig.appsettings) {
+        const lastSlash = configUrl.lastIndexOf("/");
+        const configFileName = lastSlash >= 0 ? configUrl.substring(lastSlash + 1) : configUrl;
+        if (configFileName === "appsettings.json" || configFileName === `appsettings.${loaderConfig.applicationEnvironment}.json`) {
+            resources.vfs.push({
+                name: configUrl,
+                virtualPath: configFileName,
+                cache: "no-cache",
+                useCredentials: true,
+            } as any);
+        }
+    }
 }
