@@ -7075,13 +7075,12 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
         VNFuncApp funcApp;
         if (GetVNFunc(vn, &funcApp))
         {
-#if defined(FEATURE_HW_INTRINSICS)
             // Some HWIntrinsic functions have known result ranges that can be queried via flags.
-            if ((funcApp.GetFunc() >= VNF_HWI_FIRST) && (funcApp.GetFunc() <= VNF_HWI_LAST))
+            NamedIntrinsic id;
+            unsigned       simdSize;
+            var_types      simdBaseType;
+            if (IsVNHWIntrinsicFunc(vn, &funcApp, &id, &simdSize, &simdBaseType))
             {
-                NamedIntrinsic id =
-                    static_cast<NamedIntrinsic>((funcApp.GetFunc() - VNF_HWI_FIRST) + (NI_HW_INTRINSIC_START + 1));
-
                 if (HWIntrinsicInfo::ReturnsBoolean(id))
                 {
                     // A boolean [0, 1]
@@ -7091,17 +7090,12 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
                 if (HWIntrinsicInfo::ReturnsScalarT(id))
                 {
                     // We are extracting a value of the base types width and sign
-
-                    var_types simdBaseType;
-                    GetVNHWIntrinsicSizeAndBaseType(funcApp, &simdBaseType);
-
                     if ((simdBaseType == TYP_UBYTE) || (simdBaseType == TYP_USHORT))
                     {
                         return VNVisit::Continue;
                     }
                 }
             }
-#endif // FEATURE_HW_INTRINSICS
 
             switch (funcApp.GetFunc())
             {
