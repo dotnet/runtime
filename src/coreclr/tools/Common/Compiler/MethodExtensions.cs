@@ -184,6 +184,11 @@ namespace ILCompiler
         /// </summary>
         public static bool IsAsyncCall(this MethodDesc method) => method.IsAsyncVariant() || method.IsReturnDroppingAsyncThunk() || (method.IsAsync && !method.Signature.ReturnsTaskOrValueTask());
 
-        public static bool IsAsyncVersion(this MethodDesc method) => method.IsAsyncVariant() && method.IsAsyncThunk();
+        /// <summary>
+        /// Check if this is an async method whose codegen supports passing it the IL of the original non-async method.
+        /// </summary>
+        /// <param name="method"></param>
+        /// <returns></returns>
+        public static bool SupportsAsyncVersionCodegen(this MethodDesc method) => method.IsAsyncVariant() && method.IsAsyncThunk();
     }
 }

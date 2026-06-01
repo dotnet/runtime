@@ -79,56 +79,13 @@ namespace Internal.IL
         }
         private ExceptionRegion[] _exceptionRegions;
 
-        private sealed class AsyncVersionMethodIL : MethodIL
-        {
-            private readonly MethodDesc _variant;
-            private readonly MethodIL _ecmaIL;
-
-            public MethodIL WrappedIL => _ecmaIL;
-
-            public AsyncVersionMethodIL(MethodDesc variant, MethodIL ecmaIL)
-                => (_variant, _ecmaIL) = (variant, ecmaIL);
-
-            // This is the reason we need this class - the method that owns the IL is the variant.
-            public override MethodDesc OwningMethod => _variant;
-
-            // Everything else dispatches to MethodIL
-            public override MethodDebugInformation GetDebugInfo() => _ecmaIL.GetDebugInfo();
-            public override ILExceptionRegion[] GetExceptionRegions() => _ecmaIL.GetExceptionRegions();
-            public override byte[] GetILBytes() => _ecmaIL.GetILBytes();
-            public override LocalVariableDefinition[] GetLocals() => _ecmaIL.GetLocals();
-            public override object GetObject(int token, NotFoundBehavior notFoundBehavior = NotFoundBehavior.Throw) => _ecmaIL.GetObject(token, notFoundBehavior);
-            public override bool IsInitLocals => _ecmaIL.IsInitLocals;
-            public override int MaxStack => _ecmaIL.MaxStack;
-        }
-
-        private MethodIL GetMethodILWithPotentialAsyncVersion(MethodDesc method)
-        {
-            if (method.IsAsyncVersion())
-            {
-                MethodDesc targetMethod = method.GetTargetOfAsyncVariant();
-
-                MethodDesc methodDef = method.GetTypicalMethodDefinition();
-                MethodDesc targetMethodDef = targetMethod.GetTypicalMethodDefinition();
-                MethodIL methodIL = new AsyncVersionMethodIL(methodDef, _compilation.GetMethodIL(targetMethodDef));
-                if (method != methodDef)
-                {
-                    methodIL = new InstantiatedMethodIL(method, methodIL);
-                }
-
-                return methodIL;
-            }
-
-            return _compilation.GetMethodIL(method);
-        }
-
         public ILImporter(ILScanner compilation, MethodDesc method, MethodIL methodIL = null)
         {
             _compilation = compilation;
 
             if (methodIL == null)
             {
-                methodIL = GetMethodILWithPotentialAsyncVersion(method);
+                methodIL = AsyncVersionMethodIL.GetWrappedIfAsyncVersion(method, _compilation);
             }
             else
             {
@@ -247,7 +204,7 @@ namespace Internal.IL
                     conditionalDependencies.Add(new(dep.Node, bb.Condition, dep.Reason));
             }
 
-            CodeBasedDependencyAlgorithm.AddDependenciesDueToMethodCodePresence(ref _unconditionalDependencies, _factory, _canonMethod, _canonMethodIL);
+            CodeBasedDependencyAlgorithm.AddDependenciesDueToMethodCodePresence(ref _unconditionalDependencies, _factory, _canonMethod, AsyncVersionMethodIL.UnwrapIfAsyncVersion(_canonMethodIL));
             CodeBasedDependencyAlgorithm.AddConditionalDependenciesDueToMethodCodePresence(ref conditionalDependencies, _factory, _canonMethod);
 
             return (_unconditionalDependencies, conditionalDependencies);
@@ -493,7 +450,7 @@ namespace Internal.IL
             if ((method.Signature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask) == MethodSignatureFlags.CallingConventionVarargs)
                 ThrowHelper.ThrowBadImageFormatException();
 
-            _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _compilation.NodeFactory, _canonMethodIL, method);
+            _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _compilation.NodeFactory, AsyncVersionMethodIL.UnwrapIfAsyncVersion(_canonMethodIL), method);
 
             if (method.IsRawPInvoke())
             {
@@ -516,7 +473,7 @@ namespace Internal.IL
                 // Don't get async variant of Delegate.Invoke method; the pointed to method is not an async variant either.
                 allowAsyncVariant = allowAsyncVariant && !method.OwningType.IsDelegate;
 
-                if (allowAsyncVariant && (_canonMethod.IsAsyncVersion() ? MatchTailCallAwait(method) : MatchTaskAwaitPattern()))
+                if (allowAsyncVariant && (_canonMethod.SupportsAsyncVersionCodegen() ? MatchTailCallAwait(method) : MatchTaskAwaitPattern()))
                 {
                     MethodDesc asyncVariantMethod = _factory.TypeSystemContext.GetAsyncVariantMethod(method);
                     MethodDesc asyncVariantRuntimeDeterminedMethod = _factory.TypeSystemContext.GetAsyncVariantMethod(runtimeDeterminedMethod);
@@ -1174,7 +1131,7 @@ namespace Internal.IL
         {
             _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.TypeHandleToRuntimeType), "mkrefany");
             _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.TypeHandleToRuntimeTypeHandle), "mkrefany");
-            _factory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _factory, _methodIL, (TypeDesc)_canonMethodIL.GetObject(token));
+            _factory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _factory, AsyncVersionMethodIL.UnwrapIfAsyncVersion(_methodIL), (TypeDesc)_canonMethodIL.GetObject(token));
             ImportTypedRefOperationDependencies(token, "mkrefany");
         }
 
@@ -1214,7 +1171,7 @@ namespace Internal.IL
                     }
                 }
 
-                _factory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _factory, _methodIL, (TypeDesc)_canonMethodIL.GetObject(token));
+                _factory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _factory, AsyncVersionMethodIL.UnwrapIfAsyncVersion(_methodIL), (TypeDesc)_canonMethodIL.GetObject(token));
 
                 _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.GetRuntimeTypeHandle), "ldtoken");
                 _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.GetRuntimeType), "ldtoken");
@@ -1297,7 +1254,7 @@ namespace Internal.IL
             if (field.IsLiteral)
                 ThrowHelper.ThrowMissingFieldException(field.OwningType, field.GetName());
 
-            _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _compilation.NodeFactory, _canonMethodIL, canonField);
+            _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _compilation.NodeFactory, AsyncVersionMethodIL.UnwrapIfAsyncVersion(_canonMethodIL), canonField);
 
             // `write` will be null for ld(s)flda. Consider address loads write unless they were
             // for initonly static fields. We'll trust the initonly that this is not a write.
@@ -1451,7 +1408,7 @@ namespace Internal.IL
                 return;
 
             TypeDesc typeForAccessCheck = type.IsRuntimeDeterminedSubtype ? type.ConvertToCanonForm(CanonicalFormKind.Specific) : type;
-            _factory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _factory, _methodIL, typeForAccessCheck);
+            _factory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _factory, AsyncVersionMethodIL.UnwrapIfAsyncVersion(_methodIL), typeForAccessCheck);
 
             if (type.IsRuntimeDeterminedSubtype)
             {
@@ -1480,7 +1437,7 @@ namespace Internal.IL
         private void ImportNewArray(int token)
         {
             var elementType = (TypeDesc)_methodIL.GetObject(token);
-            _factory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _factory, _methodIL, (TypeDesc)_canonMethodIL.GetObject(token));
+            _factory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _factory, AsyncVersionMethodIL.UnwrapIfAsyncVersion(_methodIL), (TypeDesc)_canonMethodIL.GetObject(token));
             if (elementType.IsRuntimeDeterminedSubtype)
             {
                 _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, elementType.MakeArrayType()), "newarr");
@@ -1829,7 +1786,7 @@ namespace Internal.IL
 
         private void ImportReturn()
         {
-            if (_wrappingAwaitReported || !_canonMethod.IsAsyncVersion() || _prevMatchedAwaitTailCallRetPostOffset == _currentOffset)
+            if (_wrappingAwaitReported || !_canonMethod.SupportsAsyncVersionCodegen() || _prevMatchedAwaitTailCallRetPostOffset == _currentOffset)
             {
                 return;
             }

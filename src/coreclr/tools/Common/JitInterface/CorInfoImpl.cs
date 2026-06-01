@@ -319,58 +319,6 @@ namespace Internal.JitInterface
             return null;
         }
 
-        private sealed class AsyncVersionMethodIL : MethodIL
-        {
-            private readonly MethodDesc _variant;
-            private readonly MethodIL _ecmaIL;
-
-            public MethodIL WrappedIL => _ecmaIL;
-
-            public AsyncVersionMethodIL(MethodDesc variant, MethodIL ecmaIL)
-                => (_variant, _ecmaIL) = (variant, ecmaIL);
-
-            // This is the reason we need this class - the method that owns the IL is the variant.
-            public override MethodDesc OwningMethod => _variant;
-
-            // Everything else dispatches to MethodIL
-            public override MethodDebugInformation GetDebugInfo() => _ecmaIL.GetDebugInfo();
-            public override ILExceptionRegion[] GetExceptionRegions() => _ecmaIL.GetExceptionRegions();
-            public override byte[] GetILBytes() => _ecmaIL.GetILBytes();
-            public override LocalVariableDefinition[] GetLocals() => _ecmaIL.GetLocals();
-            public override object GetObject(int token, NotFoundBehavior notFoundBehavior = NotFoundBehavior.Throw) => _ecmaIL.GetObject(token, notFoundBehavior);
-            public override bool IsInitLocals => _ecmaIL.IsInitLocals;
-            public override int MaxStack => _ecmaIL.MaxStack;
-        }
-
-        private MethodIL GetMethodILWithPotentialAsyncVersion(MethodDesc method)
-        {
-            if (method.IsAsyncVersion())
-            {
-                MethodDesc targetMethod = method.GetTargetOfAsyncVariant();
-
-                MethodDesc methodDef = method.GetTypicalMethodDefinition();
-                MethodDesc targetMethodDef = targetMethod.GetTypicalMethodDefinition();
-                MethodIL methodIL = new AsyncVersionMethodIL(methodDef, _compilation.GetMethodIL(targetMethodDef));
-                if (method != methodDef)
-                {
-                    methodIL = new InstantiatedMethodIL(method, methodIL);
-                }
-
-                return methodIL;
-            }
-
-            return _compilation.GetMethodIL(method);
-        }
-
-        private MethodIL RemoveAsyncVersion(MethodIL methodIL)
-        {
-            if (methodIL.GetMethodILDefinition() is AsyncVersionMethodIL)
-            {
-                return _compilation.GetMethodIL(methodIL.OwningMethod);
-            }
-            return methodIL;
-        }
-
         private CompilationResult CompileMethodInternal(IMethodNode methodCodeNodeNeedingCode, MethodIL methodIL)
         {
             // methodIL must not be null
@@ -627,7 +575,7 @@ namespace Internal.JitInterface
             }
 #else
             var methodIL = (MethodIL)HandleToObject((void*)_methodScope);
-            CodeBasedDependencyAlgorithm.AddDependenciesDueToMethodCodePresence(ref _additionalDependencies, _compilation.NodeFactory, MethodBeingCompiled, RemoveAsyncVersion(methodIL));
+            CodeBasedDependencyAlgorithm.AddDependenciesDueToMethodCodePresence(ref _additionalDependencies, _compilation.NodeFactory, MethodBeingCompiled, AsyncVersionMethodIL.UnwrapIfAsyncVersion(methodIL));
             _methodCodeNode.InitializeDebugInfo(_debugInfo);
 
             LocalVariableDefinition[] locals = methodIL.GetLocals();
@@ -887,7 +835,7 @@ namespace Internal.JitInterface
             }
 
 #if !READYTORUN
-            if (method.IsAsyncVersion())
+            if (method.SupportsAsyncVersionCodegen())
             {
                 // This is an async version and the IL belongs to the sync version.
                 methodInfo->options |= CorInfoOptions.CORINFO_ASYNC_VERSION;
@@ -1325,7 +1273,7 @@ namespace Internal.JitInterface
             if (!_compilation.CanInline(MethodBeingCompiled, method))
                 return false;
 
-            MethodIL methodIL = method.IsUnboxingThunk() ? null : GetMethodILWithPotentialAsyncVersion(method);
+            MethodIL methodIL = method.IsUnboxingThunk() ? null : AsyncVersionMethodIL.GetWrappedIfAsyncVersion(method, _compilation);
             return Get_CORINFO_METHOD_INFO(method, methodIL, info);
         }
 
@@ -1354,7 +1302,7 @@ namespace Internal.JitInterface
             {
                 if (rootModule.IsWrapNonExceptionThrows != calleeModule.IsWrapNonExceptionThrows)
                 {
-                    var calleeIL = GetMethodILWithPotentialAsyncVersion(calleeMethod);
+                    var calleeIL = AsyncVersionMethodIL.GetWrappedIfAsyncVersion(calleeMethod, _compilation);
                     if (calleeIL.GetExceptionRegions().Length != 0)
                     {
                         // Fail inlining if root method and callee have different exception wrapping behavior
@@ -1387,7 +1335,7 @@ namespace Internal.JitInterface
 
         private void getEHinfo(CORINFO_METHOD_STRUCT_* ftn, uint EHnumber, ref CORINFO_EH_CLAUSE clause)
         {
-            var methodIL = GetMethodILWithPotentialAsyncVersion(HandleToObject(ftn));
+            var methodIL = AsyncVersionMethodIL.GetWrappedIfAsyncVersion(HandleToObject(ftn), _compilation);
 
             var ehRegion = methodIL.GetExceptionRegions()[EHnumber];
 
@@ -1576,7 +1524,7 @@ namespace Internal.JitInterface
 #endif
 
                 CORINFO_RESOLVED_TOKEN result = default(CORINFO_RESOLVED_TOKEN);
-                MethodILScope scope = jitInterface.GetMethodILWithPotentialAsyncVersion(methodWithToken.Method);
+                MethodILScope scope = AsyncVersionMethodIL.GetWrappedIfAsyncVersion(methodWithToken.Method, jitInterface._compilation);
                 scope ??= EcmaMethodILScope.Create((EcmaMethod)methodWithToken.Method.GetTypicalMethodDefinition());
                 result.tokenScope = jitInterface.ObjectToHandle(scope);
                 result.tokenContext = jitInterface.contextFromMethod(method);
@@ -1950,7 +1898,7 @@ namespace Internal.JitInterface
                     ValidateSafetyOfUsingTypeEquivalenceInSignature(method.Signature);
                 }
 #else
-                _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _additionalDependencies, _compilation.NodeFactory, RemoveAsyncVersion((MethodIL)methodIL), method);
+                _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _additionalDependencies, _compilation.NodeFactory, AsyncVersionMethodIL.UnwrapIfAsyncVersion((MethodIL)methodIL), method);
 #endif
 
                 if (pResolvedToken.tokenType is CorInfoTokenKind.CORINFO_TOKENKIND_Await)

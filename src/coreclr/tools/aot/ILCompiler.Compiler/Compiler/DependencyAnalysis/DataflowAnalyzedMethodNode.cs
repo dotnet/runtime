@@ -23,6 +23,10 @@ namespace ILCompiler.DependencyAnalysis
 
         public DataflowAnalyzedMethodNode(MethodIL methodIL)
         {
+            if (methodIL is AsyncVersionMethodIL)
+            {
+                Console.WriteLine("foo");
+            }
             Debug.Assert(methodIL.OwningMethod.IsTypicalMethodDefinition);
             Debug.Assert(!CompilerGeneratedState.IsNestedFunctionOrStateMachineMember(methodIL.OwningMethod));
             _methodIL = methodIL;
