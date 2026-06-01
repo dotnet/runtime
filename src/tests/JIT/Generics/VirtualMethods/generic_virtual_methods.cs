@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using Xunit;
 
@@ -219,6 +220,11 @@ internal class RuntimeLookupDelegateGenericVirtual
         Delegate m1 = test2.Foo<List<T>>();
         Delegate m2 = test2.Foo<List<List<T>>>;
         Assert.Equal(m1, m2);
+        
+        IBase foo = new DerivedStruct();
+        Delegate d = foo.Foo<List<T>>();
+        MethodInfo expected = typeof(DerivedStruct).GetMethod(nameof(DerivedStruct.Foo))!.MakeGenericMethod(typeof(List<T>));
+        Assert.Equal(expected, d.Method);
     }
 }
 
@@ -242,6 +248,19 @@ internal class Derived : Base
     public override Delegate Foo<U1>()
     {
         return Foo<List<U1>>;
+    }
+}
+
+internal interface IBase
+{
+    Delegate Foo<U>();
+}
+
+internal struct DerivedStruct : IBase
+{
+    public Delegate Foo<U>()
+    {
+        return Foo<U>;
     }
 }
 
