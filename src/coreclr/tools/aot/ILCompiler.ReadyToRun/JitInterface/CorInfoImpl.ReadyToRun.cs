@@ -2774,11 +2774,12 @@ namespace Internal.JitInterface
                     break;
 
                 case DictionaryEntryKind.MethodDescSlot:
+                case DictionaryEntryKind.DevirtualizedMethodDescSlot:
                 case DictionaryEntryKind.MethodEntrySlot:
                 case DictionaryEntryKind.ConstrainedMethodEntrySlot:
                 case DictionaryEntryKind.DispatchStubAddrSlot:
                 {
-                    if (entryKind == DictionaryEntryKind.MethodDescSlot)
+                    if (entryKind == DictionaryEntryKind.MethodDescSlot || entryKind == DictionaryEntryKind.DevirtualizedMethodDescSlot)
                     {
                         helperId = ReadyToRunHelperId.MethodHandle;
                     }
@@ -2806,21 +2807,38 @@ namespace Internal.JitInterface
                     throw new NotImplementedException(entryKind.ToString());
             }
 
-            object helperArg = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
-            if (helperArg is MethodDesc methodDesc)
+            object helperArg;
+            if (entryKind == DictionaryEntryKind.DevirtualizedMethodDescSlot)
             {
-                var methodIL = HandleToObject(pResolvedToken.tokenScope);
-                MethodDesc sharedMethod = methodIL.OwningMethod.GetSharedRuntimeFormMethodTarget();
-                // We shouldn't be needing shared generics in resumption stubs - generics info should all be stored in the continuation
-                Debug.Assert(MethodBeingCompiled is not AsyncResumptionStub);
-                _compilation.NodeFactory.DetectGenericCycles(MethodBeingCompiled, sharedMethod);
-                helperArg = new MethodWithToken(methodDesc, HandleToModuleToken(ref pResolvedToken, out bool strippedInstantiation), constrainedType, unboxing: false, genericContextObject: sharedMethod, forceOwningTypeFromMethodDesc: strippedInstantiation);
+                Debug.Assert(templateMethod != null);
+                MethodDesc tokenMethod = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
+                if (tokenMethod.HasInstantiation)
+                {
+                    templateMethod = _compilation.TypeSystemContext.GetInstantiatedMethod(templateMethod.GetMethodDefinition(), tokenMethod.Instantiation);
+                }
+                _compilation.NodeFactory.DetectGenericCycles(MethodBeingCompiled, templateMethod);
+                ModuleToken templateMethodToken =
+                    _compilation.NodeFactory.Resolver.GetModuleTokenForMethod(templateMethod.GetTypicalMethodDefinition(), allowDynamicallyCreatedReference: false, throwIfNotFound: true);
+                helperArg = new MethodWithToken(templateMethod, templateMethodToken, constrainedType: null, unboxing: false, genericContextObject: null);
             }
-            else if (helperArg is FieldDesc fieldDesc)
+            else
             {
-                ModuleToken fieldToken = HandleToModuleToken(ref pResolvedToken, out bool strippedInstantiation);
-                Debug.Assert(!strippedInstantiation);
-                helperArg = new FieldWithToken(fieldDesc, fieldToken, forceOwningTypeNotDerivedFromToken: strippedInstantiation);
+                helperArg = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
+                if (helperArg is MethodDesc methodDesc)
+                {
+                    var methodIL = HandleToObject(pResolvedToken.tokenScope);
+                    MethodDesc sharedMethod = methodIL.OwningMethod.GetSharedRuntimeFormMethodTarget();
+                    // We shouldn't be needing shared generics in resumption stubs - generics info should all be stored in the continuation
+                    Debug.Assert(MethodBeingCompiled is not AsyncResumptionStub);
+                    _compilation.NodeFactory.DetectGenericCycles(MethodBeingCompiled, sharedMethod);
+                    helperArg = new MethodWithToken(methodDesc, HandleToModuleToken(ref pResolvedToken, out bool strippedInstantiation), constrainedType, unboxing: false, genericContextObject: sharedMethod, forceOwningTypeFromMethodDesc: strippedInstantiation);
+                }
+                else if (helperArg is FieldDesc fieldDesc)
+                {
+                    ModuleToken fieldToken = HandleToModuleToken(ref pResolvedToken, out bool strippedInstantiation);
+                    Debug.Assert(!strippedInstantiation);
+                    helperArg = new FieldWithToken(fieldDesc, fieldToken, forceOwningTypeNotDerivedFromToken: strippedInstantiation);
+                }
             }
 
             var methodContext = new GenericContext(callerHandle);
