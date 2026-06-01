@@ -259,32 +259,32 @@ void SystemNative_LowLevelFutex_WakeByAddressSingle(int32_t* address)
 }
 #else// defined(TARGET_LINUX) || defined(TARGET_ANDROID)
 
-__attribute__((noreturn))
 void SystemNative_LowLevelFutex_WaitOnAddress(int32_t* address, int32_t comparand)
 {
     (void)address; // unused
     (void)comparand; // unused
-    assert_msg(false, "Futex is not supported on this platform", 0);
+    assert(!"Futex is not supported on this platform");
     errno = ENOTSUP;
-    abort();
+    // trivial implementation of Wait always wakes spuriously.
 }
 
-__attribute__((noreturn))
 int32_t SystemNative_LowLevelFutex_WaitOnAddressTimeout(int32_t* address, int32_t comparand, int32_t timeoutMilliseconds)
 {
     (void)address; // unused
     (void)comparand; // unused
     (void)timeoutMilliseconds; // unused
-    assert_msg(false, "Futex is not supported on this platform", 0);
-    abort();
+    assert(!"Futex is not supported on this platform");
+    errno = ENOTSUP;
+    // trivial implementation of Wait always wakes spuriously.
+    return 1;
 }
 
-__attribute__((noreturn))
 void SystemNative_LowLevelFutex_WakeByAddressSingle(int32_t* address)
 {
     (void)address; // unused
-    assert_msg(false, "Futex is not supported on this platform", 0);
-    abort();
+    assert(!"Futex is not supported on this platform");
+    errno = ENOTSUP;
+    // trivial implementation of Wake does nothing.
 }
 
 #endif  // defined(TARGET_LINUX) || defined(TARGET_ANDROID)
