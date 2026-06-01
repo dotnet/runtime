@@ -249,6 +249,8 @@ int32_t AndroidCryptoNative_GetDsaParameters(
     cbQ = AndroidCryptoNative_GetBigNumBytes(loc[qBn]);
     cbG = AndroidCryptoNative_GetBigNumBytes(loc[gBn]);
     cbY = AndroidCryptoNative_GetBigNumBytes(loc[yBn]);
+    if (cbP == FAIL || cbQ == FAIL || cbG == FAIL || cbY == FAIL)
+        goto cleanup;
 
     loc[privateKey] = (*env)->CallObjectMethod(env, dsa, g_keyPairGetPrivateMethod);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
@@ -259,6 +261,8 @@ int32_t AndroidCryptoNative_GetDsaParameters(
         loc[xBn] = (*env)->CallObjectMethod(env, loc[privateKeySpec], g_DSAPrivateKeySpecGetX);
         ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
         cbX = AndroidCryptoNative_GetBigNumBytes(loc[xBn]);
+        if (cbX == FAIL)
+            goto cleanup;
     }
 
     // Clean up any partially promoted global refs if a later promotion fails.
