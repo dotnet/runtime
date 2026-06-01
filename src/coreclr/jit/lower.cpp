@@ -7679,6 +7679,12 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
         // because we won't be able to use ldar/star
         return false;
     }
+
+    // TODO-SVE: Create an addressable node containing an index scaled by VL or PL
+    if (parent->TypeIs(TYP_MASK, TYP_SIMD))
+    {
+        return false;
+    }
 #endif
 
     GenTree* base   = nullptr;
@@ -10150,12 +10156,18 @@ void Lowering::LowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blk)
     assert(!blk->IsVolatile());
     assert(!blk->Data()->OperIs(GT_IND) || !blk->Data()->AsIndir()->IsVolatile());
 
+    // Capture whether the original block store could throw (e.g. NRE from a null address).
+
     GenTree* dest = blk->Addr();
     GenTree* data = blk->Data();
+
+    bool destMayFault = blk->IndirMayFault(m_compiler);
+    bool dataMayFault;
 
     if (data->OperIs(GT_IND))
     {
         // Drop GT_IND nodes
+        dataMayFault = data->IndirMayFault(m_compiler);
         BlockRange().Remove(data);
         data = data->AsIndir()->Addr();
     }
@@ -10164,6 +10176,7 @@ void Lowering::LowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blk)
         assert(data->OperIs(GT_LCL_VAR, GT_LCL_FLD));
 
         // Convert local to LCL_ADDR
+        dataMayFault       = false;
         unsigned lclOffset = data->AsLclVarCommon()->GetLclOffs();
         data->ChangeOper(GT_LCL_ADDR);
         data->ChangeType(TYP_I_IMPL);
@@ -10228,8 +10241,16 @@ void Lowering::LowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blk)
             LowerNode(nullcheck);
         }
     };
-    wrapWithNullcheck(dest);
-    wrapWithNullcheck(data);
+
+    if (destMayFault)
+    {
+        wrapWithNullcheck(dest);
+    }
+
+    if (dataMayFault)
+    {
+        wrapWithNullcheck(data);
+    }
 }
 
 //------------------------------------------------------------------------

@@ -212,6 +212,7 @@ namespace R2RDump
                     Machine.Arm64 => TargetArchitecture.ARM64,
                     Machine.LoongArch64 => TargetArchitecture.LoongArch64,
                     Machine.RiscV64 => TargetArchitecture.RiscV64,
+                    WasmMachine.Wasm32 => TargetArchitecture.Wasm32,
                     _ => throw new NotImplementedException(r2r.Machine.ToString()),
                 };
                 TargetOS os = r2r.OperatingSystem switch
@@ -466,7 +467,7 @@ namespace R2RDump
                     // parse the ReadyToRun image
                     ReadyToRunReader r2r = new(model, filename);
                     r2r.ValidateDebugInfo = Get(_command.ValidateDebugInfo);
-                    if (disasm && !(r2r.CompositeReader is WebcilImageReader))
+                    if (disasm)
                     {
                         disassembler = new Disassembler(r2r, model);
                     }

@@ -526,11 +526,6 @@ EXTERN_C void JIT_CheckedWriteBarrier_End()
     PORTABILITY_ASSERT("JIT_CheckedWriteBarrier_End is not implemented on wasm");
 }
 
-EXTERN_C void JIT_ByRefWriteBarrier_End()
-{
-    PORTABILITY_ASSERT("JIT_ByRefWriteBarrier_End is not implemented on wasm");
-}
-
 EXTERN_C void JIT_StackProbe_End()
 {
     PORTABILITY_ASSERT("JIT_StackProbe_End is not implemented on wasm");
@@ -622,8 +617,6 @@ extern "C" void RhpVTableOffsetDispatch()
 typedef uint8_t CODE_LOCATION;
 CODE_LOCATION RhpAssignRefAVLocation;
 CODE_LOCATION RhpCheckedAssignRefAVLocation;
-CODE_LOCATION RhpByRefAssignRefAVLocation1;
-CODE_LOCATION RhpByRefAssignRefAVLocation2;
 
 extern "C" void ThisPtrRetBufPrecodeWorker()
 {
