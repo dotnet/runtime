@@ -3507,6 +3507,7 @@ namespace Internal.JitInterface
             instArg = default;
             return null;
 #else
+            instArg = default;
             MethodDesc caller = HandleToObject(callerHandle);
             Debug.Assert(caller.IsAsyncVariant() && caller.IsAsyncThunk());
 
