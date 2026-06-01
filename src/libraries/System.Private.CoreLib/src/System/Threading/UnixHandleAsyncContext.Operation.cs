@@ -142,7 +142,9 @@ namespace System.Threading
                 }
                 catch (ObjectDisposedException)
                 {
-                    // (unlikely) The handle was disposed before aborting the context, or the user called SetHandleAsInvalid.
+                    // The handle was disposed while TryCompleteOperation was running.
+                    // This can happen when AbortAndDispose returns while an operation is in-flight
+                    // and the caller disposes the handle before the operation finishes.
                     _state = State.RunningWithPendingAbort;
                 }
 

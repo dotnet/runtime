@@ -199,7 +199,7 @@ namespace System.IO.Ports
             {
                 if (!IsOpen)
                     throw new InvalidOperationException(SR.Port_not_open);
-                return _internalSerialStream.BytesToRead + CachedBytesToRead; // count the number of bytes we have in the internal buffer too.
+                return _internalSerialStream.GetBytesToRead(CachedBytesToRead); // count the number of bytes we have in the internal buffer too.
             }
         }
 
@@ -458,6 +458,8 @@ namespace System.IO.Ports
 
                 if (IsOpen)
                 {
+                    _internalSerialStream.ReceivedBytesThreshold = value;
+
                     // fake the call to our event handler in case the threshold has been set lower
                     // than how many bytes we currently have.
                     SerialDataReceivedEventArgs args = new SerialDataReceivedEventArgs(SerialData.Chars);
@@ -639,6 +641,8 @@ namespace System.IO.Ports
             {
                 _internalSerialStream.PinChanged += _pinChangedHandler;
             }
+
+            _internalSerialStream.ReceivedBytesThreshold = _receivedBytesThreshold;
 
             if (_dataReceived != null)
             {
@@ -1270,6 +1274,7 @@ namespace System.IO.Ports
 
             if ((eventHandler != null) && (stream != null))
             {
+                bool raiseSkipped = false; // If we don't meet the threshold, ensure we keep watching for it.
                 lock (stream)
                 {
                     // SerialStream might be closed between the time the event runner
@@ -1280,7 +1285,12 @@ namespace System.IO.Ports
                     bool raiseEvent = false;
                     try
                     {
-                        raiseEvent = stream.IsOpen && (SerialData.Eof == e.EventType || BytesToRead >= _receivedBytesThreshold);
+                        if (!stream.IsOpen)
+                        {
+                            return;
+                        }
+                        raiseSkipped = SerialData.Chars == e.EventType && stream.GetBytesToRead(CachedBytesToRead, throwOnDispose: false) < _receivedBytesThreshold;
+                        raiseEvent = SerialData.Eof == e.EventType || !raiseSkipped;
                     }
                     catch
                     {
@@ -1297,6 +1307,11 @@ namespace System.IO.Ports
                         if (raiseEvent)
                             eventHandler(this, e);  // here, do your reading, etc.
                     }
+                }
+
+                if (raiseSkipped)
+                {
+                    stream.OnRaiseCharsEventSkipped();
                 }
             }
         }

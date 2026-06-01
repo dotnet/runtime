@@ -22,6 +22,10 @@ namespace System.IO.Ports
         private bool _inBreak;
         private Handshake _handshake;
 
+        internal int ReceivedBytesThreshold { get; set; } = 1;
+
+        internal int BytesToRead => GetBytesToRead(buffered: 0);
+
 #pragma warning disable CS0067 // Events shared by Windows and Linux, on Linux we currently never call them
         // called when any runtime error occurs on the port (frame, overrun, parity, etc.)
         internal event SerialErrorReceivedEventHandler ErrorReceived;
