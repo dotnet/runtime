@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
+    <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+    <GCStressIncompatible>true</GCStressIncompatible>
+    <JitOptimizationSensitive>true</JitOptimizationSensitive>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+    <ProjectReference Include="../common/eventpipe_common.csproj" />
+    <ProjectReference Include="../common/Microsoft.Diagnostics.NETCore.Client/Microsoft.Diagnostics.NETCore.Client.csproj" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+</Project>
