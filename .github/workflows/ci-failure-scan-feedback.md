@@ -200,13 +200,13 @@ Hard rules: no comments on issues/PRs, no edits outside `.github/workflows/ci-fa
 
    These reflect the health of the **CI being monitored**, not the scanner workflow itself. Each signal has a fixed threshold and renders as 🔴 when tripped, otherwise 🟢.
 
-   Source data comes from the cached artifact list; `[ci-scan]` KBE issues are proxies for distinct stable failure signatures in CI. For each KBE issue, fetch the body via the `github` MCP and grep for the line `Build error leg or test failing: <value>` (this is the only place the KBE template carries leg information; older `Impact on platforms` lines are not present in templates emitted after #128440). The value is `<AzDO leg name>-<assembly or test name>` where the separator is the LAST `-` in the value: split on the last hyphen and treat the left side as the leg. Cache `(issue_number, leg)` rows to `/tmp/gh-aw/agent/artifact_legs.tsv`. Signals count distinct legs, not pipelines (the KBE body does not capture the AzDO pipeline definition id reliably).
+   Source data comes from the cached artifact list; `[ci-scan]` KBE issues are proxies for distinct stable failure signatures in CI. For each KBE issue, fetch the body via the `github` MCP and grep for the line `Build error leg or test failing: <value>` (this is the only place the KBE template carries leg information; older `Impact on platforms` lines are not present in templates emitted after #128440). The value is `<AzDO leg name>-<assembly or test name>` where the separator is the LAST `-` in the value: split on the last hyphen and treat the left side as the leg. Cache `(issue_number, leg)` rows to `/tmp/gh-aw/agent/artifact_legs.tsv`. The pipeline-outage signal counts distinct legs because the KBE body does not capture the AzDO pipeline definition id reliably; treat distinct legs as a conservative proxy for distinct pipelines.
 
    | signal | source | threshold |
    |---|---|---|
    | New-KBE burst | count of `[ci-scan]` KBE issues created per day in the last 7d | any day > 2x trailing 30d daily median (min absolute count 3 to avoid noise) |
    | Build-break spike | count of `[ci-scan] Build break:` issues created per 24h | >= 2 in any 24h window in the last 7d |
-   | Multi-leg outage | distinct leg names (parsed per above) across KBEs created in the last 24h | >= 3 distinct legs |
+   | Multi-pipeline outage (distinct legs proxy) | distinct leg names (parsed per above) across KBEs created in the last 24h | >= 3 distinct legs |
    | KBE re-filed after maintainer close | for each `[ci-scan]` KBE issue opened in the last 7d, search `is:issue is:closed -is:open in:title "<test-name-stem>" closed:>=<14d-ago>` and check whether any closed predecessor exists with a MEMBER/OWNER comment matching the keyword set in section B | any in the last 7d |
    | Wrong-closure rate | section B's `wrong_rate_30d` | >= 30% with `closed_30d >= 10` |
 
@@ -243,11 +243,18 @@ Hard rules: no comments on issues/PRs, no edits outside `.github/workflows/ci-fa
    |---|---|---|---|---|
    | New-KBE burst | day > 2x trailing 30d median (min 3) | <new_kbe_24h> / median <median_daily_kbe_30d> | peak day <peak_kbe_7d> | <🔴 or 🟢> |
    | Build-break spike | >= 2 in any 24h | <bb_24h> | <bb_7d> | <icon> |
-   | Multi-leg outage | >= 3 distinct legs in 24h | <legs_24h> distinct | <legs_peak_7d> distinct (peak day) | <icon> |
+   | Multi-pipeline outage (distinct legs proxy) | >= 3 distinct legs in 24h | <legs_24h> distinct | <legs_peak_7d> distinct (peak day) | <icon> |
    | KBE re-filed after maintainer close | any in 7d | <refile_24h> | <refile_7d> | <icon> |
    | Wrong-closure rate (30d) | >= 30% with `closed_30d >= 10` | — | <wrong_rate_30d_pct> | <icon> |
 
-   When status is 🔴, append a `details:` line beneath the table for that row naming the offending artifacts (for example, `details: refile signal: #128793 re-filed #128737`, or `details: multi-leg: runtime-coreclr outerloop linux x64 checked, runtime-extra-platforms windows x86 release, runtime-interpreter linux x64 checked all red on 2026-06-01`) so a maintainer can jump straight to the source without grepping logs.
+   For each signal at 🔴, emit one `details:` line **after** the Outage signals table (not inside it; markdown tables cannot carry sub-rows). Prefix each line with the signal name so it is unambiguous which row it explains. Example:
+
+   ```
+   details: Multi-pipeline outage — runtime-coreclr outerloop linux x64 checked, runtime-extra-platforms windows x86 release, runtime-interpreter linux x64 checked all red on 2026-06-01
+   details: KBE re-filed after maintainer close — #128793 re-filed #128737
+   ```
+
+   Omit the details block entirely when no signal is 🔴.
    ````
 
    Suppression rules:
