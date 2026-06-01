@@ -246,6 +246,12 @@ internal sealed class ManagedTypeSource_1 : IManagedTypeSource
 
         ILoader loader = _target.Contracts.Loader;
         TargetPointer systemAssembly = loader.GetSystemAssembly();
+        if (systemAssembly == TargetPointer.Null)
+        {
+            mdReader = null;
+            return false;
+        }
+
         ModuleHandle moduleHandle = loader.GetModuleHandleFromAssemblyPtr(systemAssembly);
 
         if (!TryFindTypeDefinition(moduleHandle, managedFqName, out mdReader, out TypeDefinitionHandle typeDefHandle))
