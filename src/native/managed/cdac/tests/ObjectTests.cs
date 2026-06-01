@@ -325,10 +325,9 @@ public unsafe class ObjectTests
 
         DelegateInfo info = contract.GetDelegateInfo(delegateAddress);
 
-        Assert.Equal(TestTarget, info.Target.Value);
-        Assert.Equal(TestMethodPtr, info.MethodPtr.Value);
-        Assert.Equal(0ul, info.MethodPtrAux.Value);
-        Assert.Equal(0ul, info.InvocationCount.Value);
+        Assert.Equal(DelegateType.Closed, info.DelegateType);
+        Assert.Equal(TestTarget, info.TargetObject.Value);
+        Assert.Equal(TestMethodPtr, info.TargetMethodPtr.Value);
     }
 
     [Theory]
@@ -354,10 +353,9 @@ public unsafe class ObjectTests
 
         DelegateInfo info = contract.GetDelegateInfo(delegateAddress);
 
-        Assert.Equal(0ul, info.Target.Value);
-        Assert.Equal(TestMethodPtr, info.MethodPtr.Value);
-        Assert.Equal(TestMethodPtrAux, info.MethodPtrAux.Value);
-        Assert.Equal(0ul, info.InvocationCount.Value);
+        Assert.Equal(DelegateType.Open, info.DelegateType);
+        Assert.Equal(0ul, info.TargetObject.Value);
+        Assert.Equal(TestMethodPtrAux, info.TargetMethodPtr.Value);
     }
 
     [Theory]
@@ -366,7 +364,7 @@ public unsafe class ObjectTests
     {
         const ulong TestMethodTable = 0x00000000_10000200;
         const ulong TestMethodPtr = 0x00000000_aaaa0000;
-        const ulong TestInvocationCount = 3;
+        const long TestInvocationCount = 3;
         TargetPointer delegateAddress = default;
 
         IObject contract = CreateObjectContract(
@@ -383,9 +381,8 @@ public unsafe class ObjectTests
 
         DelegateInfo info = contract.GetDelegateInfo(delegateAddress);
 
-        Assert.Equal(0ul, info.Target.Value);
-        Assert.Equal(TestMethodPtr, info.MethodPtr.Value);
-        Assert.Equal(0ul, info.MethodPtrAux.Value);
-        Assert.Equal(TestInvocationCount, info.InvocationCount.Value);
+        Assert.Equal(DelegateType.Unknown, info.DelegateType);
+        Assert.Equal(0ul, info.TargetObject.Value);
+        Assert.Equal(0ul, info.TargetMethodPtr.Value);
     }
 }

@@ -5,11 +5,17 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
+public enum DelegateType
+{
+    Unknown,
+    Closed,
+    Open,
+}
+
 public readonly record struct DelegateInfo(
-    TargetPointer Target,
-    TargetCodePointer MethodPtr,
-    TargetCodePointer MethodPtrAux,
-    TargetNUInt InvocationCount);
+    TargetPointer TargetObject,
+    TargetCodePointer TargetMethodPtr,
+    DelegateType DelegateType);
 
 public interface IObject : IContract
 {

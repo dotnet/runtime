@@ -3325,44 +3325,74 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsDelegate(VMPTR_Object vmObject,
     return hr;
 }
 
+//-----------------------------------------------------------------------------
+// Given a delegate pointer, compute the type of delegate according to the data held in it.
+//-----------------------------------------------------------------------------
+DacDbiInterfaceImpl::DelegateType DacDbiInterfaceImpl::GetDelegateType(VMPTR_Object delegateObject)
+{
+    _ASSERTE(!delegateObject.IsNull());
+
+    DelegateType delegateType = DelegateType::kUnknownDelegateType;
+    PTR_DelegateObject pDelObj = dac_cast<PTR_DelegateObject>(delegateObject.GetDacPtr());
+    INT_PTR invocationCount = pDelObj->GetInvocationCount();
+
+    if (invocationCount == 0)
+    {
+        // If this delegate points to a static function or this is a open virtual delegate, this should be non-null
+        // Special case: This might fail in a VSD delegate (instance open virtual)...
+        // TODO: There is the special signatures cases missing.
+        TADDR targetMethodPtr = PCODEToPINSTR(pDelObj->GetMethodPtrAux());
+        if (targetMethodPtr == (TADDR)NULL)
+        {
+            // Static extension methods, other closed static delegates, and instance delegates fall into this category.
+            delegateType = DelegateType::kClosedDelegate;
+        }
+        else
+        {
+            delegateType = DelegateType::kOpenDelegate;
+        }
+    }
+    return delegateType;
+}
+
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetDelegateFunctionData(
     VMPTR_Object delegateObject,
     OUT VMPTR_Assembly *ppFunctionAssembly,
     OUT mdMethodDef *pMethodDef)
 {
     DD_ENTER_MAY_THROW;
-
-    BOOL fIsDelegate = FALSE;
-    IsDelegate(delegateObject, &fIsDelegate);
-    if (!fIsDelegate)
-    {
-        return CORDBG_E_UNSUPPORTED_DELEGATE;
-    }
-
     HRESULT hr = S_OK;
-    PTR_DelegateObject pDelObj = dac_cast<PTR_DelegateObject>(delegateObject.GetDacPtr());
-    if (pDelObj->GetInvocationCount())
-    {
-        return CORDBG_E_UNSUPPORTED_DELEGATE;
-    }
 
-    TADDR targetMethodPtr = (TADDR)NULL;
-    VMPTR_MethodDesc pMD;
-    if (pDelObj->GetMethodPtrAux())
+    EX_TRY
     {
-        targetMethodPtr = PCODEToPINSTR(pDelObj->GetMethodPtrAux());
-    }
-    else
-    {
-        targetMethodPtr = PCODEToPINSTR(pDelObj->GetMethodPtr());
-    }
+        BOOL fIsDelegate = FALSE;
+        IsDelegate(delegateObject, &fIsDelegate);
+        if (!fIsDelegate)
+        {
+            ThrowHR(CORDBG_E_UNSUPPORTED_DELEGATE);
+        }
 
-    hr = GetMethodDescPtrFromIpEx(targetMethodPtr, &pMD);
-    if (hr != S_OK)
-        return hr;
+        PTR_DelegateObject pDelObj = dac_cast<PTR_DelegateObject>(delegateObject.GetDacPtr());
+        TADDR targetMethodPtr = (TADDR)NULL;
 
-    ppFunctionAssembly->SetDacTargetPtr(dac_cast<TADDR>(pMD.GetDacPtr()->GetModule()->GetAssembly()));
-    *pMethodDef = pMD.GetDacPtr()->GetMemberDef();
+        switch (GetDelegateType(delegateObject))
+        {
+            case kClosedDelegate:
+                targetMethodPtr = PCODEToPINSTR(pDelObj->GetMethodPtr());
+                break;
+            case kOpenDelegate:
+                targetMethodPtr = PCODEToPINSTR(pDelObj->GetMethodPtrAux());
+                break;
+            default:
+                ThrowHR(CORDBG_E_UNSUPPORTED_DELEGATE);
+        }
+
+        VMPTR_MethodDesc pMD;
+        IfFailThrow(GetMethodDescPtrFromIpEx(targetMethodPtr, &pMD));
+        ppFunctionAssembly->SetDacTargetPtr(dac_cast<TADDR>(pMD.GetDacPtr()->GetModule()->GetAssembly()));
+        *pMethodDef = pMD.GetDacPtr()->GetMemberDef();
+    }
+    EX_CATCH_HRESULT(hr);
 
     return hr;
 }
@@ -3372,31 +3402,33 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetDelegateTargetObject(
     OUT VMPTR_Object *ppTargetObj)
 {
     DD_ENTER_MAY_THROW;
-
-    BOOL fIsDelegate = FALSE;
-    IsDelegate(delegateObject, &fIsDelegate);
-    if (!fIsDelegate)
-    {
-        return CORDBG_E_UNSUPPORTED_DELEGATE;
-    }
-
     HRESULT hr = S_OK;
-    PTR_DelegateObject pDelObj = dac_cast<PTR_DelegateObject>(delegateObject.GetDacPtr());
-    if (pDelObj->GetInvocationCount())
+    EX_TRY
     {
-        return CORDBG_E_UNSUPPORTED_DELEGATE;
-    }
+        BOOL fIsDelegate = FALSE;
+        IsDelegate(delegateObject, &fIsDelegate);
+        if (!fIsDelegate)
+        {
+            ThrowHR(CORDBG_E_UNSUPPORTED_DELEGATE);
+        }
 
-    if (pDelObj->GetMethodPtrAux() == (PCODE)NULL)
-    {
-        // closed delegate
-        PTR_Object pRemoteTargetObj = OBJECTREFToObject(pDelObj->GetTarget());
-        ppTargetObj->SetDacTargetPtr(pRemoteTargetObj.GetAddr());
+        PTR_DelegateObject pDelObj = dac_cast<PTR_DelegateObject>(delegateObject.GetDacPtr());
+        switch (GetDelegateType(delegateObject))
+        {
+            case kClosedDelegate:
+            {
+                PTR_Object pRemoteTargetObj = OBJECTREFToObject(pDelObj->GetTarget());
+                ppTargetObj->SetDacTargetPtr(pRemoteTargetObj.GetAddr());
+                break;
+            }
+            case kOpenDelegate:
+                ppTargetObj->SetDacTargetPtr((TADDR)NULL);
+                break;
+            default:
+                ThrowHR(CORDBG_E_UNSUPPORTED_DELEGATE);
+        }
     }
-    else
-    {
-        ppTargetObj->SetDacTargetPtr((TADDR)NULL);
-    }
+    EX_CATCH_HRESULT(hr);
     return hr;
 }
 

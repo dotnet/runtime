@@ -149,10 +149,30 @@ internal readonly struct Object_1 : IObject
     public DelegateInfo GetDelegateInfo(TargetPointer address)
     {
         Data.Delegate del = _target.ProcessedData.GetOrAdd<Data.Delegate>(address);
+
+        // Classify by invocation count first: -1 is the unmanaged-fptr sentinel,
+        // anything other than 0 indicates a multicast/wrapper/special-sig delegate
+        // that this API does not interpret further. Only when invocationCount==0
+        // do MethodPtr/MethodPtrAux unambiguously identify a closed/open delegate.
+        DelegateType delegateType = DelegateType.Unknown;
+        if (del.InvocationCount.Value == 0)
+        {
+            if (del.MethodPtrAux == TargetCodePointer.Null)
+                delegateType = DelegateType.Closed;
+            else
+                delegateType = DelegateType.Open;
+        }
+
+        (TargetPointer targetObject, TargetCodePointer targetMethodPtr) = delegateType switch
+        {
+            DelegateType.Closed => (del.Target, del.MethodPtr),
+            DelegateType.Open => (TargetPointer.Null, del.MethodPtrAux),
+            _ => (TargetPointer.Null, TargetCodePointer.Null),
+        };
+
         return new DelegateInfo(
-            Target: del.Target,
-            MethodPtr: del.MethodPtr,
-            MethodPtrAux: del.MethodPtrAux,
-            InvocationCount: del.InvocationCount);
+            TargetObject: targetObject,
+            TargetMethodPtr: targetMethodPtr,
+            DelegateType: delegateType);
     }
 }

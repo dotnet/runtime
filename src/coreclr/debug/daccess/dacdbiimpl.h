@@ -404,6 +404,15 @@ private:
                                               TypeHandle * pInst);
 
 
+    typedef enum
+    {
+        kUnknownDelegateType,
+        kClosedDelegate,
+        kOpenDelegate,
+    } DelegateType;
+
+    static DelegateType GetDelegateType(VMPTR_Object delegateObject);
+
     // TypeDataWalk
     // This class provides functionality to allow us to read type handles for generic type parameters or the
     // argument of an array or address type. It takes code sharing into account and allows us to get the canonical

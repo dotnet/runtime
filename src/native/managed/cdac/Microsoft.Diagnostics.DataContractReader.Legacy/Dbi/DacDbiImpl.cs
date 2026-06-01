@@ -3680,19 +3680,15 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
             DelegateInfo delegateInfo = _target.Contracts.Object.GetDelegateInfo(new TargetPointer(delegateObject));
 
-            // Multicast/wrapper/special-sig delegates are not supported by this API.
-            if (delegateInfo.InvocationCount.Value != 0)
+            // Only closed/open delegates expose a single managed target method via this API.
+            // Multicast, unmanaged-fptr, wrapper, and special-sig delegates are not supported.
+            if (delegateInfo.DelegateType is not (DelegateType.Closed or DelegateType.Open))
             {
                 throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_UNSUPPORTED_DELEGATE)!;
             }
 
-            // Open delegate uses methodPtrAux; closed delegate uses methodPtr.
-            TargetCodePointer targetMethodPtr = delegateInfo.MethodPtrAux != TargetCodePointer.Null
-                ? delegateInfo.MethodPtrAux
-                : delegateInfo.MethodPtr;
-
             IExecutionManager eman = _target.Contracts.ExecutionManager;
-            TargetPointer methodDescPtr = eman.NonVirtualEntry2MethodDesc(targetMethodPtr);
+            TargetPointer methodDescPtr = eman.NonVirtualEntry2MethodDesc(delegateInfo.TargetMethodPtr);
 
             if (methodDescPtr == TargetPointer.Null)
             {
@@ -3741,21 +3737,12 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_UNSUPPORTED_DELEGATE)!;
 
             DelegateInfo delegateInfo = _target.Contracts.Object.GetDelegateInfo(new TargetPointer(delegateObject));
-            if (delegateInfo.InvocationCount.Value != 0)
+            if (delegateInfo.DelegateType is not (DelegateType.Closed or DelegateType.Open))
             {
                 throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_UNSUPPORTED_DELEGATE)!;
             }
 
-            if (delegateInfo.MethodPtrAux == TargetCodePointer.Null)
-            {
-                // Closed delegate: return the bound target object reference.
-                *ppTargetObj = delegateInfo.Target.Value;
-            }
-            else
-            {
-                // Open delegate: return 0 to indicate no bound target object.
-                *ppTargetObj = 0;
-            }
+            *ppTargetObj = delegateInfo.TargetObject.Value;
         }
         catch (System.Exception ex)
         {

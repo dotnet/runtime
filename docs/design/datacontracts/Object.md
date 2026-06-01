@@ -5,11 +5,17 @@ This contract is for getting information about well-known managed objects
 ## APIs of contract
 
 ``` csharp
+public enum DelegateType
+{
+    Unknown,
+    Closed,
+    Open,
+}
+
 public readonly record struct DelegateInfo(
-    TargetPointer Target,
-    TargetCodePointer MethodPtr,
-    TargetCodePointer MethodPtrAux,
-    TargetNUInt InvocationCount);
+    TargetPointer TargetObject,
+    TargetCodePointer TargetMethodPtr,
+    DelegateType DelegateType);
 
 // Get the method table address for the object
 TargetPointer GetMethodTableAddress(TargetPointer address);
@@ -48,7 +54,7 @@ Data descriptors used:
 | `Delegate` | `Target` | Bound `this` reference for closed delegates |
 | `Delegate` | `MethodPtr` | Primary method pointer |
 | `Delegate` | `MethodPtrAux` | Auxiliary method pointer (open/wrapper delegates) |
-| `Delegate` | `InvocationCount` | Invocation count (non-zero for multicast/wrapper/special delegates) |
+| `Delegate` | `InvocationCount` | Invocation count (non-zero for multicast/wrapper/unmanaged/special delegates) |
 
 Global variables used:
 | Global Name | Type | Purpose |
@@ -180,10 +186,28 @@ TargetPointer GetSyncBlockAddress(TargetPointer address)
 
 DelegateInfo GetDelegateInfo(TargetPointer address)
 {
-    return new DelegateInfo(
-        Target:          target.ReadPointer(address + /* Delegate::Target offset */),
-        MethodPtr:       target.ReadCodePointer(address + /* Delegate::MethodPtr offset */),
-        MethodPtrAux:    target.ReadCodePointer(address + /* Delegate::MethodPtrAux offset */),
-        InvocationCount: target.ReadNUInt(address + /* Delegate::InvocationCount offset */));
+    Data.Delegate del = new Data.Delegate(target, address);
+
+    // Classify the delegate from its invocation count and auxiliary pointer.
+    DelegateType delegateType = del.InvocationCount.Value switch
+    {
+        0  => del.MethodPtrAux == TargetCodePointer.Null
+                ? DelegateType.Closed
+                : DelegateType.Open,
+        _  => DelegateType.Unknown,
+    };
+
+    // Pick the bound object and primary entry point based on the classification.
+    // For Closed delegates the target is the bound `this` and MethodPtr is invoked on it.
+    // For Open delegates MethodPtrAux is the unbound entry point; the bound object is not meaningful.
+    // For Unknown do not provide any info.
+    (TargetPointer targetObject, TargetCodePointer targetMethodPtr) = delegateType switch
+    {
+        DelegateType.Closed => (del.Target, del.MethodPtr),
+        DelegateType.Open   => (TargetPointer.Null, del.MethodPtrAux),
+        _                   => (TargetPointer.Null, TargetCodePointer.Null),
+    };
+
+    return new DelegateInfo(targetObject, targetMethodPtr, delegateType);
 }
 ```

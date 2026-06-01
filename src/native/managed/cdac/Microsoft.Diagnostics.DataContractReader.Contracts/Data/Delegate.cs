@@ -9,5 +9,5 @@ internal sealed partial class Delegate : IData<Delegate>
     [Field] public TargetPointer Target { get; }
     [Field] public TargetCodePointer MethodPtr { get; }
     [Field] public TargetCodePointer MethodPtrAux { get; }
-    [Field] public TargetNUInt InvocationCount { get; }
+    [Field] public TargetNInt InvocationCount { get; }
 }

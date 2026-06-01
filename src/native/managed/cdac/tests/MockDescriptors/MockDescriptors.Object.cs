@@ -156,7 +156,7 @@ internal sealed class MockDelegateObjectData : TypedView
             .AddPointerField(TargetFieldName)
             .AddPointerField(MethodPtrFieldName)
             .AddPointerField(MethodPtrAuxFieldName)
-            .AddNUIntField(InvocationCountFieldName)
+            .AddNIntField(InvocationCountFieldName)
             .Build<MockDelegateObjectData>();
     }
 
@@ -184,10 +184,12 @@ internal sealed class MockDelegateObjectData : TypedView
         set => WritePointerField(MethodPtrAuxFieldName, value);
     }
 
-    public ulong InvocationCount
+    public long InvocationCount
     {
-        get => ReadPointerField(InvocationCountFieldName);
-        set => WritePointerField(InvocationCountFieldName, value);
+        // Stored at pointer width; on 32-bit, WritePointer truncates the upper bits
+        // so the signed bit pattern of `value` is preserved (e.g. -1 → 0xFFFFFFFF).
+        get => unchecked((long)ReadPointerField(InvocationCountFieldName));
+        set => WritePointerField(InvocationCountFieldName, unchecked((ulong)value));
     }
 }
 
@@ -327,7 +329,7 @@ internal partial class MockDescriptors
             return fragment.Address;
         }
 
-        internal ulong AddDelegateObject(ulong methodTable, ulong target, ulong methodPtr, ulong methodPtrAux, ulong invocationCount)
+        internal ulong AddDelegateObject(ulong methodTable, ulong target, ulong methodPtr, ulong methodPtrAux, long invocationCount)
         {
             MockMemorySpace.HeapFragment fragment = ManagedObjectAllocator.Allocate((uint)DelegateLayout.Size, $"Delegate : MT = '{methodTable}'");
             MockDelegateObjectData mockDelegate = DelegateLayout.Create(fragment);
