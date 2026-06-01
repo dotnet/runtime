@@ -3268,7 +3268,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
         else
         {
             assert((ni > NI_PRIMITIVE_START) && (ni < NI_PRIMITIVE_END));
-            return impPrimitiveNamedIntrinsic(ni, clsHnd, method, sig, mustExpand);
+            return impPrimitiveNamedIntrinsic(ni, clsHnd, method, sig R2RARG(entryPoint), mustExpand);
         }
     }
 
@@ -5826,11 +5826,12 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
 // impPrimitiveNamedIntrinsic: import a NamedIntrinsic representing a primitive operation
 //
 // Arguments:
-//    intrinsic - the intrinsic being imported
-//    clsHnd    - handle for the intrinsic method's class
-//    method    - handle for the intrinsic method
-//    sig       - signature of the intrinsic method
-//   mustExpand    - true if the intrinsic must return a GenTree*; otherwise, false
+//    intrinsic  - the intrinsic being imported
+//    clsHnd     - handle for the intrinsic method's class
+//    method     - handle for the intrinsic method
+//    sig        - signature of the intrinsic method
+//    entryPoint - The entry point information required for R2R scenarios
+//    mustExpand - true if the intrinsic must return a GenTree*; otherwise, false
 //
 // Returns:
 //    IR tree to use in place of the call, or nullptr if the jit should treat
@@ -5839,7 +5840,7 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
 GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                                               CORINFO_CLASS_HANDLE  clsHnd,
                                               CORINFO_METHOD_HANDLE method,
-                                              CORINFO_SIG_INFO*     sig,
+                                              CORINFO_SIG_INFO* sig R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
                                               bool                  mustExpand)
 {
     assert(sig->sigInst.classInstCount == 0);
@@ -6261,20 +6262,36 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                 result = gtNewOperNode(GT_XOR, baseType, result, icon);
             }
 
+            if (retType != baseType)
+            {
+                result   = gtFoldExpr(gtNewCastNode(retType, result, /* unsigned */ true, retType));
+                baseType = retType;
+            }
+
             if (op1Dup != nullptr)
             {
-                // result = (value < 0) ? throw new ArgumentOutOfRangeException() : log2(value);
+                // The logical operation is:
+                //   result = (value < 0) ? throw new ArgumentOutOfRangeException() : log2(value);
+                //
+                // However, we don't want the exception message to deviate in the case `(value < 0)`
+                // and so we track it as a rewritable intrinsic node instead. This allows rationalization
+                // to ensure we actually get the CALL, but still allows DCE and other opts the rest of
+                // the JIT.
+
                 assert(!varTypeIsUnsigned(JitType2PreciseVarType(baseJitType)));
 
                 GenTree* fallback =
-                    gtNewMustThrowException(CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION, baseType, NO_CLASS_HANDLE);
+                    new (this, GT_INTRINSIC) GenTreeIntrinsic(retType, op1, intrinsic, method R2RARG(*entryPoint));
                 GenTree* cond = gtNewOperNode(GT_LT, TYP_INT, op1Dup, gtNewZeroConNode(isLong ? TYP_LONG : TYP_INT));
-                GenTreeColon* colon = gtNewColonNode(baseType, fallback, result);
-                GenTree*      qmark = gtNewQmarkNode(baseType, cond, colon);
+                GenTreeColon* colon = gtNewColonNode(retType, fallback, result);
+                GenTreeQmark* qmark = gtNewQmarkNode(retType, cond, colon);
+
+                // Ensure the fallback will end up set to run rarely
+                qmark->SetThenNodeLikelihood(0);
 
                 unsigned tmp = lvaGrabTemp(true DEBUGARG("Grabbing temp for Log2 Qmark"));
                 impStoreToTemp(tmp, qmark, CHECK_SPILL_NONE);
-                result = gtNewLclvNode(tmp, baseType);
+                result = gtNewLclvNode(tmp, retType);
             }
 #endif // FEATURE_HW_INTRINSICS
 
