@@ -1495,17 +1495,6 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
 
         switch (blkNode->gtBlkOpKind)
         {
-            case GenTreeBlk::BlkOpKindCpObjRepInstr:
-                // We need the size of the contiguous Non-GC-region to be in RCX to call rep movsq.
-                sizeRegMask = SRBM_RCX;
-                FALLTHROUGH;
-
-            case GenTreeBlk::BlkOpKindCpObjUnroll:
-                // The srcAddr must be in a register. If it was under a GT_IND, we need to subsume all of its sources.
-                dstAddrRegMask = SRBM_RDI;
-                srcRegMask     = SRBM_RSI;
-                break;
-
             case GenTreeBlk::BlkOpKindUnroll:
             {
                 unsigned regSize   = m_compiler->roundDownSIMDSize(size);
@@ -2478,6 +2467,30 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
+            case NI_X86Base_X64_BigMul:
+            {
+                assert(numArgs == 2);
+                assert(dstCount == 2);
+                assert(isRMW);
+                assert(!op1->isContained());
+
+                SingleTypeRegSet apxAwareRegCandidates =
+                    ForceLowGprForApxIfNeeded(op1, RBM_NONE, canHWIntrinsicUseApxRegs);
+
+                // mulEAX always uses EAX; if one operand is contained, force the other op into EAX.
+                // Otherwise don't force any register: the second parameter may already happen to be in EAX,
+                // in which case codegen will use it as the implicit operand.
+                srcCount = BuildOperandUses(op1, op2->isContained() ? SRBM_EAX : apxAwareRegCandidates);
+                srcCount += BuildOperandUses(op2, apxAwareRegCandidates);
+
+                // result put in EAX and EDX
+                BuildDef(intrinsicTree, SRBM_EAX, 0);
+                BuildDef(intrinsicTree, SRBM_EDX, 1);
+
+                buildUses = false;
+                break;
+            }
+
             case NI_AVX2_MultiplyNoFlags:
             case NI_AVX2_X64_MultiplyNoFlags:
             {
@@ -3022,9 +3035,11 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     }
     else
     {
-        // Currently dstCount = 2 is only used for DivRem, which has special constraints and is handled above
+        // Currently dstCount = 2 is only used for DivRem and BigMul, which have special constraints and are handled
+        // above
         assert((dstCount == 0) ||
-               ((dstCount == 2) && ((intrinsicId == NI_X86Base_DivRem) || (intrinsicId == NI_X86Base_X64_DivRem))));
+               ((dstCount == 2) && ((intrinsicId == NI_X86Base_DivRem) || (intrinsicId == NI_X86Base_X64_DivRem) ||
+                                    (intrinsicId == NI_X86Base_X64_BigMul))));
     }
 
     *pDstCount = dstCount;
