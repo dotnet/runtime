@@ -31,7 +31,7 @@ public class StackWalkDumpTests : DumpTestBase
 
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
 
-        IEnumerable<IStackDataFrameHandle> frames = stackWalk.CreateStackWalk(crashingThread);
+        IEnumerable<IStackDataFrameHandle> frames = stackWalk.CreateStackWalk(crashingThread).Where(ClrDataStackWalk.IsLegacyVisible);
         List<IStackDataFrameHandle> frameList = frames.ToList();
 
         Assert.True(frameList.Count > 0, "Expected at least one stack frame on the crashing thread");
@@ -47,7 +47,7 @@ public class StackWalkDumpTests : DumpTestBase
 
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
 
-        IEnumerable<IStackDataFrameHandle> frames = stackWalk.CreateStackWalk(crashingThread);
+        IEnumerable<IStackDataFrameHandle> frames = stackWalk.CreateStackWalk(crashingThread).Where(ClrDataStackWalk.IsLegacyVisible);
         List<IStackDataFrameHandle> frameList = frames.ToList();
 
         // The debuggee has Main → MethodA → MethodB → MethodC → FailFast,
@@ -68,7 +68,7 @@ public class StackWalkDumpTests : DumpTestBase
 
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
 
-        IEnumerable<IStackDataFrameHandle> frames = stackWalk.CreateStackWalk(crashingThread);
+        IEnumerable<IStackDataFrameHandle> frames = stackWalk.CreateStackWalk(crashingThread).Where(ClrDataStackWalk.IsLegacyVisible);
 
         foreach (IStackDataFrameHandle frame in frames)
         {
@@ -92,7 +92,7 @@ public class StackWalkDumpTests : DumpTestBase
 
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
 
-        IEnumerable<IStackDataFrameHandle> frames = stackWalk.CreateStackWalk(crashingThread);
+        IEnumerable<IStackDataFrameHandle> frames = stackWalk.CreateStackWalk(crashingThread).Where(ClrDataStackWalk.IsLegacyVisible);
         IStackDataFrameHandle? firstFrame = frames.FirstOrDefault();
         Assert.NotNull(firstFrame);
 
@@ -130,7 +130,7 @@ public class StackWalkDumpTests : DumpTestBase
         IStackWalk stackWalk = Target.Contracts.StackWalk;
 
         ThreadData crashingThread = DumpTestHelpers.FindThreadWithMethod(Target, "Main");
-        IEnumerable<IStackDataFrameHandle> frames = stackWalk.CreateStackWalk(crashingThread);
+        IEnumerable<IStackDataFrameHandle> frames = stackWalk.CreateStackWalk(crashingThread).Where(ClrDataStackWalk.IsLegacyVisible);
         List<IStackDataFrameHandle> frameList = frames.ToList();
 
         Assert.True(frameList.Count > 0, "Expected at least one stack frame on the crashing thread");
@@ -165,7 +165,7 @@ public class StackWalkDumpTests : DumpTestBase
         IStackWalk stackWalk = Target.Contracts.StackWalk;
 
         ThreadData crashingThread = DumpTestHelpers.FindThreadWithMethod(Target, "Main");
-        IEnumerable<IStackDataFrameHandle> frames = stackWalk.CreateStackWalk(crashingThread);
+        IEnumerable<IStackDataFrameHandle> frames = stackWalk.CreateStackWalk(crashingThread).Where(ClrDataStackWalk.IsLegacyVisible);
         List<IStackDataFrameHandle> frameList = frames.ToList();
 
         Assert.True(frameList.Count > 0, "Expected at least one stack frame on the crashing thread");
@@ -202,7 +202,7 @@ public class StackWalkDumpTests : DumpTestBase
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
 
         ThreadData crashingThread = DumpTestHelpers.FindThreadWithMethod(Target, "Main");
-        IEnumerable<IStackDataFrameHandle> frames = stackWalk.CreateStackWalk(crashingThread);
+        IEnumerable<IStackDataFrameHandle> frames = stackWalk.CreateStackWalk(crashingThread).Where(ClrDataStackWalk.IsLegacyVisible);
 
         bool foundILStub = false;
         foreach (IStackDataFrameHandle frame in frames)
@@ -234,7 +234,7 @@ public class StackWalkDumpTests : DumpTestBase
         ISOSDacInterface sosDac = new SOSDacImpl(Target, legacyObj: null);
 
         ThreadData crashingThread = DumpTestHelpers.FindThreadWithMethod(Target, "Main");
-        IEnumerable<IStackDataFrameHandle> frames = stackWalk.CreateStackWalk(crashingThread);
+        IEnumerable<IStackDataFrameHandle> frames = stackWalk.CreateStackWalk(crashingThread).Where(ClrDataStackWalk.IsLegacyVisible);
 
         foreach (IStackDataFrameHandle frame in frames)
         {
@@ -268,7 +268,7 @@ public class StackWalkDumpTests : DumpTestBase
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
 
         ThreadData crashingThread = DumpTestHelpers.FindThreadWithMethod(Target, "Main");
-        IEnumerable<IStackDataFrameHandle> frames = stackWalk.CreateStackWalk(crashingThread);
+        IEnumerable<IStackDataFrameHandle> frames = stackWalk.CreateStackWalk(crashingThread).Where(ClrDataStackWalk.IsLegacyVisible);
 
         foreach (IStackDataFrameHandle frame in frames)
         {
@@ -304,7 +304,7 @@ public class StackWalkDumpTests : DumpTestBase
         ISOSDacInterface sosDac = new SOSDacImpl(Target, legacyObj: null);
 
         ThreadData crashingThread = DumpTestHelpers.FindThreadWithMethod(Target, "Main");
-        IEnumerable<IStackDataFrameHandle> frames = stackWalk.CreateStackWalk(crashingThread);
+        IEnumerable<IStackDataFrameHandle> frames = stackWalk.CreateStackWalk(crashingThread).Where(ClrDataStackWalk.IsLegacyVisible);
 
         foreach (IStackDataFrameHandle frame in frames)
         {
