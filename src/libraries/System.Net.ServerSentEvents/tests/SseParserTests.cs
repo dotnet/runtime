@@ -1021,37 +1021,6 @@ namespace System.Net.ServerSentEvents.Tests
 
         private sealed class InfiniteLineStream : Stream
         {
-            private int _position = 0;
-            private byte[] _initialPattern;
-            private byte[] _repeatingPattern = Encoding.UTF8.GetBytes(new string('y', 64 * 1024));
-            public InfiniteLineStream(string initialData)
-            {
-                _initialPattern = Encoding.UTF8.GetBytes(initialData);
-            }
-            public override bool CanRead => true;
-            public override bool CanSeek => false;
-            public override bool CanWrite => false;
-            public override long Length => throw new NotSupportedException();
-            public override long Position { get => _position; set => _position = checked((int)value); }
-            public override void Flush() { }
-            public override int Read(byte[] buffer, int offset, int count)
-            {
-                Span<byte> src = _position < _initialPattern.Length ? _initialPattern.AsSpan().Slice(_position) : _repeatingPattern;
-                Span<byte> dst = buffer.AsSpan().Slice(offset, count);
-
-                int bytesCnt = Math.Min(src.Length, dst.Length);
-                src = src.Slice(0, bytesCnt);
-
-                src.CopyTo(dst);
-
-                _position += bytesCnt;
-                return bytesCnt;
-            }
-            public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
-            public override void SetLength(long value) => throw new NotSupportedException();
-            public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
-        private sealed class InfiniteLineStream : Stream
-        {
             private ReadOnlyMemory<byte> _initialData;
 
             public InfiniteLineStream(string initialData)
@@ -1066,13 +1035,17 @@ namespace System.Net.ServerSentEvents.Tests
             public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
             public override void Flush() { }
 
+#if NET
             public override int Read(Span<byte> buffer)
+#else
+            private int Read(Span<byte> buffer)
+#endif
             {
                 if (!_initialData.IsEmpty)
                 {
                     int toCopy = Math.Min(buffer.Length, _initialData.Length);
-                    _initialData.Span[..toCopy].CopyTo(buffer);
-                    _initialData = _initialData[toCopy..];
+                    _initialData.Span.Slice(0, toCopy).CopyTo(buffer);
+                    _initialData = _initialData.Slice(toCopy);
                     return toCopy;
                 }
 

@@ -74,7 +74,7 @@ namespace System.Net.ServerSentEvents
         /// <remarks>This can be different than <see cref="_dataLength"/> != 0 if empty data was appended.</remarks>
         private bool _dataAppended;
 
-        internal int _maxBufferSize = 1024 * 1024 * 1024;
+        private int _maxBufferSize = 1024 * 1024 * 1024;
 
         /// <summary>The event type for the next event.</summary>
         private string? _eventType;
