@@ -2827,9 +2827,6 @@ void emitter::emitJumpDistBind()
     UNATIVE_OFFSET adjIG;
     UNATIVE_OFFSET adjSJ;
     insGroup*      lstIG;
-#ifdef DEBUG
-    insGroup* prologIG = emitPrologIG;
-#endif // DEBUG
 
     // NOTE:
     //  bit0 of isLinkingEnd_LA: indicating whether updating the instrDescJmp's size with the type INS_OPTS_J;
@@ -2884,7 +2881,7 @@ AGAIN:
         assert(lastSJ == nullptr || lastIG != jmp->idjIG || lastSJ->idjOffs < (jmp->idjOffs + adjSJ));
         lastSJ = (lastIG == jmp->idjIG) ? jmp : nullptr;
 
-        assert(lastIG == nullptr || lastIG->IsBeforeOrEqual(jmp->idjIG) || jmp->idjIG == prologIG);
+        assert(lastIG == nullptr || lastIG->IsBeforeOrEqual(jmp->idjIG) || emitIGisInProlog(jmp->idjIG));
         lastIG = jmp->idjIG;
 #endif // DEBUG
 
@@ -4119,7 +4116,8 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             {
                 printf("%s, %s, 0x%lx\n", RegNames[regd], RegNames[regj], offs16);
             }
-            else if ((unsigned)(addr - emitCodeBlock) < emitPrologIG->igSize) // only for prolog
+            // only for prolog
+            else if (emitPrologEndPos.Valid() && ((unsigned)(addr - emitCodeBlock) < emitPrologEndPos.CodeOffset(this)))
             {
                 if (offs16 < 0)
                 {
@@ -4140,7 +4138,8 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
         {
             tmp = (((code >> 10) & 0xffff) | ((code & 0x1f) << 16)) << 11;
             tmp >>= 9;
-            if ((unsigned)(addr - emitCodeBlock) < emitPrologIG->igSize) // only for prolog
+            // only for prolog
+            if (emitPrologEndPos.Valid() && ((unsigned)(addr - emitCodeBlock) < emitPrologEndPos.CodeOffset(this)))
             {
                 tmp >>= 2;
                 if (tmp < 0)
@@ -4169,7 +4168,8 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                 methodName = m_compiler->eeGetMethodFullName((CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie);
                 printf("# %s\n", methodName);
             }
-            else if ((unsigned)(addr - emitCodeBlock) < emitPrologIG->igSize) // only for prolog
+            // only for prolog
+            else if (emitPrologEndPos.Valid() && ((unsigned)(addr - emitCodeBlock) < emitPrologEndPos.CodeOffset(this)))
             {
                 tmp >>= 2;
                 if (tmp < 0)

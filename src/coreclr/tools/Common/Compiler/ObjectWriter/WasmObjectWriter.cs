@@ -969,7 +969,7 @@ namespace ILCompiler.ObjectWriter
                             // These will need to be fixed up by the runtime after load by adding tableBase
                             // except for WASM_TABLE_INDEX_REL_I32 and WASM_TABLE_INDEX_SLEB which are relative
                             // to the start of the table.
-                            Relocation.WriteValue(reloc.Type, pData, index);
+                            Relocation.WriteValue(reloc.Type, pData, index + addend);
                             break;
                         }
                         case RelocType.WASM_FUNCTION_INDEX_LEB:
@@ -979,7 +979,7 @@ namespace ILCompiler.ObjectWriter
 
                             // These are module-local function pointer indices, so we can simply write out the assigned function index
                             // for this particular symbol
-                            Relocation.WriteValue(reloc.Type, pData, index);
+                            Relocation.WriteValue(reloc.Type, pData, index + addend);
                             break;
                         }
                         default:

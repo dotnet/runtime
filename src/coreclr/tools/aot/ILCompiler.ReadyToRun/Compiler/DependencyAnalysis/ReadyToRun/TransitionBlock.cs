@@ -388,6 +388,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                                 break;
                             }
 
+                            if (IsWasm32)
+                            {
+                                // Wasm doesn't use a ret buffer for returning structs in the interpreter calling convention, which is the TransitionBlock convention on Wasm platforms.
+                                break;
+                            }
+
                             uint size = (uint)thRetType.GetSize();
 
                             if (IsX86 || IsX64)
@@ -774,7 +780,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             public override bool IsArgPassedByRef(TypeHandle th)
             {
-                return WasmLowering.LowerToAbiType(th.GetRuntimeTypeHandle()) == null;
+                return false;
             }
 
             public override int StackElemSize(int parmSize, bool isValueType, bool isFloatHfa)

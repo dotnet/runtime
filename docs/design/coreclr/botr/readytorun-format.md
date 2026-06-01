@@ -894,7 +894,7 @@ enum ReadyToRunHelper
     // Write barriers
     READYTORUN_HELPER_WriteBarrier              = 0x30,
     READYTORUN_HELPER_CheckedWriteBarrier       = 0x31,
-    READYTORUN_HELPER_ByRefWriteBarrier         = 0x32,
+    READYTORUN_HELPER_ByRefWriteBarrier         = 0x32, // Unused since READYTORUN_MAJOR_VERSION 19.0
 
     // Array helpers
     READYTORUN_HELPER_Stelem_Ref                = 0x38,
