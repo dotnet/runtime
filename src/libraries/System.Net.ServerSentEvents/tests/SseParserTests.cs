@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -904,18 +905,29 @@ namespace System.Net.ServerSentEvents.Tests
         [MemberData(nameof(NewlineAsyncData))]
         public async Task Parse_LongLineCap_Throws(string newline, bool useAsync)
         {
+            // Temporary workaround until we expose limit in public API
+            void ReduceLineLengthLimit(SseParser<string> parser)
+            {
+                Type type = typeof(SseParser<string>);
+                var field = type.GetField("_maxBufferSize", BindingFlags.Instance | BindingFlags.NonPublic);
+                Assert.NotNull(field);
+                field.SetValue(parser, 10 * 1024);
+            }
+
             using Stream stream = new InfiniteLineStream($"data: shortline{newline}{newline}data: ");
+            var parser = SseParser.Create(stream);
+            ReduceLineLengthLimit(parser);
 
             if (useAsync)
             {
-                var enumerator = SseParser.Create(stream).EnumerateAsync().GetAsyncEnumerator();
+                await using var enumerator = parser.EnumerateAsync().GetAsyncEnumerator();
                 await enumerator.MoveNextAsync();
                 Assert.Equal("shortline", enumerator.Current.Data);
                 await Assert.ThrowsAsync<InvalidDataException>(async () => await enumerator.MoveNextAsync());
             }
             else
             {
-                var enumerator = SseParser.Create(stream).Enumerate().GetEnumerator();
+                using var enumerator = parser.Enumerate().GetEnumerator();
                 enumerator.MoveNext();
                 Assert.Equal("shortline", enumerator.Current.Data);
                 Assert.Throws<InvalidDataException>(() => enumerator.MoveNext());
@@ -1021,8 +1033,9 @@ namespace System.Net.ServerSentEvents.Tests
             public override bool CanWrite => false;
             public override long Length => throw new NotSupportedException();
             public override long Position { get => _position; set => _position = checked((int)value); }
-            public override void Flush() {}
-            public override int Read(byte[] buffer, int offset, int count) {
+            public override void Flush() { }
+            public override int Read(byte[] buffer, int offset, int count)
+            {
                 Span<byte> src = _position < _initialPattern.Length ? _initialPattern.AsSpan().Slice(_position) : _repeatingPattern;
                 Span<byte> dst = buffer.AsSpan().Slice(offset, count);
 

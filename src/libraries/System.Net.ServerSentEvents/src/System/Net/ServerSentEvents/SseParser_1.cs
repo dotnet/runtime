@@ -74,7 +74,7 @@ namespace System.Net.ServerSentEvents
         /// <remarks>This can be different than <see cref="_dataLength"/> != 0 if empty data was appended.</remarks>
         private bool _dataAppended;
 
-        private const int MaxBufferSize = 1024 * 1024 * 1024;
+        internal int _maxBufferSize = 1024 * 1024 * 1024;
 
         /// <summary>The event type for the next event.</summary>
         private string? _eventType;
@@ -554,9 +554,9 @@ namespace System.Net.ServerSentEvents
         }
 
         /// <summary>Grows the buffer, returning the existing one to the ArrayPool and renting an ArrayPool replacement.</summary>
-        private static void GrowBuffer([NotNull] ref byte[]? buffer, int minimumLength)
+        private void GrowBuffer([NotNull] ref byte[]? buffer, int minimumLength)
         {
-            if (minimumLength > MaxBufferSize)
+            if (minimumLength > _maxBufferSize)
             {
                 throw new InvalidDataException(SR.InvalidDataException_SseExceededMaxLength);
             }
