@@ -7088,35 +7088,142 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
                 case VNF_LE_UN:
                 case VNF_LT_UN:
                 case VNF_MDArrLowerBound:
-#ifdef FEATURE_HW_INTRINSICS
-#ifdef TARGET_XARCH
+                {
+                    return VNVisit::Continue;
+                }
+
+#if defined(FEATURE_HW_INTRINSICS)
+#if defined(TARGET_XARCH)
+                case VNF_HWI_Vector256_ExtractMostSignificantBits:
+                case VNF_HWI_Vector512_ExtractMostSignificantBits:
+                case VNF_HWI_X86Base_MoveMask:
+                case VNF_HWI_AVX_MoveMask:
+                case VNF_HWI_AVX2_MoveMask:
+                case VNF_HWI_AVX512_MoveMask:
+#elif defined(TARGET_ARM64)
+                case VNF_HWI_Vector64_ExtractMostSignificantBits:
+#endif
+                case VNF_HWI_Vector128_ExtractMostSignificantBits:
+                {
+                    // We have 1 bit per element, remaining upper bits are 0
+
+                    var_types simdBaseType;
+                    uint32_t  simdSize = GetVNHWIntrinsicSizeAndBaseType(funcApp, &simdBaseType);
+
+                    size_t elementSize  = genTypeSize(simdBaseType);
+                    size_t elementCount = simdSize / elementSize;
+
+                    if (elementCount <= 16)
+                    {
+                        return VNVisit::Continue;
+                    }
+                    break;
+                }
+
+#if defined(TARGET_XARCH)
+                case VNF_HWI_Vector256_op_Equality:
+                case VNF_HWI_Vector256_op_Inequality:
+                case VNF_HWI_Vector512_op_Equality:
+                case VNF_HWI_Vector512_op_Inequality:
+                case VNF_HWI_X86Base_CompareScalarOrderedEqual:
+                case VNF_HWI_X86Base_CompareScalarOrderedGreaterThan:
+                case VNF_HWI_X86Base_CompareScalarOrderedGreaterThanOrEqual:
+                case VNF_HWI_X86Base_CompareScalarOrderedLessThan:
+                case VNF_HWI_X86Base_CompareScalarOrderedLessThanOrEqual:
+                case VNF_HWI_X86Base_CompareScalarOrderedNotEqual:
+                case VNF_HWI_X86Base_CompareScalarUnorderedEqual:
+                case VNF_HWI_X86Base_CompareScalarUnorderedGreaterThan:
+                case VNF_HWI_X86Base_CompareScalarUnorderedGreaterThanOrEqual:
+                case VNF_HWI_X86Base_CompareScalarUnorderedLessThan:
+                case VNF_HWI_X86Base_CompareScalarUnorderedLessThanOrEqual:
+                case VNF_HWI_X86Base_CompareScalarUnorderedNotEqual:
+                case VNF_HWI_X86Base_TestC:
+                case VNF_HWI_X86Base_TestNotZAndNotC:
+                case VNF_HWI_X86Base_TestZ:
+                case VNF_HWI_AVX_TestC:
+                case VNF_HWI_AVX_TestNotZAndNotC:
+                case VNF_HWI_AVX_TestZ:
+#elif defined(TARGET_ARM64)
+                case VNF_HWI_Vector64_op_Equality:
+                case VNF_HWI_Vector64_op_Inequality:
+#endif
+                case VNF_HWI_Vector128_op_Equality:
+                case VNF_HWI_Vector128_op_Inequality:
+                {
+                    // A boolean [0, 1]
+                    return VNVisit::Continue;
+                }
+
+#if defined(TARGET_XARCH)
+                case VNF_HWI_Vector256_GetElement:
+                case VNF_HWI_Vector256_ToScalar:
+                case VNF_HWI_Vector512_GetElement:
+                case VNF_HWI_Vector512_ToScalar:
+                case VNF_HWI_X86Base_Extract:
+                case VNF_HWI_X86Base_X64_Extract:
+#elif defined(TARGET_ARM64)
+                case VNF_HWI_Vector64_GetElement:
+                case VNF_HWI_Vector64_ToScalar:
+                case VNF_HWI_AdvSimd_Extract:
+#endif
+                case VNF_HWI_Vector128_GetElement:
+                case VNF_HWI_Vector128_ToScalar:
+                {
+                    // We are extracting a value of the base types width and sign
+
+                    var_types simdBaseType;
+                    uint32_t  simdSize = GetVNHWIntrinsicSizeAndBaseType(funcApp, &simdBaseType);
+
+                    if ((simdBaseType == TYP_UBYTE) || (simdBaseType == TYP_USHORT))
+                    {
+                        return VNVisit::Continue;
+                    }
+                    break;
+                }
+
+#if defined(TARGET_XARCH)
                 case VNF_HWI_X86Base_PopCount:
                 case VNF_HWI_X86Base_X64_PopCount:
                 case VNF_HWI_AVX2_LeadingZeroCount:
                 case VNF_HWI_AVX2_TrailingZeroCount:
                 case VNF_HWI_AVX2_X64_LeadingZeroCount:
                 case VNF_HWI_AVX2_X64_TrailingZeroCount:
-                    return VNVisit::Continue;
 #elif defined(TARGET_ARM64)
-                case VNF_HWI_AdvSimd_PopCount:
-                case VNF_HWI_AdvSimd_LeadingZeroCount:
-                case VNF_HWI_AdvSimd_LeadingSignCount:
                 case VNF_HWI_ArmBase_LeadingZeroCount:
                 case VNF_HWI_ArmBase_Arm64_LeadingZeroCount:
                 case VNF_HWI_ArmBase_Arm64_LeadingSignCount:
-                    return VNVisit::Continue;
+#else
+#error Unsupported platform
 #endif
+                {
+                    // The actual range is [0..32] or [0..64]
+                    return VNVisit::Continue;
+                }
+
+                    // TODO-SVE: Various intrinsics extract scalars or test patterns and return bool
+
                 case VNF_XOR:
+                {
                     if (IsVNLog2(vn))
                     {
                         return VNVisit::Continue;
                     }
                     break;
-
+                }
 #endif // FEATURE_HW_INTRINSICS
 
+                case VNF_LeadingZeroCount:
+                case VNF_PopCount:
+                case VNF_TrailingZeroCount:
+                {
+                    // The actual range is [0..32] or [0..64]
+                    return VNVisit::Continue;
+                }
+
                 default:
+                {
                     break;
+                }
             }
         }
         return VNVisit::Abort;
@@ -10548,28 +10655,47 @@ bool ValueNumStore::IsVNHWIntrinsicFunc(
         return false;
     }
 
-    assert(funcApp->GetArity() != 0);
-    VNFuncApp simdType;
-
-    if (!GetVNFunc(funcApp->GetArg(funcApp->GetArity() - 1), &simdType))
-    {
-        return false;
-    }
-
-    assert(simdType.FuncIs(VNF_SimdType));
-    assert(simdType.GetArity() == 2);
-    assert(IsVNConstant(simdType.GetArg(0)));
-    assert(IsVNConstant(simdType.GetArg(1)));
-
-    *intrinsicId  = static_cast<NamedIntrinsic>((funcId - VNF_HWI_FIRST) + (NI_HW_INTRINSIC_START + 1));
-    *simdSize     = static_cast<uint32_t>(GetConstantInt32(simdType.GetArg(0)));
-    *simdBaseType = static_cast<var_types>(GetConstantInt32(simdType.GetArg(1)));
+    *intrinsicId = static_cast<NamedIntrinsic>((funcId - VNF_HWI_FIRST) + (NI_HW_INTRINSIC_START + 1));
+    *simdSize    = GetVNHWIntrinsicSizeAndBaseType(*funcApp, simdBaseType);
 
     return true;
 #else
     return false;
 #endif // FEATURE_HW_INTRINSICS
 }
+
+#if defined(FEATURE_HW_INTRINSICS)
+//----------------------------------------------------------------------------------
+// GetVNHWIntrinsicSizeAndBaseType: Gets the simdSize and simdBaseType of a HWIntrinsic funcApp
+//
+// Arguments:
+//    funcApp         - The function application
+//    simdBaseType    - The simd base type for the intrinsic.
+//
+// Return Value:
+//    The simd size of the intrinsic.
+//
+uint32_t ValueNumStore::GetVNHWIntrinsicSizeAndBaseType(const VNFuncApp& funcApp, var_types* simdBaseType)
+{
+    assert((funcApp.GetFunc() >= VNF_HWI_FIRST) && (funcApp.GetFunc() <= VNF_HWI_LAST));
+    assert(simdBaseType != nullptr);
+
+    assert(funcApp.GetArity() != 0);
+    VNFuncApp simdType;
+
+    // All HWIntrinsic funcApps must encode the simdSize and baseType
+    bool succeeded = GetVNFunc(funcApp.GetArg(funcApp.GetArity() - 1), &simdType);
+    assert(succeeded);
+
+    assert(simdType.FuncIs(VNF_SimdType));
+    assert(simdType.GetArity() == 2);
+    assert(IsVNConstant(simdType.GetArg(0)));
+    assert(IsVNConstant(simdType.GetArg(1)));
+
+    *simdBaseType = static_cast<var_types>(GetConstantInt32(simdType.GetArg(1)));
+    return static_cast<uint32_t>(GetConstantInt32(simdType.GetArg(0)));
+}
+#endif // FEATURE_HW_INTRINSICS
 
 bool ValueNumStore::VNIsValid(ValueNum vn)
 {

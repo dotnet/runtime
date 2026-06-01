@@ -2794,13 +2794,147 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.IsThreadSuspendedOrHijacked(vmThread, pResult) : HResults.E_NOTIMPL;
 
     public int CreateHeapWalk(nuint* pHandle)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.CreateHeapWalk(pHandle) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        if (pHandle is null)
+            return HResults.E_POINTER;
+        *pHandle = 0;
+        HeapWalk? walk = null;
+        try
+        {
+            walk = new HeapWalk(_target);
+            *pHandle = (nuint)((IEnum<COR_HEAPOBJECT>)walk).GetHandle();
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            nuint legacyHandle = 0;
+            int hrLocal = _legacy.CreateHeapWalk(&legacyHandle);
+            // The cDAC walker uses a lazy C# iterator and doesn't pre-validate objects at construction time;
+            // the legacy walker eagerly validates the heap-start object and can refuse if it's corrupt.
+            Debug.ValidateHResult(hr, hrLocal, HResultValidationMode.AllowCdacSuccess);
+            if (hrLocal == HResults.S_OK && walk is not null)
+                walk.LegacyHandle = legacyHandle;
+            else if (hrLocal == HResults.S_OK)
+                _legacy.DeleteHeapWalk(legacyHandle);
+        }
+#endif
+        return hr;
+    }
 
     public int DeleteHeapWalk(nuint handle)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.DeleteHeapWalk(handle) : HResults.E_NOTIMPL;
+    {
+        if (handle == 0)
+            return HResults.S_OK;
 
+        int hr = HResults.S_OK;
+        nuint legacyHandle = 0;
+        try
+        {
+            GCHandle gcHandle = GCHandle.FromIntPtr((nint)handle);
+            if (gcHandle.Target is not HeapWalk walk)
+                throw new ArgumentException("Invalid heap walk handle", nameof(handle));
+            legacyHandle = walk.LegacyHandle;
+            ((IEnum<COR_HEAPOBJECT>)walk).Dispose();
+            gcHandle.Free();
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null && legacyHandle != 0)
+        {
+            int hrLocal = _legacy.DeleteHeapWalk(legacyHandle);
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+        return hr;
+    }
+
+    // Should be called repeatedly until it returns S_FALSE. E_FAIL is not fatal, just indicates partial heap corruption.
     public int WalkHeap(nuint handle, uint count, COR_HEAPOBJECT* objects, uint* fetched)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.WalkHeap(handle, count, objects, fetched) : HResults.E_NOTIMPL;
+    {
+        if (fetched is null)
+            return HResults.E_INVALIDARG;
+        *fetched = 0;
+        if (objects is null && count > 0)
+            return HResults.E_INVALIDARG;
+        if (handle == 0)
+            return HResults.E_INVALIDARG;
+
+        HeapWalk walk;
+        try
+        {
+            GCHandle gcHandle = GCHandle.FromIntPtr((nint)handle);
+            if (gcHandle.Target is not HeapWalk hw)
+                throw new ArgumentException("Invalid heap walk handle", nameof(handle));
+            walk = hw;
+        }
+        catch (System.Exception ex)
+        {
+            return ex.HResult;
+        }
+
+        int hr = HResults.S_OK;
+        uint i = 0;
+        try
+        {
+            while (i < count && walk.Enumerator.MoveNext())
+            {
+                COR_HEAPOBJECT current = walk.Enumerator.Current;
+                // Sentinel value indicates invalid object.
+                if (current.address == 0)
+                {
+                    hr = HResults.E_FAIL;
+                    break;
+                }
+                objects[i++] = current;
+            }
+
+            // A clean batch reports S_FALSE iff we couldn't fill the caller's request.
+            if (hr == HResults.S_OK && i < count)
+                hr = HResults.S_FALSE;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        *fetched = i;
+#if DEBUG
+        if (_legacy is not null && walk.LegacyHandle != 0)
+        {
+            COR_HEAPOBJECT[] objectsLocal = new COR_HEAPOBJECT[count];
+            uint fetchedLocal = 0;
+            int hrLocal;
+            fixed (COR_HEAPOBJECT* objectsLocalPtr = objectsLocal)
+            {
+                hrLocal = _legacy.WalkHeap(walk.LegacyHandle, count, objectsLocalPtr, &fetchedLocal);
+            }
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr >= HResults.S_OK)
+            {
+                Debug.Assert(*fetched == fetchedLocal,
+                    $"cDAC WalkHeap fetched {*fetched}, legacy fetched {fetchedLocal}");
+                for (uint k = 0; k < fetchedLocal; k++)
+                {
+                    Debug.Assert(objects[k].address == objectsLocal[k].address,
+                        $"cDAC[{k}].address=0x{objects[k].address:x}, legacy=0x{objectsLocal[k].address:x}");
+                    Debug.Assert(objects[k].size == objectsLocal[k].size,
+                        $"cDAC[{k}].size=0x{objects[k].size:x}, legacy=0x{objectsLocal[k].size:x} (addr 0x{objects[k].address:x})");
+                    Debug.Assert(objects[k].type.token1 == objectsLocal[k].type.token1,
+                        $"cDAC[{k}].type.token1=0x{objects[k].type.token1:x}, legacy=0x{objectsLocal[k].type.token1:x} (addr 0x{objects[k].address:x})");
+                }
+            }
+        }
+#endif
+        return hr;
+    }
 
 #if DEBUG
     [ThreadStatic]
