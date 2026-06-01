@@ -526,6 +526,43 @@ namespace System.Diagnostics
             return true;
         }
 
+        private static unsafe partial SafeProcessHandle InvokeStartCallback(ProcessStartInfo startInfo, SafeFileHandle childInput, SafeFileHandle childOutput, SafeFileHandle childError, Func<ProcessStartArguments, SafeProcessHandle> callback)
+        {
+            ValueStringBuilder commandLine = new(stackalloc char[256]);
+            ProcessUtils.BuildCommandLine(startInfo, ref commandLine);
+            commandLine.NullTerminate();
+
+            string? environmentBlock = null;
+            if (startInfo._environmentVariables != null)
+            {
+                environmentBlock = ProcessUtils.GetEnvironmentVariablesBlock(startInfo._environmentVariables!);
+            }
+
+            string? workingDirectory = startInfo.WorkingDirectory;
+            if (workingDirectory is not null && workingDirectory.Length == 0)
+            {
+                workingDirectory = null;
+            }
+
+            ProcessStartArguments args = new()
+            {
+                FileName = null, // On Windows, the file name is embedded in the command line
+                WorkingDirectory = workingDirectory,
+                StandardInput = childInput,
+                StandardOutput = childOutput,
+                StandardError = childError,
+                ProcessStartInfo = startInfo,
+            };
+
+            fixed (char* commandLinePtr = &commandLine.GetPinnableReference())
+            fixed (char* environmentBlockPtr = environmentBlock)
+            {
+                args.Arguments = commandLinePtr;
+                args.EnvironmentVariables = environmentBlockPtr;
+                return callback(args);
+            }
+        }
+
         private string GetMainWindowTitle()
         {
             IntPtr handle = MainWindowHandle;

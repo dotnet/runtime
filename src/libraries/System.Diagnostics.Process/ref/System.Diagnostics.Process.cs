@@ -215,6 +215,11 @@ namespace System.Diagnostics
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")] // this needs to come after the ios attribute due to limitations in the platform analyzer
         public static System.Diagnostics.Process? Start(System.Diagnostics.ProcessStartInfo startInfo) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
+        public static System.Diagnostics.Process Start(System.Diagnostics.ProcessStartInfo startInfo, System.Func<System.Diagnostics.ProcessStartArguments, Microsoft.Win32.SafeHandles.SafeProcessHandle> callback) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")] // this needs to come after the ios attribute due to limitations in the platform analyzer
@@ -286,6 +291,20 @@ namespace System.Diagnostics
         public string Content { get { throw null; } }
         public bool StandardError { get { throw null; } }
         public override string ToString() { throw null; }
+    }
+    public sealed partial class ProcessStartArguments
+    {
+        internal ProcessStartArguments() { }
+        [System.CLSCompliantAttribute(false)]
+        public unsafe void* Arguments { get { throw null; } }
+        [System.CLSCompliantAttribute(false)]
+        public unsafe void* EnvironmentVariables { get { throw null; } }
+        public string? FileName { get { throw null; } }
+        public System.Diagnostics.ProcessStartInfo ProcessStartInfo { get { throw null; } }
+        public Microsoft.Win32.SafeHandles.SafeFileHandle StandardError { get { throw null; } }
+        public Microsoft.Win32.SafeHandles.SafeFileHandle StandardInput { get { throw null; } }
+        public Microsoft.Win32.SafeHandles.SafeFileHandle StandardOutput { get { throw null; } }
+        public string? WorkingDirectory { get { throw null; } }
     }
     public enum ProcessPriorityClass
     {

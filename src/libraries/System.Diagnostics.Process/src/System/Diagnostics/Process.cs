@@ -1385,6 +1385,180 @@ namespace System.Diagnostics
                 null;
         }
 
+        /// <summary>
+        /// Starts a new process by preparing all necessary arguments (standard handles, command line, environment, working directory)
+        /// and then invoking the user-supplied <paramref name="callback"/> to perform the actual process creation system call.
+        /// The callback receives a <see cref="ProcessStartArguments"/> instance with the prepared data and must return a
+        /// <see cref="SafeProcessHandle"/> representing the created process.
+        /// </summary>
+        /// <param name="startInfo">The <see cref="ProcessStartInfo"/> that contains the information used to start the process.</param>
+        /// <param name="callback">
+        /// A function that receives the prepared <see cref="ProcessStartArguments"/> and creates the process using any system call of the user's choice.
+        /// The callback must return a valid <see cref="SafeProcessHandle"/> for the newly created process.
+        /// The memory referenced by pointer properties in <see cref="ProcessStartArguments"/> is only valid for the duration of the callback.
+        /// </param>
+        /// <returns>A new <see cref="Process"/> instance associated with the started process.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="startInfo"/> or <paramref name="callback"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException">The <see cref="SafeProcessHandle"/> returned by the callback is invalid.</exception>
+        /// <exception cref="InvalidOperationException"><see cref="ProcessStartInfo.UseShellExecute"/> is set to <see langword="true"/>.</exception>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        [CLSCompliant(false)]
+        public static Process Start(ProcessStartInfo startInfo, Func<ProcessStartArguments, SafeProcessHandle> callback)
+        {
+            ArgumentNullException.ThrowIfNull(startInfo);
+            ArgumentNullException.ThrowIfNull(callback);
+
+            if (startInfo.UseShellExecute)
+            {
+                throw new InvalidOperationException(SR.Format(SR.UseShellExecuteNotSupportedForScenario, nameof(Start)));
+            }
+
+            if (!ProcessUtils.PlatformSupportsProcessStartAndKill)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            SerializationGuard.ThrowIfDeserializationInProgress("AllowProcessCreation", ref ProcessUtils.s_cachedSerializationSwitch);
+
+            startInfo.ThrowIfInvalid(out bool anyRedirection, out SafeHandle[]? inheritedHandles);
+
+            SafeFileHandle? parentInputPipeHandle = null;
+            SafeFileHandle? parentOutputPipeHandle = null;
+            SafeFileHandle? parentErrorPipeHandle = null;
+
+            SafeFileHandle? childInputHandle = null;
+            SafeFileHandle? childOutputHandle = null;
+            SafeFileHandle? childErrorHandle = null;
+
+            try
+            {
+                bool requiresLock = anyRedirection && !ProcessUtils.SupportsAtomicNonInheritablePipeCreation;
+
+                if (requiresLock)
+                {
+                    ProcessUtils.s_processStartLock.EnterWriteLock();
+                }
+
+                try
+                {
+                    if (startInfo.StandardInputHandle is not null)
+                    {
+                        childInputHandle = startInfo.StandardInputHandle;
+                    }
+                    else if (startInfo.RedirectStandardInput)
+                    {
+                        SafeFileHandle.CreateAnonymousPipe(out childInputHandle, out parentInputPipeHandle);
+                    }
+
+                    if (startInfo.StandardOutputHandle is not null)
+                    {
+                        childOutputHandle = startInfo.StandardOutputHandle;
+                    }
+                    else if (startInfo.RedirectStandardOutput)
+                    {
+                        SafeFileHandle.CreateAnonymousPipe(out parentOutputPipeHandle, out childOutputHandle, asyncRead: OperatingSystem.IsWindows());
+                    }
+
+                    if (startInfo.StandardErrorHandle is not null)
+                    {
+                        childErrorHandle = startInfo.StandardErrorHandle;
+                    }
+                    else if (startInfo.RedirectStandardError)
+                    {
+                        SafeFileHandle.CreateAnonymousPipe(out parentErrorPipeHandle, out childErrorHandle, asyncRead: OperatingSystem.IsWindows());
+                    }
+                }
+                finally
+                {
+                    if (requiresLock)
+                    {
+                        ProcessUtils.s_processStartLock.ExitWriteLock();
+                    }
+                }
+
+                if (startInfo.StartDetached)
+                {
+                    if (childInputHandle is null || childOutputHandle is null || childErrorHandle is null)
+                    {
+                        SafeFileHandle nullDeviceHandle = File.OpenNullHandle();
+                        childInputHandle ??= nullDeviceHandle;
+                        childOutputHandle ??= nullDeviceHandle;
+                        childErrorHandle ??= nullDeviceHandle;
+                    }
+                }
+                else if (ProcessUtils.PlatformSupportsConsole)
+                {
+                    childInputHandle ??= Console.OpenStandardInputHandle();
+                    childOutputHandle ??= Console.OpenStandardOutputHandle();
+                    childErrorHandle ??= Console.OpenStandardErrorHandle();
+                }
+
+                SafeProcessHandle processHandle = InvokeStartCallback(startInfo, childInputHandle!, childOutputHandle!, childErrorHandle!, callback);
+
+                if (processHandle is null || processHandle.IsInvalid)
+                {
+                    throw new ArgumentException(SR.Argument_InvalidHandle, nameof(callback));
+                }
+
+                Process process = new Process();
+                process._startInfo = startInfo;
+                process.SetProcessHandle(processHandle);
+                process.SetProcessId(processHandle.ProcessId);
+
+                if (startInfo.RedirectStandardInput)
+                {
+                    process._standardInput = new StreamWriter(OpenStream(parentInputPipeHandle!, FileAccess.Write),
+                        startInfo.StandardInputEncoding ?? GetStandardInputEncoding(), StreamBufferSize)
+                    {
+                        AutoFlush = true
+                    };
+                }
+                if (startInfo.RedirectStandardOutput)
+                {
+                    process._standardOutput = new StreamReader(OpenStream(parentOutputPipeHandle!, FileAccess.Read),
+                        startInfo.StandardOutputEncoding ?? GetStandardOutputEncoding(), true, StreamBufferSize);
+                }
+                if (startInfo.RedirectStandardError)
+                {
+                    process._standardError = new StreamReader(OpenStream(parentErrorPipeHandle!, FileAccess.Read),
+                        startInfo.StandardErrorEncoding ?? GetStandardOutputEncoding(), true, StreamBufferSize);
+                }
+
+                return process;
+            }
+            catch
+            {
+                parentInputPipeHandle?.Dispose();
+                parentOutputPipeHandle?.Dispose();
+                parentErrorPipeHandle?.Dispose();
+
+                throw;
+            }
+            finally
+            {
+                if (startInfo.StandardInputHandle is null)
+                {
+                    childInputHandle?.Dispose();
+                }
+                if (startInfo.StandardOutputHandle is null)
+                {
+                    childOutputHandle?.Dispose();
+                }
+                if (startInfo.StandardErrorHandle is null)
+                {
+                    childErrorHandle?.Dispose();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Platform-specific method that prepares the command line / argv, environment block, and working directory,
+        /// then invokes the user callback with the populated <see cref="ProcessStartArguments"/>.
+        /// </summary>
+        private static unsafe partial SafeProcessHandle InvokeStartCallback(ProcessStartInfo startInfo, SafeFileHandle childInput, SafeFileHandle childOutput, SafeFileHandle childError, Func<ProcessStartArguments, SafeProcessHandle> callback);
+
         /// <devdoc>
         ///     Make sure we are not watching for process exit.
         /// </devdoc>

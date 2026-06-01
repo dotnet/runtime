@@ -409,6 +409,43 @@ namespace System.Diagnostics
             return new AnonymousPipeClientStream(direction, safePipeHandle);
         }
 
+        private static unsafe partial SafeProcessHandle InvokeStartCallback(ProcessStartInfo startInfo, SafeFileHandle childInput, SafeFileHandle childOutput, SafeFileHandle childError, Func<ProcessStartArguments, SafeProcessHandle> callback)
+        {
+            string? resolvedFileName = ProcessUtils.ResolvePath(startInfo.FileName);
+            string[] argv = ProcessUtils.ParseArgv(startInfo);
+
+            IDictionary<string, string?> env = startInfo.Environment;
+            string? workingDirectory = !string.IsNullOrWhiteSpace(startInfo.WorkingDirectory) ? startInfo.WorkingDirectory : null;
+
+            byte** argvPtr = null;
+            byte** envpPtr = null;
+
+            try
+            {
+                Interop.Sys.AllocArgvArray(argv, ref argvPtr);
+                Interop.Sys.AllocEnvpArray(env, ref envpPtr);
+
+                ProcessStartArguments args = new()
+                {
+                    FileName = resolvedFileName,
+                    Arguments = argvPtr,
+                    WorkingDirectory = workingDirectory,
+                    EnvironmentVariables = envpPtr,
+                    StandardInput = childInput,
+                    StandardOutput = childOutput,
+                    StandardError = childError,
+                    ProcessStartInfo = startInfo,
+                };
+
+                return callback(args);
+            }
+            finally
+            {
+                NativeMemory.Free(envpPtr);
+                NativeMemory.Free(argvPtr);
+            }
+        }
+
         private static Encoding GetStandardInputEncoding() => Encoding.Default;
 
         private static Encoding GetStandardOutputEncoding() => Encoding.Default;
