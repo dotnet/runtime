@@ -10152,7 +10152,6 @@ void Lowering::LowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blk)
     assert(blk->OperIs(GT_STORE_BLK));
     assert(blk->GetLayout()->HasGCPtr());
     assert(!blk->OperIsInitBlkOp());
-    assert(!blk->IsAddressNotOnHeap(m_compiler));
     assert(!blk->IsVolatile());
     assert(!blk->Data()->OperIs(GT_IND) || !blk->Data()->AsIndir()->IsVolatile());
 
@@ -10292,21 +10291,26 @@ void Lowering::LowerCopyBlockStore(GenTreeBlk* blkNode)
     const unsigned unrollLimit = m_compiler->getUnrollThreshold(Compiler::UnrollKind::Memcpy, canUseSimd);
 #endif
 
+#if !defined(JIT32_GCENCODER)
     if (doCpObj && isNotHeap)
     {
         // No write barriers are needed if the destination is known to be outside of the GC heap.
         // If the layout contains a byref, then we know it must live on the stack.
         doCpObj = false;
-#if !defined(JIT32_GCENCODER) && !defined(TARGET_WASM)
+#if !defined(TARGET_WASM)
         if (size <= unrollLimit)
         {
             // If the size is small enough to unroll then we need to mark the block as non-interruptible
             // to actually allow unrolling. The generated code does not report GC references loaded in the
-            // temporary register(s) used for copying. This is not supported for the JIT32_GCENCODER.
+            // temporary register(s) used for copying. This is not supported for the JIT32_GCENCODER, so
+            // on that target we keep doCpObj=true above and stay on the GC-aware CpObj path; the lowering
+            // heuristics in TryDecomposeBlockStoreAsIndirs then choose between per-slot decomposition and
+            // the bulk write-barrier helper.
             blkNode->gtBlkOpGcUnsafe = true;
         }
 #endif
     }
+#endif // !JIT32_GCENCODER
 
     if (doCpObj)
     {
