@@ -414,8 +414,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy
                     return;
 
                 case CorElementType.FnPtr:
-                    runtimeTypeSystem.IsFunctionPointer(typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out byte callConv);
-                    SignatureHeader header = new SignatureHeader(callConv);
+                    runtimeTypeSystem.IsFunctionPointer(typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out SignatureCallingConvention callConv);
+                    SignatureHeader header = new SignatureHeader((byte)callConv);
                     AddType(target, stringBuilder, retAndArgTypes[0]);
                     stringBuilder.Append(" (");
                     for (int i = 1; i < retAndArgTypes.Length; i++)

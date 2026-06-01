@@ -452,7 +452,13 @@ int32_t SystemNative_GetHostEntryForName(const uint8_t* address, int32_t address
                     continue;
                 }
 
-                if (ifa->ifa_addr->sa_family == AF_INET)
+                sa_family_t interfaceFamily = ifa->ifa_addr->sa_family;
+                if (platformFamily != AF_UNSPEC && interfaceFamily != platformFamily)
+                {
+                    continue;
+                }
+
+                if (interfaceFamily == AF_INET)
                 {
                     // Remember if there's at least one non-loopback address for IPv4, so that they will be skipped.
                     if ((ifa->ifa_flags & IFF_LOOPBACK) == 0)
@@ -462,7 +468,7 @@ int32_t SystemNative_GetHostEntryForName(const uint8_t* address, int32_t address
 
                     entry->IPAddressCount++;
                 }
-                else if (ifa->ifa_addr->sa_family == AF_INET6)
+                else if (interfaceFamily == AF_INET6)
                 {
                     // Remember if there's at least one non-loopback address for IPv6, so that they will be skipped.
                     if ((ifa->ifa_flags & IFF_LOOPBACK) == 0)
@@ -512,15 +518,21 @@ int32_t SystemNative_GetHostEntryForName(const uint8_t* address, int32_t address
                     continue;
                 }
 
+                sa_family_t interfaceFamily = ifa->ifa_addr->sa_family;
+                if (platformFamily != AF_UNSPEC && interfaceFamily != platformFamily)
+                {
+                    continue;
+                }
+
                 // Skip loopback addresses if at least one interface has non-loopback one.
-                if ((!includeIPv4Loopback && ifa->ifa_addr->sa_family == AF_INET && (ifa->ifa_flags & IFF_LOOPBACK) != 0) ||
-                    (!includeIPv6Loopback && ifa->ifa_addr->sa_family == AF_INET6 && (ifa->ifa_flags & IFF_LOOPBACK) != 0))
+                if ((!includeIPv4Loopback && interfaceFamily == AF_INET && (ifa->ifa_flags & IFF_LOOPBACK) != 0) ||
+                    (!includeIPv6Loopback && interfaceFamily == AF_INET6 && (ifa->ifa_flags & IFF_LOOPBACK) != 0))
                 {
                     entry->IPAddressCount--;
                     continue;
                 }
 
-                if (CopySockAddrToIPAddress(ifa->ifa_addr, ifa->ifa_addr->sa_family, ipAddressList) == 0)
+                if (CopySockAddrToIPAddress(ifa->ifa_addr, interfaceFamily, ipAddressList) == 0)
                 {
                     ++ipAddressList;
                 }
