@@ -41,7 +41,17 @@ namespace System.Threading
             *_pState = 0;
 
 #if USE_MONITOR
-            _monitor.Initialize();
+            try
+            {
+                _monitor.Initialize();
+            }
+            catch
+            {
+                NativeMemory.AlignedFree(_pState);
+                _pState = null;
+                throw;
+            }
+#endif
 #endif
         }
 
