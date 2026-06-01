@@ -366,10 +366,9 @@ ARGS_NON_NULL_ALL static void FreeSSLStream(JNIEnv* env, SSLStream* sslStream)
     ReleaseGRef(env, sslStream->netInBuffer);
     ReleaseGRef(env, sslStream->appInBuffer);
 
-    // managedContextCleanup may be NULL if the SSLStream was created via SSLStreamCreate
-    // but SSLStreamInitialize was never called (e.g. when managed code fails validation
-    // before invoking initialize and then disposes the SafeSslHandle). In that case there
-    // is no managed handle to release.
+    // managedContextCleanup may be NULL if the SSLStream was created but
+    // SSLStreamInitialize was never called. In that case there is no managed
+    // handle to release.
     if (sslStream->managedContextCleanup != NULL)
         sslStream->managedContextCleanup(sslStream->managedContextHandle);
 
@@ -622,6 +621,11 @@ int32_t AndroidCryptoNative_SSLStreamInitialize(
     abort_unless(sslStream->sslEngine == NULL, "sslEngine is NOT NULL in SSL stream");
     abort_unless(sslStream->sslSession == NULL, "sslSession is NOT NULL in SSL stream");
 
+    sslStream->managedContextHandle = managedContextHandle;
+    sslStream->streamReader = streamReader;
+    sslStream->streamWriter = streamWriter;
+    sslStream->managedContextCleanup = managedContextCleanup;
+
     int32_t ret = FAIL;
     JNIEnv* env = GetJNIEnv();
 
@@ -675,10 +679,6 @@ int32_t AndroidCryptoNative_SSLStreamInitialize(
         ToGRef(env, (*env)->CallStaticObjectMethod(env, g_ByteBuffer, g_ByteBufferAllocate, packetBufferSize));
     ON_EXCEPTION_PRINT_AND_GOTO(exit);
 
-    sslStream->managedContextHandle = managedContextHandle;
-    sslStream->streamReader = streamReader;
-    sslStream->streamWriter = streamWriter;
-    sslStream->managedContextCleanup = managedContextCleanup;
     ret = SUCCESS;
 
 exit:
