@@ -52,7 +52,6 @@ namespace System.Threading
                 throw;
             }
 #endif
-#endif
         }
 
         public void Dispose()
