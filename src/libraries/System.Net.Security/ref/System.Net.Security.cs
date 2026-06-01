@@ -718,11 +718,11 @@ namespace System.Net.Security
         public System.Net.Security.TlsCipherSuite NegotiatedCipherSuite { get { throw null; } }
         public System.Net.Security.SslApplicationProtocol NegotiatedApplicationProtocol { get { throw null; } }
         public static System.Net.Security.TlsSession Create(System.Net.Security.TlsContext context) { throw null; }
-        public System.Net.Security.TlsOperationStatus ProcessHandshake(System.ReadOnlySpan<byte> input, System.Span<byte> output, out int consumed, out int produced) { throw null; }
-        public System.Net.Security.TlsOperationStatus Encrypt(System.ReadOnlySpan<byte> plaintext, System.Span<byte> ciphertext, out int consumed, out int produced) { throw null; }
-        public System.Net.Security.TlsOperationStatus Decrypt(System.ReadOnlySpan<byte> ciphertext, System.Span<byte> plaintext, out int consumed, out int produced) { throw null; }
-        public System.Net.Security.TlsOperationStatus Shutdown(System.Span<byte> ciphertext, out int produced) { throw null; }
-        public System.Net.Security.TlsOperationStatus DrainPendingOutput(System.Span<byte> ciphertext, out int produced) { throw null; }
+        public System.Net.Security.TlsOperationStatus ProcessHandshake(System.ReadOnlySpan<byte> input, System.Span<byte> output, out int bytesConsumed, out int bytesWritten) { throw null; }
+        public System.Net.Security.TlsOperationStatus Encrypt(System.ReadOnlySpan<byte> plaintext, System.Span<byte> ciphertext, out int bytesConsumed, out int bytesWritten) { throw null; }
+        public System.Net.Security.TlsOperationStatus Decrypt(System.ReadOnlySpan<byte> ciphertext, System.Span<byte> plaintext, out int bytesConsumed, out int bytesWritten) { throw null; }
+        public System.Net.Security.TlsOperationStatus Shutdown(System.Span<byte> ciphertext, out int bytesWritten) { throw null; }
+        public System.Net.Security.TlsOperationStatus DrainPendingOutput(System.Span<byte> ciphertext, out int bytesWritten) { throw null; }
         public System.Security.Cryptography.X509Certificates.X509Certificate2? GetRemoteCertificate() { throw null; }
         public System.Security.Cryptography.X509Certificates.X509Certificate2Collection? GetRemoteCertificates() { throw null; }
         public System.Net.Security.SslPolicyErrors AcceptWithDefaultValidation() { throw null; }
@@ -730,7 +730,7 @@ namespace System.Net.Security
         public void SetServerOptions(System.Net.Security.SslServerAuthenticationOptions options) { }
         public System.Security.Cryptography.X509Certificates.X509Certificate2? LocalCertificate { get { throw null; } }
         public System.Security.Authentication.ExtendedProtection.ChannelBinding? GetChannelBinding(System.Security.Authentication.ExtendedProtection.ChannelBindingKind kind) { throw null; }
-        public System.Net.Security.TlsOperationStatus RequestClientCertificate(System.Span<byte> ciphertext, out int produced) { throw null; }
+        public System.Net.Security.TlsOperationStatus RequestClientCertificate(System.Span<byte> ciphertext, out int bytesWritten) { throw null; }
         public void Dispose() { }
     }
 }

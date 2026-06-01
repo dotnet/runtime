@@ -32,19 +32,19 @@ namespace System.Net.Security
         public static TlsSession Create(TlsContext context) =>
             throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
 
-        public TlsOperationStatus ProcessHandshake(ReadOnlySpan<byte> input, Span<byte> output, out int consumed, out int produced) =>
+        public TlsOperationStatus ProcessHandshake(ReadOnlySpan<byte> input, Span<byte> output, out int bytesConsumed, out int bytesWritten) =>
             throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
 
-        public TlsOperationStatus Encrypt(ReadOnlySpan<byte> plaintext, Span<byte> ciphertext, out int consumed, out int produced) =>
+        public TlsOperationStatus Encrypt(ReadOnlySpan<byte> plaintext, Span<byte> ciphertext, out int bytesConsumed, out int bytesWritten) =>
             throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
 
-        public TlsOperationStatus Decrypt(ReadOnlySpan<byte> ciphertext, Span<byte> plaintext, out int consumed, out int produced) =>
+        public TlsOperationStatus Decrypt(ReadOnlySpan<byte> ciphertext, Span<byte> plaintext, out int bytesConsumed, out int bytesWritten) =>
             throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
 
-        public TlsOperationStatus DrainPendingOutput(Span<byte> ciphertext, out int produced) =>
+        public TlsOperationStatus DrainPendingOutput(Span<byte> ciphertext, out int bytesWritten) =>
             throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
 
-        public TlsOperationStatus Shutdown(Span<byte> ciphertext, out int produced) =>
+        public TlsOperationStatus Shutdown(Span<byte> ciphertext, out int bytesWritten) =>
             throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
 
         public X509Certificate2? GetRemoteCertificate() =>
@@ -68,7 +68,7 @@ namespace System.Net.Security
         public ChannelBinding? GetChannelBinding(ChannelBindingKind kind) =>
             throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
 
-        public TlsOperationStatus RequestClientCertificate(Span<byte> ciphertext, out int produced) =>
+        public TlsOperationStatus RequestClientCertificate(Span<byte> ciphertext, out int bytesWritten) =>
             throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
 
         public void Dispose() { }

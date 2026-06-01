@@ -427,12 +427,12 @@ namespace System.Net.Security
         public TlsOperationStatus ProcessHandshake(
             ReadOnlySpan<byte> input,
             Span<byte> output,
-            out int consumed,
-            out int produced)
+            out int bytesConsumed,
+            out int bytesWritten)
         {
             ThrowIfDisposed();
-            consumed = 0;
-            produced = 0;
+            bytesConsumed = 0;
+            bytesWritten = 0;
 
             if (_externalValidationFault is not null)
             {
@@ -466,7 +466,7 @@ namespace System.Net.Security
             // Drain pending first; do not consume new input while output is owed.
             if (_pendingLength > 0)
             {
-                produced = DrainTo(output);
+                bytesWritten = DrainTo(output);
                 return _pendingLength > 0 ? TlsOperationStatus.WantWrite : TlsOperationStatus.Complete;
             }
 
@@ -544,7 +544,7 @@ namespace System.Net.Security
                         ref _context.CredentialsHandle,
                         ref _securityContext,
                         input,
-                        out consumed,
+                        out bytesConsumed,
                         _context.Options);
                 }
                 else
@@ -557,7 +557,7 @@ namespace System.Net.Security
                         ref _securityContext,
                         hostName,
                         input,
-                        out consumed,
+                        out bytesConsumed,
                         _context.Options);
                 }
 
@@ -591,7 +591,7 @@ namespace System.Net.Security
 
                 if (_pendingLength > 0)
                 {
-                    produced = DrainTo(output);
+                    bytesWritten = DrainTo(output);
                     if (_pendingLength > 0)
                     {
                         return TlsOperationStatus.WantWrite;
@@ -622,7 +622,7 @@ namespace System.Net.Security
                 // re-enters us with the remainder instead of blocking on a network
                 // read the peer will never satisfy (e.g. server seeing CKE+CCS+
                 // Finished in one TCP read during a TLS 1.2 handshake).
-                if (consumed > 0 && consumed < input.Length)
+                if (bytesConsumed > 0 && bytesConsumed < input.Length)
                 {
                     return TlsOperationStatus.Complete;
                 }
@@ -638,13 +638,13 @@ namespace System.Net.Security
         public TlsOperationStatus Encrypt(
             ReadOnlySpan<byte> plaintext,
             Span<byte> ciphertext,
-            out int consumed,
-            out int produced)
+            out int bytesConsumed,
+            out int bytesWritten)
         {
             ThrowIfDisposed();
             ThrowIfPendingExternalValidation();
-            consumed = 0;
-            produced = 0;
+            bytesConsumed = 0;
+            bytesWritten = 0;
 
             if (!_isHandshakeComplete)
             {
@@ -653,7 +653,7 @@ namespace System.Net.Security
 
             if (_pendingLength > 0)
             {
-                produced = DrainTo(ciphertext);
+                bytesWritten = DrainTo(ciphertext);
                 return _pendingLength > 0 ? TlsOperationStatus.WantWrite : TlsOperationStatus.Complete;
             }
 
@@ -681,7 +681,7 @@ namespace System.Net.Security
                         throw new IOException(SR.net_io_encrypt, SslStreamPal.GetException(token.Status));
                     }
 
-                    consumed = chunk;
+                    bytesConsumed = chunk;
 
                     if (token.Size > 0)
                     {
@@ -699,7 +699,7 @@ namespace System.Net.Security
                 ArrayPool<byte>.Shared.Return(rented);
             }
 
-            produced = DrainTo(ciphertext);
+            bytesWritten = DrainTo(ciphertext);
             return _pendingLength > 0 ? TlsOperationStatus.WantWrite : TlsOperationStatus.Complete;
         }
 
@@ -708,13 +708,13 @@ namespace System.Net.Security
         public TlsOperationStatus Decrypt(
             ReadOnlySpan<byte> ciphertext,
             Span<byte> plaintext,
-            out int consumed,
-            out int produced)
+            out int bytesConsumed,
+            out int bytesWritten)
         {
             ThrowIfDisposed();
             ThrowIfPendingExternalValidation();
-            consumed = 0;
-            produced = 0;
+            bytesConsumed = 0;
+            bytesWritten = 0;
 
             if (!_isHandshakeComplete)
             {
@@ -758,19 +758,19 @@ namespace System.Net.Security
             switch (status.ErrorCode)
             {
                 case SecurityStatusPalErrorCode.OK:
-                    consumed = frameSize;
+                    bytesConsumed = frameSize;
                     if (outCount > plaintext.Length)
                     {
                         throw new InvalidOperationException(
                             $"Plaintext buffer too small: needed {outCount}, got {plaintext.Length}.");
                     }
                     _decryptScratch.AsSpan(outOffset, outCount).CopyTo(plaintext);
-                    produced = outCount;
+                    bytesWritten = outCount;
                     return TlsOperationStatus.Complete;
 
                 case SecurityStatusPalErrorCode.ContextExpired:
                 case SecurityStatusPalErrorCode.ContextExpiredError:
-                    consumed = frameSize;
+                    bytesConsumed = frameSize;
                     return TlsOperationStatus.Closed;
 
                 case SecurityStatusPalErrorCode.Renegotiate:
@@ -782,7 +782,7 @@ namespace System.Net.Security
                     // record that must be fed back into ASC/ISC so SChannel can
                     // update its internal state. If we don't, the next DecryptMessage
                     // returns SEC_E_CONTEXT_EXPIRED because the context is stuck.
-                    consumed = frameSize;
+                    bytesConsumed = frameSize;
                     ProcessPostHandshakeMessage(_decryptScratch.AsSpan(outOffset, outCount));
                     // Return Complete (not WantRead): we consumed input bytes but
                     // produced no plaintext. The caller's loop should re-enter to
@@ -814,10 +814,10 @@ namespace System.Net.Security
         /// <see cref="GetRemoteCertificate"/>.
         /// </para>
         /// </remarks>
-        public TlsOperationStatus RequestClientCertificate(Span<byte> ciphertext, out int produced)
+        public TlsOperationStatus RequestClientCertificate(Span<byte> ciphertext, out int bytesWritten)
         {
             ThrowIfDisposed();
-            produced = 0;
+            bytesWritten = 0;
 
             if (!_context.IsServer)
             {
@@ -854,7 +854,7 @@ namespace System.Net.Security
                 }
             }
 
-            produced = DrainTo(ciphertext);
+            bytesWritten = DrainTo(ciphertext);
             return _pendingLength > 0 ? TlsOperationStatus.WantWrite : TlsOperationStatus.Complete;
         }
 
@@ -873,10 +873,10 @@ namespace System.Net.Security
         /// otherwise <see cref="TlsOperationStatus.Closed"/> once all bytes have
         /// been handed to the caller.
         /// </remarks>
-        public TlsOperationStatus Shutdown(Span<byte> ciphertext, out int produced)
+        public TlsOperationStatus Shutdown(Span<byte> ciphertext, out int bytesWritten)
         {
             ThrowIfDisposed();
-            produced = 0;
+            bytesWritten = 0;
 
             if (_securityContext == null || _securityContext.IsInvalid)
             {
@@ -933,16 +933,16 @@ namespace System.Net.Security
                 }
             }
 
-            produced = DrainTo(ciphertext);
+            bytesWritten = DrainTo(ciphertext);
             return _pendingLength > 0 ? TlsOperationStatus.WantWrite : TlsOperationStatus.Closed;
         }
 
         // ── Pending output ────────────────────────────────────────────────
 
-        public TlsOperationStatus DrainPendingOutput(Span<byte> ciphertext, out int produced)
+        public TlsOperationStatus DrainPendingOutput(Span<byte> ciphertext, out int bytesWritten)
         {
             ThrowIfDisposed();
-            produced = DrainTo(ciphertext);
+            bytesWritten = DrainTo(ciphertext);
             return _pendingLength > 0 ? TlsOperationStatus.WantWrite : TlsOperationStatus.Complete;
         }
 
@@ -1113,7 +1113,7 @@ namespace System.Net.Security
         // updates internal handshake-complete state. Returns the raw PAL token so the
         // caller can preserve existing ProtocolToken-based plumbing (alerts, error
         // mapping, NetEventSource).
-        internal ProtocolToken HandshakeStepForSslStream(ReadOnlySpan<byte> input, out int consumed)
+        internal ProtocolToken HandshakeStepForSslStream(ReadOnlySpan<byte> input, out int bytesConsumed)
         {
             ThrowIfDisposed();
 
@@ -1124,7 +1124,7 @@ namespace System.Net.Security
                     ref _context.CredentialsHandle,
                     ref _securityContext,
                     input,
-                    out consumed,
+                    out bytesConsumed,
                     _context.Options);
             }
             else
@@ -1135,7 +1135,7 @@ namespace System.Net.Security
                     ref _securityContext,
                     hostName,
                     input,
-                    out consumed,
+                    out bytesConsumed,
                     _context.Options);
             }
 
