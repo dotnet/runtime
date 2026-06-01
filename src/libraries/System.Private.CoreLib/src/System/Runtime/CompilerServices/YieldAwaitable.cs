@@ -116,7 +116,7 @@ namespace System.Runtime.CompilerServices
             {
                 Debug.Assert(box != null);
 
-                if (AsyncInstrumentation.IsEnabled.AsyncProfiler(AsyncInstrumentation.SyncActiveFlags()))
+                if (AsyncTaskDispatcherInfo.InstrumentCheckPoint && AsyncInstrumentation.IsEnabled.AsyncProfiler(AsyncInstrumentation.SyncActiveFlags()))
                 {
                     box = AsyncTaskDispatcher.Create(box);
                 }

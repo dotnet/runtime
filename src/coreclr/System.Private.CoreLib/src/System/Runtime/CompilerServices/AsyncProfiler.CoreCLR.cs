@@ -464,7 +464,7 @@ namespace System.Runtime.CompilerServices
                 {
                     CaptureRuntimeAsyncCallstackState state = default;
                     state.Continuation = asyncCallstack;
-                    EmitAsyncCallstack(context, currentTimestamp, currentTimestamp - context.LastEventTimestamp, eventID, id, state);
+                    EmitAsyncCallstack(context, currentTimestamp, currentTimestamp - context.LastEventTimestamp, eventID, id, ref state);
                 }
             }
 

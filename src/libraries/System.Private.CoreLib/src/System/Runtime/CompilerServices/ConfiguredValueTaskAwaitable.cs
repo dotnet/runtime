@@ -102,7 +102,7 @@ namespace System.Runtime.CompilerServices
                 }
                 else if (obj != null)
                 {
-                    if (AsyncInstrumentation.IsEnabled.AsyncProfiler(AsyncInstrumentation.SyncActiveFlags()))
+                    if (AsyncTaskDispatcherInfo.InstrumentCheckPoint && AsyncInstrumentation.IsEnabled.AsyncProfiler(AsyncInstrumentation.SyncActiveFlags()))
                     {
                         box = AsyncTaskDispatcher.Create(box);
                     }
@@ -212,7 +212,7 @@ namespace System.Runtime.CompilerServices
                 }
                 else if (obj != null)
                 {
-                    if (AsyncInstrumentation.IsEnabled.AsyncProfiler(AsyncInstrumentation.SyncActiveFlags()))
+                    if (AsyncTaskDispatcherInfo.InstrumentCheckPoint && AsyncInstrumentation.IsEnabled.AsyncProfiler(AsyncInstrumentation.SyncActiveFlags()))
                     {
                         box = AsyncTaskDispatcher.Create(box);
                     }

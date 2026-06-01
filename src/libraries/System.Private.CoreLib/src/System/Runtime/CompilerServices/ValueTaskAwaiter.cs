@@ -98,7 +98,7 @@ namespace System.Runtime.CompilerServices
                 // allocating a full AsyncTaskDispatcher (Task-derived). The IValueTaskSource.OnCompleted API
                 // already takes Action<object?> + state separately, so we can use a lightweight static callback
                 // that performs PUSH/MoveNext/POP inline without the Task overhead.
-                if (AsyncInstrumentation.IsEnabled.AsyncProfiler(AsyncInstrumentation.SyncActiveFlags()))
+                if (AsyncTaskDispatcherInfo.InstrumentCheckPoint && AsyncInstrumentation.IsEnabled.AsyncProfiler(AsyncInstrumentation.SyncActiveFlags()))
                 {
                     box = AsyncTaskDispatcher.Create(box);
                 }
@@ -185,7 +185,7 @@ namespace System.Runtime.CompilerServices
             }
             else if (obj != null)
             {
-                if (AsyncInstrumentation.IsEnabled.AsyncProfiler(AsyncInstrumentation.SyncActiveFlags()))
+                if (AsyncTaskDispatcherInfo.InstrumentCheckPoint && AsyncInstrumentation.IsEnabled.AsyncProfiler(AsyncInstrumentation.SyncActiveFlags()))
                 {
                     box = AsyncTaskDispatcher.Create(box);
                 }

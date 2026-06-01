@@ -771,17 +771,9 @@ namespace System.Runtime.CompilerServices
 
             public static void Append(AsyncTaskDispatcher dispatcher, AsyncThreadContext context, long currentTimestamp)
             {
-                if (IsEnabled.ResumeAsyncCallstackEvent(context.ActiveEventKeywords))
+                if (IsEnabled.ResumeAsyncCallstackEvent(context.ActiveEventKeywords) && dispatcher.ContinuationChainChanged)
                 {
-                    Task? lastTask = dispatcher.LastContinuation;
-                    if (lastTask != null)
-                    {
-                        object? newContinuation = lastTask.DiagnosticContinuationObject;
-                        if (newContinuation != null)
-                        {
-                            AsyncCallstack.EmitEvent(dispatcher, context, newContinuation, currentTimestamp, AsyncEventID.AppendAsyncCallstack, GetId(dispatcher));
-                        }
-                    }
+                    AsyncCallstack.EmitEvent(dispatcher, context, dispatcher.LastContinuation?.DiagnosticContinuationObject, currentTimestamp, AsyncEventID.AppendAsyncCallstack, GetId(dispatcher));
                 }
             }
 
@@ -1331,7 +1323,7 @@ namespace System.Runtime.CompilerServices
                         CaptureTaskAsyncCallstackState state = default;
                         state.Continuation = box;
 
-                        EmitAsyncCallstack(context, currentTimestamp, currentTimestamp - context.LastEventTimestamp, eventID, id, state);
+                        EmitAsyncCallstack(context, currentTimestamp, currentTimestamp - context.LastEventTimestamp, eventID, id, ref state);
 
                         box = ResolveAsyncStateMachineBox(state.LastContinuation);
                         if (box != null)
@@ -1461,7 +1453,7 @@ namespace System.Runtime.CompilerServices
                 return null;
             }
 
-            private static void EmitAsyncCallstack<T>(AsyncThreadContext context, long currentTimestamp, long delta, AsyncEventID eventID, ulong id, T captureCallstack)
+            private static void EmitAsyncCallstack<T>(AsyncThreadContext context, long currentTimestamp, long delta, AsyncEventID eventID, ulong id, ref T captureCallstack)
                 where T : ICaptureAsyncCallstack, allows ref struct
             {
                 ref EventBuffer eventBuffer = ref context.EventBuffer;
