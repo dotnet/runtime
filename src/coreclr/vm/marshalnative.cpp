@@ -110,7 +110,7 @@ extern "C" BOOL QCALLTYPE MarshalNative_HasLayout(QCall::TypeHandle t, BOOL* pIs
     {
         // Enums don't have native layout info, but they marshal identically
         // to their underlying primitive type.
-        th = CoreLibBinder::GetElementType(th.GetVerifierCorElementType());
+        th = CoreLibBinder::GetElementType(th.GetInternalCorElementType());
     }
 
     if (th.HasLayout())
