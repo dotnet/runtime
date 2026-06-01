@@ -755,8 +755,10 @@ int LinearScan::BuildNode(GenTree* tree)
                 var_types      baseType        = simdVal.gtSimdScalableBaseType;
                 bool           canEncodeScalar = false;
 
-                ssize_t index = -1;
-                ssize_t step  = -1;
+                ssize_t index       = -1;
+                ssize_t step        = -1;
+                bool    indexHasImm = true;
+                bool    stepHasImm  = true;
                 switch (simdVal.gtSimdScalableBaseType)
                 {
                     case TYP_BYTE:
@@ -810,8 +812,25 @@ int LinearScan::BuildNode(GenTree* tree)
 
                     case TYP_ULONG:
                     {
-                        index = static_cast<ssize_t>(simdVal.gtSimdScalableIndexU64[0]);
-                        step  = static_cast<ssize_t>(simdVal.gtSimdScalableStepU64[0]);
+                        const uint64_t indexVal = simdVal.gtSimdScalableIndexU64[0];
+                        const uint64_t stepVal  = simdVal.gtSimdScalableStepU64[0];
+                        if (indexVal <= static_cast<uint64_t>(INT64_MAX))
+                        {
+                            index = static_cast<ssize_t>(indexVal);
+                        }
+                        else
+                        {
+                            indexHasImm = false;
+                        }
+
+                        if (stepVal <= static_cast<uint64_t>(INT64_MAX))
+                        {
+                            step = static_cast<ssize_t>(stepVal);
+                        }
+                        else
+                        {
+                            stepHasImm = false;
+                        }
                         break;
                     }
 
@@ -828,8 +847,8 @@ int LinearScan::BuildNode(GenTree* tree)
                     {
                         if (varTypeIsIntegral(baseType))
                         {
-                            canEncodeScalar =
-                                emitter::isValidSimm<8>(index) || emitter::isValidSimm_MultipleOf<8, 256>(index);
+                            canEncodeScalar = indexHasImm && (emitter::isValidSimm<8>(index) ||
+                                                              emitter::isValidSimm_MultipleOf<8, 256>(index));
                         }
                         else if (baseType == TYP_FLOAT)
                         {
@@ -853,13 +872,13 @@ int LinearScan::BuildNode(GenTree* tree)
                     {
                         canEncodeScalar = true;
 
-                        if (!emitter::isValidSimm<5>(index))
+                        if (!indexHasImm || !emitter::isValidSimm<5>(index))
                         {
                             canEncodeScalar = false;
                             buildInternalIntRegisterDefForNode(tree);
                         }
 
-                        if (!emitter::isValidSimm<5>(step))
+                        if (!stepHasImm || !emitter::isValidSimm<5>(step))
                         {
                             canEncodeScalar = false;
                             buildInternalIntRegisterDefForNode(tree);
@@ -876,7 +895,8 @@ int LinearScan::BuildNode(GenTree* tree)
                     {
                         if (varTypeIsIntegral(baseType))
                         {
-                            canEncodeScalar = emitter::emitIns_valid_imm_for_mov(index, emitActualTypeSize(baseType));
+                            canEncodeScalar =
+                                indexHasImm && emitter::emitIns_valid_imm_for_mov(index, emitActualTypeSize(baseType));
                         }
                         else if (baseType == TYP_FLOAT)
                         {
