@@ -1746,8 +1746,10 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     public int EnumerateClassFields(ulong thExact, nuint* pObjectSize, delegate* unmanaged<FieldData*, void*, void> fpCallback, nint pUserData)
     {
         nuint cdacObjectSize = 0;
+        List<FieldData>? cdacFields = null;
 #if DEBUG
-        List<FieldData>? cdacFields = _legacy is not null ? new() : null;
+        if (_legacy is not null)
+            cdacFields = new();
 #endif
         int hr = HResults.S_OK;
         try
@@ -1767,11 +1769,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 cdacObjectSize = rts.GetNumInstanceFieldBytes(thApprox);
             }
 
-            CollectFieldsForDbi(rts, thExactHandle, thApprox, fpCallback, pUserData,
-#if DEBUG
-                cdacFields
-#endif
-                );
+            CollectFieldsForDbi(rts, thExactHandle, thApprox, fpCallback, pUserData, cdacFields);
         }
         catch (System.Exception ex)
         {
@@ -1798,8 +1796,10 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     public int EnumerateInstantiationFields(ulong vmAssembly, ulong vmThExact, ulong vmThApprox, nuint* pObjectSize, delegate* unmanaged<FieldData*, void*, void> fpCallback, nint pUserData)
     {
         nuint cdacObjectSize = 0;
+        List<FieldData>? cdacFields = null;
 #if DEBUG
-        List<FieldData>? cdacFields = _legacy is not null ? new() : null;
+        if (_legacy is not null)
+            cdacFields = new();
 #endif
         int hr = HResults.S_OK;
         try
@@ -1812,11 +1812,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
             cdacObjectSize = rts.GetNumInstanceFieldBytes(thApproxHandle);
 
-            CollectFieldsForDbi(rts, thExactHandle, thApproxHandle, fpCallback, pUserData,
-#if DEBUG
-                cdacFields
-#endif
-                );
+            CollectFieldsForDbi(rts, thExactHandle, thApproxHandle, fpCallback, pUserData, cdacFields);
         }
         catch (System.Exception ex)
         {
@@ -1848,10 +1844,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         TypeHandle thApprox,
         delegate* unmanaged<FieldData*, void*, void> fpCallback,
         nint pUserData,
-#if DEBUG
-        List<FieldData>? cdacFields
-#endif
-        )
+        List<FieldData>? cdacFields)
     {
         TargetPointer gcStaticsBase = TargetPointer.Null;
         TargetPointer nonGCStaticsBase = TargetPointer.Null;
@@ -1862,26 +1855,14 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         }
 
         foreach (TargetPointer fdPtr in rts.GetFieldDescList(thApprox))
-            EmitFieldData(rts, fdPtr, gcStaticsBase, nonGCStaticsBase, fpCallback, pUserData,
-#if DEBUG
-                cdacFields
-#endif
-                );
+            EmitFieldData(rts, fdPtr, gcStaticsBase, nonGCStaticsBase, fpCallback, pUserData, cdacFields);
 
         if (_target.Contracts.TryGetContract<IEditAndContinue>(out IEditAndContinue enc))
         {
             foreach (TargetPointer fdPtr in enc.EnumerateAddedFieldDescs(thApprox, staticFields: false))
-                EmitFieldData(rts, fdPtr, gcStaticsBase, nonGCStaticsBase, fpCallback, pUserData,
-#if DEBUG
-                    cdacFields
-#endif
-                );
+                EmitFieldData(rts, fdPtr, gcStaticsBase, nonGCStaticsBase, fpCallback, pUserData, cdacFields);
             foreach (TargetPointer fdPtr in enc.EnumerateAddedFieldDescs(thApprox, staticFields: true))
-                EmitFieldData(rts, fdPtr, gcStaticsBase, nonGCStaticsBase, fpCallback, pUserData,
-#if DEBUG
-                    cdacFields
-#endif
-                );
+                EmitFieldData(rts, fdPtr, gcStaticsBase, nonGCStaticsBase, fpCallback, pUserData, cdacFields);
         }
     }
 
@@ -1894,10 +1875,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         TargetPointer nonGCStaticsBase,
         delegate* unmanaged<FieldData*, void*, void> fpCallback,
         nint pUserData,
-#if DEBUG
-        List<FieldData>? cdacFields
-#endif
-        )
+        List<FieldData>? cdacFields)
     {
         bool isStatic = rts.IsFieldDescStatic(fdPtr);
         CorElementType type = rts.GetFieldDescType(fdPtr);
