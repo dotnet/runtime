@@ -22,6 +22,7 @@ internal static class LayoutSetSource
 #nullable enable
 
 using System;
+using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace Microsoft.Diagnostics.DataContractReader.Generated;
@@ -30,13 +31,13 @@ namespace Microsoft.Diagnostics.DataContractReader.Generated;
 /// An ordered set of type layouts resolved from multiple type info sources.
 /// Field lookups iterate sources in priority order (native cdac descriptor
 /// first, then managed type metadata), trying each candidate field name
-/// per source.
+/// per source. Sources are resolved lazily.
 /// </summary>
 internal readonly struct LayoutSet
 {
-    private readonly Target.TypeInfo?[] _layouts;
+    private readonly LazyLayout[] _layouts;
 
-    public LayoutSet(Target.TypeInfo?[] layouts)
+    public LayoutSet(LazyLayout[] layouts)
     {
         _layouts = layouts;
     }
@@ -45,9 +46,9 @@ internal readonly struct LayoutSet
     {
         get
         {
-            foreach (Target.TypeInfo? layout in _layouts)
+            foreach (LazyLayout layout in _layouts)
             {
-                if (layout?.Size is uint s)
+                if (layout.Get()?.Size is uint s)
                     return s;
             }
             throw new InvalidOperationException("No layout source has a known instance size.");
@@ -56,9 +57,9 @@ internal readonly struct LayoutSet
 
     public bool TrySelect(TargetPointer address, out Target.TypeInfo type, out TargetPointer baseAddr, out string name, params ReadOnlySpan<string> names)
     {
-        foreach (Target.TypeInfo? layout in _layouts)
+        foreach (LazyLayout layout in _layouts)
         {
-            if (layout is not Target.TypeInfo ti)
+            if (layout.Get() is not Target.TypeInfo ti)
                 continue;
             foreach (string candidate in names)
             {
@@ -85,37 +86,62 @@ internal readonly struct LayoutSet
 
     public static LayoutSet Resolve(Target target, string[] names)
     {
-        Target.TypeInfo? native = null;
-        Target.TypeInfo? managed = null;
+        List<LazyLayout> layouts = new(2);
 
         foreach (string name in names)
         {
             if (target.TryGetTypeInfo(name, out Target.TypeInfo n))
             {
-                native = n;
+                layouts.Add(new LazyLayout(n));
                 break;
             }
         }
 
         if (target.Contracts.TryGetContract(out IManagedTypeSource mts))
         {
-            foreach (string name in names)
+            layouts.Add(new LazyLayout(() =>
             {
-                if (mts.TryGetTypeInfo(name, out Target.TypeInfo m))
+                foreach (string name in names)
                 {
-                    managed = m;
-                    break;
+                    if (mts.TryGetTypeInfo(name, out Target.TypeInfo m))
+                        return m;
                 }
-            }
+                return null;
+            }));
         }
 
-        if (native is null && managed is null)
+        return new LayoutSet(layouts.ToArray());
+    }
+}
+
+/// <summary>
+/// Memoized lazy holder for a single <see cref="Target.TypeInfo"/> source.
+/// Constructed either with a pre-resolved value (for cheap sources) or with
+/// a factory invoked on first access (for expensive sources).
+/// </summary>
+internal sealed class LazyLayout
+{
+    private Func<Target.TypeInfo?>? _factory;
+    private Target.TypeInfo? _value;
+
+    public LazyLayout(Target.TypeInfo value)
+    {
+        _value = value;
+    }
+
+    public LazyLayout(Func<Target.TypeInfo?> factory)
+    {
+        _factory = factory;
+    }
+
+    public Target.TypeInfo? Get()
+    {
+        if (_factory is not null)
         {
-            throw new InvalidOperationException(
-                $"No descriptor available for names=[{string.Join(",", names)}].");
+            _value = _factory();
+            _factory = null;
         }
-
-        return new LayoutSet([native, managed]);
+        return _value;
     }
 }
 """;
