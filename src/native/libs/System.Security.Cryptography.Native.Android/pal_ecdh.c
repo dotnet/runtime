@@ -39,6 +39,7 @@ int32_t AndroidCryptoNative_EcdhDeriveKey(EC_KEY* ourKey, EC_KEY* peerKey, uint8
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     jsize secretBufferLen = (*env)->GetArrayLength(env, loc[secret]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     if (secretBufferLen > bufferLength)
         goto cleanup;
 

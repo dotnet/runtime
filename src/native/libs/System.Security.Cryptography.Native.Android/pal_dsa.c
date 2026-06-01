@@ -261,25 +261,40 @@ int32_t AndroidCryptoNative_GetDsaParameters(
         cbX = AndroidCryptoNative_GetBigNumBytes(loc[xBn]);
     }
 
-    // Only promote local refs to global refs and write outputs on success so
-    // the caller never observes a partially-populated state.
+    // Clean up any partially promoted global refs if a later promotion fails.
     *p = AddGRef(env, loc[pBn]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     *pLength = cbP;
     *q = AddGRef(env, loc[qBn]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     *qLength = cbQ;
     *g = AddGRef(env, loc[gBn]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     *gLength = cbG;
     *y = AddGRef(env, loc[yBn]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     *yLength = cbY;
     if (loc[xBn])
     {
         *x = AddGRef(env, loc[xBn]);
+        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
         *xLength = cbX;
     }
 
     ret = SUCCESS;
 
 cleanup:
+    if (ret != SUCCESS)
+    {
+        ReleaseGRef(env, *p);
+        ReleaseGRef(env, *q);
+        ReleaseGRef(env, *g);
+        ReleaseGRef(env, *y);
+        ReleaseGRef(env, *x);
+        *p = *q = *g = *y = *x = NULL;
+        *pLength = *qLength = *gLength = *yLength = *xLength = 0;
+    }
+
     RELEASE_LOCALS_ENV(loc, ReleaseLRef);
     return ret;
 }

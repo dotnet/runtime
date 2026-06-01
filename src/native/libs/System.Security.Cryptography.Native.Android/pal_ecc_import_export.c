@@ -68,21 +68,32 @@ int32_t AndroidCryptoNative_GetECKeyParameters(const EC_KEY* key,
             goto cleanup;
     }
 
-    // Only promote local refs to global refs and write outputs on success so
-    // the caller never observes a partially-populated state.
+    // Clean up any partially promoted global refs if a later promotion fails.
     *qx = AddGRef(env, loc[xBn]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     *cbQx = cbxBn;
     *qy = AddGRef(env, loc[yBn]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     *cbQy = cbyBn;
     if (includePrivate)
     {
         *d = AddGRef(env, loc[dBn]);
+        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
         *cbD = cbdBn;
     }
 
     ret = SUCCESS;
 
 cleanup:
+    if (ret != SUCCESS)
+    {
+        ReleaseGRef(env, *qx);
+        ReleaseGRef(env, *qy);
+        ReleaseGRef(env, *d);
+        *qx = *qy = *d = NULL;
+        *cbQx = *cbQy = *cbD = 0;
+    }
+
     RELEASE_LOCALS_ENV(loc, ReleaseLRef);
     return ret;
 }
