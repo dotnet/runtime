@@ -5252,6 +5252,8 @@ BasicBlock* Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 
         for (BasicBlock* const predBlock : block->PredBlocksEditing())
         {
+            // Inherit affordances
+            predBlock->CopyFlags(block, BBF_ASYNC_RESUMPTION);
             // change all jumps/refs to the removed block
             fgReplaceJumpTarget(predBlock, block, succBlock);
         }

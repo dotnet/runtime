@@ -19,7 +19,7 @@ namespace System.Formats.Tar
         // Attempts to retrieve the next header from the specified tar archive stream.
         // Throws if end of stream is reached or if any data type conversion fails.
         // Returns a valid TarHeader object if the attributes were read successfully, null otherwise.
-        internal static TarHeader? TryGetNextHeader(Stream archiveStream, bool copyData, TarEntryFormat initialFormat, bool processDataBlock)
+        internal static unsafe TarHeader? TryGetNextHeader(Stream archiveStream, bool copyData, TarEntryFormat initialFormat, bool processDataBlock)
         {
             // The four supported formats have a header that fits in the default record size
             Span<byte> buffer = stackalloc byte[TarHelpers.RecordSize];
@@ -151,6 +151,11 @@ namespace System.Formats.Tar
             // The 'size' header field only fits 12 bytes, so the data section length that surpases that limit needs to be retrieved
             if (TarHelpers.TryGetStringAsBaseTenLong(ExtendedAttributes, PaxEaSize, out long size))
             {
+                if (size < 0)
+                {
+                    throw new InvalidDataException(SR.Format(SR.TarSizeFieldNegative));
+                }
+
                 _size = size;
             }
 
@@ -719,7 +724,7 @@ namespace System.Formats.Tar
 
         private void ValidateSize()
         {
-            if ((uint)_size > (uint)Array.MaxLength)
+            if ((ulong)_size > (ulong)MaxMetadataBlockSize)
             {
                 ThrowSizeFieldTooLarge();
             }

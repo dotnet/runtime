@@ -1,10 +1,7 @@
 set(GC_DIR ../../gc)
 
 set(COMMON_RUNTIME_SOURCES
-    allocheap.cpp
     rhassert.cpp
-    ${RUNTIME_DIR}/CachedInterfaceDispatch.cpp
-    CachedInterfaceDispatch_Aot.cpp
     ${RUNTIME_DIR}/MiscNativeHelpers.cpp
     Crst.cpp
     DebugHeader.cpp
@@ -152,8 +149,12 @@ else()
     include_directories($ENV{EMSCRIPTEN/system/lib/libcxxabi/include})
   endif()
 
-  # Disable building _Unwind_XXX style APIs of libunwind, since we don't use them.
-  add_definitions(-D_LIBUNWIND_DISABLE_ZERO_COST_APIS=1)
+  # Guard out the public unw_* C API, C++ exception dispatch entry points,
+  # and the LocalAddressSpace singleton from llvm-libunwind. NativeAOT does
+  # not use these - it uses the internal C++ classes directly. Omitting them
+  # avoids exporting symbols that conflict with platform libunwind (e.g.
+  # Android NDK r29).
+  add_definitions(-D_LIBUNWIND_NATIVEAOT=1)
 
   # Compile unwinding only for the current compilation target architecture
   add_definitions(-D_LIBUNWIND_IS_NATIVE_ONLY)
@@ -226,6 +227,7 @@ endif (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
 
 list(APPEND RUNTIME_SOURCES_ARCH_ASM
   ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.${ASM_SUFFIX}
+  ${ARCH_SOURCES_DIR}/DispatchResolve.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/ExceptionHandling.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/GcProbe.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/MiscStubs.${ASM_SUFFIX}
@@ -235,20 +237,6 @@ list(APPEND RUNTIME_SOURCES_ARCH_ASM
   ${ARCH_SOURCES_DIR}/UniversalTransition.${ASM_SUFFIX}
   ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.${ASM_SUFFIX}
 )
-
-if (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64)
-  list(APPEND RUNTIME_SOURCES_ARCH_ASM
-    ${ARCH_SOURCES_DIR}/CachedInterfaceDispatchAot.${ASM_SUFFIX}
-  )
-endif ()
-
-if(CLR_CMAKE_TARGET_WIN32)
-  if (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64)
-    list(APPEND RUNTIME_SOURCES_ARCH_ASM
-      ${ARCH_SOURCES_DIR}/DispatchResolve.${ASM_SUFFIX}
-    )
-  endif()
-endif()
 
 # Add architecture specific folder for looking up headers.
 convert_to_absolute_path(ARCH_SOURCES_DIR ${ARCH_SOURCES_DIR})
@@ -285,10 +273,6 @@ add_compile_definitions($<$<CONFIG:Debug,Checked>:FEATURE_GC_STRESS>)
 add_definitions(-DFEATURE_NATIVEAOT)
 add_definitions(-DVERIFY_HEAP)
 add_definitions(-DNATIVEAOT)
-add_definitions(-DFEATURE_CACHED_INTERFACE_DISPATCH)
-if(CLR_CMAKE_TARGET_ARCH_I386 OR CLR_CMAKE_TARGET_ARCH_ARM)
-  add_definitions(-DINTERFACE_DISPATCH_CACHE_HAS_CELL_BACKPOINTER)
-endif()
 add_definitions(-D_LIB)
 if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
   add_definitions(-DGC_DESCRIPTOR)

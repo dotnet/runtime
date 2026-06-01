@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -39,7 +39,7 @@ namespace System
             /// <summary>
             /// Creates the custom serialized string representation of a TimeZoneInfo instance.
             /// </summary>
-            public static string GetSerializedString(TimeZoneInfo zone)
+            public static unsafe string GetSerializedString(TimeZoneInfo zone)
             {
                 var serializedText = new ValueStringBuilder(stackalloc char[InitialCapacityForString]);
 
@@ -252,7 +252,7 @@ namespace System
             /// Also <see cref="_state"/> is set to either <see cref="State.StartOfToken"/> or
             /// <see cref="State.EndOfLine"/> on exit.
             /// </summary>
-            private string GetNextStringValue()
+            private unsafe string GetNextStringValue()
             {
                 // first verify the internal state of the object
                 if (_state == State.EndOfLine)

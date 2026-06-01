@@ -285,6 +285,7 @@ namespace System.Diagnostics
         public ProcessOutputLine(string content, bool standardError) { throw null; }
         public string Content { get { throw null; } }
         public bool StandardError { get { throw null; } }
+        public override string ToString() { throw null; }
     }
     public enum ProcessPriorityClass
     {
@@ -319,6 +320,8 @@ namespace System.Diagnostics
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string FileName { get { throw null; } set { } }
         public System.Collections.Generic.IList<System.Runtime.InteropServices.SafeHandle>? InheritedHandles { get { throw null; } set { } }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("linux")]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public bool KillOnParentExit { get { throw null; } set { } }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]

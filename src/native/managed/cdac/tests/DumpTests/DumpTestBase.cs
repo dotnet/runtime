@@ -120,6 +120,31 @@ public abstract class DumpTestBase : IDisposable
         Assert.True(created, $"Failed to create ContractDescriptorTarget from dump: {dumpPath}");
     }
 
+    /// <summary>
+    /// Loads the dump from the given <paramref name="dumpPath"/> directly.
+    /// Use this overload for ad-hoc dumps (e.g., collected via cdb) that don't follow
+    /// the standard naming conventions.
+    /// </summary>
+    protected void InitializeDumpTestFromPath(string dumpPath)
+    {
+        if (!File.Exists(dumpPath))
+            throw new SkipTestException($"Dump not found: {dumpPath}");
+
+        _host = ClrMdDumpHost.Open(dumpPath, []);
+        ulong contractDescriptor = _host.FindContractDescriptorAddress();
+
+        bool created = ContractDescriptorTarget.TryCreate(
+            contractDescriptor,
+            _host.ReadFromTarget,
+            writeToTarget: static (_, _) => -1,
+            _host.GetThreadContext,
+            allocVirtual: static (ulong _, out ulong _) => throw new NotImplementedException("Dump tests do not provide AllocVirtual"),
+            [Contracts.CoreCLRContracts.Register],
+            out _target);
+
+        Assert.True(created, $"Failed to create ContractDescriptorTarget from dump: {dumpPath}");
+    }
+
     public void Dispose()
     {
         _host?.Dispose();
