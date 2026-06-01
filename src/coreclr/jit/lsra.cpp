@@ -5902,8 +5902,6 @@ void LinearScan::allocateRegisters()
                 RefPosition* nextRefPosition        = currentRefPosition.nextRefPosition;
                 bool         isExtraUpperVectorSave = currentRefPosition.IsExtraUpperVectorSave();
 
-                // Normally, the only live physReg here would be callee-save (lower half only) d8-d15.
-                // But PROF_HOOK fully preserves q0-q7, so an UpperVectorSave here does not require a spill.
                 bool profHookUpperHalfPreserved = CanSkipUpperVectorSave(&currentRefPosition, lclVarInterval);
 
                 if ((lclVarInterval->physReg == REG_NA) || isExtraUpperVectorSave || profHookUpperHalfPreserved ||
@@ -7425,6 +7423,7 @@ bool LinearScan::CanSkipUpperVectorSave(RefPosition* refPosition, Interval* lclV
 {
     assert(refPosition->refType == RefTypeUpperVectorSave);
 
+#ifdef TARGET_ARM64
     // PROF_HOOK preserves upper halves of q0-q7, LSRA must be told explicitly that saving these is not needed
     // So skip the save if reg is assigned, ref is a PROF_HOOK, kill set does not contain reg, and reg is not
     // a upper-half-only-callee saved reg
@@ -7432,6 +7431,11 @@ bool LinearScan::CanSkipUpperVectorSave(RefPosition* refPosition, Interval* lclV
            refPosition->treeNode->OperIs(GT_PROF_HOOK) &&
            !getKillSetForProfilerHook().IsRegNumInMask(lclVarInterval->physReg) &&
            !RBM_FLT_CALLEE_SAVED.IsRegNumInMask(lclVarInterval->physReg);
+#else
+    // Tail call profiler stub for amd64 target explicitly calls out that upper halves of ymm registers are not
+    // preserved
+    return false;
+#endif
 }
 
 //------------------------------------------------------------------------
