@@ -272,8 +272,27 @@ bool IntegralRange::Contains(int64_t value) const
         case GT_HWINTRINSIC:
         {
             GenTreeHWIntrinsic* hwintrinsic = node->AsHWIntrinsic();
+            NamedIntrinsic      id          = hwintrinsic->GetHWIntrinsicId();
 
-            switch (hwintrinsic->GetHWIntrinsicId())
+            if (HWIntrinsicInfo::ReturnsBoolean(id))
+            {
+                // A boolean [0, 1]
+                return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
+            }
+
+            if (HWIntrinsicInfo::ReturnsScalarT(id))
+            {
+                // We are extracting a value of the base types width and sign
+                var_types simdBaseType = hwintrinsic->GetSimdBaseType();
+
+                if (varTypeIsSmall(simdBaseType))
+                {
+                    rangeType = simdBaseType;
+                }
+                break;
+            }
+
+            switch (id)
             {
 #if defined(TARGET_XARCH)
                 case NI_Vector256_ExtractMostSignificantBits:
@@ -299,65 +318,6 @@ bool IntegralRange::Contains(int64_t value) const
                     else if (elementCount <= 16)
                     {
                         rangeType = TYP_USHORT;
-                    }
-                    break;
-                }
-
-#if defined(TARGET_XARCH)
-                case NI_Vector256_op_Equality:
-                case NI_Vector256_op_Inequality:
-                case NI_Vector512_op_Equality:
-                case NI_Vector512_op_Inequality:
-                case NI_X86Base_CompareScalarOrderedEqual:
-                case NI_X86Base_CompareScalarOrderedGreaterThan:
-                case NI_X86Base_CompareScalarOrderedGreaterThanOrEqual:
-                case NI_X86Base_CompareScalarOrderedLessThan:
-                case NI_X86Base_CompareScalarOrderedLessThanOrEqual:
-                case NI_X86Base_CompareScalarOrderedNotEqual:
-                case NI_X86Base_CompareScalarUnorderedEqual:
-                case NI_X86Base_CompareScalarUnorderedGreaterThan:
-                case NI_X86Base_CompareScalarUnorderedGreaterThanOrEqual:
-                case NI_X86Base_CompareScalarUnorderedLessThan:
-                case NI_X86Base_CompareScalarUnorderedLessThanOrEqual:
-                case NI_X86Base_CompareScalarUnorderedNotEqual:
-                case NI_X86Base_TestC:
-                case NI_X86Base_TestNotZAndNotC:
-                case NI_X86Base_TestZ:
-                case NI_AVX_TestC:
-                case NI_AVX_TestNotZAndNotC:
-                case NI_AVX_TestZ:
-#elif defined(TARGET_ARM64)
-                case NI_Vector64_op_Equality:
-                case NI_Vector64_op_Inequality:
-#endif
-                case NI_Vector128_op_Equality:
-                case NI_Vector128_op_Inequality:
-                {
-                    // A boolean [0, 1]
-                    return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
-                }
-
-#if defined(TARGET_XARCH)
-                case NI_Vector256_GetElement:
-                case NI_Vector256_ToScalar:
-                case NI_Vector512_GetElement:
-                case NI_Vector512_ToScalar:
-                case NI_X86Base_Extract:
-                case NI_X86Base_X64_Extract:
-#elif defined(TARGET_ARM64)
-                case NI_Vector64_GetElement:
-                case NI_Vector64_ToScalar:
-                case NI_AdvSimd_Extract:
-#endif
-                case NI_Vector128_GetElement:
-                case NI_Vector128_ToScalar:
-                {
-                    // We are extracting a value of the base types width and sign
-                    var_types simdBaseType = hwintrinsic->GetSimdBaseType();
-
-                    if (varTypeIsSmall(simdBaseType))
-                    {
-                        rangeType = simdBaseType;
                     }
                     break;
                 }
