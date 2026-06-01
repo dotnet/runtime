@@ -968,7 +968,7 @@ void emitter::emitNewIG()
  *  Finish and save the current IG.
  */
 
-insGroup* emitter::emitSavIG(bool emitAdd)
+insGroup* emitter::emitSavIG(bool extend)
 {
     insGroup* ig;
     BYTE*     id;
@@ -1030,7 +1030,7 @@ insGroup* emitter::emitSavIG(bool emitAdd)
 
     // Allocate space for the instructions and optional liveset
 
-    id = (BYTE*)emitGetMem(gs);
+    id = (gs == 0) ? nullptr : (BYTE*)emitGetMem(gs);
 
     // Do we need to store the byref regs
 
@@ -1054,7 +1054,7 @@ insGroup* emitter::emitSavIG(bool emitAdd)
 
     assert((ig->igFlags & IGF_PLACEHOLDER) == 0);
     ig->igData = id;
-    INDEBUG(ig->igDataSize = gs;)
+    INDEBUG(ig->igDataSize = sz;)
 
     memcpy(id, emitCurIGfreeBase, sz);
 
@@ -1110,7 +1110,7 @@ insGroup* emitter::emitSavIG(bool emitAdd)
         ig->igGCregs = (regMaskSmall)emitInitGCrefRegs;
     }
 
-    if (!emitAdd)
+    if (!extend)
     {
         // Update the previous recorded live GC ref sets, but not if if we are
         // starting an "overflow" buffer. Note that this is only used to
@@ -2896,9 +2896,6 @@ void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMas
     else
     {
         emitCurIG->igFlags &= ~IGF_EXTEND;
-
-        // This is not an EXTEND group.
-        assert((emitCurIG->igFlags & IGF_EXTEND) == 0);
 
 #if defined(DEBUG) || defined(LATE_DISASM)
         emitCurIG->igWeight    = getCurrentBlockWeight();
@@ -10871,8 +10868,8 @@ void emitter::emitEnableGC()
         emitNoGCIG = false;
 
         // The next time an instruction needs to be generated, force a new instruction group.
-        // It will be an emitAdd group in that case. Note that the next thing we see might be
-        // a label, which will force a non-emitAdd group.
+        // It will be an IGF_EXTEND group in that case. Note that the next thing we see might be
+        // a label, which can cause a non IGF_EXTEND group.
         //
         // Note that we can't just create a new instruction group here, because we don't know
         // if there are going to be any instructions added to it, and we don't support empty

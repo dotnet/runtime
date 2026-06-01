@@ -407,14 +407,16 @@ void CodeGen::genCodeForBlock(BasicBlock* block)
 
     if (needLabel)
     {
-        // Mark a label and update the current set of live GC refs.
-        // Use an inline label if it's a fall-through block to give peephole opts a better chance.
-        if (block->GetUniquePred(m_compiler) == block->Prev())
+        // Try to use an inline label for fall-through blocks to let peephole opts see further back.
+        bool useInlineLabel = !block->IsFirst() && BasicBlock::sameEHRegion(block, block->Prev()) &&
+                              (block->GetUniquePred(m_compiler) == block->Prev());
+        if (useInlineLabel)
         {
             block->bbEmitCookie = GetEmitter()->emitAddInlineLabel();
         }
         else
         {
+            // Updates the current set of live GC refs.
             block->bbEmitCookie = GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
                                                              gcInfo.gcRegByrefSetCur, block->Prev());
         }

@@ -2906,7 +2906,8 @@ private:
     // reaching a label, the next instruction group will be an "overflow", or "extension" group
     // (marked with IGF_EXTEND). Thus, the size of the global buffer shouldn't matter (as long as it
     // can hold at least one of the largest instruction descriptor forms), since we can always overflow
-    // to subsequent instruction groups.
+    // to subsequent instruction groups. We also use IGF_EXTEND for fall-through blocks to let 
+    // peephole opts see further back.
     //
     // Note that DEBUG and non-DEBUG builds have different instrDesc sizes, and there are multiple
     // sizes of instruction descriptors, so the number of instructions that will fit in the largest
@@ -2984,8 +2985,8 @@ private:
     bool     emitFwdJumps;         // forward jumps present?
     unsigned emitNoGCRequestCount; // Count of number of nested "NO GC" region requests we have.
     bool     emitNoGCIG;           // Are we generating IGF_NOGCINTERRUPT insGroups (for prologs, epilogs, etc.)
-    bool emitForceNewIG; // If we generate an instruction, and not another instruction group, force create a new emitAdd
-                         // instruction group.
+    bool     emitForceNewIG; // If we generate an instruction, and not another instruction group, force create a new
+                             // IGF_EXTEND instruction group.
 
     BYTE* emitCurIGfreeNext; // next available byte in buffer
     BYTE* emitCurIGfreeEndp; // one byte past the last available byte in buffer
@@ -3079,7 +3080,7 @@ private:
 #endif
 
     void      emitGenIG(insGroup* ig);
-    insGroup* emitSavIG(bool emitAdd = false);
+    insGroup* emitSavIG(bool extend = false);
     void      emitNxtIG(bool extend = false);
 
 #ifdef TARGET_ARM64
