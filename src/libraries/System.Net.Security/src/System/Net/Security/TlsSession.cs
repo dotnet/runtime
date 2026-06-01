@@ -269,6 +269,14 @@ namespace System.Net.Security
                 chain.Dispose();
             }
 
+            // A user RemoteCertificateValidationCallback can reject an otherwise-clean chain
+            // by returning false with sslPolicyErrors == None. Synthesize a non-None failure
+            // so SetRemoteCertificateValidationResult takes the reject branch instead of accepting.
+            if (!ok && sslPolicyErrors == SslPolicyErrors.None)
+            {
+                sslPolicyErrors = SslPolicyErrors.RemoteCertificateChainErrors;
+            }
+
             // On success VerifyRemoteCertificateCore set _remoteCertificate = _externalPendingCert, so
             // SetRemoteCertificateValidationResult below leaves it alone. On failure we must dispose the
             // pending cert ourselves because no one adopted it.
@@ -315,6 +323,19 @@ namespace System.Net.Security
             else
             {
                 _externalValidationFault = new AuthenticationException(SR.net_ssl_io_cert_validation);
+                // VerifyRemoteCertificateCore assigns _remoteCertificate to the candidate before it
+                // knows whether the chain validates, so on the reject path the rejected leaf is sitting
+                // in the canonical slot. Drop it so GetRemoteCertificate cannot surface a cert the caller
+                // explicitly refused. Either _remoteCertificate or _externalPendingCert owns it, not both.
+                if (_remoteCertificate is not null && ReferenceEquals(_remoteCertificate, _externalPendingCert))
+                {
+                    _remoteCertificate = null;
+                }
+                else
+                {
+                    _remoteCertificate?.Dispose();
+                    _remoteCertificate = null;
+                }
                 _externalPendingCert?.Dispose();
                 _externalPendingCert = null;
             }

@@ -985,6 +985,61 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        public async Task ClientSession_ExternalValidation_CallbackRejectsCleanChain_FaultsSession()
+        {
+            // Regression: a user RemoteCertificateValidationCallback can reject by returning false
+            // even when sslPolicyErrors == None. AcceptWithDefaultValidation must treat that as a
+            // rejection, not accept the connection.
+            using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
+            string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
+
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+            using (clientStream)
+            using (serverStream)
+            using (SslStream serverSsl = new SslStream(serverStream, leaveInnerStreamOpen: false))
+            {
+                using TlsContext ctx = TlsContext.Create(new SslClientAuthenticationOptions
+                {
+                    TargetHost = serverName,
+                    EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                    // Callback overrides default chain validation, returns false unconditionally,
+                    // and reports no policy errors. The session must still reject.
+                    RemoteCertificateValidationCallback = (_, _, _, _) => false,
+                });
+                using TlsSession session = TlsSession.Create(ctx);
+
+                Task serverHandshake = serverSsl.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = serverCert,
+                    EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                    ClientCertificateRequired = false,
+                });
+
+                SslPolicyErrors observedErrors = SslPolicyErrors.RemoteCertificateNotAvailable;
+                Task clientHandshake = Task.Run(async () =>
+                {
+                    await DriveHandshakeWithExternalValidationAsync(
+                        session, clientStream,
+                        onSuspend: () =>
+                        {
+                            observedErrors = session.AcceptWithDefaultValidation();
+                        });
+                });
+
+                await serverHandshake.WaitAsync(TimeSpan.FromSeconds(30));
+                await clientHandshake.WaitAsync(TimeSpan.FromSeconds(30));
+
+                // AcceptWithDefaultValidation returns the original sslPolicyErrors (None here, since
+                // the test cert happens to validate against the trust store on some hosts), but the
+                // false return from the user callback must still fault the session.
+                Assert.Throws<AuthenticationException>(() =>
+                    session.Encrypt("x"u8.ToArray(), new byte[CipherBufSize], out _, out _));
+
+                _ = observedErrors;
+            }
+        }
+
+        [Fact]
         public void TlsSession_ExternalValidation_SetResultBeforeSuspended_Throws()
         {
             using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
