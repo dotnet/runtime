@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
@@ -34,7 +35,7 @@ public class ExceptionHandlingInfoDumpTests : DumpTestBase
 
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
 
-        foreach (IStackDataFrameHandle frame in stackWalk.CreateStackWalk(crashingThread))
+        foreach (IStackDataFrameHandle frame in stackWalk.CreateStackWalk(crashingThread).Where(ClrDataStackWalk.IsLegacyVisible))
         {
             TargetPointer methodDescPtr = stackWalk.GetMethodDescPtr(frame);
             string? name = DumpTestHelpers.GetMethodName(Target, methodDescPtr);
