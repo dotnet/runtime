@@ -648,6 +648,9 @@ int32_t AndroidCryptoNative_SSLStreamInitialize(
     // sslEngine.setUseClientMode(!isServer);
     sslStream->sslEngine = ToGRef(env, sslEngine);
     ON_EXCEPTION_PRINT_AND_GOTO(exit);
+    if (sslStream->sslEngine == NULL)
+        goto exit;
+
     (*env)->CallVoidMethod(env, sslStream->sslEngine, g_SSLEngineSetUseClientMode, !isServer);
     ON_EXCEPTION_PRINT_AND_GOTO(exit);
 
