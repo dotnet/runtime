@@ -97,6 +97,8 @@ public enum DataType
     InterpMethod,
     InterpMethodContextFrame,
     Array,
+    StackTraceArrayHeader,
+    StackTraceElement,
     SyncBlock,
     SyncTableEntry,
     ObjectHeader,
