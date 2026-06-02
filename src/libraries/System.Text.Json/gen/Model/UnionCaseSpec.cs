@@ -19,5 +19,18 @@ namespace System.Text.Json.SourceGeneration
         public required TypeRef CaseType { get; init; }
 
         public required bool IsNullable { get; init; }
+
+        /// <summary>
+        /// Whether this case contributes a <c>value switch</c> arm in the generated
+        /// union constructor/deconstructor. When a union declares both <c>Foo(T)</c>
+        /// and <c>Foo(Nullable&lt;T&gt;)</c> the two ctors translate to the same C#
+        /// pattern (CS8116 rejects <c>Nullable&lt;T&gt;</c> in patterns; at the CLR
+        /// layer a boxed <c>Nullable&lt;T&gt;</c> with HasValue=true is bit-identical
+        /// to a boxed <c>T</c>). The parser keeps both as distinct union cases but
+        /// marks only one as the canonical switch arm; the non-<c>Nullable&lt;T&gt;</c>
+        /// sibling is preferred so most-derived dispatch reports <c>typeof(T)</c>
+        /// rather than <c>typeof(Nullable&lt;T&gt;)</c>.
+        /// </summary>
+        public required bool IsSwitchArm { get; init; }
     }
 }
