@@ -395,7 +395,6 @@ bool IntegralRange::Contains(int64_t value) const
             switch (node->AsIntrinsic()->gtIntrinsicName)
             {
                 case NI_PRIMITIVE_LeadingZeroCount:
-                case NI_PRIMITIVE_Log2:
                 case NI_PRIMITIVE_PopCount:
                 case NI_PRIMITIVE_TrailingZeroCount:
                 {
