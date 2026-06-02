@@ -314,7 +314,8 @@ struct LcMdArrayOptInfo : public LcOptInfo
             {
                 index->indLcls.Push(arrElem->gtArrInds[i]->AsLclVarCommon()->GetLclNum());
             }
-            index->arrLcl = arrElem->gtArrObj->AsLclVarCommon()->GetLclNum();
+            index->arrLcl  = arrElem->gtArrObj->AsLclVarCommon()->GetLclNum();
+            index->arrType = arrElem->gtArrObj->TypeGet();
         }
         return index;
     }
