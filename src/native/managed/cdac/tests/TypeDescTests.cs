@@ -3,6 +3,7 @@
 
 using System;
 using System.Linq;
+using System.Reflection.Metadata;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
 using Xunit;
@@ -159,9 +160,9 @@ public class TypeDescTests
             // Function pointer
             IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
             TypeHandle handle = rts.GetTypeHandle(GetTypeDescHandlePointer(funcPtr));
-            bool res = rts.IsFunctionPointer(handle, out ReadOnlySpan<TypeHandle> actualRetAndArgTypes, out byte actualCallConv);
+            bool res = rts.IsFunctionPointer(handle, out ReadOnlySpan<TypeHandle> actualRetAndArgTypes, out SignatureCallingConvention actualCallConv);
             Assert.True(res);
-            Assert.Equal(callConv, actualCallConv);
+            Assert.Equal(callConv, (byte)actualCallConv);
             Assert.Equal(retAndArgTypesHandle.Length, actualRetAndArgTypes.Length);
             for (int i = 0; i < retAndArgTypesHandle.Length; i++)
             {

@@ -15,7 +15,7 @@ parameters:
   sccacheVersion: '0.15.0'
 
 steps:
-  - ${{ if and(eq(parameters.osGroup, 'linux'), or(eq(parameters.osSubgroup, ''), eq(parameters.osSubgroup, '_musl')), eq(parameters.archType, 'x64')) }}:
+  - ${{ if and(or(eq(parameters.osGroup, 'linux'), eq(parameters.osGroup, 'freebsd')), or(eq(parameters.archType, 'x64'), eq(parameters.archType, 'arm64'))) }}:
     # Set up the Azure Pipeline Cache for sccache's local cache directory.
     # Use a rolling key so each build can update the cache; restoreKeys
     # falls back to the most recent saved entry.
@@ -43,7 +43,7 @@ steps:
         chmod +x "$sccacheDir/sccache"
         echo "##vso[task.prependpath]$sccacheDir"
         echo "##vso[task.setvariable variable=SCCACHE_DIR]$(Pipeline.Workspace)/.sccache"
-        echo "##vso[task.setvariable variable=SCCACHE_CACHE_SIZE]3584M"
+        echo "##vso[task.setvariable variable=SCCACHE_CACHE_SIZE]5120M"
         echo "##vso[task.setvariable variable=SCCACHE_IDLE_TIMEOUT]0"
         echo "##vso[task.setvariable variable=USE_SCCACHE]true"
       displayName: Download and configure sccache
