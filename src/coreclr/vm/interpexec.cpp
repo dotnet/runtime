@@ -883,8 +883,6 @@ template <typename THelper> static THelper GetPossiblyIndirectHelper(const Inter
 }
 
 // Floating-point to integer conversions saturate at the destination type's range. NaN maps to 0.
-// This matches the JIT's R -> small integral type behavior introduced for
-// https://github.com/dotnet/runtime/issues/116823
 template <typename TResult, typename TIntermediate, typename TSource> static void ConvFpHelper(int8_t *stack, const int32_t *ip)
 {
     static_assert(!std::numeric_limits<TSource>::is_integer, "ConvFpHelper is only for use on floats and doubles");
@@ -892,8 +890,7 @@ template <typename TResult, typename TIntermediate, typename TSource> static voi
     static_assert(std::numeric_limits<TResult>::is_integer, "ConvFpHelper is only for use on floats and doubles to be converted to integers");
 
     // First, promote the source value to double. The bounds are derived from TResult so that
-    // out-of-range values saturate at the destination type's range (matching the JIT behavior
-    // for R -> small integral type conversions, see https://github.com/dotnet/runtime/issues/116823).
+    // out-of-range values saturate at the destination type's range.
     double src = LOCAL_VAR(ip[2], TSource),
         minValue = (double)std::numeric_limits<TResult>::lowest(),
         maxValue = (double)std::numeric_limits<TResult>::max();
