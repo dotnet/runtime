@@ -1792,7 +1792,8 @@ void CodeGen::genSetScopeInfo()
         return;
     }
 
-    noway_assert((m_compiler->opts.compScopeInfo && (m_compiler->info.compVarScopesCount > 0)) || (varLiveKeeper->getLiveRangesCount() == 0));
+    noway_assert((m_compiler->opts.compScopeInfo && (m_compiler->info.compVarScopesCount > 0)) ||
+                 (varLiveKeeper->getLiveRangesCount() == 0));
 
     // Initialize the table where the reported variables' home will be placed.
     m_compiler->eeSetLVcount(varsLocationsCount);
