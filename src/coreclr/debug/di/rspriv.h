@@ -5921,8 +5921,6 @@ private:
     // Grabs the appropriate signature parser for a methodref, methoddef, methodspec.
     HRESULT GetSigParserFromFunction(mdToken mdFunction, mdToken *pClass, SigParser &methodSig, SigParser &genericSig);
 
-    int GetCallInstructionLength(BYTE *buffer, ULONG32 len);
-
     //-----------------------------------------------------------
     // Data members
     //-----------------------------------------------------------

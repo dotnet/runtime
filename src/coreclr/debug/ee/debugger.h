@@ -1502,8 +1502,6 @@ protected:
     ULONG                    m_lastIL;
     PTR_DebuggerILToNativeMap m_sequenceMap;
     unsigned int             m_sequenceMapCount;
-    PTR_DebuggerILToNativeMap m_callsiteMap;
-    unsigned int             m_callsiteMapCount;
     bool                     m_sequenceMapSorted;
 
     PTR_NativeVarInfo        m_varNativeInfo;
@@ -1532,10 +1530,9 @@ public:
             "                 m_addrOfCode: %p\n"
             "                 m_sizeOfCode: 0x%zx\n"
             "                     m_lastIL: 0x%x\n"
-            "           m_sequenceMapCount: %u\n"
-            "           m_callsiteMapCount: %u\n",
+            "           m_sequenceMapCount: %u\n",
             this, (m_jitComplete ? "true" : "false"), encState,
-            m_methodInfo, m_addrOfCode, m_sizeOfCode, m_lastIL, m_sequenceMapCount, m_callsiteMapCount));
+            m_methodInfo, m_addrOfCode, m_sizeOfCode, m_lastIL, m_sequenceMapCount));
 #endif //LOGGING
     }
 
@@ -1554,22 +1551,6 @@ public:
 
         LazyInitBounds();
         return m_sequenceMap;
-    }
-
-    unsigned int GetCallsiteMapCount()
-    {
-        SUPPORTS_DAC;
-
-        LazyInitBounds();
-        return m_callsiteMapCount;
-    }
-
-    PTR_DebuggerILToNativeMap GetCallSiteMap()
-    {
-        SUPPORTS_DAC;
-
-        LazyInitBounds();
-        return m_callsiteMap;
     }
 
     PTR_NativeVarInfo GetVarNativeInfo()
