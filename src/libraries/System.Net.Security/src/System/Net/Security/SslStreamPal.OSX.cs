@@ -99,7 +99,7 @@ namespace System.Net.Security
 
 #pragma warning disable IDE0060
         public static ProtocolToken AcceptSecurityContext(
-            ref SafeFreeCredentials credential,
+            ref SafeFreeCredentials? credential,
             ref SafeDeleteContext? context,
             ReadOnlySpan<byte> inputBuffer,
             out int consumed,
@@ -109,7 +109,7 @@ namespace System.Net.Security
         }
 
         public static ProtocolToken InitializeSecurityContext(
-            ref SafeFreeCredentials credential,
+            ref SafeFreeCredentials? credential,
             ref SafeDeleteContext? context,
             string? _ /*targetName*/,
             ReadOnlySpan<byte> inputBuffer,

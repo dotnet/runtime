@@ -9,6 +9,15 @@ using System.Net.Sockets;
 using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography.X509Certificates;
+// macOS PAL has two SafeDelete* derivatives (SecureTransport + Network.framework)
+// and surfaces the base type in ref parameters. Use the base type for the security-context
+// field on macOS so it lines up with the PAL ref signatures; other platforms keep the
+// derived SafeDeleteSslContext.
+#if TARGET_APPLE
+using TlsSecurityContext = System.Net.Security.SafeDeleteContext;
+#else
+using TlsSecurityContext = System.Net.Security.SafeDeleteSslContext;
+#endif
 
 namespace System.Net.Security
 {
@@ -43,7 +52,7 @@ namespace System.Net.Security
         private readonly SslAuthenticationOptions _options;
         private readonly bool _ownsOptions;
         private bool _hasServerOptions;
-        private SafeDeleteSslContext? _securityContext;
+        private TlsSecurityContext? _securityContext;
 
         private byte[]? _pending;
         private int _pendingOffset;
@@ -671,6 +680,63 @@ namespace System.Net.Security
                     AppendPending(new ReadOnlySpan<byte>(token.Payload, 0, token.Size));
                 }
 
+                // Server-side ALPN selection ceremony (SChannel and SecureTransport).
+                // After parsing the ClientHello the PAL pauses and asks the caller to
+                // pick the application protocol before resuming. We re-enter ASC with
+                // an empty input so the PAL can generate the ServerHello carrying the
+                // selected ALPN value.
+                if (token.Status.ErrorCode == SecurityStatusPalErrorCode.HandshakeStarted)
+                {
+                    ReadOnlySpan<byte> rawAlpn = ReadOnlySpan<byte>.Empty;
+                    TlsFrameHelper.TlsFrameInfo frameInfo = default;
+                    if (TlsFrameHelper.TryGetFrameInfo(input, ref frameInfo,
+                            TlsFrameHelper.ProcessingOptions.ApplicationProtocol | TlsFrameHelper.ProcessingOptions.RawApplicationProtocol) &&
+                        frameInfo.RawApplicationProtocols is byte[] rawAlpnBytes)
+                    {
+                        rawAlpn = rawAlpnBytes;
+                    }
+
+                    SecurityStatusPal selStatus = SslStreamPal.SelectApplicationProtocol(
+                        _context.CredentialsHandle,
+                        _securityContext!,
+                        _options,
+                        rawAlpn);
+
+                    if (selStatus.ErrorCode != SecurityStatusPalErrorCode.OK)
+                    {
+                        throw new AuthenticationException(SR.net_auth_SSPI, selStatus.Exception);
+                    }
+
+                    token.ReleasePayload();
+
+                    if (_context.IsServer)
+                    {
+                        token = SslStreamPal.AcceptSecurityContext(
+                            ref _context.CredentialsHandle,
+                            ref _securityContext,
+                            ReadOnlySpan<byte>.Empty,
+                            out _,
+                            _options);
+                    }
+                    else
+                    {
+                        string hostName = TargetHostNameHelper.NormalizeHostName(_options.TargetHost);
+                        token = SslStreamPal.InitializeSecurityContext(
+                            ref _context.CredentialsHandle,
+                            ref _securityContext,
+                            hostName,
+                            ReadOnlySpan<byte>.Empty,
+                            out _,
+                            _options);
+                    }
+
+                    if (token.Size > 0)
+                    {
+                        Debug.Assert(token.Payload != null);
+                        AppendPending(new ReadOnlySpan<byte>(token.Payload, 0, token.Size));
+                    }
+                }
+
                 if (token.Failed &&
                     token.Status.ErrorCode != SecurityStatusPalErrorCode.CredentialsNeeded &&
                     token.Status.ErrorCode != SecurityStatusPalErrorCode.NeedsRemoteCertificateValidation)
@@ -858,20 +924,33 @@ namespace System.Net.Security
             SecurityStatusPal status = SslStreamPal.DecryptMessage(
                 _securityContext!,
                 _decryptScratch.AsSpan(0, frameSize),
-                out int outOffset,
-                out int outCount);
+                plaintext,
+                out int decBytesWritten,
+                out int decLeftoverOffset,
+                out int decLeftoverLength);
 
             switch (status.ErrorCode)
             {
                 case SecurityStatusPalErrorCode.OK:
                     bytesConsumed = frameSize;
-                    if (outCount > plaintext.Length)
+                    // Linux/macOS PALs write the plaintext directly into the destination span and
+                    // (if it didn't fit, or the PAL prefers in-place) leave overflow in the encrypted
+                    // span at leftoverOffset/leftoverLength. SChannel always decrypts in place and
+                    // reports bytesWritten = 0 with leftoverOffset/leftoverLength pointing at the
+                    // plaintext inside the encrypted span. Unify by appending the leftover slice
+                    // after whatever was written into destination.
+                    int needed = decBytesWritten + decLeftoverLength;
+                    if (needed > plaintext.Length)
                     {
                         throw new InvalidOperationException(
-                            $"Plaintext buffer too small: needed {outCount}, got {plaintext.Length}.");
+                            $"Plaintext buffer too small: needed {needed}, got {plaintext.Length}.");
                     }
-                    _decryptScratch.AsSpan(outOffset, outCount).CopyTo(plaintext);
-                    bytesWritten = outCount;
+                    if (decLeftoverLength > 0)
+                    {
+                        _decryptScratch.AsSpan(decLeftoverOffset, decLeftoverLength)
+                            .CopyTo(plaintext.Slice(decBytesWritten));
+                    }
+                    bytesWritten = needed;
                     return TlsOperationStatus.Complete;
 
                 case SecurityStatusPalErrorCode.ContextExpired:
@@ -889,7 +968,10 @@ namespace System.Net.Security
                     // update its internal state. If we don't, the next DecryptMessage
                     // returns SEC_E_CONTEXT_EXPIRED because the context is stuck.
                     bytesConsumed = frameSize;
-                    ProcessPostHandshakeMessage(_decryptScratch.AsSpan(outOffset, outCount));
+                    if (decLeftoverLength > 0)
+                    {
+                        ProcessPostHandshakeMessage(_decryptScratch.AsSpan(decLeftoverOffset, decLeftoverLength));
+                    }
                     // Return Complete (not WantRead): we consumed input bytes but
                     // produced no plaintext. The caller's loop should re-enter to
                     // process any remaining buffered ciphertext (e.g. application
@@ -925,6 +1007,11 @@ namespace System.Net.Security
             ThrowIfDisposed();
             bytesWritten = 0;
 
+#if TARGET_APPLE
+            // SecureTransport does not expose a post-handshake client-authentication
+            // path, and Network.framework does not provide renegotiation primitives.
+            throw new PlatformNotSupportedException(SR.net_ssl_renegotiate_not_supported);
+#else
             if (!_context.IsServer)
             {
                 throw new InvalidOperationException("RequestClientCertificate can only be invoked on a server session.");
@@ -962,6 +1049,7 @@ namespace System.Net.Security
 
             bytesWritten = DrainTo(ciphertext);
             return _pendingLength > 0 ? TlsOperationStatus.WantWrite : TlsOperationStatus.Complete;
+#endif
         }
 
         // ── Shutdown ──────────────────────────────────────────────────────
@@ -1207,7 +1295,7 @@ namespace System.Net.Security
             set => _suppressInternalCertificateValidation = value;
         }
 
-        internal SafeDeleteSslContext? SecurityContext => _securityContext;
+        internal TlsSecurityContext? SecurityContext => _securityContext;
         internal TlsContext Context => _context;
         internal SafeFreeCredentials? CredentialsHandle
         {

@@ -18,7 +18,7 @@ using TestCertificates = System.Net.Test.Common.Configuration.Certificates;
 
 namespace System.Net.Security.Tests
 {
-    [PlatformSpecific(TestPlatforms.Linux | TestPlatforms.FreeBSD | TestPlatforms.Windows)]
+    [PlatformSpecific(TestPlatforms.Linux | TestPlatforms.FreeBSD | TestPlatforms.Windows | TestPlatforms.OSX)]
     public class TlsSessionTests
     {
         private const int CipherBufSize = 32 * 1024;
@@ -215,6 +215,7 @@ namespace System.Net.Security.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows))]
         [InlineData(SslProtocols.Tls12)]
         [InlineData(SslProtocols.Tls13)]
+        [SkipOnPlatform(TestPlatforms.OSX, "SecureTransport does not surface a deferred client-credential prompt; SslStream supplies the certificate up-front.")]
         public async Task ClientSession_WantCredentials_SetClientCertificateContext_ResumesHandshake(SslProtocols protocol)
         {
             // Server (SslStream) demands a client certificate. The client TlsContext is
@@ -398,6 +399,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.OSX, "SecureTransport does not expose the TLS exporter required to compute tls-server-end-point channel binding here.")]
         public async Task ServerSession_ChannelBinding_MatchesSslStreamClient()
         {
             using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
@@ -459,6 +461,12 @@ namespace System.Net.Security.Tests
         [InlineData(SslProtocols.Tls13)]
         public void TwoSessions_HandshakeAndPingPong_InMemory_Succeeds(SslProtocols protocols)
         {
+            if (protocols == SslProtocols.Tls13 && OperatingSystem.IsMacOS())
+            {
+                // SecureTransport (the legacy macOS TLS backend used here) does not implement TLS 1.3.
+                return;
+            }
+
             using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
             string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
 
@@ -1312,6 +1320,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.OSX, "SecureTransport does not support post-handshake renegotiation.")]
         public async Task ServerSession_RequestClientCertificate_Tls12_ProducesHandshakeBytes()
         {
             using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
