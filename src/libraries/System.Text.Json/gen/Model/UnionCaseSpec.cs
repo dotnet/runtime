@@ -18,6 +18,17 @@ namespace System.Text.Json.SourceGeneration
     {
         public required TypeRef CaseType { get; init; }
 
+        /// <summary>
+        /// Type symbol used in the generated <c>value switch</c> arm pattern.
+        /// For a value-type <c>Nullable&lt;T&gt;</c> case this is the underlying
+        /// <c>T</c> (C# rejects <c>Nullable&lt;T&gt;</c> in a pattern with CS8116
+        /// — at the CLR layer a boxed <c>Nullable&lt;T&gt;</c> with HasValue=true
+        /// is bit-identical to a boxed <c>T</c>, so the underlying-type arm covers
+        /// both <c>Foo(T)</c> and <c>Foo(Nullable&lt;T&gt;)</c> non-null payloads).
+        /// For every other shape this equals <see cref="CaseType"/>.
+        /// </summary>
+        public required TypeRef PatternType { get; init; }
+
         public required bool IsNullable { get; init; }
 
         /// <summary>

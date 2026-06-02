@@ -677,7 +677,7 @@ namespace System.Text.Json.SourceGeneration
                             continue;
                         }
 
-                        string patternTypeFQN = GetPatternTypeFullyQualifiedName(caseSpec);
+                        string patternTypeFQN = caseSpec.PatternType.FullyQualifiedName;
                         writer.WriteLine($"{patternTypeFQN} caseValue{ctorArmIndex} => new {genericArg}(caseValue{ctorArmIndex}),");
                         ctorArmIndex++;
                     }
@@ -751,7 +751,7 @@ namespace System.Text.Json.SourceGeneration
                             continue;
                         }
 
-                        string patternTypeFQN = GetPatternTypeFullyQualifiedName(caseSpec);
+                        string patternTypeFQN = caseSpec.PatternType.FullyQualifiedName;
                         writer.WriteLine($"{patternTypeFQN} caseValue{deconArmIndex} => (typeof({caseSpec.CaseType.FullyQualifiedName}), (object?)caseValue{deconArmIndex}),");
                         deconArmIndex++;
                     }
@@ -782,26 +782,6 @@ namespace System.Text.Json.SourceGeneration
                 writer.WriteLine('}');
 
                 return CompleteSourceFileAndReturnText(writer);
-            }
-
-            /// <summary>
-            /// Returns the type name to use in a <c>value switch</c> pattern. C# rejects
-            /// <c>Nullable&lt;T&gt;</c> (in any spelling — <c>T?</c>, <c>Nullable&lt;T&gt;</c>,
-            /// <c>System.Nullable&lt;T&gt;</c>) in a pattern with CS8116 and directs the user
-            /// to the underlying <c>T</c>. At runtime a boxed <c>Nullable&lt;T&gt;</c> with
-            /// HasValue=true is bit-identical to a boxed <c>T</c>, so the resulting arm
-            /// naturally covers the non-null payloads of both <c>Foo(T)</c> and
-            /// <c>Foo(Nullable&lt;T&gt;)</c> ctors.
-            /// </summary>
-            private static string GetPatternTypeFullyQualifiedName(UnionCaseSpec caseSpec)
-            {
-                string fqn = caseSpec.CaseType.FullyQualifiedName;
-                if (caseSpec.CaseType.SpecialType is SpecialType.System_Nullable_T && fqn.Length > 0 && fqn[fqn.Length - 1] == '?')
-                {
-                    return fqn.Substring(0, fqn.Length - 1);
-                }
-
-                return fqn;
             }
 
             /// <summary>

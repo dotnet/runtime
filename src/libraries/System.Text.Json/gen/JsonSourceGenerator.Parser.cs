@@ -749,9 +749,21 @@ namespace System.Text.Json.SourceGeneration
                                     break;
                                 }
 
+                                TypeRef caseTypeRef = EnqueueType(caseType, typeToGenerate.Mode);
+
+                                // C# rejects Nullable<T> in `value switch` patterns (CS8116). The CLR layer
+                                // boxes a Nullable<T> with HasValue=true bit-identically to a boxed T, so the
+                                // generated pattern arm uses the underlying T symbol — never the source
+                                // Nullable<T> string spelling. Compute this from the symbol here so the
+                                // emitter never has to manipulate FQN strings.
+                                TypeRef patternTypeRef = caseType is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullableCaseType
+                                    ? new TypeRef(nullableCaseType.TypeArguments[0])
+                                    : caseTypeRef;
+
                                 resolvedUnionCaseSpecs.Add(new UnionCaseSpec
                                 {
-                                    CaseType = EnqueueType(caseType, typeToGenerate.Mode),
+                                    CaseType = caseTypeRef,
+                                    PatternType = patternTypeRef,
                                     IsNullable = acceptsNull,
                                     IsSwitchArm = switchArmRoles[i],
                                 });
