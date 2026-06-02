@@ -4796,11 +4796,7 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
     return action;
 }
 
-HijackFrame::HijackFrame(LPVOID returnAddress, Thread *thread, HijackArgs *args
-#if defined(TARGET_ARM64)
-    , LPVOID spForPacSign
-#endif
-    )
+HijackFrame::HijackFrame(LPVOID returnAddress, Thread *thread, HijackArgs *args ARM64_ARG(LPVOID spForPacSign))
            : Frame(FrameIdentifier::HijackFrame),
              m_ReturnAddress((TADDR)returnAddress),
 #if defined(TARGET_ARM64)
@@ -4846,11 +4842,7 @@ void STDCALL OnHijackWorker(HijackArgs * pArgs)
 
     // Build a frame so that stack crawling can proceed from here back to where
     // we will resume execution.
-    HijackFrame frame(thread->m_pvHJRetAddr, thread, pArgs
-#if defined(TARGET_ARM64)
-        , thread->m_pSpForPacSign
-#endif
-        );
+    HijackFrame frame(thread->m_pvHJRetAddr, thread, pArgs ARM64_ARG(thread->m_pSpForPacSign));
 
 #ifdef _DEBUG
     BOOL GCOnTransition = FALSE;
