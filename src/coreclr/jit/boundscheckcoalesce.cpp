@@ -64,10 +64,24 @@ struct BoundsCheckCandidate
 //
 bool IsSideEffectBarrier(Compiler* comp, GenTree* node, bool blockHasEHSuccs)
 {
+    // A node that lowers to a helper call requires the call flag but is not a
+    // GT_CALL (for example, a variable-distance long shift on 32-bit targets).
+    // Treat such nodes as barriers up front: they are effectively calls, and
+    // OperEffects/OperRequiresGlobRefFlag do not expect to be queried for them.
+    //
+    if (node->OperRequiresCallFlag(comp))
+    {
+        return true;
+    }
+
     ExceptionSetFlags  exSet;
     GenTreeFlags const effects = node->OperEffects(comp, &exSet);
 
-    if ((effects & GTF_CALL) != 0)
+    // Calls are barriers, as are nodes whose evaluation order is explicitly
+    // constrained (GTF_ORDER_SIDEEFF): coalescing must not move a strengthened
+    // check across an operation the IR says cannot be reordered.
+    //
+    if ((effects & (GTF_CALL | GTF_ORDER_SIDEEFF)) != 0)
     {
         return true;
     }
@@ -171,6 +185,12 @@ PhaseStatus Compiler::optBoundsCheckCoalesce()
                     GenTreeBoundsChk* const bc = node->AsBoundsChk();
                     if (bc->gtThrowKind != SCK_RNGCHK_FAIL)
                     {
+                        // A bounds check with a different throw kind throws a
+                        // different exception. Treat it as a barrier so we do not
+                        // reorder a strengthened range check across it and change
+                        // which exception is observed.
+                        //
+                        barrierCount++;
                         continue;
                     }
 
