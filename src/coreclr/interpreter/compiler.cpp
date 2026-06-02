@@ -5824,6 +5824,12 @@ void InterpCompiler::EmitRet(CORINFO_METHOD_INFO* methodInfo)
 
 void InterpCompiler::WrapTopOfStackInAwait()
 {
+    // Async versions of non-async task-returning methods are compiled with the
+    // exact same IL as the original method. This means the return value is
+    // mistyped; the original IL returns a Task or ValueTask, but the runtime
+    // async version expects to return the unwrapped result. This function
+    // accomplishes the unwrapping by inserting an async call to
+    // AsyncHelpers.TransparentAwait around the value on the top of the stack.
     CheckStackExact(1);
 
     CORINFO_LOOKUP instArgLookup;
@@ -5833,8 +5839,90 @@ void InterpCompiler::WrapTopOfStackInAwait()
     m_compHnd->getMethodSig(awaitMethod, &awaitSig);
 
     assert(awaitSig.isAsyncCall());
+    assert(awaitSig.numArgs == 1);
+    assert(!awaitSig.hasThis());
 
+    // Pop the awaitable off the stack; it becomes the first argument.
+    int32_t awaitableVar = m_pStackPointer[-1].var;
+    m_pStackPointer--;
 
+    int extraParamArgLocation = awaitSig.hasTypeArg() ? 1 : INT_MAX;
+    int continuationArgLocation = awaitSig.hasTypeArg() ? 2 : 1;
+    int numArgs = 1 + (awaitSig.hasTypeArg() ? 1 : 0) + 1; // task + (optional inst) + continuation
+
+    int32_t* callArgs = getAllocator(IMK_CallInfo).allocate<int32_t>(numArgs + 1);
+    callArgs[0] = awaitableVar;
+
+    if (awaitSig.hasTypeArg())
+    {
+        int32_t instParamVar;
+        if (instArgLookup.lookupKind.needsRuntimeLookup)
+        {
+            EmitPushCORINFO_LOOKUP(instArgLookup);
+            m_pStackPointer--;
+            instParamVar = m_pStackPointer[0].var;
+        }
+        else
+        {
+            assert(instArgLookup.constLookup.accessType == IAT_VALUE);
+            PushStackType(StackTypeI, NULL);
+            m_pStackPointer--;
+            instParamVar = m_pStackPointer[0].var;
+            AddIns(INTOP_LDPTR);
+            m_pLastNewIns->SetDVar(instParamVar);
+            m_pLastNewIns->data[0] = GetDataItemIndex(instArgLookup.constLookup.handle);
+        }
+        callArgs[extraParamArgLocation] = instParamVar;
+    }
+
+    // Continuation arg: pass null; the suspend logic emitted below sets it up.
+    PushStackType(StackTypeI, NULL);
+    m_pStackPointer--;
+    int32_t continuationArg = m_pStackPointer[0].var;
+    AddIns(INTOP_LDNULL);
+    m_pLastNewIns->SetDVar(continuationArg);
+    callArgs[continuationArgLocation] = continuationArg;
+
+    callArgs[numArgs] = CALL_ARGS_TERMINATOR;
+
+    // Result var. Must be on top of the stack so EmitSuspend treats it as the
+    // return value of the call (and not as an unrelated live stack var).
+    int32_t dVar;
+    if (awaitSig.retType != CORINFO_TYPE_VOID)
+    {
+        InterpType interpType = GetInterpType(awaitSig.retType);
+        if (interpType == InterpTypeVT)
+        {
+            int32_t size = m_compHnd->getClassSize(awaitSig.retTypeClass);
+            PushTypeVT(awaitSig.retTypeClass, size);
+        }
+        else
+        {
+            PushInterpType(interpType, NULL);
+        }
+        dVar = m_pStackPointer[-1].var;
+    }
+    else
+    {
+        // Create a new dummy var to serve as the dVar of the call.
+        PushStackType(StackTypeI4, NULL);
+        m_pStackPointer--;
+        dVar = m_pStackPointer[0].var;
+    }
+
+    AddIns(INTOP_CALL);
+    m_pLastNewIns->data[0] = GetMethodDataItemIndex(awaitMethod);
+    m_pLastNewIns->SetDVar(dVar);
+    m_pLastNewIns->SetSVar(CALL_ARGS_SVAR);
+    m_pLastNewIns->flags |= INTERP_INST_FLAG_CALL;
+    m_pLastNewIns->info.pCallInfo = new (getAllocator(IMK_CallInfo)) InterpCallInfo();
+    m_pLastNewIns->info.pCallInfo->pCallArgs = callArgs;
+
+    // EmitSuspend only inspects callInfo.sig, so a partially-populated
+    // CORINFO_CALL_INFO is sufficient here.
+    CORINFO_CALL_INFO callInfo = {};
+    callInfo.sig = awaitSig;
+    EmitSuspend(callInfo, ContinuationContextHandling::ContinueOnCapturedContext);
 }
 
 static void SetSlotToTrue(TArray<bool, MemPoolAllocator> &gcRefMap, int32_t slotOffset)
