@@ -405,16 +405,21 @@ namespace Microsoft.Win32.SafeHandles
             finally
             {
                 ProcessUtils.s_processStartLock.ExitWriteLock();
+                commandLine.Dispose();
             }
 
             static void EnableInheritance(SafeFileHandle safeHandle)
             {
+                if (safeHandle.IsInvalid)
+                {
+                    return;
+                }
+
                 bool refAdded = false;
 
                 try
                 {
                     safeHandle.DangerousAddRef(ref refAdded);
-
                     // Enable inheritance on this handle so the child process can use it.
                     if (!Interop.Kernel32.SetHandleInformation(
                         safeHandle.DangerousGetHandle(),

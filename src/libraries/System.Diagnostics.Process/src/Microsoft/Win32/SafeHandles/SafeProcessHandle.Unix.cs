@@ -224,10 +224,16 @@ namespace Microsoft.Win32.SafeHandles
             waitStateHolder = null;
             ProcessUtils.EnsureInitialized();
 
+            string? cwd = !string.IsNullOrWhiteSpace(startInfo.WorkingDirectory) ? startInfo.WorkingDirectory : null;
             string? resolvedFileName = ProcessUtils.ResolvePath(startInfo.FileName);
+            if (string.IsNullOrEmpty(resolvedFileName))
+            {
+                Interop.ErrorInfo error = Interop.Error.ENOENT.Info();
+                throw ProcessUtils.CreateExceptionForErrorStartingProcess(error.GetErrorMessage(), error.RawErrno, startInfo.FileName, cwd);
+            }
+
             string[] argv = ProcessUtils.ParseArgv(startInfo);
             bool usesTerminal = UsesTerminal(childInput, childOutput, childError);
-
             byte** argvPtr = null;
             byte** envpPtr = null;
 
