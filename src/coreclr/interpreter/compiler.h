@@ -694,6 +694,7 @@ private:
     // directly returns the continuation of the call instead of creating a new
     // suspension point.
     bool m_nextAwaitIsTail = false;
+    bool m_matchedAsyncCallRetInAsyncVersion = false;
 
     // Table of mappings of leave instructions to the first finally call island the leave
     // needs to execute.
@@ -899,6 +900,7 @@ private:
 
     void *m_asyncResumeFuncPtr = NULL;
     bool m_isAsyncMethodWithContextSaveRestore = false;
+    bool m_isAsyncVersionOfSyncMethod = false;
     int32_t m_asyncFinallyStartOffset = -1; // If the method is async, this is the offset of the start of the fault handler
 
     bool m_shadowCopyOfThisPointerActuallyNeeded = false;
@@ -983,6 +985,7 @@ private:
     bool    IsRuntimeAsyncCallConfigureAwaitTask(const uint8_t* ip, OpcodePeepElement* peep, void** computedInfo);
     bool    IsRuntimeAsyncCallConfigureAwaitValueTask(const uint8_t* ip, OpcodePeepElement* peep, void** computedInfo);
     bool    IsRuntimeAsyncCallConfigureAwaitValueTaskExactStLoc(const uint8_t* ip, OpcodePeepElement* peep, void** computedInfo);
+    bool    IsRuntimeAsyncCallRetInAsyncVersion(const uint8_t* ip, OpcodePeepElement* peep, void** computedInfo);
 
     int     ApplyRuntimeAsyncCall(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo) { return -1; }
     ContinuationContextHandling m_currentContinuationContextHandling = ContinuationContextHandling::None;
@@ -997,6 +1000,7 @@ private:
     void    EmitShiftOp(int32_t opBase);
     void    EmitCompareOp(int32_t opBase);
     void    EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool readonly, bool tailcall, bool newObj, bool isCalli);
+    void    WrapTopOfStackInAwait();
     void    EmitRet(CORINFO_METHOD_INFO* methodInfo);
     void    EmitSuspend(const CORINFO_CALL_INFO &callInfo, ContinuationContextHandling ContinuationContextHandling);
     void    EmitCalli(bool isTailCall, void* calliCookie, int callIFunctionPointerVar, CORINFO_SIG_INFO* callSiteSig);
