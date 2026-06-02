@@ -102,7 +102,7 @@ namespace Microsoft.Extensions.Options
             {
                 errors ??= new List<string>();
 
-                foreach (ValidationResult result in results!)
+                foreach (ValidationResult result in results)
                 {
                     errors.Add($"DataAnnotation validation failed for '{qualifiedName}' members: '{string.Join(",", result.MemberNames)}' with the error: '{result.ErrorMessage}'.");
                 }
@@ -116,7 +116,7 @@ namespace Microsoft.Extensions.Options
                     continue;
                 }
 
-                object? value = propertyInfo!.GetValue(options);
+                object? value = propertyInfo.GetValue(options);
 
                 if (value is null)
                 {
@@ -128,7 +128,6 @@ namespace Microsoft.Extensions.Options
                     visited ??= new HashSet<object>(ReferenceEqualityComparer.Instance);
                     visited.Add(options);
 
-                    results ??= new List<ValidationResult>();
                     bool innerRes;
                     (innerRes, errors) = await TryValidateOptionsAsync(value, $"{qualifiedName}.{propertyInfo.Name}", results, errors, visited, cancellationToken).ConfigureAwait(false);
                     res = innerRes && res;
@@ -138,7 +137,6 @@ namespace Microsoft.Extensions.Options
                 {
                     visited ??= new HashSet<object>(ReferenceEqualityComparer.Instance);
                     visited.Add(options);
-                    results ??= new List<ValidationResult>();
 
                     int index = 0;
                     foreach (object item in enumerable)

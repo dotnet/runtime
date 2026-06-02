@@ -97,6 +97,8 @@ namespace Microsoft.Extensions.Hosting.Internal
                     _hostedLifecycleServices = GetHostLifecycles(_hostedServices);
 
                     // Call startup validators (prefer async if available).
+                    // IAsyncStartupValidator takes precedence; the built-in StartupValidator implements both
+                    // interfaces and its ValidateAsync() calls Validate() internally.
                     IAsyncStartupValidator? asyncValidator = Services.GetService<IAsyncStartupValidator>();
                     if (asyncValidator is not null)
                     {
@@ -110,6 +112,7 @@ namespace Microsoft.Extensions.Hosting.Internal
                 }
                 catch (Exception ex)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     // service factory or validation failed, abort startup.
                     exceptions.Add(ex);
                     LogAndRethrow();

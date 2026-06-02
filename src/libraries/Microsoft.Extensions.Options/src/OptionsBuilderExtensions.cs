@@ -28,7 +28,7 @@ namespace Microsoft.Extensions.DependencyInjection
             ArgumentNullException.ThrowIfNull(optionsBuilder);
 
             optionsBuilder.Services.TryAddTransient<IStartupValidator, StartupValidator>();
-            optionsBuilder.Services.TryAddTransient<IAsyncStartupValidator>(sp => (IAsyncStartupValidator)sp.GetRequiredService<IStartupValidator>());
+            optionsBuilder.Services.TryAddTransient<IAsyncStartupValidator, StartupValidator>();
             optionsBuilder.Services.AddOptions<StartupValidatorOptions>()
                 .Configure<IOptionsMonitor<TOptions>>((vo, options) =>
                 {
@@ -47,7 +47,7 @@ namespace Microsoft.Extensions.DependencyInjection
                     {
                         vo._asyncValidators[(typeof(TOptions), optionsBuilder.Name)] = async (CancellationToken ct) =>
                         {
-                                // Retrieve the options value (already created by sync Validate() call)
+                            // Retrieve the options value (already created by sync Validate() call)
                             TOptions optionsValue = options.Get(optionsBuilder.Name);
 
                             // Run async validators

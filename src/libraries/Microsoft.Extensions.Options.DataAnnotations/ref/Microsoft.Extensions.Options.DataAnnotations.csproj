@@ -7,7 +7,7 @@
     <Compile Include="Microsoft.Extensions.Options.DataAnnotations.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))">
     <Compile Include="Microsoft.Extensions.Options.DataAnnotations.Async.cs" />
   </ItemGroup>
 

@@ -55,7 +55,8 @@ namespace Microsoft.Extensions.Options
 
         public async Task ValidateAsync(CancellationToken cancellationToken = default)
         {
-            // Run sync validators first (this triggers options creation + sync validation)
+            // Run sync validators first. If sync validation fails, skip async validators
+            // to avoid expensive I/O operations on already-invalid configuration (two-stage validation).
             Validate();
 
             // Then run async validators
