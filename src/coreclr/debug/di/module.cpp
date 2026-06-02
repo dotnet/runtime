@@ -4237,7 +4237,22 @@ HRESULT CordbNativeCode::GetReturnValueLiveOffset(ULONG32 ILoffset, ULONG32 buff
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
     EX_TRY
     {
-        hr = GetReturnValueLiveOffsetImpl(NULL, ILoffset, bufferSize, pFetched, pOffsets);
+        NewArrayHolder<const ICorDebugInfo::NativeVarInfo *> varInfos;
+        const ICorDebugInfo::NativeVarInfo **pVarInfosBuffer = NULL;
+        if (pOffsets != NULL && bufferSize > 0)
+        {
+            varInfos = new const ICorDebugInfo::NativeVarInfo *[bufferSize];
+            pVarInfosBuffer = varInfos;
+        }
+
+        hr = GetReturnValueLiveOffsetImpl(NULL, ILoffset, bufferSize, pFetched, pVarInfosBuffer);
+        if ((SUCCEEDED(hr) || hr == S_FALSE) && pVarInfosBuffer != NULL)
+        {
+            for (ULONG32 i = 0; i < *pFetched; ++i)
+            {
+                pOffsets[i] = pVarInfosBuffer[i]->startOffset;
+            }
+        }
     }
     EX_CATCH_HRESULT(hr);
     return hr;
@@ -4611,7 +4626,7 @@ HRESULT CordbNativeCode::GetCallSignature(ULONG32 ILoffset, mdToken *pClass, mdT
     return GetSigParserFromFunction(mdFunction, pClass, parser, generics);
 }
 
-HRESULT CordbNativeCode::GetReturnValueLiveOffsetImpl(Instantiation *currentInstantiation, ULONG32 ILoffset, ULONG32 bufferSize, ULONG32 *pFetched, ULONG32 *pOffsets)
+HRESULT CordbNativeCode::GetReturnValueLiveOffsetImpl(Instantiation *currentInstantiation, ULONG32 ILoffset, ULONG32 bufferSize, ULONG32 *pFetched, const ICorDebugInfo::NativeVarInfo **ppVarInfos)
 {
     if (pFetched == NULL)
         return E_INVALIDARG;
@@ -4625,7 +4640,7 @@ HRESULT CordbNativeCode::GetReturnValueLiveOffsetImpl(Instantiation *currentInst
     IfFailRet(GetCallSignature(ILoffset, &mdClass, NULL, signature, generics));
     IfFailRet(EnsureReturnValueAllowed(currentInstantiation, mdClass, signature, generics));
 
-    // now find the native offset
+    // now find the matching CALL_RETURN_ILNUM NativeVarInfo entries
     const DacDbiArrayList<ICorDebugInfo::NativeVarInfo> *pOffsetInfoList = m_nativeVarData.GetOffsetInfoList();
     _ASSERTE(pOffsetInfoList != NULL);
     for (unsigned int i = 0; i < pOffsetInfoList->Count(); i++)
@@ -4643,15 +4658,15 @@ HRESULT CordbNativeCode::GetReturnValueLiveOffsetImpl(Instantiation *currentInst
         }
 
         // if we have a buffer, fill it in.
-        if (pOffsets && found < bufferSize)
+        if (ppVarInfos && found < bufferSize)
         {
-            pOffsets[found] = pNativeVarInfo->startOffset;
+            ppVarInfos[found] = pNativeVarInfo;
         }
 
         found++;
     }
 
-    if (pOffsets)
+    if (ppVarInfos)
         *pFetched = found < bufferSize ? found : bufferSize;
     else
         *pFetched = found;
@@ -4659,7 +4674,7 @@ HRESULT CordbNativeCode::GetReturnValueLiveOffsetImpl(Instantiation *currentInst
     if (found == 0)
         return E_FAIL;
 
-    if (pOffsets && found > bufferSize)
+    if (ppVarInfos && found > bufferSize)
         return S_FALSE;
 
     return S_OK;
