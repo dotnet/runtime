@@ -19,7 +19,6 @@ set(NATIVECRYPTO_SOURCES
     pal_symmetric.c
     pal_x509.c
     pal_x509chain.c
-    pal_swiftbindings.o
     pal_networkframework.m
 )
 
@@ -87,13 +86,35 @@ if (PRERELEASE)
     set(SWIFT_COMPILER_ERRORS_FLAG "-warnings-as-errors")
 endif()
 
-add_custom_command(
-    OUTPUT pal_swiftbindings.o
-    COMMAND xcrun swiftc -emit-object -static -parse-as-library -enable-library-evolution ${SWIFT_COMPILER_ERRORS_FLAG} -gline-tables-only ${SWIFT_OPTIMIZATION_FLAG} -runtime-compatibility-version none ${SWIFT_SDK_FLAG} -target ${SWIFT_COMPILER_TARGET} ${CMAKE_CURRENT_SOURCE_DIR}/pal_swiftbindings.swift -o pal_swiftbindings.o
-    MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/pal_swiftbindings.swift
-    COMMENT "Compiling Swift file pal_swiftbindings.swift"
-)
-set_source_files_properties(pal_swiftbindings.o PROPERTIES EXTERNAL_OBJECT true GENERATED true)
+set(SWIFTBINDINGS_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/pal_swiftbindings.swift)
+set(SWIFTBINDINGS_COMPILER_ARGS
+    -emit-object
+    -static
+    -parse-as-library
+    -enable-library-evolution
+    ${SWIFT_COMPILER_ERRORS_FLAG}
+    -gline-tables-only
+    ${SWIFT_OPTIMIZATION_FLAG}
+    -runtime-compatibility-version none
+    ${SWIFT_SDK_FLAG}
+    -target ${SWIFT_COMPILER_TARGET})
+
+function(compile_swiftbindings_object output module_name target_kind)
+    add_custom_command(
+        OUTPUT ${output}
+        COMMAND xcrun swiftc ${SWIFTBINDINGS_COMPILER_ARGS} -module-name ${module_name} ${SWIFTBINDINGS_SOURCE} -o ${output}
+        MAIN_DEPENDENCY ${SWIFTBINDINGS_SOURCE}
+        COMMENT "Compiling Swift file pal_swiftbindings.swift for ${target_kind} library"
+        VERBATIM
+    )
+    set_source_files_properties(${output} PROPERTIES EXTERNAL_OBJECT true GENERATED true)
+endfunction()
+
+# Swift classes are registered with process-global ObjC runtime names. Build the
+# shared library and static archive with different module names so both can load
+# into the same process without duplicate Swift class registrations.
+compile_swiftbindings_object(pal_swiftbindings_shared.o pal_swiftbindings shared)
+compile_swiftbindings_object(pal_swiftbindings_static.o pal_swiftbindings_static static)
 
 if (CLR_CMAKE_TARGET_MACCATALYST)
     add_definitions(-DTARGET_MACCATALYST)
@@ -111,6 +132,7 @@ if (GEN_SHARED_LIB)
     add_library(System.Security.Cryptography.Native.Apple
         SHARED
         ${NATIVECRYPTO_SOURCES}
+        pal_swiftbindings_shared.o
         ${VERSION_FILE_PATH}
     )
 endif()
@@ -122,6 +144,7 @@ endif()
 add_library(System.Security.Cryptography.Native.Apple-Static
     STATIC
     ${NATIVECRYPTO_SOURCES}
+    pal_swiftbindings_static.o
 )
 
 set_target_properties(System.Security.Cryptography.Native.Apple-Static PROPERTIES OUTPUT_NAME System.Security.Cryptography.Native.Apple CLEAN_DIRECT_OUTPUT 1)
