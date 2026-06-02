@@ -4251,7 +4251,10 @@ static BOOL CanShareComMethodTableWithParent(MethodTable *pClassMT, MethodTable 
     for (unsigned i = 0; i < pItfMT->GetNumVirtuals(); i++)
     {
         MethodDesc *pItfMD = pItfMT->GetMethodDescForSlot_NoThrow(i);
-        if (pItfMD == NULL || pItfMD->IsAsyncMethod())
+        if (pItfMD == NULL)
+            return FALSE;
+
+        if (pItfMD->IsAsyncMethod())
             continue;
 
         DispatchSlot childSlot(pClassMT->FindDispatchSlotForInterfaceMD(pItfMD, FALSE /* throwOnConflict */));

@@ -76,10 +76,13 @@ public class VirtualMethodOverrideTest
     public static void DerivedFirst()
     {
         int doWorkSlot = Marshal.GetStartComSlot(typeof(IFoo));
-        IntPtr pDerived = Marshal.GetComInterfaceForObject(new FooDerived(), typeof(IFoo));
-        IntPtr pBase = Marshal.GetComInterfaceForObject(new Foo(), typeof(IFoo));
+        IntPtr pDerived = IntPtr.Zero;
+        IntPtr pBase = IntPtr.Zero;
         try
         {
+            pDerived = Marshal.GetComInterfaceForObject(new FooDerived(), typeof(IFoo));
+            pBase = Marshal.GetComInterfaceForObject(new Foo(), typeof(IFoo));
+
             LastCalledType = null;
             Assert.True(CallDoWork(pDerived, doWorkSlot) >= 0);
             Assert.Equal(nameof(FooDerived), LastCalledType);
@@ -90,8 +93,11 @@ public class VirtualMethodOverrideTest
         }
         finally
         {
-            Marshal.Release(pDerived);
-            Marshal.Release(pBase);
+            if (pDerived != IntPtr.Zero)
+                Marshal.Release(pDerived);
+
+            if (pBase != IntPtr.Zero)
+                Marshal.Release(pBase);
         }
     }
 
@@ -99,10 +105,13 @@ public class VirtualMethodOverrideTest
     public static void BaseFirst()
     {
         int doWorkSlot = Marshal.GetStartComSlot(typeof(IBar));
-        IntPtr pBase = Marshal.GetComInterfaceForObject(new Bar(), typeof(IBar));
-        IntPtr pDerived = Marshal.GetComInterfaceForObject(new BarDerived(), typeof(IBar));
+        IntPtr pBase = IntPtr.Zero;
+        IntPtr pDerived = IntPtr.Zero;
         try
         {
+            pBase = Marshal.GetComInterfaceForObject(new Bar(), typeof(IBar));
+            pDerived = Marshal.GetComInterfaceForObject(new BarDerived(), typeof(IBar));
+
             LastCalledType = null;
             Assert.True(CallDoWork(pBase, doWorkSlot) >= 0);
             Assert.Equal(nameof(Bar), LastCalledType);
@@ -113,8 +122,8 @@ public class VirtualMethodOverrideTest
         }
         finally
         {
-            Marshal.Release(pBase);
-            Marshal.Release(pDerived);
+            if (pBase != IntPtr.Zero) Marshal.Release(pBase);
+            if (pDerived != IntPtr.Zero) Marshal.Release(pDerived);
         }
     }
 }
