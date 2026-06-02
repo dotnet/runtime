@@ -8807,8 +8807,7 @@ GenTree* Compiler::fgOptimizeRelationalComparison(GenTreeOp* cmp)
         if (GenTree::Compare(cmp->gtGetOp1()->gtGetOp2(), cmp->gtGetOp2()))
         {
             cmp->SetOper(GenTree::ReverseRelop(cmp->OperGet()), GenTree::PRESERVE_VN);
-            cmp->gtGetOp2()->BashToZeroConst(cmp->gtGetOp2()->TypeGet());
-            fgUpdateConstTreeValueNumber(cmp->gtGetOp2());
+            cmp->gtOp2 = gtNewIconNodeWithVN(this, 0, cmp->gtGetOp2()->TypeGet());
         }
     }
 
