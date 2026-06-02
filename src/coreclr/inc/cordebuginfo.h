@@ -391,7 +391,7 @@ public:
         UNKNOWN_ILNUM            = -6, // Unknown variable
 
 
-        MAX_ILNUM                = -6  // Sentinel value. This should be set to the largest magnitude value in th enum
+        MAX_ILNUM                = -6  // Sentinel value. This should be set to the largest magnitude value in the enum
                                        // so that the compression routines know the enum's range.
     };
 

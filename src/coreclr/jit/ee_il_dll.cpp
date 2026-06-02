@@ -874,7 +874,7 @@ void Compiler::eeDispVar(ICorDebugInfo::NativeVarInfo* var)
 
     if (var->varNumber == (DWORD)ICorDebugInfo::CALL_RETURN_ILNUM)
     {
-        int printed = printf("(call %03u)", var->callReturnValueILOffset);
+        printf("(call %03u)", var->callReturnValueILOffset);
     }
     else if (0 <= var->varNumber && var->varNumber < lvaCount)
     {

@@ -495,7 +495,7 @@ CodeGenInterface::siVarLoc::siVarLoc(const LclVarDsc* varDsc, regNumber baseReg,
 //    A "siVarLoc" representing the variable location, which could live
 //    in a register, an stack position, or a combination of both.
 //
-CodeGenInterface::siVarLoc CodeGenInterface::getSiVarLoc(const LclVarDsc* varDsc, unsigned offset, unsigned stackLevel) const
+CodeGenInterface::siVarLoc CodeGenInterface::getSiVarLoc(const LclVarDsc* varDsc, int offset, int stackLevel) const
 {
     // For stack vars, find the base register, and offset
 
@@ -1081,7 +1081,7 @@ void CodeGenInterface::VariableLiveKeeper::siStartVariableLiveRange(const LclVar
     {
         // Build siVarLoc for this born "varDsc"
         CodeGenInterface::siVarLoc varLocation =
-            m_compiler->codeGen->getSiVarLoc(varDsc, 0, m_compiler->codeGen->getCurrentStackLevel());
+            m_compiler->codeGen->getSiVarLoc(varDsc, 0, (int)m_compiler->codeGen->getCurrentStackLevel());
 
         VariableLiveDescriptor* varLiveDsc = &m_vlrLiveDsc[varNum];
         // this variable live range is valid from this point
@@ -1150,7 +1150,7 @@ void CodeGenInterface::VariableLiveKeeper::siUpdateVariableLiveRange(const LclVa
     {
         // Build the location of the variable
         CodeGenInterface::siVarLoc siVarLoc =
-            m_compiler->codeGen->getSiVarLoc(varDsc, 0, m_compiler->codeGen->getCurrentStackLevel());
+            m_compiler->codeGen->getSiVarLoc(varDsc, 0, (int)m_compiler->codeGen->getCurrentStackLevel());
 
         // Report the home change for this variable
         VariableLiveDescriptor* varLiveDsc = &m_vlrLiveDsc[varNum];

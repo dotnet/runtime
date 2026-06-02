@@ -1798,7 +1798,7 @@ void CodeGen::genEmitCallWithCurrentGC(EmitCallParams& params)
         }
 
         unsigned lclNum = node->AsLclVarCommon()->GetLclNum();
-        unsigned lclOffs = node->AsLclVarCommon()->GetLclOffs();
+        int lclOffs = node->AsLclVarCommon()->GetLclOffs();
         int stackLevelBias = 0;
 #ifdef TARGET_X86
         stackLevelBias = getCurrentStackLevel();

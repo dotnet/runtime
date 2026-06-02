@@ -660,7 +660,7 @@ public:
     };
 
 public:
-    siVarLoc getSiVarLoc(const LclVarDsc* varDsc, unsigned offset, unsigned stackLevel) const;
+    siVarLoc getSiVarLoc(const LclVarDsc* varDsc, int offset, int stackLevel) const;
 
 #ifdef DEBUG
     void dumpSiVarLoc(const siVarLoc* varLoc) const;
