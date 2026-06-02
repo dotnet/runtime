@@ -8808,6 +8808,11 @@ GenTree* Compiler::fgOptimizeRelationalComparison(GenTreeOp* cmp)
         {
             cmp->SetOper(GenTree::ReverseRelop(cmp->OperGet()), GenTree::PRESERVE_VN);
             cmp->gtOp2 = gtNewIconNodeWithVN(this, 0, cmp->gtGetOp2()->TypeGet());
+
+            if (fgGlobalMorph)
+            {
+                fgMorphTreeDone(cmp->gtOp2);
+            }
         }
     }
 
