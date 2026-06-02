@@ -1201,19 +1201,18 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         *pRetVal = 0;
         try
         {
-            TargetPointer threadPointer = new TargetPointer(vmThread);
             Contracts.IThread threadContract = _target.Contracts.Thread;
 
-            if (!threadContract.GetInteropDebuggingHijacked(threadPointer))
+            if (!threadContract.IsInteropDebuggingHijacked(vmThread))
             {
-                TargetPointer filterContext = threadContract.GetDebuggerFilterContext(threadPointer);
+                TargetPointer filterContext = threadContract.GetDebuggerFilterContext(vmThread);
                 if (filterContext != TargetPointer.Null)
                 {
                     *pRetVal = filterContext.Value;
                 }
                 else
                 {
-                    TargetPointer redirectedContext = threadContract.GetRedirectedContext(threadPointer);
+                    TargetPointer redirectedContext = threadContract.GetRedirectedContext(vmThread);
                     if (redirectedContext != TargetPointer.Null)
                     {
                         *pRetVal = redirectedContext.Value;

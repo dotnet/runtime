@@ -421,14 +421,14 @@ byte[] IThread.GetContext(TargetPointer threadPointer, ThreadContextSource conte
     // return a zeroed context.
 }
 
-bool GetInteropDebuggingHijacked(TargetPointer thread)
+bool IsInteropDebuggingHijacked(TargetPointer thread)
 {
-    return thread.InteropDebuggingHijacked != 0;
+    return target.Read<byte>(thread + /* Thread::InteropDebuggingHijacked offset */) != 0;
 }
 
 TargetPointer GetDebuggerFilterContext(TargetPointer thread)
 {
-    return thread.DebuggerFilterContext;
+    return target.ReadPointer(thread + /* Thread::DebuggerFilterContext offset */);
 }
 
 TargetPointer GetRedirectedContext(TargetPointer thread)

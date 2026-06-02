@@ -371,7 +371,7 @@ internal readonly struct Thread_1 : IThread
         return context.GetBytes();
     }
 
-    bool IThread.GetInteropDebuggingHijacked(TargetPointer threadPointer)
+    bool IThread.IsInteropDebuggingHijacked(TargetPointer threadPointer)
     {
         Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadPointer);
         return thread.InteropDebuggingHijacked != 0;
