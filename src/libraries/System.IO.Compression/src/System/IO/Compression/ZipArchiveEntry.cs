@@ -981,7 +981,11 @@ namespace System.IO.Compression
         private bool IsOpenableFinalVerifications(bool needToLoadIntoMemory, long offsetOfCompressedData, out string? message)
         {
             message = null;
-            if (offsetOfCompressedData + _compressedSize > _archive.ArchiveStream.Length)
+            // Use an overflow-safe form: corrupt zip64 archives can report compressed sizes / offsets
+            // near long.MaxValue, which would wrap around in 'offsetOfCompressedData + _compressedSize'.
+            if (offsetOfCompressedData < 0 ||
+                _compressedSize < 0 ||
+                _compressedSize > _archive.ArchiveStream.Length - offsetOfCompressedData)
             {
                 message = SR.LocalFileHeaderCorrupt;
                 return false;
