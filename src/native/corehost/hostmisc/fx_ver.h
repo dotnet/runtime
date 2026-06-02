@@ -19,9 +19,9 @@ extern "C" {
 // for lifetime management.
 typedef struct c_fx_ver
 {
-    int major;
-    int minor;
-    int patch;
+    int32_t major;
+    int32_t minor;
+    int32_t patch;
     pal_char_t* pre;   // prerelease label with leading '-', or NULL/empty
     pal_char_t* build; // build label with leading '+', or NULL/empty
 } c_fx_ver_t;
