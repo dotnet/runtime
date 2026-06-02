@@ -3,6 +3,8 @@
 
 using System.ComponentModel;
 using System.Runtime.InteropServices;
+using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.DotNet.XUnitExtensions;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
 
@@ -10,12 +12,12 @@ namespace System.Diagnostics.Tests
 {
     public partial class ProcessHandlesTests
     {
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public unsafe void StartWithCallback_PosixSpawn_CanRedirectOutput()
         {
             ProcessStartInfo startInfo = new("/bin/sh")
             {
-                ArgumentList = { "-c", "echo hello" },
+                ArgumentList = { "-c", "echo hello && echo error >&2" },
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false
@@ -27,42 +29,54 @@ namespace System.Diagnostics.Tests
 
                 // posix_spawn_file_actions_t is a platform-specific struct (80 bytes on glibc x64, 104 bytes on macOS arm64).
                 // We allocate enough space on the stack and pass a pointer.
-                // Use 128 bytes to be safe across platforms.
+                // Use 128 bytes to be safe across platforms, and request explicit alignment for the native struct.
                 const int PosixSpawnFileActionsSize = 128;
-                byte* fileActionsBuffer = stackalloc byte[PosixSpawnFileActionsSize];
-
-                result = posix_spawn_file_actions_init(fileActionsBuffer);
-                if (result != 0)
+                const nuint PosixSpawnFileActionsAlignment = 16;
+                void* fileActionsBuffer = NativeMemory.AlignedAlloc(PosixSpawnFileActionsSize, PosixSpawnFileActionsAlignment);
+                if (fileActionsBuffer is null)
                 {
-                    throw new Win32Exception(result);
+                    throw new OutOfMemoryException();
                 }
 
                 try
                 {
-                    Redirect(fileActionsBuffer, args.StandardInput, 0);
-                    Redirect(fileActionsBuffer, args.StandardOutput, 1);
-                    Redirect(fileActionsBuffer, args.StandardError, 2);
-
-                    int pid;
-                    byte[] pathBytes = System.Text.Encoding.UTF8.GetBytes(args.FileName! + '\0');
-                    fixed (byte* pathPtr = pathBytes)
-                    {
-                        result = posix_spawn(&pid, pathPtr, fileActionsBuffer, null, (byte**)args.Arguments, (byte**)args.EnvironmentVariables);
-                    }
-
+                    result = posix_spawn_file_actions_init(fileActionsBuffer);
                     if (result != 0)
                     {
                         throw new Win32Exception(result);
                     }
 
-                    // Get SafeProcessHandle from the pid.
-                    // In the future, SafeProcessHandle.Open will be used instead.
-                    Process spawned = Process.GetProcessById(pid);
-                    return spawned.SafeHandle;
+                    try
+                    {
+                        Redirect(fileActionsBuffer, args.StandardInput, 0);
+                        Redirect(fileActionsBuffer, args.StandardOutput, 1);
+                        Redirect(fileActionsBuffer, args.StandardError, 2);
+
+                        int pid;
+                        byte[] pathBytes = System.Text.Encoding.UTF8.GetBytes(args.FileName! + '\0');
+                        fixed (byte* pathPtr = pathBytes)
+                        {
+                            result = posix_spawn(&pid, pathPtr, fileActionsBuffer, null, (byte**)args.Arguments, (byte**)args.EnvironmentVariables);
+                        }
+
+                        if (result != 0)
+                        {
+                            throw new Win32Exception(result);
+                        }
+
+                        // Get SafeProcessHandle from the pid.
+                        // In the future, SafeProcessHandle.Open will be used instead.
+                        Process spawned = Process.GetProcessById(pid);
+                        return spawned.SafeHandle;
+                    }
+                    finally
+                    {
+                        posix_spawn_file_actions_destroy(fileActionsBuffer);
+                    }
                 }
                 finally
                 {
-                    posix_spawn_file_actions_destroy(fileActionsBuffer);
+                    NativeMemory.AlignedFree(fileActionsBuffer);
                 }
             });
 
@@ -70,6 +84,7 @@ namespace System.Diagnostics.Tests
             process.WaitForExit(WaitInMS);
 
             Assert.Equal("hello\n", output);
+            Assert.Equal("error\n", error);
             Assert.True(process.HasExited);
             Assert.Equal(0, process.ExitCode);
         }

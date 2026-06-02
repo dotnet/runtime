@@ -110,7 +110,7 @@ namespace System.Diagnostics.Tests
         {
             ProcessStartInfo startInfo = new("cmd")
             {
-                ArgumentList = { "/c", "echo hello" },
+                ArgumentList = { "/c", "echo hello && echo error 1>&2" },
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false
@@ -155,6 +155,7 @@ namespace System.Diagnostics.Tests
             process.WaitForExit(WaitInMS);
 
             Assert.Equal("hello\r\n", output);
+            Assert.Equal("error\r\n", error);
             Assert.Equal(0, process.ExitCode);
         }
 

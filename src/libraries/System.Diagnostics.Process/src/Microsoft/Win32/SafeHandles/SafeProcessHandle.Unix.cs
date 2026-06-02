@@ -312,6 +312,19 @@ namespace Microsoft.Win32.SafeHandles
             }
             finally
             {
+                if (stdinRefAdded)
+                {
+                    stdinFd!.DangerousRelease();
+                }
+                if (stdoutRefAdded)
+                {
+                    stdoutHandle!.DangerousRelease();
+                }
+                if (stderrRefAdded)
+                {
+                    stderrHandle!.DangerousRelease();
+                }
+
                 NativeMemory.Free(envpPtr);
                 NativeMemory.Free(argvPtr);
             }
