@@ -766,8 +766,10 @@ public unsafe class DacDbiImplTests
                 (nameof(Constants.Globals.FinalizerThread), threadBuilder.FinalizerThreadGlobalAddress),
                 (nameof(Constants.Globals.GCThread), threadBuilder.GCThreadGlobalAddress),
                 ("RedirectedThreadFrameIdentifier", MockFrameBuilder.RedirectedThreadFrameIdentifierValue))
-            .AddContract<IThread>(version: "c1");
-
+            .AddMockContract(new Mock<IExecutionManager>())
+            .AddMockContract(new Mock<IGCInfo>())
+            .AddContract<IThread>(version: "c1")
+            .AddContract<IStackWalk>(version: "c1");
         TestPlaceholderTarget target = targetBuilder.Build();
         DacDbiImpl dacDbi = new(target, legacyObj: null);
         return (dacDbi, thread, frameBuilder);

@@ -583,7 +583,7 @@ IReadOnlyList<StackReferenceData> WalkStackReferences(ThreadData threadData)
 
 The implementation uses the same stack walk algorithm as `CreateStackWalk`, but integrates the GC-aware `Filter` directly (rather than consuming pre-generated frames) and performs GC reference enumeration at each frame. See [GC Stack Reference Scanning](#gc-stack-reference-scanning) for details.
 
-The `GetContextFromFrames`implementation walks the Frame chain (`Thread::Frame` linked list) and returns the first frame that yields a usable context:
+The `GetContextFromFrames` implementation walks the Frame chain (`Thread::Frame` linked list) and returns the first frame that yields a usable context:
 * If the current Frame is an `InterpreterFrame`, clear the context and update it from the Frame. Return the resulting bytes.
 * Otherwise, clear the context and update it from the current Frame; accept the context when both the stack pointer and instruction pointer are non-zero (e.g. `RedirectedThreadFrame`, `InlinedCallFrame`, `DynamicHelperFrame`). Mark `RawContextFlags = FullContextFlags` so callers know SP/PC/FP are valid.
 
