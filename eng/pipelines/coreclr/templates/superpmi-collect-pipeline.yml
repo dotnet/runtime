@@ -337,14 +337,7 @@ extends:
       # superpmi.py maps target_arch=wasm to mch_arch=<host_arch>=x64).
       #
       # Uses buildConfig: checked so the wasm cross-targeting JIT used during collection
-      # is a Checked build. This matches the developer-iteration default and is required
-      # for replays of CI-collected MCHs to succeed against locally-built Checked JITs
-      # (Checked JITs call additional JIT-EE APIs like getMethodNameFromMetadata and
-      # isFieldStatic that aren't called in Release; if collection used a Release JIT,
-      # those calls would not be recorded and replay would report >90% "missing data").
-      # superpmi_collect_setup.py handles the corelib collection by combining the
-      # release Core_Root (for crossgen2 and framework references) with the checked
-      # wasm cross JIT copied on top.
+      # is a Checked build.
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
