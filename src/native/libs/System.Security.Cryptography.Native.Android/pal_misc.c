@@ -3,6 +3,9 @@
 
 #include "pal_misc.h"
 #include "pal_jni.h"
+#include <errno.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 int32_t CryptoNative_EnsureOpenSslInitialized(void)
 {
@@ -11,22 +14,56 @@ int32_t CryptoNative_EnsureOpenSslInitialized(void)
 
 int32_t CryptoNative_GetRandomBytes(uint8_t* buff, int32_t len)
 {
-    // JNI requires `buff` to be not NULL when passed to `{Get,Set}ByteArrayRegion`
     abort_unless(buff != NULL, "The 'buff' parameter must be a valid pointer");
+    abort_unless(len >= 0, "The 'len' parameter must not be negative");
 
-    JNIEnv* env = GetJNIEnv();
-    jobject randObj = (*env)->NewObject(env, g_randClass, g_randCtor);
-    abort_unless(randObj != NULL,"Unable to create an instance of java/security/SecureRandom");
+    int flags = O_RDONLY;
+#ifdef O_CLOEXEC
+    flags |= O_CLOEXEC;
+#endif
 
-    jbyteArray buffArray = make_java_byte_array(env, len);
-    (*env)->SetByteArrayRegion(env, buffArray, 0, len, (jbyte*)buff);
-    (*env)->CallVoidMethod(env, randObj, g_randNextBytesMethod, buffArray);
-    (*env)->GetByteArrayRegion(env, buffArray, 0, len, (jbyte*)buff);
+    int fd;
+    do
+    {
+        fd = open("/dev/urandom", flags);
+    }
+    while ((fd == -1) && (errno == EINTR));
 
-    (*env)->DeleteLocalRef(env, buffArray);
-    (*env)->DeleteLocalRef(env, randObj);
+    if (fd == -1)
+    {
+        return FAIL;
+    }
 
-    return CheckJNIExceptions(env) ? FAIL : SUCCESS;
+#ifndef O_CLOEXEC
+    fcntl(fd, F_SETFD, FD_CLOEXEC);
+#endif
+
+    int32_t offset = 0;
+    while (offset != len)
+    {
+        ssize_t n = read(fd, buff + offset, (size_t)(len - offset));
+        if (n == -1)
+        {
+            if (errno == EINTR)
+            {
+                continue;
+            }
+
+            close(fd);
+            return FAIL;
+        }
+
+        if (n == 0)
+        {
+            close(fd);
+            return FAIL;
+        }
+
+        offset += (int32_t)n;
+    }
+
+    close(fd);
+    return SUCCESS;
 }
 
 jobject AndroidCryptoNative_CreateKeyPair(JNIEnv* env, jobject publicKey, jobject privateKey)
