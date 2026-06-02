@@ -16,14 +16,14 @@ namespace System.Diagnostics
         public ProcessStartArguments() { }
 
         /// <summary>
-        /// Gets the resolved file name of the process to start.
+        /// Gets or sets the resolved file name of the process to start.
         /// On Windows, this is <see langword="null"/> (the file name is embedded in <see cref="Arguments"/>).
         /// On Unix, this is the resolved absolute path to the executable.
         /// </summary>
         public string? FileName { get; set; }
 
         /// <summary>
-        /// Gets a pointer to the command-line arguments for the process.
+        /// Gets or sets a pointer to the command-line arguments for the process.
         /// On Windows, this is a pointer to a null-terminated <see cref="char"/> string (the full command line including the executable).
         /// On Unix, this is a pointer to a null-terminated array of pointers to null-terminated UTF-8 byte strings (argv).
         /// </summary>
@@ -34,7 +34,7 @@ namespace System.Diagnostics
         public unsafe void* Arguments { get; set; }
 
         /// <summary>
-        /// Gets a pointer to the environment variables block for the new process.
+        /// Gets or sets a pointer to the environment variables block for the new process.
         /// On Windows, this is a pointer to a null-terminated <see cref="char"/> string in the format used by CreateProcess
         /// (each variable is "name=value\0", terminated by an extra '\0').
         /// On Unix, this is a pointer to a null-terminated array of pointers to null-terminated UTF-8 byte strings ("name=value").
@@ -47,22 +47,28 @@ namespace System.Diagnostics
         public unsafe void* EnvironmentVariables { get; set; }
 
         /// <summary>
-        /// Gets the raw handle to use as the standard input for the new process.
+        /// Gets or sets the raw handle to use as the standard input for the new process.
+        /// On Unix, this is a file descriptor value.
+        /// On Windows, this is an OS handle value.
         /// </summary>
         public nint StandardInput { get; set; }
 
         /// <summary>
-        /// Gets the raw handle to use as the standard output for the new process.
+        /// Gets or sets the raw handle to use as the standard output for the new process.
+        /// On Unix, this is a file descriptor value.
+        /// On Windows, this is an OS handle value.
         /// </summary>
         public nint StandardOutput { get; set; }
 
         /// <summary>
-        /// Gets the raw handle to use as the standard error for the new process.
+        /// Gets or sets the raw handle to use as the standard error for the new process.
+        /// On Unix, this is a file descriptor value.
+        /// On Windows, this is an OS handle value.
         /// </summary>
         public nint StandardError { get; set; }
 
         /// <summary>
-        /// Gets the original <see cref="ProcessStartInfo"/> provided by the user,
+        /// Gets or sets the original <see cref="ProcessStartInfo"/> provided by the user,
         /// allowing the callback to inspect any additional configuration.
         /// </summary>
         public ProcessStartInfo ProcessStartInfo { get; set; } = null!;
