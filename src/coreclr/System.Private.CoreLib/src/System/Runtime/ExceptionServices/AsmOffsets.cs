@@ -96,9 +96,9 @@ class AsmOffsets
     public const int OFFSETOF__REGDISPLAY__ControlPC = 0x898;
 #endif // TARGET_UNIX
 #elif TARGET_ARM
-    public const int SIZEOF__REGDISPLAY = 0x404;
-    public const int OFFSETOF__REGDISPLAY__SP = 0x3e4;
-    public const int OFFSETOF__REGDISPLAY__ControlPC = 0x3e8;
+    public const int SIZEOF__REGDISPLAY = 0x400;
+    public const int OFFSETOF__REGDISPLAY__SP = 0x3e0;
+    public const int OFFSETOF__REGDISPLAY__ControlPC = 0x3e4;
 #elif TARGET_X86
     public const int SIZEOF__REGDISPLAY = 0x5f4;
     public const int OFFSETOF__REGDISPLAY__SP = 0x5e8;
