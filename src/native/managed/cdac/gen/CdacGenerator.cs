@@ -36,8 +36,8 @@ public sealed class CdacGenerator : IIncrementalGenerator
         // one helper is present but the other is not.
         IncrementalValueProvider<(bool EmitLayoutSet, bool EmitTypeNameResolver)> shouldEmitHelpers = context.CompilationProvider
             .Select(static (compilation, _) => (
-                EmitLayoutSet: compilation.GetTypeByMetadataName(LayoutSetSource.FullyQualifiedName) is null,
-                EmitTypeNameResolver: compilation.GetTypeByMetadataName(TypeNameResolverSource.FullyQualifiedName) is null));
+                EmitLayoutSet: !IsTypeAccessible(compilation, LayoutSetSource.FullyQualifiedName),
+                EmitTypeNameResolver: !IsTypeAccessible(compilation, TypeNameResolverSource.FullyQualifiedName)));
 
         context.RegisterSourceOutput(shouldEmitHelpers, static (ctx, flags) =>
         {
@@ -66,5 +66,23 @@ public sealed class CdacGenerator : IIncrementalGenerator
 
         context.RegisterSourceOutput(models, static (spc, model) =>
             spc.AddSource(Emitter.HintNameFor(model), SourceText.From(Emitter.Emit(model), Encoding.UTF8)));
+    }
+
+    /// <summary>
+    /// Returns true if the consuming compilation can already see a usable
+    /// <paramref name="metadataName"/> (declared here, or in a referenced assembly
+    /// and accessible).
+    /// </summary>
+    private static bool IsTypeAccessible(Compilation compilation, string metadataName)
+    {
+        foreach (INamedTypeSymbol type in compilation.GetTypesByMetadataName(metadataName))
+        {
+            if (compilation.IsSymbolAccessibleWithin(type, compilation.Assembly))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
