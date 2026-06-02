@@ -12,7 +12,6 @@
 #include <clrconfignocache.h>
 #include <limits>
 #include <minipal/guid.h>
-#include <errno.h>
 #include <limits.h>
 #include <new>
 #include <stdlib.h>

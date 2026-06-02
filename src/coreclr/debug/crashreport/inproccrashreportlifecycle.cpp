@@ -471,33 +471,6 @@ InProcCrashReportLifecycle::ProbeDirectoryWritable(const char* path)
     return writable;
 }
 
-// Parses a single unsigned filename component, advancing *value past the digits
-// consumed. strtoull skips leading whitespace and accepts a leading '+'/'-' sign,
-// so a leading-digit guard is kept up front to stop malformed names from matching
-// the report-<timestamp>-<pid> pattern.
-static bool TryParseUnsigned(
-    const char** value,
-    uint64_t* result)
-{
-    const char* current = *value;
-    if (current == nullptr || *current < '0' || *current > '9')
-    {
-        return false;
-    }
-
-    errno = 0;
-    char* end = nullptr;
-    unsigned long long parsed = strtoull(current, &end, 10);
-    if (errno == ERANGE)
-    {
-        return false;
-    }
-
-    *value = end;
-    *result = static_cast<uint64_t>(parsed);
-    return true;
-}
-
 bool
 InProcCrashReportLifecycle::TryParseReportName(
     const char* name,
@@ -531,19 +504,24 @@ InProcCrashReportLifecycle::TryParseReportName(
     }
 
     const char* current = name + prefixLength;
-    uint64_t timestamp = 0;
-    uint64_t pid = 0;
 
-    if (!TryParseUnsigned(&current, &timestamp) || *current != '-')
+    // The timestamp and pid are written by this process as plain decimal digits,
+    // so parse them directly with strtoull/strtoul. end == current means no digits
+    // were consumed, which rejects an empty timestamp or pid component.
+    char* end = nullptr;
+    uint64_t timestamp = strtoull(current, &end, 10);
+    if (end == current || *end != '-')
     {
         return false;
     }
-    current++;
+    current = end + 1;
 
-    if (!TryParseUnsigned(&current, &pid))
+    uint64_t pid = strtoul(current, &end, 10);
+    if (end == current)
     {
         return false;
     }
+    current = end;
 
     if (strncmp(current, CrashReportFileExtension, extensionLength) != 0)
     {
