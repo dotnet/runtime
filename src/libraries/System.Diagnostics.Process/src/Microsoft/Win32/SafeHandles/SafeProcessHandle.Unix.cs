@@ -218,6 +218,79 @@ namespace Microsoft.Win32.SafeHandles
                 out waitStateHolder);
         }
 
+        internal static unsafe SafeProcessHandle StartWithCallback(ProcessStartInfo startInfo, SafeFileHandle childInput, SafeFileHandle childOutput, SafeFileHandle childError,
+            Func<ProcessStartArguments, SafeProcessHandle> callback, out ProcessWaitState.Holder? waitStateHolder)
+        {
+            waitStateHolder = null;
+            ProcessUtils.EnsureInitialized();
+
+            string? resolvedFileName = ProcessUtils.ResolvePath(startInfo.FileName);
+            string[] argv = ProcessUtils.ParseArgv(startInfo);
+            bool usesTerminal = UsesTerminal(childInput, childOutput, childError);
+
+            byte** argvPtr = null;
+            byte** envpPtr = null;
+
+            try
+            {
+                Interop.Sys.AllocArgvArray(argv, ref argvPtr);
+                Interop.Sys.AllocEnvpArray(startInfo.Environment, ref envpPtr);
+
+                ProcessStartArguments args = new()
+                {
+                    FileName = resolvedFileName,
+                    Arguments = argvPtr,
+                    EnvironmentVariables = envpPtr,
+                    StandardInput = childInput,
+                    StandardOutput = childOutput,
+                    StandardError = childError,
+                    ProcessStartInfo = startInfo,
+                };
+
+                // Lock to avoid races with OnSigChild
+                // By using a ReaderWriterLock we allow multiple processes to start concurrently.
+                ProcessUtils.s_processStartLock.EnterReadLock();
+
+                try
+                {
+                    if (usesTerminal)
+                    {
+                        ProcessUtils.ConfigureTerminalForChildProcesses(1);
+                    }
+
+                    SafeProcessHandle processHandle = callback(args);
+                    if (processHandle is null || processHandle.IsInvalid)
+                    {
+                        throw new ArgumentException(SR.Argument_InvalidHandle, nameof(callback));
+                    }
+
+                    waitStateHolder = new ProcessWaitState.Holder(processHandle.ProcessId, isNewChild: true, usesTerminal);
+                    return processHandle;
+                }
+                catch
+                {
+                    if (usesTerminal)
+                    {
+                        // We failed to launch a child that could use the terminal.
+                        ProcessUtils.s_processStartLock.EnterWriteLock();
+                        ProcessUtils.ConfigureTerminalForChildProcesses(-1);
+                        ProcessUtils.s_processStartLock.ExitWriteLock();
+                    }
+
+                    throw;
+                }
+                finally
+                {
+                    ProcessUtils.s_processStartLock.ExitReadLock();
+                }
+            }
+            finally
+            {
+                NativeMemory.Free(envpPtr);
+                NativeMemory.Free(argvPtr);
+            }
+        }
+
         private static SafeProcessHandle StartWithShellExecute(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle,
             SafeFileHandle? stderrHandle, out ProcessWaitState.Holder? waitStateHolder)
         {

@@ -34,11 +34,6 @@ namespace System.Diagnostics
         public unsafe void* Arguments { get; internal set; }
 
         /// <summary>
-        /// Gets the working directory for the new process, or <see langword="null"/> if the current directory should be used.
-        /// </summary>
-        public string? WorkingDirectory { get; internal set; }
-
-        /// <summary>
         /// Gets a pointer to the environment variables block for the new process.
         /// On Windows, this is a pointer to a null-terminated <see cref="char"/> string in the format used by CreateProcess
         /// (each variable is "name=value\0", terminated by an extra '\0').

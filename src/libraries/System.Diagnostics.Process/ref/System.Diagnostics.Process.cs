@@ -304,7 +304,6 @@ namespace System.Diagnostics
         public Microsoft.Win32.SafeHandles.SafeFileHandle StandardError { get { throw null; } }
         public Microsoft.Win32.SafeHandles.SafeFileHandle StandardInput { get { throw null; } }
         public Microsoft.Win32.SafeHandles.SafeFileHandle StandardOutput { get { throw null; } }
-        public string? WorkingDirectory { get { throw null; } }
     }
     public enum ProcessPriorityClass
     {

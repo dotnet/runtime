@@ -358,13 +358,20 @@ namespace System.Diagnostics
             return new SafeProcessHandle(_waitStateHolder!.IncrementRefCount());
         }
 
-        private bool StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, SafeHandle[]? inheritedHandles)
+        private bool StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, SafeHandle[]? inheritedHandles, Func<ProcessStartArguments, SafeProcessHandle>? callback)
         {
-            SafeProcessHandle startedProcess = SafeProcessHandle.StartCore(startInfo, stdinHandle, stdoutHandle, stderrHandle, inheritedHandles, out ProcessWaitState.Holder? waitStateHolder);
+            ProcessWaitState.Holder? waitStateHolder = null;
+
+            SafeProcessHandle startedProcess = callback is null
+                ? SafeProcessHandle.StartCore(startInfo, stdinHandle, stdoutHandle, stderrHandle, inheritedHandles, out waitStateHolder)
+                : SafeProcessHandle.StartWithCallback(startInfo, stdinHandle!, stdoutHandle!, stderrHandle!, callback, out waitStateHolder);
+
             Debug.Assert(!startedProcess.IsInvalid);
 
-            // SafeProcessHandle has its own copy of the wait state holder, so we need to increment the ref count for our copy.
-            _waitStateHolder = waitStateHolder!.IncrementRefCount();
+            _waitStateHolder = callback is null
+                ? waitStateHolder!.IncrementRefCount() // SafeProcessHandle has its own copy of the wait state holder, so we need to increment the ref count for our copy.
+                : waitStateHolder; // we created a dedicated holder
+
             SetProcessHandle(startedProcess);
             SetProcessId(startedProcess.ProcessId);
             return true;
@@ -407,43 +414,6 @@ namespace System.Diagnostics
 
             // Use AnonymousPipeClientStream for async, cancellable read/write support.
             return new AnonymousPipeClientStream(direction, safePipeHandle);
-        }
-
-        private static unsafe partial SafeProcessHandle InvokeStartCallback(ProcessStartInfo startInfo, SafeFileHandle childInput, SafeFileHandle childOutput, SafeFileHandle childError, Func<ProcessStartArguments, SafeProcessHandle> callback)
-        {
-            string? resolvedFileName = ProcessUtils.ResolvePath(startInfo.FileName);
-            string[] argv = ProcessUtils.ParseArgv(startInfo);
-
-            IDictionary<string, string?> env = startInfo.Environment;
-            string? workingDirectory = !string.IsNullOrWhiteSpace(startInfo.WorkingDirectory) ? startInfo.WorkingDirectory : null;
-
-            byte** argvPtr = null;
-            byte** envpPtr = null;
-
-            try
-            {
-                Interop.Sys.AllocArgvArray(argv, ref argvPtr);
-                Interop.Sys.AllocEnvpArray(env, ref envpPtr);
-
-                ProcessStartArguments args = new()
-                {
-                    FileName = resolvedFileName,
-                    Arguments = argvPtr,
-                    WorkingDirectory = workingDirectory,
-                    EnvironmentVariables = envpPtr,
-                    StandardInput = childInput,
-                    StandardOutput = childOutput,
-                    StandardError = childError,
-                    ProcessStartInfo = startInfo,
-                };
-
-                return callback(args);
-            }
-            finally
-            {
-                NativeMemory.Free(envpPtr);
-                NativeMemory.Free(argvPtr);
-            }
         }
 
         private static Encoding GetStandardInputEncoding() => Encoding.Default;

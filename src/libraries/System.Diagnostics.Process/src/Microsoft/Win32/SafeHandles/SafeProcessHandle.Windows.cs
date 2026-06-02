@@ -356,6 +356,84 @@ namespace Microsoft.Win32.SafeHandles
             return procSH;
         }
 
+        internal static unsafe SafeProcessHandle StartWithCallback(ProcessStartInfo startInfo, SafeFileHandle childInput, SafeFileHandle childOutput, SafeFileHandle childError,
+            Func<ProcessStartArguments, SafeProcessHandle> callback)
+        {
+            ValueStringBuilder commandLine = new(stackalloc char[256]);
+            ProcessUtils.BuildCommandLine(startInfo, ref commandLine);
+            commandLine.NullTerminate();
+
+            string? environmentBlock = null;
+            if (startInfo._environmentVariables != null)
+            {
+                environmentBlock = ProcessUtils.GetEnvironmentVariablesBlock(startInfo._environmentVariables!);
+            }
+
+            ProcessStartArguments args = new()
+            {
+                FileName = null, // On Windows, the file name is embedded in the command line
+                StandardInput = childInput,
+                StandardOutput = childOutput,
+                StandardError = childError,
+                ProcessStartInfo = startInfo,
+            };
+
+            // Acquire the process lock to avoid accidental handle inheritance issues.
+            ProcessUtils.s_processStartLock.EnterWriteLock();
+
+            try
+            {
+                EnableInheritance(childInput);
+                EnableInheritance(childOutput);
+                EnableInheritance(childError);
+
+                fixed (char* commandLinePtr = &commandLine.GetPinnableReference())
+                fixed (char* environmentBlockPtr = environmentBlock)
+                {
+                    args.Arguments = commandLinePtr;
+                    args.EnvironmentVariables = environmentBlockPtr;
+
+                    SafeProcessHandle startedProcess = callback(args);
+                    if (startedProcess is null || startedProcess.IsInvalid)
+                    {
+                        throw new ArgumentException(SR.Argument_InvalidHandle, nameof(callback));
+                    }
+
+                    return startedProcess;
+                }
+            }
+            finally
+            {
+                ProcessUtils.s_processStartLock.ExitWriteLock();
+            }
+
+            static void EnableInheritance(SafeFileHandle safeHandle)
+            {
+                bool refAdded = false;
+
+                try
+                {
+                    safeHandle.DangerousAddRef(ref refAdded);
+
+                    // Enable inheritance on this handle so the child process can use it.
+                    if (!Interop.Kernel32.SetHandleInformation(
+                        safeHandle.DangerousGetHandle(),
+                        Interop.Kernel32.HandleFlags.HANDLE_FLAG_INHERIT,
+                        Interop.Kernel32.HandleFlags.HANDLE_FLAG_INHERIT))
+                    {
+                        throw new Win32Exception(Marshal.GetLastWin32Error());
+                    }
+                }
+                finally
+                {
+                    if (refAdded)
+                    {
+                        safeHandle.DangerousRelease();
+                    }
+                }
+            }
+        }
+
         private static unsafe SafeProcessHandle StartWithShellExecute(ProcessStartInfo startInfo)
         {
             if (!string.IsNullOrEmpty(startInfo.UserName) || startInfo.Password != null)
