@@ -13,7 +13,7 @@ Abstract:
 #include <cstdint>
 #include "cgroupcpu.h"
 
-#if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+#if defined(TARGET_LINUX)
 
 #include <cstddef>
 #include <cassert>
@@ -499,7 +499,7 @@ bool GetCpuLimit(uint32_t* val)
     return CGroup::GetCpuLimit(val);
 }
 
-#else // !(TARGET_LINUX || TARGET_ANDROID)
+#else // !TARGET_LINUX
 
 void InitializeCpuCGroup()
 {
@@ -510,4 +510,4 @@ bool GetCpuLimit(uint32_t* val)
     return false;
 }
 
-#endif // TARGET_LINUX || TARGET_ANDROID
+#endif // TARGET_LINUX
