@@ -21,10 +21,9 @@ class OutOfMemoryExceptionTest
 
     const string AllocateSmallArg = "--allocate-small";
     const string AllocateLargeArg = "--allocate-large";
-    // Both the minimal OOM fail-fast path ("Process terminated. System.OutOfMemoryException")
-    // and the standard unhandled-exception path ("Unhandled exception. System.OutOfMemoryException...")
-    // contain this token. The test validates that some OOM diagnostic is printed rather than
-    // just "Aborted" with no context.
+    // The standard unhandled-exception path ("Unhandled exception. System.OutOfMemoryException...")
+    // contains this token. The minimal OOM fail-fast path may only print a short "Out of memory." message.
+    // The test validates that some OOM diagnostic is printed rather than just "Aborted" with no context.
     const string ExpectedOomToken = "OutOfMemoryException";
     const string ExpectedMinimalOomToken = "Out of memory.";
 
