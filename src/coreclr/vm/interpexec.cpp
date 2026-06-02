@@ -882,7 +882,7 @@ template <typename THelper> static THelper GetPossiblyIndirectHelper(const Inter
     return (THelper)addr;
 }
 
-// Float to integer conversions saturate at the destination type's range. NaN maps to 0.
+// Floating-point to integer conversions saturate at the destination type's range. NaN maps to 0.
 // This matches the JIT's R -> small integral type behavior introduced for
 // https://github.com/dotnet/runtime/issues/116823
 template <typename TResult, typename TIntermediate, typename TSource> static void ConvFpHelper(int8_t *stack, const int32_t *ip)

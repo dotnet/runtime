@@ -1696,7 +1696,7 @@ public class InterpreterTest
 
     public static bool TestConvBoundaries(double inRangeShort, double outOfRangeShort, double inRangeInt, double outOfRangeInt)
     {
-        // In unchecked mode, both the interpreter and the JIT saturate on float->int conversions
+        // In unchecked mode, both the interpreter and the JIT saturate on floating-point -> integral conversions
         // if the value is out of range (see https://github.com/dotnet/runtime/issues/116823).
         unchecked
         {
