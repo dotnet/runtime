@@ -19,8 +19,7 @@ namespace System.Diagnostics.Tests
             {
                 ArgumentList = { "-c", "echo hello && echo error >&2" },
                 RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false
+                RedirectStandardError = true
             };
 
             using Process process = Process.Start(startInfo, (ProcessStartArguments args) =>

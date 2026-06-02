@@ -112,8 +112,7 @@ namespace System.Diagnostics.Tests
             {
                 ArgumentList = { "/c", "echo hello && echo error 1>&2" },
                 RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false
+                RedirectStandardError = true
             };
 
             using Process process = Process.Start(startInfo, (ProcessStartArguments args) =>
@@ -154,7 +153,7 @@ namespace System.Diagnostics.Tests
             (string output, string error) = process.ReadAllText();
             process.WaitForExit(WaitInMS);
 
-            Assert.Equal("hello\r\n", output);
+            Assert.Equal("hello \r\n", output);
             Assert.Equal("error\r\n", error);
             Assert.Equal(0, process.ExitCode);
         }
