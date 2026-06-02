@@ -4607,12 +4607,13 @@ static OpcodePeepElement peepRuntimeAsyncCallConfigureAwaitValueTask_EXACT_L[] =
     // LDC_I4_0 or LDC_I4_1 goes here (at offset 10)
     { 11, CEE_CALL},
     { 16, CEE_CALL },
-    { 19, CEE_ILLEGAL } // End marker
+    { 21, CEE_ILLEGAL } // End marker
 };
 
 static OpcodePeepElement peepRuntimeAsyncCallRetInAsyncVersion[] = {
     // call or callvirt at the start
     { 5, CEE_RET },
+    { 6, CEE_ILLEGAL } // End marker
 };
 
 class InterpAsyncCallPeeps
@@ -4625,7 +4626,7 @@ class InterpAsyncCallPeeps
     OpcodePeep peepCallConfigureAwaitValueTask_S_S = { peepRuntimeAsyncCallConfigureAwaitValueTask_S_S, &InterpCompiler::IsRuntimeAsyncCallConfigureAwaitValueTask, &InterpCompiler::ApplyRuntimeAsyncCall, "CallConfigureAwaitValueTask_S_S" };
     OpcodePeep peepCallConfigureAwaitValueTask_EXACT_S = { peepRuntimeAsyncCallConfigureAwaitValueTask_EXACT_S, &InterpCompiler::IsRuntimeAsyncCallConfigureAwaitValueTaskExactStLoc, &InterpCompiler::ApplyRuntimeAsyncCall, "CallConfigureAwaitValueTask_EXACT_S" };
     OpcodePeep peepCallConfigureAwaitValueTask_EXACT_L = { peepRuntimeAsyncCallConfigureAwaitValueTask_EXACT_L, &InterpCompiler::IsRuntimeAsyncCallConfigureAwaitValueTaskExactStLoc, &InterpCompiler::ApplyRuntimeAsyncCall, "CallConfigureAwaitValueTask_EXACT_L" };
-    OpcodePeep peepCallRetInAsyncVersion = { peepRuntimeAsyncCallRetInAsyncVersion, &InterpCompiler::IsRuntimeAsyncCallRetInAsyncVersion, &InterpCompiler::ApplyRuntimeAsyncCall, "CallRetInAsyncVersion" };
+    OpcodePeep peepCallRetInAsyncVersion = { peepRuntimeAsyncCallRetInAsyncVersion, &InterpCompiler::IsRuntimeAsyncCallRetInAsyncVersion, &InterpCompiler::ApplyRuntimeAsyncCallRetInAsyncVersion, "CallRetInAsyncVersion" };
 
 public:
     OpcodePeep* Peeps[10] = {
@@ -7528,10 +7529,15 @@ bool InterpCompiler::IsRuntimeAsyncCallRetInAsyncVersion(const uint8_t* ip, Opco
         return false;
     }
 
-    INTERP_DUMP("Matched tailcall in async version\n");
     m_currentContinuationContextHandling = ContinuationContextHandling::None;
     m_matchedAsyncCallRetInAsyncVersion = true;
     return true;
+}
+
+int InterpCompiler::ApplyRuntimeAsyncCallRetInAsyncVersion(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo)
+{
+    // Only skip the call, not the RET we matched.
+    return 5;
 }
 
 int InterpCompiler::ApplyConvRUnR4Peep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo)
