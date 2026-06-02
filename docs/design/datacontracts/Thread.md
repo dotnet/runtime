@@ -423,7 +423,7 @@ byte[] IThread.GetContext(TargetPointer threadPointer, ThreadContextSource conte
 
 bool IsInteropDebuggingHijacked(TargetPointer thread)
 {
-    return target.Read<byte>(thread + /* Thread::InteropDebuggingHijacked offset */) != 0;
+    return target.Read<uint>(thread + /* Thread::InteropDebuggingHijacked offset */) != 0;
 }
 
 TargetPointer GetDebuggerFilterContext(TargetPointer thread)
