@@ -14,7 +14,6 @@ if ! nmOutput=$("$nmCommand" -m "$library"); then
   exit 2
 fi
 
-IFS=$'\n'
 swiftObjCClasses=()
 while IFS= read -r line; do
   # Swift classes are registered as ObjC classes with process-global names. Local
