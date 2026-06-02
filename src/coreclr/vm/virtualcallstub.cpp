@@ -417,6 +417,10 @@ void VirtualCallStubManager::ResetCache()
     // Go through each cache entry and if the cache element there is in
     // the cache entry heap of the manager being deleted, then we just
     // set the cache entry to empty.
+#ifdef CHAIN_LOOKUP
+    // Serialize cache chain unlinking against concurrent insert/promote writers.
+    CrstHolder lh(g_resolveCache->GetWriteLock());
+#endif
     DispatchCache::Iterator it(g_resolveCache);
     while (it.IsValid())
     {
@@ -681,6 +685,10 @@ VirtualCallStubManager::~VirtualCallStubManager()
     // Go through each cache entry and if the cache element there is in
     // the cache entry heap of the manager being deleted, then we just
     // set the cache entry to empty.
+#ifdef CHAIN_LOOKUP
+    // Serialize cache chain unlinking against concurrent insert/promote writers.
+    CrstHolder lh(g_resolveCache->GetWriteLock());
+#endif
     DispatchCache::Iterator it(g_resolveCache);
     while (it.IsValid())
     {

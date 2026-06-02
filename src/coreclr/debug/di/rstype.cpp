@@ -1163,8 +1163,11 @@ HRESULT CordbType::TypeDataToType(CordbAppDomain *pAppDomain, DebuggerIPCE_Basic
 
                     {
                         RSLockHolder lockHolder(pProcess->GetProcessLock());
+                        CORDB_ADDRESS vmTypeHandleRaw = 0;
+                        static_assert(sizeof(data->vmTypeHandle) <= sizeof(vmTypeHandleRaw), "VMPTR_TypeHandle is larger than CORDB_ADDRESS");
+                        memcpy(&vmTypeHandleRaw, &data->vmTypeHandle, sizeof(data->vmTypeHandle));
                         IfFailThrow(pProcess->GetDAC()->TypeHandleToExpandedTypeInfo(NoValueTypeBoxing,  // could be generics which are never boxed
-                                                                                    data->vmTypeHandle,
+                                                                                    vmTypeHandleRaw,
                                                                                     &typeInfo));
                     }
 
@@ -1370,7 +1373,10 @@ HRESULT CordbType::InstantiateFromTypeHandle(CordbAppDomain * pAppDomain,
         TypeParamsList params;
         {
             RSLockHolder lockHolder(pProcess->GetProcessLock());
-            IfFailThrow(pProcess->GetDAC()->GetTypeHandleParams(vmTypeHandle, &params));
+            CallbackAccumulator<DebuggerIPCE_ExpandedTypeData> acc;
+            IfFailThrow(pProcess->GetDAC()->EnumerateTypeHandleParams(vmTypeHandle, &CallbackAccumulator<DebuggerIPCE_ExpandedTypeData>::PushCallback, &acc));
+            IfFailThrow(acc.hrError);
+            params.Init(acc.items.Ptr(), (int)acc.items.Size());
         }
 
         // convert the parameter type information to a list of CordbTypeInstances (one for each parameter)

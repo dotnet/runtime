@@ -166,6 +166,7 @@ namespace Mono.Linker.Steps
             DependencyKind.ReturnTypeMarshalSpec,
             DependencyKind.DynamicInterfaceCastableImplementation,
             DependencyKind.XmlDescriptor,
+            DependencyKind.DisablePrivateReflectionRequirement,
         };
 
         static readonly DependencyKind[] _methodReasons = new DependencyKind[] {
@@ -215,6 +216,7 @@ namespace Mono.Linker.Steps
             DependencyKind.ReturnTypeMarshalSpec,
             DependencyKind.XmlDescriptor,
             DependencyKind.UnsafeAccessorTarget,
+            DependencyKind.DisablePrivateReflectionRequirement,
         };
 #endif
 

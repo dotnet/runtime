@@ -12,6 +12,7 @@
   <!-- Default priority building values. -->
   <PropertyGroup>
     <DisableProjectBuild Condition="'$(IsMergedTestRunnerAssembly)' == 'true' and '$(BuildAllTestsAsStandalone)' == 'true' and '$(HasMergedInTests)' != 'true'">true</DisableProjectBuild>
+    <DisableProjectBuild Condition="'$(MonoAotIncompatible)' == 'true' and '$(RuntimeFlavor)' == 'mono' and ('$(RuntimeVariant)' == 'minifullaot' or '$(RuntimeVariant)' == 'llvmfullaot')">true</DisableProjectBuild>
     <SkipInferOutputType Condition="'$(TargetOS)' == 'android' and '$(TestBuildMode)' == 'nativeaot' and '$(OutputType)' != ''">true</SkipInferOutputType>
     <OutputType Condition="'$(SkipInferOutputType)' != 'true' and (('$(IsMergedTestRunnerAssembly)' == 'true' and '$(BuildAllTestsAsStandalone)' != 'true') or ('$(RequiresProcessIsolation)' == 'true' and '$(CLRTestKind)' != 'SharedLibrary'))">Exe</OutputType>
 
@@ -517,6 +518,7 @@
   <Import Project="$(RepoRoot)/src/tests/Common/XUnitWrapperGenerator/XUnitWrapperGenerator.props" />
   <Import Project="$(RepoRoot)eng/liveBuilds.targets" />
   <Import Project="$(RepositoryEngineeringDir)toolAot.targets" />
+  <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" Condition="'$(UseBootstrap)' == 'true'" />
   <Import Project="$(MSBuildProjectFullPath).targets" Condition="Exists('$(MSBuildProjectFullPath).targets')"/>
   <Import Project="$(RepoRoot)/src/tests/Common/mergedrunner.targets" Condition="'$(IsMergedTestRunnerAssembly)' == 'true'" />
 
@@ -592,6 +594,6 @@
 
   <Target Name="LinkNativeIfBuildAndRun"
           Condition="'$(_WillCLRTestProjectBuild)' == 'true' and '$(CLRTestKind)' == 'BuildAndRun'"
-          DependsOnTargets="ComputeResolvedFilesToPublishList;LinkNative" />
+          DependsOnTargets="ComputeResolvedFilesToPublishList;NativeCompile" />
 
 </Project>

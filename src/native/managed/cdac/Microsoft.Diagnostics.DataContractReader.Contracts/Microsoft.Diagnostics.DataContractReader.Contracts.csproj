@@ -18,6 +18,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Microsoft.Diagnostics.DataContractReader.Abstractions\Microsoft.Diagnostics.DataContractReader.Abstractions.csproj" GlobalPropertiesToRemove="RuntimeIdentifier" />
+
+    <!-- Wire the cdac source generator as a Roslyn analyzer. -->
+    <ProjectReference Include="..\Microsoft.Diagnostics.DataContractReader.DataGenerator\Microsoft.Diagnostics.DataContractReader.DataGenerator.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
   </ItemGroup>
 
   <ItemGroup>

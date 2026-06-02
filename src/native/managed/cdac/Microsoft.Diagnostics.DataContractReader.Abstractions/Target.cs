@@ -138,6 +138,14 @@ public abstract class Target
     public abstract TargetNUInt ReadNUInt(ulong address);
 
     /// <summary>
+    /// Read a native signed integer from the target in target endianness
+    /// </summary>
+    /// <param name="address">Address to start reading from</param>
+    /// <returns>Value read from the target</returns>
+    /// <exception cref="VirtualReadException">Thrown when the read operation fails</exception>
+    public abstract TargetNInt ReadNInt(ulong address);
+
+    /// <summary>
     /// Read a well known global from the target process as a string
     /// </summary>
     /// <param name="name">The name of the global</param>
@@ -234,9 +242,17 @@ public abstract class Target
     /// <summary>
     /// Returns the information about the given well-known data type in the target process
     /// </summary>
-    /// <param name="type">The name of the well known type</param>
+    /// <param name="typeName">The name of the well known type</param>
     /// <returns>The information about the given type in the target process</returns>
-    public abstract TypeInfo GetTypeInfo(DataType type);
+    public abstract TypeInfo GetTypeInfo(string typeName);
+
+    /// <summary>
+    /// Try to resolve a native cdac type info by name. Returns <c>false</c> when the
+    /// descriptor does not define this type, instead of throwing. Used by
+    /// <c>TargetLayoutExtensions.ResolveLayouts</c> for IData classes that opt into
+    /// per-field fallback between native cdac descriptors and managed type metadata.
+    /// </summary>
+    public abstract bool TryGetTypeInfo(string typeName, out TypeInfo info);
 
     /// <summary>
     /// Get the data cache for the target
@@ -304,10 +320,6 @@ public abstract class Target
         /// </summary>
         public int Offset { get; init; }
         /// <summary>
-        /// The well known data type of the field in the target process
-        /// </summary>
-        public readonly DataType Type { get; init; }
-        /// <summary>
         /// The name of the well known data type of the field in the target process, or null
         /// if the target data descriptor did not record a name
         /// </summary>
@@ -323,7 +335,7 @@ public abstract class Target
     /// Clear all cached data held by this target, including processed data and contract caches.
     /// Called when the target process state may have changed (e.g. on resume).
     /// </summary>
-    public void Flush()
+    public virtual void Flush()
     {
         ProcessedData.Clear();
         Contracts.Flush();

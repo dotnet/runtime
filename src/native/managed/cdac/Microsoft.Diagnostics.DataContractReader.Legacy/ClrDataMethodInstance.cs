@@ -255,9 +255,10 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
                     validateIlOffsets ? localIlOffsetsPtr : null);
             }
 
-            Debug.ValidateHResult(hr, hrLocal);
+            // AllowCdacSuccess: the DAC fails on interpreted code.
+            Debug.ValidateHResult(hr, hrLocal, HResultValidationMode.AllowCdacSuccess);
 
-            if (hr == HResults.S_OK)
+            if (hr == HResults.S_OK && hrLocal == HResults.S_OK)
             {
                 if (validateOffsetsNeeded)
                 {
@@ -287,7 +288,8 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
 
         try
         {
-            TargetCodePointer pCode = _target.Contracts.RuntimeTypeSystem.GetNativeCode(_methodDesc);
+            TargetCodePointer nativeCode = _target.Contracts.RuntimeTypeSystem.GetNativeCode(_methodDesc);
+            TargetCodePointer pCode = _target.Contracts.PrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent(nativeCode);
             TargetPointer codeStart = pCode.ToAddress(_target);
 
             // No debug info exists at all (e.g. ILStubs).

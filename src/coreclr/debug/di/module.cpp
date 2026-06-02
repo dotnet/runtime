@@ -928,7 +928,7 @@ void CordbModule::InitPublicMetaData(TargetBuffer buffer)
     // copy it over from the remote process
 
     CoTaskMemHolder<VOID> pMetaDataCopy;
-    CopyRemoteMetaData(buffer, pMetaDataCopy.GetAddr());
+    CopyRemoteMetaData(buffer, &pMetaDataCopy);
 
 
     //
@@ -955,7 +955,7 @@ void CordbModule::InitPublicMetaData(TargetBuffer buffer)
                                   reinterpret_cast<IUnknown**>( &m_pIMImport ));
 
     // MetaData has taken ownership -don't free the memory
-    pMetaDataCopy.SuppressRelease();
+    pMetaDataCopy.Detach();
 
     // Immediately restore the old setting.
     HRESULT hrRestore = pDisp->SetOption(MetaDataSetUpdate, &valueOld);
@@ -1009,7 +1009,7 @@ void CordbModule::UpdatePublicMetaDataFromRemote(TargetBuffer bufferRemoteMetaDa
 
     // First copy it from the remote process
     CoTaskMemHolder<VOID> pLocalMetaDataPtr;
-    CopyRemoteMetaData(bufferRemoteMetaData, pLocalMetaDataPtr.GetAddr());
+    CopyRemoteMetaData(bufferRemoteMetaData, &pLocalMetaDataPtr);
 
     IMetaDataDispenserEx *  pDisp = GetProcess()->GetDispenser();
     _ASSERTE(pDisp != NULL); // throws on error.
@@ -1037,7 +1037,7 @@ void CordbModule::UpdatePublicMetaDataFromRemote(TargetBuffer bufferRemoteMetaDa
     IfFailThrow(hr);
 
     // Success.  MetaData now owns the metadata memory
-    pLocalMetaDataPtr.SuppressRelease();
+    pLocalMetaDataPtr.Detach();
 }
 
 //---------------------------------------------------------------------------------------
@@ -1058,7 +1058,7 @@ void CordbModule::UpdatePublicMetaDataFromRemote(TargetBuffer bufferRemoteMetaDa
 //    Uses an allocator (CoTaskMemHolder) that lets us hand off the memory to the metadata.
 void CordbModule::CopyRemoteMetaData(
     TargetBuffer buffer,
-    CoTaskMemHolder<VOID> * pLocalBuffer)
+    VOID** pLocalBuffer)
 {
     CONTRACTL
     {
@@ -1071,20 +1071,16 @@ void CordbModule::CopyRemoteMetaData(
 
     // Allocate space for the local copy of the metadata
     // No need to zero out the memory since we'll fill it all here.
-    LPVOID pRawBuffer = CoTaskMemAlloc(buffer.cbSize);
-    if (pRawBuffer == NULL)
+    CoTaskMemHolder<BYTE> pBuffer{ (BYTE*)CoTaskMemAlloc(buffer.cbSize) };
+    if (pBuffer == NULL)
     {
         ThrowOutOfMemory();
     }
 
-    pLocalBuffer->Assign(pRawBuffer);
-
-
-
     // Copy the metadata from the left side
-    GetProcess()->SafeReadBuffer(buffer, (BYTE *)pRawBuffer);
+    GetProcess()->SafeReadBuffer(buffer, pBuffer);
 
-    return;
+    *pLocalBuffer = pBuffer.Detach();
 }
 
 HRESULT CordbModule::QueryInterface(REFIID id, void **pInterface)

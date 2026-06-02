@@ -1349,10 +1349,9 @@ namespace Internal.JitInterface
         {
             // Initialize OUT fields
             info->devirtualizedMethod = null;
-            info->exactContext = null;
+            info->tokenLookupContext = null;
             info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_UNKNOWN;
-            info->isInstantiatingStub = false;
-            info->needsMethodContext = false;
+            info->instParamLookup = default(CORINFO_LOOKUP);
 
             TypeDesc objType = HandleToObject(info->objClass);
 
@@ -1497,8 +1496,7 @@ namespace Internal.JitInterface
 #endif
             info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_SUCCESS;
             info->devirtualizedMethod = ObjectToHandle(impl);
-            info->isInstantiatingStub = false;
-            info->exactContext = contextFromType(owningType);
+            info->tokenLookupContext = contextFromType(owningType);
 
             return true;
 
@@ -1872,6 +1870,7 @@ namespace Internal.JitInterface
             else
             {
                 recordToken = (_compilation.CompilationModuleGroup.VersionsWithType(owningType) || _compilation.CompilationModuleGroup.CrossModuleInlineableType(owningType)) && owningType is EcmaType;
+                recordToken &= methodIL.GetMethodILScopeDefinition() is IMethodTokensAreUseableInCompilation || methodIL.GetMethodILScopeDefinition() is IEcmaMethodIL;
             }
 #endif
 
@@ -1884,7 +1883,8 @@ namespace Internal.JitInterface
 #if READYTORUN
                 if (recordToken)
                 {
-                    ModuleToken methodModuleToken = HandleToModuleToken(ref pResolvedToken);
+                    ModuleToken methodModuleToken = HandleToModuleToken(ref pResolvedToken, out bool strippedInstantiation);
+                    Debug.Assert(!strippedInstantiation);
                     var resolver = _compilation.NodeFactory.Resolver;
                     resolver.AddModuleTokenForMethod(method, methodModuleToken);
                     ValidateSafetyOfUsingTypeEquivalenceInSignature(method.Signature);
@@ -1951,7 +1951,8 @@ namespace Internal.JitInterface
 #if READYTORUN
                 if (recordToken)
                 {
-                    _compilation.NodeFactory.Resolver.AddModuleTokenForType(type, HandleToModuleToken(ref pResolvedToken));
+                    _compilation.NodeFactory.Resolver.AddModuleTokenForType(type, HandleToModuleToken(ref pResolvedToken, out bool strippedInstantiation));
+                    Debug.Assert(!strippedInstantiation);
                 }
 #endif
 
@@ -2313,7 +2314,7 @@ namespace Internal.JitInterface
                 }
             }
 
-            if (type.Context.Target.Architecture == TargetArchitecture.ARM &&
+            if (type.Context.Target.SupportsAlign8 &&
                 alignment < 8 && type.RequiresAlign8())
             {
                 // If the structure contains 64-bit primitive fields and the platform requires 8-byte alignment for
@@ -4326,9 +4327,9 @@ namespace Internal.JitInterface
                     break;
             }
 
+            RelocType relocType = GetRelocType(fRelocType);
             relocDelta += addlDelta;
 
-            RelocType relocType = GetRelocType(fRelocType);
             // relocDelta is stored as the value
             Relocation.WriteValue(relocType, location, relocDelta);
 
@@ -4438,6 +4439,9 @@ namespace Internal.JitInterface
             flags.Set(CorJitFlag.CORJIT_FLAG_AOT);
             flags.Set(CorJitFlag.CORJIT_FLAG_RELOC);
             flags.Set(CorJitFlag.CORJIT_FLAG_USE_PINVOKE_HELPERS);
+#if !READYTORUN
+            flags.Set(CorJitFlag.CORJIT_FLAG_USE_DISPATCH_HELPERS);
+#endif
 
             TargetArchitecture targetArchitecture = _compilation.TypeSystemContext.Target.Architecture;
 

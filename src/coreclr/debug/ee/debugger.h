@@ -3435,6 +3435,7 @@ public:
     mdMethodDef                        m_methodToken;
     mdTypeDef                          m_classToken;
     PTR_DebuggerModule                 m_debuggerModule;     // Only valid if AD is still around
+    PTR_Assembly                       m_pAssembly;
     RSPTR_CORDBEVAL                    m_funcEvalKey;
     bool                               m_successful;        // Did the eval complete successfully
     Debugger::AreValueTypesBoxed       m_retValueBoxing;        // Is the return value boxed?
@@ -3767,7 +3768,7 @@ HANDLE OpenWin32EventOrThrow(
         ThreadStoreLockHolderWithSuspendReason tsld(ThreadSuspend::SUSPEND_FOR_DEBUGGER); \
         g_pDebugger->LockForEventSending(__pDbgLockHolder);                               \
         /* Check if the thread has been suspended by the debugger via SetDebugState(). */ \
-        if (thread != NULL && thread->HasThreadStateNC(Thread::TSNC_DebuggerUserSuspend)) \
+        if (thread != NULL && thread->HasDebuggerControlledThreadState(Thread::DCTS_UserSuspend)) \
         {                                                                                 \
             /* Just leave the lock and retry (see comment above for explanation */        \
         }                                                                                 \
