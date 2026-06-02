@@ -153,11 +153,6 @@ static CORINFO_InstructionSet V512VersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_AVXVNNIINT_V512;
         }
 
-        case InstructionSet_AVXVNNI:
-        {
-            return InstructionSet_AVXVNNI_V512;
-        }
-
         default:
         {
             return InstructionSet_NONE;

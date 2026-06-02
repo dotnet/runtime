@@ -6177,11 +6177,6 @@ int Compiler::compCompileAfterInit(CORINFO_MODULE_HANDLE classPtr,
             instructionSetFlags.AddInstructionSet(InstructionSet_AVXIFMA);
         }
 
-        if (JitConfig.EnableAVXVNNI_V512() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_AVXVNNI_V512);
-        }
-
         if (JitConfig.EnableAVXVNNI() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_AVXVNNI);
