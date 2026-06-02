@@ -234,6 +234,14 @@ test -f /tmp/gh-aw/agent/filed.tsv && cut -f1 /tmp/gh-aw/agent/filed.tsv | grep 
 printf '%s\t%s\n' "$key" "aw_<id>" >> /tmp/gh-aw/agent/filed.tsv                              # after emit
 ```
 
+**Cross-definition dedup (check second).** A KBE matches on signature text regardless of which pipeline definition produced it, so do NOT file a second KBE for a signature already filed this run under a different `definition_id`. After the exact-key check above misses, also check the definition-independent key `<queue>|<stress_mode>|<signature_norm>`. On match, record `skipped: cross-def dup of filed-issue #aw_<id> earlier in this run` and stop. Do NOT proceed to Branch B: `aw_<id>` is a safe-output ID from this run, not a real issue number, and rule #9 forbids same-run test-disable PRs. The per-definition test-disable PR (if test-disable is welcome on the resulting KBE) will surface on the next run, once the KBE has a real issue number. Append this key too after every Branch A emission.
+
+```bash
+xkey="<queue>|<stress_mode>|${signature_norm}"
+test -f /tmp/gh-aw/agent/filed.tsv && cut -f1 /tmp/gh-aw/agent/filed.tsv | grep -Fxq "$xkey"  # cross-def dup if exit 0
+printf '%s\t%s\n' "$xkey" "aw_<id>" >> /tmp/gh-aw/agent/filed.tsv                              # after emit
+```
+
 #### Step 4.1 — Load the matching skill
 
 | Pipeline category | Skill |
@@ -273,7 +281,8 @@ Record the same outcomes described there:
 
 Read the candidate KBE / tracker body + the latest 5 comments (not just the most recent). Also read the body + latest 5 comments of ANY issue referenced in the KBE body (e.g. `refs #<n>`, `Tracking: dotnet/runtime#<n>`) — maintainer signals on the root-cause issue override the KBE. Skip the test-disable (record `-> skipped: do-not-disable on issue #<n>`) if ANY of:
 
-- Body or recent comment from any `MEMBER`/`OWNER` mentions one of (case-insensitive): `please don't disable`, `do not mute`, `do not disable`, `keep failing`, `investigation in progress`, `fix-forward`, `fix forward`, `should be supported`, `will investigate`, `wait for #`, `landing in #`.
+- Body or recent comment from any `MEMBER`/`OWNER` mentions one of (case-insensitive): `please don't disable`, `do not mute`, `do not disable`, `keep failing`, `investigation in progress`, `fix-forward`, `fix forward`, `should be supported`, `will investigate`, `wait for #`, `landing in #`, `trying to understand`, `without disabling`, `i'm fixing`, `i am fixing`, `understand the problem`, `investigating root cause`, `find the root cause`.
+- Heuristic catch-all: any `MEMBER`/`OWNER` comment expressing investigation or fix-forward intent, even when no exact phrase above matches. Treat first-person statements about understanding, diagnosing, or fixing the failure (e.g. "I'm looking into this", "we should understand why", "I'd rather fix the pipeline than mute") as a do-not-disable signal. When the comment reads as a maintainer choosing to investigate rather than mute, skip the test-disable.
 - Issue carries a label semantically equivalent to "do not mute" (verify the label exists in `dotnet/runtime` before relying on it; do not invent labels).
 - Most recent area-owner comment within the last 14 days opposes disabling on procedural grounds.
 - A prior `[ci-scan]` test-disable PR for the same test (or same KBE `#<n>`) was **closed without merge** within the last 30 days. Search `is:pr is:closed -is:merged "<test-name>" "[ci-scan]" closed:>=<30-days-ago>` and `is:pr is:closed -is:merged "#<n>" "[ci-scan]" closed:>=<30-days-ago>` (compute `<30-days-ago>` as the ISO date 30 days before the scan run). For each hit, fetch the PR comments and skip if any commenter with `authorAssociation` `MEMBER` or `OWNER` used any of the keywords listed above. The combination of a maintainer pushback comment plus a non-merge close is the do-not-disable signal; the closer does not need to be the same maintainer. Re-filing requires fresh evidence such as a new maintainer comment on the KBE greenlighting the disable, or a clearly different failure signature. Record `-> skipped: do-not-disable, prior PR #<n> closed without merge after maintainer pushback`.
